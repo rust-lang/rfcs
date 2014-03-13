@@ -8,7 +8,7 @@ significantly more useful.
 
 The current implementation has two major issues:
 
-1. There are very limited warnings for valid attributes that end up in the
++ There are very limited warnings for valid attributes that end up in the
 wrong place. Something like this will be silently ignored:
 ```rust
 #[deriving(Clone)]; // Shouldn't have put a ; here
@@ -19,8 +19,7 @@ mod bar {
     //...
 }
 ```
-
-2. `ItemDecorators` can now be defined outside of the compiler, and there's no
++ `ItemDecorators` can now be defined outside of the compiler, and there's no
 way to tag them and associated attributes as valid. Something like this
 requires an `#[allow(attribute-usage)]`:
 ```rust
@@ -44,22 +43,31 @@ whitelist, but no other distinctions are made.
 
 This RFC would change the implementation to actually track which attributes are
 used during the compilation process. `syntax::ast::Attribute_` would be
-modified to add a new `used` field:
+modified to add an ID field:
 ```rust
+pub type AttrId = uint;
+
 pub struct Attribute_ {
+    id: AttrId,
     style: AttrStyle,
     value: @MetaItem,
     is_sugared_doc: bool,
-    used: bool,
 }
 ```
 
-It will be initialized to `false`, and code reading an attribute should set it
-to `true`. The utility methods in `ast::attr` can be modified to automatically
-set it to handle the simple cases automatically.
+`syntax::ast::parse::ParseSess` will generate new `AttrId`s on demand. I
+believe that attributes will only be created during parsing and expansion, and
+the `ParseSess` is accessible in both.
+
+The `AttrId`s will be used to create a side table of used attributes. This will
+most likely be a thread local to make it easily accessible during all stages of
+compilation by calling a function in `syntax::attr`:
+```rust
+fn mark_used(attr: &Attribute) { }
+```
 
 The `attribute-usage` lint would run at the end of compilation and warn on all
-attributes whose `used` field hasn't been set.
+attributes whose ID does not appear in the side table.
 
 One interesting edge case is attributes like `doc` that are used, but not in
 the normal compilation process. There could either be a separate fold pass to
@@ -84,4 +92,10 @@ support.
 "unknown" attributes. The `#[phase(syntax)]` crate loading infrastructure could
 be extended to pull a list of attributes from crates to use in the lint pass,
 but I'm not sure if the extra complexity is worth it.
++ The side table could be threaded through all of the compilation stages that
+need to use it instead of being a thread local. This would probably require
+significantly more work than the thread local approach, however. The thread
+local approach should not negatively impact any future parallelization work as
+each thread can keep its own side table, which can be merged into one for the
+lint pass.
 
