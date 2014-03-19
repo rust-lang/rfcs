@@ -45,7 +45,7 @@ This RFC would change the implementation to actually track which attributes are
 used during the compilation process. `syntax::ast::Attribute_` would be
 modified to add an ID field:
 ```rust
-pub type AttrId = uint;
+pub struct AttrId(uint);
 
 pub struct Attribute_ {
     id: AttrId,
