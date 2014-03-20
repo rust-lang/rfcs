@@ -34,6 +34,9 @@ simd![Expr, Expr, Expr] // SIMD expression syntax
 simd![Expr,..Expr] // SIMD repeat expression
 ```
 
+The second expression in the repeat syntax must evaluate to a constant integral
+greater than or equal to 1.
+
 As such, these would be used like so:
 
 ```rust
@@ -92,27 +95,14 @@ vector's subtype.
 
 ### Comparisons
 
-For SIMD vectors, component-wise comparisons would be nice. However, that does
-not play well with the existing infrastructure that expects comparisons to
-return boolean values. With this in mind, I propose implementing the equality
-operator as the equivalent to this pseudocode:
+Programmers using SIMD vectors in comparisons are likely to want to get a
+vector of boolean values as a result. However, the traits for these operations
+require returning a single boolean value. With this in mind, I propose only
+implementing the equality operator that returns whether every pair in the two
+vectors are equal or not.
 
-```rust
-fn eq(lhs: simd![T, ..n], rhs: simd![T, ..n]) -> bool {
-    for i in range(0, n) {
-        if lhs[i] != rhs[i] {
-            return false;
-        }
-    }
-    return true;
-}
-```
-
-Due to the lack of total ordering between SIMD vectors, I do not propose
-implementing the inequality operators for SIMD vectors.
-
-To fill the gap of component-wise comparisons on vectors, I propose a set of
-intrinsics that do the appropriate operations.
+Component-wise comparison, returning a vector of boolean values, shall be done
+by a set of appropriate intrinsics.
 
 ### Shuffle Access
 
@@ -128,7 +118,7 @@ let swiz : simd![f32,..4] = v.wzyx; // simd![4.0, 3.0, 2.0, 1.0]
 let dup : simd![f32,..4] = v.xxyy; // simd![1.0, 1.0, 2.0, 2.0]
 
 // simd![1.0, 1.0, 2.0, 2.0, 3.0, 3.0, 4.0, 4.0]
-let num : simd![f32,..8] = v.s0011223344;
+let num : simd![f32,..8] = v.s00112233;
 ```
 
 The `x`, `y`, `z` and `w` components will be usable to access the first,
