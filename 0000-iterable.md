@@ -81,7 +81,8 @@ trait MutIterable<'a, A, I: iter::Iterator<A>> {
 }
 ```
 
-We also could support more optimal iterators for collections of `Pod`s
+We also could support more optimal iterators for collections of `Pod`s. This
+allows users to replaces calls of `x.refs().map(|x| *x)` with `x.values()`:
 
 ```rust
 /// Automatically implemented for all `RefIterable<&A>` with `A: Pod`
@@ -108,7 +109,7 @@ impl<'a, T: Pod, I: iter::DoubleEndedIterator<&'a T>> iter::DoubleEndedIterator<
 impl<'a, T: Pod, I: iter::ExactSize<&'a T>> iter::ExactSize<T> for Values<I> {}
 ```
 
-Finally, here is a demonstration of using this trait to reimplement `Extendable`:
+Finally, here is a demonstration of using these traits to reimplement `Extendable`:
 
 ```rust
 trait Extendable<T> {
@@ -129,8 +130,10 @@ impl<T> Extendable<T> for Vec<T> {
 
 fn main() {
     let mut a = Vec::new();
-    a.my_extend(vec!(4, 5, 6));
-    a.my_extend(vec!(7, 8, 9).move_iter());
+    a.my_extend(vec!(1, 2));
+    a.my_extend(vec!(3, 4).into_iter());
+    a.my_extend(vec!(5, 6).refs().map(|x| x.clone()));
+    a.my_extend(vec!(7, 8).values());
     println!("extend: {}", a);
 }
 ```
