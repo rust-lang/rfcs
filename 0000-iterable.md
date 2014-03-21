@@ -19,7 +19,7 @@ We have some unnecessary redundancy in some of our collection APIs:
 
 This redundancy can be eliminated with a simple trait:
 
-```
+```rust
 /// Any type that implements `Iterable<T, I>` can be iterated over with the
 /// iterator `I` to yield values of type `T`. Because of Rusts move semantics,
 /// this means that `self` needs to be taken by value, which for moving types
@@ -44,7 +44,7 @@ This trait is implementable by both values and iterators. Values would opt-in
 to implementing `Iterable`, where we would move all `.move_iter()`-style
 methods to impls of `Iterable`:
 
-```
+```rust
 use std::vec_ng::{Vec, Items, MutItems, MoveItems};
 
 impl<T> Iterable<T, MoveItems<T>> for Vec<T> {
@@ -56,7 +56,7 @@ impl<T> Iterable<T, MoveItems<T>> for Vec<T> {
 
 Iterators would now be required to implement `Iterable`:
 
-```
+```rust
 trait Iterator<A>: Iterable<A, Self> {
     ...
 }
@@ -71,7 +71,7 @@ use case for a macro.
 
 Additionally, we would add two similar traits to handle returning references:
 
-```
+```rust
 trait RefIterable<'a, A, I: iter::Iterator<A>> {
     fn refs(&'a self) -> I;
 }
@@ -83,7 +83,7 @@ trait MutIterable<'a, A, I: iter::Iterator<A>> {
 
 We also could support more optimal iterators for collections of `Pod`s
 
-```
+```rust
 /// Automatically implemented for all `RefIterable<&A>` with `A: Pod`
 trait PodIterable<'a, A: Pod, I: iter::Iterator<A>> {
     fn values(&'a self) -> Values<I>;
@@ -110,7 +110,7 @@ impl<'a, T: Pod, I: iter::ExactSize<&'a T>> iter::ExactSize<T> for Values<I> {}
 
 Finally, here is a demonstration of using this trait to reimplement `Extendable`:
 
-```
+```rust
 trait Extendable<T> {
     fn extend<I: Iterator<T>, Iter: Iterable<T, I>>(&mut self, x: Iter);
 }
