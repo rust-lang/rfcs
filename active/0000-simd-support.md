@@ -19,6 +19,10 @@ help programmers to exploit modern hardware safely.
 
 # Detailed design
 
+The support for SIMD vectors is primarily designed to match [Open CL] vectors
+where appropriate. Many of the operations have relatively simple syntactical
+forms and carrying that over to Rust seems like a good idea.
+
 ## Syntax
 
 SIMD vectors are unlikely to be common, therefore implementing an entire new
@@ -52,10 +56,7 @@ fixed-length vectors. This type would, however, limit it's subtype to machine
 types, i.e. integers, floats and bools.
 
 Casting between different SIMD types of the same length should be supported,
-e.g. `simd![f32, ..4] => simd![u32, ..4]`. Vectors of length 1 should be
-coercible to their subtype and vice versa.
-
-Taking the address of a vector element will not be allowed.
+e.g. `simd![f32, ..4] => simd![u32, ..4]`.
 
 ## Back-end Implementation
 
@@ -93,6 +94,9 @@ x.w = v.w + u.w;
 The operations would be limited based on the supported operations of the
 vector's subtype.
 
+Support for vector *op* scalar operations will not be supported, unlike Open
+CL, as it is effectively is a coercion that we do not do for any other types.
+
 ### Comparisons
 
 Programmers using SIMD vectors in comparisons are likely to want to get a
@@ -104,10 +108,24 @@ vectors are equal or not.
 Component-wise comparison, returning a vector of boolean values, shall be done
 by a set of appropriate intrinsics.
 
+### Component/Element Access
+
+Accessing individual elements of a vector can be done using standard indexing
+syntax:
+
+```rust
+let a = v[0];
+```
+
+Also supported would be Open CL style field accessor syntax. With the x, y, z
+and w fields returning the first, second, third and fourth elements of the
+vector. The second field accessor syntax would be an 's' followed by a single
+hexadecimal digit for accessing elements up to the sixteenth.
+
 ### Shuffle Access
 
-Open CL vectors support an accessor-style syntax for shuffle and related
-operations. I propose implementing a similar syntax:
+Shuffles are permutations of a vector, returning another vector. Open CL
+extends the field access syntax to support this like so:
 
 ```rust
 let v : simd![f32,...4] = simd![1.0, 2.0, 3.0, 4.0];
@@ -121,25 +139,24 @@ let dup : simd![f32,..4] = v.xxyy; // simd![1.0, 1.0, 2.0, 2.0]
 let num : simd![f32,..8] = v.s00112233;
 ```
 
-The `x`, `y`, `z` and `w` components will be usable to access the first,
-second, third and fourth components of the type, for vectors of size 2, 3
-and 4.
+The same field accessor syntax may be used to set arbitrary components of a
+vector all at once:
 
-Vectors of size sixteen or less will support component access via numeric
-indices in hexadecimal as part of a field with an `s` prefix.
+```rust
+v.s246 = simd![1.0, 2.0, 3.0];
+```
+
+However, repeating a component on the right-hand side will not be allowed.
 
 `shuffle` and `shuffle2` intrinsics should be available to implement the
 above behaviour for variable permutations and vectors of a size greater than
 16.
 
-The same accessor syntax may be used to set arbitrary components of a vector
-all at once.
-
 ### Load/Store Functions
 
 There should be a set of unsafe load and store functions for reading and
 writing vectors to a raw pointer. These are required due to alignment concerns
-on some operating systems.
+on some platforms.
 
 ### Miscellaneous Functions
 
@@ -161,12 +178,10 @@ part of SIMD support.
 # Unresolved questions
 
 1. Syntax - should it stay as proposed or is there a better alternative?
-2. Shuffle support via field access. It's a nice feature that I would like to
-   see, however the complexity of implementation may not be worth it.
-3. Upper limit on vector size. To my knowledge, LLVM does not have an upper
+2. Upper limit on vector size. To my knowledge, LLVM does not have an upper
    limit on the size of the vector. Should we enforce one anyway?
-4. LLVM supports vectors of pointers to the supported types, should we also
+3. LLVM supports vectors of pointers to the supported types, should we also
    support this, given that they would need to be unsafe?
 
 [SIMD]: http://en.wikipedia.org/wiki/SIMD
-[OpenCL vectors]: http://www.khronos.org/registry/cl/specs/opencl-1.2.pdf#page=234
+[OpenCL]: http://www.khronos.org/registry/cl/specs/opencl-1.2.pdf#page=234
