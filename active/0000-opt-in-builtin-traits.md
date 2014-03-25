@@ -12,8 +12,8 @@
   `S`, all fields of `S` must have types which are `Send`).
 - To check for membership in a builtin trait, we employ a slightly
   modified version of the standard trait matching algorithm.
-  Modifications are needed because the language cannot express (yet)
-  the full set of impls we would require.
+  Modifications are needed because the language cannot express the
+  full set of impls we would require.
 - Rename `Pod` trait to `Copy`.
 
 # Motivation
@@ -103,9 +103,11 @@ As usual, deriving forms would be available.
 
 Builtin traits can only be implemented for struct or enum types and
 only within the crate in which that struct or enum is defined (see the
-section on *Matching and Coherence* below). Whenever a builtin trait is
-implemented, the compiler will enforce that all fields or that
-struct/enum are of a typed which implements the trait.
+section on *Matching and Coherence* below). Whenever a builtin trait
+is implemented, the compiler will enforce that all fields or that
+struct/enum are of a type which implements the trait (or else of
+`Unsafe` type, which matches all traits, see *Matching and
+Coherence*).
 
     struct Foo<'a> { x: &'a int }
     
@@ -237,6 +239,12 @@ possible on a `& &mut T`. In that case ,the `&mut T` is found in an
 aliasable location and hence is immutable (if you can find a counter
 example, that's definitely a bug).
 
+Moreover, there is one further exception to the rules.  The
+`Unsafe<T>` type is *always* considered to implement all builtin
+traits, no matter the type `T`. The motivation here is that we want to
+be able to permit a type like `Mutex` to be `Share` even if it closes
+over data that is not `Share`.
+
 # Implementation plan
 
 Here is a loose implementation plan that @flaper87 and I worked
@@ -262,9 +270,8 @@ out. No doubt things will change along the way.
 5. Check to make sure that the impls the user provides are safe:
    - User-defined impls can only apply to enums or structs
     - If implementing a builtin trait T for a struct type S, each
-      field of S must impl T
+      field of S must have a type that implements S.
     - same for enums, but "for each variant, for each argument" essentially
-
 
 # Expanded motivation
 
