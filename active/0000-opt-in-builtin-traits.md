@@ -240,10 +240,11 @@ aliasable location and hence is immutable (if you can find a counter
 example, that's definitely a bug).
 
 Moreover, there is one further exception to the rules.  The
-`Unsafe<T>` type is *always* considered to implement all builtin
-traits, no matter the type `T`. The motivation here is that we want to
-be able to permit a type like `Mutex` to be `Share` even if it closes
-over data that is not `Share`.
+`Unsafe<T>` type is *always* considered to implement `Share`, no
+matter the type `T`. `Send` and `Copy` are implemented if `T` is
+`Send` and `Copy`. The motivation here is that we want to be able to
+permit a type like `Mutex` to be `Share` even if it closes over data
+that is not `Share`.
 
 # Implementation plan
 
