@@ -28,7 +28,7 @@ struct Foo {
 }
 ```
 
-It cannot handle deserializing into a into a generic enum like this:
+It cannot handle deserializing into a generic enum like this:
 
 ```rust
 enum Json {
