@@ -157,6 +157,85 @@ sub-module is extended to its reflexive, transitive closure). Niko's reasoning:
     initialisers', below]
 
 
+# JDM's example
+
+From https://gist.github.com/jdm/9900569
+
+```
+virtual struct Node {
+    parent: Rc<Node>,
+    first_child: Rc<Node>,
+}
+
+struct TextNode : Node {
+}
+
+virtual struct Element : Node {
+    attrs: HashMap<str, str>
+}
+
+impl Element {
+    fn set_attribute(&mut self, key: &str, value: &str)
+    {
+        self.before_set_attr(key, value);
+        //...update attrs...
+        self.after_set_attr(key, value);
+    }
+
+    virtual fn before_set_attr(&mut self, key: &str, value: &str);
+    virtual fn after_set_attr(&mut self, key: &str, value: &str);
+}
+
+struct HTMLImageElement : Element {
+}
+
+impl HTMLImageElement {
+    override fn before_set_attr(&mut self, key: &str, value: &str)
+    {
+        if (key == "src") {
+            //..remove cached image with url |value|...
+        }
+        Element::before_set_attr(self, key, value);
+    }    
+}
+
+struct HTMLVideoElement : Element {
+    cross_origin: bool
+}
+
+impl HTMLVideoElement {
+    override fn after_set_attr(&mut self, key: &str, value: &str)    
+    {
+        if (key == "crossOrigin") {
+            self.cross_origin = value == "true";
+        }
+        Element::after_set_attr(self, key, value);
+    }
+}
+
+fn process_any_element(element: &Element) {
+    // ...
+}
+
+fn foo() {
+    let videoElement: Rc<HTMLVideoElement> = ...;
+    process_any_element(videoElement);
+
+    let node = videoElement.first_child;
+
+    // See open question about downcasting, this is one possibility
+    match node {
+        element @ Rc(Element{..}) => { ... }
+        _ => {
+            let text = match node {
+                text @ Rc(TextNode {..}) => Some(text),
+                _ => None,
+            }
+        }
+    }
+}
+```
+
 # Alternatives
 
 There have been many proposals for alternative designs and variations on this
