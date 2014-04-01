@@ -193,8 +193,9 @@ A number of terms correspond to the behaviour of tagged union style enums:
 
 Although `union` declares an _untagged union_ in C and C++, it is reasoned that
 this term is most familiar to this group of programmers, those of whom
-constitute a large section of the Rust's target audience. `union` is also five
-characters long, which is consistent with Rust's other keywords.
+constitute a large section of the Rust's target audience. `union` also sits
+nicely with Rust's current set of keywords, which tend to be single words with
+a length of five characters or under.
 
 Alternative keywords can be rejected for the following reasons:
 
@@ -206,10 +207,10 @@ Alternative keywords can be rejected for the following reasons:
 - `data` and `type` imply that the declaration of full algebraic data types is
   supported, where as the language construct only supports sum types.
 - `datatype` is too long, and the reasoning for `data` and `type` also hold.
-- As stated before, `enum` causes confusion because the semantics associated
-  with tagged union style enums is extremely different to the semantics
-  associated with the keyword in C. Using the keyword for declaring tagged
-  unions only limited precedent.
+- `enum` causes confusion because using the keyword to declare tagged
+  unions has only a limited precedent (in [Haxe](https://en.wikipedia.org/wiki/Haxe#Enumerated_types),
+  the semantics are very different from those associated with the `enum`
+  keyword in C.
 
 # Detailed design
 
@@ -229,8 +230,8 @@ union CD { C, D(int) }
 
 ## Description in the language tutorial
 
-Currently is a description of using `enum` for declaring tagged unions that
-seems to be targeted at targeted at C and C++ developers:
+Currently the tutorial contains a description of using `enum` for declaring
+tagged unions that seems to be targeted at targeted at C and C++ developers:
 
 > The run-time representation of such a value includes an identifier of the actual form that it
 > holds, much like the "tagged union" pattern in C, but with better static guarantees.
@@ -247,7 +248,7 @@ keyword). The description could instead read:
 > The `union` keyword provides safe language support for the the "tagged
 > union" pattern commonly found in C or C++. In order to enforce safety, the
 > only way to access the contents of a `union` instance is via pattern matching
-> against the variants.
+> against the variants using the `match` construct.
 
 Here is an example of describing `enum` to C developers:
 
