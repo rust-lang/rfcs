@@ -62,13 +62,13 @@ Tagged union style enums can't be cast:
 enum AB { A, B(int) }
 
 fn main() {
-    print!("{:?}", B(2) as int);
+    print!("{:?}", A as int);
 }
 ~~~
 
 ~~~
 test.rs:4:20: 7:31 error: non-scalar cast: `AB` as `int`
-test.rs:4     print!("{:?}", B(2) as int);
+test.rs:4     print!("{:?}", A as int);
                              ^~~~~~~~~~~
 ~~~
 
@@ -172,7 +172,7 @@ A number of terms correspond to the behaviour of tagged union style enums:
   and _sum types_)
 - _variant type_
 - _tagged union_
-- _enumerated type_
+- _enumerated type_ (this usually refers to C-style unions only)
 
 ### Keywords used in other languages
 
@@ -270,7 +270,9 @@ even though this term is used far less for referring to tagged unions.
 
 Incrementing the keyword count of the language could be seen as adding complexity.
 The keyword could be renamed to `union` to improve clarity for the most common
-use case.
+use case. There is overlap in functionality when tagged unions only have nullary
+variants (although casting variants to their integer discriminants is very rare
+in code that does not interface with C FFIs.)
 
 ## Use a alternative keyword to `union`
 
