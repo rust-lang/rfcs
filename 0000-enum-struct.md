@@ -292,6 +292,82 @@ impl Element2 {
 }
 ```
 
+# JDM's example
+
+From https://gist.github.com/jdm/9900569
+
+```
+struct Node {
+    parent: Rc<Node>,
+    first_child: Rc<Node>,
+
+    struct TextNode {},
+
+    enum Element {
+        attrs: HashMap<str, str>,
+
+        struct HTMLImageElement {}.
+
+        struct HTMLVideoElement {
+            cross_origin: bool
+        }
+    }
+}
+
+impl Element {
+    fn set_attribute(&mut self, key: &str, value: &str)
+    {
+        self.before_set_attr(key, value);
+        //...update attrs...
+        self.after_set_attr(key, value);
+    }
+
+    virtual fn before_set_attr(&mut self, key: &str, value: &str);
+    virtual fn after_set_attr(&mut self, key: &str, value: &str);
+}
+
+impl HTMLImageElement {
+    override fn before_set_attr(&mut self, key: &str, value: &str)
+    {
+        if (key == "src") {
+            //..remove cached image with url |value|...
+        }
+        Element::before_set_attr(self, key, value);
+    }    
+}
+
+impl HTMLVideoElement {
+    override fn after_set_attr(&mut self, key: &str, value: &str)    
+    {
+        if (key == "crossOrigin") {
+            self.cross_origin = value == "true";
+        }
+        Element::after_set_attr(self, key, value);
+    }
+}
+
+fn process_any_element(element: &Element) {
+    // ...
+}
+
+fn foo() {
+    let videoElement: Rc<HTMLVideoElement> = ...;
+    process_any_element(videoElement);
+
+    let node = videoElement.first_child;
+
+    match node {
+        element @ Rc(Element{..}) => { ... }
+        _ => {
+            let text = match node {
+                text @ Rc(TextNode {..}) => Some(text),
+                _ => None,
+            }
+        }
+    }
+}
+```
+
 
 # Alternatives
 
