@@ -172,7 +172,8 @@ A number of terms correspond to the behaviour of tagged union style enums:
   and _sum types_)
 - _variant type_
 - _tagged union_
-- _enumerated type_ (this usually refers to C-style unions only)
+- _enumerated type_ (this usually refers only to [C-style enumerations](http://msdn.microsoft.com/en-us/library/whbyts4t.aspx),
+  ie. unions containing only nullary variants with integer discriminants)
 
 ### Keywords used in other languages
 
