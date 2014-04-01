@@ -438,7 +438,7 @@ can always be accessed.
 If a method is overridden, we should still be able to call it. C++ uses `::`
 syntax to allow this. In the example above we use `Foo::bar(self)` to indicate
 static dispatch of an overridden method. I'm not sure if this is currently
-valid Rust or if it is the optimal tsolution. But it looks nice to me and we
+valid Rust or if it is the optimal solution. But it looks nice to me and we
 need something for such a situation.
 
 ## Generics
