@@ -31,8 +31,8 @@ The second part of this RFC is matching on bits. It is often required to perform
 match val[4..5] {
   0b00 => ...,
   0b01 => ...,
-  0b02 => ...,
-  0b03 => ...
+  0b10 => ...,
+  0b11 => ...
 } // no match all provided, all variants must be included.
 ```
 
