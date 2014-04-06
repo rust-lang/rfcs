@@ -30,23 +30,36 @@ overhead from the descriminator.
 Motivating example:
 
 ```rust
-#[unsafe_not_null]
 struct Rc<T> {
+    #[unsafe_not_null]
     inner: *RcBox<T>
 }
 ```
 
-The `#[unsafe_not_null]` attribute, when applied to a `struct` which contains
-only a single field whose type is an unsafe pointer, marks this structure as
-eligible for the "nullable pointer" optimization. If the attribute is used
-on a struct with more than one field, or whose only field is not a raw
-pointer, the program will be rejected.
+The `#[unsafe_not_null]` attribute, when applied to a field of a struct,
+signals that this field will never be null. It may only be applied to a single
+field in a struct, and only once. With this knowledge, the nullable-pointer
+pointer optimization can be extended to these types. Using `Option`, for
+example, the `None` would be encoded as the `inner` field being null, rather
+than an additional discriminant. By being applied to a field rather than the
+struct as a whole, the optimization can be extended for more complex compound
+types such as `Vec`:
+
+```rust
+struct Vec<T> {
+    data: *T,
+    len: uint,
+    cap: uint
+}
+```
+
+Using `Option<Vec<T>>` now has no additional overhead.
 
 # Alternatives
 
-One alternative that may seem appealing is to use some sort of marker type,
-`NotNull<T>`. This is unappealing because it will require a method to do the
-dereferencing, and it cannot implement `Deref` or `DerefMut`. Why? Because
+One alternative that may seem appealing at first is to use some sort of marker
+type, `NotNull<T>`. This is undesirable because it will require a method to do
+the dereferencing, and it cannot implement `Deref` or `DerefMut`. Why? Because
 this is wrapping an unsafe pointer, and `Deref`/`DerefMut` are assumed to be
 safe. Introducing another method call on all uses of smart pointers using
 `NonNull<T>` is going to put even more pressure on the already-strained LLVM
