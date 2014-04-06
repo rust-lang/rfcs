@@ -187,9 +187,114 @@ impl<'a> Node<'a> for Attribute<'a> {
 
 ```
 
+## JDM's Servo Example
+
+Here is [jdm's servo example](https://gist.github.com/jdm/9900569) translated into rust+this proposal:
+
+```rust
+struct NodeFields {
+    parent: Rc<Fat<Node>>,
+    first_child: Rc<Fat<Node>>
+}
+impl NodeFields {
+    fn as_text_node<'a>(&'a self) -> &'a TextNode {
+        assert!(/*sensible check*/);
+        downcast(self)
+    }
+}
+trait Node:NodeFields {
+    fn as_element<'a>(&self) -> Option<&'a Element> {
+        None
+    }
+}
+
+struct TextNodeFields: NodeFields;
+
+struct ElementFields: NodeFields {
+    attrs: Vec<(~str,~str)>
+}
+trait ElementStaticMethods:ElementFields {
+    fn set_attribute(&mut self, key:&str, value:&str);
+}
+impl<T:Element> ElementStaticMethods for T {
+    fn set_attribute(&mut self, key:&str, value:&str) {
+        self.before_set_attr(key,value);
+        // ...update attrs...
+        self.after_set_attr(key,value);
+    }
+}
+trait Element:ElementFields Node {
+    fn before_set_attr(&mut self, key:&str, value:&str) {
+        // Implementation goes here--jdm's gist does not give an implementation
+        // but implies it exists (the method is not pure virtual)
+    }
+    fn after_set_attr(&mut self, key:&str, value:&str) {
+        // Implementation goes here--jdm's gist does not give an implementation
+        // but implies it exists (the method is not pure virtual)
+    }
+}
+
+struct HTMLImageElementFields: ElementFields;
+impl Element for HTMLImageElementFields {
+    fn before_set_attr(&mut self, key:&str, value:&str) {
+        if key == "src" {
+            //..remove cached image with url /value/...
+        }
+        // Should specify that this works...wouldn't in current rust, but would
+        // it under the UFCS proposal?
+        Element::before_set_attr(self,key, value);
+    }
+}
+
+struct HTMLVideoElementFields: ElementFields {
+    cross_origin:bool
+}
+impl Element for HTMLVideoElementFields {
+    fn after_set_attr(&mut self, key:&str, value:&str) {
+        if key == "crossOrigin" {
+            self.cross_origin = (value == "true");
+        }
+        Element::after_set_attr(self,key,value);
+    }
+}
+
+fn process_any_element(element:&Element) {
+    //...
+}
+
+// Code outside of a function in jdm's example:
+fn more_code() {
+    // We assume we need videoElement to be a fat object.  It would need to be
+    // to be stored in another element, for instance.
+    let videoElement:Rc<Fat<HTMLVideoElement,Element>> = Rc::new(fat(/*...*/));
+    process_any_element(&**videoElement);
+    // We are cloning the Rc, not the node itself
+    let node = videoElement.first_child.clone();
+    match node.as_element() {
+        Some(element) => { 
+            // do things with element...
+        }
+        None => {
+            let text = node.as_text_node();
+            // ...
+        }
+    }
+}
+```
+
+Some comments on this:
+
+First, note that for functions that take borrowed pointers as parameters, we still use fat pointers.  There really won't be much reason to do otherwise--the cost of the virtual call will be roughly the same, and using the fat pointer is more flexible because you can always convert a thin pointer into a fat one, but not vice versa.  The reason to use thin pointers is if you're going have more pointers than objects, thin pointers to fat objects saves space.  This would usually arise for struct fields rather than function parameters--if you're nesting function calls deeply enough for this to matter, you've probably got other problems.
+
+The upshot of this is that you'd expect to see `Rc<Fat<X>>`, `Gc<Fat<X>>` and `~Fat<X>` much more frequently than you'd ever see a `&Fat<X>`.
+
+The annoying part is having to create extra types that don't mean anything.  You don't just have `Element`, you have `ElementFields` and `ElementStaticMethods`, even though the second and third of these aren't really useful.  (`ElementStaticMethods` is here so that a call to `set_attribtue` is not itself virtual, but can make virtual calls to `before_set_attribute` and `after_set_attribute`.)  Choosing a different arrangement for struct inheritance could alleviate this--[traits with fields](https://github.com/mozilla/rust/issues/9912) may come out as a better complement here.  (_Possibly rewrite this RFC and choose that alternative instead?_)
+
 # Alternatives
 
 The main alternative to this is [`virtual struct` and `virtual fn`](https://github.com/rust-lang/rfcs/pull/5).  Mere mention of this in the work week meeting notes generated a [lengthy email thread](http://thread.gmane.org/gmane.comp.lang.rust.devel/8878) about that idea.  The motivation for this RFC was to present an alternative to this.
+
+After this, @bill-myers proposed a [completely different alternative](https://github.com/rust-lang/rfcs/pull/11) involving extending the notion of an `enum` to turn it into a syntax to describe an object hierarchy.  @nick29581 filed what he described as an [extension/variant](https://github.com/rust-lang/rfcs/pull/24) of this, which keeps the extension of enums, but then adds back `virtual` on top of it.
 
 Some [brief thoughts on reddit](http://www.reddit.com/r/rust/comments/20b3dz/virtual_fn_is_a_bad_idea/cg1irqt) (with a link to some [discussion on irc](http://irclog.gr/#show/irc.mozilla.org/servo/76862)) by @eddyb talk about something very similar to the fat objects presented here.  Like this proposal, it allows for either thin or fat objects, but instead of choosing between thin and fat for each object, it would be chosen for each struct once at the struct's declaration.  This could happen either through a special `Vtable<Trait>` type (added explicitly to the struct), or via an attribute on the struct.  He says in the comment that he may be working on an RFC, so we may find more details about this soon.
 
@@ -200,3 +305,5 @@ There are multiple existing proposals floating around for how to implement singl
 Intrinsics are added to `std` but the exact path is not specified.
 
 I'm sure there are other implementation concerns and edge case questions I haven't thought about.
+
+This RFC has not addressed exactly how, in an overridden method, a parent method can be invoked from an overridden one.  The RFC for [unified function call syntax](https://github.com/rust-lang/rfcs/pull/4) could hopefully address this in a general way, for all traits rather than just structural inheritance.  (It would be good to be able to call the default impl from any trait when overriding it.)
