@@ -37,13 +37,13 @@ struct Rc<T> {
 ```
 
 The `#[unsafe_not_null]` attribute, when applied to a field of a struct,
-signals that this field will never be null. It may only be applied to a single
-field in a struct, and only once. With this knowledge, the nullable-pointer
-pointer optimization can be extended to these types. Using `Option`, for
-example, the `None` would be encoded as the `inner` field being null, rather
-than an additional discriminant. By being applied to a field rather than the
-struct as a whole, the optimization can be extended for more complex compound
-types such as `Vec`:
+signals that this field will never be null. It may only be applied to unsafe
+pointer fields. With this knowledge, the nullable-pointer pointer optimization
+can be extended to these types. Using `Option`, for example, the `None` would
+be encoded as the `inner` field being null, rather than an additional
+discriminant. By being applied to a field rather than the struct as a whole,
+the optimization can be extended for more complex compound types such as
+`Vec`:
 
 ```rust
 struct Vec<T> {
@@ -53,7 +53,10 @@ struct Vec<T> {
 }
 ```
 
-Using `Option<Vec<T>>` now has no additional overhead.
+Using `Option<Vec<T>>` now has no additional overhead. The attribute is
+allowed on multiple fields to provide more information. Each field adds
+another bit of information that the compiler can use to encode more variants
+in the same space.
 
 # Alternatives
 
