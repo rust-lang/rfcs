@@ -35,16 +35,18 @@ impl Bar for int { ... }
 If a crate C were to link to both A and B, and then call the method `what` on
 an int, which method would it dispatch to? Furthermore, if it only links to
 crate A and calls `what`, what happens when later on it starts linking to `B`?
-Requiring that the trait be in scope is a good solution for this, but it also
-has undesirable consequences. First, it adds additional imports whenever one
-wants to call a trait-provided method on a type. This can become burdensome
-for crates which have many abstractions. Second, it causes a backwards
-compatability hazard when factoring out behavior into a common trait. In order
-to do the refactor, all dependent crates must now start importing this new
-trait.
+Requiring that the trait be in scope is a simple solution for this, but it
+also has undesirable consequences. First, it adds additional imports whenever
+one wants to call a trait-provided method on a type. This can become
+burdensome for crates which have many abstractions. Second, it causes a
+backwards compatibility hazard when factoring out behavior into a common
+trait. In order to do the refactor, all dependent crates must now start
+importing this new trait.
 
-This restriction causes pain for all non-extension-method uses of traits. A
-less restrictive system would be to instead use methods from an extension
+This restriction causes pain for all non-extension-implementation uses of
+traits. An extension implementation is when a crate defines its own trait,
+but implements that trait for types in other crates.  The less restrictive
+system proposed here is to instead use methods from an extension
 implementation only if that trait is in scope.
 
 A more concrete example arises in `libterm`. Ideally `AnsiTerminal` would be a
