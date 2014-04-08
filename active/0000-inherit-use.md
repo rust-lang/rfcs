@@ -8,7 +8,7 @@ Add a way to let imports "trickle down" into child modules.
 
 # Motivation
 
-When using non-std crates, and ubiquitous data structures, it can becomes
+When using non-std crates, and ubiquitous data structures, it can become
 annoying to have to repeat the same imports everywhere.
 
 # Detailed design
