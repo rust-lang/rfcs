@@ -12,7 +12,7 @@ Bit fields are commonly used in embedded and system software where rust should b
 
 # Detailed design
 
-The first part of this RFC is defenition of a bit access for integer types. For the sake of simplicity, only unsigned integer types (uint, u8, u16, u32, u64) are supported.
+The first part of this RFC is defenition of a bit access for integer types. For the sake of simplicity, only fixed width unsigned integer types (u8, u16, u32, u64) are supported.
 
 Bit access operation is defined as
 
