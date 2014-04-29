@@ -96,7 +96,7 @@ The `std::io::Writer` trait gets a new default method:
 Like `flush()`, this method defaults to a no-op
 but is meant be overridden by implementations.
 
-Override `size_hint` as appropriate in libstd implementors.
+`size_hint` is overridden as appropriate in libstd implementors.
 For example, in `MemWriter` (modeled after `Vec::from_iter`):
 
 ```rust
