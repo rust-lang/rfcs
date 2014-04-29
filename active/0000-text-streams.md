@@ -86,6 +86,7 @@ pub trait TextReader {
     // These are similar to Reader
     fn read_to_end(&mut self) -> IoResult<~str> { ... }
     fn bytes<'r>(&'r mut self) -> Bytes<'r, Self> { ... }
+    fn by_ref<'a>(&'a mut self) -> RefReader<'a, Self> { ... }
 
     // These are similar to Buffer
     fn read_line(&mut self) -> IoResult<~str> { ... }
