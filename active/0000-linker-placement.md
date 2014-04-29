@@ -71,7 +71,21 @@ static int reg @ 0xdeadbeef;
 
 # Alternatives
 
-N/A
+Alternative implementation, that keeps the exsisting static parser intact is:
+
+```rust
+#[unsafe_override_address]
+static UART0: UART = 0xdeadbeef;
+```
+
+or even
+
+```rust
+#[unsafe_override_address]
+static UART0: &UART = 0xdeadbeef;
+```
+
+The last case is apparently the simplest one to implement.
 
 # Unresolved questions
 
