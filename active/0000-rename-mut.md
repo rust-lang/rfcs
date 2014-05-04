@@ -4,10 +4,11 @@
 
 # Summary
 
-`&mut` implies that `&` is not mutable, which is not accurate due to types that
-implement internal mutability. So, rename `&mut` to `&only` since that better
-reflects the semantics of that reference type - that it is non-aliased. Then,
-allow borrowing of a non-mut value to an `&only` reference.
+
+The real guarantees provided by `&` and `&mut` related to aliasabilty, not
+mutability, so the names should reflect that.  So, rename `&mut` to `&only`
+since that better reflects the semantics of that reference type - that it is
+non-aliased. Then, allow borrowing of a non-mut value to an `&only` reference.
 
 # Motivation
 
