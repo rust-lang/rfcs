@@ -37,10 +37,10 @@ justify this.
 
 Furthermore, it is not entirely clear, how well this feature fits with Rust's
 current approach to meta-programming. When implemented completely, this feature
-requires compile-time function execution (CTFE), which has been [discussed in
-the past](https://mail.mozilla.org/pipermail/rust-dev/2014-January/008252.html)
-without a clear outcome. This feature would also introduce the possibility for
-[template metaprogramming](http://en.wikipedia.org/wiki/Template_metaprogramming).
+requires compile-time function execution (CTFE), which has been
+[discussed][issue_11621] [in the past][ctfe_mail] without a clear outcome. This
+feature would also introduce the possibility for
+[template metaprogramming][template_meta].
 
 # Detailed design
 
@@ -123,13 +123,19 @@ fn concatenate<T, n: uint, m: uint>
 # Alternatives
 
 Parts of the functionality provided by this change could be achieved using
-macros, which is currently done in some libraries (see for example @sebcrozet's
-libraries [nalgebra](https://github.com/sebcrozet/nalgebra) and
-[nphysics](https://github.com/sebcrozet/nphysics)). However, macros are fairly
-limited in this regard.
+macros, which is currently done in some libraries (see for example in
+[Servo][servo_macros] or @sebcrozet's libraries [nalgebra][nalgebra] and
+[nphysics][nphysics]. However, macros are fairly limited in this regard.
 
 # Unresolved questions
 
 * How does type inference work in this context?
 * In how far is compile-time function execution acceptable to support this?
 * How exactly does this work with traits and enums?
+
+
+[nalgebra]: https://github.com/sebcrozet/nalgebra
+[nphysics]: https://github.com/sebcrozet/nphysics
+[issue_11621]: https://github.com/mozilla/rust/issues/11621
+[ctfe_mail]: https://mail.mozilla.org/pipermail/rust-dev/2014-January/008252.html
+[template_meta]: http://en.wikipedia.org/wiki/Template_metaprogramming
