@@ -22,6 +22,13 @@ To illustrate this further, consider the following two use cases as examples:
   sense to add a 2-vector with a 3-vector or multiply a 3x4 matrix by a
   5-vector. But the algorithms can be written generically in terms of the
   dimensionality of these types.
+* *Compile-time sizes*: define sizes for small buffers and other data
+  structures at compile-time. This can be quite important to only allocate
+  larger chunks of memory, when they are really required. If this is unlikely,
+  it can have a meaningful impact on performance. For instance,
+  [Servo][servo_macros]
+  currently resorts to a range of types implemented with macros to deal with
+  this issue.
 * *Physical units*: In science one often deals with numerical quantities
   equipped with units (meters, hours, kilometers per hour, etc.). To avoid
   errors dealing with these units, it makes sense to include in the data type.
@@ -139,7 +146,7 @@ macros, which is currently done in some libraries (see for example in
 * In how far is compile-time function execution acceptable to support this?
 * How exactly does this work with traits and enums?
 
-
+[servo_macros]: https://github.com/mozilla/servo/blob/b14b2eca372ea91dc40af66b1f8a9cd510c37abf/src/components/util/smallvec.rs#L475-L525
 [nalgebra]: https://github.com/sebcrozet/nalgebra
 [nphysics]: https://github.com/sebcrozet/nphysics
 [issue_11621]: https://github.com/mozilla/rust/issues/11621
