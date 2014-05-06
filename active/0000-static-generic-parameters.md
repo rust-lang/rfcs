@@ -133,6 +133,30 @@ fn concatenate<T, n: uint, m: uint>
 
 ```
 
+Type inference can potentially become complex, especially when arbitrary
+functions must be executed. First of all, compile-time function execution as
+described in [this issue][issue_11621] is required to instantiate the types
+parametrized with static parameters.
+
+It seems reasonable to restrict the use of algebraic expressions in types in
+such a way, that it is still possible to immediately infer a type from an
+expression without resorting to any kind of function inversion.
+
+So the following function signature would work
+
+```rust
+fn inc<n: int>(x: T<n>) -> T<n + 1> {...}
+```
+
+while this one wouldn't
+
+```rust
+fn inc<n: int>(x: T<n - 1>) -> T<n + 1> {...}
+```
+
+Traits and enumerations should also be able to be parametrized like this in the
+same manner.
+
 # Alternatives
 
 Parts of the functionality provided by this change could be achieved using
