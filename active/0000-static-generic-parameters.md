@@ -4,8 +4,9 @@
 
 # Summary
 
-Allow generics to have static values as parameters in addition to lifetime and
-type parameters.
+Implement a simple form of a dependent type system similar to C++ and D by
+allowing generics to have static values as parameters in addition to lifetime
+and type parameters.
 
 # Motivation
 
@@ -28,6 +29,11 @@ To illustrate this further, consider the following two use cases as examples:
   single calculation at run-time might be prohibitively slow. Here static
   values as generic parameters could allow to convert between units and check
   for consistency at compile-time.
+
+In general, this feature allows for nicer abstractions that are dealt with at
+compile-time and thus have no cost in terms of run-time performance. It is also
+a very expressive feature that Rust is currently lacking in comparison with
+similar languages such as C++ and D.
 
 # Drawbacks
 
