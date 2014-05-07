@@ -65,7 +65,7 @@ compile-time.
 To propose a concrete syntax, consider this simple generic function:
 
 ```rust
-fn add_n<n: int>(x: int) -> int {
+fn add_n<static n: int>(x: int) -> int {
     x + n
 }
 
@@ -75,28 +75,36 @@ fn main() {
 
 ```
 
-The syntax `<n: int>` closely resembles the syntax for type parameters with
-trait bounds. Traits would probably not be allowed as the type of a static
-parameter, since they could not be statically resolved at compile-time.
-Therefore the parser should be able to distinguish type parameters from static
-value parameters despite the similarity. However, one could also annotate the
-parameter in some way to differentiate it more clearly from type parameters.
+The syntax `<static n: int>` closely resembles the syntax for type parameters
+with trait bounds. There is the additional keyword `static` to clearly
+distinguish it from type parameters. This keyword is already used in a
+different context. This use has a semantic relation to other uses of
+`static` as a keyword. There is no ambiguity due to the context of generic
+parameters in which it appears here either. Therefore it makes sense to use it
+in this context.
+
+Alternatively, one could also omit `static`. Traits would probably not be
+allowed as the type of a static parameter, since they could not be statically
+resolved at compile-time. Therefore the parser should be able to distinguish
+type parameters from static value parameters despite the similarity, even
+without `static`. However, the difference between type parameters and static
+parameters might become less obvious that way.
 
 Structs could be parametrized similarly, as this (incomplete) implementation of
 an arbitrarily-sized algebraic vector illustrates:
 
 ```rust
-struct Vector<T, n: uint> {
+struct Vector<T, static n: uint> {
     pub data: [T, ..n]
 }
 
-impl<T, n: uint> Vector<T, n> {
+impl<T, static n: uint> Vector<T, n> {
     fn new(data: [T, ..n]]) -> Vector<T, n> {
         Vector{data: data}
     }
 }
 
-impl<T: Add, n: uint> Add<Vector<T, n>, Vector<T, n>> for Vector<T, n> {
+impl<T: Add, static n: uint> Add<Vector<T, n>, Vector<T, n>> for Vector<T, n> {
     fn add(&self, rhs: &Vector<T, n>) -> Vector<T, n> {
         let mut new_data: [T, ..n] = [0, ..n];
         for (i, (&x, &y)) in self.data.iter().zip(rhs.data.iter()).enumerate() {
@@ -122,7 +130,7 @@ fn main() {
 It should also be possible to do some algebra with the parameters, like this:
 
 ```rust
-fn concatenate<T, n: uint, m: uint>
+fn concatenate<T, static n: uint, static m: uint>
     (x: Vector<T, n>, y: Vector<T, m>) -> Vector<T, n + m>
 {
     let mut new_data: [T, ..n + m] = [0, ..n + m];
@@ -145,13 +153,13 @@ expression without resorting to any kind of function inversion.
 So the following function signature would work
 
 ```rust
-fn inc<n: int>(x: T<n>) -> T<n + 1> {...}
+fn inc<static n: int>(x: T<n>) -> T<n + 1> {...}
 ```
 
 while this one wouldn't
 
 ```rust
-fn inc<n: int>(x: T<n - 1>) -> T<n + 1> {...}
+fn inc<static n: int>(x: T<n - 1>) -> T<n + 1> {...}
 ```
 
 Traits and enumerations should also be able to be parametrized like this in the
