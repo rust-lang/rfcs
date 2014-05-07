@@ -14,9 +14,9 @@ This RFC depends on proving the following 4 points:
 
 2. `&` references do not offer practical immutability
 
-3. `&mut`'s real guarantee is 'non-aliased'; Mutability is just a consequence.
+3. `&mut`'s real guarantee is 'non-aliased'; Mutability is just a consequence
 
-4. `&mut` implies that `&` is immutable which is confusing and inaccurate.
+4. `&mut` implies that `&` is immutable which is confusing and inaccurate
 
 Therefore, since the term `&mut` is both confusing and inaccurate, I propose
 that the name should be changed to something that better reflects the actual
@@ -48,7 +48,7 @@ particularly practical guarantee for the programmer, however.
 
 Lets look at the following code:
 
-```
+```rust
 use some_library::Flag;
 
 fn do_something(holder: &Flag) {
@@ -103,12 +103,11 @@ mutability. It is true that most of the time objects cannot be mutated through
 a `&`. However, I would argue that any guarantee that needs to include the
 phrase "most of the time" is not a very good guarantee.
 
-## 3. `&mut`'s real guarantee is 'non-aliased'; Mutability is just a
-consequence.
+## 3. `&mut`'s real guarantee is 'non-aliased'; Mutability is just a consequence
 
 Let's examine the following code:
 
-```
+```rust
 use std::cell::Cell;
 
 fn some_func(c: &Cell<uint>) { .. .}
@@ -127,7 +126,9 @@ fn funcb(c1: &mut Cell<uint>, c2: &Cell<uint>) -> uint {
 ```
 
 This time, we have a `Cell`, so, everyone knows what it does and how its
-implemented. The question this time: What value does `funca` return?
+implemented. `funca` and `funcb` are completely identical, except that
+`funcb` accepts one of its arguments with a `&mut` instead of a `&`.
+The question this time: What value does `funca` return?
 
 Spoiler alert: just like before, there is no way to know. What `funca` returns
 depends on:
@@ -172,7 +173,7 @@ make sense to say that the guarantee is one of mutability since what we see in
 this example is specifically a guarantee of *non-mutability* - that `c1` cannot
 be mutated through `c2`.
 
-## 4. `&mut` implies that `&` is immutable which is confusing and inaccurate.
+## 4. `&mut` implies that `&` is immutable which is confusing and inaccurate
 
 Its not hard to find blog posts, email threads, reddit discussions, etc. where
 `&` is referred to as immutable. I believe I've laid out the case that this is
@@ -184,7 +185,7 @@ This seems to make sense at first blush - I'm ok with passing a `&mut` to a
 function that expects a `&` since it feels like I can be sure that it won't
 mutate it. However, then I become worried that function will change someday to
 accept a `&mut`. So, what I want is a compiler warning if the function I'm
-calling changes and starting mutating my variable without me expecting it. As
+calling changes and starts mutating my variable without me expecting it. As
 I've described already, however, `&` doesn't mean immutable, so, this request,
 while good intentioned, doesn't really accomplish the goal of controlling
 mutation. Lets say that `&mut` where changed to something (such as `&only`)
@@ -198,7 +199,7 @@ of exactly which guarantees each pointer type makes. The biggest point of
 confusion being the idea that Rust supports immutable references, which I argue
 it does not. (Granted, its very hard to define or prove "widespread"). With
 `&mut` references present in the language, this misunderstanding will never
-go away - no ammount of documentation to the contrary will ever overcome
+go away - no amount of documentation to the contrary will ever overcome
 opening up a file, seeing `&mut`, and then concluding that `&` must be
 immutable, since if it wasn't, why would `&mut` exist?
 
