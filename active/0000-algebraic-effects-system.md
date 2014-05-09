@@ -9,7 +9,7 @@
 
 # Summary
 
-(Some of the ideas and concepts are inspired by the [effects proposal in the Rust wiki](https://github.com/mozilla/rust/wiki/Proposal-for-effects) written by [@cartazio](https://github.com/cartazio))
+(Some of the ideas and concepts are inspired by the [effects proposal in the Rust wiki](https://github.com/mozilla/rust/wiki/Proposal-for-effects) written by [@bblum](https://github.com/bblum))
 
 An algebraic effects system allows one to understand functions in terms of their *effects*.
 
@@ -19,7 +19,7 @@ The goal is to provide mechanics to describe and enforce effects that functions 
 
 Safety is the cornerstone of the language (within the realms that a systems language allows &mdash; i.e., practicality). Pure functions, in languages like Haskell, don't allow any side effects, but real applications do. Things like state, communication over the network, file I/O, etc... Above all that, real systems may fail.
 
-Haskell, for example, solves such problems with the use of monads and monad transformers. However, there are problems with using such a tool (See the paper for details).
+Haskell, for example, solves such problems with the use of monads and monad transformers. However, there are problems with using such a tool; paraphrasing the paper, Monads don't compose very well; Monad transformers can become unwieldy when many effects are being managed.
 
 Algebraic effects presents a more appropriate tool for dealing with function or program effects. They're not as powerful; monads and monad transformers have wider utility beyond just effects.
 
@@ -228,4 +228,4 @@ However, I disagree. In this case, Bob clearly doesn't want his function to fail
 This proposal hasn't yet touched on Traits and effect parameters.
 
 
-Thanks to [@cartazio](https://github.com/cartazio) for the original proposal!
+Thanks to [@bblum](https://github.com/bblum) for the original proposal!
