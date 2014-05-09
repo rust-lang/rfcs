@@ -15,7 +15,7 @@ for a variety of types. Parametrisation over static values extends this feature
 to certain use cases, where it is necessary to maintain type-safety in terms of
 these values.
 
-To illustrate this further, consider the following two use cases as examples:
+To illustrate this further, consider the following use cases for this feature:
 
 * *Algebraic types*: algebraic vectors and matrices generally have a certain
   dimensionality, which changes their behaviour. For example, it does not make
@@ -36,6 +36,9 @@ To illustrate this further, consider the following two use cases as examples:
   single calculation at run-time might be prohibitively slow. Here static
   values as generic parameters could allow to convert between units and check
   for consistency at compile-time.
+* *Range and mod types*: This would allow [range and mod types similar to
+  Ada][range_mod_ada] in Rust, which enforce certain range constraints and
+  implement modular arithmetics respectively.
 
 In general, this feature allows for nicer abstractions that are dealt with at
 compile-time and thus have no cost in terms of run-time performance. It is also
@@ -184,3 +187,4 @@ macros, which is currently done in some libraries (see for example in
 [issue_11621]: https://github.com/mozilla/rust/issues/11621
 [ctfe_mail]: https://mail.mozilla.org/pipermail/rust-dev/2014-January/008252.html
 [template_meta]: http://en.wikipedia.org/wiki/Template_metaprogramming
+[range_mod_ada]: http://en.wikipedia.org/wiki/Ada_%28programming_language%29#Data_types
