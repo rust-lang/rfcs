@@ -26,7 +26,6 @@ Algebraic effects presents a more appropriate tool for dealing with function or 
 A few examples of effects:
 
 * Task Failure
-* Unsafe Code
 * GC
 * Dynamic Allocation
 * Nondeterminism
@@ -49,21 +48,30 @@ The goals are as follows:
 The first step is to introduce a new `effect` language keyword. This will be used to introduce new effects and to specify which effect functions allow.
 
 ```rust
-effect Fail
-effect Unsafe
+effect Failure
 effect IO
 effect GC
 effect Anything
 ```
 
-The first letter of each word in effects are capitalized, the remaining letters are lowercased. `Fail`, `GC`, `Unsafe`, `IO`.
+The first letter of each word in effects are capitalized, the remaining letters are lowercased. `Failure`, `GC`, `Anything`, `IO`. (I'm treating acronyms as separate words)
+
+Full list of keywords needed:
+
+```rust
+effect
+forbid
+trustme
+```
+
+**Note:** `wont` has been renamed to `forbid` to allow for proper grammar and `trustme` is open for improvments.
 
 ### Annotating Effects
 
 Now comes annotating a single function with it's effects.
 
 ```rust
-fn compare(a: int, b: int) -> bool effect(Fail) {
+fn compare(a: int, b: int) -> bool effect(Failure) {
 	fail!("Oops, I failed.");
 	a > b
 }
@@ -72,7 +80,7 @@ fn compare(a: int, b: int) -> bool effect(Fail) {
 The `effect()` expression will follow the function signature including the return type. Multiple effects may be used in a single annotation for terseness.
 
 ```rust
-fn alloc(a: int, b: int, c: int) -> Vec<int> effect(Fail, Alloc) {
+fn alloc(a: int, b: int, c: int) -> Vec<int> effect(Failure, Alloc) {
 	fail!("Oops, I failed.");
 	vec![a, b, c]
 }
@@ -84,15 +92,15 @@ In this example, we have allocated memory on the heap.
 
 These effects are great. We can effectively tell what functions *do*. However, we need to start enforcing these annotations. By default, the top-level effect `Anything` is enforced. This allows one that does not care about effects to continue along without any breaking changes. 
 
-Enforcements use the `wont(Effect1, ...EffectN)` syntax the same way as effects annotation.
+Enforcements use the `forbid(Effect1, ...EffectN)` syntax the same way as effects annotation.
 
 ```rust
 // dont-fail.rs
-fn random() effect(Fail) {
+fn random() effect(Failure) {
     fail!("Ooops! I actually did fail.");
 }
 
-fn safe() wont(Fail) {
+fn safe() forbid(Failure) {
     random(); // Won't compile
 }
 ```
@@ -113,28 +121,10 @@ The default enforcement that all functions receive is `Anything`.
 
 Annotating effects that functions may have is really powerful, but that's quite a bit of manual work. Instead, the compiler would be inferring most of the effects. Some effects that it can't infer or can't properly infer might need to be manually specified.
 
-**Unsafe:**
-
-```rust
-fn ffi() { // effect(Unsafe)
-	unsafe { call_extern_fn() }
-}
-```
-
-The compiler will infer the `Unsafe` effect and annotate the function directly. No intervention needed.
-
-Enforcing is the user's choice. This is where the grunt of the work will be done.
-
-```rust
-fn something() wont(Unsafe) {
-	ffi(); // This will fail to compile.
-}
-```
-
 **Fail:**
 
 ```rust
-fn check() { // effect(Fail)
+fn check() { // effect(Failure)
 	fail!("Oops. That went wrong.");
 }
 ```
@@ -144,7 +134,7 @@ fn check() { // effect(Fail)
 Given the following code:
 
 ```rust
-fn take(arg: ||) wont(Fail) {
+fn take(arg: ||) forbid(Failure) {
 	arg();
 }
 
@@ -155,14 +145,14 @@ fn main() {
 }
 ```
 
-We have an issue here. The enforcement of `wont(Fail)` applies to what? 
+We have an issue here. The enforcement of `forbid(Failure)` applies to what? 
 
 1. The whole function and it's context. If it calls a function that fails then it also fails (and won't compile). However, I'm unsure if the compiler can take note of that.
-2. The closure `arg` will need to also be marked as `wont(Fail)`.
+2. The closure `arg` will need to also be marked as `forbid(Failure)`.
 
 
 ```rust
-fn take(arg: || wont(Fail)) wont(Fail) {
+fn take(arg: || forbid(Failure)) forbid(Failure) {
 	arg();
 }
 
@@ -173,15 +163,25 @@ take(|| {
 
 ### Trust Me
 
-Following in the footsteps of unsafe, where a user may perform unsafe behaviour and says "trust me compiler, I know what I'm doing."
+Following in the footsteps of unsafe, where a user may perform unsafe behaviour and say "trust me compiler, I know what I'm doing."
 
-A `trustme` keyword could be added to provide an override. For example:
+A `trustme` keyword could be added to provide an override; ensuring the compiler that a particular side-effect *won't* happen. For example:
 
 ```rust
-fn dosomething() trustme(wont(Fail)) {
+fn dosomething() trustme(forbid(Fail)) {
 	// I hope you know what you're doing in here...
 }
 ```
+
+### User Defined Effects
+
+I don't see a particularly strong case for custom effects that users would define.
+
+Some problems that could occur:
+
+* Incompatible-composability when using libraries and sharing code.
+* Inability to integrate the inference required for effects as an extension.
+* Besides the core effects, there really shouldn't be *that* many important ones left for the user to define. They could simply submit a patch to include it in the compiler natively.
 
 
 ### Use Cases
@@ -192,14 +192,14 @@ Quoting the prominent use case from the wiki proposal:
 
 ```rust
 trait Drop {
-    fn drop(self) wont(Fail);
+    fn drop(self) forbid(Fail);
 }
 ```
 
 
 > We might also want to forbid GC in destructors, as per #6996.
 
-> A "fantasy" reason is that, with the old borrow checker (where &mut Ts were copyable, and &mut T could be borrowed into &T only if the surrounding code was "pure"), effect inference would avoid needing to write pure explicitly on any function you wanted to call from such code, and wont(Mutate) could be inferred.
+> A "fantasy" reason is that, with the old borrow checker (where &mut Ts were copyable, and &mut T could be borrowed into &T only if the surrounding code was "pure"), effect inference would avoid needing to write pure explicitly on any function you wanted to call from such code, and `forbid(Mutate)` could be inferred.
 
 > Other speculative reasons include:
 
@@ -212,20 +212,25 @@ trait Drop {
 
 Currently, in most languages (especially C++), you're in-charge of managing the effects yourself. People typically don't design systems in terms of effects and effect containment. Rust already has concepts like lifetimes, where people would of had to traditionally manage them manually, with no safety or guarantees.
 
-The syntax position (after the function signature but before the body) seems to be the best position, but one could also move it to after the body.
+The syntax position (after the function signature but before the body) seems to be the best position, but one could also move it to append the body.
 
 # Unresolved questions
 
 The original wiki explains a trouble with such a system:
 
-> There is something of a "library boundary discipline" risk here. Suppose Alice writes a library fn a() which happens not to fail, and Bob writes a fn b() wont(Fail) that uses a(). Later Alice, who doesn't care about effects, updates her library and makes it possibly fail. This breaks Bob's code in a way akin to changing the actual type signature of a function, except the "type" is inferred, which makes it more of a surprise. This downside is unavoidable given the desire to be unobtrusive in the common case.
+> There is something of a "library boundary discipline" risk here. Suppose Alice writes a library fn a() which happens not to fail, and Bob writes a fn b() forbid(Fail) that uses a(). Later Alice, who doesn't care about effects, updates her library and makes it possibly fail. This breaks Bob's code in a way akin to changing the actual type signature of a function, except the "type" is inferred, which makes it more of a surprise. This downside is unavoidable given the desire to be unobtrusive in the common case.
 
 However, I disagree. In this case, Bob clearly doesn't want his function to fail. If Alice changes to function to fail, Bob's program **should not compile** because that's the whole point of these guarantees.
 
 * A real issue, as the wiki explained is the use of `assert`. Should assert always have a `Fail` effect, or should it be an exception? If it fails in a destructor, then we have the memory leak issue.
 * Should print/debug statements count as I/O?
+* In places where the compiler cannot infer the appropriate effect (i.e., unsafe code) should the user be forced (a la lifetimes) to be explicit?
+* `Fail` or `Failure` as an effect presents some difficulties. In essence, *most* things *could* cause a failure without a rigorous static stack analysis, banning memory allocation, ban recursion, etc... Thus, there should be a discussion about, if `Failure` is introduced, to what extend does it apply to? Or, perhaps it's not a useful effect because of the previously stated problems and other combination of effects should replace it.
+* A comprehensive list of effects hasn't yet been made. This should be done as part of the RFC process.
+* Backward-compatibility issues should be addressed. This RFC is against having any disruption to current users/code. Users shouldn't be forced to (the majority of times, i.e., everywhere except perhaps unsafe code.) annotate or forbid effects if they don't want to. This won't cause the learning curve of Rust to dramatically increase. 
 
 This proposal hasn't yet touched on Traits and effect parameters.
 
+---
 
 Thanks to [@bblum](https://github.com/bblum) for the original proposal!
