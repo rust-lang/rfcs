@@ -67,8 +67,10 @@ pub trait TextWriter {
 
     // These are similar to Writer
     fn flush(&mut self) -> IoResult<()> { ... }
-    fn by_ref<'a>(&'a mut self) -> RefTextWriter<'a, Self> { ... }
+    fn by_ref<'a>(&'a mut self) -> RefWriter<'a, Self> { ... }
 }
+
+impl<'a, W: TextWriter> TextWriter for RefWriter<'a, W> { ... }
 ```
 
 Other than `write_char`, the set of default methods is just an idea.
@@ -95,6 +97,8 @@ pub trait TextReader {
     fn read_char(&mut self) -> IoResult<char> { ... }
     fn chars<'r>(&'r mut self) -> Chars<'r, Self> { ... }
 }
+
+impl<'a, R: TextReader> TextReader for RefReader<'a, R> { ... }
 ```
 
 The set of default methods here is just an idea.
