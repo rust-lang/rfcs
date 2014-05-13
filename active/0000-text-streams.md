@@ -83,6 +83,7 @@ with `#[requires(one_of(write_str, write_char)]` on the trait.
 
 ```rust
 pub trait TextReader {
+    // XXX See "Unresolved questions" below.
     fn read(&mut self, buf: &mut StrBuf, max_bytes: uint) -> IoResult<uint>;
 
     // These are similar to Reader
@@ -112,6 +113,9 @@ The set of default methods here is just an idea.
 
 # Unresolved questions
 
+* `fn read(&mut self, buf: &mut StrBuf, max_bytes: uint) -> IoResult<uint>;`
+  is proposed as the most fundamental method of `TextReader`.
+  Is this the right design? See discussion in this RFC’s pull request comments.
 * Which of these things should have text-oriented equivalents?
   The `Buffer`, `Seek`, and `Stream` traits,
   their buffered wrapper implementations,
