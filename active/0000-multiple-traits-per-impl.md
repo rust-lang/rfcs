@@ -8,7 +8,7 @@ Provide syntax to allow multiple traits to be implemented in a single `impl` blo
 
 # Motivation
 
-The current syntax for implementing multiple Traits is quite verbose, and this simple syntactic change will make code more understandable than mountains of boilerplate
+The current syntax for implementing multiple traits is quite verbose, and this simple syntactic change will make code more understandable than useless boilerplate
 
 # Drawbacks
 
@@ -25,11 +25,11 @@ impl MyFirstTrait + MySecondTrait for MyStruct { //the RFC will allow this
 }
 ```
 
-The plus sign `+` is used as it holds consistent to the current syntax for multiple Traits used in bounds.
+The plus sign `+` is used as it holds consistent to the current syntax for multiple traits used in bounds.
 
 # Alternatives
 
-* Keeping the current syntax is not too bad, but this syntax would be quite helpful, and possibly make it more readable and understandable.
+* Keeping the current syntax is not too bad, but this syntax would be quite helpful, and possibly make code more readable and understandable.
 
 * Instead of a plus sign `+` a comma `,` could be used, for consistency with other languages. However keeping consistency with Rust is more beneficial than with other languages.
 
