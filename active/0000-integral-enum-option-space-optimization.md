@@ -12,7 +12,7 @@ There's no need to waste memory for storing a separate tag in variables of type 
 
 # Detailed design
 
-Given an integral enum type ```E```, the compiler should check if some bit pattern exists which does not represent a valid value of ```E``` as determined by the enumerators of type ```E```. If such a bit pattern is found, the compiler should use it to represent a ```None``` value of type ```Option<E>``` and omit storing the tag in variables of type ```Option<E>```. If more than one such "invalid" bit pattern exists, the compiler should be free to choose any one of those.
+Given an integral enum type ```E```, the compiler should check if some bit pattern exists which does not represent a valid value of ```E``` as determined by the enumerators of type ```E```. If such a bit pattern is found, the compiler should use it to represent a ```None``` value of type ```Option<E>``` and omit storing the tag in variables of type ```Option<E>```. If more than one such "invalid" bit pattern exists, the compiler should choose the one with the largest binary value.
 
 # Drawbacks
 
