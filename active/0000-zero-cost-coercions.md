@@ -62,8 +62,8 @@ any two types where the target type "is a proper subtype of" the input type. Not
 is never a virtual call, as it is not a method of `Coercible`: `Coercible<T>` doesn't have a
 vtable, and is considered a built-in "kind" alongside `Copy`, `Send`, etc.
 
-Where single inheritance and subtyping conflate many different ideas, among them transparenta
-ccess to superstruct fields, zero-cost conversion from sub- to supertypes, and these conversions
+Where single inheritance and subtyping conflate many different ideas, among them transparent
+access to superstruct fields, zero-cost conversion from sub- to supertypes, and these conversions
 being implicit/automatic, `Coercible` captures and exposes only the thing which is truly important:
 the zero-cost conversions, and for a much wider range of scenarios.
 
