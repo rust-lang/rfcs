@@ -58,7 +58,7 @@ fn coerce<U, T: Coercible<U>>(x: T) -> U { unsafe { transmute(x) } }
 
 The trait is wired-in to the compiler, and user-defined impls of it are highly restricted as
 described in the implementation section talking about roles. `coerce()` would coerce between
-any two types where the target type "is a proper subtype of" the input type. Note that `coerce`
+any two types where the target type "is a subtype of" the input type. Note that `coerce`
 is never a virtual call, as it is not a method of `Coercible`: `Coercible<T>` doesn't have a
 vtable, and is considered a built-in "kind" alongside `Copy`, `Send`, etc.
 
@@ -68,7 +68,7 @@ being implicit/automatic, `Coercible` captures and exposes only the thing which 
 the zero-cost conversions, and for a much wider range of scenarios.
 
 There would be another such wired-in trait called `HasPrefix`. `T: HasPrefix<U>` corresponds to `T`
-starts-with `U`, while `T: Coercible<U>` corresponds to `T` is-a-proper-subtype-of `U`.
+starts-with `U`, while `T: Coercible<U>` corresponds to `T` is-a-subtype-of `U`.
 
 ```rust
 trait HasPrefix<T> { }
@@ -146,7 +146,7 @@ impl<A, B: HasPrefix<A>, C: HasPrefix<B>> HasPrefix<A> for C { }
 impl<A, B: Coercible<A>, C: Coercible<B>> Coercible<A> for C { }
 ```
 
-Is-a-proper-subtype-of implies starts-with:
+Is-a-subtype-of implies starts-with:
 
 ```rust
 impl<A, B: Coercible<A>> HasPrefix<A> for B { }
