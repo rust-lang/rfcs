@@ -84,8 +84,8 @@ layered combination, however deep) and needs a `T` for the code to compile, it
 automatically dereferences the pointer to get a `T`. This would generalize the
 custom handling of method invocations (as stated above, `.` will auto-deref).
 
-Types implementing `Deref` would be considered non-raw pointers for
-the purpose of this change.
+Types implementing `Deref` are considered non-raw pointers for the purposes of
+this change.
 
 Raw pointers would be left untouched; they have to be dereferenced manually by
 the user.
