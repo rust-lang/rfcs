@@ -13,7 +13,7 @@ and allow multiple (fixed-size) subslices borrows in one pattern (eg. `[xs..3, y
 In both cases, token after `..` is a number – array size, but in current pattern matching it is a sublice's
 name. Furthermore, I think that `xs..` is more intuitive (and is also similar to syntax that C++ uses in variadic templates).
 
-(2) Current syntax allows to make only one subslice reborrow in pattern. But now it's impossible to do following
+(2) Current syntax allows to make only one subslice reborrow in pattern. Now it's impossible to do following
 with pattern matching:
 
     // slice has type &[T]
