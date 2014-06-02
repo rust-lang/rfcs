@@ -61,6 +61,28 @@ implicitly converts `&T` to a `T` (where the implicit conversion actually
 performs a dereference). This would generalize the custom handling of method
 invocations (as stated above, `.` will auto-deref).
 
+More specifically, the following code:
+
+```rust
+fn foo(_: int) {}
+fn main() {
+    let x = &&&3;
+    let y = x;
+    foo(y);
+}
+```
+
+would compile as if it were written as:
+
+```rust
+fn foo(_: int) {}
+fn main() {
+    let x = &&&3;
+    let y = x;
+    foo(***y);
+}
+```
+
 Types implementing `Deref` are considered non-raw pointers for the purposes of
 this change.
 
@@ -87,39 +109,6 @@ Manual deref of raw pointers would serve as both a slight deterrent against
 their usage and would visually call attention to the presence of a raw pointer.
 In codebases where all non-raw pointers are auto-derefed, `*x` would immediately
 signal a possible failure location.
-
-_If we wanted to_ (and I think this can be not implemented at all), we could
-make rustc aware of "deeper" implicit conversions so that e.g. `(&u8, &u8)` can
-be _considered_ to be (**not** converted to) `(u8, &u8)`, `(&u8, u8)` and `(u8,
-u8)` because the inner `&u8` can be converted to `u8`, so any code that actually
-uses the other types "reachable" from `(&u8, &u8)` can do so. Again, this is
-optional since it's a very small part of the auto-deref use-case.
-
-Let's look at a more involved example:
-
-```rust
-let x: u8 = 10;
-let y = Some((1, &x));
-let z = y == Some((1, '\n' as u8));
-```
-
-This currently fails to compile as well but the fix is uglier:
-`y == Some((1, &('\n' as u8)))`.
-
-But if the user wants to use `assert_eq!` instead of using equality directly
-because they're writing a unit test:
-
-```rust
-let x: u8 = 10;
-let y = Some((1, &x));
-assert_eq!(y, Some((1, &('\n' as u8))));
-```
-
-This doesn't work because `borrowed value doesn't live long enough`.
-
-Implicitly derefencing the pointer would make it far less annoying to write the
-above code because the `&(...)` wrap would be unnecessary and the code would
-compile.
 
 # Drawbacks
 
