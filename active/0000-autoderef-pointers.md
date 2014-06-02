@@ -28,34 +28,6 @@ Currently, this code fails with `expected &u8 but found u8`. Since there is zero
 danger in dereferencing `x` and the compiler knows that `x` is a `&u8`, this
 should be done for the user instead of asking them to do this manually.
 
-A simple fix for the above issue would be to write `*x == '\n' as u8`. But now
-let's look at a more involved example:
-
-```rust
-let x: u8 = 10;
-let y = Some((1, &x));
-let z = y == Some((1, '\n' as u8));
-```
-
-This currently fails to compile as well but the fix is uglier:
-`y == Some((1, &('\n' as u8)))`.
-
-
-But if the user wants to use `assert_eq!` instead of using equality directly
-because they're writing a unit test:
-
-```rust
-let x: u8 = 10;
-let y = Some((1, &x));
-assert_eq!(y, Some((1, &('\n' as u8))));
-```
-
-This doesn't work because `borrowed value doesn't live long enough`.
-
-Implicitly derefencing the pointer would make it far less annoying to write the
-above code because the `&(...)` wrap would be unnecessary and the code would
-compile.
-
 Critically, Rust _already_ implicitly dereferences pointers in some cases, but
 this is done piecemeal. From the tutorial:
 
@@ -100,13 +72,6 @@ There would be no change to how variables or functions are declared.
 The user would still be allowed to dereference pointers by hand. This would make
 this change entirely backwards-compatible.
 
-_If we wanted to_ (and I think this can be not implemented at all), we could
-make rustc aware of "deeper" implicit conversions so that e.g. `(&u8, &u8)` can
-be _considered_ to be (**not** converted to) `(u8, &u8)`, `(&u8, u8)` and `(u8,
-u8)` because the inner `&u8` can be converted to `u8`, so any code that actually
-uses the other types "reachable" from `(&u8, &u8)` can do so. Again, this is
-optional since it's a very small part of the auto-deref use-case.
-
 The syntactical overhead of Rust non-raw pointers when compared to C++
 references would disappear and the resulting design is strictly better; non-raw
 Rust pointers are always safe to deref, whereas C++ references are safe to deref
@@ -122,6 +87,39 @@ Manual deref of raw pointers would serve as both a slight deterrent against
 their usage and would visually call attention to the presence of a raw pointer.
 In codebases where all non-raw pointers are auto-derefed, `*x` would immediately
 signal a possible failure location.
+
+_If we wanted to_ (and I think this can be not implemented at all), we could
+make rustc aware of "deeper" implicit conversions so that e.g. `(&u8, &u8)` can
+be _considered_ to be (**not** converted to) `(u8, &u8)`, `(&u8, u8)` and `(u8,
+u8)` because the inner `&u8` can be converted to `u8`, so any code that actually
+uses the other types "reachable" from `(&u8, &u8)` can do so. Again, this is
+optional since it's a very small part of the auto-deref use-case.
+
+Let's look at a more involved example:
+
+```rust
+let x: u8 = 10;
+let y = Some((1, &x));
+let z = y == Some((1, '\n' as u8));
+```
+
+This currently fails to compile as well but the fix is uglier:
+`y == Some((1, &('\n' as u8)))`.
+
+But if the user wants to use `assert_eq!` instead of using equality directly
+because they're writing a unit test:
+
+```rust
+let x: u8 = 10;
+let y = Some((1, &x));
+assert_eq!(y, Some((1, &('\n' as u8))));
+```
+
+This doesn't work because `borrowed value doesn't live long enough`.
+
+Implicitly derefencing the pointer would make it far less annoying to write the
+above code because the `&(...)` wrap would be unnecessary and the code would
+compile.
 
 # Drawbacks
 
