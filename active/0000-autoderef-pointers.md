@@ -86,8 +86,9 @@ providing a benefit.
 
 In all cases where the compiler sees a non-raw pointer (`&T`, `Box<T>` or a
 layered combination, however deep) and needs a `T` for the code to compile, it
-automatically dereferences the pointer to get a `T`. This would generalize the
-custom handling of method invocations (as stated above, `.` will auto-deref).
+implicitly converts `&T` to a `T` (where the implicit conversion actually
+performs a dereference). This would generalize the custom handling of method
+invocations (as stated above, `.` will auto-deref).
 
 Types implementing `Deref` are considered non-raw pointers for the purposes of
 this change.
@@ -99,6 +100,13 @@ There would be no change to how variables or functions are declared.
 
 The user would still be allowed to dereference pointers by hand. This would make
 this change entirely backwards-compatible.
+
+_If we wanted to_ (and I think this can be not implemented at all), we could
+make rustc aware of "deeper" implicit conversions so that e.g. `(&u8, &u8)` can
+be _considered_ to be (**not** converted to) `(u8, &u8)`, `(&u8, u8)` and `(u8,
+u8)` because the inner `&u8` can be converted to `u8`, so any code that actually
+uses the other types "reachable" from `(&u8, &u8)` can do so. Again, this is
+optional since it's a very small part of the auto-deref use-case.
 
 The syntactical overhead of Rust non-raw pointers when compared to C++
 references would disappear and the resulting design is strictly better; non-raw
