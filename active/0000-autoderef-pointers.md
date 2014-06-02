@@ -125,7 +125,8 @@ Possible drawbacks:
   pointers in some places and not in others. This would lead to some justifiable
   user anger over "the compiler knows how to get a `T` from my `&T` and knows
   that doing so is safe, why do I have to it by hand?". C++ programmers
-  examining Rust decry the usability hit they don't have with C++ references.
+  examining Rust continue to decry the "Rust giveth and Rust taketh away"
+  result of switching from C++ references (more safety, but usability hit).
 - Also introduce auto-ref alongside auto-deref. Code like the following would
   compile:
 
