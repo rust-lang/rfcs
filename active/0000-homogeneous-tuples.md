@@ -74,7 +74,11 @@ None of which I am aware.
    precisely, `(T_1, ..., T_n)` would be a subtype of `[U, ..n]` if
    `forall i. T_i <: U`. This is elegant but would be a deeper change
    for something that rarely comes up in practice. I am not sure of
-   the full repercussions.
+   the full repercussions. I also don't think there's a big impact
+   betwee this proposal and that one -- that is, if we added
+   subtyping, these traits would presumably have little purpose, but
+   we could just stop including them in the prelude and/or adapt
+   somehow.
   
 2. As above, but use coercion. This is actually a somewhat smaller
    change though I am reluctant to do anything but tighten coercion
