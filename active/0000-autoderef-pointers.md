@@ -107,8 +107,8 @@ behavior), which doesn't prevent bugs. This would provide yet another selling
 point for converting C++ programmers to Rust.
 
 Programmers coming from dynamic languages would have an easier time learning
-Rust with a lower likelihood of falling into the trap of "just throw sigils at
-it until it compiles."
+Rust with a lower likelihood of falling into [the trap of "just throw sigils at
+it until it compiles."][sigils-trap]
 
 Manual deref of raw pointers would serve as both a slight deterrent against
 their usage and would visually call attention to the presence of a raw pointer.
@@ -153,3 +153,4 @@ None currently.
 [so-practice]: http://stackoverflow.com/a/7058373/1672783
 [isocpp]: https://isocpp.org/wiki/faq/references#refs-vs-ptrs
 [confusing]: http://www.reddit.com/r/rust/comments/272i7p/rfc_autodereferencing_nonraw_pointers/chws5x7
+[sigils-trap]: http://www.reddit.com/r/rust/comments/272i7p/rfc_autodereferencing_nonraw_pointers/chwzvnb
