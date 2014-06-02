@@ -56,10 +56,15 @@ providing a benefit.
 # Detailed design
 
 In all cases where the compiler sees a non-raw pointer (`&T`, `Box<T>` or a
-layered combination, however deep) and needs a `T` for the code to compile, it
+layered combination, however deep) _and needs a `T` for the code to compile_, it
 implicitly converts `&T` to a `T` (where the implicit conversion actually
 performs a dereference). This would generalize the custom handling of method
 invocations (as stated above, `.` will auto-deref).
+
+Note that the auto-deref _only_ happens if the code wouldn't compile with `&T`
+but would with `T`; if there's a `foo` method implemented for both `&T` and `T`,
+the one for `&T` would be called. In other words, the auto-deref acts like a
+fallback.
 
 More specifically, the following code:
 
