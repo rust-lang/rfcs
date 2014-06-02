@@ -76,7 +76,15 @@ None of which I am aware.
    for something that rarely comes up in practice. I am not sure of
    the full repercussions.
   
-2. Make fixed-length patterns more-expressive so that they can easily
+2. As above, but use coercion. This is actually a somewhat smaller
+   change though I am reluctant to do anything but tighten coercion
+   rules for the time being. In particular I do not want to add ad-hoc
+   rules because I hope to leave space for something more
+   user-extensible in the future. In the event that these coercions
+   become automatic, these tuple traits could probably be removed, or
+   at least deprecated.
+
+3. Make fixed-length patterns more-expressive so that they can easily
    support moves. In other words, people might write:
    
        let [a, b, c] = fixed_length;
