@@ -74,6 +74,11 @@ they should be preferred over pointers wherever
 possible](http://stackoverflow.com/a/7058373/1672783) as does the [official
 isocpp.org FAQ](https://isocpp.org/wiki/faq/references#refs-vs-ptrs).**
 
+The main reason why references are preferred to pointers in C++ is because of
+the increased safety, but the syntactical benefits are a factor. The main point
+is that effectively no one in the C++ community considers the "hidden"
+dereference operations to be an issue.
+
 Forcing the user to manually deref pointers introduces a user-level cost without
 providing a benefit.
 
