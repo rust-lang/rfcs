@@ -132,9 +132,9 @@ Possible drawbacks:
     - The current system leads to some justifiable user anger over "the compiler
       knows how to get a `T` from my `&T` and knows that doing so is safe, why
       do I have to it by hand?"
-    - C++ programmers examining Rust continue to decry the "Rust giveth and Rust
-      taketh away" result of switching from C++ references (more safety, but
-      usability hit).
+    - C++ programmers examining Rust [continue to decry][cpp-dev] the "Rust
+      giveth and Rust taketh away" result of switching from C++ references (more
+      safety, but usability hit).
 - Also introduce auto-ref alongside auto-deref. Code like the following would
   compile:
 
@@ -154,3 +154,4 @@ None currently.
 [isocpp]: https://isocpp.org/wiki/faq/references#refs-vs-ptrs
 [confusing]: http://www.reddit.com/r/rust/comments/272i7p/rfc_autodereferencing_nonraw_pointers/chws5x7
 [sigils-trap]: http://www.reddit.com/r/rust/comments/272i7p/rfc_autodereferencing_nonraw_pointers/chwzvnb
+[cpp-dev]: http://www.reddit.com/r/rust/comments/272i7p/rfc_autodereferencing_nonraw_pointers/chxvd3l
