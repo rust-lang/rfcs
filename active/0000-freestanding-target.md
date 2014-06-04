@@ -14,7 +14,7 @@ software. At the moment, we still depend on LLVM's split-stack prologue for
 stack safety. In certain situations, it is impossible or undesirable to
 support what LLVM requires to enable this (on x86, a certain thread-local
 storage setup). We also link to some libraries unconditionally, making it
-difficult to produce freestanding binaries.
+difficult to produce freestanding binaries without stubbing them out.
 
 # Detailed design
 
@@ -37,14 +37,14 @@ will never be a valid platform for rustc itself to run on, and can only be
 used for cross-compiling a crate. Statically linking to other crates will
 still be valid.
 
-"Support libraries" includes libc, libm, and compiler-rt. libc and libm
-are clearly not available on the unknown OS, and the crate author will need to
-provide compiler-rt or a similar library themselves if they use a feature
-requiring it. The goal is to have 0 dependencies on the environment, at
-compile time and runtime, reducing unnecessary surprises for the freestanding
-author and allowing the use of only rustc to compile the crate, rather than
-manually assembling and linking LLVM bitcode. Providing linker arguments
-manually is probably unavoidable in these cases.
+"Support libraries" means libmorestack and compiler-rt. The crate author will
+need to provide compiler-rt or a similar library themselves if they use a
+feature requiring it, and libmorestack is just not required without split
+stacks. The goal is to have 0 dependencies on the environment, at compile time
+and runtime, reducing unnecessary surprises for the freestanding author and
+allowing the use of only rustc to compile the crate, rather than manually
+assembling and linking LLVM bitcode. Providing linker arguments manually is
+probably unavoidable in these cases.
 
 # Drawbacks
 
