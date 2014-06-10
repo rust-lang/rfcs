@@ -140,6 +140,8 @@ impl<T> Option<T> {
 impl<T> Option<T> {
     pub fn as_ref<'r>(&'r self) -> Option<&'r T> { ... }
     pub fn as_mut<'r>(&'r mut self) -> Option<&'r mut T> { ... }
+    pub fn as_slice<'r>(&'r self) -> &'r [T] { ... }
+    pub fn as_mut_slice<'r>(&'r mut self) -> &'r mut [T] { ... }
     pub fn unwrap(self) -> T { ... }
     pub fn unwrap_or(self, def: T) -> T { ... }
     pub fn unwrap_or_else(self, f: || -> T) -> T { ... }
@@ -172,8 +174,6 @@ impl<T: Default> Option<T>
 
 Old API             | New API
 --------------------|--------------------------------------------------
-`.as_slice()`       | <code>.as_ref().map_or(&[], &#124;x&#124; slice::ref_slice(x))</code>
-`.as_mut_slice()`   | <code>.as_mut().map_or(&[], &#124;x&#124; slice::mut_slice(x))</code>
 `.get_ref()`        | `.as_ref().unwrap()`
 `.get_mut_ref()`    | `.as_mut().unwrap()`
 `.take_unwrap()`    | `take().unwrap()`
@@ -215,6 +215,8 @@ impl<T, E> Result<T, E> {
 impl<T, E> Result<T, E> {
     pub fn as_ref<'a>(&'a self) -> Result<&'a T, E> { ... }
     pub fn as_mut<'a>(&'a mut self) -> Result<&'a mut T, E> { ... }
+    pub fn as_slice<'r>(&'r self) -> &'r [T] { ... }
+    pub fn as_mut_slice<'r>(&'r mut self) -> &'r mut [T] { ... }
     pub fn unwrap(self) -> T { ... }
     pub fn unwrap_or(self, def: T) -> T { ... }
     pub fn unwrap_or_else(self, f: || -> T) -> T { ... }
@@ -243,6 +245,8 @@ impl<T, E> ForErr<T, E> {
 impl<T, E> ForErr<T, E> {
     pub fn as_ref<'a>(&'a self) -> Result<T, &'a E> { ... }
     pub fn as_mut<'a>(&'a mut self) -> Result<T, &'a mut E> { ... }
+    pub fn as_slice<'r>(&'r self) -> &'r [E] { ... }
+    pub fn as_mut_slice<'r>(&'r mut self) -> &'r mut [E] { ... }
     pub fn unwrap(self) -> E { ... }
     pub fn unwrap_or(self, def: E) -> E { ... }
     pub fn unwrap_or_else(self, f: || -> E) -> E { ... }
@@ -262,12 +266,16 @@ impl<T, E> ForErr<T, E> {
 
 ### Added methods
 
+- `Result::as_slice`
+- `Result::as_mut_slice`
 - `Result::for_err`
 - `Result::unwrap`
 - `Result::map_or`
 - `Result::mutate`
 - `Result::mutate_or_set`
 - `Result::iter`
+- `ForErr::as_slice`
+- `ForErr::as_mut_slice`
 - `ForErr::unwrap`
 - `ForErr::unwrap_or`
 - `ForErr::unwrap_or_else`
