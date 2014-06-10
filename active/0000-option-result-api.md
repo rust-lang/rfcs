@@ -147,7 +147,9 @@ impl<T> Option<T> {
     pub fn map_or<U>(self, def: U, f: |T| -> U) -> U { ... }
     pub fn mutate(&mut self, f: |T| -> T) -> bool { ... }
     pub fn mutate_or_set(&mut self, def: T, f: |T| -> T) -> bool { ... }
-    pub fn iter(self) -> SomeItem<T> { ... }
+    pub fn iter<'r>(&'r self) -> SomeItem<&'r T> { ... }
+    pub fn mut_iter<'r>(&'r mut self) -> SomeItem<&'r mut T> { ... }
+    pub fn move_iter(self) -> SomeItem<T> { ... }
     pub fn and<U>(self, optb: Option<U>) -> Option<U> { ... }
     pub fn and_then<U>(self, f: |T| -> Option<U>) -> Option<U> { ... }
     pub fn or(self, optb: Option<T>) -> Option<T> { ... }
@@ -166,15 +168,12 @@ impl<T: Default> Option<T>
 }
 ~~~
 
-### Removed methods from Option
+### Changes from the old Option API
 
 Old API             | New API
 --------------------|--------------------------------------------------
 `.as_slice()`       | <code>.as_ref().map_or(&[], &#124;x&#124; slice::ref_slice(x))</code>
 `.as_mut_slice()`   | <code>.as_mut().map_or(&[], &#124;x&#124; slice::mut_slice(x))</code>
-`.iter()`           | `.as_ref().iter()`
-`.mut_iter()`       | `.as_mut().iter()`
-`.move_iter()`      | `.iter()`
 `.get_ref()`        | `.as_ref().unwrap()`
 `.get_mut_ref()`    | `.as_mut().unwrap()`
 `.take_unwrap()`    | `take().unwrap()`
@@ -223,7 +222,9 @@ impl<T, E> Result<T, E> {
     pub fn map_or<U>(self, def: U, f: |T| -> U) -> U { ... }
     pub fn mutate(&mut self, f: |T| -> T) -> bool { ... }
     pub fn mutate_or_set(&mut self, def: T, f: |T| -> T) -> bool { ... }
-    pub fn iter(self) -> OkItem<T> { ... }
+    pub fn iter<'r>(&'r self) -> OkItem<&'r T> { ... }
+    pub fn mut_iter<'r>(&'r mut self) -> OkItem<&'r mut T> { ... }
+    pub fn move_iter(self) -> OkItem<T> { ... }
     pub fn and<U>(self, other: Result<U, E>) -> Result<U, E> { ... }
     pub fn and_then<U>(self, f: |T| -> Result<U, E>) -> Result<U, E> { ... }
     pub fn or(self, other: Result<T, E>) -> Result<T, E> { ... }
@@ -249,7 +250,9 @@ impl<T, E> ForErr<T, E> {
     pub fn map_or<F>(self, def: F, f: |E| -> F) -> F { ... }
     pub fn mutate(&mut self, f: |E| -> E) -> bool { ... }
     pub fn mutate_or_set(&mut self, def: E, f: |E| -> E) -> bool { ... }
-    pub fn iter(self) -> ErrItem<E> { ... }
+    pub fn iter<'r>(&'r self) -> ErrItem<&'r E> { ... }
+    pub fn mut_iter<'r>(&'r mut self) -> ErrItem<&'r mut E> { ... }
+    pub fn move_iter(self) -> ErrItem<E> { ... }
     pub fn and<F>(self, other: Result<T, F>) -> Result<T, F> { ... }
     pub fn and_then<F>(self, f: |E| -> Result<T, F>) -> Result<T, F> { ... }
     pub fn or(self, other: Result<T, E>) -> Result<T, E> { ... }
@@ -272,6 +275,8 @@ impl<T, E> ForErr<T, E> {
 - `ForErr::mutate`
 - `ForErr::mutate_or_set`
 - `ForErr::iter`
+- `ForErr::mut_iter`
+- `ForErr::move_iter`
 - `ForErr::and`
 - `ForErr::and_then`
 - `ForErr::or`
