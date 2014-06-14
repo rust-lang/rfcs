@@ -19,7 +19,7 @@ A private boolean "incremental" would be added to Parser and Builder. A new argu
 In Parser.next, when it would normally yield a TrailingCharacters error, reset the Parser's state to the initial state instead.
 
 ## Builder
-When constructing a Builder with "incremental", also construct the Parser with "incremental" set. No other changes should need to be made- calling Builder.build() multiple times should return multiple JSON objects, until the end of the Iterator\<char\>. Iterator<Json> could also be implemented for Builder.
+When constructing a Builder with "incremental", also construct the Parser with "incremental" set. No other changes should need to be made- calling Builder.build() multiple times should return multiple JSON objects, until the end of the Iterator\<char\>. Iterator\<Json\> could also be implemented for Builder.
 
 # Drawbacks
 
@@ -35,4 +35,4 @@ Leaving this unchanged causes enormous headaches when attempting to send several
 
 "incremental" could be bikeshedded a bit.
 
-Should Builder implement Iterator<Json>  ?
+Should Builder implement Iterator\<Json\>  ?
