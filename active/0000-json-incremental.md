@@ -1,29 +1,38 @@
-- Start Date: (fill me in with today's date, YYYY-MM-DD)
+- Start Date: 2014-06-14
 - RFC PR #: (leave this empty)
 - Rust Issue #: (leave this empty)
 
 # Summary
 
-One para explanation of the feature.
+Add support for not consuming an entire Iterator\<char\> to serialize::json::Parser and Builder; in other words, allow incrementally reading one JSON object at a time.
 
 # Motivation
 
-Why are we doing this? What use cases does it support? What is the expected outcome?
+In networked applications, a socket may be used to transfer multiple JSON objects by streaming them, concatenated, across the network. As serialize::json::Parser currently stands, it is incompatible with this usecase (modulo hacks that e.g. separate JSON objects with terminator characters and pass each object as a string to a Builder). This problem is solvable with a very simple modification to Parser.
 
 # Detailed design
 
-This is the bulk of the RFC. Explain the design in enough detail for somebody familiar
-with the language to understand, and for somebody familiar with the compiler to implement.
-This should get into specifics and corner-cases, and include examples of how the feature is used.
+A private boolean "incremental" would be added to Parser and Builder. A new argument "incremental" would also be added to their constructors, setting the value of this boolean. This flag would change the behavior of Parser and Builder as follows:
+
+## Parser
+
+In Parser.next, when it would normally yield a TrailingCharacters error, reset the Parser's state to the initial state instead.
+
+## Builder
+When constructing a Builder with "incremental", also construct the Parser with "incremental" set. No other changes should need to be made- calling Builder.build() multiple times should return multiple JSON objects, until the end of the Iterator\<char\>. Iterator<Json> could also be implemented for Builder.
 
 # Drawbacks
 
-Why should we *not* do this?
+Complexity is added to Parser and Builder, and their size is trivially increased.
+
+Code using Builder::new or Parser::new directly must be rewritten; however, most code in the wild uses the wrapper functions serialize::json::from\_str or serialize::json::from\_reader . Changing these wrapper functions should obviate any need for changes in the majority of programs.
 
 # Alternatives
 
-What other designs have been considered? What is the impact of not doing this?
+Leaving this unchanged causes enormous headaches when attempting to send several JSON objects through the same socket. Although they could be passed as a JSON list, Builder will consume the entire list before returning it; thus lists cannot be used to communicate with JSON.
 
 # Unresolved questions
 
-What parts of the design are still TBD?
+"incremental" could be bikeshedded a bit.
+
+Should Builder implement Iterator<Json>  ?
