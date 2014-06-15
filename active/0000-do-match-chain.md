@@ -8,7 +8,7 @@ Reintroduce the `do` keyword as sugar for nested match statements.
 
 # Motivation
 
-Flatten code that suffers from 'match pyramids' without loosing the expressiveness of match statements.
+Flatten code that suffers from 'match pyramids' without losing the expressiveness of match statements.
 
 # Detailed design
 
