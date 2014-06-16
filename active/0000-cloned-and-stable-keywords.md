@@ -138,6 +138,21 @@ fn bar<T: Clone>(cloned arg: T)
 fn baz<T>(arg: &T)
 ```
 
+A variable passed to a function as an argument labeled `stable` is eligible to automatic referencing/dereferencing just the same as the `self` arguments are. The reason for this is that generic functions such as the following must work:
+```
+trait Qux {
+    fn qux(&self, stable arg: int);
+}
+
+fn possibly_auto_referencing<T: Qux>(q: &T, value: int) {
+    q.qux(value); // `value` may need to be auto-referenced depending on `T`
+}
+
+fn possibly_auto_dereferencing<T: Qux>(q: &T, value: &int) {
+    q.qux(value); // `value` may need to be auto-dereferenced depending on `T`
+}
+```
+
 Now, with these two new keywords, the C++ like implicit move-optimization could be accomplished in our earlier motivating example with the following two changes:
 
 1) Change the definition of the `Mul` trait to this:
