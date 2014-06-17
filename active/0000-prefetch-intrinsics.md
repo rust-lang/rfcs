@@ -15,10 +15,58 @@ Prefetch can speed up program execution in some cases.
 Add a number of intrinsics representing the possible constant parameters of 
 `void @llvm.prefetch(i8* <address>, i32 <rw>, i32 <locality>, i32 <cache type>)`, 
 their type being `fn(*i8)` for reads, `fn(*mut i8)` for writes.
-They should be named like `prefetch` for a read, extreme locality, 
-data cache, `prefetch_write` for a write with a same parameters, 
-`prefetch_none` for a read, no locality, data cache prefetch,
-`prefetch_write_low_icache` for a write, low locality, instruction cache one.
+
+the proposed intrinsics:
+
+```rust
+/// Prefetch the pointer `address` for read to the data cache with maximum locality
+pub fn prefetch<T>(address: *T);
+
+/// Prefetch the pointer `address` for write to the data cache with maximum locality
+pub fn prefetch_write<T>(address: *mut T);
+
+/// Prefetch the pointer `address` for read to the data cache with high locality
+pub fn prefetch_high<T>(address: *T);
+
+/// Prefetch the pointer `address` for write to the data cache with high locality
+pub fn prefetch_write_high<T>(address: *mut T);
+
+/// Prefetch the pointer `address` for read to the data cache with low locality
+pub fn prefetch_low<T>(address: *T);
+
+/// Prefetch the pointer `address` for write to the data cache with low locality
+pub fn prefetch_write_low<T>(address: *mut T);
+
+/// Prefetch the pointer `address` for read to the data cache with no locality
+pub fn prefetch_none<T>(address: *T);
+
+/// Prefetch the pointer `address` for write to the data cache with no locality
+pub fn prefetch_write_none<T>(address: *mut T);
+
+/// Prefetch the pointer `address` for read to the instruction cache with maximum locality
+pub fn prefetch_icache<T>(address: *T);
+
+/// Prefetch the pointer `address` for write to the instruction cache with maximum locality
+pub fn prefetch_write_icache<T>(address: *mut T);
+
+/// Prefetch the pointer `address` for read to the instruction cache with high locality
+pub fn prefetch_high_icache<T>(address: *T);
+
+/// Prefetch the pointer `address` for write to the instruction cache with high locality
+pub fn prefetch_write_high_icache<T>(address: *mut T);
+
+/// Prefetch the pointer `address` for read to the instruction cache with low locality
+pub fn prefetch_low_icache<T>(address: *T);
+
+/// Prefetch the pointer `address` for write to the instruction cache with low locality
+pub fn prefetch_write_low_icache<T>(address: *mut T);
+
+/// Prefetch the pointer `address` for read to the instruction cache with no locality
+pub fn prefetch_none_icache<T>(address: *T);
+
+/// Prefetch the pointer `address` for write to the instruction cache with no locality
+pub fn prefetch_write_none_icache<T>(address: *mut T);
+```
 
 # Drawbacks
 
@@ -30,4 +78,4 @@ It could be implemented in a single intrinsic that somehow makes sure it supplie
 
 # Unresolved questions
 
-The instruction cache prefetches could have some different type.
+The instruction cache prefetches could have some different type, maybe?
