@@ -14,7 +14,7 @@ Prefetch can speed up program execution in some cases.
 
 Add a number of intrinsics representing the possible constant parameters of 
 `void @llvm.prefetch(i8* <address>, i32 <rw>, i32 <locality>, i32 <cache type>)`, 
-their type being `fn(*i8)` for reads, `fn(*mut i8)` for writes.
+their type being `fn<T>(*T)` for reads, `fn<T>(*mut T)` for writes.
 
 the proposed intrinsics:
 
