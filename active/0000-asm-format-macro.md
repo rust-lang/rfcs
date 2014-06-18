@@ -47,7 +47,7 @@ A parameter consists of an expression at the minimum. Its other properties
 
 In contrast to the `format!` macro, an argument can be referred to using many
 constraints.
-Referring to a parameter with different constraints such as {:r} and {:m}
+Referring to a parameter with different constraints such as `{:r}` and `{:m}`
 in the template will generate many separate old-style operands. Additionally,
 it's easier to see which one is allowed in an instruction.
 
@@ -95,7 +95,7 @@ It's also possible to set constraints for parameters that aren't referred to
 within the assembly string:
 
 ```rust
-asm!("syscall" : "{rax}" = n -> ret, {rdi}" = a1, "{rsi}" = a2, "rcx", "r11", "memory", "volatile");
+asm!("syscall", "{rax}" = n -> ret, "{rdi}" = a1, "{rsi}" = a2, "rcx", "r11", "memory", "volatile");
 ```
 
 This example uses multiple outputs:
@@ -122,10 +122,11 @@ fn main() {
 * The syntax is new and partly unfamiliar. The meaning of `->` placed in
 between expressions is not immediately obvious.
 * The `format` parser needs a slight modification or refactoring to allow
-`{:=}` and perhaps `{:+}`.
-* Some `asm!` code might already contain `{}`, so this change can't be entirely
-painless and backwards compatible. ARM register lists are enclosed in braces:
-`push {r11, lr}`. This instruction would have to look like `push {{r11, lr}}`.
+`{:=r}` and perhaps `{:+r}`.
+* Some `asm!` code might already contain curly brackets, so this change can't
+be entirely painless and backwards compatible. ARM register lists are enclosed
+in braces: `push {r11, lr}`. This instruction would have to look like this:
+`push {{r11, lr}}`.
 * Automatic indexing won't work with comments containing braces such as `// {}`.
 
 # Alternatives
