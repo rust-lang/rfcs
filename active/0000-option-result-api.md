@@ -25,6 +25,7 @@ impl<T> Option<T> {
     pub fn unwrap(self) -> T { ... }
     pub fn unwrap_or(self, def: T) -> T { ... }
     pub fn unwrap_or_else(self, f: || -> T) -> T { ... }
+    pub fn expect(self, msg: &str) -> T { ... }
     pub fn map<U>(self, f: |T| -> U) -> Option<U> { ... }
     pub fn map_or<U>(self, def: U, f: |T| -> U) -> U { ... }
     pub fn mutate(&mut self, f: |T| -> T) -> bool { ... }
@@ -46,20 +47,6 @@ impl<T> Option<T> {
 
 impl<T: Default> Option<T> 
     pub fn unwrap_or_default(self) -> T { ... }
-}
-~~~
-
-An `Expect` trait is also included in the standard library:
-
-~~~rust
-// core::option
-
-pub trait Expect<T> {
-    fn expect<M: Any + Send>(self, m: M) -> T;
-}
-
-impl<T> Expect<T> for Option<T> {
-    fn expect<M: Any + Send>(self, msg: M) -> T { ... }
 }
 ~~~
 
@@ -149,6 +136,7 @@ impl<T> Option<T> {
     pub fn unwrap(self) -> T { ... }
     pub fn unwrap_or(self, def: T) -> T { ... }
     pub fn unwrap_or_else(self, f: || -> T) -> T { ... }
+    pub fn expect(self, msg: &str) -> T { ... }
     pub fn map<U>(self, f: |T| -> U) -> Option<U> { ... }
     pub fn map_or<U>(self, def: U, f: |T| -> U) -> U { ... }
     pub fn mutate(&mut self, f: |T| -> T) -> bool { ... }
@@ -228,6 +216,7 @@ impl<T, E> Result<T, E> {
     pub fn unwrap(self) -> T { ... }
     pub fn unwrap_or(self, def: T) -> T { ... }
     pub fn unwrap_or_else(self, f: || -> T) -> T { ... }
+    pub fn expect(self, msg: &str) -> T { ... }
     pub fn map<U>(self, f: |T| -> U) -> Result<U, E> { ... }
     pub fn map_or<U>(self, def: U, f: |T| -> U) -> U { ... }
     pub fn mutate(&mut self, f: |T| -> T) -> bool { ... }
@@ -256,6 +245,7 @@ impl<T, E> ForErr<T, E> {
     pub fn unwrap(self) -> E { ... }
     pub fn unwrap_or(self, def: E) -> E { ... }
     pub fn unwrap_or_else(self, f: || -> E) -> E { ... }
+    pub fn expect(self, msg: &str) -> E { ... }
     pub fn map<F>(self, f: |E| -> F) -> Result<T, F> { ... }
     pub fn map_or<F>(self, def: F, f: |E| -> F) -> F { ... }
     pub fn mutate(&mut self, f: |E| -> E) -> bool { ... }
@@ -274,6 +264,7 @@ impl<T, E> ForErr<T, E> {
 
 - `Result::for_err`
 - `Result::unwrap`
+- `Result::expect`
 - `Result::map_or`
 - `Result::mutate`
 - `Result::mutate_or_set`
@@ -281,6 +272,7 @@ impl<T, E> ForErr<T, E> {
 - `ForErr::unwrap`
 - `ForErr::unwrap_or`
 - `ForErr::unwrap_or_else`
+- `ForErr::expect`
 - `ForErr::map_or`
 - `ForErr::mutate`
 - `ForErr::mutate_or_set`
@@ -300,31 +292,6 @@ Old API             | New API
 `.err()`            | `.for_err().to_option()`
 `.map_err(...)`     | `.for_err().map(...)`
 `.or_else(...)`     | `.for_err().or(...)`
-
-## Expect trait
-
-The `Expect` trait would be implemented both on `Result` as well as `Option`,
-and be moved into its own module.
-
-~~~rust
-// std::expect
-
-trait Expect<T> {
-    fn expect<M: Any + Send>(self, msg: M) -> T;
-}
-
-impl<T> Expect<T> for Option<T> {
-    fn expect<M: Any + Send>(self, msg: M) -> T { ... }
-}
-
-impl<T, E> Expect<T> for Result<T, E> {
-    fn expect<M: Any + Send>(self, msg: M) -> T { ... }
-}
-
-impl<T, E> Expect<E> for ForErr<T, E> {
-    fn expect<M: Any + Send>(self, msg: M) -> E { ... }
-}
-~~~
 
 # Drawbacks
 
