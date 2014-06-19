@@ -136,10 +136,14 @@ impl<T> Option<T> {
     pub fn is_none(&self) -> bool { ... }
 }
 
-// Methods in common with Result
+// Reference conversion methods
 impl<T> Option<T> {
     pub fn as_ref<'r>(&'r self) -> Option<&'r T> { ... }
     pub fn as_mut<'r>(&'r mut self) -> Option<&'r mut T> { ... }
+}
+
+// Methods in common with Result
+impl<T> Option<T> {
     pub fn as_slice<'r>(&'r self) -> &'r [T] { ... }
     pub fn as_mut_slice<'r>(&'r mut self) -> &'r mut [T] { ... }
     pub fn unwrap(self) -> T { ... }
@@ -205,6 +209,12 @@ impl<T, E> Result<T, E> {
     pub fn is_err(&self) -> bool { ... }
 }
 
+// Reference conversion methods
+impl<T, E> Result<T, E> {
+    pub fn as_ref<'a>(&'a self) -> Result<&'a T, &'a E> { ... }
+    pub fn as_mut<'a>(&'a mut self) -> Result<&'a mut T, &'a E> { ... }
+}
+
 // Conversion methods
 impl<T, E> Result<T, E> {
     pub fn to_option(self) -> Option<T> { ... }
@@ -213,8 +223,6 @@ impl<T, E> Result<T, E> {
 
 // Methods in common with Option
 impl<T, E> Result<T, E> {
-    pub fn as_ref<'a>(&'a self) -> Result<&'a T, E> { ... }
-    pub fn as_mut<'a>(&'a mut self) -> Result<&'a mut T, E> { ... }
     pub fn as_slice<'r>(&'r self) -> &'r [T] { ... }
     pub fn as_mut_slice<'r>(&'r mut self) -> &'r mut [T] { ... }
     pub fn unwrap(self) -> T { ... }
@@ -243,8 +251,6 @@ impl<T, E> ForErr<T, E> {
 
 // Methods in common with Option
 impl<T, E> ForErr<T, E> {
-    pub fn as_ref<'a>(&'a self) -> Result<T, &'a E> { ... }
-    pub fn as_mut<'a>(&'a mut self) -> Result<T, &'a mut E> { ... }
     pub fn as_slice<'r>(&'r self) -> &'r [E] { ... }
     pub fn as_mut_slice<'r>(&'r mut self) -> &'r mut [E] { ... }
     pub fn unwrap(self) -> E { ... }
@@ -266,16 +272,12 @@ impl<T, E> ForErr<T, E> {
 
 ### Added methods
 
-- `Result::as_slice`
-- `Result::as_mut_slice`
 - `Result::for_err`
 - `Result::unwrap`
 - `Result::map_or`
 - `Result::mutate`
 - `Result::mutate_or_set`
 - `Result::iter`
-- `ForErr::as_slice`
-- `ForErr::as_mut_slice`
 - `ForErr::unwrap`
 - `ForErr::unwrap_or`
 - `ForErr::unwrap_or_else`
