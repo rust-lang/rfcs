@@ -206,7 +206,7 @@ impl<T, E> Result<T, E> {
 // Conversion methods
 impl<T, E> Result<T, E> {
     pub fn to_option(self) -> Option<T> { ... }
-    pub fn for_err(self) -> ForErr<T, E> { ... }
+    pub fn err(self) -> ForErr<T, E> { ... }
 }
 
 // Methods in common with Option
@@ -269,7 +269,7 @@ impl<T: Show, E> ForErr<T, E> {
 
 ### Added methods
 
-- `Result::for_err`
+- `Result::err`
 - `Result::unwrap`
 - `Result::expect`
 - `Result::map_or`
@@ -296,9 +296,9 @@ impl<T: Show, E> ForErr<T, E> {
 Old API             | New API
 --------------------|--------------------------------------------------
 `.ok()`             | `.to_option()`
-`.err()`            | `.for_err().to_option()`
-`.map_err(...)`     | `.for_err().map(...)`
-`.or_else(...)`     | `.for_err().or(...)`
+`.err()`            | `.err().to_option()`
+`.map_err(...)`     | `.err().map(...)`
+`.or_else(...)`     | `.err().or(...)`
 
 # Drawbacks
 
@@ -309,13 +309,13 @@ the `Result` API.
 
 What other designs have been considered? What is the impact of not doing this?
 
-- `Result::for_err` could be renamed to `Result::err`. This would be more
-  succinct.
+- `Result::err` could be renamed to `Result::for_err`. This would be more
+  in line with the resulting type name, but would also be more verbose.
 - Instead of using the `ForErr` adapter, we could instead just use the `_err`
   suffix. This would be slightly more convenient, but would incompatible
   with a move to a trait-based API in the future.
 - Instead of implementing the `Ok`-biased methods directly on `Result`, a
-  `ForOk` adapter and `for_ok` method could be added, mirroring `ForErr`. This
+  `ForOk` adapter and `ok` method could be added, mirroring `ForErr`. This
   would be more inconvenient for the common case, but would be more
   symmetrical with the `Err` biased API.
 - We could remove the `Err` methods entirely, because they bloat the API
