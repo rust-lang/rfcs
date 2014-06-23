@@ -213,7 +213,6 @@ impl<T, E> Result<T, E> {
 impl<T, E> Result<T, E> {
     pub fn as_slice<'r>(&'r self) -> &'r [T] { ... }
     pub fn as_mut_slice<'r>(&'r mut self) -> &'r mut [T] { ... }
-    pub fn unwrap(self) -> T { ... }
     pub fn unwrap_or(self, def: T) -> T { ... }
     pub fn unwrap_or_else(self, f: || -> T) -> T { ... }
     pub fn expect(self, msg: &str) -> T { ... }
@@ -228,6 +227,10 @@ impl<T, E> Result<T, E> {
     pub fn and_then<U>(self, f: |T| -> Result<U, E>) -> Result<U, E> { ... }
     pub fn or(self, other: Result<T, E>) -> Result<T, E> { ... }
     pub fn or_else(self, f: || -> Result<T, E>) -> Result<T, E> { ... }
+}
+
+impl<T, E: Show> Result<T, E> {
+    pub fn unwrap(self) -> T { ... }
 }
 
 pub struct ForErr<T, E>(pub Result<T, E>);
@@ -257,6 +260,10 @@ impl<T, E> ForErr<T, E> {
     pub fn and_then<F>(self, f: |E| -> Result<T, F>) -> Result<T, F> { ... }
     pub fn or(self, other: Result<T, E>) -> Result<T, E> { ... }
     pub fn or_else(self, f: || -> Result<T, E>) -> Result<T, E> { ... }
+}
+
+impl<T: Show, E> ForErr<T, E> {
+    pub fn unwrap(self) -> E { ... }
 }
 ~~~
 
@@ -315,6 +322,11 @@ What other designs have been considered? What is the impact of not doing this?
   considerably.
 
 # Unresolved questions
+
+To preserve the current behaviour of `Result::{unwrap, unwrap_err}`,
+`Result::unwrap` and `ForErr::unwrap` must be implemented on `E: fmt::Show`
+and `T: fmt::Show` respectively. It is unclear how to make this completely
+mirror the `Option` API.
 
 It might be a good idea to think more deeply about how the API will be
 structured with higher-kinded types, dividing the `impl`s up in a more
