@@ -85,9 +85,9 @@ And function parameters:
 This will encourage people to add an `&` before their parameter type whenever they only need to read the value instead of consuming it.
 For example the `Vec::get` function would have the `fn get(&self, &uint)` definition instead.
 
-Note that this only concerns `T`. The `&mut` syntax should still be mandatory when passing an object by mutable reference, because it explicitly says that the variable will be modified.
+Note that this only concerns `&T`. The `&mut` syntax should still be mandatory when passing an object by mutable reference, because it explicitly says that the variable will be modified.
 
-The consequence of this and second proposed change is that when a `&T` parameter is requested and `T` is a base type (integers, floats, etc.), then the compiler should be allowed to optimize this by sending the value itself instead of a pointer to the value. This is the avoid a performance hit of passing a `&uint` instead of an `uint`.
+The consequence of this and second proposed change is that when a `&T` parameter is requested and `T` is a base type (integers, floats, etc.), then the compiler should be allowed to optimize this by sending the value itself instead of a pointer to the value. The purpose of this is to avoid the performance hit of passing a `&uint` instead of an `uint`.
 
 
 # Drawbacks
