@@ -81,8 +81,10 @@ And function parameters:
 
     fn foo(val: &int) {}
     foo(5);   // currently not ok, but would become ok
+    
+This implicit conversion should only be attempted when the compiler fails to match the value with the requested type.
 
-This will encourage people to add an `&` before their parameter type whenever they only need to read the value instead of consuming it.
+This feature will encourage people to add an `&` before their parameter type whenever they only need to read the value instead of consuming it.
 For example the `Vec::get` function would have the `fn get(&self, &uint)` definition instead.
 
 Note that this only concerns `&T`. The `&mut` syntax should still be mandatory when passing an object by mutable reference, because it explicitly says that the variable will be modified.
