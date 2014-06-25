@@ -12,28 +12,28 @@ Objects of type `T` should be implicitely convertible to `&T`.
  When you call a member function, the object is automatically borrowed when the function requires a `&self`.
  However when you pass an object to a function, the `&` must be explicit.
 
-    struct Foo;
-    impl Foo {
-    	fn member_ref(&self) {}
-    	fn member_val(self) {}
-    }
-    fn extern_ref(&Foo) {}
-    fn extern_val(Foo) {}
+      struct Foo;
+      impl Foo {
+       fn member_ref(&self) {}
+    	  fn member_val(self) {}
+      }
+      fn extern_ref(&Foo) {}
+      fn extern_val(Foo) {}
 
-    let a = Foo;
-    let b = Foo;
+      let a = Foo;
+      let b = Foo;
 
-    a.member_ref();  // ok, automatically borrowed
-    a.member_val();  // ok
-    extern_ref(&b);  // different syntax, why is the '&' needed in this scenario?
-    extern_val(b);   // ok
+      a.member_ref();  // ok, automatically borrowed
+      a.member_val();  // ok
+      extern_ref(&b);  // different syntax, why is the '&' needed in this scenario?
+      extern_val(b);   // ok
 
  * You need to differenciate between local variables and parameters only in some cases.
  I think that you should either always differenciate between references and values, or never. But not *sometimes*.
 
-    fn bar(a: &Vec<int>) {}
+      fn bar(a: &Vec<int>) {}
 
-    fn foo(a: &Vec<int>) {
+      fn foo(a: &Vec<int>) {
         let b: Vec<int> = vec!(2, 4, 73, -7);
 
         // you use a and b the same way, they are indifferentiable:
@@ -45,7 +45,7 @@ Objects of type `T` should be implicitely convertible to `&T`.
         // ...except when you pass them to functions:
         bar(a);
         bar(&b);  // different syntax
-    }
+      }
 
  * The `hashmap.find(&5)` syntax is ugly and counter-intuitive.
 
@@ -56,15 +56,15 @@ Objects of type `T` should be implicitely convertible to `&T`.
  This leads to inconsistencies in APIs, like the one below. The `get` function expects a value while
  the `find` function expects a reference, even though both functions are very similar.
 
-    let index = 5;
+      let index = 5;
 
-    let a: Vec<int> = ...something...
-    a.get(index)     // the function expects a value
+      let a: Vec<int> = ...something...
+      a.get(index)     // the function expects a value
 
-    let b: HashMap<uint, int> = ...something...
-    b.find(&index)   // the function expects a reference
+      let b: HashMap<uint, int> = ...something...
+      b.find(&index)   // the function expects a reference
 
-    // I prefer the syntax of "get", but "find" is more correct because you shouldn't consume the index
+      // I prefer the syntax of "get", but "find" is more correct because you shouldn't consume the index
 
 
 
