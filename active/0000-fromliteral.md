@@ -51,8 +51,12 @@ Literals could be treated as String/Vec instead of &'static str and fixed-size v
 
 Add generic literal types to the language officially (not just in the compiler), and create a single FromLiteral<T: GenericLiteral> type or reuse FromPrimitive. 
 
+Only FromStringLiteral could be added, as it is the most needed (rust contains >300 uses of .to_string and only 20 uses of .to_owned) and the type of the argument from_vector_literal should take is quite hard to decide on.
+
 # Unresolved questions
 
 As always, naming is bikesheddable.
 
 Is there enough of a use-case for a FromIntegerLiteral or FromFloatLiteral? 
+
+DST being implemented could allow better ways to pass vector literals around. This isn't a question, is it?
