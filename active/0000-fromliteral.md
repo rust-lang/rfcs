@@ -28,7 +28,9 @@ trait FromStringLiteral {
 
 trait FromVectorLiteral<T> {
     fn from_vector_literal(lit: &[T]) -> Self;
-}```
+}
+```
+
 
 A string or vector literal would be considered a "generic string" or "generic vector", similar to generic ints. All types implementing FromStringLiteral/FromVectorLiteral would be considered subtypes of generic strings/vectors (respectively); if the compiler encounters a literal being used where a type implementing one of these traits is expected, the compiler generates code to call the trait's from_string_literal/from_vector_literal method with a reference to a string or vector containing the literal data.
 
@@ -42,6 +44,8 @@ Integral / floating point literals are not included in this, and would behave as
 A type could potentially implement FromStringLiteral/FromVectorLiteral in an expensive manner, surprising the user. Programmers should be told not to do this.
 
 Wrapper types around strings/vectors which carry semantic information in their type could implement FromStringLiteral/FromVectorLiteral, thus allowing one to "accidentally" construct a type which might represent "safe" unsanitized data, etc. Programmers should be told not to implement FromStringLiteral/FromVectorLiteral on types where accidental construction is a concern.
+
+FromVectorLiteral would have to clone types, which *might* be optimized out but is generally bad. Alternatives include a Vec-like syntax (initialization and push).
 
 # Alternatives
 
