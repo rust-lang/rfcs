@@ -4,7 +4,7 @@
 
 # Summary
 
-Create new traits, FromStringLiteral, FromVectorLiteral<T>. Types implementing these traits can be automatically constructed from literals automatically. Literals will effectively have their actual types inferred statically.
+Create new traits, FromStringLiteral, FromVectorLiteral<T>. Types implementing these traits can be automatically constructed from literals. Literals will effectively have their actual types inferred statically.
 
 # Motivation
 
@@ -23,12 +23,11 @@ If this is implemented, both would compile.
 
 ```rust
 trait FromStringLiteral {
-	fn from_string_literal(lit: &'static str) -> Self;
+    fn from_string_literal(lit: &'static str) -> Self;
 }
-trait FromVectorLiteral<T> {
 
-	fn from_vector_literal(lit: &[T]) -> Self;
-	
+trait FromVectorLiteral<T> {
+    fn from_vector_literal(lit: &[T]) -> Self;
 }```
 
 A string or vector literal would be considered a "generic string" or "generic vector", similar to generic ints. All types implementing FromStringLiteral/FromVectorLiteral would be considered subtypes of generic strings/vectors (respectively); if the compiler encounters a literal being used where a type implementing one of these traits is expected, the compiler generates code to call the trait's from_string_literal/from_vector_literal method with a reference to a string or vector containing the literal data.
