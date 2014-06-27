@@ -12,7 +12,7 @@ The biggest usecase for this will be that creating a String from a literal will 
 
 Before, this compiles:
 
-```let x = "Hello, world!".to_string(); ```
+```let x = "Hello, world!".to_string();```
 
 while this doesn't:
 ```let x: String = "Hello, world!";```
@@ -21,11 +21,14 @@ If this is implemented, both would compile.
 
 # Detailed design
 
-```trait FromStringLiteral {
+```rust
+trait FromStringLiteral {
 	fn from_string_literal(lit: &'static str) -> Self;
 }
 trait FromVectorLiteral<T> {
+
 	fn from_vector_literal(lit: &[T]) -> Self;
+	
 }```
 
 A string or vector literal would be considered a "generic string" or "generic vector", similar to generic ints. All types implementing FromStringLiteral/FromVectorLiteral would be considered subtypes of generic strings/vectors (respectively); if the compiler encounters a literal being used where a type implementing one of these traits is expected, the compiler generates code to call the trait's from_string_literal/from_vector_literal method with a reference to a string or vector containing the literal data.
@@ -49,7 +52,7 @@ A full C++-style constructor system could be added, allowing types to be secretl
 
 Literals could be treated as String/Vec instead of &'static str and fixed-size vectors. This ties the language far too closely to the standard library, and should be avoided.
 
-Add generic literal types to the language officially (not just in the compiler), and create a single FromLiteral<T: GenericLiteral> type or reuse FromPrimitive. 
+Add generic literal types to the language officially (not just in the compiler), and create a single `FromLiteral<T: GenericLiteral>` type or reuse FromPrimitive. 
 
 Only FromStringLiteral could be added, as it is the most needed (rust contains >300 uses of .to_string and only 20 uses of .to_owned) and the type of the argument from_vector_literal should take is quite hard to decide on.
 
