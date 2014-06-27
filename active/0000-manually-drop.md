@@ -1,0 +1,194 @@
+- Start Date: 2014-06-27
+- RFC PR #: (leave this empty)
+- Rust Issue #: (leave this empty)
+
+# Summary
+
+Provide a `ManualDrop<T>` type that stores a `T` inline in memory, but
+doesn't run `T`s destructor by default.
+
+# Motivation
+
+There is currently no long-term way to have partially (un)initialised
+inline data in types, since internal fields always have their own
+destructor run. This is effectively generalising the behaviour of
+`*const` and `*mut` (which do not run destructors on their contents
+automatically) to inline data, i.e. not requiring allocation or other
+indirection like the pointer types.
+
+The motivating example of this is a `SmallVec<T>` type
+(e.g. [those defined by servo][servosmallvec]), where vector instances
+with a small number of elements are stored directly inline, not on the
+heap. Something like
+
+```rust
+struct SmallVec<T> {
+    length: uint,
+    capacity: uint,
+    pointer: *mut T,
+    inline: [T, .. 8]
+}
+```
+
+[servosmallvec]: https://github.com/servo/servo/blob/bc9127c499793177bd3826dd3c1c77ff294cede3/src/components/util/smallvec.rs
+
+As an example of its behaviour consider:
+
+```rust
+let mut v = SmallVec::new();
+// v.length == v.capacity == 0
+// v.pointer == NULL
+// v.inline = [uninit, uninit, ... ]
+
+
+v.push("foo".to_string());
+// v.length == 1, v.capacity == 0 (or something)
+// v.pointer == NULL
+// v.inline = ["foo", uninit, ... ]
+
+for _ in range(0, 99) {
+    v.push("bar".to_string());
+}
+// v.length == 100, v.capacity >= 100
+// v.pointer == some allocation containing "foo", "bar", "bar", ...
+// v.inline = [uninit, uninit, ... ]
+```
+
+When a `SmallVec` with the above definition is dropped, the
+destructors of all 8 `T`s in `inline` will always be run (no matter
+what happens in the `Drop` implementation of `SmallVec`), leading to
+dramatic unsafety: in the first and last cases, destructors would be
+running on uninitialised data, and in the second, it would correctly
+destroy the first element (`"foo"`) but the last 7 are uninitialised.
+
+With the `ManuallyDrop` type given in this RFC, `SmallVec` could be
+defined as
+
+```rust
+// (sketch, without `unsafe {}`s/casts etc. for clarity)
+
+struct SmallVec<T> {
+    length: uint,
+    capacity: uint,
+    pointer: *mut T,
+
+    // now these 8 T's are not automatically destroyed when a SmallVec
+    // goes out of scope.
+    inline: ManuallyDrop<[T, .. 8]>
+}
+
+impl<T> Drop for SmallVec<T> {
+    fn drop(&mut self) {
+        if !self.pointer.is_null() { // heap allocated
+            // same as Vec<T>'s drop
+            for i in range(0, self.length) {
+                ptr::read(self.pointer.offset(i));
+            }
+            alloc::heap::deallocate(self.pointer, ...);
+        } else {
+            // run destructors on the first `self.length` elements of
+            // `self.inline`, but no others.
+            for i in range(0, self.length) {
+                ptr::read(&self.inline.get().offset(i));
+            }
+        }
+    }
+}
+```
+
+This definition is now safe: destructors run on exactly those elements
+that are valid and no others.
+
+
+To be precise, at the time of writing, Rust defines that destructors
+are safe to run on zeroed values (and guarantees it via the so called
+"drop flag"), meaning this can currently be made safe via:
+
+```rust
+impl<T> Drop for SmallVec<T> {
+    fn drop(&mut self) {
+        // same as above.
+
+        // zero the whole array: it's fine for the `inner` field to be
+        // redestroyed now.
+        mem::set_memory(&mut self.inner as *mut T, 0, self.inner.len());
+    }
+}
+```
+
+However, the drop flag is likely to disappear:
+[#5016](https://github.com/mozilla/rust/issues/5016).
+
+# Detailed design
+
+A new lang-item type equivalent to
+
+```rust
+pub struct ManuallyDrop<T> {
+    pub data: T
+}
+```
+
+would be provided, and the compiler would know to *not* run the
+destructor of the `T` when a `ManuallyDrop<T>` instance goes out of
+scope. That is,
+
+```rust
+struct X { num: int };
+impl Drop for X {
+    fn drop(&mut self) { println!("{}", self.num) }
+}
+
+fn main() {
+    let normal = X { x: 0 };
+    let new = ManuallyDrop { data: X { x: 1 } };
+}
+```
+
+would print only `0`, *not* `1`.
+
+This would be modelled after the `UnsafeCell` type, providing similar
+methods:
+
+- `fn get(&self) -> *const T`
+- `fn get_mut(&mut self) -> *mut T`
+- `unsafe fn unwrap(self) -> T`
+
+The `data` field is public to allow for static initialisation (again,
+similar to `UnsafeCell`).
+
+# Drawbacks
+
+This is quite dangerous.
+
+# Alternatives
+
+- This may be adequately modeled by enums in many situations, but I
+  can't imagine it will be easy to wrangle `enum`s to make `SmallVec`
+  work nicely (one variant for each possible on-stack arity? How do
+  you avoid adding an (unnecessary) additional work for the
+  discriminant?), and especially not if we ever get generic number
+  parameters, so something like `struct SmallVec<T, n> { ... inner: ManuallyDrop<[T, .. n]> }`
+  would work, allowing for `SmallVec<T, 2>`, `SmallVec<T, 100>` etc.
+
+- Continue relying on the drop flag/zeroing.
+
+- A struct `UninterpretedBytesOfSize<T>` equal to
+  `[u8, .. size_of::<T>()]`, that is, a chunk of memory large enough
+  to store a `T`, but treated as raw memory (i.e. `u8`s). This has the
+  (large) downside of loosing all type information, inferring with the
+  compiler's reachability analysis (e.g. for `UnsafeCell`), and making
+  it easier for the programmer to make mistakes w.r.t. an incorrect or
+  forgotten coercion (it's would be identical to C's `void*`).
+
+# Unresolved questions
+
+- Should a `ManuallyDrop<T>` always be `Copy`? It no longer has a
+  destructor and so the only risk of double freeing (etc.) would be
+  when the user writes such a thing. This would allow it to be a
+  maximally flexible building-block, but I cannot think of a specific
+  use-case for `ManuallyDrop<NonCopy>` to be `Copy`. Being `Copy`
+  would make `ManuallyDrop` entirely the inline equivalent of `*const`
+  and `*mut`, since they are both `Copy` always.
+
+- The name.
