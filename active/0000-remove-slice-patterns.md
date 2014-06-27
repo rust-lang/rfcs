@@ -19,7 +19,7 @@ Remove variable-length slice patterns from the language.
 # Motivation
 
 1. Slice patterns do not fit in well with the rest of the supported pattern types. Slices are currently the only non-algebraic data type that can be destructured in a pattern.
-2. To the best of my knowledge and understanding, they're also impossible to reason about, in all cases but the trivial (such as match expressions with only Cons-like ([first, second, ..tail]) or Snoc-like patterns ([..init, last])), when analyzing match arms for exhaustiveness and reachability without incorporating an SMT solver.
+2. To the best of my knowledge and understanding, they're also impossible to reason about, in all cases but the trivial (such as match expressions with only Cons-like ([first, second, ..tail]) or Snoc-like patterns ([..init, last])), when analyzing match arms for exhaustiveness and reachability, without incorporating an SMT solver.
 
 # Detailed design
 
@@ -31,13 +31,14 @@ Slice patterns can be a convenient way of working with slices and vectors. In pa
 
 # Alternatives
 
-To address the second limitation without removing the syntax, slice patterns can be restricted to only allow Cons-like patterns, where the variable-length part of the pattern appears at the end of the pattern:
-
+To address the second limitation without removing the syntax, slice patterns can be restricted to only allow Cons-like an Snoc-like patterns, where the variable-length part of the pattern appears at the very end or the very beginning of the pattern:
 ```rust
-[first, second, ..tail] => ()
+match x { [first, second, ..tail] => () }
+match x { [..init, first, second] => () }
 ```
+In addition, the two could not be intermixed together in a single column of a match expression.
 
-The impact of not removing the feature will be that slice patterns will have to, in some scenarios, be excluded from the exhaustiveness analysis, which will result in match expressions that can fail at runtime, introducing a new class of runtime errors.
+The impact of leaving the feature intact will be that slice patterns will have to, in some scenarios, be excluded from the exhaustiveness analysis, which will result in match expressions that can fail at runtime, introducing a new class of runtime errors.
 
 # Unresolved questions
 
