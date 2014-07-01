@@ -36,7 +36,7 @@ fn parse['a, T: Encodable[Encoder['a], IoError]](value: T) {
 
 This is a very easy change to make.
 
-## Downsides
+# Downsides
 
 * The syntax is used quite a bit. Automation could potentially do some, if not most of the changes (The tricky part is the ambiguities in the current syntax). However, of the changes we've had in the past, I think this syntax change is a whole lot easier to work with than semantic changes, or more complex syntax changes.
 
