@@ -10,7 +10,7 @@ Switching (back) the current type parameter syntax from `<>` to `[]`.
 
 Recently there has been a lot of talks on simplifying the syntax. Starting from removing the sigils `@` and `~` and making lifetimes less syntax heavy (through various proposals). I think changing the current generic syntax to `[]` will make it that much better and clearer (I think `[]` is much easier to read).
 
-1. `[]` is easier to type than `<>`.
+1. `[]` is easier to type than `<>` on *most* keyboards.
 
 2. `[]` delimeters are always matching.
 
