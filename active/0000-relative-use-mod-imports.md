@@ -40,7 +40,7 @@ from foo.rs, the following statements
 ```use mod baz::qux;```
 ```use mod super::qaz;```
 
-would add these files to the project, and make ```bar::,qux::,qaz::``` available as qualifiers to reference symbols of those files within foo.rs . Further ```use``` could shortcut more individual symbols, and longer paths could be written to access subtrees of these modules.
+would add these files to the project, and make ```bar::,qux::,qaz::``` available as qualifiers to reference symbols of those files within foo.rs . Further ```use``` statements could shortcut more individual symbols, and longer paths could be written to access subtrees of these modules.
 
 Each individual file would in turn be able to bring in its own relative files.
 
@@ -54,7 +54,7 @@ Replicates functionality available with use, mod and #[path=...] directives, and
 
 heirachical 'use' paths have their own problems. When moving sources up or down the directory tree, refactoring would still be needed;
 
-one might need references to a long string of ```super::super::..``` statements to refer to symbols in the project root.
+If this was to replace the existing use/mod behaviour, one might need references to a long string of ```use mod super::super::..::main``` statements to refer to symbols relative to the project root. 
 
 The behaviour of the standard prelude would not seem as consistent with this scheme.
 
