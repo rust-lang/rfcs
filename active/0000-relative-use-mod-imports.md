@@ -56,6 +56,6 @@ heirachical 'use' paths have their own problems. When moving sources up or down 
 
 If this was to replace the existing use/mod behaviour, one might need references to a long string of ```use mod super::super::..::main``` statements to refer to symbols relative to the project root. 
 
-The behaviour of the standard prelude would not seem as consistent with this scheme.
+The behaviour of the standard library prelude would not seem as consistent with this scheme.
 
 
