@@ -4,7 +4,7 @@
 
 # Summary
 
-introduce ```use mod ...;``` as a fused relative module import and namespace 'use'
+introduce ```use mod ...;``` as a fused module import and namespace 'use', using relative filename/module paths
 
 # Motivation
 
@@ -23,7 +23,7 @@ The seperate absolute and relative paths, and mod / use statements are a trippin
 with a project setup this way, a tool can locate definitions starting at the 'current' file and spidering outward. While working on a project, one may have code in different component libraries open,needing changes; Under the current system, each of which would have different absolute paths.
 
 ## simpler imports
-eliminate the need for seperate ```mod.rs``` files within directories
+eliminate the need for seperate ```mod.rs``` files within directories. Each file would do the job of mod.rs specifying further files to bring in.
 
 # Detailed design
 
@@ -40,11 +40,11 @@ from foo.rs, the following statements
 ```use mod baz::qux;```
 ```use mod super::qaz;```
 
-would add these files to the project, and make bar,baz,quz available as qualifiers to reference symbols of those files within foo.rs . ```use``` statements would bring more individual symbols in, or longer paths could be written to access subtrees of these modules.
+would add these files to the project, and make ```bar::,qux::,qaz::``` available as qualifiers to reference symbols of those files within foo.rs . Further ```use``` could shortcut more individual symbols, and longer paths could be written to access subtrees of these modules.
 
 Each individual file would in turn be able to bring in its own relative files.
 
-eg if qux.rs contained the statement ```use mod super::super::qaz;``` , ```../qaz.rs``` would be brought into the project, although 'foo.rs' would still need an additional ```use super::qaz``` to reference it's symbols.
+eg if qux.rs contained the statement ```use mod super::super::qaz;``` , ```../qaz.rs``` would be brought into the project, although 'foo.rs' would still need an additional ```use super::qaz``` to reference symbols in ```qaz.rs```.
 
 item paths would still reflect the directory-structure: - when a series of siblings reference eachother, one would not be able to follow this graph to reach symbols.
 
