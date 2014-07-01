@@ -28,18 +28,9 @@ fn parse['a, T: Encodable[Encoder['a], IoError]](value: T) {
 }
 ```
 
-3. It would bring the ability to have much nicer syntax when dealing with HKTs (there are a few different proposals I have in mind in terms of syntax, but it's mostly inferred.).
+3. There's precendence for it. Scala's syntax for generics uses `[]`. At the time when Rust switched form `[]` to `<>` there was no precedence in a C-style language for `[]` generics. That's no longer true.
 
-```rust
-// Possible syntax for HKTs.
-pub trait Monad[M[T]] {
-    // ...
-}
-```
-
-4. There's precendence for it. Scala's syntax for generics uses `[]`. At the time when Rust switched form `[]` to `<>` there was no precedence in a C-style language for `[]` generics. That's no longer true.
-
-5. `[]` delimeters are always matching which then one can finally use motions like `%` in Vim (and alternatives in other editors.).
+4. `[]` delimeters are always matching which then one can finally use motions like `%` in Vim (and alternatives in other editors.).
 
 # Detailed design
 
