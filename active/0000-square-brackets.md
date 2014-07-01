@@ -31,7 +31,7 @@ pub trait Monad[M[T]] {
 }
 ```
 
-4. There's precendence for it. Scala's syntax for generics is awesome. At the time when Rust switched form `[]` to `<>` there was no precedence in a C-style language for `[]` generics. That's no longer true.
+4. There's precendence for it. Scala's syntax for generics uses `[]`. At the time when Rust switched form `[]` to `<>` there was no precedence in a C-style language for `[]` generics. That's no longer true.
 
 6. Because it's consistent, one can finally use motions like `%` in Vim (and alternatives in other editors.).
 
