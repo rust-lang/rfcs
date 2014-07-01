@@ -8,7 +8,7 @@ Switching (back) the current type parameter syntax from `<>` to `[]`.
 
 # Motivation
 
-Recently there has been a lot of talks on simplifying the syntax. Starting from removing the sigils `@` and `~` and making lifetimes less syntax heavy (through various proposals). I think changing the current generic syntax to `[]` will make it that much better and clearer (`[]` is much easier to read).
+Recently there has been a lot of talks on simplifying the syntax. Starting from removing the sigils `@` and `~` and making lifetimes less syntax heavy (through various proposals). I think changing the current generic syntax to `[]` will make it that much better and clearer (I think `[]` is much easier to read).
 
 1. We would remove the current ambiguities surround the current syntax `<>`. That means, we could be able to have:
 
@@ -43,9 +43,7 @@ pub trait Monad[M[T]] {
 }
 ```
 
-4. There's precendence for it. Scala's syntax for generics is awesome. It imposes very little effort when reading and understanding.
-
-5. Somewhat related to the first point in that it would bring a consistent syntax for generic everywhere. No more `foo::<>()` that tends to confuse people (not those already aware of the syntax, of course).
+4. There's precendence for it. Scala's syntax for generics is awesome. It imposes very little effort (I think) when reading and understanding.
 
 6. Because it's consistent and has no ambiguities, one can finally use motions like `%` in Vim (and alternatives in other editors.).
 
@@ -56,6 +54,8 @@ This is a very easy change to make.
 ## Downsides
 
 * The syntax is used quite a bit. Automation could potentially do some, if not most of the changes (The tricky part is the ambiguities in the current syntax). However, of the changes we've had in the past, I think this syntax change is a whole lot easier to work with than semantic changes, or more complex syntax changes.
+
+* One that I forgot about is the issue with the indexing syntax.
 
 # Alternatives
 
