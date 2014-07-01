@@ -55,10 +55,12 @@ This is a very easy change to make.
 
 ## Downsides
 
-* The syntax is used quite a bit. Automation could potentially do some, if not most of the changes (The tricky part is the ambiguities in the current syntax)
+* The syntax is used quite a bit. Automation could potentially do some, if not most of the changes (The tricky part is the ambiguities in the current syntax). However, of the changes we've had in the past, I think this syntax change is a whole lot easier to work with than semantic changes, or more complex syntax changes.
 
 # Alternatives
 
 * Keep it like it currently is and end up with the current syntax forever.
 
 # Unresolved questions
+
+* Why was did Rust originally have `[]` but decided to switch to `<>`? I heard it was related to try and be consistent with C-class languages (C++, Java, etc...), is this correct?
