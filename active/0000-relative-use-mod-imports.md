@@ -9,9 +9,10 @@ introduce ```use mod ...;``` as a fused relative module import and namespace 'us
 # Motivation
 
 ## versatility for compile units
-consider moving between the extremes of one compilation unit per file, and an entire project as a single compilation unit - with the existing use/mod behaviour, you would have to refactor how modules are brought in and how components are referenced when moving between these extremes.
 
-Relative paths would allow greater flexibility when wanting to treat project subtrees as seperate libraries.
+Consider moving between the extremes of one compilation unit per file, and an entire project as a single compilation unit - with the existing use/mod behaviour, you would have to refactor how modules are brought in and how components are referenced when moving between these extremes.
+
+Relative paths would allow greater flexibility when wanting to treat project subtrees as seperate libraries, or vica versa.
 
 A build system would be at liberty to cache any appropriate subtree equivalently to a library crate.
 
@@ -34,18 +35,16 @@ bar.rs
 baz/qux.rs
 ../qaz.rs
 
-from foo.rs,
-```use mod bar```
-```use mod baz::qux```
-```use mod super::qaz```
+from foo.rs, the following statements
+```use mod bar;```
+```use mod baz::qux;```
+```use mod super::qaz;```
 
-would add these files to the project, and make bar,baz,quz available as qualifiers to reference symbols in these files. ```use``` statements would bring more individual symbols in, or longer paths could be written to access subtrees of these modules.
+would add these files to the project, and make bar,baz,quz available as qualifiers to reference symbols of those files within foo.rs . ```use``` statements would bring more individual symbols in, or longer paths could be written to access subtrees of these modules.
 
-Each file referenced would in turn be able to bring more files in.
+Each individual file would in turn be able to bring in its own relative files.
 
-from qux.rs,
-```use mod super::super::qaz``` 
-would make ```qaz``` available.
+eg if qux.rs contained the statement ```use mod super::super::qaz;``` , ```../qaz.rs``` would be brought into the project, although 'foo.rs' would still need an additional ```use super::qaz``` to reference it's symbols.
 
 item paths would still reflect the directory-structure: - when a series of siblings reference eachother, one would not be able to follow this graph to reach symbols.
 
