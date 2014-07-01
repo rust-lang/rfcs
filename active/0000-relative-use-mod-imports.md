@@ -12,7 +12,7 @@ introduce ```use mod ...;``` as a fused module import and namespace 'use', using
 
 Consider moving between the extremes of one compilation unit per file, and an entire project as a single compilation unit - with the existing use/mod behaviour, you would have to refactor how modules are brought in and how components are referenced when moving between these extremes.
 
-Relative paths would allow greater flexibility when wanting to treat project subtrees as seperate libraries, or vica versa.
+Relative paths would allow greater flexibility when wanting to treat project subtrees as seperate libraries, or vica versa. eg. for building examples demonstrating components of an SDK, or a single source tree building a suite of tools.
 
 A build system would be at liberty to cache any appropriate subtree equivalently to a library crate.
 
