@@ -4,16 +4,16 @@
 
 # Summary
 
-introduce ```use mod ...``` as a fused relative module import and namespace 'use'
+introduce ```use mod ...;``` as a fused relative module import and namespace 'use'
 
 # Motivation
 
 ## versatility for compile units
-consider moving between the extremes of one compilation unit per file, and an entire project as one compilation unit - with the existing use/mod behaviour, you must refactor how modules are brought in and how components are referenced when moving between these extremes.
+consider moving between the extremes of one compilation unit per file, and an entire project as a single compilation unit - with the existing use/mod behaviour, you would have to refactor how modules are brought in and how components are referenced when moving between these extremes.
 
 Relative paths would allow greater flexibility when wanting to treat project subtrees as seperate libraries.
 
-A build system would be at liberty to cache any appropriate subtree equivalently to a crate under the current system.
+A build system would be at liberty to cache any appropriate subtree equivalently to a library crate.
 
 ## learning curve
 The seperate absolute and relative paths, and mod / use statements are a tripping point for new users
@@ -50,6 +50,8 @@ would make ```qaz``` available.
 item paths would still reflect the directory-structure: - when a series of siblings reference eachother, one would not be able to follow this graph to reach symbols.
 
 # Drawbacks
+
+Replicates functionality available with use, mod and #[path=...] directives, and is a slightly different mentality to the existing system.
 
 heirachical 'use' paths have their own problems. When moving sources up or down the directory tree, refactoring would still be needed;
 
