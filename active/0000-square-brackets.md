@@ -8,13 +8,14 @@ Switching (back) the current type parameter syntax from `<>` to `[]`.
 
 # Motivation
 
-Recently there has been a lot of talks on simplifying the syntax. Starting from removing the sigils `@` and `~` and making lifetimes less syntax heavy (through various proposals). I think changing the current generic syntax to `[]` will make it that much better and clearer (I think `[]` is much easier to read).
+Recently there has been a lot of talks on simplifying the syntax. Starting from removing the sigils `@` and `~` and making lifetimes less syntax heavy (through various proposals). I think changing the current generic syntax from `<>` to `[]` will make it that much better and clearer (I think `[]` is much easier to read).
 
 1. `[]` is easier to type than `<>` on *most* keyboards.
 
-2. IMO `[]` composes **much** better than the more cryptic `<>` form; `[]` separates the different pieces more so than `<>`. `<>` elongates everything and it mashes it's contents. This is a common readability issue when working with any nested types (such as encoders and decoders).
+2. IMO `[]` composes **much** better than the more cryptic `<>` form. The `[]` syntax separates the different pieces more so than `<>`. The `<>` syntax elongates everything and it mashes it's contents. This is a common readability issue when working with any nested types (such as encoders and decoders).
 
 ```rust
+// Current syntax
 fn parse<'a, T: Encodable<Encoder<'a>, IoError>>(value: T) {
     // ...
 }
@@ -23,18 +24,35 @@ fn parse<'a, T: Encodable<Encoder<'a>, IoError>>(value: T) {
 vs
 
 ```rust
+// New syntax
 fn parse['a, T: Encodable[Encoder['a], IoError]](value: T) {
     // ...
 }
 ```
 
-3. There's precendence for it. Scala's syntax for generics uses `[]`. At the time when Rust switched form `[]` to `<>` there was no precedence in a C-style language for `[]` generics. That's no longer true.
+3. At the time when Rust switched from `[]` to `<>`, there was no precedence in a C-style language for `[]` generics; this is no longer true: Scala is an example of a language that has become fairly popular recently and which uses `[]` for its generics syntax.
 
-4. `[]` delimeters are always matching which then one can finally use motions like `%` in Vim (and alternatives in other editors.).
+4. `[]` delimeters are always matching, where one can finally use motions like `%` in Vim (and alternatives in other editors.).
 
 # Detailed design
 
-This is a very easy change to make.
+Type parameters would be encapsulated with `[]` instead of `<>`.
+
+```rust
+struct Vec[T] {
+    // ...
+}
+
+fn compile['a, T](input: &'a str, arg: T) -> CompiledArg[T] {
+    // ...
+}
+```
+
+Ambiguities with vector indices are avoided the same way the current syntax works.
+
+```rust
+foo::[int]();
+```
 
 # Downsides
 
