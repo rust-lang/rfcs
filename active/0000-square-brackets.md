@@ -12,9 +12,15 @@ Recently there has been a lot of talks on simplifying the syntax. Starting from 
 
 1. `[]` is easier to type than `<>` on *most* keyboards.
 
-2. `[]` delimeters are always matching.
+2. IMO `[]` composes **much** better than the more cryptic `<>` form; `[]` separates the different pieces more so than `<>`. `<>` elongates everything and it mashes it's contents. This is a common readability issue when working with any nested types (such as encoders and decoders).
 
-2. IMO `[]` composes (nesting) **much** better than the more cryptic `<>` form. This is a common readability issue when working with any nested types (such as encoders and decoders).
+```rust
+fn parse<'a, T: Encodable<Encoder<'a>, IoError>>(value: T) {
+    // ...
+}
+```
+
+vs
 
 ```rust
 fn parse['a, T: Encodable[Encoder['a], IoError]](value: T) {
@@ -33,7 +39,7 @@ pub trait Monad[M[T]] {
 
 4. There's precendence for it. Scala's syntax for generics uses `[]`. At the time when Rust switched form `[]` to `<>` there was no precedence in a C-style language for `[]` generics. That's no longer true.
 
-6. Because it's consistent, one can finally use motions like `%` in Vim (and alternatives in other editors.).
+5. `[]` delimeters are always matching which then one can finally use motions like `%` in Vim (and alternatives in other editors.).
 
 # Detailed design
 
