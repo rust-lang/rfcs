@@ -4,7 +4,7 @@
 
 # Summary
 
-introduce ```use mod ...;``` as a simultaneous module import and namespace 'use', with relative module paths, which are also relative filename paths.
+introduce ```use mod ...;``` or ```import ...;``` as a simultaneous module import and namespace 'use', with relative module paths, which are also relative filename paths.
 
 Creates a graph of imports between files as in other module systems, but still mounts modules heriarchically.
 
@@ -20,11 +20,12 @@ This system exploits coherence between the module heirarchy and the filesystem d
 
 Consider moving between the extremes of one compilation unit per file, vs an entire project as a single compilation unit - with the existing use/mod behaviour, you would have to refactor how modules are brought in and how components are referenced.
 
+a faster debug build with less inlining might be possible with smaller translation units; or you want to switch to a single translation unit (like C++ unity builds) for the maximum optimization possible.
+
 Relative paths would allow greater flexibility when wanting to treat project subtrees as seperate libraries, or vica versa. eg. for building examples demonstrating components of an SDK, or a single source tree building a suite of tools.
 
 A build system would be at liberty to cache any appropriate subtree equivalently to a library crate with no pre-planning on the users' part.
 
-a faster debug build with less inlining might be possible with smaller translation units; or you want to switch to a single translation unit (like C++ unity builds) for the maximum optimization possible.
 
 ## shorter learning curve
 The seperate absolute and relative paths, and mod / use statements are a tripping point for new users. Under this scheme, you only see relative paths, and you only need one statement 'use mod '.
@@ -41,18 +42,18 @@ with a project setup this way, a tool can locate definitions starting at any 'cu
 
 ```use mod``` would look for a file relative to the current file.
 
-given some source files in 
+given some source files: 
 
-    ./foo.rs
-    ./bar.rs
-    ./baz/qux.rs
+    foo.rs
+    bar.rs
+    baz/qux.rs
     ../qaz.rs
 
 from ```foo.rs,``` the following statements
 
-    use mod bar;
-    use mod baz::qux;
-    use mod super::qaz;
+    use mod   bar;
+    use mod   baz::qux;
+    use mod   super::qaz;
 
 would add ```foo.rs,bar.rs,qux.rs,qaz.rs ``` to the project (eg, baz::qux is like saying 'load baz/qux.rs'), and make ```bar::,qux::,qaz::``` available as qualifiers to reference symbols of those files, within foo.rs . 
 
@@ -75,6 +76,8 @@ if  it wasn't for the existence of submodules, would it be possible to infer loa
 
 # Drawbacks
 
+The behaviour of the standard library prelude might not seem as consistent with this scheme.
+
 Replicates functionality available with use, mod and #[path=...] directives, and is a slightly different mentality to the existing system.
 
 Might look more complicated *when used alonside the existing system* (even though its' intended as a replacement, it would require a rolling refactor)
@@ -86,6 +89,7 @@ If this was to replace the existing use/mod behaviour, one might need references
 perhaps the tree flattening effect of explicit crate files which are them imported into a project root is desirable.
 (under this scheme, *every* source file that wants to refer to a particular crate conveiniently would have some ```use mod super::super..some_major_module_that_would_currently_be_a_crate```)
 
-The behaviour of the standard library prelude might not seem as consistent with this scheme.
+if modules down the graph did import files earlier in the tree, the tool would have to warn you about this and possibly dissalow when you compile a subtree as a library crate.
+
 
 
