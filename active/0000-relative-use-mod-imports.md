@@ -71,7 +71,7 @@ Replicates functionality available with use, mod and #[path=...] directives, and
 
 Might look more complicated *when used alonside the existing system* (even though its' intended as a replacement, it would require a rolling refactor)
 
-heirachical 'use' paths have their own problems. When moving sources up or down the directory tree, refactoring would still be needed;
+heirachical 'use' paths have their own problems. When moving sources up or down the directory tree, refactoring would still be needed; Rust supposedly already moved from relative to absolute.
 
 If this was to replace the existing use/mod behaviour, one might need references to a long string of ```use mod super::super::..::main``` statements to refer to symbols relative to the project root. 
 
