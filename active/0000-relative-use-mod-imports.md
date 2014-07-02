@@ -4,7 +4,9 @@
 
 # Summary
 
-introduce ```use mod ...;``` as a fused module import and namespace 'use', using relative module paths, which are also relative filename paths.
+introduce ```use mod ...;``` as a simultaneous module import and namespace 'use', with relative module paths, which are also relative filename paths.
+
+Creates a graph of imports between files as in other module systems, but still mounts modules heriarchically.
 
 ```use mod``` brings a module into scope along with the hint: "this module is an actual file"
 
@@ -16,41 +18,47 @@ This system exploits coherence between the module heirarchy and the filesystem d
 
 ## versatility for compile units
 
-Consider moving between the extremes of one compilation unit per file, and an entire project as a single compilation unit - with the existing use/mod behaviour, you would have to refactor how modules are brought in and how components are referenced when moving between these extremes.
+Consider moving between the extremes of one compilation unit per file, vs an entire project as a single compilation unit - with the existing use/mod behaviour, you would have to refactor how modules are brought in and how components are referenced.
 
 Relative paths would allow greater flexibility when wanting to treat project subtrees as seperate libraries, or vica versa. eg. for building examples demonstrating components of an SDK, or a single source tree building a suite of tools.
 
-A build system would be at liberty to cache any appropriate subtree equivalently to a library crate.
+A build system would be at liberty to cache any appropriate subtree equivalently to a library crate with no pre-planning on the users' part.
 
-This might be useful for compiling tests, eg it would be theoretically possible to start with any individual file and test it, in isolation from the whole-project build.
+a faster debug build with less inlining might be possible with smaller translation units; or you want to switch to a single translation unit (like C++ unity builds) for the maximum optimization possible.
 
 ## shorter learning curve
 The seperate absolute and relative paths, and mod / use statements are a tripping point for new users. Under this scheme, you only see relative paths, and you only need one statement 'use mod '.
 
-## tooling
-with a project setup this way, a tool can locate definitions starting at the 'current' file and spidering outward. While working on a project, one may have code in different component libraries open,needing changes; Under the current system, each of which would have different absolute paths. So a tool needs to have seen less of the whole project structure. 
+eliminates the need to create seperate ```mod.rs``` files within directories. Each file would do the job of mod.rs specifying further files to bring in.
 
-## simpler description of source-tree
-eliminate the need for seperate ```mod.rs``` files within directories. Each file would do the job of mod.rs specifying further files to bring in.
+## parallelize --test
+This might be useful for compiling tests, eg it would be theoretically possible to start at any individual file and test it, in isolation from the whole-project build. So building for test could be done across more cores.
+
+## tooling
+with a project setup this way, a tool can locate definitions starting at any 'current' file and spidering outward. While working on a project, one may have source from different component libraries open; Under the current system, each of which would have different addressing scheme, relative to its own crate root. Under this scheme, a tools needs to know less about the whole project to give consistent help to the user.
 
 # Detailed design
 
 ```use mod``` would look for a file relative to the current file.
 
 given some source files in 
-./foo.rs
-./bar.rs
-./baz/qux.rs
-../qaz.rs
+
+    ./foo.rs
+    ./bar.rs
+    ./baz/qux.rs
+    ../qaz.rs
 
 from ```foo.rs,``` the following statements
-```use mod bar;```
-```use mod baz::qux;```
-```use mod super::qaz;```
 
-would add those files to the project (eg, baz::qux is like saying 'load baz/qux.rs'), and make ```bar::,qux::,qaz::``` available as qualifiers to reference symbols of those files within foo.rs . 
+    use mod bar;
+    use mod baz::qux;
+    use mod super::qaz;
 
-Further ```use``` statements could give shortcuts to individual symbols, and longer paths could be written to access subtrees of these modules.
+would add ```foo.rs,bar.rs,qux.rs,qaz.rs ``` to the project (eg, baz::qux is like saying 'load baz/qux.rs'), and make ```bar::,qux::,qaz::``` available as qualifiers to reference symbols of those files, within foo.rs . 
+
+This would work regardless whether ```foo.rs``` was the crate root or further down the tree.
+
+Further ```use``` statements could give shortcuts to individual symbols within foo.rs, and longer paths could be written to access subtrees of these modules.
 
 Each individual file would in turn be able to bring in its own relative files - starting from the project root, the build system would spider outward.
 
@@ -73,7 +81,7 @@ Might look more complicated *when used alonside the existing system* (even thoug
 
 heirachical 'use' paths have their own problems. When moving sources up or down the directory tree, refactoring would still be needed; Rust supposedly already moved from relative to absolute.
 
-If this was to replace the existing use/mod behaviour, one might need references to a long string of ```use mod super::super::..::main``` statements to refer to symbols relative to the project root. 
+If this was to replace the existing use/mod behaviour, one might need references to a long string of ```use mod super::super::super::...::main``` statements to refer to symbols relative to the project root. 
 
 perhaps the tree flattening effect of explicit crate files which are them imported into a project root is desirable.
 (under this scheme, *every* source file that wants to refer to a particular crate conveiniently would have some ```use mod super::super..some_major_module_that_would_currently_be_a_crate```)
