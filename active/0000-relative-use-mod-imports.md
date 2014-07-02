@@ -6,9 +6,10 @@
 
 introduce ```use mod ...;``` as a fused module import and namespace 'use', using relative module paths, which are also relative filename paths.
 
+```use mod``` brings a module into scope along with the hint: "this module is an actual file"
+
 This system exploits coherence between the module heirarchy and the filesystem directory tree - but it *assumes* this coherence, instead of relying on the user to manually *create* it with 'mod.rs' files. So the information you give when 'bringing things into scope' should be enough to specify what to load.
 
-```use mod``` would bring something into scope along with the hint: "this module is an actual file,not a submodule, so it should be loaded."
 
 
 # Motivation
