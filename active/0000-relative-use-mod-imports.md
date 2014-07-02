@@ -4,17 +4,21 @@
 
 # Summary
 
-introduce ```use mod ...;``` or ```import ...;``` as a simultaneous module import and namespace 'use', with relative module paths, which are also relative filename paths.
+introduce ```use mod ...;``` or ```import ...;``` as a simultaneous module import and namespace 'use', with relative module paths, which have a 1:1 mapping to relative filename paths.
 
 Creates a graph of imports between files as in other module systems, but still mounts modules heriarchically.
 
 ```use mod``` brings a module into scope along with the hint: "this module is an actual file"
 
-This system exploits coherence between the module heirarchy and the filesystem directory tree - but it *assumes* this coherence, instead of relying on the user to manually *create* it with 'mod.rs' files. So the information you give when 'bringing things into scope' should be enough to specify what to load.
 
 
 
 # Motivation
+
+## avoids repeating information
+
+This idea exploits coherence between the module heirarchy and the filesystem directory tree - but it *assumes* this coherence, instead of relying on the user to manually *create* it with 'mod.rs' files. So the information you give when 'bringing things into scope' should be enough to specify what to load.
+
 
 ## versatility for compile units
 
