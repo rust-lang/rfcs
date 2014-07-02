@@ -6,8 +6,9 @@
 
 introduce ```use mod ...;``` as a fused module import and namespace 'use', using relative module paths, which are also relative filename paths.
 
-This system exploits the coherence between the module heirarchy and the filesystem directory tree - but it *assumes* this coherence, instead of relying on the user to manually create it with 'mod.rs' files. So the information of 'bringing things into scope' should be enough to specify what to load.
+This system exploits coherence between the module heirarchy and the filesystem directory tree - but it *assumes* this coherence, instead of relying on the user to manually *create* it with 'mod.rs' files. So the information you give when 'bringing things into scope' should be enough to specify what to load.
 
+```use mod``` would bring something into scope along with the hint: "this module is an actual file,not a submodule, so it should be loaded."
 
 
 # Motivation
@@ -59,6 +60,9 @@ Symbol paths would always reflect the directory-structure: - when a series of si
 
 ##submodules wthin files
 mod {...} within a file would still be available - this is where the module heirarchy can differ from the file layout, but its assumed every file would be referenced explicityly by a ```use mod``` path. (submodules would be reached with additional ```use```'s
+
+## use vs use mod
+if  it wasn't for the existence of submodules, would it be possible to infer load information entirely from relative use directives, and individual qualified symbols ? However this system relies on "use mod" as a hint, "this module is a file"
 
 # Drawbacks
 
