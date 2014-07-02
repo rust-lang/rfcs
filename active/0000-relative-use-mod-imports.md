@@ -20,6 +20,8 @@ Relative paths would allow greater flexibility when wanting to treat project sub
 
 A build system would be at liberty to cache any appropriate subtree equivalently to a library crate.
 
+This might be useful for compiling tests, eg it would be theoretically possible to start with any individual file and test it, in isolation from the whole-project build.
+
 ## shorter learning curve
 The seperate absolute and relative paths, and mod / use statements are a tripping point for new users. Under this scheme, you only see relative paths, and you only need one statement 'use mod '.
 
