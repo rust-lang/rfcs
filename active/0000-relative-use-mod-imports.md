@@ -5,7 +5,8 @@
 # Summary
 
 introduce ```use mod ...;``` as a fused module import and namespace 'use', using relative module paths, which are also relative filename paths.
-Exploit the coherence between the module heirarchy and the filesystem directory heirarchy - but *assume* this coherence, instead of manually creating it with 'mod.rs' files
+
+This system exploits the coherence between the module heirarchy and the filesystem directory tree - but it *assumes* this coherence, instead of relying on the user to manually create it with 'mod.rs' files. So the information of 'bringing things into scope' should be enough to specify what to load.
 
 
 
@@ -51,7 +52,11 @@ Each individual file would in turn be able to bring in its own relative files - 
 
 eg if qux.rs contained the statement ```use mod super::super::qaz;``` , ```../qaz.rs``` would be brought into the project, although 'foo.rs' would still need an additional ```use super::qaz``` to reference symbols in ```qaz.rs```.
 
-item paths would still reflect the directory-structure: - when a series of siblings reference eachother, one would not be able to follow this graph to reach symbols.
+## use mod between siblings
+Symbol paths would always reflect the directory-structure: - when a series of siblings reference eachother, one would not be able to follow this graph to reach symbols.  eg if there is a relationship  a.rs->b.rs->c.rs but they are all in the same directory, there is no path ```a::b::c```, just seperate ```a::  b:: c::```
+
+##submodules wthin files
+mod {...} within a file would still be available - this is where the module heirarchy can differ from the file layout, but its assumed every file would be referenced explicityly by a ```use mod``` path. (submodules would be reached with additional ```use```'s
 
 # Drawbacks
 
