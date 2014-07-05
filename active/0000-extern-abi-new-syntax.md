@@ -1,18 +1,22 @@
-- Start Date: (fill me in with today's date, YYYY-MM-DD)
+- Start Date: 2014-07-05
 - RFC PR #: (leave this empty)
 - Rust Issue #: (leave this empty)
 
 
 # Summary
 
-Change the current `extern "ABI"` syntax to either `extern<ABI>` or just `extern ABI`.
+Change the current `extern "ABI"` syntax to either `extern<ABI>` or just `extern 
+ABI`.
 
 
 # Motivation
 
-The available ABIs are conceptually much more like members of an enumeration than like arbitrary strings.
+The available ABIs are conceptually much more like members of an enumeration 
+than like arbitrary strings.
 
-In the future, we may gain support for values (as opposed to types) as generic parameters. When that happens, we could enumerate the available ABIs in an `enum` for real:
+In the future, we may gain support for values (as opposed to types) as generic 
+parameters. When that happens, we could enumerate the available ABIs in an 
+`enum` for real:
 
     enum ExternAbi {
         Rust,
@@ -21,13 +25,15 @@ In the future, we may gain support for values (as opposed to types) as generic p
         ...
     }
 
-In which case it becomes possible to write, for instance, a higher-order function which is generic over a function pointer of any ABI:
+In which case it becomes possible to write, for instance, a higher-order 
+function which is generic over a function pointer of any ABI:
 
     fn calculate_something<static SOME_ABI: ExternAbi>(some_function: extern<SOME_ABI> fn(int, int) -> int) -> int {
         /* ... use `some_function` ... */
     }
 
-Alternately, the same thing can be encoded today, only slightly less elegantly, using plain types:
+Alternately, the same thing can be encoded today, only slightly less elegantly, 
+using plain types:
 
     // wired into compiler, can't be implemented by user types
     trait ExternAbi { };
@@ -84,4 +90,5 @@ Is the ability to abstract over ABIs *useful*?
 
 Should it be `extern<ABI>` or `extern ABI`?
 
-(The former is more suggestive, but there is precedent for omitting the `<>` for built-in things, such as `&` references.)
+(The former is more suggestive, but there is precedent for omitting the `<>` for 
+built-in things, such as `&` references.)
