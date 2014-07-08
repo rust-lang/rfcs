@@ -4,7 +4,9 @@
 
 # Summary
 
-introduce ```use mod ...;``` or ```import ...;``` as a simultaneous module import and namespace 'use', with relative module paths, which have a 1:1 mapping to relative filename paths.
+introduce ```use mod ...;``` (or ```import ...;``` ) as a simultaneous import and 'use', with relative module paths, which have a 1:1 mapping to relative filename paths.
+
+``` use mod foo::bar::baz``` brings in module foo/bar/baz.rs & uses' bar. 
 
 Creates a graph of imports between files as in other module systems, but still mounts modules heriarchically.
 
@@ -59,11 +61,11 @@ from ```foo.rs,``` the following statements
     use mod   baz::qux;
     use mod   super::qaz;
 
-would add ```foo.rs,bar.rs,qux.rs,qaz.rs ``` to the project (eg, baz::qux is like saying 'load baz/qux.rs'), and make ```bar::,qux::,qaz::``` available as qualifiers to reference symbols of those files, within foo.rs . 
+would add ```foo.rs, bar.rs, baz/qux.rs, ../qaz.rs ``` to the project (eg, baz::qux is like saying 'load baz/qux.rs'), and make ```bar::,qux::,qaz::``` available as qualifiers within foo.rs . 
 
 This would work regardless whether ```foo.rs``` was the crate root or further down the tree.
 
-Further ```use``` statements could give shortcuts to individual symbols within foo.rs, and longer paths could be written to access subtrees of these modules.
+Further ```use``` statements could give shortcuts to individual symbols, and longer paths could be written to access subtrees of these modules.
 
 Each individual file would in turn be able to bring in its own relative files - starting from the project root, the build system would spider outward.
 
@@ -73,7 +75,7 @@ eg if qux.rs contained the statement ```use mod super::super::qaz;``` , ```../qa
 Symbol paths would always reflect the directory-structure: - when a series of siblings reference eachother, one would not be able to follow this graph to reach symbols.  eg if there is a relationship  a.rs->b.rs->c.rs but they are all in the same directory, there is no path ```a::b::c```, just seperate ```a::  b:: c::```
 
 ##submodules wthin files
-mod {...} within a file would still be available - this is where the module heirarchy can differ from the file layout, but its assumed every file would be referenced explicityly by a ```use mod``` path. (submodules would be reached with additional ```use```'s
+mod {...} within a file would still be available - this is where the module heirarchy can differ from the file layout, but its assumed every file must be referenced explicitely by a ```use mod``` statement. (submodules would be reached with additional ```use```'s
 
 ## use vs use mod
 if  it wasn't for the existence of submodules, would it be possible to infer load information entirely from relative use directives, and individual qualified symbols ? However this system relies on "use mod" as a hint, "this module is a file"
