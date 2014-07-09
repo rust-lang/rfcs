@@ -139,6 +139,8 @@ The names of the built-in types are:
 
 # Drawbacks
 
+## Non-ASCII identifiers
+
 The most common objection I've encountered to this idea is that we may want to
 allow non-ascii identifiers in the future, and that not all alphabets have a
 distinction between uppercase and lowercase characters.
@@ -167,6 +169,29 @@ they should be sufficient to counter it twice.
     other words, writing identifiers in certain foreign alphabets would be
     legal, but *technically inferior*. I don't think this would be a positive
     situation.
+
+
+## FFI
+
+Foreign libraries may not follow our capitalization conventions. On a technical
+level, `extern` functions already have a [`link_name`][link_name] attribute 
+which allows a different name to be specified for linking than which is used 
+inside Rust. On an ergonomic level, a simple convention based on two rules could
+be used to make interfacing with such libraries predictable:
+
+ 1. If it starts with an uppercase character in the original API, but in Rust it
+    would only be legal with a lowercase character, then in Rust it begins with
+    the lowercase version of that character.
+ 
+ 2. If it starts with a lowercase character in the original API, but in Rust it 
+    would only be legal with an uppercase character, then in Rust it begins with 
+    the uppercase version of that character.
+
+Automatic bindings generators can apply these rules automatically, and consumers
+of the bindings can apply the rules in their heads when recalling the names of 
+things.
+
+[link_name]: http://doc.rust-lang.org/rust.html#ffi-attributes
 
 
 # Alternatives
