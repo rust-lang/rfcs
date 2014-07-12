@@ -8,7 +8,7 @@ introduce ```use mod ...;``` (or ```import ...;``` ) as a simultaneous import an
 
 ``` use mod foo::bar::baz``` brings in module foo/bar/baz.rs & uses' bar. 
 
-Creates a graph of imports between files as in other module systems, but still mounts modules heriarchically.
+Creates a graph of imports between files as in other module systems, but still mounts modules heriarchically, mirroring the directory tree.
 
 ```use mod``` brings a module into scope along with the hint: "this module is an actual file"
 
