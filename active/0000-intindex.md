@@ -13,35 +13,29 @@ meaning of "by default.")
 
 # Motivation
 
-So Rust libraries won't have new overflow bugs when run on embedded devices with
-16-bit addressing, ditto for code written for 64-bit addressing then run in
-32-bit environments. Rust is a very compelling replacement for C/C++ in embedded
-devices, "Internet of Things" devices, and safety-critical robotics actuators.
-
-So programmers will know when to use which integer types.
+  - To avoid new integer overflow bugs when moving Rust code to smaller address spaces.
+  - So programmers will know when to use which integer types.
 
 
 # Background
 
-Rust defines types `int` and `uint` as integers that are wide enough to hold a
-pointer. The language uses them for array indexes since `uint` is large enough
-to index into any memory array and `int` is useful for a difference between two
-pointers or array indexes.
+The Rust language does array indexing using the smallest integer types that span
+the address space. For this, Rust defines integer types `int` and `uint` to be
+large enough to hold a pointer in the target environment. Beware that it does
+not promise that these are the fastest, "native," register, or C sized integers
+despite the names.
 
 (A rationale given for using unsigned array indexes is to allow array bounds
 checking in one comparison rather than two. However, a compiler can generate one
 unsigned comparison to bounds-check a signed integer index as long as the lower
 bound is 0.)
 
-`int`/`uint` can also good choices for indexing and sizing in-memory containers.
+`int`/`uint` may also be good choices for indexing and sizing in-memory
+containers. But using these types for computations that are not limited by
+memory leads to code that's not portable to smaller-address targets than it was
+developed and tested on.
 
-The point of an integer type that depends on the target address space is to give
-the same code compact array indexes in small-address targets while supporting
-huge arrays in large-address targets. But using these types for computations
-that are not limited by addressing leads to code that's not portable to
-smaller-address targets than it was developed and tested on.
-
-From decades of C/C++ experience, programmers have learned to pick `int`/`uint`
+From C/C++/Java experience, programmers have learned to pick `int`/`uint`
 as the "default" integer types where not particularly constrained by
 requirements, e.g.:
 
@@ -49,10 +43,7 @@ requirements, e.g.:
   * to avoid cluttering APIs with ungermane integer sizes
   * to hold tags and other values supplied by callers
 
-(Java programmers are also accustomed to `int` as the default integer type, but
-a Java `int` is always 32-bits.)
-
-Programmers should figure out a value's needed integer range then maybe widen to
+Programmers should figure out a value's needed range then maybe widen to
 a "default" type for easy interconnections. For a value in the range 1 .. 100,
 you can pick from 10 types. Choosing an 8-bit or 16-bit integer is an
 optimization. Premature? Which integer type should you pick when you're writing
@@ -75,7 +66,9 @@ These misconceptions lead to misuses and thus to code with overflow bugs
 considered and tested.
 
 The worst failure mode is in libraries written with desktop CPUs in mind and
-then used in small embedded devices.
+then used in small embedded devices (such as Atmel AVR, PIC controllers, and TI
+MSP430). Rust is a very compelling replacement for C/C++ in embedded devices
+and safety-critical robotics actuators.
 
 
 # Detailed design
@@ -93,7 +86,7 @@ Alternate name choices:
 
 To ease the transition, first deprecate the old types.
 
-**Alternative:** specify that these two integer types are _at least 32-bits
+**Alternative:** Specify that these two integer types are _at least 32-bits
 wide_ on every target architecture. That avoids the worst failure mode although
 it doesn't help when code tested in a 64-bit address space later runs in a
 32-bit address space.
@@ -133,11 +126,6 @@ This assumption does not hold for PalmOS even on 32-bit ARM, where `int` is
 
 See the discussions from many contributors to [Issue #14758](https://github.com/rust-lang/rust/issues/14758) and [Issue #9940](https://github.com/rust-lang/rust/issues/9940).
 
-Also see [Issue #11831](https://github.com/rust-lang/rust/issues/11831) about
-keeping pointer sized integers as the default. If people are happy with that
-choice, then this RFC is about making `int`/`uint` at least 32-bits wide and
-setting style guidelines for integer types.
-
 [Daniel Micay notes](https://github.com/rust-lang/rust/issues/9940#issuecomment-32104831):
 
 > If you're using `int` as a "default", then you're not using it correctly. It
@@ -153,13 +141,21 @@ there's some buy-in for fixing it.
 a survey of uses of `int` and `uint` showing how many of them are
 appropriate / inappropriate / borderline.
 
-More recently, [type inference no longer falls back to `int`/`uint`](https://github.com/rust-lang/rust/issues/6023) and there's an RFC for
+More recently, [type inference was changed to not fall back to `int`/`uint`](https://github.com/rust-lang/rust/issues/6023) and there's an RFC for
 [Scoped attributes for checked arithmetic](https://github.com/rust-lang/rfcs/pull/146).
+
+[Issue #11831](https://github.com/rust-lang/rust/issues/11831) is also about
+`int` and `uint` pointer-sized integers. Was the conclusion the type inference
+change? A commitment to the names `int` and `uint`? In the latter case, this
+RFC amounts to making `int`/`uint` at least 32-bits wide and setting style
+guidelines for integer types.
 
 
 # Not in scope of this RFC
 
-Changes in overflow handling.
+  * Changes in overflow handling.
+  * Giving `Vec` a settable index size as `Vec<T, Index=uint>`.
+  * Adding more target-dependent integer types such as C's `int_fast32_t` -- the fastest signed integer type at least 32 bits wide. (Do this in a library?)
 
 
 # Unresolved questions
