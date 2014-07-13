@@ -91,18 +91,31 @@ wide_ on every target architecture. That avoids the worst failure mode although
 it doesn't help when code tested in a 64-bit address space later runs in a
 32-bit address space.
 
-**Either way:** The style guide should document when to use and not use these
-types and elect a particular integer type for programmers to pick "by default".
-This RFC recommends `i32`.
 
-The style guide should also recommend using signed integers except when unsigned values are required such as for modulo 2^N arithmetic. The
-[Google Style Guide](http://google-styleguide.googlecode.com/svn/trunk/cppguide.xml#Integer_Types) explains:
+## Integer type style guidelines
+
+Recommend using the `index` and `uindex` (or `int` and `uint`) types only for
+array indexing and similar purposes.
+
+Elect a particular integer type for programmers to pick "by default". This RFC
+recommends `i32`.
+
+On using unsigned types for numbers that should never be negative:
+
+  * If Rust provides integer overflow checking (see [RFC PR #146: Scoped attributes for checked arithmetic](https://github.com/rust-lang/rfcs/pull/146)) then recommend unsigned integer types.
+  * If not, recommend signed integers with manual assertions except in special cases such as modulo 2^N arithmetic and when representing a bit pattern rather than a number.
+
+The [Google C++ Style Guide](http://google-styleguide.googlecode.com/svn/trunk/cppguide.xml?showone=Integer_Types#Integer_Types) says:
 
 > In particular, do not use unsigned types to say a number will never be negative. Instead, use assertions for this. ...
 >
 > Some people, including some textbook authors, recommend using unsigned types to represent numbers that are never negative. This is intended as a form of self-documentation. However, in C, the advantages of such documentation are outweighed by the real bugs it can introduce.
 
-Furthermore:
+That's because C lacks overflow detection. To quote [Gábor Lehel](https://github.com/rust-lang/rfcs/pull/161/files#r14857522):
+
+> This suggestion [signed integers with assertions] makes a lot of sense in a context where overflow/underflow silently wraps around. However, if something like [RFC PR #146](https://github.com/rust-lang/rfcs/pull/146) were to be implemented, then it would once again make sense to use types which more accurately express the range of legal values (i.e., which are self-documenting), because compiler-added checks can be enabled to catch errors where the value would go out of range. Accurate types with compiler-added assertions beats inaccurate types with programmer-added assertions.
+
+FYI from the [Google C++ Style Guide](http://google-styleguide.googlecode.com/svn/trunk/cppguide.xml?showone=Integer_Types#Integer_Types):
 
 > You should assume that an `int` is at least 32 bits, but don't assume that it has more than 32 bits.
 
