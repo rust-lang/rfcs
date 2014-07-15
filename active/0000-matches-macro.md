@@ -49,7 +49,6 @@ Add the following to `src/libstd/macros.rs`
 /// if input.len() >= 2
 ///         && matches!(input.char_at(0), '+' | '-')
 ///         && matches!(input.char_at(1), '0'..'9') {
-///         && match input.char_at(1) { '0'..'9' => true, _ => false } {
 ///     // Parse signed number
 /// } else if /* ... */
 /// ```
