@@ -143,6 +143,9 @@ that this sugar should not be implemented for integers. It doesn't seem that
 terrible, however, as in principle it is analogous to code such as `1 / 2`
 which Rust happily accepts.
 
+One alternative is to implement this operator only for `uint` RHS, as integer
+powers are by far the most common in mathematical formulas.
+
 # Unresolved questions
 
 * Which token to actually use.
