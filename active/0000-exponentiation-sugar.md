@@ -42,10 +42,11 @@ There are at least three reasonable tokens to use for exponentiation:
     double-dereference). Overall, though, this token choice would not be
     backwards compatible.
 
-* `^^` - This is rare, but not unprecedented. It is used in Haskell and D. The
-    D case is in particular relevant to Rust, as it has the same issue of
-    dereferencing introducing ambiguity. Notably, since unary `^` is not valid
-    in current Rust syntax, this token is fully backwards compatible.
+* `^^` - This is rare, but not unprecedented. It is used in Haskell (in
+    addition to `^` and `**`) and D. The D case is in particular relevant to
+    Rust, as it has the same issue of dereferencing introducing ambiguity.
+    Notably, since unary `^` is not valid in current Rust syntax, this token is
+    fully backwards compatible.
 
 ### Precedence
 
