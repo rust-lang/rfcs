@@ -61,8 +61,8 @@ let a = 1.0 * (2.0 ^^ (3.0 as f32));
 ### Associativity
 
 The associativity should be to the right, which is consistent with
-(mathematical notation)[http://en.wikipedia.org/wiki/Exponentiation#Identities_and_properties]
-and most other languages (see overview (here)[https://wiki.php.net/rfc/pow-operator#discussion]).
+[mathematical notation](http://en.wikipedia.org/wiki/Exponentiation#Identities_and_properties)
+and most other languages (see overview [here](https://wiki.php.net/rfc/pow-operator#discussion)).
 
 That is, this should not fail:
 
