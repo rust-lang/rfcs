@@ -58,6 +58,26 @@ let a = 1.0 * 2.0 ^^ 3.0 as f32;
 let a = 1.0 * (2.0 ^^ (3.0 as f32));
 ~~~
 
+### Associativity
+
+The associativity should be to the right, which is consistent with
+(mathematical notation)[http://en.wikipedia.org/wiki/Exponentiation#Identities_and_properties]
+and most other languages (see overview (here)[https://wiki.php.net/rfc/pow-operator#discussion]).
+
+That is, this should not fail:
+
+~~~rust
+assert_eq!(3u64 ^^ 3 ^^ 3, 7625597484987)
+~~~
+
+Regardless of convention, the right associativity seems more 'useful' because
+left associativity can be trivially reduced like so:
+
+~~~rust
+// Assume ^^ is left associative for this line
+assert_eq!(3 ^^ 3 ^^ 3, 3 ^^ (3 * 3))
+~~~
+
 ## Trait and lang item
 
 ### Declaration
