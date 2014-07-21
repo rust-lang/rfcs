@@ -68,19 +68,20 @@ impl AsSocketAddr for (IpAddr, u16) {
     }
 }
 
-impl<S: Str> AsSocketAddr for (S, u16) {
+// Better use `<S: Str>` instead of `&'a str`, but it will conflict with other implementations
+// in the current trait matching system
+
+impl<'a> AsSocketAddr for (&'a str, u16) {
     fn as_socket_addr(&self) -> IoResult<SocketAddr> {
-        let (ref host, ref port) = *self;
-        match get_host_addresses(host.as_slice()).map(|v| v.move_iter().next()) {
-            Ok(Some(addr)) => (addr, *port).as_socket_addr(),
+        let (host, port) = *self;
+        match get_host_addresses(host).map(|v| v.move_iter().next()) {
+            Ok(Some(addr)) => (addr, port).as_socket_addr(),
             Ok(None) => { /* whatever error indicating that no addresses are available */ }
             Err(e) => Err(e)
         }
     }
 }
 
-// better be `impl<S: Str> AsSocketAddr for S`, but it will conflict with other implementations
-// in current trait matching system
 impl<'a> AsSocketAddr for &'a str {
     // accepts strings like 'localhost:12345'
     fn as_socket_addr(&self) -> IoResult<SocketAddr> {
