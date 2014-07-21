@@ -30,9 +30,30 @@ A new trait is introduced to the standard library:
 
 ```rust
 pub trait AsSocketAddr {
-    fn as_socket_addr(&self) -> IoResult<SocketAddr>;
+    fn as_socket_addr(&self) -> IoResult<SocketAddr> {
+        match self.as_socket_addr_all().map(|v| v.move_iter().next()) {
+            Ok(Some(addr)) => addr,
+            Ok(None) => Err(/* some error on that no addresses are available */),
+            Err(e) => Err(e)
+        }
+    }
+
+    #[inline]
+    fn as_socket_addr_all(&self) -> IoResult<Vec<SocketAddr>> {
+        self.as_socket_addr().map(|a| vec![a])
+    }
 }
 ```
+
+This trait contains two methods which are defined in terms of each other. This is done to simplify
+implementations; for those types which can be represented with multiple `SocketAddr`esses,
+`as_socket_addr_all()` method should be implemented, and its counterpart will be automatically
+there; for those types which can only be represented by one `SocketAddr`ess, `as_socket_addr()`
+method should be implemented, and the trivial vector implementation will be readily available.
+
+The method returning a vector is required because some values correspond to potentially multiple IP
+addresses, for example, host names. All these addresses are sometimes needed in the underlying
+libraries to choose the most appropriate one.
 
 Then all functions/methods which need an address accept a generic parameter bounded by this trait:
 
@@ -72,13 +93,14 @@ impl AsSocketAddr for (IpAddr, u16) {
 // in the current trait matching system
 
 impl<'a> AsSocketAddr for (&'a str, u16) {
-    fn as_socket_addr(&self) -> IoResult<SocketAddr> {
+    fn as_socket_addr_all(&self) -> IoResult<Vec<SocketAddr>> {
         let (host, port) = *self;
-        match get_host_addresses(host).map(|v| v.move_iter().next()) {
-            Ok(Some(addr)) => (addr, port).as_socket_addr(),
-            Ok(None) => { /* whatever error indicating that no addresses are available */ }
-            Err(e) => Err(e)
-        }
+        get_host_addresses(host).map(|v|
+            v.move_iter().map(|a| SocketAddr { 
+                ip: a, 
+                port: port
+            }).collect()
+        )
     }
 }
 
@@ -104,6 +126,9 @@ let mut stream = TcpStream::connect_timeout(addr, 10_000).unwrap();
 
 This provides great flexibility, does not hamper performance at all (due to static dispatch) and
 still gives nice and clean interface.
+
+Underlying socket API may use `as_socket_addr_all()` method to obtain all available addresses and
+make a decision on which to use, if it is required.
 
 Note that this pattern is already used in `std`, namely, in `std::path` module. There is a trait,
 [`BytesContainer`](http://doc.rust-lang.org/std/path/trait.BytesContainer.html), which represents
@@ -174,3 +199,6 @@ the call site, which is undesirable.
 
 Exact name of the trait and its method is an open question.
 
+Is it OK that the trait contains mutually recursive default methods? This is in spirit of Haskell
+`Eq` trait with its `(==)` and `(/=)` methods, but it is debatable whether such approach is
+appropriate in Rust.
