@@ -8,13 +8,45 @@ This adds the ability to have macros in type signatures.
 
 # Motivation
 
-* Using a common set of type parameters. `A<int, CommonParameters!()>` and `B<CommonParameters!()>`
+## Use procedural macros to generate values at the type level.
+For natural number we could define something like this:
+```rust
+struct Zero;
+struct Succ<T>;
+```
+Now we can make numbers like 0 (`Zero`),  1 (`Succ<Zero>`), 2 (`Succ<Succ<Zero>>`), etc. on the type level.
+However these are inconvenient to write out, so we can make an procedural macro which generates these for us.
+`PackInt!(3)` could expand to `Succ<Succ<Succ<Zero>>>`. To turn this back into a value, we can use a trait.
+```rust
+trait IntVal {
+    fn get(&self) -> uint;
+}
 
-* Use procedural macros to generate values at the type level. For example `PackStr!("hello")` and `PackInt!(43)` with corresponding `UnpackStr!(Type)` and `UnpackInt!(Type)`
+impl IntVal for Zero {
+    fn get(&self) -> uint {
+        0
+    }
+}
 
-* Emulate field offsets passed as type parameters. Using `declare_field!(Type, field_name)` as an item and later `OffsetOf!(Type, field_name)` to get a type representing the field.
+impl<T: IntVal> IntVal for Succ<T> {
+    fn get(&self) -> uint {
+        unsafe {
+            1 + unpack_int<T>()
+        }
+    }
+}
 
-* Completeness. It's currently suprising that macros won't work in type signatures.
+fn unpack_int<T: IntVal>() -> uint {
+    unsafe {
+        mem::uninitialized<T>().get()
+    }
+}
+```
+
+An more advanced example would be `PackStr!("hello")` which could use cons cells to encode a string literal as a type.
+
+## Completeness
+It's currently surprising that macros won't work in type signatures.
 
 # Detailed design
 
