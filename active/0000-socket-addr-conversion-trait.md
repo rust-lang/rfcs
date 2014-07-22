@@ -29,9 +29,9 @@ has all necessary facilities to allow so.
 A new trait is introduced to the standard library:
 
 ```rust
-pub trait AsSocketAddr {
-    fn as_socket_addr(&self) -> IoResult<SocketAddr> {
-        match self.as_socket_addr_all().map(|v| v.move_iter().next()) {
+pub trait ToSocketAddr {
+    fn to_socket_addr(&self) -> IoResult<SocketAddr> {
+        match self.to_socket_addr_all().map(|v| v.move_iter().next()) {
             Ok(Some(addr)) => addr,
             Ok(None) => Err(/* some error on that no addresses are available */),
             Err(e) => Err(e)
@@ -39,16 +39,16 @@ pub trait AsSocketAddr {
     }
 
     #[inline]
-    fn as_socket_addr_all(&self) -> IoResult<Vec<SocketAddr>> {
-        self.as_socket_addr().map(|a| vec![a])
+    fn to_socket_addr_all(&self) -> IoResult<Vec<SocketAddr>> {
+        self.to_socket_addr().map(|a| vec![a])
     }
 }
 ```
 
 This trait contains two methods which are defined in terms of each other. This is done to simplify
 implementations; for those types which can be represented with multiple `SocketAddr`esses,
-`as_socket_addr_all()` method should be implemented, and its counterpart will be automatically
-there; for those types which can only be represented by one `SocketAddr`ess, `as_socket_addr()`
+`to_socket_addr_all()` method should be implemented, and its counterpart will be automatically
+there; for those types which can only be represented by one `SocketAddr`ess, `to_socket_addr()`
 method should be implemented, and the trivial vector implementation will be readily available.
 
 The method returning a vector is required because some values correspond to potentially multiple IP
@@ -59,31 +59,31 @@ Then all functions/methods which need an address accept a generic parameter boun
 
 ```rust
 impl TcpStream {
-    pub fn connect<A: AsSocketAddr>(addr: A) -> IoResult<TcpStream> { ... }
-    pub fn connect_timeout<A: AsSocketAddr>(addr: A, timeout_ms: u64) -> IoResult<TcpStream> { ... }
+    pub fn connect<A: ToSocketAddr>(addr: A) -> IoResult<TcpStream> { ... }
+    pub fn connect_timeout<A: ToSocketAddr>(addr: A, timeout_ms: u64) -> IoResult<TcpStream> { ... }
 }
 
 impl TcpListener {
-    pub fn bind<A: AsSocketAddr>(addr: A) -> IoResult<TcpListener> { ... }
+    pub fn bind<A: ToSocketAddr>(addr: A) -> IoResult<TcpListener> { ... }
 }
 
 impl UdpSocket {
-    pub fn bind<A: AsSocketAddr>(addr: A) -> IoResult<UdpSocket> { ... }
-    pub fn connect<A: AsSocketAddr>(self, other: A) -> UdpStream { ... }
+    pub fn bind<A: ToSocketAddr>(addr: A) -> IoResult<UdpSocket> { ... }
+    pub fn connect<A: ToSocketAddr>(self, other: A) -> UdpStream { ... }
 }
 ```
 
 This trait is implemented for a number of types:
 
 ```rust
-impl AsSocketAddr for SocketAddr {
+impl ToSocketAddr for SocketAddr {
     #[inline]
-    fn as_socket_addr(&self) -> IoResult<SocketAddr> { Ok(*self) }
+    fn to_socket_addr(&self) -> IoResult<SocketAddr> { Ok(*self) }
 }
 
-impl AsSocketAddr for (IpAddr, u16) {
+impl ToSocketAddr for (IpAddr, u16) {
     #[inline]
-    fn as_socket_addr(&self) -> IoResult<SocketAddr> {
+    fn to_socket_addr(&self) -> IoResult<SocketAddr> {
         let (ip, port) = *self;
         Ok(SocketAddr { ip: ip, port: port });
     }
@@ -92,8 +92,8 @@ impl AsSocketAddr for (IpAddr, u16) {
 // Better use `<S: Str>` instead of `&'a str`, but it will conflict with other implementations
 // in the current trait matching system
 
-impl<'a> AsSocketAddr for (&'a str, u16) {
-    fn as_socket_addr_all(&self) -> IoResult<Vec<SocketAddr>> {
+impl<'a> ToSocketAddr for (&'a str, u16) {
+    fn to_socket_addr_all(&self) -> IoResult<Vec<SocketAddr>> {
         let (host, port) = *self;
         get_host_addresses(host).map(|v|
             v.move_iter().map(|a| SocketAddr { 
@@ -104,9 +104,9 @@ impl<'a> AsSocketAddr for (&'a str, u16) {
     }
 }
 
-impl<'a> AsSocketAddr for &'a str {
+impl<'a> ToSocketAddr for &'a str {
     // accepts strings like 'localhost:12345'
-    fn as_socket_addr(&self) -> IoResult<SocketAddr> {
+    fn to_socket_addr(&self) -> IoResult<SocketAddr> {
         // split the string by ':' and convert the second part to u16
     }
 }
@@ -127,7 +127,7 @@ let mut stream = TcpStream::connect_timeout(addr, 10_000).unwrap();
 This provides great flexibility, does not hamper performance at all (due to static dispatch) and
 still gives nice and clean interface.
 
-Underlying socket API may use `as_socket_addr_all()` method to obtain all available addresses and
+Underlying socket API may use `to_socket_addr_all()` method to obtain all available addresses and
 make a decision on which to use, if it is required.
 
 Note that this pattern is already used in `std`, namely, in `std::path` module. There is a trait,
@@ -153,7 +153,7 @@ Under this proposal it will look like this:
 let mut stream = TcpStream::connect(("localhost", 12345)).unwrap();
 ```
 Note an additional set of parentheses. This may be somewhat confusing. However, implementing
-`AsSocketAddr` for `&str` greatly reduces this problem: when a fixed address is needed, it can be
+`ToSocketAddr` for `&str` greatly reduces this problem: when a fixed address is needed, it can be
 written as a string directly (see example above).
 
 # Alternatives
@@ -177,7 +177,7 @@ enum SocketAddrWrapper<'a> {
 }
 
 impl<'a> SocketAddrWrapper<'a> {
-    pub fn as_socket_addr(&self) -> SocketAddr {
+    pub fn to_socket_addr(&self) -> SocketAddr {
         match *self {
             // whatever
         }
