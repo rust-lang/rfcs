@@ -49,7 +49,7 @@ In contrast to the `format!` macro, an argument can be referred to using many
 constraints.
 Referring to a parameter with different constraints such as `{:r}` and `{:m}`
 in the template will generate many separate old-style operands. Additionally,
-it's easier to see which one is allowed in an instruction.
+it’s easier to see which one is allowed in an instruction.
 
 An unused argument should cause an error, unless a constraint is explicitly
 specified with a string literal.
@@ -66,7 +66,7 @@ The expression can be both input and output expression. It depends on the
 template. At least one operand `"{,=,+}constraint"(expr)` is generated.
 
 An optional output expression follows. It makes the parameter read+write if
-it isn't already. It basically generates an additional operand in the form of
+it isn’t already. It basically generates an additional operand in the form of
 `"0"(expr_out)`.
 
 ## Named parameters
@@ -91,7 +91,7 @@ This simple addition could use positional parameters:
 asm!("add {:r}, {:r}", b, a -> sum);
 ```
 
-It's also possible to set constraints for parameters that aren't referred to
+It’s also possible to set constraints for parameters that aren’t referred to
 within the assembly string:
 
 ```rust
@@ -120,23 +120,23 @@ fn main() {
 # Drawbacks
 
 * The syntax is new and partly unfamiliar. The meaning of `->` placed in
-between expressions is not immediately obvious.
+  between expressions is not immediately obvious.
 * The `format` parser needs a slight modification or refactoring to allow
-`{:=r}` and perhaps `{:+r}`.
-* Some `asm!` code might already contain curly brackets, so this change can't
-be entirely painless and backwards compatible. ARM register lists are enclosed
-in braces: `push {r11, lr}`. This instruction would have to look like this:
-`push {{r11, lr}}`.
-* Automatic indexing won't work with comments containing braces such as `// {}`.
+  `{:=r}` and perhaps `{:+r}`.
+* Some `asm!` code might already contain curly brackets, so this change can’t
+  be entirely painless and backwards compatible. ARM register lists are enclosed
+  in braces: `push {r11, lr}`. This instruction would have to look like this:
+  `push {{r11, lr}}`.
+* Automatic indexing won’t work with comments containing braces as in `// {}`.
 
 # Alternatives
 
 * Implement this as `asm_format!` extension alongside `asm!`.
-* Keep the current extension. `asm_format!` can be implemented and maintained
-separately.
+* Keep only the current extension. `asm_format!` can be implemented
+  and maintained separately.
 
 # Unresolved questions
 
 * Is it sane to mix clobbers and options in the same place?
 * How to set the type of a parameter? Is it possible to avoid writing
-`var = var -> var` to set the type?
+  `var = var -> var` to set the type?
