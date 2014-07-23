@@ -77,7 +77,7 @@ it isn’t already. It basically generates an additional operand in the form of
 
 The only difference is that they can be only referenced by name.
 
-## Examples
+## Examples (AT&T syntax)
 
 Consider this excerpt from Rust by Example:
 
@@ -133,10 +133,29 @@ fn main() {
 
 * Implement this as `asm_format!` extension alongside `asm!`.
 * Keep only the current extension. `asm_format!` can be implemented
-  and maintained separately.
+  and maintained separately in a third-party library.
+* Create a full-featured inline assembler just like D-lang’s. This means a lot
+  of work implementing a multi-architecture assembler in Rust. It’s unclear how
+  macro hygiene would interact with an inline language.
+* Use angle brackets `<>` or pipes `||` for operands to avoid escaping braces.
+  Angle braces are especially rare in assembly dialects.
+* Simplify the syntax with token stringification as in the `stringify!`
+  extension. Get rid of the template string. Rust is not whitespace dependent,
+  therefore semicolons would have to separate instructions.
+
+An illustration of some alternative syntax proposals:
+
+```rust
+let (c, d) = asm! {
+    <b: r, c = a, d = a>
+    add <b>, <c:=r>;
+    sub <b>, <d:=r>;
+    <c, d>
+};
+```
 
 # Unresolved questions
 
 * Is it sane to mix clobbers and options in the same place?
 * How to set the type of a parameter? Is it possible to avoid writing
-  `var = var -> var` to set the type?
+  `var = var -> var` for an output operand?
