@@ -84,7 +84,16 @@ Language complexity is increased to cover a small use case.
 
 # Alternatives
 
-1.  For/default + option iter:
+1.  #160 if let
+    
+        if let Some(caps) = re1.captures(name)){
+            ...     // case 1
+        }else if let Some(caps) = re2.captures(name){
+            ...     // case 2
+        }else{
+            ...     // default
+        }
+2.  For/default + option iter:
     
         for caps in re1.captures(name){
             ...     // case 1
@@ -93,19 +102,6 @@ Language complexity is increased to cover a small use case.
             ...     // case 2
             break;
         }default{
-            ...     // default
-        }
-2.  Allow let within expressions. Note that if "type narrowing" were used like
-    in Ceylon, the `unwrap` lines could be omitted, but I can't see that
-    feature fitting into Rust well.
-    
-        if (let m1 = re1.captures(name)).is_some(){
-            let caps = m1.unwrap();
-            ...     // case 1
-        }else with caps in re2.captures(name){
-            let caps = m2.unwrap();
-            ...     // case 2
-        }else{
             ...     // default
         }
 3.  Using one of the more verbose syntaxes above
