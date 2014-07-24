@@ -52,8 +52,9 @@ following rules are used:
 
 This applies to implicit derefences as well.
 
-Remove all special treatment of `Box` by the borrow checker. Instead, `Box`
-implements `DerefMove` in the standard library roughly as follows:
+Remove all special treatment of `Box` by the borrow checker. Instead, add an
+implementation of `DerefMove` for `Box` in the standard library roughly as
+follows:
 
 ```rust
 impl<T> DerefMove<T> for Box<T> {
@@ -63,6 +64,11 @@ impl<T> DerefMove<T> for Box<T> {
     }
 }
 ```
+
+Add similar implementations of `Deref` and `DerefMut` to the standard library.
+Remove all previously built-in dereference functionality for `Box` from the
+language, because all dereference functionality is now provided by the standard
+library.
 
 Drawbacks
 =========
