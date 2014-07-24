@@ -1,14 +1,14 @@
-- Start Date: (fill me in with today's date, YYYY-MM-DD)
+- Start Date: 2014-07-23
 - RFC PR #: (leave this empty)
 - Rust Issue #: (leave this empty)
 
 # Summary
 
-One para explanation of the feature.
+Currently, numeric literals like "1" can become either signed or unsigned integers of any time, depending on how they're used. For example, in `let x = 3; let y = x + 1u32;`, `x` is deduced to have type `u32`. However, replacing `1u32` with `1f32` leads to a compile error unless `3` is replaced with `3.`. `3` is a perfectly valid floating point number, so it should be able to be a floating point number under type deduction without any explicit suffixes.
 
 # Motivation
 
-Why are we doing this? What use cases does it support? What is the expected outcome?
+Having unnecessary type annotations adds noise to code and makes it harder to follow. Rust's type deduction mechanism greatly reduces the number of type annotations needed for a program, but there are still some spots where it misses.
 
 # Detailed design
 
@@ -18,12 +18,16 @@ This should get into specifics and corner-cases, and include examples of how the
 
 # Drawbacks
 
-Why should we *not* do this?
+Increased complexity in the type deduction system.
+
+People who expect unsuffixed integer literals to always be integers will be confused.
 
 # Alternatives
 
-What other designs have been considered? What is the impact of not doing this?
+Leaving it as it is.
 
 # Unresolved questions
 
-What parts of the design are still TBD?
+Should a literal still be coerced if it's too big for any float to exactly equal it?
+
+Should a literal that is very large be coerced if it does happen to have an exact float representation? 
