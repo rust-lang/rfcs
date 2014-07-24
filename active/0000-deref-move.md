@@ -35,13 +35,20 @@ pub trait DerefMove<Result> {
 }
 ```
 
-The `deref_move` method would be called in any of the following situations:
+In order to determine which method to use when deferencing with `*`, the
+following rules are used:
 
-* Something is being dereferenced, and the only `Deref*` trait it implements is
-  `DerefMove`;
-* Something is being dereferenced, and while it *does* implement `Deref` and/or
-  `DerefMut`, it also implements `DerefMove` and a value is being moved out of
-  the dereference.
+1. If the type implements `DerefMove` but not `Deref` or `DerefMut`, all
+   dereferences are done using `deref_move`.
+2. If a reference is being taken to a dereference (e.g. `&*ptr`), call `deref`
+   or `deref_mut`, depending on the mutability of the reference.
+3. If a value is being dereferenced and implements `DerefMove` and `Deref`:
+  1. If the type is `Copy`, call `deref_move`.
+  2. Otherwise:
+    1. If the type implements `Deref<T>` where `T: Copy`, call `*deref`.
+    2. Otherwise, call `deref_move`.
+4. If a value is being dereferenced and does not implement `DerefMove` but does
+   implement `Deref`, use `deref`.
 
 This applies to implicit derefences as well.
 
