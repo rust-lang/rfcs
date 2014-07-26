@@ -19,22 +19,29 @@ mix the types.
 With the current newtypes:
 
 ```
-// We want to do generic manipulations
-fn calc_area<T: Mul<T, T>>(w: T, h: T) -> T { w * h }
-
 struct Inch(uint);
 struct Cm(uint);
 
-let inch = Inch(10);
-let cm = Inch(3);
+// We want to do generic manipulations
+fn calc_distance<T: Sub<T, T>>(start: T, end: T) -> T {
+    end - start
+}
+
+let (start_inch, end_inch) = (Inch(10), Inch(18));
+let (start_cm, end_cm) = (Cm(2), Cm(5));
 
 // We must explicitly destruct to reach the values
-let Inch(inch_val) = inch;
-let Cm(cm_val) = vm;
+let (Inch(start), Inch(end)) = (start_inch, end_inch);
+let inch_dist = Inch(calc_distance(start, end));
 
-let inch_area = Inch(calc_area(inch, inch));
-let cm_area = Cm(calc_area(cm, cm)); // type Cm
-println!("area: {} and {}", inch_area, cm_area);
+let (Cm(start), Cm(end)) = (start_cm, end_cm);
+let cm_dist = Cm(calc_distance(start, end));
+
+let (Inch(inch_val), Cm(cm_val)) = (inch_dist, cm_dist);
+println!("dist: {} and {}", inch_val, cm_val);
+
+// Disallowed compile time
+let not_allowed = calc_distance(start_inch, end_cm);
 ```
 
 This is verbose, but at least the types don't mix.
@@ -44,8 +51,8 @@ if want the same capabilities as the underlying type.
 Another option is to use the `type` keyword, but then we loose type safety:
 
 ```
-type Inch = int;
-type Cm = int;
+type Inch = uint;
+type Cm = uint;
 
 let inch: Inch = 10;
 let cm: Cm = 2;
@@ -60,19 +67,24 @@ Introduce a new keyword: `newtype`. It introduces a new type, with the same
 capabilities as the underlying type, but keeping the types separate.
 
 ```
-fn calc_area<T: Mul<T, T>>(w: T, h: T) -> T { w * h }
-
 newtype Inch = uint;
 newtype Cm = uint;
 
-let inch = Inch(10);
-let cm = Inch(3);
+// We want to do generic manipulations
+fn calc_distance<T: Sub<T, T>>(start: T, end: T) -> T {
+    end - start
+}
 
-let inch_area = calc_area(inch, inch); // type Inch
-let cm_area = calc_area(cm, cm); // type Cm
-println!("area: {} and {}", inch_area, cm_area);
+let (start_inch, end_inch) = (Inch(10), Inch(18));
+let (start_cm, end_cm) = (Cm(2), Cm(5));
 
-let not_allowed = inch + cm; // Compile error
+let inch_dist = calc_distance(start_inch, end_inch);
+let cm_dist = calc_distance(start_cm, end_cm);
+
+println!("dist: {} and {}", inch_dist, cm_dist);
+
+// Disallowed compile time
+let not_allowed = calc_distance(start_inch, end_cm);
 ```
 
 The grammar rules will be the same as for `type`.
@@ -109,8 +121,10 @@ It adds a new keyword to the language and increases the language complexity.
     But we still need to explicitly cast when using generic functions:
 
     ```
-    let area = Inch(calc_area(v as int, v as int));
+    let dist = Inch(calc_distance(start_inch as int, end_inch as int));
     ```
+
+    It also looses type safety.
 
 
 # Unresolved questions
