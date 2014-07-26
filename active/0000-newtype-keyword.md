@@ -63,8 +63,8 @@ let oops = inch + cm; // not safe!
 
 # Detailed design
 
-Introduce a new keyword: `newtype`. It introduces a new type, with the same
-capabilities as the underlying type, but keeping the types separate.
+Introduce a new keyword: `newtype`. It introduces a new type, inheriting the
+trait implementations from the underlying type, but keeping the types separate.
 
 ```
 newtype Inch = uint;
@@ -75,9 +75,12 @@ fn calc_distance<T: Sub<T, T>>(start: T, end: T) -> T {
     end - start
 }
 
-let (start_inch, end_inch) = (Inch(10), Inch(18));
-let (start_cm, end_cm) = (Cm(2), Cm(5));
+// Initialize the same way as the underlying types
+let (start_inch, end_inch): (Inch, Inch) = (10, 18);
+let (start_cm, end_cm): (Cm, Cm) = (2, 5);
 
+// Here `calc_distance` operates on the types `Inch` and `Cm`,
+// where previously we had to cast to and from `uint`.
 let inch_dist = calc_distance(start_inch, end_inch);
 let cm_dist = calc_distance(start_cm, end_cm);
 
@@ -93,9 +96,19 @@ It would also allow generics, like `type`:
 ```
 struct A<N, M> { n: N, m: M }
 newtype B<T> = A<uint, T>;
+
+let b = B { n: 2u, m: "this is a T" };
 ```
 
-Just like `type` does.
+`newtype` would follow the natural scoping rules:
+
+```
+newtype Inch = uint; // Not accessible from outside the module
+pub newtype Cm = uint; // Accessible
+
+use module::Inch; // Import into scope
+pub use module::Inch; // Re-export
+```
 
 
 # Drawbacks
@@ -126,8 +139,10 @@ It adds a new keyword to the language and increases the language complexity.
 
     It also loses type safety.
 
+* Could possibly be implemented as a macro instead, similar to `bitflags!`
+
 
 # Unresolved questions
 
-None yet
+Not sure how to actually implement it.
 
