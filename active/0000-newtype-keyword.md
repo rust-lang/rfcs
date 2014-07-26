@@ -124,7 +124,7 @@ It adds a new keyword to the language and increases the language complexity.
     let dist = Inch(calc_distance(start_inch as int, end_inch as int));
     ```
 
-    It also looses type safety.
+    It also loses type safety.
 
 
 # Unresolved questions
