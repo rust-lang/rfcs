@@ -110,13 +110,52 @@ use module::Inch; // Import into scope
 pub use module::Inch; // Re-export
 ```
 
+It would not be possible to use the `newtype` in place of the parent type,
+we would need to resort to traits.
+
+```
+fn bad(x: uint) { ... }
+fn good<T: Sub>(x: T) { ... }
+
+newtype Foo = uint;
+let a: Foo = 2;
+bad(a); // Not allowed
+good(a); // Ok, Foo implements Sub
+```
+
 
 # Drawbacks
 
 It adds a new keyword to the language and increases the language complexity.
 
+Automatically deriving all traits may not make sense in some cases.
+For example deriving multiplication for `Inch` doesn't make much sense, as it would
+result in `Inch * Inch -> Inch` but semantically `Inch * Inch -> Inch^2`.
+
+This is a deficiency in the design and a better approach may be to explicitly
+specify which traits to derive.
+
 
 # Alternatives
+
+* Explicitly derive selected traits
+
+    Similar to GHC's [`GeneralizedNewtypeDeriving`][newtype-deriving]. E.g.:
+
+    ```
+    #[deriving(Sub)]
+    struct Inch(uint);
+
+    #[deriving(Sub)]
+    struct Cm(uint);
+    ```
+
+    This would avoid the problems with automatically deriving all traits,
+    while some would not make sense.
+
+    We could save a keyword with this approach and we might consider a generalization
+    over all tuple structs.
+
 
 * Keep it the same
 
@@ -139,10 +178,14 @@ It adds a new keyword to the language and increases the language complexity.
 
     It also loses type safety.
 
-* Could possibly be implemented as a macro instead, similar to `bitflags!`
+* Implement similar behaviour with a macro instead, similar to `bitflags!`
 
+    This would not allow us to derive all trait implementations automatically however.
+    It would work for only primitive types.
 
 # Unresolved questions
 
 Not sure how to actually implement it.
+
+[newtype-deriving]: https://www.haskell.org/ghc/docs/7.8.1/html/users_guide/deriving.html#newtype-deriving
 
