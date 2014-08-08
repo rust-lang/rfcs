@@ -22,9 +22,11 @@ Require the programmer to explicitly declare where a safe interface exists. This
 
 # Motivation
 
-The goal is to force the programmer to declare (and think about) their intent when they write unsafe code, and have it correctly documented for future maintainers. With these changes implemented, the use of unsafe blocks in safe functions becomes a compiler error by default. The programmer will need to make a conscious decision about how the unsafe code should be treated, since they can no longer just place an unsafe block down and forget about it. If the function is not safe to execute for all inputs, then the programmer can mark the function as `unsafe`. If the programmer believes the function exposes a safe interface, then they can proclaim a `#[safe_interface]`. If they make neither of these choices, the program won't compile.
+The goal is to force the programmer to explicitly declare (and think about) their intent when they write unsafe code, and have it correctly documented for future maintainers. Currently, when you put an unsafe block in a safe function the rule is "assume the function is still safe" by default. Under the proposed new rules, it becomes "error by default; have the programmer choose explicitly between safe and unsafe". 
 
-The labelling scheme aims to push the `#[safe_interface]` as an override, rather than a normal language feature. It will be the point where safe code and unsafe code are stitched together, and the point where the safety leaks occur.
+The programmer will need to make a conscious decision about how the unsafe code should be treated, since they can no longer just place an unsafe block down and forget about it. If the function is not safe to execute for all inputs, then the programmer should mark the function as `unsafe`. If the programmer believes the function exposes a safe interface, then they can proclaim a `#[safe_interface]`. If they make neither of these choices, the program won't compile. The compiler makes no assumptions about safety without written permission.
+
+`#[safe_interface]` is treated as a safety override, rather than a normal language feature. It will be the point where safe code and unsafe code are stitched together, and the point where the safety leaks occur. Another name like `#[override(safe)]` could be used to emphasise this point, but we'll stick with `#[safe_interface]` for the rest of this RFC.
 
 # Detailed design
 
