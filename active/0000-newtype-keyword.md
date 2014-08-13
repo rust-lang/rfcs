@@ -90,7 +90,7 @@ println!("dist: {} and {}", inch_dist, cm_dist);
 let not_allowed = calc_distance(start_inch, end_cm);
 ```
 
-The grammar rules will be the same as for `type`.
+
 It would also allow generics, like `type`:
 
 ```
@@ -98,16 +98,6 @@ struct A<N, M> { n: N, m: M }
 newtype B<T> = A<uint, T>;
 
 let b = B { n: 2u, m: "this is a T" };
-```
-
-`newtype` would follow the natural scoping rules:
-
-```
-newtype Inch = uint; // Not accessible from outside the module
-pub newtype Cm = uint; // Accessible
-
-use module::Inch; // Import into scope
-pub use module::Inch; // Re-export
 ```
 
 It would not be possible to use the `newtype` in place of the parent type,
@@ -122,6 +112,61 @@ let a: Foo = 2;
 bad(a); // Not allowed
 good(a); // Ok, Foo implements Sub
 ```
+
+
+## Derived traits
+
+In the derived trait implementations the basetype will be replaced by the newtype.
+
+So for example as `uint` implements `Add<uint, uint>`, `newtype Inch = uint`
+would implement `Add<Inch, Inch>`.
+
+This would present a problem when we have a specialization with the same parameter
+as a another parameter with a fixed type. For example `trait Shl<RHS, Result>` where
+`RHS = uint` in  all implementations. Specifically:
+
+```
+impl Shl<uint, int> for int
+impl Shl<uint, i8> for i8
+impl Shl<uint, uint> for uint
+impl Shl<uint, u8> for u8
+...
+```
+
+`newtype Inch = int` would implement `Shl<uint, Inch>` but `newtype Inch = uint`
+would implement `Shl<Inch, Inch>`, which is not what we want.
+
+A solution would be to allow `Self` in trait implementations. This would require
+us to change `Shl` to:
+
+```
+impl Shl<uint, Self> for int
+impl Shl<uint, Self> for i8
+impl Shl<uint, Self> for uint
+impl Shl<uint, Self> for u8
+...
+```
+
+Then `newtype Inch = uint` would implement `Shl<uint, Inch>`.
+
+`Self` in trait implementations might require a new RFC.
+
+
+
+## Scoping
+
+`newtype` would follow the natural scoping rules:
+
+```
+newtype Inch = uint; // Not accessible from outside the module
+pub newtype Cm = uint; // Accessible
+
+use module::Inch; // Import into scope
+pub use module::Inch; // Re-export
+```
+
+
+## Casting
 
 Newtypes can explicitly be casted to their base types, and vice versa.
 Implicit conversions should not be allowed.
@@ -138,6 +183,12 @@ let a: uint = 2;
 let i: Inch = a; // Compile error, implicit conversion not allowed
 let i: Inch = a as Inch; // Ok
 ```
+
+
+## Grammar
+
+The grammar rules will be the same as for `type`.
+
 
 
 # Drawbacks
@@ -198,6 +249,7 @@ specify which traits to derive.
 
     This would not allow us to derive all trait implementations automatically however.
     It would work for only primitive types.
+
 
 # Unresolved questions
 
