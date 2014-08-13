@@ -176,7 +176,7 @@ This is quite dangerous.
 - A struct `UninterpretedBytesOfSize<T>` equal to
   `[u8, .. size_of::<T>()]`, that is, a chunk of memory large enough
   to store a `T`, but treated as raw memory (i.e. `u8`s). This has the
-  (large) downside of loosing all type information, inferring with the
+  (large) downside of losing all type information, interfering with the
   compiler's reachability analysis (e.g. for `UnsafeCell`), and making
   it easier for the programmer to make mistakes w.r.t. an incorrect or
   forgotten coercion (it's would be identical to C's `void*`).
