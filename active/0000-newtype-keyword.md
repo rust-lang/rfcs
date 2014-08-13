@@ -123,6 +123,22 @@ bad(a); // Not allowed
 good(a); // Ok, Foo implements Sub
 ```
 
+Newtypes can explicitly be casted to their base types, and vice versa.
+Implicit conversions should not be allowed.
+
+```
+newtype Inch = uint;
+
+fn frobnicate(x: uint) -> uint { x * 2 + 14 - 3 * x * x }
+
+let x: Inch = 2;
+println!("{}", frobnicate(x as uint));
+
+let a: uint = 2;
+let i: Inch = a; // Compile error, implicit conversion not allowed
+let i: Inch = a as Inch; // Ok
+```
+
 
 # Drawbacks
 
