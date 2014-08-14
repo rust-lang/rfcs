@@ -4,14 +4,20 @@
 
 # Summary
 
-Revise language semantics for drop so that all branches move or drop
-the same pieces of state ("value-paths").  Add lint(s) to inform the
-programmer of situations when this new drop-semantics could cause
-side-effects of RAII-style code (e.g. releasing locks, flushing
-buffers) to occur sooner than expected.  Remove the dynamic tracking
-of whether a value has been dropped or not; in particular, (1.) remove
-implicit addition of a drop-flag by `Drop` impl, and (2.) remove
-implicit zeroing of the memory that occurs when values are dropped.
+Three step plan:
+
+ 1. Revise language semantics for drop so that all branches move or drop
+    the same pieces of state ("value-paths").
+
+ 2. Add lint(s) to inform the programmer of situations when this new
+    drop-semantics could cause side-effects of RAII-style code
+    (e.g. releasing locks, flushing buffers) to occur sooner than
+    expected.
+
+ 3. Remove the dynamic tracking of whether a value has been dropped or
+    not; in particular, (a) remove implicit addition of a drop-flag by
+    `Drop` impl, and (b) remove implicit zeroing of the memory that
+    occurs when values are dropped.
 
 # Motivation
 
