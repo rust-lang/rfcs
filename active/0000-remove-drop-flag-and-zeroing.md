@@ -56,7 +56,8 @@ i.e. before the end of their owner's lexical scope).
 A static drop semantics essentially works by inserting implicit calls
 to `mem::drop` at certain points in the control-flow to ensure that
 the set of values to drop is statically known at compile-time.
-(See "How static drop semantics works" for more details.)
+(See "How static drop semantics works" in the detailed design for more
+discussion of how this is done.)
 
 There are two important things to note about a static drop semantics:
 
@@ -101,6 +102,161 @@ TODO
 This is the bulk of the RFC. Explain the design in enough detail for somebody familiar
 with the language to understand, and for somebody familiar with the compiler to implement.
 This should get into specifics and corner-cases, and include examples of how the feature is used.
+
+## How static drop semantics works
+
+(This section is presenting a detailed outline of how static drop
+semantics, which is part of this RFC proposal, looks from the view
+point of someone trying to understand a Rust program.)
+
+No struct or enum has an implicit drop-flag.  When a local variable is
+initialized, that establishes a set of "drop obligations": a set of
+structural paths (e.g. a local `a`, or a path to a field `b.f.y`) that
+need to be dropped (or moved away to a new owner).
+
+The drop obligations for a local variable `x` of struct-type `T` are
+computed from analyzing the structure of `T`.  If `T` itself
+implements `Drop`, then `x` is a drop obligation.  If `T` does not
+implement `Drop`, then the set of drop obligations is the union of the
+drop obligations of the fields of `T`.
+
+When a path is moved to a new location or consumed by a function call,
+it is removed from the set of drop obligations.
+
+For example:
+
+```rust
+
+struct Pair<X,Y>{ x:X, y:Y }
+
+struct D; struct S;
+
+impl Drop for D { ... }
+
+fn test() -> bool { ... }
+
+fn xform(d:D) -> D { ... }
+
+fn f1() {
+    // At the outset, the set of drop obligations is
+    // just the set of moved input parameters (empty
+    // in this case).
+
+    //                                      DROP OBLIGATIONS
+    //                                  ------------------------
+    //                                  {  }
+    let pDD : Pair<D,D> = ...;
+    //                                  {pDD.x, pDD.y}
+    let pDS : Pair<D,S> = ...;
+    //                                  {pDD.x, pDD.y, pDS.x}
+    let some_d : Option<D>;
+    //                                  {pDD.x, pDD.y, pDS.x}
+    if test() {
+        //                                  {pDD.x, pDD.y, pDS.x}
+        {
+            let temp = xform(pDD.x);
+            //                              {       pDD.y, pDS.x, temp}
+            some_d = Some(temp);
+            //                              {       pDD.y, pDS.x, temp, some_d}
+        } // END OF SCOPE for `temp`
+        //                                  {       pDD.y, pDS.x, some_d}
+    } else {
+        {
+            //                              {pDD.x, pDD.y, pDS.x}
+            let z = D;
+            //                              {pDD.x, pDD.y, pDS.x, z}
+
+            // This drops `pDD.y` before
+            // moving `pDD.x` there.
+            pDD.y = pDD.x;
+
+            //                              {       pDD.y, pDS.x, z}
+            some_d = None;
+            //                              {       pDD.y, pDS.x, z, some_d}
+        } // END OF SCOPE for `z`
+        //                                  {       pDD.y, pDS.x, some_d}
+    }
+
+    // MERGE POINT: set of drop obligations must
+    // match on all incoming control-flow paths...
+    //
+    // ... which they do in this case.
+
+    // (... some code that does not change drop obligations ...)
+
+    //                                  {       pDD.y, pDS.x, some_d}
+}
+
+// `f2` is similar to `f1`, except that it will have differing set
+// of drop obligations at the merge point, necessitating a hidden
+// drop call.
+fn f2() {
+    // At the outset, the set of drop obligations is
+    // just the set of moved input parameters (empty
+    // in this case).
+
+    //                                      DROP OBLIGATIONS
+    //                                  ------------------------
+    //                                  {  }
+    let pDD : Pair<D,D> = ...;
+    //                                  {pDD.x, pDD.y}
+    let pDS : Pair<D,S> = ...;
+    //                                  {pDD.x, pDD.y, pDS.x}
+    let some_d : Option<D>;
+    //                                  {pDD.x, pDD.y, pDS.x}
+    if test() {
+        //                                  {pDD.x, pDD.y, pDS.x}
+        {
+            let temp = xform(pDD.y);
+            //                              {pDD.x,        pDS.x, temp}
+            some_d = Some(temp);
+            //                              {pDD.x,        pDS.x, temp, some_d}
+        } // END OF SCOPE for `temp`
+        //                                  {pDD.x,        pDS.x, some_d}
+
+        // MERGE POINT PREDECESSOR 1
+
+        // implicit drops injected: drop(pDD.y)
+    } else {
+        {
+            //                              {pDD.x, pDD.y, pDS.x}
+            let z = D;
+            //                              {pDD.x, pDD.y, pDS.x, z}
+
+            // This drops `pDD.y` before
+            // moving `pDD.x` there.
+            pDD.y = pDD.x;
+
+            //                              {       pDD.y, pDS.x, z}
+            some_d = None;
+            //                              {       pDD.y, pDS.x, z, some_d}
+        } // END OF SCOPE for `z`
+        //                                  {       pDD.y, pDS.x, some_d}
+
+        // MERGE POINT PREDECESSOR 2
+
+        // implicit drops injected: drop(pDD.y)
+    }
+
+    // MERGE POINT: set of drop obligations must
+    // match on all incoming control-flow paths.
+    //
+    // For the original user code, they did not
+    // in this case.
+    //
+    // Therefore, implicit drops are injected up
+    // above, to ensure that the set of drop
+    // obligations match.
+
+    // After the implict drops, the resulting
+    // remaining drop obligations are the
+    // following:
+
+    //                                  {              pDS.x, some_d}
+}
+```
+
+
 
 # Drawbacks
 
@@ -193,8 +349,82 @@ complexity budget.
 
 # Unresolved questions
 
-I am not certain of all the implementation details of changes to the
-`trans` module in `rustc`.
+## How should moving into wildcards be handled?
+
+In an example like:
+
+```rust
+enum Pair<X,Y> { Two(X,Y), One(X), Zed }
+let x : Pair<FD, FD> = ...; // FD is some eFfectful Drop thing.
+match x {
+    Two(payload, _) => {
+        ... code working with, then dropping, payload ...
+    }
+    One(payload) => {
+        ... code working with, then dropping, payload ...
+    }
+    Zed => {
+    }
+}
+```
+
+In the above example, when the first match arm matches, we move `x`
+into it, binding its first tuple component as `payload`.  But how
+should the second tuple component of `x` be handled?  We need to drop
+it at some point, since we need for all of `x` to be dropped at
+the point in the control-flow where all of the match arms meet.
+
+The most obvious options are:
+
+ 1. In any given arm, implicitly drop state bound to `_` at the end of the
+    arm's scope.
+
+    This would be as if the programmer had actually written:
+
+    ```rust
+    Two(payload, _ignore_me) => {
+        ... code working with, then dropping, payload ...
+    }
+    ```
+
+ 2. In any given arm, implicitly drop state bound to `_` at the
+    beginning of the arm's scope.
+
+    This would be as if the programmer had actually written:
+
+    ```rust
+    Two(payload, _ignore_me) => {
+        ... code working with, then dropping, payload ...
+    }
+    ```
+
+ 3. Disallow moving into `_` patterns; force programmer to name them
+    and deal with them.
+
+    While this is clearly a clean conservative solution, it is also
+    awkward when you consider attempting to simplify the code above
+    like so (illegal under the suggested scheme):
+
+```rust
+enum Pair<X,Y> { Two(X,Y), One(X), Zed }
+let x : Pair<FD, FD> = ...; // FD is some eFfectful Drop thing.
+match x {
+    Two(payload, _) |
+    One(payload) => {
+        ... code working with, then dropping, payload ...
+    }
+    Zed => {
+    }
+}
+```
+
+
+## Implementation gotchas in `trans`
+
+I implemented the `borrowck` and `dataflow` changes necessary to
+compute the set of drop obligations accurately, but I am not certain
+of all the implementation details of changes to the `trans` module in
+`rustc`.
 
 # Appendix
 
@@ -401,159 +631,6 @@ fn foo(b: || -> bool) {
 
 fn main() {
     foo(|| true);
-}
-```
-
-## How static drop semantics works
-
-(This section is presenting a detailed outline of how static drop
-semantics, which is part of this RFC proposal, looks from the view
-point of someone trying to understand a Rust program.)
-
-No struct or enum has an implicit drop-flag.  When a local variable is
-initialized, that establishes a set of "drop obligations": a set of
-structural paths (e.g. a local `a`, or a path to a field `b.f.y`) that
-need to be dropped (or moved away to a new owner).
-
-The drop obligations for a local variable `x` of struct-type `T` are
-computed from analyzing the structure of `T`.  If `T` itself
-implements `Drop`, then `x` is a drop obligation.  If `T` does not
-implement `Drop`, then the set of drop obligations is the union of the
-drop obligations of the fields of `T`.
-
-When a path is moved to a new location or consumed by a function call,
-it is removed from the set of drop obligations.
-
-For example:
-
-```rust
-
-struct Pair<X,Y>{ x:X, y:Y }
-
-struct D; struct S;
-
-impl Drop for D { ... }
-
-fn test() -> bool { ... }
-
-fn xform(d:D) -> D { ... }
-
-fn f1() {
-    // At the outset, the set of drop obligations is
-    // just the set of moved input parameters (empty
-    // in this case).
-
-    //                                      DROP OBLIGATIONS
-    //                                  ------------------------
-    //                                  {  }
-    let pDD : Pair<D,D> = ...;
-    //                                  {pDD.x, pDD.y}
-    let pDS : Pair<D,S> = ...;
-    //                                  {pDD.x, pDD.y, pDS.x}
-    let some_d : Option<D>;
-    //                                  {pDD.x, pDD.y, pDS.x}
-    if test() {
-        //                                  {pDD.x, pDD.y, pDS.x}
-        {
-            let temp = xform(pDD.x);
-            //                              {       pDD.y, pDS.x, temp}
-            some_d = Some(temp);
-            //                              {       pDD.y, pDS.x, temp, some_d}
-        } // END OF SCOPE for `temp`
-        //                                  {       pDD.y, pDS.x, some_d}
-    } else {
-        {
-            //                              {pDD.x, pDD.y, pDS.x}
-            let z = D;
-            //                              {pDD.x, pDD.y, pDS.x, z}
-
-            // This drops `pDD.y` before
-            // moving `pDD.x` there.
-            pDD.y = pDD.x;
-
-            //                              {       pDD.y, pDS.x, z}
-            some_d = None;
-            //                              {       pDD.y, pDS.x, z, some_d}
-        } // END OF SCOPE for `z`
-        //                                  {       pDD.y, pDS.x, some_d}
-    }
-
-    // MERGE POINT: set of drop obligations must
-    // match on all incoming control-flow paths...
-    //
-    // ... which they do in this case.
-
-    // (... some code that does not change drop obligations ...)
-
-    //                                  {       pDD.y, pDS.x, some_d}
-}
-
-// `f2` is similar to `f1`, except that it will have differing set
-// of drop obligations at the merge point, necessitating a hidden
-// drop call.
-fn f2() {
-    // At the outset, the set of drop obligations is
-    // just the set of moved input parameters (empty
-    // in this case).
-
-    //                                      DROP OBLIGATIONS
-    //                                  ------------------------
-    //                                  {  }
-    let pDD : Pair<D,D> = ...;
-    //                                  {pDD.x, pDD.y}
-    let pDS : Pair<D,S> = ...;
-    //                                  {pDD.x, pDD.y, pDS.x}
-    let some_d : Option<D>;
-    //                                  {pDD.x, pDD.y, pDS.x}
-    if test() {
-        //                                  {pDD.x, pDD.y, pDS.x}
-        {
-            let temp = xform(pDD.y);
-            //                              {pDD.x,        pDS.x, temp}
-            some_d = Some(temp);
-            //                              {pDD.x,        pDS.x, temp, some_d}
-        } // END OF SCOPE for `temp`
-        //                                  {pDD.x,        pDS.x, some_d}
-
-        // MERGE POINT PREDECESSOR 1
-
-        // implicit drops injected: drop(pDD.y)
-    } else {
-        {
-            //                              {pDD.x, pDD.y, pDS.x}
-            let z = D;
-            //                              {pDD.x, pDD.y, pDS.x, z}
-
-            // This drops `pDD.y` before
-            // moving `pDD.x` there.
-            pDD.y = pDD.x;
-
-            //                              {       pDD.y, pDS.x, z}
-            some_d = None;
-            //                              {       pDD.y, pDS.x, z, some_d}
-        } // END OF SCOPE for `z`
-        //                                  {       pDD.y, pDS.x, some_d}
-
-        // MERGE POINT PREDECESSOR 2
-
-        // implicit drops injected: drop(pDD.y)
-    }
-
-    // MERGE POINT: set of drop obligations must
-    // match on all incoming control-flow paths.
-    //
-    // For the original user code, they did not
-    // in this case.
-    //
-    // Therefore, implicit drops are injected up
-    // above, to ensure that the set of drop
-    // obligations match.
-
-    // After the implict drops, the resulting
-    // remaining drop obligations are the
-    // following:
-
-    //                                  {              pDS.x, some_d}
 }
 ```
 
