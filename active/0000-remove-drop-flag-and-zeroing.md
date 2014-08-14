@@ -7,7 +7,7 @@
 Three step plan:
 
  1. Revise language semantics for drop so that all branches move or drop
-    the same pieces of state ("value-paths").
+    the same pieces of state ("drop obligations").
 
  2. Add lint(s) to inform the programmer of situations when this new
     drop-semantics could cause side-effects of RAII-style code
