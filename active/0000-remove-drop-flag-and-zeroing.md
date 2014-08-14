@@ -142,7 +142,7 @@ Felix (the author) was originally planning to take this approach, but
 it became clear after a little experimentation that the annoyance
 implied here made this a non-starter.
 
-## Associate drop flags with stack-0local variables alone
+## Associate drop flags with stack-local variables alone
 
 I mentioned in "Hidden bits are bad, part II" that some users have
 said they thought that the drop flag was only part of a local
@@ -160,6 +160,36 @@ that are *not* stack-allocated, which implies that we would still need
 to do some sort of static drop semantics for those values.  And if we
 are going to do that anyway, we might as well apply it across the
 board.
+
+## Separate individual and grouped instances of a type
+
+(This is a variant on "Associate drop flags with stack-local variables
+alone" above, but with a clearer vision for how it would work.)
+
+Instead of having a single `size_of` value for a given type, treat
+each type as having two different sizes: `indiv_size_of::<T>` and
+`group_size_of::<T>`.
+
+An individual instance can be moved on its own.  It gets a drop-flag.
+
+An instance that is part of a group cannot be moved on its own.  The
+whole group gets a drop flag, but each instance within it does not.
+(I am assuming the group is itself allocated as an individual
+instance, though perhaps one could recursively structure a group made
+up of groups; that is an unclear aspect of this thought-exercise.)
+
+When looking at a slice `[T]`, the instances are part of the group,
+and one uses `group_size_of::<T>` for offset calculations.
+
+For enums, structs, and tuples, the fields are considered individuals.
+(Though perhaps we could have "atomic" enums/structs/tuples where the
+fields are considered part of the group as a whole and cannot be
+independently moved to new owners on control flow branches.)
+
+This is an interesting thought exercise, but a pretty serious
+language/library change, and it is not clear whether it would be any
+better than static drop semantics in terms of Rust's language
+complexity budget.
 
 # Unresolved questions
 
