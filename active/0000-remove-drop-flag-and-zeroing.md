@@ -69,19 +69,9 @@ There are two important things to note about a static drop semantics:
     expressiveness typically say nothing about *convenience*.)
 
  2. Static drop semantics could be *surprising* to Rust programmers
-    who are used to dynamic drop semantics, in terms of it potentially
-    invalidating certain kinds of
-    resource-acquisition-is-initialization (RAII) patterns.
-    In particular, an implicit early drop could lead to unexpected
-    side-effects occurring earlier than expected.  Such side-effects
-    include:
-
-     * Memory being deallocated (probably harmless, but some may care)
-
-     * Output buffers being flushed in an output port.
-
-     * Mutex locks being released (more worrisome potential change
-       in timing semantics).
+    who are used to dynamic drop semantics.  In particular, an implicit early
+    drop could lead to unexpected side-effects occurring earlier than
+    expected.
 
 The bulk of the Detailed Design is dedicated to mitigating that second
 observation, in order to reduce the expected number of surprises for
@@ -97,17 +87,27 @@ or by rewriting the code to put in a manual drop-flag via
 
 # Detailed design
 
-TODO
+The change suggested by this RFC has three parts:
 
-This is the bulk of the RFC. Explain the design in enough detail for somebody familiar
-with the language to understand, and for somebody familiar with the compiler to implement.
-This should get into specifics and corner-cases, and include examples of how the feature is used.
+1. Change from a dynamic drop semantics to a static drop semantics,
+
+2. Provide one or more lints to inform the programmer of potential
+   suprises that may arise from earlier drops that are caused by the
+   static drop semantics, and
+
+3. Remove the implicitly added drop-flag, and the implicit zeroing of
+   the memory for dropped values.
+
+
+Each of the three parts is given its own section below.
 
 ## How static drop semantics works
 
-(This section is presenting a detailed outline of how static drop
-semantics, which is part of this RFC proposal, looks from the view
-point of someone trying to understand a Rust program.)
+This section presents a detailed outline of how static drop semantics
+looks from the view point of someone trying to understand a Rust
+program.
+
+### Drop obligations
 
 No struct or enum has an implicit drop-flag.  When a local variable is
 initialized, that establishes a set of "drop obligations": a set of
@@ -122,6 +122,8 @@ drop obligations of the fields of `T`.
 
 When a path is moved to a new location or consumed by a function call,
 it is removed from the set of drop obligations.
+
+### Example of code with unchanged behavior under static drop semantics
 
 For example:
 
@@ -146,35 +148,35 @@ fn f1() {
     //                                  ------------------------
     //                                  {  }
     let pDD : Pair<D,D> = ...;
-    //                                  {pDD.x, pDD.y}
+    //                                  { pDD.x, pDD.y }
     let pDS : Pair<D,S> = ...;
-    //                                  {pDD.x, pDD.y, pDS.x}
+    //                                  { pDD.x, pDD.y, pDS.x }
     let some_d : Option<D>;
-    //                                  {pDD.x, pDD.y, pDS.x}
+    //                                  { pDD.x, pDD.y, pDS.x }
     if test() {
-        //                                  {pDD.x, pDD.y, pDS.x}
+        //                                 { pDD.x, pDD.y, pDS.x }
         {
             let temp = xform(pDD.x);
-            //                              {       pDD.y, pDS.x, temp}
+            //                             {        pDD.y, pDS.x, temp }
             some_d = Some(temp);
-            //                              {       pDD.y, pDS.x, temp, some_d}
+            //                             {        pDD.y, pDS.x, temp, some_d }
         } // END OF SCOPE for `temp`
-        //                                  {       pDD.y, pDS.x, some_d}
+        //                                 {        pDD.y, pDS.x, some_d }
     } else {
         {
-            //                              {pDD.x, pDD.y, pDS.x}
+            //                             { pDD.x, pDD.y, pDS.x }
             let z = D;
-            //                              {pDD.x, pDD.y, pDS.x, z}
+            //                             { pDD.x, pDD.y, pDS.x, z }
 
             // This drops `pDD.y` before
             // moving `pDD.x` there.
             pDD.y = pDD.x;
 
-            //                              {       pDD.y, pDS.x, z}
+            //                             {        pDD.y, pDS.x, z }
             some_d = None;
-            //                              {       pDD.y, pDS.x, z, some_d}
+            //                             {        pDD.y, pDS.x, z, some_d }
         } // END OF SCOPE for `z`
-        //                                  {       pDD.y, pDS.x, some_d}
+        //                                 {        pDD.y, pDS.x, some_d }
     }
 
     // MERGE POINT: set of drop obligations must
@@ -182,10 +184,15 @@ fn f1() {
     //
     // ... which they do in this case.
 
+    //                                  {       pDD.y, pDS.x, some_d }
+
     // (... some code that does not change drop obligations ...)
 
-    //                                  {       pDD.y, pDS.x, some_d}
+    //                                  {       pDD.y, pDS.x, some_d }
 }
+
+
+### Example of code with changed behavior under static drop semantics
 
 // `f2` is similar to `f1`, except that it will have differing set
 // of drop obligations at the merge point, necessitating a hidden
@@ -253,10 +260,256 @@ fn f2() {
     // following:
 
     //                                  {              pDS.x, some_d}
+
+    // (... some code that does not change drop obligations ...)
+
+    //                                  {              pDS.x, some_d}
 }
 ```
 
+### Control-flow sensitivity
 
+Note that the static drop semantics is based on a control-flow
+analysis, *not* just the lexical nesting structure of the code.
+
+In particular: If control flow splits at a point like an if-expression,
+but the two arms never meet
+
+### match expressons and enum variants
+
+The examples above used just structs and `if` expressions, but there
+is an additional twist introduced by `enum` types.  The examples above
+showed that a struct type can be partially moved: one of its fields
+can be moved away while the other is still present, and this can be
+faithfully represented in the set of drop oblgiations.
+But consider an `enum` and `match`:
+
+```rust
+pub enum Pairy<X> { Two(X,X), One(X,X) }
+pub fn foo<A>(c: || -> Pairy<A>,
+              dA: |A| -> i8,
+              dR: |&A| -> i8) -> i8 {
+    let s = c();
+    let ret = match s {
+        Two(ref r1, ref r2) => {
+            dR(r1) + dR(r2)
+        }
+        One(a1, a2) => {
+            dA(a1) + dA(a2)
+        }
+    };
+    c();
+    ret
+}
+```
+
+In the above code, which is legal today in Rust, we have an arm for
+`Two` that matches the input `s` by reference, while the arm for `One`
+moves `s` into the match.  That is, if the `Two` arm matches, then `s`
+is left in place to be dropped at the end of the execution of `foo()`,
+while if the `One` arm matches, then the `s` is deconstructed and
+moved in pieces into `a1` and `a2`, which are themselves then consumed
+by the calls to `dA`.
+
+While we *could* attempt to continue supporting this style of code
+(see "variant-predicated drop-obligations" in the Alternatives
+section), it seems simpler if we just disallow it.  This RFC
+proposes the following rule: if any arm in a match consumes
+the input via `move`, then *every* arm in the match must consume the
+input *by the end of each arm's associated body*.
+
+That last condition is crucial, because it enables patterns like
+this to continue working:
+
+```rust
+    match s {
+        One(a1, a2) => { // a moving match here
+            dA(a1) + dA(a2)
+        }
+        Two(_, _) => { // a non-binding match here
+            helper_function(s)
+        }
+    };
+
+```
+
+### Type parameters
+
+With respect to static drop semantics, there is not much to say about
+type parameters: unless they have the `Copy` bound, we must assume
+that they implement `Drop`, and therefore introduce drop obligations
+(the same as types that actually do implement `Drop`, as illustrated
+above).
+
+## Early drop lints
+
+Some users may be surprised by the implicit drops that are injected
+by static drop semantics, especially if the drop code being executed
+has observable side-effects.
+
+Such side-effects include:
+
+  * Memory being deallocated earlier than expected (probably harmless,
+    but some may care)
+
+  * Output buffers being flushed in an output port earlier than
+    expected.
+
+  * Mutex locks being released earlier than expected (a worrisome
+    change in timing semantics when writing concurrent algorithms).
+
+In particular, the injection of the implcit drops could silently
+invalidate certain kinds of "resource acquisition is initialization"
+(RAII) patterns.
+
+It is important to keep in mind that one can always recreate the
+effect of the former drop flag by wrapping one's type `T` in an
+`Option<T>`; therefore, the problem is *not* that such RAII patterns
+cannot be expresed.  It is merely that a user may assume that a
+variable binding induces RAII-style effect, and that assumpion is then
+invalidated due to a errant move on one control-flow branch.
+
+Therefore, to defend against users being surprised by the early
+implicit drops induced by static drop semantics, this RFC proposes
+adding lints that tell the user about the points in the control-flow
+where implcit drops are injected.  The specific proposal is to add two
+lints, named `quiet_early_drop` and `unmarked_early_drop`, with the
+default settings `#[allow(quiet_early_drop)]` and
+`#[warn(unmarked_early_drop)]`.  (The two lints are similar in name
+because they provide very similar functionality; the only difference
+is how aggressively each reports injected drop invocations.)
+
+### The `unmarked_early_drop` lint
+
+Here is an example piece of code (very loosely adapted from the Rust
+`sync` crate):
+
+```rust
+        let (guard, state) = self.lock(); // (`guard` is mutex `LockGuard`)
+        ...
+        if state.disconnected {
+            ...
+        } else {
+            ...
+            match f() {
+                Variant1(payload) => g(payload, guard),
+                Variant2          => {}
+            }
+
+            ... // (***)
+
+            Ok(())
+        }
+```
+
+In the `Variant1` arm above, `guard` is consumed by `g`.  Threfore,
+when the bit of code labelled with a `(***)` represents a span that,
+when reached via the `Variant2` branch of the match statement, has the
+`guard` still held under dynamic drop semantics, but the `guard` is
+*released* under static drop semantics.
+
+The `unmwarked_early_drop` lint is meant to catch cases such as this,
+where the user has inadvertantly written code where static drop
+semantics injects an implicit call to a side-effectful `drop` method.
+
+Assuming that the `LockGuard` has a `Drop` impl but does not implement
+the `QuietEarlyDrop` trait (see below `quiet_early_drop` lint below),
+then the #[warn(unmarked_early_drop)]` lint will report a warning for
+the code above, telling the user that the `guard` is moved away on the
+`Variant1` branch but not on the other branches.  In general the lint
+cannot know what the actual intention of the user was.  Therefore, the
+lint suggests that the user either (1.) add an explicit drop call, for
+clarity, or (2.)  reinitialize `guard` on the `Variant1` arm, or (3.)
+emulate a drop-flag by using `Option<LockGuard>` instead of
+`LockGuard` as the type of `guard`.
+
+### The `quiet_early_drop` lint and `QuietEarlyDrop` trait
+
+To be effective, a lint must not issue a significant number of false
+positives: i.e., we do not want to tell the user about every site in
+their crate where a `String` was dropped on one branch but not
+another.
+
+More generally, it is likely that most sites where `Vec<u8>` is
+dropped are not of interest either.  Instead, the user is likely to
+want to focus on points in the control flow where *effectful* drops
+are executed (such as flushing output buffers or releasing locks).
+
+Meanwhile, some users may still care about every potential
+side-effect, even those that their libraries have deemed "pure".  Some
+users may just want, out of principle, to mark every early drop
+explcitly, in the belief that such explicitness improves code
+comprehension.
+
+Therefore, rather than provide just a single lint for warning about
+all occurrences of injected early drops, this proposal suggests a
+simple two-tier structure: by default, `Drop` implementations are
+assumed to have significant side-effects, and thus qualify for warning
+via the aforementioned `unmarked_early_drop` trait.  However, when
+defining a type, one can implement the `QuietEarlyDrop` trait, which
+recategorizes the type as having a `Drop` implementation that "pure"
+(i.e. does not exhibit side-effects that the client of the crate is
+likely to care about).
+
+An easy example of such a type whose `drop` method is likely to be
+considered pure is `Vec<u8>`, since the only side-effect of dropping a
+`Vec<u8>` is deallocation of its backing buffer.  More generally,
+`Vec<T>` should be `QuietEarlyDrop` for any `T` that is also
+`QuietEarlyDrop`.
+
+If a type implements `QuietEarlyDrop`, then early implicit drops of
+that type will no longer be reported by `#[warn(unmarked_early_drop)]`
+(instead, such a type becomes the reponsibility of the
+`#[allow(quiet_early_drop)]` lint).  Thus, the former lint will
+hopefully provide well-focused warnings with a low false-positive
+rate, while the latter, being set to `allow` by default, will
+not generate much noise.
+
+Meanwhile, to ensure that a particular fn item has no hidden early
+drops, one can turn on `#[deny(quiet_early_drop)]` and
+`#[deny(unmarked_early_drop)]`, and then all statically injected drops
+are reported (and the code rejected if any are present), regardless of
+whether the types involved implement `QuietEarlyDrop` or not.
+
+### Scope end for owner can handle mismatched drop obligations
+
+Consider again the long examples from the "How static drop semantics
+works" section above.  Both examples took care to explcitly include a
+bit at the end marked with the comment "(... some code that does not
+change drop obligations ...)".  This represents some potentially
+side-effectful code that comes between a merge-point and the end of
+the procedure (or more generally, the end of the lexical scope for
+some local varibles that own paths in the set of drop obligations).
+
+If you hit a merge-point with two sets of drop obligations like `{
+pDD.x, pDD.y }` and `{ pDD.x, z }`, and there is no side-effectful
+computation between that merge-point and the end of the scope for
+`pDD` and `z`, then there is no problem with the mismatches between
+the set of drop obligations, and neither lint should report anything.
+
+### Type parameters, revisited
+
+We noted in the "How static drop semantics works" section that
+type parameters are not particularly special with respect t
+static drop semantics.
+
+However, with the lints there is potential for type parameters to be
+treated specially.
+
+Nonetheless, this RFC currently proposes that type parameters not be
+treated specially by the lints: if you have mismatched drop
+obligations, then that represents a hidden implicit drop that you may
+not have known was there, and it behooves you to make an explicit call
+to `drop`.
+
+(See further discussion in the "Unresolved Questions.")
+
+## Removing the drop-flag; removing memory zeroing
+
+With the above two pieces in place, the remainder is trivial.  Namely:
+once static drop semantics is actually implemented, then the compiler
+can be revised to no longer inject a drop flag into structs and enums that
+implement `Drop`, and likewise memory zeroing can be removed.
 
 # Drawbacks
 
@@ -297,6 +550,29 @@ This would be equivalent to doing `#[deny(unmarked_early_drops)]`.
 Felix (the author) was originally planning to take this approach, but
 it became clear after a little experimentation that the annoyance
 implied here made this a non-starter.
+
+## Do this, but add support for variant-predicated drop-obligations
+
+In "match expressons and enum variants" above, this RFC proposed a
+rule that if any arm in a match consumes the input via `move`, then
+every arm in the match must consume the input (by the end of its
+body).
+
+There is an alterative, however.  We could enrich the structure of
+drop-obligations to include paths that are predicated on enum
+variants, like so: `{(s is Two => s#0), (s is Two => s#1)}`.  This
+represents the idea that (1.) all control flows where `s` is the `One`
+variant dropped `s` entirely but also, (2.) all control flows where
+`s` is the `Two` variant still has the 0'th and 1'st tuple compoents
+remaining as drop obligations.
+
+I do not currently know how to efficiently implement such an enriched
+drop-obligation representation.  It seems it would get nasty when
+one considers that these predicates can accumulate.
+
+Also, if we do figure out how to implement this, we could add this
+later backward compatibly.  I do not want to attempt to implement it
+in the short-term.
 
 ## Associate drop flags with stack-local variables alone
 
@@ -348,6 +624,51 @@ better than static drop semantics in terms of Rust's language
 complexity budget.
 
 # Unresolved questions
+
+## Names (bikeshed welcome)
+
+I know there must be better names for lints and the traits being added
+ahere.  It took me a while to come up with `unmarked_early_drop` to
+categorized the types that implement `Drop` but do not have a
+`QuietEarlyDrop` impl, and `quiet_early_drop` to categorize
+(obviously) the types that do implement both traits.
+
+## Which library types should be `QuietEarlyDrop`.
+
+Side-effectfulness is in the eye of the beholder.  In particular,
+I wonder how to handle `rc`; should it be:
+
+```rust
+impl<T> QuietEarlyDrop for Rc<T>
+```
+
+or should it be like other container types, like so:
+```rust
+impl<T:QuietEarlyDrop> QuietEarlyDrop for Rc<T>
+```
+
+One school of thought says that when you use `Rc`, you have
+effectively given up on RAII for that type, at least when RAII is
+viewed as being tied to a particular lexical scope, and therefore
+all instances of `Rc<T>` should be considered to have pure drop
+behavior, regardless of their contents.
+
+But another school of thought says that since the destruction timing
+of `Rc<T>` is predictable (compared to `Gc<T>` which in principle is
+not predictable), then it would make sense to continue using the same
+bubble-up semantics that the other collection types use.
+
+
+## Should type parameters be treated specially
+
+It is possible that generic code in general does not
+need to be written with the same sort of care about drop timing that
+code specific to a particular effectful type needs to be.  (Or rather,
+it is possible that someone writing generic code will either want to
+opt into receiving warnings about merge-points with mismatched drop
+obligations.)
+
+
 
 ## How should moving into wildcards be handled?
 
@@ -426,7 +747,7 @@ compute the set of drop obligations accurately, but I am not certain
 of all the implementation details of changes to the `trans` module in
 `rustc`.
 
-# Appendix
+# Appendices
 
 ## Program illustrating space impact of hidden drop flag
 
