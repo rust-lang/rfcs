@@ -537,6 +537,13 @@ computation between that merge-point and the end of the scope for
 `pDD` and `z`, then there is no problem with the mismatches between
 the set of drop obligations, and neither lint should report anything.
 
+The reasoning is as follows: under dynamic drop semantics, the drop
+would have run at the end of the scope.  But there are no side-effects
+between the merge-point being analyzed and the end of the scope;
+therefore there is no harm in running the `drop` method, no matter what
+the side-effects of the `drop` are, instead at the end of the incoming
+branch to that merge point.
+
 ### Type parameters, revisited
 
 We noted in the "How static drop semantics works" section that
