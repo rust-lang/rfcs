@@ -247,7 +247,7 @@ fn f2() {
 
         // MERGE POINT PREDECESSOR 1
 
-        // implicit drops injected: drop(pDD.y)
+        // implicit drops injected: drop(pDD.x)
     } else {
         {
             //                              {pDD.x, pDD.y, pDS.x}
@@ -273,11 +273,17 @@ fn f2() {
     // match on all incoming control-flow paths.
     //
     // For the original user code, they did not
-    // in this case.
+    // in this case.  In the original code,
+    // Predecessor 1 has drop obligations
+    // {pDD.x,        pDS.x, some_d}
+    // and Predecessor 2 has drop obligations
+    // {       pDD.y, pDS.x, some_d}.
     //
     // Therefore, implicit drops are injected up
     // above, to ensure that the set of drop
-    // obligations match.
+    // obligations match, yielding the final
+    // set:
+    // {              pDS.x, some_d}.
 
     // After the implicit drops, the resulting
     // remaining drop obligations are the
