@@ -462,7 +462,7 @@ semantics injects an implicit call to a side-effectful `drop` method.
 
 Assuming that the `LockGuard` has a `Drop` impl but does not implement
 the `QuietEarlyDrop` trait (see below `quiet_early_drop` lint below),
-then the #[warn(unmarked_early_drop)]` lint will report a warning for
+then the `#[warn(unmarked_early_drop)]` lint will report a warning for
 the code above, telling the user that the `guard` is moved away on the
 `Variant1` branch but not on the other branches.  In general the lint
 cannot know what the actual intention of the user was.  Therefore, the
