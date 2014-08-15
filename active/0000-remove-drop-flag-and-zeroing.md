@@ -25,8 +25,9 @@ Currently, implementing `Drop` on a struct (or enum) injects a hidden
 bit, known as the "drop-flag", into the struct (and likewise, each of
 the the enum variants).  The drop-flag, in tandem with Rust's implicit
 zeroing of dropped values, tracks whether a value has already been
-moved to another owner or been dropped.  (See "How dynamic drop
-semantics works" for more details.)
+moved to another owner or been dropped.  (See the "How dynamic drop
+semantics works" appendix for more details if you are unfamiliar
+with this part of Rust's current implementation.)
 
 Here are some problems with this:
 
