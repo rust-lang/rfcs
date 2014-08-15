@@ -211,9 +211,7 @@ drop-obligation based on the type of `some_d` (`Option<D>`, which
 represents a drop-obligation, or at least a potential one).  Anyway,
 the point is that having this assignment introduce a drop-obligation
 there makes things happier at the merge point that follows it in the
-control flow.  (There is further discussion of subtlety here
-in the "match expressions and enum variants that copy (or do not bind)"
-section below.)
+control flow.
 
 ### Example of code with changed behavior under static drop semantics
 
@@ -510,58 +508,6 @@ pDD.x, pDD.y }` and `{ pDD.x, z }`, and there is no side-effectful
 computation between that merge-point and the end of the scope for
 `pDD` and `z`, then there is no problem with the mismatches between
 the set of drop obligations, and neither lint should report anything.
-
-### match expressions and enum variants that copy (or do not bind)
-
-In the "Example of code with unchanged behavior under static drop
-semantics", we noted that it may have seemed silly to have the
-assignment `some_d = None;` introduce a drop-obligation for `some_d`.
-
-And in fact, there are clearly silly instances of this; while it
-happened to work out that it made the set of drop obligations match at
-the merge point above, consider now this (artificial) example:
-
-```rust
-    let some_d : Option<D>
-    match {
-       Some(d) => foo(d),
-       None => 
-    }
-    if test() {
-        println!("no assignments");
-    } else {
-        some_d = None;
-    }
-```
-
-Blind adherence to the rules outlined in "Drop obligations" and
-the "Example of code with unchanged behavior under static drop semantics"
-would lead one to think that our lints should report a mismatch
-at the merge point here, since on one branch we have assigned to
-`some_d : Option<D>`, while on another we did no such assignment,
-and therefore we will insert an implicit drop of `some_d` on the
-branch that assigns `some_d = None;`
-
-Of course, such blind adherence is bad.  In particular, it would be
-silly to warn about an implicit drop of `some_d` here, since we can
-easily tell that on this arm, `some_d` will always be something that
-has no side-effect when dropped.
-
-The lints can handle this situation just fine: Just as
-we made a dataflow analysis that determines the set of drop obligations,
-we can make a dataflow analysis that determines which drop obligations
-are in fact *ignorable* because the particular variants involved
-on those control flow paths are made up entirely of non-moved data.
-(In the `some_d` example, this trivially holds because there was
-no data moved nor copied; more generally though we want this analysis
-to also handle cases like:
-```rust
-enum Pairy2<X,Y>{ Two(X,Y), One(X,X) }
-let s : Pairy2<S,D> = ...;
-match s {
-    
-}
-```
 
 ### Type parameters, revisited
 
