@@ -464,7 +464,9 @@ Assuming that the `LockGuard` has a `Drop` impl but does not implement
 the `QuietEarlyDrop` trait (see below `quiet_early_drop` lint below),
 then the `#[warn(unmarked_early_drop)]` lint will report a warning for
 the code above, telling the user that the `guard` is moved away on the
-`Variant1` branch but not on the other branches.  In general the lint
+`Variant1` branch but not on the other branches.
+
+In general the lint
 cannot know what the actual intention of the user was.  Therefore, the
 lint suggests that the user either (1.) add an explicit drop call, for
 clarity, or (2.)  reinitialize `guard` on the `Variant1` arm, or (3.)
