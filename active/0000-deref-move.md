@@ -35,7 +35,7 @@ pub trait DerefMove<Result> {
 }
 ```
 
-In order to determine which method to use when deferencing with `*`, the
+In order to determine which method to use when dereferencing with `*`, the
 following rules are used:
 
 1. If the type implements `DerefMove` but not `Deref` or `DerefMut`, all
@@ -50,9 +50,10 @@ following rules are used:
 4. If a value is being dereferenced and does not implement `DerefMove` but does
    implement `Deref`, use `deref`.
 
-This applies to implicit derefences as well.
+This applies to implicit dereferences as well.
 
-Remove all special treatment of `Box` by the borrow checker. Instead, add an
+This means that (at least with DST) it is now possible remove all special
+treatment of `Box` by the borrow checker. To do this, we would have add an
 implementation of `DerefMove` for `Box` in the standard library roughly as
 follows:
 
@@ -65,10 +66,10 @@ impl<T> DerefMove<T> for Box<T> {
 }
 ```
 
-Add similar implementations of `Deref` and `DerefMut` to the standard library.
-Remove all previously built-in dereference functionality for `Box` from the
-language, because all dereference functionality is now provided by the standard
-library.
+and also add similar implementations of `Deref` and `DerefMut` to the standard
+library. With these changes, it’s now possible to finally remove all previously
+built-in dereference functionality for `Box` from the language, because all
+dereference functionality is now provided by the standard library.
 
 Drawbacks
 =========
@@ -79,8 +80,8 @@ language.
 Alternatives
 ============
 
-* Do nothing, and blame `Box`’s special-casing on the fact that it is a lang item
-  anyway.
+* Do nothing, and blame `Box`’s special-casing on the fact that it is a lang
+  item anyway.
 * Add a `DerefSet` trait as well, for assignments of the form `*ptr = val`.
 
 Unresolved questions
