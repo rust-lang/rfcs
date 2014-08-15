@@ -295,7 +295,17 @@ Note that the static drop semantics is based on a control-flow
 analysis, *not* just the lexical nesting structure of the code.
 
 In particular: If control flow splits at a point like an if-expression,
-but the two arms never meet
+but the two arms never meet, then they can have completely
+sets of drop obligations.
+
+This is important, since in coding patterns like loops, one
+often sees different sets of drop obligations prior to a `break`
+compared to a `continue` or loop end.
+
+Likewise, a `return` statement represents another control flow jump
+where the set of drop obligations can be completely different from
+elsewhere in the code (this ties into a related topic discussed in
+"Scope end for owner can handle mismatched drop obligations").
 
 ### match expressions and enum variants that move
 
