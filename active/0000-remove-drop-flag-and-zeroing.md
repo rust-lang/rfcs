@@ -41,6 +41,8 @@ Here are some problems with this:
    expect `struct Foo { x: u32, y: u32 }` to occupy 8 bytes, but if
    `Foo` implements `Drop`, the hidden drop flag will cause it to
    double in size (16 bytes).
+   See the "Program illustrating space impact of hidden drop flag"
+   appendix for a concrete illustration.
 
  * Hidden bits are bad, part II: Some users have expressed an
    expectation that the drop-flag only be present for individual local
