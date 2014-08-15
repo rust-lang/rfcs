@@ -68,7 +68,7 @@ discussion of how this is done.)
 
 There are two important things to note about a static drop semantics:
 
- 1. It is *equal* in expressive power to the Rust language as we know
+ 1. It should be *equal* in expressive power to the Rust language as we know
     it today.  This is because, if the user is actually relying on the
     drop-flag today in some variable or field declaration `x: T`, they
     can replace that declaration with `x: Option<T>` and thus recreate
@@ -580,6 +580,20 @@ one considers that these predicates can accumulate.
 Also, if we do figure out how to implement this, we could add this
 later backward compatibly.  I do not want to attempt to implement it
 in the short-term.
+
+## Does the match-arm rule break expressiveness claim?
+
+I made the claim in a number of places that a static drop semantics
+should be *equal* in expressive power to the Rust language as we know
+it today.
+
+However, when I made that claim, I did not think carefully
+about the impliciations of the simple match arm rule.
+Being forced to move out of the original owner in every arm
+might imply that you cannot perform a mechanical transformation
+on the program to reencode the prior behavior.
+(I am not sure, it is too late at night right now for me to
+be sure one way or another about this.)
 
 ## Associate drop flags with stack-local variables alone
 
