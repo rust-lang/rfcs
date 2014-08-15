@@ -98,7 +98,7 @@ The change suggested by this RFC has three parts:
 1. Change from a dynamic drop semantics to a static drop semantics,
 
 2. Provide one or more lints to inform the programmer of potential
-   suprises that may arise from earlier drops that are caused by the
+   surprises that may arise from earlier drops that are caused by the
    static drop semantics, and
 
 3. Remove the implicitly added drop-flag, and the implicit zeroing of
@@ -261,7 +261,7 @@ fn f2() {
     // above, to ensure that the set of drop
     // obligations match.
 
-    // After the implict drops, the resulting
+    // After the implicit drops, the resulting
     // remaining drop obligations are the
     // following:
 
@@ -281,13 +281,13 @@ analysis, *not* just the lexical nesting structure of the code.
 In particular: If control flow splits at a point like an if-expression,
 but the two arms never meet
 
-### match expressons and enum variants
+### match expressions and enum variants
 
 The examples above used just structs and `if` expressions, but there
 is an additional twist introduced by `enum` types.  The examples above
 showed that a struct type can be partially moved: one of its fields
 can be moved away while the other is still present, and this can be
-faithfully represented in the set of drop oblgiations.
+faithfully represented in the set of drop obligations.
 But consider an `enum` and `match`:
 
 ```rust
@@ -364,21 +364,21 @@ Such side-effects include:
   * Mutex locks being released earlier than expected (a worrisome
     change in timing semantics when writing concurrent algorithms).
 
-In particular, the injection of the implcit drops could silently
+In particular, the injection of the implicit drops could silently
 invalidate certain kinds of "resource acquisition is initialization"
 (RAII) patterns.
 
 It is important to keep in mind that one can always recreate the
 effect of the former drop flag by wrapping one's type `T` in an
 `Option<T>`; therefore, the problem is *not* that such RAII patterns
-cannot be expresed.  It is merely that a user may assume that a
-variable binding induces RAII-style effect, and that assumpion is then
+cannot be expressed.  It is merely that a user may assume that a
+variable binding induces RAII-style effect, and that assumption is then
 invalidated due to a errant move on one control-flow branch.
 
 Therefore, to defend against users being surprised by the early
 implicit drops induced by static drop semantics, this RFC proposes
 adding lints that tell the user about the points in the control-flow
-where implcit drops are injected.  The specific proposal is to add two
+where implicit drops are injected.  The specific proposal is to add two
 lints, named `quiet_early_drop` and `unmarked_early_drop`, with the
 default settings `#[allow(quiet_early_drop)]` and
 `#[warn(unmarked_early_drop)]`.  (The two lints are similar in name
@@ -408,14 +408,14 @@ Here is an example piece of code (very loosely adapted from the Rust
         }
 ```
 
-In the `Variant1` arm above, `guard` is consumed by `g`.  Threfore,
-when the bit of code labelled with a `(***)` represents a span that,
+In the `Variant1` arm above, `guard` is consumed by `g`.  Therefore,
+when the bit of code labeled with a `(***)` represents a span that,
 when reached via the `Variant2` branch of the match statement, has the
 `guard` still held under dynamic drop semantics, but the `guard` is
 *released* under static drop semantics.
 
-The `unmwarked_early_drop` lint is meant to catch cases such as this,
-where the user has inadvertantly written code where static drop
+The `unmarked_early_drop` lint is meant to catch cases such as this,
+where the user has inadvertently written code where static drop
 semantics injects an implicit call to a side-effectful `drop` method.
 
 Assuming that the `LockGuard` has a `Drop` impl but does not implement
@@ -444,7 +444,7 @@ are executed (such as flushing output buffers or releasing locks).
 Meanwhile, some users may still care about every potential
 side-effect, even those that their libraries have deemed "pure".  Some
 users may just want, out of principle, to mark every early drop
-explcitly, in the belief that such explicitness improves code
+explicitly, in the belief that such explicitness improves code
 comprehension.
 
 Therefore, rather than provide just a single lint for warning about
@@ -453,7 +453,7 @@ simple two-tier structure: by default, `Drop` implementations are
 assumed to have significant side-effects, and thus qualify for warning
 via the aforementioned `unmarked_early_drop` trait.  However, when
 defining a type, one can implement the `QuietEarlyDrop` trait, which
-recategorizes the type as having a `Drop` implementation that "pure"
+re-categorizes the type as having a `Drop` implementation that "pure"
 (i.e. does not exhibit side-effects that the client of the crate is
 likely to care about).
 
@@ -465,7 +465,7 @@ considered pure is `Vec<u8>`, since the only side-effect of dropping a
 
 If a type implements `QuietEarlyDrop`, then early implicit drops of
 that type will no longer be reported by `#[warn(unmarked_early_drop)]`
-(instead, such a type becomes the reponsibility of the
+(instead, such a type becomes the responsibility of the
 `#[allow(quiet_early_drop)]` lint).  Thus, the former lint will
 hopefully provide well-focused warnings with a low false-positive
 rate, while the latter, being set to `allow` by default, will
@@ -480,12 +480,12 @@ whether the types involved implement `QuietEarlyDrop` or not.
 ### Scope end for owner can handle mismatched drop obligations
 
 Consider again the long examples from the "How static drop semantics
-works" section above.  Both examples took care to explcitly include a
+works" section above.  Both examples took care to explicitly include a
 bit at the end marked with the comment "(... some code that does not
 change drop obligations ...)".  This represents some potentially
 side-effectful code that comes between a merge-point and the end of
 the procedure (or more generally, the end of the lexical scope for
-some local varibles that own paths in the set of drop obligations).
+some local variables that own paths in the set of drop obligations).
 
 If you hit a merge-point with two sets of drop obligations like `{
 pDD.x, pDD.y }` and `{ pDD.x, z }`, and there is no side-effectful
@@ -559,17 +559,17 @@ implied here made this a non-starter.
 
 ## Do this, but add support for variant-predicated drop-obligations
 
-In "match expressons and enum variants" above, this RFC proposed a
+In "match expressions and enum variants" above, this RFC proposed a
 rule that if any arm in a match consumes the input via `move`, then
 every arm in the match must consume the input (by the end of its
 body).
 
-There is an alterative, however.  We could enrich the structure of
+There is an alternative, however.  We could enrich the structure of
 drop-obligations to include paths that are predicated on enum
 variants, like so: `{(s is Two => s#0), (s is Two => s#1)}`.  This
 represents the idea that (1.) all control flows where `s` is the `One`
 variant dropped `s` entirely but also, (2.) all control flows where
-`s` is the `Two` variant still has the 0'th and 1'st tuple compoents
+`s` is the `Two` variant still has the 0'th and 1'st tuple components
 remaining as drop obligations.
 
 I do not currently know how to efficiently implement such an enriched
@@ -634,7 +634,7 @@ complexity budget.
 ## Names (bikeshed welcome)
 
 I know there must be better names for lints and the traits being added
-ahere.  It took me a while to come up with `unmarked_early_drop` to
+here.  It took me a while to come up with `unmarked_early_drop` to
 categorized the types that implement `Drop` but do not have a
 `QuietEarlyDrop` impl, and `quiet_early_drop` to categorize
 (obviously) the types that do implement both traits.
