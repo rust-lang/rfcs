@@ -365,6 +365,22 @@ this to continue working:
 
 ```
 
+Unfortunately, the same property does not hold
+for a ref-binding match: we cannot write code like this:
+```rust
+    match s {
+        One(a1, a2) => { // a moving match here
+            dA(a1) + dA(a2)
+        }
+        Two(ref r1, ref r2) => { // a ref-binding match here
+            let ret = helper_function(r1, r2);
+            mem::drop(s); // <-- oops, `s` is still borrowed.
+            ret
+        }
+    };
+```
+
+
 ### Type parameters
 
 With respect to static drop semantics, there is not much to say about
