@@ -746,13 +746,6 @@ match x {
 ```
 
 
-## Implementation gotchas in `trans`
-
-I implemented the `borrowck` and `dataflow` changes necessary to
-compute the set of drop obligations accurately, but I am not certain
-of all the implementation details of changes to the `trans` module in
-`rustc`.
-
 # Appendices
 
 ## Program illustrating space impact of hidden drop flag
