@@ -304,10 +304,14 @@ This is important, since in coding patterns like loops, one
 often sees different sets of drop obligations prior to a `break`
 compared to a `continue` or loop end.
 
+TODO: add concrete example of `break` with different drop obligation.
+
 Likewise, a `return` statement represents another control flow jump
 where the set of drop obligations can be completely different from
 elsewhere in the code (this ties into a related topic discussed in
 "Scope end for owner can handle mismatched drop obligations").
+
+TODO: add concrete example of `return` with different drop obligation.
 
 ### match expressions and enum variants that move
 
@@ -546,6 +550,14 @@ therefore there is no harm in running the `drop` method, no matter what
 the side-effects of the `drop` are, instead at the end of the incoming
 branch to that merge point.
 
+### match expressions and enum variants that copy (or do-not-bind)
+
+TODO: There is some special handling of these in the current prototype
+implementation (mostly to avoid getting spurious lint warnings about
+data that obviously cannot have an effectful drop).  I need to
+document what the motivation is for having special handling here and
+describe what that special handling is.
+
 ### Type parameters, revisited
 
 We noted in the "How static drop semantics works" section that
@@ -562,6 +574,13 @@ not have known was there, and it behooves you to make an explicit call
 to `drop`.
 
 (See further discussion in the "Unresolved Questions.")
+
+## Quality of output from the lints
+
+TODO: given all the fine-tuning modifications for the lints listed
+here, I should put some data here on how well/poorly the lints do in
+terms of false-positive rates depending on which modifications are
+enabled/disabled.
 
 ## Part 3: Removing the drop-flag; removing memory zeroing
 
