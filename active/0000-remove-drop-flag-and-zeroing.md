@@ -108,7 +108,7 @@ The change suggested by this RFC has three parts:
 
 Each of the three parts is given its own section below.
 
-## How static drop semantics works
+## Part 1: How static drop semantics works
 
 This section presents a detailed outline of how static drop semantics
 looks from the view point of someone trying to understand a Rust
@@ -373,7 +373,7 @@ that they implement `Drop`, and therefore introduce drop obligations
 (the same as types that actually do implement `Drop`, as illustrated
 above).
 
-## Early drop lints
+## Part 2: Early drop lints
 
 Some users may be surprised by the implicit drops that are injected
 by static drop semantics, especially if the drop code being executed
@@ -536,7 +536,7 @@ to `drop`.
 
 (See further discussion in the "Unresolved Questions.")
 
-## Removing the drop-flag; removing memory zeroing
+## Part 3: Removing the drop-flag; removing memory zeroing
 
 With the above two pieces in place, the remainder is trivial.  Namely:
 once static drop semantics is actually implemented, then the compiler
