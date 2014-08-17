@@ -34,6 +34,19 @@ operator.
 - Add "must be commutative" to the documentation for `Add`.
 - Add "must be associative" to the documentation for `Compose`.
 
+The signature of `compose` is exactly the same as that for `add` and the other
+binary operators:
+
+````rust
+pub trait Compose<RHS,Result> {
+    /// The method for the `++` operator
+    fn compose(&self, rhs: &RHS) -> Result;
+}
+````
+and will be updated alongside the other binary-operation traits as the trait system
+is revamped. (For example, adding `ComposeAssign` for in in-place `++=` or making
+`Result` an associated item.)
+
 For those interested in algebraic names, this makes `++` into a semigroup operator.
 Users who want an abelian group can then use `Add+Zero+Neg` (or `Add+Zero+Sub`,
 this ambiguity should probably be addressed in a later RFC related to fixing the
