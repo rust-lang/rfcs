@@ -31,6 +31,8 @@ commutative operator, except for strings. Therefore I propose:
 - Introduce a `Compose` trait with a `compose` function that sugars to the `++`
 operator.
 - Implement this on `String` for concatenation. This replaces `Add` for `String`.
+- Implement this on `Bitv`, `DList`, `Vec` and any other "linear" collections
+  where concatenation makes sense.
 - Add "must be commutative" to the documentation for `Add`.
 - Add "must be associative" to the documentation for `Compose`.
 
