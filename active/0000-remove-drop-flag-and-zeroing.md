@@ -197,10 +197,11 @@ fn f1() {
 
     //                                  {       pDD.y, pDS.x, some_d }
 }
-
+```
 
 ### Example of code with changed behavior under static drop semantics
 
+```rust
 // `f2` is similar to `f1`, except that it will have differing set
 // of drop obligations at the merge point, necessitating a hidden
 // drop call.
@@ -321,7 +322,7 @@ by the calls to `dA`.
 While we *could* attempt to continue supporting this style of code
 (see "variant-predicated drop-obligations" in the Alternatives
 section), it seems simpler if we just disallow it.  This RFC
-proposes the following rule: if any arm in a match consumes
+proposes the following so-called "match-arm rule": if any arm in a match consumes
 the input via `move`, then *every* arm in the match must consume the
 input *by the end of each arm's associated body*.
 
@@ -560,8 +561,8 @@ implied here made this a non-starter.
 
 ## Do this, but add support for variant-predicated drop-obligations
 
-In "match expressions and enum variants" above, this RFC proposed a
-rule that if any arm in a match consumes the input via `move`, then
+In "match expressions and enum variants" above, this RFC proposed the
+match-arm rule that if any arm in a match consumes the input via `move`, then
 every arm in the match must consume the input (by the end of its
 body).
 
@@ -588,7 +589,7 @@ should be *equal* in expressive power to the Rust language as we know
 it today.
 
 However, when I made that claim, I did not think carefully
-about the impliciations of the simple match arm rule.
+about the impliciations of the simple match-arm rule.
 Being forced to move out of the original owner in every arm
 might imply that you cannot perform a mechanical transformation
 on the program to reencode the prior behavior.
@@ -760,7 +761,120 @@ match x {
 }
 ```
 
+## Should the match-arm rule be weakened to just a warning
 
+In principle we do not need to actually make it *illegal* to
+write:
+```rust
+    let ret = match s {
+        Two(ref r1, ref r2) => {
+            dR(r1) + dR(r2)
+        }
+        One(a1, a2) => {
+            dA(a1) + dA(a2)
+        }
+    };
+```
+
+We could instead just treat this like another instance of a case where
+there will be another early implciit drop (namely a drop of `s` at the
+end of each arm where it has been accessed by reference) -- the
+difference is that we cannot suggest that the user add an explicit
+`drop` of `s` for such arms, since doing so would violate the
+borrowing rules (since the references are still in scope).
+
+(But then again, if the borrowed references leak into the constructed
+value that lives longer than the `match` itself, those implicit early
+drops will be unsound.  This scenario leads me to think that we should
+strongly consider adopting the stronger form of the match-arm rule,
+for simplicity in the compiler itself.)
+
+## Is the expressiveness claim just broken due to potential for borrows
+
+Consider the following code (TODO: check that this or some variant of
+it actually passes borrowck today).
+
+```rust
+let x;
+let opt_ref = (if condition1 {
+    x = D1;
+    Some(&x.f)
+} else {
+    None
+};
+```
+
+The above may work, but how does one port it to use `Option<T>` to replace the drop-flag?
+
+In other words, does the below work? (TODO: check that below actually breaks in needsdrop branch.)
+               
+```rust
+let x = None;
+let opt_ref = (if condition1 {
+    x = Some(D1);
+    Some(&x.as_ref().unwrap().f)
+} else {
+    None
+};
+```
+
+## The most direct `Option<T>` re-encoding of drop-flag yields dead_assignments
+
+When porting this old code:
+
+```rust
+let x;
+if condition1 {
+    if condition2 {
+        x = D1;
+    } else {
+        x = D2;
+    }
+    use_of(&x);
+}
+// no explicit uses of `x` here, though `x` may have an effect when dropped.
+```
+
+in a manner that preserves the spirit of the drop flag,
+(including only dropping `x` at the end of its scope as
+declared above),
+
+```rust
+let mut x = None;
+if condition1 {
+    if condition2 {
+        x = Some(D1);
+    } else {
+        x = Some(D2);
+    }
+    use_of(x.as_ref().unwrap());
+}
+// no explicit uses of `x` here, though `x` may have an effect when dropped.
+```
+
+The problem here is that this causes the dead-assignment lint to fire,
+since there is no uses of `x` that is not first preceded by an
+assignment with a non-None value.
+
+Under this RFC as proposed, to have warning-free code, one would have to
+write:
+
+```rust
+let x;
+if condition1 {
+    if condition2 {
+        x = Some(D1);
+    } else {
+        x = Some(D2);
+    }
+    use_of(&x);
+} else {
+    x = None;
+}
+```
+
+(Maybe some people would regard the latter as an improvement on the first re-write.)
+               
 # Appendices
 
 ## Program illustrating space impact of hidden drop flag
