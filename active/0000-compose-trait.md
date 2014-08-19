@@ -4,7 +4,7 @@
 
 # Summary
 
-A `Combine` trait is added with a single function `combine` which desugars to
+A `Combine` trait is added with a single function `combine` which sugars to
 the `++` operator. The `Add` implementation for `String` is replaced by one
 for `Combine`.
 
@@ -29,7 +29,7 @@ unenforcable because standard library was violating it.
 Currently everything in the stdlib which implements `Add` implements `add` as a
 commutative operator, except for strings. Therefore I propose:
 - Introduce a `Combine` trait with a `combino` function that sugars to the `++`
-operator.
+operator. The precedence of `++` is between the bitwise operators and the comparison operators.
 - Implement this on `String` for concatenation. This replaces `Add` for `String`.
 - Implement this for every collection, using the same semantics as their `Extendable`
   implementations. (`Vec`s and `Bitv`s would be concatenated, sets and maps would
