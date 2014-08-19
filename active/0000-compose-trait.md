@@ -4,9 +4,9 @@
 
 # Summary
 
-A `Compose` trait is added with a single function `compose` which desugars to
+A `Combine` trait is added with a single function `combine` which desugars to
 the `++` operator. The `Add` implementation for `String` is replaced by one
-for `Compose`.
+for `Combine`.
 
 # Motivation
 
@@ -28,7 +28,7 @@ unenforcable because standard library was violating it.
 
 Currently everything in the stdlib which implements `Add` implements `add` as a
 commutative operator, except for strings. Therefore I propose:
-- Introduce a `Compose` trait with a `compose` function that sugars to the `++`
+- Introduce a `Combine` trait with a `combino` function that sugars to the `++`
 operator.
 - Implement this on `String` for concatenation. This replaces `Add` for `String`.
 - Implement this for every collection, using the same semantics as their `Extendable`
@@ -37,26 +37,26 @@ operator.
 - Implement this on `Path` as a synonym for `join`
 - Implement this on `Iterator` as a synonym for `chain`
 - Add "must be commutative" to the documentation for `Add`.
-- Add "must be associative" to the documentation for `Compose`.
+- Add "must be associative" to the documentation for `Combine`.
 
-The signature of `compose` is exactly the same as that for `add` and the other
+The signature of `combine` is exactly the same as that for `add` and the other
 binary operators:
 
 ````rust
-pub trait Compose<RHS,Result> {
+pub trait Combine<RHS,Result> {
     /// The method for the `++` operator
-    fn compose(&self, rhs: &RHS) -> Result;
+    fn combine(&self, rhs: &RHS) -> Result;
 }
 ````
 and will be updated alongside the other binary-operation traits as the trait system
-is revamped. (For example, adding `ComposeAssign` for in in-place `++=` or making
+is revamped. (For example, adding `CombineAssign` for in in-place `++=` or making
 `Result` an associated item.)
 
 For those interested in algebraic names, this makes `++` into a semigroup operator.
 Users who want an abelian group can then use `Add+Zero+Neg` (or `Add+Zero+Sub`,
 this ambiguity should probably be addressed in a later RFC related to fixing the
 numeric traits once we have associated items); users who want an arbitrary group
-can use `Mul+One+Div`; users who want a monoid can use `Compose+Default`, etc.
+can use `Mul+One+Div`; users who want a monoid can use `Combine+Default`, etc.
 
 This way nobody is surprised by generic code which sometimes does the Wrong Thing,
 but we avoid having a Haskell-like scenario where every category-theoretic object
@@ -73,8 +73,8 @@ Leave `+` as is.
 
 # Unresolved questions
 
-`Compose` should also be used for function compositions, at least for single-argument
+`Combine` should also be used for function compositions, at least for single-argument
 functions `T->T`. How would this interact with our current/future coherence rules?
 
-Where else should `Compose` be used?
+Where else should `Combine` be used?
 
