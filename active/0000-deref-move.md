@@ -21,6 +21,12 @@ patterns, which is mostly acceptable because of the plan to support `box`
 for other pointer types): `Box` pointers can be moved out of, even though
 none of the `Deref*` traits support moves.
 
+Additionally, this lets custom pointer types like `Cell` be dereferenced. At the
+moment, `Cell` doesn’t implement `Deref` or `DerefMut`, because the contents of
+`Cell` pointers can’t be referenced for safety reasons. This would allow read
+access to the contents of `Cell` pointers (although admittedly not the ability
+to modify them).
+
 Detailed design
 ===============
 
