@@ -41,6 +41,8 @@ Here are some problems with this:
    expect `struct Foo { x: u32, y: u32 }` to occupy 8 bytes, but if
    `Foo` implements `Drop`, the hidden drop flag will cause it to
    double in size (16 bytes).
+   See the "Program illustrating space impact of hidden drop flag"
+   appendix for a concrete illustration.
 
  * Hidden bits are bad, part II: Some users have expressed an
    expectation that the drop-flag only be present for individual local
@@ -81,11 +83,11 @@ There are two important things to note about a static drop semantics:
     expected.
 
 The bulk of the Detailed Design is dedicated to mitigating that second
-observation, in order to reduce the expected number of surprises for
+observation, in order to reduce the number of surprises for
 Rust programmers.  The main idea for this mitigation is the addition
 of one or more lints that report to the user when an side-effectful
 early-drop will be implicitly injected into the code, and suggest to
-them that they revise their code to remove the implicit injection
+them that they revise their code to remove the implicit `drop` injection
 (e.g. by explicitly dropping the path in question, or by
 re-establishing the drop obligation on the other control-flow paths,
 or by rewriting the code to put in a manual drop-flag via
@@ -108,7 +110,7 @@ The change suggested by this RFC has three parts:
 
 Each of the three parts is given its own section below.
 
-## How static drop semantics works
+## Part 1: How static drop semantics works
 
 This section presents a detailed outline of how static drop semantics
 looks from the view point of someone trying to understand a Rust
@@ -127,12 +129,15 @@ implements `Drop`, then `x` is a drop obligation.  If `T` does not
 implement `Drop`, then the set of drop obligations is the union of the
 drop obligations of the fields of `T`.
 
-When a path is moved to a new location or consumed by a function call,
-it is removed from the set of drop obligations.
+When a path is moved to a new location, or consumed by a function call,
+or when control flow reaches the end of its owner's lexical scope,
+the path is removed from the set of drop obligations.
 
 ### Example of code with unchanged behavior under static drop semantics
 
-For example:
+Consider the following example, where `D` represents some struct that
+introduces a drop-obligation, while `S` represents some struct that
+does not.
 
 ```rust
 
@@ -199,6 +204,17 @@ fn f1() {
 }
 ```
 
+Some notes about the example above:
+
+It may seem silly that the line `some_d = None;` introduces a
+drop-obligation for `some_d`, since `None` itself contains nothing to
+drop.  The analysis infers whether such an assignment introduces a
+drop-obligation based on the type of `some_d` (`Option<D>`, which
+represents a drop-obligation, or at least a potential one).  Anyway,
+the point is that having this assignment introduce a drop-obligation
+there makes things happier at the merge point that follows it in the
+control flow.
+
 ### Example of code with changed behavior under static drop semantics
 
 ```rust
@@ -231,7 +247,7 @@ fn f2() {
 
         // MERGE POINT PREDECESSOR 1
 
-        // implicit drops injected: drop(pDD.y)
+        // implicit drops injected: drop(pDD.x)
     } else {
         {
             //                              {pDD.x, pDD.y, pDS.x}
@@ -257,11 +273,17 @@ fn f2() {
     // match on all incoming control-flow paths.
     //
     // For the original user code, they did not
-    // in this case.
+    // in this case.  In the original code,
+    // Predecessor 1 has drop obligations
+    // {pDD.x,        pDS.x, some_d}
+    // and Predecessor 2 has drop obligations
+    // {       pDD.y, pDS.x, some_d}.
     //
     // Therefore, implicit drops are injected up
     // above, to ensure that the set of drop
-    // obligations match.
+    // obligations match, yielding the final
+    // set:
+    // {              pDS.x, some_d}.
 
     // After the implicit drops, the resulting
     // remaining drop obligations are the
@@ -281,9 +303,23 @@ Note that the static drop semantics is based on a control-flow
 analysis, *not* just the lexical nesting structure of the code.
 
 In particular: If control flow splits at a point like an if-expression,
-but the two arms never meet
+but the two arms never meet, then they can have completely
+sets of drop obligations.
 
-### match expressions and enum variants
+This is important, since in coding patterns like loops, one
+often sees different sets of drop obligations prior to a `break`
+compared to a `continue` or loop end.
+
+TODO: add concrete example of `break` with different drop obligation.
+
+Likewise, a `return` statement represents another control flow jump
+where the set of drop obligations can be completely different from
+elsewhere in the code (this ties into a related topic discussed in
+"Scope end for owner can handle mismatched drop obligations").
+
+TODO: add concrete example of `return` with different drop obligation.
+
+### match expressions and enum variants that move
 
 The examples above used just structs and `if` expressions, but there
 is an additional twist introduced by `enum` types.  The examples above
@@ -341,6 +377,22 @@ this to continue working:
 
 ```
 
+Unfortunately, the same property does not hold
+for a ref-binding match: we cannot write code like this:
+```rust
+    match s {
+        One(a1, a2) => { // a moving match here
+            dA(a1) + dA(a2)
+        }
+        Two(ref r1, ref r2) => { // a ref-binding match here
+            let ret = helper_function(r1, r2);
+            mem::drop(s); // <-- oops, `s` is still borrowed.
+            ret
+        }
+    };
+```
+
+
 ### Type parameters
 
 With respect to static drop semantics, there is not much to say about
@@ -349,7 +401,7 @@ that they implement `Drop`, and therefore introduce drop obligations
 (the same as types that actually do implement `Drop`, as illustrated
 above).
 
-## Early drop lints
+## Part 2: Early drop lints
 
 Some users may be surprised by the implicit drops that are injected
 by static drop semantics, especially if the drop code being executed
@@ -422,9 +474,11 @@ semantics injects an implicit call to a side-effectful `drop` method.
 
 Assuming that the `LockGuard` has a `Drop` impl but does not implement
 the `QuietEarlyDrop` trait (see below `quiet_early_drop` lint below),
-then the #[warn(unmarked_early_drop)]` lint will report a warning for
+then the `#[warn(unmarked_early_drop)]` lint will report a warning for
 the code above, telling the user that the `guard` is moved away on the
-`Variant1` branch but not on the other branches.  In general the lint
+`Variant1` branch but not on the other branches.
+
+In general the lint
 cannot know what the actual intention of the user was.  Therefore, the
 lint suggests that the user either (1.) add an explicit drop call, for
 clarity, or (2.)  reinitialize `guard` on the `Variant1` arm, or (3.)
@@ -495,6 +549,21 @@ computation between that merge-point and the end of the scope for
 `pDD` and `z`, then there is no problem with the mismatches between
 the set of drop obligations, and neither lint should report anything.
 
+The reasoning is as follows: under dynamic drop semantics, the drop
+would have run at the end of the scope.  But there are no side-effects
+between the merge-point being analyzed and the end of the scope;
+therefore there is no harm in running the `drop` method, no matter what
+the side-effects of the `drop` are, instead at the end of the incoming
+branch to that merge point.
+
+### match expressions and enum variants that copy (or do-not-bind)
+
+TODO: There is some special handling of these in the current prototype
+implementation (mostly to avoid getting spurious lint warnings about
+data that obviously cannot have an effectful drop).  I need to
+document what the motivation is for having special handling here and
+describe what that special handling is.
+
 ### Type parameters, revisited
 
 We noted in the "How static drop semantics works" section that
@@ -512,7 +581,14 @@ to `drop`.
 
 (See further discussion in the "Unresolved Questions.")
 
-## Removing the drop-flag; removing memory zeroing
+## Quality of output from the lints
+
+TODO: given all the fine-tuning modifications for the lints listed
+here, I should put some data here on how well/poorly the lints do in
+terms of false-positive rates depending on which modifications are
+enabled/disabled.
+
+## Part 3: Removing the drop-flag; removing memory zeroing
 
 With the above two pieces in place, the remainder is trivial.  Namely:
 once static drop semantics is actually implemented, then the compiler
