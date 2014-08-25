@@ -2,6 +2,43 @@
 - RFC PR: (leave this empty)
 - Rust Issue: (leave this empty)
 
+# Table of Contents
+*   [Summary](#summary)
+*   [Motivation](#motivation)
+**  [Abandoning dynamic drop semantics](#abandoning-dynamic-drop-semantics)
+*   [Detailed design](#detailed-design)
+**  [Part 1: How static drop semantics works](#part-1-how-static-drop-semantics-works)
+*** [Drop obligations](#drop-obligations)
+*** [Example of code with unchanged behavior under static drop semantics](#example-of-code-with-unchanged-behavior-under-static-drop-semantics)
+*** [Example of code with changed behavior under static drop semantics](#example-of-code-with-changed-behavior-under-static-drop-semantics)
+*** [Control-flow sensitivity](#control-flow-sensitivity)
+*** [match expressions and enum variants that move](#match-expressions-and-enum-variants-that-move)
+*** [Type parameters](#type-parameters)
+** [Part 2: Early drop lints](#part-2-early-drop-lints)
+*** [The `early_noisy_drop` lint](#the-early-noisy-drop-lint)
+*** [The `early_quiet_drop` lint and `QuietDrop` trait](#the-early-quiet-drop-lint-and-quietdrop-trait)
+*** [Type parameters, revisited](#type-parameters-revisited)
+** [Part 3: Removing the drop-flag; removing memory zeroing](#part-3-removing-the-drop-flag-removing-memory-zeroing)
+* [Drawbacks](#drawbacks)
+* [Alternatives](#alternatives)
+** [Do nothing](#do-nothing)
+** [Require explicit drops rather than injecting them](#require-explicit-drops-rather-than-injecting-them)
+** [Do this with support for variant-predicated drop-obligations](#do-this-with-support-for-variant-predicated drop-obligations)
+** [Associate drop flags with stack-local variables alone](#associate-drop-flags-with-stack-local variables alone)
+** [Separate individual and grouped instances of a type](#separate-individual-and-grouped-instances-of-a-type)
+* [Unresolved questions](#unresolved-questions)
+** [Names (bikeshed expected)](#names-bikeshed-expected)
+** [Does the match-arm rule break expressiveness claim?](#does-the-match-arm-rule-break-expressiveness-claim)
+** [Which library types should be `QuietDrop`](#which-library-types-should-be-quietdrop)
+** [Should type parameters be treated specially](#should-type-parameters-be-treated-specially)
+** [How should moving into wildcards be handled](#how-should-moving-into-wildcards-be-handled)
+** [Should the match-arm rule be weakened to just a warning](#should-the-match-arm-rule-be-weakened-to-just-a-warning)
+** [The most direct `Option<T>` re-encoding of drop-flag yields dead_assignments](#the-most-direct-option-t-re-encoding-of-drop-flag-yields-dead-assignments)
+* [Appendices](#appendices)
+** [Program illustrating space impact of hidden drop flag](#program-illustrating-space-impact-of-hidden-drop-flag)
+** [How dynamic drop semantics works](#how-dynamic-drop-semantics-works)
+*** [Program illustrating semantic impact of hidden drop flag](#program-illustrating-semantic-impact-of-hidden-drop-flag)
+
 # Summary
 
 Three step plan:
@@ -775,20 +812,6 @@ Also, if we do figure out how to implement this, we could add this
 later backward compatibly.  I do not want to attempt to implement it
 in the short-term.
 
-## Does the match-arm rule break expressiveness claim?
-
-I made the claim in "Abandoning dynamic drop semantics"
-that a static drop semantics should be *equal* in expressive power to
-the Rust language as we know it today.
-
-However, when I made that claim, I did not think carefully
-about the implications of the simple match-arm rule.
-Being forced to move out of the original owner in every arm
-might imply that you cannot perform a truly automatic mechanical
-transformation on the program to reencode the prior behavior.
-Still, I remain confident that one can find some encoding in terms
-of `Option<T>` for any current program.
-
 ## Associate drop flags with stack-local variables alone
 
 I mentioned in "Hidden bits are bad, part II" that some users have
@@ -841,13 +864,28 @@ complexity budget.
 
 # Unresolved questions
 
-## Names (bikeshed welcome)
+## Names (bikeshed expected)
 
 There may be better names for lints and the traits being added
 here.  It took me a while to come up with the "noisy" and "quiet"
 mnemonics.
 
-## Which library types should be `QuietDrop`.
+## Does the match-arm rule break expressiveness claim?
+
+I made the claim in "Abandoning dynamic drop semantics"
+that a static drop semantics should be *equal* in expressive power to
+the Rust language as we know it today.
+
+However, when I made that claim, I did not think carefully
+about the implications of the simple match-arm rule.
+Being forced to move out of the original owner in every arm
+might imply that you cannot perform a truly automatic mechanical
+transformation on the program to reencode the prior behavior.
+Still, I remain confident that one can find some encoding in terms
+of `Option<T>` for any current program.
+
+
+## Which library types should be `QuietDrop`
 
 Side-effectfulness is in the eye of the beholder.  In particular,
 I wonder how to handle `rc`; should it be:
@@ -884,7 +922,7 @@ obligations.)
 
 
 
-## How should moving into wildcards be handled?
+## How should moving into wildcards be handled
 
 In an example like:
 
@@ -1040,7 +1078,7 @@ if condition1 {
                
 # Appendices
 
-## Program illustrating space impact of hidden drop flag
+## Program illustrating space impact of hidden drop flag#
 
 
 ```rust
