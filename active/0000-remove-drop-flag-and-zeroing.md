@@ -146,6 +146,9 @@ There are two important things to note about a static drop semantics:
     drop could lead to unexpected side-effects occurring earlier than
     expected.
 
+    (Note of course that a dynamic drop semantics may *also* be
+     surprising to some programmers.)
+
 The bulk of the Detailed Design is dedicated to mitigating the second
 observation, to reduce the number of surprises for a programmer
 encountering an early-drop injected by `rustc`.
@@ -584,6 +587,13 @@ above).
 
 ## Part 2: Early drop lints
 
+The interaction of moves and "resource acquisition is initialization"
+(RAII) patterns can have surprising consequences. Under the current
+dynamic drop semantics, drops normally occur at the end of scope, but
+not if a value has been moved. Under static drop semantics, drops of
+moved values occur earlier. In many cases, it is unclear what the user
+intended.
+
 Some users may be surprised by the implicit drops that are injected
 by static drop semantics, especially if the drop code being executed
 has observable side-effects.
@@ -600,8 +610,7 @@ Such side-effects include:
     change in timing semantics when writing concurrent algorithms).
 
 In particular, the injection of the implicit drops could silently
-invalidate certain kinds of "resource acquisition is initialization"
-(RAII) patterns.
+invalidate certain kinds of RAII patterns.
 
 It is important to keep in mind that one can always recreate the
 effect of the former drop flag by wrapping one's type `T` in an
@@ -704,7 +713,7 @@ considered pure is `Vec<u8>`, since the only side-effect of dropping a
 and `NoisyDrop` for any `T` that is `NoisyDrop`.)
 
 Then programmers can implement `NoisyDrop` on a type like `LockGuard`
-to declare that it has sie-effects when dropped, and can use
+to declare that it has side-effects when dropped, and can use
 `QuietDrop` to make a type with a noisy subcomponent quiet again,
 e.g. if the containing type forms an abstraction that makes the
 side-effect insignificant again.  An example of the latter occurs in
