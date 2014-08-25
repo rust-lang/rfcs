@@ -59,7 +59,7 @@ Three step plan:
   * [Should type parameters be treated specially](#should-type-parameters-be-treated-specially)
   * [How should moving into wildcards be handled](#how-should-moving-into-wildcards-be-handled)
   * [Should the match-arm rule be weakened to just a warning](#should-the-match-arm-rule-be-weakened-to-just-a-warning)
-  * [The most direct `Option<T>` re-encoding of drop-flag yields dead_assignments](#the-most-direct-option-t-re-encoding-of-drop-flag-yields-dead-assignments)
+  * [The most direct `Option<T>` re-encoding of drop-flag yields dead_assignments](#the-most-direct-optiont-re-encoding-of-drop-flag-yields-dead_assignments)
 * [Appendices](#appendices)
   * [Program illustrating space impact of hidden drop flag](#program-illustrating-space-impact-of-hidden-drop-flag)
   * [How dynamic drop semantics works](#how-dynamic-drop-semantics-works)
