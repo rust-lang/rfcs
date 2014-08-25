@@ -573,13 +573,13 @@ Therefore, to defend against users being surprised by the early
 implicit drops induced by static drop semantics, this RFC proposes
 adding lints that tell the user about the points in the control-flow
 where implicit drops are injected.  The specific proposal is to add two
-lints, named `early_quiet_drop` and `early_loud_drop`, with the
+lints, named `early_quiet_drop` and `early_noisy_drop`, with the
 default settings `#[allow(early_quiet_drop)]` and
-`#[warn(early_loud_drop)]`.  (The two lints are similar in name
+`#[warn(early_noisy_drop)]`.  (The two lints are similar in name
 because they provide very similar functionality; the only difference
 is how aggressively each reports injected drop invocations.)
 
-### The `early_loud_drop` lint
+### The `early_noisy_drop` lint
 
 Here is an example piece of code (very loosely adapted from the Rust
 `sync` crate):
@@ -608,14 +608,14 @@ when reached via the `Variant2` branch of the match statement, has the
 `guard` still held under dynamic drop semantics, but the `guard` is
 *released* under static drop semantics.
 
-The `early_loud_drop` lint is meant to catch cases such as this,
+The `early_noisy_drop` lint is meant to catch cases such as this,
 where the user has inadvertently written code where static drop
 semantics injects an implicit call to a side-effectful `drop` method.
 
 Assuming that `LockGuard`, or some subcomponent of it, implements the
-`LoudDrop` trait, but does not implement the `QuietDrop` trait (see
+`NoisyDrop` trait, but does not implement the `QuietDrop` trait (see
 below `early_quiet_drop` lint below), then the
-`#[warn(early_loud_drop)]` lint will report a warning for the code
+`#[warn(early_noisy_drop)]` lint will report a warning for the code
 above, telling the user that the `guard` is moved away on the
 `Variant1` branch but not on the other branches.
 
@@ -646,11 +646,11 @@ comprehension.
 Therefore, rather than provide just a single lint for warning about
 all occurrences of injected early drops, this proposal suggests a
 simple two-tier structure.  Droppable types are categorized as
-either "quiet" or "loud."  A loud drop has significant side-effects
+either "quiet" or "noisy."  A noisy drop has significant side-effects
 where the programmer is likely to care about ordering.
 A quiet drop has no significant side-effects.
 
-There are two marker traits, `LoudDrop` and `QuietDrop`, that the
+There are two marker traits, `NoisyDrop` and `QuietDrop`, that the
 programmer can use to mark their types, in much the same manner as
 described on RFC PR #127, "Opt-in builtin traits, take 2: default and
 negative impls".  By default, `Drop` implementations are assumed to be
@@ -660,11 +660,11 @@ An easy example of such a type whose `drop` method is likely to be
 considered pure is `Vec<u8>`, since the only side-effect of dropping a
 `Vec<u8>` is deallocation of its backing buffer.  (More generally,
 `Vec<T>` should be `QuietDrop` for any `T` that is also `QuietDrop`,
-and `LoudDrop` for any `T` that is `LoudDrop`.)
+and `NoisyDrop` for any `T` that is `NoisyDrop`.)
 
-Then programmers can implement `LoudDrop` on a type like `LockGuard`
+Then programmers can implement `NoisyDrop` on a type like `LockGuard`
 to declare that it has sie-effects when dropped, and can use
-`QuietDrop` to make a type with a loud subcomponent quiet again,
+`QuietDrop` to make a type with a noisy subcomponent quiet again,
 e.g. if the containing type forms an abstraction that makes the
 side-effect insignificant again.  An example of the latter occurs in
 `std::sync::Mutex<T>`, where the lock is meant only to guard an
@@ -672,7 +672,7 @@ instance of the wrapped type `T`, and therefore it does no harm to
 drop of the `Mutex` early.
 
 If a type implements `QuietDrop`, then early implicit drops of
-that type will no longer be reported by `#[warn(early_loud_drop)]`
+that type will no longer be reported by `#[warn(early_noisy_drop)]`
 (instead, such a type becomes the responsibility of the
 `#[allow(early_quiet_drop)]` lint).  Thus, the first lint will
 hopefully provide well-focused warnings with a low false-positive
@@ -681,7 +681,7 @@ not generate much noise.
 
 Meanwhile, to ensure that a particular fn item has no hidden early
 drops at all, one can turn on `#[deny(early_quiet_drop)]` and
-`#[deny(early_loud_drop)]`, and then all statically injected drops
+`#[deny(early_noisy_drop)]`, and then all statically injected drops
 are reported (and the code rejected if any are present), regardless of
 whether the types involved implement `QuietDrop` or not.
 
@@ -713,7 +713,7 @@ implement `Drop`, and likewise memory zeroing can be removed.
 
 * The lint may be annoying to users whose programs are not affected by
   the early drops. (We mitigate this by providing ways for users to
-  opt-out of the lint `#[allow(early_loud_drop)]`, both in a
+  opt-out of the lint `#[allow(early_noisy_drop)]`, both in a
   lexically scoped fashion, like other lints, and in a type-based
   fashion via a `QuietDrop` trait.)
 
@@ -744,7 +744,7 @@ reject programs that have control-flow merge points with an
 inconsistent set of incoming drop-obligations.
 
 This would be equivalent to doing `#[forbid(early_quiet_drops)]`
-and `#[forbid(early_loud_drops)]`.
+and `#[forbid(early_noisy_drops)]`.
 
 Felix (the author) was originally planning to take this approach, but
 it became clear after a little experimentation that the annoyance
@@ -842,7 +842,7 @@ complexity budget.
 ## Names (bikeshed welcome)
 
 There may be better names for lints and the traits being added
-here.  It took me a while to come up with the "loud" and "quiet"
+here.  It took me a while to come up with the "noisy" and "quiet"
 mnemonics.
 
 ## Which library types should be `QuietDrop`.
