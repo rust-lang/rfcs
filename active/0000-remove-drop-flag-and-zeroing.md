@@ -100,7 +100,7 @@ Here are some problems with this situation:
    expectation that the drop-flag only be present for individual local
    variables, but that is not what Rust does currently: when `Foo`
    implements `Drop`, each instance of `Foo` carries a drop-flag, even
-   in contexts like a `Vec<Foo>` or `[Foo, ..100]` where a program
+   in contexts like a `Vec<Foo>` where a program
    cannot actually move individual values out of the collection.
    Thus, the amount of extra memory being used by drop-flags is not
    bounded by program stack growth; the memory wastage is strewn
