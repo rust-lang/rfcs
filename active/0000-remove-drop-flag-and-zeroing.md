@@ -52,7 +52,8 @@ Here are some problems with this situation:
    expect `struct Foo { x: u32, y: u32 }` to occupy 8 bytes, but if
    `Foo` implements `Drop`, the hidden drop flag will cause it to
    double in size (16 bytes).
-   See the "Program illustrating space impact of hidden drop flag"
+   See the ["Program illustrating space impact of hidden drop flag"]
+   (#program-illustrating-space-impact-of-hidden-drop-flag)
    appendix for a concrete illustration.
 
  * Hidden bits are bad, part II: Some users have expressed an
@@ -78,8 +79,8 @@ i.e. before the end of their owner's lexical scope).
 A static drop semantics essentially works by inserting implicit calls
 to `mem::drop` at certain points in the control-flow to ensure that
 the set of values to drop is statically known at compile-time.
-(See "How static drop semantics works" in the detailed design for more
-discussion of how this is done.)
+(See ["How static drop semantics works"](#how-static-drop-semantics-works)
+in the detailed design for more discussion of how this is done.)
 
 There are two important things to note about a static drop semantics:
 
@@ -496,8 +497,8 @@ moved in pieces into `a1` and `a2`, which are themselves then consumed
 by the calls to `dA`.
 
 While we *could* attempt to continue supporting this style of code
-(see "variant-predicated drop-obligations" in the Alternatives
-section), it seems simpler if we just disallow it.  This RFC
+(see ["variant-predicated drop-obligations"](#do-this-with-support-for-variant-predicated-drop-obligations)
+in the Alternatives section), it seems simpler if we just disallow it.  This RFC
 proposes the following so-called "match-arm rule": if any arm in a match consumes
 the input via `move`, then *every* arm in the match must consume the
 input *by the end of each arm's associated body*.
@@ -614,10 +615,10 @@ semantics injects an implicit call to a side-effectful `drop` method.
 
 Assuming that `LockGuard`, or some subcomponent of it, implements the
 `NoisyDrop` trait, but does not implement the `QuietDrop` trait (see
-below `early_quiet_drop` lint below), then the
-`#[warn(early_noisy_drop)]` lint will report a warning for the code
-above, telling the user that the `guard` is moved away on the
-`Variant1` branch but not on the other branches.
+below `early_quiet_drop` lint), then the `#[warn(early_noisy_drop)]` lint
+will report a warning for the code above, telling the user that
+the `guard` is moved away on the `Variant1` branch but not on the
+other branches.
 
 In general the lint cannot know what the actual intention of the user
 was.  Therefore, the lint suggests that the user either (1.) add an
@@ -700,7 +701,8 @@ obligations, then that represents a hidden implicit drop that you may
 not have known was there, and it behooves you to make an explicit call
 to `drop`.
 
-(See further discussion in the "Unresolved Questions.")
+(See further discussion in the
+["Unresolved Questions"](#unresolved-questions).)
 
 ## Part 3: Removing the drop-flag; removing memory zeroing
 
@@ -750,7 +752,7 @@ Felix (the author) was originally planning to take this approach, but
 it became clear after a little experimentation that the annoyance
 implied here made this a non-starter.
 
-## Do this, but add support for variant-predicated drop-obligations
+## Do this with support for variant-predicated drop-obligations
 
 In "match expressions and enum variants" above, this RFC proposed the
 match-arm rule that if any arm in a match consumes the input via `move`, then
