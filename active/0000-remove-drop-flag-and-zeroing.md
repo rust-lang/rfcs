@@ -2,8 +2,34 @@
 - RFC PR: (leave this empty)
 - Rust Issue: (leave this empty)
 
+# Summary
+
+Three step plan:
+
+ 1. Revise language semantics for drop so that all branches move or drop
+    the same pieces of state ("drop obligations").  To satisfy this
+    constraint, the compiler has freedom to move the drop code for
+    some state to earlier points in the control flow ("early drops").
+
+ 2. Add lints to inform the programmer of situations when this new
+    drop-semantics could cause side-effects of RAII-style code
+    (e.g. releasing locks, flushing buffers) to occur sooner than
+    expected.
+
+    Types that have side-effectful drop implement a marker trait,
+    `NoisyDrop`, that drives a warn-by-default lint; another marker
+    trait, `QuietDrop`, allows types to opt opt.  An allow-by-default
+    lint provides a way for programmers to request notification of all
+    auto-inserted early-drops.
+
+ 3. Remove the dynamic tracking of whether a value has been dropped or
+    not; in particular, (a) remove implicit addition of a drop-flag by
+    `Drop` impl, and (b) remove implicit zeroing of the memory that
+    occurs when values are dropped.
+
 # Table of Contents
 * [Summary](#summary)
+* [Table of Contents](#table-of-contents)
 * [Motivation](#motivation)
   * [Abandoning dynamic drop semantics](#abandoning-dynamic-drop-semantics)
 * [Detailed design](#detailed-design)
@@ -39,30 +65,6 @@
   * [How dynamic drop semantics works](#how-dynamic-drop-semantics-works)
     * [Program illustrating semantic impact of hidden drop flag](#program-illustrating-semantic-impact-of-hidden-drop-flag)
 
-# Summary
-
-Three step plan:
-
- 1. Revise language semantics for drop so that all branches move or drop
-    the same pieces of state ("drop obligations").  To satisfy this
-    constraint, the compiler has freedom to move the drop code for
-    some state to earlier points in the control flow ("early drops").
-
- 2. Add lints to inform the programmer of situations when this new
-    drop-semantics could cause side-effects of RAII-style code
-    (e.g. releasing locks, flushing buffers) to occur sooner than
-    expected.
-
-    Types that have side-effectful drop implement a marker trait,
-    `NoisyDrop`, that drives a warn-by-default lint; another marker
-    trait, `QuietDrop`, allows types to opt opt.  An allow-by-default
-    lint provides a way for programmers to request notification of all
-    auto-inserted early-drops.
-
- 3. Remove the dynamic tracking of whether a value has been dropped or
-    not; in particular, (a) remove implicit addition of a drop-flag by
-    `Drop` impl, and (b) remove implicit zeroing of the memory that
-    occurs when values are dropped.
 
 # Motivation
 
