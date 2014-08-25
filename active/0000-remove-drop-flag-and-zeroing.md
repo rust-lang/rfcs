@@ -52,6 +52,7 @@ Three step plan:
   * [Do this with support for variant-predicated drop-obligations](#do-this-with-support-for-variant-predicated-drop-obligations)
   * [Associate drop flags with stack-local variables alone](#associate-drop-flags-with-stack-local-variables-alone)
   * [Separate individual and grouped instances of a type](#separate-individual-and-grouped-instances-of-a-type)
+  * [Store drop-flags for fragments of state on stack out-of-band](#store-drop-flags-for-fragments-of-state-on-stack-out-of-band)
 * [Unresolved questions](#unresolved-questions)
   * [Names (bikeshed expected)](#names-bikeshed-expected)
   * [Does the match-arm rule break expressiveness claim?](#does-the-match-arm-rule-break-expressiveness-claim)
@@ -863,6 +864,31 @@ This is an interesting thought exercise, but a pretty serious
 language/library change, and it is not clear whether it would be any
 better than static drop semantics in terms of Rust's language
 complexity budget.
+
+## Store drop-flags for fragments of state on stack out-of-band
+
+(This is another variant on "Associate drop flags with stack-local variables alone",
+but with appropriate support for tracking fragments of state.)
+
+Keep a dynamic drop semantics, but without the drop-flags.  To
+accomplish this, internally, the compiler does the same
+drop-obligation analysis that is described above, to identify paths to
+state where the drop-obligations differ at a merge point.  On the
+stack frame itself, keep an array of boolean drop-flags for the
+function that tracks all such paths with differing drop obligations.
+Then, at the end of a variable's scope, consult the drop-flag array as
+necessary.
+
+Under this alternative, since we are continuing to use a dynamic drop
+semantics, we do not add `NoisyDrop` nor `QuietDrop`.  The main
+difference of this alternative over what code does today is that code
+would not be allowed to attempt to inspect the state of the drop flag.
+
+Whether or not to take this approach is largely dependent on whether
+one thinks that it is too easy to be relying on a drop-flag
+unintentionally; i.e., is it better to require code that wants a
+drop-flag to use `Option<T>`?  Does that help code clarity?  Or does
+it just create unnecessary work?
 
 # Unresolved questions
 
