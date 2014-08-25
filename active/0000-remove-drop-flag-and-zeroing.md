@@ -50,7 +50,7 @@ Three step plan:
   * [Do nothing](#do-nothing)
   * [Require explicit drops rather than injecting them](#require-explicit-drops-rather-than-injecting-them)
   * [Do this with support for variant-predicated drop-obligations](#do-this-with-support-for-variant-predicated-drop-obligations)
-  * [Associate drop flags with stack-local variables alone](#associate-drop-flags-with-stack-local variables alone)
+  * [Associate drop flags with stack-local variables alone](#associate-drop-flags-with-stack-local-variables-alone)
   * [Separate individual and grouped instances of a type](#separate-individual-and-grouped-instances-of-a-type)
 * [Unresolved questions](#unresolved-questions)
   * [Names (bikeshed expected)](#names-bikeshed-expected)
