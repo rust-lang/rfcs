@@ -7,12 +7,20 @@
 Three step plan:
 
  1. Revise language semantics for drop so that all branches move or drop
-    the same pieces of state ("drop obligations").
+    the same pieces of state ("drop obligations").  To satisfy this
+    constraint, the compiler has freedom to move the drop code for
+    some state to earlier points in the control flow ("early drops").
 
- 2. Add lint(s) to inform the programmer of situations when this new
+ 2. Add lints to inform the programmer of situations when this new
     drop-semantics could cause side-effects of RAII-style code
     (e.g. releasing locks, flushing buffers) to occur sooner than
     expected.
+
+    Types that have side-effectful drop implement a marker trait,
+    `NoisyDrop`, that drives a warn-by-default lint; another marker
+    trait, `QuietDrop`, allows traits to opt opt.  An allow-by-default
+    lint provides a way for programmers to request notification of all
+    auto-inserted early-drops.
 
  3. Remove the dynamic tracking of whether a value has been dropped or
     not; in particular, (a) remove implicit addition of a drop-flag by
@@ -29,13 +37,16 @@ moved to another owner or been dropped.  (See the "How dynamic drop
 semantics works" appendix for more details if you are unfamiliar
 with this part of Rust's current implementation.)
 
-Here are some problems with this:
+## Problems with dynamic drop semantics
 
- * Most important: implicit memory zeroing is a hidden cost that all
-   Rust programs are paying.  With the removal of the drop flag, we
-   can remove implicit memory zeroing (or at least revisit its utility
-   -- there may be other motivations for implicit memory zeroing,
-   e.g. to try to keep secret data from being exposed to unsafe code).
+Here are some problems with this situation:
+
+ * Most important: implicit memory zeroing is a hidden cost that today
+   all Rust programs pay, in both execution time and code size.
+   With the removal of the drop flag, we can remove implicit memory
+   zeroing (or at least revisit its utility -- there may be other
+   motivations for implicit memory zeroing, e.g. to try to keep secret
+   data from being exposed to unsafe code).
 
  * Hidden bits are bad, part I: Users coming from a C/C++ background
    expect `struct Foo { x: u32, y: u32 }` to occupy 8 bytes, but if
@@ -54,12 +65,14 @@ Here are some problems with this:
    bounded by program stack growth; the memory wastage is strewn
    throughout the heap.
 
-So, those are the main motivations for removing the drop flag.
+The above are the main motivations for removing the drop flag.
 
-But, how do we actually remove the drop flag? The answer: By replacing
+## Abandoning dynamic drop semantics
+
+How do we actually remove the drop flag? The answer: By replacing
 the dynamic drop semantics (that implicitly checks the flag to
-determine if a value has already been dropped) with a static drop
-semantics (that performs drop of certain values more eagerly,
+determine if a value has already been dropped) with a *static drop
+semantics* (that performs drop of certain values more eagerly,
 i.e. before the end of their owner's lexical scope).
 
 A static drop semantics essentially works by inserting implicit calls
@@ -71,27 +84,38 @@ discussion of how this is done.)
 There are two important things to note about a static drop semantics:
 
  1. It should be *equal* in expressive power to the Rust language as we know
-    it today.  This is because, if the user is actually relying on the
-    drop-flag today in some variable or field declaration `x: T`, they
-    can replace that declaration with `x: Option<T>` and thus recreate
-    the effect of the drop-flag.  (Note that formal comparisons of
-    expressiveness typically say nothing about *convenience*.)
+    it today.
 
- 2. Static drop semantics could be *surprising* to Rust programmers
-    who are used to dynamic drop semantics.  In particular, an implicit early
+    If the user is actually relying on the drop-flag today in some
+    variable or field declaration `x: T`, they can replace that
+    declaration with `x: Option<T>` and thus recreate the effect of
+    the drop-flag.
+
+    (Note that formal comparisons of expressiveness typically say
+    nothing about *convenience*; this RFC is explicitly sacrificing
+    the "convenience" of the implicit drop flag, under the assumption
+    that in the common case, programmers would choose an early-drop
+    over an `Option<T>` wrapper, if given the choice.)
+
+ 2. Static drop semantics may be *surprising* to programmers.
+
+    Rust programmers may be used to dynamic drop semantics, and C++
+    programmers may be used to destructors always being run at the end
+    of the scope (never earlier).  In particular, an implicit early
     drop could lead to unexpected side-effects occurring earlier than
     expected.
 
-The bulk of the Detailed Design is dedicated to mitigating that second
-observation, in order to reduce the number of surprises for
-Rust programmers.  The main idea for this mitigation is the addition
-of one or more lints that report to the user when an side-effectful
-early-drop will be implicitly injected into the code, and suggest to
-them that they revise their code to remove the implicit `drop` injection
-(e.g. by explicitly dropping the path in question, or by
-re-establishing the drop obligation on the other control-flow paths,
-or by rewriting the code to put in a manual drop-flag via
-`Option<T>`).
+The bulk of the Detailed Design is dedicated to mitigating the second
+observation, to reduce the number of surprises for a programmer
+encountering an early-drop injected by `rustc`.
+
+The main idea for this mitigation is the addition of one or more lints
+that report to the user when an side-effectful early-drop will be
+implicitly injected into the code, and suggest to them that they
+revise their code to remove the implicit `drop` injection (e.g. by
+explicitly dropping the path in question, or by re-establishing the
+drop obligation on the other control-flow paths, or by rewriting the
+code to put in a manual drop-flag via `Option<T>`).
 
 
 # Detailed design
@@ -152,6 +176,7 @@ fn test() -> bool { ... }
 fn xform(d:D) -> D { ... }
 
 fn f1() {
+
     // At the outset, the set of drop obligations is
     // just the set of moved input parameters (empty
     // in this case).
@@ -217,11 +242,13 @@ control flow.
 
 ### Example of code with changed behavior under static drop semantics
 
+The function `f2` below is similar to `f1`, except that it will have differing set
+of drop obligations at the merge point, necessitating a hidden
+drop call.
+
 ```rust
-// `f2` is similar to `f1`, except that it will have differing set
-// of drop obligations at the merge point, necessitating a hidden
-// drop call.
 fn f2() {
+
     // At the outset, the set of drop obligations is
     // just the set of moved input parameters (empty
     // in this case).
