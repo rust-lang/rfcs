@@ -55,11 +55,9 @@ Three step plan:
   * [Store drop-flags for fragments of state on stack out-of-band](#store-drop-flags-for-fragments-of-state-on-stack-out-of-band)
 * [Unresolved questions](#unresolved-questions)
   * [Names (bikeshed expected)](#names-bikeshed-expected)
-  * [Does the match-arm rule break expressiveness claim?](#does-the-match-arm-rule-break-expressiveness-claim)
   * [Which library types should be `QuietDrop`](#which-library-types-should-be-quietdrop)
   * [Should type parameters be treated specially](#should-type-parameters-be-treated-specially)
   * [How should moving into wildcards be handled](#how-should-moving-into-wildcards-be-handled)
-  * [Should the match-arm rule be weakened to just a warning](#should-the-match-arm-rule-be-weakened-to-just-a-warning)
   * [The most direct `Option<T>` re-encoding of drop-flag yields dead_assignments](#the-most-direct-optiont-re-encoding-of-drop-flag-yields-dead_assignments)
 * [Appendices](#appendices)
   * [Program illustrating space impact of hidden drop flag](#program-illustrating-space-impact-of-hidden-drop-flag)
@@ -539,43 +537,21 @@ while if the `One` arm matches, then the `s` is deconstructed and
 moved in pieces into `a1` and `a2`, which are themselves then consumed
 by the calls to `dA`.
 
-While we *could* attempt to continue supporting this style of code
-(see ["variant-predicated drop-obligations"](#do-this-with-support-for-variant-predicated-drop-obligations)
-in the Alternatives section), it seems simpler if we just disallow it.  This RFC
-proposes the following so-called "match-arm rule": if any arm in a match consumes
-the input via `move`, then *every* arm in the match must consume the
-input *by the end of each arm's associated body*.
+According to static drop semantics, if any arm in a match consumes the
+input via `move`, then every arm must consume the input, possibly by
+adding implicit early drops as necessary at the end of arms that do
+not consume the input.  In particular, the above code will remain
+legal, but there will be an implicit early drop of `s` added at the
+end of the first arm.
 
-That last condition is crucial, because it enables patterns like
-this to continue working:
+This is notable for two reasons.  First, the programmer cannot
+currently write such a drop explicitly today, since that would require
+non-lexical borrows.  Second, the borrow-checker must take care to not
+allow borrowed references to live beyond the inserted early drops.
 
-```rust
-    match s {
-        One(a1, a2) => { // a moving match here
-            dA(a1) + dA(a2)
-        }
-        Two(_, _) => { // a non-binding match here
-            helper_function(s)
-        }
-    };
-
-```
-
-Unfortunately, the same property does not hold
-for a ref-binding match: we cannot write code like this:
-```rust
-    match s {
-        One(a1, a2) => { // a moving match here
-            dA(a1) + dA(a2)
-        }
-        Two(ref r1, ref r2) => { // a ref-binding match here
-            let ret = helper_function(r1, r2);
-            mem::drop(s); // <-- oops, `s` is still borrowed.
-            ret
-        }
-    };
-```
-
+(An earlier version of this RFC proposed a so-called "match-arm rule"
+that made the above code illegal, requiring that if any arm consumed
+the input, then all arms must also consume the input.)
 
 ### Type parameters
 
@@ -803,12 +779,7 @@ implied here made this a non-starter.
 
 ## Do this with support for variant-predicated drop-obligations
 
-In "match expressions and enum variants" above, this RFC proposed the
-match-arm rule that if any arm in a match consumes the input via `move`, then
-every arm in the match must consume the input (by the end of its
-body).
-
-There is an alternative, however.  We could enrich the structure of
+We could enrich the structure of
 drop-obligations to include paths that are predicated on enum
 variants, like so: `{(s is Two => s#0), (s is Two => s#1)}`.  This
 represents the idea that (1.) all control flows where `s` is the `One`
@@ -906,21 +877,6 @@ it just create unnecessary work?
 There may be better names for lints and the traits being added
 here.  It took me a while to come up with the "noisy" and "quiet"
 mnemonics.
-
-## Does the match-arm rule break expressiveness claim?
-
-I made the claim in "Abandoning dynamic drop semantics"
-that a static drop semantics should be *equal* in expressive power to
-the Rust language as we know it today.
-
-However, when I made that claim, I did not think carefully
-about the implications of the simple match-arm rule.
-Being forced to move out of the original owner in every arm
-might imply that you cannot perform a truly automatic mechanical
-transformation on the program to reencode the prior behavior.
-Still, I remain confident that one can find some encoding in terms
-of `Option<T>` for any current program.
-
 
 ## Which library types should be `QuietDrop`
 
@@ -1027,34 +983,6 @@ match x {
     }
 }
 ```
-
-## Should the match-arm rule be weakened to just a warning
-
-In principle we do not need to actually make it *illegal* to
-write:
-```rust
-    let ret = match s {
-        Two(ref r1, ref r2) => {
-            dR(r1) + dR(r2)
-        }
-        One(a1, a2) => {
-            dA(a1) + dA(a2)
-        }
-    };
-```
-
-We could instead just treat this like another instance of a case where
-there will be another early implicit drop (namely a drop of `s` at the
-end of each arm where it has been accessed by reference) -- the
-difference is that we cannot suggest that the user add an explicit
-`drop` of `s` for such arms, since doing so would violate the
-borrowing rules (since the references are still in scope).
-
-(But then again, if the borrowed references leak into the constructed
-value that lives longer than the `match` itself, those implicit early
-drops will be unsound.  This scenario leads me to think that we should
-strongly consider adopting the stronger form of the match-arm rule,
-for simplicity in the compiler itself.)
 
 ## The most direct `Option<T>` re-encoding of drop-flag yields dead_assignments
 
