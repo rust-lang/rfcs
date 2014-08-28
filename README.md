@@ -16,7 +16,7 @@ the direction the language is evolving in.
 
 You need to follow this process if you intend to make "substantial" 
 changes to the Rust distribution. What constitutes a "substantial" 
-change is evolving based on community norms, but may include the following.
+change is evolving based on community norms, but may include the following:
 
    - Any semantic or syntactic change to the language that is not a bugfix.
    - Removing language features, including those that are feature-gated.
@@ -24,7 +24,7 @@ change is evolving based on community norms, but may include the following.
 including lang items and intrinsics.
    - Additions to `std`
 
-Some changes do not require an RFC:
+Some changes do not require a RFC:
 
    - Rephrasing, reorganizing, refactoring, or otherwise "changing shape 
 does not change meaning".
@@ -41,14 +41,14 @@ submit an RFC first.
 ## What the process is
 
 In short, to get a major feature added to Rust, one must first get the 
-RFC merged into the RFC repo as a markdown file. At that point the RFC 
+RFC merged into the RFC repo as a markdown file. At that point, the RFC 
 is 'active' and may be implemented with the goal of eventual inclusion 
 into Rust.
 
 * Fork the RFC repo http://github.com/rust-lang/rfcs
 * Copy `0000-template.md` to `active/0000-my-feature.md` (where 
-'my-feature' is descriptive. don't assign an RFC number yet).
-* Fill in the RFC
+'my-feature' is descriptive, don't assign a RFC number yet).
+* Fill in the RFC.
 * Submit a pull request. The pull request is the time to get review of 
 the design from the larger community.
 * Build consensus and integrate feedback. RFCs that have broad support 
@@ -60,7 +60,7 @@ the RFC is 'active', or reject it by closing the pull request.
 
 ## The RFC life-cycle
 
-Once an RFC becomes active then authors may implement it and submit the 
+Once a RFC becomes active then authors may implement it and submit the 
 feature as a pull request to the Rust repo. An 'active' is not a rubber 
 stamp, and in particular still does not mean the feature will ultimately 
 be merged; it does mean that in principle all the major stakeholders 
@@ -79,12 +79,12 @@ the time of the next major release; therefore we try to keep each RFC
 document somewhat in sync with the language feature as planned,
 tracking such changes via followup pull requests to the document.
 
-An RFC that makes it through the entire process to implementation is
-considered 'complete' and is moved to the 'complete' folder; an RFC
+A RFC that makes it through the entire process to implementation is
+considered 'complete' and is moved to the 'complete' folder; a RFC
 that fails after becoming active is 'inactive' and moves to the
 'inactive' folder.
 
-## Implementing an RFC
+## Implementing a RFC
 
 Some accepted RFC's represent vital features that need to be
 implemented right away. Other accepted RFC's can represent features
@@ -94,7 +94,7 @@ implementation in the Rust repository; thus that associated issue can
 be assigned a priority via the [triage process] that the team uses for
 all issues in the Rust repository.
 
-The author of an RFC is not obligated to implement it. Of course, the
+The author of a RFC is not obligated to implement it. Of course, the
 RFC author (like any other developer) is welcome to post an
 implementation for review after the RFC has been accepted.
 
@@ -131,13 +131,13 @@ its virtues and the community’s desire for it.
 ## RFC Postponement
 
 Some RFC pull requests are tagged with the 'postponed' label when they
-are closed (as part of the rejection process).  An RFC closed with
+are closed (as part of the rejection process).  A RFC closed with
 “postponed” is marked as such because we want neither to think about
 evaluating the proposal nor about implementing the described feature
 until after the next major release, and we believe that we can afford
 to wait until then to do so.
 
-Usually an RFC pull request marked as “postponed” has already passed
+Usually a RFC pull request marked as “postponed” has already passed
 an informal first round of evaluation, namely the round of “do we
 think we would ever possibly consider making this change, as outlined
 in the RFC pull request, or some semi-obvious variation of it.”  (When
