@@ -4,22 +4,23 @@
 
 # Summary
 
-Efficient single inheritance by unification and nesting of structs and enums,
-and virtual dispatch of methods called on reference-to-concrete-type objects.
+Support performance (time and space) sensitive data structures (such as the DOM
+or an AST) by enhancing enums. In particular, offer a dynamically sized version
+of an enum, called a struct. This struct is a generalisation of current structs
+and supports efficient single inheritance. Structs and enum variants are unified
+(up to the keyword and static vs dynamic size distinction) which means struct
+variants, tuple structs, and enum variants as types emerge naturally. We add the
+option of virtual dispatch of methods called on reference-to-concrete-type-
+objects (in addition to virtual dispatch for reference-to-trait-objects which
+exists today).
 
-This will support data structures such as the DOM which need to be efficient
-both in speed (particularly non-virtual field access) and space (thin pointers
-to abstract types).
-
-The approach unifies many of our data types so although we add features (virtual
-methods, nested enums), we reduce complexity of the language and compiler in
-other directions (removing distinctions between structs and enums, makes support
-for struct variants and tuple structs less ad hoc).
+These changes are mostly backwards compatible, see the staging section for more
+details.
 
 # Motivation
 
 Supporting efficient, heterogeneous data structures such as the DOM or an AST
-(e.g., in the Rust compiler). Precisely we need a form of code sharing which
+(e.g., in the Rust compiler). Precisely, we need a form of code reuse which
 satisfies the following constraints:
 
 * cheap field access from internal methods;
@@ -114,14 +115,15 @@ types, amongst others). Fields in outer items are inherited by inner items
 (e.g., `S2` objects have fields `f1` and `f2`). Field shadowing is not allowed.
 
 All leaf variants may be instantiated. Non-leaf enums may not be instantiated
-(e.g., you can't create an `E3` or `VariantNest` object). By default, all
-structs can be instantiated. Structs, including nested structs, but not leaf
-structs, may be marked `virtual`, which means they cannot be instantiated. Put
-another way, enums are virtual by default. E.g., `virtual struct S1 { ... S2 {
-... } }` means `S1` cannot be instantiated, but `S2` can. `virtual struct S1 {
-... virtual S2 { ... } }` would mean `S2` could not be instantiated, but would
-be illegal because it is a leaf item. The `virtual` keyword can only be used at
-the top level or inside another `virtual` struct.
+(e.g., you can't create an `E3` or `VariantNest` object), but they my be used in
+pattern matching. By default, all structs can be instantiated. Structs,
+including nested structs, but not leaf structs, may be marked `virtual`, which
+means they cannot be instantiated. Put another way, enums are virtual by
+default. E.g., `virtual struct S1 { ... S2 { ... } }` means `S1` cannot be
+instantiated, but `S2` can. `virtual struct S1 { ... virtual S2 { ... } }` would
+mean `S2` could not be instantiated, but would be illegal because it is a leaf
+item. The `virtual` keyword can only be used at the top level or inside another
+`virtual` struct.
 
 **Open question:** is the above use of the `virtual` keyword a good idea? We
 could use `abstract` instead (some people do not like `virtual` in general, and
@@ -134,18 +136,18 @@ keyword (`struct` or `enum`) is required and must match the outer item. For
 example, `struct S3 : S1 { ... }` adds another case to the `S1` defintion above
 and objects of `S3` would inherit the fields `f1` and `f2`. Likewise, one could
 write `enum Variant3 : E3;` to add a case to the defintion of `E3`. Such items
-are only allowed in the same module or a sub-module of the outer item. Why?
+are only allowed in the same crate as the outer item. Why?
 
     1. Prevents people from abusing virtual structs to create an open-ended
     abstraction: traits are more suitable in such cases.
     2. Downcasting is more optimizable, becomes O(1) instead of O(n). This is a
     common complaint against C++ RTTI (as pointed out on the mailing list).
-    3. Addresses the private fields initialization gotcha. (Without this
-    restriction, it is not clear how to initialise a struct with private fields 
-    in a different module).
+    3. Prevents the 'fragile base class' problem - since there are no derived
+    structs outside the base struct's crate, changing the base class has only
+    limited and known effects.
 
-When matching data types, you can use any names from any level of nesting to
-cover all inner levels. E.g.,
+When pattern matching data types, you can use any names from any level of
+nesting to cover all inner levels. E.g.,
 
 ```
 fn foo(x: E3) {
@@ -172,7 +174,7 @@ affects how they can be used). enum objects are represented as they are today.
 They have a tag and are the size of the largest variant plus the tag. A pointer
 or reference to an enum object is a thin pointer to a regular enum
 object. Nested variants should use a single tag and the 'largest variant' must
-take into account nesting. Event if we know the static type restricts us to a
+take into account nesting. Even if we know the static type restricts us to a
 small object, we must assume it could be a larger variant. That allows for
 trivial coercions from nested variants to outer variants. We could optimise this
 later, perhaps.
@@ -185,14 +187,17 @@ values have their minimal size (i.e., their size does not take into account
 other variants). This is also current behaviour. Pointers to structs are DST
 pointers, but are not fat. They point to a pointer to a vtable, followed by the
 data in the struct. The vtable pointer allows identification of the concrete
-struct variant. Pointer-to-struct objects may only be dereferenced if the static
-type is a leaf and gives only the concrete object with no indication of the
-vtable. The runtime representation of pointer-to-leaf struct objects is changed
-from the current representation in that the pointer is a pointer to
-`[vtable_ptr, data]` rather than a pointer to `data`. However, since
-dereferencing must give the data (and not the `[vtable_ptr, data]`
-representation), this difference is only observable if the programmer uses
-unsafe transmutes.
+struct variant.
+
+Pointer-to-struct objects may only be dereferenced if the static type is a leaf
+struct. Dereferencing gives only the concrete object with no indication of the
+vtable.
+
+The runtime representation of pointer-to-leaf struct objects is changed from the
+current representation in that the pointer is a pointer to `[vtable_ptr, data]`
+rather than a pointer to `data`. However, since dereferencing must give the data
+(and not the `[vtable_ptr, data]` representation), this difference is only
+observable if the programmer uses unsafe transmutes.
 
 To summarise the important differences between enums and structs: enum objects
 may be passed by value where an outer enum type is expected. Struct objects may
@@ -238,8 +243,8 @@ A programmer would typically use enums for small, similar size objects where the
 data is secondary and discrimination is primary. For example, the current
 `Result` type. Structs would be used for large or diversely sized objects where
 discrimination is secondary, that is they are often used in a polymorphic
-setting. A good candidate would be the AST enum in libsyntax (or of course, the
-DOM in Servo).
+setting. A good candidate would be the AST enum in libsyntax or the DOM in
+Servo.
 
 Matching struct objects (that is pointer-to-structs) should take into account the
 dynamic type given by the vtable pointer and thus allow for safe and efficient
@@ -251,7 +256,7 @@ Methods may be marked as `virtual` which allows them to be overridden by a sub-
 struct. Overriding methods must be marked `override`. It is an error for a
 method to override without the annotation, or for an annotated method not to
 override a super-struct method. Methods may be marked as both `override` and
-`virtual` to indicate that override and may in turn be overridden. (Methods
+`virtual` to indicate that they override and may in turn be overridden. (Methods
 marked `override` but not `virtual` must override but may not be overriden). A
 method without the `virtual` annotation is final (in the Java sense) and may not
 be overridden. Virtual methods may be given without a body, these are pure
@@ -266,23 +271,22 @@ dynamically using an object's vtable.
 
 Nothing in this RFC introduces subtyping.
 
-Inner enum values can implicitly coerce to outer enum values.
+Inner enum values can implicitly coerce to outer enum values as can enum pointer
+values.
 
 Inner struct pointer values can implicitly coerce to outer struct pointer
 values. Note that there is no coercion between struct values. Since all but leaf
 structs are unsized, they may not be dereferenced. Thus we are immune to the
-object slicing problem from C++.
+object slicing problem from C++. Mutable references cannot be upcast (coerced)
+in this way since it would be unsafe (once the scope of the 'super-type' borrow
+expires, the 'sub-type' reference can be accessed again and the pointee may have
+changed type). Coercion of mutable `Box` pointers is allowed.
 
 **Open question: We could choose to force explicit coercions. It would make
-**sense for the behaviour to match sub-traits, whatever we decide for that.
+sense for the behaviour to match sub-traits, whatever we decide for that.
 
 Via the DST rules, it should fall out that these coercions work for smart
 pointers as well as `&` and `Box` pointers.
-
-Note that this means if `R` is an inner struct of `S` and `S` implements a trait
-`T`, but `R` does not, then given a pointer to an `R` object, it may be coerced
-(explicitly) to an `S` in order to call methods defined in `T`, if the self type
-of those methods is a pointer to self (e.g., `&self`).
 
 If in the future we decide that subtyping is useful, we could add it backwards
 compatibly.
@@ -291,7 +295,7 @@ compatibly.
 
 (I feel the syntax could be nicer here, any ideas?)
 
-Nested items must specify formal and actual type parameters. The outer items'
+Nested structs must specify formal and actual type parameters. The outer items'
 type parameters must be given between `<>` after a `:` (similar to the
 inheritance notation, but no need to name the outer item). E.g.,
 
@@ -344,10 +348,14 @@ struct Sgn<X, Y, Z> : Sg<X, Y> {
 let x = Sgn<int, int, int> { field: ... };
 ```
 
+For enums, only the outermost enum may have type parameters. All nested enums
+implicitly inherit all those type parameters. This is necessary both for
+backwards compatibilty and to know the size of any enum instance.
+
 ## Privacy
 
 The privacy rules for fields remain unchanged. Nested items inherit their
-privacy from their parent, so module private by default unless the parent is
+privacy from their parent, i.e., module private by default unless the parent is
 marked `pub`.
 
 **Open question:** is there a use case for allowing nested items to be marked
@@ -398,8 +406,18 @@ implement it too, via coercion. (ht Niko).
 
 If a method is overridden, we should still be able to call it. C++ uses `::`
 syntax to allow this, UFCS should let us do this. Since all such uses would use
-static dispatch, we would use self-as-arg syntax, e.g.,
+static dispatch, we would use self-as-argument syntax, e.g.,
 `BaseType::method(self, ...)`.
+
+
+## Trait matching
+
+When searching for traits to match an expression, super-structs/enums should
+also checked for impls. Searching for impl candidates is essentially a matter of
+dereferencing a bunch of times and then trying to apply a subset of coercions
+(auto-slicing, etc.), and then auto-borrowing. With this RFC, we would add
+checking of outer items to the set of coercions checked. We would only consider
+these candidates for structs if the type of `self` is a reference type.
 
 
 # JDM's example
@@ -497,7 +515,7 @@ extend a single struct and add subtyping appropriately. We would then need to
 add support for some kind of RTTI (possibly using a trait and macros) to allow
 safe and efficient downcasting.
 
-## Some previous RFCs
+## Some other RFCs
 
 * [Virtual Structs (5)](https://github.com/rust-lang/rfcs/pull/5) Stays as
   closely as possible to single inheritance in Java or C++. Touches only
@@ -523,6 +541,14 @@ safe and efficient downcasting.
 * [Unify and nest enums and structs (24)](https://github.com/rust-lang/rfcs/pull/24)
   A variation of RFC 11, superseeded by this RFC.
 
+* [Trait based inheritance (223)](https://github.com/rust-lang/rfcs/pull/223)
+  "This is largely based upon #9 and #91, but fleshed out to make an actual
+  inheritance proposal.". I'm afraid I haven't spent enough time on this to give
+  an accurate summary.
+
+* Kimundi and eddyb have promised an RFC for a possible solution using trait
+  fields.
+
 
 ## Variation - `data` for `struct` and `enum`
 
@@ -539,6 +565,59 @@ them as syntactic sugar for `sized data` and `unsized virtual data`,
 respectively.
 
 # Unresolved questions
+
+## Initialisation
+
+To initialise a struct you must give values for all its fields. There is a
+technical and an ergonomic problem here: if the base struct is in a different
+module, then its private fields cannot be named in the constructor for the
+derived struct; and if the base struct has a lot of fields, it is painful and
+error-prone to write out their values in multiple places.
+
+We can address the first problem by adjusting the privacy rules to always allow
+the naming of private fields in constructors if the most derived struct's fields
+are visible.
+
+To address the second problem, we start by adjusting the rules for struct
+initialisers. An initialiser currently has the form
+`Foo { f_0: value_0, ..., f_n: value_n, .. e }` where `e` is an expression with
+type `Foo` and which supplies any fields not in the field list. We can make this
+more general by accepting an expression with type `Foo` or any of its base
+structs, where the programmer must explicitly give at least any missing fields.
+This addresses both the first and second problems described above. However, it
+has a problem of its own if the base struct is virtual - then we cannot
+create an instance with the required type, so the derived struct is impossible
+to instantiate.
+
+I don't see any good way to solve this problem. Here are some ideas (I think the
+second or third are my favourites):
+
+* Where a struct is virtual, allow the struct to be instantiated, but do not
+  allow any method calls on such objects, nor taking its address. The only
+  operations allowed on objects with such type are field access and use in
+  initialiser expressions. This is yet more added complexity.
+
+* Some attribute similar to `deriving` for a virtual base struct which
+  automatically generates a non-virtual derived struct with no extra fields and
+  with an implementation which `fail!`s for every method call. A constructor for
+  the base struct can create one of these objects and return a `Box<Foo>` (if
+  `Foo` is the base struct). We would adjust struct initialisers to allow
+  `Box<T>` as well as `T` where `T` is the struct being initialised or any of
+  its base structs. This can be thought of as a dynamic version of the above
+  (static) proposal. It has the advantage of much less compiler complexity and
+  no new language rules (ish), however, this comes at the expense of risk of
+  runtime failure.
+
+* Allow fields to have default values, e.g., `struct Foo { x: int, y:int = 42 }`,
+  here `y` has a default. When instantiating `Foo`, `x` must be provided and `y`
+  may be. If `y` is provided then it overrides the default value. If a struct is
+  to have derived structs in different modules, then all private fields must
+  have defaults (this does not need to be enforced by the compiler - it is a
+  natural consequence). This has the disadvantage that fields can only ever have
+  a single default (as opposed to using multiple constructor functions) and
+  there can be no input to field defaults. It is also more language complexity,
+  but I believe this is useful in regular structs too.
+
 
 ## Multiple inheritance
 
@@ -580,7 +659,30 @@ impl Element2 {
 ```
 
 I believe that all such uses can be implemented using the traits mechanisms in
-Rust and that these will interact cleanly with the proposed features for
-efficient single inheritance. Therefore, we should not add any additional
-mechanism for multiple inheritance.
+Rust and that these will interact cleanly with the rest of this RFC. Therefore,
+we should not add any additional mechanism for multiple inheritance.
 
+
+# Staging
+
+There is a lot to implement here. Here is an approximate implementation plan:
+
+* Add enum variants to the type name space (this is backwards incompatible so
+must happen before 1.0);
+* Ensure the syntax for struct inheritance matches the syntax in this RFC for
+non-lexical nesting;
+* Allow private fields to be initialised in the initialisers of sub-structs
+(possibly remove this later);
+* Implement the rules around instantiation of virtual structs;
+* Add vtables for virtual structs and ensure virtual structs behave as DST
+unsized types;
+* Add coercions for virtual structs;
+* Implement trait matching rules;
+* Implement rules for Drop and destructors;
+* Implement virtual impls;
+* Implement pattern matching downcasts for virtual structs (at this stage we
+have everything Servo needs for the DOM);
+* Implement initialisation mechanism;
+* Allow lexically nested structs and deeply nested enums. Refactor the compiler
+middle-end to have a single representation;
+* Allow use of enum variants as types.
