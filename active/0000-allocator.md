@@ -71,7 +71,9 @@ allocated size from the `ptr` in `free` and `realloc` calls.
 
 To accomplish the above, this RFC proposes a `RawAlloc` interface for
 managing blocks of memory, with specified size and alignment
-constraints.
+constraints.  The `RawAlloc` client can attempt to adjust the storage
+in use in a copy-free manner by observing the memory block's
+current capacity via a `usable_size` call.
 
 Meanwhile, we would like to continue supporting a garbage collector
 (GC) even in the presence of user-defined allocators.  In particular,
@@ -80,9 +82,29 @@ data outside the GC-heap and program stack, and still be scannable by
 a tracing GC implementation.  In other words, we want this to work:
 
 ```rust
-let x: Rc<int> = Rc::new(3);
-let y: Gc<Rc<int>> = Gc::new(x);
-let z: Rc<Gc<Rc<int>>> = Rc::new(y);
+let alloc: MyAlloc = ...;
+
+// Instances of `MyVec` have their backing array managed by `MyAlloc`.
+type MyVec<T> = Vec<T, MyAlloc>;
+let mut v: MyVec<int> = vec![3, 4];
+
+// Here, we move `x` into a gc-managed pointer; the vec's backing
+// array is still managed by `alloc`.
+let w: Gc<MyVec<int> = Gc::new(x);
+
+// similar
+let x: Gc<MyVec<int> = Gc::new(vec![5, 6]);
+
+// And here we have a vec whose backing array, which contains GC roots,
+// is held in memory managed by `MyAlloc`.
+let y: MyVec<Gc<MyVec<int>>> = vec![w, x];
+```
+
+Or, as a potentially simpler example, this should also work:
+```rust
+let a: Rc<int> = Rc::new(3);
+let b: Gc<Rc<int>> = Gc::new(x);
+let c: Rc<Gc<Rc<int>>> = Rc::new(y);
 ```
 
 But we do not want to impose the burden of supporting a tracing
@@ -108,6 +130,8 @@ higher level, within the Rust standard library itself.
 
 # Detailed design
 
+## The RawAlloc trait
+
 Here is the `RawAlloc` trait design.  It is largely the same
 as the design from [RFC PR 39]; points of departure are
 enumerated after the API listing.
@@ -128,34 +152,137 @@ pub trait RawAlloc {
     /// Extends or shrinks the allocation referenced by `ptr` to
     /// `size` bytes of memory, retaining the alignment `align`.
     ///
-    /// If this returns non-null, then the storage referenced by `ptr`
-    /// may have been freed and should be considered unusable.
+    /// If this returns non-null, then the memory block referenced by
+    /// `ptr` may have been freed and should be considered unusable.
     ///
-    /// Returns null if allocation fails; in this scenario, the original
-    /// memory is unaltered.
+    /// Returns null if allocation fails; in this scenario, the
+    /// original memory block referenced by `ptr` is unaltered.
     ///
-    /// The `old_size` and `align` parameters must be the parameters
-    /// last used to create `ptr` (either via `alloc` or `realloc`);
-    /// otherwise behavior is undefined.  Behavior also undefined if
-    /// `size` is 0.
+    /// The `align` parameter must have the value used to create
+    /// `ptr` (via `alloc_bytes` or `realloc_bytes`).
+    /// The `old_size` parameter must fall in the range `[orig,
+    /// usable]`, where:
+    ///   * `orig` is the value last used to create `ptr`
+    ///     (either via `alloc_bytes` or `realloc_bytes`), and
+    ///   * `usable` is the value returned from `usable_size` when
+    ///     given `ptr`, `orig`, and `align`.
+    ///
+    /// Behavior is undefined if above constraints on `align` and
+    /// `old_size` are unmet. Behavior also undefined if `size` is 0.
     unsafe fn realloc_bytes(&self, ptr: *mut u8, size: uint, align: uint, old_size: uint) -> *mut u8;
 
     /// Returns the usable size of an allocation created with the
     /// specified `size` and `align`.
+    ///
+    /// The `align` parameter must have the value used to create
+    /// `ptr` (via `alloc_bytes` or `realloc_bytes`).
+    /// The `size` parameter must fall in the range
+    /// `[orig, usable]`, where:
+    ///
+    ///   * `orig` is the value last used to create `ptr`
+    ///     (either via `alloc_bytes` or `realloc_bytes`), and
+    ///   * `usable` is the value returned from `usable_size` when
+    ///     given `ptr`, `orig`, and `align`.
+    ///
     #[inline(always)]
-    unsafe fn usable_size(&self, size: uint, align: uint) -> uint {
+    unsafe fn usable_size_bytes(&self, ptr: *mut u8, size: uint, align: uint) -> uint {
         size
     }
 
     /// Deallocate the memory referenced by `ptr`.
     ///
-    /// The `old_size` and `align` parameters must be the parameters
-    /// last used to create `ptr` (either via `alloc` or `realloc`);
-    /// otherwise behavior is undefined.  Behavior also undefined if
-    /// `ptr` is null.
+    /// Returns null if allocation fails; in this scenario, the
+    /// original memory block referenced by `ptr` is unaltered.
+    ///
+    /// The `align` parameter must have the value used to create
+    /// `ptr` (via `alloc_bytes` or `realloc_bytes`).
+    /// The `old_size` parameter must fall in the range `[orig,
+    /// usable]`, where:
+    ///   * `orig` is the value last used to create `ptr`
+    ///     (either via `alloc_bytes` or `realloc_bytes`), and
+    ///   * `usable` is the value returned from `usable_size` when
+    ///     given `ptr`, `orig`, and `align`.
+    ///
+    /// Behavior is undefined if above constraints on `align` and
+    /// `old_size` are unmet. Behavior also undefined if `ptr` is
+    /// null.
     unsafe fn dealloc_bytes(&self, ptr: *mut u8, size: uint, align: uint);
 }
 ```
+
+Points of departure from [RFC PR 39]:
+
+  * Changed names to include the suffix `_bytes`, to differentiate
+    these methods from the high-level allocation API below.
+
+  * Extended interface of `realloc_bytes` and `dealloc_bytes` to allow
+    `old_size` to take on a range of values between the originally
+    given allocation size and the usable size for the pointer.
+
+    The intention is to allow the client to locally adjust its own
+    interpretation of how much of the memory is in use, without
+    forcing it to round-trip through the `realloc` interface each
+    time, and without forcing it to record the original parameter fed
+    to `alloc_bytes` or `realloc_bytes` that produced the pointer.
+
+
+  * Extended `usable_size_bytes` to take the `ptr` itself as an
+    argument, to handle hypothetical allocators who may choose
+    different sized bins given the same `(size, align)` input.
+
+    (I expect in practice that most allocators that override the
+    default implementation will actually return a constant-expression
+    computed solely from the given `size` and `align`, but I do not
+    yet see a compelling reason to drop `ptr` from the argument list.)
+
+## The high_alloc mod
+
+The `RawAlloc` trait defines the low-level API we expect users to be
+able to provide easily, either by dispatching to other native
+allocator libraries (such as [jemalloc], [tcmalloc], [Hoard], et
+cetera), or by implementing their own in Rust (!).
+
+But the low-level API is not sufficient.  It is lacking in two ways:
+
+* It does not integrate dynamically sized types (DST), in the sense
+  that it still leaves the problem of shifting from a thin-pointer
+  (`*mut u8`) to a potentially fat-pointer (e.g. `*mut [T]` for some
+  `T:Sized`).
+
+* It does not integrate garbage collection (GC).  Rust has been
+  designed to allow an optional [tracing garbage collector] to manage
+  graph-structured memory, but if all collections relied solely on the
+  `RawAlloc` interface without also registering the potential GC roots
+  held in the natively allocated blocks, we could not hope to put in a
+  tracing GC.
+
+Therefore, this RFC defines a high-level interface that is intended
+for direct use by libraries.  The high-level interface defines a small
+group of `Alloc` traits that correspond to how one allocates instances
+of a sized type or arrays.
+
+Crucially, the intention in this design is that every implementation
+of the `Alloc` trait be parameterized over one or more `RawAlloc`
+instances (usually just one) that dictate the actual low-level memory
+allocation.
+
+When splitting between a high-level `Alloc` and a low-level `RawAlloc`,
+there are questions that arise regarding how the high-level operations
+of `Alloc` actually map to the low-level methods provided by `RawAlloc`.
+Here are a few properties of potential interest when thinking about
+this mapping:
+
+* A "header-free" high-level allocation is one where the high-level
+  allocator implementation adds no headers to the block associated
+  with the storage for one value; more specfically, the size of the
+  memory block allocated to represent a type `T` is (at most) the size
+  of what the underlying `RawAlloc` would return for a request a block
+  of size `mem::size_of::<T>()` and alignment `mem::align_of::<T>()`.
+  (We say "at most" because the `Alloc` implementation may choose to
+  use `mem::min_align_of::<T>()`; that detail does not matter in terms
+  of the spirit of what "header-free allocation" means.
+
+* A "1:1 call correspondence" between a high-level allocator
 
 Here is the `high_alloc` API design.  Much of it is similar to the
 `RawAlloc` trait, but there are a few extra pieces added for type-safe
@@ -222,20 +349,60 @@ mod high_alloc {
         unsafe fn deinit_range<T>(&self, start: *mut T, count: uint);
     }
 
+    /// Represents information about what kind of memory block must be
+    /// allocated to hold an instance of `T`.
+    ///
+    /// This struct is used as the abstraction for communicating with
+    /// the high-level type-aware allocator.
+    ///
+    /// It is also used as the abstraction for reasoning about the
+    /// validity of calls to "realloc" in the high-level allocator; in
+    /// particular, given a memory block allocated for some type `T`,
+    /// you can only attempt to reuse that memory block for another
+    /// type `U` if the `MemoryBlockInfo<T>` is *compatible with* the
+    /// `MemoryBlockInfo<U>`.
+    ///
+    /// Definition of "info_1 compatible with info_2"
+    ///
+    /// For non GC-root carrying data, "info_1 is compatible with
+    /// info_2" means that the two `MemoryBlockInfos` have the same
+    /// alignment.  (They need not have the same size, as that would
+    /// defeat the point of the `realloc` interface.)  For GC-root
+    /// carrying data, according to this RFC, "compatible with" means
+    /// that they are either two instances of the same array type [T]
+    /// with potentially differing lengths, or, if they are not both
+    /// array types, then "compatible with" means that they are the
+    /// same type `T`.
+    ///
+    /// (In the future, we may widen the "compatible with" relation to
+    /// allow distinct types containing GC-roots to be compatible if
+    /// they meet other yet-to-be-defined constraints.  But for now
+    /// the above conservative definition should serve our needs.)
+    ///
+    /// Definiton of "info_1 extension of info_2"
+    ///
+    /// For non GC-root carrying data, "info_1 is an extension of
+    /// info_2" means that info_1 is *compatible with* info_2, *and*
+    /// the size of info_1 is greater than or equal to info_2.
     pub struct MemoryBlockInfo<Sized? T> {
         // compiler and runtime internal fields
 
-        // (perhaps these, but also others for tracing GC)
+        // naive impl (namely, it probably carries these fields; but
+        // it may have other fields for tracing GC support)
         size: uint,
         align: uint,
     }
 
     impl MemoryBlockInfo<Sized? T> {
+        /// Returns minimum size of memory block for holding a `T`.
+        pub fn size(&self) -> uint { self.size }
+
         /// Produces a normalized MemoryBlockInfo that can be compared
         /// against other normalized MemoryBlockInfo.  Allocations can
         /// be categorized into bins according to their normalized
         /// MemoryBlockInfos.
         pub fn forget_type(&self) -> MemoryBlockInfo<()> {
+            // naive impl
             MemoryBlockInfo { size: self.size, align: self.align }
         }
 
@@ -257,6 +424,7 @@ mod high_alloc {
         /// If either `size < mem::size_of::<T>()` or
         /// `align < mem::min_align_of::<T>()` then behavior undefined.
         pub fn from_size_and_align(size: uint, align: uint) -> MemoryBlockInfo<T> {
+            // naive impl
             MemoryBlockInfo { size: size, align: align }
         }
     }
@@ -266,26 +434,54 @@ mod high_alloc {
         /// with minimum size and alignment specified by `info`.
         unsafe fn alloc_info<Sized? T>(&self, info: MemoryBlockInfo<T>) -> *mut T;
 
-        /// The `info` must have size and align compatible with the
-        /// `info` that was used to create `old_ptr`.
+        /// Attempts to recycle the memory block for `old_ptr` to create
+        /// a memory block suitable for an instance of `U`.
         ///
-        /// This method is very dangerous.
+        /// Requirement 1: `info` must be *compatible with* `old_info`.
+        ///
+        /// Requirement 2: `old_info` must be an *extension of* the
+        /// `mbi_orig`; the size of `old_info` must be in the range
+        /// `[mbi_orig.size(),self.usable_size_info(old_ptr,mbi_orig)]`
+        /// (where `mbi_orig` is the `MemoryBlockInfo` originally used
+        /// to create `old_ptr`, be it via `alloc_info` or
+        /// `realloc_info`).
+        ///
+        /// (The requirements use terms in the sense defined in the
+        /// documentation for `MemoryBlockInfo`.)
+        ///
+        /// Here is the executive summary of what the above
+        /// requirements mean: This method is dangerous.  It is
+        /// especially dangerous for data that may hold GC roots.
         ///
         /// The only time this is safe to use on GC-referencing data
         /// is when converting from `[T]` of one length to `[T]` of a
         /// different length.  In particular, this method is not safe
-        /// to use to convert between different types if either type
+        /// to use to convert between different non-array types `S`
+        /// and `T` (or between `[S]` and `[T]`, etc) if either type
         /// references GC data.
-        unsafe fn realloc_info<Sized? T, Sized? U>(&self, old_ptr: *mut T, info: MemoryBlockInfo<U>) -> *mut U;
+        unsafe fn realloc_info<Sized? T, Sized? U>(&self, old_ptr: *mut T, old_info: MemoryBlockInfo<T>, info: MemoryBlockInfo<U>) -> *mut U;
+
+        /// The `info` must be an *extension of* the `MemoryBlockInfo`
+        /// originally used to create `ptr`, be it via `alloc_info` or
+        /// `realloc_info`.
+        unsafe fn usable_size_info<Sized? T>(&self, ptr: *mut u8, info: MemoryBlockInfo<T>) -> uint;
 
         /// Deallocates the memory block at `pointer`.
         ///
-        /// The `info` must have size and align compatible with the
-        /// `info` that was used to create `pointer`.
+        /// The `info` must be an *extension of* the `MemoryBlockInfo`
+        /// used to create `pointer`.
         unsafe fn dealloc_info<Sized? T>(&self, pointer: *mut T, info: MemoryBlockInfo<T>);
 
         /// Returns true if this allocator exposes its internals to
         /// the garbage collector for root extraction and scanning.
+        ///
+        /// Note: We leave it to a future RFC to define the criteria
+        /// by which an implementation of `AllocCore` can return
+        /// `true` for this method.  The standard library should
+        /// eventually provide at least one implementation of
+        /// `AllocCore` that is tightly GC-integrated, but the manner
+        /// in which this will be accomplished is not a component of
+        /// this RFC.
         fn tightly_gc_integrated() -> bool { false }
     }
 
@@ -367,24 +563,32 @@ mod high_alloc {
     }
 
     fn allocate_and_register_rooted_memory<Raw:RawAlloc, Sized? T>(raw: &Raw, info: MemoryBlockInfo<T>) -> *mut T {
-        // allocates memory with an added (hidden) header that allows
+        // Standard library provided method.
+        //
+        // Allocates memory with an added (hidden) header that allows
         // the GC to scan the memory for roots.
         ...
     }
     fn reallocate_and_register_rooted_memory<Raw:RawAlloc, Sized? T>(raw: &Raw, old_ptr: *mut T, info: MemoryBlockInfo<T>) -> *mut T {
-        // adjusts `old_ptr` to compensate for hidden header;
+        // Standard library provided method.
+        //
+        // Adjusts `old_ptr` to compensate for hidden header;
         // reallocates memory with an added header that allows the GC
         // to scan the memory for roots.
         ...
     }
     fn deallocate_and_unregister_rooted_memory<Raw:RawAlloc, Sized? T>(raw: &Raw, old_ptr: *mut T, info: MemoryBlockInfo<T>) -> *mut T {
-        // adjusts `old_ptr` to compensate for hidden header; removes
+        // Standard library provided method.
+        //
+        // Adjusts `old_ptr` to compensate for hidden header; removes
         // memory from the GC root registry, and deallocates the
         // memory.
         ...
     }
     fn deinit_range_gc<T>(&self, start: *mut T, count: uint) {
-        // zeros the address range so that the GC will not mistakenly
+        // Standard library provided method.
+        //
+        // Zeros the address range so that the GC will not mistakenly
         // interpret words there as roots.
         ...
     }
@@ -462,6 +666,13 @@ What other designs have been considered? What is the impact of not doing this?
 
 # Unresolved questions
 
+## Platform supported page size
+
+It is a little ugly that the `RawAlloc` has an error case for an
+`align` that is too large, but there is no way in the interface for
+the user to ask for that limit.  We could make the limit an associated
+constant on `RawAlloc`.
+
 
 ## What is the type for an alignment
 
@@ -474,3 +685,11 @@ existing `align_of` primitives expose `uint`, not `u32`.
 [RFC PR 39]: https://github.com/rust-lang/rfcs/pull/39/files
 
 [ReCustomMalloc]: http://dl.acm.org/citation.cfm?id=582421
+
+[jemalloc]: http://www.canonware.com/jemalloc/
+
+[tcmalloc]: http://goog-perftools.sourceforge.net/doc/tcmalloc.html
+
+[Hoard]: http://www.hoard.org/
+
+[tracing garbage collector]: http://en.wikipedia.org/wiki/Tracing_garbage_collection
