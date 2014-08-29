@@ -16,8 +16,9 @@ allocators, with the following goals:
     in statically-typed user-allocated objects outside the GC-heap,
     without sacrificing efficiency for code that does not use `Gc<T>`.
 
- 3. Do not require an allocator itself track the size of allocations.
+ 3. Do not require an allocator itself to track the size of allocations.
     Instead, force the client to supply size at the deallocation site.
+    (This can improve overall performance on certain hot paths.)
 
  4. Incorporate data alignment constraints into the API, as many
     allocators have efficient support for meeting such constraints
@@ -32,6 +33,13 @@ compiler and standard library; we leave work on pluggable GC as future
 research.
 
 # Motivation
+
+## Why Custom Allocators
+
+As noted in [RFC PR 39], modern general purpose allocators are good,
+but due to the design tradeoffs they must make, cannot be optimal in
+all contexts.  Therefore, the standard library should allow clients to
+plug in their own allocator for managing memory.
 
 TODO: enumerate typical use cases for Allocators from C++.  Some
 immediate thoughts:
@@ -48,15 +56,12 @@ immediate thoughts:
   4. memory padding to reduce/eliminate false sharing of cache lines (I
      think strcat had this in his RFC)
 
-  5. memory usage instrumentation.
+  5. memory usage instrumentation and debugging.
 
-As noted in [RFC PR 39], modern general purpose allocators are good,
-but due to the design tradeoffs they must make, cannot be optimal in
-all contexts.  Therefore, the standard library should allow clients to
-plug in their own allocator for managing memory.
+## Why this API
 
 Also as noted in [RFC PR 39], the basic `malloc` interface
-{`malloc(size) -> ptr`, `free(ptr)`, realloc(ptr, size) -> ptr`} is
+{`malloc(size) -> ptr`, `free(ptr)`, `realloc(ptr, size) -> ptr`} is
 lacking in a number of ways: `malloc` lacks the ability to request a
 particular alignment, and `realloc` lacks the ability to express a
 copy-free "reuse the input, or do nothing at all" request.  Another
@@ -82,7 +87,8 @@ let z: Rc<Gc<Rc<int>>> = Rc::new(y);
 
 But we do not want to impose the burden of supporting a tracing
 garbage collector on all users: if a type does not contain any
-GC-managed pointers, then the code path for allocating an instance of
+GC-managed pointers (and is not itself GC-managed),
+then the code path for allocating an instance of
 that type should not bear any overhead related to GC.
 
 To provide garbage-collection support without imposing overhead on
@@ -94,7 +100,7 @@ when necessary (but only when allocating types that involve `Gc`).
 The code-paths for the `high_alloc` procedures are optimized with
 fast-paths for when the allocated type does not contain `Gc<T>`.
 
-The user-specified instance of `RawAlloc` is not expected to attempt
+The user-specified instance of `RawAlloc` is not required to attempt
 to provide GC-support itself.  The user-specified allocator is only
 meant to satisfy a simple, low-level interface for allocating and
 freeing memory.  The support for garbage-collection is handled at a
