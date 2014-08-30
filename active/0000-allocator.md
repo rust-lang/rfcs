@@ -32,6 +32,11 @@ library.  We assume here that any GC support is built-in to the Rust
 compiler and standard library; we leave work on pluggable GC as future
 research.
 
+This RFC deliberately leaves some implementation details unspecified
+and left for a future RFC after we have more direct experience with
+the API's proposed here; for more discussion, see the section:
+[Why is half of the implementation missing][#wheres-the-beef].
+
 # Table of Contents
 
 * [Summary][#summary]
@@ -39,6 +44,7 @@ research.
 * [Motivation][#motivation]
   * [Why custom allocators][#why-custom-allocators]
   * [Why this API][#why-this-api]
+  * [Why is half of the implementation missing][#wheres-the-beef]
 * [Detailed design][#detailed-design]
   * [The RawAlloc trait][#the-rawalloc-trait]
   * [The typed_alloc module][#the-typedalloc-module]
@@ -152,6 +158,50 @@ to provide GC-support itself.  The user-specified allocator is only
 meant to satisfy a simple, low-level interface for allocating and
 freeing memory.  The support for garbage-collection is handled at a
 higher level, within the Rust standard library itself.
+
+## Where's the beef
+or, Why is half of the implementation "missing"
+
+This RFC only specifies the API's that one would use to implement a
+custom low-level allocator and then use it (indirectly) from client
+library code.  In particular, it specifies both a low-level API for
+managing blocks of raw bytes, and a high-level client-oriented API for
+for managing blocks holding instances of typed objects, but does *not*
+provide a formal specification of all the primitive intrinsic
+operations one would need to actually *implement* the high-level API
+directly.
+
+(There is a non-normative [appendix](#non-normative-high-level-allocator-implementation)
+that contains a sketch of how the high-level API might be implemented,
+to show concretely that the high-level API is *implementable*.)
+
+This RFC includes the specification of the high-level API because it
+is what libraries are expected to be written against, and thus its
+interface is arguably even more important than the interface than the
+low-level API.
+
+This RFC also specifies that the standard library will provide types
+for building high-level allocators up from instances of the low-level
+allocators.  We expect that for most use-cases where custom allocators
+are required, it should suffice to define a [low-level
+allocator](#the-rawalloc-trait), which this RFC *does* include enough
+information for users to work with today, and then construct a
+high-level allocator directly from that low-level one.  Note
+especially that when GC data is not involved, all of the standard
+high-level allocator operations are meant to map directly to low-level
+allocator methods, without any added runtime overhead.
+
+The reason that this RFC does not include the definitions of the
+intrinsics needed to implement instances of the high-level allocator
+is that we do not want to commit prematurely to a set of intrinsics
+that we have not yet had any direct experience working with.
+Additionally, the details of those intrinsics are probably
+uninteresting to the majority of users interested in custom
+allocators.  (If you are curious, you are more than welcome to read
+and provide feedback on the sketch in the non-normative
+[appendix](#non-normative-high-level-allocator-implementation); just
+keep in mind that the intrinsics and helper methods there are not part
+of the specification proposed by this RFC.
 
 # Detailed design
 
