@@ -224,7 +224,44 @@ as the design from [RFC PR 39]; points of departure are
 enumerated after the API listing.
 
 ```rust
+type Size = uint;
+type Capacity = uint;
+type Alignment = uint;
+
 /// Low-level explicit memory management support.
+///
+/// Defines a family of methods for allocating and deallocating
+/// byte-oriented blocks of memory.  A user-implementation of
+/// this trait need only reimplement `alloc_bytes` and `dealloc_bytes`,
+/// though it 
+///
+/// Several of these methods state as a condition that the input
+/// `size: Size` and `align: Alignment` must *fit* an input pointer
+/// `ptr: *mut u8`.
+///
+/// What it means for `(size, align)` to "fit" a pointer `ptr` means
+/// is that the following two conditions must hold:
+///
+/// 1. The `align` must have the same value that was last used to
+///    create `ptr` via one of the allocation methods,
+///
+/// 2. The `size` parameter must fall in the range `[orig, usable]`, where:
+///
+///    * `orig` is the value last used to create `ptr` via one of the
+///      allocation methods, and
+///
+///    * `usable` is the capacity that was (or would have been)
+///      returned when (if) `ptr` was created via a call to
+///      `alloc_bytes_excess` or `realloc_bytes_excess`.
+///
+/// "The allocation methods" above refers to one of `alloc_bytes`,
+/// `realloc_bytes`, `alloc_bytes_excess`, and `realloc_bytes_excess")
+///
+/// Note that due to the constraints in the methods below, a
+/// lower-bound on `usable` can be safely approximated by a call to
+/// `usable_size_bytes`.
+
+
 pub trait RawAlloc {
     /// Returns a pointer to `size` bytes of memory, aligned to
     /// a `align`-byte boundary.
@@ -234,10 +271,41 @@ pub trait RawAlloc {
     /// Behavior undefined if `size` is 0 or `align` is not a
     /// power of 2, or if the `align` is larger than the largest
     /// platform-supported page size.
-    unsafe fn alloc_bytes(&self, size: uint, align: uint) -> *mut u8;
+    unsafe fn alloc_bytes(&self, size: Size, align: Alignment) -> *mut u8;
+
+    /// Deallocate the memory referenced by `ptr`.
+    ///
+    /// `(size, align)` must *fit* the `ptr` (see above).
+    ///
+    /// Behavior is undefined if above constraints on `align` and
+    /// `size` are unmet. Behavior also undefined if `ptr` is null.
+    unsafe fn dealloc_bytes(&self, ptr: *mut u8, size: Size, align: Alignment);
+
+    /// Returns a pointer to `size` bytes of memory, aligned to
+    /// a `align`-byte boundary, as well as the capacity of the
+    /// referenced block of memory.
+    ///
+    /// Returns `(null, c)` for some `c` if allocation fails.
+    ///
+    /// A successful allocation will by definition have capacity
+    /// greater than or equal to the given `size` parameter.
+    /// A successful allocation will also also have capacity greater
+    /// than or equal to the value of `self.usable_size_bytes(size,
+    /// align)`.
+    ///
+    /// Behavior undefined if `size` is 0 or `align` is not a
+    /// power of 2, or if the `align` is larger than the largest
+    /// platform-supported page size.
+    unsafe fn alloc_bytes_excess(&self, size: Size, align: Alignment) -> (*mut u8, Capacity) {
+        // Default implementation: just conservatively report the usable size
+        // according to the underlying allocator.
+        (self.alloc_bytes(size, align), self.usable_size_bytes(size, align))
+    }
 
     /// Extends or shrinks the allocation referenced by `ptr` to
     /// `size` bytes of memory, retaining the alignment `align`.
+    ///
+    /// `(old_size, align)` must *fit* the `ptr` (see above).
     ///
     /// If this returns non-null, then the memory block referenced by
     /// `ptr` may have been freed and should be considered unusable.
@@ -245,55 +313,65 @@ pub trait RawAlloc {
     /// Returns null if allocation fails; in this scenario, the
     /// original memory block referenced by `ptr` is unaltered.
     ///
-    /// The `align` parameter must have the value used to create
-    /// `ptr` (via `alloc_bytes` or `realloc_bytes`).
-    /// The `old_size` parameter must fall in the range `[orig,
-    /// usable]`, where:
-    ///   * `orig` is the value last used to create `ptr`
-    ///     (either via `alloc_bytes` or `realloc_bytes`), and
-    ///   * `usable` is the value returned from `usable_size` when
-    ///     given `ptr`, `orig`, and `align`.
+    /// Behavior is undefined if above constraints on `align` and
+    /// `old_size` are unmet. Behavior also undefined if `size` is 0.
+    unsafe fn realloc_bytes(&self, ptr: *mut u8, size: Size, align: Alignment, old_size: Size) -> *mut u8 {
+        if size <= self.usable_size_bytes(old_size, align) {
+            return ptr;
+        } else {
+            let new_ptr = self.alloc_bytes(size, align);
+            if new_ptr.is_not_null() {
+                ptr::copy_memory(new_ptr, ptr as *const u8, cmp::min(size, old_size));
+                self.dealloc_bytes(ptr, old_size, align);
+            }
+            return new_ptr;
+        }
+    }
+
+    /// Extends or shrinks the allocation referenced by `ptr` to
+    /// `size` bytes of memory, retaining the alignment `align`,
+    /// and returning the capacity of the (potentially new) block of
+    /// memory.
+    ///
+    /// `(old_size, align)` must *fit* the `ptr` (see above).
+    ///
+    /// When successful, returns a non-null ptr and the capacity of
+    /// the referenced block of memory.  The capacity will be greater
+    /// than or equal to the given `size`; it will also be greater
+    /// than or equal to `self.usable_size_bytes(size, align)`.
+    ///
+    /// If this returns non-null (i.e., when successful), then the
+    /// memory block referenced by `ptr` may have been freed, and
+    /// should be considered unusable.
+    ///
+    /// Returns `(null, c)` for some `c` if reallocation fails; in
+    /// this scenario, the original memory block referenced by `ptr`
+    /// is unaltered.
     ///
     /// Behavior is undefined if above constraints on `align` and
     /// `old_size` are unmet. Behavior also undefined if `size` is 0.
-    unsafe fn realloc_bytes(&self, ptr: *mut u8, size: uint, align: uint, old_size: uint) -> *mut u8;
-
-    /// Returns the usable size of an allocation created with the
-    /// specified `size` and `align`.
-    ///
-    /// The `align` parameter must have the value used to create
-    /// `ptr` (via `alloc_bytes` or `realloc_bytes`).
-    /// The `size` parameter must fall in the range
-    /// `[orig, usable]`, where:
-    ///
-    ///   * `orig` is the value last used to create `ptr`
-    ///     (either via `alloc_bytes` or `realloc_bytes`), and
-    ///   * `usable` is the value returned from `usable_size` when
-    ///     given `ptr`, `orig`, and `align`.
-    ///
-    #[inline(always)]
-    unsafe fn usable_size_bytes(&self, ptr: *mut u8, size: uint, align: uint) -> uint {
-        size
+    unsafe fn realloc_bytes_excess(&self, ptr: *mut u8, size: Size, align: Alignment, old_size: Size) -> (*mut u8, Capacity) {
+        (self.realloc_bytes(ptr, size, align, old_size), self.usable_size_bytes(size, align))
     }
 
-    /// Deallocate the memory referenced by `ptr`.
+    /// Returns the minimum guaranteed usable size of a successful
+    /// allocation created with the specified `size` and `align`.
     ///
-    /// Returns null if allocation fails; in this scenario, the
-    /// original memory block referenced by `ptr` is unaltered.
+    /// Clients who wish to make use of excess capacity are encouraged
+    /// to use the `alloc_bytes_excess` and `realloc_bytes_excess`
+    /// instead, as this method is constrained to conservatively
+    /// report a value less than or equal to the minimum capacity for
+    /// all possible calls to those methods.
     ///
-    /// The `align` parameter must have the value used to create
-    /// `ptr` (via `alloc_bytes` or `realloc_bytes`).
-    /// The `old_size` parameter must fall in the range `[orig,
-    /// usable]`, where:
-    ///   * `orig` is the value last used to create `ptr`
-    ///     (either via `alloc_bytes` or `realloc_bytes`), and
-    ///   * `usable` is the value returned from `usable_size` when
-    ///     given `ptr`, `orig`, and `align`.
-    ///
-    /// Behavior is undefined if above constraints on `align` and
-    /// `old_size` are unmet. Behavior also undefined if `ptr` is
-    /// null.
-    unsafe fn dealloc_bytes(&self, ptr: *mut u8, size: uint, align: uint);
+    /// However, for clients that do not wish to track the capacity
+    /// returned by `alloc_bytes_excess` locally, this method is
+    /// likely to produce useful results; e.g. in an allocator with
+    /// bins of blocks categorized by size class, the capacity will be
+    /// the same for any given `(size, align)`.
+    #[inline(always)]
+    unsafe fn usable_size_bytes(&self, size: Size, align: Alignment) -> Capacity {
+        size
+    }
 }
 ```
 
@@ -312,15 +390,12 @@ Points of departure from [RFC PR 39]:
     time, and without forcing it to record the original parameter fed
     to `alloc_bytes` or `realloc_bytes` that produced the pointer.
 
-
-  * Extended `usable_size_bytes` to take the `ptr` itself as an
-    argument, to handle hypothetical allocators who may choose
-    different sized bins given the same `(size, align)` input.
-
-    (I expect in practice that most allocators that override the
-    default implementation will actually return a constant-expression
-    computed solely from the given `size` and `align`, but I do not
-    yet see a compelling reason to drop `ptr` from the argument list.)
+  * Added `_with_excess` variants of the allocation methods that
+    return the "true" usable capacity for the block.  This variant
+    was discussed a bit in the comment thread for [RFC PR 39].
+    I chose not to make the tuple-returning forms the *only* kind
+    allocation method, so that simple clients who will not
+    use the excess capacity can remain simple.
 
 ## The typed_alloc module
 
@@ -1026,6 +1101,42 @@ with a few standard implementations of those traits (namely, the
 `Alloc` and `Direct` structs) that we know how to implement, and let
 the end user decide how they want GC-root carrying data to be handled
 by selecting the appropriate implementation of the trait.
+
+## try_realloc
+
+I have seen some criticisms of the C `realloc` API that say that
+`realloc` fails to capture some important use cases, such as a request
+to "attempt to extend the data-block in place to match my new needed
+size, but if the attempt fails, do not allocate a new block (or in
+some variations, do allocate a new block of the requested size, but do
+not waste time copying the old data over to it."
+
+(A use-case where this arises is when one is expanding some given
+object, but one is also planning to immediately fill it with fresh
+data, making the copy step useless.)
+
+We could offer specialized methods like these in the `RawAlloc` interface,
+with a signature like
+```rust
+fn try_grow_bytes(&self, ptr: *mut u8, size: uint, align: uint, old_size: uint) -> bool
+```
+
+Or we could delay such additions to hypothetical subtraits e.g. `RawTryAlloc`.
+
+Or we could claim that given `RawAlloc` API, with its 
+
+## ptr parametric `usable_size`
+
+I considered extending `usable_size_bytes` to take the `ptr` itself as an
+argument, as another way to handle hypothetical allocators who may choose
+different sized bins given the same `(size, align)` input.
+
+But in the end I agreed with the assertion from [RFC PR 39], that in
+practice most allocators that override the default implementation will
+actually return a constant-expression computed solely from the given
+`size` and `align`, and I decided it was simpler to support the above
+hypothetical allocators with different size bins via the
+`alloc_bytes_excess` and `realloc_bytes_excess` methods.
 
 # Unresolved questions
 
