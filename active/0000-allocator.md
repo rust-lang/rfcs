@@ -349,23 +349,26 @@ mod high_alloc {
         unsafe fn deinit_range<T>(&self, start: *mut T, count: uint);
     }
 
-    /// Represents information about what kind of memory block must be
-    /// allocated to hold an instance of `T`.
+    /// A `MemoryBlockInfo` (or more simply, "block info") represents
+    /// information about what kind of memory block must be allocated
+    /// to hold data of (potentially unsized) type `U`, and also what
+    /// extra-data, if any, must be attached to a pointer to such a
+    /// memory block to create `*mut U` or `*U` pointer.
     ///
-    /// This struct is used as the abstraction for communicating with
-    /// the high-level type-aware allocator.
+    /// This opaque struct is used as the abstraction for
+    /// communicating with the high-level type-aware allocator.
     ///
     /// It is also used as the abstraction for reasoning about the
     /// validity of calls to "realloc" in the high-level allocator; in
-    /// particular, given a memory block allocated for some type `T`,
+    /// particular, given a memory block allocated for some type `U`,
     /// you can only attempt to reuse that memory block for another
-    /// type `U` if the `MemoryBlockInfo<T>` is *compatible with* the
-    /// `MemoryBlockInfo<U>`.
+    /// type `T` if the `MemoryBlockInfo<U>` is *compatible with* the
+    /// `MemoryBlockInfo<T>`.
     ///
     /// Definition of "info_1 compatible with info_2"
     ///
     /// For non GC-root carrying data, "info_1 is compatible with
-    /// info_2" means that the two `MemoryBlockInfos` have the same
+    /// info_2" means that the two block infos have the same
     /// alignment.  (They need not have the same size, as that would
     /// defeat the point of the `realloc` interface.)  For GC-root
     /// carrying data, according to this RFC, "compatible with" means
@@ -383,39 +386,70 @@ mod high_alloc {
     ///
     /// For non GC-root carrying data, "info_1 is an extension of
     /// info_2" means that info_1 is *compatible with* info_2, *and*
-    /// the size of info_1 is greater than or equal to info_2.
-    pub struct MemoryBlockInfo<Sized? T> {
+    /// also the size of info_1 is greater than or equal to info_2.
+    /// The notion of a block info extending another is meant to
+    /// denote when a memory block has been locally reinterpreted to
+    /// use more of its available capacity (but without going through
+    /// a round-trip via `realloc`).
+    pub struct MemoryBlockInfo<Sized? U> {
         // compiler and runtime internal fields
 
-        // naive impl (namely, it probably carries these fields; but
-        // it may have other fields for tracing GC support)
+        // naive impl (notably, a block info probably carries these
+        // fields; but in practice it may have other fields describing
+        // the format of the data within the block, to support tracing
+        // GC).
+
+        // The requested size of the memory block
         size: uint,
+
+        // The requested alignment of the memory block
         align: uint,
+
+        // The extra word of data to attach to a fat pointer for unsized `T`
+        unsized_metadata: uint,
+
+        // Explicit marker indicates that a block info is neither co-
+        // nor contra-variant with respect to its type parameter `U`.
+        marker: InvariantType<U>
     }
 
-    impl MemoryBlockInfo<Sized? T> {
+    impl<Sized? U> MemoryBlockInfo<T> {
         /// Returns minimum size of memory block for holding a `T`.
         pub fn size(&self) -> uint { self.size }
 
-        /// Produces a normalized MemoryBlockInfo that can be compared
-        /// against other normalized MemoryBlockInfo.  Allocations can
-        /// be categorized into bins according to their normalized
-        /// MemoryBlockInfos.
+        /// Produces a normalized block info that can be compared
+        /// against other similarly normalized block infos.
+        ///
+        /// If two distinct types `T` and `U` are indistinguishable
+        /// from the point of view of the garbage collector, then they
+        /// will have equivalent normalized block infos.  Thus,
+        /// allocations may be categorized into bins by the high-level
+        /// allocator according to their normalized block infos.
         pub fn forget_type(&self) -> MemoryBlockInfo<()> {
             // naive impl
-            MemoryBlockInfo { size: self.size, align: self.align }
+
+            // (I assume even a naive implementation still needs to
+            // construct a fresh `marker` to placate the type system)
+            MemoryBlockInfo { marker: InvariantType, ..*self }
         }
 
+        /// Returns a block info for a sized type `T`.
         pub fn from_type() -> MemoryBlockInfo<T>() where T : Sized {
-            MemoryBlockInfo::<T>::from_size_and_align(
+            // naive impl
+            MemoryBlockInfo::<T>::new(
                 mem::size_of::<T(),
-                mem::align_of::<T>())
+                mem::align_of::<T>(),
+                0u)
         }
 
-        pub fn array(capacity: uint) -> MemoryBlockInfo<T> where T : Sized {
-            MemoryBlockInfo<T>::from_size_and_align(
-                capacity * mem::size_of::<T>(),
-                mem::align_of::<T>())
+        /// Returns a block info for an array of (unsized) type `[U]`
+        /// capable of holding at least `length` instances of `U`.
+        pub fn array<U>(length: uint) -> MemoryBlockInfo<[U]> {
+            // naive impl
+            MemoryBlockInfo<[U]>::from_size_and_align(
+                length * mem::size_of::<T>(),
+                mem::align_of::<T>(),
+                length)
         }
 
         /// `size` is the minimum size (in bytes) for the allocated
@@ -423,15 +457,20 @@ mod high_alloc {
         ///
         /// If either `size < mem::size_of::<T>()` or
         /// `align < mem::min_align_of::<T>()` then behavior undefined.
-        pub fn from_size_and_align(size: uint, align: uint) -> MemoryBlockInfo<T> {
+        fn new(size: uint, align: uint, extra: uint) -> MemoryBlockInfo<T> {
             // naive impl
-            MemoryBlockInfo { size: size, align: align }
+            MemoryBlockInfo {
+                size: size,
+                align: align,
+                unsized_metadata: extra,
+                marker: InvariantType,
+            }
         }
     }
 
     trait AllocCore {
         /// Allocates a memory block suitable for holding `T`,
-        /// with minimum size and alignment specified by `info`.
+        /// according to the  `info`.
         unsafe fn alloc_info<Sized? T>(&self, info: MemoryBlockInfo<T>) -> *mut T;
 
         /// Attempts to recycle the memory block for `old_ptr` to create
@@ -440,7 +479,7 @@ mod high_alloc {
         /// Requirement 1: `info` must be *compatible with* `old_info`.
         ///
         /// Requirement 2: `old_info` must be an *extension of* the
-        /// `mbi_orig`; the size of `old_info` must be in the range
+        /// `mbi_orig`, the size of `old_info` must be in the range
         /// `[mbi_orig.size(),self.usable_size_info(old_ptr,mbi_orig)]`
         /// (where `mbi_orig` is the `MemoryBlockInfo` originally used
         /// to create `old_ptr`, be it via `alloc_info` or
@@ -488,11 +527,29 @@ mod high_alloc {
     // What follows is a sketch of how the above extension traits are
     // implemented atop the `RawAlloc` interface, with GC hooks
     // included as needed (but optimized away when the type does not
-    // involve GC).
+    // involve GC).  This sketch assumes that the Rust has been
+    // extended with type-level compile-time intrinsic functions to
+    // indicate whether allocation of involves coordination with the
+    // garbage collector.
+    //
+    // These compile-time intrinsic functions are:
+    //
+    // * `type_is_gc_allocated::<T>()`, which indicates whether `T` is
+    //   itself allocated on the garbage-collected heap (e.g. `T` is
+    //   some `GcBox<_>`, where `Gc<_>` holds a reference to a
+    //   `GcBox<_>`), and
+    //
+    // * `type_reaches_gc::<T>()`, which indicates if the memory block
+    //   for `T` needs to be treated as holding GC roots (e.g. `T`
+    //   contains some `Gc<_>` within its immediate contents).
+
+    // Notes on the direct `RawAlloc` based implementation.
+    // * Raw allocators cannot directly allocate on the gc-heap.
 
     impl<Raw:RawAlloc> AllocInfo for Raw {
         #[inline(always)]
         unsafe fn alloc_info<Sized? T>(&self, info: MemoryBlockInfo<T>) -> *mut T {
+            assert!(!type_is_gc_allocated::<T>());
             if ! type_reaches_gc::<T>() {
                 self.alloc_bytes(info.size(), info.align())
             } else {
@@ -502,6 +559,7 @@ mod high_alloc {
 
         #[inline(always)]
         unsafe fn realloc_info<Sized? T, Sized? U>(&self, old_ptr: *mut T, info: MemoryBlockInfo<U>) -> *mut U {
+            assert!(!type_is_gc_allocated::<T>());
             if ! type_reaches_gc::<T>() {
                 self.realloc_bytes(old_ptr, info.size(), info.align())
             } else {
