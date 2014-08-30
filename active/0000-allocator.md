@@ -69,25 +69,36 @@ the API's proposed here; for more discussion, see the section:
 
 As noted in [RFC PR 39], modern general purpose allocators are good,
 but due to the design tradeoffs they must make, cannot be optimal in
-all contexts.  Therefore, the standard library should allow clients to
-plug in their own allocator for managing memory.
+all contexts.  (It is worthwhile to also read discussion of this claim
+in papers such as [ReCustomMalloc] and [MemFragSolvedP].)
+FIXME: is [MemFragSolvedP] actually relevant to the point here?)
 
-TODO: enumerate typical use cases for Allocators from C++.  Some
-immediate thoughts:
+Therefore, the standard library should allow clients to plug in their
+own allocator for managing memory.
 
-  1. memory grouping, at very least in same size-class (but also
-     potentially for different size classes, via a bump-pointer allocator
-     with I guess a slow/no-op free?)
+The typical reasons given for use of custom allocators in C++ are among the
+following:
 
-  2. hard memory limit (as I think EASTL offers and perhaps others),
+  1. Speed: A custom allocator can be tailored to the particular
+     memory usage profiles of one client.  This can yield advantages
+     such as:
 
-  3. shared-memory across processes (suggested by nical, not sure if we
-     can put in the static checks for vtables that he wants)
+     * A bump-pointer based allocator, when available, is faster
+       than calling `malloc`.
 
-  4. memory padding to reduce/eliminate false sharing of cache lines (I
-     think strcat had this in his RFC)
+     * Adding memory padding can reduce/eliminate false sharing of
+       cache lines.
 
-  5. memory usage instrumentation and debugging.
+  2. Stability: By segregating different sub-allocators and imposing
+     hard memory limits upon them, one has a better chance of handling
+     out-of-memory conditions.  If everything comes from a global
+     heap, it becomes much harder to handle out-of-memory conditions
+     because the handler is almost certainly going to be unable to
+     allocate any memory of its own work.
+
+  3. Instrumentation and debugging: One can swap in a custom
+     allocator that collects data such as number of allocations
+     or time for requests to be serviced.
 
 ## Why this API
 
@@ -102,9 +113,10 @@ allocated size from the `ptr` in `free` and `realloc` calls.
 
 To accomplish the above, this RFC proposes a `RawAlloc` interface for
 managing blocks of memory, with specified size and alignment
-constraints.  The `RawAlloc` client can attempt to adjust the storage
-in use in a copy-free manner by observing the memory block's
-current capacity via a `usable_size` call.
+constraints (the latter was originally overlooked in the C++ `std`
+STL).  The `RawAlloc` client can attempt to adjust the storage in use
+in a copy-free manner by observing the memory block's current capacity
+via a `usable_size` call.
 
 Meanwhile, we would like to continue supporting a garbage collector
 (GC) even in the presence of user-defined allocators.  In particular,
@@ -347,31 +359,35 @@ When splitting between a high-level `Alloc` and a low-level `RawAlloc`,
 there are questions that arise regarding how the high-level operations
 of `Alloc` actually map to the low-level methods provided by `RawAlloc`.
 Here are a few properties of potential interest when thinking about
-this mapping:
+this mapping.
 
-* A "header-free" high-level allocation is one where the high-level
-  allocator implementation adds no headers to the block associated
-  with the storage for one value; more specfically, the size of the
-  memory block allocated to represent a type `T` is (at most) the size
-  of what the underlying `RawAlloc` would return for a request a block
-  of size `mem::size_of::<T>()` and alignment `mem::align_of::<T>()`.
-  (We say "at most" because the `Alloc` implementation may choose to
-  use `mem::min_align_of::<T>()`; that detail does not matter in terms
-  of the spirit of what "header-free allocation" means.
+#### Headerless high-level allocation
 
-* A "call correspondence" between a high-level allocator and one of
-  its underlying `RawAllocs` is a summary of how many calls will be
-  made to the methods of the `RawAlloc` in order to implement the
-  corresponding method of the high level allocator.
+A "header-free" high-level allocation is one where the high-level
+allocator implementation adds no headers to the block associated with
+the storage for one value; more specfically, the size of the memory
+block allocated to represent a type `T` is (at most) the size of what
+the underlying `RawAlloc` would return for a request a block of size
+`mem::size_of::<T>()` and alignment `mem::align_of::<T>()`.  (We say
+"at most" because the `Alloc` implementation may choose to use
+`mem::min_align_of::<T>()`; that detail does not matter in terms of
+the spirit of what "header-free allocation" means.
 
-  Every high-level allocator provides at least the methods for
-  allocating and deallocating data (which can correspond to
-  `alloc_bytes` and `dealloc_bytes`), and potentially also a method
-  for attempting to reallocate data in-place (which can correspond to
-  `realloc_bytes`).  I call these methods the "allocation methods",
-  though note that they include both allocate and deallocate methods.
-  I have identified three potentially interesting call
-  correspondences, which I have labelled as "1:1", "1:1+", and "1:n".
+#### Call correspondence
+
+A "call correspondence" between a high-level allocator and one of
+its underlying `RawAllocs` is a summary of how many calls will be
+made to the methods of the `RawAlloc` in order to implement the
+corresponding method of the high level allocator.
+
+Every high-level allocator provides at least the methods for
+allocating and deallocating data (which can correspond to
+`alloc_bytes` and `dealloc_bytes`), and potentially also a method
+for attempting to reallocate data in-place (which can correspond to
+`realloc_bytes`).  I call these methods the "allocation methods",
+though note that they include both allocate and deallocate methods.
+I have identified three potentially interesting call
+correspondences, which I have labelled as "1:1", "1:1+", and "1:n".
 
   * If a high-level allocator has a "1:1" call correspondence with a
     raw allocator, that means that every successful call to an
@@ -757,7 +773,14 @@ mod typed_alloc {
     // * When treated as a high-level allocator, a raw allocator has a
     //   1:1 call correspondence with itself.
 
-    impl<Raw:RawAlloc> AllocCore for Raw {
+    /// This high-level allocator dispatches all calls to the underlying
+    /// underlying raw allocator, adding a header when the allocated type
+    /// contains GC roots.  Note that it cannot allocate to the GC-heap
+    /// itself.
+
+    struct Direct<Raw:RawAlloc>(Raw)
+
+    impl<Raw:RawAlloc> AllocCore for Direct<Raw> {
         #[inline(always)]
         unsafe fn alloc_info<Sized? T>(&self, info: MemoryBlockInfo<T>) -> *mut T {
             // (compile-time evaluated conditions)
@@ -1048,6 +1071,8 @@ and make corresponding variants of the high-level allocator traits?
 
 [ReCustomMalloc]: http://dl.acm.org/citation.cfm?id=582421
 
+[MemFragSolvedP]: http://dl.acm.org/citation.cfm?id=286864
+
 [jemalloc]: http://www.canonware.com/jemalloc/
 
 [tcmalloc]: http://goog-perftools.sourceforge.net/doc/tcmalloc.html
@@ -1057,6 +1082,10 @@ and make corresponding variants of the high-level allocator traits?
 [tracing garbage collector]: http://en.wikipedia.org/wiki/Tracing_garbage_collection
 
 [malloc/free]: http://en.wikipedia.org/wiki/C_dynamic_memory_allocation
+
+[EASTL]: http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2007/n2271.html
+
+[Halpern proposal]: http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2005/n1850.pdf
 
 ## Terminology
 
