@@ -987,9 +987,22 @@ in the `typed_alloc` module, and much like the trait implementations above,
 it would directly invoke the underlying `RawAlloc` on requests involving
 non GC-root carrying data.
 
-The reason I abandoned this appraich
+The reason I abandoned this approach was that when I reconsidered the
+various [call correspondence][#call-correspondence] properties, I
+realized that our initial approach to how the standard high-level
+allocator would handle GC data, via a "1:n" call correspondence, was
+arguably *subverting* the goals of a custom allocator.  For example,
+if the goal of the custom allocator is to instrument the allocation
+behavior of a given container class, then a "1:n" call correspondence
+is probably not acceptable, since the data captured by the low-level
+allocator does not correspond in a meaningful way to the actual
+allocation calls being made by the container library.
 
-What other designs have been considered? What is the impact of not doing this?
+Therefore, I decided to introduce the family of `Alloc` traits, along
+with a few standard implementations of those traits (namely, the
+`Alloc` and `Direct` structs) that we know how to implement, and let
+the end user decide how they want GC-root carrying data to be handled
+by selecting the appropriate implementation of the trait.
 
 # Unresolved questions
 
