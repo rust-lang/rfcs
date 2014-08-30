@@ -32,6 +32,31 @@ library.  We assume here that any GC support is built-in to the Rust
 compiler and standard library; we leave work on pluggable GC as future
 research.
 
+# Table of Contents
+
+* [Summary][#summary]
+* [Table of Contents][#table-of-contents]
+* [Motivation][#motivation]
+  * [Why custom allocators][#why-custom-allocators]
+  * [Why this API][#why-this-api]
+* [Detailed design][#detailed-design]
+  * [The RawAlloc trait][#the-rawalloc-trait]
+  * [The typed_alloc module][#the-typedalloc-module]
+    * [Properties of high-level allocators][#properties-of-high-level-allocators]
+    * [The high-level allocator API][#the-high-level-allocator-api]
+* [Drawbacks][#drawbacks]
+* [Alternatives][#alternatives]
+  * [Type-carrying Alloc][#type-carrying-alloc]
+  * [No Alloc traits][#no-alloc-traits]
+* [Unresolved Questions][#unresolved-questions]
+  * [Platform supported page size][#platform-supported-page-size]
+  * [What is the type of an alignment][#what-is-the-type-for-an-alignment]
+  * [Reap support][#reap-support]
+* [Appendices][#appendices]
+  * [Bibligraphy][#bibliography]
+  * [Terminology][#terminology]
+  * [Non-normative high-level allocator implementation][#non-normative-high-level-allocator-implementation]
+
 # Motivation
 
 ## Why Custom Allocators
@@ -115,11 +140,11 @@ that type should not bear any overhead related to GC.
 
 To provide garbage-collection support without imposing overhead on
 clients who do not need GC, this RFC proposes a high-level type-aware
-allocator API, here called the `high_alloc` module, parameterized over
+allocator API, here called the `typed_alloc` module, parameterized over
 its underlying `RawAlloc`.  Libraries are meant to use the
-`high_alloc` API, which will maintain garbage collection meta-data
+`typed_alloc` API, which will maintain garbage collection meta-data
 when necessary (but only when allocating types that involve `Gc`).
-The code-paths for the `high_alloc` procedures are optimized with
+The code-paths for the `typed_alloc` procedures are optimized with
 fast-paths for when the allocated type does not contain `Gc<T>`.
 
 The user-specified instance of `RawAlloc` is not required to attempt
@@ -235,7 +260,7 @@ Points of departure from [RFC PR 39]:
     computed solely from the given `size` and `align`, but I do not
     yet see a compelling reason to drop `ptr` from the argument list.)
 
-## The high_alloc mod
+## The typed_alloc module
 
 The `RawAlloc` trait defines the low-level API we expect users to be
 able to provide easily, either by dispatching to other native
@@ -356,12 +381,12 @@ this mapping:
 
 ### The high-level allocator API
 
-Here is the `high_alloc` API design.  Much of it is similar to the
+Here is the `typed_alloc` API design.  Much of it is similar to the
 `RawAlloc` trait, but there are a few extra pieces added for type-safe
 allocation, dyanmically-sized types, and GC support.
 
 ```rust
-mod high_alloc {
+mod typed_alloc {
     trait InstanceAlloc {
         /// Allocates a memory block suitable for holding `T`.
         /// Returns the pointer to the block if allocation succeeds.
@@ -901,13 +926,14 @@ struct Rc<Sized? T, A:AllocJust<RcBox> = DefaultAllocJust<RcBox>> {
 }
 ```
 
-## No `Alloc` traits; just `RawAlloc` parameteric methods in `high_alloc`
+## No `Alloc` traits
+No `Alloc` traits; just `RawAlloc` parameteric methods in `typed_alloc`
 
 When the two-level approach was first laid out, we thought we might
 just have a single standard high-level allocator, and clients would
 solely implement instances of the `RawAlloc` trait.  The single
 standard high-level allocator would be encoded as struct provided
-in the `high_alloc` module, and much like the trait implementations above,
+in the `typed_alloc` module, and much like the trait implementations above,
 it would directly invoke the underlying `RawAlloc` on requests involving
 non GC-root carrying data.
 
@@ -951,21 +977,9 @@ trait RawReapAlloc : RawAlloc { ... }
 ```
 and make corresponding variants of the high-level allocator traits?
 
-# Terminology
+# Appendices
 
-* Size-tracking allocator: An allocator which embeds all allocator
-  meta-data such as block size into the allocated block itself, either
-  explicitly (e.g. via a header), or implicitly (e.g. by maintaining a
-  separate map from address-ranges to sizes).  The C [malloc/free]
-  functions form an example of such an API: since the `free` function
-  takes only a pointer, the allocator is forced to embed that
-  meta-data into the block itself.
-
-* Stateful allocator:
-
-* GC-root carrying data:
-
-# References
+## Bibliography
 
 [RFC PR 39]: https://github.com/rust-lang/rfcs/pull/39/files
 
@@ -980,3 +994,21 @@ and make corresponding variants of the high-level allocator traits?
 [tracing garbage collector]: http://en.wikipedia.org/wiki/Tracing_garbage_collection
 
 [malloc/free]: http://en.wikipedia.org/wiki/C_dynamic_memory_allocation
+
+## Terminology
+
+* Size-tracking allocator: An allocator which embeds all allocator
+  meta-data such as block size into the allocated block itself, either
+  explicitly (e.g. via a header), or implicitly (e.g. by maintaining a
+  separate map from address-ranges to sizes).  The C [malloc/free]
+  functions form an example of such an API: since the `free` function
+  takes only a pointer, the allocator is forced to embed that
+  meta-data into the block itself.
+
+* Stateful allocator:
+
+* GC-root carrying data:
+
+## Non-normative high-level allocator implementation
+
+The high-level allocator traits in [the-typed_alloc-module] 
