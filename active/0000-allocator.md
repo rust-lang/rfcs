@@ -490,7 +490,7 @@ mod high_alloc {
     // included as needed (but optimized away when the type does not
     // involve GC).
 
-    impl<Raw:RawAlloc> AllocInfo for Raw {
+    impl<Raw:RawAlloc> AllocCore for Raw {
         #[inline(always)]
         unsafe fn alloc_info<Sized? T>(&self, info: MemoryBlockInfo<T>) -> *mut T {
             if ! type_reaches_gc::<T>() {
@@ -519,7 +519,7 @@ mod high_alloc {
         }
     }
 
-    impl<A:AllocInfo> Alloc for A {
+    impl<A:AllocCore> Alloc for A {
         unsafe fn alloc<T>(&self) -> *mut T {
             self.alloc_info(MemoryBlockInfo::<T>::from_type())
         }
@@ -529,7 +529,7 @@ mod high_alloc {
         }
     }
 
-    impl<A:AllocInfo> ArrayAlloc for A {
+    impl<A:AllocCore> ArrayAlloc for A {
         unsafe fn alloc_array<T>(&self, capacity: uint) -> *mut T {
             self.alloc_info(MemoryBlockInfo::<T>::array(capacity))
         }
@@ -662,6 +662,65 @@ Why should we *not* do this?
 
 # Alternatives
 
+## Type-carrying Alloc
+(aka "objects verus generics")
+
+While it will sometimes make sense to provide a low-level allocator as
+an raw allocator object type `&RawAlloc`, e.g. to control
+code-duplication, in general we here define the high-level type-aware
+methods as type-parametric methods of a high-level trait, such as the
+method `fn alloc<T>(&self) -> *mut T` of the `Alloc` trait.  (Note
+that since all of the methods of `Alloc` are type-parametric, a
+trait-object type `&Alloc` has no callable methods, because Rust does
+not allow one to invoke type-parametric methods of trait objects.)
+
+That is, we did not attempt to encode the high-level interface using
+solely traits with type-specific implementations, such as suggested
+by a signature like:
+```rust
+trait AllocJust<Sized? T> { fn alloc(&self) -> *mut T; ... }
+```
+
+While a trait like `AllocJust<T>` is attractive, since it could then
+be realized as a (useful) object-type `&AllocJust<T>`, this API is not
+terribly useful as the basis for an allocator in a library
+(at least not unless it is actually a trait for a higher-kinded
+type `AllocJust: type -> type`), because:
+
+1. The library developer would be forced to take a distinct `AllocJust<T>`
+   for each `T` allocated in the library, and
+
+2. It would force the library developer to expose some types `T` that would
+   otherwise be private implementation details of the libraries.
+
+A concrete example of this is the reference-counted type `Rc<T>`, assuming we
+make it allocator-parametric: if we used an `AllocJust<T>` API, the resulting
+code would look like this:
+```rust
+/// This struct definition should be private to the internals of `rc` ...
+struct RcBox<Sized? T> {
+    ref_count: uint,
+    data: T,
+}
+
+/// ... but `RcBox` cannot be private, because of the `A` parameter here.
+struct Rc<Sized? T, A:AllocJust<RcBox> = DefaultAllocJust<RcBox>> {
+    box: RcBox<T>,
+}
+```
+
+## No `Alloc` traits; just `RawAlloc` parameteric methods in `high_alloc`
+
+When the two-level approach was first laid out, we thought we might
+just have a single standard high-level allocator, and clients would
+solely implement instances of the `RawAlloc` trait.  The single
+standard high-level allocator would be encoded as struct provided
+in the `high_alloc` module, and much like the trait implementations above,
+it would directly invoke the underlying `RawAlloc` on requests involving
+non GC-root carrying data.
+
+The reason I abandoned this appraich
+
 What other designs have been considered? What is the impact of not doing this?
 
 # Unresolved questions
@@ -680,6 +739,20 @@ constant on `RawAlloc`.
 with LLVM.  This RFC is currently using `uint`, but only because our
 existing `align_of` primitives expose `uint`, not `u32`.
 
+# Terminology
+
+* Size-tracking allocator: An allocator which embeds all allocator
+  meta-data such as block size into the allocated block itself, either
+  explicitly (e.g. via a header), or implicitly (e.g. by maintaining a
+  separate map from address-ranges to sizes).  The C [malloc/free]
+  functions form an example of such an API: since the `free` function
+  takes only a pointer, the allocator is forced to embed that
+  meta-data into the block itself.
+
+* Stateful allocator:
+
+* GC-root carrying data:
+
 # References
 
 [RFC PR 39]: https://github.com/rust-lang/rfcs/pull/39/files
@@ -693,3 +766,5 @@ existing `align_of` primitives expose `uint`, not `u32`.
 [Hoard]: http://www.hoard.org/
 
 [tracing garbage collector]: http://en.wikipedia.org/wiki/Tracing_garbage_collection
+
+[malloc/free]: http://en.wikipedia.org/wiki/C_dynamic_memory_allocation
