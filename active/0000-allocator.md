@@ -266,6 +266,8 @@ of the `Alloc` trait be parameterized over one or more `RawAlloc`
 instances (usually just one) that dictate the actual low-level memory
 allocation.
 
+### Properties of high-level allocators
+
 When splitting between a high-level `Alloc` and a low-level `RawAlloc`,
 there are questions that arise regarding how the high-level operations
 of `Alloc` actually map to the low-level methods provided by `RawAlloc`.
@@ -282,7 +284,77 @@ this mapping:
   use `mem::min_align_of::<T>()`; that detail does not matter in terms
   of the spirit of what "header-free allocation" means.
 
-* A "1:1 call correspondence" between a high-level allocator
+* A "call correspondence" between a high-level allocator and one of
+  its underlying `RawAllocs` is a summary of how many calls will be
+  made to the methods of the `RawAlloc` in order to implement the
+  corresponding method of the high level allocator.
+
+  Every high-level allocator provides at least the methods for
+  allocating and deallocating data (which can correspond to
+  `alloc_bytes` and `dealloc_bytes`), and potentially also a method
+  for attempting to reallocate data in-place (which can correspond to
+  `realloc_bytes`).  I call these methods the "allocation methods",
+  though note that they include both allocate and deallocate methods.
+  I have identified three potentially interesting call
+  correspondences, which I have labelled as "1:1", "1:1+", and "1:n".
+
+  * If a high-level allocator has a "1:1" call correspondence with a
+    raw allocator, that means that every successful call to an
+    allocation method corresponds to exactly one successful call to
+    the corresponding method of the underlying raw allocator.
+
+    Note that the successful raw allocator call may have been preceded
+    by zero or more unsuccessful calls, depending on what kind of
+    policy the high-level allocator is using to respond to allocation
+    failure.
+
+    If the raw allocator is serving just that single high-level
+    allocator, then a "1:1" call correspondence also indicates that
+    every successful call to a raw allocator method can be matched
+    with exactly one call to some method of the high-level allocator.
+
+    This latter feature makes the "1:1" correspondence a fairly strong
+    property to satisfy, since it means that the high-level allocator
+    must be using the raw allocator solely to service the requests of
+    the end client directly, without using the raw allocator to
+    allocate memory for the high-level allocator to use internally.
+
+    The "1:1" correspondence describes high-level allocators that
+    massage their requests and then pass them over to the low-level
+    raw allocator, but do not use that raw allocator to dynamically
+    allocate any state for their own private usage.
+
+  * If a high-level allocator has a "1:1+" call correspondence with
+    a raw allocator, then every successful call to an allocation method
+    corresponds to one successful call to the corresponding method of the
+    underlying raw allocator, plus zero or more calls to other methods
+    of the raw allocator.
+
+    This is a weaker property than "1:1" correspondence, because it
+    allows for the high-level allocator to use the raw allocator
+    to construct internal meta-data for the high-level allocator,
+    as well as provide the backing storage for end client requests.
+
+  * If a high-level allocator has a "1:n" call correspondence with a
+    raw allocator, then a successful call to an allocation method
+    implies that at least one successful call to *some* method of the
+    raw allocator was made at some point, potentially during some
+    prior allocation method call.
+
+    This is a very weak property; it essentially means that no
+    prediction should be made a priori about how calls to the
+    high-level allocator will map to the low-level raw allocator.
+
+    The "1:n" correspondence describes high-level allocators that, for
+    example, create private bins of storage via the low-level
+    allocator and then service end-client requests directly from those
+    bins without going through the raw allocator until their
+    high-level internal policy demands.  This kind of allocator can
+    subvert the goals of a low-level raw allocator, since it can hide
+    the memory usage patterns of the end client from the raw
+    allocator.
+
+### The high-level allocator API
 
 Here is the `high_alloc` API design.  Much of it is similar to the
 `RawAlloc` trait, but there are a few extra pieces added for type-safe
@@ -290,7 +362,7 @@ allocation, dyanmically-sized types, and GC support.
 
 ```rust
 mod high_alloc {
-    trait Alloc {
+    trait InstanceAlloc {
         /// Allocates a memory block suitable for holding `T`.
         /// Returns the pointer to the block if allocation succeeds.
         ///
@@ -542,13 +614,78 @@ mod high_alloc {
     // * `type_reaches_gc::<T>()`, which indicates if the memory block
     //   for `T` needs to be treated as holding GC roots (e.g. `T`
     //   contains some `Gc<_>` within its immediate contents).
+    //
+    // * `type_invoves_gc::<T>()`: a short-hand for
+    //   `type_is_gc_allocated::<T>() || type_reaches_gc::<T>()`
+
+    // Notes on the abstract "standard library" implementation
+    //
+    // * The standard library will be able to allocate GC managed data.
+    //
+    // * For non GC-root carrying data, it provides a "1:1" call
+    //   correspondence with its given raw alloc.
+    //
+    // * We make no guarantees about the call correspondence for
+    //   GC-root carrying (but not GC-managed) data; it will probably
+    //   have the "1:n" call correspondence (which, as noted above, is
+    //   a very weak property).
+    //
+    // * As for GC-managed data: It may or may not attempt to use the
+    //   given raw allocator to provide backing storage for the
+    //   GC-heap.
+
+    struct Alloc<Raw:RawAlloc> { ... }
+
+    impl<Raw:RawAlloc> Alloc {
+        unsafe fn alloc_info_gc<Sized? T>(&self, info: MemoryBlockInfo<T>) -> *mut T { ... }
+        unsafe fn realloc_info_gc<Sized? T, Sized? U>(&self, old_ptr: *mut T, info: MemoryBlockInfo<U>) -> *mut U { ... }
+        unsafe fn dealloc_info_gc<Sized? T>(&self, pointer: &mut T, info: MemoryBlockInfo<T>) { ... }
+    }
+
+    // FIXME: *none* of these AllocCore impls are DST aware.
+
+    impl<Raw:RawAlloc> AllocCore for Alloc {
+        #[inline(always)]
+        unsafe fn alloc_info<Sized? T>(&self, info: MemoryBlockInfo<T>) -> *mut T {
+            // (compile-time evaluated conditions)
+            if ! type_involves_gc::<T>() {
+                self.alloc_bytes(info.size(), info.align())
+            } else {
+                self.alloc_info_gc(info)
+            }
+        }
+
+        #[inline(always)]
+        unsafe fn realloc_info<Sized? T, Sized? U>(&self, old_ptr: *mut T, info: MemoryBlockInfo<U>) -> *mut U {
+            // (compile-time evaluated conditions)
+            if ! type_involves_gc::<T>() && ! type_involves_gc::<U>() {
+                self.realloc_bytes(old_ptr, info.size(), info.align())
+            } else {
+                self.realloc_info_gc(old_ptr, info)
+            }
+        }
+        #[inline(always)]
+        unsafe fn dealloc_info<Sized? T>(&self, pointer: *mut T, info: MemoryBlockInfo<T>) {
+            // (compile-time evaluated conditions)
+            if ! type_involves_gc::<T>() {
+                self.dealloc_bytes(pointer, info.size(), info.align())
+            } else {
+                self.dealloc_info_gc(pointer, info)
+            }
+        }
+    }
 
     // Notes on the direct `RawAlloc` based implementation.
+    //
     // * Raw allocators cannot directly allocate on the gc-heap.
+    //
+    // * When treated as a high-level allocator, a raw allocator has a
+    //   1:1 call correspondence with itself.
 
     impl<Raw:RawAlloc> AllocCore for Raw {
         #[inline(always)]
         unsafe fn alloc_info<Sized? T>(&self, info: MemoryBlockInfo<T>) -> *mut T {
+            // (compile-time evaluated conditions)
             assert!(!type_is_gc_allocated::<T>());
             if ! type_reaches_gc::<T>() {
                 self.alloc_bytes(info.size(), info.align())
@@ -559,8 +696,10 @@ mod high_alloc {
 
         #[inline(always)]
         unsafe fn realloc_info<Sized? T, Sized? U>(&self, old_ptr: *mut T, info: MemoryBlockInfo<U>) -> *mut U {
+            // (compile-time evaluated conditions)
             assert!(!type_is_gc_allocated::<T>());
-            if ! type_reaches_gc::<T>() {
+            assert!(!type_is_gc_allocated::<U>());
+            if ! type_reaches_gc::<T>() && ! type_reaches_gc::<U>() {
                 self.realloc_bytes(old_ptr, info.size(), info.align())
             } else {
                 reallocate_and_register_rooted_memory(self, old_ptr, info)
@@ -569,6 +708,8 @@ mod high_alloc {
 
         #[inline(always)]
         unsafe fn dealloc_info<Sized? T>(&self, pointer: *mut T, info: MemoryBlockInfo<T>) {
+            // (compile-time evaluated conditions)
+            assert!(!type_is_gc_allocated::<T>());
             if ! type_reaches_gc::<T>() {
                 self.dealloc_bytes(pointer, info.size(), info.align())
             } else {
@@ -592,6 +733,8 @@ mod high_alloc {
             self.alloc_info(MemoryBlockInfo::<T>::array(capacity))
         }
 
+        // FIXME: self does not have a `raw` in this context.
+        // (And this interface may need to change anyway.)
         unsafe fn usable_capacity<T>(&self, capacity: uint) -> uint {
             let info = MemoryBlockInfo::<T>::array(capacity);
             self.raw.usable_size(info.size, info.align);
@@ -653,15 +796,6 @@ mod high_alloc {
 }
 ```
 
-
-TODO: Reap support? [ReCustomMalloc]  More generally, how do
-extensions to the allocator API work?  Do they need to come in
-pairs, i.e. where you use a trait-extension of RawAlloc, and then
-    make another struct like `Alloc` that exposes the new method?
-But really, that seems like a non-starter to me.
-(Using a wrapper struct that hides the underlying RawAlloc may
-itself also be a non-starter; maybe better to add the mixed-in
-methods via an adapter trait.
 
 TODO: spell out more of GC integration?  E.g.: can the GC use the
 given RawAlloc to manage some of its own meta-data?  (How could that
@@ -796,6 +930,26 @@ constant on `RawAlloc`.
 [RFC PR 39] deliberately used a `u32` for alignment, for compatibility
 with LLVM.  This RFC is currently using `uint`, but only because our
 existing `align_of` primitives expose `uint`, not `u32`.
+
+## Reap support
+
+After (re-)reading [ReCustomMalloc], I am thinking that we should make
+sure our allocator design allows for easy use of a *Reap* abstraction.
+
+A "Reap" is like an arena, in that it optimizes for stack-like
+allocation patterns where large amounts of data is predicted to all
+die at the same time, but a reap also allows for individual deletions
+of objects within its structure.
+
+If possible, I do not want worry about trying to extend this API with
+"Reap" support.  I will be happy if I can be convinced that a library
+will be able to implement and supply a reap abstraction that is
+compatible with this RFC.  For example, would it suffice to define a
+trait-extension of `RawAlloc`, such as
+```rust
+trait RawReapAlloc : RawAlloc { ... }
+```
+and make corresponding variants of the high-level allocator traits?
 
 # Terminology
 
