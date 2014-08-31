@@ -46,7 +46,7 @@ the API's proposed here; for more discussion, see the section:
 * [Detailed design](#detailed-design)
   * [The RawAlloc trait](#the-rawalloc-trait)
   * [The high-level allocator API](#the-high-level-allocator-api)
-    * [Properties of high-level allocators](#properties-of-high-level-allocators)
+    * [Potential properties of high-level allocators](#potential-properties-of-high-level-allocators)
       * [Header-free high-level allocation](#header-free-high-level-allocation)
       * [Call correspondences](#call-correspondence)
       * [Backing memory correspondence](#backing-memory-correspondence)
@@ -447,7 +447,7 @@ Instead, for now all this RFC says is that there will be at least
 two constructor functions available to build a high-level allocator from a
 raw allocator; these constructors are named `
 
-### Properties of high-level allocators
+### Potential properties of high-level allocators
 
 When splitting between a high-level `Alloc` and a low-level `RawAlloc`,
 there are questions that arise regarding how the high-level operations
