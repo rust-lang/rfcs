@@ -33,7 +33,7 @@ research.
 This RFC deliberately leaves some implementation details unspecified
 and left for a future RFC after we have more direct experience with
 the API's proposed here; for more discussion, see the section:
-[Why is half of the implementation missing][#wheres-the-beef].
+[Why is half of the implementation missing](#wheres-the-beef).
 
 # Table of Contents
 
