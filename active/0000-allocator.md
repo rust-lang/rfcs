@@ -1200,7 +1200,7 @@ Paul Pedriana. 2007. [EASTL] -- Electronic Arts Standard Template Library. Docum
 ### Towards a Better Allocator Model
 [Halpern proposal]: http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2005/n1850.pdf
 
-Pablo Halpern. 2005. [Halpern proposal]: Towards a Better Allocator Model. Document number: N1850=05-0110
+Pablo Halpern. 2005. [Towards a Better Allocator Model][Halpern proposal]. Document number: N1850=05-0110
 
 
 [jemalloc]: http://www.canonware.com/jemalloc/
