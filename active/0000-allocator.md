@@ -1,4 +1,4 @@
-- Start Date: (fill me in with today's date, 2014-08-31)
+- Start Date: 2014-08-31
 - RFC PR: (leave this empty)
 - Rust Issue: (leave this empty)
 
@@ -16,9 +16,12 @@ allocators, with the following goals:
     in statically-typed user-allocated objects outside the GC-heap,
     without sacrificing efficiency for code that does not use `Gc<T>`.
 
- 3. Do not require an allocator itself to track the size of allocations.
-    Instead, force the client to supply size at the deallocation site.
-    (This can improve overall performance on certain hot paths.)
+ 3. Do not require an allocator itself to extract metadata (such as
+    the size of an allocation) from the initial address of the
+    allocated block; instead, force the client to supply size at the
+    deallocation site.  In other words, do not require use of a
+    `free(ptr)`-based API. (This can improve overall performance on
+    certain hot paths.)
 
  4. Incorporate data alignment constraints into the API, as many
     allocators have efficient support for meeting such constraints
@@ -79,7 +82,9 @@ the API's proposed here; for more discussion, see the section:
 As noted in [RFC PR 39], modern general purpose allocators are good,
 but due to the design tradeoffs they must make, cannot be optimal in
 all contexts.  (It is worthwhile to also read discussion of this claim
-in papers such as [ReCustomMalloc] and [MemFragSolvedP].)
+in papers such as
+[Reconsidering Custom Malloc](#reconsidering-custom-memory-allocation) and
+[The memory fragmentation problem: solved?](#the-memory-fragmentation-problem-solved).)
 FIXME: is [MemFragSolvedP] actually relevant to the point here?)
 
 Therefore, the standard library should allow clients to plug in their
@@ -91,10 +96,8 @@ following:
   1. Speed: A custom allocator can be tailored to the particular
      memory usage profiles of one client.  This can yield advantages
      such as:
-
      * A bump-pointer based allocator, when available, is faster
        than calling `malloc`.
-
      * Adding memory padding can reduce/eliminate false sharing of
        cache lines.
 
@@ -111,21 +114,24 @@ following:
 
 ## Why this API
 
-Also as noted in [RFC PR 39], the basic `malloc` interface
+As noted in [RFC PR 39], the basic `malloc` interface
 {`malloc(size) -> ptr`, `free(ptr)`, `realloc(ptr, size) -> ptr`} is
 lacking in a number of ways: `malloc` lacks the ability to request a
 particular alignment, and `realloc` lacks the ability to express a
 copy-free "reuse the input, or do nothing at all" request.  Another
 problem with the `malloc` interface is that it burdens the allocator
 with tracking the sizes of allocated data and re-extracting the
-allocated size from the `ptr` in `free` and `realloc` calls.
+allocated size from the `ptr` in `free` and `realloc` calls (the
+latter can be very cheap, but there is still no reason to pay that
+cost in a language like Rust where the relevant size is often already
+immediately available as a compile-time constant).
 
 To accomplish the above, this RFC proposes a `RawAlloc` interface for
 managing blocks of memory, with specified size and alignment
 constraints (the latter was originally overlooked in the C++ `std`
 STL).  The `RawAlloc` client can attempt to adjust the storage in use
 in a copy-free manner by observing the memory block's current capacity
-via a `usable_size` call.
+via a `usable_size_bytes` call.
 
 Meanwhile, we would like to continue supporting a garbage collector
 (GC) even in the presence of user-defined allocators.  In particular,
@@ -160,10 +166,11 @@ let c: Rc<Gc<Rc<int>>> = Rc::new(y);
 ```
 
 But we do not want to impose the burden of supporting a tracing
-garbage collector on all users: if a type does not contain any
-GC-managed pointers (and is not itself GC-managed),
-then the code path for allocating an instance of
-that type should not bear any overhead related to GC.
+garbage collector on all users; if a type does not contain any
+GC-managed pointers (and is not itself GC-managed), then the code path
+for allocating an instance of that type should not bear any overhead
+related to GC, and it should be *simple* for a user to write an
+allocator to support that use case.
 
 To provide garbage-collection support without imposing overhead on
 clients who do not need GC, this RFC proposes a high-level type-aware
@@ -869,10 +876,10 @@ pub mod typed_alloc {
             self.realloc_info_excess(old_ptr, old_info, info).val0()
         }
 
-        /// Returns a conservative lower-bound on the capacity for any
-        /// memory block that could be returned for a successful
-        /// allocation or reallocation for `info`.
-        unsafe fn usable_size_info<Sized? T>(&self, info: MemoryBlockInfo<T>) -> uint;
+        /// Returns a conservative lower-bound on the capacity (in
+        /// bytes) for any memory block that could be returned for a
+        /// successful allocation or reallocation for `info`.
+        unsafe fn usable_size_info<Sized? T>(&self, info: MemoryBlockInfo<T>) -> Capacity;
 
         /// Deallocates the memory block at `pointer`.
         ///
@@ -1484,11 +1491,9 @@ mod typed_alloc_impl {
             self.alloc_info_excess(MemoryBlockInfo::<T>::array(capacity))
         }
 
-        // FIXME: self does not have a `raw` in this context.
-        // (And this interface may need to change anyway.)
         unsafe fn usable_capacity<T>(&self, capacity: uint) -> uint {
             let info = MemoryBlockInfo::<T>::array(capacity);
-            self.raw.usable_size(info.size, info.align);
+            self.usable_size_info(info) / mem::size_of::<T>()
         }
 
         unsafe fn realloc_array<T>(&self,
@@ -1571,9 +1576,9 @@ mod typed_alloc_impl {
         }
 
         #[inline(always)]
-        unsafe fn usable_size_info<Sized? T>(&self, info: MemoryBlockInfo<T>) -> uint {
+        unsafe fn usable_size_info<Sized? T>(&self, info: MemoryBlockInfo<T>) -> Capacity {
             if ! type_involves_gc::<T>() {
-                self.
+                self.raw.usable_size_bytes(info.size, info.align)
             } else {
                 info.size
             }
