@@ -25,7 +25,8 @@ allocators, with the following goals:
     built-in, rather than forcing the client to build their own
     re-aligning wrapper around a `malloc`-style interface.
 
-This RFC does not attempt to specify a so-called "pluggable" GC
+This RFC does not attempt to specify a so-called "pluggable" garbage
+collector
 library.  We assume here that any GC support is built-in to the Rust
 compiler and standard library; we leave work on pluggable GC as future
 research.
@@ -207,7 +208,7 @@ are required, it should suffice to define a [low-level
 allocator](#the-rawalloc-trait), which this RFC *does* include enough
 information for users to work with today, and then construct a
 high-level allocator directly from that low-level one.  Note
-especially that when GC data is not involved, all of the standard
+especially that when garbage collected data is not involved, all of the standard
 high-level allocator operations are meant to map directly to low-level
 allocator methods, without any added runtime overhead.
 
@@ -564,7 +565,7 @@ raw allocators, then we say that it has "hidden backing."
 
 The properties above are worth discussing because they establish
 constraints that may be important for clients of user-defined
-allocators, and/or for the GC integration.
+allocators, and/or for the garbage collector integration.
 
 For example, when integrating the GC with a user-defined allocator
 without requiring the user-defined allocator to be GC-aware, we could
@@ -585,7 +586,7 @@ functionality).
 
 Here is the `typed_alloc` API design.  Much of it is similar to the
 `RawAlloc` trait, but there are a few extra pieces added for type-safe
-allocation, dyanmically-sized types, and GC support.
+allocation, dyanmically-sized types, and garbage collector support.
 
 ```rust
 pub mod typed_alloc {
@@ -838,7 +839,7 @@ pub mod typed_alloc {
 
     /// The default standard library implementation of a high-level allocator.
     ///
-    /// * Instances of `Alloc` are able to allocate GC managed data.
+    /// * Instances of `Alloc` are able to allocate GC-managed data.
     ///
     /// * For data not involving the GC, the `Alloc<R>` provides
     ///   header-free allocation and a "1:1" call correspondence with
@@ -887,7 +888,7 @@ pub mod typed_alloc {
 ```
 
 The design above is meant to provide a great deal of flexibility in
-how the GC is implemented in the default system allocator,
+how the garbage collector is implemented in the default system allocator,
 while ensuring that when the GC is not involved, there will
 be no overhead added by the glue that connects the high-level allocator
 to the underlying raw allocator.
@@ -925,11 +926,12 @@ implementation strategies for Rust.
 # Drawbacks
 
 A two level API may seem overly engineered, or at least intimidating.
-But then again, I do not see much of an alternative without giving up
-on GC entirely.
+But then again, I do not see much of an alternative, at least not
+without giving up on garbage collection entirely.
 
 If people really do object to the two-level API, we could side-step it
-somewhat by making the `RawAlloc` directly implement the traits in the
+somewhat (while still supporting GC by default)
+by making the `RawAlloc` directly implement the traits in the
 `typed_alloc` module; then clients would be able to pass in their
 `RawAlloc` instances without using the `typed_alloc::Direct` wrapper.
 But I think it is better to include the wrapper, since it opens up the
@@ -992,7 +994,9 @@ When the two-level approach was first laid out, we thought we might
 just have a single standard high-level allocator, and clients would
 solely implement instances of the `RawAlloc` trait.  The single
 standard high-level allocator would be encoded as struct provided
-in the `typed_alloc` module, and much like the trait implementations above,
+in the `typed_alloc` module, and much like the trait implementations
+in the non-normative
+[appendix](#non-normative-high-level-allocator-implementation),
 it would directly invoke the underlying `RawAlloc` on requests involving
 non GC-root carrying data.
 
