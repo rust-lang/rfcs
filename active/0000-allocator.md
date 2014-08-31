@@ -67,7 +67,7 @@ the API's proposed here; for more discussion, see the section:
   * [What is the type of an alignment](#what-is-the-type-for-an-alignment)
   * [Reap support](#reap-support)
 * [Appendices](#appendices)
-  * [Bibligraphy](#bibliography)
+  * [Bibliography](#bibliography)
   * [Terminology](#terminology)
   * [Non-normative high-level allocator implementation](#non-normative-high-level-allocator-implementation)
 
@@ -1116,11 +1116,31 @@ and make corresponding variants of the high-level allocator traits?
 
 ## Bibliography
 
+### RFC Pull Request #39: Allocator trait
 [RFC PR 39]: https://github.com/rust-lang/rfcs/pull/39/files
 
+Daniel Micay, 2014. RFC: Allocator trait. https://github.com/thestinger/rfcs/blob/ad4cdc2662cc3d29c3ee40ae5abbef599c336c66/active/0000-allocator-trait.md
+
+### Reconsidering custom memory allocation
 [ReCustomMalloc]: http://dl.acm.org/citation.cfm?id=582421
 
+Emery D. Berger, Benjamin G. Zorn, and Kathryn S. McKinley. 2002. Reconsidering custom memory allocation. In Proceedings of the 17th ACM SIGPLAN conference on Object-oriented programming, systems, languages, and applications (OOPSLA '02).
+
+### The memory fragmentation problem: solved?
 [MemFragSolvedP]: http://dl.acm.org/citation.cfm?id=286864
+
+Mark S. Johnstone and Paul R. Wilson. 1998. The memory fragmentation problem: solved?. In Proceedings of the 1st international symposium on Memory management (ISMM '98).
+
+### EASTL: Electronic Arts Standard Template Library
+[EASTL]: http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2007/n2271.html
+
+Paul Pedriana. 2007. [EASTL] -- Electronic Arts Standard Template Library. Document number: N2271=07-0131
+
+### Towards a Better Allocator Model
+[Halpern proposal]: http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2005/n1850.pdf
+
+Pablo Halpern. 2005. [Halpern proposal]: Towards a Better Allocator Model. Document number: N1850=05-0110
+
 
 [jemalloc]: http://www.canonware.com/jemalloc/
 
@@ -1132,10 +1152,6 @@ and make corresponding variants of the high-level allocator traits?
 
 [malloc/free]: http://en.wikipedia.org/wiki/C_dynamic_memory_allocation
 
-[EASTL]: http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2007/n2271.html
-
-[Halpern proposal]: http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2005/n1850.pdf
-
 ## Terminology
 
 * Size-tracking allocator: An allocator which embeds all allocator
@@ -1146,9 +1162,46 @@ and make corresponding variants of the high-level allocator traits?
   takes only a pointer, the allocator is forced to embed that
   meta-data into the block itself.
 
-* Stateful allocator:
+* Stateful allocator: An allocator whose particular instances can
+  carry local state. (Versions of the C++ standard prior to 2011
+  required that to allocators of the same type compare equal.)
+  Containers that are parameteric with respect to an allocator are
+  expected to carry it as a field (rather than invoking it via static
+  methods on the allocator type); this is quite workable in Rust
+  without imposing unnecessary overhead since Rust supports zero-sized
+  types.
 
 * GC-root carrying data:
+  A block of memory that is not allocated on the garbage-collected
+  heap (e.g., stack allocated or acquired from the host memory via
+  `malloc`), but has fields directly within it of type `Gc<T>` (i.e.
+  that point to objects allocated on the garbage-collected heap).
+
+  Some examples: When not GC-heap allocated, `HasDirectRoots` is
+  GC-root carrying data:
+
+```rust
+struct HasDirectRoots {
+    some_int: Gc<int>,
+    some_array: Gc<[int]>,
+}
+```
+
+  For comparison, `OnlyIndirectRoots` is *not* GC-root carrying data:
+
+```rust
+struct OnlyIndirectRoots {
+    some_int: Box<Gc<int>>,
+    some_array: Box<Gc<[int]>>,
+}
+```
+
+The `OnlyIndirectRoots` struct does have fields that *point* to blocks
+of GC-root carrying data, but `OnlyIndirectRoots` itself does not
+itself contain direct pointers into the GC-heap.  This is important,
+because it means that as long as the memory blocks for the two `Box`
+instances are always scanned for roots, the root scanner does *not*
+need to ever scan instances of `OnlyIndirectRoots`.
 
 ## Non-normative high-level allocator implementation
 
