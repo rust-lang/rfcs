@@ -3,6 +3,7 @@
 - Rust Issue: (leave this empty)
 
 # Summary
+[Summary]: #summary
 
 Add a standard allocator interface and support for user-defined
 allocators, with the following goals:
@@ -41,43 +42,45 @@ the API's proposed here; for more discussion, see the section:
 
 # Table of Contents
 
-* [Summary](#summary)
+* [Summary]
 * [Table of Contents](#table-of-contents)
-* [Motivation](motivation)
-  * [Why custom allocators](#why-custom-allocators)
-  * [Why this API](#why-this-api)
-  * [Why is half of the implementation missing](#wheres-the-beef)
-* [Detailed design](#detailed-design)
-  * [The RawAlloc trait](#the-rawalloc-trait)
-  * [The high-level allocator API](#the-high-level-allocator-api)
-    * [Potential properties of high-level allocators](#potential-properties-of-high-level-allocators)
-      * [Header-free high-level allocation](#header-free-high-level-allocation)
-      * [Call correspondences](#call-correspondence)
-      * [Backing memory correspondence](#backing-memory-correspondence)
-      * [Why these properties are useful](#why-these-properties-are-useful)
-    * [The typed_alloc module](#the-typed_alloc-module)
-* [Drawbacks](#drawbacks)
-* [Alternatives](#alternatives)
-  * [Type-carrying Alloc](#type-carrying-alloc)
-  * [No Alloc traits](#no-alloc-traits)
-  * [RawAlloc variations](#rawalloc-variations)
-    * [try_realloc](#try_realloc)
-    * [ptr parametric `usable_size`](#ptr-parametric-usable_size)
-  * [High-level allocator variations](#high-level-allocator-varitions)
-    * [Make `ArrayAlloc` extend `InstanceAlloc`](#make-arrayalloc-extend-instancealloc)
-    * [make-alloccore-non-normative](#make-alloccore-non-normative)
-* [Unresolved Questions](#unresolved-questions)
-  * [Platform supported page size](#platform-supported-page-size)
-  * [What is the type of an alignment](#what-is-the-type-for-an-alignment)
-  * [Reap support](#reap-support)
-* [Appendices](#appendices)
-  * [Bibliography](#bibliography)
-  * [Glossary](#glossary)
-  * [Non-normative high-level allocator implementation](#non-normative-high-level-allocator-implementation)
+* [Motivation]
+  * [Why custom allocators]
+  * [Why this API]
+  * [Why is half of the implementation missing]
+* [Detailed design]
+  * [The `RawAlloc` trait][`RawAlloc` trait]
+  * [The high-level allocator API][high-level allocator API]
+    * [Potential properties of high-level allocators][properties of high-level allocators]
+      * [Header-free high-level allocation]
+      * [Call correspondences][Call correspondence]
+      * [Backing memory correspondence]
+      * [Why these properties are useful]
+    * [The typed_alloc module][typed_alloc module]
+* [Drawbacks]
+* [Alternatives]
+  * [Type-carrying Alloc]
+  * [No Alloc traits]
+  * [RawAlloc variations]
+    * [try_realloc]
+    * [ptr parametric `usable_size`]
+  * [High-level allocator variations]
+    * [Make `ArrayAlloc` extend `InstanceAlloc`]
+    * [Make `AllocCore` non-normative]
+* [Unresolved Questions]
+  * [Platform-supported page size]
+  * [What is the type of an alignment]
+  * [Reap support]
+* [Appendices]
+  * [Bibliography]
+  * [Glossary]
+  * [Non-normative high-level allocator implementation]
 
 # Motivation
+[Motivation]: #motivation
 
 ## Why Custom Allocators
+[Why Custom Allocators]: #why-custom-allocators
 
 As noted in [RFC PR 39], modern general purpose allocators are good,
 but due to the design tradeoffs they must make, cannot be optimal in
@@ -113,6 +116,7 @@ following:
      or time for requests to be serviced.
 
 ## Why this API
+[Why this API]: #why-this-api
 
 As noted in [RFC PR 39], the basic `malloc` interface
 {`malloc(size) -> ptr`, `free(ptr)`, `realloc(ptr, size) -> ptr`} is
@@ -188,6 +192,7 @@ freeing memory.  Built-in support for garbage-collection is handled at a
 higher level, within the Rust standard library itself.
 
 ## Where's the beef
+[Why is half of the implementation missing]: #wheres-the-beef
 or, Why is half of the implementation "missing"
 
 This RFC only specifies the API's that one would use to implement a
@@ -211,8 +216,8 @@ low-level API.
 This RFC also specifies that the standard library will provide types
 for building high-level allocators up from instances of the low-level
 allocators.  We expect that for most use-cases where custom allocators
-are required, it should suffice to define a [low-level
-allocator](#the-rawalloc-trait), which this RFC *does* include enough
+are required, it should suffice to define a
+[low-level allocator](#the-rawalloc-trait), which this RFC *does* include enough
 information for users to work with today, and then construct a
 high-level allocator directly from that low-level one.  Note
 especially that when garbage collected data is not involved, all of the standard
@@ -232,13 +237,15 @@ keep in mind that the intrinsics and helper methods there are not part
 of the specification proposed by this RFC.)
 
 # Detailed design
+[Detailed design]: #detailed-design
 
 The allocator API is divided into two levels: a byte-oriented
-low-level *raw allocator* trait (named [`RawAlloc`](#the-rawalloc-trait)),
+low-level *raw allocator* ([The `RawAlloc` trait]),
 and a family of type-driven high-level *typed allocator* traits
-(defined in the [typed_alloc module](#the-typed_alloc-module)).
+(defined in the [typed_alloc module]).
 
-## The RawAlloc trait
+## The `RawAlloc` trait
+[`RawAlloc` trait]: #the-rawalloc-trait
 
 Here is the `RawAlloc` trait design.  It is largely the same
 as the design from [RFC PR 39]; points of departure are
@@ -421,6 +428,7 @@ Points of departure from [RFC PR 39]:
     use the excess capacity can remain simple.
 
 ## The high-level allocator API
+[high-level allocator API]: #the-high-level-allocator-api
 
 The `RawAlloc` trait defines the low-level API we expect users to be
 able to provide easily, either by dispatching to other native
@@ -457,6 +465,7 @@ two constructor functions available to build a high-level allocator from a
 raw allocator; these constructors are named `
 
 ### Potential properties of high-level allocators
+[properties of high-level allocators]: #potential-properties-of-high-level-allocators
 
 When splitting between a high-level `Alloc` and a low-level `RawAlloc`,
 there are questions that arise regarding how the high-level operations
@@ -465,6 +474,7 @@ Here are a few properties of potential interest when thinking about
 this mapping.
 
 #### Header-free high-level allocation
+[Header-free high-level allocation]: #header-free-high-level-allocation
 
 A "header-free" high-level allocation is one where the high-level
 allocator implementation adds no headers to the block associated with
@@ -477,6 +487,7 @@ the underlying `RawAlloc` would return for a request a block of size
 the spirit of what "header-free allocation" means.
 
 #### Call correspondences
+[call correspondence]: #call-correspondences
 
 A "call correspondence" between a high-level allocator and one of
 its underlying `RawAllocs` is a summary of how many calls will be
@@ -549,6 +560,7 @@ correspondences, which I have labelled as "1:1", "1:1+", and "1:n".
     allocator.
 
 #### Backing memory correspondence
+[Backing memory correspondence]: #backing-memory-correspondence
 
 A high-level allocator will usually be parameterized over one or more
 raw allocators.  One might infer that when one has a high-level
@@ -570,6 +582,7 @@ allocator's dynamically allocated state is not managed by any of its
 raw allocators, then we say that it has "hidden backing."
 
 #### Why these properties are useful
+[Why these properties are useful]: #why-these-properties-are-useful
 
 The properties above are worth discussing because they establish
 constraints that may be important for clients of user-defined
@@ -591,6 +604,7 @@ memory allocated via direct calls to native system `malloc`
 functionality).
 
 ### The typed_alloc module
+[typed_alloc module]: #the-typed_alloc-module
 
 Here is the `typed_alloc` API design.  Much of it is similar to the
 `RawAlloc` trait, but there are a few extra pieces added for type-safe
@@ -976,6 +990,7 @@ provides a great deal of freedom for the future as we research GC
 implementation strategies for Rust.
 
 # Drawbacks
+[Drawbacks]: #drawbacks
 
 A two level API may seem overly engineered, or at least intimidating.
 But then again, I do not see much of an alternative, at least not
@@ -991,8 +1006,10 @@ potential for other future wrapper structs, rather than giving one
 specific implementation strategy a syntactic advantage.
 
 # Alternatives
+[Alternatives]: #alternatives
 
 ## Type-carrying Alloc
+[Type-carrying Alloc]: #type-carrying-alloc
 (aka "objects verus generics")
 
 While it will sometimes make sense to provide a low-level allocator as
@@ -1041,6 +1058,8 @@ struct Rc<Sized? T, A:AllocJust<RcBox> = DefaultAllocJust<RcBox>> {
 ```
 
 ## No `Alloc` traits
+[No `Alloc` traits]: #no-alloc-traits
+
 No `Alloc` traits; just `RawAlloc` parameteric methods in `typed_alloc`
 
 When the two-level approach was first laid out, we thought we might
@@ -1071,11 +1090,13 @@ the end user decide how they want GC-root carrying data to be handled
 by selecting the appropriate implementation of the trait.
 
 ## RawAlloc variations
+[RawAlloc variations]: #rawalloc-variations
 
 Here are collected some variations alterations of the low-level
-[`RawAlloc`](#the-rawalloc-trait) API.
+[`RawAlloc` trait] API.
 
 ### try_realloc
+[try_realloc]: #try_realloc
 
 I have seen some criticisms of the C `realloc` API that say that
 `realloc` fails to capture some important use cases, such as a request
@@ -1101,6 +1122,7 @@ Or we could claim that given `RawAlloc` API, between
 suffices for expected practice.
 
 ### ptr parametric `usable_size`
+[ptr parametric `usable_size`]: #ptr-parametric-usable_size
 
 I considered extending `usable_size_bytes` to take the `ptr` itself as an
 argument, as another way to handle hypothetical allocators who may choose
@@ -1114,8 +1136,10 @@ hypothetical allocators with different size bins via the
 `alloc_bytes_excess` and `realloc_bytes_excess` methods.
 
 ## High-level allocator variations
+[High-level allocator variations]: #high-level-allocator-variations
 
 ### Make `ArrayAlloc` extend `InstanceAlloc`
+[Make `ArrayAlloc` extend `InstanceAlloc`]: #make-arrayalloc-extend-instancealloc
 
 It might simplify clients to do `trait ArrayAlloc : InstanceAlloc`.
 
@@ -1128,6 +1152,7 @@ extension, because such a trait object is not usable, as discussed in
 [Type-carrying Alloc](#type-carrying-alloc).)
 
 ### Make `AllocCore` non-normative
+[Make `AllocCore` non-normative]: #make-alloccore-non-normative
 
 Many clients would not need the low-level control offered by `AllocCore`.
 Arguably `InstanceAlloc` and `ArrayAlloc` might suffice for the high-level
@@ -1138,8 +1163,10 @@ non-array data; that is my main motivation for leaving `AllocCore`
 in the RFC itself.
 
 # Unresolved questions
+[Unresolved questions]: #unresolved-questions
 
-## Platform supported page size
+## Platform-supported page size
+[Platorm-supported page size]: #platform-supported-page-size
 
 It is a little ugly that the `RawAlloc` has an error case for an
 `align` that is too large, but there is no way in the interface for
@@ -1147,13 +1174,15 @@ the user to ask for that limit.  We could make the limit an associated
 constant on `RawAlloc`.  (Note that the [high-level API](#the-typed_alloc-module)
 is already relying on `where` clauses, namely in its `from_type` method.)
 
-## What is the type for an alignment
+## What is the type of an alignment
+[What is the type of an alignment]: #what-is-the-type-of-an-alignment
 
 [RFC PR 39] deliberately used a `u32` for alignment, for compatibility
 with LLVM.  This RFC is currently using `uint`, but only because our
 existing `align_of` primitives expose `uint`, not `u32`.
 
 ## Reap support
+[Reap support]: #reap-support
 
 After (re-)reading [ReCustomMalloc], I am thinking that we should make
 sure our allocator design allows for easy use of a *Reap* abstraction.
@@ -1174,8 +1203,10 @@ trait RawReapAlloc : RawAlloc { ... }
 and make corresponding variants of the high-level allocator traits?
 
 # Appendices
+[Appendices]: #appendices
 
 ## Bibliography
+[Bibliography]: #bibliography
 
 ### RFC Pull Request #39: Allocator trait
 [RFC PR 39]: https://github.com/rust-lang/rfcs/pull/39/files
@@ -1214,8 +1245,10 @@ Pablo Halpern. 2005. [Towards a Better Allocator Model][Halpern proposal]. Docum
 [malloc/free]: http://en.wikipedia.org/wiki/C_dynamic_memory_allocation
 
 ## Glossary
+[Glossary]: #glossary
 
 ### Size-tracking allocator
+[Size-tracking allocator]: #size-tracking-allocator
 
 A "size-tracking allocator" is an allocator which embeds all allocator
 meta-data such as block size into the allocated block itself, either
@@ -1226,6 +1259,7 @@ takes only a pointer, the allocator is forced to embed that meta-data
 into the block itself.
 
 ### Stateful allocator
+[Stateful allocator]: #stateful-allocator
 
 A "stateful allocator" is an allocator whose particular instances can
 carry local state. (Versions of the C++ standard prior to 2011
@@ -1236,6 +1270,7 @@ methods on the allocator type); this is quite workable in Rust without
 imposing unnecessary overhead since Rust supports zero-sized types.
 
 ### GC-root carrying data
+[GC-root carrrying data]: #gc-root-carrying-data
 
 A "GC-root carrying" block of memory is one that is not allocated on the
 garbage-collected heap (e.g., stack allocated or acquired from the
@@ -1270,6 +1305,7 @@ instances are always scanned for roots, the root scanner does *not*
 need to ever scan instances of `OnlyIndirectRoots`.
 
 ## Non-normative high-level allocator implementation
+[Non-normative high-level allocator implementation]: #non-normative-high-level-allocator-implementation
 
 The high-level allocator traits in [the-typed_alloc-module] are just
 API surface; the description above does not specify the manner in
