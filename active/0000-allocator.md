@@ -59,10 +59,10 @@ the API's proposed here; for more discussion, see the section:
     * [The typed_alloc module][typed_alloc module]
 * [Drawbacks]
 * [Alternatives]
-  * [Type-carrying Alloc]
-  * [No Alloc traits]
-  * [RawAlloc variations]
-    * [try_realloc]
+  * [Type-carrying `Alloc`]
+  * [No `Alloc` traits]
+  * [`RawAlloc` variations]
+    * [`try_realloc`]
     * [ptr parametric `usable_size`]
   * [High-level allocator variations]
     * [Make `ArrayAlloc` extend `InstanceAlloc`]
@@ -240,7 +240,7 @@ of the specification proposed by this RFC.)
 [Detailed design]: #detailed-design
 
 The allocator API is divided into two levels: a byte-oriented
-low-level *raw allocator* ([The `RawAlloc` trait]),
+low-level *raw allocator* (the [`RawAlloc` trait]),
 and a family of type-driven high-level *typed allocator* traits
 (defined in the [typed_alloc module]).
 
@@ -1008,8 +1008,8 @@ specific implementation strategy a syntactic advantage.
 # Alternatives
 [Alternatives]: #alternatives
 
-## Type-carrying Alloc
-[Type-carrying Alloc]: #type-carrying-alloc
+## Type-carrying `Alloc`
+[Type-carrying `Alloc`]: #type-carrying-alloc
 (aka "objects verus generics")
 
 While it will sometimes make sense to provide a low-level allocator as
@@ -1089,14 +1089,14 @@ with a few standard implementations of those traits (namely, the
 the end user decide how they want GC-root carrying data to be handled
 by selecting the appropriate implementation of the trait.
 
-## RawAlloc variations
-[RawAlloc variations]: #rawalloc-variations
+## `RawAlloc` variations
+[`RawAlloc` variations]: #rawalloc-variations
 
 Here are collected some variations alterations of the low-level
 [`RawAlloc` trait] API.
 
-### try_realloc
-[try_realloc]: #try_realloc
+### `try_realloc`
+[`try_realloc`]: #try_realloc
 
 I have seen some criticisms of the C `realloc` API that say that
 `realloc` fails to capture some important use cases, such as a request
