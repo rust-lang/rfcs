@@ -37,36 +37,36 @@ the API's proposed here; for more discussion, see the section:
 
 # Table of Contents
 
-* [Summary][#summary]
-* [Table of Contents][#table-of-contents]
-* [Motivation][#motivation]
-  * [Why custom allocators][#why-custom-allocators]
-  * [Why this API][#why-this-api]
-  * [Why is half of the implementation missing][#wheres-the-beef]
-* [Detailed design][#detailed-design]
-  * [The RawAlloc trait][#the-rawalloc-trait]
+* [Summary](#summary)
+* [Table of Contents](#table-of-contents)
+* [Motivation](motivation)
+  * [Why custom allocators](#why-custom-allocators)
+  * [Why this API](#why-this-api)
+  * [Why is half of the implementation missing](#wheres-the-beef)
+* [Detailed design](#detailed-design)
+  * [The RawAlloc trait](#the-rawalloc-trait)
   * [The high-level allocator API](#the-high-level-allocator-api)
-    * [Properties of high-level allocators][#properties-of-high-level-allocators]
+    * [Properties of high-level allocators](#properties-of-high-level-allocators)
       * [Header-free high-level allocation](#header-free-high-level-allocation)
       * [Call correspondences](#call-correspondence)
       * [Backing memory correspondence](#backing-memory-correspondence)
       * [Why these properties are useful](#why-these-properties-are-useful)
-    * [The typed_alloc module][#the-typed_alloc-module]
-* [Drawbacks][#drawbacks]
-* [Alternatives][#alternatives]
-  * [Type-carrying Alloc][#type-carrying-alloc]
-  * [No Alloc traits][#no-alloc-traits]
+    * [The typed_alloc module](#the-typed_alloc-module)
+* [Drawbacks](#drawbacks)
+* [Alternatives](#alternatives)
+  * [Type-carrying Alloc](#type-carrying-alloc)
+  * [No Alloc traits](#no-alloc-traits)
   * [RawAlloc variations](#rawalloc-variations)
     * [try_realloc](#try_realloc)
     * [ptr parametric `usable_size`](#ptr-parametric-usable_size)
-* [Unresolved Questions][#unresolved-questions]
-  * [Platform supported page size][#platform-supported-page-size]
-  * [What is the type of an alignment][#what-is-the-type-for-an-alignment]
-  * [Reap support][#reap-support]
-* [Appendices][#appendices]
-  * [Bibligraphy][#bibliography]
-  * [Terminology][#terminology]
-  * [Non-normative high-level allocator implementation][#non-normative-high-level-allocator-implementation]
+* [Unresolved Questions](#unresolved-questions)
+  * [Platform supported page size](#platform-supported-page-size)
+  * [What is the type of an alignment](#what-is-the-type-for-an-alignment)
+  * [Reap support](#reap-support)
+* [Appendices](#appendices)
+  * [Bibligraphy](#bibliography)
+  * [Terminology](#terminology)
+  * [Non-normative high-level allocator implementation](#non-normative-high-level-allocator-implementation)
 
 # Motivation
 
