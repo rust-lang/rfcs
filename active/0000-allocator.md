@@ -1185,12 +1185,12 @@ Daniel Micay, 2014. RFC: Allocator trait. https://github.com/thestinger/rfcs/blo
 ### Reconsidering custom memory allocation
 [ReCustomMalloc]: http://dl.acm.org/citation.cfm?id=582421
 
-Emery D. Berger, Benjamin G. Zorn, and Kathryn S. McKinley. 2002. Reconsidering custom memory allocation. In Proceedings of the 17th ACM SIGPLAN conference on Object-oriented programming, systems, languages, and applications (OOPSLA '02).
+Emery D. Berger, Benjamin G. Zorn, and Kathryn S. McKinley. 2002. [Reconsidering custom memory allocation][ReCustomMalloc]. In Proceedings of the 17th ACM SIGPLAN conference on Object-oriented programming, systems, languages, and applications (OOPSLA '02).
 
 ### The memory fragmentation problem: solved?
 [MemFragSolvedP]: http://dl.acm.org/citation.cfm?id=286864
 
-Mark S. Johnstone and Paul R. Wilson. 1998. The memory fragmentation problem: solved?. In Proceedings of the 1st international symposium on Memory management (ISMM '98).
+Mark S. Johnstone and Paul R. Wilson. 1998. [The memory fragmentation problem: solved?][MemFragSolvedP]. In Proceedings of the 1st international symposium on Memory management (ISMM '98).
 
 ### EASTL: Electronic Arts Standard Template Library
 [EASTL]: http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2007/n2271.html
