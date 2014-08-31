@@ -1,4 +1,4 @@
-- Start Date: (fill me in with today's date, YYYY-MM-DD)
+- Start Date: (fill me in with today's date, 2014-08-31)
 - RFC PR: (leave this empty)
 - Rust Issue: (leave this empty)
 
@@ -59,6 +59,9 @@ the API's proposed here; for more discussion, see the section:
   * [RawAlloc variations](#rawalloc-variations)
     * [try_realloc](#try_realloc)
     * [ptr parametric `usable_size`](#ptr-parametric-usable_size)
+  * [High-level allocator variations](#high-level-allocator-varitions)
+    * [Make `ArrayAlloc` extend `InstanceAlloc`](#make-arrayalloc-extend-instancealloc)
+    * [make-alloccore-non-normative](#make-alloccore-non-normative)
 * [Unresolved Questions](#unresolved-questions)
   * [Platform supported page size](#platform-supported-page-size)
   * [What is the type of an alignment](#what-is-the-type-for-an-alignment)
@@ -1036,7 +1039,9 @@ fn try_grow_bytes(&self, ptr: *mut u8, size: uint, align: uint, old_size: uint) 
 
 Or we could delay such additions to hypothetical subtraits e.g. `RawTryAlloc`.
 
-Or we could claim that given `RawAlloc` API, with its 
+Or we could claim that given `RawAlloc` API, between
+`usable_capacity_bytes` and its `excess` allocation and methods,
+suffices for expected practice.
 
 ### ptr parametric `usable_size`
 
@@ -1050,6 +1055,26 @@ actually return a constant-expression computed solely from the given
 `size` and `align`, and I decided it was simpler to support the above
 hypothetical allocators with different size bins via the
 `alloc_bytes_excess` and `realloc_bytes_excess` methods.
+
+## High-level allocator variations
+
+### Make `ArrayAlloc` extend `InstanceAlloc`
+
+It might simplify clients to do `trait ArrayAlloc : InstanceAlloc`.
+
+But even then, we would probably want the same set of methods, and
+we'd have to specify whether e.g. one is allowed to deallocate, via
+`fn dealloc`, a block that had been allocated via `fn alloc_array`.
+
+### Make `AllocCore` non-normative
+
+Many clients would not need the low-level control offered by `AllocCore`.
+Arguably `InstanceAlloc` and `ArrayAlloc` might suffice for the high-level
+API; I could move `AllocCore` to the non-normative appendix for now.
+
+But I assume that some clients will want to make use of `realloc` on
+non-array data; that is my main motivation for leaving `AllocCore`
+in the RFC itself.
 
 # Unresolved questions
 
