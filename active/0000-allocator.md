@@ -1237,7 +1237,7 @@ imposing unnecessary overhead since Rust supports zero-sized types.
 
 ### GC-root carrying data
 
-A GC-root carrying block of memory is one that is not allocated on the
+A "GC-root carrying" block of memory is one that is not allocated on the
 garbage-collected heap (e.g., stack allocated or acquired from the
 host memory via `malloc`), but has fields directly within it of type
 `Gc<T>` (i.e.  that point to objects allocated on the
