@@ -68,7 +68,7 @@ the API's proposed here; for more discussion, see the section:
   * [Reap support](#reap-support)
 * [Appendices](#appendices)
   * [Bibliography](#bibliography)
-  * [Terminology](#terminology)
+  * [Glossary](#glossary)
   * [Non-normative high-level allocator implementation](#non-normative-high-level-allocator-implementation)
 
 # Motivation
@@ -1152,7 +1152,7 @@ Pablo Halpern. 2005. [Halpern proposal]: Towards a Better Allocator Model. Docum
 
 [malloc/free]: http://en.wikipedia.org/wiki/C_dynamic_memory_allocation
 
-## Terminology
+## Glossary
 
 * Size-tracking allocator: An allocator which embeds all allocator
   meta-data such as block size into the allocated block itself, either
