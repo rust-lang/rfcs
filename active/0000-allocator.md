@@ -1215,31 +1215,36 @@ Pablo Halpern. 2005. [Towards a Better Allocator Model][Halpern proposal]. Docum
 
 ## Glossary
 
-* Size-tracking allocator: An allocator which embeds all allocator
-  meta-data such as block size into the allocated block itself, either
-  explicitly (e.g. via a header), or implicitly (e.g. by maintaining a
-  separate map from address-ranges to sizes).  The C [malloc/free]
-  functions form an example of such an API: since the `free` function
-  takes only a pointer, the allocator is forced to embed that
-  meta-data into the block itself.
+### Size-tracking allocator
 
-* Stateful allocator: An allocator whose particular instances can
-  carry local state. (Versions of the C++ standard prior to 2011
-  required that to allocators of the same type compare equal.)
-  Containers that are parameteric with respect to an allocator are
-  expected to carry it as a field (rather than invoking it via static
-  methods on the allocator type); this is quite workable in Rust
-  without imposing unnecessary overhead since Rust supports zero-sized
-  types.
+A "size-tracking allocator" is an allocator which embeds all allocator
+meta-data such as block size into the allocated block itself, either
+explicitly (e.g. via a header), or implicitly (e.g. by maintaining a
+separate map from address-ranges to sizes).  The C [malloc/free]
+functions form an example of such an API: since the `free` function
+takes only a pointer, the allocator is forced to embed that meta-data
+into the block itself.
 
-* GC-root carrying data:
-  A block of memory that is not allocated on the garbage-collected
-  heap (e.g., stack allocated or acquired from the host memory via
-  `malloc`), but has fields directly within it of type `Gc<T>` (i.e.
-  that point to objects allocated on the garbage-collected heap).
+### Stateful allocator
 
-  Some examples: When not GC-heap allocated, `HasDirectRoots` is
-  GC-root carrying data:
+A "stateful allocator" is an allocator whose particular instances can
+carry local state. (Versions of the C++ standard prior to 2011
+required that to allocators of the same type compare equal.)
+Containers that are parameteric with respect to an allocator are
+expected to carry it as a field (rather than invoking it via static
+methods on the allocator type); this is quite workable in Rust without
+imposing unnecessary overhead since Rust supports zero-sized types.
+
+### GC-root carrying data
+
+A GC-root carrying block of memory is one that is not allocated on the
+garbage-collected heap (e.g., stack allocated or acquired from the
+host memory via `malloc`), but has fields directly within it of type
+`Gc<T>` (i.e.  that point to objects allocated on the
+garbage-collected heap).
+
+Some examples: When not GC-heap allocated, `HasDirectRoots` is GC-root
+carrying data:
 
 ```rust
 struct HasDirectRoots {
@@ -1248,7 +1253,7 @@ struct HasDirectRoots {
 }
 ```
 
-  For comparison, `OnlyIndirectRoots` is *not* GC-root carrying data:
+For comparison, `OnlyIndirectRoots` is *not* GC-root carrying data:
 
 ```rust
 struct OnlyIndirectRoots {
