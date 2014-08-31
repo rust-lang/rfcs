@@ -218,7 +218,7 @@ allocators.  (If you are curious, you are more than welcome to read
 and provide feedback on the sketch in the non-normative
 [appendix](#non-normative-high-level-allocator-implementation); just
 keep in mind that the intrinsics and helper methods there are not part
-of the specification proposed by this RFC.
+of the specification proposed by this RFC.)
 
 # Detailed design
 
