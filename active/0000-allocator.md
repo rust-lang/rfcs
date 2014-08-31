@@ -1074,7 +1074,7 @@ it would directly invoke the underlying `RawAlloc` on requests involving
 non GC-root carrying data.
 
 The reason I abandoned this approach was that when I reconsidered the
-various [call correspondence][#call-correspondence] properties, I
+various [call correspondence] properties, I
 realized that our initial approach to how the standard high-level
 allocator would handle GC data, via a "1:n" call correspondence, was
 arguably *subverting* the goals of a custom allocator.  For example,
