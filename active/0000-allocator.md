@@ -247,7 +247,8 @@ type Alignment = uint;
 /// Defines a family of methods for allocating and deallocating
 /// byte-oriented blocks of memory.  A user-implementation of
 /// this trait need only reimplement `alloc_bytes` and `dealloc_bytes`,
-/// though it 
+/// though it should strongly consider reimplementing `realloc_bytes`
+/// as well.
 ///
 /// Several of these methods state as a condition that the input
 /// `size: Size` and `align: Alignment` must *fit* an input pointer
@@ -588,10 +589,38 @@ Here is the `typed_alloc` API design.  Much of it is similar to the
 `RawAlloc` trait, but there are a few extra pieces added for type-safe
 allocation, dyanmically-sized types, and garbage collector support.
 
+Note: for the purposes of this RFC, clients of user-defined allocators
+are *not* intended to attempt to implement the traits in the
+`typed_alloc` module, at least not directly.  Users are instead
+expected to implement an instance of the `RawAlloc` trait, and then
+use that as input when constructing one of the `typed_alloc`
+implementations provided via the standard library (see `StdAlloc` and
+`Direct` below).  Therefore, it is not terribly important at this
+point to establish which methods provided by the `typed_alloc` traits
+have default implementations.  In the description below, I do include
+default implementations for some of the methods (namely in
+`AllocCore`), but that is mainly as a presentation aid; it is not
+meant to be a requirement of the final definition of the trait.
+
 ```rust
 pub mod typed_alloc {
+    /// Base trait that all high-level allocators extend.
+    pub trait BaseAlloc {
+        /// Returns true if this allocator exposes its internals to
+        /// the garbage collector for root extraction and scanning.
+        ///
+        /// Note: We leave it to a future RFC to define the criteria
+        /// by which an implementation of `AllocCore` can return
+        /// `true` for this method.  The standard library should
+        /// eventually provide at least one implementation of
+        /// `AllocCore` that is tightly GC-integrated (namely
+        /// `StdAlloc` here), but the manner in which this will be
+        /// accomplished is not a component of this RFC.
+        fn tightly_gc_integrated() -> bool { false }
+    }
+
     /// High-level allocator for instances of some sized type.
-    pub trait InstanceAlloc {
+    pub trait InstanceAlloc : BaseAlloc {
         /// Allocates a memory block suitable for holding `T`.
         /// Returns the pointer to the block if allocation succeeds.
         ///
@@ -630,7 +659,7 @@ pub mod typed_alloc {
     /// `realloc_array`, or `realloc_array_excess`; the "excess
     /// allocation methods" are the ones that end with the suffix
     /// "excess".
-    pub trait ArrayAlloc {
+    pub trait ArrayAlloc : BaseAlloc {
         /// Allocates a memory block suitable for holding `len`
         /// instances of `T`.
         ///
@@ -640,8 +669,9 @@ pub mod typed_alloc {
         unsafe fn alloc_array<T>(&self, len: uint) -> *mut T;
 
         /// Allocates a memory block suitable for holding `len`
-        /// instances of `T`, as well as the capacity (in
-        /// number of `T`) of the referenced block of memory.
+        /// instances of `T`.  On successful allocation, returns the
+        /// capacity (in number of `T`) of the referenced block of
+        /// memory.
         ///
         /// Returns the pointer to the block if allocation succeeds.
         ///
@@ -767,12 +797,19 @@ pub mod typed_alloc {
         // compiler and runtime internal fields
     }
 
-    pub trait AllocCore {
+    /// High-level allocator for arbitrary unsized objects.
+    ///
+    /// This provides a great deal of flexiblity but also has a
+    /// relatively complex interface; most clients should first see if
+    /// `InstanceAlloc` or `ArrayAlloc` would serve their needs.
+    pub trait AllocCore : BaseAlloc {
         /// Allocates a memory block suitable for holding `T`,
         /// according to the  `info`.
         ///
         /// Returns null if allocation fails.
-        unsafe fn alloc_info<Sized? T>(&self, info: MemoryBlockInfo<T>) -> *mut T;
+        unsafe fn alloc_info<Sized? T>(&self, info: MemoryBlockInfo<T>) -> *mut T {
+            self.alloc_info_excess(info).val0()
+        }
 
         /// Allocates a memory block suitable for holding `T`,
         /// according to the `info`, as well as the capacity (in
@@ -787,16 +824,24 @@ pub mod typed_alloc {
         unsafe fn usable_capacity_bytes<Sized? T>(&self, len: uint) -> uint;
 
         /// Attempts to recycle the memory block for `old_ptr` to create
-        /// a memory block suitable for an instance of `U`.
+        /// a memory block suitable for an instance of `U`.  On
+        /// successful reallocation, returns the capacity (in bytes) of
+        /// the memory block referenced by the returned pointer.
         ///
         /// Requirement 1: `info` must be *compatible with* `old_info`.
         ///
         /// Requirement 2: `old_info` must be an *extension of* the
-        /// `mbi_orig`, the size of `old_info` must be in the range
-        /// `[mbi_orig.size(),self.usable_size_info(old_ptr,mbi_orig)]`
-        /// (where `mbi_orig` is the `MemoryBlockInfo` originally used
-        /// to create `old_ptr`, be it via `alloc_info` or
-        /// `realloc_info`).
+        /// `mbi_orig` and the size of `old_info` must be in the range
+        /// `[orig_size, usable]`, where:
+        ///
+        /// * `mbi_orig` is the `MemoryBlockInfo` used to create
+        ///    `old_ptr`, be it via `alloc_info` or `realloc_info`,
+        ///
+        /// * `orig_size` is `mbi_orig.size()`, and
+        ///
+        /// * `usable` is capacity returned by `[re]alloc_info_excess`
+        ///   to create `old_ptr`.  (This can be conservatively
+        ///   approximated via `self.usable_size_info(mbi_orig)`).
         ///
         /// (The requirements use terms in the sense defined in the
         /// documentation for `MemoryBlockInfo`.)
@@ -811,12 +856,23 @@ pub mod typed_alloc {
         /// to use to convert between different non-array types `S`
         /// and `T` (or between `[S]` and `[T]`, etc) if either type
         /// references GC data.
-        unsafe fn realloc_info<Sized? T, Sized? U>(&self, old_ptr: *mut T, old_info: MemoryBlockInfo<T>, info: MemoryBlockInfo<U>) -> *mut U;
+        unsafe fn realloc_info_excess<Sized? T, Sized? U>(&self, old_ptr: *mut T, old_info: MemoryBlockInfo<T>, info: MemoryBlockInfo<U>) -> (*mut U, Capacity);
 
-        /// The `info` must be an *extension of* the `MemoryBlockInfo`
-        /// originally used to create `ptr`, be it via `alloc_info` or
-        /// `realloc_info`.
-        unsafe fn usable_size_info<Sized? T>(&self, ptr: *mut u8, info: MemoryBlockInfo<T>) -> uint;
+        /// Attempts to recycle the memory block for `old_ptr` to create
+        /// a memory block suitable for an instance of `U`.
+        ///
+        /// Has the same constraints on its input as `realloc_info_excess`.
+        ///
+        /// Most importantly: This method is just as dangerous as as
+        /// `realloc_info_excess`, especially on data involving GC.
+        unsafe fn realloc_info<Sized? T, Sized? U>(&self, old_ptr: *mut T, old_info: MemoryBlockInfo<T>, info: MemoryBlockInfo<U>) -> *mut U {
+            self.realloc_info_excess(old_ptr, old_info, info).val0()
+        }
+
+        /// Returns a conservative lower-bound on the capacity for any
+        /// memory block that could be returned for a successful
+        /// allocation or reallocation for `info`.
+        unsafe fn usable_size_info<Sized? T>(&self, info: MemoryBlockInfo<T>) -> uint;
 
         /// Deallocates the memory block at `pointer`.
         ///
@@ -824,24 +880,13 @@ pub mod typed_alloc {
         /// used to create `pointer`.
         unsafe fn dealloc_info<Sized? T>(&self, pointer: *mut T, info: MemoryBlockInfo<T>);
 
-        /// Returns true if this allocator exposes its internals to
-        /// the garbage collector for root extraction and scanning.
-        ///
-        /// Note: We leave it to a future RFC to define the criteria
-        /// by which an implementation of `AllocCore` can return
-        /// `true` for this method.  The standard library should
-        /// eventually provide at least one implementation of
-        /// `AllocCore` that is tightly GC-integrated, but the manner
-        /// in which this will be accomplished is not a component of
-        /// this RFC.
-        fn tightly_gc_integrated() -> bool { false }
     }
 
     /// The default standard library implementation of a high-level allocator.
     ///
-    /// * Instances of `Alloc` are able to allocate GC-managed data.
+    /// * Instances of `StdAlloc` are able to allocate GC-managed data.
     ///
-    /// * For data not involving the GC, the `Alloc<R>` provides
+    /// * For data not involving the GC, the `StdAlloc<R>` provides
     ///   header-free allocation and a "1:1" call correspondence with
     ///   its given raw alloc `R`.
     ///
@@ -850,13 +895,13 @@ pub mod typed_alloc {
     ///   data.  It will probably have the "1:n" call correspondence
     ///   (which, as noted above, is a very weak property).
     ///
-    /// * For GC-managed data: the `Alloc` may or may not attempt to
+    /// * For GC-managed data: the `StdAlloc` may or may not attempt to
     ///   use the given raw allocator to provide backing storage for
     ///   the GC-heap.
-    pub struct Alloc<Raw:RawAlloc> { /* private fields */ }
+    pub struct StdAlloc<Raw:RawAlloc> { /* private fields */ }
 
-    /// Constructs an `Alloc` from a raw allocator.
-    pub fn Alloc<Raw:RawAlloc>(r: Raw) -> Alloc<Raw> {
+    /// Constructs an `StdAlloc` from a raw allocator.
+    pub fn StdAlloc<Raw:RawAlloc>(r: Raw) -> StdAlloc<Raw> {
         // implementation hidden; see Non-normative high-level
         // allocator implementation in the appendices
     }
@@ -947,10 +992,11 @@ While it will sometimes make sense to provide a low-level allocator as
 an raw allocator object type `&RawAlloc`, e.g. to control
 code-duplication, in general we here define the high-level type-aware
 methods as type-parametric methods of a high-level trait, such as the
-method `fn alloc<T>(&self) -> *mut T` of the `Alloc` trait.  (Note
-that since all of the methods of `Alloc` are type-parametric, a
-trait-object type `&Alloc` has no callable methods, because Rust does
-not allow one to invoke type-parametric methods of trait objects.)
+method `fn alloc<T>(&self) -> *mut T` of the `InstanceAlloc` trait.
+(Note that since all of the methods of `InstanceAlloc` are
+type-parametric, a trait-object type `&InstanceAlloc` has no callable
+methods, because Rust does not allow one to invoke type-parametric
+methods of trait objects.)
 
 That is, we did not attempt to encode the high-level interface using
 solely traits with type-specific implementations, such as suggested
@@ -1013,7 +1059,7 @@ allocation calls being made by the container library.
 
 Therefore, I decided to introduce the family of `Alloc` traits, along
 with a few standard implementations of those traits (namely, the
-`Alloc` and `Direct` structs) that we know how to implement, and let
+`StdAlloc` and `Direct` structs) that we know how to implement, and let
 the end user decide how they want GC-root carrying data to be handled
 by selecting the appropriate implementation of the trait.
 
@@ -1069,6 +1115,10 @@ It might simplify clients to do `trait ArrayAlloc : InstanceAlloc`.
 But even then, we would probably want the same set of methods, and
 we'd have to specify whether e.g. one is allowed to deallocate, via
 `fn dealloc`, a block that had been allocated via `fn alloc_array`.
+
+(Note that the trait object `&ArrayAlloc` would not motivate this
+extension, because such a trait object is not usable, as discussed in
+[Type-carrying Alloc](#type-carrying-alloc).)
 
 ### Make `AllocCore` non-normative
 
@@ -1244,27 +1294,53 @@ In addition, we need some primitive operations for converting from raw
 byte pointers to fat-pointers to dynamically sized types (DSTs) and
 back again.
 
-The `MemoryBlockInfo<T>` struct below carries the necessary word of
-data that is attached to fat pointers, in the `unsized_metadata`
+First, we introduce into the standard library an opaque type called
+`PointerData<U>`, which represents the extra data associated with a
+(fat or thin) pointer:
+
+    // Opaque tag that is known to the compiler describing the
+    // extra data attached to a (fat or thin) pointer.
+    #[deriving(Copy,Eq)]
+    struct PointerData<Sized? U> {
+        opaque: uint,
+        marker: InvariantType<U>
+    }
+
+Since thin pointers to sized types don't have any extra data,
+you can create one of these for any sized type:
+
+    // Returns pointer data for any sized type.
+    fn thin_pointer_data<T>() -> PointerData<T> {
+        PointerData { opaque: 0, marker: marker::InvariantType }
+    }
+
+Moreover, you can use this function to create the pointer data
+for an array `[T]` of length `n`:
+
+    // Returns pointer data for any sized type.
+    fn array_pointer_data<T>(length: uint) -> PointerData<[T]> {
+        PointerData { opaque: length, marker: marker::InvariantType }
+    }
+
+The sample implementation below of the `MemoryBlockInfo<T>` struct
+carries the necessary `PointerData<T>` in the `unsized_metadata`
 field.
 
 If you have an actual pointer `&U`, you can extract its pointer data
 using the intrinsic `pointer_data`, which takes a (possibly fat)
-pointer and returns the pointer data associated with it. The interface
-actually takes 
+pointer and returns the pointer data associated with it.
 
     // Given fat (or thin) pointer of type U1, extract data suitable
     // for `U2`. The types U1 and U2 must require the same sort of
-    // meta data: in particular U2 may be a struct type (or tuple type etc)
-    // whose field field is of the type U1.
+    // meta data: in particular U2 may be a struct type (or tuple type, etc)
+    // whose final (potentially unsized) field is of the type U1.
     /*intrinsic*/ fn pointer_data<Sized? U1, Sized? U2>(x: &U1) -> PointerData<U2>;
 
 There is also the `pointer_mem` intrinsic, which extracts out the raw
-thin pointer. It also returns a `*u8`.
+thin pointer underlying a `&U`.
 
     // Given fat (or thin) pointer, extract the memory
     /*intrinsic*/ fn pointer_mem<Sized? U>(x: &U) -> *mut u8;
-
 
 Next, we have the intrinsics for computing the size and alignment
 requirements of a type. Note that these operator over any type, sized
@@ -1272,12 +1348,12 @@ of unsized, but a pointer data is required:
 
     /*intrinsic*/ fn sizeof_type<Sized? U>(data: PointerData<U>) -> uint;
     /*intrinsic*/ fn alignof_type<Sized? U>(data: PointerData<U>) -> uint;
-    
+
 Finally, we have an intrinsic to make a pointer. If `U` is a sized
 type, this is the same as a transmute, but if `U` is unsized, it will
 pair up `p` with the given pointer data (note that pointer data is
 always POD).
-    
+
     // Make a fat (or thin) pointer from some memory
     /*intrinsic*/ fn make_pointer<Sized? U>(p: *mut u8,
                                             data: PointerData<U>)
@@ -1298,7 +1374,7 @@ functions for computing sizes:
 Note: intrinsics are needed because the appropriate code will depend
 on whether `U` winds up being sized or not. We might be able to get
 away with one core intrinsic `ty_is_dst()` or something like that.
-This is relatively minor detail: the same helper functions will exist
+This is relatively minor detail: similar helper functions would exist
 either way.
 
 ```rust
@@ -1318,7 +1394,7 @@ mod typed_alloc_impl {
         align: uint,
 
         // The extra word of data to attach to a fat pointer for unsized `T`
-        unsized_metadata: uint,
+        unsized_metadata: PointerData<U>,
 
         // Explicit marker indicates that a block info is neither co-
         // nor contra-variant with respect to its type parameter `U`.
@@ -1337,31 +1413,40 @@ mod typed_alloc_impl {
         /// will have equivalent normalized block infos.  Thus,
         /// allocations may be categorized into bins by the high-level
         /// allocator according to their normalized block infos.
+        ///
+        /// (The main point of this method is to allow one to have two
+        ///  instances of `MemoryBlockInfo<()>` (i.e. the same type)
+        ///  that describe blocks that have different formats in terms
+        ///  of where their GC roots fall.  This sort of
+        ///  implementation detail is not represented in the
+        ///  `MemoryBlockInfo` internals of this non-normative
+        ///  appendix; so in many ways this method is just a hint
+        ///  about future possible implementation strategies; it also
+        ///  explains why this design has a `MemoryBlockInfo` struct
+        ///  that is distinct from the `PointerData<T>` struct.)
         pub fn forget_type(&self) -> MemoryBlockInfo<()> {
             // naive impl
 
             // (I assume even a naive implementation still needs to
             // construct a fresh `marker` to placate the type system)
-            MemoryBlockInfo { marker: InvariantType, ..*self }
+            MemoryBlockInfo { marker: InvariantType,
+                              unsized_metadata: thin_pointer_data::<()>(),
+                              ..*self }
         }
 
         /// Returns a block info for a sized type `T`.
         pub fn from_type() -> MemoryBlockInfo<T>() where T : Sized {
             // naive impl
-            MemoryBlockInfo::<T>::new(
-                mem::size_of::<T(),
-                mem::align_of::<T>(),
-                0u)
+            let pd = thin_pointer_data::<T>();
+            MemoryBlockInfo::new(sizeof_type(pd), alignof_type(pd), pd)
         }
 
         /// Returns a block info for an array of (unsized) type `[U]`
         /// capable of holding at least `length` instances of `U`.
         pub fn array<U>(length: uint) -> MemoryBlockInfo<[U]> {
             // naive impl
-            MemoryBlockInfo<[U]>::from_size_and_align(
-                length * mem::size_of::<T>(),
-                mem::align_of::<T>(),
-                length)
+            let pd = array_pointer_data::<U>(length);
+            MemoryBlockInfo::new(sizeof_type(pd), alignof_type(pd), pd)
         }
 
         /// `size` is the minimum size (in bytes) for the allocated
@@ -1369,7 +1454,7 @@ mod typed_alloc_impl {
         ///
         /// If either `size < mem::size_of::<T>()` or
         /// `align < mem::min_align_of::<T>()` then behavior undefined.
-        fn new(size: uint, align: uint, extra: uint) -> MemoryBlockInfo<T> {
+        fn new(size: uint, align: uint, extra: PointerData<T>) -> MemoryBlockInfo<T> {
             // naive impl
             MemoryBlockInfo {
                 size: size,
@@ -1429,29 +1514,6 @@ mod typed_alloc_impl {
         }
     }
 
-    fn allocate_and_register_rooted_memory<Raw:RawAlloc, Sized? T>(raw: &Raw, info: MemoryBlockInfo<T>) -> *mut T {
-        // Standard library provided method.
-        //
-        // Allocates memory with an added (hidden) header that allows
-        // the GC to scan the memory for roots.
-        ...
-    }
-    fn reallocate_and_register_rooted_memory<Raw:RawAlloc, Sized? T>(raw: &Raw, old_ptr: *mut T, info: MemoryBlockInfo<T>) -> *mut T {
-        // Standard library provided method.
-        //
-        // Adjusts `old_ptr` to compensate for hidden header;
-        // reallocates memory with an added header that allows the GC
-        // to scan the memory for roots.
-        ...
-    }
-    fn deallocate_and_unregister_rooted_memory<Raw:RawAlloc, Sized? T>(raw: &Raw, old_ptr: *mut T, info: MemoryBlockInfo<T>) -> *mut T {
-        // Standard library provided method.
-        //
-        // Adjusts `old_ptr` to compensate for hidden header; removes
-        // memory from the GC root registry, and deallocates the
-        // memory.
-        ...
-    }
     fn deinit_range_gc<T>(&self, start: *mut T, count: uint) {
         // Standard library provided method.
         //
@@ -1460,43 +1522,83 @@ mod typed_alloc_impl {
         ...
     }
 
-    // FIXME: *none* of these AllocCore impls are DST aware.
+    pub struct StdAlloc<Raw:RawAlloc> {
+        raw: Raw,
+        /* gc-related private fields omitted */
+    }
 
-    impl<Raw:RawAlloc> AllocCore for Alloc {
+    // The `AllocCore` implementations are when we start to see direct
+    // use of the DST manipulating intrinsics `pointer_mem` and
+    // `make_pointer`.
+
+    impl<Raw:RawAlloc> AllocCore for StdAlloc {
         #[inline(always)]
-        unsafe fn alloc_info<Sized? T>(&self, info: MemoryBlockInfo<T>) -> *mut T {
+        unsafe fn alloc_info_excess<Sized? T>(&self, info: MemoryBlockInfo<T>) -> (*mut T, Capacity) {
             // (compile-time evaluated conditions)
-            if ! type_involves_gc::<T>() {
-                self.alloc_bytes(info.size(), info.align())
+            let p = if ! type_involves_gc::<T>() {
+                make_pointer(self.raw.alloc_bytes(info.size, info.align),
+                             info.unsized_metadata)
             } else {
                 self.alloc_info_gc(info)
-            }
+            };
+            (p, self.usable_size_info(info))
         }
 
         #[inline(always)]
-        unsafe fn realloc_info<Sized? T, Sized? U>(&self, old_ptr: *mut T, info: MemoryBlockInfo<U>) -> *mut U {
+        unsafe fn realloc_info_excess<Sized? T, Sized? U>(&self, old_ptr: *mut T, info: MemoryBlockInfo<U>) -> (*mut U, Capacity) {
             // (compile-time evaluated conditions)
-            if ! type_involves_gc::<T>() && ! type_involves_gc::<U>() {
-                self.realloc_bytes(old_ptr, info.size(), info.align())
+            let p = if ! type_involves_gc::<T>() && ! type_involves_gc::<U>() {
+                make_pointer(self.raw.realloc_bytes(pointer_mem(old_ptr),
+                                                    info.size,
+                                                    info.align),
+                             info.unsized_metadata)
             } else {
                 self.realloc_info_gc(old_ptr, info)
-            }
+            };
+            (p, self.usable_size_info(info))
         }
+
         #[inline(always)]
         unsafe fn dealloc_info<Sized? T>(&self, pointer: *mut T, info: MemoryBlockInfo<T>) {
             // (compile-time evaluated conditions)
             if ! type_involves_gc::<T>() {
-                self.dealloc_bytes(pointer, info.size(), info.align())
+                self.raw.dealloc_bytes(pointer_mem(pointer),
+                                       info.size,
+                                       info.align)
             } else {
                 self.dealloc_info_gc(pointer, info)
             }
         }
+
+        #[inline(always)]
+        unsafe fn usable_size_info<Sized? T>(&self, info: MemoryBlockInfo<T>) -> uint {
+            if ! type_involves_gc::<T>() {
+                self.
+            } else {
+                info.size
+            }
+        }
     }
 
-    impl<Raw:RawAlloc> Alloc {
+    impl<Raw:RawAlloc> StdAlloc {
+
+        // The gc-integrated methods are elided from this
+        // presentation. As discussed in the documentation above
+        // `StdAlloc`, the standard library will not provide many
+        // guarantees about correspondences between the high- and
+        // low-level allocations for data involving the GC, so any
+        // presentation here would likely just be misleading.
+
         unsafe fn alloc_info_gc<Sized? T>(&self, info: MemoryBlockInfo<T>) -> *mut T { ... }
         unsafe fn realloc_info_gc<Sized? T, Sized? U>(&self, old_ptr: *mut T, info: MemoryBlockInfo<U>) -> *mut U { ... }
         unsafe fn dealloc_info_gc<Sized? T>(&self, pointer: &mut T, info: MemoryBlockInfo<T>) { ... }
+    }
+
+    impl<Raw:RawAlloc> Direct(Raw) {
+        fn raw(&self) -> &Raw {
+            let &Direct(ref raw) = self;
+            raw
+        }
     }
 
     impl<Raw:RawAlloc> AllocCore for Direct<Raw> {
@@ -1505,9 +1607,10 @@ mod typed_alloc_impl {
             // (compile-time evaluated conditions)
             assert!(!type_is_gc_allocated::<T>());
             if ! type_reaches_gc::<T>() {
-                self.alloc_bytes(info.size(), info.align())
+                make_pointer(self.raw().alloc_bytes(info.size, info.align),
+                            info.unsized_metadata)
             } else {
-                allocate_and_register_rooted_memory(self, info)
+                allocate_and_register_rooted_memory(self.raw(), info)
             }
         }
 
@@ -1517,9 +1620,14 @@ mod typed_alloc_impl {
             assert!(!type_is_gc_allocated::<T>());
             assert!(!type_is_gc_allocated::<U>());
             if ! type_reaches_gc::<T>() && ! type_reaches_gc::<U>() {
-                self.realloc_bytes(old_ptr, info.size(), info.align())
+                make_pointer(self.raw().realloc_bytes(pointer_mem(old_ptr),
+                                                      info.size,
+                                                      info.align),
+                             info.unsized_metadata)
             } else {
-                reallocate_and_register_rooted_memory(self, old_ptr, info)
+                reallocate_and_register_rooted_memory(self.raw(),
+                                                      old_ptr,
+                                                      info)
             }
         }
 
@@ -1528,12 +1636,41 @@ mod typed_alloc_impl {
             // (compile-time evaluated conditions)
             assert!(!type_is_gc_allocated::<T>());
             if ! type_reaches_gc::<T>() {
-                self.dealloc_bytes(pointer, info.size(), info.align())
+                self.raw().dealloc_bytes(pointer_mem(pointer),
+                                         info.size,
+                                         info.align)
             } else {
-                deallocate_and_unregister_rooted_memory(self, pointer, info)
+                deallocate_and_unregister_rooted_memory(self.raw(),
+                                                        pointer,
+                                                        info)
             }
         }
     }
 
+    fn allocate_and_register_rooted_memory<Raw:RawAlloc, Sized? T>(raw: &Raw, info: MemoryBlockInfo<T>) -> *mut T {
+        // Standard library provided method.
+        //
+        // Allocates memory with an added (hidden) header that allows
+        // the GC to scan the memory for roots.
+        ...
+    }
+
+    fn reallocate_and_register_rooted_memory<Raw:RawAlloc, Sized? T>(raw: &Raw, old_ptr: *mut T, info: MemoryBlockInfo<T>) -> *mut T {
+        // Standard library provided method.
+        //
+        // Adjusts `old_ptr` to compensate for hidden header;
+        // reallocates memory with an added header that allows the GC
+        // to scan the memory for roots.
+        ...
+    }
+
+    fn deallocate_and_unregister_rooted_memory<Raw:RawAlloc, Sized? T>(raw: &Raw, old_ptr: *mut T, info: MemoryBlockInfo<T>) -> *mut T {
+        // Standard library provided method.
+        //
+        // Adjusts `old_ptr` to compensate for hidden header; removes
+        // memory from the GC root registry, and deallocates the
+        // memory.
+        ...
+    }
 }
 ```
