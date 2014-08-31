@@ -47,7 +47,7 @@ the API's proposed here; for more discussion, see the section:
 * [Motivation](#motivation)
   * [Why custom allocators]
   * [Why this API]
-  * [Why is half of the implementation missing]
+  * [Why is half of the implementation non-normative]
 * [Detailed design]
   * [The `RawAlloc` trait][`RawAlloc` trait]
   * [The high-level allocator API][high-level allocator API]
@@ -56,13 +56,13 @@ the API's proposed here; for more discussion, see the section:
       * [Call correspondences][Call correspondence]
       * [Backing memory correspondence]
       * [Why these properties are useful]
-    * [The typed_alloc module][typed_alloc module]
+    * [The `typed_alloc` module][`typed_alloc` module]
 * [Drawbacks]
 * [Alternatives]
   * [Type-carrying `Alloc`]
   * [No `Alloc` traits]
-  * [`RawAlloc` variations]
-    * [`try_realloc`]
+  * [Some `RawAlloc` variations][`RawAlloc` variations]
+    * [A `try_realloc` method][`try_realloc`]
     * [ptr parametric `usable_size`]
   * [High-level allocator variations]
     * [Make `ArrayAlloc` extend `InstanceAlloc`]
@@ -130,8 +130,8 @@ latter can be very cheap, but there is still no reason to pay that
 cost in a language like Rust where the relevant size is often already
 immediately available as a compile-time constant).
 
-To accomplish the above, this RFC proposes a `RawAlloc` interface for
-managing blocks of memory, with specified size and alignment
+To accomplish the above, this RFC proposes a [`RawAlloc` interface][`RawAlloc` trait]
+for managing blocks of memory, with specified size and alignment
 constraints (the latter was originally overlooked in the C++ `std`
 STL).  The `RawAlloc` client can attempt to adjust the storage in use
 in a copy-free manner by observing the memory block's current capacity
@@ -178,7 +178,7 @@ allocator to support that use case.
 
 To provide garbage-collection support without imposing overhead on
 clients who do not need GC, this RFC proposes a high-level type-aware
-allocator API, here called the `typed_alloc` module, parameterized over
+allocator API, here called the [`typed_alloc` module], parameterized over
 its underlying `RawAlloc`.  Libraries are meant to use the
 `typed_alloc` API, which will maintain garbage collection meta-data
 when necessary (but only when allocating types that involve `Gc`).
@@ -192,8 +192,8 @@ freeing memory.  Built-in support for garbage-collection is handled at a
 higher level, within the Rust standard library itself.
 
 ## Where's the beef
-[Why is half of the implementation missing]: #wheres-the-beef
-or, Why is half of the implementation "missing"
+[Why is half of the implementation non-normative]: #wheres-the-beef
+or, Why is half of the implementation non-normative (aka "missing").
 
 This RFC only specifies the API's that one would use to implement a
 custom low-level allocator and then use it (indirectly) from client
@@ -242,7 +242,7 @@ of the specification proposed by this RFC.)
 The allocator API is divided into two levels: a byte-oriented
 low-level *raw allocator* (the [`RawAlloc` trait]),
 and a family of type-driven high-level *typed allocator* traits
-(defined in the [typed_alloc module]).
+(defined in the [`typed_alloc` module]).
 
 ## The `RawAlloc` trait
 [`RawAlloc` trait]: #the-rawalloc-trait
@@ -430,7 +430,7 @@ Points of departure from [RFC PR 39]:
 ## The high-level allocator API
 [high-level allocator API]: #the-high-level-allocator-api
 
-The `RawAlloc` trait defines the low-level API we expect users to be
+The [`RawAlloc` trait] defines the low-level API we expect users to be
 able to provide easily, either by dispatching to other native
 allocator libraries (such as [jemalloc], [tcmalloc], [Hoard], et
 cetera), or by implementing their own in Rust (!).
@@ -469,7 +469,7 @@ raw allocator; these constructors are named `
 
 When splitting between a high-level `Alloc` and a low-level `RawAlloc`,
 there are questions that arise regarding how the high-level operations
-of `Alloc` actually map to the low-level methods provided by `RawAlloc`.
+of `Alloc` actually map to the low-level methods provided by the [`RawAlloc` trait].
 Here are a few properties of potential interest when thinking about
 this mapping.
 
@@ -491,7 +491,7 @@ the spirit of what "header-free allocation" means.
 
 A "call correspondence" between a high-level allocator and one of
 its underlying `RawAllocs` is a summary of how many calls will be
-made to the methods of the `RawAlloc` in order to implement the
+made to the methods of the [`RawAlloc` trait] in order to implement the
 corresponding method of the high level allocator.
 
 Every high-level allocator provides at least the methods for
@@ -603,11 +603,11 @@ allocator stored the meta-data on a different raw allocator, or in
 memory allocated via direct calls to native system `malloc`
 functionality).
 
-### The typed_alloc module
-[typed_alloc module]: #the-typed_alloc-module
+### The `typed_alloc` module
+[`typed_alloc` module]: #the-typed_alloc-module
 
 Here is the `typed_alloc` API design.  Much of it is similar to the
-`RawAlloc` trait, but there are a few extra pieces added for type-safe
+[`RawAlloc` trait], but there are a few extra pieces added for type-safe
 allocation, dyanmically-sized types, and garbage collector support.
 
 Note: for the purposes of this RFC, clients of user-defined allocators
@@ -998,8 +998,8 @@ without giving up on garbage collection entirely.
 
 If people really do object to the two-level API, we could side-step it
 somewhat (while still supporting GC by default)
-by making the `RawAlloc` directly implement the traits in the
-`typed_alloc` module; then clients would be able to pass in their
+by making the [`RawAlloc` trait] directly implement the traits in the
+[`typed_alloc` module]; then clients would be able to pass in their
 `RawAlloc` instances without using the `typed_alloc::Direct` wrapper.
 But I think it is better to include the wrapper, since it opens up the
 potential for other future wrapper structs, rather than giving one
@@ -1060,11 +1060,12 @@ struct Rc<Sized? T, A:AllocJust<RcBox> = DefaultAllocJust<RcBox>> {
 ## No `Alloc` traits
 [No `Alloc` traits]: #no-alloc-traits
 
-No `Alloc` traits; just `RawAlloc` parameteric methods in `typed_alloc`
+No `Alloc` traits; just `RawAlloc` parameteric methods in
+the [`typed_alloc` module].
 
 When the two-level approach was first laid out, we thought we might
 just have a single standard high-level allocator, and clients would
-solely implement instances of the `RawAlloc` trait.  The single
+solely implement instances of the [`RawAlloc` trait].  The single
 standard high-level allocator would be encoded as struct provided
 in the `typed_alloc` module, and much like the trait implementations
 in the non-normative
@@ -1109,7 +1110,7 @@ not waste time copying the old data over to it."
 object, but one is also planning to immediately fill it with fresh
 data, making the copy step useless.)
 
-We could offer specialized methods like these in the `RawAlloc` interface,
+We could offer specialized methods like these in the [`RawAlloc` trait] interface,
 with a signature like
 ```rust
 fn try_grow_bytes(&self, ptr: *mut u8, size: uint, align: uint, old_size: uint) -> bool
@@ -1166,12 +1167,12 @@ in the RFC itself.
 [Unresolved questions]: #unresolved-questions
 
 ## Platform-supported page size
-[Platorm-supported page size]: #platform-supported-page-size
+[Platform-supported page size]: #platform-supported-page-size
 
-It is a little ugly that the `RawAlloc` has an error case for an
-`align` that is too large, but there is no way in the interface for
-the user to ask for that limit.  We could make the limit an associated
-constant on `RawAlloc`.  (Note that the [high-level API](#the-typed_alloc-module)
+It is a little ugly that the [`RawAlloc` trait] has an error case for an
+`align` that is too large while there is no way in the current interface for
+the user to ask for the value of that threshold.  We could make the limit an associated
+constant on `RawAlloc`.  (Note that the [high-level API][`typed_alloc` module]
 is already relying on `where` clauses, namely in its `from_type` method.)
 
 ## What is the type of an alignment
@@ -1195,8 +1196,8 @@ of objects within its structure.
 If possible, I do not want worry about trying to extend this API with
 "Reap" support.  I will be happy if I can be convinced that a library
 will be able to implement and supply a reap abstraction that is
-compatible with this RFC.  For example, would it suffice to define a
-trait-extension of `RawAlloc`, such as
+compatible with this RFC.  For example, would it suffice to define an
+extension of the [`RawAlloc` trait], such as
 ```rust
 trait RawReapAlloc : RawAlloc { ... }
 ```
@@ -1307,13 +1308,13 @@ need to ever scan instances of `OnlyIndirectRoots`.
 ## Non-normative high-level allocator implementation
 [Non-normative high-level allocator implementation]: #non-normative-high-level-allocator-implementation
 
-The high-level allocator traits in [the-typed_alloc-module] are just
+The high-level allocator traits in the [`typed_alloc` module] are just
 API surface; the description above does not specify the manner in
 which one *implements* instances of these traits.
 
 Here follows a sketch of how the `typed_alloc` traits might be
-implemented for the `Alloc` and `Direct` structs atop the `RawAlloc`
-interface, with GC hooks included as needed (but optimized away when
+implemented for the `Alloc` and `Direct` structs atop the [`RawAlloc` trait],
+with GC hooks included as needed (but optimized away when
 the type does not involve GC).
 
 (Much of this design was contributed by Niko Matsakis. Niko deserves
