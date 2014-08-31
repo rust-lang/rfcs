@@ -44,7 +44,7 @@ the API's proposed here; for more discussion, see the section:
 
 * [Summary]
 * [Table of Contents](#table-of-contents)
-* [Motivation]
+* [Motivation](#motivation)
   * [Why custom allocators]
   * [Why this API]
   * [Why is half of the implementation missing]
