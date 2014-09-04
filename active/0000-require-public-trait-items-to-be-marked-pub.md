@@ -14,7 +14,53 @@ The term *trait item* here refers to any method, associated method, associated t
 
 # Detailed design
 
-For now, make it a compile-time error to declare a trait item without the preceding `pub` keyword. At some later point in time we can allow trait items without the preceding `pub` keyword, which would make the trait item private (whatever the exact semantics of a private trait item happen to be).
+For now, make it a compile-time error to declare a trait item without the preceding `pub` keyword. At some later point in time we can allow trait items without the preceding `pub` keyword, which would make the trait item private (whatever the exact semantics of a private trait item happen to be). With the proposed changes, the code in the following example 1 would become invalid (for now) and would have to be changed to the code in example 2.
+
+Example 1.
+```
+trait Tr {
+    fn foo(&self);    // error: public trait items must be marked `pub`
+    fn bar(&self) {}  // error: public trait items must be marked `pub`
+    fn baz() -> Self; // error: public trait items must be marked `pub`
+}
+
+struct St;
+
+impl Tr for St {
+    fn foo(&self) {}      // error: public trait items must be marked `pub`
+    fn baz() -> St { St } // error: public trait items must be marked `pub`
+}
+
+fn main () {
+    let x = St;
+    x.foo();
+    x.bar();
+    let s: St = Tr::baz();
+}
+```
+
+Example 2.
+```
+trait Tr {
+    pub fn foo(&self);
+    pub fn bar(&self) {}
+    pub fn baz() -> Self;
+}
+
+struct St;
+
+impl Tr for St {
+    pub fn foo(&self) {}
+    pub fn baz() -> St { St }
+}
+
+fn main () {
+    let x = St;
+    x.foo();
+    x.bar();
+    let s: St = Tr::baz();
+}
+```
 
 # Drawbacks
 
