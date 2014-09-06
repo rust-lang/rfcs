@@ -413,6 +413,10 @@ fn dump<'a>(node: NodeBox<'a>) {
   ```
 
   This would allow, for example, casting `&'a Vec<Box<T>>` to `&'a [&'a T]`.
+* Compiler support for RTTI could be dropped, forcing the user to do this manually. As an example, the `Node` trait in the example
+  above would have new methods `as_text_node<'a>(&'a self) -> Option<&'a TextNode<'a>>` and `as_element_node`, and `ElementNode`
+  would have `as_img_node`. This would cause huge amounts of boilerplate, but would be conceptually simpler and would be possibly
+  more efficient (constant time).
 
 # Unresolved questions
 
