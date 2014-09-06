@@ -23,7 +23,7 @@ satisfies the following constraints:
 Moreover, in comparison to other proposals for inheritance, the design should work
 well with existing Rust features and follow Rust's philosophies:
 
-* There should be no new ways to acheive the same behavior. For example, virtual calls
+* There should be no new ways to achieve the same behavior. For example, virtual calls
   are currently only used in trait objects and function pointers, and this seeks to keep
   that list constant.
 * Almost everything added should be useful in a general context, not specific to the
@@ -270,68 +270,72 @@ struct NodeData {
     source_loc: uint
 }
 
-type NodeBox = Box<Bundle<Node + Typed>>;
+type NodeBox<'a> = Box<Bundle<Node + Typed + 'a>>;
 
 trait Node: Extend<NodeData> {
-    fn children(&self) -> Vec<NodeBox>
+    fn children<'a>(&'a self) -> Vec<NodeBox<'a>>
 }
 
-struct TextNode {
+
+struct TextNode<'a> {
     #[first_field]
     node: NodeData,
-    text: String
+    text: &'a str
 }
 
-type TextNodeBox = Box<Bundle<Node + Typed, TextNode>>;
+type TextNodeBox<'a> = Box<Bundle<Node + Typed + 'a, TextNode<'a>>>;
 
-impl Node for TextNode {
-    fn children(&self) -> Vec<NodeBox> {
+impl <'a> Node for TextNode<'a> {
+    fn children<'b>(&self) -> Vec<NodeBox<'b>> {
         vec![]
     }
 }
 
-struct ElementNodeData {
+
+struct ElementNodeData<'a> {
     #[first_field]
     node: NodeData,
-    children: Vec<NodeBox>
+    children: Vec<NodeBox<'a>>
 }
 
-type ElementNodeBox = Box<Bundle<ElementNode + Typed>>;
+type ElementNodeBox<'a> = Box<Bundle<ElementNode<'a> + Typed + 'a>>;
 
-trait ElementNode: Node + Extend<ElementNodeData> {
+trait ElementNode<'a>: Node + Extend<ElementNodeData<'a>> {
     fn element_type(&self) -> String;
 }
 
-impl Node for ElementNodeData {
-    fn children(&self) -> Vec<NodeBox> {
+impl <'a> Node for ElementNodeData<'a> {
+    fn children<'b>(&'b self) -> Vec<NodeBox<'b>> {
         self.children.clone()
     }
 }
 
-struct ImgElement {
+
+struct ImgElement<'a> {
     #[first_field]
-    element: ElementNodeData,
+    element: ElementNodeData<'a>,
     width: uint,
     hieght: uint,
-    src: String
+    src: &'a str
 }
 
-impl Node for ImgElement {
-    fn children(&self) -> Vec<NodeBox> {
+impl <'a> Node for ImgElement<'a> {
+    fn children<'b>(&'b self) -> Vec<NodeBox<'b>> {
         self.element.children()
     }
 }
 
-impl ElementNode for ImgElement {
+impl <'a> ElementNode<'a> for ImgElement<'a> {
     fn element_type(&self) -> String {
         "img".to_string()
     }
 }
 
-fn dump(node: &NodeBox) {
-    if let Ok(text_node): Option<&TextNodeBox> = downcast_copy(node) {
+
+fn dump<'a>(node: NodeBox<'a>) {
+    if let Ok(text_node): Option<&TextNodeBox<'a>> = downcast_copy(node) {
         println!("Found text node: {}", text_node.text);
-    } else if let Ok(element_node): Option<&ElementNodeBox> = downcast_copy(node) {
+    } else if let Ok(element_node): Option<&ElementNodeBox<'a>> = downcast_copy(node) {
         println!("Found element node: {}", element_node.element_type());
     } else {
         println!("Found unknown node!");
