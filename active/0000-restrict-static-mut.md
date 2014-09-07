@@ -4,8 +4,8 @@
 
 # Summary
 
-It is no longer allowed to modify the values in a `static mut` variable, even in unsafe code. As
-a result of this, it is also perfectly safe to take immutable references to `static mut` variables.
+It is no longer allowed to directly modify the values in a `static mut` variable, even in unsafe code.
+As a result of this, it is also perfectly safe to take immutable references to `static mut` variables.
 
 # Motivation
 
@@ -22,8 +22,9 @@ the atomicity by changing that actual `AtomicT` violates that safety.
 
 # Detailed design
 
-The built in ability for unsafe code to modify `static mut` variables is removed. Taking a shared
-reference to a `static mut` variable no longer requires unsafe code.
+The built in ability for unsafe code to directly (without going through `UnsafeCell`) modify
+`static mut` variables is removed. Taking a shared reference to a `static mut` variable no longer
+requires unsafe code.
 
 # Drawbacks
 
