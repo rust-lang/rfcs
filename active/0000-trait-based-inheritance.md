@@ -416,7 +416,25 @@ fn dump<'a>(node: NodeBox<'a>) {
 * Compiler support for RTTI could be dropped, forcing the user to do this manually. As an example, the `Node` trait in the example
   above would have new methods `as_text_node<'a>(&'a self) -> Option<&'a TextNode<'a>>` and `as_element_node`, and `ElementNode`
   would have `as_img_node`. This would cause huge amounts of boilerplate, but would be conceptually simpler and would be possibly
-  more efficient (constant time).
+  more efficient (constant time). A macro might help with the boilerplate.
+* Compiler support for RTTI is dropped. However, a new function is added that extracts the vtable pointer from a pointer to a trait
+  object. This allows users to check whether the implementation in a trait object is a known implementation, which in turn allows
+  for downcasting. Again, a macro might help automating this. For example,
+
+      fn is_specific_node<'a, T: Node>(node: &'a Node) -> Option<&'a T> {
+          unsafe {
+              if node.get_vtable_ptr() == (&mem::uninitialized::<T>() as &Node).get_vtable_ptr() {
+                  Some(mem::transmute(node.get_data_ptr()))
+              } else {
+                  None
+              }
+          }
+      }
+
+  This also has the advantage of being more flexible, as users can build complex data structures like `PhfMap`s over the vtable pointers,
+  giving more controlled and efficient handling of type information. This is not just restricted to known implementations, either, as the
+  `get_vtable_ptr` method would return a unique value for each implementation at runtime, not just the ones defined in the same module as
+  the trait.
 
 ## Bikeshedding
 * Rename `#[first_field]` to `#[super]` or `#[extend]`.
