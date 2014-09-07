@@ -418,6 +418,13 @@ fn dump<'a>(node: NodeBox<'a>) {
   would have `as_img_node`. This would cause huge amounts of boilerplate, but would be conceptually simpler and would be possibly
   more efficient (constant time).
 
+## Bikeshedding
+* Rename `#[first_field]` to `#[super]` or `#[extend]`.
+* Rename `Cast` to `Coerce`, `Coercible`, `Transmute`, `SameRepr`, `Convert`, or `Upcast`.
+* Rename `Extend` to `HasPrefix` or `StartsWith`.
+* Rename `Bundle` to `Fat`, `Thin`, or `BehindPointer`.
+* Rename `Typed` to `HasType`, `Typable`, or `RTTI`.
+
 # Unresolved questions
 
 * Is there a better way to deal with downcasting?
