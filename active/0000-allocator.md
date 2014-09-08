@@ -423,8 +423,8 @@ This RFC also specifies that the standard library will provide types
 for building high-level allocators up from instances of the low-level
 allocators.  We expect that for most use-cases where custom allocators
 are required, it should suffice to define a
-[low-level allocator](#the-rawalloc-trait), which this RFC *does* include enough
-information for users to work with today, and then construct a
+[low-level allocator](#the-rawalloc-trait) (which this RFC *does* include enough
+information for users to implement today), and then construct a
 high-level allocator directly from that low-level one.  Note
 especially that when garbage collected data is not involved, all of the standard
 high-level allocator operations are meant to map directly to low-level
