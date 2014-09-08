@@ -450,6 +450,11 @@ low-level *raw allocator* (the [`RawAlloc` trait]),
 and a family of type-driven high-level *typed allocator* traits
 (defined in the [`typed_alloc` module]).
 
+Note that only developers who *provide* low-level allocators are
+expected to use the `RawAlloc` trait;
+clients writing allocator-parametric libraries are intended to solely
+use the traits defined in the [`typed_alloc` module].
+
 ## The `RawAlloc` trait
 [`RawAlloc` trait]: #the-rawalloc-trait
 
