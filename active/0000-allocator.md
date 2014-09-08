@@ -618,8 +618,8 @@ pub trait RawAlloc {
 /// `StdRawAlloc` is the default low-level memory allocator for Rust's
 /// standard library.
 ///
-/// This should be a good choice as a default type for an allocator
-/// parameter.
+/// This should be a good choice as a default input for a high-level
+/// allocator constructor parameter.
 
 pub struct StdRawAlloc;
 
