@@ -94,9 +94,7 @@ As noted in [RFC PR 39], modern general purpose allocators are good,
 but due to the design tradeoffs they must make, cannot be optimal in
 all contexts.  (It is worthwhile to also read discussion of this claim
 in papers such as
-[Reconsidering Custom Malloc](#reconsidering-custom-memory-allocation) and
-[The memory fragmentation problem: solved?](#the-memory-fragmentation-problem-solved).)
-FIXME: is [MemFragSolvedP] actually relevant to the point here?)
+[Reconsidering Custom Malloc](#reconsidering-custom-memory-allocation).)
 
 Therefore, the standard library should allow clients to plug in their
 own allocator for managing memory.
