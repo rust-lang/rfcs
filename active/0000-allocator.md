@@ -78,7 +78,6 @@ For more discussion, see the section:
 * [Unresolved Questions]
   * [Platform-supported page size]
   * [What is the type of an alignment]
-  * [Reap support]
 * [Appendices]
   * [Bibliography]
   * [Glossary]
@@ -1457,27 +1456,6 @@ is already relying on `where` clauses, namely in its `from_type` method.)
 [RFC PR 39] deliberately used a `u32` for alignment, for compatibility
 with LLVM.  This RFC is currently using `uint`, but only because our
 existing `align_of` primitives expose `uint`, not `u32`.
-
-## Reap support
-[Reap support]: #reap-support
-
-After (re-)reading [ReCustomMalloc], I am thinking that we should make
-sure our allocator design allows for easy use of a *Reap* abstraction.
-
-A "Reap" is like an arena, in that it optimizes for stack-like
-allocation patterns where large amounts of data is predicted to all
-die at the same time, but a reap also allows for individual deletions
-of objects within its structure.
-
-If possible, I do not want worry about trying to extend this API with
-"Reap" support.  I will be happy if I can be convinced that a library
-will be able to implement and supply a reap abstraction that is
-compatible with this RFC.  For example, would it suffice to define an
-extension of the [`RawAlloc` trait], such as
-```rust
-trait RawReapAlloc : RawAlloc { ... }
-```
-and make corresponding variants of the high-level allocator traits?
 
 # Appendices
 [Appendices]: #appendices
