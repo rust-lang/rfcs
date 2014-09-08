@@ -81,6 +81,7 @@ For more discussion, see the section:
 * [Appendices]
   * [Bibliography]
   * [Glossary]
+  * [Details of call and memory correspondence][details of call and memory correspondence]
   * [The `AllocCore` API]
   * [Non-normative high-level allocator implementation]
 
@@ -740,92 +741,19 @@ its underlying `RawAllocs` is a summary of how many calls will be
 made to the methods of the [`RawAlloc` trait] in order to implement the
 corresponding method of the high level allocator.
 
-Every high-level allocator provides at least the methods for
-allocating and deallocating data (which can correspond to
-`alloc_bytes` and `dealloc_bytes`), and potentially also a method
-for attempting to reallocate data in-place (which can correspond to
-`realloc_bytes`).  I call these methods the "allocation methods",
-though note that they include both allocate and deallocate methods.
-I have identified three potentially interesting call
-correspondences, which I have labelled as "1:1", "1:1+", and "1:n".
-
-  * If a high-level allocator has a "1:1" call correspondence with a
-    raw allocator, that means that every successful call to an
-    allocation method corresponds to exactly one successful call to
-    the corresponding method of the underlying raw allocator.
-
-    Note that the successful raw allocator call may have been preceded
-    by zero or more unsuccessful calls, depending on what kind of
-    policy the high-level allocator is using to respond to allocation
-    failure.
-
-    If the raw allocator is serving just that single high-level
-    allocator, then a "1:1" call correspondence also indicates that
-    every successful call to a raw allocator method can be matched
-    with exactly one call to some method of the high-level allocator.
-
-    This latter feature makes the "1:1" correspondence a fairly strong
-    property to satisfy, since it means that the high-level allocator
-    must be using the raw allocator solely to service the requests of
-    the end client directly, without using the raw allocator to
-    allocate memory for the high-level allocator to use internally.
-
-    The "1:1" correspondence describes high-level allocators that
-    massage their requests and then pass them over to the low-level
-    raw allocator, but do not use that raw allocator to dynamically
-    allocate any state for their own private usage.
-
-  * If a high-level allocator has a "1:1+" call correspondence with
-    a raw allocator, then every successful call to an allocation method
-    corresponds to one successful call to the corresponding method of the
-    underlying raw allocator, plus zero or more calls to other methods
-    of the raw allocator.
-
-    This is a weaker property than "1:1" correspondence, because it
-    allows for the high-level allocator to use the raw allocator
-    to construct internal meta-data for the high-level allocator,
-    as well as provide the backing storage for end client requests.
-
-  * If a high-level allocator has a "1:n" call correspondence with a
-    raw allocator, then a successful call to an allocation method
-    implies that at least one successful call to *some* method of the
-    raw allocator was made at some point, potentially during some
-    prior allocation method call.
-
-    This is a very weak property; it essentially means that no
-    prediction should be made a priori about how calls to the
-    high-level allocator will map to the low-level raw allocator.
-
-    The "1:n" correspondence describes high-level allocators that, for
-    example, create private bins of storage via the low-level
-    allocator and then service end-client requests directly from those
-    bins without going through the raw allocator until their
-    high-level internal policy demands.  This kind of allocator can
-    subvert the goals of a low-level raw allocator, since it can hide
-    the memory usage patterns of the end client from the raw
-    allocator.
+For more detail, see the [details of call correspondence] appendix.
 
 #### Backing memory correspondence
 [Backing memory correspondence]: #backing-memory-correspondence
 
-A high-level allocator will usually be parameterized over one or more
-raw allocators.  One might infer that when one has a high-level
-allocator with a single raw allocator parameter, then all of the
-memory allocated by that high-level allocator must be provided solely
-by its raw allocator.
-
-This seems like a good design principle to follow, but may not be true
-in general.  In particular, a high-level allocators may be
-deliberately parameterized over a single raw allocator for simplicity
-in its interface, but may still allocate internal state via means
-other than the raw allocator.
-
-Thus, as a way to distinguish these design choices, we say that a
+We say that a
 high-level allocator is "fully-backed" by a given raw allocator if all
 of its dynamically allocated state is managed by that raw allocator.
 This is called the "full backing" property.  If some of a high-level
 allocator's dynamically allocated state is not managed by any of its
 raw allocators, then we say that it has "hidden backing."
+
+For more discussion, see the [details of memory correspondence] appendix.
 
 #### Why these properties are useful
 [Why these properties are useful]: #why-these-properties-are-useful
@@ -1465,6 +1393,105 @@ itself contain direct pointers into the GC-heap.  This is important,
 because it means that as long as the memory blocks for the two `Box`
 instances are always scanned for roots, the root scanner does *not*
 need to ever scan instances of `OnlyIndirectRoots`.
+
+## Details of call and memory correspondence
+[details of call and memory correspondence]: #details-of-call-and-memory-correspondence
+
+### Details of call correspondence
+[details of call correspondence]: #details-of-call-correspondence
+
+A "call correspondence" between a high-level allocator and one of
+its underlying `RawAllocs` is a summary of how many calls will be
+made to the methods of the [`RawAlloc` trait] in order to implement the
+corresponding method of the high level allocator.
+
+Every high-level allocator provides at least the methods for
+allocating and deallocating data (which can correspond to
+`alloc_bytes` and `dealloc_bytes`), and potentially also a method
+for attempting to reallocate data in-place (which can correspond to
+`realloc_bytes`).  I call these methods the "allocation methods",
+though note that they include both allocate and deallocate methods.
+I have identified three potentially interesting call
+correspondences, which I have labelled as "1:1", "1:1+", and "1:n".
+
+  * If a high-level allocator has a "1:1" call correspondence with a
+    raw allocator, that means that every successful call to an
+    allocation method corresponds to exactly one successful call to
+    the corresponding method of the underlying raw allocator.
+
+    Note that the successful raw allocator call may have been preceded
+    by zero or more unsuccessful calls, depending on what kind of
+    policy the high-level allocator is using to respond to allocation
+    failure.
+
+    If the raw allocator is serving just that single high-level
+    allocator, then a "1:1" call correspondence also indicates that
+    every successful call to a raw allocator method can be matched
+    with exactly one call to some method of the high-level allocator.
+
+    This latter feature makes the "1:1" correspondence a fairly strong
+    property to satisfy, since it means that the high-level allocator
+    must be using the raw allocator solely to service the requests of
+    the end client directly, without using the raw allocator to
+    allocate memory for the high-level allocator to use internally.
+
+    The "1:1" correspondence describes high-level allocators that
+    massage their requests and then pass them over to the low-level
+    raw allocator, but do not use that raw allocator to dynamically
+    allocate any state for their own private usage.
+
+  * If a high-level allocator has a "1:1+" call correspondence with
+    a raw allocator, then every successful call to an allocation method
+    corresponds to one successful call to the corresponding method of the
+    underlying raw allocator, plus zero or more calls to other methods
+    of the raw allocator.
+
+    This is a weaker property than "1:1" correspondence, because it
+    allows for the high-level allocator to use the raw allocator
+    to construct internal meta-data for the high-level allocator,
+    as well as provide the backing storage for end client requests.
+
+  * If a high-level allocator has a "1:n" call correspondence with a
+    raw allocator, then a successful call to an allocation method
+    implies that at least one successful call to *some* method of the
+    raw allocator was made at some point, potentially during some
+    prior allocation method call.
+
+    This is a very weak property; it essentially means that no
+    prediction should be made a priori about how calls to the
+    high-level allocator will map to the low-level raw allocator.
+
+    The "1:n" correspondence describes high-level allocators that, for
+    example, create private bins of storage via the low-level
+    allocator and then service end-client requests directly from those
+    bins without going through the raw allocator until their
+    high-level internal policy demands.  This kind of allocator can
+    subvert the goals of a low-level raw allocator, since it can hide
+    the memory usage patterns of the end client from the raw
+    allocator.
+
+### Details of memory correspondence
+[details of memory correspondence]: #details-of-memory-correspondence
+
+A high-level allocator will usually be parameterized over one or more
+raw allocators.  One might infer that when one has a high-level
+allocator with a single raw allocator parameter, then all of the
+memory allocated by that high-level allocator must be provided solely
+by its raw allocator.
+
+This seems like a good design principle to follow, but may not be true
+in general.  In particular, a high-level allocators may be
+deliberately parameterized over a single raw allocator for simplicity
+in its interface, but may still allocate internal state via means
+other than the raw allocator.
+
+Thus, as a way to distinguish these design choices, we say that a
+high-level allocator is "fully-backed" by a given raw allocator if all
+of its dynamically allocated state is managed by that raw allocator.
+This is called the "full backing" property.  If some of a high-level
+allocator's dynamically allocated state is not managed by any of its
+raw allocators, then we say that it has "hidden backing."
+
 
 ## The `AllocCore` API
 [The `AllocCore` API]: #the-alloccore-api
