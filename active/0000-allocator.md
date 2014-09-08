@@ -74,13 +74,14 @@ For more discussion, see the section:
     * [ptr parametric `usable_size`]
   * [High-level allocator variations]
     * [Make `ArrayAlloc` extend `InstanceAlloc`]
-    * [Make `AllocCore` non-normative]
+    * [Expose `realloc` for non-array types]
 * [Unresolved Questions]
   * [Platform-supported page size]
   * [What is the type of an alignment]
 * [Appendices]
   * [Bibliography]
   * [Glossary]
+  * [The `AllocCore` API]
   * [Non-normative high-level allocator implementation]
 
 # Motivation
@@ -1013,137 +1014,6 @@ pub mod typed_alloc {
         unsafe fn reinit_range<T>(&self, start: *mut T, count: uint);
     }
 
-    /// A `MemoryBlockInfo` (or more simply, "block info") represents
-    /// information about what kind of memory block must be allocated
-    /// to hold data of (potentially unsized) type `U`, and also what
-    /// extra-data, if any, must be attached to a pointer to such a
-    /// memory block to create `*mut U` or `*U` pointer.
-    ///
-    /// This opaque struct is used as the abstraction for
-    /// communicating with the high-level type-aware allocator.
-    ///
-    /// It is also used as the abstraction for reasoning about the
-    /// validity of calls to "realloc" in the high-level allocator; in
-    /// particular, given a memory block allocated for some type `U`,
-    /// you can only attempt to reuse that memory block for another
-    /// type `T` if the `MemoryBlockInfo<U>` is *compatible with* the
-    /// `MemoryBlockInfo<T>`.
-    ///
-    /// Definition of "info_1 compatible with info_2"
-    ///
-    /// For non GC-root carrying data, "info_1 is compatible with
-    /// info_2" means that the two block infos have the same
-    /// alignment.  (They need not have the same size, as that would
-    /// defeat the point of the `realloc` interface.)  For GC-root
-    /// carrying data, according to this RFC, "compatible with" means
-    /// that they are either two instances of the same array type [T]
-    /// with potentially differing lengths, or, if they are not both
-    /// array types, then "compatible with" means that they are the
-    /// same type `T`.
-    ///
-    /// (In the future, we may widen the "compatible with" relation to
-    /// allow distinct types containing GC-roots to be compatible if
-    /// they meet other yet-to-be-defined constraints.  But for now
-    /// the above conservative definition should serve our needs.)
-    ///
-    /// Definiton of "info_1 extension of info_2"
-    ///
-    /// For non GC-root carrying data, "info_1 is an extension of
-    /// info_2" means that info_1 is *compatible with* info_2, *and*
-    /// also the size of info_1 is greater than or equal to info_2.
-    /// The notion of a block info extending another is meant to
-    /// denote when a memory block has been locally reinterpreted to
-    /// use more of its available capacity (but without going through
-    /// a round-trip via `realloc`).
-    pub struct MemoryBlockInfo<Sized? U> {
-        // compiler and runtime internal fields
-    }
-
-    /// High-level allocator for arbitrary unsized objects.
-    ///
-    /// This provides a great deal of flexiblity but also has a
-    /// relatively complex interface; most clients should first see if
-    /// `InstanceAlloc` or `ArrayAlloc` would serve their needs.
-    pub trait AllocCore {
-        /// Allocates a memory block suitable for holding `T`,
-        /// according to the  `info`.
-        ///
-        /// Returns null if allocation fails.
-        unsafe fn alloc_info<Sized? T>(&self, info: MemoryBlockInfo<T>) -> *mut T {
-            self.alloc_info_excess(info).val0()
-        }
-
-        /// Allocates a memory block suitable for holding `T`,
-        /// according to the `info`, as well as the capacity (in
-        /// bytes) of the referenced block of memory.
-        ///
-        /// Returns `(null, c)` for some `c` if allocation fails.
-        unsafe fn alloc_info_excess<Sized? T>(&self, info: MemoryBlockInfo<T>) -> (*mut T, Capacity);
-
-        /// Given a pointer to the start of a memory block allocated
-        /// for holding instance(s) of `T`, returns the number of
-        /// contiguous instances of `T` that `T` can hold.
-        unsafe fn usable_capacity_bytes<Sized? T>(&self, len: uint) -> uint;
-
-        /// Attempts to recycle the memory block for `old_ptr` to create
-        /// a memory block suitable for an instance of `U`.  On
-        /// successful reallocation, returns the capacity (in bytes) of
-        /// the memory block referenced by the returned pointer.
-        ///
-        /// Requirement 1: `info` must be *compatible with* `old_info`.
-        ///
-        /// Requirement 2: `old_info` must be an *extension of* the
-        /// `mbi_orig` and the size of `old_info` must be in the range
-        /// `[orig_size, usable]`, where:
-        ///
-        /// * `mbi_orig` is the `MemoryBlockInfo` used to create
-        ///    `old_ptr`, be it via `alloc_info` or `realloc_info`,
-        ///
-        /// * `orig_size` is `mbi_orig.size()`, and
-        ///
-        /// * `usable` is capacity returned by `[re]alloc_info_excess`
-        ///   to create `old_ptr`.  (This can be conservatively
-        ///   approximated via `self.usable_size_info(mbi_orig)`).
-        ///
-        /// (The requirements use terms in the sense defined in the
-        /// documentation for `MemoryBlockInfo`.)
-        ///
-        /// Here is the executive summary of what the above
-        /// requirements mean: This method is dangerous.  It is
-        /// especially dangerous for data that may hold GC roots.
-        ///
-        /// The only time this is safe to use on GC-referencing data
-        /// is when converting from `[T]` of one length to `[T]` of a
-        /// different length.  In particular, this method is not safe
-        /// to use to convert between different non-array types `S`
-        /// and `T` (or between `[S]` and `[T]`, etc) if either type
-        /// references GC data.
-        unsafe fn realloc_info_excess<Sized? T, Sized? U>(&self, old_ptr: *mut T, old_info: MemoryBlockInfo<T>, info: MemoryBlockInfo<U>) -> (*mut U, Capacity);
-
-        /// Attempts to recycle the memory block for `old_ptr` to create
-        /// a memory block suitable for an instance of `U`.
-        ///
-        /// Has the same constraints on its input as `realloc_info_excess`.
-        ///
-        /// Most importantly: This method is just as dangerous as as
-        /// `realloc_info_excess`, especially on data involving GC.
-        unsafe fn realloc_info<Sized? T, Sized? U>(&self, old_ptr: *mut T, old_info: MemoryBlockInfo<T>, info: MemoryBlockInfo<U>) -> *mut U {
-            self.realloc_info_excess(old_ptr, old_info, info).val0()
-        }
-
-        /// Returns a conservative lower-bound on the capacity (in
-        /// bytes) for any memory block that could be returned for a
-        /// successful allocation or reallocation for `info`.
-        unsafe fn usable_size_info<Sized? T>(&self, info: MemoryBlockInfo<T>) -> Capacity;
-
-        /// Deallocates the memory block at `pointer`.
-        ///
-        /// The `info` must be an *extension of* the `MemoryBlockInfo`
-        /// used to create `pointer`.
-        unsafe fn dealloc_info<Sized? T>(&self, pointer: *mut T, info: MemoryBlockInfo<T>);
-
-    }
-
     /// The default standard library implementation of a high-level allocator.
     ///
     /// * Instances of `StdAlloc` are able to allocate GC-managed data.
@@ -1195,12 +1065,9 @@ pub mod typed_alloc {
     ///   carrying data.
     struct Direct<Raw:RawAlloc>(Raw)
 
-    impl<Raw:RawAlloc> AllocCore for Direct<Raw> { ... }
+    impl<Raw:RawAlloc> InstanceAlloc for Direct<Raw> { ... }
 
-    impl<A:AllocCore> InstanceAlloc for A { ... }
-
-    impl<A:AllocCore> ArrayAlloc for A { ... }
-
+    impl<Raw:RawAlloc> ArrayAlloc for Direct<Raw> { ... }
 }
 ```
 
@@ -1442,23 +1309,46 @@ we'd have to specify whether e.g. one is allowed to deallocate, via
 extension, because such a trait object is not usable, as discussed in
 [Type-carrying Alloc](#type-carrying-alloc).)
 
-### Make `AllocCore` non-normative
-[Make `AllocCore` non-normative]: #make-alloccore-non-normative
+### Expose `realloc` for non-array types
+[Expose `realloc` for non-array types]: #expose-realloc-for-non-array-types
 
-Many clients would not need the low-level control offered by `AllocCore`.
-Arguably `InstanceAlloc` and `ArrayAlloc` might suffice for the high-level
-API; I could move `AllocCore` to the non-normative appendix for now.
+In the RFC as written, the only way for a (high-level)
+allocator-parametric library to make use of `realloc` functionality
+provided by the underling low-level allocator is when it uses an
+implementation of `ArrayAlloc`.  This may suffice for many real world
+use cases.
 
-But I assume that some clients will want to make use of `realloc` on
-non-array data; that is my main motivation for leaving `AllocCore`
-in the RFC itself.
+Then again, there may be significant demand for a more expressive
+high-level trait that can perform `realloc` on non-array types.
+
+An earlier draft of this RFC supported this use-case, via a high-level
+`AllocCore` trait.  To see its specification, see [The `AllocCore`
+API] appendix.  For a sketch of its implementation, see the
+[Non-normative high-level allocator implementation] appendix.
 
 # Unresolved questions
 [Unresolved questions]: #unresolved-questions
 
 ## should `StdFoo` just be `()`
 
+(warning: bikeshed trigger)
 
+Does it add to clarity to have the `StdRawAlloc` and `StdAlloc<StdRawAlloc>`
+names?  Consider e.g. definitions like:
+
+```rust
+pub struct Arr<T, A:ArrayAlloc = StdAlloc<StdRawAlloc>> { ... }
+```
+
+An alternative approach would be to implement both `RawAlloc`
+and all of the `typed_alloc` traits on the zero-sized unit type `()`,
+and then users would write the definition above like so:
+
+```rust
+pub struct Arr<T, A:ArrayAlloc = ()> { ... }
+```
+
+Which is preferable?
 
 ## Platform-supported page size
 [Platform-supported page size]: #platform-supported-page-size
@@ -1578,6 +1468,144 @@ because it means that as long as the memory blocks for the two `Box`
 instances are always scanned for roots, the root scanner does *not*
 need to ever scan instances of `OnlyIndirectRoots`.
 
+## The `AllocCore` API
+[The `AllocCore` API]: #the-alloccore-api
+```rust
+    /// A `MemoryBlockInfo` (or more simply, "block info") represents
+    /// information about what kind of memory block must be allocated
+    /// to hold data of (potentially unsized) type `U`, and also what
+    /// extra-data, if any, must be attached to a pointer to such a
+    /// memory block to create `*mut U` or `*U` pointer.
+    ///
+    /// This opaque struct is used as the abstraction for
+    /// communicating with the high-level type-aware allocator.
+    ///
+    /// It is also used as the abstraction for reasoning about the
+    /// validity of calls to "realloc" in the high-level allocator; in
+    /// particular, given a memory block allocated for some type `U`,
+    /// you can only attempt to reuse that memory block for another
+    /// type `T` if the `MemoryBlockInfo<U>` is *compatible with* the
+    /// `MemoryBlockInfo<T>`.
+    ///
+    /// Definition of "info_1 compatible with info_2"
+    ///
+    /// For non GC-root carrying data, "info_1 is compatible with
+    /// info_2" means that the two block infos have the same
+    /// alignment.  (They need not have the same size, as that would
+    /// defeat the point of the `realloc` interface.)  For GC-root
+    /// carrying data, according to this RFC, "compatible with" means
+    /// that they are either two instances of the same array type [T]
+    /// with potentially differing lengths, or, if they are not both
+    /// array types, then "compatible with" means that they are the
+    /// same type `T`.
+    ///
+    /// (In the future, we may widen the "compatible with" relation to
+    /// allow distinct types containing GC-roots to be compatible if
+    /// they meet other yet-to-be-defined constraints.  But for now
+    /// the above conservative definition should serve our needs.)
+    ///
+    /// Definiton of "info_1 extension of info_2"
+    ///
+    /// For non GC-root carrying data, "info_1 is an extension of
+    /// info_2" means that info_1 is *compatible with* info_2, *and*
+    /// also the size of info_1 is greater than or equal to info_2.
+    /// The notion of a block info extending another is meant to
+    /// denote when a memory block has been locally reinterpreted to
+    /// use more of its available capacity (but without going through
+    /// a round-trip via `realloc`).
+    pub struct MemoryBlockInfo<Sized? U> {
+        // compiler and runtime internal fields
+    }
+
+    /// High-level allocator for arbitrary unsized objects.
+    ///
+    /// This provides a great deal of flexiblity but also has a
+    /// relatively complex interface; most clients should first see if
+    /// `InstanceAlloc` or `ArrayAlloc` would serve their needs.
+    pub trait AllocCore {
+        /// Allocates a memory block suitable for holding `T`,
+        /// according to the  `info`.
+        ///
+        /// Returns null if allocation fails.
+        unsafe fn alloc_info<Sized? T>(&self, info: MemoryBlockInfo<T>) -> *mut T {
+            self.alloc_info_excess(info).val0()
+        }
+
+        /// Allocates a memory block suitable for holding `T`,
+        /// according to the `info`, as well as the capacity (in
+        /// bytes) of the referenced block of memory.
+        ///
+        /// Returns `(null, c)` for some `c` if allocation fails.
+        unsafe fn alloc_info_excess<Sized? T>(&self, info: MemoryBlockInfo<T>) -> (*mut T, Capacity);
+
+        /// Given a pointer to the start of a memory block allocated
+        /// for holding instance(s) of `T`, returns the number of
+        /// contiguous instances of `T` that `T` can hold.
+        unsafe fn usable_capacity_bytes<Sized? T>(&self, len: uint) -> uint;
+
+        /// Attempts to recycle the memory block for `old_ptr` to create
+        /// a memory block suitable for an instance of `U`.  On
+        /// successful reallocation, returns the capacity (in bytes) of
+        /// the memory block referenced by the returned pointer.
+        ///
+        /// Requirement 1: `info` must be *compatible with* `old_info`.
+        ///
+        /// Requirement 2: `old_info` must be an *extension of* the
+        /// `mbi_orig` and the size of `old_info` must be in the range
+        /// `[orig_size, usable]`, where:
+        ///
+        /// * `mbi_orig` is the `MemoryBlockInfo` used to create
+        ///    `old_ptr`, be it via `alloc_info` or `realloc_info`,
+        ///
+        /// * `orig_size` is `mbi_orig.size()`, and
+        ///
+        /// * `usable` is capacity returned by `[re]alloc_info_excess`
+        ///   to create `old_ptr`.  (This can be conservatively
+        ///   approximated via `self.usable_size_info(mbi_orig)`).
+        ///
+        /// (The requirements use terms in the sense defined in the
+        /// documentation for `MemoryBlockInfo`.)
+        ///
+        /// Here is the executive summary of what the above
+        /// requirements mean: This method is dangerous.  It is
+        /// especially dangerous for data that may hold GC roots.
+        ///
+        /// The only time this is safe to use on GC-referencing data
+        /// is when converting from `[T]` of one length to `[T]` of a
+        /// different length.  In particular, this method is not safe
+        /// to use to convert between different non-array types `S`
+        /// and `T` (or between `[S]` and `[T]`, etc) if either type
+        /// references GC data.
+        unsafe fn realloc_info_excess<Sized? T, Sized? U>(&self, old_ptr: *mut T, old_info: MemoryBlockInfo<T>, info: MemoryBlockInfo<U>) -> (*mut U, Capacity);
+
+        /// Attempts to recycle the memory block for `old_ptr` to create
+        /// a memory block suitable for an instance of `U`.
+        ///
+        /// Has the same constraints on its input as `realloc_info_excess`.
+        ///
+        /// Most importantly: This method is just as dangerous as as
+        /// `realloc_info_excess`, especially on data involving GC.
+        unsafe fn realloc_info<Sized? T, Sized? U>(&self, old_ptr: *mut T, old_info: MemoryBlockInfo<T>, info: MemoryBlockInfo<U>) -> *mut U {
+            self.realloc_info_excess(old_ptr, old_info, info).val0()
+        }
+
+        /// Returns a conservative lower-bound on the capacity (in
+        /// bytes) for any memory block that could be returned for a
+        /// successful allocation or reallocation for `info`.
+        unsafe fn usable_size_info<Sized? T>(&self, info: MemoryBlockInfo<T>) -> Capacity;
+
+        /// Deallocates the memory block at `pointer`.
+        ///
+        /// The `info` must be an *extension of* the `MemoryBlockInfo`
+        /// used to create `pointer`.
+        unsafe fn dealloc_info<Sized? T>(&self, pointer: *mut T, info: MemoryBlockInfo<T>);
+
+    }
+
+    impl<Raw:RawAlloc> AllocCore for Direct<Raw> { ... }
+}
+```
+
 ## Non-normative high-level allocator implementation
 [Non-normative high-level allocator implementation]: #non-normative-high-level-allocator-implementation
 
@@ -1589,6 +1617,9 @@ Here follows a sketch of how the `typed_alloc` traits might be
 implemented for the `Alloc` and `Direct` structs atop the [`RawAlloc` trait],
 with GC hooks included as needed (but optimized away when
 the type does not involve GC).
+
+Note that much of the design is built upon the `AllocCore` trait
+defined in [The `AllocCore` API] appendix.
 
 (Much of this design was contributed by Niko Matsakis. Niko deserves
 credit for the insights, and much of the text was directly
