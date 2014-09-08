@@ -37,7 +37,12 @@ research.
 
 This RFC deliberately leaves some implementation details unspecified
 and left for a future RFC after we have more direct experience with
-the API's proposed here; for more discussion, see the section:
+the API's proposed here.  In particular, the high-level API is not
+meant for users to implement themselves; instead, users are meant to
+implement an instance of the `RawAlloc` trait, and then use that as
+input when constructing one of the `typed_alloc` implementations
+provided via the standard library (see `StdAlloc` and `Direct` below).
+For more discussion, see the section:
 [Why is half of the implementation missing](#wheres-the-beef).
 
 # Table of Contents
@@ -46,6 +51,7 @@ the API's proposed here; for more discussion, see the section:
 * [Table of Contents](#table-of-contents)
 * [Motivation](#motivation)
   * [Why custom allocators]
+  * [Example usage]
   * [Why this API]
   * [Why is half of the implementation non-normative]
 * [Detailed design]
@@ -57,6 +63,8 @@ the API's proposed here; for more discussion, see the section:
       * [Backing memory correspondence]
       * [Why these properties are useful]
     * [The `typed_alloc` module][`typed_alloc` module]
+      * [Design decisions of `typed_alloc`][high-level design decisions]
+      * [GC integration with `typed_alloc`][GC integration]
 * [Drawbacks]
 * [Alternatives]
   * [Type-carrying `Alloc`]
@@ -114,6 +122,205 @@ following:
   3. Instrumentation and debugging: One can swap in a custom
      allocator that collects data such as number of allocations
      or time for requests to be serviced.
+
+## Example usage
+[Example usage]: #example-usage
+
+The API provided in this RFC is broken into a low-level [`RawAlloc`
+trait] and a [high-level allocator API].  Before we jump into *why* a
+two-level API is useful and the detailed description of the API, we
+will first illustrate how pluggable allocators will look to Rust
+programmers (mainly to argue that this interface is not too
+complicated).
+
+Note that these example libraries are implemented in terms of unsafe
+pointers; how one integrates these allocators into the `Box`
+smart-pointer and `box` expression syntax is not covered by this RFC,
+but should be a natural next step atop the foundation provided here.
+
+Here is an example implementation of a `Vec`-like library (where the
+`Vec<T>` is now called `Arr<T>`) that is parameterized over its
+allocator.
+
+```rust
+use typed_alloc::{ArrayAlloc, StdAlloc};
+
+pub struct Arr<T, A:ArrayAlloc = StdAlloc<StdRawAlloc>> {
+    alloc: A,
+    len: uint,
+    cap: uint,
+    ptr: *mut T
+}
+
+impl<T, A:Default + ArrayAlloc> Arr<T, A> {
+    pub fn new() -> Arr<T, A> {
+        Arr::<T,A>::with_capacity(0)
+    }
+
+    pub fn with_capacity(capacity: uint) -> Arr<T, A> {
+        let alloc: A = Default::default();
+        Arr::<T,A>::with_alloc_capacity(alloc, capacity)
+    }
+}
+
+impl<T, A:ArrayAlloc> Arr<T, A> {
+    pub fn with_alloc(alloc: A) -> Arr<T, A> {
+        Arr::with_alloc_capacity(alloc, 0)
+    }
+
+    pub fn with_alloc_capacity(alloc: A, capacity: uint) -> Arr<T, A> {
+        // (This example is not attempting to handle zero-sized T properly.
+        assert!(mem::size_of::<T>() != 0);
+        let size = capacity.checked_mul(&mem::size_of::<T>())
+                           .expect("capacity overflow");
+        let ptr = unsafe { alloc.alloc_bytes(size, mem::min_align_of::<T>()) };
+        Arr { alloc: alloc, len: 0, cap: capacity, ptr: ptr as *mut T }
+    }
+}
+
+impl<T, A:ArrayAlloc> Arr<T, A> {
+    fn alloc_or_realloc(&mut self, len: uint) -> *mut T {
+        let (ptr, new_cap) = if old_len == 0 {
+            self.alloc.alloc_array_excess(len)
+        } else {
+            self.alloc.realloc_array_excess((self.ptr, self.cap), len)
+        };
+        self.ptr = ptr;
+        self.cap = 0; // if assert fails, ensure drop does not try to free.
+        assert!(!ptr.is_null());
+        self.cap = new_cap;
+    }
+
+    pub fn push(&mut self, value: T) {
+        if self.len == self.cap {
+            let new_cap = max(self.cap, 2) * 2;
+            unsafe {
+                self.ptr = self.alloc_or_realloc(new_cap);
+            }
+        }
+
+        unsafe {
+            let end = self.ptr.offset(self.len as int);
+            ptr::write(&mut *end, value);
+            self.len += 1;
+        }
+    }
+
+    pub fn pop(&mut self) -> Option<T> {
+        unsafe {
+            self.len -= 1;
+            let ptr = self.ptr.offset(self.len());
+            let ret = Some(ptr::read(ptr as *const T));
+
+            // (reinit zeroes GC-ptrs if `alloc` deems necessary)
+            alloc.reinit_range(ptr, 1);
+            ret
+        }
+    }
+}
+
+impl<T> Drop for Arr<T> {
+    fn drop(&mut self) {
+        if self.cap != 0 {
+            unsafe {
+                // Drop each of the elements...
+                for i in range(0u, self.len) {
+                    let ptr = self.ptr.offset(i as int);
+                    ptr::read(ptr as *const T)
+                }
+                // ... and then deallocate the backing storage.
+                self.alloc.dealloc_array(self.ptr, self.cap)
+            }
+        }
+    }
+}
+```
+
+With the above `Arr` implementation in place, here is one way a
+client might attempt to use it with a specific allocator:
+
+```rust
+use alloc::{RawAlloc, StdRawAlloc};
+use alloc::typed_alloc::Direct;
+
+fn main() {
+    let counting = ByteCountingAllocator::new();
+    let array: Arr<i64> = Arr::with_alloc(Direct(counting));
+    for i in range(0_i64, 1000) {
+        array.push(i);
+    }
+    println!("bytes_in_use: {}", counting.bytes_in_use());
+}
+
+struct ByteCountingAllocator<Raw: RawAlloc> {
+    raw: Raw,
+
+    // N.B. these measures are not precise; error can accumulate if
+    // the client is locally using excess capacity and reports a
+    // different size upon freeing than it had requested upon
+    // allocation.
+    bytes_in_use: Cell<uint>,
+}
+
+impl ByteCountingAllocator {
+    fn new() -> ByteCountingAllocator {
+        ByteCountingAllocator::with_alloc(raw)
+    }
+
+    fn with_alloc(raw: RawAlloc) -> ByteCountingAllocator {
+        ByteCountingAllocator { raw: raw, bytes_in_use }
+    }
+
+    fn bytes_in_use(&self) -> uint {
+        self.bytes_in_use.get()
+    }
+
+    // Not at all thread-safe
+    fn add(&self, delta: uint) {
+        self.bytes_in_use.set(self.bytes_in_use.get() + delta);
+    }
+
+    // Not at all thread-safe
+    fn sub(&self, delta: uint) {
+        self.bytes_in_use.set(self.bytes_in_use.get() - delta);
+    }
+}
+
+impl<Raw: RawAlloc> RawAlloc for ByteCountingAllocator {
+    unsafe fn alloc_bytes(&self, size: Size, align: Alignment) -> *mut u8 {
+        let (ptr, cap) = self.alloc_bytes_excess(size, align);
+        ptr
+    }
+    unsafe fn dealloc_bytes(&self, ptr: *mut u8, size: Size, align: Alignment) {
+        self.sub(size);
+        self.raw.dealloc_bytes(ptr, size, align)
+    }
+    unsafe fn alloc_bytes_excess(&self, size: Size, align: Alignment) -> (*mut u8, Capacity) {
+        let (ptr, cap) = self.raw.alloc_bytes_excess(size, align);
+        if !ptr.is_null() {
+            self.add(size);
+        }
+        (ptr, cap)
+    }
+
+    unsafe fn realloc_bytes(&self, ptr: *mut u8, size: Size, align: Alignment, old_size: Size) -> *mut u8 {
+        let (ptr, cap) = self.realloc_bytes_excess(ptr, size, align, old_size);
+        ptr
+    }
+
+    unsafe fn realloc_bytes_excess(&self, ptr: *mut u8, size: Size, align: Alignment, old_size: Size) -> (*mut u8, Capacity) {
+        let (ptr, cap) = self.raw.alloc_bytes_excess(size, align);
+        if !ptr.is_null() {
+            self.sub(old_size);
+            self.add(size);
+        }
+        (ptr, cap)
+    }
+    unsafe fn usable_size_bytes(&self, size: Size, align: Alignment) -> Capacity {
+        self.raw.usable_size_bytes(size, align)
+    }
+}
+```
 
 ## Why this API
 [Why this API]: #why-this-api
@@ -403,6 +610,42 @@ pub trait RawAlloc {
         size
     }
 }
+
+/// `StdRawAlloc` is the default low-level memory allocator for Rust's
+/// standard library.
+///
+/// This should be a good choice as a default type for an allocator
+/// parameter.
+
+pub struct StdRawAlloc;
+
+impl RawAlloc for StdRawAlloc { ... }
+```
+
+Here is a (very naive) sample implementation of `RawAlloc`.
+
+```rust
+pub struct MemalignFree;
+
+impl RawAlloc for MemalignFree {
+    unsafe fn alloc_bytes(&self, size: Size, align: Alignment) -> *mut u8 {
+        // (Note: GNU supported; *not* BSD supported)
+        return memalign(size, align);
+    }
+
+    unsafe fn dealloc_bytes(&self, ptr: *mut u8, size: Size, align: Alignment) {
+        free(ptr);
+    }
+
+    unsafe fn realloc_bytes(&self, ptr: *mut u8, size: Size, align: Alignment, old_size: Size) -> *mut u8 {
+        // malloc must support alignment of largest builtin type
+        if align <= mem::min_align_of::<u64> {
+            realloc(ptr, size)
+        } else {
+            ... // cut-and-paste from default impl
+        }
+    }
+}
 ```
 
 Points of departure from [RFC PR 39]:
@@ -625,23 +868,8 @@ meant to be a requirement of the final definition of the trait.
 
 ```rust
 pub mod typed_alloc {
-    /// Base trait that all high-level allocators extend.
-    pub trait BaseAlloc {
-        /// Returns true if this allocator exposes its internals to
-        /// the garbage collector for root extraction and scanning.
-        ///
-        /// Note: We leave it to a future RFC to define the criteria
-        /// by which an implementation of `AllocCore` can return
-        /// `true` for this method.  The standard library should
-        /// eventually provide at least one implementation of
-        /// `AllocCore` that is tightly GC-integrated (namely
-        /// `StdAlloc` here), but the manner in which this will be
-        /// accomplished is not a component of this RFC.
-        fn tightly_gc_integrated() -> bool { false }
-    }
-
     /// High-level allocator for instances of some sized type.
-    pub trait InstanceAlloc : BaseAlloc {
+    pub trait InstanceAlloc {
         /// Allocates a memory block suitable for holding `T`.
         /// Returns the pointer to the block if allocation succeeds.
         ///
@@ -680,13 +908,14 @@ pub mod typed_alloc {
     /// `realloc_array`, or `realloc_array_excess`; the "excess
     /// allocation methods" are the ones that end with the suffix
     /// "excess".
-    pub trait ArrayAlloc : BaseAlloc {
+    pub trait ArrayAlloc {
         /// Allocates a memory block suitable for holding `len`
         /// instances of `T`.
         ///
         /// Returns the pointer to the block if allocation succeeds.
         ///
-        /// Returns null if allocation fails.
+        /// Returns null if allocator cannot acquire necessary memory.
+        /// Returns null if `size_of::<T>() * len` overflows.
         unsafe fn alloc_array<T>(&self, len: uint) -> *mut T;
 
         /// Allocates a memory block suitable for holding `len`
@@ -696,7 +925,8 @@ pub mod typed_alloc {
         ///
         /// Returns the pointer to the block if allocation succeeds.
         ///
-        /// Returns null if allocation fails.
+        /// Returns null if allocator cannot acquire necessary memory.
+        /// Returns null if `size_of::<T>() * len` overflows.
         unsafe fn alloc_array_excess<T>(&self, len: uint) -> (*mut T, uint);
 
         /// Given `len`, a length (in number of instances of `T`) that
@@ -712,13 +942,17 @@ pub mod typed_alloc {
         /// Extends or shrinks the allocation referenced by `old_ptr`
         /// to hold at least `new_len` instances of `T`.
         ///
-        /// The `old_len` must *fit* the block referenced by `old_ptr`.
+        /// The `old_len` must *fit* the block referenced by
+        /// `old_ptr`.  (As a special case of the preceding sentence,
+        /// behavior undefined if `size_of::<T>() * old_len`
         ///
         /// If this returns non-null, then the memory block referenced by
         /// `old_ptr` may have been freed and should be considered unusable.
         ///
-        /// Returns null if allocation fails; in this scenario, the
-        /// original memory block referenced by `old_ptr` is unaltered.
+        /// Returns null if allocator cannot acquire necessary memory;
+        /// in this scenario, the original memory block referenced by
+        /// `old_ptr` is unaltered.
+        /// Returns null if `size_of::<T>() * new_len` overflows.
         unsafe fn realloc_array<T>(&self,
                                    (old_ptr, old_len): (*mut T, uint),
                                    new_len: uint) -> *mut T;
@@ -727,33 +961,39 @@ pub mod typed_alloc {
         /// Extends or shrinks the allocation referenced by `old_ptr`
         /// to hold at least `new_len` instances of `T`.
         ///
-        /// The `old_len` must *fit* the block referenced by `old_ptr`.
+        /// The `old_len` must *fit* the block referenced by
+        /// `old_ptr`. (As a special case of the preceding sentence,
+        /// behavior undefined if `size_of::<T>() * old_len`.
+        /// overflows.)
         ///
         /// If reallocation succeeds, returns `(p, c)` where `p` is
-        /// the pointer to the memory block to hold `new_len`
-        /// instances of `T`, and `c` is the capacity (in number of
-        /// `T`) of the referenced block of memory.
+        /// the pointer to the initialized memory block to hold `c`
+        /// instances of `T`, where the capacity `c > new_len`.
         ///
         /// If this returns a non-null pointer, then the memory block
         /// referenced by `old_ptr` may have been freed and should be
         /// considered unusable.
         ///
-        /// If the reallocation attempt fails, returns `(null, c)` for
-        /// some `c`; in this scenario, the original memory block
-        /// referenced by `old_ptr` is unaltered.
+        /// If the allocator cannot acquire necessary memory,
+        /// or if `size_of::<T>() * new_len` overflows, then
+        /// returns `(null, c)` for some `c`; in this scenario, the
+        /// original memory block referenced by `old_ptr` is
+        /// unaltered.
         unsafe fn realloc_array_excess<T>(&self,
                                           (old_ptr, old_len): (*mut T, uint),
                                           new_len: uint) -> (*mut T, uint);
 
         /// Frees memory block referenced by `ptr`.
         ///
-        /// `len` must *fit* the block referenced by `ptr`.
+        /// `len` must *fit* the block referenced by `ptr`. (As a
+        /// special case of the preceding sentence, behavior undefined
+        /// if `size_of::<T>() * len` overflows.)
         unsafe fn dealloc_array<T>(&self, (ptr, len): (*mut T, uint));
 
-        /// Deinitializes the range of instances `[start, start+count)`.
+        /// Reinitializes the range of instances `[start, start+count)`.
         ///
         /// A container must call this function when (1.) it has
-        /// previously initialized the instances of `T` in the
+        /// previously moved any instances of `T` into the
         /// aforementioned range, and (2.) it has since moved or
         /// dropped the instances of `T` out of the array.
         ///
@@ -763,13 +1003,10 @@ pub mod typed_alloc {
         /// goals of tracing garbage collection (and also would make
         /// `Gc<T>` non-`Copy`, another non-starter).
         ///
-        /// Note: Failing to call this should solely result in storage
-        /// leaks, not in arbitrary unsound behavior.  (This note may
-        /// not belong in the API doc, unless we want to clarify
-        /// motivation and/or the sorts of bugs one can encounter when
-        /// one fails to uphold the obligation.)
-        /// XXX Niko please double-check my reasoning here.
-        unsafe fn deinit_range<T>(&self, start: *mut T, count: uint);
+        /// Behavior undefined if `start+count` lies beyond the usable
+        /// capacity associated with `*mut T` (see `usable` in definition
+        /// of "fit" in `ArrayAlloc` overview).
+        unsafe fn reinit_range<T>(&self, start: *mut T, count: uint);
     }
 
     /// A `MemoryBlockInfo` (or more simply, "block info") represents
@@ -823,7 +1060,7 @@ pub mod typed_alloc {
     /// This provides a great deal of flexiblity but also has a
     /// relatively complex interface; most clients should first see if
     /// `InstanceAlloc` or `ArrayAlloc` would serve their needs.
-    pub trait AllocCore : BaseAlloc {
+    pub trait AllocCore {
         /// Allocates a memory block suitable for holding `T`,
         /// according to the  `info`.
         ///
@@ -909,7 +1146,8 @@ pub mod typed_alloc {
     ///
     /// * For data not involving the GC, the `StdAlloc<R>` provides
     ///   header-free allocation and a "1:1" call correspondence with
-    ///   its given raw alloc `R`.
+    ///   its given raw alloc `R`.  In this case it is also *fully-backed*
+    ///   by `R`.
     ///
     /// * The implementation makes no guarantees about the call
     ///   correspondence for GC-root carrying (but not GC-managed)
@@ -919,7 +1157,12 @@ pub mod typed_alloc {
     /// * For GC-managed data: the `StdAlloc` may or may not attempt to
     ///   use the given raw allocator to provide backing storage for
     ///   the GC-heap.
-    pub struct StdAlloc<Raw:RawAlloc> { /* private fields */ }
+    pub struct StdAlloc<Raw:RawAlloc = ...> { /* private fields */ }
+
+    impl<Raw:RawAlloc> InstanceAlloc for StdAlloc<Raw> { ... }
+    impl<Raw:RawAlloc>    ArrayAlloc for StdAlloc<Raw> { ... }
+
+    impl Default for StdAlloc<StdRawAlloc> { ... }
 
     /// Constructs an `StdAlloc` from a raw allocator.
     pub fn StdAlloc<Raw:RawAlloc>(r: Raw) -> StdAlloc<Raw> {
@@ -934,14 +1177,18 @@ pub mod typed_alloc {
     ///   allocator `R`, adding a header when the allocated type
     ///   contains GC roots.
     ///
-    /// * `Direct<R>` cannot allocate on the gc-heap.
+    /// * All memory allocated by a `Direct<R>` is *fully-backed*
+    ///   by `R`.  To support this, `Direct<R>` cannot itself
+    ///   allocate on the gc-heap (though its objects *can* point
+    ///   into the gc-heap).
     ///
     /// * For data not involving the GC, the `Direct<R>` provides
     ///   header-free allocation and a "1:1" call correspondence with
     ///   its given raw alloc `R`.
     ///
     /// * For GC-root carrying data, `Direct<R>` has a "1:1" call
-    ///   correspondence with `R`.
+    ///   correspondence with `R`; it may add headers to GC-root
+    ///   carrying data.
     struct Direct<Raw:RawAlloc>(Raw)
 
     impl<Raw:RawAlloc> AllocCore for Direct<Raw> { ... }
@@ -952,6 +1199,31 @@ pub mod typed_alloc {
 
 }
 ```
+
+#### Design decisions of `typed_alloc`
+[high-level design decisions]: #Design-decisions-of-typed_alloc
+
+##### Trait split
+
+The API splits the methods into `InstanceAlloc` and `ArrayAlloc`
+(rather than supply a single high-level trait with all of the
+methods).  The motivation for this is based on a guess that many
+allocator-parametric libraries will need their allocator to support
+either one or the other, and thus it makes sense for such libraries to
+specify which, to make it easier for library clients to feed in their
+own instrumented versions of the allocators.
+
+##### Overflow handling
+
+Some of the `ArrayAlloc` methods return `null` (i.e. signal failure)
+on overflow, while others say that it is undefined behavior.
+The guiding philosophy in choosing which does which is this:
+The length inputs when performing an allocation of a block of
+memory are checked, while lengths for deallocation (including when
+`realloc_bytes` does a deallocation) are not checked.
+
+#### GC integration with `typed_alloc`
+[GC integration]: #gc-integration-with-typed_alloc
 
 The design above is meant to provide a great deal of flexibility in
 how the garbage collector is implemented in the default system allocator,
@@ -1165,6 +1437,10 @@ in the RFC itself.
 
 # Unresolved questions
 [Unresolved questions]: #unresolved-questions
+
+## should `StdFoo` just be `()`
+
+
 
 ## Platform-supported page size
 [Platform-supported page size]: #platform-supported-page-size
@@ -1578,7 +1854,7 @@ mod typed_alloc_impl {
     // use of the DST manipulating intrinsics `pointer_mem` and
     // `make_pointer`.
 
-    impl<Raw:RawAlloc> AllocCore for StdAlloc {
+    impl<Raw:RawAlloc> AllocCore for StdAlloc<Raw> {
         #[inline(always)]
         unsafe fn alloc_info_excess<Sized? T>(&self, info: MemoryBlockInfo<T>) -> (*mut T, Capacity) {
             // (compile-time evaluated conditions)
