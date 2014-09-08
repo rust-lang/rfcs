@@ -1221,6 +1221,20 @@ The length inputs when performing an allocation of a block of
 memory are checked, while lengths for deallocation (including when
 `realloc_bytes` does a deallocation) are not checked.
 
+## No `libarena` integration.
+
+We already offer a `libarena` that supplies two arena-based memory
+managers.  In principle it would be nice if the traits defined in this
+RFC had some integration with the arena types.  However, the arena types
+are set up to provide *safe* memory management by returning `&'a T`;
+this RFC is solely concerned with *unsafe* memory management.
+
+Presumably a later RFC could define safe memory management APIs that
+build atop the functionality defined here.  That later RFC will
+probably be a natural place to also address integrating user-defined
+allocators with the smart-pointer `Box<T>` and the `box` expression
+syntax.
+
 #### GC integration with `typed_alloc`
 [GC integration]: #gc-integration-with-typed_alloc
 
