@@ -1577,6 +1577,20 @@ raw allocators, then we say that it has "hidden backing."
 
 ## The `AllocCore` API
 [The `AllocCore` API]: #the-alloccore-api
+
+An earlier draft of this RFC supported a high-level trait,
+`AllocCore`, that can perform `realloc` on non-array types.
+Implementations for the other two high-level traits were then
+implementated on top of `AllocCore`, since it was more expressive than
+either of them.
+
+However, the expressiveness of `AllocCore` came at a cost: It is a
+complex specification. Furthermore, the author was not sure whether it
+was sufficiently motivated. Therefore, the `AllocCore` is no longer a
+required part of this RFC; we have kept it in case people reviewing it
+want to see the sorts of issues that arise when attempting to support
+high-level `realloc` on non-array types.
+
 ```rust
     /// A `MemoryBlockInfo` (or more simply, "block info") represents
     /// information about what kind of memory block must be allocated
