@@ -763,6 +763,11 @@ its underlying `RawAllocs` is a summary of how many calls will be
 made to the methods of the [`RawAlloc` trait] in order to implement the
 corresponding method of the high level allocator.
 
+A "1:1" call correspondence is one example of a (very strong) call
+correspondence: it means every successful call to a high-level
+allocation method maps to exactly one successful call to the
+corresponding method of the underlying raw allocator.
+
 For more detail, see the [details of call correspondence] appendix.
 
 #### Backing memory correspondence
@@ -784,8 +789,8 @@ The properties above are worth discussing because they establish
 constraints that may be important for clients of user-defined
 allocators, and/or for the garbage collector integration.
 
-For example, when integrating the GC with a user-defined allocator
-without requiring the user-defined allocator to be GC-aware, we could
+For example, to integrate the GC with a user-defined allocator
+*without* requiring the user-defined allocator to be GC-aware, we could
 piggy-back a header holding GC metadata on the block itself; this
 option would lose header-free allocation, but would enable maintenance
 of 1:1 call correspondence.
