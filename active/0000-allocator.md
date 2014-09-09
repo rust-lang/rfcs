@@ -68,6 +68,7 @@ For more discussion, see the section:
 * [Drawbacks]
 * [Alternatives]
   * [Type-carrying `Alloc`]
+  * [Have `RawAlloc` implement `typed_alloc` traits without `Direct` wrapper]
   * [No `Alloc` traits]
   * [Some `RawAlloc` variations][`RawAlloc` variations]
     * [A `try_realloc` method][`try_realloc`]
@@ -1077,16 +1078,9 @@ implementation strategies for Rust.
 
 A two level API may seem overly engineered, or at least intimidating.
 But then again, I do not see much of an alternative, at least not
-without giving up on garbage collection entirely.
-
-If people really do object to the two-level API, we could side-step it
-somewhat (while still supporting GC by default)
-by making the [`RawAlloc` trait] directly implement the traits in the
-[`typed_alloc` module]; then clients would be able to pass in their
-`RawAlloc` instances without using the `typed_alloc::Direct` wrapper.
-But I think it is better to include the wrapper, since it opens up the
-potential for other future wrapper structs, rather than giving one
-specific implementation strategy a syntactic advantage.
+without giving up on garbage collection entirely.  (However, see also
+the [Have `RawAlloc` implement `typed_alloc` traits without `Direct` wrapper]
+alternative.)
 
 # Alternatives
 [Alternatives]: #alternatives
@@ -1139,6 +1133,18 @@ struct Rc<Sized? T, A:AllocJust<RcBox> = DefaultAllocJust<RcBox>> {
     box: RcBox<T>,
 }
 ```
+
+## Have `RawAlloc` implement `typed_alloc` traits without `Direct` wrapper
+[Have `RawAlloc` implement `typed_alloc` traits without `Direct` wrapper]: #have-rawalloc-implement-typed_alloc-traits-without-direct-wrapper
+
+If people really do object to the two-level API, we could side-step it
+somewhat (while still supporting GC by default)
+by making the [`RawAlloc` trait] directly implement the traits in the
+[`typed_alloc` module]; then clients would be able to pass in their
+`RawAlloc` instances without using the `typed_alloc::Direct` wrapper.
+But I think it is better to include the wrapper, since it opens up the
+potential for other future wrapper structs, rather than giving one
+specific implementation strategy a syntactic advantage.
 
 ## No `Alloc` traits
 [No `Alloc` traits]: #no-alloc-traits
