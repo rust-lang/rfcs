@@ -1068,7 +1068,7 @@ The length inputs when performing an allocation of a block of
 memory are checked, while lengths for deallocation (including when
 `realloc_bytes` does a deallocation) are not checked.
 
-## No `libarena` integration.
+##### No `libarena` integration.
 
 We already offer a `libarena` that supplies two arena-based memory
 managers.  In principle it would be nice if the traits defined in this
