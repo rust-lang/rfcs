@@ -92,7 +92,7 @@ For more discussion, see the section:
   * [Glossary]
   * [Details of call and memory correspondence][details of call and memory correspondence]
   * [The `AllocCore` API]
-  * [Non-normative high-level allocator implementation]
+  * [Non-normative high-level allocator implementation][non-normative high-level allocator implementation]
 
 # Motivation
 [Motivation]: #motivation
@@ -1331,7 +1331,7 @@ high-level trait that can perform `realloc` on non-array types.
 An earlier draft of this RFC supported this use-case, via a high-level
 `AllocCore` trait.  To see its specification, see [The `AllocCore`
 API] appendix.  For a sketch of its implementation, see the
-[Non-normative high-level allocator implementation] appendix.
+[non-normative high-level allocator implementation] appendix.
 
 # Unresolved questions
 [Unresolved questions]: #unresolved-questions
@@ -1587,9 +1587,12 @@ either of them.
 However, the expressiveness of `AllocCore` came at a cost: It is a
 complex specification. Furthermore, the author was not sure whether it
 was sufficiently motivated. Therefore, the `AllocCore` is no longer a
-required part of this RFC; we have kept it in case people reviewing it
+required part of this RFC; we have kept the original API text
+in case people reviewing it
 want to see the sorts of issues that arise when attempting to support
-high-level `realloc` on non-array types.
+high-level `realloc` on non-array types (and also because it *is* part
+of the
+[non-normative high-level allocator implementation]).
 
 ```rust
     /// A `MemoryBlockInfo` (or more simply, "block info") represents
@@ -1728,7 +1731,7 @@ high-level `realloc` on non-array types.
 ```
 
 ## Non-normative high-level allocator implementation
-[Non-normative high-level allocator implementation]: #non-normative-high-level-allocator-implementation
+[non-normative high-level allocator implementation]: #non-normative-high-level-allocator-implementation
 
 The high-level allocator traits in the [`typed_alloc` module] are just
 API surface; the description above does not specify the manner in
