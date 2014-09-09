@@ -329,6 +329,18 @@ impl<Raw: RawAlloc> RawAlloc for ByteCountingAllocator {
 }
 ```
 
+An aside regarding the imprecision in the `ByteCountingAllocator`
+example (noted in the comment above `bytes_in_use`): Note that an
+alternative (slower) version of `ByteCountingAllocator` could get
+completely precise allocation statistics by always returning `size` as
+the usable capacity from the excess allocation methods and
+`usable_size_bytes`. This change would force the container library to
+always call back into the allocator when it wanted to adjust the size
+of a memory block, giving the allocator full knowledge of the memory
+actually in use.  (Requiring the container library to call back so
+frequently would of course impose a higher overhead, which is why the
+example above did not take that tack.)
+
 ## Why this API
 [Why this API]: #why-this-api
 
