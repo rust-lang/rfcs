@@ -34,6 +34,9 @@ collector
 library.  We assume here that any GC support is built-in to the Rust
 compiler and standard library; we leave work on pluggable GC as future
 research.
+The design is split between a high and low-level API's so that
+allocator implementors do not have to concern themselves with GC support
+issues.
 
 This RFC deliberately leaves some implementation details unspecified
 and left for a future RFC after we have more direct experience with
@@ -396,7 +399,9 @@ The user-specified instance of `RawAlloc` is not required to attempt
 to provide GC-support itself.  The user-specified allocator is only
 meant to satisfy a simple, low-level interface for allocating and
 freeing memory.  Built-in support for garbage-collection is handled at a
-higher level, within the Rust standard library itself.
+higher level, within the Rust standard library itself.  In short,
+this two-level design allows us to separate the GC concerns from the low-level
+allocation concerns.
 
 ## Where's the beef
 [Why is half of the implementation non-normative]: #wheres-the-beef
