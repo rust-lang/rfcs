@@ -84,6 +84,7 @@ For more discussion, see the section:
     * [Make `ArrayAlloc` extend `InstanceAlloc`]
     * [Expose `realloc` for non-array types]
 * [Unresolved Questions]
+  * [Should StdFoo just be `()`]
   * [Platform-supported page size]
   * [What is the type of an alignment]
 * [Appendices]
@@ -1335,7 +1336,8 @@ API] appendix.  For a sketch of its implementation, see the
 # Unresolved questions
 [Unresolved questions]: #unresolved-questions
 
-## should `StdFoo` just be `()`
+## should `StdFoo` just be unit
+[Should StdFoo just be `()`]: #should-stdfoo-just-be-unit
 
 (warning: bikeshed trigger)
 
