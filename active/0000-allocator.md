@@ -1842,18 +1842,25 @@ mod typed_alloc_impl {
         marker: InvariantType<U>
     }
 
+    pub struct MemoryBlockSignature {
+        // compiler and runtime internal fields
+        size: uint,
+        align: uint,
+        gc_layout: GcLayoutDescriptor,
+    }
+
     impl<Sized? U> MemoryBlockInfo<T> {
         /// Returns minimum size of memory block for holding a `T`.
         pub fn size(&self) -> uint { self.size }
 
-        /// Produces a normalized block info that can be compared
-        /// against other similarly normalized block infos.
+        /// Produces a normalized block signature that can be compared
+        /// against other similarly normalized block signatures.
         ///
         /// If two distinct types `T` and `U` are indistinguishable
         /// from the point of view of the garbage collector, then they
-        /// will have equivalent normalized block infos.  Thus,
+        /// will have equivalent normalized block signatures.  Thus,
         /// allocations may be categorized into bins by the high-level
-        /// allocator according to their normalized block infos.
+        /// allocator according to their normalized block signatures.
         ///
         /// (The main point of this method is to allow one to have two
         ///  instances of `MemoryBlockInfo<()>` (i.e. the same type)
@@ -1862,17 +1869,14 @@ mod typed_alloc_impl {
         ///  implementation detail is not represented in the
         ///  `MemoryBlockInfo` internals of this non-normative
         ///  appendix; so in many ways this method is just a hint
-        ///  about future possible implementation strategies; it also
-        ///  explains why this design has a `MemoryBlockInfo` struct
-        ///  that is distinct from the `PointerData<T>` struct.)
-        pub fn forget_type(&self) -> MemoryBlockInfo<()> {
+        ///  about future possible implementation strategies.)
+        pub fn forget_type(&self) -> MemoryBlockSignature {
             // naive impl
 
-            // (I assume even a naive implementation still needs to
-            // construct a fresh `marker` to placate the type system)
-            MemoryBlockInfo { marker: InvariantType,
-                              unsized_metadata: thin_pointer_data::<()>(),
-                              ..*self }
+            MemoryBlockSignature { size: self.size,
+                                   align: self.align,
+                                   gc_layout: type_to_gc_layout::<T>(),
+            }
         }
 
         /// Returns a block info for a sized type `T`.
