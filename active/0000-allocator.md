@@ -10,8 +10,11 @@ allocators, with the following goals:
 
  1. Allow libraries to be generic with respect to the allocator, so
     that users can supply their own memory allocator and still make
-    use of library types like `Vec` or `HashMap`.  In particular,
-    stateful per-container allocators are supported.
+    use of library types like `Vec` or `HashMap` (assuming that the
+    library types are updated to be parameterized over their
+    allocator).
+
+    In particular, stateful per-container allocators are supported.
 
  2. Support ability of garbage-collector (GC) to identify roots stored
     in statically-typed user-allocated objects outside the GC-heap,
@@ -20,9 +23,10 @@ allocators, with the following goals:
  3. Do not require an allocator itself to extract metadata (such as
     the size of an allocation) from the initial address of the
     allocated block; instead, force the client to supply size at the
-    deallocation site.  In other words, do not require use of a
-    `free(ptr)`-based API. (This can improve overall performance on
-    certain hot paths.)
+    deallocation site.
+
+    In other words, do not provide a `free(ptr)`-based API. (This can
+    improve overall performance on certain hot paths.)
 
  4. Incorporate data alignment constraints into the API, as many
     allocators have efficient support for meeting such constraints
