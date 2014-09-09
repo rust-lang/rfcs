@@ -811,6 +811,13 @@ pub mod typed_alloc {
         /// Returns the pointer to the block if allocation succeeds.
         ///
         /// Returns null if allocation fails.
+        ///
+        /// The `alloc` method is responsible for zero-initializing
+        /// any GC-tracable fields of the block before returning it to
+        /// the caller, so that an intervening GC trace will not
+        /// observe garbage data.  The caller is then responsible for
+        /// only keeping well-formatted data in those GC-tracable
+        /// fields.
         unsafe fn alloc<T>(&self) -> *mut T;
 
         /// Frees memory block at `pointer`.
@@ -820,6 +827,20 @@ pub mod typed_alloc {
     }
 
     /// High-level allocator for arrays.
+    ///
+    /// In the below, the phrase "the allocation methods of
+    /// `ArrayAlloc`" refers to any one of `alloc_array`,
+    /// `alloc_array_excess`, `realloc_array`, or
+    /// `realloc_array_excess`; the "excess allocation methods" are
+    /// the ones that end with the suffix "excess".
+    ///
+    /// The allocation methods of `ArrayAlloc` are responsible for
+    /// zero-initializing any GC-tracable fields of the memory block
+    /// (up to its usable capacity) before returning it to the caller,
+    /// so that an intervening GC trace will not observe garbage data.
+    /// The caller is then responsible for only keeping well-formatted
+    /// data in those GC-tracable fields (in particular, see the
+    /// `reinit_range` method).
     ///
     /// Some of the methods below say that an input length `len` must
     /// *fit* a memory block.
@@ -839,12 +860,6 @@ pub mod typed_alloc {
     /// * `excess_cap` is the excess capacity returned if `b` was
     ///   allocated via one of the excess allocation methods, or 0
     ///   if `b` was allocated by another of the allocation methods.
-    ///
-    /// The phrase "the allocation methods of `ArrayAlloc`" above
-    /// refers to one of `alloc_array`, `alloc_array_excess`,
-    /// `realloc_array`, or `realloc_array_excess`; the "excess
-    /// allocation methods" are the ones that end with the suffix
-    /// "excess".
     pub trait ArrayAlloc {
         /// Allocates a memory block suitable for holding `len`
         /// instances of `T`.
@@ -929,12 +944,13 @@ pub mod typed_alloc {
 
         /// Reinitializes the range of instances `[start, start+count)`.
         ///
-        /// A container must call this function when (1.) it has
+        /// A container *must* call this function when (1.) it has
         /// previously moved any instances of `T` into the
-        /// aforementioned range, and (2.) it has since moved or
-        /// dropped the instances of `T` out of the array.
+        /// aforementioned range, and (2.) after doing (1), it has
+        /// since moved or dropped the instances of `T` out of the
+        /// array.
         ///
-        /// This method is solely to prevents dangling references to
+        /// This method is provided to prevent dangling references to
         /// GC-able objects.  The alternative would be to require all
         /// `Gc<T>` to have a destructor, which is counter to the
         /// goals of tracing garbage collection (and also would make
