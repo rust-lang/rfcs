@@ -1137,25 +1137,30 @@ alternative.)
 [Type-carrying `Alloc`]: #type-carrying-alloc
 (aka "objects verus generics")
 
-While it will sometimes make sense to provide a low-level allocator as
-an raw allocator object type `&RawAlloc`, e.g. to control
-code-duplication, in general we here define the high-level type-aware
-methods as type-parametric methods of a high-level trait, such as the
-method `fn alloc<T>(&self) -> *mut T` of the `InstanceAlloc` trait.
-(Note that since all of the methods of `InstanceAlloc` are
-type-parametric, a trait-object type `&InstanceAlloc` has no callable
-methods, because Rust does not allow one to invoke type-parametric
-methods of trait objects.)
+It will sometimes make sense to provide a low-level allocator as an
+raw allocator trait-object type `&RawAlloc`, e.g. to control
+code-duplication.
 
-That is, we did not attempt to encode the high-level interface using
-solely traits with type-specific implementations, such as suggested
-by a signature like:
+However, this same trick does not work for the high-level API as given
+here.  In general we here define the high-level type-aware methods as
+type-parametric methods of a high-level trait, such as the method `fn
+alloc<T>(&self) -> *mut T` of the `InstanceAlloc` trait.
+
+Note that since all of the methods of `InstanceAlloc` are
+type-parametric in `T`, a trait-object type `&InstanceAlloc` has *no*
+callable methods, because Rust does not allow one to invoke
+type-parametric methods of trait objects. Therefore, the object type
+`&InstanceAlloc` as defined here is not useful.
+
+In particular, we did not attempt to encode the high-level interface
+using solely traits with type-specific implementations, such as
+suggested by a signature like:
 ```rust
 trait AllocJust<Sized? T> { fn alloc(&self) -> *mut T; ... }
 ```
 
 While a trait like `AllocJust<T>` is attractive, since it could then
-be realized as a (useful) object-type `&AllocJust<T>`, this API is not
+be used in a (useful) trait-object type `&AllocJust<T>`, this API is not
 terribly useful as the basis for an allocator in a library
 (at least not unless it is actually a trait for a higher-kinded
 type `AllocJust: type -> type`), because:
