@@ -963,6 +963,9 @@ pub mod typed_alloc {
     impl<Raw:RawAlloc> InstanceAlloc for StdAlloc<Raw> { ... }
     impl<Raw:RawAlloc>    ArrayAlloc for StdAlloc<Raw> { ... }
 
+    /// Thinking forward to opt-in built-in traits
+    impl<Raw:Copy> Copy for StdAlloc<Raw> { }
+
     impl Default for StdAlloc<StdRawAlloc> { ... }
 
     /// Constructs an `StdAlloc` from a raw allocator.
@@ -995,6 +998,9 @@ pub mod typed_alloc {
     impl<Raw:RawAlloc> InstanceAlloc for Direct<Raw> { ... }
 
     impl<Raw:RawAlloc> ArrayAlloc for Direct<Raw> { ... }
+
+/// Thinking forward to opt-in built-in traits
+    impl<Raw:Copy> Copy for Direct<Raw> { }
 }
 ```
 
@@ -1049,22 +1055,43 @@ out a few different design options for GC integration:
 * GC root tracking option 1 (block registry): When an allocator
   allocates a block, it is responsible for registering that block in
   the task-local GC state.  The manner of registration is a detail of
-  the GC design (it could add a header that includes fields for a
-  doubly-linked list that is traversed by the GC; or it could record
-  an entry in a bitmap aka pagemap).
+  the GC design.  For example, it could add a header to the allocated block
+  that includes fields for a doubly-linked list (that is traversed by the GC),
+  where the root of the linked list is stored in the task-local GC state;
+  this is often known as "threading" the root set.
+  Alternatively, the block registrar could record an entry in a bitmap
+  (aka pagemap) associated with the task-local GC state.
+
+  In this block registry system, the allocator is not attempting to
+  incorporate the GC information associated with the requested type to
+  influence its allocation decisions.  In other words, it could just
+  blindly call out to `malloc` (or at least `memalign`) and accept
+  whatever address it receives in return.
 
 * GC root tracking option 2 (allocator registry): When an allocator is
   first used to allocate GC storage, it is added to a task-local
   registry of of GC-enabled allocators.  Then when the GC does root
   scanning, it iterates over the registered allocators, asking each to
-  provide the addresses it needs to scan.  Allocators in this design
-  need to carry state (to enumerate the roots in address ranges they
-  have allocated); they also must remove themselves from the allocator
-  registry when they are no longer in use (note that this latter
-  requirement seems to imply that such an allocator implement `Drop`,
-  which may be too arduous to work with in practice; I have largely
-  side-stepped the question of whether allocators should implement the
-  `Copy` bound or not).
+  provide the addresses it needs to scan.
+
+  The advantage of this design is that the allocator itself controls
+  what memory blocks it hands out for a particular type; this means
+  the allocator can employ e.g. a so-called "binning" strategy where
+  particular address ranges are associated with a certain structure
+  layout, which is then used during GC heap tracing.
+
+  Allocators in this design need to carry state (to enumerate the
+  roots in address ranges they have allocated); such allocators must
+  also remove themselves from the allocator registry when they are no
+  longer in use.  Note that this latter requirement seems to imply
+  that such an allocator either live as long as the task or implement
+  `Drop`.  (An allocator that does not implement the `Copy` bound may
+  be too arduous for container libraries to work with in practice;
+  this RFC largely side-steps the question of whether or not
+  allocators should implement the `Copy` bound, apart from stating
+  that both `Direct<R>` and `StdAlloc<R>` implement `Copy` if `R`
+  does.)
+
 
 The point of spelling out the root tracking options above is *not* to
 claim that the Rust standrd library will actually support all of these
