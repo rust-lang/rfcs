@@ -917,7 +917,7 @@ pub mod typed_alloc {
         ///
         /// The `old_len` must *fit* the block referenced by
         /// `old_ptr`.  (As a special case of the preceding sentence,
-        /// behavior undefined if `size_of::<T>() * old_len`
+        /// behavior undefined if `size_of::<T>() * old_len`.)
         ///
         /// If this returns non-null, then the memory block referenced by
         /// `old_ptr` may have been freed and should be considered unusable.
@@ -936,7 +936,7 @@ pub mod typed_alloc {
         ///
         /// The `old_len` must *fit* the block referenced by
         /// `old_ptr`. (As a special case of the preceding sentence,
-        /// behavior undefined if `size_of::<T>() * old_len`.
+        /// behavior undefined if `size_of::<T>() * old_len`
         /// overflows.)
         ///
         /// If reallocation succeeds, returns `(p, c)` where `p` is
