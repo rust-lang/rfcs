@@ -1047,7 +1047,7 @@ pub mod typed_alloc {
 ```
 
 #### Design decisions of `typed_alloc`
-[high-level design decisions]: #Design-decisions-of-typed_alloc
+[high-level design decisions]: #design-decisions-of-typed_alloc
 
 ##### Trait split
 
