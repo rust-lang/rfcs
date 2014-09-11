@@ -158,13 +158,14 @@ message explicitly suggests the use of a `CovariantType`
 (resp. `ContravariantLifetime`) marker:
 
     type parameter `T` is never used; either remove it, or use a
-    marker such as `std::kinds::marker::CovariantType`"
+    marker such as `std::kinds::marker::InvariantType`"
     
 The goal is to help users as concretely as possible. The documentation
-on the `CovariantType` marker type should also be helpful in guiding
+on the `InvariantType` marker type should also be helpful in guiding
 users to make the right choice (the ability to easily attach
 documentation to the marker type was in fact the major factor that led
-us to adopt marker types in the first place).
+us to adopt marker types in the first place). I chose to suggest
+invariance because it is the safest choice.
 
 One problem with the current implementation is that, because
 bivariance warnings are issued as lints, bivariant type parameters
@@ -210,7 +211,23 @@ explicit declarations. However, variance declarations are notoriously
 hard for people to understand. We were unable to come up with a
 suitable set of keywords or other system that felt sufficiently
 lightweight. Nonetheless this might be a good idea for a future RFC if
-someone feels clever.
+someone feels clever. I did gather some statistics at one point that
+seem relevant:
+
+- in standard library:
+  - 85% of region parameters are contravariant
+  - 15% are invariant
+  - 0% are covariant
+- for types, harder to analyze quickly, but:
+  - ~50% invariant
+  - ~25% covariant
+  - ~25% contravariant
+
+I found these results somewhat surprising, particularly the fact that
+50% of types wound up as invariant. These results are somewhat
+suspicious since in the process of implementing this RFC I did fix
+various bugs in the inference algorithm. Perhaps I will regather them
+at some point.
 
 **Rename the marker types.** The current marker types have
 particularly uninspiring names. In particular, it might be advisable
