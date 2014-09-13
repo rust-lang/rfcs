@@ -112,7 +112,7 @@ By combining explicit drops and refined immutable variables, *deep* pinning and 
 
 To forbid partial outbound moves from immutable variables, only one rule is needed to be added to Rust's mutation control semantics:
 
-* Outbound moves from inherently immutable struct fields or enum variant fields are forbidden.
+**Outbound moves from inherently immutable struct fields or enum variant fields are forbidden.**
 
 After the change, a programmer will be required to use mutable variables if he/she truly wants partial outbound moves.
 
@@ -124,21 +124,21 @@ The RFC author (@CloudiDust) believes this to be generally a plus. Rust prefers 
 
 The problem with using more `mut` is that: `mut` dictates no mutation restrictions at all, and it is not clear what kind of mutation the programmer actually wants when he/she writes `mut`. Inbound copies? Or inbound moves? Or outbound moves? Fully or partially?
 
-Note this problem already exists in Rust today.
+Note this problem *already exists* in Rust today.
 
 Actually, immutable and mutable variables each codify a commonly used mutation control policy, bBut there are many more. It may be beneficial to support more fine grained mutation control, but this is outside the scope of this RFC. The RFC author already has some ideas on the design for that feature, the design is backwards-compatible (other than that it requires adding a `pin` or `pinned` keyword), so it can be postponed, but it relies on this RFC being accepted.
 
 # Alternatives
 
-Alternative 1. Instead of forbidding partial moves from immutable variables, forbid reading any remaining part of a partially moved value (either mutable or immutable), but still allow the remaining parts to be moved.
+**Alternative 1.** Instead of forbidding partial moves from immutable variables, forbid reading any remaining part of a partially moved value (either mutable or immutable), but still allow the remaining parts to be moved.
 
 This was suggested when this RFC was still a pre-RFC. This new rule would help finding out unexpected partial outbound moves in some cases. However, a value that can be moved but not read doesn't make sense.
  
-Alternative 2. Maintain the status quo.
+**Alternative 2.** Maintain the status quo.
 
 It can be argued that, because reading partially-moved values (as a whole) or empty slots are compile errors, many of the bugs caused by unexpected partial moves from immutable variables will "eventually" be caught, so the status quo may not be *that* bad in practice. But it is still better to catch more bugs on spot, and calling partially moved values "not mutated", is hardly justifiable. Also there will be no way to deeply pin a value.
 
-Alternative 3. Go all the way and forbid full outbound moves from immutable variables as well.
+**Alternative 3.** Go all the way and forbid full outbound moves from immutable variables as well.
 
 This would make immutable variables even more true to their names, and effectively this is deeply pinning all immutable values. But this is too restrictive and unnecessary. Having to throw `mut` everywhere defeats the purpose of the mutable/immutable distinction. Also, unexpected full outbound moves are easier to catch than unexpected partial outbound moves as compile errors will happen more often.
 
