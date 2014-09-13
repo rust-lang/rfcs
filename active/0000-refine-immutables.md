@@ -118,15 +118,35 @@ After this change, a programmer will be required to use mutable variables if he/
 
 # Drawbacks
 
-Breaking change. `mut`s and `ref`s may have to be added.
+Breaking change. `mut`s and `ref`s may have to be used in more places.
 
-The RFC author (@CloudiDust) believes this to be generally a plus. Rust prefers doing things (reasonably) explicitly after all. Partial outbound moves are mutations to the parent values, and should have been labelled as such. Currently they just slip past the radar.
+Particularly, if for some reason, partial outbound moves from immutable values are intentionally requested by a programmer, and he/she needs the values to again be immutable after the moves, then he/she has to use this idiom:
+
+```rust
+let foo = Foo {...};
+...
+let mut foo = foo;
+move(foo.bar);
+let foo = foo;
+...
+```
+
+Instead of simply:
+
+```rust
+let foo = Foo {...};
+...
+move(foo.bar);
+...
+```
+
+There may be some ergonomic issues. But the RFC author (@CloudiDust) believes this change to be generally a plus. Rust prefers doing things (reasonably) explicitly after all. Partial outbound moves are mutations to the parent values, and should have been labelled as such. Currently they just slip past the radar.
 
 The problem with using more `mut` is that: `mut` dictates no mutation restrictions at all, and it is not clear what kind of mutation the programmer actually wants when he/she writes `mut`. Inbound copies? Or inbound moves? Or outbound moves? Fully or partially?
 
 Note this problem *already exists* in Rust today.
 
-Actually, immutable and mutable variables each codify a commonly used mutation control policy, but there are many other possibilities. It may be beneficial to support more fine grained mutation control, but this is outside the scope of this RFC. The RFC author already has some ideas on the design for that feature, the design is backwards-compatible (other than that it requires adding a `pin` or `pinned` keyword), so it can be postponed, but it relies on this RFC being accepted.
+Actually, immutable and mutable variables each codify a commonly used mutation control policy, but there are many other possibilities. It may be beneficial to support more fine grained mutation control, but this is outside the scope of this RFC. The RFC author already has some ideas on the design for that feature, *which also solves the ergonomic issues mentioned above*. The design is backwards-compatible (other than that it requires adding a `pin` or `pinned` keyword), so it can be postponed, but it relies on this RFC being accepted.
 
 # Alternatives
 
