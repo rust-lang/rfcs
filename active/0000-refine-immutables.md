@@ -18,7 +18,7 @@ This RFC is motivated by two problems in Rust today:
 
 Rust's "immutable" variables do *not* provide *strict immutability*. There are three exceptions:
 
-1. it is legal to have internal mutability even inside "immutable" variables, via `UnsafeSell<T>`;
+1. it is legal to have internal mutability even inside "immutable" variables, via `UnsafeCell<T>`;
 2. it is legal to move values from "immutable" variables as a whole;
 3. it is legal to move parts of compound values from "immutable" variables.
 
