@@ -8,7 +8,7 @@
 This RFC proposes that the semantics of immutable variables be refined by forbidding partial outbound moves, so:
 
 1. immutable variables in Rust become more immutable;
-2. guaranteed scoped lifetimes for values with move semantics ("movable values") can be achieved.
+2. guaranteed lifetimes for values with move semantics ("movable values") can be achieved.
 
 # Motivation
 
@@ -106,7 +106,7 @@ There is still a problem with this form of pinning, as it is *shallow* in that o
 
 That's when our refined immutable variables come into play:
 
-By combining explicit drops and refined immutable variables, *deep* pinning and truly guaranteed lifetime for movable values can be achieved.
+By combining explicit drops and refined immutable variables, *deep* pinning and truly guaranteed lifetimes for movable values can be achieved.
 
 # Detailed Design
 
