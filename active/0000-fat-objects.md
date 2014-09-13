@@ -112,9 +112,7 @@ From the motivating requirements, we now have thin pointers, cheap dynamic dispa
 
 ## Single Inheritance
 
-For the purposes of the examples below I'll assume the version of single inheritance proposed in the @nikomatsakis [blog post from October 2013](http://smallcultfollowing.com/babysteps/blog/2013/10/24/single-inheritance/).
-
-Single inheritance is necessary to meet all the listed requirements, but isn't really the focus of this RFC--another RFC should focus on choosing the exact form of it.  It's included here by reference, just so I can use it to show that combining it with fat objects meets the requirements that inspired the `virtual struct` proposal.
+Single inheritance is necessary to meet all the listed requirements, but is not the focus of this RFC.  Another RFC should focus on choosing the exact form of it.  For the purposes of the examples below I'll assume the version of single inheritance proposed in the @nikomatsakis [blog post from October 2013](http://smallcultfollowing.com/babysteps/blog/2013/10/24/single-inheritance/).  This RFC is not advocating for this over any of the other proposed forms of single inheritance--others, such as [traits with fields](https://github.com/mozilla/rust/issues/9912) or just so I can use it to show that combining it with fat objects meets the requirements that inspired the `virtual struct` proposal.
 
 ## Downcasting
 
@@ -152,7 +150,7 @@ trait Node<'a>: NodeFields<'a> {
     // Methods defined here have access to the fields and methods of NodeFields via `self` [5]
     fn frobify_children(&self) {
         // .children is a static offset field access--no extra pointer indirection [1]
-        for node in children.iter() {
+        for node in self.children.iter() {
             node.frobify(); // dynamic method dispatch [2]
         }
     }
@@ -179,7 +177,7 @@ impl<'a> Node<'a> for Attribute<'a> {
     fn frobify(&self) {
         // We know only elements have attributes as children, so we can downcast [3]
         let parent_element:&Element = downcast(parent.unwrap()).unwrap();
-        println("Frobifying the attribtue of {}: {}={}", parent_element.name, self.name, self.value);
+        println("Frobifying the attribute of {}: {}={}", parent_element.name, self.name, self.value);
     }
 }
 
@@ -203,12 +201,18 @@ impl NodeFields {
     }
 }
 trait Node:NodeFields {
-    fn as_element<'a>(&self) -> Option<&'a Element> {
+    fn as_element<'a>(&'a self) -> Option<&'a Element> {
         None
     }
 }
 
 struct TextNodeFields: NodeFields;
+trait TextNode: Node {
+    // ...
+}
+impl TextNode for TextNodeFields {
+    // ...
+}
 
 struct ElementFields: NodeFields {
     attrs: Vec<(~str,~str)>
@@ -223,7 +227,7 @@ impl<T:Element> ElementStaticMethods for T {
         self.after_set_attr(key,value);
     }
 }
-trait Element:ElementFields Node {
+trait Element: ElementFields Node {
     fn before_set_attr(&mut self, key:&str, value:&str) {
         // Implementation goes here--jdm's gist does not give an implementation
         // but implies it exists (the method is not pure virtual)
@@ -234,8 +238,14 @@ trait Element:ElementFields Node {
     }
 }
 
-struct HTMLImageElementFields: ElementFields;
-impl Element for HTMLImageElementFields {
+impl<T:Element> Node for T {
+    fn as_element<'a>(&'a self) -> Option<&'a Element> {
+        Some(self as &Element)
+    }
+}
+
+struct HTMLImageElement: ElementFields;
+impl Element for HTMLImageElement {
     fn before_set_attr(&mut self, key:&str, value:&str) {
         if key == "src" {
             //..remove cached image with url /value/...
@@ -246,10 +256,10 @@ impl Element for HTMLImageElementFields {
     }
 }
 
-struct HTMLVideoElementFields: ElementFields {
+struct HTMLVideoElement: ElementFields {
     cross_origin:bool
 }
-impl Element for HTMLVideoElementFields {
+impl Element for HTMLVideoElement {
     fn after_set_attr(&mut self, key:&str, value:&str) {
         if key == "crossOrigin" {
             self.cross_origin = (value == "true");
@@ -264,9 +274,9 @@ fn process_any_element(element:&Element) {
 
 // Code outside of a function in jdm's example:
 fn more_code() {
-    // We assume we need videoElement to be a fat object.  It would need to be
-    // to be stored in another element, for instance.
-    let videoElement:Rc<Fat<HTMLVideoElement,Element>> = Rc::new(fat(/*...*/));
+    // We assume we need videoElement to be a fat object for the trait Element, e.g.
+    // because it would need to be stored in another element.
+    let videoElement:Rc<Fat<Element, HTMLVideoElement>> = Rc::new(fat(/*...*/));
     process_any_element(&**videoElement);
     // We are cloning the Rc, not the node itself
     let node = videoElement.first_child.clone();
@@ -284,11 +294,9 @@ fn more_code() {
 
 Some comments on this:
 
-First, note that for functions that take borrowed pointers as parameters, we still use fat pointers.  There really won't be much reason to do otherwise--the cost of the virtual call will be roughly the same, and using the fat pointer is more flexible because you can always convert a thin pointer into a fat one, but not vice versa.  The reason to use thin pointers is if you're going have more pointers than objects, thin pointers to fat objects saves space.  This would usually arise for struct fields rather than function parameters--if you're nesting function calls deeply enough for this to matter, you've probably got other problems.
+Note that for functions that take borrowed pointers as parameters, we still use fat pointers.  This is more flexible for the caller, as it allows the method to be called using both fat and thin pointers.  The cost of the virtual call will be roughly the same either way.  If the method needed a fat object, it would have to take a thin pointer to it as a parameter instead (e.g. `fn process_any_element(element:&Fat<Element>)`).  I would expect this would mostly appear methods that construct data structures that have thin pointers inside them.
 
-The upshot of this is that you'd expect to see `Rc<Fat<X>>`, `Gc<Fat<X>>` and `~Fat<X>` much more frequently than you'd ever see a `&Fat<X>`.
-
-The annoying part is having to create extra types that don't mean anything.  You don't just have `Element`, you have `ElementFields` and `ElementStaticMethods`, even though the second and third of these aren't really useful.  (`ElementStaticMethods` is here so that a call to `set_attribtue` is not itself virtual, but can make virtual calls to `before_set_attribute` and `after_set_attribute`.)  Choosing a different arrangement for struct inheritance could alleviate this--[traits with fields](https://github.com/mozilla/rust/issues/9912) may come out as a better complement here.  (_Possibly rewrite this RFC and choose that alternative instead?_)
+The annoying part is having to create extra types that don't mean anything.  You don't just have `Element`, you have `ElementFields` and `ElementStaticMethods`, even though the second and third of these aren't really useful.  (`ElementStaticMethods` is here so that a call to `set_attribtue` is not itself virtual, but can make virtual calls to `before_set_attribute` and `after_set_attribute`.)  Choosing a different arrangement for struct inheritance could alleviate this--[traits with fields](https://github.com/mozilla/rust/issues/9912) may come out as a better complement here.  (_Possibly rewrite this RFC and choose that alternative instead?_)  With this example, at least the leaves of the inheritance tree (`HTMLImageElement` and `HTMLVideoElement`) can simply be structs and are expressed in a more straightforward way.
 
 # Alternatives
 
