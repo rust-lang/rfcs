@@ -17,8 +17,8 @@ be the additive identity; ditto for `One` and `Mul`).
 
 It is an (often unstated) assumption in many algorithms that `+` is a commutative
 operator. Violating this assumption in the stdlib forces programmers to memorize
-that `+` means something different in rust than it does everywhere else, and also
-risks encouraging abuse of operator overloading.
+that `+` means something different in rust than it does in common language, and
+also risks encouraging abuse of operator overloading.
 
 There is a postponed proposal regarding having unit tests for Traits which enforce
 invariants; commutativity of `+` is an natural one and it would be bad if it was
@@ -28,14 +28,13 @@ unenforcable because standard library was violating it.
 
 Currently everything in the stdlib which implements `Add` implements `add` as a
 commutative operator, except for strings. Therefore I propose:
-- Introduce a `Combine` trait with a `combino` function that sugars to the `++`
+- Introduce a `Combine` trait with a `combine` function that sugars to the `++`
 operator. The precedence of `++` is between the bitwise operators and the comparison operators.
 - Implement this on `String` for concatenation. This replaces `Add` for `String`.
 - Implement this for every collection, using the same semantics as their `Extendable`
   implementations. (`Vec`s and `Bitv`s would be concatenated, sets and maps would
   be unioned, etc.)
 - Implement this on `Path` as a synonym for `join`
-- Implement this on `Iterator` as a synonym for `chain`
 - Add "must be commutative" to the documentation for `Add`.
 - Add "must be associative" to the documentation for `Combine`.
 
@@ -49,7 +48,7 @@ pub trait Combine<RHS,Result> {
 }
 ````
 and will be updated alongside the other binary-operation traits as the trait system
-is revamped. (For example, adding `CombineAssign` for in in-place `++=` or making
+is revamped. (For example, adding `CombineAssign` for in-place `++=` or making
 `Result` an associated item.)
 
 For those interested in algebraic names, this makes `++` into a semigroup operator.
