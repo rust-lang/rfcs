@@ -50,7 +50,7 @@ fn main() {
 
     // seemed innocent:
     match person {
-        Person { name: n, gender: Male } => println!("I am {}, a man!", n),
+        Person { name: n, gender: Male } => println!("I am {}, a man.", n),
         Person { name: n, gender: Female } => println!("I am {}, a woman.", n),
     }
     
@@ -70,7 +70,7 @@ This snippet compiles and runs - and that's the problem.
 There were partial outbound moves happening in the match arms, which was unexpected for two reasons:
 
 1. `person` was supposed to be *immutable*;
-2. even if the programmer knew that `person` is not strictly immutable, it was likely that he/she may not expect the innocent looking matches to move his name - he should have used `ref n`, not bare `n`.
+2. even if the programmer knew that `person` is not strictly immutable, it was likely that he/she may not expect the innocent looking matches to move the name - he/she should have used `ref n`, not bare `n`.
 
 So, forbidding partial moves from immutable variables can have the following benefits:
 
@@ -100,7 +100,7 @@ It is actually quite simple: if guaranteed lifetime is necessary, then explicitl
 
 Because if unexpected moves happen before the explicit drop, a compile error is guaranteed happen, though the compiler will complain about the explicit drop, not the unexpected moves. However in practice this is not a problem.
 
-Let's call this *value pinning*.
+Let's call this *value pinning*. This form of pinning would merely be an idiom, and the language itself would not have a concept of pinning.
 
 There is still a problem with this form of pinning, as it is *shallow* in that only the *root* value is pinned, but partial moves from the value is still allowed. Shallow pinning cannot guard against the possibility of losing lifetime control of parts of a compound value.
 
@@ -114,7 +114,7 @@ To forbid partial outbound moves from immutable variables, only one rule is need
 
 **Outbound moves from inherently immutable struct fields or enum variant fields are forbidden.**
 
-After the change, a programmer will be required to use mutable variables if he/she truly wants partial outbound moves.
+After this change, a programmer will be required to use mutable variables if he/she truly wants partial outbound moves.
 
 # Drawbacks
 
@@ -140,7 +140,7 @@ It can be argued that, because reading partially-moved values (as a whole) or em
 
 **Alternative 3.** Go all the way and forbid full outbound moves from immutable variables as well.
 
-This would make immutable variables even more true to their names, and effectively this is deeply pinning all immutable values. But this is too restrictive and unnecessary. Having to throw `mut` everywhere defeats the purpose of the mutable/immutable distinction. Also, unexpected full outbound moves are easier to catch than unexpected partial outbound moves as compile errors will happen more often.
+This would make immutable variables even more true to their names, and effectively this would deeply pin all immutable values and guarantee that they all have scoped lifetimes. But this is too restrictive and unnecessary. Having to throw `mut` everywhere defeats the purpose of the mutable/immutable distinction. Also, unexpected full outbound moves are easier to catch than unexpected partial outbound moves, as compile errors will happen more often.
 
 The RFC author considers the proposed change in this RFC to be a reasonable compromise between the alternatives 2 and 3. 
 
