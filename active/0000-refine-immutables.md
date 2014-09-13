@@ -77,7 +77,7 @@ So, forbidding partial moves from immutable variables can have the following ben
 1. the semantics of immutable variables will be less against programmer intuitions;
 2. certain kinds of unexpected moves will be prevented on spot.
 
-## Guaranteed lifetimes for movable values
+## Guaranteed lifetimes for movable values cannot be expressed.
 
 In [RFC PR 210: Static drop semantics](https://github.com/rust-lang/rfcs/pull/210), `NoisyDrop`/`QuietDrop` are proposed to help programmers identify unwanted implicit drops introduced by the new semantics. The reason that some so-called "early" drops (or "implicit balancing drops") are unwanted is because the programmer, for whatever reason, wants to ensure that some movable values have certain guaranteed lifetimes.
 
