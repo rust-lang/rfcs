@@ -126,7 +126,7 @@ The problem with using more `mut` is that: `mut` dictates no mutation restrictio
 
 Note this problem *already exists* in Rust today.
 
-Actually, immutable and mutable variables each codify a commonly used mutation control policy, bBut there are many more. It may be beneficial to support more fine grained mutation control, but this is outside the scope of this RFC. The RFC author already has some ideas on the design for that feature, the design is backwards-compatible (other than that it requires adding a `pin` or `pinned` keyword), so it can be postponed, but it relies on this RFC being accepted.
+Actually, immutable and mutable variables each codify a commonly used mutation control policy, but there are many other possibilities. It may be beneficial to support more fine grained mutation control, but this is outside the scope of this RFC. The RFC author already has some ideas on the design for that feature, the design is backwards-compatible (other than that it requires adding a `pin` or `pinned` keyword), so it can be postponed, but it relies on this RFC being accepted.
 
 # Alternatives
 
