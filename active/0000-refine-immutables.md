@@ -36,7 +36,7 @@ enum Status { Living, Deceased }
 #[deriving(Show)]
 struct Person {
     name: String,
-	status: Status,
+    status: Status,
 }
 
 fn main() {
