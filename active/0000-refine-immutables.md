@@ -129,7 +129,7 @@ It can be argued that, because using partially-moved values (as a whole) or empt
 
 Also, there is a reason that Rust's mutation control semantics are designed the way it is. `mut`/`&mut` are not actually designed around *mutability*, but *exclusive accessibility*. What Rust has is not *mutation control* but *uniqueness and aliasing control*, and `mut` actually means "this is a variable that you can request exclusive access of", not *necessary* "this is a variable that is mutable". So conversely, a variable without the `mut` keyword, is just a variable that "you cannot (statically) request exclusive access of", not *necessary* "a variable that is immutable". (Exclusive/mutable access to immutable values can be requested and checked dynamically with the `UnsafeCell<T>` family of types.) 
 
-But it is still better to catch more bugs on spot, and calling partially moved values "not mutated", is hardly justifiable. The RFC author (@CloudiDust) believes that, uniqueness and aliasing control is but an implementation detail. If the keyword is called `mut`, then "mutable" and "immutable" should fit programmer intuitions.
+But it is still better to catch more bugs on spot, and calling partially moved values "not mutated", is hardly justifiable. The RFC author believes that, uniqueness and aliasing control is but an implementation detail. If the keyword is called `mut`, then "mutable" and "immutable" should fit programmer intuitions.
 
 **Alternative 3.** Go all the way and forbid full outbound moves from immutable variables as well.
 
