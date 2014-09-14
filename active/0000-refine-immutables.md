@@ -5,26 +5,24 @@
 
 # Summary
 
-This RFC proposes that the semantics of immutable variables be refined by forbidding partial outbound moves, so:
-
-1. immutable variables in Rust become more immutable;
-2. guaranteed lifetimes for values with move semantics ("movable values") can be achieved.
+This RFC proposes that the semantics of immutable variables be refined by forbidding partial outbound moves, so immutable variables in Rust become more immutable.
 
 # Motivation
 
-This RFC is motivated by two problems in Rust today:
+This RFC is motivated by the following problem in Rust today:
 
 ## "Immutable" variables are not immutable enough.
 
 Rust's "immutable" variables do *not* provide *strict immutability*. There are three exceptions:
 
-1. it is legal to have internal mutability even inside "immutable" variables, via `UnsafeCell<T>`;
+1. it is legal to have internal mutability even inside "immutable" variables, via `UnsafeCell<T>` and the likes;
 2. it is legal to move values from "immutable" variables as a whole;
 3. it is legal to move parts of compound values from "immutable" variables.
 
 So, "immutable" is not exactly accurate, but is it good *enough*?
 
-Exception 1 can be justified because well, `UnsafeCell<T>` *is* unsafe.
+Exception 1 can be justified because well, `UnsafeCell<T>` and the likes are explicitly designed for *internal* mutability, and must be opted-in by the programmer. (Also, see the discussion for Alternative 2 below, which explains this one further.)
+
 Exception 2 can be justified because the only thing that changes after a *full outbound move* is the value's location, not the value itself.
 
 But there is a problem: Exception 3 is very hard to justify, as after a *partial outbound move*, the value itself is mutated.
@@ -33,35 +31,35 @@ Consider the following snippet:
 
 ```rust
 #[deriving(Show)]
-enum Gender { Male, Female }
+enum Status { Living, Deceased }
 
 #[deriving(Show)]
 struct Person {
     name: String,
-	gender: Gender,
+	status: Status,
 }
 
 fn main() {
     // not supposed to change:
-    let person = Person { name: "Mike".to_string(), gender: Male };
+    let person = Person { name: "Mike".to_string(), status: Living};
 
     // person.name = "Clark";  // compile error
-    // person.gender = Female; // compile error
+    // person.status = Deceased; // compile error
 
     // seemed innocent:
     match person {
-        Person { name: n, gender: Male } => println!("I am {}, a man.", n),
-        Person { name: n, gender: Female } => println!("I am {}, a woman.", n),
+        Person { name: n, status: Living } => println!("{} is alive.", n),
+        Person { name: n, status: Deceased } => println!("{} is dead.", n),
     }
     
     // but the name was moved:
-    // println!("Oh yes, I am {}!", person.name); // compile error
+    // println!("Hi, {}!", person.name); // compile error
     
     // the value as a whole, was rendered unusable:
-    // println!("Hey! I am {}!", person); // compile error
+    // println!("{}", person); // compile error
     
     // though the other part can still be used:
-    println!("What?! I am still a {}!", person.gender);
+    println!("The nameless person is still {}.", person.status);
 }
 ```
 
@@ -77,36 +75,7 @@ So, forbidding partial moves from immutable variables can have the following ben
 1. the semantics of immutable variables will be less against programmer intuitions;
 2. certain kinds of unexpected moves will be prevented on spot.
 
-## Guaranteed lifetimes for movable values cannot be expressed.
-
-In [RFC PR 210: Static drop semantics](https://github.com/rust-lang/rfcs/pull/210), `NoisyDrop`/`QuietDrop` are proposed to help programmers identify unwanted implicit drops introduced by the new semantics. The reason that some so-called "early" drops (or "implicit balancing drops") are unwanted is because the programmer, for whatever reason, wants to ensure that some movable values have certain guaranteed lifetimes.
-
-`NoisyDrop`/`QuietDrop` can help, but:
-
-1. the necessity of guaranteed lifetimes depends heavily on context, and should be decided by the application programmer on a case-by-case basis, not by library types;
-2. for all their troubles, `NoisyDrop`/`QuietDrop` still cannot guard against all the possibilities that would threaten the guarantee.
-
-Because moves transfer ownership and lifetime control to the receiver, and the original owner can guarantee nothing once ownership is transferred. This is true regardless of where the moves happen or if they are balanced or not, or if they are implicit or not (a drop can be seen as a special kind of move - a move into oblivion).
-
-Therefore:
-
-**The only way to guarantee that a value has a certain lifetime is to maintain ownership and do not move it before the intended drop point.**
-
-The above is true regardless of which drop semantics is used. Dynamic drops? Static drops? Even eager drops? Doesn't matter.
-
-Then, how can this be done?
-
-It is actually quite simple: if guaranteed lifetime is necessary, then explicitly call `drop` at the intended drop point.
-
-Because if unexpected moves happen before the explicit drop, a compile error is guaranteed happen, though the compiler will complain about the explicit drop, not the unexpected moves. However in practice this is not a problem.
-
-Let's call this *value pinning*. This form of pinning would merely be an idiom, and the language itself would not have a concept of pinning.
-
-There is still a problem with this form of pinning, as it is *shallow* in that only the *root* value is pinned, but partial moves from the value is still allowed. Shallow pinning cannot guard against the possibility of losing lifetime control of parts of a compound value.
-
-That's when our refined immutable variables come into play:
-
-By combining explicit drops and refined immutable variables, *deep* pinning and truly guaranteed lifetimes for movable values can be achieved.
+(Here used to be a section about how this RFC will help providing guaranteed lifetimes. But it turns out that explicit drops *alone* can achieve that. Please refer to the comments of [RFC PR 210](https://github.com/rust-lang/rfcs/pull/210) for more details.)
 
 # Detailed Design
 
@@ -156,11 +125,15 @@ This was suggested when this RFC was still a pre-RFC. This new rule would help f
  
 **Alternative 2.** Maintain the status quo.
 
-It can be argued that, because reading partially-moved values (as a whole) or empty slots are compile errors, many of the bugs caused by unexpected partial moves from immutable variables will "eventually" be caught, so the status quo may not be *that* bad in practice. But it is still better to catch more bugs on spot, and calling partially moved values "not mutated", is hardly justifiable. Also there will be no way to deeply pin a value.
+It can be argued that, because using partially-moved values (as a whole) or empty slots are compile errors, many of the bugs caused by unexpected partial moves from immutable variables will eventually be caught. Also, types implementing `Drop` are *always* not partially-movable already, so the status quo may not be *that* bad in practice.
+
+Also, there is a reason that Rust's mutation control semantics are designed the way it is. `mut`/`&mut` are not actually designed around *mutability*, but *exclusive accessibility*. What Rust has is not *mutation control* but *uniqueness and aliasing control*, and `mut` actually means "this is a variable that you can request exclusive access of", not *necessary* "this is a variable that is mutable". So conversely, a variable without the `mut` keyword, is just a variable that "you cannot (statically) request exclusive access of", not *necessary* "a variable that is immutable". (Exclusive/mutable access to immutable values can be requested and checked dynamically with the `UnsafeCell<T>` family of types.) 
+
+But it is still better to catch more bugs on spot, and calling partially moved values "not mutated", is hardly justifiable. The RFC author (@CloudiDust) believes that, uniqueness and aliasing control is but an implementation detail. If the keyword is called `mut`, then "mutable" and "immutable" should fit programmer intuitions.
 
 **Alternative 3.** Go all the way and forbid full outbound moves from immutable variables as well.
 
-This would make immutable variables even more true to their names, and effectively this would deeply pin all immutable values and guarantee that they all have scoped lifetimes. But this is too restrictive and unnecessary. Having to throw `mut` everywhere defeats the purpose of the mutable/immutable distinction. Also, unexpected full outbound moves are easier to catch than unexpected partial outbound moves, as compile errors will happen more often.
+This would make immutable variables even more true to their names, and effectively this would deeply pin all immutable values and guarantee that they all have scoped lifetimes. But this is too restrictive and unnecessary. Having to throw `mut` everywhere defeats the purpose of the mutable/immutable distinction.
 
 The RFC author considers the proposed change in this RFC to be a reasonable compromise between the alternatives 2 and 3. 
 
