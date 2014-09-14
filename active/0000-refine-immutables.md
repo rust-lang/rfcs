@@ -89,14 +89,13 @@ After this change, a programmer will be required to use mutable variables if he/
 
 Breaking change. `mut`s and `ref`s may have to be used in more places.
 
-Particularly, if for some reason, partial outbound moves from immutable values are intentionally requested by a programmer, and he/she needs the values to again be immutable after the moves, then he/she has to use this idiom:
+Particularly, if for some reason, partial outbound moves from immutable values are intentionally requested by a programmer, then he/she has to use this:
 
 ```rust
 let foo = Foo {...};
 ...
 let mut foo = foo;
 move(foo.bar);
-let foo = foo;
 ...
 ```
 
@@ -109,7 +108,7 @@ move(foo.bar);
 ...
 ```
 
-There may be some ergonomic issues. But the RFC author (@CloudiDust) believes this change to be generally a plus. Rust prefers doing things (reasonably) explicitly after all. Partial outbound moves are mutations to the parent values, and should have been labelled as such. Currently they just slip past the radar.
+There may be some ergonomic issues, and the programmer can no longer move `foo` back into an immutable variable. (Arguably this can be a good thing, as immutable values will be guaranteed to be without "holes".) The RFC author (@CloudiDust) believes this change to be generally a plus. Rust prefers doing things (reasonably) explicitly after all. Partial outbound moves are mutations to the parent values, and should have been labelled as such. Currently they just slip past the radar.
 
 The problem with using more `mut` is that: `mut` dictates no mutation restrictions at all, and it is not clear what kind of mutation the programmer actually wants when he/she writes `mut`. Inbound copies? Or inbound moves? Or outbound moves? Fully or partially?
 
