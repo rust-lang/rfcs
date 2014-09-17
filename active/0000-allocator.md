@@ -1503,7 +1503,8 @@ Which is preferable?
 
 It is a little ugly that the [`RawAlloc` trait] says "behavior undefined" for an
 `align` that is too large, while at the same time, there is no way in the current interface for
-the user to ask for the *value* of that threshold.  We could make the limit an associated
+the user to ask for the *value* of that threshold.  We could attempt to expose
+the limit as an associated
 constant on `RawAlloc`.  (Note that the [high-level API][`typed_alloc` module]
 is already relying on `where` clauses, namely in its `from_type` method.)
 
