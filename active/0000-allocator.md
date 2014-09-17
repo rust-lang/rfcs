@@ -172,6 +172,10 @@ impl<T, A:Default + ArrayAlloc> Arr<T, A> {
 }
 
 impl<T, A:ArrayAlloc> Arr<T, A> {
+    pub fn backing_alloc<'a>(&'a self) -> &'a A {
+        &self.alloc
+    }
+
     pub fn with_alloc(alloc: A) -> Arr<T, A> {
         Arr::with_alloc_capacity(alloc, 0)
     }
@@ -253,16 +257,16 @@ use alloc::{RawAlloc, StdRawAlloc};
 use alloc::typed_alloc::Direct;
 
 fn main() {
-    let bytes_in_use: Cell<uint> = Cell::new(0u);
-    let counting = ByteCountingAllocator::new(&bytes_in_use);
+    let shared: Cell<uint> = Cell::new(0u);
+    let counting = SharedByteCountingAllocator::new(&shared);
     let array: Arr<i64> = Arr::with_alloc(Direct(counting));
     for i in range(0_i64, 1000) {
         array.push(i);
     }
-    println!("bytes_in_use: {}", bytes_in_use.get());
+    println!("bytes_in_use: {}", array.backing_alloc().bytes_in_use());
 }
 
-struct ByteCountingAllocator<'a, Raw: RawAlloc> {
+struct SharedSharedByteCountingAllocator<'a, Raw: RawAlloc> {
     raw: Raw,
 
     // N.B. this measure is not precise; error can accumulate if
@@ -272,13 +276,17 @@ struct ByteCountingAllocator<'a, Raw: RawAlloc> {
     bytes_in_use: &Cell<uint>,
 }
 
-impl<'a, Raw: RawAlloc> ByteCountingAllocator<'a, Raw> {
-    fn new(accum: &Cell<uint>) -> ByteCountingAllocator {
-        ByteCountingAllocator::with_alloc(StdRawAlloc, accum)
+impl<'a, Raw: RawAlloc> SharedByteCountingAllocator<'a, Raw> {
+    fn new(accum: &Cell<uint>) -> SharedByteCountingAllocator {
+        SharedByteCountingAllocator::with_alloc(StdRawAlloc, accum)
     }
 
-    fn with_alloc(raw: RawAlloc, accum: &Cell<uint>) -> ByteCountingAllocator {
-        ByteCountingAllocator { raw: raw, bytes_in_use: accum }
+    fn with_alloc(raw: RawAlloc, accum: &Cell<uint>) -> SharedByteCountingAllocator {
+        SharedByteCountingAllocator { raw: raw, bytes_in_use: accum }
+    }
+
+    fn bytes_in_use(&self) -> uint {
+        self.bytes_in_use.get()
     }
 
     // Not at all thread-safe
@@ -292,7 +300,7 @@ impl<'a, Raw: RawAlloc> ByteCountingAllocator<'a, Raw> {
     }
 }
 
-impl<Raw: RawAlloc> RawAlloc for ByteCountingAllocator {
+impl<Raw: RawAlloc> RawAlloc for SharedByteCountingAllocator {
     unsafe fn alloc_bytes(&mut self, size: Size, align: Alignment) -> *mut u8 {
         let (ptr, cap) = self.alloc_bytes_excess(size, align);
         ptr
@@ -328,9 +336,9 @@ impl<Raw: RawAlloc> RawAlloc for ByteCountingAllocator {
 }
 ```
 
-An aside regarding the imprecision in the `ByteCountingAllocator`
+An aside regarding the imprecision in the `SharedByteCountingAllocator`
 example (noted in the comment above `bytes_in_use`): Note that an
-alternative (slower) version of `ByteCountingAllocator` could get
+alternative (slower) version of `SharedByteCountingAllocator` could get
 completely precise allocation statistics by always returning `size` as
 the usable capacity from the excess allocation methods and
 `usable_size_bytes`. This change would force the container library to
@@ -339,6 +347,14 @@ of a memory block, giving the allocator full knowledge of the memory
 actually in use.  (Requiring the container library to call back so
 frequently would of course impose a higher overhead, which is why the
 example above did not take that tack.)
+
+Furthermore, note that it is even simpler to make a
+`LocalByteCountingAllocator` that tracks the `byte_in_use` for just
+the one container: instead of a `&Cell<uint>`, just use a `uint`.
+(Note that this is simple in part because the API of `Arr` allows one
+to extract an `&A` reference to its underlying raw allocator, with the
+specific type that was provided. It is up the the library designer to
+decide whether or not to expose the allocator it such a way.)
 
 ## Why this API
 [Why this API]: #why-this-api
