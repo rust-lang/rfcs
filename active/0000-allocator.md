@@ -2158,13 +2158,19 @@ mod typed_alloc_impl {
     // use of the DST manipulating intrinsics `pointer_mem` and
     // `make_pointer`.
 
+    static dummy_byte_for_zero_size_ptrs : u8 = 0;
+
     impl<Raw:RawAlloc> AllocCore for StdAlloc<Raw> {
         #[inline(always)]
         unsafe fn alloc_info_excess<Sized? T>(&mut self, info: MemoryBlockInfo<T>) -> (*mut T, Capacity) {
             // (compile-time evaluated conditions)
             let p = if ! type_involves_gc::<T>() {
-                make_pointer(self.raw.alloc_bytes(info.size, info.align),
-                             info.unsized_metadata)
+                let byte_ptr = if size_of::<T>() == 0 {
+                    &dummy_byte_for_zero_size_ptrs as *mut u8
+                } else {
+                    self.raw.alloc_bytes(info.size, info.align)
+                };
+                make_pointer(byte_ptr, info.unsized_metadata)
             } else {
                 self.alloc_info_gc(info)
             };
@@ -2175,10 +2181,14 @@ mod typed_alloc_impl {
         unsafe fn realloc_info_excess<Sized? T, Sized? U>(&mut self, old_ptr: *mut T, info: MemoryBlockInfo<U>) -> (*mut U, Capacity) {
             // (compile-time evaluated conditions)
             let p = if ! type_involves_gc::<T>() && ! type_involves_gc::<U>() {
-                make_pointer(self.raw.realloc_bytes(pointer_mem(old_ptr),
-                                                    info.size,
-                                                    info.align),
-                             info.unsized_metadata)
+                let byte_ptr = if size_of::<T>() == 0 {
+                    &dummy_byte_for_zero_size_ptrs as *mut u8
+                } else {
+                    self.raw.realloc_bytes(pointer_mem(old_ptr),
+                                           info.size,
+                                           info.align)
+                };
+                make_pointer(byte_ptr, info.unsized_metadata)
             } else {
                 self.realloc_info_gc(old_ptr, info)
             };
@@ -2189,9 +2199,11 @@ mod typed_alloc_impl {
         unsafe fn dealloc_info<Sized? T>(&mut self, pointer: *mut T, info: MemoryBlockInfo<T>) {
             // (compile-time evaluated conditions)
             if ! type_involves_gc::<T>() {
-                self.raw.dealloc_bytes(pointer_mem(pointer),
-                                       info.size,
-                                       info.align)
+                if size_of::<T>() != 0 {
+                    self.raw.dealloc_bytes(pointer_mem(pointer),
+                                           info.size,
+                                           info.align);
+                }
             } else {
                 self.dealloc_info_gc(pointer, info)
             }
@@ -2200,7 +2212,11 @@ mod typed_alloc_impl {
         #[inline(always)]
         unsafe fn usable_size_info<Sized? T>(&self, info: MemoryBlockInfo<T>) -> Capacity {
             if ! type_involves_gc::<T>() {
-                self.raw.usable_size_bytes(info.size, info.align)
+                if size_of::<T>() == 0 {
+                    0
+                } else {
+                    self.raw.usable_size_bytes(info.size, info.align)
+                }
             } else {
                 info.size
             }
@@ -2234,8 +2250,12 @@ mod typed_alloc_impl {
             // (compile-time evaluated conditions)
             assert!(!type_is_gc_allocated::<T>());
             if ! type_reaches_gc::<T>() {
-                make_pointer(self.raw().alloc_bytes(info.size, info.align),
-                            info.unsized_metadata)
+                let byte_ptr = if size_of::<T>() == 0 {
+                    &dummy_byte_for_zero_size_ptrs as *mut u8
+                } else {
+                    self.raw().alloc_bytes(info.size, info.align)
+                };
+                make_pointer(byte_ptr, info.unsized_metadata)
             } else {
                 allocate_and_register_rooted_memory(self.raw(), info)
             }
@@ -2247,10 +2267,14 @@ mod typed_alloc_impl {
             assert!(!type_is_gc_allocated::<T>());
             assert!(!type_is_gc_allocated::<U>());
             if ! type_reaches_gc::<T>() && ! type_reaches_gc::<U>() {
-                make_pointer(self.raw().realloc_bytes(pointer_mem(old_ptr),
-                                                      info.size,
-                                                      info.align),
-                             info.unsized_metadata)
+                let byte_ptr = if size_of::<T>() == 0 {
+                    &dummy_byte_for_zero_size_ptrs as *mut u8
+                } else {
+                    self.raw().realloc_bytes(pointer_mem(old_ptr),
+                                             info.size,
+                                             info.align)
+                };
+                make_pointer(byte_ptr, info.unsized_metadata)
             } else {
                 reallocate_and_register_rooted_memory(self.raw(),
                                                       old_ptr,
@@ -2263,9 +2287,11 @@ mod typed_alloc_impl {
             // (compile-time evaluated conditions)
             assert!(!type_is_gc_allocated::<T>());
             if ! type_reaches_gc::<T>() {
-                self.raw().dealloc_bytes(pointer_mem(pointer),
-                                         info.size,
-                                         info.align)
+                if size_of::<T>() != 0 {
+                    self.raw().dealloc_bytes(pointer_mem(pointer),
+                                             info.size,
+                                             info.align)
+                }
             } else {
                 deallocate_and_unregister_rooted_memory(self.raw(),
                                                         pointer,
