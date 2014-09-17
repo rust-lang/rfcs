@@ -181,8 +181,6 @@ impl<T, A:ArrayAlloc> Arr<T, A> {
     }
 
     pub fn with_alloc_capacity(alloc: A, capacity: uint) -> Arr<T, A> {
-        // (This example is not attempting to handle zero-sized T properly.
-        assert!(mem::size_of::<T>() != 0);
         unsafe {
             let (ptr, cap) = unsafe { alloc.alloc_array_excess(capacity) };
             assert!(ptr.is_not_null());
@@ -709,6 +707,7 @@ Points of departure from [RFC PR 39]:
     forcing it to round-trip through the `realloc` interface each
     time, and without forcing it to record the original parameter fed
     to `alloc_bytes` or `realloc_bytes` that produced the pointer.
+
   * Added `_with_excess` variants of the allocation methods that
     return the "true" usable capacity for the block.  This variant
     was discussed a bit in the comment thread for [RFC PR 39].
@@ -862,6 +861,9 @@ meant to be a requirement of the final definition of the trait.
 ```rust
 pub mod typed_alloc {
     /// High-level allocator for instances of some sized type.
+    ///
+    /// Note that this handles even *zero-sized* types; see
+    /// `fn alloc` for more details.
     pub trait InstanceAlloc {
         /// Allocates a memory block suitable for holding `T`.
         /// Returns the pointer to the block if allocation succeeds.
@@ -874,6 +876,15 @@ pub mod typed_alloc {
         /// observe garbage data.  The caller is then responsible for
         /// only keeping well-formatted data in those GC-tracable
         /// fields.
+        ///
+        /// On successful allocation of a *zero-sized* type, returns
+        /// *some* non-null pointer to a readable memory address,
+        /// though it may or may not correspond to a freshly allocated
+        /// block of memory; in particular, it may be a pointer to
+        /// static storage and thus it may not be safe to write to the
+        /// returned address.  Thus a generic client is still
+        /// responsible for calling `dealloc` on such a pointer when
+        /// done with it.
         unsafe fn alloc<T>(&mut self) -> *mut T;
 
         /// Frees memory block at `pointer`.
@@ -917,6 +928,15 @@ pub mod typed_alloc {
     /// * `excess_cap` is the excess capacity returned if `b` was
     ///   allocated via one of the excess allocation methods, or 0
     ///   if `b` was allocated by another of the allocation methods.
+    ///
+    /// Finally, as with `InstanceAlloc`, when the allocation methods
+    /// successfully allocate an array of `T` where `T` is a
+    /// zero-sized type, they will return *some* non-null pointer to a
+    /// readable memory address, though it may or may not correspond
+    /// to a freshly allocated block of memory, and it may or may not
+    /// be safe to write to the returned address.  A generic client is
+    /// still responsible for calling `dealloc` on such a pointer when
+    /// done with it.
     pub trait ArrayAlloc {
         /// Allocates a memory block suitable for holding `len`
         /// instances of `T`.
@@ -1143,6 +1163,46 @@ syntax.
 As with the [`RawAlloc` trait], the allocators here use `&mut self`
 rather than `&self` on all of the methods that allocate or deallocate
 storage, again based on [huon's arguments on discuss] for `&mut self`.
+
+##### Handling of zero-sized types
+
+While the `RawAlloc` API explicitly says that passing a 0 size yields
+undefined behavior, the `typed_alloc` traits all accept zero-sized `T`.
+
+The thinking behind this was that many low-level system allocators
+also yield undefined behavior when requesting 0 bytes, and therefore
+any `RawAlloc` that was going to be a wafer-thin shim over such
+a system allocator would need to do the same.
+
+At the same time, we did not want to allow this undefined behavior to
+bubble all the way up to the expected clients calling into allocators,
+namely the clients using instances of the `typed_alloc` traits.  That
+is, it did not seem reasonable to force every client to put in a
+separate allocator-free code path for zero-sized types.  Therefore,
+those traits all explicitly say that they handle zero-sized types.
+
+We expect that most implementations of `InstanceAlloc` and
+`ArrayAlloc` will return a pointer to some static address for every
+request for allocating a zero-sized type.  We *could* go so far as to
+make that their specified behavior.  However, since we also expect
+allocators to be used within generic code, and we do not know whether
+some allocators may actually *want* to provide fresh blocks of memory
+even on zero sized types (e.g. if they are attempting to tag
+allocations with headers, or otherwise otherwise make use of a unique
+address associated with every allocation), we decided instead to leave
+this portion of the implementation strategy up to the allocator, and
+thus in generic code the clients are responsible for calling `dealloc`
+on the supposedly-allocated memory, even when it is zero-sized.
+
+This should not be a burden on programmers since such a code path
+matches that of non-zero-sized types, and it should not be a problem
+for the generated object code, at least under the assumption that the
+typical implementation strategy will include a no-op path for
+zero-sized types in `dealloc` that then boils away after inlining.
+(And of course, a client who is really concerned about this could
+always put in a separate allocator-free code path for zero-sized
+types; it remains an *option*, and we just wanted to ensure it was not
+a *requirement*.)
 
 #### GC integration with `typed_alloc`
 [GC integration]: #gc-integration-with-typed_alloc
