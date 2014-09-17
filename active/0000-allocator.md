@@ -1102,11 +1102,15 @@ methods).  The motivation for this is based on a guess that many
 allocator-parametric libraries will need their allocator to support
 either one or the other, and thus it makes sense for such libraries to
 specify which, to make it easier for library clients to feed in their
-own instrumented versions of the allocators. For example, if one
-interested in instrumenting containers to learn how well their
-internal resizing policy is working (with respect to number of
-invocations and amount of fragmentation being introduced), then one
-just implements an `ArrayAlloc` wrapper.
+own instrumented versions of the allocators.
+
+For example, if one interested in instrumenting containers to learn
+how well their internal resizing policy is working (with respect to
+number of invocations and amount of fragmentation being introduced),
+then one just implements an `ArrayAlloc` wrapper.  (Perhaps more
+signficantly, when a container type is just allocating individual
+instances, the API surface of `InstanceAlloc` is much smaller and
+therefore wrappers for it can be written more quickly.)
 
 This design choice assumes that it will be easy for concrete
 allocators to just implement both types when that makes sense.
