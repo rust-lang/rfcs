@@ -125,7 +125,7 @@ following:
      out-of-memory conditions.  If everything comes from a global
      heap, it becomes much harder to handle out-of-memory conditions
      because the handler is almost certainly going to be unable to
-     allocate any memory of its own work.
+     allocate any memory for its own work.
 
   3. Instrumentation and debugging: One can swap in a custom
      allocator that collects data such as number of allocations
@@ -179,10 +179,11 @@ impl<T, A:ArrayAlloc> Arr<T, A> {
     pub fn with_alloc_capacity(alloc: A, capacity: uint) -> Arr<T, A> {
         // (This example is not attempting to handle zero-sized T properly.
         assert!(mem::size_of::<T>() != 0);
-        let size = capacity.checked_mul(&mem::size_of::<T>())
-                           .expect("capacity overflow");
-        let ptr = unsafe { alloc.alloc_bytes(size, mem::min_align_of::<T>()) };
-        Arr { alloc: alloc, len: 0, cap: capacity, ptr: ptr as *mut T }
+        unsafe {
+            let (ptr, cap) = unsafe { alloc.alloc_array_excess(capacity) };
+            assert!(ptr.is_not_null());
+            Arr { alloc: alloc, len: 0, cap: cap, ptr: ptr as *mut T }
+        }
     }
 }
 
@@ -539,9 +540,11 @@ pub trait RawAlloc {
 
     /// Deallocate the memory referenced by `ptr`.
     ///
+    /// `ptr` must have previously been provided via this allocator.
+    ///
     /// `(size, align)` must *fit* the `ptr` (see above).
     ///
-    /// Behavior is undefined if above constraints on `align` and
+    /// Behavior is undefined if above constraints on `ptr`, `align` and
     /// `size` are unmet. Behavior also undefined if `ptr` is null.
     unsafe fn dealloc_bytes(&self, ptr: *mut u8, size: Size, align: Alignment);
 
@@ -569,6 +572,8 @@ pub trait RawAlloc {
     /// Extends or shrinks the allocation referenced by `ptr` to
     /// `size` bytes of memory, retaining the alignment `align`.
     ///
+    /// `ptr` must have previously been provided via this allocator.
+    ///
     /// `(old_size, align)` must *fit* the `ptr` (see above).
     ///
     /// If this returns non-null, then the memory block referenced by
@@ -577,7 +582,7 @@ pub trait RawAlloc {
     /// Returns null if allocation fails; in this scenario, the
     /// original memory block referenced by `ptr` is unaltered.
     ///
-    /// Behavior is undefined if above constraints on `align` and
+    /// Behavior is undefined if above constraints on `ptr`, `align` and
     /// `old_size` are unmet. Behavior also undefined if `size` is 0.
     unsafe fn realloc_bytes(&self, ptr: *mut u8, size: Size, align: Alignment, old_size: Size) -> *mut u8 {
         if size <= self.usable_size_bytes(old_size, align) {
@@ -597,6 +602,8 @@ pub trait RawAlloc {
     /// and returning the capacity of the (potentially new) block of
     /// memory.
     ///
+    /// `ptr` must have previously been provided via this allocator.
+    ///
     /// `(old_size, align)` must *fit* the `ptr` (see above).
     ///
     /// When successful, returns a non-null ptr and the capacity of
@@ -612,7 +619,7 @@ pub trait RawAlloc {
     /// this scenario, the original memory block referenced by `ptr`
     /// is unaltered.
     ///
-    /// Behavior is undefined if above constraints on `align` and
+    /// Behavior is undefined if above constraints on `ptr`, `align` and
     /// `old_size` are unmet. Behavior also undefined if `size` is 0.
     unsafe fn realloc_bytes_excess(&self, ptr: *mut u8, size: Size, align: Alignment, old_size: Size) -> (*mut u8, Capacity) {
         (self.realloc_bytes(ptr, size, align, old_size), self.usable_size_bytes(size, align))
@@ -844,7 +851,8 @@ pub mod typed_alloc {
 
         /// Frees memory block at `pointer`.
         ///
-        /// `pointer` must have been previously allocated via `alloc`.
+        /// `pointer` must have been previously allocated via `alloc`
+        /// via this allocator.
         unsafe fn dealloc<T>(&self, pointer: *mut T);
     }
 
@@ -916,6 +924,8 @@ pub mod typed_alloc {
         /// Extends or shrinks the allocation referenced by `old_ptr`
         /// to hold at least `new_len` instances of `T`.
         ///
+        /// `old_ptr` must have previously been provided via this allocator.
+        ///
         /// The `old_len` must *fit* the block referenced by
         /// `old_ptr`.  (As a special case of the preceding sentence,
         /// behavior undefined if `size_of::<T>() * old_len`.)
@@ -934,6 +944,8 @@ pub mod typed_alloc {
 
         /// Extends or shrinks the allocation referenced by `old_ptr`
         /// to hold at least `new_len` instances of `T`.
+        ///
+        /// `old_ptr` must have previously been provided via this allocator.
         ///
         /// The `old_len` must *fit* the block referenced by
         /// `old_ptr`. (As a special case of the preceding sentence,
@@ -959,12 +971,17 @@ pub mod typed_alloc {
 
         /// Frees memory block referenced by `ptr`.
         ///
+        /// `ptr` must have previously been provided via this allocator.
+        ///
         /// `len` must *fit* the block referenced by `ptr`. (As a
         /// special case of the preceding sentence, behavior undefined
         /// if `size_of::<T>() * len` overflows.)
         unsafe fn dealloc_array<T>(&self, (ptr, len): (*mut T, uint));
 
         /// Reinitializes the range of instances `[start, start+count)`.
+        ///
+        /// `[start, start+count)` must fall in a block of memory that
+        /// was previously provided via this allocator.
         ///
         /// A container *must* call this function when (1.) it has
         /// previously moved any instances of `T` into the
@@ -1361,9 +1378,9 @@ Which is preferable?
 ## Platform-supported page size
 [Platform-supported page size]: #platform-supported-page-size
 
-It is a little ugly that the [`RawAlloc` trait] has an error case for an
-`align` that is too large while there is no way in the current interface for
-the user to ask for the value of that threshold.  We could make the limit an associated
+It is a little ugly that the [`RawAlloc` trait] says "behavior undefined" for an
+`align` that is too large, while at the same time, there is no way in the current interface for
+the user to ask for the *value* of that threshold.  We could make the limit an associated
 constant on `RawAlloc`.  (Note that the [high-level API][`typed_alloc` module]
 is already relying on `where` clauses, namely in its `from_type` method.)
 
@@ -1764,7 +1781,7 @@ These compile-time intrinsic functions for GC introspection are:
     needs to be treated as holding GC roots (e.g. `T` contains some
     `Gc<_>` within its immediate contents), and
 
-  * `type_invoves_gc::<T>()`: a short-hand for
+  * `type_involves_gc::<T>()`: a short-hand for
     `type_is_gc_allocated::<T>() || type_reaches_gc::<T>()`
 
 In addition, we need some primitive operations for converting from raw
