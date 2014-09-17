@@ -81,6 +81,7 @@ For more discussion, see the section:
     * [A `try_realloc` method][`try_realloc`]
     * [ptr parametric `usable_size`]
   * [High-level allocator variations]
+    * [Merge `ArrayAlloc` and `InstanceAlloc`]
     * [Make `ArrayAlloc` extend `InstanceAlloc`]
     * [Expose `realloc` for non-array types]
 * [Unresolved Questions]
@@ -1115,6 +1116,7 @@ pub mod typed_alloc {
 [high-level design decisions]: #design-decisions-of-typed_alloc
 
 ##### Trait split
+[Trait split]: #trait-split
 
 The API splits the methods into `InstanceAlloc` and `ArrayAlloc`
 (rather than supply a single high-level trait with all of the
@@ -1423,6 +1425,19 @@ hypothetical allocators with different size bins via the
 
 ## High-level allocator variations
 [High-level allocator variations]: #high-level-allocator-variations
+
+### Merge `ArrayAlloc` and `InstanceAlloc` into one trait
+[Merge `ArrayAlloc` and `InstanceAlloc`]: #merge-arrayalloc-and-instancealloc-into-one-trait
+
+As discussed in the [`typed_alloc` trait split][Trait split], one could
+imagine using a single high-level trait with all the methods, instead
+of two separate ones; the motivation for the split was already discussed
+there.  It seems a matter of perspective which choice is "simpler."
+
+In addition, in the future we may want still other more specialized
+traits in `typed_alloc` (see [Expose `realloc` for non-array types]),
+and so it seems reasonable to establish a precendent now of having
+tailored high-level traits.
 
 ### Make `ArrayAlloc` extend `InstanceAlloc`
 [Make `ArrayAlloc` extend `InstanceAlloc`]: #make-arrayalloc-extend-instancealloc
