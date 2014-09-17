@@ -253,58 +253,55 @@ use alloc::{RawAlloc, StdRawAlloc};
 use alloc::typed_alloc::Direct;
 
 fn main() {
-    let counting = ByteCountingAllocator::new();
+    let bytes_in_use: Cell<uint> = Cell::new(0u);
+    let counting = ByteCountingAllocator::new(&bytes_in_use);
     let array: Arr<i64> = Arr::with_alloc(Direct(counting));
     for i in range(0_i64, 1000) {
         array.push(i);
     }
-    println!("bytes_in_use: {}", counting.bytes_in_use());
+    println!("bytes_in_use: {}", bytes_in_use.get());
 }
 
-struct ByteCountingAllocator<Raw: RawAlloc> {
+struct ByteCountingAllocator<'a, Raw: RawAlloc> {
     raw: Raw,
 
-    // N.B. these measures are not precise; error can accumulate if
+    // N.B. this measure is not precise; error can accumulate if
     // the client is locally using excess capacity and reports a
     // different size upon freeing than it had requested upon
     // allocation.
-    bytes_in_use: Cell<uint>,
+    bytes_in_use: &Cell<uint>,
 }
 
-impl ByteCountingAllocator {
-    fn new() -> ByteCountingAllocator {
-        ByteCountingAllocator::with_alloc(raw)
+impl<'a, Raw: RawAlloc> ByteCountingAllocator<'a, Raw> {
+    fn new(accum: &Cell<uint>) -> ByteCountingAllocator {
+        ByteCountingAllocator::with_alloc(StdRawAlloc, accum)
     }
 
-    fn with_alloc(raw: RawAlloc) -> ByteCountingAllocator {
-        ByteCountingAllocator { raw: raw, bytes_in_use }
-    }
-
-    fn bytes_in_use(&self) -> uint {
-        self.bytes_in_use.get()
+    fn with_alloc(raw: RawAlloc, accum: &Cell<uint>) -> ByteCountingAllocator {
+        ByteCountingAllocator { raw: raw, bytes_in_use: accum }
     }
 
     // Not at all thread-safe
-    fn add(&self, delta: uint) {
+    fn add(&mut self, delta: uint) {
         self.bytes_in_use.set(self.bytes_in_use.get() + delta);
     }
 
     // Not at all thread-safe
-    fn sub(&self, delta: uint) {
+    fn sub(&mut self, delta: uint) {
         self.bytes_in_use.set(self.bytes_in_use.get() - delta);
     }
 }
 
 impl<Raw: RawAlloc> RawAlloc for ByteCountingAllocator {
-    unsafe fn alloc_bytes(&self, size: Size, align: Alignment) -> *mut u8 {
+    unsafe fn alloc_bytes(&mut self, size: Size, align: Alignment) -> *mut u8 {
         let (ptr, cap) = self.alloc_bytes_excess(size, align);
         ptr
     }
-    unsafe fn dealloc_bytes(&self, ptr: *mut u8, size: Size, align: Alignment) {
+    unsafe fn dealloc_bytes(&mut self, ptr: *mut u8, size: Size, align: Alignment) {
         self.sub(size);
         self.raw.dealloc_bytes(ptr, size, align)
     }
-    unsafe fn alloc_bytes_excess(&self, size: Size, align: Alignment) -> (*mut u8, Capacity) {
+    unsafe fn alloc_bytes_excess(&mut self, size: Size, align: Alignment) -> (*mut u8, Capacity) {
         let (ptr, cap) = self.raw.alloc_bytes_excess(size, align);
         if !ptr.is_null() {
             self.add(size);
@@ -312,12 +309,12 @@ impl<Raw: RawAlloc> RawAlloc for ByteCountingAllocator {
         (ptr, cap)
     }
 
-    unsafe fn realloc_bytes(&self, ptr: *mut u8, size: Size, align: Alignment, old_size: Size) -> *mut u8 {
+    unsafe fn realloc_bytes(&mut self, ptr: *mut u8, size: Size, align: Alignment, old_size: Size) -> *mut u8 {
         let (ptr, cap) = self.realloc_bytes_excess(ptr, size, align, old_size);
         ptr
     }
 
-    unsafe fn realloc_bytes_excess(&self, ptr: *mut u8, size: Size, align: Alignment, old_size: Size) -> (*mut u8, Capacity) {
+    unsafe fn realloc_bytes_excess(&mut self, ptr: *mut u8, size: Size, align: Alignment, old_size: Size) -> (*mut u8, Capacity) {
         let (ptr, cap) = self.raw.alloc_bytes_excess(size, align);
         if !ptr.is_null() {
             self.sub(old_size);
@@ -536,7 +533,7 @@ pub trait RawAlloc {
     /// Behavior undefined if `size` is 0 or `align` is not a
     /// power of 2, or if the `align` is larger than the largest
     /// platform-supported page size.
-    unsafe fn alloc_bytes(&self, size: Size, align: Alignment) -> *mut u8;
+    unsafe fn alloc_bytes(&mut self, size: Size, align: Alignment) -> *mut u8;
 
     /// Deallocate the memory referenced by `ptr`.
     ///
@@ -546,7 +543,7 @@ pub trait RawAlloc {
     ///
     /// Behavior is undefined if above constraints on `ptr`, `align` and
     /// `size` are unmet. Behavior also undefined if `ptr` is null.
-    unsafe fn dealloc_bytes(&self, ptr: *mut u8, size: Size, align: Alignment);
+    unsafe fn dealloc_bytes(&mut self, ptr: *mut u8, size: Size, align: Alignment);
 
     /// Returns a pointer to `size` bytes of memory, aligned to
     /// a `align`-byte boundary, as well as the capacity of the
@@ -563,7 +560,7 @@ pub trait RawAlloc {
     /// Behavior undefined if `size` is 0 or `align` is not a
     /// power of 2, or if the `align` is larger than the largest
     /// platform-supported page size.
-    unsafe fn alloc_bytes_excess(&self, size: Size, align: Alignment) -> (*mut u8, Capacity) {
+    unsafe fn alloc_bytes_excess(&mut self, size: Size, align: Alignment) -> (*mut u8, Capacity) {
         // Default implementation: just conservatively report the usable size
         // according to the underlying allocator.
         (self.alloc_bytes(size, align), self.usable_size_bytes(size, align))
@@ -584,7 +581,7 @@ pub trait RawAlloc {
     ///
     /// Behavior is undefined if above constraints on `ptr`, `align` and
     /// `old_size` are unmet. Behavior also undefined if `size` is 0.
-    unsafe fn realloc_bytes(&self, ptr: *mut u8, size: Size, align: Alignment, old_size: Size) -> *mut u8 {
+    unsafe fn realloc_bytes(&mut self, ptr: *mut u8, size: Size, align: Alignment, old_size: Size) -> *mut u8 {
         if size <= self.usable_size_bytes(old_size, align) {
             return ptr;
         } else {
@@ -621,7 +618,7 @@ pub trait RawAlloc {
     ///
     /// Behavior is undefined if above constraints on `ptr`, `align` and
     /// `old_size` are unmet. Behavior also undefined if `size` is 0.
-    unsafe fn realloc_bytes_excess(&self, ptr: *mut u8, size: Size, align: Alignment, old_size: Size) -> (*mut u8, Capacity) {
+    unsafe fn realloc_bytes_excess(&mut self, ptr: *mut u8, size: Size, align: Alignment, old_size: Size) -> (*mut u8, Capacity) {
         (self.realloc_bytes(ptr, size, align, old_size), self.usable_size_bytes(size, align))
     }
 
@@ -662,16 +659,16 @@ Here is a (very naive) sample implementation of `RawAlloc`.
 pub struct MemalignFree;
 
 impl RawAlloc for MemalignFree {
-    unsafe fn alloc_bytes(&self, size: Size, align: Alignment) -> *mut u8 {
+    unsafe fn alloc_bytes(&mut self, size: Size, align: Alignment) -> *mut u8 {
         // (Note: GNU supported; *not* BSD supported)
         return memalign(size, align);
     }
 
-    unsafe fn dealloc_bytes(&self, ptr: *mut u8, size: Size, align: Alignment) {
+    unsafe fn dealloc_bytes(&mut self, ptr: *mut u8, size: Size, align: Alignment) {
         free(ptr);
     }
 
-    unsafe fn realloc_bytes(&self, ptr: *mut u8, size: Size, align: Alignment, old_size: Size) -> *mut u8 {
+    unsafe fn realloc_bytes(&mut self, ptr: *mut u8, size: Size, align: Alignment, old_size: Size) -> *mut u8 {
         // malloc must support alignment of largest builtin type
         if align <= mem::min_align_of::<u64> {
             realloc(ptr, size)
@@ -696,13 +693,27 @@ Points of departure from [RFC PR 39]:
     forcing it to round-trip through the `realloc` interface each
     time, and without forcing it to record the original parameter fed
     to `alloc_bytes` or `realloc_bytes` that produced the pointer.
-
   * Added `_with_excess` variants of the allocation methods that
     return the "true" usable capacity for the block.  This variant
     was discussed a bit in the comment thread for [RFC PR 39].
     I chose not to make the tuple-returning forms the *only* kind
     allocation method, so that simple clients who will not
     use the excess capacity can remain simple.
+
+  * Used `&mut self` rather than `&self` for the methods that
+    conceptually would already have unique access to the allocator,
+    based on [huon's arguments on discuss] for `&mut self`.
+
+    Note in particular that even if one is going to implement one's
+    own allocator in Rust, if one wants the same allocator to manage
+    the backing storage for multiple containers, then in this design
+    one must *already* distinguish between the `Allocator` type that
+    has a separate instance for each container (which is what the
+    API's in this RFC are referring to), versus the shared `Store`
+    type that represents the full backing storage, and to which each
+    `Allocator` would hold a shared `&Store` reference.
+
+[huon's arguments on discuss]: http://discuss.rust-lang.org/t/pre-rfc-allocators-take-ii/480/4
 
 ## The high-level allocator API
 [high-level allocator API]: #the-high-level-allocator-api
@@ -847,13 +858,13 @@ pub mod typed_alloc {
         /// observe garbage data.  The caller is then responsible for
         /// only keeping well-formatted data in those GC-tracable
         /// fields.
-        unsafe fn alloc<T>(&self) -> *mut T;
+        unsafe fn alloc<T>(&mut self) -> *mut T;
 
         /// Frees memory block at `pointer`.
         ///
         /// `pointer` must have been previously allocated via `alloc`
         /// via this allocator.
-        unsafe fn dealloc<T>(&self, pointer: *mut T);
+        unsafe fn dealloc<T>(&mut self, pointer: *mut T);
     }
 
     /// High-level allocator for arrays.
@@ -898,7 +909,7 @@ pub mod typed_alloc {
         ///
         /// Returns null if allocator cannot acquire necessary memory.
         /// Returns null if `size_of::<T>() * len` overflows.
-        unsafe fn alloc_array<T>(&self, len: uint) -> *mut T;
+        unsafe fn alloc_array<T>(&mut self, len: uint) -> *mut T;
 
         /// Allocates a memory block suitable for holding `len`
         /// instances of `T`.  On successful allocation, returns the
@@ -909,7 +920,7 @@ pub mod typed_alloc {
         ///
         /// Returns null if allocator cannot acquire necessary memory.
         /// Returns null if `size_of::<T>() * len` overflows.
-        unsafe fn alloc_array_excess<T>(&self, len: uint) -> (*mut T, uint);
+        unsafe fn alloc_array_excess<T>(&mut self, len: uint) -> (*mut T, uint);
 
         /// Given `len`, a length (in number of instances of `T`) that
         /// *fits* the memory block allocated for an array, returns a
@@ -937,7 +948,7 @@ pub mod typed_alloc {
         /// in this scenario, the original memory block referenced by
         /// `old_ptr` is unaltered.
         /// Returns null if `size_of::<T>() * new_len` overflows.
-        unsafe fn realloc_array<T>(&self,
+        unsafe fn realloc_array<T>(&mut self,
                                    (old_ptr, old_len): (*mut T, uint),
                                    new_len: uint) -> *mut T;
 
@@ -965,7 +976,7 @@ pub mod typed_alloc {
         /// returns `(null, c)` for some `c`; in this scenario, the
         /// original memory block referenced by `old_ptr` is
         /// unaltered.
-        unsafe fn realloc_array_excess<T>(&self,
+        unsafe fn realloc_array_excess<T>(&mut self,
                                           (old_ptr, old_len): (*mut T, uint),
                                           new_len: uint) -> (*mut T, uint);
 
@@ -976,7 +987,7 @@ pub mod typed_alloc {
         /// `len` must *fit* the block referenced by `ptr`. (As a
         /// special case of the preceding sentence, behavior undefined
         /// if `size_of::<T>() * len` overflows.)
-        unsafe fn dealloc_array<T>(&self, (ptr, len): (*mut T, uint));
+        unsafe fn dealloc_array<T>(&mut self, (ptr, len): (*mut T, uint));
 
         /// Reinitializes the range of instances `[start, start+count)`.
         ///
@@ -998,7 +1009,7 @@ pub mod typed_alloc {
         /// Behavior undefined if `start+count` lies beyond the usable
         /// capacity associated with `*mut T` (see `usable` in definition
         /// of "fit" in `ArrayAlloc` overview).
-        unsafe fn reinit_range<T>(&self, start: *mut T, count: uint);
+        unsafe fn reinit_range<T>(&mut self, start: *mut T, count: uint);
     }
 
     /// The default standard library implementation of a high-level allocator.
@@ -1075,7 +1086,14 @@ methods).  The motivation for this is based on a guess that many
 allocator-parametric libraries will need their allocator to support
 either one or the other, and thus it makes sense for such libraries to
 specify which, to make it easier for library clients to feed in their
-own instrumented versions of the allocators.
+own instrumented versions of the allocators. For example, if one
+interested in instrumenting containers to learn how well their
+internal resizing policy is working (with respect to number of
+invocations and amount of fragmentation being introduced), then one
+just implements an `ArrayAlloc` wrapper.
+
+This design choice assumes that it will be easy for concrete
+allocators to just implement both types when that makes sense.
 
 ##### Overflow handling
 
@@ -1099,6 +1117,12 @@ build atop the functionality defined here.  That later RFC will
 probably be a natural place to also address integrating user-defined
 allocators with the smart-pointer `Box<T>` and the `box` expression
 syntax.
+
+##### `&mut self` rather than `&self`
+
+As with the [`RawAlloc` trait], the allocators here use `&mut self`
+rather than `&self` on all of the methods that allocate or deallocate
+storage, again based on [huon's arguments on discuss] for `&mut self`.
 
 #### GC integration with `typed_alloc`
 [GC integration]: #gc-integration-with-typed_alloc
@@ -1182,8 +1206,8 @@ code-duplication.
 
 However, this same trick does not work for the high-level API as given
 here.  In general we here define the high-level type-aware methods as
-type-parametric methods of a high-level trait, such as the method `fn
-alloc<T>(&self) -> *mut T` of the `InstanceAlloc` trait.
+type-parametric methods of a high-level trait, such as the method
+`fn alloc<T>(&mut self) -> *mut T` of the `InstanceAlloc` trait.
 
 Note that since all of the methods of `InstanceAlloc` are
 type-parametric in `T`, a trait-object type `&InstanceAlloc` has *no*
@@ -1195,7 +1219,7 @@ In particular, we did not attempt to encode the high-level interface
 using solely traits with type-specific implementations, such as
 suggested by a signature like:
 ```rust
-trait AllocJust<Sized? T> { fn alloc(&self) -> *mut T; ... }
+trait AllocJust<Sized? T> { fn alloc(&mut self) -> *mut T; ... }
 ```
 
 While a trait like `AllocJust<T>` is attractive, since it could then
@@ -1294,7 +1318,7 @@ data, making the copy step useless.)
 We could offer specialized methods like these in the [`RawAlloc` trait] interface,
 with a signature like
 ```rust
-fn try_grow_bytes(&self, ptr: *mut u8, size: uint, align: uint, old_size: uint) -> bool
+fn try_grow_bytes(&mut self, ptr: *mut u8, size: uint, align: uint, old_size: uint) -> bool
 ```
 
 Or we could delay such additions to hypothetical subtraits e.g. `RawTryAlloc`.
@@ -1422,6 +1446,14 @@ Paul Pedriana. 2007. [EASTL] -- Electronic Arts Standard Template Library. Docum
 
 Pablo Halpern. 2005. [Towards a Better Allocator Model][Halpern proposal]. Document number: N1850=05-0110
 
+### Pre-RFC for this document on discuss
+[pre-rfc-allocators-take-ii]: http://discuss.rust-lang.org/t/pre-rfc-allocators-take-ii/480/
+
+Felix Klock and commenters, 2014, [Pre-RFC Allocators, take II][pre-rfc-allocators-take-ii] http://discuss.rust-lang.org/t/pre-rfc-allocators-take-ii/480/
+
+### Various allocators
+
+[jemalloc], [tcmalloc], [Hoard]
 
 [jemalloc]: http://www.canonware.com/jemalloc/
 
@@ -1668,7 +1700,7 @@ of the
         /// according to the  `info`.
         ///
         /// Returns null if allocation fails.
-        unsafe fn alloc_info<Sized? T>(&self, info: MemoryBlockInfo<T>) -> *mut T {
+        unsafe fn alloc_info<Sized? T>(&mut self, info: MemoryBlockInfo<T>) -> *mut T {
             self.alloc_info_excess(info).val0()
         }
 
@@ -1677,7 +1709,7 @@ of the
         /// bytes) of the referenced block of memory.
         ///
         /// Returns `(null, c)` for some `c` if allocation fails.
-        unsafe fn alloc_info_excess<Sized? T>(&self, info: MemoryBlockInfo<T>) -> (*mut T, Capacity);
+        unsafe fn alloc_info_excess<Sized? T>(&mut self, info: MemoryBlockInfo<T>) -> (*mut T, Capacity);
 
         /// Given a pointer to the start of a memory block allocated
         /// for holding instance(s) of `T`, returns the number of
@@ -1717,7 +1749,7 @@ of the
         /// to use to convert between different non-array types `S`
         /// and `T` (or between `[S]` and `[T]`, etc) if either type
         /// references GC data.
-        unsafe fn realloc_info_excess<Sized? T, Sized? U>(&self, old_ptr: *mut T, old_info: MemoryBlockInfo<T>, info: MemoryBlockInfo<U>) -> (*mut U, Capacity);
+        unsafe fn realloc_info_excess<Sized? T, Sized? U>(&mut self, old_ptr: *mut T, old_info: MemoryBlockInfo<T>, info: MemoryBlockInfo<U>) -> (*mut U, Capacity);
 
         /// Attempts to recycle the memory block for `old_ptr` to create
         /// a memory block suitable for an instance of `U`.
@@ -1726,7 +1758,7 @@ of the
         ///
         /// Most importantly: This method is just as dangerous as as
         /// `realloc_info_excess`, especially on data involving GC.
-        unsafe fn realloc_info<Sized? T, Sized? U>(&self, old_ptr: *mut T, old_info: MemoryBlockInfo<T>, info: MemoryBlockInfo<U>) -> *mut U {
+        unsafe fn realloc_info<Sized? T, Sized? U>(&mut self, old_ptr: *mut T, old_info: MemoryBlockInfo<T>, info: MemoryBlockInfo<U>) -> *mut U {
             self.realloc_info_excess(old_ptr, old_info, info).val0()
         }
 
@@ -1739,7 +1771,7 @@ of the
         ///
         /// The `info` must be an *extension of* the `MemoryBlockInfo`
         /// used to create `pointer`.
-        unsafe fn dealloc_info<Sized? T>(&self, pointer: *mut T, info: MemoryBlockInfo<T>);
+        unsafe fn dealloc_info<Sized? T>(&mut self, pointer: *mut T, info: MemoryBlockInfo<T>);
 
     }
 
@@ -1903,7 +1935,7 @@ mod typed_alloc_impl {
     }
 
     impl<Sized? U> MemoryBlockInfo<T> {
-        /// Returns minimum size of memory block for holding a `T`.
+        /// Returns minimum size (in bytes) of memory block for holding a `T`.
         pub fn size(&self) -> uint { self.size }
 
         /// Produces a normalized block signature that can be compared
@@ -1964,21 +1996,21 @@ mod typed_alloc_impl {
     }
 
     impl<A:AllocCore> InstanceAlloc for A {
-        unsafe fn alloc<T>(&self) -> *mut T {
+        unsafe fn alloc<T>(&mut self) -> *mut T {
             self.alloc_info(MemoryBlockInfo::<T>::from_type())
         }
 
-        unsafe fn dealloc<T>(&self, pointer: *mut T) {
+        unsafe fn dealloc<T>(&mut self, pointer: *mut T) {
             self.dealloc_info(MemoryBlockInfo::<T>::from_type())
         }
     }
 
     impl<A:AllocCore> ArrayAlloc for A {
-        unsafe fn alloc_array<T>(&self, capacity: uint) -> *mut T {
+        unsafe fn alloc_array<T>(&mut self, capacity: uint) -> *mut T {
             self.alloc_info(MemoryBlockInfo::<T>::array(capacity))
         }
 
-        unsafe fn alloc_array_excess<T>(&self, capacity: uint) -> (*mut T, uint) {
+        unsafe fn alloc_array_excess<T>(&mut self, capacity: uint) -> (*mut T, uint) {
             self.alloc_info_excess(MemoryBlockInfo::<T>::array(capacity))
         }
 
@@ -1987,20 +2019,20 @@ mod typed_alloc_impl {
             self.usable_size_info(info) / mem::size_of::<T>()
         }
 
-        unsafe fn realloc_array<T>(&self,
-                                       old_ptr_and_capacity: (*mut T, uint),
-                                       new_capacity: uint) -> *mut T {
+        unsafe fn realloc_array<T>(&mut self,
+                                   old_ptr_and_capacity: (*mut T, uint),
+                                   new_capacity: uint) -> *mut T {
             let (op, oc) = old_ptr_and_capacity;
             self.realloc_info(op, MemoryBlockInfo::<T>::array(new_capacity))
         }
 
-        unsafe fn dealloc_array<T>(&self, ptr_and_capacity: (*mut T, uint)) {
+        unsafe fn dealloc_array<T>(&mut self, ptr_and_capacity: (*mut T, uint)) {
             let (op, oc) = ptr_and_capacity;
             self.dealloc_info(op, MemoryBlockInfo::<T>::array(oc))
         }
 
         #[inline(always)]
-        unsafe fn deinit_range<T>(&self, start: *mut T, count: uint) {
+        unsafe fn deinit_range<T>(&mut self, start: *mut T, count: uint) {
             if ! type_reaches_gc::<T>() {
                 /* no-op */
                 return;
@@ -2010,7 +2042,7 @@ mod typed_alloc_impl {
         }
     }
 
-    fn deinit_range_gc<T>(&self, start: *mut T, count: uint) {
+    fn deinit_range_gc<T>(start: *mut T, count: uint) {
         // Standard library provided method.
         //
         // Zeros the address range so that the GC will not mistakenly
@@ -2029,7 +2061,7 @@ mod typed_alloc_impl {
 
     impl<Raw:RawAlloc> AllocCore for StdAlloc<Raw> {
         #[inline(always)]
-        unsafe fn alloc_info_excess<Sized? T>(&self, info: MemoryBlockInfo<T>) -> (*mut T, Capacity) {
+        unsafe fn alloc_info_excess<Sized? T>(&mut self, info: MemoryBlockInfo<T>) -> (*mut T, Capacity) {
             // (compile-time evaluated conditions)
             let p = if ! type_involves_gc::<T>() {
                 make_pointer(self.raw.alloc_bytes(info.size, info.align),
@@ -2041,7 +2073,7 @@ mod typed_alloc_impl {
         }
 
         #[inline(always)]
-        unsafe fn realloc_info_excess<Sized? T, Sized? U>(&self, old_ptr: *mut T, info: MemoryBlockInfo<U>) -> (*mut U, Capacity) {
+        unsafe fn realloc_info_excess<Sized? T, Sized? U>(&mut self, old_ptr: *mut T, info: MemoryBlockInfo<U>) -> (*mut U, Capacity) {
             // (compile-time evaluated conditions)
             let p = if ! type_involves_gc::<T>() && ! type_involves_gc::<U>() {
                 make_pointer(self.raw.realloc_bytes(pointer_mem(old_ptr),
@@ -2055,7 +2087,7 @@ mod typed_alloc_impl {
         }
 
         #[inline(always)]
-        unsafe fn dealloc_info<Sized? T>(&self, pointer: *mut T, info: MemoryBlockInfo<T>) {
+        unsafe fn dealloc_info<Sized? T>(&mut self, pointer: *mut T, info: MemoryBlockInfo<T>) {
             // (compile-time evaluated conditions)
             if ! type_involves_gc::<T>() {
                 self.raw.dealloc_bytes(pointer_mem(pointer),
@@ -2085,9 +2117,9 @@ mod typed_alloc_impl {
         // low-level allocations for data involving the GC, so any
         // presentation here would likely just be misleading.
 
-        unsafe fn alloc_info_gc<Sized? T>(&self, info: MemoryBlockInfo<T>) -> *mut T { ... }
-        unsafe fn realloc_info_gc<Sized? T, Sized? U>(&self, old_ptr: *mut T, info: MemoryBlockInfo<U>) -> *mut U { ... }
-        unsafe fn dealloc_info_gc<Sized? T>(&self, pointer: &mut T, info: MemoryBlockInfo<T>) { ... }
+        unsafe fn alloc_info_gc<Sized? T>(&mut self, info: MemoryBlockInfo<T>) -> *mut T { ... }
+        unsafe fn realloc_info_gc<Sized? T, Sized? U>(&mut self, old_ptr: *mut T, info: MemoryBlockInfo<U>) -> *mut U { ... }
+        unsafe fn dealloc_info_gc<Sized? T>(&mut self, pointer: &mut T, info: MemoryBlockInfo<T>) { ... }
     }
 
     impl<Raw:RawAlloc> Direct(Raw) {
@@ -2099,7 +2131,7 @@ mod typed_alloc_impl {
 
     impl<Raw:RawAlloc> AllocCore for Direct<Raw> {
         #[inline(always)]
-        unsafe fn alloc_info<Sized? T>(&self, info: MemoryBlockInfo<T>) -> *mut T {
+        unsafe fn alloc_info<Sized? T>(&mut self, info: MemoryBlockInfo<T>) -> *mut T {
             // (compile-time evaluated conditions)
             assert!(!type_is_gc_allocated::<T>());
             if ! type_reaches_gc::<T>() {
@@ -2111,7 +2143,7 @@ mod typed_alloc_impl {
         }
 
         #[inline(always)]
-        unsafe fn realloc_info<Sized? T, Sized? U>(&self, old_ptr: *mut T, info: MemoryBlockInfo<U>) -> *mut U {
+        unsafe fn realloc_info<Sized? T, Sized? U>(&mut self, old_ptr: *mut T, info: MemoryBlockInfo<U>) -> *mut U {
             // (compile-time evaluated conditions)
             assert!(!type_is_gc_allocated::<T>());
             assert!(!type_is_gc_allocated::<U>());
@@ -2128,7 +2160,7 @@ mod typed_alloc_impl {
         }
 
         #[inline(always)]
-        unsafe fn dealloc_info<Sized? T>(&self, pointer: *mut T, info: MemoryBlockInfo<T>) {
+        unsafe fn dealloc_info<Sized? T>(&mut self, pointer: *mut T, info: MemoryBlockInfo<T>) {
             // (compile-time evaluated conditions)
             assert!(!type_is_gc_allocated::<T>());
             if ! type_reaches_gc::<T>() {
