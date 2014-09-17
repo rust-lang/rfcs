@@ -1433,6 +1433,9 @@ As discussed in the [`typed_alloc` trait split][Trait split], one could
 imagine using a single high-level trait with all the methods, instead
 of two separate ones; the motivation for the split was already discussed
 there.  It seems a matter of perspective which choice is "simpler."
+Note that with such a change,  we would have to specify whether
+e.g. one is allowed to deallocate, via
+`fn dealloc`, a block that had been allocated via `fn alloc_array`.
 
 In addition, in the future we may want still other more specialized
 traits in `typed_alloc` (see [Expose `realloc` for non-array types]),
@@ -1445,7 +1448,8 @@ tailored high-level traits.
 It might simplify clients to do `trait ArrayAlloc : InstanceAlloc`.
 
 But even then, we would probably want the same set of methods, and
-we'd have to specify whether e.g. one is allowed to deallocate, via
+similarly to [Merge `ArrayAlloc` and `InstanceAlloc`],
+we would have to specify whether e.g. one is allowed to deallocate, via
 `fn dealloc`, a block that had been allocated via `fn alloc_array`.
 
 (Note that the trait object `&ArrayAlloc` would not motivate this
