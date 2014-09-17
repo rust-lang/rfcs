@@ -1526,6 +1526,11 @@ existing `align_of` primitives expose `uint`, not `u32`.
 
 Daniel Micay, 2014. RFC: Allocator trait. https://github.com/thestinger/rfcs/blob/ad4cdc2662cc3d29c3ee40ae5abbef599c336c66/active/0000-allocator-trait.md
 
+### Dynamic Storage Allocation: A Survey and Critical Review
+[WilsonSurvey]: ftp://ftp.cs.utexas.edu/pub/garbage/allocsrv.ps
+
+Paul R. Wilson, Mark S. Johnstone, Michael Neely, and David Boles, 1995. [Dynamic Storage Allocation: A Survey and Critical Review][WilsonSurvey].  Slightly modified version appears in Proceedings of 1995 International Workshop on Memory Management (IWMM '95), Kinross, Scotland, UK, September 27--29, 1995 Springer Verlag LCNS
+
 ### Reconsidering custom memory allocation
 [ReCustomMalloc]: http://dl.acm.org/citation.cfm?id=582421
 
