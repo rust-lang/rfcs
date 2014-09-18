@@ -352,8 +352,8 @@ Furthermore, note that it is even simpler to make a
 the one container: instead of a `&Cell<uint>`, just use a `uint`.
 (Note that this is simple in part because the API of `Arr` allows one
 to extract an `&A` reference to its underlying raw allocator, with the
-specific type that was provided. It is up the the library designer to
-decide whether or not to expose the allocator it such a way.)
+specific type that was provided. It is up to the library designer to
+decide whether or not to expose the allocator in such a way.)
 
 ## Why this API
 [Why this API]: #why-this-api
