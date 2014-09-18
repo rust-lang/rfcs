@@ -122,10 +122,6 @@ All leaf variants may be instantiated. Non-leaf enums may not be instantiated
 (e.g., you can't create an `E3` or `VariantNest` object), but they my be used in
 pattern matching. By default, all structs can be instantiated.
 
-**Open question: it is no longer necessary to mark structs virtual. However it
-**might still be desirable. I believe `abstract` might be a better word here.The
-**wording from #142 is:
-
 Structs, including nested structs, but not leaf structs, may be marked
 `virtual`, which means they cannot be instantiated. Put another way, enums are
 virtual by default. E.g., `virtual struct S1 { ... S2 { ... } }` means `S1`
@@ -135,10 +131,10 @@ is a leaf item. The `virtual` keyword can only be used at the top level or
 inside another `virtual` struct.
 
 **Open question:** is the above use of the `virtual` keyword a good idea? We
-could use `abstract` instead (some people do not like `virtual` in general, and
-this use is different from the use described below for methods). Alternatively,
-we could allow instantiation of all structs (unless they have pure virtual
-methods, see below) or only allow instantiation of leaf structs.
+could use `abstract` instead (some people do not like `virtual` in general, I
+think I prefer `abstract`). Alternatively, we could allow instantiation of all
+structs (unless they implement a virtual impl, see below) or only allow
+instantiation of leaf structs.
 
 We allow logical nesting without lexical nesting by using `:`. In this case a
 keyword (`struct` or `enum`) is required and must match the outer item. For
@@ -278,14 +274,15 @@ of it, for sure.
 
 An impl may be marked as `abstract` (e.g., `abstract impl T for U { ... }`).
 This means that the impl does not need to provide all methods required by the
-trait and does not act as a valid impl when searching as part of trait
-resolution. The point of this is to provide default implementations of some
-trait methods and allow the rest to be provided by a child data type.
+trait. The point of this is to provide default implementations of some trait
+methods and allow the rest to be provided by a child data type. To prevent calls
+to 'pure virtual methods', only abstract concrete data may have abstract
+implementations.
 
 **Open question:** alternative for `abstract`: `virtual`. We could also not
 require a keyword and infer the `abstract`-ness from whether or not all
 methods are provided. That has the effect of pushing errors from the impl to
-where we try to use the concrete type as a trait. But is does mean less
+where we try to use the concrete type as a trait. But it does mean less
 annotation.
 
 We introduce an attribute for traits: `closed`. Any trait may be marked as
@@ -467,25 +464,34 @@ From https://gist.github.com/jdm/9900569
 ```
 // closed means we can downcast via match and optimise to a thin pointer
 #[closed]
+trait Node {}
+
+#[closed]
 trait Element {
     fn set_attribute(&mut self, key: &str, value: &str);
     fn before_set_attr(&mut self, key: &str, value: &str);
     fn after_set_attr(&mut self, key: &str, value: &str);
-    attrs: HashMap<str, str>
 }
 
+// This is here just to show how a sub-trait works with this
 #[closed]
 trait MediaElement : Element {
     fn display_media(&mut self, dest: &MediaDestination);
 }
 
-struct Node {
+abstract struct NodeData {
     parent: Rc<Node>,
     first_child: Rc<Node>,
+
+    abstract ElementData {
+        attrs: HashMap<str, str>    
+    }
 }
 
-// virtual here means Node can't be an Element itself, but can help its children
-virtual impl Element for Node {
+// abstract here means NodeData can't be an Element itself, but can help its children
+abstract impl Element for NodeData {}
+
+abstract impl Element for ElementData {
     fn set_attribute(&mut self, key: &str, value: &str)
     {
         self.before_set_attr(key, value);
@@ -494,31 +500,30 @@ virtual impl Element for Node {
     }
 }
 
-struct TextNode : Node {
-}
+struct TextNode : NodeData {}
 
-struct HTMLImageNode : Node {
-}
+struct HTMLImageElement : ElementData {}
 
-impl Element for HTMLImageNode {
+impl Element for HTMLImageElement {
     fn before_set_attr(&mut self, key: &str, value: &str)
     {
         if (key == "src") {
             //..remove cached image with url |value|...
         }
-        // TODO not clear what this is meant to do?
-        Element::before_set_attr(self, key, value);
+        // TODO not clear what this is meant to do since Element::before_set_attr
+        // is pure virtual in the C++ version.
+        ElementData::before_set_attr(self, key, value);
     }    
     fn after_set_attr(&mut self, key: &str, value: &str) { ... }
 }
 
-impl MediaElement for HTMLImageNode {
+impl MediaElement for HTMLImageElement {
     fn display_media(&mut self, dest: &MediaDestination) {
         self.set_attribute("displaying", "true");
     }
 }
 
-struct HTMLVideoNode : Node {
+struct HTMLVideoElement : ElementData {
     cross_origin: bool
 }
 
@@ -529,8 +534,7 @@ impl Element for HTMLVideoNode {
         if (key == "crossOrigin") {
             self.cross_origin = value == "true";
         }
-        // TODO not clear what this is meant to do?
-        Element::after_set_attr(self, key, value);
+        ElementData::after_set_attr(self, key, value);
     }
 }
 
@@ -547,8 +551,8 @@ fn process_any_element(element: &Element) {
 }
 
 fn foo() {
-    let videoElement: Rc<HTMLVideoNode> = ...;
-    process_any_element(videoElement);
+    let videoElement: Rc<HTMLVideoElement> = ...;
+    process_any_element(&*videoElement);
 
     let node = videoElement.first_child;
 
@@ -593,6 +597,12 @@ them as syntactic sugar for `sized data` and `unsized virtual data`,
 respectively.
 
 # Unresolved questions
+
+What to do if there are implementations for a data structure for multiple,
+unrelated, closed traits? Should this be an error? Or should we fall back to fat
+pointers (I don't think this will work, because users of the trait objects will
+expect a thin pointer) with a warning? Or can we emulate C++ vtables to give
+efficient multiple inheritance?
 
 ## Initialisation
 
