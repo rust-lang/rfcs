@@ -204,7 +204,8 @@ take arbitrary expressions as arguments, e.g., `sizeof(1L) == sizeof(long)`.
 Rust also has a function that can do this: `size_of_val<T>(val: T)` which then
 calls `size_of::<T>()`. Unfortunately `size_of_val` is a real function and not
 a `extern "rust-intrinsic"`. Thus you cannot use it in programs that wish to
-avoid `libcore`. Note that this would not be a problem with the two
-alternatives above.
+avoid `libcore`. How could this be done? Note that this would not be a problem with
+the two alternatives above.
 - There are many more intrinsic (math) functions which could be evaluated at
-compile time.
+compile time. Should these functions be allowed in constant expressions? Note that
+this is not possible with the two alternatives above.
