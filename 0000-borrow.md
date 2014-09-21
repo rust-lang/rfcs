@@ -7,9 +7,20 @@
 
 Change the address-of operator (`&`) to a borrow operator. This is an
 alternative to #241 and #226 (cross-borrowing coercions). The borrow operator
-would perform as many dereferences as possible and then take the address of the
-result. The result of `&expr` would always have type `&T` where `T` does not
-implement `Deref`.
+would create a borrowed reference to data referenced by any number of smart
+pointers or borrowed references. It would be implemented by performing as many
+dereferences as possible and then take the address of the result.
+
+E.g.,
+
+```
+fn foo(x: &Baz) { ... }
+
+fn bar(y: Rc<Baz>, z: &Rc<&Baz>) {
+    foo(&y);  // currently: foo(&*y);
+    foo(&z);  // currently: foo(&***y);
+}
+```
 
 
 # Motivation
@@ -21,7 +32,7 @@ know how many levels of indirection are involved in a reference.
 
 It is annoying to have to write out `&*`, `&**`, etc. to convert from one
 pointer kind to another. It is not really informative and just makes reading and
-writing Rust more painful.
+writing Rust more painful ("type Tetris").
 
 It would be nice to strongly enforce the principle that the first type a
 programmer should think of for a function signature is `&T` and to discourage
@@ -33,12 +44,18 @@ how to convert to `&T`.
 # Detailed design
 
 Writing `&expr` has the effect of dereferencing `expr` as many times as possible
-(by calling `deref` from the `Deref` trait or by doing a compiler-built-in
-dereference) and taking the address of the result.
+(whether smart pointers or borrowed references) and taking the address of the
+result. This is implemented in the same way as the `*` operator, by checking for
+borrowed references (or `Gc` or `Box` pointers while these are special-cased by
+the compiler) or the `Deref` trait.
 
 Where `T` is some type that does not implement `Deref`, `&x` will have type `&T`
 if `x` has type `T`, `&T`, `Box<T>`, `Rc<T>`, `&Rc<T>`, `Box<&Rc<Box<&T>`, and
 so forth.
+
+Note that this operation depends entirely on the static type of the expression
+being borrowed. An expression with generic type and which is not bounded by
+`Deref` will not be dereferenced, even if at runtime it is a smart pointer.
 
 `&mut expr` would behave the same way but take a mutable reference as the final
 step. The expression would have type `&mut T`. The usual rules for dereferencing
@@ -54,16 +71,26 @@ dereferences to be explicit and to be in an unsafe block. So if `x` has type
 make attempting to dereference a raw pointer using `&` a type error, so `&x`
 would give a type error and a note advising to use explicit dereferencing.
 
-Writing `&(expr)` (and similarly for `&mut(expr)`) will have the effect of
-taking the address of `expr` (the current semantics of `&expr`). If `expr` has
-type `U`, for any `U`, then `&(expr)` will have type `&U`. This syntax is not
-the greatest, and I'm very open to other suggestions. In particular writing
-`&(some_big_expression)` will give the address-of not borrow behaviour, which
-might be confusing. In practice, I hope this works, since when doing explicit
-referencing/dereferencing, people often use brackets (e.g., `(&*x).foo()` would
-become `(&(*x)).foo()`). I hope these cases are very rare. It is only necessary
-when you need an expression to have type `&Rc<T>` or similar, and when that
-expression is not the receiver of a method call.
+We would add a function `addr` to the prelude that would fulfill the function of
+the current `&` operator, i.e., take a borrowed reference without dereferencing.
+It would be defined as:
+
+```
+#[inline]
+fn addr<T>(x: T) -> &T {
+    &T
+}
+```
+
+Similarly, we would add an `addr_mut` function. Note that we use the new borrow
+operator in the definition of `addr`, we get the desired effect because `T` is
+not bounded by `Deref`. This illustrates that the borrow operator depends on the
+static type of the operand and that the operation is in some ways as fundamental
+as the current address-of operator.
+
+I hope use of these functions are very rare. It is only necessary when you need
+an expression to have type `&Rc<T>` or similar, and when that expression is not
+the receiver of a method call.
 
 
 # Drawbacks
@@ -75,12 +102,17 @@ When a function _does_ want to borrow an owning reference (e.g., takes a
 `&Box<T>` or `&mut Vec<T>`), it would be more painful to call that function. I
 believe this situation is rare, however.
 
+Since the behaviour of the borrow operator depends on the static type of its
+operand, the behaviour might change if a borrow expression is inlined from a
+generic function. This is surprising when compared to the address-of operator,
+however, it is similar behaviour to that expected from function/method calls and
+the `*` operator (and other overloaded operators).
 
 # Alternatives
 
-Take this proposal, but use a different operator. This new operator would have
-the semantics proposed here for `&`, and `&` would continue to be an address-of
-operator.
+Take this proposal, but use a different operator (`~` has been suggested). This
+new operator would have the semantics proposed here for `&`, and `&` would
+continue to be an address-of operator.
 
 There are two RFCs for different flavours of cross-borrowing: #226 and #241.
 
@@ -142,8 +174,21 @@ example assumes `Deref` for `Vec`, but the point stands without it, in general).
 
 # Unresolved questions
 
-Can we do better than `&(expr)` syntax for address-of?
+## Receiver conversions
 
+We currently allow very flexible type conversions in method calls and fields
+accesses (i.e., using the dot operator). These are fairly unpredictable and a
+little out of place in Rust since they auto-reference (blurring the line between
+value and reference). It strikes me that the most common case is for converting
+to `&self`, it might be possible to change the current receiver conversion to be
+an implicit version of the borrow operator. I believe that would be more
+predictable, more consistent, and easier to explain. However, it is clearly
+less flexible, so the question is 'how much code would break?'.
+
+## `ref`
+
+Using `ref` in a pattern has similar behaviour to using `&` in an expression.
+Should it have the borrow or address-of semantics?
 
 ## Slicing
 
