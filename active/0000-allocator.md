@@ -1126,7 +1126,7 @@ either one or the other, and thus it makes sense for such libraries to
 specify which, to make it easier for library clients to feed in their
 own instrumented versions of the allocators.
 
-For example, if one interested in instrumenting containers to learn
+For example, if one is interested in instrumenting containers to learn
 how well their internal resizing policy is working (with respect to
 number of invocations and amount of fragmentation being introduced),
 then one just implements an `ArrayAlloc` wrapper.  (Perhaps more
