@@ -4,22 +4,46 @@
 
 # Summary
 
-Support performance (time and space) sensitive data structures (such as the DOM
-or an AST) by enhancing enums. In particular, offer a dynamically sized version
-of an enum, called a struct. This struct is a generalisation of current structs
-and supports efficient single inheritance. Structs and enum variants are unified
-(up to the keyword and static vs dynamic size distinction) which means struct
-variants, tuple structs, and enum variants as types emerge naturally. We add the
-notion of closed traits to support virtual dispatch over these data structures
-using traits whilst allowing them to be represented using thin pointers.
+This RFC begins by generalising and unifying enums and structs. We allow
+arbitrary nesting of enums/structs and mixing of named and unnamed fields. Inner
+enums have any fields defined in outer enums. The `struct` and `enum` keywords
+are synonymous. By allowing nesting and enum variants as types, we can allow for
+an easy to understand form of refinement types. Data types such as struct
+variants fall out naturally. Data structures can be expressed more elegantly
+since the programmer does not need to create separate structs to hold the data
+for an enum variant if the programmer also wishes to use this data in a stand-
+alone way.
 
-This is an adaption of RFC PR #142. This RFC takes the enhanced enum parts of
-that RFC, but uses traits to provide virtual methods. Hopefully, that makes this
-proposal more 'Rust'-ey and feel less bolted-on. The new section is 'Methods and
-closed traits'.
+We allow optimisation of structs/enums by allowing them to be marked as
+`unsized`. Unsized variants may only be referred to by reference, never by
+value. This means they can take up a minimal amount of memory, rather than the
+maximum of any variant.
+
+Allowing coercions from more deeply nested variants to less deeply nested ones
+preserves the current behaviour of enums. We extend this behaviour by
+considering that traits implemented by less deeply nested variants are also
+implemented by more deeply nested ones. We believe this is the natural behaviour
+for such nesting (consider the case for enums today if we could impl for
+individual variants, it is natural to assume impls for enum apply to the
+variants too).
+
+As a futher optimisation, we allow marking traits and concrete data types as
+`closed`. This prevents implementations from outside the crate in which they are
+declared, but allows the compiler to optimise the representation of trait
+objects as thin pointers with inline vtables, rather than fat objects with
+vtables kept with the pointer.
+
+The changes to the data types can be considered as introducing 'data
+inheritance'. In keeping to the Rust design principle of keeping data and
+behaviour separate, this data inheritance is separate from the behaviour
+inheritance between traits.
+
+These features taken together allow for very efficient implementation of data
+structures such as the Servo DOM or the Rust AST.
 
 These changes are mostly backwards compatible, see the staging section for more
 details.
+
 
 # Motivation
 
@@ -36,12 +60,11 @@ satisfies the following constraints:
 
 # Detailed design
 
-Syntactically, we unify structs and enums (but not their keywords, but see
-'alternatives', below) and allow nesting. That means enums may have fields and
-structs may have variants. Both may have nested data; the keyword (`struct` or
-`enum`) is only required at the top level. Unnamed fields (tuple variants/tuple
-structs) are only allowed in leaf data. All existing uses are preserved. Some
-examples:
+Syntactically, we unify structs and enums and allow nesting. That means enums
+may have fields and structs may have variants. Both may have nested data; the
+keyword (`struct` or `enum`) is only required at the top level. Unnamed fields
+(tuple variants/tuple structs) are only allowed in leaf data. All existing uses
+are preserved. Some examples:
 
 plain enum:
 
@@ -118,24 +141,6 @@ All names of variants may be used as types (that is, from the above examples,
 types, amongst others). Fields in outer items are inherited by inner items
 (e.g., `S2` objects have fields `f1` and `f2`). Field shadowing is not allowed.
 
-All leaf variants may be instantiated. Non-leaf enums may not be instantiated
-(e.g., you can't create an `E3` or `VariantNest` object), but they my be used in
-pattern matching. By default, all structs can be instantiated.
-
-Structs, including nested structs, but not leaf structs, may be marked
-`virtual`, which means they cannot be instantiated. Put another way, enums are
-virtual by default. E.g., `virtual struct S1 { ... S2 { ... } }` means `S1`
-cannot be instantiated, but `S2` can. `virtual struct S1 { ... virtual S2 { ...
-} }` would mean `S2` could not be instantiated, but would be illegal because it
-is a leaf item. The `virtual` keyword can only be used at the top level or
-inside another `virtual` struct.
-
-**Open question:** is the above use of the `virtual` keyword a good idea? We
-could use `abstract` instead (some people do not like `virtual` in general, I
-think I prefer `abstract`). Alternatively, we could allow instantiation of all
-structs (unless they implement a virtual impl, see below) or only allow
-instantiation of leaf structs.
-
 We allow logical nesting without lexical nesting by using `:`. In this case a
 keyword (`struct` or `enum`) is required and must match the outer item. For
 example, `struct S3 : S1 { ... }` adds another case to the `S1` defintion above
@@ -150,6 +155,21 @@ are only allowed in the same crate as the outer item. Why?
     3. Prevents the 'fragile base class' problem - since there are no derived
     structs outside the base struct's crate, changing the base class has only
     limited and known effects.
+
+All leaf variants may be instantiated. A non-leaf variant may only be
+instantiated if it has no inline children. Whether or not it has out of line
+children is irrelevant. (e.g., you can't create an `E3` or `VariantNest`
+object). In any case, the variant may be used in pattern matching. This might
+seem an odd rule, but I believe it fits the common use cases for structs/enums
+without requiring the two keywords to have different behaviour and maintains
+backwards comparability.
+
+A variant may be marked as `abstract` which means it may not be instantiated. It
+is an error to mark a leaf variant as `abstract`. Marking a variant which may
+not be instantiated as abstract should give a warning (a configurable lint).
+
+**Open question:** should `abstract` be a keyword or an attribute? I am leaning
+towards attribute.
 
 When pattern matching data types, you can use any names from any level of
 nesting to cover all inner levels. E.g.,
@@ -174,42 +194,30 @@ fn foo(x: E3) {
 }
 ```
 
-The only difference between structs and enums is in their representation (which
-affects how they can be used). enum objects are represented as they are today.
-They have a tag and are the size of the largest variant plus the tag. A pointer
-or reference to an enum object is a thin pointer to a regular enum
-object. Nested variants should use a single tag and the 'largest variant' must
-take into account nesting. Even if we know the static type restricts us to a
-small object, we must assume it could be a larger variant. That allows for
-trivial coercions from nested variants to outer variants. We could optimise this
-later, perhaps.
+Enums/structs may be annotated with `[#unsized]`. Enums/structs without this
+annotation are represented as enums are today. They have a tag and are the size
+of the largest variant plus the tag. A pointer or reference to an enum object is
+a thin pointer to a regular enum object. Nested variants should use a single tag
+and the 'largest variant' must take into account nesting. Even if we know the
+static type restricts us to a small object, we must assume it could be a larger
+variant. That allows for trivial coercions from nested variants to outer
+variants. We could optimise this later, perhaps.
 
-Non-leaf struct values are unsized, that is they follow the rules for DSTs. A
-programmer cannot use non-leaf structs as value types, only pointers to such
-types may exist. E.g., (given the definition of `S1` above) one can write `x:
-S2` (since it is a leaf struct), `x: &S2`, and `x: &S1`, but not `x: S1`. Struct
-values have their minimal size (i.e., their size does not take into account
-other variants). This is also current behaviour. Pointers to structs are DST
-pointers, but are not fat. They point to a pointer to a vtable, followed by the
-data in the struct. The vtable pointer allows identification of the concrete
-struct variant.
+Non-leaf variants which are unsized follow the rules for DSTs. A programmer
+cannot use non-leaf variants as value types, only pointers to such types may
+exist. E.g., (given the definition of `S1` above) one can write `x: S2` (since
+it is a leaf struct), `x: &S2`, and `x: &S1`, but not `x: S1`. Unsized values
+have their minimal size (i.e., their size does not take into account other
+variants). This is the current behaviour for structs. Pointers to unszied
+variants are DST pointers, but are not fat. They point to a pointer to a vtable,
+followed by the data in the variant. The vtable pointer allows identification of
+the concrete variant.
 
-Pointer-to-struct objects may only be dereferenced if the static type is a leaf
-struct. Dereferencing gives only the concrete object with no indication of the
-vtable.
+Pointer-to-unsized-variant objects may only be dereferenced if the static type
+is a leaf variant. Dereferencing gives only the concrete object with no
+indication of the vtable.
 
-The runtime representation of pointer-to-leaf struct objects is changed from the
-current representation in that the pointer is a pointer to `[vtable_ptr, data]`
-rather than a pointer to `data`. However, since dereferencing must give the data
-(and not the `[vtable_ptr, data]` representation), this difference is only
-observable if the programmer uses unsafe transmutes.
-
-To summarise the important differences between enums and structs: enum objects
-may be passed by value where an outer enum type is expected. Struct objects may
-only be passed by reference (borrowed reference, or any kind of smart or built-
-in pointer). enum values have the size of the largest variant plus a
-discriminator (modulo optimisation). Struct values have their minimal (concrete)
-size plus one word (for the vtable pointer). For example,
+For example,
 
 ```
 enum E {
@@ -218,6 +226,7 @@ enum E {
     EVar3(i64, i64, i64, i64),
 }
 
+[#unsized]
 struct S {
     SVar1,
     SVar2,
@@ -244,30 +253,33 @@ value plus a pointer to a vtable).
 The function `foo_s` is a type error because `S` is an unsized type (DST). The
 other functions are all valid.
 
-A programmer would typically use enums for small, similar size objects where the
-data is secondary and discrimination is primary. For example, the current
-`Result` type. Structs would be used for large or diversely sized objects where
-discrimination is secondary, that is they are often used in a polymorphic
-setting. A good candidate would be the AST enum in libsyntax or the DOM in
-Servo.
+A programmer would typically use sized enums for small, similar size objects
+where the data is secondary and discrimination is primary. For example, the
+current `Result` type. Unsized enums would be used for large or diversely sized
+objects where discrimination is secondary, that is they are often used in a
+polymorphic setting. A good candidate would be the AST enum in libsyntax or the
+DOM in Servo.
 
-Matching struct objects (that is pointer-to-structs) should take into account the
-dynamic type given by the vtable pointer and thus allow for safe and efficient
-downcasting.
+**Open question:** we should have style guidlines for when to use `struct` vs
+`enum` keywords.
+
+Matching unszied objects (that is pointer-to-unsized-variants) should take into
+account the dynamic type given by the vtable pointer and thus allow for safe and
+efficient downcasting.
+
 
 ## Methods and closed traits
 
-[This section is new to this RFC].
-
 We allow impls for any enum or struct anywhere in the nesting tree of the data
-type. If an outer data structure implements a trait, then all of its children
-are considered to implement that trait. Furthermore, if any of the children
-implement that trait, they are not obliged to provide all the required methods.
-Any missing methods use the defintions for the parent data structure.
+type (since they are all valid types). If an outer data structure implements a
+trait, then all of its children are considered to implement that trait.
+Furthermore, if any of the children implement that trait, they are not obliged
+to provide all the required methods. Any missing methods use the definitions for
+the parent data structure.
 
 Note: I believe this arrangement is natural for enums if we allow variants to be
 types and thus have impls. We then extend this mechanism to structs, since they
-should have almost identical behaviour to enums.
+should have identical behaviour to enums.
 
 **Open question:** Does this behaviour fall out naturally from coercions? Not all
 of it, for sure.
@@ -276,59 +288,54 @@ An impl may be marked as `abstract` (e.g., `abstract impl T for U { ... }`).
 This means that the impl does not need to provide all methods required by the
 trait. The point of this is to provide default implementations of some trait
 methods and allow the rest to be provided by a child data type. To prevent calls
-to 'pure virtual methods', only abstract concrete data may have abstract
-implementations.
+to 'pure virtual methods', only concrete data which cannot be instantiated may
+have abstract implementations.
 
 **Open question:** alternative for `abstract`: `virtual`. We could also not
-require a keyword and infer the `abstract`-ness from whether or not all
-methods are provided. That has the effect of pushing errors from the impl to
-where we try to use the concrete type as a trait. But it does mean less
-annotation.
+require a keyword and infer the `abstract`-ness from whether or not all methods
+are provided. That has the effect of pushing errors from the impl to trait
+mathcing. But it does mean less annotation.
 
-We introduce an attribute for traits: `closed`. Any trait may be marked as
-closed and this means that it may only have impls in the same crate as it is
-declared. In turn that means that trait objects for closed traits may be
-optimised as thin pointers. Other than that, there is nothing special about
-inheritance or impls for closed traits.
+We introduce an attribute for traits and concrete types: `closed`. Any trait may
+be marked as closed and this means that it may only have impls in the same crate
+as it is declared. Furthermore, only concrete types in that crate and marked as
+`closed` may implement a closed trait. In turn that means that trait objects for
+closed traits may be optimised as thin pointers. Other than that, there is
+nothing special about inheritance or impls for closed traits.
 
-Any concrete data type which implements a closed trait has a vtable pointer as a
-first field in its memory layout (note that nested structs/enums would have such
-a field in any case, other data structures would get an extra field). Since
-closed traits can only have impls in the same crate, the compiler can always
-know if a data structure needs a vtable field or not. The vtable is only used
+Any closed concrete data type has a vtable pointer as a first field in its
+memory layout (note that nested structs/enums would have such a field in any
+case, other data structures would get an extra field). The vtable is only used
 for methods dispatch on trait objects, as we do today.
 
 There is a bit of an edge case for enums here. Enum variants have a tag in their
 representation to identify the variant. We could re-purpose this slot as a
 vtable pointer to allow nested enums to implement closed traits without adding
 an extra word to their representation. However, that would preclude any of the
-other optimisations we do for enums. I would suggest that if an enum implements
-no closed traits, it gets a tag or whichever optimised version of that it would
-usualy get. If it does implement a closed trait, then it gets a vtable pointer
-in all cases.
+other optimisations we do for enums. I would suggest that if an enum is marked
+closed, then it gets a vtable pointer in all cases, i.e., is not eligable for
+the other enum optimisations. We might be able to make this less strict in the
+future.
 
-A trait object for a closed trait is always a thin pointer. If an object has a
-vtable pointer for thin objects, but is coerced to a non-closed trait object, it
-is still represented as a fat object.
+A trait object for a closed trait is always a thin pointer. If an closed
+concrete data type value is coerced to a non-closed trait object, it is
+represented as a fat object.
 
 
 ## Subtyping and coercion
 
 Nothing in this RFC introduces subtyping.
 
-Inner enum values can implicitly coerce to outer enum values as can enum pointer
-values.
+Inner sized variant values can implicitly coerce to outer variant values as can
+sized pointer values.
 
-Inner struct pointer values can implicitly coerce to outer struct pointer
-values. Note that there is no coercion between struct values. Since all but leaf
-structs are unsized, they may not be dereferenced. Thus we are immune to the
-object slicing problem from C++. Mutable references cannot be upcast (coerced)
-in this way since it would be unsafe (once the scope of the 'super-type' borrow
-expires, the 'sub-type' reference can be accessed again and the pointee may have
-changed type). Coercion of mutable `Box` pointers is allowed.
-
-**Open question: We could choose to force explicit coercions. It would make
-sense for the behaviour to match sub-traits, whatever we decide for that.
+Inner unsized pointer values can implicitly coerce to outer variant pointer
+values. Note that there is no coercion between unsized values. Unsized variant
+pointers may not be dereferenced. Thus we are immune to the object slicing
+problem from C++. Sized mutable references cannot be upcast (coerced) in this way
+since it would be unsafe (once the scope of the 'super-type' borrow expires, the
+'sub-type' reference can be accessed again and the pointee may have changed
+type). Coercion of mutable `Box` pointers is allowed.
 
 Via the DST rules, it should fall out that these coercions work for smart
 pointers as well as `&` and `Box` pointers.
@@ -338,38 +345,12 @@ compatibly.
 
 ## Generics
 
-(I feel the syntax could be nicer here, any ideas?)
-
-Nested structs must specify formal and actual type parameters. The outer items'
-type parameters must be given between `<>` after a `:` (similar to the
-inheritance notation, but no need to name the outer item). E.g.,
+When using the inline syntax for enums and structs, only the outermost variant
+may have formal type parameters. All inner variants take the same type
+parameters. Examples:
 
 ```
-struct Sg<X, Y> {
-    Sgn<X, Y, Z> : <X, Y> {
-        field: Foo<X, Z>
-    }
-}
-
-let x = Sgn<int, int, int> { field: ... };
-```
-
-In the nested notation only, if an item has exactly the same type parameters as
-its parent, they may be ommitted. For example, for
-
-```
-struct Sg<X, Y> {
-    Sgn2<X, Y> : <X, Y> {
-        field: Foo<X>
-    }
-}
-
-let x = Sgn2<int, int> { field: ... };
-```
-
-the programmer may write
-
-```
+[#unsized]
 struct Sg<X, Y> {
     Sgn2 {
         field: Foo<X>
@@ -384,24 +365,27 @@ actual type parameters for the parent. (Note also that the super-type is named
 whether or not type parameters are present). E.g.,
 
 ```
+[#unsized]
 struct Sg<X, Y> {}
 
-struct Sgn<X, Y, Z> : Sg<X, Y> {
+struct Sgn<X, Y, Z> : Sg<Y, X> {
     field: Foo<X, Z>
 }
 
 let x = Sgn<int, int, int> { field: ... };
 ```
 
-For enums, only the outermost enum may have type parameters. All nested enums
-implicitly inherit all those type parameters. This is necessary both for
-backwards compatibilty and to know the size of any enum instance.
+If the struct/enum is sized, then all variants must take the same parameters.
+This is automatically the case when variants are declared inline. For out of
+line variants, the actual and formal parameters must be the same (e.g., `struct
+Sgn3<X, Y> : Sg<X, Y>`). This is necessary both for backwards compatibilty and
+to know the size of any variant instance.
 
 ## Privacy
 
 The privacy rules for fields remain unchanged. Nested items inherit their
-privacy from their parent, i.e., module private by default unless the parent is
-marked `pub`.
+privacy from their outer-most parent, i.e., module private by default unless the
+parent is marked `pub`.
 
 **Open question:** is there a use case for allowing nested items to be marked
 `pub`? That is having a private parent but public child. What about the
@@ -410,17 +394,16 @@ opposite?
 
 ## Drop
 
-Traits may be marked `inherit` (alternatively, we could use `virtual` here too,
-although this is probably overloading one keyword too far): `inherit Trait Tr
-{...}`. This implies that for an item `T` to implement `Tr` any outer item of
-`T` must also implement `Tr` (possibly providing a pure virtual declaration if
-the outer item is itself virtual). This is checked where the impl is declared,
-so it would be possible that an impl could be declared for an outer item in a
-different module but due to the visibility rules, it is invisible, this should
-be a compile error. Since `impl`s are not imported, only traits, I believe this
-means that if a trait is marked `inherit`, then anywhere an implementation for
-an inner item is visible, then an implementation for the outer item is also
-visible.
+Traits may be marked `inherit`: `inherit trait Tr {...}` (this keyword could
+also be an attribute). This implies that for an item `T` to implement `Tr` any
+outer item of `T` must also implement `Tr` (possibly providing an abstract
+declaration if the outer item is itself abstract). This is checked where the
+impl is declared, so it would be possible that an impl could be declared for an
+outer item in a different module but due to the visibility rules, it is
+invisible, this should be a compile error. Since `impl`s are not imported, only
+traits, I believe this means that if a trait is marked `inherit`, then anywhere
+an implementation for an inner item is visible, then an implementation for the
+outer item is also visible.
 
 `Drop` is marked `inherit`.
 
@@ -446,6 +429,11 @@ former case is like saying "must override")? This is kind of dual to the idea
 above that if an outer item implements a trait, then the inner trait appears to
 implement it too, via coercion. (ht Niko).
 
+**Alternative:** don't use the inherit machinery described above and only do
+the above checks for the `Drop` trait as a special case. This is less general,
+but less complex. I'm not sure if there are any use cases for `inherit` other
+then `Drop`.
+
 
 ## Trait matching
 
@@ -454,7 +442,7 @@ also checked for impls. Searching for impl candidates is essentially a matter of
 dereferencing a bunch of times and then trying to apply a subset of coercions
 (auto-slicing, etc.), and then auto-borrowing. With this RFC, we would add
 checking of outer items to the set of coercions checked. We would only consider
-these candidates for structs if the type of `self` is a reference type.
+these candidates for unsized variants if the type of `self` is a reference type.
 
 
 # JDM's example
@@ -479,7 +467,8 @@ trait MediaElement : Element {
     fn display_media(&mut self, dest: &MediaDestination);
 }
 
-abstract struct NodeData {
+#[closed, unsized]
+struct NodeData {
     parent: Rc<Node>,
     first_child: Rc<Node>,
 
@@ -500,6 +489,8 @@ abstract impl Element for ElementData {
     }
 }
 
+// Note these structs don't need #[closed,unsized] since they extend a struct
+// with those annotations.
 struct TextNode : NodeData {}
 
 struct HTMLImageElement : ElementData {}
@@ -571,30 +562,11 @@ We are adding a fair bit of complexity here, in particular in allowing nesting
 of structs/enums. The reduction in complexity by unifying structs and enums has
 clearer advantages to the language implementation than to users of the language.
 
-The difference between a struct and enum is subtle, and probably hard to get
-across in a tutorial. On the other hand, the two are satisfying clearly
-different use cases with different priorities. I believe the extra complexity
-does not need to be paid for by every user in the sense that, unless you
-specifically want to use these features, you don't need to know about them.
 
 # Alternatives
 
 See http://discuss.rust-lang.org/t/summary-of-efficient-inheritance-rfcs/494
 
-
-## Variation - `data` for `struct` and `enum`
-
-An alternative to using `enum` and `struct` is to use a single keyword for both
-constructs. `data` is my personal favourite and matches Haskell (I'm not aware
-of other uses, Scala?). We would then need some way to indicate the sized-ness
-of the datatype. The obvious way is to use another keyword. For DST we use
-`Sized?` but this is not a keyword, it indicates the possible absence of the
-default trait bound `Sized`, so that is probably not suitable. Furthermore, I'm
-not sure whether the sized or unsized version should be the default.
-
-We could then either forbid the use of `enum` and `struct` or we could allow
-them as syntactic sugar for `sized data` and `unsized virtual data`,
-respectively.
 
 # Unresolved questions
 
@@ -604,13 +576,14 @@ pointers (I don't think this will work, because users of the trait objects will
 expect a thin pointer) with a warning? Or can we emulate C++ vtables to give
 efficient multiple inheritance?
 
+
 ## Initialisation
 
-To initialise a struct you must give values for all its fields. There is a
-technical and an ergonomic problem here: if the base struct is in a different
-module, then its private fields cannot be named in the constructor for the
-derived struct; and if the base struct has a lot of fields, it is painful and
-error-prone to write out their values in multiple places.
+To initialise an unsized struct you must give values for all its fields. There
+is a technical and an ergonomic problem here: if the base struct is in a
+different module, then its private fields cannot be named in the constructor for
+the derived struct; and if the base struct has a lot of fields, it is painful
+and error-prone to write out their values in multiple places.
 
 We can address the first problem by adjusting the privacy rules to always allow
 the naming of private fields in constructors if the most derived struct's fields
@@ -623,14 +596,14 @@ type `Foo` and which supplies any fields not in the field list. We can make this
 more general by accepting an expression with type `Foo` or any of its base
 structs, where the programmer must explicitly give at least any missing fields.
 This addresses both the first and second problems described above. However, it
-has a problem of its own if the base struct is virtual - then we cannot
+has a problem of its own if the base struct is abstract - then we cannot
 create an instance with the required type, so the derived struct is impossible
 to instantiate.
 
 I don't see any good way to solve this problem. Here are some ideas (I think the
 second or third are my favourites):
 
-* Where a struct is virtual, allow the struct to be instantiated, but do not
+* Where a struct is abstract, allow the struct to be instantiated, but do not
   allow any method calls on such objects, nor taking its address. The only
   operations allowed on objects with such type are field access and use in
   initialiser expressions. This is yet more added complexity.
@@ -704,3 +677,14 @@ we should not add any additional mechanism for multiple inheritance.
 # Staging
 
 Follows approximately the plan laid out in #142.
+
+Note that allowing enum variants as types introduces a backwards incompatibility
+due to type inference - type inference will infer the most minimal type, if that
+changes to be a variant rather than the whole enum, we could get errors. For
+example, `let v = vec![Some(2i), Some(3)]`; today, `v` would have inferred type
+`Vec<Option<int>>`, with these changes, it could be inferred the type
+`Vec<Some<int>>`. There would then be an error with `v.push(None)` which is not
+an error today.
+
+To avoid this backwards incompatibility we could make enum variants valid types
+before 1.0.
