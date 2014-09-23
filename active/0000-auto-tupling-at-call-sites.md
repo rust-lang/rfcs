@@ -13,7 +13,7 @@ function call-sites:
   automatically turn convert excess arguments into a tuple of the
   final argument and the excess arguments.  I call this "auto-tupling."
 * If there are insufficient arguments at a given call site,
-  then automatically replace each of the omitted arugments with
+  then automatically replace each of the omitted arguments with
   the unit value (`()`).  I call this "auto-unit'ing." [*]
 
 The above two transformations can be used in tandem with the trait
@@ -148,7 +148,7 @@ When k > i+j, then the j'th, j+1'th, ... k'th argument expressions
 (here denoted `e_j, e_j+1, ... e_k`) are all replaced with a single
 tuple expression: `(e_j, e_j+1, ..., e_k)`.
 
-The rest of the compilation procedes as normal.  In particular, either
+The rest of the compilation proceeds as normal.  In particular, either
 the rewritten code will work because the generic type(s) in question
 are compatible with either unit (in the k < i+j case) or with the
 tuple expression `(e_j, e_j+1, ..., e_k)`.
@@ -334,7 +334,7 @@ usage, if that is desired.)
 * Related to the previous bullet: Auto-tupling may hide errors entirely
 
   Since auto-tupling requires no change in syntax at the function
-  definiton site, it is conceivable that someone unaware of the
+  definition site, it is conceivable that someone unaware of the
   auto-tupling rule in the language could hypothetically
   make the following change from version 1 to version 2 of `foo`:
   ```
@@ -377,7 +377,7 @@ the calling convention, depending on how extreme you want to be).  The
 main reason I could see for going down that path is to support
 optional arguments on closures and object methods.
 
-  * Another reason to go down this road woudl be to support
+  * Another reason to go down this road would be to support
     non-trailing optional arguments (though I personally prefer
     optional arguments be restricted to trailing).
 
@@ -390,7 +390,7 @@ am explicitly trying to avoid it.
 My original proposal that I posted to [discuss] did not have
 "auto-unit'ing".  Instead it used a more general notion of
 auto-tupling, where all omitted arguments where replaced with a single
-unit `()` value.  While this orignally appealed to me, "auto-unit'ing"
+unit `()` value.  While this originally appealed to me, "auto-unit'ing"
 allow for clean code in many cases.
 
 [discuss]: http://discuss.rust-lang.org/t/pre-rfc-auto-tupling-at-call-sites/175/
@@ -399,7 +399,7 @@ The main reason I was considering generalized auto-tupling was to
 enable client-side flexibility in more cases (i.e. in the
 `print_report` example above, under generalized auto-tupling, both the
 `format` and `output` arguments to `print_report` would forced to be
-carried in a single paramteric formal argument at the end of the
+carried in a single parametric formal argument at the end of the
 argument list, and thus client code would be able to freely override
 the protocol for how either is handled).  However, I think this
 motivation seems relatively weak (since it requires much foresight on
