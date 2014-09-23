@@ -82,13 +82,6 @@ trait Foo<W> {
     type X;
     fn bar<Y>(t: Option<Y>, u: u8, v: V, w: W, x: X, y: Y);
 }
-
-struct Baz<Z> { ... }
-
-impl<A> Foo<A> for Baz<A> {
-    type X = A;
-    fn bar<Y>(t: Option<Y>, u: u8, v: V, w: A, x: A, y: Y) { ... }
-}
 ```
 
 the formal arguments to `Foo::bar` are {`t`, `u`, `v`, `w`, `x`, `y`},
@@ -99,10 +92,20 @@ parameter `Y`, `t` itself is not considered parametric under the
 definition of this RFC.  I know this may be unintuitive; suggestions
 for improvements to this terminology are welcome!)
 
-Likewise, the formal arguments to `<Baz as Foo>::bar` are again {`t`,
-`u`, `v`, `w`, `x`, `y`}; and now the parametric arguments are `w`,
-`x`, and `y`, since the first two are typed by the type parameter `A`
-and the third by the type parameter `Y`.
+Continuing with the above example:
+```rust
+struct Baz<Z> { ... }
+
+impl<A> Foo<A> for Baz<A> {
+    type X = A;
+    fn bar<Y>(t: Option<Y>, u: u8, v: V, w: A, x: A, y: Y) { ... }
+}
+```
+
+Likewise in this case, the formal arguments to `<Baz as Foo>::bar` are
+again {`t`, `u`, `v`, `w`, `x`, `y`}; and now the parametric arguments
+are `w`, `x`, and `y`, since the first two are typed by the type
+parameter `A` and the third by the type parameter `Y`.
 
 For any function F, let "F has trailing parametric formals" mean that
 F, in its function definition, takes i+j formal parameters, for some
