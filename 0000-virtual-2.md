@@ -63,8 +63,9 @@ satisfies the following constraints:
 Syntactically, we unify structs and enums and allow nesting. That means enums
 may have fields and structs may have variants. Both may have nested data; the
 keyword (`struct` or `enum`) is only required at the top level. Unnamed fields
-(tuple variants/tuple structs) are only allowed in leaf data. All existing uses
-are preserved. Some examples:
+(tuple variants/tuple structs) are only allowed in leaf data and only if inner
+variants have no data (I expect this rule could be relaxed somehow in the
+future). All existing uses are preserved. Some examples:
 
 plain enum:
 
@@ -95,15 +96,11 @@ enum with fields:
 enum E2 {
     f: int,
     Variant1,
-    Variant2(int)
+    Variant2{f2: int}
 }
 
-let x: E2 = Variant2(f: 34, 23);
+let x: E2 = Variant2{f: 34, f2: 23};
 ```
-
-**Open question:** should we use `()` or `{}` when instantiating items with a
-mix of named and unnamed fields? Or allow either? Or forbid items having both
-kinds of fields?
 
 nested enum:
 
@@ -268,7 +265,7 @@ account the dynamic type given by the vtable pointer and thus allow for safe and
 efficient downcasting.
 
 
-## Methods and closed traits
+## Methods and the closed annotation
 
 We allow impls for any enum or struct anywhere in the nesting tree of the data
 type (since they are all valid types). If an outer data structure implements a
@@ -280,9 +277,6 @@ the parent data structure.
 Note: I believe this arrangement is natural for enums if we allow variants to be
 types and thus have impls. We then extend this mechanism to structs, since they
 should have identical behaviour to enums.
-
-**Open question:** Does this behaviour fall out naturally from coercions? Not all
-of it, for sure.
 
 An impl may be marked as `abstract` (e.g., `abstract impl T for U { ... }`).
 This means that the impl does not need to provide all methods required by the
@@ -313,13 +307,51 @@ representation to identify the variant. We could re-purpose this slot as a
 vtable pointer to allow nested enums to implement closed traits without adding
 an extra word to their representation. However, that would preclude any of the
 other optimisations we do for enums. I would suggest that if an enum is marked
-closed, then it gets a vtable pointer in all cases, i.e., is not eligable for
+closed, then it gets a vtable pointer in all cases, i.e., is not eligible for
 the other enum optimisations. We might be able to make this less strict in the
 future.
 
-A trait object for a closed trait is always a thin pointer. If an closed
+A trait object for a closed trait is always a thin pointer. If a closed
 concrete data type value is coerced to a non-closed trait object, it is
 represented as a fat object.
+
+**Open question:** I realised that this approach is actually a bit more subtle
+than I appreciated, so there are a few details to work out:
+
+* The assumption so far has been that unsized variants get a vtable ptr and
+ sized variants get a type tag (or some optimised equivalent). I think that is
+ not quite right. The sized-ness doesn't affect the kind of tag. If a variant
+ is closed it must get a vtable (since it may be used with closed traits). If
+ it is not closed it should get a vtable if it has overriding methods in impls
+ (as described above). Alternatively, we could only allow overriding methods
+ for closed variants (this seems the sanest-option, although overriding has
+ nothing to do with closed-ness) or add another attribute to allow overriding
+ (this might be preferable since overriding has engineering concerns as well as
+ implementation ones). If we don't do something like this we end up with
+ dynamic dispatch for unsized data and static dispatch for sized data, which
+ seems highly undesirable.
+
+* Note that if we take self by value in a method, we will get static dispatch in
+ any case, but I think that is OK.
+
+* We must forbid `&mut self` for sized variants being used as a default method
+ (i.e., they must not be inherited). This is for the same reason as we avoid
+ coercion between `&mut` objects. Alternatively, we could always treat `Self`
+ as unsized for `&mut self` methods when the method is inherited. Neither
+ option seems nice, but I don't think we can avoid `&mut self` entirely.
+
+* Methods with a `Self` type other than in `self` position can also not be
+ inherited (because the type of Self changes). Alternatively we could allow
+ `Self` in method implementations and type check the method for all values of
+ `Self` (seems like future work).
+
+* Methods with type parameters can't be overridden because of monomorphisation
+ issues.
+
+This all sounds like a lot of subtle and horrid complexity. I hope there is some
+way to slice the Gordian Knot, rather than requiring all these fiddly rules.
+
+**end of open question**
 
 
 ## Subtyping and coercion
@@ -567,6 +599,7 @@ clearer advantages to the language implementation than to users of the language.
 
 See http://discuss.rust-lang.org/t/summary-of-efficient-inheritance-rfcs/494
 
+TODO struct vs enum difference
 
 # Unresolved questions
 
