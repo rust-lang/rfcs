@@ -54,6 +54,15 @@ convention. It is just a local transformation on each call-site where
 the number of actual arguments does not match the number of formal
 parameters.
 
+In addition, the programming pattern espoused by this RFC leverages
+our existing trait infrastructure.  This is important because it means
+that client code of some function using optional arguments or
+variable-arity functions is likely to have more options available to
+it, since it will be free to implement the provided traits in whatever
+manner it likes, without being beholden to the particular protocol
+originally envisaged by the library developer.
+
+
 The expected outcome is that we reap many of the benefits already
 associated with optional arguments and arity-based overloading,
 assuming that the standard library is revised to make full use of the
@@ -230,6 +239,11 @@ But with this RFC in place, the syntax for the last line becomes a bit nicer:
 vec4(1.0f32, 2.0f32, 3.0f32, 4.0f32)   // ==> Vec4{ x: 1.0, y: 2.0, z: 3.0, w: 4.0 }
 ```
 
+Finally, as an example that uses auto-tupl'ing for optional arguments,
+which also illustrates how encouraging this programming pattern can
+provide extra flexibility to client code (assuming the system is
+appropriately architected).
+
 The two examples above followed a general rule of treating the trait
 as a bundle of all of the remaining arguments.  However, the scheme of
 this RFC can also express multiple-arity dispatch, where one may want
@@ -240,34 +254,61 @@ than the function body, which just dispatches off to the trait.
 
 So as an example:
 ```rust
-fn print_report<P:ReportPrinter>(report: &Report, output: P) {
-    output.print_it(report)
+fn print_report<F:ReportFormat,P:ReportPrinter>(report: &Report, format: F, output: P) {
+    output.print_it(report, format.date(), format.currency());
+}
+
+trait ReportPrinter {
+    fn print_it(&self, report: &Report, date: DateFormat, decimal: DecimalFormat);
+}
+
+trait ReportFormat {
+    fn date(&self) -> DateFormat;
+    fn decimal(&self) -> DecimalFormat;
+}
+
+impl ReportFormat for () {
+    fn date(&self) -> DateFormat { MM_DD_YYYY_IS_SO_GR8 }
+    fn decimal(&self) -> DecimalFormat { NUMBER_DOT_FRACTION }
+}
+
+struct Format { date: DateFormat, decimal: DecimalFormat }
+impl ReportFormat for Format {
+    fn date(&self) -> DateFormat { self.date }
+    fn decimal(&self) -> DecimalFormat { self.decimal }
 }
 
 impl ReportPrinter for () {
-    fn print_it(&self) { /* just print to stdout */ }
+    fn print_it(&self, report: &Report, date: DateFormat, decimal: DecimalFormat) {
+        /* just print to stdout */
+    }
 }
 
 impl<'a> ReportPrinter for &'a std::io::File {
-    fn print_it(&self) { /* print to the file*/ }
+    fn print_it(&self, report: &Report, date: DateFormat, decimal: DecimalFormat) {
+        /* print to the file */
+    }
 }
 
 impl<'a> ReportPrinter for &'a gui::Window {
-    fn print_it(&self) { /* print to a text area in the window */ }
+    fn print_it(&self, report: &Report, date: DateFormat, decimal: DecimalFormat) {
+        /* print to an html formatted box in the window */
+    }
 }
 
 let the_report = ...;
-print_report(&the_report); // prints to stdout
+print_report(&the_report); // prints to stdout with the default formatting
 let the_file : std::io::File = ...;
-print_report(&the_report, &the_file);
+let the_format = Format { date: YYYY_MM_DD, decimal: NUMBER_COMMA_FRACTION };
+print_report(&the_report, the_format, &the_file);
 ```
 
 The design philosophy espoused by this RFC allows for client code to
 add new instances of the arguments trait.  As a concrete example, in
 the previous example of `ReportPrinter`, its entirely possible that
-the code for `impl ReportPrinter for gui::Window` lives in the crate
-that defines `gui::Window`, rather than the crate that defines `fn
-print_report`.  (Of course it falls upon the author of the
+the code for `impl<'a> ReportPrinter for &'a gui::Window` lives in the
+crate that defines `gui::Window`, rather than the crate that defines
+`fn print_report`.  (Of course it falls upon the author of the
 `ReportPrinter` trait to document its API well-enough to support such
 usage, if that is desired.)
 
@@ -340,16 +381,28 @@ I think many of the other proposals for optional and/or keyword
 arguments and/or variable arity functions have gone down this road; I
 am explicitly trying to avoid it.
 
-## Auto-tupling alone
+## Generalized auto-tupling alone
 
 My original proposal that I posted to [discuss] did not have
 "auto-unit'ing".  Instead it used a more general notion of
 auto-tupling, where all omitted arguments where replaced with a single
-unit `()` value.  While this orignally appealed to me, I think
-"auto-unit'ing" will allow for cleaner code than this generalize
-auto-tupling.
+unit `()` value.  While this orignally appealed to me, "auto-unit'ing"
+allow for clean code in many cases.
 
 [discuss]: http://discuss.rust-lang.org/t/pre-rfc-auto-tupling-at-call-sites/175/
+
+The main reason I was considering generalized auto-tupling was to
+enable client-side flexibility in more cases (i.e. in the
+`print_report` example above, under generalized auto-tupling, both the
+`format` and `output` arguments to `print_report` would forced to be
+carried in a single paramteric formal argument at the end of the
+argument list, and thus client code would be able to freely override
+the protocol for how either is handled).  However, I think this
+motivation seems relatively weak (since it requires much foresight on
+the part of the library designer and also much ingenuity on the part
+of the client), so I was willing to forego this approach and instead
+propose auto-unit'ing as a cleaner alternative.
+
 
 # Unresolved questions
 
