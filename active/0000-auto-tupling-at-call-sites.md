@@ -353,13 +353,14 @@ usage, if that is desired.)
 
 * Auto-tupling may delay the reporting of legitimate errors.
   Reporting errors as eagerly as possible is the reason I included the
-  condition that the final formal argument to the function be some
-  generic type parameter, but obviously that still does not catch
+  condition that only functions with trailing parametric formals be
+  subject to the call-site rewriting, but obviously that still does not catch
   the case where one e.g. invokes `vec4(1.0f32, 2.0f32)`, which would
   expand into `vec4((1.0f32, 2.0f32))` and lead to an error like:
   "error: failed to find an implementation of trait Vec4Args for (f32,f32)";
   Presumably the rustc compiler can be adapted to report a better
-  error message when a tuple has been introduced by auto-tupling.
+  error message when a tuple has been introduced by auto-tupling
+  and then fails to actually implement the required trait.
 
 # Alternatives
 
