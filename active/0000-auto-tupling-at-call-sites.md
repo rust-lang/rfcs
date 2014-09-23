@@ -4,12 +4,25 @@
 
 # Summary
 
-Automatically turn excess arguments at a given call site into a tuple
-of the final argument and the excess arguments.  Automatically turn an
-omitted argument at a given call site into unit (`()`).
-transformations (which I am calling "auto-tupling") can be used in
-tandem with the trait system as a way to express optional parameters
-and multiple-arity functions.
+Add support for default and variable-arity functions via a small
+language feature and a simple programming pattern.
+The language feature is solely a pair of changes to the treatment of
+function call-sites:
+
+* If there are excess arguments at a given call site, then
+  automatically turn convert excess arguments into a tuple of the
+  final argument and the excess arguments.  I call this "auto-tupling."
+* If there are insufficient arguments at a given call site,
+  then automatically replace each of the omitted arugments with
+  the unit value (`()`).  I call this "auto-unit'ing." [*]
+
+The above two transformations can be used in tandem with the trait
+system as a way to express optional parameters and multiple-arity
+functions.
+
+[*] Note that "auto-unit'ing" is pronounced with a short "i", like
+    "pit" (or "unit"), as opposed to "auto-uniting", which would
+    be pronounced with a long "i", like "pie" (or "unite").
 
 # Motivation
 
@@ -19,19 +32,25 @@ People have been asking for optional arguments for a while,
 
 * On the rust repo: [Default arguments and keyword arguments](https://github.com/rust-lang/rust/issues/6973)
 
-* On the RFC repo: [optional parameters](https://github.com/rust-lang/rfcs/pull/152), [Arity-based parameter overloading](https://github.com/rust-lang/rfcs/pull/153)
+* On the RFC repo: [optional parameters](https://github.com/rust-lang/rfcs/pull/152), [Arity-based parameter overloading](https://github.com/rust-lang/rfcs/pull/153), [Default and positional arguments](https://github.com/rust-lang/rfcs/pull/257).
 
 Auto-tupling at the call site provides a clean syntax for defining
 functions that support a variety of calling protocols: you make the
 last argument for the function a trait, and then implement the trait
 for every combination of tuple that you want to support.
 
-This strategy supports optional arguments and arity-based overloading
-for statically-dispatched call sites.
+Meanwhile, auto-unit'ing provides a clean way to describe trailing
+optional arguments, resolved by their position (as opposed to some
+sort of name-based scheme): You make a trait for each optional
+argument, and then you provide an implementation of the trait for both
+`()` and for the actual kind of value you expect to be provided.
+
+Therefore, these features support optional arguments and arity-based
+overloading for statically-dispatched call sites.
 
 At the same time, it is a relatively simple change to the language:
 nothing changes about function definitions nor about the calling
-convention; it is just a local transformation on each call-site where
+convention. It is just a local transformation on each call-site where
 the number of actual arguments does not match the number of formal
 parameters.
 
@@ -42,22 +61,85 @@ feature.
 
 # Detailed design
 
-For any function F, if the following two conditions hold for its definition:
-* F is defined as taking `k+1` arguments, and
-* F where the final formal argument to the function is some generic type parameter,
-then at all of the call sites for F, it can be passed any number of
-arguments >= `k`.
+## Preliminary Definitions
 
-When F is passed `k` arguments, then the missing final `k+1`'th
-argument is automatically inserted as the unit value `()`.
+Let us define a "parametric" formal argument to a function as
+any formal argument that has as its type, some type parameter to the
+function, trait, or impl.  So for example:
 
-When F is passed `k+1` arguments, then everything operates the same as
-today (i.e. this RFC has no effect on it).
+```
+type V = char;
+trait Foo<W> {
+    type X;
+    fn bar<Y>(t: Option<Y>, u: u8, v: V, w: W, x: X, y: Y);
+}
 
-When F is passed `k+j` arguments, then the final `j` arguments are
-converted into a tuple of length `j`.
+struct Baz<Z> { ... }
 
-The rest of the compilation procedes as normal.
+impl<A> Foo<A> for Baz<A> {
+    type X = A;
+    fn bar<Y>(t: Option<Y>, u: u8, v: V, w: A, x: A, y: Y) { ... }
+}
+```
+
+the formal arguments to `Foo::bar` are {`t`, `u`, `v`, `w`, `x`, `y`},
+and the parametric ones are `w` and `y`.
+
+(Note that even though the type of `t`, `Option<Y>`, contains the type
+parameter `Y`, `t` itself is not considered parametric under the
+definition of this RFC.  I know this may be unintuitive; suggestions
+for improvements to this terminology are welcome!)
+
+Likewise, the formal arguments to `<Baz as Foo>::bar` are again {`t`,
+`u`, `v`, `w`, `x`, `y`}; and now the parametric arguments are `w`,
+`x`, and `y`, since the first two are typed by the type parameter `A`
+and the third by the type parameter `Y`.
+
+For any function F, let "F has trailing parametric formals" mean that
+F, in its function definition, takes i+j formal parameters, for some
+non-negative i and positive j, where the i is chosen to be the last
+non-parametric formal argument to F (and thus i is zero if and only if
+F has *only* parametric formals), and j is the number of trailing
+parametric formals in F.
+
+Thus, in the following:
+```rust
+fn no_trailing<X>(x0: X, x1: X, y: int) { ... }
+fn trailing_1<X>(w: int, x: X) { ... }
+fn trailing_2<Y,Z>(w: int, y: Y, z: Z) { ... }
+fn trailing_3<Y,Z>(y: Y, z: Z) { ... }
+```
+
+the `no_trailing` function does not have trailing parametric formals,
+while both `trailing_1`, `trailing_2`, and `trailing_3` have trailing
+parametric formals (`x` in the first and {`y`,`z`} in the latter two).
+For `trailing_1`, i=1 and j=1; for `trailing_2`, i=1 and j=2; and for
+`trailing_3`, i=0 and j=2.
+
+## Call Site Overloading
+
+For any F that has trailing parametric formals (and thus has i
+"normal" arguments plus j trailing parametric formals), any call to F
+is allowed to take any number of actual arguments greater than or
+equal to i.
+
+Let the number of actual arguments be denoted by k.
+
+When F is passed k = i+j expressions as actual arguments, then
+everything operates the same as today (i.e. this RFC has no effect on
+it).
+
+When k < i+j, then every missing argument expression is filled in with
+the unit value `()`.
+
+When k > i+j, then the j'th, j+1'th, ... k'th argument expressions
+(here denoted `e_j, e_j+1, ... e_k`) are all replaced with a single
+tuple expression: `(e_j, e_j+1, ..., e_k)`.
+
+The rest of the compilation procedes as normal.  In particular, either
+the rewritten code will work because the generic type(s) in question
+are compatible with either unit (in the k < i+j case) or with the
+tuple expression `(e_j, e_j+1, ..., e_k)`.
 
 In the common case, the final argument to F will have one or more
 trait bounds, and the call sites will be expected to pass a set of
@@ -65,20 +147,20 @@ arguments whose auto-tupling is compatible with those trait bounds.
 That is how we get all the way to enforcing a strict protocol on what
 the optional arguments are, or what multiple arities of F are.
 
-Note: The strategy of this RFC does not work for closures and dynamic
-dispatch because closures are monomorphic and object methods cannot
-have generic type parameters.  I deem this an acceptable price to pay
-to keep the language change simple: (In general, supporting a
-combination of optional arguments and dynamic dispatch would require
-some way of communicating the type and number of parameters from the
-call-site to the method definition.)
+Note: The strategy of this RFC does not work in general for closures
+and dynamic dispatch because closures are monomorphic and object
+methods cannot have generic type parameters.  I deem this an
+acceptable price to pay to keep the language change simple: (In
+general, supporting a combination of optional arguments and dynamic
+dispatch would require some way of communicating the type and number
+of parameters from the call-site to the method definition.)
 
 As a concrete example, assume the following definition (where nothing
 new from this RFC is being used):
 
 ```rust
 fn foo<T:FooArgs>(required_x: int, rest: T) -> int {
-    required_ + rest.y() + rest.z()
+    required_x + rest.y() + rest.z()
 }
 
 trait FooArgs {
@@ -166,14 +248,19 @@ impl ReportPrinter for () {
     fn print_it(&self) { /* just print to stdout */ }
 }
 
-impl ReportPrinter for std::io::File {
+impl<'a> ReportPrinter for &'a std::io::File {
     fn print_it(&self) { /* print to the file*/ }
 }
 
-impl ReportPrinter for gui::Window {
+impl<'a> ReportPrinter for &'a gui::Window {
     fn print_it(&self) { /* print to a text area in the window */ }
 }
 
+let the_report = ...;
+print_report(&the_report); // prints to stdout
+let the_file : std::io::File = ...;
+print_report(&the_report, &the_file);
+```
 
 The design philosophy espoused by this RFC allows for client code to
 add new instances of the arguments trait.  As a concrete example, in
@@ -186,15 +273,39 @@ usage, if that is desired.)
 
 # Drawbacks
 
-* Some people may prefer explicit sugar on the function definition to
-  indicate optional arguments and/or argument-based dispatch, rather
-  than indirectly expressing it via a trait.  So adopting auto-tupling
-  may not satisfy such persons' desire for so-called "true" optional
-  arguments.
+* Some people may prefer explicit syntax on the function definition
+  site to indicate optional arguments and/or argument-based dispatch,
+  rather than indirectly expressing it via a trait.  So adopting
+  auto-tupling may not satisfy such persons' desire for so-called
+  "true" optional arguments.
 
-  * As a concrete example of why one might prefer baked-in support:
-    rustdoc would not show you the various potential arguments with
-    which one might invoke the function.
+  * As a concrete example of why one might prefer baked-in support: I
+    do not think rustdoc would show you the various potential argument
+    types with which one might invoke the function, (unless we revise
+    rustdoc to be smarter about these cases).  This is a bit of a
+    strawman example, since rustdoc would need to be revised in
+    response to *any* change we make to support optional arguments
+    and/or variable-arity functions.
+
+* Related to the previous bullet: Auto-tupling may hide errors entirely
+
+  Since auto-tupling requires no change in syntax at the function
+  definiton site, it is conceivable that someone unaware of the
+  auto-tupling rule in the language could hypothetically
+  make the following change from version 1 to version 2 of `foo`:
+  ```
+  #[cfg(version_1)]
+  fn foo<Z>(x: int, y: int, z: Z) { ... }
+
+  #[cfg(version_2)]
+  fn foo<Z>(x: int, z: Z) { ... }
+  ```
+
+  and then be upset that the old call `foo(1, 2, 3)` is not flagged as
+  a mismatched argument count error.
+
+  I see this as a small risk, or at least a reasonable price to retain
+  overall language simplicity.
 
 * Auto-tupling may delay the reporting of legitimate errors.
   Reporting errors as eagerly as possible is the reason I included the
@@ -208,8 +319,12 @@ usage, if that is desired.)
 
 # Alternatives
 
+## Status quo
+
 We can choose to not add any support for optional arguments at all.
 We have been getting by without them.
+
+## Look beyond the call-site
 
 We can add a more complex protocol for supporting optional arguments
 that includes changes at the function definition site (and potentially
@@ -217,6 +332,51 @@ the calling convention, depending on how extreme you want to be).  The
 main reason I could see for going down that path is to support
 optional arguments on closures and object methods.
 
+  * Another reason to go down this road woudl be to support
+    non-trailing optional arguments (though I personally prefer
+    optional arguments be restricted to trailing).
+
+I think many of the other proposals for optional and/or keyword
+arguments and/or variable arity functions have gone down this road; I
+am explicitly trying to avoid it.
+
+## Auto-tupling alone
+
+My original proposal that I posted to [discuss] did not have
+"auto-unit'ing".  Instead it used a more general notion of
+auto-tupling, where all omitted arguments where replaced with a single
+unit `()` value.  While this orignally appealed to me, I think
+"auto-unit'ing" will allow for cleaner code than this generalize
+auto-tupling.
+
+[discuss]: http://discuss.rust-lang.org/t/pre-rfc-auto-tupling-at-call-sites/175/
+
 # Unresolved questions
+
+In the first example from the Detailed Design, the formal parameter
+`x` was non-parametric in `trait Foo` (since it was an
+associated type, not a type parameter that could be freely chosen),
+while in the `impl<A> Foo<A> for Baz<A>`, the formal parameter `x` was
+now the type parameter `A` and thus `x` is parametric.  (I am
+assuming such an `impl` is a legal use of the associated
+`type X = A;` in the impl.)
+
+What if I had written instead:
+```
+fn bar<Y>(&self, u: u8, v: V, w: A, x: X, y: Y) { ... }
+                                    ^~~~
+```
+where now `x` again has type `X` instead of `A`?  Would we still treat
+that as being a parametric, since in this case, `X` resolves to `A`?
+
+In other words, what can we conclude about the legality of
+```rust
+<Baz as Foo>::bar(1u8, '2');
+```
+in the latter scenario?  Would it rewrite to:
+```rust
+<Baz as Foo>::bar(1u8, '2', (), (), ());
+```
+or would it be flagged as an error by the compiler?
 
 None yet.
