@@ -435,5 +435,3 @@ in the latter scenario?  Would it rewrite to:
 <Baz as Foo>::bar(1u8, '2', (), (), ());
 ```
 or would it be flagged as an error by the compiler?
-
-None yet.
