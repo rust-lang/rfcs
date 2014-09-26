@@ -33,7 +33,7 @@ bitdata KdNode : u64 {
     NodeX { axis = 0 : u2, left : u15, right: u15, split : f32 },
     NodeY { axis = 1 : u2, left : u15, right: u15, split : f32 },
     NodeZ { axis = 2 : u2, left : u15, right: u15, split : f32 },
-	Leaf  { tag  = 3 : u2, _: u2, tri0 : u20, tri1 : u20, tri2 : u20 }
+    Leaf  { tag  = 3 : u2, _: u2, tri0 : u20, tri1 : u20, tri2 : u20 }
 }
 ```
 This defines a 64-bit value, where the two most significant bits indicate 
@@ -51,7 +51,7 @@ fn lookup(pt: Vec3, ns: &[KdNode]) -> Option<(uint,uint,uint)> {
        NodeZ {left, right, split} => if pt.z < split { left } else { right },
        Leaf  {tri0, tri1, tri2}   => return Some(tri0, tri1, tri2)
      };
-	 if n == 0 { return None }
+     if n == 0 { return None }
      i = n;
    }
 }
@@ -115,25 +115,16 @@ not be exhaustive.
   let addr = PCI { bus : 0, dev : 2, fun : 3 };
   let tree = vec![ NodeX { left: 1, right: 2, split: 10.0 }, // 0
                    NodeY { left: 3, right: 0, split: 0.5 },  // 1
-				   Leaf { tri0: 0, tri1: 1, tri2: 2 },       // 2
-				   Leaf { tri0: 3, tri1: 4, tri2: 5 } ]      // 3
+                   Leaf { tri0: 0, tri1: 1, tri2: 2 },       // 2
+                   Leaf { tri0: 3, tri1: 4, tri2: 5 } ]      // 3
 ```
 
-## Bit-field access
+## Bit-data access
 
-Access through the `.` operator is unchecked. In other words, this is valid
+There are two ways of getting access to bit-data; by using `match` (bit-data 
+patterns) or by bit-field access.
 
-```rust
-fn f(node : KdNode) -> f32 { node.NodeX.axis }
-```
-
-If there is only one bit-constructor in the bit data, the constructor name may
-be elided:
-```rust
-fn bus(pci : PCI) -> u8 { pci.bus }
-```
-
-## Matching
+### Matching
 
 Matching is not nescessarily exhaustive, as there may be "junk" values. For
 instance, 
@@ -146,6 +137,91 @@ considered "junk":
 match t { S => "Zero", N => "Non-zero", _ => "Junk" }
 ```
 
+While enums use exhaustiveness checks to ensure safety, bit-data matches may
+not. Instead, a match is implemented (at least semantically) through a series 
+of `if`-`else` tests. Warnings should however be generated if unreachable 
+match-arms exist. For instance, if the first pattern does not have any 
+discriminant bits (tag bits) set, then the first match arm will always be
+taken:
+
+```rust
+bitdata U { 
+  A { data : u32 },
+  B { 0u2, rest : u30 }
+}
+
+fn test(u : U) -> u32 {
+  match u { 
+    A {data} => data, // Always taken.
+    B {rest} => rest  // Warning: Unused match arm
+  }
+}
+```
+
+### Bit-field access
+
+Bit-data variants can be unwieldly for enum variants with many fields. For 
+regular enums, we solve the problem by using named fields -- in other words, 
+we create structs. Notice that unlike regular enums, bit-data variants are 
+already named, hence we should be able to get access to a bit-field using 
+the bit-field name.
+
+```rust
+fn axis(node : KdNode) -> u32 { node.NodeX.axis }
+```
+
+Notice that bit-field access is unchecked, so `axis(node)` would result 
+in `3` if `node` is a leaf. While this feature may seem unsafe, it is 
+a useful construct when the value depends on external data. For instance:
+
+```rust
+bitdata PortResult : u32 {
+    E { code : u16, src : u16 }, // Error
+    F { f : f32 },
+    U { u : u32 }
+}
+
+fn parse_port_result(signal: u32, result: PortResult} {
+  match signal {
+    0 => println!("Error: {}, {}", result.E.code, result.E.src),
+    1 => println!("Float: {}", result.F.f),
+    2 => println!("Int: {}", result.U.u),
+    _ => println!("Invalid port result")
+  }
+}
+```
+Here, hardware gives us a result as a 32-bit value, but the value can't 
+be discriminated by the value itself.
+
+If there is only one bit-constructor in the bit data, or if all bit-data
+variants place the same bit-field in the same bit location, then the 
+constructor name may be elided:
+
+```rust
+fn bus(pci : PCI) -> u8 { pci.bus }
+```
+
+## Byte Order
+
+Byte order is not defined for bit-data. This makes sense since bit-data is 
+simply defined in terms of bit-positions within an unsigned integer. Storage
+of the integer could be specified in either big-endian or little-endian 
+formats, but that is outside the scope of this RFC.
+
+## Bit Order
+
+While bit-data does not define byte-order, sometimes it is useful to specify
+the bit-order. By default it is most significant bits first. If this is to
+be changed it has to be done through an attribute, like the equivalent 
+definition below:
+
+```rust
+#[bitorder(lsf)]
+bitdata PCI {
+    PCI { fun : u3, dev : u5, bus : u8 }
+}
+```
+
 ## Compared to `enum`
 
 The `bitdata` type is similar to the existing `enum` type with the following
@@ -153,6 +229,7 @@ differences:
 
 * The discriminator is not added automatically. 
 * All bit-data constructors must have the exact same bit-size.
+* Exhaustiveness checks are more forgiving.
 
 ## Notes
 
@@ -186,14 +263,28 @@ and overlapping tag checks
 
 # Unresolved questions
 
-This RFC does not discuss endianess issues. It is assumed that the bit-fields
-are defined in target endianess.
+## Inline Arrays
 
-Also, we could support inline-arrays of bit fields, but that could be saved 
+We could support inline-arrays of bit fields, but that could be saved 
 for a future implementation. For instance:
+
 ```rust
 bitdata KdTree {
    // ...
    Leaf  { tag = 3 : u2, _: u2, tri : [u20,..3] }
+}
+```
+
+# Notes 
+
+## Byte data
+
+The carrier type is typically a `u8`, `u16`, `u32`, `u64`, etc., but it
+can also be an array type:
+
+```rust
+bitdata PackedRgb : [u8, ..3]
+{
+  RGB { r: u8, g: u8, b: u8 }
 }
 ```
