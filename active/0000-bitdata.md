@@ -12,7 +12,7 @@ Rust aims to be a systems level language, yet it does not support bit-level
 manipulations to a satisfactory level. We support a macro `bitflags!` for
 supporting individual bits, but there is no support for bit-ranges. Anyone
 who has had to write disassemblers for the x86 instruction set would concur
-to how error-prone it is to deal with shifts and masks.
+how error-prone it is to deal with shifts and masks.
 
 With this RFC accepted, we can describe a PCI address:
 
@@ -43,17 +43,17 @@ node to the triangle vertex data).
 With this in place, one could implement point lookup as such:
 ```rust
 fn lookup(pt: Vec3, ns: &[KdNode]) -> Option<(uint,uint,uint)> {
-   let mut i = 0u;
-   loop {
-     let n = match ns[i] {
-       NodeX {left, right, split} => if pt.x < split { left } else { right },
-       NodeY {left, right, split} => if pt.y < split { left } else { right },
-       NodeZ {left, right, split} => if pt.z < split { left } else { right },
-       Leaf  {tri0, tri1, tri2}   => return Some(tri0, tri1, tri2)
-     };
-     if n == 0 { return None }
-     i = n;
-   }
+     let mut i = 0u;
+     loop {
+         let n = match ns[i] {
+             NodeX {left, right, split} => if pt.x < split { left } else { right },
+             NodeY {left, right, split} => if pt.y < split { left } else { right },
+             NodeZ {left, right, split} => if pt.z < split { left } else { right },
+             Leaf  {tri0, tri1, tri2}   => return Some(tri0, tri1, tri2)
+         };
+         if n == 0 { return None }
+         i = n;
+     }
 }
 ```
 
@@ -146,15 +146,15 @@ taken:
 
 ```rust
 bitdata U { 
-  A { data : u32 },
-  B { 0u2, rest : u30 }
+    A { data : u32 },
+    B { 0u2, rest : u30 }
 }
 
 fn test(u : U) -> u32 {
-  match u { 
-    A {data} => data, // Always taken.
-    B {rest} => rest  // Warning: Unused match arm
-  }
+    match u { 
+        A {data} => data, // Always taken.
+        B {rest} => rest  // Warning: Unused match arm
+    }
 }
 ```
 
@@ -182,12 +182,12 @@ bitdata PortResult : u32 {
 }
 
 fn parse_port_result(signal: u32, result: PortResult} {
-  match signal {
-    0 => println!("Error: {}, {}", result.E.code, result.E.src),
-    1 => println!("Float: {}", result.F.f),
-    2 => println!("Int: {}", result.U.u),
-    _ => println!("Invalid port result")
-  }
+    match signal {
+        0 => println!("Error: {}, {}", result.E.code, result.E.src),
+        1 => println!("Float: {}", result.F.f),
+        2 => println!("Int: {}", result.U.u),
+        _ => println!("Invalid port result")
+    }
 }
 ```
 Here, hardware gives us a result as a 32-bit value, but the value can't 
@@ -238,13 +238,13 @@ we can analyse a IEEE-754 value:
 
 ```rust
 bitdata IEEE754 {
-   F { value : f32 },
-   I { sign : u1, exp: u8, mant: u23 }
+    F { value : f32 },
+    I { sign : u1, exp: u8, mant: u23 }
 }
 
 fn float_rep(f : f32) {
-  let x = F { value : f };
-  println!("s:{}, e:{}, m:{}", x.I.sign, x.I.exp, x.I.mant)
+    let x = F { value : f };
+    println!("s:{}, e:{}, m:{}", x.I.sign, x.I.exp, x.I.mant)
 }
 ```
 
@@ -256,7 +256,7 @@ can also be an array type:
 ```rust
 bitdata PackedRgb : [u8, ..3]
 {
-  RGB { r: u8, g: u8, b: u8 }
+    RGB { r: u8, g: u8, b: u8 }
 }
 ```
 
@@ -282,8 +282,8 @@ for a future implementation. For instance:
 
 ```rust
 bitdata KdTree {
-   // ...
-   Leaf  { tag = 3 : u2, _: u2, tri : [u20,..3] }
+    // ...
+    Leaf  { tag = 3 : u2, _: u2, tri : [u20,..3] }
 }
 ```
 
