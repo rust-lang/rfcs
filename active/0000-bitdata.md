@@ -248,6 +248,18 @@ fn float_rep(f : f32) {
 }
 ```
 
+### Byte data
+
+The carrier type is typically a `u8`, `u16`, `u32`, `u64`, etc., but it
+can also be an array type:
+
+```rust
+bitdata PackedRgb : [u8, ..3]
+{
+  RGB { r: u8, g: u8, b: u8 }
+}
+```
+
 # Alternatives
 
 It has been suggested to implement this a syntax extension. This will not 
@@ -275,16 +287,3 @@ bitdata KdTree {
 }
 ```
 
-# Notes 
-
-## Byte data
-
-The carrier type is typically a `u8`, `u16`, `u32`, `u64`, etc., but it
-can also be an array type:
-
-```rust
-bitdata PackedRgb : [u8, ..3]
-{
-  RGB { r: u8, g: u8, b: u8 }
-}
-```
