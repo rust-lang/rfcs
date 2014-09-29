@@ -55,9 +55,19 @@ The tokenizer will eat literal suffixes according to the regular
 expression `[uif][0-9]*`, and either it or the parser reject any that
 it doesn't understand.
 
-Examples of valid literals:
+Examples of "valid" literals after this change (that is, entities that
+will be consumed as a single token):
 
+```
+1 0b2 0x3 4.5 6e78 9.10e11
+12u 13i 14f
+15u16 17i18 19f20 21.22f23
+0b11u25 0x26i27 28.29e30f31
+```
 
+Placing a space between the letter of the suffix and the number will
+cause it to be parsed as two separate tokens, just like today. That is
+`1u2` is one token, `1u 2` is two tokens.
 
 The example above would then be an error, something like:
 
