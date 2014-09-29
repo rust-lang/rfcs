@@ -41,13 +41,14 @@ Moreover, teepee's status module could be refactored by removing the
 An enum is C-like if all its variants belong to two groups:
 
 * variants that have empty bodies
-* variants that contain exactly one value that is a C-like enum
+* variants that contain exactly one member which is a C-like enum
 
-Remove the restriction that variants of such nested enums can't have
-explicitly assigned discriminants.
+Allow the use non-empty variant bodies and explicitly assigned discriminants
+in a single C-like enum.
 
 Use the error message `discriminant value already exists [E0081]` to disallow
-conflicting values. The set of values of a C-like enum type is the union of
+conflicting values in enums that have an integer representation mandated by
+the `repr` attribute. The set of values of a C-like enum type is the union of
 the set of all values it contains, and the set of its empty-bodied values.
 
 # Drawbacks
