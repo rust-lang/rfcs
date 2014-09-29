@@ -58,6 +58,8 @@ the set of all values it contains, and the set of its empty-bodied values.
 
 # Alternatives
 
+* Allow C-like enum variants that contain integers smaller than the
+  representation of the enum. (Perhaps with only one such member per enum.)
 * This could be approached as a general enum discriminant optimization.
   However, further improvements shouldn't be nearly as much of a language
   change as this one and are deemed to be an implementation detail out of
