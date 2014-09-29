@@ -72,7 +72,7 @@ cause it to be parsed as two separate tokens, just like today. That is
 The example above would then be an error, something like:
 
 ```rust
-    println!("{}", foo!(1u256)); // literal with unsupported size
+    println!("{}", foo!(1u256)); // error: literal with unsupported size
 ```
 
 Similarly, `1f16` and `0i1` would be errors. (The macro example there
@@ -81,6 +81,18 @@ was only handling it as a token, i.e. `tt`, there is the possibility
 that it wouldn't have to be illegal, e.g. `stringify!(1u256)` doesn't
 have to be illegal because the `1u256` never occurs at runtime/in the
 type system.)
+
+If we choose to allow tokens with nonstandard suffixes to be used in
+macros, the largest suffix that would be passed through to them would
+be `u64::MAX`, in particular, 2<sup>64</sup> - 1
+= 18446744073709551615. Longer streams of digits would still be
+consumed as a single token but would emit an error during
+tokenisation. For example:
+
+```
+1u18446744073709551616 // error: suffix out of range
+1u9999999999999999999999999999 // error: suffix out of range
+```
 
 # Drawbacks
 
@@ -107,5 +119,7 @@ things not on that list.
   [C++'s user defined literals][cpp]. (This could be extended to
   string and char literals, but this should be a separate RFC.)
 
+- Should we reduce the `u64::MAX` bound to to `u32::MAX` or even
+  `u16::MAX`?
 
 [cpp]: http://en.cppreference.com/w/cpp/language/user_literal
