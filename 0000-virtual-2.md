@@ -466,6 +466,10 @@ the above checks for the `Drop` trait as a special case. This is less general,
 but less complex. I'm not sure if there are any use cases for `inherit` other
 then `Drop`.
 
+**Open question:** how to deal with virtual method calls from `drop()`. This is
+a footgun in C++ and we should try to avoid it in Rust. C++ adjusts the vtable
+as parent destructors are called. I don't see a nice way to forbid virtual calls
+from a destructor, though presumably it could be hacked.
 
 ## Trait matching
 
