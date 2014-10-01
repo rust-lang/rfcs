@@ -354,12 +354,13 @@ fn send_form(
 
 The programmer's task is to refactor the arguments to a `Form` struct.
 This is done by copying the arguments, remove default arguments for the struct,
+add a lifetime paramter,
 and remove the type annotation for the function:
 
 ```Rust
-pub: struct Form {
-    first_name: Option<&str>,
-    last_name: Option<&str>,
+pub: struct Form<'a> {
+    first_name: Option<&'a str>,
+    last_name: Option<&'a str>,
     age: Option<uint>
 }
 
