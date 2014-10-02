@@ -19,6 +19,12 @@ Libraries can currently do this by forcing users to build with just `--cfg test`
 but this is a poor solution as this doesn't support `cargo test` and other
 tools which assume the normal `--test` behavior.
 
+This is needed by libraries like [stainless](https://github.com/reem/stainless)
+if they want to provide `before` and `after` for running code before and after
+all tests have completed. This is useful for things like opening up a database
+connection pool, starting a server, or other expensive, one-time
+initialization.
+
 # Detailed design
 
 A new builtin attribute, `#[test_main]` would be added, which can annotate any
