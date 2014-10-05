@@ -21,7 +21,7 @@ fn find(list: Vec<int>, val: int) -> Option<uint> {
     for (i, v) in list.iter().enumerate() {
         if *v == val {
             index = Some(i);
-            break;
+            break
         }
     }
     index
@@ -72,7 +72,7 @@ let x;
 frobnicate(for (i, v) in haystack.iter().enumerate() {
     if v >= needle {
         x = i;
-        break v;
+        break v
     }
 } else {
     x = -1;
@@ -90,7 +90,7 @@ The following statement:
 ```rust
 let x = while w {
     code;
-    if cond { break brk; }
+    if cond { break brk }
 } else {
     els
 };
@@ -106,19 +106,23 @@ In other words, it would be roughly equivalent to something like this:
 
 ```rust
 let x = {
-    let mut _res = None;
-    while w {
-        code;
-        if cond { _res = Some(brk); break; }
-    }
-    match _res {
-        None => {
-            els
+    let _res;
+    loop {
+        if w {
+            code;
+            if cond { _res = brk; break }
+        } else {
+            _res = els;
+            break
         }
-        Some(res) => res
     }
+    _res
 };
 ```
+
+This ‘translation’ also helps explain the use of the `else` keyword here: the
+`else` clause is run if the condition (here `w`) failed, much like how the
+`else` clause is run in an `if` expression if the condition failed.
 
 Drawbacks
 =========
@@ -133,7 +137,11 @@ Alternatives
 ============
 
 * Do nothing. Instead, rely on using mutable variables to keep track of
-  something within a loop.
+  something within a loop, or use the methods provided by the `Iterator` trait.
+  However, the same argument could be used to propose that `for` loops should be
+  removed altogether in favour of `map`, which presumably would not be a popular
+  change, if only because `break` and returning from the outer function would be
+  disallowed.
 * Use `nobreak` or something instead of `else`. This makes things a lot clearer,
   but has the downside of introducing a new keyword, making this a
   backward-incompatible change.
