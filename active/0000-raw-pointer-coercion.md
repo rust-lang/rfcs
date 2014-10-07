@@ -49,6 +49,16 @@ Add these rules:
 - `*mut T` coerces to `*const T`
 - `&mut T` coerces to `*const T`
 
+So that the following code compiles:
+
+```rust
+let a = &mut 1u;
+let b: *mut uint = a;
+
+let x: *const uint = a;
+let y: *const uint = b;
+```
+
 # Alternatives
 
 Leave it the way it is.
