@@ -32,7 +32,7 @@ impl TWrapper {
         unsafe { non_mutating_operation(self.raw as *const T); }
     }
 
-    fn mutating_operation(&self) {
+    fn mutating_operation(&mut self) {
         unsafe { mutating_operation(self.raw); }
     }
 }
