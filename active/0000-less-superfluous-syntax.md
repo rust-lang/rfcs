@@ -105,13 +105,13 @@ Obvious drawback is that this would make almost all code backwards incompatible.
 
 # Alternatives
 
---
+* Sticking to the current syntax is an alternative.
 
 # Unresolved questions
 
 Unfortunately, if operator overloading is not acceptable, 
-character "." as the namespace qualifier will conflict with struct field expression.
-On the other hand, character ":" might conflict with something else like the match proposal below.
+using character "." as the namespace qualifier will conflict with struct field expression.
+On the other hand, character ":" might conflict with something else like the match proposal above.
 Third option could be the "~" character.
 ```rust
 hello~print_hello(); 
