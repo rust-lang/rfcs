@@ -14,7 +14,8 @@ unchecked slice manipulation.
 * Provide unsafe versions of the addition, subtraction, and indexing operators on raw ptrs to
 provide more ergonomic ptr manipulation.
 
-* Deprecate or move most of the free functions in `ptr` to the RawPtr extension traits.
+* Deprecate some of the free functions in `ptr`, and duplicate the rest as convenience methods on
+the RawPtr extension traits.
 
 * Deprecate *all* `unsafe` methods on slices and `slice::raw` in favour of raw slices.
 
@@ -159,8 +160,6 @@ following refactors:
 
 * Deprecate `ptr::read_and_zero` as a weak convenience for `read` and `set_memory`.
 
-* Deprecate `ptr::swap` and `ptr::replace` in favour of the same methods in `mem`.
-
 * Deprecate `RawPtr::null` and `RawPtr::is_not_null` as awkward to use.
 
 * Deprecate all of `slice::raw` as poorly motivated, especially with raw slices available.
@@ -179,7 +178,7 @@ In addition, this would have the benefit of removing the need to explicitly cast
 `*const`'s in some places.
 
 * Rename `copy_memory`, `copy_nonoverlapping_memory`, and `set_memory` to `copy`,
-`copy_nonoverlapping` and `set_bytes` for simplification.
+`copy_nonoverlapping` and `write_bytes` for simplification.
 
 * Rename `RawPtr::to_uint` to `RawPtr::as_uint` to match conversion conventions.
 
@@ -190,6 +189,14 @@ slices as "the safe way" and raw slices as "the unsafe way". The naive transitio
 `foo.unsafe_get(i)` -> `foo.as_raw()[i]`. However if lots of unsafe work needs to be done, the
 `as_raw` conversion need only be done once.
 
+We also duplicate the free functions on `ptr` to the RawPtr traits because while methods are
+generally more convenient to use, raw ptrs are frequently made very transiently.
+ref-to-ptr coercion means the free functions can be more ergonomic to use when the user only has
+a proper reference to the value. Therefore we offer both free functions and methods so that the
+most ergonomic calling style can be used. When UFCS is fully available, it should be possible to
+import the RawPtr methods *as* free functions, in which case the free functions can reasonably
+be deprecated.
+
 The ptr module ends up only having the following functions:
 
 ```
@@ -198,6 +205,31 @@ pub fn null<T>() -> *const T;
 
 /// Create an unsafe mutable null pointer.
 pub fn null_mut<T>() -> *mut T;
+
+/// Reads the value from *src and returns it.
+pub unsafe fn read<T>(src: *const T) -> T;
+
+/// Unsafely overwrites a memory location with the given value without destroying the old value.
+pub unsafe fn write<T>(dest: *mut T, src: T);
+
+/// Unsafely overwrites `count * size_of<T>()` bytes with the given byte.
+pub unsafe fn write_bytes(dest: *mut T, byte: u8, count: uint);
+
+/// Swaps the values of `x` and `y`. Note that in contrast to `mem::swap`, `x` and `y` may point
+/// to the same address of memory. Useful for making some operations branchless.
+pub unsafe fn swap<T>(x: *mut T, y: *mut T);
+
+/// Replace the value at a mutable location with a new one, returning the old value. This is simply
+/// a convenience for calling `mem::replace` with a raw pointer.
+pub unsafe fn replace<T>(dest: *mut T, src: T) -> T;
+
+/// Copies `count * size_of<T>()` many bytes from `src` to `dest`,
+/// assuming that the source and destination *may* overlap.
+pub unsafe fn copy<T>(dest: *mut T, src: *const T, count: uint);
+
+/// Copies `count * size_of<T>()` many bytes from `src` to `dest`,
+/// assuming that the source and destination *do not* overlap.
+pub unsafe fn copy_nonoverlapping<T>(dest: *mut T, src: *const T, count: uint);
 ```
 
 And the ptr traits end up looking like this:
@@ -226,7 +258,7 @@ pub trait RawPtr<T> {
     /// `count` of 3 represents a pointer offset of `3 * sizeof::<T>()` bytes.
     unsafe fn offset(self, count: int) -> Self;
 
-    /// Reads the value from `*src` and returns it.
+    /// Reads the value from `self` and returns it.
     unsafe fn read(self) -> T;
 }
 ```
@@ -253,17 +285,25 @@ pub trait RawMutPtr<T>{
     /// so care must be taken to previously deallocate the value at `dst`.
     unsafe fn write(self, src: T);
 
-    /// Copies `count * size_of<T>()` many bytes from `from` to the address of this pointer,
-    /// assuming that the source and destination *may* overlap.
-    unsafe fn copy(self, from: *const T, count: uint);
-
-    /// Copies `count * size_of<T>()` many bytes from `from` to the address of this pointer,
-    /// assuming that the source and destination *do not* overlap.
-    unsafe fn copy_nonoverlapping(self, from: *const T, count: uint);
-
     /// Sets the `count * size_of<T>()` bytes at the address of this pointer to the the given
     /// byte. Good for zeroing out memory.
-    unsafe fn set_bytes(self, byte: u8, count: uint);
+    unsafe fn write_bytes(self, byte: u8, count: uint);
+
+    /// Copies `count * size_of<T>()` many bytes from `src` to the address of this pointer,
+    /// assuming that the source and destination *may* overlap.
+    unsafe fn copy(self, src: *const T, count: uint);
+
+    /// Copies `count * size_of<T>()` many bytes from `src` to the address of this pointer,
+    /// assuming that the source and destination *do not* overlap.
+    unsafe fn copy_nonoverlapping(self, src: *const T, count: uint);
+
+    /// Swaps the values of `self` and `y`. Note that in contrast to `mem::swap`, `x` and `y`
+    /// may point to the same address of memory. Useful for making some operations branchless.
+    pub unsafe fn swap<T>(self, y: *mut T);
+
+    /// Replace the value of the pointer, returning the old value. This is simply
+    /// a convenience for calling `mem::replace` with a raw pointer.
+    pub unsafe fn replace<T>(self, src: T) -> T;
 }
 ```
 
@@ -279,7 +319,9 @@ pub trait ImmutableSlice<'a, T> {
     // remove this:
     unsafe fn unsafe_get(self, index: uint) -> &'a T
 }
+```
 
+```
 pub trait MutableSlice<'a, T> {
     // ... a bunch of stuff that doesn't change ...
 
@@ -370,7 +412,6 @@ fn insertion_sort<T>(v: &mut [T], compare: |&T, &T| -> Ordering) {
                 let tmp = ptr::read(read_ptr);
                 buf_v[j + 1, ..].copy(buf_v[j, i]);
                 buf_v.write(j, tmp);
-                mem::forget(tmp);
             }
         }
     }
@@ -389,6 +430,10 @@ naturally out of the range that the slice is over.
 
 * The raw slice API *significantly* duplicates the ptr API. The authors of this RFC consider this
 a significant trade-off for the sake of ergonomics.
+
+* As written, `RawSlice<T>` theoretically prevents `RawPtr<T>` ever being implemented for
+`T: Unsized`. This could be potentially worked around by a very specific exception to the blanket
+impl for `T = [U]`.
 
 # Alternatives
 
@@ -435,3 +480,5 @@ be worth considering this. This can be done in a back-compat way later, though.
 * Checked or truncating versions of the copy methods on raw slices?
 
 * Maybe deprecate `is_null()` in favour of `== ptr::null()`?
+
+* `ptr::swap` and `ptr::replace` can be changed
