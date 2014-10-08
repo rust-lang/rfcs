@@ -111,7 +111,7 @@ Obvious drawback is that this would make almost all code backwards incompatible.
 
 # Alternatives
 
-* Sticking to the current syntax is an alternative.
+Sticking to the current syntax is an alternative.
 
 # Unresolved questions
 
