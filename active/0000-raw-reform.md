@@ -78,7 +78,7 @@ trait RawSlice<T> {
     fn len(self) -> uint;
 
     /// Converts the rawslice into a slice
-    unsafe fn as_slice(self) -> &[T];
+    unsafe fn as_slice<'a>(self) -> &'a [T];
 
     /// Converts the rawslice into a rawptr
     fn as_ptr(self) -> *const T;
@@ -92,7 +92,7 @@ trait RawSlice<T> {
 ```
 trait RawMutSlice<T> : RawSlice<T> {
     //// Converts the rawslice into a mutable slice
-    unsafe fn as_mut_slice(self) -> &mut[T];
+    unsafe fn as_mut_slice<'a>(self) -> &'a mut[T];
 
     /// Converts the rawslice into a mutable rawptr
     fn as_mut_ptr(self) -> *mut T;
@@ -215,7 +215,7 @@ pub trait RawPtr<T> {
     fn as_raw_slice(self, len: uint) -> *const [T];
 
     /// Converts the pointer into a slice.
-    unsafe fn as_slice(self, len: uint) -> &[T];
+    unsafe fn as_slice<'a>(self, len: uint) -> &'a [T];
 
     /// Returns `None` if the pointer is null, or else returns a reference to the
     /// value wrapped in `Some`.
@@ -243,7 +243,7 @@ pub trait RawMutPtr<T>{
     fn as_raw_mut_slice(self, len: uint) -> *mut [T];
 
     /// Converts the pointer into a mutable slice.
-    unsafe fn as_mut_slice(self, len: uint) -> &mut [T];
+    unsafe fn as_mut_slice<'a>(self, len: uint) -> &;a mut [T];
 
     /// Unsafely overwrite a memory location with the given value without destroying
     /// the old value.
@@ -251,7 +251,7 @@ pub trait RawMutPtr<T>{
     /// This operation is unsafe because it does not destroy the previous value
     /// contained at the location `dst`. This could leak allocations or resources,
     /// so care must be taken to previously deallocate the value at `dst`.
-    pub unsafe fn write<T>(self, src: T);
+    pub unsafe fn write(self, src: T);
 
     /// Copies `count * size_of<T>()` many bytes from `from` to the address of this pointer,
     /// assuming that the source and destination *may* overlap.
@@ -263,7 +263,7 @@ pub trait RawMutPtr<T>{
 
     /// Sets the `count * size_of<T>()` bytes at the address of this pointer to the the given
     /// byte. Good for zeroing out memory.
-    pub fn set_bytes<T>(self, byte: u8, count: uint);
+    pub fn set_bytes(self, byte: u8, count: uint);
 }
 ```
 
