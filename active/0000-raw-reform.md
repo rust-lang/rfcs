@@ -251,19 +251,19 @@ pub trait RawMutPtr<T>{
     /// This operation is unsafe because it does not destroy the previous value
     /// contained at the location `dst`. This could leak allocations or resources,
     /// so care must be taken to previously deallocate the value at `dst`.
-    pub unsafe fn write(self, src: T);
+    unsafe fn write(self, src: T);
 
     /// Copies `count * size_of<T>()` many bytes from `from` to the address of this pointer,
     /// assuming that the source and destination *may* overlap.
-    fn copy(self, from: *const T, count: uint);
+    unsafe fn copy(self, from: *const T, count: uint);
 
     /// Copies `count * size_of<T>()` many bytes from `from` to the address of this pointer,
     /// assuming that the source and destination *do not* overlap.
-    fn copy_nonoverlapping(self, from: *const T, count: uint);
+    unsafe fn copy_nonoverlapping(self, from: *const T, count: uint);
 
     /// Sets the `count * size_of<T>()` bytes at the address of this pointer to the the given
     /// byte. Good for zeroing out memory.
-    pub fn set_bytes(self, byte: u8, count: uint);
+    unsafe fn set_bytes(self, byte: u8, count: uint);
 }
 ```
 
