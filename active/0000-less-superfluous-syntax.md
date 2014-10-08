@@ -71,14 +71,20 @@ let add_one = |x: int| -> int { 1i + x };
 let add_one = |x: int| int { 1i + x };
 ```
 
-### Replace namespace qualifier "::" with some single character symbol like ":", ".", "~"
+### Replace namespace qualifier "::" with some single character symbol like ".", ":", "~"
 ```rust
 hello::print_hello();
 ```
 ```rust
 hello.print_hello(); 
 ```
-
+Unfortunately, if operator overloading is not acceptable, 
+using character "." as the namespace qualifier will conflict with struct field expression.
+On the other hand, character ":" might conflict with something else like the match proposal above.
+Third option could be the "~" character.
+```rust
+hello~print_hello(); 
+```
 
 ### Replace "=>" in match with ":"
 ```rust
@@ -109,10 +115,4 @@ Obvious drawback is that this would make almost all code backwards incompatible.
 
 # Unresolved questions
 
-Unfortunately, if operator overloading is not acceptable, 
-using character "." as the namespace qualifier will conflict with struct field expression.
-On the other hand, character ":" might conflict with something else like the match proposal above.
-Third option could be the "~" character.
-```rust
-hello~print_hello(); 
-```
+Possible syntactical conflicts like the namespace qualifier vs. struct field expression above.
