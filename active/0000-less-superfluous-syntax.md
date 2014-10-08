@@ -4,7 +4,7 @@
 
 # Summary
 
-Consider making the syntax less verbose to make it easier to read and write code.
+Consider making the syntax less superfluous to make it easier to read and write code.
 
 # Motivation
 
