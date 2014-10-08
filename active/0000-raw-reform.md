@@ -243,7 +243,7 @@ pub trait RawMutPtr<T>{
     fn as_raw_mut_slice(self, len: uint) -> *mut [T];
 
     /// Converts the pointer into a mutable slice.
-    unsafe fn as_mut_slice<'a>(self, len: uint) -> &;a mut [T];
+    unsafe fn as_mut_slice<'a>(self, len: uint) -> &'a mut [T];
 
     /// Unsafely overwrite a memory location with the given value without destroying
     /// the old value.
