@@ -17,7 +17,7 @@ provide more ergonomic ptr manipulation.
 * Deprecate some of the free functions in `ptr`, and duplicate the rest as convenience methods on
 the RawPtr extension traits.
 
-* Deprecate *all* `unsafe` methods on slices and `slice::raw` in favour of raw slices.
+* Deprecate *all* `unsafe` methods in `slice::raw` in favour of raw slices.
 
 * Add conversion methods to the three families of extension traits for conveniently moving between
 them.
@@ -169,9 +169,6 @@ following refactors:
 
 * Deprecate all of `slice::raw` as poorly motivated, especially with raw slices available.
 
-* Deprecate `ImmutableSlice::unsafe_get` and `MutableSlice::unsafe_mut` in favour of using raw
-slices and indexing into them.
-
 * Add `as_raw` and `as_raw_mut` to the `Slice` and `MutSlice` extension traits.
 
 * Add `as_slice`, `as_mut_slice`, `as_raw_slice`, and `as_raw_mut_slice` to the
@@ -189,16 +186,17 @@ In addition, this would have the benefit of removing the need to explicitly cast
 
 * Make the RawPtr traits take self by value, because ptrs are `copy`.
 
-When all of this is done, slices will no longer have *any* unsafe methods. This clearly delinates
-slices as "the safe way" and raw slices as "the unsafe way". The naive transition path will be
-`foo.unsafe_get(i)` -> `foo.as_raw()[i]`. However if lots of unsafe work needs to be done, the
-`as_raw` conversion need only be done once.
+Note that this proposal keeps `unsafe_get` andd `unsafe_mut` on slices. While this behaviour can 
+be theoretically subsumed by using raw slices, they would strip away all lifetime and ownership 
+information that the slice would normally provide. However `unsafe_get` can be cumbersome. If 
+lots of unsafe work needs to be done, the `as_raw` conversion may be more ergonomic, as it need 
+only be done once.
 
 We also duplicate the free functions on `ptr` to the RawPtr traits because while methods are
 generally more convenient to use, raw ptrs are frequently made very transiently.
 ref-to-ptr coercion means the free functions can be more ergonomic to use when the user only has
 a proper reference to the value. Therefore we offer both free functions and methods so that the
-most ergonomic calling style can be used. When UFCS is fully available, it should be possible to
+most ergonomic calling style can be used. In one hypothetical UFCS future, it would be possible to
 import the RawPtr methods *as* free functions, in which case the free functions can reasonably
 be deprecated.
 
@@ -312,7 +310,7 @@ pub trait RawMutPtr<T>{
 }
 ```
 
-And the `ImmutableSlice` and `MutableSlice` traits end up like this:
+And the `ImmutableSlice` and `MutableSlice` traits each add a single method:
 
 ```
 pub trait ImmutableSlice<'a, T> {
@@ -320,9 +318,6 @@ pub trait ImmutableSlice<'a, T> {
 
     /// Converts the slice into a raw slice
     fn as_raw(&self) -> *const [T];
-
-    // remove this:
-    unsafe fn unsafe_get(self, index: uint) -> &'a T
 }
 ```
 
@@ -332,9 +327,6 @@ pub trait MutableSlice<'a, T> {
 
     /// Converts the slice into a raw slice
     fn as_raw_mut(self) -> *mut [T];
-
-    // remove this:
-    unsafe fn unsafe_mut(self, index: uint) -> &'a mut T
 }
 ```
 
@@ -433,15 +425,12 @@ naturally out of the range that the slice is over.
 
 * Adds more special-casing to the compiler to handle the unsafe operators.
 
-* The raw slice API *significantly* duplicates the ptr API. The authors of this RFC consider this
-a significant trade-off for the sake of ergonomics.
+* *significant* API duplication is introduced. There are no less than *three* ways to `read`
+a value under this proposal.
 
 * As written, `RawSlice<T>` theoretically prevents `RawPtr<T>` ever being implemented for
 `T: Unsized`. This could be potentially worked around by a very specific exception to the blanket
 impl for `T = [U]`.
-
-* Coercing to a raw slice to perform an unchecked operation completely clobbers all lifetime
-information that would otherwise normally be available. This is unfortunate.
 
 # Alternatives
 
@@ -472,11 +461,6 @@ However it may reduce ergonomics in the common case.
 * Should `ptr.offset` be deprecated in favour of only using pointer arithmetic? Being able to
 method chain offsets is moderately convenient.
 
-* `*const [T]` is a `*const U` for `U = [T]`, but we propose indexing on these two types to have
-different effects. Must one be chosen, or can this be disambiguated somehow? How would this
-interact with the possibility of a future migration to one of the more extreme choices for unsafe
-operators?
-
 * raw slices could also support `offset`, and consequently unsafe addition and subtraction. This
 could be useful for shifting a window into a larger slice around. This would also bring raw slices
 and pointers closer together in functionality. Unclear if this is desirable. May accidentally fall
@@ -488,3 +472,6 @@ be worth considering this. This can be done in a back-compat way later, though.
 * Checked or truncating versions of the copy methods on raw slices?
 
 * Maybe deprecate `is_null()` in favour of `== ptr::null()`?
+
+* swap and replace *aren't* provided on the current RawSlice API for no particular reason other
+than them being only weakly motivated. They could be added.
