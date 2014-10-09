@@ -125,6 +125,11 @@ block. Unsafe operators should behave exactly like dereffing a raw ptr. Unsafe s
 yield a new raw slice. Unsafe indexing takes a uint, and returns (and then deref) an
 `&T` or `&mut T` as appropriate (an alternative can be found in the alternatives section).
 
+All of these operations are *completely* unchecked, even though the length information is
+available. If you wish to perform a checked operation on a raw slice, you can coerce to a
+normal slice and perform the operation there. Similarly, if you wish to perform an unchecked
+operation on a normal slice, you can safely coerce to a raw slice temporarily.
+
 Unsafe addition, subtraction, and indexing of `*const T` and `*mut T`
 should also be provided with ints rather than uints. Unsafe addition and subtraction should be
 equivalent to calling `offset` on the ptr today. Indexing should have the same behaviour as
@@ -435,6 +440,9 @@ a significant trade-off for the sake of ergonomics.
 `T: Unsized`. This could be potentially worked around by a very specific exception to the blanket
 impl for `T = [U]`.
 
+* Coercing to a raw slice to perform an unchecked operation completely clobbers all lifetime
+information that would otherwise normally be available. This is unfortunate.
+
 # Alternatives
 
 * All of this design can be *easily* implemented *right now* thanks to DST, except for the unsafe
@@ -480,5 +488,3 @@ be worth considering this. This can be done in a back-compat way later, though.
 * Checked or truncating versions of the copy methods on raw slices?
 
 * Maybe deprecate `is_null()` in favour of `== ptr::null()`?
-
-* `ptr::swap` and `ptr::replace` can be changed
