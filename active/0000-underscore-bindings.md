@@ -91,7 +91,8 @@ a binding `_x` where `_x` is a fresh unused variable.
 # Drawbacks
 
 I can't think of any reasons why someone would want to rely on the current
-behavior. It would be more clear to explicitly scope the 
+behavior. It would be more clear to explicitly scope the binding to specify that
+the destructor should run immediately.
 
 # Alternatives
 
