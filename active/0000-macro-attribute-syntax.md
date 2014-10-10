@@ -373,8 +373,7 @@ where attributes and macros may appear.
   only expressions that begin with a keyword would permit attributes.
   (Due to ambiguities around `@attr[]`.)
 
-The author is of the opinion that we ought to be stricter in both
-cases.
+The author is vaguely of the opinion that we ought to be stricter.
 
 [PR]: https://github.com/pcwalton/rfcs/blob/unify-attributes-and-macros/active/0000-unify-attributes-and-macros.md
 [3740]: https://github.com/rust-lang/rust/issues/3740
