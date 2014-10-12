@@ -151,6 +151,9 @@ change is not backwards compatible.
 * There could be no changes made at all, and users will just have to deal with
 the problems caused by the current behavior.
 
+* The behavior proposed in this RFC could be implemented as a warn-by-default
+lint on top of the existing behavior.
+
 * Lifetime error messages could be improved to the point that they sufficiently
 reduce the frustrations caused by the elision rules giving incorrect lifetimes.
 This doesn't address the problem that the errors are not given when writing the
