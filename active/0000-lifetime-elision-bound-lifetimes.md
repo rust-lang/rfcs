@@ -122,20 +122,6 @@ trait Foo<'a> {
 }
 ```
 
-* Nested functions, e.g.
-
-```rust
-impl<'a> A<'a> {
-    fn bar(&self) -> &'a int {
-        fn f(a: &int) -> &int {
-            ...
-        }
-
-        ...
-    }
-}
-```
-
 # Drawbacks
 
 This change will require more lifetime parameters to be written. However, it
