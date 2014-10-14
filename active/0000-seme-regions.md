@@ -170,15 +170,13 @@ This definition is inspired somewhat by the work done on liveness analysis and
 register allocation of programs in [static single assignment form](http://en.wikipedia.org/wiki/Static_single_assignment_form).
 
 If R is a set of vertices in the CFG, we say that R is a *single-entry /
-multiple-exit region* if the following conditions hold:
+multiple-exit region* if there is a vertex Entry in R such that if V is in R and
+W is not in R, then every path from W to V contains Entry. If W is the CFG entry
+point, then this condition specializes to the first condition in the definition
+of a SESE region above. It isn't hard to see that if such a vertex Entry exists
+then it must be unique, by considering paths from the CFG entry point.
 
-1. There is a vertex Entry in R such that for all vertices V in R, every path
-from the function entry to V contains Entry.
-
-2. If V is in R and P is a path from Entry to V that does not leave R and
-reenter through Entry, then every vertex of P is in R.
-
-The second condition is to ensure that in the case of a program fragment like
+This condition ensures that in the case of a program fragment like
 
 ```rust
 let mut i = 0i;
@@ -191,7 +189,7 @@ if ... {
 drop(p);
 ```
 
-that the region corresponding to the borrow in `p` includes both branches of the
+the region corresponding to the borrow in `p` includes both branches of the
 `if`.
 
 This definition is difficult to work with directly, but it is possible to
