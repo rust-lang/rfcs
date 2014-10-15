@@ -71,22 +71,32 @@ dereferences to be explicit and to be in an unsafe block. So if `x` has type
 make attempting to dereference a raw pointer using `&` a type error, so `&x`
 would give a type error and a note advising to use explicit dereferencing.
 
-We would add a function `addr` to the prelude that would fulfill the function of
-the current `&` operator, i.e., take a borrowed reference without dereferencing.
-It would be defined as:
+We would add an `AddressOf` trait to the prelude that would fulfill the function
+of the current `&` operator, i.e., take a borrowed reference without
+dereferencing. It would be defined as:
 
 ```
-#[inline]
-fn addr<T>(x: T) -> &T {
-    &T
+trait AddressOf {
+    fn address_of(&self) -> &Self;
+    fn address_of_mut(&mut self) -> &mut Self;
+}
+
+impl<T> AddressOf for T {
+    #[inline]
+    fn address_of(&self) -> &T {
+        self
+    }
+   
+    #[inline]
+    fn address_of_mut(&mut self) -> &mut T {
+        self
+    }
 }
 ```
 
-Similarly, we would add an `addr_mut` function. Note that we use the new borrow
-operator in the definition of `addr`, we get the desired effect because `T` is
-not bounded by `Deref`. This illustrates that the borrow operator depends on the
-static type of the operand and that the operation is in some ways as fundamental
-as the current address-of operator.
+To get get the address of some value `foo`, you would write `foo.address_of()`.
+This trait relies on the auto-ref behaviour of methods on their receivers and
+the way that mechanism prefers to do as few references as possible.
 
 I hope use of these functions are very rare. It is only necessary when you need
 an expression to have type `&Rc<T>` or similar, and when that expression is not
