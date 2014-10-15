@@ -25,7 +25,7 @@ implementing a trait carries with it a few restrictions:
     * No lifetimes can be added/removed to the methods that are not present in
       the original trait
     * The methods may not be made private
-    * The methods may not have additional generics
+    * The methods may not have additional type parameters
 
 * The relevant trait implementation has to fulfill coherence requirements since 
   the operator overloading traits are 3rd party to most of the Rust's library 
