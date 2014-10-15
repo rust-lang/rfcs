@@ -92,9 +92,9 @@ impl MyTrait for S {
 ```
 
 `"xxx"` in the above definition would be replaced by a string corresponding to 
-each operator (the author suggests using the current lang-item names). Invalid 
-method signatures are accepted, but are naturally detected when the de-sugaring 
-happens at the call site.
+each operator (the author suggests using the method names of the current 
+operator overloading traits). Invalid method signatures are accepted, but are 
+naturally detected when the de-sugaring happens at the call site.
 
 ## Possible implementation
 
@@ -141,6 +141,9 @@ pub trait Add<RHS,Result> {
     fn add(&self, rhs: &RHS) -> Result;
 }
 ```
+
+For operator overloading traits with multiple methods, each method gets its own 
+version of the `#[operator]` attribute.
 
 The user code would not be affected.
 
