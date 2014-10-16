@@ -229,3 +229,14 @@ One possibility is allowing only methods that are object safe, that is
 they do not mention the `Self` type and are not generic, but it's possible
 that with some ingenuity we could get away with both.
 
+How should this interact with type inference?
+
+Should this: `let x = vec![1u, "hello", 7i]` compile with
+`x: Vec<uint | &'static str | int>` or be rejected without further
+annotations? Should you generally be able to coerce to a join type
+without explicit annotation that you want a join type somewhere in
+the program?
+
+If so, that implies a large change in the way types are inferred
+and could be a source of confusion.
+
