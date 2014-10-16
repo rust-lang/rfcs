@@ -116,7 +116,9 @@ The notation is order independent, `A | B` is the same type as `B | A`.
 In the same vein, multiple occurrences of `A | B`, even in different crates,
 are the same type.
 
-As a result of this, no trait impls are allowed for join types.
+Trait impls on joins follow the regular coherence rules as they apply to
+tuples - at least one of the types in the join must be defined in the
+same crate or the trait must be defined in the same crate.
 
 ```rust
 type BorA = B | A;
@@ -178,6 +180,9 @@ impl Show for A | B {
 Join types are represented in memory exactly like their equivalent enums.
 
 For instance, `A | B` is represented the same as `enum AorB { a(A), b(B) }`.
+
+Duplicate types in a join are disallowed, i.e. `T | T` is illegal, as is
+`A | B | A`.
 
 # Drawbacks
 
