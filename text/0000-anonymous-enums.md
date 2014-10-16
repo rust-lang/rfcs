@@ -142,8 +142,11 @@ instantiation syntax. Instead, types which are listed in a join are
 implicitly coercable to the join type. They can also be converted using
 `as` where it would be inconvenient to otherwise give a type hint.
 
+The obvious syntax is ambiguous with bitwise XOR (`|`) for integers.
+As a result, it must be disambiguated using `A as (A | B)`.
+
 ```rust
-let x = A as A | B;
+let x = A as (A | B);
 ```
 
 In a significant departure from the behavior of regular enums, if all of the
