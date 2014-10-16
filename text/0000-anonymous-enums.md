@@ -248,3 +248,10 @@ the program?
 If so, that implies a large change in the way types are inferred
 and could be a source of confusion.
 
+How does the ban on duplicate types interact with generics?
+
+Given `fn<A: Default, B: Default> -> A | B`, what if `A` and `B`
+are instantiated as the same type? Is this a reason to allow
+duplicate types, even though they are confusing and possibly
+ambiguous?
+
