@@ -67,7 +67,7 @@ No coercions may be applied to `expr` in `&expr`, but they may be applied to
 
 Raw pointers would not be dereferenced by `&`. We expect raw pointer
 dereferences to be explicit and to be in an unsafe block. So if `x` has type
-`&Box<*Gc<T>>`, then `&x` would have type `&*Gc<T>`. Alternatively, we could
+`&Box<*Rc<T>>`, then `&x` would have type `&*Rc<T>`. Alternatively, we could
 make attempting to dereference a raw pointer using `&` a type error, so `&x`
 would give a type error and a note advising to use explicit dereferencing.
 
@@ -102,6 +102,34 @@ I hope use of these functions are very rare. It is only necessary when you need
 an expression to have type `&Rc<T>` or similar, and when that expression is not
 the receiver of a method call.
 
+There would be no change to reference types, `&T` would mean the same as it does
+today.
+
+There would also be no change to using `&` in pattern matching. That is, `&` in
+pattern matching would match the behaviour of the `&` type, not the `&`
+operator. This is logical since the `&` operator is no longer a type
+construction operation. It is slightly unfortunate that the type introduction
+and elimination syntax do not correspond exactly (but they would correspond
+better than `*` does).
+
+## ref
+
+I think `ref` should continue to have the same behaviour it does today. It is a
+bit of a shame that `&` and `ref` would have different effects, but given that
+they are completely different syntax-wise, I think this is OK. In support of
+keeping `ref` as is:
+
+* if you want the borrow operator behaviour, you can always just use `&` on the
+  variable;
+* unlike in expression position, there is no way to call a function to get a
+  reference (if we took the borrow operator behaviour);
+* in my experience, when using `&` in expression position, I want to borrow the
+  contents, but when using `ref` I want the operand, but I just want it 'by reference';
+* pattern matching is very structural, and it just **feels** better that here we
+  are precise about a reference and not unwrapping too;
+* I think the above points hold especially true when considering `mut ref`, see
+  also the comments below about mutable references to collections in the
+  'unresolved questions' section.
 
 # Drawbacks
 
@@ -195,10 +223,6 @@ an implicit version of the borrow operator. I believe that would be more
 predictable, more consistent, and easier to explain. However, it is clearly
 less flexible, so the question is 'how much code would break?'.
 
-## `ref`
-
-Using `ref` in a pattern has similar behaviour to using `&` in an expression.
-Should it have the borrow or address-of semantics?
 
 ## Slicing
 
@@ -212,3 +236,11 @@ using `&expr` (with RFC #226 the conversion would be implicit).
 The question is really about `Vec`, `String`, and `Deref`, and is mostly
 orthogonal to this RFC. As long as we accept this or one of the cross-borrowing
 RFCs, then `Deref` could give us 'nice' conversions from `Vec` and `String`.
+
+However, it is worth considering the `&mut` situation in particular. One place
+it seems sensible to want a mutable reference is when mutating owning
+collections. If we want to add or remove an element from a `Vec` (for example)
+we do want a mutable reference to the `Vec` itself and not a mutable slice view
+of the data inside. Even though this situation is sensible, I believe it is rare
+enough that using a function will suffice. I believe many such instances are in
+pattern matching, and `ref` is not affected by this proposal.
