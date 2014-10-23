@@ -46,19 +46,20 @@ example.
 Detailed design
 ===============
 
-Extend `for` and `while` (and `while let`) to have an optional extra `else`
-clause. This clause is evaluated if and only if the loop finished iterating
-without reaching a `break` statement. This `else` clause, when reached, makes
-the loop expression evaluate to the value within. When omitted, it is equivalent
-to an empty `else` clause returning `()`. The syntax for this additional clause
-comes from Python, where it is used for the same thing.
+Extend `for`, `while`, and `while let` (but not `loop`) to have an optional
+extra `else` clause. This clause is evaluated if and only if the loop finished
+iterating without reaching a `break` statement. This `else` clause, when
+reached, makes the loop expression evaluate to the value within. When omitted,
+it is equivalent to an empty `else` clause returning `()`. The syntax for this
+additional clause comes from Python, where it is used for the same thing.
 
 Add an optional expression parameter to `break` statements following the label
 (if any). A `break` expression with a value breaks out of the loop and makes the
-loop evaluate to the given expression. The type of the `break` statement’s
+loop evaluate to the given expression. `break` expressions have the same
+precedence as `return` expressions. The type of the `break` statement’s
 expression must be the same as that of the `else` clause and that of any other
-`break` expression. Because `loop` loops have no `else` clause, this restriction
-does not apply to them.
+`break` expression. Because `loop` loops have no `else` clause, their `break`s
+only need to match types with each other.
 
 An advantage of having this new kind of construct is that the compiler can know
 that either the main loop body or the `else` clause will *always* be run at
@@ -82,8 +83,8 @@ frobnicate(for (i, v) in haystack.iter().enumerate() {
 
 because the compiler knows that `x` will be assigned to exactly once.
 
-Example
--------
+Examples
+--------
 
 The following statement:
 
@@ -124,6 +125,76 @@ This ‘translation’ also helps explain the use of the `else` keyword here: th
 `else` clause is run if the condition (here `w`) failed, much like how the
 `else` clause is run in an `if` expression if the condition failed.
 
+### Valid samples
+
+- ```rust
+  let x: int = while cond {
+      break 1
+  };
+  ```
+
+  Here the `else` clause is allowed to be omitted (inferred to be an empty block
+  of type `()`) because the type of the body block is `!`, which unifies with
+  `()`.
+
+- ```rust
+  let x: int = while cond {
+      foo();
+      if let Some(foo) = bar() { break foo }
+  } else {
+      0
+  };
+  ```
+
+  The types of the `else` and `break` clauses are the same, and they also match
+  the type of the variable the loop is assigned to, so this typechecks.
+
+- ```rust
+  let z: int;
+  let x: int = 'a: while cond {
+      let y: f64 = while foo() {
+          if bar() { z = 1; break 'a 1 }
+          if baz() { break 1.618 }
+      } else {
+          6.283
+      };
+      if y > 5 { z = 2; break y as int }
+  } else {
+      z = 3;
+      0
+  };
+  ```
+
+  This example demonstrates labelled `break`s/`continue`s: the type of the
+  expression passed to the `break` has to be the same as the type of the loop
+  with the corresponding label. Additionally, `z` is always going to be assigned
+  to exactly once: every assignment inside the outer `while` loop’s main body is
+  followed by a `break` for the outer loop, and it is assigned to exactly once
+  in the `else` clause.
+
+### Invalid samples
+
+- ```rust
+  let x = while cond {
+      if foo() { break 1i }
+  };
+  ```
+
+  This example would not typecheck, because the type of the `break`’s expression
+  (`int`) does not match the type of the (omitted) `else` block (`()`).
+
+- ```rust
+  let x: int;
+  while cond {
+      if foo() { x = 1 }
+  } else {
+      x = 2
+  }
+  ```
+
+  In this example, `x` could be assigned to more than once, so this would be
+  invalid.
+
 Drawbacks
 =========
 
@@ -144,7 +215,10 @@ Alternatives
   disallowed.
 * Use `nobreak` or something instead of `else`. This makes things a lot clearer,
   but has the downside of introducing a new keyword, making this a
-  backward-incompatible change.
+  backward-incompatible change. Alternatively, `!break` could be used, avoiding
+  the introduction of a new keyword. Unfortunately, this looks quite cryptic,
+  and could be tricky to parse (although it is not ambiguous), especially given
+  that `!break` is currently a valid expression.
 * Make iterators yield `Result<T, E>` instead of `Option<T>` when calling
   `next`, and adjust `for` loops to evaluate to the expression parameter of any
   `break` encountered or the `Err` part of `next`’s return value. This could be
