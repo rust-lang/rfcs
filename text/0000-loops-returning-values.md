@@ -127,7 +127,6 @@ This ‘translation’ also helps explain the use of the `else` keyword here: th
 
 ### Valid samples
 
-
 - ```rust
   let x: int = while cond {
       break 1
@@ -137,8 +136,6 @@ This ‘translation’ also helps explain the use of the `else` keyword here: th
   Here the `else` clause is allowed to be omitted (inferred to be an empty block
   of type `()`) because the type of the body block is `!`, which unifies with
   `()`.
-
-
 - ```rust
   let x: int = while cond {
       foo();
@@ -150,8 +147,6 @@ This ‘translation’ also helps explain the use of the `else` keyword here: th
 
   The types of the `else` and `break` clauses are the same, and they also match
   the type of the variable the loop is assigned to, so this typechecks.
-
-
 - ```rust
   let z: int;
   let x: int = 'a: while cond {
@@ -175,7 +170,6 @@ This ‘translation’ also helps explain the use of the `else` keyword here: th
   followed by a `break` for the outer loop, and it is assigned to exactly once
   in the `else` clause.
 
-
 ### Invalid samples
 
 - ```rust
@@ -186,8 +180,6 @@ This ‘translation’ also helps explain the use of the `else` keyword here: th
 
   This example would not typecheck, because the type of the `break`’s expression
   (`int`) does not match the type of the (omitted) `else` block (`()`).
-
-
 - ```rust
   let x: int;
   while cond {
@@ -199,7 +191,6 @@ This ‘translation’ also helps explain the use of the `else` keyword here: th
 
   In this example, `x` could be assigned to more than once, so this would be
   invalid.
-
 
 Drawbacks
 =========
