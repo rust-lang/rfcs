@@ -14,6 +14,7 @@ Relocation and interface changes for the Rust library module `c_str`.
   constructors.
 * Add some methods and trait implementations to make the types more useful.
 * Remove the `Clone` implementation due to lack of purpose.
+* Remove `.as_mut_ptr()` due to its potential for convenient evil.
 
 # Motivation
 
@@ -93,13 +94,34 @@ pointer as a parameter. This allows passing plain functions as destructors
 in the most common case, potentially optimizing away the empty boxed
 closure environment.
 
-## No Clone
+## Remove or deprecate problematic methods and trait implementations
+
+### No Clone
 
 The semantics of `Clone` would be somewhat at odds with the newly
 introduced custom destructors.
 After some discussion on IRC and a few related GitHub issues, it is
 perceived by the author that there is no need to facilitate copying
 C strings in Rust.
+
+### No .as_mut_ptr()
+
+The string wrapper types are immutable and they treat the wrapped
+string as immutable, so they should not provide a convenient
+mutability crowbar.
+For unsafe in-place modifications of string's bytes, there is
+always an explicit raw pointer cast:
+````rust
+let hack_ptr = unsafe { buf.as_ptr() as *mut libc::c_char };
+// Ah-ha, I see we are up to something dangerous here
+````
+
+### Deprecate .owns_buffer()
+
+The semantics of `.owns_buffer()` are somewhat muddled by custom
+destructor closures, and between them and `.unwrap()` there should not
+remain much need for this method. It's left as deprecated to facilitate
+porting of existing code.
 
 ## Implement ToCStr for CString and CStrBuf
 
