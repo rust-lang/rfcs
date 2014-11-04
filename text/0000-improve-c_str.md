@@ -151,5 +151,3 @@ define it differently for some architecture.
 
 Bring along `c_vec`, perhaps with additional harmonization regarding the
 destructor closure type?
-
-Move the C compatibility modules right into the `libc` crate?
