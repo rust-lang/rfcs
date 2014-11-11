@@ -27,7 +27,7 @@ But contrary to expectations set by other programming languages, these are not t
 
 Given the history, `int` and `uint` _look_ like default integer types, but a target-dependent size is not a good default.
 
-Using pointer-sized integers for computations that are not limited by memory produces code with overflow bugs (checked or unchecked) on different size targets, non-portable binary I/O, and excess performance costs.
+Using pointer-sized integers for computations that are not limited by memory produces code with overflow bugs ([checked or unchecked](https://github.com/rust-lang/rfcs/pull/146)) on different size targets, non-portable binary I/O, and excess performance costs.
 
 This RFC replaces [RFC: int/uint portability to 16-bit CPUs](https://github.com/rust-lang/rfcs/pull/161).
 
