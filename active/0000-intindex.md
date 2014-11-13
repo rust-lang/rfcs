@@ -2,6 +2,11 @@
 - RFC PR #: (leave this empty)
 - Rust Issue #: (leave this empty)
 
+# Replacement
+
+## I propose to withdraw this RFC in favor of the single-purpose [RFC: Renaming int/uint (PR #464)](https://github.com/rust-lang/rfcs/pull/464).
+
+
 # Summary
 
 Either rename the types `int` and `uint` to `index` and `uindex` to avoid
