@@ -19,7 +19,7 @@ This RFC assumes a fixed-size integer type will become the type inference fallba
 
 # Background
 
-The Rust language does array indexing using the smallest integer types that span the address space. For this purpose, Rust defines integer types, currently named `int` and `uint`, that are large enough to hold a pointer in the target environment -- `uint` for indexing and `int` for pointer differences.
+The Rust language does array indexing using the smallest integer types that span the address space. For this purpose, Rust defines two integer types that are large enough to hold a pointer in the target environment: currently named `uint` for indexing and `int` for pointer differences.
 
 (For memory safety, the memory allocator will limit each node to half of address space so any array index will fit in a signed, pointer-sized integer.)
 
@@ -32,14 +32,14 @@ Using pointer-sized integers for computations that are not limited by memory pro
 This RFC replaces [RFC: int/uint portability to 16-bit CPUs](https://github.com/rust-lang/rfcs/pull/161).
 
 
-# Detailed design
+# Detailed Design
 
 Rename these two types. The names `index` and `uindex` are meant to convey their intended use with arrays. Use them more narrowly for array indexing and related purposes.
 
 
 # Drawbacks
 
-  - Renaming `int`/`uint` requires changing a bunch of existing code. (The Rust Guide will change anyway, once the integer fallback type is chosen.)
+  - Renaming `int`/`uint` requires changing a bunch of existing code. (The Rust Guide will also change once the integer type inference fallback is chosen.)
   - The new names are longer.
 
 
@@ -54,17 +54,17 @@ Alternative names:
   - `PointerSizedInt` and `PointerSizedUInt`.
   - ...
 
-The impact of not doing this: Portability bugs, peformance bugs, difficulties explaining the language, and recurring discussions about this. A possible impact on language adoption when people read warnings not to use `int`.
+The impact of not doing this: Portability bugs, peformance bugs, difficulties explaining the language, and recurring discussions about this. Also a possible impact on language adoption when people read warnings to be careful about using `int`.
 
 Another alternative considered is a lint warning on every use of `int` or `uint` that's not directly related to array indexing.
 
 
-# Unresolved questions
+# Unresolved Questions
 
   - Change this before Rust 1.0?
 
 
-# References
+# Discussion References
 
   - [Guide: what to do about int](https://github.com/rust-lang/rust/issues/15526)
   - [If `int` has the wrong size …?](http://discuss.rust-lang.org/t/if-int-has-the-wrong-size/454)
