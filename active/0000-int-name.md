@@ -4,7 +4,7 @@
 
 # Summary
 
-Rename the pointer-size integer types from `int` and `uint` to `index` and `uindex` to avoid misconceptions and misuses. They aren't the default types you're looking for.
+Rename the pointer-size integer types `int` and `uint` to avoid misconceptions and misuses. They aren't the default types you're looking for. Several candidate names are listed under **Alternatives**, below, starting with `iptr` and `uptr`.
 
 This RFC assumes a fixed-size integer type will become the type inference fallback and thus the language's "default integer type." See [RFC: Change integer fallback RFC to suggest `i32` instead of `int` as the fallback](https://github.com/rust-lang/rfcs/pull/452). That fixed-size type will be used heavily in tutorials and libraries.
 
@@ -34,12 +34,17 @@ This RFC replaces [RFC: int/uint portability to 16-bit CPUs](https://github.com/
 
 # Detailed Design
 
-Rename these two types. The names `index` and `uindex` are meant to convey their intended use with arrays. Use them more narrowly for array indexing and related purposes.
+Rename these two pointer-sized integer types. Decide on new names that convey their intended use with arrays rather than general-purpose integers.
+
+Update code and documentation to use pointer-sized integers more narrowly for array indexing and related purposes. Provide a deprecation period to carry out these updates.
+
+Rename the integer literal suffixes `i` and `u` to new names that suit the new type names (e.g. `iptr` and `uptr`).
 
 
 # Drawbacks
 
-  - Renaming `int`/`uint` requires changing a bunch of existing code. (The Rust Guide will also change once the integer type inference fallback is chosen.)
+  - Renaming `int`/`uint` requires changing a bunch of existing code. On the other hand, this is an ideal opportunity to fix integer portability bugs.
+  - The Rust Guide also needs to change, but it'll mostly change for the integer type inference fallback type.
   - The new names are longer.
 
 
@@ -47,9 +52,14 @@ Rename these two types. The names `index` and `uindex` are meant to convey their
 
 Alternative names:
 
-  - `index` and `uindex`, named for their uses and preserving Rust's "i" and "u" integer prefixes.
-  - `intptr` and `uintptr`, [borrowing from C's](http://en.cppreference.com/w/cpp/types/integer) `intptr_t` and `uintptr_t`. These names are awkward by design.
-  - `isize` and `usize`, [borrowing from C's](http://en.cppreference.com/w/cpp/types/integer) `ssize_t` and `size_t` with Rust's "i/u" prefixes. But these types are defined as having the same number of bits as a pointer, not as a way of measuring sizes. A `usize` would be larger than needed for the largest memory node.
+  - `iptr` and `uptr`, which refer directly to the (variable) *pointer* length just like `i32` refers to the length 32 bits.
+  - `index` and `uindex`, related to array indexing and preserving Rust's "i"/"u" integer prefixes, however `uindex` is the type used for indexing. (Is "index" too good of an identifier to sacrifice to a keyword?)
+  - `sindex` and `index`, since the unsigned type is the one used for indexing.
+  - `intptr` and `uintptr`, [borrowing from C's](https://en.wikipedia.org/wiki/C_data_types#Fixed-width_integer_types) `intptr_t` and `uintptr_t`. These names are awkward by design.
+  - `isize` and `usize`, [borrowing from C's](https://en.wikipedia.org/wiki/C_data_types#Size_and_pointer_difference_types) `ssize_t` and `size_t` with Rust's "i/u" prefixes. But these two types are defined as having the same number of bits as a pointer, that is in terms of the address space size, not for measuring objects. An unsigned pointer-sized integer can count at least twice the number of bytes in the maximum memory node (which is limited by the signed pointer-sized integer) and yet it artificially limits the size in elements of a bit vector.
+  - `index` and `ptrdiff`.
+  - `offset` and `size`.
+  - `ioffset` and `ulength` or `ulen` or `uaddr`.
   - `intps` and `uintps`.
   - `PointerSizedInt` and `PointerSizedUInt`.
   - ...
