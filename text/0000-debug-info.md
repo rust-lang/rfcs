@@ -60,7 +60,7 @@ for the `DebugLocationMarker` are `Copy`, `Eq` and `PartialEq`.
 
 ## The Debug Info
 
-the `inspect_debug_location` function returns a `DebugInfo` object that has as much
+The `inspect_debug_location` function returns a `DebugInfo` object that has as much
 debug information as available for the given location:
 
 ```rust
