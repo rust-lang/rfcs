@@ -22,7 +22,7 @@ taken (for instance error logging libraries can benefit from these macros) they 
 causing worse overall performance for situations where the error branch is never taken
 or error handling never needs the location information.
 
-The wah `debug_location!()` could work, is by recording the instruction pointer and
+The way `debug_location!()` could work, is by recording the instruction pointer and
 then later using `DWARF` information to find the debug info.  However it is implemented
 as a macro which would allow extra information to be frozen where the expansion happens
 to aid this.
