@@ -439,6 +439,14 @@ operator syntax should be unsuprising. The `Placer` trait has a single
    with two methods.  It is effectively an `&uninit` reference:
    i.e. it represents a pointer to uninitialized storage.
 
+ * The `Data` type parameter to `Placer` has the `Sized?`
+   generalization marker, implying that `Placer` accepts instances of
+   unsized types.  However, this is just meant to future-proof the
+   `Placer` trait (and likewise the `PlacementAgent` trait below) for
+   hypothetical future support for instances of unsized types.
+   This RFC, in particular the placement protocol defined here,
+   does not attempt to support unsized types.
+
 The library designer is responsible for implementing the two traits
 above in a manner compatible with the hypothetical (hygienic) syntax
 expansion:
@@ -543,7 +551,10 @@ On the flip side, a `Vec::emplace_back` placer shows how to use the
 Placer API to directly evaluate an expression into a target cell
 within a vector object; it follows the example established by
 [Placement `in` as an (overloaded) operator], where the
-`emplace_back()` method returns a temporary value that 
+`emplace_back()` method returns a temporary value that negotiates the
+handling of the backing storage (in particular, establishing the
+vector's new length when panic does not occur, thus finalizing the
+computed value as a member of the vector).
 
 ```rust
 struct EmplaceBack<'a, T:'a> {
@@ -736,3 +747,22 @@ while evaluating the `<value-expr>`.
 
 * Is there a significant benefit to building in linguistic support for `&uninit` rather
   than having the protocol rely on the unsafe methods in `PlacementAgent`?
+
+* Can these traits be used in some manner to support dynamically-sized
+  types (DST)?  A small amount of forward-thinking was applied, in
+  that the trait definitions genralize the `Data` type parameter via
+  the `Sized?` generalization marker, but this RFC explicitly is not
+  attempting to address DST support, and the placement `in` expression
+  syntax fundamentally *should not* be used to compute instances of
+  unsized values.
+
+  My guess is that the `Placer` API itself is likely to be too
+  impoverished to support DST, since `make_place` itself is not given
+  any information about the value's size and alignment, since the
+  trait was designed to be used with `in (<place-expr>) <value-expr>`,
+  where we can compute the size and alignment from the static type of
+  `<value-expr>`. But it is possible that an extension of `Placer`
+  could provide the needed methods and then be used with
+  `PlacementAgent`. (This may be an argument for removing the `Sized?`
+  generalization marker from `Data` in `Placer`, but for keeping the
+  `Sized?` marker on `Data` in `PlacementAgent`.)
