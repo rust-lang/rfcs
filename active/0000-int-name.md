@@ -38,7 +38,7 @@ Rename these two pointer-sized integer types. Decide on new names that convey th
 
 Update code and documentation to use pointer-sized integers more narrowly for array indexing and related purposes. Provide a deprecation period to carry out these updates.
 
-Rename the integer literal suffixes `i` and `u` to new names that suit the new type names (e.g. `iptr` and `uptr`).
+Rename the integer literal suffixes `i` and `u` to new names that suit the new type names. Examples: `32uptr`, `32usize`, or `32umem`, depending on the new names selected.
 
 
 # Drawbacks
@@ -56,7 +56,8 @@ Alternative names:
   - `index` and `uindex`, related to array indexing and preserving Rust's "i"/"u" integer prefixes, however `uindex` is the type used for indexing. (Is "index" too good of an identifier to sacrifice to a keyword?)
   - `sindex` and `index`, since the unsigned type is the one used for indexing.
   - `intptr` and `uintptr`, [borrowing from C's](https://en.wikipedia.org/wiki/C_data_types#Fixed-width_integer_types) `intptr_t` and `uintptr_t`. These names are awkward by design.
-  - `isize` and `usize`, [borrowing from C's](https://en.wikipedia.org/wiki/C_data_types#Size_and_pointer_difference_types) `ssize_t` and `size_t` with Rust's "i/u" prefixes. But these two types are defined as having the same number of bits as a pointer, that is in terms of the address space size, not for measuring objects. An unsigned pointer-sized integer can count at least twice the number of bytes in the maximum memory node (which is limited by the signed pointer-sized integer) and yet it artificially limits the size in elements of a bit vector.
+  - `isize` and `usize`, [borrowing from C's](https://en.wikipedia.org/wiki/C_data_types#Size_and_pointer_difference_types) `ssize_t` and `size_t` with Rust's "i/u" prefixes, indicating integers large enough to hold the *size-in-bytes* of a memory object, and thus ([as in C++](http://en.cppreference.com/w/cpp/types/size_t)) ideal for indexing an in-memory array of elements at least 1 byte each.
+  - `imem` and `umem`, defined as integers large enough to address any memory the program can address. Suits both indices and sizes (unlike `uptr`, `uindex`, and `usize`).
   - `index` and `ptrdiff`.
   - `offset` and `size`.
   - `ioffset` and `ulength` or `ulen` or `uaddr`.
