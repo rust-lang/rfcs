@@ -19,11 +19,13 @@ This RFC assumes a fixed-size integer type will become the type inference fallba
 
 # Background
 
-The Rust language does array indexing using the smallest integer types that span the address space. For this purpose, Rust defines two integer types that are large enough to hold a pointer in the target environment: currently named `uint` for indexing and `int` for pointer differences.
+The Rust language does array indexing using the smallest integer types that span the address space. For this purpose, Rust defines two [machine-dependent integer types](http://doc.rust-lang.org/reference.html#machine-dependent-integer-types) that have the same number of bits as the target platform's pointer type. They're currently named `uint` for indexing and `int` for pointer differences.
 
-(For memory safety, the memory allocator will limit each node to half of address space so any array index will fit in a signed, pointer-sized integer.)
+(For memory safety, the language sets the theoretical upper bound on object and array size to the maximum `int` value.)
 
-But contrary to expectations set by other programming languages, these are not the fastest, "native," register, C-sized, nor 32-bit integer types.
+These types are useful for "memory numbers": indices, counts, sizes, offsets, etc. The problem is their names.
+
+Contrary to expectations set by other programming languages, these are not the fastest, "native," register, C-sized, "word" sized, nor 32-bit integer types.
 
 Given the history, `int` and `uint` _look_ like default integer types, but a target-dependent size is not a good default.
 
@@ -34,11 +36,11 @@ This RFC replaces [RFC: int/uint portability to 16-bit CPUs](https://github.com/
 
 # Detailed Design
 
-Rename these two pointer-sized integer types. Decide on new names that convey their intended use with arrays rather than general-purpose integers.
+Rename these two pointer-sized integer types. Decide on new names that convey their intended memory-scale uses rather than general-purpose integers.
 
 Update code and documentation to use pointer-sized integers more narrowly for array indexing and related purposes. Provide a deprecation period to carry out these updates.
 
-Rename the integer literal suffixes `i` and `u` to new names that suit the new type names. Examples: `32uptr`, `32usize`, or `32umem`, depending on the new names selected.
+Rename the integer literal suffixes `i` and `u` to new names that suit the new type names. The suffix could be the same as the type, e.g. `32umem`, `32uptr`, or `32usize` (depending on the new names selected) or a shorter form, e.g. `32um` and `100im`.
 
 
 # Drawbacks
@@ -56,8 +58,8 @@ Alternative names:
   - `index` and `uindex`, related to array indexing and preserving Rust's "i"/"u" integer prefixes, however `uindex` is the type used for indexing. (Is "index" too good of an identifier to sacrifice to a keyword?)
   - `sindex` and `index`, since the unsigned type is the one used for indexing.
   - `intptr` and `uintptr`, [borrowing from C's](https://en.wikipedia.org/wiki/C_data_types#Fixed-width_integer_types) `intptr_t` and `uintptr_t`. These names are awkward by design.
-  - `isize` and `usize`, [borrowing from C's](https://en.wikipedia.org/wiki/C_data_types#Size_and_pointer_difference_types) `ssize_t` and `size_t` with Rust's "i/u" prefixes, indicating integers large enough to hold the *size-in-bytes* of a memory object, and thus ([as in C++](http://en.cppreference.com/w/cpp/types/size_t)) ideal for indexing an in-memory array of elements at least 1 byte each.
-  - `imem` and `umem`, defined as integers large enough to address any memory the program can address. Suits both indices and sizes (unlike `uptr`, `uindex`, and `usize`).
+  - `isize` and `usize`, [borrowing from C's](https://en.wikipedia.org/wiki/C_data_types#Size_and_pointer_difference_types) `ssize_t` and `size_t` with Rust's "i/u" prefixes, indicating integers large enough to hold the *size-in-bytes* of a memory object, and thus ([as in C++](http://en.cppreference.com/w/cpp/types/size_t)) the right range to index an in-memory array of elements at least 1 byte each.
+  - `imem` and `umem`, meaning *"memory numbers."* These type names are suitable for indexes, counts, offsets, and sizes (unlike `uptr`, `uindex`, and `usize`). As memory numbers, it makes sense that they're sized to fit the address space.
   - `index` and `ptrdiff`.
   - `offset` and `size`.
   - `ioffset` and `ulength` or `ulen` or `uaddr`.
