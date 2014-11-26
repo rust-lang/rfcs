@@ -55,6 +55,13 @@ It's a large change that will cause a ton of churn very close to 1.0. Since the
 only compiler changes required will be to the parser and pretty printer, it's
 relatively low risk (compared to resolve or typeck changes for example).
 
+The lack of delimiters around the whole attribute does pose a small ambiguity
+problem once attributes are allowed to be attached to expressions. Is `@foo
+(1 + 1)` the attribute `@foo` attached to the expression `(1 + 1)` or is it
+the (syntactically invalid) attribute `@foo(1+1)`? The parser will act greedily
+and take the second interpretation. The parenthesis can be replaced by `{}` or
+the attribute could be made an inner attribute: `(@!foo 1+1)`.
+
 # Alternatives
 
 We can punt on this until after 1.0. `@`-attributes and `#`-attributes will
