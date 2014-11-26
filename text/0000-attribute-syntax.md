@@ -88,6 +88,16 @@ We can leave the syntax as is, which is also not that bad.
 
 We could use `()` as the optional delimiters instead of `[]`.
 
+Alternatively, we could forbid delimiters, and the ambiguity could be solved
+via empty parens (which are already allowed by the grammar):
+```rust
+match (foo, bar) {
+    @thing()
+    (a, b) => { ...}
+    ...
+}
+```
+
 Support for `#[deprecated = "reason"]` style attributes is removed because
 `@deprecated = "reason"` is a bit visually confusing since there are no
 delimiters wrapping the attribute. There are a couple of alternatives here.
