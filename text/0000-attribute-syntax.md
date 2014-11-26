@@ -80,6 +80,9 @@ relatively low risk (compared to resolve or typeck changes for example).
 The need to add parentheses to avoid ambiguities in some situations is a bit
 unfortunate.
 
+The fact that `@foo(bar, baz)` and `@foo("bar")` are legal but `@foo("bar",
+"baz")` isn't is a bit weird.
+
 # Alternatives
 
 We can punt on this until after 1.0. `@`-attributes and `#`-attributes will
