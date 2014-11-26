@@ -23,6 +23,7 @@ Attributes and inner attributes would be written in one of the following forms
 
 ```
 ATTR       = '@' [!] META
+           | '@' [!] '[' META ']'
 META       = ID
            | ID '(' META_SEQ ')'
 META_SEQ   = META_ITEM {',' META_ITEM}
@@ -34,12 +35,32 @@ Here are some examples of legal syntax:
 
 * `@inline`
 * `@!inline`
+* `@[inline]`
 * `@deprecated(reason = "foo")`
 * `@deriving(Eq)`
 
 Note that some attributes which are legal today have no equivalent:
 
 * `#[deprecated = "foo"]` becomes `@deprecated(reason = "foo")`
+
+`[]` delimiters are allowed but not required. They are necessary to avoid
+mis-parses in certain situations:
+```rust
+match (foo, bar) {
+    @thing
+    (a, b) => { ...}
+    ...
+}
+```
+This will parse as the attribute `@thing(a, b)`, which will in turn result in
+a syntax error. `[]` delimiters will resolve the ambiguity:
+```rust
+match (foo, bar) {
+    @[thing]
+    (a, b) => { ...}
+    ...
+}
+```
 
 ## Implementation
 
@@ -55,12 +76,7 @@ It's a large change that will cause a ton of churn very close to 1.0. Since the
 only compiler changes required will be to the parser and pretty printer, it's
 relatively low risk (compared to resolve or typeck changes for example).
 
-The lack of delimiters around the whole attribute does pose a small ambiguity
-problem once attributes are allowed to be attached to expressions. Is `@foo
-(1 + 1)` the attribute `@foo` attached to the expression `(1 + 1)` or is it
-the (syntactically invalid) attribute `@foo(1+1)`? The parser will act greedily
-and take the second interpretation. The parenthesis can be replaced by `{}` or
-the attribute could be made an inner attribute: `(@!foo 1+1)`.
+The need to continue to allow `[]` delimiters is a bit unfortunate.
 
 # Alternatives
 
@@ -69,6 +85,8 @@ have to coexist to avoid breaking backwards compatibility, but that won't be
 all that hard to deal with.
 
 We can leave the syntax as is, which is also not that bad.
+
+We could use `()` as the optional delimiters instead of `[]`.
 
 Support for `#[deprecated = "reason"]` style attributes is removed because
 `@deprecated = "reason"` is a bit visually confusing since there are no
