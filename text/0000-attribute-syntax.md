@@ -22,29 +22,26 @@ Attributes and inner attributes would be written in one of the following forms
 (BNF):
 
 ```
-ATTR       = '@' [!] META
-           | '@' [!] '[' META ']'
-META       = ID
-           | ID '(' META_SEQ ')'
-META_SEQ   = META_ITEM {',' META_ITEM}
-META_ITEM  = META
-           | ID '=' STRING_LITERAL
+ATTR     = '@' [!] META
+META     = ID
+         | ID '(' STRING_LITERAL ')
+         | ID '(' META {',' META} ')'
 ```
 
 Here are some examples of legal syntax:
 
 * `@inline`
 * `@!inline`
-* `@[inline]`
-* `@deprecated(reason = "foo")`
+* `@inline()`
+* `@deprecated("foo")`
 * `@deriving(Eq)`
+* `@cfg(all(target_os("linux"), feature("my_cargo_feature")))`
 
-Note that some attributes which are legal today have no equivalent:
+Note that the old `foo = "bar"` syntax is now `foo("bar")`. Since the `[]`
+delimiters are no longer present, `@foo = "bar"` is a bit confusing to visually
+parse (though it is not grammatically ambiguous).
 
-* `#[deprecated = "foo"]` becomes `@deprecated(reason = "foo")`
-
-`[]` delimiters are allowed but not required. They are necessary to avoid
-mis-parses in certain situations:
+The removal of `[]` delimiters do pose an ambiguity problem in some situations:
 ```rust
 match (foo, bar) {
     @thing
@@ -53,14 +50,18 @@ match (foo, bar) {
 }
 ```
 This will parse as the attribute `@thing(a, b)`, which will in turn result in
-a syntax error. `[]` delimiters will resolve the ambiguity:
+a syntax error. A pair of parentheses can be added to resolve the ambiguity:
 ```rust
 match (foo, bar) {
-    @[thing]
+    @thing()
     (a, b) => { ...}
     ...
 }
 ```
+This workaround is similar to the `box` syntax: `box () (foo, bar)`.
+
+To avoid confusing syntax extensions, the internal AST representation of
+`@foo` and `@foo()` should be made the same.
 
 ## Implementation
 
@@ -76,7 +77,8 @@ It's a large change that will cause a ton of churn very close to 1.0. Since the
 only compiler changes required will be to the parser and pretty printer, it's
 relatively low risk (compared to resolve or typeck changes for example).
 
-The need to continue to allow `[]` delimiters is a bit unfortunate.
+The need to add parentheses to avoid ambiguities in some situations is a bit
+unfortunate.
 
 # Alternatives
 
@@ -86,37 +88,14 @@ all that hard to deal with.
 
 We can leave the syntax as is, which is also not that bad.
 
-We could use `()` as the optional delimiters instead of `[]`.
+We could resolve the ambiguity problem by allowing, but not requiring, the use
+of `[]` (or `()`) delimiters.
 
-Alternatively, we could forbid delimiters, and the ambiguity could be solved
-via empty parens (which are already allowed by the grammar):
-```rust
-match (foo, bar) {
-    @thing()
-    (a, b) => { ...}
-    ...
-}
-```
-
-Support for `#[deprecated = "reason"]` style attributes is removed because
-`@deprecated = "reason"` is a bit visually confusing since there are no
-delimiters wrapping the attribute. There are a couple of alternatives here.
-One is to just allow that syntax. It's not grammatically ambiguous, after all.
-
-Another is to change `foo = "bar"` to `foo("bar")`:
-```
-ATTR     = '@' [!] META
-META     = ID
-         | ID '(' STRING_LITERAL ')
-         | ID '(' META {',' META} ')'
-```
-
-For example:
-* `@deprecated("foo")`
-* `@cfg(all(target_os("linux"), feature("my_cargo_feature")))`
-
-This allows for a more convenient syntax for deprecation, but does add even
-more parentheses to attribute invocations like the `cfg` example above.
+We can avoid the readability issues with `foo = "bar"` meta items by simply
+forbidding them at the top level of an attribute, that is, `@foo = "bar"` would
+not be allowed but `@foo(bar = "baz")` would. This would make things like
+deprecation attributes a bit more verbose - `@deprecated(reason = "foo")`
+instead of `@deprecated("foo")`.
 
 # Unresolved questions
 
