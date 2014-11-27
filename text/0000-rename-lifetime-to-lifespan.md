@@ -4,7 +4,7 @@
 
 # Summary
 
-Rename the term `lifetime` to `lifespan` in Rust's ownership model. The change would mostly effect compiler messages and documentations.
+Rename the term `lifetime` to `lifespan` in Rust's ownership model. The change would mostly affect compiler messages and documentations.
 
 # Motivation
 
