@@ -211,7 +211,7 @@ that they can handle tracebacks which greatly aids the debugging experience.
 
 The following layout is proposed:
 
-```
+```rust
 struct Failure<E: Error> {
     error: Box<E>,
 }
@@ -221,7 +221,7 @@ To support tracebacks additional traceback information can be included in debug
 builds.  In `rust-incidents` the failure is implemented by storing the error
 in a box in release, an by moving it into the traceback in debug:
 
-```
+```rust
 struct Failure<E: Error> {
     #[cfg(ndebug)]
     error: Box<E>,
