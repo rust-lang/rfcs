@@ -122,42 +122,46 @@ fn get_error_type(&self) -> TypeId { TypeId::of::<Self>() }
 The intended behavior of the functions added:
 
 name():
-    Return the capitalized name of the error.  This can be a variation of the
-    type name, but might also be conditional to the data stored in the error.
-    For instance for IO Errors the implementation can show "File Not Found"
-    if the kind is `IoErrorKind::FileNotFound`.
 
-    This is the only required method.
+> Return the capitalized name of the error.  This can be a variation of the
+> type name, but might also be conditional to the data stored in the error.
+> For instance for IO Errors the implementation can show "File Not Found"
+> if the kind is `IoErrorKind::FileNotFound`.
+>
+> This is the only required method.
 
 description():
-    An optional static description of what this error means in detail.  This
-    should only be provided if the name of the error is not clear enough by
-    itself.  There is no point in repeating "the file does not exist" if
-    the error is already callde "File Not Found".  However it would make sense
-    to provide information about why the file was not found.  For instance
-    "was not able to find configuration file" is a good description.
+
+> An optional static description of what this error means in detail.  This
+> should only be provided if the name of the error is not clear enough by
+> itself.  There is no point in repeating "the file does not exist" if
+> the error is already callde "File Not Found".  However it would make sense
+> to provide information about why the file was not found.  For instance
+> "was not able to find configuration file" is a good description.
 
 detail():
-    Detail is intended to be optionally calculated on the fly from error information
-    stored on the error.  It's not intended that the detail is stored as such
-    directly on the error as a formatted string.  The idea is that the detail
-    information might be more expensive to create and is only interesting for
-    error formatting.
 
-    Under no circumstances should anyone ever be forced to parse the error
-    detail.  All information contained within that might be relevant for
-    error handling should be exposed as individual fields or through accessor
-    functions.  For instance if a file does not exist, and the filename is
-    relevant information it should be stored separately.
-
-    Detail should never contain information that is already in description.
-    It does not replace description as information, it just augments it.
+> Detail is intended to be optionally calculated on the fly from error information
+> stored on the error.  It's not intended that the detail is stored as such
+> directly on the error as a formatted string.  The idea is that the detail
+> information might be more expensive to create and is only interesting for
+> error formatting.
+>
+> Under no circumstances should anyone ever be forced to parse the error
+> detail.  All information contained within that might be relevant for
+> error handling should be exposed as individual fields or through accessor
+> functions.  For instance if a file does not exist, and the filename is
+> relevant information it should be stored separately.
+>
+> Detail should never contain information that is already in description.
+> It does not replace description as information, it just augments it.
 
 cause():
-    If an error was caused by another error and the conversion happened through
-    `FromError` it can be a good idea to expose the original error here.  There
-    is no guarnatee and requirement that this happens.  This also is completely
-    orthogonal to the optional traceback support.  See later for more information.
+
+> If an error was caused by another error and the conversion happened through
+> `FromError` it can be a good idea to expose the original error here.  There
+> is no guarnatee and requirement that this happens.  This also is completely
+> orthogonal to the optional traceback support.  See later for more information.
 
 ## Error Trait Bounds and TypeId
 
