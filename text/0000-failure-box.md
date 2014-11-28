@@ -424,23 +424,43 @@ macro_rules! try {
 
 This RFC is very lengthy and potentially controversial.  The reason it's one package
 instead of smaller independent ones is that error handling needs to be a core language
-feature and it's very hard.
+feature and it's nearly impossible to provide the necessary interoperability in
+an external library.
 
 # Questions
 
-Extend the Non-nullable pointer optimization to handle Option<Bucket<K, V>>
+Q: Why is `name()` and `description()` necessary?  What about translations?
 
-https://github.com/rust-lang/rust/issues/9378
+> A: Support for translations is out of the scope for this.  However it should be
+> possible to map translations to errors through the use of `TypeId`.  For this it
+> might be a good idea to expose the underlying type id.
+>
+> Name and description are necessary for both a developer having something to work
+> off other than just a random (and unstable) hex number, and also for an end user
+> to have something to punch into Google if everything else fails.
 
-Send?
+Q: Why are heap allocations necessary?
 
-Clone?
+> A: They are not actually necessary in this proposal.  While the use of `Failure<T>`
+> requires a heap allocation for boxing up the error, the error itself can be used
+> without a failure.  However if developers want to use errors directly they should
+> take great care of keeping the errors small.  Ideally errors like `IoError` would
+> be always boxed or converted into much smaller types.
 
-ToOwned?
+Q: An Internal box does not implement non-nullable pointers correctly!
 
-# Alternatives
+> A: That's not a question, but it's correct.  That however only affects
+> `Result<(), Failure<T>>` and is something that can be easily fixed by making
+> this optimization work through a struct indirection.
 
-As an alternative name, `function_name!` could be used.
+Q: Why does the error need to be `Clone`?
+
+> A: It does not need to but it is very useful for both making tracebacks work
+> as well as other means of error reporting.  For instance an error might have
+> to go two ways to be handled: one error is converted in the process into something
+> that can be presented to the user while a clone of the error would go to an
+> error reporting service.  By knowing that any error can be `Clone` it allows
+> such usages.
 
 # References:
 
