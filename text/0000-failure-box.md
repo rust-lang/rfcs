@@ -47,6 +47,13 @@ frameworks rather than libraries.  However if libraries have huge error types
 (that might even wrap other errors) then `Failure<T>` is encouraged over
 using results with huge error structs.
 
+# Incompletenes
+
+This RFC is incomplete and does not provide all implementation details for
+`ConstructFailure`.  The reason for this is that an entire reference implementation
+can be found in `rust-incidents` [2] and would be too long for the scope of
+the RFC.  However all necessary implementation details are provided.
+
 # Motivation
 
 The introduction of the `FromError` and `Error` trait have transformed how error
