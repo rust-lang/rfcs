@@ -51,7 +51,7 @@ following rules are used:
 3. If a value is being dereferenced and implements `DerefMove` and `Deref`:
   1. If the type is `Copy`, call `deref_move`.
   2. Otherwise:
-    1. If the type implements `Deref<T>` where `T: Copy`, call `*deref`.
+    1. If the type implements `Deref<T>` where `T: Copy`, call `*foo.deref()`.
     2. Otherwise, call `deref_move`.
 4. If a value is being dereferenced and does not implement `DerefMove` but does
    implement `Deref`, use `deref`.
@@ -89,6 +89,10 @@ Alternatives
 * Do nothing, and blame `Box`’s special-casing on the fact that it is a lang
   item anyway.
 * Add a `DerefSet` trait as well, for assignments of the form `*ptr = val`.
+* Add a new `&'a move T` pointer type which can be moved out of, and use it in
+  the signature for `deref_move` instead. This would be ideal for, for example,
+  implementing `DerefMove<[T]>` on `Vec`, which would not be possible with the
+  current version of this RFC.
 
 Unresolved questions
 ====================
