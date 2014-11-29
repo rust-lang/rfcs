@@ -16,7 +16,7 @@ The changes as an overview:
   * the `description()` method will be changed to allow an optional description
     rather than a mandatory one.
   * it gains the `'static` trait bound to support `TypeId` to be used internally.
-  * it subtypes `Clone` in additiona to `Send` to allow cloning of errors.  This
+  * it subtypes `Clone` in additional to `Send` to allow cloning of errors.  This
     comes in useful for supporting debug information in tracebacks.
 * It introduces the `Failure<T>` box type which works similar to `Box<T>` but
   only holds errors and has a different internal implementation in release builds
@@ -54,7 +54,7 @@ handling in Rust works.  It made many great improvements over the most popular
 error handling concept in Rust which is based on error conversion at library
 boundaries.  Instead of libraries swallowing internal errors entirely or using
 `Any` or similar concepts to propagate it onwards unchanged, libraries found a
-clever middleground where they can report their own error while still retaining
+clever middle ground where they can report their own error while still retaining
 the original error information internally.
 
 There are however some issues with the current error design that need addressing.
@@ -76,7 +76,7 @@ The problem manually boxing up introduces is that now there is a layer of
 abstraction between the error and what it's represented at, which forces
 developers to implement the error trait for the box as well.  It also makes
 pattern matching over data contained on the error a lot more awkward as it
-requires derefering the error first.
+requires deref-ing the error first.
 
 By using a error specific box (called `Failure<T>`) it opens up not only the
 possibility to customize the error handling code to make the box more implicit,
@@ -156,7 +156,7 @@ description():
 > An optional static description of what this error means in detail.  This
 > should only be provided if the name of the error is not clear enough by
 > itself.  There is no point in repeating "the file does not exist" if
-> the error is already callde "File Not Found".  However it would make sense
+> the error is already called "File Not Found".  However it would make sense
 > to provide information about why the file was not found.  For instance
 > "was not able to find configuration file" is a good description.
 
@@ -181,7 +181,7 @@ cause():
 
 > If an error was caused by another error and the conversion happened through
 > `FromError` it can be a good idea to expose the original error here.  There
-> is no guarnatee and requirement that this happens.  This also is completely
+> is no guarantee and requirement that this happens.  This also is completely
 > orthogonal to the optional traceback support.  See later for more information.
 
 ## Error Trait Bounds and TypeId
@@ -192,7 +192,7 @@ bound is not entirely necessary but it is required if `TypeId` should be
 provided.  The implementation of the tracebacks currently heavily depends on
 this.  It also is a requirement for working with `cause()` properly.
 
-`rust-incidents` provideds an error extension that provides a way to cast and
+`rust-incidents` provides an error extension that provides a way to cast and
 typecheck an error:
 
 ```rust
@@ -220,7 +220,7 @@ impl<'a> ErrorExt<'a> for &'a Error {
 ```
 
 This has been a heavily discussed point in the past and it would be possible
-to deferr this point for later.  In any case the `'static` trait bound should
+to defer this point for later.  In any case the `'static` trait bound should
 be added so that dynamic errors can be added back later.
 
 ## Failures
@@ -277,7 +277,7 @@ debug case.
 
 At present the `try!` macro goes through the `FromError` trait directly.  This RFC
 introduces a new level of indirection which allows debug information to be captured
-if necessary.  In addition it also enables one way interoparability between errors
+if necessary.  In addition it also enables one way interoperability between errors
 and failures.
 
 ```rust
@@ -362,7 +362,7 @@ impl<E: Error, T: Error+FromError<E>> ConstructFailure<(E,)> for Failure<T> {
 
 As you can see, the implementation is different depending on the `ndebug` config.
 This in itself just makes an empty traceback.  The bubbling of the error through
-stacktraces is created by another `ConstructFailure`:
+tracebacks is created by another `ConstructFailure`:
 
 ```rust
 impl<E: Error> ConstructFailure<(Failure<E>,)> for Failure<E> {
@@ -424,7 +424,7 @@ In general the macro basically just takes a variable number of arguments and pas
 it onwards to the `ConstructFailure` as tuple.
 
 The try macro is similar, but it just takes either one result where the error
-part is passed onwards to `fail!` and the ok part is uwnrapped; or alternatively
+part is passed onwards to `fail!` and the `Ok` part is unwrapped; or alternatively
 a two argument version of where the second argument is an optional cause that
 is passed as second argument to `fail!`.
 
@@ -486,14 +486,14 @@ Q: Why does the error need to be `Clone`?
 Q: Why is `try!` now restricted to `Error`s?
 
 > A: partially this is a limitation of Rust.  Because the failure construction
-> needs to differenciate between failures and errors it is currently not
+> needs to differentiate between failures and errors it is currently not
 > possible to have a fallback implementation that works on arbitrary types that
 > do not implement `Error` and are not failures.  If negative trait bounds will
 > be introduced the same macro could be used to also work with arbitrary values.
 >
 > However the fact that `try!` now requires failures or errors is probably
-> benefitial for the user as it keeps the mental overhead of what happens on
-> rethrowing manageable.  It might be reasonable to implement a separate
+> beneficial for the user as it keeps the mental overhead of what happens on
+> re-throwing manageable.  It might be reasonable to implement a separate
 > macro to propagate failed results that are not errors.
 
 # References:
