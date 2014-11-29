@@ -4,9 +4,9 @@
 
 # Summary
 
-This RFC proposes the introduction of a `Failure<T>` wrapper type for errors
-and modifications to the `Error` trait for better error interoperability and
-debugging support.
+This RFC proposes changes to the `Error` trait and the introduction of a
+`Failure<T>` wrapper type for errors and modifications to the `Error` trait for
+better error interoperability and debugging support.
 
 The changes as an overview:
 
@@ -25,6 +25,27 @@ The changes as an overview:
   automatic creation of `Failure<T>` boxes.
 * It changes the behavior of the `try!` macro to automatically use the `fail!`
   macro in the `Err` clause.
+
+The traceback support can be kept optional in the beginning but ideally it lands
+not long after the initial support.  The reason for this is that propagating
+errors without location information is a lot more painful to debug than
+to immediately panic.  Especially if the application ends up bubbling errors
+up to a central point to render out an error message it becomes basically
+impossible to tell the origin of the error if multiple places exist that produce
+the same error.
+
+# Intended Usage
+
+After this RFC has been implemented libraries are supposed to only emit errors
+that implement a confirming `Error` trait.  This RFC also changes the `try!`
+macro to only work with errors in the future which will encourage libraries to
+properly implement `Error`.
+
+The usage of `Failure<T>` as provided by this RFC is entirely optional and
+partially by libraries.  `Failure<T>` should be used by applications and
+frameworks rather than libraries.  However if libraries have huge error types
+(that might even wrap other errors) then `Failure<T>` is encouraged over
+using results with huge error structs.
 
 # Motivation
 
@@ -461,6 +482,19 @@ Q: Why does the error need to be `Clone`?
 > that can be presented to the user while a clone of the error would go to an
 > error reporting service.  By knowing that any error can be `Clone` it allows
 > such usages.
+
+Q: Why is `try!` now restricted to `Error`s?
+
+> A: partially this is a limitation of Rust.  Because the failure construction
+> needs to differenciate between failures and errors it is currently not
+> possible to have a fallback implementation that works on arbitrary types that
+> do not implement `Error` and are not failures.  If negative trait bounds will
+> be introduced the same macro could be used to also work with arbitrary values.
+>
+> However the fact that `try!` now requires failures or errors is probably
+> benefitial for the user as it keeps the mental overhead of what happens on
+> rethrowing manageable.  It might be reasonable to implement a separate
+> macro to propagate failed results that are not errors.
 
 # References:
 
