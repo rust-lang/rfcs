@@ -457,7 +457,7 @@ an external library.
 
 # Questions
 
-Q: Why is `name()` and `description()` necessary?  What about translations?
+Q: Why are `name()` and `description()` necessary?  What about translations?
 
 > A: Support for translations is out of the scope for this.  However it should be
 > possible to map translations to errors through the use of `TypeId`.  For this it
