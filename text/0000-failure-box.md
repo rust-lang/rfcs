@@ -109,7 +109,7 @@ syntax support such as the proposed `?` operator[1] around it.
 
 # RFC Priority Defense
 
-The error handling situation is currently not idea in Rust and it has some
+The error handling situation is currently not ideal in Rust and it has some
 big impact on the kind of APIs that are being created.  As we are approaching
 a stable language revision it's important to get error handling right or we
 will fundamentally suffer from this issue in the standard and core libs.
