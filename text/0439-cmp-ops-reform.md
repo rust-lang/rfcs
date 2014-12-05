@@ -346,22 +346,28 @@ the following desugaring:
 ```rust
 i..j  ==>  Range(i, j)
 i..   ==>  RangeFrom(i)
-..j   ==>  RangeTo(j)
 
 where
 
 struct Range<Idx>(Idx, Idx);
 struct RangeFrom<Idx>(Idx);
-struct RangeTo<Idx>(Idx);
 ```
 
 Then, to implement slice notation, you just implement `Index`/`IndexMut` with
-`Range`, `RangeFrom`, and `RangeTo` index types.
+`Range` and `RangeFrom` index types.
 
-This cuts down on the number of special traits and machinery. It makes
-indexing and slicing more consistent (since both will implicitly deref
-their result); you'll write `&mut v[1..]` to get a mutable slice. It
-also opens the door to other uses of the range notation:
+The reason to drop the `..j` notation is an ambiguity: fixed size
+arrays like `["hello", .. 32]` conflict with this notation. Using the
+full range notation here does not seem too onerous, since it involves
+only writing an extra `0`. (Note that `..` is also used for functional
+record update, but that is not ambiguous: in `Foo { a: x, .. bar}`,
+the `.. bar` component will never be parsed as an expression.)
+
+Overall, this cuts down on the number of special traits and
+machinery. It makes indexing and slicing more consistent (since both
+will implicitly deref their result); you'll write `&mut v[1..]` to get
+a mutable slice. It also opens the door to other uses of the range
+notation:
 
 ```
 for x in 1..100 { ... }
@@ -370,13 +376,10 @@ for x in 1..100 { ... }
 because the refactored design is more modular.
 
 What about `v[]` notation? The proposal is to desugar this to
-`v[FullRange]` where `struct FullRange;`.
-
-Note that `..` is already used in a few places in the grammar, notably
-fixed length arrays and functional record update. The former is at the
-type level, however, and the latter is not ambiguous: `Foo { a: x,
-.. bar}` since the `.. bar` component will never be parsed as an
-expression.
+`v[FullRange]` where `struct FullRange;`. The proposal also keeps `[]`
+rather than changing to `[..]` both for brevity, and because `[..]`
+would suggest too much symmetry, i.e. it would suggest that `[..j]`
+works.
 
 ## Special traits
 
