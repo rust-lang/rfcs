@@ -59,7 +59,6 @@ own, introducing the following problems:
 * Mixing between their own Iterators and others in one file becomes inconvenient, as importing `IteratorExt`
   will clash with their implementations
 * Sidestepping the issue by using a different vocabulary (e.g. `fast_last()`) can introduce usage errors.
-* The `Ext` trait s
 
 Instead, I propose to disallow blanket implementations and implement the `Ext` type specifically for each type:
 
