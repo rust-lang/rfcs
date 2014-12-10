@@ -524,8 +524,7 @@ not exist in Rust right now and all types have names or are, in the case
 of unboxed closures, generated and interacted with through a trait.
 
 The syntax for checking whether a value is of a single specific type,
-regardless of the other bounds on it is somewhat unintuitive and involves
-repeating the type you want twice.
+regardless of the other bounds on it is somewhat unintuitive.
 
 It might not be possible to gaurentee that the **in memory** layout of two
 semantically identical union types are the same. This would prevent transmuting
@@ -535,7 +534,7 @@ The most obvious way to implement this would be to have the compiler generate a
 standard enum which contains variants for all of the possible bounds, this
 could lead to long compile times and large enums in cases where the types are
 not tightly constrained. For example the following would require the compiler
-to generate a 120-variant enum to accomadate any of the types being enums.
+to generate a 120-variant enum to accomadate any of the types being traits.
 
 ```rust
 fn pick_one<A, B, C, D, E>(a: &A, b: &B, c: &C, d: &D, e: &E) -> &(A|B|C|D|E) { ... }
