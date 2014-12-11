@@ -305,10 +305,10 @@ trait Talker { fn talk(&self); }
 
 impl Talker for Enter | Leave {
     fn talk(&self) {
-        match *self {
-            x as Enter         => { println!("hi-{}", x.say_hi()); },
-            x as Leave         => { println!("bye-{}", x.say_bye()); },
-            x as Enter + Leave => { println!("hi-{} and bye-{}", x.say_hi(), x.say_bye()); },
+        match self {
+            x as &Enter           => { println!("hi-{}", x.say_hi()); },
+            x as &Leave           => { println!("bye-{}", x.say_bye()); },
+            x as &(Enter + Leave) => { println!("hi-{} and bye-{}", x.say_hi(), x.say_bye()); },
         }
     }
 }
@@ -330,18 +330,21 @@ or all compound bounds are impossible for example in the following.
 ```rust
 struct X;
 struct Y;
-trait Z {}
 
-match a {
-    x  as X     => { ... },
-    y  as Y     => { ... },
-    z  as Z     => { ... },
-    xz as X + Z => { ... },
-    yz as Y + Z => { ... },
-    // The following two are illegal since X and Y are structs and thus
-    // these bounds are impossible to meet.
-    xy  as X + Y     => { ... }, // Error: Unreachable
-    xyz as X + Y + Z => { ... }, // Error: Unreachable
+fn example<Z>(a: &(X|Y|Z)) {
+    // Since the compiler cannot know if Z is a trait that X or Y implements we
+    // must explicitly handle these cases
+    match a {
+        x  as &X       => { ... },
+        y  as &Y       => { ... },
+        z  as &Z       => { ... },
+        xz as &(X + Z) => { ... },
+        yz as &(Y + Z) => { ... },
+        // The following two are illegal since X and Y are structs and thus
+        // these bounds are impossible to meet.
+        xy  as &(X + Y)     => { ... }, // Error: Unreachable
+        xyz as &(X + Y + Z) => { ... }, // Error: Unreachable
+    }
 }
 ```
 
@@ -351,17 +354,17 @@ the `?` to indicate the union of all possible types, useful for getting out
 something that is guaranteed to be some subset of the types.
 
 ```rust
-trait A { ... }
-trait B { ... }
-trait C { ... }
+trait X { ... }
+trait Y { ... }
+trait Z { ... }
 
-let abc : A | B | C = ...;
+let abc : &(X | Y | Z) = ...;
 
 match abc {
-    ab        as A + B + ? => { ... },     // Is an A + B, and any or no other types.
-                                           // The `?` is syntactic sugar for the set of all
-                                           // possible types, here ? = (A|B|C)
-    _ => { ... },                          // Default bounds. Everything not above.
+    ab as &(X + Y + ?) => { ... },     // Is an X + Y, and any or no other types.
+                                       // The `?` is syntactic sugar for the set of all
+                                       // possible types, here ? = (X|Y|Z)
+    _ => { ... },                      // Default bounds. Everything not above.
 }
 ```
 
@@ -448,7 +451,7 @@ let b = a.to_owned::<B>();
 ### Errors and the Type-Checker
 
 We always flatten types as much as possible, so therefore the following
-declarations are all equivalent:
+declarations are all semantically equivalent:
 
 ```rust
 type T1 = A | B | C;
@@ -484,6 +487,23 @@ has not already been declared.
 // Error: Did you mean: let x : Vec<uint|&'static str> = vec![1,2,"hello","goodbye"];
 let x = vec![1, 2, "hello", "goodbye"];
 ```
+
+### Representation in the compiler
+
+I wish to, as far as possible, avoid mandating any particular representation of
+Unions within this document. I will, however, give my take on how this could be
+represented.  I should note that I have no particular experience with how the
+types in rust are represented in object files and this section might need some
+serious work.
+
+Internal to the compiler we would create a normal enum structure containing a
+varient for each of the possible bounds that the union could have. This would
+further be marked as a Union type within the code and associated metadata.
+Whether or not any two equivalent union types have the same in-memory
+representation should be left undefined for ease of optimization. To handle
+cross-crate uses of Unions we would insert a shim above the function, or after
+the return value, that would convert the type into the type of union this crate
+expects, possibly adding or removing bounds.
 
 # Drawbacks
 
