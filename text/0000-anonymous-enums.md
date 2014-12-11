@@ -303,7 +303,7 @@ trait Leave { fn say_bye(&self) -> &str; }
 
 trait Talker { fn talk(&self); }
 
-impl Talker for Enter | Leave {
+impl Talker for T where T: Enter | Leave {
     fn talk(&self) {
         match self {
             x as &Enter           => { println!("hi-{}", x.say_hi()); },
@@ -357,6 +357,8 @@ something that is guaranteed to be some subset of the types.
 trait X { ... }
 trait Y { ... }
 trait Z { ... }
+
+// ...
 
 let abc : &(X | Y | Z) = ...;
 
