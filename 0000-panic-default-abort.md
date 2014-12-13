@@ -1,4 +1,4 @@
-- Start Date: (fill me in with today's date, 2014-12-12)
+- Start Date: 2014-12-12
 - RFC PR: (leave this empty)
 - Rust Issue: (leave this empty)
 
