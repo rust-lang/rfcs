@@ -5,6 +5,8 @@
 # Summary
 
 Relocation and interface changes for the Rust library module `c_str`.
+The redesigned module is available as a
+[standalone project](https://github.com/mzabaluev/rust-c-compat).
 
 * Move the `c_str` module out of `std` to free the standard library from
   public type dependencies on `libc`.
