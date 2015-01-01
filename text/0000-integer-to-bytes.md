@@ -8,7 +8,8 @@ The Standard Library currently does not provide a way to cast an integer into a 
 
 # Motivation
 
-I have been looking around in the rust source code, and I figured there is quite some places that replicate this behaviour. Also a lot of users seem to be asking around how to do this in rust. It is probably a good decision to put this in the standard library. 
+
+There are some places where rust replicates the behaviour of these functions, and they should probably be replaced by using this. [[1]](https://github.com/rust-lang/rust/blob/master/src/libstd/io/extensions.rs#L80)[[2]](https://github.com/rust-lang/rust/blob/master/src/libstd/io/extensions.rs#L121)[[3]](https://github.com/rust-lang/rust/blob/master/src/librustc_back/sha2.rs#L24) Also a lot of users seem to be asking around how to do this in rust. It is probably a good decision to put this in the standard library. 
 
 # Detailed design
 
@@ -25,4 +26,4 @@ The method could be moved outside of the Int trait, to allow it to be of a fixed
 
 # Unresolved questions
 
-There are some places where rust replicates the behaviour of these functions, and they should probably be replaced by using this. [[1]](https://github.com/rust-lang/rust/blob/master/src/libstd/io/extensions.rs#L80)[[2]](https://github.com/rust-lang/rust/blob/master/src/libstd/io/extensions.rs#L121)[[3]](https://github.com/rust-lang/rust/blob/master/src/librustc_back/sha2.rs#L24)
+There should probably be a similar function, that does the same thing, but in reverse. 
