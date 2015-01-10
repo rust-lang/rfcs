@@ -7,19 +7,19 @@
 All paths should be relative by default. The current design requires the
 `self::` prefix to be relative in `use` statements.
 
-Global paths should require a new `crate::` prefix. The current design has
-global paths by default in `use` statements.
+Absolute paths should require a new `crate::` prefix. The current design has
+absolute paths by default in `use` statements.
 
 # Motivation
 
-Currently, `use` statements have global paths by default, but other paths
+Currently, `use` statements have absolute paths by default, but other paths
 are relative paths by default. This causes confusion for beginners due to
 the inconsistencies.
 
-Additionally, this encourages misusing global paths when relative paths
+Additionally, this encourages misusing absolute paths when relative paths
 are more logical (e.g. when importing from a sibling module). This makes
 refactoring such as renaming modules harder. The cases that require
-global paths should be rarer than the ones that require local paths,
+absolute paths should be rarer than the ones that require relative paths,
 given a reasonable module structure.
 
 # Detailed design
@@ -38,11 +38,11 @@ expr_path : [ "crate::" | "super::" + ] ? ident [ "::" expr_path_tail ] + ;
 
 The behavior is simple:
 
-- The `crate::` prefix makes the path a global path (i.e. starts from
+- The `crate::` prefix makes the path an absolute path (i.e. starts from
   the crate root).
 - The `super::` prefix makes the path start from the nth ancestor module,
   where n is the number of `super::` prefixes.
-- Having no prefix makes the path a local path (i.e. starts from the
+- Having no prefix makes the path a relative path (i.e. starts from the
   current module).
 
 # Drawbacks
