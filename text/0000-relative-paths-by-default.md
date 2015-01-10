@@ -22,6 +22,9 @@ refactoring such as renaming modules harder. The cases that require
 absolute paths should be rarer than the ones that require relative paths,
 given a reasonable module structure.
 
+Note that this creates a nice analogy with the file system, with `::`
+instead of `/`.
+
 # Detailed design
 
 The original grammar for paths (from the reference) is:
@@ -44,6 +47,12 @@ The behavior is simple:
   where n is the number of `super::` prefixes.
 - Having no prefix makes the path a relative path (i.e. starts from the
   current module).
+
+Note that `use foo::bar` should behave as if the contents of `foo::bar`
+(`self::foo::bar` in the current syntax) is copied into the current module
+(`self`). The analogy to the file system is creating a soft link named `bar`
+pointing to `foo/bar`. As a consequence, `use foo::bar` followed by
+`use bar::baz` is valid.
 
 # Drawbacks
 
