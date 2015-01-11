@@ -30,7 +30,7 @@ overhead.
 # Detailed design
 
 The intrinsically implemented macro `bytes!` takes any number of
-comma-separated literals which may be `&'static str` or `&'static [u8]`
+comma-separated parameters which may be `&'static str` or `&'static [u8]`
 values computable at compile time (i.e. string literals, byte string literals,
 and byte array initializer expressions). The result is a byte slice value of
 type `&'static [u8]`, concatenating the byte string representations of the
