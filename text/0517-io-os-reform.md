@@ -44,7 +44,8 @@ follow-up PRs against this RFC.
         * [Proposed organization]
     * [Revising `Reader` and `Writer`] (stub)
     * [String handling] (stub)
-    * [Deadlines] (stub)
+    * [Deadlines]
+        * [Timeouts versus deadlines]
     * [Splitting streams and cancellation] (stub)
     * [Modules]
         * [core::io] (stub)
@@ -457,7 +458,94 @@ counts, arguments to `main`, and so on).
 ## Deadlines
 [Deadlines]: #deadlines
 
-> To be added in a follow-up PR.
+Most blocking system operations can take a timeout or a deadline
+(depending on the platform) for completion, and it's important that
+Rusts IO APIs offer the same capability. This poses a bit of a
+challenge, however, because adding variants to all of the blocking
+APIs would significantly increase the API surface, while taking an
+`Option` argument would decrease their ergonomics.
+
+The current solution is to offer `set_timeout` methods on various IO
+objects (a variant of a builder-style API), which allows configuration
+to be done independently of the blocking operation being configured.
+
+Unfortunately, as explained [above](#timeouts), this stateful approach
+has poor composability, since users of an IO objects can accidentally
+interfere with one another.
+
+The proposed solution is to instead offer a `with_deadline` method
+(correcting the terminology) that, rather than changing the state of
+an object, creates a *wrapper* object with the given deadline.
+
+```rust
+struct Deadline {
+    ... // to be determined
+}
+
+trait IntoDeadine {
+    fn into_deadline(self) -> Deadline;
+}
+
+struct Deadlined<T> {
+    deadline: Deadline,
+    inner: T,
+}
+
+impl<T> Deadlined<T> {
+    pub fn new<D: IntoDeadline>(inner: T, deadline: D) -> Deadlined<T> {
+        Deadlined { deadline: deadline, inner: inner }
+    }
+
+    pub fn deadline(&self) -> Deadline {
+        self.deadline
+    }
+
+    pub fn inner(&self) -> &T {
+        &self.inner
+    }
+
+    pub fn inner_mut(&mut self) -> &mut T {
+        &mut self.inner
+    }
+
+    pub fn into_inner(self) -> T {
+        self.inner
+    }
+}
+
+impl TcpStream {
+    fn with_deadline<D>(&mut self, deadline: D) -> Deadlined<&mut TcpStream> where
+        D: IntoDeadline
+    {
+        Deadlined::new(self, deadline)
+    }
+}
+
+impl<'a> Reader for Deadlined<&'a mut TcpStream> {
+    type Err = IoError;
+    fn read(&mut self, buf: &mut [u8]) -> Result<uint, Err> {
+        // read, using the specified deadline
+    }
+}
+
+// And so on for other traits and concrete types
+```
+
+The exact details of `Deadline` and the `impl`s for `IntoDeadline` are
+left unspecified, as they will depend on what notions of time are
+available in `std`, but they will at least include a way to specify an
+absolute time.
+
+### Timeouts versus deadlines
+[Timeouts versus deadlines]: #timeouts-versus-deadlines
+
+This RFC is not going to delve deeply into the timeout versus deadline
+debate, but the main motivation for using deadlines is for *compound*
+operations like `write_all`. With a deadline-based approach, it's
+possible to bound the total amount of time taken even though an
+operation involves many system calls. Doing so with timeouts is
+harder, since the timeout must change as the operations progress
+(requiring re-checking the clock each time).
 
 ## Splitting streams and cancellation
 [Splitting streams and cancellation]: #splitting-streams-and-cancellation
