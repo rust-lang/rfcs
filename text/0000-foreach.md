@@ -15,7 +15,7 @@ for loop, in general is considered that flat is better than nested and leads to 
 
 # Detailed design
 
-The design is simple, just syntacting suggar around a loop that consumes the iterator as seen in
+The design is simple, just syntactic suggar around a loop that consumes the iterator as seen in
 this PR.
 
 https://github.com/rust-lang/rust/pull/21098
