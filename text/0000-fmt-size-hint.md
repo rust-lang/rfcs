@@ -52,11 +52,11 @@ impl Add for SizeHint {
     type Output = SizeHint;
     fn add(self, other: SizeHint) -> SizeHint {
         SizeHint {
-            min: self.min + other.min,
-            max: match (self.max, other.max) {
-                (Some(left), Some(right)) => Some(left + right),
-                // if either is None, we can't assume a max
-                _ => None
+            min: self.min.saturating_add(other.min),
+            max: if let (Some(left), Some(right)) = (self.max, other.max) {
+                Some(left.checked_add(right)),
+            } else {
+                None
             }
         }
     }
