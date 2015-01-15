@@ -29,6 +29,8 @@ test bench_short_memcpy ... bench:        33 ns/iter (+/- 3)
 
 # Detailed design
 
+## size_hint method
+
 Add a `size_hint` method to all of the `fmt` traits, with a default implementation so no one is broken. Opting in simply means better performance. All traits should have their own size_hint implementation, since the trait used can change the length of the output written.
 
 ```rust
@@ -39,6 +41,8 @@ trait Show {
     }
 }
 ```
+
+## SizeHint type
 
 Add a `SizeHint` type, with named properties, instead of using tuple indexing. Include an `Add` implementation for `SizeHint`, so they can be easily added together from nested properties.
 
@@ -62,6 +66,80 @@ impl Add for SizeHint {
     }
 }
 ```
+
+This type differs from `Iter::size_hint`, primarily to provide an `Add` implementation that doesn't interfere with `(usize, Option<usize>)` globally. Since using our own internal type, a struct with named properties is more expressive than a tuple-struct using tuple indexing.
+
+It's possible that `Iter::size_hint` could adopt the same type, but that seems out of scope of this RFC.
+
+## std::fmt::format
+
+There are 2 ways that the format traits are used: through `std::fmt::format`, and `std::string::ToString`. The `ToString` blanket implementation will be adjusted to simply wrap `std::fmt::format`, so there is no longer duplicated code.
+
+```rust
+impl<T: fmt::String> ToString for T {
+    fn to_string(&self) -> String {
+        format!("{}", self)
+    }
+}
+```
+
+The size hint will be accessed in `std::fmt::format` to provide the initial capacity to the `fmt::Writer`. Since calls to `write!` use a pre-existing `Writer`, use of a size hint there is up to the creator of said `Writer`.
+
+Here is where we could be clever with `SizeHint`'s `min` and `max` values. Perhaps if difference is large enough, some value in between could be more efficient. This is left in the Unresolved Questions section.
+
+```rust
+pub fn format(args: Arguments) -> string::String {
+    let mut output = string::String::with_capacity(args.size_hint().min);
+    let _ = write!(&mut output, "{}", args);
+    output
+}
+```
+
+This involves implementing `size_hint` for `Arguments`:
+
+```rust
+impl String for Arguments {
+    //fn fmt(&self, ...)
+    fn size_hint(&self) -> SizeHint {
+        let pieces = self.pieces.iter().fold(0, |sum, &piece| sum.saturating_add(piece.len()));
+        let args = self.args.iter().fold(SizeHint { min: 0, max: None }, |sum, arg| {
+            sum + String::size_hint(arg)
+        });
+        args + SizeHint { min: pieces, max: Some(pieces) }
+    }
+}
+
+```
+
+Each `Argument` includes a `fmt` function, and reference to the object to format, with its type erased. In order to get the `SizeHint`, the appropriate `size_hint` function will need to be included in the `Argument` struct.
+
+
+```rust
+pub struct Argument<'a> {
+    value: &'a Void,
+    formatter: fn(&Void, &mut Formatter) -> Result,
+    hint: fn(&Void) -> SizeHint,
+}
+
+impl<'a> String for Argument<'a> {
+    // fn fmt ...
+    fn size_hint(&self) -> SizeHint {
+        (self.hint)(self.value)
+    }
+}
+```
+
+The public facing constructor of `Argument` would be altered to this:
+
+```rust
+pub fn argument<'a, T>(f: fn(&T, &mut Formatter) -> Result,
+                       s: fn(&T) -> SizeHint,
+                       t: &'a T) -> Argument<'a> {
+    Argument::new(t, f, s)                       
+}
+```
+
+## Examples 
 
 Some example implementations:
 
@@ -95,11 +173,17 @@ Deriving `Show` would also be able to implement `size_hint` meaning most everyon
 
 # Drawbacks
 
-I can't think of a reason to stop this.
+Added complexity may conflict with landing more critical things for 1.0, but that should only mean a possible postponing, vs rejection.
 
 # Alternatives
 
-The impact of not doing this is that `"foo".to_string()` stays at its current speed. Adding the size hints knocks the time down by around half in each case.
+An alternative proposed by @kballard:
+
+> I've got a different approach that does not change the API of `Show` or `String` (or anything else that third-party code is expected to implement). It's focused around optimizing the case of `"foo".to_string()`. The approach here is to add a parameter to `std::fmt::Writer::write_str()` called more_coming that is true if the caller believes it will be calling `write_str()` again. The flag is tracked in the Formatter struct so calls to `write!()` inside an implementation of `Show/String` don't incorrectly claim there will be no writes if their caller still has more to write. Ultimately, the flag is used in the implementation of `fmt::Writer` on `String` to use `reserve_exact()` if nothing more is expected to be written.
+
+A drawback of this alternative is that it focuses improvements only when the object is a String, or at least does not contain properties that will be be formatted as well. The proposal in this RFC provides improvements for all types.
+
+The impact of not doing this at all is that `"foo".to_string()` stays at its current speed. Adding the size hints knocks the time down by around half in each case.
 
 # Unresolved questions
 
