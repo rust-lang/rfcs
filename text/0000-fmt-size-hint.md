@@ -36,6 +36,7 @@ Add a `size_hint` method to all of the `fmt` traits, with a default implementati
 ```rust
 trait Show {
     fn fmt(&self, &mut Formatter) -> Result;
+    #[unstable]
     fn size_hint(&self) -> SizeHint {
         SizeHint { min: 0, max: None }
     }
@@ -47,6 +48,7 @@ trait Show {
 Add a `SizeHint` type, with named properties, instead of using tuple indexing. Include an `Add` implementation for `SizeHint`, so they can be easily added together from nested properties.
 
 ```rust
+#[unstable]
 struct SizeHint {
     min: usize,
     max: Option<usize>
