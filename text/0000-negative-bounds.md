@@ -508,7 +508,25 @@ Implicit specialization may be added back in the future, see the [Alternatives](
 
 # Alternatives
 
-## Syntax of inequality bounds
+## Syntax
+
+### Negative bounds
+
+Instead `!` we may denote a negative bound with `-`. This is more consistent with `+` for combining bounds, and it's natural to introduce the shorthand `A + -B == A - B`:
+
+```rust
+impl<T: -Int> Trait for T {}
+impl<T: Int - Float> Trait for T {}
+```
+
+The advantage of `!` over `-` is that negative impls are already using `!`, and `!` seems more intuitive given that most old discussions raising this idea uses `!`.
+
+```rust
+impl<T> !Send for *const T {}
+impl<T: !Send> NotSync for T {}
+```
+
+### Inequality bounds
 
 Instead of `where T != u8`, we may write `where T: !u8` for an inequality bound. The advantage is we could add inequality to multiple types much more concisely:
 
