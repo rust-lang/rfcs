@@ -231,6 +231,11 @@ impl<T> Trait for T where T: !Iterator { ... }
 impl<T> Trait for T where T: Iterator, T::Item != u8 { ... }
 ```
 
+We could allow negation in the inner position however:
+
+* `where T: Iterator<Item != u8>`, equivalent to
+* `where T: Iterator, T::Item != u8`
+
 Negation cannot be combined with relaxation. The following should not parse:
 
 ```rust
@@ -473,7 +478,7 @@ Implicit specialization may be added back in the future, see the [Alternatives](
 
 ## Miscellaneous
 
-* We should allow equality type bound syntax be also written as `where T == a`, to preserve the symmetry with `where T != a`.
+* We should allow equality type bound syntax be also written as `where T == a`, to preserve the symmetry with `where T != a`. Similarly, allow `where T: Iterator<Item==u8>`.
 
 * The Clone trait may be changed to automatically implemented to those implementing Copy, as described in issue [#17884][17884]. This would require a `!Copy` bound to most custom implementations though. Similar for PartialEq/Eq and PartialOrd/Ord.
 
@@ -524,20 +529,6 @@ The advantage of `!` over `-` is that negative impls are already using `!`, and 
 ```rust
 impl<T> !Send for *const T {}
 impl<T: !Send> NotSync for T {}
-```
-
-### Inequality bounds
-
-Instead of `where T != u8`, we may write `where T: !u8` for an inequality bound. The advantage is we could add inequality to multiple types much more concisely:
-
-* `where T: !u8 + !u16 + !u32 + !u64`, vs.
-* `where T != u8, T != u16, T != u32, T != u64`
-
-The disadvantage is apparent ambiguity in:
-
-```rust
-trait U {}
-impl<T, U> Foo for T where T: !U {} // refering to type U, not trait U.
 ```
 
 ## Alternatives to negative bounds
