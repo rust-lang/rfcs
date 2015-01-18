@@ -45,7 +45,7 @@ for each currently supported target:
 * obj - `.o`;
 * dep-info – `.d`;
 * link – depends on `crate-type`:
-  * bin – no extension;
+  * bin – no extension or `.exe`;
   * lib – `.rlib`;
   * rlib – `.rlib`;
   * dylib – `.so`, `.dll` or `.dylib`;
