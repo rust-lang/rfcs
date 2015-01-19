@@ -39,10 +39,10 @@ In case there is multiple emit targets, each output will be written to:
 The `[.extension]` is file extension specific to the emitted target. This is a list of extensions
 for each currently supported target:
 
-* asm - `.s`;
-* llvm-bc - `.bc`;
-* llvm-ir - `.ll`;
-* obj - `.o`;
+* asm – `.s`;
+* llvm-bc – `.bc`;
+* llvm-ir – `.ll`;
+* obj – `.o`;
 * dep-info – `.d`;
 * link – depends on `crate-type`:
   * bin – no extension or `.exe`;
