@@ -26,12 +26,12 @@ compiler should create it.
 If there is a single emit target or the option is not specified (defaults to `--emit=link`), the
 output will be written to:
 
-* `[out-dir]/[filestem]` if `--dir-name` is specified;
+* `[out-dir]/[filestem]` if `--out-dir` is specified;
 * `[filestem]` otherwise.
 
 In case there is multiple emit targets, each output will be written to:
 
-* `[out-dir]/[filestem][.extension]` if `--dir-name` is specified;
+* `[out-dir]/[filestem][.extension]` if `--out-dir` is specified;
 * `[filestem][.extension]` otherwise.
 
 We will cover the `[filestem]` in section about `-o`.
