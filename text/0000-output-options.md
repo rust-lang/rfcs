@@ -4,14 +4,14 @@
 
 # Summary
 
-Fix rustc’s handling of `-o`, `--out-dir` and `--emit` options and their combinations.
+Fix rustc’s handling of output (`-o`, `--out-dir` and `--emit`) options and their combinations.
 
 # Motivation
 
 rustc’s handling of various `-o`, `--out-dir` and `--emit` command line option combinations is very
-inconsistent and sometimes unexpected. For example the compiler will use filename provided through
-`-o` option for *some* of `--emit` targets, even though, it emits a warning about the filename
-being ignored. The document aims to propose rules governing interactions of the three options.
+inconsistent and sometimes unexpected. For example, the compiler will use filename provided via
+`-o` option for *some* of `--emit` targets, even though it emits a warning about filename being
+ignored. The document aims to propose rules governing interactions of the three options.
 
 # Detailed design
 
@@ -19,7 +19,7 @@ being ignored. The document aims to propose rules governing interactions of the 
 
 `--out-dir` is never ignored or adjusted, even in presence of other options that would usually
 conflict with `--out-dir`. If the option is provided and the directory does not exist yet, the
-compiler will create it.
+compiler should create it.
 
 ## `--emit`
 
@@ -53,41 +53,53 @@ for each currently supported target:
 
 ## `-o`
 
-The value of `-o` option, unlike `--out-dir` may be adjusted by `rustc` in case it conflicts with
-other options. Ignoring it is strongly discouraged. Were the value be ignored or adjusted, the
-warning is output detailing from what to what the value was changed and the reason why it was
-ignored or adjusted.
+The value of `-o` option, unlike `--out-dir` may be adapted by `rustc` in case it conflicts with
+other options. Ignoring the option is strongly discouraged.
 
-* `-o` value may be a full path to the output file, like this:
+Were the value be ignored or adapted, the warning detailing actions taken should be emitted.
 
-        $ rustc foo.rs -o bar/foo # A-OK
+### Interactions with `--out-dir`
 
-* However this is not the case when both `-o` and `--out-dir` are specified. Any directory path
-  components in `-o` are ignored:
+In absence of `--out-dir` option, `-o` value may contain directory path components:
 
-        $ rustc foo.rs --out-dir=baz -o foo # A-OK
-        $ rustc foo.rs --out-dir=baz -o bar/foo
-        warning: `-o foo` is used instead of `-o bar/foo`, because `--out-dir=baz` is specified
+    $ rustc foo.rs -o bar/foo # A-OK
 
-* Were both `-o` and multiple `--emit` targets specified, any directory path components in `-o` are
-  ignored too:
+For this particular command the compiler behaves as if it had gotten options `--out-dir=bar/` and
+`-o foo`. More generally, the compiler interprets the option by splitting value into the
+[`filename`][filename] to be used as `[filestem]` and [`dirname`][dirname] to be used as
+`[out-dir]`.
 
-         $ rustc foo.rs --emit=asm -o bar/foo
-         # A-OK, the file is output to bar/foo
-         $ rustc foo.rs --emit=asm,obj -o bar/foo
-         warning: `-o foo` is used instead of `-o bar/foo`, because multiple `--emit` targets are specified
-         # Output: foo.s foo.o
+[filename]: http://doc.rust-lang.org/std/path/trait.GenericPath.html#tymethod.filename
+[dirname]: http://doc.rust-lang.org/std/path/trait.GenericPath.html#tymethod.dirname
 
-    The adjusted value of `-o` option then becomes `[filestem]` to be used in output file path
-    generation. See `--emit` section about its usage.
+If both `--out-dir` and `-o` are provided, the `-o` value is adjusted so it only contains a
+`filename`, which is used as `[filestem]`:
 
-* extension has no special meaning in `-o` option values and is not stripped or replaced:
+    $ rustc foo.rs --out-dir=baz -o foo # A-OK
+    $ rustc foo.rs --out-dir=baz -o bar/foo
+    warning: `-o foo` is used instead of `-o bar/foo`, because `--out-dir=baz` is specified
 
-        $ rustc foo.rs --emit=asm,obj -o foo.bar
-        # Output: foo.bar.s foo.bar.o
+### Interactions with `--emit`
 
-In case `-o` is not specified, `[filestem]` is inferred from `crate-name` and other data available
-to the compiler.
+The extension has no special meaning in `-o` option values and becomes a part of `[filestem]`
+verbatim:
+
+    $ rustc foo.rs --emit=asm,obj -o foo.bar
+    # Output: foo.bar.s foo.bar.o
+    $ rustc foo.rs --emit=asm -o foo.bar
+    # Output: foo.bar
+
+### `-o` is not specified
+
+In case `-o` is not specified, compiler generates `[filestem]` on a best-effort basis. rustc could
+use any of following sources of data:
+
+* `crate-name`;
+* Filename of the input file;
+* …
+
+If `[filestem]` cannot be generated from the available data, a sensible default such as `rust-out`
+is used.
 
 # Drawbacks
 
