@@ -34,7 +34,7 @@ In case there is multiple emit targets, each output will be written to:
 * `[out-dir]/[filestem][.extension]` if `--out-dir` is specified;
 * `[filestem][.extension]` otherwise.
 
-We will cover the `[filestem]` in section about `-o`.
+`[out-dir]` is the value of `--out-dir`. We will cover `[filestem]` in depth in section about `-o`.
 
 The `[.extension]` is file extension specific to the emitted target. This is a list of extensions
 for each currently supported target:
@@ -50,6 +50,11 @@ for each currently supported target:
   * rlib – `.rlib`;
   * dylib – `.so`, `.dll` or `.dylib`;
   * staticlib – `.a`.
+
+`link` target should prepend prefix `lib` to `[filestem]` for all `crate-type`s except `bin`:
+
+    $ rustc foo.rs -o foo --crate-type=staticlib
+    # Output: libfoo.a
 
 ## `-o`
 
