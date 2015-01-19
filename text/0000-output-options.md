@@ -70,7 +70,7 @@ In absence of `--out-dir` option, `-o` value may contain directory path componen
     $ rustc foo.rs -o bar/foo # A-OK
 
 For this particular command the compiler behaves as if it had gotten options `--out-dir=bar/` and
-`-o foo`. More generally, the compiler interprets the option by splitting value into the
+`-o foo`. More generally, the compiler interprets the option by splitting value into
 [`filename`][filename] to be used as `[filestem]` and [`dirname`][dirname] to be used as
 `[out-dir]`.
 
