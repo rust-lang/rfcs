@@ -101,8 +101,10 @@ In case `-o` is not specified, compiler generates `[filename]` on a best-effort 
 use any of following sources of data:
 
 * `crate-name`;
-* Filename of the input file;
+* [Filestem][filestem] of the input file;
 * …
+
+[filestem]: http://doc.rust-lang.org/std/path/trait.GenericPath.html#method.filestem
 
 If `[filename]` cannot be generated from the available data, a sensible default such as `rust-out`
 is used.
