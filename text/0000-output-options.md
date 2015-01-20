@@ -26,15 +26,15 @@ compiler should create it.
 If there is a single emit target or the option is not specified (defaults to `--emit=link`), the
 output will be written to:
 
-* `[out-dir]/[filestem]` if `--out-dir` is specified;
-* `[filestem]` otherwise.
+* `[out-dir]/[filename]` if `--out-dir` is specified;
+* `[filename]` otherwise.
 
 In case there is multiple emit targets, each output will be written to:
 
-* `[out-dir]/[filestem][.extension]` if `--out-dir` is specified;
-* `[filestem][.extension]` otherwise.
+* `[out-dir]/[filename][.extension]` if `--out-dir` is specified;
+* `[filename][.extension]` otherwise.
 
-`[out-dir]` is the value of `--out-dir`. We will cover `[filestem]` in depth in section about `-o`.
+`[out-dir]` is the value of `--out-dir`. We will cover `[filename]` in depth in section about `-o`.
 
 The `[.extension]` is file extension specific to the emitted target. This is a list of extensions
 for each currently supported target:
@@ -51,7 +51,7 @@ for each currently supported target:
   * dylib – `.so`, `.dll` or `.dylib`;
   * staticlib – `.a`.
 
-`link` target should prepend prefix `lib` to `[filestem]` for all `crate-type`s except `bin`:
+`link` target should prepend prefix `lib` to `[filename]` for all `crate-type`s except `bin`:
 
     $ rustc foo.rs -o foo --crate-type=staticlib
     # Output: libfoo.a
@@ -71,14 +71,14 @@ In absence of `--out-dir` option, `-o` value may contain directory path componen
 
 For this particular command the compiler behaves as if it had gotten options `--out-dir=bar/` and
 `-o foo`. More generally, the compiler interprets the option by splitting value into
-[`filename`][filename] to be used as `[filestem]` and [`dirname`][dirname] to be used as
+[`filename`][filename] to be used as `[filename]` and [`dirname`][dirname] to be used as
 `[out-dir]`.
 
 [filename]: http://doc.rust-lang.org/std/path/trait.GenericPath.html#tymethod.filename
 [dirname]: http://doc.rust-lang.org/std/path/trait.GenericPath.html#tymethod.dirname
 
 If both `--out-dir` and `-o` are provided, the `-o` value is adjusted so it only contains a
-`filename`, which is used as `[filestem]`:
+`filename`, which is used as `[filename]`:
 
     $ rustc foo.rs --out-dir=baz -o foo # A-OK
     $ rustc foo.rs --out-dir=baz -o bar/foo
@@ -86,7 +86,7 @@ If both `--out-dir` and `-o` are provided, the `-o` value is adjusted so it only
 
 ### Interactions with `--emit`
 
-The extension has no special meaning in `-o` option values and becomes a part of `[filestem]`
+The extension has no special meaning in `-o` option values and becomes a part of `[filename]`
 verbatim:
 
     $ rustc foo.rs --emit=asm,obj -o foo.bar
@@ -96,20 +96,20 @@ verbatim:
 
 ### `-o` is not specified
 
-In case `-o` is not specified, compiler generates `[filestem]` on a best-effort basis. rustc could
+In case `-o` is not specified, compiler generates `[filename]` on a best-effort basis. rustc could
 use any of following sources of data:
 
 * `crate-name`;
 * Filename of the input file;
 * …
 
-If `[filestem]` cannot be generated from the available data, a sensible default such as `rust-out`
+If `[filename]` cannot be generated from the available data, a sensible default such as `rust-out`
 is used.
 
 ## `--extra-filename`
 
-When `--extra-filename` option is specified, the `[filestem]` is mutated so the new value is
-`[filestem][extra-filename]`.
+When `--extra-filename` option is specified, the `[filename]` is mutated so the new value is
+`[filename][extra-filename]`.
 
 # Drawbacks
 
