@@ -106,6 +106,11 @@ use any of following sources of data:
 If `[filestem]` cannot be generated from the available data, a sensible default such as `rust-out`
 is used.
 
+## `--extra-filename`
+
+When `--extra-filename` option is specified, the `[filestem]` is mutated so the new value is
+`[filestem][extra-filename]`.
+
 # Drawbacks
 
 Nothing yet.
