@@ -19,22 +19,23 @@ ignored. The document aims to propose rules governing interactions of the three 
 
 `--out-dir` is never ignored or adjusted, even in presence of other options that would usually
 conflict with `--out-dir`. If the option is provided and the directory does not exist yet, the
-compiler should create it.
+compiler should create it. Defaults to `.`, otherwise known as current working directory or `$PWD`.
+Value of this option from now on will be referred to as `[out-dir]`.
 
 ## `--emit`
 
 If there is a single emit target or the option is not specified (defaults to `--emit=link`), the
 output will be written to:
 
-* `[out-dir]/[filename]` if `--out-dir` is specified;
-* `[filename]` otherwise.
+* `[out-dir]/[filename][.extension]` if [filename] was [inferred][inferred].
+* `[out-dir]/[filename]` otherwise;
 
-In case there is multiple emit targets, each output will be written to:
+[inferred]: #-o-is-not-specified
 
-* `[out-dir]/[filename][.extension]` if `--out-dir` is specified;
-* `[filename][.extension]` otherwise.
+In case there is multiple emit targets, each output will be written to
+`[out-dir]/[filename][.extension]`.
 
-`[out-dir]` is the value of `--out-dir`. We will cover `[filename]` in depth in section about `-o`.
+What `[filename]` resolves to is specified in [section about `-o`](#-o).
 
 The `[.extension]` is file extension specific to the emitted target. This is a list of extensions
 for each currently supported target:
