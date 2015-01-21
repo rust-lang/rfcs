@@ -109,10 +109,13 @@ use any of following sources of data:
 If `[filename]` cannot be generated from the available data, a sensible default such as `rust-out`
 is used.
 
-## `--extra-filename`
+## `-C extra-filename`
 
-When `--extra-filename` option is specified, the `[filename]` is mutated so the new value is
+When `-C extra-filename` option is specified, the `[filename]` is mutated so the new value is
 `[filename][extra-filename]`.
+
+    $ rustc foo.rs -C extra-filename=qux -o foo.bar --crate-type=rlib
+    # Output: foo.barqux.rlib
 
 # Drawbacks
 
