@@ -8,10 +8,11 @@ Fix rustc’s handling of output (`-o`, `--out-dir` and `--emit`) options and th
 
 # Motivation
 
-rustc’s handling of various `-o`, `--out-dir` and `--emit` command line option combinations is very
-inconsistent and sometimes unexpected. For example, the compiler will use filename provided via
-`-o` option for *some* of `--emit` targets, even though it emits a warning about filename being
-ignored. The document aims to propose rules governing interactions of the three options.
+rustc’s handling of various `-o`, `--out-dir`, and `--emit` command line option combinations is
+very inconsistent and sometimes unexpected. For example, the compiler will use filename provided
+via `-o` option for *some* of `--emit` targets, even though it emits a warning about filename being
+ignored. The document aims to propose rules governing interactions of options which influence
+compiler output.
 
 # Detailed design
 
