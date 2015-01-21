@@ -25,16 +25,16 @@ Value of this option from now on will be referred to as `[out-dir]`.
 ## `--emit` and `--crate-type`
 
 The two options influence what and how many files the compiler has to write to the filesystem. The
-common case compiler having to write one file only (e.g. `--emit` and `--crate-type` only have one
-value each). In this case the path to output file shall be built using these templates:
+common case compiler having to write one file only (e.g. `--emit` only has one value). In this case
+the path to output file shall be built using these templates:
 
 * `[out-dir]/[filename][.extension]` if [filename] was [inferred][inferred].
 * `[out-dir]/[filename]` otherwise;
 
 [inferred]: #-o-is-not-specified
 
-Otherwise, when there’s multiple files to output, each output file will be written to path built
-using `[out-dir]/[filename][.extension]` template.
+When there’s multiple files to output, each output file shall be written to path generated using
+`[out-dir]/[filename][.extension]` template.
 
 What `[filename]` resolves to is specified in [section about `-o`](#-o).
 
@@ -53,10 +53,16 @@ for each currently supported target:
   * dylib – `.so`, `.dll` or `.dylib`;
   * staticlib – `.a`.
 
-`link` target should prepend prefix `lib` to `[filename]` for all `crate-type`s except `bin`:
+An exception to most of the rules above is the `link` target. Different path templates for this
+target are necessitated by the fact that the target depends on value(s) of `--crate-type`:
+
+* `[out-dir]/[filename][.extension]` for `bin` `crate-type`;
+* `[out-dir]/lib[filename][.extension]` for other `crate-type`s.
 
     $ rustc foo.rs -o foo --crate-type=staticlib
     # Output: libfoo.a
+    $ rustc foo.rs -o foo
+    # Output on Windows: foo.exe
 
 ## `-o`
 
@@ -94,11 +100,11 @@ verbatim:
     $ rustc foo.rs --emit=asm,obj -o foo.bar
     # Output: foo.bar.s foo.bar.o
     $ rustc foo.rs --crate-type=staticlib,rlib -o foo.bar
-    # Output: foo.bar.rlib foo.bar.a
+    # Output: libfoo.bar.rlib libfoo.bar.a
     $ rustc foo.rs --emit=asm -o foo.bar
     # Output: foo.bar
     $ rustc foo.rs --crate-type=rlib -o foo.bar
-    # Output: foo.bar
+    # Output: libfoo.bar.rlib
 
 ### `-o` is not specified
 
@@ -120,11 +126,24 @@ When `-C extra-filename` option is specified, the `[filename]` is mutated so the
 `[filename][extra-filename]`.
 
     $ rustc foo.rs -C extra-filename=qux -o foo.bar --crate-type=rlib
-    # Output: foo.barqux.rlib
+    # Output: libfoo.barqux.rlib
 
 # Drawbacks
 
-Nothing yet.
+The special case for `link` target might be somewhat confusing:
+
+    $ rustc foo.rs --emit=link -o foo.bar
+    # Output on Windows: foo.bar.exe
+
+but
+
+    $ rustc foo.rs --emit=asm -o foo.bar
+    # Output: foo.bar
+
+It does not allow setting precise filename for link outputs, since both `lib` prefix and an
+extension might be appended, while other targets don’t share such a restriction. On the other hand,
+the drawback is necessary, because rustc needs both the extension and the prefix to consider it as
+a linkage candidate and binaries without `.exe` extension look silly on Windows.
 
 # Alternatives
 
