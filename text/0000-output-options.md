@@ -22,6 +22,10 @@ conflict with `--out-dir`. If the option is provided and the directory does not 
 compiler should create it. Defaults to `.`, otherwise known as current working directory or `$PWD`.
 Value of this option from now on will be referred to as `[out-dir]`.
 
+Note, that a requirement for the compiler to create the output directory if it didn’t exist yet is
+introduced. This is purely for convenience reasons: creating the output directory after a failure
+and restarting the program is exceedingly common nowadays.
+
 ## `--emit` and `--crate-type`
 
 The two options influence what and how many files the compiler has to write to the filesystem. The
@@ -92,6 +96,14 @@ If both `--out-dir` and `-o` are provided, the `-o` value is adjusted so it only
     $ rustc foo.rs --out-dir=baz -o bar/foo
     warning: `-o foo` is used instead of `-o bar/foo`, because `--out-dir=baz` is specified
 
+Note, that this proposed behaviour is completely different than status quo. At the time of writing
+both commands in the previous example completely ignore `--out-dir` and write the files to `./foo`
+and `./bar/foo` respectively. This is, arguably, completely unintuitive and requires extensive
+documentation for the options. With the change both options’ behaviour becomes as intuitive as it
+gets: `--out-dir` is the option to specify output directory and `-o` is the option to specify
+output filename. Ability to specify output directory with `-o` is only a (sometimes unavailable)
+shorthand convenience.
+
 ### Interactions with `--emit`
 
 The extension has no special meaning in `-o` option values and becomes a part of `[filename]`
@@ -117,7 +129,7 @@ use any of following sources of data:
 
 [filestem]: http://doc.rust-lang.org/std/path/trait.GenericPath.html#method.filestem
 
-If `[filename]` cannot be generated from the available data, a sensible default such as `rust-out`
+If `[filename]` cannot be generated from the available data, a sensible default such as `rust_out`
 is used.
 
 ## `-C extra-filename`
@@ -140,10 +152,10 @@ but
     $ rustc foo.rs --emit=asm -o foo.bar
     # Output: foo.bar
 
-It does not allow setting precise filename for link outputs, since both `lib` prefix and an
-extension might be appended, while other targets don’t share such a restriction. On the other hand,
-the drawback is necessary, because rustc needs both the extension and the prefix to consider it as
-a linkage candidate and binaries without `.exe` extension look silly on Windows.
+It does not allow setting precise filename for `link` target outputs, since both `lib` prefix and
+an extension might be appended, while other targets don’t share such a restriction. On the other
+hand, the drawback is necessary, because rustc needs both the extension and the prefix to consider
+it as a linkage candidate and binaries without `.exe` extension look silly on Windows.
 
 # Alternatives
 
