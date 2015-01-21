@@ -33,7 +33,7 @@ The two options influence what and how many files the compiler has to write to t
 common case compiler having to write one file only (e.g. `--emit` only has one value). In this case
 the path to output file shall be built using these templates:
 
-* `[out-dir]/[filename][.extension]` if [filename] was [inferred][inferred].
+* `[out-dir]/[filename][.extension]` if `[filename]` was [inferred][inferred].
 * `[out-dir]/[filename]` otherwise;
 
 [inferred]: #-o-is-not-specified
@@ -64,10 +64,12 @@ target are necessitated by the fact that the target depends on value(s) of `--cr
 * `[out-dir]/[filename][.extension]` for `bin` `crate-type`;
 * `[out-dir]/lib[filename][.extension]` for other `crate-type`s.
 
-    $ rustc foo.rs -o foo --crate-type=staticlib
-    # Output: libfoo.a
-    $ rustc foo.rs -o foo
-    # Output on Windows: foo.exe
+```
+$ rustc foo.rs -o foo --crate-type=staticlib
+# Output: libfoo.a
+$ rustc foo.rs -o foo
+# Output on Windows: foo.exe
+```
 
 ## `-o`
 
