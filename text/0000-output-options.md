@@ -22,18 +22,19 @@ conflict with `--out-dir`. If the option is provided and the directory does not 
 compiler should create it. Defaults to `.`, otherwise known as current working directory or `$PWD`.
 Value of this option from now on will be referred to as `[out-dir]`.
 
-## `--emit`
+## `--emit` and `--crate-type`
 
-If there is a single emit target or the option is not specified (defaults to `--emit=link`), the
-output will be written to:
+The two options influence what and how many files the compiler has to write to the filesystem. The
+common case compiler having to write one file only (e.g. `--emit` and `--crate-type` only have one
+value each). In this case the path to output file shall be built using these templates:
 
 * `[out-dir]/[filename][.extension]` if [filename] was [inferred][inferred].
 * `[out-dir]/[filename]` otherwise;
 
 [inferred]: #-o-is-not-specified
 
-In case there is multiple emit targets, each output will be written to
-`[out-dir]/[filename][.extension]`.
+Otherwise, when there’s multiple files to output, each output file will be written to path built
+using `[out-dir]/[filename][.extension]` template.
 
 What `[filename]` resolves to is specified in [section about `-o`](#-o).
 
@@ -92,7 +93,11 @@ verbatim:
 
     $ rustc foo.rs --emit=asm,obj -o foo.bar
     # Output: foo.bar.s foo.bar.o
+    $ rustc foo.rs --crate-type=staticlib,rlib -o foo.bar
+    # Output: foo.bar.rlib foo.bar.a
     $ rustc foo.rs --emit=asm -o foo.bar
+    # Output: foo.bar
+    $ rustc foo.rs --crate-type=rlib -o foo.bar
     # Output: foo.bar
 
 ### `-o` is not specified
