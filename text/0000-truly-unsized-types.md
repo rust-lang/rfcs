@@ -63,7 +63,8 @@ switch to using the `DynamicSize` bound.
 Specifically, there are generic items where the `Sized` bound is not
 lifted only to ensure that a reference is thin so it can be coerced or
 transmuted to a raw pointer. These will be unable to use truly unsized types,
-and should relax the type bound to `?Sized` and a negative bound (#586)
+and should get the type bound relaxed to `?Sized` and a
+[negative bound](https://github.com/rust-lang/rfcs/pull/586)
 on `DynamicSize`.
 
 # Drawbacks
