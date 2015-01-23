@@ -427,11 +427,13 @@ building on `Iterator<u32>`.
 The module will provide 3 basic algorithms to try to provide more clarity:
 
 - `OsRng`, a "true" random number generator calling into the operating system,
-- `XorShiftRng`, an [xorshift](http://en.wikipedia.org/wiki/Xorshift)
-  random number generator (or one of the variations), for extremely
-  high performance random numbers,
+- `XorshiftRng`, an [xorshift][xorshift] random number generator (or
+  one of the variations), for extremely high performance random
+  numbers,
 - `ChaChaRng`, a [ChaCha] random number generator, for "secure"
   user-space random numbers.
+
+[xorshift]: http://en.wikipedia.org/wiki/Xorshift
 
 ### Algorithms
 
@@ -463,7 +465,7 @@ possible alternative name.
 #### PRNGs
 
 Only two user-space pseudo-random number generators are provided:
-ChaCha and Xorshift.
+[ChaCha] and [Xorshift][xorshift].
 
 This specifically means the ISAAC and ISAAC64 implementations will be
 moved out of `std::rand`. Compared to ISAAC*, the ChaCha RNG is much
@@ -483,7 +485,7 @@ For example, the stable public interface for `ChaChaRng` (and
 pub struct ChaChaRng { ... }
 
 impl ChaChaRng {
-    pub fn from_seed(seed: &[u32]) -> ChaChaRng { ... } // seed: [u32; 4] for XorShiftRng
+    pub fn from_seed(seed: &[u32]) -> ChaChaRng { ... } // seed: [u32; 4] for XorshiftRng
 }
 
 impl Random<FullRange> for ChaChaRng {
@@ -521,6 +523,9 @@ wrapper types of those names). However, the precedent is to not do
 this, both in other parts of the Rust library (e.g. `collections`) and
 in other random libraries, e.g. [C++11's `random`][cpp_random] and
 [D's `std.random`][d_random] both use the algorithms' names.
+
+Note, `XorShiftRng` is renamed to `XorshiftRng` since the "Xorshift"
+capitalisation is the correct one.
 
 ### Thread RNG
 
@@ -563,7 +568,7 @@ following may be interesting:
 
 - `Os`, `RandomDevice`, `Secure`, `SecureRng` (or just `OsRng`)
 - `ChaCha`
-- `Xorshift`
+- `Xorshift`, `XorShift`
 - `std::rand::ThreadLocal` (a little confusing), `std::thread_local::Rng`
 
 We currently provide a `StdRng` type as an alias for another
