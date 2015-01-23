@@ -150,9 +150,6 @@ trait RngExt {
 
     /// Randomize the order of the elements of `values`
     fn shuffle<T>(&mut self, values: &mut [T]) { ... }
-    /// Select one value uniformly at random from the slice.
-    #[unstable]
-    fn choose<'a>(&mut self, values: &[T]) -> Option<&'a T> { ... }
     /// Select `n` values uniformly at random from the iterator.
     fn sample<I: Iterator>(&mut self, n: uint, values: I) -> Vec<I::Item> { ... }
 }
@@ -230,7 +227,7 @@ a sequence of bits where each bit:
 - is independent of all other bits.
 
 Other functions will be assuming these properties to give sensible
-answers (e.g. `shuffle`, `choose` and `sample`) but there's no way any
+answers (e.g. `shuffle` and `sample`) but there's no way any
 function can rely on them and cause unsafety only when violated, so
 this is not overly problematic.
 
@@ -332,22 +329,22 @@ not necessary (e.g. it could perfectly well reorder the elements of a
 it generic now. However, it is likely that it could be made generic in
 future, backwards-compatibly.
 
-The last methods are `rng.choose(values)` and `rng.sample(n, values)`.
-They are unfortunately similar: `rng.choose(values)` is (semantically)
-just `sample(1, values.iter())` without the `Vec` allocation. It would
-be extremely nice to reconcile them but this does not seem feasible at
-the moment. NB. by taking a slice, `choose` is O(1): it generates a
-random number in-bounds of the slice and just indexes. Laying out the
-iterator-based options: taking an fully generic iterator would require
-traversing the full iterator while generating a random number at each
-step (like `sample`), taking an `ExactSizeIterator` would reduce this
-to a single random number in total and allow truncating the traversal,
-andlastly taking a `RandomAccessIterator` would give the same indexing
-behaviour as a slice. The RFC author is unsure about the best path
-here, but notes that `Iterable` may make it possible to generalise
-this backwards-compatibly in future.
+The last methods is `rng.sample(n, values)` which just selects at most
+`n` values uniformly at random out of the finite iterator `values`,
+that is, semantically equivalent to
 
-The current `Rng` trait has two pieces of functionality that will be
+```rust
+// get all possible values
+let mut data = values.collect::<Vec<_>>();
+// rearrange them
+rng.shuffle(&mut data[]);
+// ignore everything but the first `n`
+data.truncate(n);
+return data;
+```
+
+
+The current `Rng` trait has three pieces of functionality that will be
 removed (or at least made `unstable`):
 
 - `rng.gen_weight_bool(n)`, this is trivially `rng.gen(0..n) == 0`.
@@ -360,6 +357,10 @@ removed (or at least made `unstable`):
   implementations, such as `struct PrintableAscii; impl
   Random<PrintableAscii> for char`, allowing
   `rng.gen_iter(PrintableAscii)`.
+- `rng.choose(slice)`, this is
+  `slice.get(rng.gen(0..slice.len()))`. Its signature of `fn
+  choose<T>(&self, &[T]) -> Option<&T>` seems insufficiently general
+  to be worth including, given how simple it is to reimplement.
 
 #### Alternatives
 
@@ -659,8 +660,6 @@ Listed inline.
 - Should `rng.gen::<f64>(..)` i.e. "FullRange" really only be
   `[0,1)`? (This is *very* strongly the convention for the default floating-point generation range.)
 - Is the exclusivity of the RHS of the `..` syntax too confusing for types like `char`?
-
-- `choose` is peculiar, and is unfortunate to take a slice when an iterator could also work.
 
 - Does it really make sense for RNGs to be `Clone`?
 
