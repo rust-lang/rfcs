@@ -651,7 +651,10 @@ Listed inline.
 # Unresolved questions
 
 - Both C++ and D use 'engine' instead of 'generator', but literature
-  generally seems to use 'generator'. Which term suits Rust best?
+  generally seems to use 'generator'. Which term suits Rust best? The
+  author(s) of C++'s `<random>`
+  [suggests "random bit generator" (`Rbg`)][rng-is-hard],
+  although this seems quite non-standard.
 - Is `Random` taking a type parameter in the form that it does worth the complications?
 - Should `rng.gen::<f64>(..)` i.e. "FullRange" really only be
   `[0,1)`? (This is *very* strongly the convention for the default floating-point generation range.)
@@ -660,3 +663,9 @@ Listed inline.
 - `choose` is peculiar, and is unfortunate to take a slice when an iterator could also work.
 
 - Does it really make sense for RNGs to be `Clone`?
+
+- Maybe this RFC conflates pure randomness (i.e. random bits) and distributions/random variates with the `Data` parameter to `Random`, see [the "RBG" paper][rng-is-hard]
+  for info on that too.
+
+
+[rng-is-hard]: http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2014/n3847.pdf
