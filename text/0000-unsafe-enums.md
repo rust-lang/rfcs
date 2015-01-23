@@ -51,7 +51,7 @@ unsafe match foo {
 unsafe match foo {
     Variant1(5) => ...,
     Variant1(x) if x < -7 => ...,
-    Variant2(x) => ...,
+    Variant1(x) => ...,
 }
 // Invalid
 unsafe match foo {
