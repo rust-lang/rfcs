@@ -31,7 +31,7 @@ unsafe enum MyEnum {
 ```
 
 ## Instantiating unsafe enums
-
+This is completely safe.
 ```rust
 let foo = Variant1(5);
 ```
@@ -40,37 +40,43 @@ let foo = Variant1(5);
 
 Due to the lack of a discriminant, destructuring becomes irrefutable, but also unsafe. Therefore all destructuring needs to be in unsafe functions or blocks. Because destructuring is irrefutable you can directly destructure unsafe enums which isn't possible with safe enums:
 ```rust
-unsafe { let Variant1(bar) = foo; }
+unsafe {
+    let Variant1(bar) = foo;
+}
 ```
 When using `match` you can only have a single irrefutable pattern. However, patterns with values inside of them or conditionals are refutable and can therefore be combined.
 ```rust
-// Valid
-unsafe match foo {
-    Variant2(x) => ...,
-}
-unsafe match foo {
-    Variant1(5) => ...,
-    Variant1(x) if x < -7 => ...,
-    Variant1(x) => ...,
-}
-// Invalid
-unsafe match foo {
-    Variant1(x) => ...,
-    Variant2(x) => ...,
-}
-unsafe match foo {
-    Variant1(x) => ...,
-    _ => ...,
+unsafe {
+    // Legal
+    match foo {
+        Variant2(x) => ...,
+    }
+    match foo {
+        Variant1(5) => ...,
+        Variant1(x) if x < -7 => ...,
+        Variant1(x) => ...,
+    }
+    // Illegal
+    match foo {
+        Variant1(x) => ...,
+        Variant2(x) => ...,
+    }
+    match foo {
+        Variant1(x) => ...,
+        _ => ...,
+    }
 }
 ```
 `if let` and `while let` are irrefutable unless the pattern has a value inside. Because irrefutable `if let` and `while let` patterns are currently illegal for enums in Rust, they will continue to be illegal for unsafe enums.
 ```rust
-// Illegal
-if let Variant1(x) = foo {}
-while let Variant2(y) = foo {}
-// Legal
-if let Variant1(5) = foo {}
-while let Variant1(7) = foo {}
+unsafe {
+    // Legal
+    if let Variant1(5) = foo {...}
+    while let Variant1(7) = foo {...}
+    // Illegal
+    if let Variant1(x) = foo {...}
+    while let Variant2(y) = foo {...}
+}
 ```
 
 ## Requirements on variants
