@@ -46,8 +46,9 @@ struct CStr {
 ```
 
 This makes references to values of such types unusable for copying
-the value out, `size_of`, `std::mem::swap`, being the source in
-`transmute_copy`, etc.
+the value out, `std::mem::swap`, being the source in
+`transmute_copy`, etc. Unsized types can't be used as the
+type parameter of `size_of`.
 
 ## Dynamically sized types
 
@@ -61,7 +62,7 @@ There may be cases where `!Sized` is taken to mean DSTs. These will have to
 switch to using the `DynamicSize` bound.
 
 Specifically, there are generic items where the `Sized` bound is not
-lifted only to ensure that a reference is thin so it can be coerced or
+lifted only to ensure that a reference is thin, so as to be coerced or
 transmuted to a raw pointer. These will be unable to use truly unsized types,
 and should get the type bound relaxed to `?Sized` and a
 [negative bound](https://github.com/rust-lang/rfcs/pull/586)
@@ -82,5 +83,5 @@ with the overall philosophy of Rust, though.
 
 # Unresolved questions
 
-For convenience, there could be an intrinsically implemented positive trait
-to complement `DynamicSize`.
+For convenience, there could be an intrinsically implemented trait
+that is a negation of `DynamicSize`.
