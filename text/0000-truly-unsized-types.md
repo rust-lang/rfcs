@@ -63,19 +63,19 @@ switch to using the `DynamicSize` bound.
 
 Specifically, there are generic items where the `Sized` bound is not
 lifted only to ensure that a reference is thin, so as to be coerced or
-transmuted to a raw pointer. These will be unable to use truly unsized types,
-and should get the type bound relaxed to `?Sized` and a
+transmuted to a raw pointer. These will not be usable with truly unsized
+types, and should get the type bound relaxed to `?Sized` and a
 [negative bound](https://github.com/rust-lang/rfcs/pull/586)
 on `DynamicSize`.
 
 # Drawbacks
 
-Adding further complexity to the type system.
+This is adding further complexity to the type system.
 
 # Alternatives
 
 Keep to the current practice of Irrelevantly Sized Types, learning to avoid
-trouble by coding discipline, documentation, and best practices. The problem
+trouble by design discipline, documentation, and best practices. The problem
 of mutable references can be resolved on a case-by-case basis by providing
 an accessor facade for fields that can be safely mutated, and disallowing
 direct mutable references to the pseudo-sized type. This feels at odds
