@@ -90,4 +90,4 @@ Adding unsafe enums adds more complexity to the language through a separate kind
 
 # Unresolved questions
 
-* For `if let`, when the pattern is irrefutable should the else block be legal?
+* ???
