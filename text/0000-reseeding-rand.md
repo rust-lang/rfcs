@@ -105,7 +105,7 @@ wrapper).
 /// mediated by information contained in `Data`.
 trait Random<Data = FullRange> {
     /// Create a random value of type `Self`
-    fn random<R: ?Sized + RngBase>(data: Data, rng: &mut Rng) -> Self;
+    fn random<R: ?Sized + Rng>(data: Data, rng: &mut R) -> Self;
 }
 
 // Example:
