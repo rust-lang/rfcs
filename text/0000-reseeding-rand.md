@@ -157,8 +157,9 @@ trait RngExt {
 impl<T: Rng> RngExt for T {}
 ```
 
-As today, the relationship between output of the methods of `Rng`, and
-between them and `io::Reader` is unspecified.
+As today, the relationship between output of the various methods of
+`Rng`, and between them and the output of the `io::Reader`
+implementation is unspecified.
 
 ### The `Random` trait
 
@@ -220,11 +221,16 @@ This trait represent random number generators, it is mostly provided
 for expressing intent, and for optimisation purposes over a plain
 `Reader`.
 
-It is expected and recommended that types implementing `Rng` generates
-a sequence of bits where each bit:
+It is expected and recommended that types implementing `Rng` are
+uniform random number generators (or random bit generators), that is,
+they abstractly generate a sequence of bitswhere each bit:
 
 - has equal probability of being either 0 or 1,
 - is independent of all other bits.
+
+(NB, these bits may be generated in groups of 32 as `u32`s, but the
+output can still be regarded, most fundamentally, as a stream of
+bits.)
 
 Other functions will be assuming these properties to give sensible
 answers (e.g. `shuffle` and `sample`) but there's no way any
