@@ -672,5 +672,11 @@ Listed inline.
 - Maybe this RFC conflates pure randomness (i.e. random bits) and distributions/random variates with the `Data` parameter to `Random`, see [the "RBG" paper][rng-is-hard]
   for info on that too.
 
+- There's the possibility that methods could opt-out of object safety
+  considerations, which would allow merging `RngExt` into `Rng`.
+- RNGs could take the `std::collections` approach and avoid having
+  generic traits at all, but, a major reason for that approach with
+  collections is that HKT is needed for good generic handling, which
+  does not seem to be a problem here.
 
 [rng-is-hard]: http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2014/n3847.pdf
