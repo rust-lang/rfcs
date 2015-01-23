@@ -96,4 +96,4 @@ Adding unsafe enums adds more complexity to the language through a separate kind
 
 # Unresolved questions
 
-* ???
+* Should we require that the variants are merely `!Drop` or should we require `Copy`, or, as @eddyb suggested, should we add an opt in built in trait that represents a type where every possible bit pattern is a valid value for that type? With the latter option we would be able to make destructuring completely safe.
