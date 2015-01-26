@@ -93,7 +93,7 @@ For this particular command the compiler behaves as if it had gotten options `--
 [dirname]: http://doc.rust-lang.org/std/path/trait.GenericPath.html#tymethod.dirname
 
 If both `--out-dir` and `-o` are provided, the `-o` value is adjusted so it only contains a
-`filename`, which is used as `[filename]`:
+[`filename`], which is used as `[filename]`:
 
     $ rustc foo.rs --out-dir=baz -o foo # A-OK
     $ rustc foo.rs --out-dir=baz -o bar/foo
@@ -163,6 +163,21 @@ it as a linkage candidate and binaries without `.exe` extension look silly on Wi
 # Alternatives
 
 Keeping current inconsistent behaviour.
+
+---
+
+When resolving conflicts betweeen [`--out-dir` and `-o` options](#interactions-with---out-dir) the
+`-o` option, when it contains directory path components, can be joined with `--out-dir` rather
+than completely ignoring its directory components:
+
+    $ rustc foo.rs --out-dir=baz -o foo # A-OK
+    # Output: baz/foo
+    $ rustc foo.rs --out-dir=baz -o bar/foo
+    # Output: baz/bar/foo
+    $ rustc foo.rs --out-dir=baz -o /bar/foo
+    error: `-o` with absolute path and `--out-dir` cannot be specified at the same time
+
+Alternative proposed by @pnkfelix.
 
 # Unresolved questions
 
