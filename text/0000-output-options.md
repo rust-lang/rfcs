@@ -93,7 +93,7 @@ For this particular command the compiler behaves as if it had gotten options `--
 [dirname]: http://doc.rust-lang.org/std/path/trait.GenericPath.html#tymethod.dirname
 
 If both `--out-dir` and `-o` are provided, the `-o` value is adjusted so it only contains a
-[`filename`], which is used as `[filename]`:
+[`filename`][filename], which is used as `[filename]`:
 
     $ rustc foo.rs --out-dir=baz -o foo # A-OK
     $ rustc foo.rs --out-dir=baz -o bar/foo
