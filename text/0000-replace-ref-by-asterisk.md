@@ -38,6 +38,11 @@ if let Some(*y) = x {
 
 Another motivation are opinions, heard from time to time, that `ref` should be called `deref`.
 
+Yet another reason for this change is discoverability -- it's reusing a operator
+(while mostly keeping its semantics),
+so it's not unlikely for somebody to discover this syntax without consulting a manual.
+Actually, there are some users reporting that they tried to use `*` before learning about `ref`.
+
 # Detailed design
 
 ### Interaction with `mut`
@@ -60,9 +65,13 @@ thing on the right of `mut`:
 * `mut` keyword in `mut *x` means "dereference of `x` is mutable", because it parses as `mut (*x)`,
 * `mut` keyword in `* mut x` means "`x` is mutable reference", because it parses as `*(mut x)`.
 
-Note that most common usage of `mut` would be `mut *x` here, so the raw-pointer-resembling
-`* mut` wouldn't appear very often.
-Syntax may allow parenthesised versions too, for consistency / increase of readability. 
+Syntax may allow these parenthesised versions too, for consistency / increase of readability.
+
+Note that most common usage of `mut` would be `mut *x` (corresponding to current `ref mut x`),
+so the raw-pointer-resembling `* mut` wouldn't appear very often
+(in rust source `ref mut` appears 139 times, compared to only 9 usages of `mut ref`).
+Additionally, that resemblance is between *pattern* and *type* syntaxes so it's not that big issue.
+Moreover, that pattern should be written with space between `*` and `mut` or use a parenthesized version.
 
 ### Fate of the `ref` keyword
 
@@ -96,7 +105,7 @@ Note that this suggestion is not a part of change proposed by the RFC.
       the old one. The lint could default to warn for alpha and forbid for beta.
   The change has to be reflected also in documentation.
 * Ungoogleability. Words *star* and *asterisk* are quite googleable too, although they are more common than *ref*.
-* `* mut x` resembles mutable raw pointer syntax (however `mut ref x` pattern is not the common one).
+* `* mut x` resembles mutable raw pointer syntax (however it won't appear very often (see explanation above)).
 
 # Alternatives
 
