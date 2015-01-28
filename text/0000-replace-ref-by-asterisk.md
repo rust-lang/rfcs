@@ -47,31 +47,41 @@ Actually, there are some users reporting that they tried to use `*` before learn
 
 ### Interaction with `mut`
 
-This RFC proposes to change:
+This RFC proposes to change (in contrary to what was suggested before, `mut ref x` is currently not a valid pattern):
 
 ```rust
 ref x            into       *x
 ref mut x        into       mut *x
-mut ref x        into       * mut x
-mut ref mut x    into       mut * mut x
 ```
 
-The rest of pattern syntax stays unchanged.
 Notice that in addition to simply changing one token to another,
-this RFC also proposes to change placing of `mut` keywords.
+this RFC also proposes to change placing of `mut` keyword.
 The reason for that change is to make `mut` refer to the
-thing on the right of `mut`:
+thing on the right of `mut`. `mut` keyword in `mut *x` means "dereference of `x` is mutable",
+because it parses as `mut (*x)`.
 
-* `mut` keyword in `mut *x` means "dereference of `x` is mutable", because it parses as `mut (*x)`,
-* `mut` keyword in `* mut x` means "`x` is mutable reference", because it parses as `*(mut x)`.
+Syntax may allow the parenthesised version too, for consistency / increase of readability.
 
-Syntax may allow these parenthesised versions too, for consistency / increase of readability.
+Another problem is interaction with `&mut _` pattern. In the new design,
+following would be ambigous to parse:
 
-Note that most common usage of `mut` would be `mut *x` (corresponding to current `ref mut x`),
-so the raw-pointer-resembling `* mut` wouldn't appear very often
-(in rust source `ref mut` appears 139 times, compared to only 9 usages of `mut ref`).
-Additionally, that resemblance is between *pattern* and *type* syntaxes so it's not that big issue.
-Moreover, that pattern should be written with space between `*` and `mut` or use a parenthesized version.
+```rust
+&mut *x
+```
+
+It could mean either `&mut (*x)` of `&(mut *x)`. Fortunately, under no conditions
+right one could compile, so the left version could be assumed.
+If the user wanted to have a mutable reference in this case,
+they have to write
+
+```rust
+&mut mut *x
+```
+
+which is unambigous and corresponds to today's `&mut ref mut x`. The double `mut` may seem weird,
+but fortunately this pattern is not a common one – it's used only 6 times in rust source,
+from which only one is outside tests.
+Additionaly this pattern (at least according to the author's knowledge) could be replaced by just `x`.
 
 ### Fate of the `ref` keyword
 
@@ -105,7 +115,6 @@ Note that this suggestion is not a part of change proposed by the RFC.
       the old one. The lint could default to warn for alpha and forbid for beta.
   The change has to be reflected also in documentation.
 * Ungoogleability. Words *star* and *asterisk* are quite googleable too, although they are more common than *ref*.
-* `* mut x` resembles mutable raw pointer syntax (however it won't appear very often (see explanation above)).
 
 # Alternatives
 
@@ -116,5 +125,6 @@ Note that this suggestion is not a part of change proposed by the RFC.
 
 # Unresolved questions
 
-* Should we allow additional parenthesis (such as `*(mut x)`) in the syntax?
+* Should we allow additional parenthesis (such as `mut (*x)`) in the syntax?
+* Should we introduce `*(mut x)` pattern which would put the reference in a mutable slot?
 * Fate of the `ref` keyword (should it be repurposed, reserved or just removed?).
