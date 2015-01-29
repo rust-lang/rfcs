@@ -119,7 +119,22 @@ private field (private fields do have some of the same downsides as
 private enum variants, though). In practice though most libraries will
 just declare all fields as private and use getters to access their
 contents, which is a better pattern in any case.
+
+**Treat extensible enums as extensible also within the local crate.**
+The current design states that extensible enums are only considered
+"extensible" outside the current crate. The intention was to allow for
+more precision locally, so that users can still take advantage of
+exhaustive matches. However, this introduces an asymmetry between
+crates; further, in many real-world use cases (e.g., `IoError`), it is
+unlikely that even the local crate will ever want to exhaustively
+match all variants, so this extra expressive power may not be
+necessary.
    
 # Unresolved questions
 
-What parts of the design are still TBD?
+Is there a way to have downstream crates get warnings -- if not errors
+-- when a match is not exhaustive? One suggestion was to add an
+alternate wildcard syntax that indicates a match that is intended to
+be exhaustive, even if a backup must be provided. But it is unclear
+what that wildcard syntax should be (the suggestion was `..`, but that
+is ambiguous with existing syntax).
