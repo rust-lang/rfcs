@@ -18,6 +18,10 @@ to make the most code correct, fast, obvious, and predictable.
 Support use cases like compressed writers, encrypted writers, etc., which also
 need end-to-end .close() checking and finalization.
 
+Please also note that a "truncation attack" can be a severe security
+vulnerability; having your /etc/passwd file only partially written is a DOS, as
+is shortening a password.
+
 # Detailed design
 
 There should be a `.close(self)` method of Writer that returns A `Result<(),
