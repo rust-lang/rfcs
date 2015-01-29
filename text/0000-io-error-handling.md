@@ -43,7 +43,9 @@ closed, so drop() doesn't try it again.  In addition, some IO objects with
 special constraints - i.e. designed for network file systems - might find it
 useful to print a warning or even panic if they are being dropped and a panic
 is not currently active but .close() was not called; that means the developer
-failed to attempt .close() on them.
+failed to attempt .close() on them.  Note that this can give a false negative
+if a file was entirely created and dropped in a destructor during a panic, but
+I think that's acceptable.
 
 Note that this RFC should not hurt the runtime speed of BufferedWriter, as
 the 'was gracefully closed' flag is only checked by drop(), and .close(self)
