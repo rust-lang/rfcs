@@ -15,6 +15,9 @@ We want code to be correct and not let "errors pass silently".  But we also
 don't want to worry about panics and double panics.  Find a pragmatic solution
 to make the most code correct, fast, obvious, and predictable.
 
+Support use cases like compressed writers, encrypted writers, etc., which also
+need end-to-end .close() checking and finalization.
+
 # Detailed design
 
 There should be a `.close(self)` method of Writer that returns A `Result<(),
@@ -50,7 +53,7 @@ to the PoisonedMutex philosophy).
 
 # Drawbacks
 
-Existing code breakage
+Existing code breakage (although said code is likely buggy)
 
 It's not the "simple python way", e.g. developers have to "type another line".
 
@@ -60,6 +63,10 @@ Java like suppressed exceptions, RAII, double panics, do nothing...
 
 RAII works great for releasing existing resources that can't fail.
 Flushing data out to disk is not "an existing resource".
+
+Suppressed exceptions in Java are useful for logging somewhere but it's hard to
+see how actionable they are otherwise, and are not appropriate for a systems
+language as it is basically an unbounded linked list.
 
 I believe you either go all in and have destructors that can throw at any time
 (including nested), or do not throw at all.   Rust's architecture fits the
