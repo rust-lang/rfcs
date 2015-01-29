@@ -68,6 +68,9 @@ Java like suppressed exceptions, RAII, double panics, do nothing...
 RAII works great for releasing existing resources that can't fail.
 Flushing data out to disk is not "an existing resource".
 
+golang examples typically show `defer dst.Close()` (no error checking, not
+useful)
+
 Suppressed exceptions in Java are useful for logging somewhere but it's hard to
 see how actionable they are otherwise, and are not appropriate for a systems
 language as it is basically an unbounded linked list.
