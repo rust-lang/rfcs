@@ -13,15 +13,10 @@ with async network filesystems.
 # Motivation
 
 Writing to files safely presents special challenges.  Unlike sockets, where
-there is usually bidrectional communication, explicit ok responses, and
+there is usually bidirectional communication, explicit ok responses, and
 expectation of packet loss, writing to a file successfully is (unfortunately)
 signaled by close().   Doing this in a destructor which can't throw (or
 certainly not double throw), has been tried in C++ and is not safe.
-
-IMPORTANT: The reason why rust "somewhat" works today is because Rust's stdout
-is line buffered all the time.  When that changes to be fully buffered, except
-to tty, that means even `println!()` panic semantics are totally useless, because
-nothing will be written until flush/close/drop.
 
 We want code to be correct and not let "errors pass silently".  But we also
 don't want to worry about panics and double panics.  Find a pragmatic solution
@@ -33,6 +28,12 @@ need end-to-end .close() checking and finalization.
 Please also note that a "truncation attack" can be a severe security
 vulnerability; having your /etc/passwd file only partially written is a DOS, as
 is shortening a password.
+
+Rust "somewhat" works today because Rust's stdout is line buffered all the
+time.  When that changes to be fully buffered, except to tty, that means even
+`println!()` panic semantics are totally useless, because nothing will be
+written until flush/close/drop.
+
 
 # Detailed design
 
@@ -48,21 +49,36 @@ on the floor*.
 
 Developers should be advised to call `.close()` of any IO objects and check the
 result.   If they don't, the remaining data won't get flushed and that should
-get caught at dev time (a very good thing)
+get caught at dev time (a very good thing).
 
-The .close() method should probably set a flag indicating the file was properly
+The .close() method should set a flag indicating the file was properly
 closed, so drop() doesn't try it again.  
 
-Note that this RFC should not hurt the runtime speed of BufferedWriter, as the
-'was gracefully closed' flag is only checked by drop(), because .close(self)
-consumes the object.
+# Rationale
 
-Developers should be advised that panic / unwinding will not perform flush or
-close, and that's probably a good thing (explicit is better than implicit).  The
-rationale here is that a panic caused by array out of bounds may indicate some
-severe internal error, and additional data should not be flushed (similar to the
-PoisonedMutex philosophy).  Also, perhaps the system is out of memory and trying
-to flush a giant buffer during unwinding would be counter productive.
+The reason `.close` consumes self is for two reasons.  First, it doesn't hurt
+the runtime speed of Writers, as the 'was closed' flag is only checked by
+drop().  Second, close is not a retryable operation on posix, so this reflects
+that.
+
+One reason drop should not flush (due to unwinding or early return) is that
+explicit is better than implicit.  In some case, an early return may well mean
+the programmers intent it *not* to flush other objects.  In panic cases, due to
+array out of bounds or out of memory, a programmer error may have happened or
+trying to flush a giant buffer during unwinding would be counter productive.
+
+The other reason drop does not flush is it encourages correct error handling.
+Developers know that HTTP requests and database transactions have to be checked
+for success.  Nobody in their right mind would make a destructor commit a
+database transaction with no way to report failure. So it's mystifying why so
+many think filesystems are somehow "more magical" and can't fail, and
+destructors should try to "commit" filesystem actions by default.
+
+RAII works great for releasing existing resources that can't fail.  Attempting
+to flush buffers and metadata out to disk is not "an existing resource".
+
+Note that writer having write, flush, and close methods mirrors what Java does,
+except close consumes the object.
 
 
 # Drawbacks
@@ -102,9 +118,6 @@ the bottom example of closing two files)
 Add the `.close()` method but still fall back to flushing/closing with panic
 semantics in drop(), only if if a panic was not happening.   Same problems as
 previous (try! closing two files needlessly panicing).
-
-RAII works great for releasing existing resources that can't fail.
-Flushing data out to disk is not "an existing resource".
 
 golang examples typically show `defer dst.Close()` (no error checking, not
 useful)
