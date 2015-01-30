@@ -18,6 +18,11 @@ expectation of packet loss, writing to a file successfully is (unfortunately)
 signaled by close().   Doing this in a destructor which can't throw (or
 certainly not double throw), has been tried in C++ and is not safe.
 
+IMPORTANT: The reason why rust "somewhat" works today is because Rust's stdout
+is line buffered all the time.  When that changes to be fully buffered, except
+to tty, that means even `println!()` panic semantics are totally useless, because
+nothing will be written until flush/close/drop.
+
 We want code to be correct and not let "errors pass silently".  But we also
 don't want to worry about panics and double panics.  Find a pragmatic solution
 to make the most code correct, fast, obvious, and predictable.
@@ -108,9 +113,6 @@ Suppressed exceptions in Java are useful for logging somewhere but it's hard to
 see how actionable they are otherwise, and are not appropriate for a systems
 language as it is basically an unbounded linked list.
 
-I believe you either go all in and have destructors that can throw at any time
-(including nested), or do not throw at all.   Rust's architecture fits the
-latter.
 
 # Unresolved questions
 
