@@ -62,10 +62,11 @@ drop().  Second, close is not a retryable operation on posix, so this reflects
 that.
 
 One reason drop should not flush (due to unwinding or early return) is that
-explicit is better than implicit.  In some case, an early return may well mean
-the programmers intent it *not* to flush other objects.  In panic cases, due to
-array out of bounds or out of memory, a programmer error may have happened or
-trying to flush a giant buffer during unwinding would be counter productive.
+explicit is better than implicit.  An explicit early return due to an error may
+well mean the programmers intent is *not* to flush other objects.  In panic
+cases, due to array out of bounds or out of memory, a programmer error may have
+happened or trying to flush a giant buffer during unwinding would be counter
+productive.
 
 The other reason drop does not flush is it encourages correct error handling.
 Developers know that HTTP requests and database transactions have to be checked
