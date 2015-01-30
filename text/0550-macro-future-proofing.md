@@ -74,31 +74,36 @@ The algorithm for recognizing valid matchers `M` follows. Note that a matcher
 is merely a token tree. A "simple NT" is an NT without repetitions. That is,
 `$foo:ty` is a simple NT but `$($foo:ty)+` is not. `FOLLOW(NT)` is the set of
 allowed tokens for the given NT's fragment specifier, and is defined below.
-`F` is used for representing the separator in complex NTs.  In `$($foo:ty),+`,
-`F` would be `,`, and for `$($foo:ty)+`, `F` would be `EOF`.
 
-*input*: a token tree `M` representing a matcher and a token `F`
+`CHECK(M, F):` *input*: a sequence of tokens `M` and a set of tokens `F`; *output*: whether M is valid.
+  1. If `M` is empty, accept.
+  2. Set `t = HEAD(M)`
+  3. If `t` is not an NT, skip to 7.
+  4. Find `S`, the set of possible successors of `t`:
+    1. If `TAIL(M)` is empty, set `S = F`,
+    2. Else, `S = LEADERS(TAIL(M))`.
+  5. If `t` is a simple NT, check that `S` is a subset of `FOLLOW(t)`.
+     If so, skip to 7, else, reject.       
+  6. Else, `t` is a complex NT.
+      1. If `t` has the form `$(Q)+` or `$(Q)*`, run `CHECK(Q, S)`. 
+         If it accepts, skip to 7, else, reject.
+      2. If `t` has the form `$(Q)u+` or `$(Q)u*` for some token `u`, 
+         run `CHECK(Q, S + {u})` If it accepts, skip to 7, else, reject.
+  7. Set `M = TAIL(M)`, goto 1.
 
-*output*: whether M is valid
+`LEADERS(S):` Returns the set of all possible tokens that may begin input sequence matched by `S`.
+  1. If `S` is empty, return `{}`.
+  2. Set `t = HEAD(S)`
+  3. If `t` is not a complex NT, return `{t}`.
+  4. If `t` is a complex NT:
+     1. If `t` has the form `$(Q)+` or `$(Q)u+`, return `LEADERS(Q)`.
+     2. If `t` has the form `$(Q)*` or `$(Q)u*`, return `LEADERS(Q) + LEADERS(TAIL(S))`.
 
-For each token `T` in `M`:
-
-1. If `T` is not an NT, continue.
-2. If `T` is a simple NT, look ahead to the next token `T'` in `M`. If
-   `T'` is `EOF` or a close delimiter of a token tree, replace `T'` with
-   `F`. If `T'` is in the set `FOLLOW(NT)`, `T'` is EOF, or `T'` is any close
-   delimiter, continue. Otherwise, reject.
-3. Else, `T` is a complex NT.
-    1. If `T` has the form `$(...)+` or `$(...)*`, run the algorithm on the
-       contents with `F` set to the token following `T`. If it accepts,
-       continue, else, reject.
-    2. If `T` has the form `$(...)U+` or `$(...)U*` for some token `U`, run
-       the algorithm on the contents with `F` set to `U`. If it accepts,
-       check that the last token in the sequence can be followed by `F`. If
-       so, accept. Otherwise, reject.
+`HEAD(M)` Returns the first token in sequence `M`.  
+`TAIL(M)` Returns sequence `M` with the first token removed.
 
 This algorithm should be run on every matcher in every `macro_rules`
-invocation, with `F` as `EOF`. If it rejects a matcher, an error should be
+invocation, with `F` as `{}` (empty set). If it rejects a matcher, an error should be
 emitted and compilation should not complete.
 
 The current legal fragment specifiers are: `item`, `block`, `stmt`, `pat`,
@@ -115,7 +120,7 @@ The current legal fragment specifiers are: `item`, `block`, `stmt`, `pat`,
 - `FOLLOW(item)` = any token
 - `FOLLOW(meta)` = any token
 
-(Note that close delimiters are valid following any NT.)
+(Note that open and close delimiters are valid following any NT.)
 
 # Drawbacks
 
