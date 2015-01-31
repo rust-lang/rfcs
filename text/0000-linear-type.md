@@ -62,8 +62,7 @@ reflected in code.
 
 ### Example: Force explicit mutex drop.
 
-To take an example from [RFC
-#210](https://github.com/rust-lang/rfcs/pull/210):
+To take an example from [RFC #210](https://github.com/rust-lang/rfcs/pull/210):
 
 ```rust
         let (guard, state) = self.lock(); // (`guard` is mutex `LockGuard`)
@@ -154,7 +153,7 @@ fn main() {
   // because data will already be dropped. 
 }
 ```
-((source)[https://github.com/rust-lang/rfcs/pull/239#issuecomment-56261758])
+([source](https://github.com/rust-lang/rfcs/pull/239#issuecomment-56261758))
 
 Having the C FFI interact with rust structures requires an explicit
 model of how the lifetime of rust structures that may cross the FFI
@@ -220,10 +219,11 @@ resource management, without inflicting their costs.
 
 First, the `linear` attribute as described here does not create true
 linear types: when unwinding past a `linear` type, the `linear`
-attribute will be ignored. Supporting unwinding means that Rust's
-`linear` types would in effect still be affine. However, if we ever
-allow a post-1.0 subset of rust without unwinding, Rust's `linear`
-types would become *true* linear types.
+attribute will be ignored, and a `Finalize` trait could be invoked.
+Supporting unwinding means that Rust's `linear` types would in effect
+still be affine. However, if we ever allow a post-1.0 subset of rust
+without unwinding, Rust's `linear` types would become *true* linear
+types.
 
 Second, and probably more importantly, unwinding should be extremely
 infrequent in rust code of any reasonable quality. As such, the linear
@@ -459,9 +459,11 @@ design of how these pointers could be introduced to the language. (I
 apologize if there is another design document describing these
 pointers, I could not easily find it.) `&move` pointers act like
 `&mut` pointers, with the additional behavior that partial moves are
-allowed from the `&move` pointer referent. In this design, we also add
-the constraint that the referent be made non-linear by the time the
-`&move` pointer goes out of scope. For example:
+allowed from the `&move` pointer referent, and that the referent's
+memory will be reclaimed some time after the `&move` pointer goes out
+of scope. In this design, we also add the constraint that the referent
+be made non-linear by the time the `&move` pointer goes out of scope.
+For example:
 
 ```rust
 struct Foo(MakeLinear);
@@ -551,7 +553,9 @@ reflect the two possible ways that a variable may go out of scope (the
 "normal" return path is associated with `Drop`, and the "exceptional"
 return path with `Finalize`), in case users want to use different code
 in either case. (A reasonable application may be to have `Finalize`
-trigger a process abort.)
+trigger a process abort, or to allow `Drop` to perform clean-up that
+would be inappropriate during unwinding, such as blocking on joining a
+thread.)
 
 ## The `explicit_bounds` lint.
 
@@ -771,7 +775,8 @@ None that I can think of.
 # Acknowledgments
 
 I'd like to thank the commentors on internals.rust-lang.org for their
-patience in helping me understand and work through some of the corner
-cases in this design. In particular, I'd like to thank @eddyb for his
-design of the basic linear types mechanism, and @glaebhoerl for his
-help in understanding `&move` pointers.
+patience in helping me identify and work through some of the corner
+cases in this design, and for helping me understand more of the Rust
+philosophy. In particular, I'd like to thank @eddyb for his design of
+the basic linear types mechanism, and @glaebhoerl for his help in
+understanding `&move` pointers.
