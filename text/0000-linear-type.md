@@ -12,9 +12,9 @@ container-types with the `Linear` trait. The compiler will refuse to
 compile a source file in which a `linear` variable would be implicitly
 dropped. A `linear` variable can be explicitly dropped by either
 making it non-linear (by moving contained linear fields out), or by
-using the `std::mem::forget` intrinsic. Add a `&move` pointer type, to
-allow partial moves out of a container as it is being dropped. Add a
-`Finalize` trait, that behaves identically to `Drop`, but can be
+using the `std::mem::forget` intrinsic. Add a `DropPtr` pointer type,
+to allow partial moves out of a container as it is being dropped. Add
+a `Finalize` trait, that behaves identically to `Drop`, but can be
 applied to linear types to clean up during unwinding. Add an
 `explicit_bounds` lint that will require that generic type parameters
 for an `impl` have their bounds specified. Compile the standard
@@ -236,11 +236,10 @@ practice.
 Note that the `linear bound` design was largely adapted from a [design
 by
 @eddyb](http://internals.rust-lang.org/t/pre-rfc-linear-type-modifier/1225/9),
-while the `&move` pointer type was originally described by
-[@nikomatsakis and
+while the `DropPtr` pointer type was inspired by [@nikomatsakis and
 @glaebhoerl](https://github.com/rust-lang/rust/issues/10672#issuecomment-29939937).
 Credit goes to these authors for the original ideas, while of course
-any blame for misunderstanding or misusing these ideas is mine alone.
+any blame for misunderstanding or misusing these ideas is mine.
 
 ## The `Linear` bound on types.
 
@@ -297,7 +296,7 @@ struct Baz {
     linear: std::markers::MakeLinear,
 }
 impl Drop for Baz {
-    fn drop(&move self) { ... }
+    fn drop(DropPtr self) { ... }
 }
 
 // does not have linear bound, because Baz does not have linear bound.
@@ -449,75 +448,61 @@ function (which involves a move of the linear container) cannot be
 called from the `drop` function body, so linear resource clean-up
 would be impossible.
 
-We get around this limitation by using the `&move` pointer type
-[originally described by @nikomatsakis and
-@glaebhoerl](https://github.com/rust-lang/rust/issues/10672#issuecomment-29939937),
-and changing the signature of `Drop::drop` to take `&move self`,
-instead of `&mut self`. The original discussion of `&move` pointers
-can be found at the link, the discussion here attempts to cover the
-design of how these pointers could be introduced to the language. (I
-apologize if there is another design document describing these
-pointers, I could not easily find it.) `&move` pointers act like
-`&mut` pointers, with the additional behavior that partial moves are
-allowed from the `&move` pointer referent, and that the referent's
-memory will be reclaimed some time after the `&move` pointer goes out
-of scope. In this design, we also add the constraint that the referent
-be made non-linear by the time the `&move` pointer goes out of scope.
-For example:
+We get around this limitation by defining a new `DropPtr` pointer
+type, and changing the signature of `Drop::drop` to take
+`DropPtr<Self>`, instead of `&mut self`. `DropPtr<T>` pointers act
+like `&mut` pointers, with the additional behavior that partial moves
+are allowed from the `DropPtr` pointer referent, that unmoved fields
+will have their destructors called, and that the referent's memory
+will be reclaimed some time after the `DropPtr` pointer goes out of
+scope. For this design, we also must have the constraint that the
+referent be made non-linear by the time the `DropPtr` pointer goes out
+of scope. For example:
 
 ```rust
 struct Foo(MakeLinear);
 impl Drop for Foo {
-    fn drop(&move self) {
+    fn drop(self: DropPtr<Foo>) {
         // make `self` non-linear by consuming the `Linear` field.
         self.0.consume();
     }
 }
 ```
 
-When a `&move` pointer goes out of scope, the referent's memory can be
-reclaimed. Since consuming the `&move` pointer will not invoke the
-`drop` callback, creating a `&move` pointer is an `unsafe` operation
-(in the same way that `std::mem::forget` is unsafe):
+When a `DropPtr` pointer goes out of scope, the referent's memory can
+be reclaimed. Since consuming the `DropPtr` pointer will not invoke
+the `drop` callback, creating a `DropPtr` pointer is an `unsafe`
+operation (in the same way that `std::mem::forget` is unsafe):
 
 ```rust
 // given the following:
 struct Foo;
 struct Bar(Foo);
-fn drop_forget<T>(_x: &move T) { }
+fn drop_forget<T>(_x: DropPtr<T>) { }
 
 // the following are legal:
 let x = Foo;
-drop_forget(unsafe { &move x });
+drop_forget(unsafe { &x as DropPtr<_> });
 // create an instance variable, but refer to it only through an
-// `&move` pointer:
-let x = unsafe { &move Foo };
+// `DropPtr` pointer:
+let x = unsafe { &Foo as DropPtr<Foo> };
 drop_forget(x);
 let x = Bar(Foo, Foo);
-drop_forget(unsafe { &move x });
+drop_forget(unsafe { &x as DropPtr<Foo> });
 
 let x = Bar(Foo);
-drop_forget(unsafe { &move x.0 });
+drop_forget(unsafe { &x.0 as DropPtr<Foo> });
 // the following line is illegal, since `x` is partially moved.
-drop_forget(unsafe { &move x });
-```
-
-In fact, it would *almost* be possible to implement `std::mem::forget`
-with a `&move` pointer (except that then this routine could not be
-invoked against a `MakeLinear` variable):
-
-```rust
-// in std::mem:
-unsafe fn forget<T>(x: T) { unsafe { let _ = &move x; } }
+drop_forget(unsafe { &x as DropPtr<Bar> });
 ```
 
 And, for completeness, we add a `std::mem::dropptr` method, which can
-allow the `drop` hook to be called when invoked with a `&move`
+allow the `drop` hook to be called when invoked with a `DropPtr`
 pointer:
 
 ```rust
 // in std::mem:
-fn dropptr<T: !Linear>(x: &move T) { let _ = *x; }
+fn dropptr<T: !Linear>(x: DropPtr<T>) { let _ = *x; }
 ```
 
 ## The `Finalize` trait.
@@ -531,7 +516,7 @@ which can will be reached via unwinding.
 ```rust
 struct Foo(MakeLinear);
 impl Finalize for Foo {
-    fn finalize(&move self) {
+    fn finalize(self: DropPtr<Foo>) {
         self.0.consume();
     }
 }
@@ -542,7 +527,7 @@ will be to use the `drop` method:
 
 ```rust
 trait Finalize {
-    fn finalize(&move self) {
+    fn finalize(self: DropPtr<Self>) {
         std::mem::dropptr(self);
     }
 }
@@ -641,7 +626,7 @@ bounds of their type parameters.
 Overall, this proposes a significant change to the language, and there
 are several pieces required to make the result usable and ergonomic.
 Where new facilities felt necessary to improve the ergonomics of
-working with linear types (`&move` references in particular), I've
+working with linear types (`DropPtr` references in particular), I've
 attempted to make those facilities more broadly useful, so that it
 would be useful and meaningful to fold aspects of this proposal into
 the language as parts. Most aspects of this proposal are intended to
@@ -741,18 +726,51 @@ better function signature.
 3. Modify the `Drop` trait, to export a different routine that would
 allow partial moves during the `drop` invocation. The default
 implementation of this routine would invoke the current `drop` routine.
-4. Allow coercion between `&mut` and `&move` on the `drop` function
+4. Allow coercion between `&mut` and `DropPtr` on the `drop` function
 signature.
 
 Of all of these approaches, I preferred the first listed, since it
 feels less "bolted-on" to the language than the others described:
 every current `Drop` implementor could mechanically replace `&mut`
-with `&move` in the `drop` function signature, and would continue to
-work, while the `&move` pointer itself adds significant extra utility
-to the language, in a way that seems (to me) to fit with Rust's
-philosophy. But of course, backwards-compatibility on this scale is a
-strong counter-argument to this proposal, so that perhaps even a more
-"bolted-on" facility may be considered preferable.
+with `DropPtr` in the `drop` function signature, and would continue to
+work, while the `DropPtr` pointer itself adds significant extra
+utility to the language, in a way that seems (to me) to fit with
+Rust's philosophy. But of course, backwards-compatibility on this
+scale is a strong counter-argument to this proposal, so that perhaps
+even a more "bolted-on" facility may be considered preferable.
+
+## Drop::drop argument type.
+
+Once it was determined that no existing pointer type would satisfy the
+requirements for this proposal, the obvious alternative was to use a
+new pointer type. I tried to analyze ones that were already described,
+but I could not find one that worked easily:
+
+* The `&move` pointers described by @glaebhoerl and @nikomatsakis have
+the behavior that the Drop routine will be invoked when the `&move`
+pointer goes out of scope. This makes this pointer type impossible to
+use inside the drop callback, since it goes out of scope with the drop
+routine, which would imply that the routine would be invoked
+recursively as its `&move` argument goes out of scope. So that
+wouldn't work.
+
+* @eddyb pointed me to his proposal for a new pointer facility
+(tentatively called OpenPointer) that could likely be made to work for
+my purposes. I personally like the proposal, but it is another design
+dimension that I would prefer to avoid including in this proposal. On
+the other hand, I've tried to make this proposal forward-compatible
+with his.
+
+* The syntax for creating and using `DropPtr` is definitely more
+awkward than the `&mut self` currently used by the `Drop::drop`
+callback. This syntax could be cleaned up with a new `&drop` pointer
+type. I am not sure what the implications of this would be: obviously,
+it would be inappropriate to make `drop` a keyword in the syntax.
+Still, it would be possible in the future to change the syntax so that
+`&drop T` could desugar to `DropPtr<T>`, or this syntax could be
+neatened by allowing `fn drop(DropPtr<self>) {}` as a self-argument to
+a method. I believe a `DropPtr` type would be forward compatible with
+future language evolution to simplify this syntax.
 
 ## Use inference for the `Linear` bound on a function type-parameter.
 
@@ -778,5 +796,7 @@ I'd like to thank the commentors on internals.rust-lang.org for their
 patience in helping me identify and work through some of the corner
 cases in this design, and for helping me understand more of the Rust
 philosophy. In particular, I'd like to thank @eddyb for his design of
-the basic linear types mechanism, and @glaebhoerl for his help in
-understanding `&move` pointers.
+the basic linear types mechanism, and for his feedback while iterating
+this design. I believe this design would have been much weaker without
+his help. I'd also like to thank @glaebhoerl for his help in
+understanding some of the new proposed pointer types.
