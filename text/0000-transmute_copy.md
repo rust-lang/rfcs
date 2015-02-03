@@ -15,13 +15,7 @@ behavior might be undefined at runtime.
 
 # Detailed design
 
-Change the implementation of `transmute_copy` to
-
-```rust
-pub unsafe fn transmute_copy<T, U>(src: &T) -> U {
-    transmute(ptr::read(src as *const T))
-}
-```
+Turn `transmute_copy` into an intrinsic that compares the size at compile time.
 
 # Drawbacks
 
