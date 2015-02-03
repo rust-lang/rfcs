@@ -84,9 +84,16 @@ except close consumes the object.
 
 # Drawbacks
 
+Having `.close` consume `self` might be limiting composability - passing a
+`&mut Writer` doesn't let the callee close it.   Technically this is the case
+today.
+
 Existing code breakage (although said code is likely buggy)
 
 It's not the "simple python way", e.g. developers have to "type another line".
+
+"My grandfather wrote his c++ code without calling .close() or checking errors,
+so that's good enough for me"
 
 People that don't like it have to write a wrapper `UnsafeCloser<T>` guard to
 return to the current implicit, but not error checked, semantics.  (Note that the
