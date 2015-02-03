@@ -4,22 +4,22 @@
 
 # Summary
 
-Add a `linear-trait` language item, that will be applied to a `Linear`
-trait, that can be used to determine if a type can be treated as
-Linear. Add a `linear-type` language item, that will be applied to a
-`MakeLinear` unit struct, which will be used to virally infect
-container-types with the `Linear` trait. The compiler will refuse to
-compile a source file in which a `linear` variable would be implicitly
-dropped. A `linear` variable can be explicitly dropped by either
-making it non-linear (by moving contained linear fields out), or by
-using the `std::mem::forget` intrinsic. Add a `DropPtr` pointer type,
-to allow partial moves out of a container as it is being dropped. Add
-a `Finalize` trait, that behaves identically to `Drop`, but can be
-applied to linear types to clean up during unwinding. Add an
-`explicit_bounds` lint that will require that generic type parameters
-for an `impl` have their bounds specified. Compile the standard
-libraries with the `explicit_bounds` lint on, and update as many APIs
-as make sense to be Linear-aware.
+Add an `droppable-trait` language item, that will be applied to a
+`Droppable` trait, that can be used to determine if variables of a
+type can be implicitly dropped. Add a `linear-type` language item,
+that will be applied to a `MakeLinear` unit struct, which will be used
+to virally infect container-types with linear behavior. The compiler
+will refuse to compile a source file in which a `linear` variable
+would be implicitly dropped. A `linear` variable can be explicitly
+dropped by either making it non-linear (by moving contained linear
+fields out), or by using the `std::mem::forget` intrinsic. Add a
+`DropPtr` pointer type, to allow partial moves out of a container as
+it is being dropped. Add a `Finalize` trait, that behaves identically
+to `Drop`, but can be applied to linear types to clean up during
+unwinding. Add an `explicit_bounds` lint that will require that
+generic type parameters for an `impl` have their bounds specified.
+Compile the standard libraries with the `explicit_bounds` lint on, and
+update as many APIs as make sense to be Linear-aware.
 
 # Motivation
 
@@ -241,55 +241,48 @@ while the `DropPtr` pointer type was inspired by [@nikomatsakis and
 Credit goes to these authors for the original ideas, while of course
 any blame for misunderstanding or misusing these ideas is mine.
 
-## The `Linear` bound on types.
+## The `Droppable` type-kind.
 
-A linear type is represented in the compiler as a type that has the
-`BoundLinear` bound associated with it. This bound is applied to a
-type in one of two ways:
+A linear type is represented in the compiler as a type that does NOT
+have the `Droppable` property. `Droppable` is applied to all types,
+except for types defined in one of the following ways:
 
 1. Either the type is attached to the `linear_type` language item, OR
 2. The type is a compound type, and at least one of the members of the
 type has the `linear` bound.
 
-The `Linear` bound can be removed from a container-type by having the
+The `Droppable` bound can be added from a container-type by having the
 container implement `Drop`. (This will be described in more detail
 below.)
 
-To allow checking if a type is linear, we also define a `Linear`
+To allow checking if a type is droppable, we also define a `Linear`
 trait, associated with a new `linear_trait` language item. The
 definition of these items in the `std::markers` crate will look like
 this:
 
 ```rust
-#[lang="linear_trait"]
-trait Linear;
+#[lang="droppable_trait"]
+trait Droppable;
 #[lang="linear_type"];
 struct MakeLinear;
 impl MakeLinear { ... }
 ```
 
-(Note that I have not added `#[derive(Linear)]`, or `impl Linear for
-MakeLinear` to explicitly annotate that the `MakeLinear` structure
-will be of `Linear` type. It is considered important in this design
-that the compiler decide which types are to be treated as linear by
-construction, so that an explicit annotation from a user that a type
-should be linear is unnecessary and undesired.)
-
 Then defining a new linear type would look something like:
 
 ```rust
-// has linear bound because it embeds the `MakeLinear` marker.
+// is not droppable because it embeds the `MakeLinear` marker.
 struct Foo {
     linear: std::markers::MakeLinear,
 }
-// has linear bound because it embeds `struct Foo` that has a linear
-// bound.
+// is not droppable because it embeds `struct Foo`, which is not
+// droppable.
 struct Bar {
     foo: Foo,
 }
 ```
 
-Removing the linear bound would look something like:
+Making a type droppable would look something like:
 
 ```rust
 struct Baz {
@@ -299,27 +292,22 @@ impl Drop for Baz {
     fn drop(DropPtr self) { ... }
 }
 
-// does not have linear bound, because Baz does not have linear bound.
+// is droppable, because Baz is droppable.
 struct Xyzzy {
     baz: Baz,
 }
 ```
 
-(Removing the linear bound will be described in more detail, below.)
+(Adding the droppable bound will be described in more detail, below.)
 
 And checking if a type-parameter is linear would look like:
 
 ```rust
-fn drop<T: !Linear>(_x: T) {}
-fn id<T: ?Linear>(x: T) -> T { x }
+fn drop<T: Droppable>(_x: T) {}
+fn id<T: ?Droppable>(x: T) -> T { x }
 // same as `id` function, but only works on linear types.
-fn linear_id<T: Linear>(x: T) -> T { x }
+fn linear_id<T: !Droppable>(x: T) -> T { x }
 ```
-
-This, of course, depends on negative trait bounds working. An
-alternative design would be to use a positive bounds check on a
-NonLinear trait. I'll discuss this possibility under the
-**Alternatives** heading, below.
 
 ## The `linear` bound on variables.
 
@@ -421,7 +409,7 @@ linear value, the compiler will require users to deconstruct the enum
 in order to dispose of the value. For example:
 
 ```rust
-impl<T: ?Linear> Option<T> {
+impl<T: ?Droppable> Option<T> {
     // new function: behaves like `unwrap`, but for the None case.
     // Consumes self, panicking if the value is `Some`.
     pub fn unwrap_empty(self) {
@@ -433,20 +421,19 @@ impl<T: ?Linear> Option<T> {
 }
 ```
 
-## Removing a linear bound from a type.
+## Making a linear-type droppable.
 
-As alluded to earlier, a linear bound can be removed from a type by
-having the type implement the `Drop` trait. Unfortunately, this won't
-work in current Rust, and (as far as I can tell) a fix involves
-changing the signature of the `drop` method. (I will have more to say
-about this below, under **Alternatives**.) The problem is, in this
-design, a linear variable is made non-linear by a partial move: moving
-a linear field out of a container suffices to make the container
-non-linear. Since partial moves are disallowed for `Drop` types --
-even during the call to `drop` -- this means that any linear clean-up
-function (which involves a move of the linear container) cannot be
-called from the `drop` function body, so linear resource clean-up
-would be impossible.
+As alluded to earlier, a linear type can be made droppable by having
+the type implement the `Drop` trait. Unfortunately, this won't work in
+current Rust, and (as far as I can tell) a fix involves changing the
+signature of the `drop` method. (I will have more to say about this
+below, under **Alternatives**.) The problem is, in this design, a
+linear variable is made non-linear by a partial move: moving a linear
+field out of a container suffices to make the container non-linear.
+Since partial moves are disallowed for `Drop` types -- even during the
+call to `drop` -- this means that any linear clean-up function (which
+involves a move of the linear container) cannot be called from the
+`drop` function body, so linear resource clean-up would be impossible.
 
 We get around this limitation by defining a new `DropPtr` pointer
 type, and changing the signature of `Drop::drop` to take
@@ -502,7 +489,7 @@ pointer:
 
 ```rust
 // in std::mem:
-fn dropptr<T: !Linear>(x: DropPtr<T>) { let _ = *x; }
+fn dropptr<T: Droppable>(x: DropPtr<T>) { let _ = *x; }
 ```
 
 ## The `Finalize` trait.
@@ -550,7 +537,7 @@ fail to compile when parametrized with a variable of linear type. (In
 other words, functions such as `std::mem::drop` should not accept
 variables of linear type.) In order not to disturb backwards
 compatibility too much, a type-parameter should default to assuming
-`!Linear`, so that this definition of `std::mem::drop`:
+`Droppable`, so that this definition of `std::mem::drop`:
 
 ```rust
 fn drop<T>(_x: T) { }
@@ -560,7 +547,7 @@ would continue to work as before. However, a function akin to
 Haskell's `id` function should be allowable with any type:
 
 ```rust
-fn id<T: ?Sized + ?Linear>(x: T) -> T { x }
+fn id<T: ?Sized + ?Droppable>(x: T) -> T { x }
 ```
 
 Many parts of the standard library (such as `Option<T>` and `Vec<T>`)
@@ -570,7 +557,7 @@ possible for the compiler to assist maintainers in determining what
 the bounds of a given type-parameter should be: in the case of a
 function like `drop`, that a variable of type-parameter `T` is
 implicitly dropped in the function implementation can be understood by
-the compiler to mean that `T` cannot be `Linear`.
+the compiler to mean that `T` must be `Droppable`.
 
 In order to make this sort of information available to maintainers,
 we'll define an `explicit_bounds` lint, which can be used to inform
@@ -582,13 +569,13 @@ restrictive than necessary:
 fn id<T>(_x: T) -> T { x }
 // will generate a compiler warning:
 // Type parameter `T` to function `id` is more restrictive than
-// necessary. Consider using `T: ?Sized + ?Linear` instead?
+// necessary. Consider using `T: ?Sized + ?Droppable` instead?
 ```
 
-## Update the standard library to be `Linear`-aware.
+## Update the standard library to be `Droppable`-aware.
 
 There are many facilities in the standard library that could be used
-with Linear types, except that they currently have assumptions that
+with linear types, except that they currently have assumptions that
 implicit drop is always allowable. For example, the `Option<T>` type
 has routines like `unwrap_or`, which will result in an implicit drop
 if the `Option` is `Some(x)` (in which case, the `or` parameter to the
@@ -596,7 +583,7 @@ function will be dropped). This can be addressed by splitting the
 implementation of `Option` based on its type parameters:
 
 ```rust
-impl<T: ?Linear> Option<T> {
+impl<T: ?Droppable> Option<T> {
   pub fn is_some ...
   pub fn is_none ...
   pub fn as_ref ...
@@ -608,7 +595,7 @@ impl<T: ?Linear> Option<T> {
   ...etc...
 }
 
-impl<T: !Linear> Option<T> {
+impl<T: Droppable> Option<T> {
   pub fn unwrap_or ...
   pub fn unwrap_or_else ...
   pub fn map_or ...
@@ -643,7 +630,7 @@ utility of many parts of the standard library (and other libraries)
 would be improved under this proposal by separating those interfaces
 which can apply to *all* type-parameter kinds, from those that can
 only apply to non-linear kinds. (The text mentioned `Option<T>`
-explicitly. Other types that would benefit from having a `Linear`
+explicitly. Other types that would benefit from having a `?Droppable`
 subset include `Vec<T>`, `Result<T>`, [T], etc.) This would cause some
 churn in library implementations, but the modifications would
 generally be highly mechanical. (Refactoring the `impl<T> Option<T>`
@@ -658,33 +645,16 @@ why this is disadvantageous (and, in my opinion, highly
 disadvantageous in some domains) in the Motivation above, but it is
 certainly possible to live without linear types.
 
-## `NonLinear` instead of `Linear`.
+## `Linear` instead of `Droppable`.
 
-As noted above, this full design requires negative trait bounds, since
-it will often be the case that a user wants to write code with the
-bounds that a type-parameter is non-linear. (For example,
-`std::mem::drop` must enforce that its type parameter is non-linear.)
-This design requires that negative trait bounds work. An alternative
-design could use a bound named `NonLinear` instead of `Linear`, so
-that the drop routine could be written as:
-
-```rust
-fn drop<T: NonLinear>(_x: T) { }
-```
-
-As a human reader, this means that the `drop` function is making a
-positive assertion that the type is not linear. This isn't that hard
-to read in this case, but if one considers `?NonLinear` (type may or
-may not be linear) or `!NonLinear` (type is linear), then confusion
-quickly becomes possible: a reader will always spend some cognitive
-effort to translate from the negative "NonLinear" to a positive
-"Linear" form. This is accidental complexity that should be avoided.
-
-On the other hand, perhaps there is a better name than "NonLinear" for
-the trait we are describing? Perhaps "Droppable"? I still personally
-prefer "Linear", even though it means some of the implementation must
-wait for negative traits to land, but perhaps others see things
-differently.
+This was the trait naming in an earlier draft of the proposal. In the
+earlier draft, I had only considered `NonLinear` as a name for the
+"can-be-implicitly-dropped" trait, which would have resulted in
+double-negatives as developers read code like `fn something<T:
+!NonLinear>(x: T)`. `Droppable` seems a better name, and better
+reflects that allowing implicit drops is a facility that is added to a
+linear type (a positive trait) than that implicit drops are removed
+from an affine type in the old design.
 
 ## `Drop` and backwards compatibility.
 
@@ -700,7 +670,7 @@ structure that might contain a linear type:
 * Linear bounds are characterized by disallowing implicit drops, while
 the `Drop` trait is defined to execute some code when a variable is
 implicitly dropped, so that it doesn't make sense for a type to be
-both `Linear` and `Drop`.
+both `!Droppable` and `Drop`.
 
 * Since `Linear` types require explicit action in order to reclaim
 linear resources, changing a type from `Linear` to `!Linear` will
@@ -772,7 +742,7 @@ neatened by allowing `fn drop(DropPtr<self>) {}` as a self-argument to
 a method. I believe a `DropPtr` type would be forward compatible with
 future language evolution to simplify this syntax.
 
-## Use inference for the `Linear` bound on a function type-parameter.
+## Use inference for the `Droppable` bound on function type-parameters.
 
 In [an earlier draft of this
 proposal](http://internals.rust-lang.org/t/pre-rfc-linear-types-take-2/1323),
