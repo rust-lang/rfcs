@@ -177,6 +177,8 @@ Deriving `Show` would also be able to implement `size_hint` meaning most everyon
 
 Added complexity may conflict with landing more critical things for 1.0, but that should only mean a possible postponing, vs rejection.
 
+Additionally, this requires more work to keep `fmt` and `size_hint` in sync for all manual implementations. Deriving will be able to build the method automatically.
+
 # Alternatives
 
 An alternative proposed by @kballard:
