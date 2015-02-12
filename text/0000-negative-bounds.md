@@ -1,3 +1,4 @@
+- Feature Name: `negative_bounds`
 - Start Date: 2015 Jan 15
 - RFC PR: (leave this empty)
 - Rust Issue: (leave this empty)
@@ -23,11 +24,13 @@ This RFC corresponds to issue #442.
 
 4. [Drawbacks](#drawbacks)
 
-5. [Alternatives](#alternatives)
+5. [Extensions](#extensions)
 
-6. [Unresolved questions](#unresolved-questions)
+6. [Alternatives](#alternatives)
 
-7. [Related discussions](#related-discussions)
+7. [Unresolved questions](#unresolved-questions)
+
+8. [Related discussions](#related-discussions)
 
 # Motivation
 
@@ -36,12 +39,14 @@ This RFC corresponds to issue #442.
 Currently, implementing a trait is impossible if a blanket impl is present. For instance it is impossible to implement `FnMut` ([#18835][18835]):
 
 ```rust
-struct Counted<F: Fn<A, R>, A, R> {
+struct Counted<F: Fn<A>, A> {
     counts: uint,
     function: F,
 }
-impl<F: Fn<A, R>, A, R> FnMut<A, R> for Counted<F, A, R> {
-    extern "rust-call" fn call_mut(&mut self, input: A) -> R {
+impl<F: Fn<A>, A> FnMut<A> for Counted<F, A> {
+    type Output = F::Output;
+
+    extern "rust-call" fn call_mut(&mut self, input: A) -> Self::Output {
         self.counts += 1;
         self.function.call(input)
     }
@@ -51,7 +56,7 @@ impl<F: Fn<A, R>, A, R> FnMut<A, R> for Counted<F, A, R> {
 because there is an existing blanket impl in libcore ([#19032][19032]):
 
 ```rust
-impl<F: ?Sized, A, R> FnMut<A, R> for F where F : Fn<A, R>
+impl<F: ?Sized, A> FnMut<A, R> for F where F : Fn<A>
 ```
 
 While it is possible that we do implement `Fn` to `Counted` with some third-party F, A or R, it is never the intention of the programmer. It should be possible to tell the compiler that `Counted` will *never* implement `Fn`, and thus clearing the conflict.
@@ -185,25 +190,17 @@ impl<T: Int + Float> Average4 for T { ... }
 
 ## Syntax of negative bounds
 
-Rust 1.0 supports 4 kinds of bounds:
+A normal trait bound is expressed as:
 
 * **Trait bound** — `where T: Int, U: Eq<T>`
-* **Equality bound** — `where T = u8`
-* **Outlives bound** — `where T: 'a, 'b: 'a`
-* **Projection bound** — `where <T as Iterator>::Item = u8` (commonly known as associated type binding)
 
-On top of these bounds, we also allow trait bounds to be higher-ranked:
-
-* `where T : for<'a, 'b: 'a> Trait<'a, 'b, X>`
-
-In this RFC, we allow all these bounds to be negated. The syntax for each kind of negative bounds is like:
+We allow these bounds to be negated by adding a `!`:
 
 * **Negative trait bound** — `where T: !Int, U: !Eq<T>`
-* **Inequality bound** — `where T != u8`
-* **Negative outlives bound** — `where T: !'a, 'b: !'a`
-* **Negative projection bound** —  `where <T as Iterator>::Item != u8`
 
-> Note: `'b: !'a` is not the same as `'a: 'b`. In `'b: !'a`, the two lifetimes could merely be representing two irrelevant regions.
+On top of this, we also allow trait bounds to be higher-ranked:
+
+* **Higher-ranked bound** — `where T : for<'a, 'b: 'a> Trait<'a, 'b, X>`
 
 There are three possible ways combine negation with higher-ranked modifier:
 
@@ -212,29 +209,6 @@ There are three possible ways combine negation with higher-ranked modifier:
 * **Negated higher-ranked negated bound** — `where T: !for<'a> !F<'a>`
 
 In this RFC we will investigate all three cases, but as HRTB is already quite rare, we may choose to only support one of these forms.
-
-There is also a shorthand notation for projection bound:
-
-* `where T: Iterator<Item=u8>`, equivalent to
-* `where T: Iterator, T::Item = u8`
-
-The shorthand notation *cannot* be negated in the outermost position, because it would need a union in the desugared form.
-
-```rust
-// the short-hand notation of output constraint cannot be negated, since its
-// expansion cannot be written in the form `A + B + !C + !D + ...`.
-impl<T> Trait for T where T: !Iterator<Item=u8> { ... }
-// error: expected `,` or `>`, found `=`
-
-// The above can be simulated using two impls if desired:
-impl<T> Trait for T where T: !Iterator { ... }
-impl<T> Trait for T where T: Iterator, T::Item != u8 { ... }
-```
-
-We could allow negation in the inner position however:
-
-* `where T: Iterator<Item != u8>`, equivalent to
-* `where T: Iterator, T::Item != u8`
 
 Negation cannot be combined with relaxation. The following should not parse:
 
@@ -256,7 +230,7 @@ We could consider trait bounds to be sets, and concrete types satisfying the bou
 
 In Rust, all traits are open for extension. Any traits with no superbounds are able to be implemented by the same type, even if the original developer may not think they should be used together. Therefore, all traits with no superbounds should be considered overlapping.
 
-The only way to create disjoint collection of trait bounds is by negative bounds. It is guaranteed that `!B` and `B` share no common types. In a collection `T: A + B + C + …`, as long as two of them are disjoint, the whole collection is also disjoint.
+It is guaranteed that `!B` and `B` share no common types, therefore `B + !B` forms a trivial disjoint collection. Furthermore, `B + !B + C + D + E + …` is also disjoint no matter what C, D, E, … are. In a collection `T: A + B + C + …`, as long as two of them are disjoint, the whole collection is also disjoint.
 
 If a trait has superbounds, then as long as a type does not satisfy one of its superbounds, it cannot implement that trait either. Therefore, we get a fundamental rule for disjoint collections:
 
@@ -285,55 +259,6 @@ The compiler could reject a bound if it is disjoint.
 fn foo<T: Copy + !Copy>(_: T) { ... }
 // error: impossible bound for `T`. `core::kinds::Copy` is both required and disallowed.
 ```
-
-### Equality and projection bounds
-
-Equality bounds could be considered a trait that only one type can satisfy. Therefore, the rule for trait bounds still apply. Additionally, if two equality bounds refer to concrete types, they are trivally disjoint.
-
-* [②] — `T = a` and `T = b` are disjoint, if `a` and `b` refer to distinct types.
-
-Although project bounds may match multiple types, the above still applies, since there can only be one associated type for each implementation of a single trait (note bug [#20400](https://github.com/rust-lang/rust/issues/20400)).
-
-* [③] — `<T as Trait>::Item = a` and `<T as Trait>::Item = b` are disjoint, if `a` and `b` refer to distinct types.
-
-In an (in)equality bound which refer to two parameters e.g. `T == U` or `T != U`, it should be considered as a bound for both T and U. The following should work:
-
-```rust
-trait TypeEqual1<T, U> { type Result; }
-impl<T, U> TypeEqual1<T, U> where T = U { type Result = TrueType; }
-impl<T, U> TypeEqual1<T, U> where T != U { type Result = FalseType; }
-
-trait TypeEqual2<T, U> { type Result; }
-impl<T> TypeEqual2<T, T> { type Result = TrueType; }
-impl<T, U> TypeEqual2<T, U> where T != U { type Result = FalseType; }
-```
-
-| Collection                   | Disjoint? | Note                                                                   |
-|------------------------------|:---------:|------------------------------------------------------------------------|
-| `T = u8, T: !Eq`             | ✓         | Disjoint because `u8: Eq`                                              |
-| `T = u8, T = i8`             | ✓         | Two concrete equality bounds are trivially disjoint                    |
-| `U, T = u8, T = U`           | ✗         | The unbound type parameter `U` could be anything, including u8.        |
-| `U, T = u8, T != U`          | ✗         | The unbound type parameter `U` could be anything, including *not* u8.  |
-| `U != u8, T = u8, T = U`     | ✓         |                                                                        |
-| `U = u8, T = u8, T != U`     | ✓         |                                                                        |
-| `U != u8, T != u8, T = U`    | ✗         | Inequality is not transitive.                                          |
-| `T = U, U != T`              | ✓         |                                                                        |
-| `V, T=Vec<V>, U=[V; 2], T=U` | ✓         | Although T and U are not concrete, they clearly have different shapes. |
-
-### Outlives bounds
-
-Lifetime bounds have the same treatment as trait bounds. The rule is same as [①]:
-
-* [④] — `T: 'a` and `T: !'b` are disjoint, if and only if `'a: 'b` (`'a` outlives `'b`).
-
-| Collection             | Disjoint? | Note                                                                          |
-|------------------------|:---------:|-------------------------------------------------------------------------------|
-| `'a: 'b, 'a: !'b`      | ✓         |                                                                               |
-| `'a: 'b + !'b`         | ✓         | Equivalent to above.                                                          |
-| `'a: 'b, 'b: 'a`       | ✗         | `'a == 'b` is still allowed by this bound.                                    |
-| `'a: 'b + !'c, 'b: 'c` | ✓         | Outlives bounds are transitive. Consider `'c` a superbound of `'b`.           |
-| `'a, T: 'static + !'a` | ✓         | `'static` outlives all lifetimes, so `'static + !'anything` must be disjoint. |
-
 ### Higher-ranked trait bounds
 
 Higher-ranked trait bounds is actually expressing an infinite intersection of multiple traits. The following two bounds are equivalent:
@@ -414,22 +339,53 @@ struct Data {
 Negative impl *could* be relaxed to allow implementing a non-empty trait. The impl must still be empty. This is one way to indicate that a particular (generic) type can never implement some trait:
 
 ```rust
-struct Counted<F: Fn<A, R>, A, R> { ... }
+struct Counted<F: Fn<A>, A> { ... }
 
 // Using negative impl to prevent Counted to implement Fn by anybody.
-impl<F: Fn<A, R>, A, R> !Fn<A, R> for Counted<F, A, R> {}
-impl<F: Fn<A, R>, A, R> FnMut<A, R> for Counted<F, A, R> { ... }
+impl<F: Fn<A, R>, A> !Fn<A> for Counted<F, A> {}
+impl<F: Fn<A, R>, A> FnMut<A> for Counted<F, A> { ... }
 
 // The following also work, but won't prevent an external crate implementing Fn
 // for Counted for other use.
-impl<F: Fn<A, R>, A, R> FnMut<A, R> for Counted<F, A, R>
-    where Counted<F, A, R>: !Fn<A, R>
+impl<F: Fn<A>, A> FnMut<A> for Counted<F, A>
+    where Counted<F, A>: !Fn<A>
 { ... }
+
+// We could also stick the negative bound to the struct definition, but is
+// currently blocked by issue rust-lang/rust#19601 or something like that.
+struct Counted<F: Fn<A>, A> where Counted<F, A>: !Fn<A> { ... }
 ```
 
 ### Associated items (#195)
 
 RFC #195 has [reserved a section][assoc_spec] about how associated types interacted with specialization. This case also applies to this RFC. We would not like to introduce any change to alter the current behavior. That means, an associated type of a non-concrete type must still be considered an arbitrary opaque type. If associated lifetime is implemented, we would also consider that is an opaque lifetime without a concrete type.
+
+The implication is that, when using an impl that involves negative trait bounds, we need to provide that complete bound otherwise the compiler would refuse to typecheck the function:
+
+```rust
+trait ToWidestType {
+    type Output;
+    fn to_widest_type(&self) -> <Self as ToWidestType>::Output;
+}
+impl<T: UnsignedInt + !SignedInt + !Float> ToWidestType for T {
+    type Output = u64;
+    fn to_widest_type(&self) -> u64 { self.to_u64().unwrap() }
+}
+impl<T: Float + !UnsignedInt + !SignedInt> ToWidestType for T { ... }
+impl<T: SignedInt + !UnsignedInt + !Float> ToWidestType for T { ... }
+```
+
+Then a function like this cannot typecheck:
+
+```rust
+fn foo<T: SignedInt>(t: T) { t.to_widest_type(); }
+```
+
+Because it is still possible that we have a type `T: SignedInt + UnsignedInt + Float`, which then `T::Output` is undefined. In order for it to work we have to specify the complete bound:
+
+```rust
+fn foo<T: SignedInt + !UnsignedInt + !Float>(t: T) { t.to_widest_type(); }
+```
 
 ### Higher-ranked trait bounds (#387)
 
@@ -478,8 +434,6 @@ Implicit specialization may be added back in the future, see the [Alternatives](
 
 ## Miscellaneous
 
-* We should allow equality type bound syntax be also written as `where T == a`, to preserve the symmetry with `where T != a`. Similarly, allow `where T: Iterator<Item==u8>`.
-
 * The Clone trait may be changed to automatically implemented to those implementing Copy, as described in issue [#17884][17884]. This would require a `!Copy` bound to most custom implementations though. Similar for PartialEq/Eq and PartialOrd/Ord.
 
     ```rust
@@ -501,15 +455,153 @@ Implicit specialization may be added back in the future, see the [Alternatives](
 
 # Drawbacks
 
-* While negative bounds is a simple concept, it is also unintuitive. It is hard to understand `'a: !'b` without drawing figures for instance.
+* While negative bounds is a simple concept, it is also unintuitive, in particular if extended to non-trait-bounds (see below). It is hard to understand `'a: !'b` without drawing figures for instance.
 
 * Negative bounds are purely a device to make the compiler happy about conflicting impl. It does not add any capability to the type it is bound on. To a human it may look like line noise.
+
+* [Negative bounds is "viral"][neg_bound_viral_comment]. Suppose we write
+
+    ```rust
+    impl<T> FnMut(T) for Func where Func: !Fn(T) { ... }
+    ```
+
+    then everytime we need to call Func, we have to also insert the negative bound:
+
+    ```rust
+    fn call_func<T>(f: Func, t: T) where Func: !Fn(T) {
+    //                             ^~~~~~~~~~~~~~~~~~
+        f(t);
+    }
+    ```
+
+* [Negative bounds may cause backward-incompatibility][neg_bound_back_compat_comment] in third-party crate without any compile errors/warnings. For instance:
+
+    ```rust
+    trait IsDisplay { fn is_display() -> bool; }
+    impl<T: Display> IsDisplay for T { fn is_display() -> bool { true } }
+    impl<T: !Display> IsDisplay for T { fn is_display() -> bool { false } }
+
+    fn foo() {
+        if (<SomeThirdPartyStruct as IsDisplay>::is_display()) {
+            eat_your_laundry();
+        } else {
+            do_normal_things();
+        }
+    }
+    ```
+
+    The behavior of `foo()` can be affected by whether the third-party struct decided to implement Display.
 
 * Unlike specialization, it seems no other languages support negative bounds.
 
 * Extra syntax needs to be introduced.
 
 * Resolving an obligation becomes more complex.
+
+# Extensions
+
+## Inequality bounds
+
+### Syntax
+
+An equality bound is expressed as:
+
+* **Equality bound** — `where T = u8`
+* **Projection bound** — `where <T as Iterator>::Item = u8` (commonly known as associated type binding)
+
+The corresponding negation syntax is:
+
+* **Inequality bound** — `where T != u8`
+* **Negative projection bound** —  `where <T as Iterator>::Item != u8`
+
+There is also a shorthand notation for projection bound:
+
+* `where T: Iterator<Item=u8>`, equivalent to
+* `where T: Iterator, T::Item = u8`
+
+The shorthand notation *cannot* be negated in the outermost position, because it would need a union in the desugared form.
+
+```rust
+// the short-hand notation of output constraint cannot be negated, since its
+// expansion cannot be written in the form `A + B + !C + !D + ...`.
+impl<T> Trait for T where T: !Iterator<Item=u8> { ... }
+// error: expected `,` or `>`, found `=`
+
+// The above can be simulated using two impls if desired:
+impl<T> Trait for T where T: !Iterator { ... }
+impl<T> Trait for T where T: Iterator, T::Item != u8 { ... }
+```
+
+We could allow negation in the inner position however:
+
+* `where T: Iterator<Item != u8>`, equivalent to
+* `where T: Iterator, T::Item != u8`
+
+For symmetry, we should allow equality type bound syntax be also written as `where T == a`, to preserve the symmetry with `where T != a`. Similarly, allow `where T: Iterator<Item==u8>`.
+
+### Semantics
+
+Equality bounds could be considered a trait that only one type can satisfy. Therefore, the rule for trait bounds still apply. Additionally, if two equality bounds refer to concrete types, they are trivally disjoint.
+
+* [②] — `T = a` and `T = b` are disjoint, if `a` and `b` refer to distinct types.
+
+Although project bounds may match multiple types, the above still applies, since there can only be one associated type for each implementation of a single trait (note bug [#20400](https://github.com/rust-lang/rust/issues/20400)).
+
+* [③] — `<T as Trait>::Item = a` and `<T as Trait>::Item = b` are disjoint, if `a` and `b` refer to distinct types.
+
+In an (in)equality bound which refer to two parameters e.g. `T == U` or `T != U`, it should be considered as a bound for both T and U. The following should work:
+
+```rust
+trait TypeEqual1<T, U> { type Result; }
+impl<T, U> TypeEqual1<T, U> where T = U { type Result = TrueType; }
+impl<T, U> TypeEqual1<T, U> where T != U { type Result = FalseType; }
+
+trait TypeEqual2<T, U> { type Result; }
+impl<T> TypeEqual2<T, T> { type Result = TrueType; }
+impl<T, U> TypeEqual2<T, U> where T != U { type Result = FalseType; }
+```
+
+| Collection                   | Disjoint? | Note                                                                   |
+|------------------------------|:---------:|------------------------------------------------------------------------|
+| `T = u8, T: !Eq`             | ✓         | Disjoint because `u8: Eq`                                              |
+| `T = u8, T = i8`             | ✓         | Two concrete equality bounds are trivially disjoint                    |
+| `U, T = u8, T = U`           | ✗         | The unbound type parameter `U` could be anything, including u8.        |
+| `U, T = u8, T != U`          | ✗         | The unbound type parameter `U` could be anything, including *not* u8.  |
+| `U != u8, T = u8, T = U`     | ✓         |                                                                        |
+| `U = u8, T = u8, T != U`     | ✓         |                                                                        |
+| `U != u8, T != u8, T = U`    | ✗         | Inequality is not transitive.                                          |
+| `T = U, U != T`              | ✓         |                                                                        |
+| `V, T=Vec<V>, U=[V; 2], T=U` | ✓         | Although T and U are not concrete, they clearly have different shapes. |
+
+## Negative outlives bound
+
+### Syntax
+
+A positive outlives bound is expressed as
+
+* `where T: !'a, 'b: !'a`
+
+The corresponding negative outlives bound can be written as
+
+* `where T: !'a, 'b: !'a`
+
+> Note: `'b: !'a` is not the same as `'a: 'b`. In `'b: !'a`, the two lifetimes could merely be representing two irrelevant regions.
+
+![Illustration of a negative outlives bound](https://camo.githubusercontent.com/4864a02dede8917c61fe3a09b76896c34fc436b2/687474703a2f2f692e696d6775722e636f6d2f5674704b724a462e706e67)
+
+### Semantics
+
+Lifetime bounds have the same treatment as trait bounds. The rule is same as [①]:
+
+* [④] — `T: 'a` and `T: !'b` are disjoint, if and only if `'a: 'b` (`'a` outlives `'b`).
+
+| Collection             | Disjoint? | Note                                                                          |
+|------------------------|:---------:|-------------------------------------------------------------------------------|
+| `'a: 'b, 'a: !'b`      | ✓         |                                                                               |
+| `'a: 'b + !'b`         | ✓         | Equivalent to above.                                                          |
+| `'a: 'b, 'b: 'a`       | ✗         | `'a == 'b` is still allowed by this bound.                                    |
+| `'a: 'b + !'c, 'b: 'c` | ✓         | Outlives bounds are transitive. Consider `'c` a superbound of `'b`.           |
+| `'a, T: 'static + !'a` | ✓         | `'static` outlives all lifetimes, so `'static + !'anything` must be disjoint. |
 
 # Alternatives
 
@@ -637,7 +729,7 @@ The problem is the resolution syntax is only good for blanket impls. It is hard 
 
 # Unresolved questions
 
-None so far?
+* If the purpose is only allow implementing FnMut, is this RFC good enough / inadequate / too complex?
 
 # Related discussions
 
@@ -670,4 +762,5 @@ Negative bounds and specialization have been mentioned many times before, here a
 [rfc442]: https://github.com/rust-lang/rfcs/issues/442
 [rfc536]: https://github.com/rust-lang/rfcs/issues/536
 [12517]: https://github.com/rust-lang/rust/issues/12517#issuecomment-61997227
-
+[neg_bound_viral_comment]: https://github.com/rust-lang/rfcs/pull/586#issuecomment-72769171
+[neg_bound_back_compat_comment]: https://github.com/rust-lang/rfcs/pull/586#issuecomment-73772518
