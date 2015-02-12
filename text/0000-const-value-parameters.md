@@ -369,6 +369,11 @@ Unfortunately, this is by far the *least* ergonomic option, since now the
 `const` keyword is now also required for *uses* of generic items, which are more
 common than *definitions* of generic items.
 
+### `where` clause range alternatives
+
+The syntax for `where` clauses could be changed. Also, inclusive ranges could be
+used instead of ranges that exclude the upper bound.
+
 ### Broader `where` clauses
 
 It has been suggested that `where` clauses for const parameter constraints
