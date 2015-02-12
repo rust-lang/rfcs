@@ -10,8 +10,9 @@ parameterization over integer and boolean constants, but much of the machinery
 being introduced apply to any other types of constant values allowed in the
 future.
 
-A significant part of the design and text of this RFC was borrowed from a draft
-RFC that @aepsil0N introduced for discussion.
+A significant part of the design and text of this RFC was borrowed
+from a draft RFC that
+[@aepsil0N introduced for discussion](http://internals.rust-lang.org/t/pre-rfc-genericity-over-static-values/1538).
 
 # Motivation
 
@@ -60,7 +61,7 @@ parameters. Here is a list:
    arrays without requiring extensive run-time checks (e.g. indexing, slicing,
    reductions, transposes, reshaping).
  - *Range and mod types*: This would allow range and mod types (similar to
-   Ada's)[http://en.wikipedia.org/wiki/Ada_%28programming_language%29#Data_types]
+   [Ada's](http://en.wikipedia.org/wiki/Ada_%28programming_language%29#Data_types))
    in Rust. These enforce certain range constraints and implement modular
    arithmetics, respectively. Besides providing *extra* checks for correctness,
    such types can also *avoid* unnecessary bounds checks, when an index can be
