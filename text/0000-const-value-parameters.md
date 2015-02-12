@@ -18,20 +18,20 @@ RFC that @aepsil0N introduced for discussion.
 Rust already contains one type which is parameterized by an integer, namely the
 array (`[T; N]`). There are several benefits to having statically sized arrays:
 
- - Arrays are sized types, and therefore can be placed on the stack.
+ - Arrays are sized types, and therefore can readily be placed on the stack.
  - Array size incompatibilities usually cause compile-time type errors, rather
    than run-time errors or silent misbehavior.
- - The compiler has the opportunity to optimize operations using heuristics
-   based on the array size.
+ - The compiler has the opportunity to optimize operations based on
+   the array size and alignment.
  - It is easier to port and/or interoperate with C or C++ code that uses fixed
    array sizes.
 
 However, this is the only case where Rust allows parameterization by a value.
-This has already caused several issues:
+This has already caused several issues, for instance:
 
  - It is impossible to generically implement a trait for arrays of any size.
- - It is impossible to generically define a family of structs to contain an
-   array of any size.
+ - It is impossible to define a parameterized struct to contain an array of any
+   size.
  - It is impossible to generically define conversion functions between array
    types. (E.g. converting `[u8; 4]` to `[u32; 1]`, `[u8; 8]` to `[u32; 2]`, and
    so on.)
@@ -46,10 +46,6 @@ This situation also makes it more difficult to define fixed-size containers that
 do not have a similar layout to arrays. This has been a problem for Servo as
 described in [issue 319](https://github.com/rust-lang/rfcs/issues/319).
 
-*(Note: Because the word "dimension" has different meanings in different
-application domains, we avoid using it below. "Multidimensional array" refers
-to an array that is indexed by more than one number.)*
-
 There are several more cases where it would be helpful to use constant values as
 parameters. Here is a list:
 
@@ -58,44 +54,51 @@ parameters. Here is a list:
    or multiply a 3x4 matrix by a 5-vector. But the algorithms can be written
    generically in terms of the ranks of these types.
  - *Multidimensional arrays*: Even when the *size* of a multidimensional array
-   is not known at compile time, the *order* (the number of indices required to
-   select an element) is typically known. Using a constant value parameter to
-   represent the order allows a variety of operations to be defined generically
-   for multidimensional arrays without requiring extensive run-time checks
-   (e.g. indexing, slicing, reductions, transposes, reshaping).
- - *Physical units*: In science, one often deals with numerical quantities
-   equipped with units (meters, hours, kilometers per hour, etc.). To avoid
-   errors dealing with these units, it makes sense to include them in the data
-   type. In this context value parameters could allow conversion between units
-   and/or checking formulae for consistency at compile-time. (For numerically
-   intensive code, run-time checks are usually prohibitively expensive.)
+   is not known at compile time, the *order* (the index dimensionality) is
+   typically known. Using a constant value parameter to represent the order
+   allows a variety of operations to be defined generically for multidimensional
+   arrays without requiring extensive run-time checks (e.g. indexing, slicing,
+   reductions, transposes, reshaping).
  - *Range and mod types*: This would allow range and mod types (similar to
    Ada's)[http://en.wikipedia.org/wiki/Ada_%28programming_language%29#Data_types]
    in Rust. These enforce certain range constraints and implement modular
    arithmetics, respectively. Besides providing *extra* checks for correctness,
    such types can also *avoid* unnecessary bounds checks, when an index can be
    proven to be in a valid range at compile time.
+ - *Physical units*: In science, one often deals with numerical quantities
+   equipped with units (meters, hours, kilometers per hour, etc.). To avoid
+   errors dealing with these units, it makes sense to include them in the data
+   type. In this context value parameters could allow conversion between units
+   and/or checking formulae for consistency at compile-time. (For numerically
+   intensive code, run-time checks are usually prohibitively expensive.)
+
+Integer const parameters would enable three of the above applications, and
+could make it easier to deal with physical units using the type system.
 
 # Detailed design
 
 ## Syntax
 
 In general, wherever a type parameter can be declared as `ident`, a const
-parameter can also be declared using the syntax `const ident: ident`, where the
+parameter can also be declared using the syntax `const ident: ty`, where the
 first identifier is the name of the parameter, and the second is its type. The
 scope of an item's const parameters is the same as that of type parameters.
 
 In any position in a parameter list where a const parameter is expected, a
-constant expression of appropriate type must be provided. To avoid any
-ambiguities that might arise from mixing type and expression syntax, this
-expression must be surrounded with `{}` braces. For convenience, these braces
-can be omitted if the expression is:
+constant expression of appropriate type must be provided. Since the list is
+positional, the compiler can readily infer the integer type, allowing
+parameterized types to be used as in `Array<T, 2>` (though `Array<T, 2us>` is
+also allowed).
+
+To avoid any ambiguities that might arise from mixing type and expression
+syntax, constant expressions in parameter lists must be surrounded with `{}`
+braces. For convenience, these braces can be omitted if the expression is:
 
 1. a literal or
 2. an identifier naming a constant.
 
 These exceptions are made because they are likely to be the most common cases,
-and because they seem to be the most manageable for parsers to handle.
+and because they seem to avoid placing any severe burden on the parser.
 
 Examples:
 
@@ -118,7 +121,7 @@ fn bar() {
 trait Gnarl<T, const N: i64, U=u32, const Q: bool = true> { /* ... */ }
 impl Gnarl<i32, -2> for Carl { /* ... */ }
 impl Gnarl<i32, {4+4}, u64> for Darl { /* ... */ }
-const x: u64 = 9;
+const x: i64 = 9;
 impl Gnarl<i32, x, _, false> for Jarl { /* ... */ }
 // Not correct.
 impl Gnarl<i32, x>>2> for Snarl { /* ... */ }
@@ -126,9 +129,13 @@ impl Gnarl<i32, x>>2> for Snarl { /* ... */ }
 impl Gnarl<i32, {x>>2}> for Snarl { /* ... */ }
 ```
 
-If const and type parameters were separated by position, it would become more
-difficult to make use of defaulted type parameters. (This also might interfere
-with variadic parameters in the future.) This is why we allow type and const
+The above examples show how this feature interacts in an intuitive way with UFCS
+syntax and parameter defaults.
+
+If const and type parameters were separated by position (e.g. if all const
+parameters had to follow all type parameters), it would become more difficult to
+make use of defaulted type parameters. This also might interfere with variadic
+parameters in the future. Therefore it seems better to allow type and const
 parameters to be mixed, and use the `const` keyword to distinguish between them.
 
 ## Type Inference
@@ -161,7 +168,7 @@ fn identity<const N: usize>(x: Foo<N>) -> Foo<N>;
 fn reduce1<const N: usize>(x: Foo<N>) -> Foo<N-1>;
 // The argument type can be inferred from the return type, but not vice versa.
 fn reduce2<const N: usize>(x: Foo<N+1>) -> Foo<N>;
-// No inference of N possible; the compiler can only do inference if N is
+// No inference of N possible; the compiler can only infer either value if N is
 // specified explicitly when reduce3 is called.
 fn reduce3<const N: usize>(x: Foo<N+2>) -> Foo<N+1>;
 ```
@@ -185,81 +192,97 @@ whether and when to check for underflow or overflow.
 ## Where clauses
 
 There may be cases where only certain values of a const parameter are
-reasonable. Therefore one needs a way to apply bounds to an item's const
-parameters. The syntax for these constraints will be `const { expr }`, where the
-expression is a constant expression that evaluates to a boolean, and the braces
-are never mandatory.
+reasonable, and therefore one needs a way to apply bounds to an item's const
+parameters. There are two new types of constraints added by this proposal:
 
-Some examples:
+ 1. Constraints of the form `const ident: constexpr`. The right hand side must
+    not contain a reference to any const parameter. The constraint is satisfied
+    if the identified const parameter is equal to the right hand side.
+ 2. Constraints of the form `const ident: RANGE`. In this case, `N` must be of
+    an integer type, and the `RANGE` is a range expression containing constant
+    integer expressions (i.e. `..`, `M..`, `..N`, and `M..N`).
+
+Some (very contrived) examples:
 
 ```rust
-/// Returns the middle element of a slice with odd length
+/// Returns the middle element.
 fn center<T, const N: usize>(a: &[T, .. n]) -> &T
-    where const {N % 2 == 1}
+    where const N: 3
 { /* ... */ }
-struct Razm<U, const M: u8>
+// Only can be instantiated with M < 5
+struct Razm<U, const M: u8, V>
     where U: Frazm,
-          const { N < 5 } {
+          const M: ..5,
+          V: Crazm {
     /* ... */
 }
 ```
 
-Unfortunately, such clauses cannot be used to inform coherence checks in
-general, because the compiler will not always be able to determine whether or
-not two `impl`s overlap:
+However, the main motivation for this case is to allow specialization of impls
+based on the value of a const parameter, as shown in the following example:
 
 ```rust
-// Matches for N = 3, 8, 13, 18...
-impl<const N: u32> Foo<N> for Bar<N>
-    where const { N % 5 == 3 } {
-}
-// Matches for N < 3, so no overlap, but this will be rejected anyway.
-impl<const N: u32> Foo<N> for Bar<N>
-    where const { N <= 2 } {
-}
-```
-
-However, there is an important case that should be covered here, as shown in the
-following example:
-
-```rust
-trait<T, const N: usize> ReduceArray<T, N> {
+trait<T, const N: usize> ReduceArray<T, N>
+      where const N: 1.. {
     type ReducedByOne;
     fn sum_dimension(self, dim: usize) -> ReducedByOne;
     /* Other functions */
-}
-impl<const N: usize> ReduceArray<i32, N> for I32Array<N>
-      where const { N > 1 } {
-    type ReducedByOne = I32Array<N-1>;
-    /* Function implementations */
 }
 impl ReduceArray<i32, 1> for I32Array<1> {
     type ReducedByOne = i32;
     /* Function implementations */
 }
+impl<const N: usize> ReduceArray<i32, N> for I32Array<N>
+      where const N: 2.. {
+    type ReducedByOne = I32Array<{N-1}>;
+    /* Function implementations */
+}
 ```
 
 This use case involves a reduction of a multidimensional array, but this pattern
-could apply equally to any case where it is useful to reduce some value to one
-of a lower order.
+could apply to other cases where it is useful to connect some type with another
+that's before/after it in a sequence. E.g. you can use this pattern to define a
+trait method that adds/removes items of fixed-size arrays, in which case you
+need to specify the type of an array that's larger/smaller than the one you were
+given.
 
 # Drawbacks
 
 ## Language and implementation complexity
 
 This change obviously represents significant additional complexity in Rust's
-type system. This RFC assumes that the resulting increase in language
-expressiveness will outweigh this cost in the long run. Under this RFC, the
-language would *not* have to add new array types, new range/mod types, or new
-types of static assertion to handle the cases discussed in the motivation
-section. Such features can be implemented in external crates or the standard
-library.
+type system. This RFC assumes that the resulting improvements in language
+expressiveness will outweigh this cost in the long run.
 
 # Alternatives
 
 ## Do nothing
 
-## Add type-level natural numbers that are unrelated to value-level integers
+Users can continue to get by with macros, run-time sizes, and generated code, as
+most do today. This is unpalatable to many developers, but it is not unworkable.
+
+## Use type-level natural numbers defined separately from value-level integers
+
+This approach has seen significant success in other languages, such as
+Haskell. The main problem with this approach in Rust is that it is at odds with
+the way we handle arrays currently. Type-level arithmetic can also be complex to
+implement and verbose to use. However, this approach is usable today.
+
+See also
+[@darinmorrison's `shoggoth` crate](https://github.com/epsilonz/shoggoth.rs).
+
+## Const parameters without arithmetic
+
+This RFC could be partially implemented without allowing arithmetic in constant
+parameters (i.e. types like `Foo<N>` and `Foo<2>` could be used, but not
+`Foo<{N-1}>` or `Foo<{2+2}>`). Then the above points about inference, arithmetic
+semantics, use of braces in parameter lists, and `where` clauses would not
+apply.
+
+This would be less complex initially, but care would need to be taken to allow
+the syntax to backwards-compatibly grow in the future. In such a partial
+implementation, array sizes would still be more flexible than struct/enum
+constant parameters (since `[T; 2+2]` is already a valid type in Rust today).
 
 ## Variations on this design
 
@@ -268,7 +291,7 @@ library.
 Here's a brief summary of other types of values that could be used as
 parameters, and the reasons that they are omitted from this RFC:
 
- - It seems necessary to omit `struct` or `enum` values pending further design
+ - It seems necessary to omit struct or enum values pending further design
    work (e.g. there may be other features that Rust's type system needs to
    implement these, and either CTFE or specialized plugins are probably required
    for these to be useful).
@@ -279,7 +302,7 @@ parameters, and the reasons that they are omitted from this RFC:
    representation to influence whether or not a program type checks.
  - References to static values (`&'static`) could be used as const parameters,
    as in C++. This does not appear to cause any major issues, and was left out
-   only because it seemed unlikely to be useful.
+   only because it adds complexity while being less likely to be useful.
 
 ### Only allow (or default to) a particular integer type
 
@@ -310,7 +333,7 @@ separate the two. Then the above `Gnarl` examples could be written this way:
 trait Gnarl<T, U=u32; N: i64, Q: bool = true> { /* ... */ }
 impl Gnarl<i32; -2> for Carl { /* ... */ }
 impl Gnarl<i32, u64; {4+4}> for Darl { /* ... */ }
-const x: u64 = 9;
+const x: i64 = 9;
 impl Gnarl<i32; x, false> for Jarl { /* ... */ }
 impl Gnarl<i32; {x>>2}> for Snarl { /* ... */ }
 ```
@@ -334,7 +357,7 @@ require the keyword `const` before the first const parameter, as seen here:
 trait Gnarl<T, U=u32, const N: i64, Q: bool = true> { /* ... */ }
 impl Gnarl<i32, const -2> for Carl { /* ... */ }
 impl Gnarl<i32, u64, const {4+4}> for Darl { /* ... */ }
-const x: u64 = 9;
+const x: i64 = 9;
 impl Gnarl<i32, const x, false> for Jarl { /* ... */ }
 impl Gnarl<i32, const {x>>2}> for Snarl { /* ... */ }
 fn contrived_function<const N: u64>(x: Foo<const N>) {}
@@ -344,6 +367,14 @@ contrived_function::<const 3>(Foo::new::<const 3>());
 Unfortunately, this is by far the *least* ergonomic option, since now the
 `const` keyword is now also required for *uses* of generic items, which are more
 common than *definitions* of generic items.
+
+### Broader `where` clauses
+
+It has been suggested that `where` clauses for const parameter constraints
+should be expanded to contain any constant boolean expression. This feature was
+omitted because it adds significant complexity to the proposal, and because it
+raises questions about whether and when such constraints can reasonably inform
+coherence checking.
 
 # Unresolved questions
 
