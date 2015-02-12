@@ -50,7 +50,7 @@ described in [issue 319](https://github.com/rust-lang/rfcs/issues/319).
 There are several more cases where it would be helpful to use constant values as
 parameters. Here is a list:
 
- - *Algebraic types*: Algebraic vectors and matrices generally have a certain
+ - *Linear Algebra*: Algebraic vectors and matrices generally have a certain
    rank. For example, it does not make sense to add a 2-vector with a 3-vector
    or multiply a 3x4 matrix by a 5-vector. But the algorithms can be written
    generically in terms of the ranks of these types.
@@ -95,8 +95,8 @@ To avoid any ambiguities that might arise from mixing type and expression
 syntax, constant expressions in parameter lists must be surrounded with `{}`
 braces. For convenience, these braces can be omitted if the expression is:
 
-1. a literal or
-2. an identifier naming a constant.
+ 1. a literal or
+ 2. an identifier naming a constant.
 
 These exceptions are made because they are likely to be the most common cases,
 and because they seem to avoid placing any severe burden on the parser.
@@ -177,20 +177,27 @@ fn reduce3<const N: usize>(x: Foo<N+2>) -> Foo<N+1>;
 ## Arithmetic semantics
 
 Arithmetic involving const parameters "at the type level" (i.e. in parameter
-lists) should always be checked for underflow and overflow. There are several
-reasons for this:
+lists) should always be checked for underflow and overflow.
+
+This is consistent with the integer overflow semantics specified by RFC 560,
+which considers integer underflow/overflow to be erroneous unless the program
+explicitly uses the wrapped arithmetic operations. The compiler is allowed (and
+in debug builds required) to reject programs that contain
+underflow/overflow. When dealing with const parameters, these checks incur no
+run-time cost, so there is no reason not to always perform them.
+
+Additionally:
 
  - No one so far has claimed that wrapped arithmetic at the type level is useful
-   for any given application.
- - There is no run-time cost for these checks.
+   for any specific use case.
  - Most proposed applications of const parameters only require unsigned types.
    Unsigned underflow is likely to result in absurdly large parameter values.
 
 Where const parameters are used like `const` values in function bodies, they
-should be treated like other integers, i.e. it is up to the compiler to decide
-whether and when to check for underflow or overflow.
+should be treated accordingly, i.e. it is up to the compiler to decide whether
+and when to check for underflow or overflow in non-debug builds.
 
-## Where clauses
+## `where` clauses
 
 There may be cases where only certain values of a const parameter are
 reasonable, and therefore one needs a way to apply bounds to an item's const
@@ -349,6 +356,8 @@ are present, though it is not *too* irregular:
 ```rust
 fn contrived_function<; N: u64>(x: Foo<; N>) {}
 contrived_function::<; 3>(Foo::new::<; 3>());
+trait<T; N: usize> ReduceArray<T; N>
+      where ; const N: 1.. {
 ```
 
 A third alternative is to separate parameters positionally with commas, but to
@@ -363,6 +372,8 @@ impl Gnarl<i32, const x, false> for Jarl { /* ... */ }
 impl Gnarl<i32, const {x>>2}> for Snarl { /* ... */ }
 fn contrived_function<const N: u64>(x: Foo<const N>) {}
 contrived_function::<const 3>(Foo::new::<const 3>());
+trait<T, const N: usize> ReduceArray<T, const N>
+      where const N: 1.. {
 ```
 
 Unfortunately, this is by far the *least* ergonomic option, since now the
