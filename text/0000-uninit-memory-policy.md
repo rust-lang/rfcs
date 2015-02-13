@@ -46,7 +46,7 @@ the wire).
 While we do not have a formal spec/contract for unsafe code, this RFC
 will serve to set an explicit policy that:
 
-**Uninitialized memory can ever be exposed in safe Rust, even when it
+**Uninitialized memory can never be exposed in safe Rust, even when it
 would not lead to undefined behavior**.
 
 # Drawbacks
