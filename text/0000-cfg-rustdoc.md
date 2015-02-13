@@ -5,7 +5,7 @@
 
 # Summary
 
-Running `rustdoc` or `cargo doc` should pass a special `-–cfg rustdoc` flag to `rustc`.
+Running `rustdoc` or `cargo doc` should pass a special `-–cfg doc` flag to `rustc`.
 
 # Motivation
 
@@ -27,11 +27,11 @@ In the current architecture, some of the above API will be missing depending on 
 
 ```rust
 /// Open the web page in Internet Explorer.
-#[cfg(any(rustdoc, target_os="win32"))]
+#[cfg(any(doc, target_os="win32"))]
 pub fn open_in_internet_explorer(url: &str) { ... }
 
 /// Open the web page in Safari
-#[cfg(any(rustdoc, target_os="macos", target_os="win32"))]
+#[cfg(any(doc, target_os="macos", target_os="win32"))]
 pub fn open_in_safari(url: &str) { ... }
 ```
 
@@ -41,7 +41,7 @@ It may be convenient if we could produce a macro example like how `std::env!` is
 
 ```rust
 /// Performs some meta-programming magic.
-#[cfg(rustdoc)]
+#[cfg(doc)]
 #[macro_export]
 macro_rules! my_plugin {
     ($($x:ident),*) => { /* plugin */ }
@@ -54,9 +54,9 @@ Rustc defines `--cfg dox` to document `env!`, `format_args!`, etc. ([rust-lang/r
 
 # Detailed design
 
-When `rustdoc` or `cargo doc` invokes `rustc`, it should add `--cfg rustdoc` as an additional flag.
+When `rustdoc` or `cargo doc` invokes `rustc`, it should add `--cfg doc` as an additional flag.
 
-Users can add documentation-only declarations with the `#[cfg(rustdoc)]` attribute.
+Users can add documentation-only declarations with the `#[cfg(doc)]` attribute.
 
 # Drawbacks
 
@@ -64,7 +64,7 @@ Possibly abused to produce documentation not matching the actual API.
 
 # Alternatives
 
-* The identifier `rustdoc` can be changed to something else.
+* The identifier `doc` can be changed to something else (`rustdoc`, `dox`, etc.).
 
 * Add a `cfg = [...]` option to the [profile sections](http://doc.crates.io/manifest.html#the-%5Bprofile.*%5D-sections) in Cargo.toml.
 
@@ -74,7 +74,7 @@ Possibly abused to produce documentation not matching the actual API.
     debug = true
     rpath = false
     lto = false
-    cfg = ["rustdoc"]    # <-- new
+    cfg = ["doc"]    # <-- new
     ```
 
 * With `cargo` it can be worked around using "features":
