@@ -5,7 +5,7 @@
 
 # Summary
 
-Set an explicit policy that uninitialized memory can ever be exposed
+Set an explicit policy that uninitialized memory can never be exposed
 in safe Rust, even when it would not lead to undefined behavior.
 
 # Motivation
