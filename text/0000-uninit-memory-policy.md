@@ -17,7 +17,7 @@ uninitialized, but allocated slice of scalars? These cases can be made
 memory and typesafe, but they carry security risks.
 
 In particular, it may be possible to exploit a bug in safe Rust code
-that leads that code to reveal the contents of memory.
+that causes that code to reveal the contents of memory.
 
 Consider the `std::io::Read` trait:
 
