@@ -35,10 +35,11 @@ underlying `read` method.
 
 While the `read` method may be implemented in pure safe code, it is
 nonetheless given read access to uninitialized memory.  The
-implementation guarantees that no UB will arise as a result. But
-nevertheless, an incorrect implementation of `read` -- for example,
-one that returned an incorrect number of bytes read -- could result in
-that memory being exposed (and then potentially sent over the wire).
+implementation of `read_to_end` guarantees that no UB will arise as a
+result. But nevertheless, an incorrect implementation of `read` -- for
+example, one that returned an incorrect number of bytes read -- could
+result in that memory being exposed (and then potentially sent over
+the wire).
 
 # Detailed design
 
