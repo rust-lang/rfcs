@@ -10,7 +10,7 @@ Add the `div_rem` function and method back into `std::num` using a new trait.
 # Motivation
 
 It is common to want to find `x / y` and `x % y` at the same time, often in
-low-level code, frequently called code where fast execution is important. For
+low-level, frequently called functions, where fast execution is important. For
 instance:
 
  - Base conversion
