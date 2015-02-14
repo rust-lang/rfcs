@@ -111,6 +111,21 @@ without specifying whether or how the `Div` and `Rem` implementations for a
 given type are related. Under this view, `div_rem` is most closely related to
 `std::ops`, and is orthogonal to the numeric traits in the `num` crate.
 
+## Add a `div_rem` method to `Int` and `Float`
+
+This avoids an extra trait, but at the cost of further hampering abstraction
+over numbers. It may interfere with redesigns of the traits under development in
+the `num` crate, and also prevents use of the `div_rem` function (the one
+defined above that is not a method).
+
+## Define `div_rem` differently for non-integer arguments
+
+If you call `div_rem` on floating point arguments, you're more likely to want
+something like `((x/y).trunc(), x % y)` or `((x/y) as i64, x%y)` than `(x / y, x
+% y)`. However, it would be potentially confusing if `div_rem` did this, since
+from the name you would expect the result to be a simple combination of the two
+operators.
+
 ## Add a new operator
 
 In this case, `DivRem` would be added to `std::ops` instead of `std::num`, and
