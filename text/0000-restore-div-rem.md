@@ -5,7 +5,7 @@
 
 # Summary
 
-Add the "div_rem" function and method back into `std::num` using a new trait.
+Add the `div_rem` function and method back into `std::num` using a new trait.
 
 # Motivation
 
