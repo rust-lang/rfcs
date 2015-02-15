@@ -7,8 +7,7 @@
 
 Allow items to be parameterized by constant values. This RFC only introduces
 parameterization over integer and boolean constants, but much of the machinery
-being introduced apply to any other types of constant values allowed in the
-future.
+being introduced will apply to any constant values allowed in the future.
 
 A significant part of the design and text of this RFC was borrowed
 from a draft RFC that
@@ -22,8 +21,8 @@ array (`[T; N]`). There are several benefits to having statically sized arrays:
  - Arrays are sized types, and therefore can readily be placed on the stack.
  - Array size incompatibilities usually cause compile-time type errors, rather
    than run-time errors or silent misbehavior.
- - The compiler has the opportunity to optimize operations based on
-   the array size and alignment.
+ - The compiler has the opportunity to optimize operations based on the array
+   size and alignment.
  - It is easier to port and/or interoperate with C or C++ code that uses fixed
    array sizes.
 
@@ -32,7 +31,8 @@ This has already caused several issues, for instance:
 
  - It is impossible to generically implement a trait for arrays of any size.
  - It is impossible to define a parameterized struct to contain an array of any
-   size.
+   size (except by using the array type as a parameter for a struct that can
+   contain *any* sized type).
  - It is impossible to generically define conversion functions between array
    types. (E.g. converting `[u8; 4]` to `[u32; 1]`, `[u8; 8]` to `[u32; 2]`, and
    so on.)
@@ -95,11 +95,11 @@ To avoid any ambiguities that might arise from mixing type and expression
 syntax, constant expressions in parameter lists must be surrounded with `{}`
 braces. For convenience, these braces can be omitted if the expression is:
 
- 1. a literal or
+ 1. a primitive literal, or
  2. an identifier naming a constant.
 
 These exceptions are made because they are likely to be the most common cases,
-and because they seem to avoid placing any severe burden on the parser.
+and because they seem to be the easiest exceptions for the parser to handle.
 
 Examples:
 
@@ -138,6 +138,33 @@ parameters had to follow all type parameters), it would become more difficult to
 make use of defaulted type parameters. This also might interfere with variadic
 parameters in the future. Therefore it seems better to allow type and const
 parameters to be mixed, and use the `const` keyword to distinguish between them.
+
+## Allowed types for const parameters
+
+For now we restrict const parameters to be of a type that implements the
+`Parameter` trait. `Parameter` will be a marker trait that is implemented only
+for integer primitive types and `bool`, and which cannot be explicitly
+implemented. It must, of course, be handled specially by the compiler, since it
+has a special role with respect to type checking.
+
+There are two reasons to provide a marker trait, rather than having the compiler
+simply treat these types specially *without* such a trait.
+
+Firstly, it allows items such as this function to be defined.
+
+```rust
+fn use_generic_const<T: Parameter, const N: T>() { /* ... */ }
+```
+
+This is something of an edge case, but there is no clear reason to forbid such a
+function. Without the `Parameter` trait, it would be impossible to specify the
+constraint that `T` be one of the allowed types for a const parameter.
+
+Secondly, and perhaps more importantly, the `Parameter` trait is likely to be
+useful if and when other types become usable as const parameters. If `struct`
+and `enum` types become usable as const parameters, `Parameter` may be
+automatically derived by the compiler (as with `Sized`) or by default and
+negative impls (as with `Send`).
 
 ## Type Inference
 
@@ -296,34 +323,46 @@ constant parameters (since `[T; 2+2]` is already a valid type in Rust today).
 
 ### Allow non-integer types to be const parameters
 
+It is entirely possible that we will want to implement a full-fledged dependent
+type system for Rust. This RFC is not intended as an alternative to dependent
+types, but as an interim measure that makes progress towards such a system,
+while also providing solutions to immediate problems.
+
 Here's a brief summary of other types of values that could be used as
 parameters, and the reasons that they are omitted from this RFC:
 
+ - Allowing tuple parameters seems harmless but unnecessary, since one can
+   simply use multiple parameters instead of a single tuple parameter. However,
+   it may be a good idea to allow them for the sake of consistency.
+ - Allowing arrays or any unsized type could cause problems for both compiler
+   performance and symbol name mangling. However, arrays that are not too large
+   should be OK, since they can be handled similarly to tuples.
+ - Floating point types can have `NaN` values, and arithmetic is inexact. It
+   seems like a very bad idea to allow details of the floating point
+   representation to influence whether or not a program type checks. This is
+   especially concerning for cross-compilation, since floating-point arithmetic
+   may yield different results on the platform that compiles the code than the
+   one that runs the code.
+ - References to static values (`&'static`) could be used as const parameters,
+   as in C++. This was left out because it adds complexity while being less
+   likely to be useful, but it may not cause any serious problems.
  - It seems necessary to omit struct or enum values pending further design
    work (e.g. there may be other features that Rust's type system needs to
    implement these, and either CTFE or specialized plugins are probably required
    for these to be useful).
- - Allowing arrays or any unsized type could cause problems for both compiler
-   performance and symbol name mangling.
- - Floating point values can have `NaN` values, and arithmetic is inexact. It
-   seems like a very bad idea to allow details of the floating point
-   representation to influence whether or not a program type checks.
- - References to static values (`&'static`) could be used as const parameters,
-   as in C++. This does not appear to cause any major issues, and was left out
-   only because it adds complexity while being less likely to be useful.
 
 ### Only allow (or default to) a particular integer type
 
 If there was only a single type of integer that could be used as a constant
 parameter, it would not be necessary to specify the type of a const parameter.
 
-The current design was chosen to be more flexible and consistent with const
-values, and to be more reasonable in the event that other types ever became
-usable as const parameters.
+The current design was chosen to be more flexible and more consistent with const
+values, and to be more compatible with future dependent types.
 
 If the type of a const parameter defaulted to a specific type (e.g. `usize`),
-this would retain the current flexibility, though to an extent it would still
-privilege integer const parameters over other types added in the future.
+this would retain the current flexibility, but to an extent it would still
+privilege such parameters over other types, in a way that would seem arbitrary
+in the long run.
 
 ### Alternative parameter syntax
 
@@ -403,9 +442,8 @@ RFC does not take a stance on whether or not this should be done.
 
 However, it is undesirable for a program to depend on unspecified details of the
 inference algorithm used by a particular compiler version. Therefore it is
-recommended that any improvements to const parameter inference should be
-described in a future RFC, or at a minimum be well documented in the Rust
-reference.
+recommended that any improvements to const parameter inference be described in a
+future RFC, or at a minimum be well documented in the Rust reference.
 
 ## What is a constant expression?
 
@@ -421,6 +459,8 @@ themselves complete.
 
  - It seems likely that, when higher-kinded types are implemented, it will be
    straightforward to treat const parameters similarly to type and lifetime
-   parameters, but there may be hidden pitfalls.
+   parameters, but there may be hidden pitfalls. Syntactically, it will
+   presumably be necessary to make a distinction between lifetime, type, and
+   const parameters when specifying the expected kind of a type.
  - It's not clear whether const parameters could be added to variadic parameter
    lists, or if it will be necessary to limit variadic behavior to types.
