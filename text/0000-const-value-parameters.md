@@ -224,63 +224,6 @@ Where const parameters are used like `const` values in function bodies, they
 should be treated accordingly, i.e. it is up to the compiler to decide whether
 and when to check for underflow or overflow in non-debug builds.
 
-## `where` clauses
-
-There may be cases where only certain values of a const parameter are
-reasonable, and therefore one needs a way to apply bounds to an item's const
-parameters. There are two new types of constraints added by this proposal:
-
- 1. Constraints of the form `const ident: constexpr`. The right hand side must
-    not contain a reference to any const parameter. The constraint is satisfied
-    if the identified const parameter is equal to the right hand side.
- 2. Constraints of the form `const ident: RANGE`. In this case, `N` must be of
-    an integer type, and the `RANGE` is a range expression containing constant
-    integer expressions (i.e. `..`, `M..`, `..N`, and `M..N`).
-
-Some (very contrived) examples:
-
-```rust
-/// Returns the middle element.
-fn center<T, const N: usize>(a: &[T, .. n]) -> &T
-    where const N: 3
-{ /* ... */ }
-// Only can be instantiated with M < 5
-struct Razm<U, const M: u8, V>
-    where U: Frazm,
-          const M: ..5,
-          V: Crazm {
-    /* ... */
-}
-```
-
-However, the main motivation for this case is to allow specialization of impls
-based on the value of a const parameter, as shown in the following example:
-
-```rust
-trait<T, const N: usize> ReduceArray<T, N>
-      where const N: 1.. {
-    type ReducedByOne;
-    fn sum_dimension(self, dim: usize) -> ReducedByOne;
-    /* Other functions */
-}
-impl ReduceArray<i32, 1> for I32Array<1> {
-    type ReducedByOne = i32;
-    /* Function implementations */
-}
-impl<const N: usize> ReduceArray<i32, N> for I32Array<N>
-      where const N: 2.. {
-    type ReducedByOne = I32Array<{N-1}>;
-    /* Function implementations */
-}
-```
-
-This use case involves a reduction of a multidimensional array, but this pattern
-could apply to other cases where it is useful to connect some type with another
-that's before/after it in a sequence. E.g. you can use this pattern to define a
-trait method that adds/removes items of fixed-size arrays, in which case you
-need to specify the type of an array that's larger/smaller than the one you were
-given.
-
 # Drawbacks
 
 ## Language and implementation complexity
@@ -308,16 +251,16 @@ See also
 
 ## Const parameters without arithmetic
 
-This RFC could be partially implemented without allowing arithmetic in constant
-parameters (i.e. types like `Foo<N>` and `Foo<2>` could be used, but not
-`Foo<{N-1}>` or `Foo<{2+2}>`). Then the above points about inference, arithmetic
-semantics, use of braces in parameter lists, and `where` clauses would not
-apply.
+This RFC could be partially implemented by only allowing literals or identifiers
+corresponding to const values to be used (i.e. types like `Foo<N>` and `Foo<2>`
+would be allowed, but not `Foo<{N-1}>` or `Foo<{2+2}>`). Then the above points
+about inference, arithmetic semantics, and the use of braces in parameter lists
+would not apply.
 
 This would be less complex initially, but care would need to be taken to allow
 the syntax to backwards-compatibly grow in the future. In such a partial
-implementation, array sizes would still be more flexible than struct/enum
-constant parameters (since `[T; 2+2]` is already a valid type in Rust today).
+implementation, array sizes would be more flexible than other const parameters
+(since `[T; 2+2]` is already a valid type in Rust today).
 
 ## Variations on this design
 
@@ -395,8 +338,6 @@ are present, though it is not *too* irregular:
 ```rust
 fn contrived_function<; N: u64>(x: Foo<; N>) {}
 contrived_function::<; 3>(Foo::new::<; 3>());
-trait<T; N: usize> ReduceArray<T; N>
-      where ; const N: 1.. {
 ```
 
 A third alternative is to separate parameters positionally with commas, but to
@@ -411,28 +352,19 @@ impl Gnarl<i32, const x, false> for Jarl { /* ... */ }
 impl Gnarl<i32, const {x>>2}> for Snarl { /* ... */ }
 fn contrived_function<const N: u64>(x: Foo<const N>) {}
 contrived_function::<const 3>(Foo::new::<const 3>());
-trait<T, const N: usize> ReduceArray<T, const N>
-      where const N: 1.. {
 ```
 
 Unfortunately, this is by far the *least* ergonomic option, since now the
 `const` keyword is now also required for *uses* of generic items, which are more
 common than *definitions* of generic items.
 
-### `where` clause range alternatives
-
-The syntax for `where` clauses could be changed. Also, inclusive ranges could be
-used instead of ranges that exclude the upper bound.
-
-### Broader `where` clauses
-
-It has been suggested that `where` clauses for const parameter constraints
-should be expanded to contain any constant boolean expression. This feature was
-omitted because it adds significant complexity to the proposal, and because it
-raises questions about whether and when such constraints can reasonably inform
-coherence checking.
-
 # Unresolved questions
+
+## Where clauses
+
+A followup RFC is planned to introduce an extension to `where` clauses, in order
+to constrain const parameters with new bounds. This is deferred until the syntax
+and interaction with coherence checks can be rigorously specified.
 
 ## Better inference
 
