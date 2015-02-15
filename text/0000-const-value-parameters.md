@@ -173,7 +173,7 @@ possible to infer const parameters in cases where a known value (in this case
 the array size) must be equal to another parameter (in this case the `ArrayWrap`
 const parameter).
 
-However, when an arbitrary constant expression is used, it is not be reasonable
+However, when an arbitrary constant expression is used, it is not reasonable
 to expect the compiler to invert the expression to perform type inference:
 
 ```rust
