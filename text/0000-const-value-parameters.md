@@ -18,9 +18,9 @@ from a draft RFC that
 Rust already contains one type which is parameterized by an integer, namely the
 array (`[T; N]`). There are several benefits to having statically sized arrays:
 
- - Arrays are sized types, and therefore can readily be placed on the stack.
- - Array size incompatibilities usually cause compile-time type errors, rather
-   than run-time errors or silent misbehavior.
+ - Array types are `Sized`, and therefore can readily be placed on the stack.
+ - Array size incompatibilities usually cause compile-time errors, rather than
+   run-time errors or silent misbehavior.
  - The compiler has the opportunity to optimize operations based on the array
    size and alignment.
  - It is easier to port and/or interoperate with C or C++ code that uses fixed
@@ -40,30 +40,30 @@ This has already caused several issues, for instance:
 Since there is no generic way to define these items, developers typically have
 to resort to macros or code generation instead. Even then, the generated code
 may not cover all cases. For instance, standard traits like `Clone` and `Debug`
-are currently only implemented for arrays up to an arbitrary size (currently
-`32`).
+are only implemented for arrays up to an arbitrary size (currently `32`).
 
 This situation also makes it more difficult to define fixed-size containers that
 do not have a similar layout to arrays. This has been a problem for Servo as
 described in [issue 319](https://github.com/rust-lang/rfcs/issues/319).
 
-There are several more cases where it would be helpful to use constant values as
-parameters. Here is a list:
+Aside from working with fixed-size containers, there are many more cases where
+it would be helpful to use constant values as parameters. Here are a few
+examples:
 
  - *Linear Algebra*: Algebraic vectors and matrices generally have a certain
    rank. For example, it does not make sense to add a 2-vector with a 3-vector
-   or multiply a 3x4 matrix by a 5-vector. But the algorithms can be written
-   generically in terms of the ranks of these types.
+   or multiply a 3x4 matrix by a 5-vector. But these operations can be written
+   generically using the ranks of these types.
  - *Multidimensional arrays*: Even when the *size* of a multidimensional array
-   is not known at compile time, the *order* (the index dimensionality) is
+   is not known at compile time, the *order* (the number of array dimensions) is
    typically known. Using a constant value parameter to represent the order
    allows a variety of operations to be defined generically for multidimensional
-   arrays without requiring extensive run-time checks (e.g. indexing, slicing,
+   arrays, without requiring extensive run-time checks (e.g. indexing, slicing,
    reductions, transposes, reshaping).
  - *Range and mod types*: This would allow range and mod types (similar to
    [Ada's](http://en.wikipedia.org/wiki/Ada_%28programming_language%29#Data_types))
    in Rust. These enforce certain range constraints and implement modular
-   arithmetics, respectively. Besides providing *extra* checks for correctness,
+   arithmetic, respectively. Besides providing *extra* checks for correctness,
    such types can also *avoid* unnecessary bounds checks, when an index can be
    proven to be in a valid range at compile time.
  - *Physical units*: In science, one often deals with numerical quantities
@@ -81,9 +81,9 @@ could make it easier to deal with physical units using the type system.
 ## Syntax
 
 In general, wherever a type parameter can be declared as `ident`, a const
-parameter can also be declared using the syntax `const ident: ty`, where the
-first identifier is the name of the parameter, and the second is its type. The
-scope of an item's const parameters is the same as that of type parameters.
+parameter can also be declared using the syntax `const ident: ty`. Naturally,
+`ident` is the name of the parameter, and `ty` is its type. The scope of an
+item's const parameters is the same as that of type parameters.
 
 In any position in a parameter list where a const parameter is expected, a
 constant expression of appropriate type must be provided. Since the list is
@@ -109,9 +109,7 @@ struct ArrayWrap<T, const N: usize> {
     inner: [T; N],
 }
 impl<T, const N: usize> ArrayWrap<T, N> {
-    fn len(&self) -> usize {
-        N
-    }
+    fn len(&self) -> usize { N }
 }
 fn bar() {
     let foo = ArrayWrap{ inner: [2i32, 3] };
@@ -161,17 +159,17 @@ function. Without the `Parameter` trait, it would be impossible to specify the
 constraint that `T` be one of the allowed types for a const parameter.
 
 Secondly, and perhaps more importantly, the `Parameter` trait is likely to be
-useful if and when other types become usable as const parameters. If `struct`
-and `enum` types become usable as const parameters, `Parameter` may be
-automatically derived by the compiler (as with `Sized`) or by default and
-negative impls (as with `Send`).
+useful if and when other types become usable as const parameters. If some
+`struct` and `enum` types are allowed as const parameters in the future,
+`Parameter` may be automatically derived for those types by the compiler (as
+with `Sized`) or by default and negative impls (as with `Send`).
 
 ## Type Inference
 
-As implied by the definition of `foo` in the above example, it should be
-possible to infer const parameters in cases where a known value (in this case
-the array size) must be equal to another parameter (in this case the `ArrayWrap`
-const parameter).
+As implied by the initialization of `foo` in the above example, it should be
+possible to infer const parameters in cases where a known constant value (in
+this case the array size) must be equal to const parameter (in this case the
+`ArrayWrap` const parameter).
 
 However, when an arbitrary constant expression is used, it is not reasonable
 to expect the compiler to invert the expression to perform type inference:
@@ -185,9 +183,9 @@ fn tensor_product<const N: usize, const M: usize>(a: Tensor<N>, b: Tensor<M>)
 let z: Tensor<105> = tensor_product(x, y);
 ```
 
-For the purposes of type inference, the compiler should not attempt to invert
-expressions, but it should otherwise infer the values of const parameters
-wherever possible. For example:
+During type inference, the compiler should not attempt to invert expressions,
+but it should otherwise infer the values of const parameters wherever
+possible. For example:
 
 ```rust
 // The return type can be inferred from the argument type, and vice versa.
@@ -197,7 +195,7 @@ fn reduce1<const N: usize>(x: Foo<N>) -> Foo<N-1>;
 // The argument type can be inferred from the return type, but not vice versa.
 fn reduce2<const N: usize>(x: Foo<N+1>) -> Foo<N>;
 // No inference of N possible; the compiler can only infer either value if N is
-// specified explicitly when reduce3 is called.
+// specified explicitly when reduce3 is called, i.e. via UFCS.
 fn reduce3<const N: usize>(x: Foo<N+2>) -> Foo<N+1>;
 ```
 
@@ -206,23 +204,24 @@ fn reduce3<const N: usize>(x: Foo<N+2>) -> Foo<N+1>;
 Arithmetic involving const parameters "at the type level" (i.e. in parameter
 lists) should always be checked for underflow and overflow.
 
-This is consistent with the integer overflow semantics specified by RFC 560,
-which considers integer underflow/overflow to be erroneous unless the program
-explicitly uses the wrapped arithmetic operations. The compiler is allowed (and
-in debug builds required) to reject programs that contain
+This is consistent with the integer overflow semantics specified by
+[RFC 560](https://github.com/rust-lang/rfcs/blob/master/text/0560-integer-overflow.md),
+which considers integer underflow and overflow to be erroneous unless the
+program explicitly uses the wrapped arithmetic operations. The compiler is
+allowed (and in debug builds required) to reject programs that contain
 underflow/overflow. When dealing with const parameters, these checks incur no
 run-time cost, so there is no reason not to always perform them.
 
 Additionally:
 
  - No one so far has claimed that wrapped arithmetic at the type level is useful
-   for any specific use case.
+   for any specific purpose.
  - Most proposed applications of const parameters only require unsigned types.
    Unsigned underflow is likely to result in absurdly large parameter values.
 
 Where const parameters are used like `const` values in function bodies, they
-should be treated accordingly, i.e. it is up to the compiler to decide whether
-and when to check for underflow or overflow in non-debug builds.
+should be treated according to RFC 560, i.e. it is up to the compiler to decide
+whether and when to check for underflow or overflow in non-debug builds.
 
 # Drawbacks
 
@@ -236,15 +235,16 @@ expressiveness will outweigh this cost in the long run.
 
 ## Do nothing
 
-Users can continue to get by with macros, run-time sizes, and generated code, as
-most do today. This is unpalatable to many developers, but it is not unworkable.
+Programmers can continue to get by with macros, run-time sizes, and generated
+code, as they do today. This is unpalatable to many developers, but it is not
+unworkable.
 
-## Use type-level natural numbers defined separately from value-level integers
+## Use type-level natural numbers, defined separately from value-level integers
 
-This approach has seen significant success in other languages, such as
-Haskell. The main problem with this approach in Rust is that it is at odds with
-the way we handle arrays currently. Type-level arithmetic can also be complex to
-implement and verbose to use. However, this approach is usable today.
+This approach has seen significant success in libraries in other languages, such
+as Haskell. The main problem with this approach in Rust is that it is at odds
+with the way we handle arrays currently. Type-level arithmetic can also be
+complex to implement and verbose to use. However, this approach is usable today.
 
 See also
 [@darinmorrison's `shoggoth` crate](https://github.com/epsilonz/shoggoth.rs).
@@ -260,7 +260,7 @@ would not apply.
 This would be less complex initially, but care would need to be taken to allow
 the syntax to backwards-compatibly grow in the future. In such a partial
 implementation, array sizes would be more flexible than other const parameters
-(since `[T; 2+2]` is already a valid type in Rust today).
+(since `[T; 2+2]` is already valid syntax in Rust today).
 
 ## Variations on this design
 
@@ -269,7 +269,7 @@ implementation, array sizes would be more flexible than other const parameters
 It is entirely possible that we will want to implement a full-fledged dependent
 type system for Rust. This RFC is not intended as an alternative to dependent
 types, but as an interim measure that makes progress towards such a system,
-while also providing solutions to immediate problems.
+while also providing solutions to more immediate problems.
 
 Here's a brief summary of other types of values that could be used as
 parameters, and the reasons that they are omitted from this RFC:
@@ -284,7 +284,7 @@ parameters, and the reasons that they are omitted from this RFC:
    seems like a very bad idea to allow details of the floating point
    representation to influence whether or not a program type checks. This is
    especially concerning for cross-compilation, since floating-point arithmetic
-   may yield different results on the platform that compiles the code than the
+   may yield different results on the platform that compiles the code from the
    one that runs the code.
  - References to static values (`&'static`) could be used as const parameters,
    as in C++. This was left out because it adds complexity while being less
@@ -296,28 +296,29 @@ parameters, and the reasons that they are omitted from this RFC:
 
 ### Only allow (or default to) a particular integer type
 
-If there was only a single type of integer that could be used as a constant
-parameter, it would not be necessary to specify the type of a const parameter.
+If there was only a single type of integer that could be used as a const
+parameter, it would not be necessary to specify the type of a const parameter,
+and it might be somewhat easier to implement this proposal.
 
 The current design was chosen to be more flexible and more consistent with const
 values, and to be more compatible with future dependent types.
 
 If the type of a const parameter defaulted to a specific type (e.g. `usize`),
-this would retain the current flexibility, but to an extent it would still
-privilege such parameters over other types, in a way that would seem arbitrary
-in the long run.
+while still allowing other types, this would retain the current proposal's
+flexibility. However, the ergonomic benefit might not be worth the puzzling
+inconsistency with other values (i.e. `let x;` does not default to `usize`).
 
 ### Alternative parameter syntax
 
 The proposal above allows type and const parameters to be intermixed, but this
 has some ergonomic cost, requiring the `const` keyword to be written out
 frequently. It is also possible that this mixing will lead to more disorganized
-parameter lists, since the constant and type parameters can be jumbled in any
+parameter lists, since the const and type parameters can be jumbled in any
 order.
 
-One way of separating constant and type parameters by position, without
-interfering with defaulted (or variadic) parameters, would be to use `;` to
-separate the two. Then the above `Gnarl` examples could be written this way:
+One way of separating const and type parameters by position, without interfering
+with defaulted (or variadic) parameters, would be to use `;` to separate the
+two. Then the above `Gnarl` examples could be written this way:
 
 ```rust
 trait Gnarl<T, U=u32; N: i64, Q: bool = true> { /* ... */ }
