@@ -38,7 +38,7 @@ fn main() {
 ```
 
 Note how part of the function argument pattern reads `x: x1: f32`.
-The syntax might not be completely ambiguous, but it definately is confusing.
+The syntax might not be completely ambiguous, but it definitely is confusing.
 
 Another example: Assume we allow to omit the struct name in literal (essential for named arguments feature) together with type ascription:
 
