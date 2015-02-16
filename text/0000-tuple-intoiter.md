@@ -28,7 +28,7 @@ but instead is required to write
 
 2. replace std::iter::Zip by a struct and some macro-tuple-magic
 
-Bluss' implementation in the itertools crate: https://github.com/bluss/rust-itertools/blob/master/src/ziptuple.rs
+[Bluss' implementation in the itertools crate][4] or mostly the same:
 
 ----------
 Not quite finished implementation (+ all features zip had). WIP-implementation to be found at [my repository][3]. Will shout loudly at you because I haven't figured out IntoIterator for references yet.
@@ -194,3 +194,4 @@ I have not thought about mixed move, ref and mut ref tuples.
   [1]: https://github.com/rust-lang/rfcs/blob/master/text/0235-collections-conventions.md#intoiterator-and-iterable
   [2]: https://github.com/rust-lang/rust/pull/20790
   [3]: https://github.com/oli-obk/rust/tree/tuple_into_iter
+  [4]: https://github.com/bluss/rust-itertools/blob/master/src/ziptuple.rs
