@@ -139,6 +139,13 @@ This might seem counter-intuitive, but that is kinda the point.
 After this RFC `:` becomes the universal type ascribing operator in the context of expressions and patterns,
 but note that any part of type definition is neither an expression or a pattern.
 
+More argumentation:
+
+>	Remember that the declaration is meant to be "backwards" and `:` is now **actual** operator in patterns and expressions.
+>	Using `:` in struct declaration would be actually inconsistent, because it would then have another use over it's purpose of type ascription,
+>	which can only be valid in expressions and patterns (and struct def is just `<ident> => <type>`, no patterns/expressions here).
+>	(I know it's used for Trait bounds too, but it's a completely different context so I think that's okay)
+
 ## Possible future improvements
 
 The fat arrow syntax can make code visually cluttered and puts too much focus on the arrow itself instead of what is being mapped.
