@@ -5,11 +5,12 @@
 
 # Summary
 
-For clarity and safety, it is likely that Rust will want to someday distinguish between functions
-and function pointers[1]. It is tempting to use DST for this, but unfortunately that would make
-function pointers fat, and moreover the sizes of functions are not in-general known dynamically
-anyway (c.f. foreign functions). Thus, this RFC instead proposals a slight syntactic disambiguation
-that should be much more forwards compatible with future work in this area post-1.0.
+It is likely that Rust will want to someday have a notion of an unboxed function type to be used
+with custom pointer types[1]. Ideally then today's function pointers would become `&'static`s of
+functions. But this is a braking syntactic change, and unboxed functions can probably not be exposed
+by 1.0. This RFC proposals making the needed breaking syntactic change now, so unboxed functions can
+be added---and function pointers turned to borrowed pointers---all backwards compatibly in the
+future.
 
 # Motivation
 
@@ -22,15 +23,34 @@ lifetimes arise as function are dynamically creatable and destroyable like any v
 type. As such, it would be nice to have all the machinery Rust offers (lifetimes, ownership, etc)
 available for functions too.
 
-Implementing all these things for functions will mean much more decision making and implementation
-effort than is feasible for the pre-1.0 timeframe. What we can do now is change the syntax of
-function pointer types to make clear they act like `&'statics`. This allow them to silently become
-actual `&statics` if function types are added in the future, and make Rust more forthright about its
-current expressiveness today.
+A nice way to enable all that machinery is add actual "unboxed" function types, unlike the
+function-ptr types that currently exist. That ways the whole menagerie of parameterized pointer
+types are available for use with functions to generate many types of function pointers. To give some
+examples of the possibilities, `Arc` can be used ARC to unload libraries or free JITed code, or, as
+@eddyb came up with, (unsafe to deref) `*const` pointers to functions could replace unsafe function
+pointers.
+
+Adding unboxed function types begs the questions of what would happen to the current function
+pointers where that route taken. Since they act just like immutable borrowed static pointers to
+functions, it would be nice if they became that in actuality, lest two ways to do the same thing be
+introduced so deeply in the language. Unfortunately, combining the two requires a braking syntactic
+change. There are many details that need to be resolved to support unboxed function types, plus
+probably a good deal of implementation work, so it is probably not realistic to try to do this
+before 1.0. Note, while it is tempting to use DST for this, but unfortunately that would make
+function pointers fat, and moreover the sizes of functions are not in-general known dynamically
+anyway (c.f. foreign functions).
+
+So if this requires a breaking change to make nice, yet is to big to do before 1.0, what can be
+done? My suggestion is simply to simply change the syntax of function pointer types to make clear
+they act like `&'statics`. This doesn't force any semantic changes in the future, but opens to door
+to reusing `fn(...)...` for unboxed functions by allowing function pointers to silently become
+actual `&statics` if/when function types are added in the future. Meanwhile Rust, while slightly
+less ergonomic---function pointers are quite rare, is more forthright about its current
+expressiveness today.
 
 # Detailed design
 
-Quite simply change the syntax of function pointer types from
+Quite simply, change the syntax of function pointer types from
 
 ```rust
 
