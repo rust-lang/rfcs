@@ -49,6 +49,10 @@ will serve to set an explicit policy that:
 **Uninitialized memory can never be exposed in safe Rust, even when it
 would not lead to undefined behavior**.
 
+Like other aspects of the definition of "safe Rust", this is part of
+the contract that *all* unsafe code must abide by, whether part of
+`std` or external libraries or applications.
+
 In practical terms, this will require methods like `read_to_end` to
 internally zero out (or otherwise ensure initialization of) memory
 before they pass it to unknown safe code like the `read` method.
