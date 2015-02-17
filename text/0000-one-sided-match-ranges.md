@@ -30,6 +30,15 @@ checks and allow for specialization of impls.
 
 # Detailed design
 
+Just as the match pattern `i...j` matches numbers between `i` and `j`, `i...`
+will match all numbers greater than `i`, and `...j` will match all numbers
+greater than `j`. This capability is extended to `char` as well, under the same
+ordering used for match patterns now.
+
+Additionally, exhaustiveness checks will be performed for patterns that match
+integers and `char`, as opposed to the current implementation, which requires
+the last arm of such match patterns to be a blanket match.
+
 Consider the following example:
 
 ```rust
@@ -70,10 +79,10 @@ match error_code {
 }
 ```
 
-The types that are affected by the new check for exhaustiveness will be the
-integer primitives and `char`. A set of patterns will be considered to
-exhaustively cover `char` if all valid `char` values (that is, all Unicode
-Scalar Values) are covered.
+A set of patterns will be considered to exhaustively cover an integer type if
+all possible values for that type are covered. A set of patterns will be
+considered to exhaustively cover `char` if all valid `char` values (that is, all
+Unicode Scalar Values) are covered.
 
 Floating point values will benefit from the new syntax (e.g. `...1.0f32` will be
 an allowed pattern), but will not be subject to the changes in exhaustiveness
