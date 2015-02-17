@@ -170,6 +170,8 @@ peel_ii_tuple! { T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, }
 
 # Drawbacks
 
+## Variadic Generics
+
 Shamelessly quoting @japaric:
 
 variadics generics would make it possible to do generic
@@ -177,6 +179,15 @@ programming over tuples and would
 let us implement this in a cleaner way (for any arity)
 which would modify/deprecate the TupleIterStruct and
 that would be backwards-incompatible
+
+## Could be interpreted as cartesian product
+
+@glaebhoerl:
+Probably my Haskell showing, but my first instinct was
+to interpret this as a cartesian product
+((1,2,3), (1,2,4), (1,2,5) ... (1,2,13), (1,3,3), (1,3,4), ... etc.)
+rather than a zip.
+
 
 # Alternatives
 ## Keep zip
