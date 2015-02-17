@@ -93,7 +93,8 @@ pointers (see [1]).
    function pointer type. (Yuck!)
 
  - `fn (...):'a ...` syntax. This would seem to doom us to a redundancy with borrowed pointers in
-   the future rather than prevent it. I believe it was rejected before too.
+   the future rather than prevent it, thought it does give us more expressiveness. Pre-RFC for this
+   at http://internals.rust-lang.org/t/pre-rfc-fn-lifetimes/472 .
 
 # Unresolved questions
 
