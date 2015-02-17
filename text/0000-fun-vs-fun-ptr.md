@@ -13,20 +13,20 @@ that should be much more forwards compatible with future work in this area post-
 
 # Motivation
 
-Currently, functions are treated like statics, and function pointers like `&'static`s. This fits
+Currently, functions have statics lifetimes, and function pointers act like `&'static`s. This fits
 common case where all functions are either statically linked or dynamic linked in a transparent
 fashion.
 
-When more manually invoking the loader or JIT-compiling, however, these restrictions no longer fit
-as function are dynamically creatable and destroyable like any value of a "normal" type. As such, it
-would be nice to have all the machinery Rust offers (lifetimes, ownership, etc) for keeping track of
-values of normal types available for values of function pointer types.
+When more manually invoking the loader or JIT-compiling, however, functions with non-static
+lifetimes arise as function are dynamically creatable and destroyable like any value of a "normal"
+type. As such, it would be nice to have all the machinery Rust offers (lifetimes, ownership, etc)
+available for functions too.
 
 Implementing all these things for functions will mean much more decision making and implementation
-effort than is feasable for the pre-1.0 timeframe. What we can do now is change the syntax of
-function pointer types to make clear they really are `&'statics`. This will syntactically "make way"
-for the other function pointer types to be added in the future, and make Rust more forthright about
-its current expressiveness.
+effort than is feasible for the pre-1.0 timeframe. What we can do now is change the syntax of
+function pointer types to make clear they act like `&'statics`. This allow them to silently become
+actual `&statics` if function types are added in the future, and make Rust more forthright about its
+current expressiveness today.
 
 # Detailed design
 
@@ -45,7 +45,11 @@ to
 ```
 
 Like slices before DST, the `fn(...) ...` itself will not denote a type on its own and need not even
-parse. It can be made legal syntax and given semantics in the future.
+parse.
+
+In the future, `fn(...) ...` can be made legal syntax and given semantics, in which case the current
+syntax would no longer be its own grammatical production but remain valid, and actually denote the
+type of a static, immutable borrowed pointer to a function.
 
 Just as today, function items may have unique function types, but those types won't have a surface
 syntax, and expressions (in practice just identifiers/paths) of those types will coerce to function
@@ -62,18 +66,20 @@ pointers (see [1]).
 
 # Alternatives
 
- - Seeing that in the short-term, all functions will have a static lifetime (i. e. can only cast a
-   value to a function pointer and not a function). It might be perfectly safe to allow `&fn(...)
-   ...` with the normal lifetime inference rules.
+ - Seeing that in the short-term, all functions will have a static lifetime (i. e. can only
+   transmute a value to a function pointer and not a function). It might be perfectly safe to allow
+   `&fn(...)  ...` with the normal lifetime inference rules. I hope this is the case, but as it
+   relies on more assumptions I put it as an alternative to stay safe.
 
  - The above isn't true, but the lifetime inference could special-case-default to `static` with a
    function pointer type. (Yuck!)
 
- - `fn (...):'a ...` syntax.
+ - `fn (...):'a ...` syntax. This would seem to doom us to a redundancy with borrowed pointers in
+   the future rather than prevent it. I believe it was rejected before too.
 
 # Unresolved questions
 
-Perhaps I am mistaken and the semantics of `&'statics` and functions pointers differ.
+Perhaps I am mistaken and the semantics of `&'static`s and functions pointers differ.
 
 [1]: https://github.com/rust-lang/rust/pull/19891 The implementation currently distinguishes between
      function types and function pointer types, but this is not really exposed as part of the language.
