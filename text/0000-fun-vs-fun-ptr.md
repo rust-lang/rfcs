@@ -53,14 +53,12 @@ expressiveness today.
 Quite simply, change the syntax of function pointer types from
 
 ```rust
-
 fn(...) ...
 ```
 
 to
 
 ```rust
-
 &'static fn(...) ...
 ```
 
