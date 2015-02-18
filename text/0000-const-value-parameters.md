@@ -177,7 +177,7 @@ to expect the compiler to invert the expression to perform type inference:
 ```rust
 struct Tensor<const N: usize> { /* ... */ }
 fn tensor_product<const N: usize, const M: usize>(a: Tensor<N>, b: Tensor<M>)
-    -> Tensor<M*N> { /* ... */ }
+    -> Tensor<{M*N}> { /* ... */ }
 // If x and y have to be inferred, do you really expect the compiler to
 // factor a number for you?
 let z: Tensor<105> = tensor_product(x, y);
@@ -191,12 +191,12 @@ possible. For example:
 // The return type can be inferred from the argument type, and vice versa.
 fn identity<const N: usize>(x: Foo<N>) -> Foo<N>;
 // The return type can be inferred from the argument type, but not vice versa.
-fn reduce1<const N: usize>(x: Foo<N>) -> Foo<N-1>;
+fn reduce1<const N: usize>(x: Foo<N>) -> Foo<{N-1}>;
 // The argument type can be inferred from the return type, but not vice versa.
-fn reduce2<const N: usize>(x: Foo<N+1>) -> Foo<N>;
+fn reduce2<const N: usize>(x: Foo<{N+1}>) -> Foo<N>;
 // No inference of N possible; the compiler can only infer either value if N is
 // specified explicitly when reduce3 is called, i.e. via UFCS.
-fn reduce3<const N: usize>(x: Foo<N+2>) -> Foo<N+1>;
+fn reduce3<const N: usize>(x: Foo<{N+2}>) -> Foo<{N+1}>;
 ```
 
 ## Arithmetic semantics
@@ -243,11 +243,76 @@ unworkable.
 
 This approach has seen significant success in libraries in other languages, such
 as Haskell. The main problem with this approach in Rust is that it is at odds
-with the way we handle arrays currently. Type-level arithmetic can also be
-complex to implement and verbose to use. However, this approach is usable today.
-
-See also
+with the way we handle arrays currently. However, this approach is usable today
+for many applications. See also
 [@darinmorrison's `shoggoth` crate](https://github.com/epsilonz/shoggoth.rs).
+
+Type-level arithmetic can also be complex to implement and verbose to use. The
+"macros in types" proposal
+([PR #873](https://github.com/rust-lang/rfcs/pull/873)) suggests that macros can
+alleviate this problem somewhat.
+
+This proposal does not directly conflict with the macros proposal, since the two
+are compatible, and since each provides functionality that the other does not.
+However, it may be useful to provide a comparison.
+
+For type-level naturals with macros:
+
+ - In theory, only minimal language support is necessary; the prototype
+   implementation is already complete.
+ - However, some degree of macro *and plugin* support is required to provide
+   efficient support for natural numbers with clean syntax, which does imply
+   some additional burden.
+    - If a library provides items parameterized by naturals, its users will find
+      the library difficult or impossible to use without the same plugin(s) that
+      that library used.
+    - If the standard library ever did so, it would likely be simplest to simply
+      integrate this capability into the compiler.
+ - The proposed macros provide capability well beyond the provision of
+   type-level naturals. A rather vast array of types can be defined and used
+   with simple syntax (though this requires implementation work, rather than
+   being automatic, as a data kinds feature would be).
+ - Macros cannot easily introduce a new type or its value into scope, meaning
+   that using a type-level natural `N` as a value requires a macro (e.g.
+   `val!(N)`). Working with multiple incompatible type-level systems would
+   require some care, if only to avoid name clashes.
+ - Not all constant expressions can be used at the type level without an
+   arbitrary number of plugin passes, since the plugin is needed to determine
+   which types are present, which in turn can add more `const` values, which
+   could in turn could affect more types...
+ - Type-level natural numbers (or integers) are not themselves given a Rust
+   type. They can in principle correspond to arbitrarily large numbers (like
+   bignums).
+ - As a consequence of several of the above points, the capabilities of the
+   macro system will not be equivalent to what the compiler does for `[T; N]`
+   arrays.
+ - Type error messages are likely to be confusing, since they will tend to
+   expose the "internal" representation of a type as, e.g., a bit pattern. This
+   might be mitigated by sufficient functionality in a plugin, or by attributes
+   allowing error message customization, similar to the existing
+   `rustc_on_unimplemented` attribute.
+
+For const parameters in this proposal:
+
+ - Significant new language complexity must be added, including new syntax, new
+   aspects of the type system (e.g. affecting inference), and a new trait to be
+   handled specially by the compiler.
+ - Only integers and `bool` are affected. Further RFCs introducing CTFE and data
+   kinds would be required before this capability would cover many of the use
+   cases handled by macros. (In effect, this would move toward a "true"
+   dependent type system.)
+ - Integers are limited in range, not bignums.
+ - Const parameters can be used as values directly, with no `val!` macro or
+   other special syntax.
+ - All constant expressions allowed for array sizes should be usable as const
+   parameters as well. In part this is because the two can be handled by the
+   same or similar code in the compiler as generic items are instantiated.
+ - Type signatures in error messages should ideally resemble code that the user
+   actually wrote.
+ - Specialization of impls based on the value of a const parameter seems more
+   tractable than doing something equivalent with type-level naturals. However,
+   the proposed language additions that would actually allow this are deferred
+   to a follow-up RFC.
 
 ## Const parameters without arithmetic
 
@@ -274,9 +339,13 @@ while also providing solutions to more immediate problems.
 Here's a brief summary of other types of values that could be used as
 parameters, and the reasons that they are omitted from this RFC:
 
+ - Adding `char` would be simple. This is omitted partly due to having less
+   obvious utility, and partly because the author did not think of it until
+   this proposal was nearly complete.
  - Allowing tuple parameters seems harmless but unnecessary, since one can
    simply use multiple parameters instead of a single tuple parameter. However,
-   it may be a good idea to allow them for the sake of consistency.
+   it may be a good idea to allow them for the sake of consistency, or to
+   group related parameters in a list.
  - Allowing arrays or any unsized type could cause problems for both compiler
    performance and symbol name mangling. However, arrays that are not too large
    should be OK, since they can be handled similarly to tuples.
@@ -290,9 +359,9 @@ parameters, and the reasons that they are omitted from this RFC:
    as in C++. This was left out because it adds complexity while being less
    likely to be useful, but it may not cause any serious problems.
  - It seems necessary to omit struct or enum values pending further design
-   work (e.g. there may be other features that Rust's type system needs to
+   work. E.g. there may be other features that Rust's type system needs to
    implement these, and either CTFE or specialized plugins are probably required
-   for these to be useful).
+   for these to be useful.
 
 ### Only allow (or default to) a particular integer type
 
