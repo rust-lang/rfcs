@@ -95,6 +95,12 @@ for the exhaustiveness check is
 [here](https://github.com/quantheory/int_range_check). This is sufficient to
 check whether a series of ranges cover all allowed values of an integer type.
 
+Finally, note that pattern guards will interact with exhaustiveness checks in
+the same way as they do now. Namely, the compiler will check to see if a match
+arm with a pattern guard is reachable, but will otherwise disregard it during
+exhaustiveness checks. This means that the pattern `2...` will not always be
+equivalent to the pattern `x if x >= 2`.
+
 # Drawbacks
 
 Since more match arms can be proven unreachable, some code that currently
