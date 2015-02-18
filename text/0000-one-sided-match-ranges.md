@@ -30,10 +30,10 @@ checks and allow for specialization of impls.
 
 # Detailed design
 
-Just as the match pattern `i...j` matches numbers between `i` and `j`, `i...`
-will match all numbers greater than `i`, and `...j` will match all numbers less
-than `j`. This capability is extended to `char` as well, under the same ordering
-used for match patterns now.
+Just as the match pattern `i...j` matches numbers between `i` and `j`
+(inclusive), `i...` will match all numbers greater than or equal to `i`, and
+`...j` will match all numbers less than or equal to `j`. This capability is
+extended to `char` as well, under the same ordering used for match patterns now.
 
 Additionally, exhaustiveness checks will be performed for patterns that match
 integers and `char`, as opposed to the current implementation, which requires
