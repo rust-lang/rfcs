@@ -245,7 +245,7 @@ This approach has seen significant success in libraries in other languages, such
 as Haskell. The main problem with this approach in Rust is that it is at odds
 with the way we handle arrays currently. However, this approach is usable today
 for many applications. See also
-[@darinmorrison's `shoggoth` crate](https://github.com/epsilonz/shoggoth.rs).
+[Darin Morrison's `shoggoth` crate](https://github.com/epsilonz/shoggoth.rs/tree/15d1b7b94057bb75d887c355d42afe5e1da6f503).
 
 Type-level arithmetic can also be complex to implement and verbose to use. The
 "macros in types" proposal
