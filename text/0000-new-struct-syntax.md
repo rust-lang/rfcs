@@ -115,36 +115,18 @@ destructuring syntax with type ascription becomes `{ field => variable: Type }`
 
 ## Declaration of struct type
 
-There's nothing wrong with the current declaratiom syntax,
-but leaving it unchanged while changing the other syntax would make structs
-the only data type which doesn't conform to the initialization-follows-declaration rule.
-To preserve the symmetry, the proposal is to change `:` to `=>` in struct declaration aswell.
+The consensus is to leave the current syntax, even though it will break the initialization-follows-declaration rule.
+It can be justified by the fact that `:` is usually followed by a type and it would hold true for struct definition:
 
 ```rust
-struct Color<T>(T, T, T); // declaration
-set_color(Color(0: u8, 0, 0)); // initialization
-let Color(red: u8, grn, blu) = get_color(); // pattern matching
+struct Color {
+	r: u8,
+	g: u8,
+	b: u8,
+}
 
-struct Color<T>{r=>T, g=>T, b=>T}; // declaration
-set_color(Color{r=>0: u8, g=>0, b=>0}); // initialization
-let Color{r=>red: u8, g=>grn, b=>blu) = get_color(); // pattern matching
+let yellow = Color { r=>255, g=>255, b=>0 };
 ```
-
-Note how there was never a single `:` in named tuple declaration.
-Instead, it "counter-intuitively" puts types where the values should be.
-Following this logic - when declaring a struct, we write it exactly the same as we use it,
-except we put types where the values should be, just like in the case of tuple structs.
-
-This might seem counter-intuitive, but that is kinda the point.
-After this RFC `:` becomes the universal type ascribing operator in the context of expressions and patterns,
-but note that any part of type definition is neither an expression or a pattern.
-
-More argumentation:
-
->	Remember that the declaration is meant to be "backwards" and `:` is now **actual** operator in patterns and expressions.
->	Using `:` in struct declaration would be actually inconsistent, because it would then have another use over it's purpose of type ascription,
->	which can only be valid in expressions and patterns (and struct def is just `<ident> => <type>`, no patterns/expressions here).
->	(I know it's used for Trait bounds too, but it's a completely different context so I think that's okay)
 
 ## Possible future improvements
 
@@ -188,6 +170,38 @@ Then, by just allowing structs as possible input type for a function we introduc
 		foo{.bar(), .baz()}; // foo.bar(); foo.baz();
 		foo{[0]='a', [1]='b'} // foo[0]='a'; foo[1]='b';
 		```
+
+-	**Use proposed syntax and change the declaration syntax aswell**:
+	There's nothing wrong with the current declaratiom syntax,
+	but leaving it unchanged while changing the other syntax would make structs
+	the only data type which doesn't conform to the initialization-follows-declaration rule.
+	To preserve the symmetry, the proposal would be to change `:` to `=>` in struct declaration aswell.
+
+	```rust
+	struct Color<T>(T, T, T); // declaration
+	set_color(Color(0: u8, 0, 0)); // initialization
+	let Color(red: u8, grn, blu) = get_color(); // pattern matching
+
+	struct Color<T>{r=>T, g=>T, b=>T}; // declaration
+	set_color(Color{r=>0: u8, g=>0, b=>0}); // initialization
+	let Color{r=>red: u8, g=>grn, b=>blu) = get_color(); // pattern matching
+	```
+
+	Note how there was never a single `:` in named tuple declaration.
+	Instead, it "counter-intuitively" puts types where the values should be.
+	Following this logic - when declaring a struct, we write it exactly the same as we use it,
+	except we put types where the values should be, just like in the case of tuple structs.
+
+	This might seem counter-intuitive, but that is kinda the point.
+	After this RFC `:` becomes the universal type ascribing operator in the context of expressions and patterns,
+	but note that any part of type definition is neither an expression or a pattern.
+
+	More argumentation:
+
+	>	Remember that the declaration is meant to be "backwards" and `:` is now **actual** operator in patterns and expressions.
+	>	Using `:` in struct declaration would be actually inconsistent, because it would then have another use over it's purpose of type ascription,
+	>	which can only be valid in expressions and patterns (and struct def is just `<ident> => <type>`, no patterns/expressions here).
+	>	(I know it's used for Trait bounds too, but it's a completely different context so I think that's okay)
 
 # Unresolved questions
 
