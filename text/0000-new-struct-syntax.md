@@ -48,6 +48,74 @@ foo({ a: b });
 
 Is `{a: b}` a struct literal with value `b` mapped to `a` or is it a code block with expression `a: b` (`a` with ascribed type `b`)?
 
+### Things that aren't at all possible without changing the syntax
+
+>	I am not really interested in making changes of this magnitude without a very strong justification.
+
+-	Easy distinction between anonymous single-value struct and a code block with a type ascribed variable.
+	Might be resolved similarly to how we differentiate single value tuples from expressions. (thanks @mandel59)
+
+	```rust
+	let foo1 = { value: Foo }; // block
+	let foo2 = { field: foo1, }; // struct
+	
+	// with this RFC:
+	let foo1 = { value: Foo }; // block
+	let foo2 = { field => foo1 }; // struct
+	```
+
+-	Possibility to pattern-match and bind type ascribed struct field to a variable with the same name as the struct field,
+	without repeating the name 2 times.
+
+	```rust
+	// bind to other name:
+	let {x: point_x, y: point_y} = get_point();
+	
+	// bind to other name and ascribe:
+	let {x: point_x: f32, y: point_y: f32} = get_point();
+	
+	// bind to same name:
+	let {x, y} = get_point();
+	
+	// bind to same name and ascribe:
+	let {x: x: f32, y: y: f32} = get_point();
+	
+	// with this RFC
+	
+	// bind to other name:
+	let {x => point_x, y => point_y} = get_point();
+	
+	// bind to other name and ascribe:
+	let {x => point_x: f32, y => point_y: f32} = get_point();
+	
+	// bind to same name:
+	let {x, y} = get_point();
+	
+	// bind to same name and ascribe:
+	let {x: f32, y: f32} = get_point();
+	```
+	
+	I'm expecting this to be used frequently when we add some kind of named arguments functionality:
+	
+	```rust
+	fn draw_rect<N: Float>({x: x: N, y: y: N, w: w : N, h: h: N}) { … }
+	
+	// with this RFC
+	fn draw_rect<N: Float>({x: N, y: N, w: N, h: N}) { … }
+	```
+
+-	Named arguments: possibility to reuse struct syntax within function brackets.
+	Could be resolved by not having named arguments *per se*, but using anonymous structs for this purpose.
+
+	```rust
+	draw_rect({x: x1: f32, y: y1, w: x2 - x1, h: y2 - y1});
+	
+	// with this RFC
+	draw_rect(x => x1: f32, y => y1, w => x2 - x1, h => y2 - y1});
+	// or
+	draw_rect((x,y,w,h) => (x1: f32, y1, x2 - x1, y2 - y1));
+	```
+
 ## What would be the ideal syntax?
 
 There are few important characteristics that a struct literal syntax should have:
