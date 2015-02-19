@@ -6,7 +6,7 @@
 # Summary
 
 It is likely that Rust will want to someday have a notion of an unboxed function type to be used
-with custom pointer types<sup>1</sup>. Ideally then today's function pointers would become `&'static`s of
+with custom pointer types.<sup>1</sup> Ideally then today's function pointers would become `&'static`s of
 functions. But this is a breaking syntactic change, and unboxed functions can probably not be exposed
 by 1.0. This RFC proposals making the needed breaking syntactic change now, so unboxed functions can
 be added---and function pointers turned to borrowed pointers---all backwards compatibly in the
