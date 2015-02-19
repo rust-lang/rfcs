@@ -31,16 +31,16 @@ examples of the possibilities, `Arc` can be used ARC to unload libraries or free
 pointers.
 
 Adding unboxed function types begs the questions of what would happen to the current function
-pointers where that route taken. Since they act just like immutable borrowed static pointers to
+pointers were that route taken. Since they act just like immutable borrowed static pointers to
 functions, it would be nice if they became that in actuality, lest two ways to do the same thing be
-introduced so deeply in the language. Unfortunately, combining the two requires a braking syntactic
+introduced so deeply in the language. Unfortunately, combining the two requires a breaking syntactic
 change. There are many details that need to be resolved to support unboxed function types, plus
 probably a good deal of implementation work, so it is probably not realistic to try to do this
 before 1.0. Note, while it is tempting to use DST for this, but unfortunately that would make
 function pointers fat, and moreover the sizes of functions are not in-general known dynamically
 anyway (c.f. foreign functions).
 
-So if this requires a breaking change to make nice, yet is to big to do before 1.0, what can be
+So if this requires a breaking change to make nice, yet is too big to do before 1.0, what can be
 done? My suggestion is simply to simply change the syntax of function pointer types to make clear
 they act like `&'statics`. This doesn't force any semantic changes in the future, but opens to door
 to reusing `fn(...)...` for unboxed functions by allowing function pointers to silently become
