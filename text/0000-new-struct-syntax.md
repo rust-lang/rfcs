@@ -111,7 +111,7 @@ Is `{a: b}` a struct literal with value `b` mapped to `a` or is it a code block 
 	draw_rect({x: x1: f32, y: y1, w: x2 - x1, h: y2 - y1});
 	
 	// with this RFC
-	draw_rect(x => x1: f32, y => y1, w => x2 - x1, h => y2 - y1});
+	draw_rect(x => x1: f32, y => y1, w => x2 - x1, h => y2 - y1); // curly braces optional
 	// or
 	draw_rect((x,y,w,h) => (x1: f32, y1, x2 - x1, y2 - y1));
 	```
