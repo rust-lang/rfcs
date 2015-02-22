@@ -6,11 +6,11 @@
 # Summary
 
 It is likely that Rust will want to someday have a notion of an unboxed function type to be used
-with custom pointer types.<sup>1</sup> Ideally then today's function pointers would become `&'static`s of
-functions. But this is a breaking syntactic change, and unboxed functions can probably not be exposed
-by 1.0. This RFC proposals making the needed breaking syntactic change now, so unboxed functions can
-be added---and function pointers turned to borrowed pointers---all backwards compatibly in the
-future.
+with custom pointer types.<sup>1</sup> Ideally then today's function pointers would become
+`&'static`s of functions. But this is a breaking syntactic change, and unboxed functions can
+probably not be exposed by 1.0. This RFC proposals making the needed breaking changes now, so
+unboxed functions can be added---and function pointers turned to borrowed pointers---all backwards
+compatibly in the future.
 
 # Motivation
 
@@ -41,37 +41,43 @@ function pointers fat, and moreover the sizes of functions are not in-general kn
 anyway (c.f. foreign functions).
 
 So if this requires a breaking change to make nice, yet is too big to do before 1.0, what can be
-done? My suggestion is simply to simply change the syntax of function pointer types to make clear
-they act like `&'statics`. This doesn't force any semantic changes in the future, but opens to door
-to reusing `fn(...)...` for unboxed functions by allowing function pointers to silently become
-actual `&statics` if/when function types are added in the future. Meanwhile Rust, while slightly
-less ergonomic---function pointers are quite rare, is more forthright about its current
-expressiveness today.
+done? My suggestion is simply to make just the breaking changes now, and leave the rest for later:
+change the syntax of function pointer types to make clear they act like `&'statics`, and make it so
+that only "borrowed functions" coerce to function pointers. This doesn't force any semantic changes
+in the future, but opens to door to reusing `fn(...)...` for unboxed functions by allowing function
+pointers to silently become actual `&statics` if/when function types are added in the
+future. Meanwhile Rust, while slightly less ergonomic---function pointers are quite rare, is more
+forthright about its current expressiveness today.
 
 # Detailed design
 
-Quite simply, change the syntax of function pointer types from
+1. Change the syntax of function pointer types from
 
-```rust
-('extern' STRING_LIT?)? 'fn' '(' (IDEN ':' TYPE (',' IDEN ':' TYPE)* ','?)? ')' ('->' TYPE)?
-```
+   ```rust
+   ('extern' STRING_LIT?)? 'fn' '(' (IDEN ':' TYPE (',' IDEN ':' TYPE)* ','?)? ')' ('->' TYPE)?
+   ```
 
-to
+   to
 
-```rust
-'&' '\'static' ('extern' STRING_LIT?)? 'fn' '(' (IDEN ':' TYPE (',' IDEN ':' TYPE)* ','?)? ')' ('->' TYPE)?
-```
+   ```rust
+   '&' '\'static' ('extern' STRING_LIT?)? 'fn' '(' (IDEN ':' TYPE (',' IDEN ':' TYPE)* ','?)? ')' ('->' TYPE)?
+   ```
 
-Like slices before DST, the `fn(...) ...` itself will not denote a type on its own and need not even
-parse.
+   Like slices before DST, the `fn(...) ...` itself will not denote a type on its own and need not
+   even parse.
 
-In the future, `fn(...) ...` can be made legal syntax and given semantics, in which case the current
-syntax would no longer be its own grammatical production but remain valid, and actually denote the
-type of a static, immutable borrowed pointer to a function.
+   In the future, `fn(...) ...` can be made legal syntax and given semantics, in which case the
+   current syntax would no longer be its own grammatical production but remain valid, and actually
+   denote the type of a static, immutable borrowed pointer to a function.
 
-Just as today, function items may have unique function types, but those types won't have a surface
-syntax, and expressions (in practice just identifiers/paths) of those types will coerce to function
-pointers (see [1]).
+
+2. Change the coercion rules so that values of the secret function types to not coerce to function
+   pointers, but values of immutably borrowed secret function types do instead.
+
+   Just as today, these secret function types won't have a surface syntax. This change however
+   brings the coercion rules for functions in line with that for DSTs, and will prevent what would
+   be a much more auto-referencing if the types of functions were exposed in the
+   future. [Thanks @P1start for this idea.]
 
 # Drawbacks
 
