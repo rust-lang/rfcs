@@ -53,13 +53,13 @@ expressiveness today.
 Quite simply, change the syntax of function pointer types from
 
 ```rust
-fn(...) ...
+('extern' STRING_LIT?)? 'fn' '(' (IDEN ':' TYPE (',' IDEN ':' TYPE)* ','?)? ')' ('->' TYPE)?
 ```
 
 to
 
 ```rust
-&'static fn(...) ...
+'&' '\'static' ('extern' STRING_LIT?)? 'fn' '(' (IDEN ':' TYPE (',' IDEN ':' TYPE)* ','?)? ')' ('->' TYPE)?
 ```
 
 Like slices before DST, the `fn(...) ...` itself will not denote a type on its own and need not even
