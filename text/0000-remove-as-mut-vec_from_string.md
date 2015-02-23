@@ -55,15 +55,15 @@ eliminates those copies).
 When there are frequent changes to the buffer in an alternatingly safe (UTF8 
 checked) and unsafe way, `as_mut_vec` would be more efficient than converting
 back and forth between `String` and `Vec` (assuming the optimizer doesn't
-eliminate those). But this is a fairly rare use case: In most cases there are 
-just 0 or 1 unsafe changes to a string buffer. 
+eliminate those). But this is a fairly rare use case: Usually there is 
+at most 1 unsafe change to a string buffer.
 
 # Alternatives
 
-It would also be possible to redesign the whole `std::string` module to get 
-even more flexibilty out of it. But such a big change is not possible before 
-releasing 1.0. Not removing `as_mut_vec` would limit the ability to change the
-implementation of `String` in the future.
+It would also be possible to redesign the whole `std::string` module to achieve
+higher flexibility. But such a big change is impossible before releasing 1.0. 
+Keeping `as_mut_vec` would limit the ability to change the implementation of 
+`String` in the future.
 
 # Unresolved questions
 
