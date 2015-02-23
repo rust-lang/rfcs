@@ -206,6 +206,16 @@ for (x, y, z) in (a.iter(), b.iter(), 1..20) {
 }
 ```
 
+## require .zip()
+
+```rust
+for (x, y, z) in (a, b, c).zip {
+    // something
+}
+```
+
+Advantages: discoverable, extendable ( `.product()`, `.flatten()` )
+
 # Unresolved questions
 I have not thought about mixed move, ref and mut ref tuples
 
