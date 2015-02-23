@@ -28,7 +28,7 @@ need for good benchmarks comparing SSO and the default string implementation,
 but this RFC is not just about SSO. There are more promising implementations of
 strings and there might be even more in the future. It's difficult if not 
 impossible to say what is the fastest implementation now or what it will be in 
-3 years. So it would be good to be able to change the implementation later on.
+three years. So it would be good to be able to change the implementation later on.
 
 # Detailed design
 
@@ -47,23 +47,23 @@ functionality can be achieved with other methods anyway: Instead of using
 `as_mut_vec` to obtain a reference into the string one can use 
 `into_bytes(self) -> Vec<u8>` and `from_utf8_unchecked(Vec<u8>) -> String` to 
 "convert" the `String` into a `Vec` and back. Those "conversions" are very cheap
-since they just copy 3 pointer/usize on the stack (and maybe the optimizer even
+since they just copy three pointer/usize on the stack (and maybe the optimizer even
 eliminates those copies). 
 
 # Drawbacks
 
-When there are frequent changes to the buffer in an alternatingly safe (UTF8 
+When frequent changes to the buffer are made in an alternatingly safe (UTF8 
 checked) and unsafe way, `as_mut_vec` would be more efficient than converting
 back and forth between `String` and `Vec` (assuming the optimizer doesn't
 eliminate those). But this is a fairly rare use case: Usually there is 
-at most 1 unsafe change to a string buffer.
+at most one unsafe change to a string buffer.
 
 # Alternatives
 
 It would also be possible to redesign the whole `std::string` module to achieve
-higher flexibility. But such a big change is impossible before releasing 1.0. 
-Keeping `as_mut_vec` would limit the ability to change the implementation of 
-`String` in the future.
+higher flexibility. However, such a big change is impossible before releasing 
+1.0. Keeping `as_mut_vec` would limit the ability to change the implementation 
+of `String` in the future.
 
 # Unresolved questions
 
