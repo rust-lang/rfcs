@@ -46,24 +46,25 @@ The solution is to just remove `as_mut_vec` from `String`. The same
 functionality can be achieved with other methods anyway: Instead of using 
 `as_mut_vec` to obtain a reference into the string one can use 
 `into_bytes(self) -> Vec<u8>` and `from_utf8_unchecked(Vec<u8>) -> String` to 
-"convert" the `String` into a Vec and back. Those "conversions" are very cheap
+"convert" the `String` into a `Vec` and back. Those "conversions" are very cheap
 since they just copy 3 pointer/usize on the stack (and maybe the optimizer even
 eliminates those copies). 
 
 # Drawbacks
 
-When there are frequent changes to the buffer in an alternating safe (UTF8 
+When there are frequent changes to the buffer in an alternatingly safe (UTF8 
 checked) and unsafe way, `as_mut_vec` would be more efficient than converting
-it back and forth between `String` and `Vec` (assuming the optimizer doesn't
+back and forth between `String` and `Vec` (assuming the optimizer doesn't
 eliminate those). But this is a fairly rare use case: In most cases there are 
 just 0 or 1 unsafe changes to a string buffer. 
 
-Why should we *not* do this?
-
 # Alternatives
 
-What other designs have been considered? What is the impact of not doing this?
+It would also be possible to redesign the whole `std::string` module to get 
+even more flexibilty out of it. But such a big change is not possible before 
+releasing 1.0. Not removing `as_mut_vec` would limit the ability to change the
+implementation of `String` in the future.
 
 # Unresolved questions
 
-What parts of the design are still TBD?
+None so far.
