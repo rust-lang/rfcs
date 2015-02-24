@@ -521,8 +521,8 @@ The updated `Reader` trait (and its extension) is as follows:
 trait Read {
     fn read(&mut self, buf: &mut [u8]) -> Result<usize, Error>;
 
-    fn read_to_end(&mut self, buf: &mut Vec<u8>) -> Result<(), Error> { ... }
-    fn read_to_string(&self, buf: &mut String) -> Result<(), Error> { ... }
+    fn read_to_end(&mut self, buf: &mut Vec<u8>) -> Result<usize, Error> { ... }
+    fn read_to_string(&self, buf: &mut String) -> Result<usize, Error> { ... }
 }
 
 // extension trait needed for object safety
@@ -555,6 +555,15 @@ buffers as input. This has multiple benefits:
   validity cannot be ensured in such cases; but if intermediate
   results are wanted, one can use `read_to_end` and convert to a
   `String` only at the end.
+
+`read_to_end` and `read_to_string` return a `Result` with either the
+number of bytes read or an error.  If a short read occurs, that call
+gives the (short) data and returns the number of bytes written into
+that buffer.  If the error was non-transient, future calls shall return
+the reason for the error (usually `EndOfFile`).
+
+returns the (short) data.  If the short read is due to the
+error, then future calls shall return the error or `EndOfFile`.
 
 Convenience methods like these will retry on `EINTR`. This is partly
 under the assumption that in practice, EINTR will *most often* arise
@@ -600,11 +609,11 @@ The `Writer` trait is cut down to even smaller size:
 
 ```rust
 trait Write {
-    fn write(&mut self, buf: &[u8]) -> Result<uint, Error>;
+    fn write(&mut self, buf: &[u8]) -> Result<usize, Error>;
     fn flush(&mut self) -> Result<(), Error>;
 
-    fn write_all(&mut self, buf: &[u8]) -> Result<(), Error> { .. }
-    fn write_fmt(&mut self, fmt: &fmt::Arguments) -> Result<(), Error> { .. }
+    fn write_all(&mut self, buf: &[u8]) -> Result<usize, Error> { .. }
+    fn write_fmt(&mut self, fmt: &fmt::Arguments) -> Result<usize, Error> { .. }
 }
 ```
 
@@ -622,7 +631,10 @@ writing, code should work with `write` directly. Like the `Read`
 conveniences, `EINTR` results in a retry.
 
 The `write_fmt` method, like `write_all`, will loop until its entire
-input is written or an error occurs.
+input is written or an error occurs.  Both convenience routines
+return the number of bytes written for consistency with their `Read`
+counterparts, though users wanting additional control should be
+encouraged to work with the lower-level `write` directly.
 
 The other methods include endian conversions (covered by
 serialization) and a few conveniences like `write_str` for other basic
@@ -985,8 +997,8 @@ pub trait BufRead: Read {
     fn fill_buf(&mut self) -> Result<&[u8], Error>;
     fn consume(&mut self, amt: uint);
 
-    fn read_until(&mut self, byte: u8, buf: &mut Vec<u8>) -> Result<(), Error> { ... }
-    fn read_line(&mut self, buf: &mut String) -> Result<(), Error> { ... }
+    fn read_until(&mut self, byte: u8, buf: &mut Vec<u8>) -> Result<usize, Error> { ... }
+    fn read_line(&mut self, buf: &mut String) -> Result<usize, Error> { ... }
 }
 
 pub trait BufReadExt: BufRead {
@@ -1008,6 +1020,13 @@ include the delimiters in the strings they produce, both for easy
 cross-platform compatibility (in the case of `read_line`) and for ease
 in copying data without loss (in particular, distinguishing whether
 the last line included a final delimiter).
+
+`EINTR`-based errors are automatically restarted by `read_until`
+and `read_line`.  Short reads give a partial buffer and return the
+number of bytes written into that buffer.  Subsequent calls on the
+same buffer may return new data, if the error was transient.  If the
+error was non-transient, future calls shall return the error (usually
+`EndOfFile`) and shall not touch the buffer.
 
 The `split` and `lines` methods provide iterator-based versions of
 `read_until` and `read_line`, and *do not* include the delimiter in
@@ -1122,14 +1141,6 @@ The `std::io::IoErrorKind` type will become `std::io::ErrorKind`, and
 `OtherIoError` variant will become `Other` now that `enum`s are
 namespaced. Other variants may be added over time, such as `Interrupted`,
 as more errors are classified from the system.
-
-The `EndOfFile` variant will be removed in favor of returning `Ok(0)`
-from `read` on end of file (or `write` on an empty slice for example). This
-approach clarifies the meaning of the return value of `read`, matches Posix
-APIs, and makes it easier to use `try!` in the case that a "real" error should
-be bubbled out. (The main downside is that higher-level operations that might
-use `Result<T, IoError>` with some `T != usize` may need to wrap `IoError` in a
-further enum if they wish to forward unexpected EOF.)
 
 #### Channel adapters
 [Channel adapters]: #channel-adapters
