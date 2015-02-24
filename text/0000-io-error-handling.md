@@ -36,7 +36,7 @@ while buf.read_line(&mut my_awesome_string).is_ok() {
 
 Compared to the old interface this is more flexible, but, considering that
 `read_line` is a convenience method, this new design makes it less valuable.
-with old_io, the code looks like this:
+With old_io the code looks like this:
 
 ```rust
 let mut my_awesome_string = String::new();
