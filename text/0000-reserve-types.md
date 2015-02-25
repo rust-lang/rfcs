@@ -18,6 +18,10 @@ Adding them is backwards incompatible because `type PRIMITIVE = T;` is an error.
 
 Reserve the following type names: `fN`, `uN`, `iN` for `N` a multiple of 8.
 
+Reserve additionally `dN` for decimal floating point numbers.
+
+Reserve additionally `mN` for SSE.
+
 # Drawbacks
 
 Makes the grammar larger for types which we may never use.
@@ -25,3 +29,5 @@ Makes the grammar larger for types which we may never use.
 # Alternatives
 
 New types could require a flag to be enabled.
+
+C99 uses `_Bool` instead of `bool` because `_T` is reserved.
