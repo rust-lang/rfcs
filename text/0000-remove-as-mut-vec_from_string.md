@@ -28,7 +28,8 @@ need for good benchmarks comparing SSO and the default string implementation,
 but this RFC is not just about SSO. There are more promising implementations of
 strings and there might be even more in the future. It's difficult if not 
 impossible to say what is the fastest implementation now or what it will be in 
-three years. So it would be good to be able to change the implementation later on.
+three years. So it would be good to be able to change the implementation later 
+on.
 
 # Detailed design
 
@@ -47,8 +48,8 @@ functionality can be achieved with other methods anyway: Instead of using
 `as_mut_vec` to obtain a reference into the string one can use 
 `into_bytes(self) -> Vec<u8>` and `from_utf8_unchecked(Vec<u8>) -> String` to 
 "convert" the `String` into a `Vec` and back. Those "conversions" are very cheap
-since they just copy three pointer/usize on the stack (and maybe the optimizer even
-eliminates those copies). 
+since they just copy three pointer/usize on the stack (and maybe the optimizer 
+even eliminates those copies). 
 
 # Drawbacks
 
@@ -56,21 +57,36 @@ When frequent changes to the buffer are made in an alternatingly safe (UTF8
 checked) and unsafe way, `as_mut_vec` would be more efficient than converting
 back and forth between `String` and `Vec` (assuming the optimizer doesn't
 eliminate those). But this is a fairly rare use case: Usually there is 
-at most one unsafe change to a string buffer.
+at most one unsafe change to a string buffer. Using `into_bytes` and 
+`from_utf8_unchecked` instead of `as_mut_vec` is just a little more verbose and
+less convenient, although functionally equivalent.
 
 # Alternatives
 
-An option would be to redesign the whole `std::string` module to achieve even higher flexibility. One possible design could be to just define a generic UTF8 wrapper. The module would mainly provide three things:
+An option would be to redesign the whole `std::string` module to achieve even 
+higher flexibility. One possible design could be to just define a generic UTF8 
+wrapper. The module would mainly provide three things:
 
-* A trait `StringBuf`. Types that implement that trait are able to be used as an underlying buffer of a string.
-* `Utf8Wrapper<T: StringBuf>` type that provide UTF8-safe methods around the raw string buffer. Furthermore they can also provide a method `as_mut_buffer(&mut self) -> &mut T` that works like `as_mut_vec`. That wouldn't be a problem in this case because the type `T` is not fixed.
-* A variety of string buffers (which implement `StringBuf`) and can be used as underlying buffer for `Utf8Wrapper`. For example: A fixed size buffer, a hybrid SSO buffer and an implementation for `Vec`.
+* A trait `StringBuf`. Types that implement that trait are able to be used as an
+  underlying buffer of a string.
+* An `Utf8Wrapper<T: StringBuf>` type that provides UTF8-safe methods around the
+  raw string buffer. Furthermore they can also provide a method 
+  `as_mut_buffer(&mut self) -> &mut T` that works like `as_mut_vec`. That 
+  wouldn't be a problem in this case because the type `T` is not fixed.
+* A variety of string buffers, which implement `StringBuf` and can be used as 
+  underlying buffer for `Utf8Wrapper`. For example: A fixed size buffer, a 
+  hybrid SSO buffer and an implementation for `Vec`.
 
-The module would probably also have some type alias like `type VecString = Utf8Wrapper<Vec<u8>>` and `type SmallString = Utf8Wrapper<SSOBuffer>;`. The current `std::string` is just about UTF8-safety. To be able to use every buffer in an UTF8-safe way would be a huge benefit.
+The module would probably also have some type aliases like 
+`type VecString = Utf8Wrapper<Vec<u8>>` and 
+`type SmallString = Utf8Wrapper<SSOBuffer>;`. The current `std::string` is just 
+about UTF8-safety. To be able to use every buffer in an UTF8-safe way would be 
+a huge benefit.
 
 However, such a big change is impossible before releasing 1.0. Keeping 
-`as_mut_vec` would limit the ability to change the implementation of `String` in the future, therefore removing it is a step in the right direction.
+`as_mut_vec` would limit the ability to change the implementation of `String` in
+the future, therefore removing it is a step in the right direction.
 
 # Unresolved questions
 
-None so far.
+Mark `as_mut_vec` as `#[unstable]`?
