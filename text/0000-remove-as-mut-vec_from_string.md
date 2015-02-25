@@ -60,10 +60,16 @@ at most one unsafe change to a string buffer.
 
 # Alternatives
 
-It would also be possible to redesign the whole `std::string` module to achieve
-higher flexibility. However, such a big change is impossible before releasing 
-1.0. Keeping `as_mut_vec` would limit the ability to change the implementation 
-of `String` in the future.
+An option would be to redesign the whole `std::string` module to achieve even higher flexibility. One possible design could be to just define a generic UTF8 wrapper. The module would mainly provide three things:
+
+* A trait `StringBuf`. Types that implement that trait are able to be used as an underlying buffer of a string.
+* `Utf8Wrapper<T: StringBuf>` type that provide UTF8-safe methods around the raw string buffer. Furthermore they can also provide a method `as_mut_buffer(&mut self) -> &mut T` that works like `as_mut_vec`. That wouldn't be a problem in this case because the type `T` is not fixed.
+* A variety of string buffers (which implement `StringBuf`) and can be used as underlying buffer for `Utf8Wrapper`. For example: A fixed size buffer, a hybrid SSO buffer and an implementation for `Vec`.
+
+The module would probably also have some type alias like `type VecString = Utf8Wrapper<Vec<u8>>` and `type SmallString = Utf8Wrapper<SSOBuffer>;`. The current `std::string` is just about UTF8-safety. To be able to use every buffer in an UTF8-safe way would be a huge benefit.
+
+However, such a big change is impossible before releasing 1.0. Keeping 
+`as_mut_vec` would limit the ability to change the implementation of `String` in the future, therefore removing it is a step in the right direction.
 
 # Unresolved questions
 
