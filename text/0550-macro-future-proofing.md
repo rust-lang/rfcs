@@ -71,7 +71,8 @@ rather than any possible arbitrary matcher.
 # Detailed design
 
 The algorithm for recognizing valid matchers `M` follows. Note that a matcher
-is merely a token tree. A "simple NT" is an NT without repetitions. That is,
+is merely a token tree. A "simple NT" is an NT without repetitions.
+A "complex NT" is an NT that is not simple.  That is,
 `$foo:ty` is a simple NT but `$($foo:ty)+` is not. `FOLLOW(NT)` is the set of
 allowed tokens for the given NT's fragment specifier, and is defined below.
 
@@ -81,25 +82,25 @@ allowed tokens for the given NT's fragment specifier, and is defined below.
   3. If `t` is not an NT, skip to 7.
   4. Find `S`, the set of possible successors of `t`:
     1. If `TAIL(M)` is empty, set `S = F`,
-    2. Else, `S = LEADERS(TAIL(M))`.
+    2. Else, `S = FIRST(TAIL(M))`.
   5. If `t` is a simple NT, check that `S` is a subset of `FOLLOW(t)`.
-     If so, skip to 7, else, reject.       
+     If so, skip to 7, else, reject.
   6. Else, `t` is a complex NT.
-      1. If `t` has the form `$(Q)+` or `$(Q)*`, run `CHECK(Q, S)`. 
+      1. If `t` has the form `$(Q)+` or `$(Q)*`, run `CHECK(Q, S)`.
          If it accepts, skip to 7, else, reject.
-      2. If `t` has the form `$(Q)u+` or `$(Q)u*` for some token `u`, 
+      2. If `t` has the form `$(Q)u+` or `$(Q)u*` for some token `u`,
          run `CHECK(Q, S + {u})` If it accepts, skip to 7, else, reject.
   7. Set `M = TAIL(M)`, goto 1.
 
-`LEADERS(S):` Returns the set of all possible tokens that may begin input sequence matched by `S`.
+`FIRST(S):` Returns the set of all possible tokens that may begin input sequence matched by `S`.
   1. If `S` is empty, return `{}`.
   2. Set `t = HEAD(S)`
   3. If `t` is not a complex NT, return `{t}`.
   4. If `t` is a complex NT:
-     1. If `t` has the form `$(Q)+` or `$(Q)u+`, return `LEADERS(Q)`.
-     2. If `t` has the form `$(Q)*` or `$(Q)u*`, return `LEADERS(Q) + LEADERS(TAIL(S))`.
+     1. If `t` has the form `$(Q)+` or `$(Q)u+`, return `FIRST(Q)`.
+     2. If `t` has the form `$(Q)*` or `$(Q)u*`, return `FIRST(Q) + FIRST(TAIL(S))`.
 
-`HEAD(M)` Returns the first token in sequence `M`.  
+`HEAD(M)` Returns the first token in sequence `M`.
 `TAIL(M)` Returns sequence `M` with the first token removed.
 
 This algorithm should be run on every matcher in every `macro_rules`
