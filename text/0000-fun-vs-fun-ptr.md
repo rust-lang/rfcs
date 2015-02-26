@@ -78,6 +78,23 @@ forthright about its current expressiveness today.
    brings the coercion rules for functions in line with that for DSTs, and will prevent what would
    be a much more auto-referencing if the types of functions were exposed in the
    future. [Thanks @P1start for this idea.]
+   
+## Examples
+
+```rust
+fn f() { }
+// f : an undenotable, (ideally) zero sized, type. Think of it as a function "proxy".
+// &'static fn() is a function pointer type.
+// fn() could *someday* be an unsized function type.
+fn main() {
+    let g = f; // DEPENDS; should the proxy impls Copy?
+    let g = &f; // OK; g : &(an undenotable, (ideally) zero sized, type)
+    let g: &'static fn() = f; // ERROR: no auto-borrowing in Rust
+    let g: &'static fn() = &f; // OK; pointers to concrete function proxy coerce to pointers function
+    let g: &Fn() = &f; // OK; &magic -coerce-> &'static fn() -coerce-> &Fn trait object. Would necessitate dyanmic dispatch though.
+    let g: &Fn() = f; // DEPENDS; Should proxies themselves Fn?
+}
+```
 
 # Drawbacks
 
@@ -105,6 +122,9 @@ forthright about its current expressiveness today.
 # Unresolved questions
 
 Perhaps I am mistaken and the semantics of `&'static`s and functions pointers differ.
+
+Should the hidden function types impl `Fn` and `Copy`? I think this depends on whether we like to bind
+function IDs to an proxy type in the future, or get rid of such proxy types.
 
 [1]: https://github.com/rust-lang/rust/pull/19891 The implementation currently distinguishes between
      function types and function pointer types, but this is not really exposed as part of the language.
