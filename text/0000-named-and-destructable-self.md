@@ -68,5 +68,5 @@ presented as `fn bar(self)`.
 
 - Would it lead to use different names to `self` (i.e. `this`)? I think not,
   but question still exist.
-- Is it really that big issue that we need another line to destruct `self`?
+- Is it really that big issue that we need another line to decompose `self`?
 - Is there reason for introducing it at this stage?
