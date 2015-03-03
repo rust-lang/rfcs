@@ -59,9 +59,7 @@ trait to add this functions, i.e. to `Complex` numbers or interval arithmetic.
 
 It kind of reverse [RFC #0369][rfc-0369], but in my opinion it has been too radical
 which can be seen as [`num` crate][num] bring most of these traits back. This makes
-`num` crate kind of _must have_ for any code related to math. Also other (`IteratorExt`,
-`SliceExt`, `SliceConcatExt`) examples show us that this kind of separation
-of concerns is desirable.
+`num` crate kind of _must have_ for any code related to math.
 
 ## Examples of reintroducing RFC #0369 traits
 
