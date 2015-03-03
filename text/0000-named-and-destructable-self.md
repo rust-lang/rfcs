@@ -1,11 +1,11 @@
-- Feature Name: named_and_destructable_self
+- Feature Name: named_and_destrucurable_self
 - Start Date: 2015-03-02
 - RFC PR: (leave this empty)
 - Rust Issue: (leave this empty)
 
 # Summary
 
-Allow destructing assignment for `self` argument.
+Allow destructuring assignment for `self` argument.
 
 # Motivation
 
