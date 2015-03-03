@@ -4,7 +4,9 @@
 
 # Summary
 
-The goal of this RFC is to add a function to get the current entry's name without the full path.
+The goal of this RFC is to add a function to the [DirEntry](https://github.com/rust-lang/rust/issues/22926) structure
+in order to get the current entry's name without the full path.
+
 It has been initialized by @hugoduncan in this [rust-issue](https://github.com/rust-lang/rust/issues/22926).
 
 # Motivation
