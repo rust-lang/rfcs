@@ -61,7 +61,7 @@ patterns separated by pipes (`|`).
 
 # Detailed design
 
-Basically take the design proposed in the original RFC for [if-let](text/0160-if-let.md) and extend the notation to allow multiple patters
+Basically take the design proposed in the original RFC for [if-let](text/0160-if-let.md) and extend the notation to allow multiple patterns
 
 # Drawbacks
 
