@@ -61,7 +61,15 @@ patterns separated by pipes (`|`).
 
 # Detailed design
 
-Basically take the design proposed in the original RFC for [if-let](0160-if-let.md) and extend the notation to allow multiple patterns
+Basically take the design proposed in the original RFC for [if-let](0160-if-let.md) and extend the notation to allow multiple patterns.
+
+Specifically, modify the grammar for `if-cond` to:
+
+```
+if-cond = 'let' pattern [ '|' pattern ] * '=' expression
+```
+
+and ditto for `while let`.
 
 # Drawbacks
 
