@@ -287,6 +287,18 @@ The same rules as for `Fn` apply to `FnMut`.
 
 The same rules as for `Fn` apply to `FnOnce`.
 
+#### Default impls
+
+Let `Trait` be a trait with a default impl:
+
+```rust
+impl Trait for .. { }
+```
+
+If there is neither an explicit `impl Trait for T` nor an explicit negative
+`impl !Trait for T`, then `T` implements `Trait` if and only if `U` implements
+`Trait`.
+
 ## Example
 
 Assume
