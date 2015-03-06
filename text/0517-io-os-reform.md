@@ -34,6 +34,7 @@ follow-up PRs against this RFC.
     * [stdio]
     * [Overly high-level abstractions]
     * [The error chaining pattern]
+    * [Problems with flush]
 * [Detailed design]
     * [Vision for IO]
         * [Goals]
@@ -250,6 +251,25 @@ In the meantime, this RFC proposes to phase out the use of impls for
 
 (Note: this may put some additional pressure on at least landing the basic use
 of `?` instead of today's `try!` before 1.0 final.)
+
+## Problems with flush
+[Problems with flush]: #problems-with-flush
+
+There are two different problems with the `flush` operation.
+
+* The `Writer` trait is the trait that provides `flush` along with
+  bytestream output. Other output traits are likely needed for specific data
+  types, such as [TextWriter][rfc272] for UTF-8 text, and types implementing
+  those traits may need a flush operation as well, intrinsically implemented
+  or possibly a trait method. There should be a way to provide this operation
+  without duplicating it in different output traits or forcing writer-like
+  types to implement byte output.
+
+* A convention on `into_inner` methods on composite writers and `BufStream`
+  is to flush the underlying writer before returning it. The deep flushing
+  may be undesirable if the consumer wants to continue writing.
+
+[rfc272]: https://github.com/rust-lang/rfcs/issues/272
 
 # Detailed design
 [Detailed design]: #detailed-design
