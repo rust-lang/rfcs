@@ -5,8 +5,11 @@
 
 # Summary
 
-Amend the methods available to construct a `CString` to improve composability
-and follow the conventions emerging elsewhere in the standard library.
+This is currently a fallback proposal in case
+[generic conversion traits](https://github.com/rust-lang/rfcs/pull/529)
+are not adopted. The changes proposed here amend the methods available to
+construct a `CString` for more flexibility and better possibilities for
+optimization.
 
 # Motivation
 
@@ -23,19 +26,19 @@ aims at addressing the following issues:
    precludes small-string optimizations, such as an in-place variant
    implemented in [c_string](https://github.com/mzabaluev/rust-c-str).
 
-3. Stylistic: `Result` as return value type of `new` feels a bit too 'loaded'.
-   It's used in some other places, but the general expectation on `new` is to
-   be the most straightforward way to obtain a value of the type, while more
-   involved failure modes tend to be more typical on `from_*` constructors
-   and the like.
-
 [rfc 592]: https://github.com/rust-lang/rfcs/pull/592
 [rfc 840]: https://github.com/rust-lang/rfcs/pull/840
 
 # Detailed design
 
-Replace the constructor accepting `IntoBytes` with one accepting
-`IntoIterator`, following the `from_iter` pattern in collection types:
+Replace `IntoBytes` with trait `IntoCString`, with the return type
+of the conversion method changed to `Result<CString, NulError>`.
+All implementations of `IntoBytes` are converted to `IntoCString`,
+and the generic bound on parameter of `CString::new` is changed to
+`IntoCString`.
+
+A constructor accepting `IntoIterator` should also be added,
+following the `from_iter` pattern in collection types:
 
 ```rust
 impl CString {
@@ -45,28 +48,26 @@ impl CString {
 }
 ```
 
-`CString::from_vec` should be reinstated as an optimized special case.
-`CString::from_cow_string` can be added later on.
-
 # Proof of concept
 
-As usual for my RFCs concerning `CString`, the proposed changes are
+As usual for my RFCs concerning `CString`, most of the proposed changes are
 implemented on its workalike `CStrBuf` in crate
 [c_string](https://github.com/mzabaluev/rust-c-str).
 
 # Drawbacks
 
-`IntoIterator` is slightly less convenient than `IntoBytes` for converting
-from standard Rust strings and byte slices.
-This can be bridged over by providing an auxiliary trait as described in
-the [Unresolved questions](#unresolved-questions) section below.
+None identified.
 
 # Alternatives
 
-None put forward so far. Living with `IntoBytes` is tolerable.
+Implement [generic conversion traits](https://github.com/rust-lang/rfcs/pull/529).
+
+Living with `IntoBytes` is tolerable as it is.
 
 # Unresolved questions
 
-An auxiliary trait could be provided to take over the convenience and
-optimization aspects of `IntoBytes`, but changed to return a
-`Result<CString, NulError>` directly.
+Stylistic issue: `Result` as return value type of `new` feels a bit too
+'loaded'. It's used in some other places, but the general expectation on `new`
+is to be the most straightforward way to obtain a value of the type, while more
+involved failure modes tend to be more typical on `from_*` constructors
+and the like.
