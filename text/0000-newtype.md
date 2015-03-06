@@ -288,13 +288,13 @@ newtype c_long = i64;
 Then `c_long` has no inherent methods and implements the following operators:
 `==, <, >, <=, >=, <<, >>, |, &, ^, +, -, *, /, %`.
 
-`c_ulong` does not implement `Drop` but implements `Neg`, `Send`, `Sized`,
+`c_long` does not implement `Drop` but implements `Neg`, `Send`, `Sized`,
 `Copy`, and `Sync`.
 
-`c_ulong` does not coerce to `i64` but can be cast to any integer or floating
-point type. Conversely, any such type can be cast to `c_ulong`.
+`c_long` does not coerce to `i64` but can be cast to any integer or floating
+point type. Conversely, any such type can be cast to `c_long`.
 
-`&c_ulong` does not coerce to `&i64` but can be cast to `&i64`.
+`&c_long` does not coerce to `&i64` but can be cast to `&i64`.
 
 ## Rationale
 
@@ -303,7 +303,7 @@ distinct types that need to be explicitly cast at the "rustic" interface
 boundary or between each other. At first one might consider the following
 design:
 
->`T` behaves as if it had been declared by `struct T(U);` except that on can
+>`T` behaves as if it had been declared by `struct T(U);` except that one can
 >cast between `T` and `U`.
 
 There are some problems with this:
