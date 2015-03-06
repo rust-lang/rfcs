@@ -616,13 +616,17 @@ method, clients of `Read` can easily recover the `push` method.
 ### `Write`
 [Write]: #write
 
-The `Writer` trait is cut down to even smaller size:
+The `Writer` trait is cut down to even smaller size, and `flush` is taken
+out into its own trait that may be implemented by types providing other than
+byte-oriented output:
 
 ```rust
-trait Write {
-    fn write(&mut self, buf: &[u8]) -> Result<uint, Error>;
+trait Flush {
     fn flush(&mut self) -> Result<(), Error>;
+}
 
+trait Write: Flush {
+    fn write(&mut self, buf: &[u8]) -> Result<uint, Error>;
     fn write_all(&mut self, buf: &[u8]) -> Result<(), Error> { .. }
     fn write_fmt(&mut self, fmt: &fmt::Arguments) -> Result<(), Error> { .. }
 }
