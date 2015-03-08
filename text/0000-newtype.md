@@ -205,8 +205,8 @@ If `(A, B) \in R1` then `A as B` is a valid cast.
 
 #### Tuple casts
 
-Let `R2` be the set of tuples `(A, B) \in Types^2` such that `type A = B` or
-`newtype A = B`.
+Let `R2` be the set of tuples `(A, B) \in Types^2` such that `type A = B`,
+`newtype A = B`, or `A` and `B` are integer types with the same width.
 
 Let `R3` be the smallest equivalence relation in `Types^2` which contains `R2`
 and which is closed under the following operation: If `N > 0` is a natural
@@ -326,13 +326,6 @@ If there is neither an explicit `impl Trait for T` nor an explicit negative
 `impl !Trait for T`, then `T` implements `Trait` if and only if `U` implements
 `Trait` and, if so, `T` and `U` are `equivalent wrt Trait`.
 
-#### Simple traits
-
-Let `Trait` be a trait such that no types besides `Self` appear in its
-definition. If `T` does not explicitly implement `Trait` and `U` implements
-`Trait`, then `Trait` shall automatically be implemented for `T` and `T` and `U`
-are `equivalent wrt Trait`.
-
 ## Example
 
 Assume
@@ -356,25 +349,122 @@ point type. Conversely, any such type can be cast to `c_long`.
 
 ## Rationale
 
-The motivation of this RFC is to make `c_char`, `c_ulong`, `pid_t`, etc.
-distinct types that need to be explicitly cast at the "rustic" interface
-boundary or between each other. At first one might consider the following
-design:
+We define `newtype T = U` as being like `struct T(())` except for parts we
+explicitly address. We do this so that we don't have to worry about defining the
+accessibility of methods, fields, or enum variants of `U`.
 
->`T` behaves as if it had been declared by `struct T(U);` except that one can
->cast between `T` and `U`.
+### Casting
 
-There are some problems with this:
+We write this section under the assumption that `as` is something that is used
+for dangerous casts as it is already today with numeric casts. For example:
+`u64 as u32` is dangerous because it might overflow. We extend this notion of
+"dangerous" to things that simply might not compile on some platforms, e.g.,
+casting `Vec<u32> as Vec<c_ulong>` will compile on Windows but not on 64 bit
+Unix.
 
-- `U` has to be sized for the definition of `T` to make sense. 
-- `T` doesn't necessarily have the same memory representation as `U`.
-- `&T` cannot be cast to `&U`.
-- `T` cannot be used for anything meaningful because all operators in Rust are
-  used via traits.
-- `T` could implement `Drop` which would make casting to `U` unsafe.
+#### Scalar casts
 
-The rules above have been chosen to be a conservative solution of these
-problems.
+First we define scalar casts, that is, casts that don't include constructs such
+as `(c_char, c_char) as (u8, u8)`. We define that casts across numeric type
+boundaries are valid: `c_char as f64`. This is necessary because otherwise the
+user would have to know the base type to perform any numeric casts. That is, on
+Windows the user would have to write `c_long as i32 as i64` and on Unix the user
+would have to write `c_long as i64`.
+
+#### Tuple casts
+
+We then extend this definition to tuples: A cast `(A1, A2) as (B1, B2)` is
+possible if `A1 as B1` and `A2 as B2` are possible and neither of them is a
+non-trivial numeric cast. We have to add this restriction so that
+`(u8, u8) as (u16, u16)` is not possible. However, to allow casts such as
+`(c_char, c_char) as (u8, u8)`, even if `newtype c_char = i8`, we have to allow
+casts between integer types that only differ in the signedness.
+
+#### Derived types
+
+Derived types are types of the form `&T`, `&[T]`, or `Vec<T>`. It is not
+possible to simply define that `X<U> as X<T>` is always possible if
+`newtype T = U` because `X` might be defined as
+
+```rust
+struct X<A: Trait> {
+    // ...
+}
+```
+
+and `T` does not automatically implement all traits `U` implements.
+
+Restricting casts to the cases where `T` implements all necessary traits is not
+possible either. Consider the following structure:
+
+```rust
+struct SortedVec<A: Ord> {
+    // ...
+}
+```
+
+`SortedVec` is like `Vec` but it guarantees that all elements in the vector are
+sorted in increasing order, i.e., when you insert an element, `SortedVec` will
+do a binary search and insert the element at the correct position.
+
+Now consider the following newtype:
+
+```rust
+newtype ReverseU32 = u32;
+
+impl PartialOrd for ReverseU32 {
+    fn partial_cmp(&self, other: &ReverseU32) -> Option<Ordering> {
+        ((*other) as u32).partial_cmp((*self) as u32)
+    }
+}
+
+impl Ord for ReverseU32 { }
+```
+
+`ReverseU32` is like `u32` but sorted in reverse order. If we could cast
+`SortedVec<u32> as SortedVec<ReverseU32>`, then the resulting object would no
+longer have the invariant guaranteed by `SortedVec`.
+
+Therefore we add the restriction that, for all trait bounds, the trait methods
+that can be accessed must be exactly the same for `U` and `T`. That is, `T` must
+not explicitly define `PartialOrd`. In this case we say that `T` and `U` are
+`equivalent wrt PartialOrd`.
+
+### Inference
+
+We want to use the numeric types in the most natural fashion:
+
+```rust
+let x: c_long = 1;
+let y: (c_long, c_long) = (1, 1);
+```
+
+Therefore we define that integer literals will be inferred as `T` if `U` is an
+integer type.
+
+### Traits
+
+Traits add functionality to types that can be accessed without an explicit cast.
+Therefore we must be much more careful with what we allow and we've already seen
+an example above where traits can cause unsafety.
+
+Certain traits are known to the compiler. For example: `Drop` and `Add`. Even
+though these traits have non-trivial behavior, we can use this knowledge to
+infer an appropriate behavior for newtypes. For example, a newtype should
+implement `Drop` if and only if the wrapped type implements `Drop`. If the
+wrapped type implements `Add`, then it should be possible to add the newtype
+with the obvious behavior.
+
+In general: If a trait `Trait` has been automatically implemented, then `T` and
+`U` are `equivalent wrt Trait`.
+
+#### Default impls
+
+We define newtypes to behave according to the OIBIS rules as if they were
+declared `struct T(U)`.
+
+Once `Send` and `Sync` have been removed from the compiler, this behavior will
+supersede their explicit handling.
 
 # Drawbacks
 
