@@ -219,7 +219,7 @@ If `(A, B) \in R3` then `A as B` is a valid cast.
 #### Derived types
 
 For every trait `T` we define the equivalence relation `equivalent wrt T` which
-is a subset of `R3`. For every type `A: T`, `(A, A) \in "equivalent wrt T"`.
+is a subset of `R3`. For every type `A: T`, `A` and `A` are `equivalent wrt T`.
 
 Let `X` be a type with free type parameters `(P1, ..., PN)` and let
 `((A1, ..., AN), (B1, ..., BN)) \in R3`.
@@ -238,31 +238,47 @@ literals will be inferred as `T` in `T` position.
 
 ### Traits
 
-No built-in traits are or can be implemented for `T` except as described below.
+We say a trait is "well-known" if the compiler is aware of its structure and
+function.
+
+No well-known traits are or can be implemented for a newtype `T` except as
+described below.
 
 For all types `W`, `PartialOrd<W>` can be implemented for `T`. If
 `PartialOrd<T>` is not explicitly implemented for `T` and `PartialOrd<U>` is
 implemented for `U`, then `PartialOrd<T>` shall automatically be implemented for
-`T` via casting to `U`.
+`T` and `T` and `U` are `equivalent wrt PartialOrd<Self>`.
 
-`Neg` can be implemented for `T`. If `Neg` is not explicitly implemented for `T`
-and `Neg` is implemented for `U`, then `Neg` shall automatically be implemented
-for `T` via casting to `U`.
+For all types `W`, `Add<W>` can be implemented for `T`. If `Add<T, Output=T>` is
+not explicitly implemented for `T` and `Add<U, Output=U>` is implemented for
+`U`, then `Add<T, Output=T>` shall automatically be implemented for `T` and `T`
+and `U` are `equivalent wrt Add<Self>`.
+
+`Neg` can be implemented for `T`. If `Neg<Output=T>` is not explicitly
+implemented for `T` and `Neg<Output=U>` is implemented for `U`, then
+`Neg<Output=T>` shall automatically be implemented for `T` and `T` and `U` are
+`equivalent wrt Neg`.
 
 For all types `W`, `Shl<W>` can be implemented for `T`. If for any integer type
-`I` `Shl<I>` is not is not explicitly implemented for `T` and `Shl<I>` is
-implemented for `U`, then `Shl<I>` shall automatically be implemented for `T`
-via casting to `U`.
+`I` `Shl<I, Output=T>` is not is not explicitly implemented for `T` and
+`Shl<I, Output=U>` is implemented for `U`, then `Shl<I, Output=T>` shall
+automatically be implemented for `T` and `T` and `U` are
+`equivalent wrt Shl<I>`.
 
-`T` implements `Drop` if and only if `U` implements `Drop`.
+`T` implements `Drop` if and only if `U` implements `Drop` and, if so, `T` and
+`U` are `equivalent wrt Drop`.
 
-`T` implements `Send` if and only if `U` implements `Send`.
+`T` implements `Send` if and only if `U` implements `Send` and, if so, `T` and
+`U` are `equivalent wrt Send`.
 
-`T` implements `Sized` if and only if `U` implements `Sized`.
+`T` implements `Sized` if and only if `U` implements `Sized` and, if so, `T` and
+`U` are `equivalent wrt Sized`.
 
-`T` implements `Copy` if and only if `U` implements `Copy`.
+`T` implements `Copy` if and only if `U` implements `Copy` and, if so, `T` and
+`U` are `equivalent wrt Copy`.
 
-`T` implements `Sync` if and only if `U` implements `Sync`.
+`T` implements `Sync` if and only if `U` implements `Sync` and, if so, `T` and
+`U` are `equivalent wrt Sync`.
 
 For all types `W`, `Fn<W>` can be implemented for `T`.
 
@@ -276,23 +292,21 @@ For all types `W`, `IndexMut<W>` can be implemented for `T`.
 
 The same rules as for `PartialOrd` apply to `PartialEq`.
 
-The same rules as for `PartialOrd` apply to `Add`.
+The same rules as for `Add` apply to `Sub`.
 
-The same rules as for `PartialOrd` apply to `Sub`.
+The same rules as for `Add` apply to `Mul`.
 
-The same rules as for `PartialOrd` apply to `Mul`.
+The same rules as for `Add` apply to `Div`.
 
-The same rules as for `PartialOrd` apply to `Div`.
-
-The same rules as for `PartialOrd` apply to `Rem`.
+The same rules as for `Add` apply to `Rem`.
 
 The same rules as for `Neg` apply to `Not`.
 
-The same rules as for `PartialOrd` apply to `BitAnd`.
+The same rules as for `Add` apply to `BitAnd`.
 
-The same rules as for `PartialOrd` apply to `BitOr`.
+The same rules as for `Add` apply to `BitOr`.
 
-The same rules as for `PartialOrd` apply to `BitXor`.
+The same rules as for `Add` apply to `BitXor`.
 
 The same rules as for `Shl` apply to `Shr`.
 
@@ -310,7 +324,14 @@ impl Trait for .. { }
 
 If there is neither an explicit `impl Trait for T` nor an explicit negative
 `impl !Trait for T`, then `T` implements `Trait` if and only if `U` implements
-`Trait`.
+`Trait` and, if so, `T` and `U` are `equivalent wrt Trait`.
+
+#### Simple traits
+
+Let `Trait` be a trait such that no types besides `Self` appear in its
+definition. If `T` does not explicitly implement `Trait` and `U` implements
+`Trait`, then `Trait` shall automatically be implemented for `T` and `T` and `U`
+are `equivalent wrt Trait`.
 
 ## Example
 
@@ -324,12 +345,14 @@ Then `c_long` has no inherent methods and implements the following operators:
 `==, <, >, <=, >=, <<, >>, |, &, ^, +, -, *, /, %`.
 
 `c_long` does not implement `Drop` but implements `Neg`, `Send`, `Sized`,
-`Copy`, and `Sync`.
+`Copy`, `Sync`, and `Clone`.
 
 `c_long` does not coerce to `i64` but can be cast to any integer or floating
 point type. Conversely, any such type can be cast to `c_long`.
 
 `&c_long` does not coerce to `&i64` but can be cast to `&i64`.
+
+`Vec<c_long>` does not coerce to `Vec<i64>` but can be cast to `Vec<i64>`.
 
 ## Rationale
 
