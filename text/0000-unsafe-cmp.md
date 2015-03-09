@@ -103,3 +103,4 @@ For `Ord`:
 - What about the `Iterator`, `ExactSizeIterator`, `DoubleEndedIterator`, and
     `RandomAccessIterator` traits?
 - Does this apply to other traits?
+- Can the transitivity properties be enforced cross-crate?
