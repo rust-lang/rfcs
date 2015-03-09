@@ -70,6 +70,8 @@ For `PartialOrd`:
 - `a.partial_cmp(b) == Some(Less) <=> a.lt(b)`
 - `a.partial_cmp(b) == Some(Greater) <=> a.gt(b)`
 - `a.partial_cmp(b) == Some(Equal) <=> a.eq(b)`
+- `a.le(b) <=> a.lt(b) || a.eq(b)`
+- `a.ge(b) <=> a.gt(b) || a.eq(b)`
 - `a.lt(b) <=> b.gt(a)`
 - `a.lt(b) && b.lt(c) => a.lt(c)`
 
