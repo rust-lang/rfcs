@@ -39,7 +39,7 @@ alternative approaches that might work better.
 
 [RFC PR 352]: https://github.com/rust-lang/rfcs/pull/352
 
-This document is *not* assigning any judgement about whether non-unit
+This document is *not* assigning any judgment about whether non-unit
 looping expressions should or should not be adopted. It is merely
 proposing that we can increase the range of variants of non-unit
 looping expressions that can be added backwards-compatibly if we start
@@ -99,7 +99,7 @@ rule.)
 to encourage the compiler developers to continue thinking of the
 looping forms as expressions, even if the stable language only exposes
 them as statements. If we remove support for parsing them as
-expressions, then it will be harder to readd it later.)
+expressions, then it will be harder to re-add it later.)
 
 ## Examples
 
@@ -194,7 +194,7 @@ see the appendix [Precedent for proposed disambiguation].
 
 # Drawbacks
 
-It is a restriction designed to accommodate a hypothetized variant of
+It is a restriction designed to accommodate a hypothesized variant of
 the non-unit looping expressions feature, but the language may never
 adopt the feature; furthermore, it is possible to adopt the feature
 without requiring this restriction, as described in [RFC PR 352] as
@@ -211,7 +211,8 @@ written.
 
     Okay, now to less obvious.
 
-  * We could restrict *just* `for`, `while`, and `while let` to
+  * "Change only for/while": We could restrict *just* `for`, `while`,
+    and `while let` to
     statement forms, but leave `loop { ... }` as an expression.
 
     A justification for this is that there are more issues to resolve
@@ -221,8 +222,8 @@ written.
     But `loop { ... }` is really simple. Its control flow never exits
     to its immediate expression context, except via `break`, and thus
     one can justify leaving `loop` as an expression form, and just
-    dictate that any furture additions for looping expression will
-    have to accommdate it (presumably in a manner similar to that used
+    dictate that any future additions for looping expression will
+    have to accommodate it (presumably in a manner similar to that used
     by [RFC PR 352], i.e. `break` with no attached `<expr>` is sugar
     for `break ()`).
 
@@ -233,6 +234,69 @@ written.
     within test code exercising the type system
     (i.e. essentially as synonymous for `let d = unimplemented!();`).
 
+  * (From [Ericson2314 comment](https://github.com/rust-lang/rfcs/pull/955#issuecomment-77790727)): "Disambiguate block-tail as expression, not statement.":
+    This would make `{ <looping-form> }` continue to parse as a block
+    with no statements and a single tail expression; it would thus be
+    rejected unless the `looping_expr_forms` feature gate were enabled.
+    One would have to add a semicolon, `{ <looping-form> ; }`, in order
+    to get one's code compiling in the short term without the feature gate.
+
+    However, we would also apply to looping-forms whatever magic we
+    use in the parser to favor eagerly parsing if- and block-forms as
+    statements. In particular: we would have the following
+
+    ```rust
+    // IF-EXPR: this is what happens *today*
+    { if false {} else {} - 3 }    // ==> -3
+    { (if false {} else {} - 3) }  // type error
+    { if false { 3 } else { 3 } }  // ==> 3
+    { if false { 3 } else { 3 }; } // ==> ()
+
+    // BLOCK-EXPR: this is what happens *today*
+    { { } - 3 }                    // ==> -3
+    { ({ } - 3) }                  // type error
+    { { 3 } }                      // ==> 3
+    { { 3 }; }                     // ==> ()
+
+    // LOOPING-EXPR: this is what this alternative proposes
+    { loop { break } - 3 }         // ==> -3
+    { (loop { break } - 3) }       // type error
+    { loop { break } }             // syntax error (*for now*)
+    { loop { break }; }            // ==> (), now and forever after
+
+    // compare the latter against:
+    // LOOPING-EXPR: this is what the RFC as written proposes
+    { loop { break } - 3 }         // ==> -3
+    { (loop { break } - 3) }       // type error
+    { loop { break } }             // ==> (), now and forever after
+    { loop { break }; }            // ==> ()
+    ```
+
+    The motivation for this alternative arises from the case labeled
+    "syntax error (*for now*)" in the code fragment above.
+    The idea is that having this in place today would set the stage
+    for supporting `break <expr>` in the future that works even
+    for looping forms that occur directly in block tail position,
+    as shown here:
+
+    ```rust
+    // LOOPING-EXPR: this is what this alternative proposes for future
+    { loop { break 4 } - 3 }       // ==> -3
+    { (loop { break 4 } - 3) }     // ==> 1
+    { loop { break 3 } }           // ==> 3  // hard to accommodate under RFC as written
+    { loop { break 3 }; }          // ==> ()
+    ```
+
+    Advantage: This alternative approach would make the analogy
+    presented in [Precedent for proposed disambiguation] much
+    stronger, which may make the whole system more coherent and easier
+    to explain overall.
+
+    Drawback: It probably also would require significantly more
+    changes to existing code. (I do not yet have an estimate of the
+    amount of changes required to the rust repo itself; if I have a
+    chance to amend my prototype I will do so.)
+    
 # Unresolved questions
 
 None.
