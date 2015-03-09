@@ -104,3 +104,4 @@ For `Ord`:
     `RandomAccessIterator` traits?
 - Does this apply to other traits?
 - Can the transitivity properties be enforced cross-crate?
+- Do we need the type parameters in `PartialEq` and `PartialOrd`?
