@@ -8,6 +8,8 @@
 Make the four `cmp` traits (`PartialEq`, `Eq`, `PartialOrd`, and `Ord`) become
 `unsafe` traits.
 
+`#[derive]` should work as usual, minimizing the amount of `unsafe`s required.
+
 # Motivation
 
 Some algorithms and data structures (such as the `SliceExt::sort()` algorithm
