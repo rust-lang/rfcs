@@ -37,6 +37,10 @@ The reason only the `cmp` traits are addressed here is because they have the
 highest potential to be relied on by `unsafe` traits. (But see the Unresolved
 questions section).
 
+I believe that in practice, only a few `unsafe`s will be required, since most
+types will simply `#[derive]` the required traits, in which case the
+correctness can be guaranteed.
+
 Additionally, the properties required are made more strict and rigourous in
 this RFC.
 
