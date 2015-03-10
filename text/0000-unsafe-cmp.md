@@ -101,6 +101,10 @@ For `Ord`:
     that can be trusted by `unsafe` code. The problem is that there is no
     obvious reason to implement `Eq` but not implement `EqStrict` (See the
     Drawbacks section).
+- Have separate `Relaxed` traits for untrusted behavior, and make the
+    non-`Relaxed` traits `unsafe`. Make the operators use the `Relaxed`
+    versions. This is similar to the previous alternative, but the `unsafe`
+    versions have the shorter names.
 
 # Unresolved questions
 
