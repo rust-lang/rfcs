@@ -147,6 +147,24 @@ language and it would (like today) speak badly about Rust's performance.
 This is better than the previous alternative, but would still lead to questions
 about small Rust programs leading to huge binaries.
 
+### Have _no_ default; always force inclusion of `--debug` or `--release`
+
+In theory, a default isn't necessary and we can always force the user to specify
+what type of build they'd prefer. `rustc foo.rs` would produce an error message
+informing the user about the necessity of choosing either a debug or release
+build. The message would include appropriate documentation links so that users
+unfamiliar with the concept of such build modes could learn more about them.
+
+IMO this is the least bad alternative that would also prevent accidental usage
+of unoptimized binaries.
+
+This brings a possible issue of unnecessary complexity for newbies (and others).
+There's something to be said for "if the user gives a compiler a program file,
+they should get back a binary." Avoiding a reasonable, safe default and forcing
+a choice every time seems like an unnecessary usability hurdle. We know what the
+safe default is, and it certainly isn't debug-by-default, so why avoid making it
+opt-by-default.
+
 # Unresolved questions
 
 - Should `rustc` gain new flags in addition to `--debug` for `cargo`? Without a
