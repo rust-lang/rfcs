@@ -179,7 +179,7 @@ opt-by-default.
 [ex1]: http://www.reddit.com/r/rust/comments/2vzxjr/poor_http_performance_iron_framework/
 [ex2]: http://learncamlirust.blogspot.de/2015/02/day-1-porting-rollingsum.html
 [ex3]: http://www.reddit.com/r/rust/comments/2xccw8/performance_of_reading_a_large_file/coyuz8l
-[ex4]: https://www.reddit.com/r/rust/comments/2yk5z7/why_this_rust_code_slower_than_c/
+[ex4]: https://www.reddit.com/r/rust/comments/2yk5z7/why_this_rust_code_slower_than_c/cpa97dh
 [ex5]: https://www.reddit.com/r/rust/comments/2y0bas/benchmark_rustnom_vs_haskellattoparsec_vs_chammer/cp51mxe
 [ex6]: https://botbot.me/mozilla/rust/2015-03-06/?msg=33512540&page=14
 [ex7]: https://botbot.me/mozilla/rust/2015-02-18/?msg=32236594&page=5
