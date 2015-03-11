@@ -9,12 +9,13 @@ Make rustc and cargo produce optimized binaries by default.
 # Motivation
 
 
-Optimizing by default is a safety & usability feature that everyone benefits
-from, but it's extra important for newcomers. Even experienced developers coming
-from dynamic languages like JavaScript, Python, Ruby or even static, enterprise
-languages like Java and C# are probably completely unaware of the concept of
-"debug" and "optimized" builds. Note that the above 5 languages represent the
-vast majority of the "first language" for people learning to code today.
+Optimizing by default is a safety (in the general sense) & usability feature
+that everyone benefits from, but it's extra important for newcomers. Even
+experienced developers coming from dynamic languages like JavaScript, Python,
+Ruby or even static, enterprise languages like Java and C# are probably
+completely unaware of the concept of "debug" and "optimized" builds. Note that
+the above 5 languages represent the vast majority of the "first language" for
+people learning to code today.
 
 `rustc` needs to be designed so that its users **[fall into the pit of
 success](http://english.stackexchange.com/questions/77535/what-does-falling-into-the-pit-of-success-mean/77541)**.
@@ -110,9 +111,9 @@ carry a legacy burden. C compilers need to be backwards compatible with the
 state-of-the-art from many decades ago, and C++ compilers need to be compatible
 with C compilers. In other words, they don't have a choice.
 
-Rust has been breaking plenty of language conventions for the sake of safety; it
-should continue on this commendable path without being hamstrung by decisions
-made in 1972.
+Rust has been breaking plenty of language conventions for the sake of both
+memory-safety and safety in general; it should continue on this commendable path
+without being hamstrung by decisions made in 1972.
 
 # Alternatives
 
@@ -132,12 +133,12 @@ section for details.
 
 ## Only make `cargo` opt-by-default, but leave `rustc` as is
 
-While this alone would be a large safety & usability boost over the current
-state, it would not help Rust newcomers or those playing around with/evaluating
-the language. Such users are less likely to know about `cargo`, and even if they
-do, are likely to shun it while experimenting with simple programs. In such
-cases, they could easily conclude that "Rust is too slow" based on their initial
-experiments and never reach `cargo build`.
+While this alone would be a large (general, not memory) safety & usability boost
+over the current state, it would not help Rust newcomers or those playing around
+with/evaluating the language. Such users are less likely to know about `cargo`,
+and even if they do, are likely to shun it while experimenting with simple
+programs. In such cases, they could easily conclude that "Rust is too slow"
+based on their initial experiments and never reach `cargo build`.
 
 `rustc foo.rs` is understandably very tempting when trying to wrap one's head around the
 language and it would (like today) speak badly about Rust's performance.
