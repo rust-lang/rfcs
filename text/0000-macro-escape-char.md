@@ -68,6 +68,7 @@ The macro grammar becomes a bit more complicated.
 # Alternatives
 
 * Do nothing, as expansion using `+` and `*` as separators may be simulated using a dedicated macro, and while matching using `+` and `*` as separators are impossible, we could change the macro interface to this restriction.
+* Use parenthesis to "escape" the separators e.g. `$($t)(+)*`. This also allows joining multiple tokens (e.g. `$($t)(1 2 3)*`). May mistaken to be expanded as `1 (+) 2 (+) 3`?
 * The escape character `$` may be changed to other symbols like `\\`.
 * No special treatment of `$+`, `$*`, etc. when not used as separators.
 
