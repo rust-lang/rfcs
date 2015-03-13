@@ -12,10 +12,10 @@ loop.
 
 `ReadExt` and `BufReadExt` provide several iterators:
 
-* `BufReadExt::split` -> `Result<Vec<u8>>`
-* `BufReadExt::lines` -> `Result<String>`
-* `ReadExt::bytes` -> `Result<u8>`
-* `ReadExt::chars` -> `Result<char, CharsError>`
+* `BufReadExt::split` iterates over `Result<Vec<u8>>`
+* `BufReadExt::lines` iterates over `Result<String>`
+* `ReadExt::bytes` iterates over `Result<u8>`
+* `ReadExt::chars` iterates over `Result<char, CharsError>`
 
 For example, `BufReadExt::lines` can be used like this:
 
