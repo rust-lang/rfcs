@@ -5,8 +5,8 @@
 
 # Summary
 
-Add back `read_to_string` and `read_to_end` methods to the `Read` trait that
-don't take a buffer.
+Add `read_into_string` and `read_into_vec` methods to the `Read` trait that
+act just like `read_to_string` and `read_to_end` but don't take a buffer.
 
 # Motivation
 
@@ -60,7 +60,7 @@ fn get_last_commit () -> String {
             .arg("HEAD")
             .spawn()
             .ok().expect("error spawning process")
-            .stdout.read_to_string()
+            .stdout.read_into_string()
             .ok().expect("error reading output")
 }
 ```
@@ -73,9 +73,9 @@ anymore, it's currently impossible.
 
 Add back methods with following signature
 
-`fn read_to_end(&mut self) -> Result<Vec<u8>>`
+`fn read_into_vec(&mut self) -> Result<Vec<u8>>`
 
-`fn read_to_string(&mut self) -> Result<String>`
+`fn read_into_string(&mut self) -> Result<String>`
 
 # Drawbacks
 
