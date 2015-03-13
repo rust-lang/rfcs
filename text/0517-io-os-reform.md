@@ -34,6 +34,7 @@ follow-up PRs against this RFC.
     * [stdio]
     * [Overly high-level abstractions]
     * [The error chaining pattern]
+    * [Problems with flush]
 * [Detailed design]
     * [Vision for IO]
         * [Goals]
@@ -250,6 +251,25 @@ In the meantime, this RFC proposes to phase out the use of impls for
 
 (Note: this may put some additional pressure on at least landing the basic use
 of `?` instead of today's `try!` before 1.0 final.)
+
+## Problems with flush
+[Problems with flush]: #problems-with-flush
+
+There are two different problems with the `flush` operation.
+
+* The `Writer` trait is the trait that provides `flush` along with
+  bytestream output. Other output traits are likely needed for specific data
+  types, such as [TextWriter][rfc272] for UTF-8 text, and types implementing
+  those traits may need a flush operation as well, intrinsically implemented
+  or possibly a trait method. There should be a way to provide this operation
+  without duplicating it in different output traits or forcing writer-like
+  types to implement byte output.
+
+* A convention on `into_inner` methods on composite writers and `BufStream`
+  is to flush the underlying writer before returning it. The deep flushing
+  may be undesirable if the consumer wants to continue writing.
+
+[rfc272]: https://github.com/rust-lang/rfcs/issues/272
 
 # Detailed design
 [Detailed design]: #detailed-design
@@ -596,13 +616,17 @@ method, clients of `Read` can easily recover the `push` method.
 ### `Write`
 [Write]: #write
 
-The `Writer` trait is cut down to even smaller size:
+The `Writer` trait is cut down to even smaller size, and `flush` is taken
+out into its own trait that may be implemented by types providing other than
+byte-oriented output:
 
 ```rust
-trait Write {
-    fn write(&mut self, buf: &[u8]) -> Result<uint, Error>;
+trait Flush {
     fn flush(&mut self) -> Result<(), Error>;
+}
 
+trait Write: Flush {
+    fn write(&mut self, buf: &[u8]) -> Result<uint, Error>;
     fn write_all(&mut self, buf: &[u8]) -> Result<(), Error> { .. }
     fn write_fmt(&mut self, fmt: &fmt::Arguments) -> Result<(), Error> { .. }
 }
@@ -1016,10 +1040,12 @@ strings) and is usually what you want when working with iterators.
 
 The `BufReader`, `BufWriter` and `BufStream` types stay
 essentially as they are today, except that for streams and writers the
-`into_inner` method yields the structure back in the case of a flush error:
+`into_inner` method only writes out the buffered output, but does not flush
+(the responsibility to make an eventual flush is moved to the consumer of the
+underlying reader) and yields the structure back in the case of a write error:
 
 ```rust
-// If flushing fails, you get the unflushed data back
+// If writing fails, you get the unwritten data back
 fn into_inner(self) -> Result<W, IntoInnerError<Self>>;
 
 pub struct IntoInnerError<W>(W, Error);
