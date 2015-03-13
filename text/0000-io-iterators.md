@@ -49,7 +49,7 @@ Change the signatures of the methods mentioned above to accept an error
 parameter. For example for `lines`:
 
 ```rust
-fn lines(self, err: Option<&mut Option<Error>>) -> Lines<Self> { /* ... */ }
+fn lines(self, err: Option<&mut Result<(), Error>>) -> Lines<Self> { /* ... */ }
 
 impl<B: BufRead> Iterator for Lines<B> {
     type Item = String;
@@ -75,18 +75,37 @@ for line in reader.lines(None) {
 // Error handling:
 
 let mut reader = // A reader that implements `BufReadExt`
-let mut err = None;
+let mut err = Ok(());
 for line in reader.lines(Some(&mut err)) {
     // Work with the line here
 }
-if let Some(err) = err {
+if let Err(e) = err {
     // Handle the error here
 }
 ```
 
 # Drawbacks
 
-None
+Consider the following use of the current `lines`:
+
+```rust
+let mut reader = // A reader that implements `BufReadExt`.
+for line in reader.lines() {
+    let line = try!(line);
+    // Work with the line here
+}
+```
+
+And with the new one:
+
+```rust
+let mut reader = // A reader that implements `BufReadExt`.
+let mut err = Ok(());
+for line in reader.lines(Some(&mut err)) {
+    // Work with the line here
+}
+try!(err);
+```
 
 # Alternatives
 
