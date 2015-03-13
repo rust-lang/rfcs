@@ -1155,8 +1155,87 @@ RFC recommends they remain unstable.
 #### `stdin`, `stdout`, `stderr`
 [stdin, stdout, stderr]: #stdin-stdout-stderr
 
-The current `stdio` module will be removed in favor of these constructors in the
-`io` module:
+##### Stdio redirection
+
+The following functions will be added to the `std::thread` module.
+
+```rust
+fn stdin() -> Arc<Mutex<Box<BufRead>>>;
+fn set_stdin(_: Arc<Mutex<Box<BufRead>>>);
+
+fn stdout() -> Arc<Mutex<Box<Write>>>;
+fn set_stdout(_: Arc<Mutex<Box<Write>>>);
+
+fn stderr() -> Arc<Mutex<Box<Write>>>;
+fn set_stderr(_: Arc<Mutex<Box<Write>>>);
+
+fn stdout_buffer_mode() -> BufferMode;
+fn set_stdout_buffer_mode(_: BufferMode);
+
+enum BufferMode {
+    None,
+    Line,
+    Full,
+}
+```
+
+These functions access thread local variables.
+
+* `set_stdin`, `set_stdout`, `set_stderr` - set the standard streams of the
+  current thread.
+* `stdin`, `stdout`, `stderr` - return the standard streams of the current
+  thread. If they have not yet been explicitly set, they will be lazily
+  initialized with the default streams described below. Messages generated
+  during panicking are written to the `stderr` stream.
+* `stdout_buffer_mode`, `set_stdout_buffer_mode` - return and set the buffer
+  mode used by the `std::io::stdout` facade described below. By default the
+  buffer mode is set to `Full`, however, if `stdout` is lazily initialized, the
+  runtime will attempt to detect whether `stdout` is a terminal and, if so, it
+  will set the buffer mode to `Line`.
+
+Unless other streams or another buffer mode has been explicitly specified via
+the thread-builder, these settings will be inherited by child-threads.
+
+##### Default streams
+
+The default streams access the default stdio streams provided by the operating
+system, i.e., on UNIX systems they access the file descriptors 0, 1, and 2.
+
+Their cross-platform behavior is as follows:
+
+* `stdin` - No special behavior.
+* `stderr` - This stream is unbuffered.
+* `stdout` - This stream is buffered.
+
+The next two subsections specify additional platform-specific behavior of the
+default streams.
+
+###### Windows behavior.
+
+If `stdin`, `stdout`, or `stderr` are connected to a console, the behavior is as
+follows.
+
+* `stdin` - interprets the input as UTF-16 and converts it to UTF-8. If the
+  input is not valid UTF-16, reading returns an error. The stream is internally
+  buffered to handle partial reads.
+* `stdout`, `stderr` - interpret writes as UTF-8 and convert them to UTF-16. If
+  a write does not contain valid UTF-8, nothing is written and an error is
+  returned.
+
+###### UNIX behavior.
+
+If `stdin`, `stdout`, or `stderr` are connected to a terminal, the behavior is
+as follows.
+
+If the current locale encoding is not UTF-8, the treatment of input and output
+is considered unstable. Currently all input/output will be passed to the user
+unchanged. In the future attempts might be made to convert input and output from
+and to the correct encoding.
+
+##### The `std::io` facade
+
+The `std::io` module provides the following thin wrappers over the streams
+provided by `std::thread`:
 
 ```rust
 pub fn stdin() -> Stdin;
@@ -1164,16 +1243,13 @@ pub fn stdout() -> Stdout;
 pub fn stderr() -> Stderr;
 ```
 
-* `stdin` - returns a handle to a **globally shared** standard input of
-  the process which is buffered as well. Due to the globally shared nature of
-  this handle, all operations on `Stdin` directly will acquire a lock internally
-  to ensure access to the shared buffer is synchronized. This implementation
-  detail is also exposed through a `lock` method where the handle can be
-  explicitly locked for a period of time so relocking is not necessary.
+* `stdin` - wraps `thread::stdin`. All operations on `Stdin` directly
+  will acquire the lock internally. A `lock` method is provided to acquire
+  exclusive access to the stream for a period of time so that relocking is not
+  necessary.
 
-  The `Read` trait will be implemented directly on the returned `Stdin` handle
-  but the `BufRead` trait will not be (due to synchronization concerns). The
-  locked version of `Stdin` (`StdinLock`) will provide an implementation of
+  The `Read` trait will be implemented directly on the returned `Stdin` handle.
+  The locked version of `Stdin` (`StdinLock`) will provide an implementation of
   `BufRead`.
 
   The design will largely be the same as is today with the `old_io` module.
@@ -1189,12 +1265,10 @@ pub fn stderr() -> Stderr;
   impl BufRead for StdinLock { ... }
   ```
 
-* `stderr` - returns a **non buffered** handle to the standard error output
-  stream for the process. Each call to `write` will roughly translate to a
-  system call to output data when written to `stderr`. This handle is locked
-  like `stdin` to ensure, for example, that calls to `write_all` are atomic with
-  respect to one another. There will also be an RAII guard to lock the handle
-  and use the result as an instance of `Write`.
+* `stderr` - wraps `thread::stderr`. All operations on `Stderr` directly
+  will acquire the lock internally. A `lock` method is provided to acquire
+  exclusive access to the stream for a period of time so that relocking is not
+  necessary. Every write is followed by a call to `flush`.
 
   ```rust
   impl Stderr {
@@ -1204,12 +1278,17 @@ pub fn stderr() -> Stderr;
   impl Write for StderrLock { ... }
   ```
 
-* `stdout` - returns a **globally buffered** handle to the standard output of
-  the current process. The amount of buffering can be decided at runtime to
-  allow for different situations such as being attached to a TTY or being
-  redirected to an output file. The `Write` trait will be implemented for this
-  handle, and like `stderr` it will be possible to lock it and then use the
-  result as an instance of `Write` as well.
+* `stdout` - wraps `thread::stdout`. All operations on `Stderr` directly
+  will acquire the lock internally. A `lock` method is provided to acquire
+  exclusive access to the stream for a period of time so that relocking is not
+  necessary. Depending on the setting of `thread::stdout_buffer_mode`, writes
+  behave as follows:
+
+  * If the mode is `None`, every write is followed by a call to `flush`.
+  * If the mode is `Line`, every write will check whether the buffer contains a
+    `b'\n'` and, if so, attempt a partial write up to the last newline
+    character, call `flush`, and write the rest of the buffer.
+  * Otherwise no flushing happens.
 
   ```rust
   impl Stdout {
@@ -1218,30 +1297,6 @@ pub fn stderr() -> Stderr;
   impl Write for Stdout { ... }
   impl Write for StdoutLock { ... }
   ```
-
-#### Windows and stdio
-[Windows stdio]: #windows-and-stdio
-
-On Windows, standard input and output handles can work with either arbitrary
-`[u8]` or `[u16]` depending on the state at runtime. For example a program
-attached to the console will work with arbitrary `[u16]`, but a program attached
-to a pipe would work with arbitrary `[u8]`.
-
-To handle this difference, the following behavior will be enforced for the
-standard primitives listed above:
-
-* If attached to a pipe then no attempts at encoding or decoding will be done,
-  the data will be ferried through as `[u8]`.
-
-* If attached to a console, then `stdin` will attempt to interpret all input as
-  UTF-16, re-encoding into UTF-8 and returning the UTF-8 data instead. This
-  implies that data will be buffered internally to handle partial reads/writes.
-  Invalid UTF-16 will simply be discarded returning an `io::Error` explaining
-  why.
-
-* If attached to a console, then `stdout` and `stderr` will attempt to interpret
-  input as UTF-8, re-encoding to UTF-16. If the input is not valid UTF-8 then an
-  error will be returned and no data will be written.
 
 #### Raw stdio
 [Raw stdio]: #raw-stdio
@@ -1312,6 +1367,8 @@ There are some key differences from today's API:
 #### Printing functions
 [Printing functions]: #printing-functions
 
+`print!` and `println!` will write to the handle provided by `stdout()`.
+
 The current `print`, `println`, `print_args`, and `println_args` functions will
 all be "removed from the public interface" by [prefixing them with `__` and
 marking `#[doc(hidden)]`][gh22607]. These are all implementation details of the
@@ -1319,12 +1376,6 @@ marking `#[doc(hidden)]`][gh22607]. These are all implementation details of the
 interface.
 
 [gh22607]: https://github.com/rust-lang/rust/issues/22607
-
-The `set_stdout` and `set_stderr` functions will be removed with no replacement
-for now. It's unclear whether these functions should indeed control a thread
-local handle instead of a global handle as whether they're justified in the
-first place. It is a backwards-compatible extension to allow this sort of output
-to be redirected and can be considered if the need arises.
 
 ### `std::env`
 [std::env]: #stdenv
