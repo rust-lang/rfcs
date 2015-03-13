@@ -1,7 +1,7 @@
 - Feature Name: read_to_string_without_buffer
 - Start Date: 2015-03-13
 - RFC PR: https://github.com/rust-lang/rfcs/pull/970
-- Rust Issue:
+- Rust Issue: https://github.com/rust-lang/rust/pull/23335
 
 # Summary
 
