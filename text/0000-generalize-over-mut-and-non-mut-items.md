@@ -113,7 +113,7 @@ struct opt-Thing<'a> {
 }
 
 impl opt-Trait for opt-Thing {
-    fn opt-bar(&opt self) -> &opt Self {
+    fn opt-bar(&opt self) -> &opt opt-Thing {
         self
     }
 
