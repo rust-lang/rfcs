@@ -33,7 +33,7 @@ Note that the `box f()` syntax should be just as fast as the function that
 returns a `Box<X>` because the caller will pass a hidden pointer to the
 pre-allocated heap-memory to `f`.
 
-[boxrfc]: (https://github.com/rust-lang/rfcs/blob/master/text/0809-box-and-in-for-stdlib.md)
+[boxrfc]: https://github.com/rust-lang/rfcs/blob/master/text/0809-box-and-in-for-stdlib.md
 
 [RFC #809][boxrfc] greatly extended the power of `box` by removing the special
 case for `Box` and turning it into a more general protocol. It also added the
