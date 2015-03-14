@@ -43,6 +43,8 @@ end-of-file.
 
 We try to find a middle ground between those two positions below.
 
+(See also https://mail.mozilla.org/pipermail/rust-dev/2014-February/thread.html#8708)
+
 # Detailed design
 
 Change the signatures of the methods mentioned above to accept an error
