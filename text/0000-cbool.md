@@ -9,15 +9,16 @@ Specify that `bool` is compatible with the `_Bool` C type.
 
 # Motivation
 
-You cannot safely call ffi functions with boolean arguments without a compatible type.
+You cannot safely call ffi functions with boolean arguments without a compatible
+type.
 
 # Detailed design
 
-Specify that `bool` is compatible with the `_Bool` C type and inform the compiler that `bool` is ffi safe.
+Specify that `bool` is compatible with the `_Bool` C type.
 
 # Drawbacks
 
-None right now. This should be a no-op on all supported platforms.
+None.
 
 # Alternatives
 
