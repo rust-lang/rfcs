@@ -115,3 +115,4 @@ For `Ord`:
 - Does this apply to other traits?
 - Can the transitivity properties be enforced cross-crate?
 - Do we need the type parameters in `PartialEq` and `PartialOrd`?
+- What about functions that take custom comparison functions like `sort_by()`?
