@@ -91,7 +91,8 @@ with `Some(c: char).iter().to_lowercase()`.
 # Alternatives
 
 * Status quo.
-* Instead of new methods on `IteratorExt`, have functions that accept `I: Iterator<Item=char>`.
+* Instead of new methods on `IteratorExt`, have functions that accept `I: Iterator<Item=char>`
+  or a new trait implemented for `I: Iterator<Item=char>`.
 
 
 # Unresolved questions
