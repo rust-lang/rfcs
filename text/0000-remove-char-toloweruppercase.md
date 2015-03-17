@@ -96,4 +96,4 @@ with `Some(c: char).iter().to_lowercase()`.
 
 # Unresolved questions
 
-None.
+None so far.
