@@ -83,7 +83,7 @@ will be provided in a crate.io library.
 
 # Drawbacks
 
-The `CharExt` could be convenient in some cases, and removing them might be a loss.
+The `CharExt` methods could be convenient in some cases, and removing them might be a loss.
 However, e.g. `(c: char).to_lowercase()` can easily be replaced
 with `Some(c: char).iter().to_lowercase()`.
 
