@@ -105,6 +105,8 @@ For `Ord`:
     non-`Relaxed` traits `unsafe`. Make the operators use the `Relaxed`
     versions. This is similar to the previous alternative, but the `unsafe`
     versions have the shorter names.
+- Make `PartialEq` and `PartialOrd` normal traits without any guarantees, but
+    make `Eq` and `Ord` `unsafe` traits with guarantees.
 
 # Unresolved questions
 
