@@ -97,15 +97,13 @@ For `Ord`:
 # Alternatives
 
 - The status quo.
-- Have separate traits for trusted behavior and untrusted behavior e.g. `Eq` as
-    a safe trait that is not trusted, and `EqStrict` that is an `unsafe` trait
-    that can be trusted by `unsafe` code. The problem is that there is no
-    obvious reason to implement `Eq` but not implement `EqStrict` (See the
-    Drawbacks section).
-- Have separate `Relaxed` traits for untrusted behavior, and make the
-    non-`Relaxed` traits `unsafe`. Make the operators use the `Relaxed`
-    versions. This is similar to the previous alternative, but the `unsafe`
-    versions have the shorter names.
+- Have separate `RelaxedEq` and `RelaxedOrd` traits with untrusted behavior,
+    and make the original four traits `unsafe` and have trusted behavior. Make
+    the operator overloading use the `Relaxed` versions. Have separate
+    functions that depend on and do not depend on sane comparisons. One problem
+    about this is handling `#[derive]`s properly.
+- Similar to previous alternative, but have `EqStrict` and other traits that
+    are `unsafe` instead.
 - Make `PartialEq` and `PartialOrd` normal traits without any guarantees, but
     make `Eq` and `Ord` `unsafe` traits with guarantees.
 
