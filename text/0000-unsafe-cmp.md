@@ -91,6 +91,7 @@ For `Ord`:
 - Some people might just use `unsafe` without knowing the potential bad
     consequences.
 - Might cause too many `unsafe`s in otherwise safe code.
+- Incorrect implementations might accidentally cause unsafe behavior.
 - This is a breaking change.
 
 # Alternatives
