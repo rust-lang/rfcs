@@ -71,7 +71,7 @@ boxed_hof(&foo); // still valid, `&foo` coerced to `&Fn()`, a closure trait obje
 let nullable_ptr_to_value: *const ValueType = ...; // for comparison
 let old_nullable_ptr_to_fn: Option<fn()> = ...; // currently valid, but a workaround, will be invalid
 let nullable_ref_to_fn: Option<&fn()> = ...; // directly replaces the above after the changes
-let nullable_ptr_to_fn: baz: *const fn() = ...; // consistent with nullable value pointers after the changes
+let nullable_ptr_to_fn: *const fn() = ...; // consistent with nullable value pointers after the changes
                                                 // (currently a nullable pointer to a non-null function pointer, not to a function)
 ```
 
