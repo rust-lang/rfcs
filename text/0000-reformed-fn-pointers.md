@@ -25,9 +25,9 @@ Thus, this RFC proposes the following solution.
 
 # Detailed design
 
-Make the current function pointer types unsized, and introduce function reference types of the form `&fn(arg_list) -> ret_type` and new (const) function pointer types of the form `&const fn(arg_list) -> ret_type`.
+Make the current function pointer types unsized, and introduce function reference types of the form `&fn(arg_list) -> ret_type` and new (const) function pointer types of the form `*const fn(arg_list) -> ret_type`.
 
-In the following section, `fn{f}`s denote function item types, `fn`s, `&fn`s and `*const fn`s denote current function pointer types, function reference types and new function pointer types, respectively. Those types are considered "compatible" if their `arg_list -> ret_type` parts match.
+In the following section, `fn{f}`s, `fn`s, `&fn`s and `*const fn`s denote function item types, current function pointer types, function reference types and new function pointer types, respectively. Those types are considered "compatible" if their `(arg_list) -> ret_type` parts match.
 
 The following rules will apply:
 
@@ -50,7 +50,7 @@ Notes:
 Optional changes that can be applied now or after Rust's final stabilization:
 
 1. Make `fn{f}`s zero-sized.
-2. Implement `Deref<Target=fn()>` on `fn{f}`s. This enables the `*` operator on `fn{f}` values, which doesn't seem to have practical uses. However, depending on how one interprets the nature of `fn{f}`s and `fn{f} -> fn` coercions, this can be a desirable change. For some, this change can stress the fact that `fn{f}`s are pointer-like (they are copyable handles to function bodies, not the function bodies themselves) and they see `&fn{f} -> &fn`s as deref coercions.
+2. Implement `Deref<Target=fn()>` on `fn{f}`s. This enables the `*` operator on `fn{f}` values, which doesn't seem to have practical uses. However, depending on how one interprets the nature of `fn{f}`s and `&fn{f} -> &fn` coercions, this can be a desirable change. For some, this change can stress the fact that `fn{f}`s are pointer-like (they are copyable handles to function bodies, not the function bodies themselves) and they see `&fn{f} -> &fn`s as deref coercions.
 
 Examples:
 
@@ -59,20 +59,24 @@ fn foo() { ... }
 fn unboxed_hof<F: Fn()>(f: F) { ... }
 fn boxed_hof(f: &Fn()) { ... }
 
-let bar = foo; // still valid
-let old_ptr_to_foo: fn() = foo; // currently valid, but will be invalid
-let ref_to_foo: &fn() = &foo;
-let ptr_to_foo = ref_to_foo as *const fn();
+let bar = foo; // valid and unchanged
+let old_fn_ptr: fn() = foo; // currently valid, but will be invalid
+let fn_ref: &fn() = &foo; // the new `&fn{f} -> &fn` coercion
+let fn_ptr = fn_ref as *const fn(); // the new `&fn -> *const fn` cast
 
-unboxed_hof(foo); // still valid
+unboxed_hof(foo); // valid and unchanged
 unboxed_hof(&foo); // currently invalid, but will be valid, `&foo` coerced to `&fn()`, a closure
-boxed_hof(&foo); // still valid, `&foo` coerced to `&Fn()`, a closure trait object
+boxed_hof(foo); // invalid both before and after the changes
+boxed_hof(&foo); // valid and unchanged, `&foo` coerced to `&Fn()`, a closure trait object
 
-let nullable_ptr_to_value: *const ValueType = ...; // for comparison
-let old_nullable_ptr_to_fn: Option<fn()> = ...; // currently valid, but a workaround, will be invalid
-let nullable_ref_to_fn: Option<&fn()> = ...; // directly replaces the above after the changes
-let nullable_ptr_to_fn: *const fn() = ...; // consistent with nullable value pointers after the changes
-                                                // (currently a nullable pointer to a non-null function pointer, not to a function)
+let nullable_value_ptr: *const ValueType = ...; // for comparison
+let old_nullable_fn_ptr: Option<fn()> = ...; // currently valid, but a workaround, will be invalid
+let nullable_fn_ref: Option<&fn()> = ...; // directly replaces the above after the changes
+let nullable_fn_ptr: *const fn() = ...; // consistent with nullable value pointers after the changes
+
+// Note:
+// Some of the lines above are valid currently and their semantics will not be changed,
+// but some others, while still valid, will take on new meanings.
 ```
 
 # Drawbacks
