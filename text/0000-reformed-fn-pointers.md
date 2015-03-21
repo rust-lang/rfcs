@@ -42,13 +42,14 @@ The following rules will apply:
 9. The `fn{f} -> fn` coercions between compatible `fn{f}`s and `fn`s are no longer valid.
 10. The `&fn{f} -> &fn` coercions between compatible `fn{f}`s and `fn`s are valid as unsizing coercions.
 
-An optional change that can be applied now or after Rust's final stabilization:
+Optional changes that can be applied now or after Rust's final stabilization:
 
-Make `fn{f}`s zero-sized statically to save space and better align with the fact that `fn`s are zero-sized dynamically.
+1. Make `fn{f}`s zero-sized statically to save space and better align with the fact that `fn`s are zero-sized dynamically.
+2. Make `&fn{f}`s implement closure traits for better symmetry between `fn{f}`s and `fn`s. 
 
 Notes:
 
-1. Currently, both `&fn{f}`s and `&fn`s are coercible to closure trait objects, but are not closures themselves. After the changes, they will be closures (`&fn`s) or coercible to closures (`&fn{f}`s).
+1. Currently, both `&fn{f}`s and `&fn`s are coercible to closure trait objects, but are not closures themselves. After the changes, they will be closures (`&fn`s) or coercible to closures (`&fn{f}`s). If the second optional change happens, then `&fn{f}`s will also be closures, without coercions.
 2. Source codes using `fn`s will have to use `&fn`s or `*const fn`s instead.
 3. In previous revisions of this RFC, `fn`s were going to be interpreted as types representing "function bodies", not "incomplete function items". But then it was pointed out that every type in Rust must have dynamically determinable sizes. This means, for `fn`s, the sizes must all be the same, because `&fn`s cannot actually carry any auxiliary data, or they will not be thin pointers. The obvious special size value here is zero. It would be weird for function bodies to be considered zero-sized, so `fn`s are reinterpreted as "incomplete function items".
 4. In previous revisions of this RFC, there were another optional change: implementing `Deref<Target=fn>`s on `fn{f}`s. This were intended to stress the fact that `fn{f}`s were themselves pointer-like constructs "pointing to" function bodies. But now that `fn`s will not be interpreted as "function bodies", this optional change will make no sense. Therefore it is dropped.
