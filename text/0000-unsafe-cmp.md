@@ -97,6 +97,10 @@ For `Ord`:
 # Alternatives
 
 - The status quo.
+- Have an `unsafe fn is_correct() -> bool` or a similar method that defaults to
+    returning `false`, but have `#derive` return `true` only if all of the
+    type's fields' `is_correct()` return `true`. It is still unclear about
+    where (i.e. in which trait) should this method be placed.
 - Have separate `RelaxedEq` and `RelaxedOrd` traits with untrusted behavior,
     and make the original four traits `unsafe` and have trusted behavior. Make
     the operator overloading use the `Relaxed` versions. Have separate
