@@ -7,8 +7,13 @@
 
 Q: One para explanation of the feature.
 
-A: if that supported, so I could implement like that:
-   "实现 { ... }" could be equal to "impl { ... }".
+A: If that supported, so I could implement like that:
+
+A: `实现 { ... }` could be equal to `impl { ... }`.
+
+A: If implemented, `trans "Hello {}"` become `"你好 {}"`.
+
+A: I couldn't thought another for now.
 
 # Motivation
 
@@ -31,6 +36,7 @@ This is the bulk of the RFC. Explain the design in enough detail for somebody fa
 with the language to understand, and for somebody familiar with the compiler to implement.
 This should get into specifics and corner-cases, and include examples of how the feature is used.
 
+It should be easy to understand. If not, Please ask it.
 
 ```rust
 
@@ -71,4 +77,6 @@ A: Macro plugins. But I think that will reinvert the wheel for any exists keywor
 
 # Unresolved questions
 
-What parts of the design are still TBD?
+Q: What parts of the design are still TBD?
+
+A: Yes?
