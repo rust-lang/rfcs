@@ -36,31 +36,11 @@ This is the bulk of the RFC. Explain the design in enough detail for somebody fa
 with the language to understand, and for somebody familiar with the compiler to implement.
 This should get into specifics and corner-cases, and include examples of how the feature is used.
 
-It should be easy to understand. If not, Please ask it.
-
-```rust
-
-impl foo {
-	fn bar() {
-		let a = ();
-	}
-}
-
-```
-
-```
-实现 甲 {
-	函数 丙 {
-		变量 乙 = ();
-	}
-}
-```
-
+https://github.com/mindcat/rust-i18n
+I have the project.
 I have a file, content: `"Hello {}": "你好 {}"`
-
-If it implemented, so I can do that:
-
-`println!(trans "Hello {}", "World!");` which outputs: `你好 World!`
+`println!(i18n_plugin!("Hello {}"), "World")` will be `println!("你好 {}", "World")`
+Now if I could use syntax plugin, so I can do `trans "Hello {}"` which equal to `i18n_plugin!("Hello {}")`.
 
 # Drawbacks
 
