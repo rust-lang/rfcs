@@ -5,7 +5,7 @@
 
 # Summary
 
-Make Rust's current function pointer types unsized, and introduce function reference types and new function pointer types, in order to make function references/pointers work more like value references/pointers.
+Repurpose Rust's current function pointer types to denote "incomplete function items", and introduce function reference types and new function pointer types, so that function references/pointers work more like value references/pointers.
 
 This is based on [RFC 883](https://github.com/rust-lang/rfcs/pull/883) and related discussions, where the following design is already largely agreed upon, but the author of RFC 883 doesn't have time to revise it. Therefore, this RFC is created to push for the changes.
 
@@ -25,16 +25,16 @@ Thus, this RFC proposes the following solution.
 
 # Detailed design
 
-Make the current function pointer types unsized, and introduce function reference types of the form `&fn(arg_list) -> ret_type` and new (const) function pointer types of the form `*const fn(arg_list) -> ret_type`.
+Repurpose current function pointer types to denote "incomplete function items". Introduce function reference types of the form `&fn(arg_list) -> ret_type` and new function pointer types of the form `*const fn(arg_list) -> ret_type`.
 
 In the following section, `fn{f}`s, `fn`s, `&fn`s and `*const fn`s denote function item types, current function pointer types, function reference types and new function pointer types, respectively. Those types are considered "compatible" if their `(arg_list) -> ret_type` parts match.
 
 The following rules will apply:
 
-1. `fn{f}`s are still the function item types, or "function handles/proxies/values".
+1. `fn{f}`s are still function item types, or "function handles/proxies/values", whose representations and semantics remain unchanged.
 2. `fn`s are no longer function pointer types, but types representing "incomplete function items", which are unsized statically and zero-sized dynamically.
-3. `&fn`s are function reference types, DST pointers with "auxiliary data" of type `()`.
-4. `&fn`s and `*const fn`s work like normal references/pointers and casting between compatible `&fn`s and `*const fn`s is valid.
+3. `&fn`s are function reference types, DST pointers with auxiliary data of type `()`, and work like other references.
+4. `*const fn`s are raw function pointer types that work as normally expected, and casting between compatible `&fn`s and `*const fn`s is valid.
 5. There are no `&mut fn`s, also no `*mut fn`s.
 6. `fn{f}`s still implement the closure traits (`Fn`/`FnMut`/`FnOnce`).
 7. `fn`s still implement the closure traits, for keeping `&fn`s coercible to closure trait objects.
