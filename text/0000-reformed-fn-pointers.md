@@ -84,21 +84,21 @@ let nullable_fn_ptr: *const fn() = ...; // consistent with nullable value pointe
 
 # Alternatives
 
-## A. Keep the status quo.
+#### A. Keep the status quo.
 
 And stick with function pointers that aren't quite function pointers.
 
-## B. Make "`fn`s are dynamically zero sized" externally visible.
+#### B. Make "`fn`s are dynamically zero sized" externally visible.
 
 And interpret `fn`s as "incomplete function items".
 
 However, given that there are other "truly unsized" types, it is better to keep the implementation detail hidden, instead of coming up with an explanation for a special cased type that is "unsized statically but zero sized dynamically".
 
-## C. Allow `fn{f} -> &'static fn`, not `&fn{f} -> &fn`.
+#### C. Allow `fn{f} -> &'static fn`, not `&fn{f} -> &fn`.
 
 It is a bit strange that a value type can be coerced to a reference type and the symmetry will be lost, though `fn{f}`s are indeed pointer-like in a way.
 
-## D. Make function item types truly denote functions.
+#### D. Make function item types truly denote functions.
 
 This alternative makes values of the type `fn{f}`s not copyable, and only `&fn{f}`s (and variations) can be passed around.
 
@@ -106,7 +106,7 @@ This has the advantage of having dedicated types for representing functions (new
 
 However, unlike function handles, function references/pointers cannot be zero-sized. Also, if `fn{f}`s are no longer `Copy`, more code will have to be changed to use `&fn{f}`, making this alternative a much larger-scale breaking change.
 
-## E. Make function item types `&'static fn{f}`s.
+#### E. Make function item types `&'static fn{f}`s.
 
 Like Alternative D, this also rules out the possibility of zero-sized function handle types.
 
