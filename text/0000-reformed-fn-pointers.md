@@ -5,7 +5,7 @@
 
 # Summary
 
-Repurpose Rust's current function pointer types to denote "incomplete function items", and introduce function reference types and new function pointer types, so that function references/pointers work more like value references/pointers.
+Repurpose current function pointer types to mean "function bodies" or "incomplete function items". Introduce function reference types and new function pointer types, so that function references/pointers work more like value references/pointers.
 
 This is based on [RFC 883](https://github.com/rust-lang/rfcs/pull/883) and related discussions, where the following design is already largely agreed upon, but the author of RFC 883 doesn't have time to revise it. Therefore, this RFC is created to push for the changes.
 
@@ -25,34 +25,29 @@ Thus, this RFC proposes the following solution.
 
 # Detailed design
 
-Repurpose current function pointer types to denote "incomplete function items". Introduce function reference types of the form `&fn(arg_list) -> ret_type` and new function pointer types of the form `*const fn(arg_list) -> ret_type`.
+Repurpose current function pointer types to mean "function bodies". Introduce shared function reference types of the form `&fn(arg_list) -> ret_type`, and the variations: mutable function references, const function pointers, and mutable function pointers.
 
-In the following section, `fn{f}`s, `fn`s, `&fn`s and `*const fn`s denote function item types, current function pointer types, function reference types and new function pointer types, respectively. Those types are considered "compatible" if their `(arg_list) -> ret_type` parts match.
+In the following section, `fn{f}`s denote function item types, `fn`s denote current function pointer types, `&fn`s, `&mut fn`s, `*const fn`s and `*mut fn`s are function references and their variations. Those types are considered "compatible" if their `(arg_list) -> ret_type` parts match.
 
 The following rules will apply:
 
-1. `fn{f}`s are still function item types, or "function handles/proxies/values", whose representations and semantics remain unchanged.
-2. `fn`s are no longer function pointer types, but types representing "incomplete function items", which are unsized statically and zero-sized dynamically.
-3. `&fn`s are function reference types, DST pointers with auxiliary data of type `()`, and work like other references.
-4. `*const fn`s are raw function pointer types that work as normally expected, and casting between compatible `&fn`s and `*const fn`s is valid.
-5. There are no `&mut fn`s, also no `*mut fn`s.
-6. `fn{f}`s still implement the closure traits (`Fn`/`FnMut`/`FnOnce`).
-7. `fn`s still implement the closure traits, for keeping `&fn`s coercible to closure trait objects.
-8. `&fn`s will implement the closure traits.
-9. The `fn{f} -> fn` coercions between compatible `fn{f}`s and `fn`s are no longer valid.
-10. The `&fn{f} -> &fn` coercions between compatible `fn{f}`s and `fn`s are valid as unsizing coercions.
-
-Optional changes that can be applied now or after Rust's final stabilization:
-
-1. Make `fn{f}`s zero-sized statically to save space and better align with the fact that `fn`s are zero-sized dynamically.
-2. Make `&fn{f}`s implement closure traits for better symmetry between `fn{f}`s and `fn`s. 
+1. `fn{f}`s' representations and semantics remain unchanged.
+2. `fn`s become unsized statically and zero sized dynamically.
+3. `&fn`s are DST pointers with auxiliary data of type `()`.
+4. `*const fn`s, `&mut fn`s and `*mut fn`s work as expected, though `&mut fn`s and `*mut fn`s may not have practical uses.
+5. `fn{f}`s still implement the closure traits (`Fn`/`FnMut`/`FnOnce`).
+6. `fn`s still implement the closure traits, for keeping `&fn`s coercible to closure trait objects.
+7. `&fn`s implement the closure traits, so they can be used in places expecting `fn`s currently. 
+8. The `fn{f} -> fn` coercions between compatible `fn{f}`s and `fn`s are no longer valid.
+9. The `&fn{f} -> &fn` coercions between compatible `fn{f}`s and `fn`s are valid as unsizing coercions.
+10. Optional: `&fn{f}`s can implement the closure traits for better symmetry with `&fn`.
+11. Optional: `&fn{f}`s can implement `Deref<Target=fn>` to stress the fact that `fn`s represent function bodies and `fn{f}`s are handles/proxies "to" `fn`s. 
 
 Notes:
 
-1. Currently, both `&fn{f}`s and `&fn`s are coercible to closure trait objects, but are not closures themselves. After the changes, they will be closures (`&fn`s) or coercible to closures (`&fn{f}`s). If the second optional change happens, then `&fn{f}`s will also be closures, without coercions.
-2. Source codes using `fn`s will have to use `&fn`s or `*const fn`s instead.
-3. In previous revisions of this RFC, `fn`s were going to be interpreted as types representing "function bodies", not "incomplete function items". But then it was pointed out that every type in Rust must have dynamically determinable sizes. This means, for `fn`s, the sizes must all be the same, because `&fn`s cannot actually carry any auxiliary data, or they will not be thin pointers. The obvious special size value here is zero. It would be weird for function bodies to be considered zero-sized, so `fn`s are reinterpreted as "incomplete function items".
-4. In previous revisions of this RFC, there were another optional change: implementing `Deref<Target=fn>`s on `fn{f}`s. This were intended to stress the fact that `fn{f}`s were themselves pointer-like constructs "pointing to" function bodies. But now that `fn`s will not be interpreted as "function bodies", this optional change will make no sense. Therefore it is dropped.
+1. Currently, both `&fn{f}`s and `&fn`s are coercible to closure trait objects, but are not closures themselves. After the changes, they will be closures (`&fn`s) or coercible to closures (`&fn{f}`s). If the first optional change happens, then `&fn{f}`s will also be closures, without coercions.
+2. Source codes using `fn`s will have to use `&fn`s or `*const fn`s instead. Due to the inference rules of the language, in practice, most uses of `&fn` would be `&'static fn`.
+3. It is an *implementation detail* that `fn`s are zero sized dynamically. The actual intention is for `fn`s to be "truly unsized" when the necessary language support for those types are designed and implemented. (Please see [RFC 709](https://github.com/rust-lang/rfcs/pull/709) and [RFC Issue 813](https://github.com/rust-lang/rfcs/pull/813) for discussions about truly unsized types.)
 
 Examples:
 
@@ -73,7 +68,7 @@ boxed_hof(&foo); // valid and unchanged, `&foo` coerced to `&Fn()`, a closure tr
 
 let nullable_value_ptr: *const ValueType = ...; // for comparison
 let old_nullable_fn_ptr: Option<fn()> = ...; // currently valid, but a workaround, will be invalid
-let nullable_fn_ref: Option<&fn()> = ...; // directly replaces the above after the changes
+let nullable_fn_ref: Option<&'static fn()> = ...; // directly replaces the above after the changes
 let nullable_fn_ptr: *const fn() = ...; // consistent with nullable value pointers after the changes
 
 // Note:
@@ -83,14 +78,32 @@ let nullable_fn_ptr: *const fn() = ...; // consistent with nullable value pointe
 
 # Drawbacks
 
-This involves breaking changes.
-
-However, currently function pointers are not used much. (See [this comment](https://github.com/rust-lang/rfcs/pull/883#issuecomment-76291284) for some statistics.)
+1. This involves breaking changes. However, currently function pointers are not used much. (See [this comment](https://github.com/rust-lang/rfcs/pull/883#issuecomment-76291284) for some statistics.)
+2. This goes down a particular path in the type system that may have unforeseen interactions.
+3. In order to hide the fact that `fn`s are zero-sized dynamically, functions like `size_of_val` would not be made usable on unsized types in the near future.
 
 # Alternatives
 
-Please see [RFC 883](https://github.com/rust-lang/rfcs/pull/883) and related discussions for the various alternatives.
+## A. Keep the status quo.
+
+And stick with function pointers that aren't quite function pointers.
+
+## B. Allow `fn{f} -> &'static fn`, not `&fn{f} -> &fn`.
+
+It is a bit strange that a value type can be coerced to a reference type, though `fn{f}`s are indeed pointer-like in a way.
+
+## B. Make function item types truly donate functions.
+
+This alternative makes values of the type `fn{f}`s not copyable, and only `&fn{f}`s (and variations) can be passed around.
+
+This has the advantage of having dedicated types for representing functions (new `fn{f}`s), and there will be no pointer-like handle types (current `fn{f}`s), only true function references/pointers (`&fn{f}`s and variations).
+
+However, unlike function handles, function references/pointers cannot be zero-sized. Also, if `fn{f}`s are no longer `Copy`, more code will have to be changed to use `&fn{f}`, making this alternative a much larger-scale breaking change.
+
+## C. Make function item types `&'static fn{f}`s.
+
+Like Alternative B, this also rules out the possibility of zero-sized function handle types.
 
 # Unresolved questions
 
-None.
+What exactly are the "unforeseen interactions" in Drawback 2, if any?
