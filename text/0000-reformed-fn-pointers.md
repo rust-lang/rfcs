@@ -5,7 +5,7 @@
 
 # Summary
 
-Repurpose current function pointer types to mean "function bodies" or "incomplete function items". Introduce function reference types and new function pointer types, so that function references/pointers work more like value references/pointers.
+Repurpose current function pointer types to mean "function bodies". Introduce function reference types and new function pointer types, so that function references/pointers work more like value references/pointers.
 
 This is based on [RFC 883](https://github.com/rust-lang/rfcs/pull/883) and related discussions, where the following design is already largely agreed upon, but the author of RFC 883 doesn't have time to revise it. Therefore, this RFC is created to push for the changes.
 
@@ -88,11 +88,17 @@ let nullable_fn_ptr: *const fn() = ...; // consistent with nullable value pointe
 
 And stick with function pointers that aren't quite function pointers.
 
-## B. Allow `fn{f} -> &'static fn`, not `&fn{f} -> &fn`.
+## B. Make "`fn`s are dynamically zero sized" externally visible.
 
-It is a bit strange that a value type can be coerced to a reference type, though `fn{f}`s are indeed pointer-like in a way.
+And interpret `fn`s as "incomplete function items".
 
-## B. Make function item types truly donate functions.
+However, given that there are other "truly unsized" types, it is better to keep the implementation detail hidden, instead of coming up with an explanation for a special cased type that is "unsized statically but zero sized dynamically".
+
+## C. Allow `fn{f} -> &'static fn`, not `&fn{f} -> &fn`.
+
+It is a bit strange that a value type can be coerced to a reference type and the symmetry will be lost, though `fn{f}`s are indeed pointer-like in a way.
+
+## D. Make function item types truly denote functions.
 
 This alternative makes values of the type `fn{f}`s not copyable, and only `&fn{f}`s (and variations) can be passed around.
 
@@ -100,9 +106,9 @@ This has the advantage of having dedicated types for representing functions (new
 
 However, unlike function handles, function references/pointers cannot be zero-sized. Also, if `fn{f}`s are no longer `Copy`, more code will have to be changed to use `&fn{f}`, making this alternative a much larger-scale breaking change.
 
-## C. Make function item types `&'static fn{f}`s.
+## E. Make function item types `&'static fn{f}`s.
 
-Like Alternative B, this also rules out the possibility of zero-sized function handle types.
+Like Alternative D, this also rules out the possibility of zero-sized function handle types.
 
 # Unresolved questions
 
