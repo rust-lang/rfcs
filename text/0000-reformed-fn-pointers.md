@@ -58,7 +58,7 @@ fn boxed_hof(f: &Fn()) { ... }
 
 let bar = foo; // valid and unchanged
 let old_fn_ptr: fn() = foo; // currently valid, but will be invalid
-let fn_ref: &fn() = &foo; // the new `&fn{f} -> &fn` coercion
+let fn_ref: &'static fn() = &foo; // the new `&fn{f} -> &fn` coercion
 let fn_ptr = fn_ref as *const fn(); // the new `&fn -> *const fn` cast
 
 unboxed_hof(foo); // valid and unchanged
