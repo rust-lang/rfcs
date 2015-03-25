@@ -110,7 +110,7 @@ instead of
 MyModel.my_field == 42 & MyModel.my_other_field > 17
 ```
 
-It is my opinion that operators are _significantly_ more readable and parsable than operators in this context, and that the return value not being a boolean is apparent in the context. That being said, if allowing the boolean operators to return non-boolean values was not acceptable, then this would probably be the next best option for my use-case.
+It is my opinion that operators are _significantly_ more readable and parsable than methods in this context, and that the return value not being a boolean is apparent in the context. That being said, if allowing the boolean operators to return non-boolean values was not acceptable, then this would probably be the next best option for my use-case.
 
 ## Confirm the current state
 
