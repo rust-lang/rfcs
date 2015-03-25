@@ -13,7 +13,7 @@ This is based on [RFC 883](https://github.com/rust-lang/rfcs/pull/883) and relat
 
 Currently in Rust, there are two kinds of types that represent functions:
 
-1. Function item types: the types of function items, `fn(arg_list) -> ret_type {foo}`s.
+1. Function item types, or function handle/proxy/value types: the types of function items, `fn(arg_list) -> ret_type {foo}`s.
 2. Function pointer types: the types of pointers to functions, `fn(arg_list) -> ret_type`s.
 
 Though called "function pointers", the function pointer types are considered *value* types (not reference/pointer types) by the language, which has the following problems:
@@ -32,7 +32,7 @@ In the following section, `fn{f}`s denote function item types, `fn`s denote curr
 The following rules will apply:
 
 1. `fn{f}`s' representations and semantics remain unchanged.
-2. `fn`s become unsized statically and zero sized dynamically.
+2. `fn`s become unsized statically and (as an implementation detail) zero sized dynamically.
 3. `&fn`s are DST pointers with auxiliary data of type `()`.
 4. `*const fn`s, `&mut fn`s and `*mut fn`s work as expected, though `&mut fn`s and `*mut fn`s may not have practical uses.
 5. `fn{f}`s still implement the closure traits (`Fn`/`FnMut`/`FnOnce`).
@@ -90,25 +90,32 @@ And stick with function pointers that aren't quite function pointers.
 
 #### B. Make "`fn`s are dynamically zero sized" externally visible.
 
-And interpret `fn`s as "incomplete function items".
+And interpret `fn`s as "incomplete function items", which aligns well with the plan to make `fn{f}`s (the "complete" function items) zero sized statically. (See [Rust Issue 19925](https://github.com/rust-lang/rust/issues/19925).)
 
-However, given that there are other "truly unsized" types, it is better to keep the implementation detail hidden, instead of coming up with an explanation for a special cased type that is "unsized statically but zero sized dynamically".
+However, it is likely that Rust will gain (other) truly unsized types one day, which is a more generally applicable solution. If possible, it is better to avoid special cases like "statically unsized but dynamically zero sized types". Thus it is better to avoid exposing the dynamic sizes of `fn`s for now.
 
 #### C. Allow `fn{f} -> &'static fn`, not `&fn{f} -> &fn`.
 
-It is a bit strange that a value type can be coerced to a reference type and the symmetry will be lost, though `fn{f}`s are indeed pointer-like in a way.
+Though `fn{f}`s are indeed pointer-like in a way, it is a bit strange that a value type can be coerced to a reference type. Also, the symmetry between `fn{f}`s and `fn`s will be lost.
 
 #### D. Make function item types truly denote functions.
 
 This alternative makes values of the type `fn{f}`s not copyable, and only `&fn{f}`s (and variations) can be passed around.
 
-This has the advantage of having dedicated types for representing functions (new `fn{f}`s), and there will be no pointer-like handle types (current `fn{f}`s), only true function references/pointers (`&fn{f}`s and variations).
+This has the advantage of having dedicated types for representing functions (new `fn{f}`s), and there will be no pointer-like handle types (current `fn{f}`s), only true function references/pointers (`&fn{f}`s and variations). This is theoretically purer.
 
-However, unlike function handles, function references/pointers cannot be zero-sized. Also, if `fn{f}`s are no longer `Copy`, more code will have to be changed to use `&fn{f}`, making this alternative a much larger-scale breaking change.
+However, function handles do have their advantages over function references/pointers:
 
-#### E. Make function item types `&'static fn{f}`s.
+1. Function handles can be zero-sized.
+2. Function handles do not involve the `&` sigil which usually has something to do with indirections (not considering optimizations). The lack of `&` is a visual hint for the lack of indirection when calling functions through the handles.
 
-Like Alternative D, this also rules out the possibility of zero-sized function handle types.
+Also, if `fn{f}`s are no longer `Copy`, more code will have to be changed to use `&fn{f}`, making this alternative a much larger-scale breaking change.
+
+#### E. Make function item types `&'static fn{f}`s instead of `fn{f}`s.
+
+This alternative eliminates the pointer-like handle types just like Alternative D does, without breaking every piece of code currently taking function handles as arguments.
+
+This also has the pros and cons of having no function handles.
 
 # Unresolved questions
 
