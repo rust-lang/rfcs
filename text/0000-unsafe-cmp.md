@@ -64,6 +64,9 @@ require implementations of these traits to satisfy the following properties:
 - Properties of other forms must evaluate to `true` if they type-check
     correctly.
 
+For all comparison traits:
+- The comparison methods must not panic.
+
 For `PartialEq`:
 - `a.eq(b) <=> b.eq(a)`
 - `a.eq(b) && b.eq(c) => a.eq(c)`
