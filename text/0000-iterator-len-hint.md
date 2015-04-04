@@ -23,7 +23,7 @@ A method `len_hint` would be added to the `std::iter::Iterator` trait, which has
 
 ```rust
 fn len_hint(&self) -> (usize, Option<usize>) {
-    self.size_hint();
+    self.size_hint()
 }
 ```
 
