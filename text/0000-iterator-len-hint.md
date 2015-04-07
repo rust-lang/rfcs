@@ -21,6 +21,20 @@ This method should be renamed.
 
 Rename the `size_hint` method of `std::iter::Iterator` to `len_hint` during the Rust 1.0 beta cycle.
 
+A new, inlined, but deprecated `size_hint` method may be added temporarily to ease the transition. That new `size_hint` would be implemented as:
+
+```rust
+fn size_hint(&self) -> (usize, Option<usize>) {
+    self.len_hint()
+}
+```
+
+Depending on the scale of impact of breaking changes planned during the beta cycle, it may or may not be desirable to release a new beta, reflecting the new breaking changes, so that more people can provide feedbacks about the changes before they get set in the stone.
+
+Ideally, this change should be completed just before a release (either the new beta, if it is decided to be released, or the final, if no new beta gets released). Also, the transition period should be as short as possible. 
+
+The reason is that: If this change happens too early, library authors (that are affected by this change) would have to maintain at least two separate branches of their libraries, one for the old beta, the other for nighties, if they want the widest possible audience. On the other hand, if the change starts and finishes just before a new release, library authors could abandon the old beta immediately and focus on the new release and later nighties.
+
 # Drawbacks
 
 This is a late breaking change (though only a minor naming correction at that).
