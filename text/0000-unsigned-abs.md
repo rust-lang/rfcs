@@ -57,7 +57,7 @@ This may actually be an advantage, as now the user code is the cause of the over
   not easy to handle the error.
 
 - Insert debug checks similar to overflow checks to prevent `Int::min_value()` to be used in abs.
-  If/when debug checks are added to `neg()` [RFC 560][https://github.com/rust-lang/rust/issues/22020],
+  If/when debug checks are added to `neg()` [RFC 560](https://github.com/rust-lang/rust/issues/22020),
   this will happen automatically. As `Int::min_value()` is an edge case, it may not get caught in a
   debug build.
 
