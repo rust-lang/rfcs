@@ -5,7 +5,7 @@
 
 # Summary
 
-Rename the `size_hint` method of the `Iterator` trait to `len_hint`.
+Deprecate `Iterator::size_hint` for `Iterator::len_hint`, and `ExactSizeIterator` for `ExactLengthIterator`, gaining consistency with the standard collections' naming convention.
 
 # Motivation
 
@@ -15,53 +15,37 @@ The standard library documentation says about [`size_hint`](http://doc.rust-lang
 
 > Returns a lower and upper bound on the remaining *length* of the iterator.
 
-This method should be renamed.
+Additionally, there is an [`ExactSizeIterator`](http://doc.rust-lang.org/1.0.0-beta/std/iter/trait.ExactSizeIterator.html) trait that also has an inconsistent name (but the sole method of `ExactSizeIterator` is named `len`, which is consistent).
+
+So, some names should be changed. However, Rust 1.0 beta has already been released, which means deprecation should be favoured over direct renaming.
 
 # Detailed design
 
-Rename the `size_hint` method of `std::iter::Iterator` to `len_hint` during the Rust 1.0 beta cycle.
+1. Add `core::iter::Iterator::len_hint`, which is an inlined method simply calling `core::iter::Iterator::size_hint`.
+2. Add `core::iter::ExactLengthIterator`, which is a re-export of `core::iter::ExactSizeIterator`.
+3. Deprecate `core::iter::Iterator::size_hint` and `core::iter::ExactSizeIterator`.
+4. Adjust the `std` re-exports accordingly.
+5. Deprecate the implementations of `size_hint`.
 
-A new, inlined, but deprecated `size_hint` method may be added temporarily to ease the transition. That new `size_hint` would be implemented as:
+Later, in Rust 2.x series, remove `size_hint` and `ExactSizeIterator`.
 
-```rust
-fn size_hint(&self) -> (usize, Option<usize>) {
-    self.len_hint()
-}
-```
-
-Depending on the scale of impact of breaking changes planned during the beta cycle, it may or may not be desirable to release a new beta, reflecting the new breaking changes, so that more people can provide feedbacks about the changes before they get set in the stone.
-
-Ideally, this change should be completed just before a release (either the new beta, if it is decided to be released, or the final, if no new beta gets released). Also, the transition period should be as short as possible. 
-
-The reason is that: If this change happens too early, library authors (that are affected by this change) would have to maintain at least two separate branches of their libraries, one for the old beta, the other for nighties, if they want the widest possible audience. On the other hand, if the change starts and finishes just before a new release, library authors could abandon the old beta immediately and focus on the new release and later nighties.
+This design is fully backwards compatible with Rust 1.0.0-beta.
 
 # Drawbacks
 
-This is a late breaking change (though only a minor naming correction at that).
+Having deprecated items in the first stable release of Rust is a bit weird. However, this is only a minor drawback.
 
 # Alternatives
 
-#### A. Add `len_hint` as a synonym for `size_hint`, and deprecate `size_hint`.
+#### A. Directly rename `size_hint` to `len_hint`, and `ExactSizeIterator` to `ExactLengthIterator` during the 1.0 beta cycle.
 
-A `len_hint` method would be added to the `std::iter::Iterator` trait, which has the following inlined default implementation:
+This alternative is clearer than the main candidate.
 
-```rust
-fn len_hint(&self) -> (usize, Option<usize>) {
-    self.size_hint()
-}
-```
-
-The `size_hint` method would be marked `deprecated` now.
-
-In Rust 2.x, `len_hint` would become a required method and `size_hint` would be removed.
-
-The advantage of this alternative is that it is not a breaking change.
-
-However, Rust 1.0 final is yet to be released, having something deprecated now but not removed until 2.x is weird.
+However, this means late breaking changes, which are generally undesirable. If other breaking changes happen during the 1.0 beta cycle, then this alternative can "piggyback" on those changes.
 
 #### B. Keep the status quo.
 
-`size_hint` is not too bad after all, though it is inconsistent, especially when even non-linear collections use methods named `len` instead of `size`.
+Other than "not introducing deprecations now", the status quo doesn't have any advantage over the main candidate.
 
 # Unresolved questions
 
