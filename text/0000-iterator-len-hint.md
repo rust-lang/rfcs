@@ -21,8 +21,8 @@ So, some names should be changed. However, Rust 1.0 beta has already been releas
 
 # Detailed design
 
-1. Add `core::iter::Iterator::len_hint`, which is an inlined method simply calling `core::iter::Iterator::size_hint`.
-2. Add `core::iter::ExactLengthIterator`, which is a re-export of `core::iter::ExactSizeIterator`.
+1. Add `core::iter::Iterator::len_hint`, a method with an inlined default implementation simply calling `self.size_hint()`.
+2. Add `core::iter::ExactLengthIterator`, a re-export of `core::iter::ExactSizeIterator`.
 3. Deprecate `core::iter::Iterator::size_hint` and `core::iter::ExactSizeIterator`.
 4. Adjust the `std` re-exports accordingly.
 5. Deprecate the implementations of `size_hint`.
