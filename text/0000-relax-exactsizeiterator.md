@@ -18,13 +18,9 @@ With
 
 # Motivation
 
-1. This requirement is redundant because `ExactSizeIterator::len` must already
-   return the exact size of the iterator. If you want the exact size of an
-   `ExactSizeIterator`, you should call `ExactSizeIterator::len()`
-2. This requirement imposes an unnecessary limitation on iterators by making it
-   impossible to implement iterators where computing the exact length is costly.
-   For example, one might have an iterator where computing the exact size is
-   `O(log(n))` and computing a bound can be done in `O(1)` time.
+This requirement is redundant and unnecessary because `ExactSizeIterator::len`
+must already return the exact size of the iterator.  If you want the exact size
+of an `ExactSizeIterator`, you should call `ExactSizeIterator::len()`
 
 # Drawbacks
 
