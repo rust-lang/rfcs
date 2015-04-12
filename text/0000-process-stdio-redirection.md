@@ -6,16 +6,15 @@
 # Summary
 
 Update the `std::process` API with the ability to redirect stdio of child
-processes to any opened file handle.
+processes to any opened file handle or equivalent.
 
 # Motivation
 
 The current API in `std::process` allows to either pipe stdio between parent and
 child process or redirect stdio to `/dev/null`. It would also be largely useful
-to allow stdio redirection to any currently opened `std::fs::File` (henceforth
-`File`) handle. This would allow redirecting stdio with a physical file or even
-another process (via OS pipe) without forcing the parent process to buffer the
-data itself.
+to allow stdio redirection to any currently opened file or pipe handles. This
+would allow redirecting stdio with a physical file or even another process (via
+OS pipe) without forcing the parent process to buffer the data itself.
 
 For example, one may wish to spawn a process which prints gigabytes
 of data (e.g. logs) and use another process to filter through it, and save the
@@ -27,66 +26,100 @@ redirection.
 # Detailed design
 
 First, the standard library should provide an OS agnostic way of creating OS
-in-memory pipes, i.e. a `Pipe`, providing reader and writer handles as `File`s.
-This would avoid the need for users to write OS specific (and `unsafe`) code
-while retaining all the benefits offered by `File`. This proposal considers
-making the `Pipe`'s reader and writer fields public to allow easily moving
-ownership of the two handles, but any other appropriate interface is acceptable.
+in-memory pipes, i.e. a `Pipe`, providing reader and writer handles as
+`PipeReader` and `PipeWriter` respectively. The reader and writer will simply be
+an abstraction over the OS specific file descriptor/HANDLE, and will implement
+the respective `Read`/`Write` trait, making it impossible to confuse the two
+together. In addition, each should implement the appropriate `AsRaw{Fd,
+Handle}`/`FromRaw{Fd, Handle}` for wrapping/unwrapping of the OS handles.
+
+On Unix systems the pipe can be created with `libc::pipe` and the file
+descriptors wrapped as appropriate (e.g. `sys::fs2::File`). On Windows the pipe
+can be created via Windows' `CreatePipe` (a stub for which is missing in
+`liblibc` at the moment) and the resulting HANDLEs also appropriately wrapped
+(using `sys::fs2::File`).
+
+This proposal considers making the `Pipe`'s reader and writer fields public
+to allow easily moving ownership of the two handles, but any other appropriate
+interface is acceptable.
 
 ```rust
 pub struct Pipe {
-	pub reader: File,
-	pub writer: File,
+	pub reader: PipeReader,
+	pub writer: PipeWriter,
+}
+
+pub struct PipeReader(sys::fs2::File);
+pub struct PipeWriter(sys::fs2::File);
+
+impl Read for PipeReader { ... }
+impl Write for PipeWriter { ... }
+```
+
+Next, several `redirect_*` methods should be added to `Stdio` for certain
+"blessed" types offered by the standard library, such as `File`, `PipeRead`, and
+`PipeWrite`. By white-listing the accepted file-like types we can ensure the API
+and its behavior is consistent across Windows and Unix.
+
+```rust
+fn redirect_file(f: File) -> Stdio { ... }
+fn redirect_pipe_read(r: PipeRead) -> Stdio { ... }
+fn redirect_pipe_write(w: PipeWrite) -> Stdio { ... }
+```
+
+These methods should take ownership of their arguments since storing references
+will require `Stdio` and `Command` to gain lifetime parameters, which will break
+the currently stabilized implementations. Thus the caller will be responsible
+for duplicating their handles appropriately if they wish to retain ownership.
+
+To make redirections easier to use `Stdio` should become clonable so that once a
+file-like handle is wrapped, the wrapper can be passed to any number of
+`Commands` simultaneously. This can be accomplished by reference counting the
+wrapped file handle.
+
+```rust
+impl Clone for Stdio { ... }
+
+#[deriving(Clone)]
+struct StdioImp {
+	...
+	// sys::fs2::File is a safe wrapper over a fd/HANDLE,
+	// not to be confused with the public `std::fs::File`
+	Redirect(Rc<sys::fs2::File>),
 }
 ```
 
-Next, `std::process::Stdio` should provide a `redirect` method which accepts and
-stores a `&File`, ensuring the underlying handle will not go out of scope
-unexpectedly before the child is spawned. The spawning implementation can then
-extract and use the `File`'s OS specific handle when creating the child
-process.
-
-This `File` reference should be an immutable one, to allow "reuse" of the handle
-across several `Command`s simultaneously. This, however, can allow code to
-indirectly mutate a `File` through an immutable reference by passing it on to a
-child process, although retrieving and mutating through the underlying OS handle
-(via `AsRaw{Fd, Socket, Handle}`) is already possible through a `&File`. Thus
-this API would not introduce any "mutability leaks" of `File`s that were not
-already present.
-
-This design also offers benefits when the user may wish to close (drop) a
-`File`, for example, closing the read end of a pipe and sending EOF to its
-child. The compiler can infer the lifetimes of all references to the original
-`File`, eliminating some guesswork on whether all ends of a pipe have been
-closed. This would not be possible in a design which duplicates the OS handle
-internally which could more easily lead to a deadlock (e.g. waiting on a child
-to exit while the same scope holds an open pipe to the child's stdin).
-
-Reclaiming ownership of the borrowed `File` may require locally scoping the
-creation of `Stdio` or `Command` instances to force their lifetimes to end,
-however, this is minimally intrusive compared to alternative designs.
-
 # Drawbacks
 
-Implementing a design based on `File` borrows will require adding lifetime
-parameters on stabilized `Stdio` and `Command` close to the 1.0 release.
+If one wishes to close (drop) a redirected handle, for example, closing the
+read end of a pipe and sending EOF to its child, they will have to manually
+ensure all cloned `Stdio` wrappers are dropped so that the underlying handle is
+closed. Otherwise it would be possible to deadlock while waiting on a child
+which is waiting on and input handle held in the same thread.
+
+In addition, if one desires to use a file-like handle outside of process
+redirection, they will need to rely on an external mechanism for duplicating the
+handle. In the case of an actual file, it can simply be reopened, but in the
+case of OS pipes or sockets the underlying OS handle may need to be duplicated
+via `libc` calls or the object itself would need to provide a duplication
+mechanism.
 
 # Alternatives
 
-Do nothing now and choose a stability compatible design, possibly being stuck
-with less ergonomic APIs.
+* Instead of specifying numerous `redirect_*` methods, simply accept anything
+  that implements the appropriate `AsRaw{Fd, Handle}` trait. This will cause OS
+  specific issues, however. For example, on Unix sockets are simple file
+  descriptors, but on Windows sockets aren't quite HANDLES, meaning the API
+  would be inconsistent across OS types.
 
-One alternative strategy is to duplicate the underlying OS handle and have the
-`std::process` APIs take ownership of the copy. When working with OS pipes,
-however, the user would have to manually keep track where the duplicates have
-gone if they wish to close them all; failing to do so may cause deadlocks.
+* Duplicate the underlying OS handle and have the `std::process` APIs take
+  ownership of the copy. When working with OS pipes, however, the user would
+  have to manually keep track where the duplicates have gone if they wish to
+  close them all; failing to do so may cause deadlocks.
 
-Another strategy would be for `Stdio` to take ownership of a `File` and wrap it
-as a `Rc<File>`, allowing it to be "reused" in any number of redirections by
-cloning the `Stdio` wrapper. A caller could try to regain ownership (via
-`try_unwrap` on the internal wrapper), but they would have to (manually) ensure
-all other `Stdio` clones are dropped. This design would also suffer from
-potential deadlocks, making it by far the least ergonomic option.
+* Do not make `Stdio` clonable, and rely on caller duplicating all handles as
+  necessary. This could be particularly limiting if certain implementations do
+  not allow duplication.
 
 # Unresolved questions
 
