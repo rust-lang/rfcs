@@ -85,7 +85,7 @@ struct StdioImp {
 	...
 	// sys::fs2::File is a safe wrapper over a fd/HANDLE,
 	// not to be confused with the public `std::fs::File`
-	Redirect(Rc<sys::fs2::File>),
+	Redirect(Arc<sys::fs2::File>),
 }
 ```
 
