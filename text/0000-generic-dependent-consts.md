@@ -117,7 +117,7 @@ allowed (and often required) to inline. They do not need a static location in
 memory, and unlike functions, they cannot add new type or lifetime parameters to
 those already present in the surrounding scope.
 
-## 'static references
+## `'static` references
 
 Consider the following definitions of similar functions:
 
@@ -173,8 +173,8 @@ backwards-compatibly in the future by adding syntax to constrain associated
 consts in generic code (similar to how type parameters, and their associated
 types, can already be constrained with `where` clauses).
 
-However, note that when the /type/ of a constant depends on a generic parameter,
-whereas its /value/ does not, the constant is still allowed in a match pattern.
+However, note that when the *type* of a constant depends on a generic parameter,
+whereas its *value* does not, the constant is still allowed in a match pattern.
 This can occur, for instance, when the value is a nullary enum (see the example
 in the `Motivation` section).
 
@@ -185,8 +185,9 @@ equal, it must be able to compare the arrays' sizes. This presents a special
 problem when performing arithmetic on constants that depend on type parameters,
 as outlined in the `Motivation` section above.
 
-To avoid dealing with arbitrary arithmetic expressions, all constant expressions
-that affect array sizes are divided into the following three categories:
+To avoid having to prove arbitrary arithmetic identities, all constant
+expressions that affect array sizes are divided into the following three
+categories:
 
  1. Constant expressions that do not depend on type parameters at all. These
     will continue to behave as they do now; they are evaluated during type
@@ -194,7 +195,7 @@ that affect array sizes are divided into the following three categories:
     evaluated during type checking to the same value.
 
  2. Constant expressions that consist of only a single path (or identifier),
-    where that path is a constant parameter that depends on at least one type
+    where that path resolves to a constant that depends on at least one type
     parameter. During type checking, such expressions will compare equal to any
     expression that consists of only a single path that resolves to the same
     item. This reduces an impossible problem (determining whether two arbitrary
@@ -216,36 +217,36 @@ let a: [u8; X] = [0u8; X];
 
 Case 3 rules out many uses of arrays with sizes that depend on type parameters.
 However, there are some operations where the array size is irrelevant to whether
-or not the code type-checks, such as coercing a reference to an array to a
-slice, or creating a raw pointer to a fixed-size buffer that can be handed to
-external code via FFI. In such cases, using an array expression such as
-`[0u8; 2*<U as Trait>::M]` could still be useful.
+or not the code type-checks, such as coercing a reference to an array to a fat
+pointer to a slice, or creating a raw pointer to a fixed-size buffer in order to
+hand the pointer to external code via FFI. In such cases, an array expression
+such as `[0u8; 2*<U as Trait>::M]` could still be useful.
 
 The justification for the above rules is that it seems premature to settle on a
 specific strategy for dealing with constant expressions in types right now.
 However, the rule in case 2, which states that two paths that resolve to the
 same item will compare equal in type checking, seems to describe a bare minimum
-of functionality that will almost certainly be included by any further long-term
-solution.
+of functionality that will almost certainly be a part of any further long-term
+solutions.
 
 # Drawbacks
 
 These issues will probably be tackled eventually, since generic code is where
-much of the utility of associated consts, and perhaps in the future "real"
-dependent types, will be found. However, we could postpone any decisions until
-further extensions of the type system force the issue. This proposal does
-introduce some complexity in that generic constants must be treated for many
-situations like generic types.
+associated consts, and perhaps in the future "real" dependent types, will be
+most useful. However, we could postpone any decisions until further extensions
+of the type system force the issue. This proposal does introduce some
+complexity, since generic constants must be treated in many situations like
+generic types.
 
-Since this design is in some cases fairly conservative regarding code that will
-be accepted, it may also produce some confusion when code that seems "obviously"
-OK is rejected by the compiler. For instance, this is rejected:
+Since this design is somewhat conservative regarding code that will be accepted,
+it may also produce some confusion when code that seems "obviously" OK is
+rejected by the compiler. For instance, this is rejected:
 
 ```rust
 // `T` is a generic parameter.
 const X: usize = <T>::N;
-// We don't backtrack to see that the RHS is using the expression that defines
-// X, so this line is invalid.
+// We don't backtrack to see that the RHS is using the same expression as the
+// one that defines X, so this line is invalid.
 let a: [u8; X] = [0u8; <T>::N];
 ```
 
@@ -260,15 +261,15 @@ We could implement this RFC and additionally allow the special example in the
 `Drawbacks` section as valid code. This seems unnecessary if a `const`
 declaration is viewed as purely creating its own item, but it seems that this
 code should be accepted if a `const` declaration is viewed as instead creating
-something more like an alias or macro simply expanding to some inlinable
-constant expression.
+something more like an alias or macro, simply expanding to some inlined constant
+expression when used.
 
 # Unresolved questions
 
 This design omits some possible extensions, such as allowing other forms of
 expressions to be considered equal during type checking.
 
-Allowing constraints on associated constant values, CTFE, and most other
-constant-related features are likewise ignored. Any interaction with CTFE may be
-obvious, by using the heuristic that constant functions should behave as if
-their code was simply inlined everywhere that they are used.
+CTFE, constraints on associated constant values, and most other constant-related
+features are likewise ignored. The interaction with CTFE might be obvious, if we
+can count on the heuristic that constant functions should behave as if their
+code was inlined.
