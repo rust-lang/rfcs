@@ -252,14 +252,14 @@ let a: [u8; X] = [0u8; <T>::N];
 
 # Alternatives
 
-# Status quo
+## Status quo
 
 We could keep the status quo, where type parameters cannot influence the values
 in constant expressions at all. This would somewhat reduce the utility of
 associated consts, and prevent us from giving this solution a "trial run", but
 the language would be simpler for now.
 
-# Forbid generic constants from appearing in constant expressions
+## Forbid generic constants from appearing in constant expressions
 
 We could allow constant values and their types to depend on type parameters, but
 not consider them to be constants in match patterns or array sizes at all. Aside
@@ -267,7 +267,7 @@ from being inlinable, the user would not be able to expect to compiler to do
 anything with these "constants" beyond what it can already do with non-constant
 variables.
 
-# Allow constants that are "aliases" of other constants to be proven equal
+## Allow constants that are "aliases" of other constants to be proven equal
 
 We could implement this RFC and additionally allow the special example in the
 `Drawbacks` section as valid code. This seems unnecessary if a `const`
