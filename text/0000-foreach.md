@@ -21,10 +21,11 @@ usually clearer code to `filter()` than to `continue` and to `take()` than to
 The foreach() method proposed by this RFC is fundamentally sugar; it does not
 enable programmers to write any instruction not already possible with existing
 language features. The most common recommendation is to write a `for` loop, but
-it is also possible to chain one of several consuming iterators, to write a fold
-which returns (), or to add a dependency to the itertools crate and use the
-foreach method defined there. A [prior RFC](https://github.com/rust-lang/rfcs/pull/582)
-to the same effect was closed without merging for these reasons.
+it is also possible to chain one of several consuming iterator methods after a
+map, to write a fold which returns (), or to add a dependency to the itertools
+crate and use the foreach method defined there. A
+[prior RFC](https://github.com/rust-lang/rfcs/pull/582) to the same effect was
+closed without merging for these reasons.
 
 However, if the inclusion of foreach() is syntactic sugar, then the exclusion of
 foreach() is syntactic salt. Several consumers are currently 'blessed' by std as
