@@ -6,9 +6,9 @@
 # Summary
 
 Allow consts declared in functions to depend on function type parameters. Since
-this raises some issues in match and type checks, use an extremely conservative
-approach that allows only minimal use of such consts when a constant expression
-is required.
+this raises some issues in match and type checks, use an conservative approach
+that allows only minimal use of such consts when a constant expression is
+required.
 
 # Motivation
 
@@ -27,7 +27,7 @@ involve arrays of size `32`.
 However, in generic code, if `T` is a type parameter, we are asking the type
 checker to apply the general proposition that `N + N = 2 * N` for all `usize`
 values (that do not overflow when doubled). While this case is simple, requiring
-the compiler to prove arbitrary algebraic identities is untenable.
+the compiler to prove arbitrary identities is untenable.
 
 A similar story applies to match patterns. In order to perform exhaustiveness
 and reachability checks, the compiler must be able to perform certain
@@ -69,13 +69,13 @@ fn circumference<T: Float>(radius: T) {
 The first three examples would be allowed under this RFC. The fourth function,
 `circumference`, would still be disallowed because the compiler cannot verify
 during type checking that `2.0 * T::PI` is a constant expression of type
-`T`. However, this RFC removes /one/ of the barriers that prevents
+`T`. However, this RFC removes *one* of the barriers that prevents
 implementation of this last example.
 
-Note that this issue becomes even more pressing if user-defined types are
-allowed to depend on constants in the future, since in such a case these issues
-are not limited to the interaction between associated consts and a handful of
-language features.
+Note that the question of how to handle generic constants will become even more
+pressing if user-defined types are allowed to depend on constants in the future.
+In that case, these issues will not be limited to the interaction between
+associated consts and a handful of language features.
 
 # Detailed design
 
@@ -141,13 +141,13 @@ fn ref_one_generic_const<T: Int>() -> &'static T {
     const REF_ONE: &'static u32 = &T::ONE;
     REF_ONE
 }
-fn ref_one_associated_const<T: Int>() -> &'static T {
+fn ref_one_ref_associated_const<T: Int>() -> &'static T {
     &T::ONE
 }
 ```
 
 This RFC proposes that both `ref_one_generic_const` and
-`ref_one_associated_const` would be invalid.
+`ref_one_ref_associated_const` would be invalid.
 
 The associated const case is disallowed for the same reason as
 `ref_one_ref_const`, i.e. because the expression is not `'static` and thus does
@@ -155,7 +155,7 @@ not live long enough for a static borrow.
 
 The generic const case is disallowed because it implicitly creates a static item
 that depends on a type parameter, and this is forbidden, as mentioned in the
-preceding section. That is to say, the initializer expression itself is invalid.
+preceding section.
 
 In order to implement this restriction, use of a type parameter in a constant
 expression must be considered "contagious". That is, if the initializer
@@ -185,7 +185,7 @@ equal, it must be able to compare the arrays' sizes. This presents a special
 problem when performing arithmetic on constants that depend on type parameters,
 as outlined in the `Motivation` section above.
 
-To avoid having to prove arbitrary arithmetic identities, all constant
+To avoid having to prove arbitrary mathematical identities, all constant
 expressions that affect array sizes are divided into the following three
 categories:
 
@@ -194,7 +194,7 @@ categories:
     checking, and will be considered equal to all other expressions that can be
     evaluated during type checking to the same value.
 
- 2. Constant expressions that consist of only a single path (or identifier),
+ 2. Constant expressions that consist of only a single path (or an identifier),
     where that path resolves to a constant that depends on at least one type
     parameter. During type checking, such expressions will compare equal to any
     expression that consists of only a single path that resolves to the same
@@ -252,10 +252,22 @@ let a: [u8; X] = [0u8; <T>::N];
 
 # Alternatives
 
+# Status quo
+
 We could keep the status quo, where type parameters cannot influence the values
 in constant expressions at all. This would somewhat reduce the utility of
 associated consts, and prevent us from giving this solution a "trial run", but
 the language would be simpler for now.
+
+# Forbid generic constants from appearing in constant expressions
+
+We could allow constant values and their types to depend on type parameters, but
+not consider them to be constants in match patterns or array sizes at all. Aside
+from being inlinable, the user would not be able to expect to compiler to do
+anything with these "constants" beyond what it can already do with non-constant
+variables.
+
+# Allow constants that are "aliases" of other constants to be proven equal
 
 We could implement this RFC and additionally allow the special example in the
 `Drawbacks` section as valid code. This seems unnecessary if a `const`
@@ -265,6 +277,10 @@ something more like an alias or macro, simply expanding to some inlined constant
 expression when used.
 
 # Unresolved questions
+
+Does it make sense to distinguish between between the *type* of a constant being
+generic and its *value* being generic? In its face this seems somewhat
+nonsensical, but in practice it seems straightforward.
 
 This design omits some possible extensions, such as allowing other forms of
 expressions to be considered equal during type checking.
