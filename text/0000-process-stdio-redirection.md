@@ -29,8 +29,8 @@ Process redirection should be provided as a system dependent extension which
 accepts the appropriate OS file/pipe representation. Namely, the API should be
 provided as a `StdioExt` implementation, whose `redirect` method accepts
 implementors of `AsRawFd` and `AsRawHandle` for Unix and Windows, respectively.
- This trait should be publicly exported under the `std::os::$platform::io`
-module.
+This implementation should be publicly exported under the
+`std::os::$platform::process` module.
 
 The private `StdioImp` enum in `std::process` should be extended with a
 `Redirect` variant which will hold the appropriate OS handle type. To avoid
@@ -49,12 +49,14 @@ StdioImp {
 }
 
 // Unix, in libstd/sys/unix/ext.rs
-pub impl StdioExt {
+pub struct StdioExt;
+impl StdioExt {
 	unsafe fn redirect<T: AsRawFd>(t: &T) -> Stdio { ... }
 }
 
 // Windows, in libstd/sys/windows/ext.rs
-pub impl StdioExt {
+pub struct StdioExt;
+impl StdioExt {
 	unsafe fn redirect<T: AsRawHandle>(t: &T) -> Stdio { ... }
 }
 ```
@@ -65,8 +67,8 @@ without suffering the constant need of `cfg!` checks to specify the exact target
 OS. For example, the code below would work on both Unix and Windows:
 
 ```rust
-#[cfg(unix)] use std::os::unix::io::StdioExt as StdioExt;
-#[cfg(windows)] use std::os::windows::io::StdioExt as StdioExt;
+#[cfg(unix)] use std::os::unix::process::StdioExt;
+#[cfg(windows)] use std::os::windows::process::StdioExt;
 
 let file = File::open(...);
 let stdio = unsafe { StdioExt::redirect(&file) };
