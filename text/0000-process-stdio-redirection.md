@@ -82,13 +82,13 @@ created when spawning the child.
 
 ```rust
 // Equivalent of `foo | bar`
-let foo = Command::new("foo").spawn().unwrap();
+let foo = Command::new("foo").stdout(Stdio::piped()).spawn().unwrap();
 let out = foo.stdout.as_ref().unwrap();
 let bar = Command::new("bar").stdin(StdioExt::redirect(out)).spawn().unwrap();
 // close foo.stdout here so that bar is the only pipe reader
 
 // Alternatively
-let bar = Command::new("bar").spawn().unwrap();
+let bar = Command::new("bar").stdin(Stdio::piped()).spawn().unwrap();
 let in  = bar.stdin.as_ref().unwrap();
 let foo = Command::new("foo").stdout(StdioExt::redirect(in)).spawn().unwrap();
 // close bar.stdin here so that foo is the only pipe writer
