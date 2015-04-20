@@ -94,14 +94,6 @@ let foo = Command::new("foo").stdout(StdioExt::redirect(in)).spawn().unwrap();
 // close bar.stdin here so that foo is the only pipe writer
 ```
 
-This would require that the internally defined `AnonPipe` wrapper be implemented
-using HANDLEs (and not file descriptors) on Windows. This can easily be
-accomplished by wrapping the resulting HANDLEs from Windows' `CreatePipe` API
-(a stub for which is missing in `libc` at the moment). The Unix implementation
-can continue to use `libc::pipe`, of course. With these changes in place,
-`AnonPipe` can implement `AsRaw{Fd, Handle}`, and allow `ChildStd{in, out, err}`
-to implement the traits as well.
-
 # Drawbacks
 
 Unsafely using raw OS file handles could potentially cause issues, however,
