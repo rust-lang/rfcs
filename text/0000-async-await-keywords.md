@@ -27,6 +27,8 @@ Reserve `async` and `await` as keywords.
 
 Don't add any new keywords. If we decide in the future to design features using `async` and `await`, it will require Rust version 2.0, since it will be a backward incompatible change.
 
+An alternative to requiring a major version of Rust would be to introduce the keyword in a context-sensitive manner, which could likely be implemented without backward incompatibility. This likely would require more complexity in the implementation, and is probably a design decision best left for later.
+
 ## Reserve only one word
 
 It may be possible to implement async features in a backward compatible way using only one keyword. Such a decision should probably deferred, leaving this as a less than ideal option.
