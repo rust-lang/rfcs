@@ -136,6 +136,10 @@ Introduces additional complexity in the form of the `Leak` trait, which, like
 `Reflect`, applies to nearly all types and therefore carries very little
 information.
 
+This proposal requires breaking changes to standard library APIs, as outlined above,
+that would affect a large body of code in the wild. This is undesirable so
+close to 1.0 even though the solution is as simple as just bounding by `Leak`.
+
 It is possible there are ways to leak arbitrary, non-`'static`, data in the
 safe subset of rust (including std) that we may not catch by 1.0, which would
 force us to make a breaking fix to those APIs to fix soundness holes if they
