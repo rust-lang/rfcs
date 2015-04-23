@@ -148,12 +148,19 @@ possible, but the author's slightly educated guess is that it is not possible.
 
 # Alternatives
 
+RFC PR 1066 is partially an alternative to this RFC, and vice versa.
+
 Other possible names for `Leak`: `MayLeak`, `Leakable`, `MaybeDrop`.
 
 Introduce `Leak` post-1.0 and add it to bounds by default, the same way `Sized`
 works today.
 
-RFC PR 1066 is partially an alternative to this RFC, and vice versa.
+## Drawbacks of Introducing Leak in 1.X (Why should we rush?)
+
+Unlike with `Sized`, the vast majority of code actually does want what would be
+`T: ?Leak`, meaning that over time we would either see lots of unnecessarily
+restrictive bounds or the proliferation of `T: ?Leak` all over pretty much all
+generic code.
 
 # Unresolved questions
 
