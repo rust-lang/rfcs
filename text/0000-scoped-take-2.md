@@ -98,11 +98,10 @@ To recover scoped threads, we extend the `Scope` type with a method for spawning
 threads:
 
 ```rust
-impl<'defer> Scope<'defer> {
-    pub fn spawn<'body, F, T>(&self, f: F) -> thread::JoinHandle<T> where
-        'defer: 'body,   // anything borrowed by the body must outlive the Scope
-        F: FnOnce() -> T + Send + 'body,
-        T: Send + 'body;
+impl<'a> Scope<'a> {
+    pub fn spawn<F, T>(&self, f: F) -> thread::JoinHandle<T> where
+        F: FnOnce() -> T + Send + 'a,
+        T: Send + 'a;
 }
 ```
 
