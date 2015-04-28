@@ -184,3 +184,7 @@ sender into their own channel.
 
 What are the best designs for safely allowing channels and `Rc`s to safely work
 with non-`'static` data?
+
+Should the `ScopedRc` functionality outlined above be added as separate types,
+or should we add a lifetime parameter to the existing `Rc`, `Arc`, et cetera to
+encourage the same types to be used for both `'static` and non-`'static` data?
