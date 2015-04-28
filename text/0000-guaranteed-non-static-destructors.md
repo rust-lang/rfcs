@@ -80,14 +80,20 @@ This RFC proposes the following solutions:
 
 Specifically, the scoped cycle collector would operate as follows:
 
- * There `RcGuard` type that can be instantiated with a given lifetime `'a`.
- * Safe code can use the guard object to safely create `Rc`s with any type that
-   outlives `'a`.
- * When the `RcGuard` is dropped, it drops the data of all `Rc's` created with
-   it. This would free any cycles.
- * Attempting to dereference any `Rc` whose content had already been dropped
-   (e.g., during cycle clean-up) would cause a panic (and thus an abort if it
-   happened during RcGuard's destructor).
+ * There is a new `ScopedRc` type that has an added lifetime parameter
+   specifying for how long the reference itself is valid.
+ * There is also a `ScopedRcGuard` type that can be instantiated with a given
+   lifetime `'a`.
+ * There is a new `ScopedRc` type that can only be constructed with a
+   `ScopedRcGuard`, and cannot outlive the guard.
+ * A `ScopedRc` created from a `ScopedRcGuard<'a>` can only contain data that
+   is valid for the duration of `'a`.
+ * When the `ScopedRcGuard` is dropped, it collects any remaining cycles.
+ * During cycle collection, an attempt by one object in the cycle to
+   dereference another that has already been collected will result in an abort.
+
+See [this gist](https://gist.github.com/rkjnsn/791ee9cc3b6d2961cf33) for a
+working `ScopedRc` implementation, including sample usage.
 
 The guard technique can also be applied to channels to ensure that they are
 properly cleaned up even if the user does something like send the receiver and
