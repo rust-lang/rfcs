@@ -1,5 +1,5 @@
 - Feature Name: silent_panic
-- Start Date: 2015-04-30)
+- Start Date: 2015-05-01
 - RFC PR: (leave this empty)
 - Rust Issue: (leave this empty)
 
