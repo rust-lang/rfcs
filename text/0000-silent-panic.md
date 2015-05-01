@@ -13,6 +13,8 @@ Currently, `panic!()` is the same as `panic!("explicit panic")`, and hence logs 
 
 This is problematic because `panic!` enables returning from a chain of deeply nested functions in an exceptional situation without complicating their signatures.
 
+An example: you have a function, ten levels deep in a child thread, that suddently can encounter a non-recoverable error (after additions to the code). Do you want to refactor ten functions to use `Result` - at a point where you have not yet decided what the best long-term approach is, as it could require heavy refactoring of the existing codebase) or use `panic!` for a while to experiment without hurting user experience (by that I mean, displaying messages best used for debugging to the user - does the user really care about the thread and line number a function failed in?). I'm not advocating the overuse of `panic!` as a cheap error handling mechanism, but it has its uses. Otherwise it would just abort the whole program instead of being possibly caught by `catch_panic`.
+
 Using `Result`s or `Option`s and creating new enums (to use with `Result`) just to handle these exceptional situations feels overkill, adds a lot of boilerplate while providing little extra functionality, and makes it harder to move around these functions without modifying their return types, while `panic!` gives very similar functionality without all the boilerplate, but since `panic!()` clutters logs with messages appropriate for debugging but not for the end user, one is often forced to resort to the former.
 
 
