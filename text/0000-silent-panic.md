@@ -19,11 +19,6 @@ Using `Result`s or `Option`s and creating new enums (to use with `Result`) just 
 
 # Detailed design
 
-This is the bulk of the RFC. Explain the design in enough detail for somebody familiar
-with the language to understand, and for somebody familiar with the compiler to implement.
-This should get into specifics and corner-cases, and include examples of how the feature is used.
-
-
 Modify the `panic!` macro to call a logging-less version of `std::rt::begin_unwind` when called without arguments:
 
 ```rust
