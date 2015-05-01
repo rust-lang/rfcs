@@ -73,4 +73,4 @@ Credits to [@Diggsey](https://github.com/Diggsey) for this idea.
 
 # Unresolved questions
 
-At the implementation level, how should the `rt` functions for unwinding be refactored to allow logging-less panics without sacrificing or duplicating code?
+At the implementation level, how should the `rt` functions for unwinding be refactored to allow logging-less panics without sacrificing functionality or duplicating code?
