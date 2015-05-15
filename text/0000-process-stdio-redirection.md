@@ -25,84 +25,99 @@ redirection.
 
 # Detailed design
 
-Process redirection should be provided as a system dependent extension which
-accepts the appropriate OS file/pipe representation. Namely, the API should be
-provided as a `StdioExt` implementation, whose `redirect` method accepts
-implementors of `AsRawFd` and `AsRawHandle` for Unix and Windows, respectively.
-This implementation should be publicly exported under the
-`std::os::$platform::process` module.
+The least intrusive way to implement this functionality would be to implement
+`FromRaw{Fd, Handle}` for `Stdio`, taking ownership of the underlying handle.
+This approach would not require the addition of any new public APIs.
 
-The private `StdioImp` enum in `std::process` should be extended with a
-`Redirect` variant which will hold the appropriate OS handle type. To avoid
-breaking changes with the stabilized interfaces (such as `Stdio` and `Command`)
-or dealing with internal reference counts over the handle to be redirected, the
-most convenient implementation would be to `unsafe`ly extract and store the raw
-fd/HANDLE to which the redirection should occur. Thus it would be the caller's
-responsibility to ensure the open file or pipe remains valid until a child
-process is spawned.
+There are several disadvantages to this design: it does not allow for using
+one handle for several redirections without forcing the caller to `unsafe`ly
+duplicate the handle, in addition, any cross-platform code will need to be
+littered with `cfg!` to call the appropriate methods. Furthermore, trying to use
+standard types like `File` will require that they be leaked by `mem::forget` so
+that their own destructors do not close the underlying handles. However, these
+inefficiencies can be addressed through a cross-platform, high level API.
 
-```rust
-StdioImp {
-    ...
-    #[cfg(unix)] Redirect(sys::io::RawFd),
-    #[cfg(windows)] Redirect(sys::io::RawHandle),
-}
+Lastly, the `AsRaw{Fd, Handle}` traits should be implemented for the
+`ChildStd{in,out,err}` types. This would allow easily piping output from one
+child process to another by leveraging the underlying OS pipes that were already
+created when spawning the child.
 
-// Unix, in libstd/sys/unix/ext.rs
-pub struct StdioExt;
-impl StdioExt {
-	unsafe fn redirect<T: AsRawFd>(t: &T) -> Stdio { ... }
-}
+## A High Level API Proposal
 
-// Windows, in libstd/sys/windows/ext.rs
-pub struct StdioExt;
-impl StdioExt {
-	unsafe fn redirect<T: AsRawHandle>(t: &T) -> Stdio { ... }
-}
-```
+In order to facilitate cross-platform usage, the API should be defined to
+operate on the respective `AsRaw{Fd, Handle}` traits for Unix and Windows,
+respectively. All method signatures should match lexically such that
+using `cfg!($platform)` checks will not be necessary. The private `StdioImp`
+enum in `std::process` should be extended with a `Redirect` variant which will
+hold a wrapper over the appropriate OS handle type to ensure it is properly
+closed (e.g. using an `AnonPipe`).
 
-One of the benefits of this design is that it still makes the caller aware they
-are using system dependent extensions, while being able to utilize the API
-without suffering the constant need of `cfg!` checks to specify the exact target
-OS. For example, the code below would work on both Unix and Windows:
+Next, the API should expose methods for redirection that both do and do not take
+ownership of the underlying handle, e.g. `redirect<T: AsRaw*>(t: T)` and
+`redirect_by_ref<T: AsRaw*>(t: &T)`.
+
+The method that takes ownership retains the
+benefits of using `FromRaw*` directly while helping the caller avoid making
+platform specific calls. Unfortunately, since we cannot guarantee that an
+implementor of `AsRaw*` is the sole owner of the OS handle they return, this
+method will have to be `unsafe`.
+
+The method which does not take ownership allows the
+caller to reuse their handle without making excessive duplications, which would
+not be possible by using `FromRaw*` directly. The caller is, however, forced to
+ensure the handle will remain valid until the child is spawned, making this
+method `unsafe` as well.
+
+Below are several alternative ways of exposing a high level API. They are
+ordered in the author's personal preference, but neither is strictly better than
+the others designs.
+
+1. Exposing `redirect` methods via separate `StdioExt` struct: It will live in
+`std::os::$platform::process`, thus making it apparent to the caller that they
+are using an OS specific extension when importing it. This design offers large
+flexibility in external libraries need only define `AsRaw*` or have access to
+the raw OS handle itself (which would trivially define `AsRaw*` for itself).
+
+2. Exposing `redirect` methods via trait, e.g. `ToStdio`: This design will give
+greatest control to us (std) as to what can be used for redirection, however, it
+gives less flexibility to external libraries as they may need to implement
+additional traits. Moreover, and any blanket impls over `AsRaw*` invalidate the
+tight control (if it is desired) of redirectables. An unresolved question is
+what to name this trait as there are no such clear patterns established in the
+standard libraries or on `crates.io`. For example, the trait could be `ToStdio`,
+`To<Stdio>`, `Into<Stdio>`, etc.
+
+3. Expose `redirect` methods directly on `Stdio`: Cutting out the middleman
+(middletrait?) and defining the methods directly on the source minimizes APIs
+that will be eventually stabilized. This design, however, blurs the distinction
+that OS specifics apply (e.g. a file and socket are both file descriptors on
+Unix, but not necessarily HANDLEs on Windows).
+
+Example API usage based on the `StdioExt` design described above:
 
 ```rust
 #[cfg(unix)] use std::os::unix::process::StdioExt;
 #[cfg(windows)] use std::os::windows::process::StdioExt;
 
-let file = File::open(...);
-let stdio = unsafe { StdioExt::redirect(&file) };
-...
-```
-
-Next, the `AsRaw{Fd, Handle}` traits should be implemented for the
-`ChildStd{in,out,err}` types. This would allow easily piping output from one
-child process to another by leveraging the underlying OS pipes that were already
-created when spawning the child.
-
-```rust
 // Equivalent of `foo | bar`
 let foo = Command::new("foo").stdout(Stdio::piped()).spawn().unwrap();
-let out = foo.stdout.as_ref().unwrap();
+let out = foo.stdout.take().unwrap();
 let bar = Command::new("bar").stdin(StdioExt::redirect(out)).spawn().unwrap();
-// close foo.stdout here so that bar is the only pipe reader
-
-// Alternatively
-let bar = Command::new("bar").stdin(Stdio::piped()).spawn().unwrap();
-let in  = bar.stdin.as_ref().unwrap();
-let foo = Command::new("foo").stdout(StdioExt::redirect(in)).spawn().unwrap();
-// close bar.stdin here so that foo is the only pipe writer
 ```
 
 # Drawbacks
 
-Unsafely using raw OS file handles could potentially cause issues, however,
-`Command`s are are usually spawned immediately after building during which time
-open file descriptors/HANDLEs are still valid.
+Without using a high level API callers will be forced to use verbose and
+`unsafe` code more than they should or could get away with. Even with using a
+high level API there will be `unsafe`ty present due to stability lock on
+`Command` and `Stdio` (i.e. we cannot simply store references to the handles
+ensuring they remain valid). However, `Command`s are are usually spawned
+immediately after building during which time open file descriptors/HANDLEs are
+still valid.
 
 # Alternatives
 
-None that don't involve breaking changes or verbose interfaces.
+High level API alternatives discussed above.
 
 # Unresolved questions
 
