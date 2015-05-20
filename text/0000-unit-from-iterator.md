@@ -13,7 +13,7 @@ The `Result` type implements `FromIterator` in a way that creates a result out o
 
 ```rust
 println!("{:?}", Result::<Vec<i32>, MyError>::from_iter(vec![Ok(4), Ok(7), Ok(-3903)])); // Ok([4, 7, -3903])
-println!("{:?}", Result::<Vec<i32>, MyError>::from_iter(vec![Ok(5), Err(MyError::DivisionByZero), Ok(842), Err(MyError::Overflow)])); // Err(MyError::DivisionByZero)
+println!("{:?}", Result::<Vec<i32>, MyError>::from_iter(vec![Ok(5), Err(MyError::DivisionByZero), Ok(842), Err(MyError::Overflow)])); // Err(DivisionByZero)
 ```
 
 Implementing this RFC would allow this pattern to be used with iterables whose item type is of the form `Result<(), T>`.
