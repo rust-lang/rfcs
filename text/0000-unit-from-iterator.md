@@ -81,4 +81,26 @@ The only known drawback is that the use-cases for this functionality seem to be 
 
 # Unresolved questions
 
-None at this time.
+*   Should the iterator be exhausted rather than discarded? An exhausting implementation:
+    
+    ```rust
+    impl FromIterator<()> for () {
+        fn from_iter<T>(iter: T) -> () where T: IntoIterator<Item = ()> {
+            for _ in iter {}
+        }
+    }
+    ```
+    
+    This would decrease performance in the `Result` example, but open up other possibilities for using this where for loops are used today.
+    
+    *   If so, should the implementation be expanded to exhaust iterables of any item type?
+        
+        ```rust
+        impl<X> FromIterator<X> for () {
+             fn from_iter<T>(iter: T) -> () where T: IntoIterator<Item = X> {
+                  for _ in iter {}
+             }
+        }
+        ```
+        
+        This would allow `.collect::<()>()` to be used as a general-purpose “exhaust and discard the entire iterable” function.
