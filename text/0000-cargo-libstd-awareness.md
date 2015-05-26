@@ -7,7 +7,7 @@
 
 Currently, all packages implicitly depend on libstd. This makes Cargo unsuitable for packages that
 need a custom-built libstd, or otherwise depend on crates with the same names as libstd and the
-crates behind the facade. The proposed fixes also open the door to a future were libstd can be
+crates behind the facade. The proposed fixes also open the door to a future where libstd can be
 Cargoized.
 
 # Motivation
