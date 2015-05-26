@@ -35,16 +35,16 @@ above, with Cargo being none the wiser.
 The only new interface proposed is a boolean field to the package meta telling Cargo that the
 package does not depend on libstd by default. This need not imply Rust's `no_std`, as one might want
 to `use` their own build of libstd by default. To disambiguate, this field is called
-q`no-implicit-deps`; please, go ahead and bikeshead the name. `no-implicit-deps` is false by
-default to maintain compatibility with existing packages.
+`implicit-deps`; please, go ahead and bikeshead the name. `implicit-deps` is true by default to
+maintain compatibility with existing packages.
 
 The meaning of this flag is defined in 3 phases, where each phase extends the last. The idea being
 is that while earlier phases are easier to implement, later phases yield a more elegant system.
 
 ## Phase 1
 
-Add a `--no-sysroot` flag to `rustc`, and pass that to `rustc` is the case that `no-implicit-deps`
-is true.
+Add a `--use-sysroot=<true|false>` flag to `rustc`, where true is the default. Make Cargo pass
+`--use-sysroot=false` to `rustc` is the case that `implicit-deps` is false.
 
 This hotfix is enough to allow us bare-metal devs to use Cargo for our own projects, but doesn't
 suffice for creating an ecosystem of packages that depend on crates behind the facade but not libstd
@@ -53,8 +53,8 @@ the crates behind the facade, or they don't depend on them at all.
 
 ## Phase 2
 
-Since, passing in a directory of crates is inherently more fragile than passing in a crate
-itself, make Cargo use `--no-sysroot` in all cases.
+Since, passing in a directory of crates is inherently more fragile than passing in a crate itself,
+make Cargo use `--use-sysroot=false` in all cases.
 
 Cargo would special case package names corresponding to the crates behind the facade, such that if
 the package don't exist, it would simply pass the corresponding system crate to `rustc`. I assume
@@ -75,7 +75,7 @@ package names can be treated normally,
 
 The standard library is be downloaded and built from crates.io. Or equivalently, Cargo comes with a
 cache of that build, as Cargo should be able cache builds between projects at this point. Just as in
-phase 2, `no-implicit-deps` just prevents libstd from implicitly being appended to the list of
+phase 2, `implicit-deps = false` just prevents libstd from implicitly being appended to the list of
 dependencies.
 
 Again, to make this as least controversial as possible, this RFC does not propose outright that the
