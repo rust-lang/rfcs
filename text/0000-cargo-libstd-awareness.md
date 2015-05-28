@@ -73,7 +73,7 @@ need.
 If/when the standard library is built with Cargo and put on crates.io, all the specially-cased
 package names can be treated normally,
 
-The standard library is be downloaded and built from crates.io. Or equivalently, Cargo comes with a
+The standard library is downloaded and built from crates.io. Or equivalently, Cargo comes with a
 cache of that build, as Cargo should be able cache builds between projects at this point. Just as in
 phase 2, `implicit-deps = false` just prevents libstd from implicitly being appended to the list of
 dependencies.
