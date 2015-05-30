@@ -48,8 +48,8 @@ For an anecdote: in https://github.com/RustOS-Fork-Holding-Ground I tried to rig
 compile libstd for me. Since I needed to use an unstable compiler anyways, it was possible in
 principle to build absolutely everything I needed with the same `rustc` version. Because of some
 trouble with Cargo and target JSONs, I didn't use a custom target specification, and just used
-`x86_64-gnu-linux`, meaning that depending on platform I was compiling on, I may or may have been
-cross-compiling. In the case where I wasn't, I couldn't complete the build because `rustc`
+`x86_64-unknown-linux-gnu`, meaning that depending on platform I was compiling on, I may or may have
+been cross-compiling. In the case where I wasn't, I couldn't complete the build because `rustc`
 complained about the libstd I was building overlapping with the libstd in the sysroot.
 
 For these reasons, most freestanding projects I know of avoid Cargo altogether, and just include
