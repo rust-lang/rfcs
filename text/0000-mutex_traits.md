@@ -114,9 +114,7 @@ This table documents the three relations and how they are described:
 |---------------|-------------------|----------------------|--------------------|
 | Specific impl | by default        | impl Trait for T     | impl !Trait for T  |
 |               | impl ?Trait for T |                      |                    |
-|---------------|-------------------|----------------------|--------------------|
 | Default impl  | by default        | impl Trait for ..    | impl !Trait for .. |
-|---------------|-------------------|----------------------|--------------------|
 | Bounds        | by default        | where T: Trait       | where T: !Trait    |
 |               | where T: ?Sized   | by default for Sized |                    |
 
@@ -167,7 +165,7 @@ If a default impl of `Trait` exists, these rules are used to determine the relat
 Note that this definition is sound if we suppose that every trait has an implicit default impl of
 `?Trait`.
 
-# Orphan rule warbles
+## Orphan rule warbles
 
 The rules above all apply to a Rust system as a whole, composed of multiple crates associated as a
 directed acyclic graph. Within crates and modules, orphan rules allow silence to have a semantic
@@ -199,7 +197,7 @@ unstable feature outside of std.
 
 # Alternatives
 
-## Sibling proposa; !Trait by default
+## Sibling proposal: !Trait by default
 
 There is an alternative scheme which has some advantages and disadvantages when compared to that
 proposed in the main RFC. I am mostly certain that the main proposal is the better one, but I have
@@ -213,9 +211,7 @@ like this:
 |---------------|--------------------|----------------------|-------------------|
 | Specific impl | impl ?Trait for T  | impl Trait for T     | by default        |
 |               |                    |                      | impl !Trait for T |
-|---------------|--------------------|----------------------|-------------------|
 | Default impl  | impl ?Trait for .. | impl Trait for ..    | by default        |
-|---------------|--------------------|----------------------|-------------------|
 | Bounds        | by default         | where T: Trait       | where T: !Trait   |
 |               | except: ?Sized     | by default for Sized |                   |
 
