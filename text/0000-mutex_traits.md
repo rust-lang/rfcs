@@ -140,12 +140,6 @@ a coherence violation for a single type to implement both `Trait` and `!Trait`.
 Bounding by `!Trait` requires that types _explicitly implement_ `!Trait` in order to meet that bound. As mentioned 
 prior, this avoids the hazard that implicit negative reasoning introduces.
 
-## Syntactic sugar: Implicit `!Trait` inference
-
-If a type `T` implements a trait `Foo` which is bounded `!Bar`, an implementation of `!Bar` is inferred for `T` 
-(unless `T` explicitly implements `!Bar`, of course). This avoids boilerplate negative impls which are inferrable from
-other impls for the type.
-
 ## Clarification of default impl rules
 
 If a default impl of `Trait` exists, these rules are used to determine the relation between `T` and `Trait`:
@@ -156,16 +150,19 @@ If a default impl of `Trait` exists, these rules are used to determine the relat
 
 Note that this set of rules is sound if we suppose that every trait has an implicit default impl of `?Trait`.
 
-## Orphan rule warbles
+## !Trait inference
 
-The rules above all apply to a Rust system as a whole, composed of multiple crates associated as a directed acyclic 
-graph. Within crates and modules, orphan rules allow silence to have a semantic expressions that is slightly different
-from these rules. Unfortunately, eliminating this warble would be backwards incompatible.
+Though the type - trait relation is `?Trait` by default, a `!Trait` relation can be inferred by providing
+implementations which would be in conflict if the relation were `?Trait`. There are two categories of impls which
+allow an inference:
 
-Specifically, when both a trait and a type are defined within a single crate, that type and trait have the 
-relationship `T: !Trait` by default, rather than `?Trait`, only within that crate. This allows a certain degree of 
-implicit negative reasoning which cannot be performed outside of that local context. It does not present a logical 
-contradiction for this proposal.
+* __Implementing a trait bound by `!Trait`:__ e.g. if trait `Edible` is bound `!Poisoonous`, and type `BirthdayCake` 
+implements the trait `Edible`, `BirthdayCake` is inferred to be `!Poisonous`.
+* __An implementation that would otherwise overlap:__ If trait `Consumable` is implemented for `T where T: Edible`,
+and `Consumable` is implemented for `Dirt`, these would overlap if `Dirt` were `?Edible`, therefore these two impls
+imply `Dirt: !Edible`. _Note_ that for backwards compatibility reasons, orphan rules currently restrict these impls
+such that both `Consumable` and `Dirt` must be defined in the same crate in order for this impl to be allowable. This
+orphan rule already exists, [see this code for an example](hhttps://play.rust-lang.org/?gist=cebbc637fa27a6c1640e&version=stable).
 
 # Drawbacks
 
@@ -215,9 +212,9 @@ compatible way, traits implementing `?Trait` by default is preferred.
 
 ## Don't implement !Trait inference
 
-The inference that `T` is `!Trait` if it implements a trait bounded `!Trait` is not necessary for the rest of the 
-proposal to be implemented; if this is considered an unnecessary or negative introduction, the proposal could be 
-accepted without it.
+The inferences that `T` is `!Trait` if it has certain impls defined is not necessary for the rest of the proposal to
+be implemented; if this inference is considered an unnecessary or negative introduction, or conflicts in some way with
+specification proposals, the rest of this proposal could be accepted without it.
 
 ## Other alternatives
 
