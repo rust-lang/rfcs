@@ -47,13 +47,16 @@ match foo {
 
 ```
 
+The syntax is chosen to look like tuples, but with pipes instead of commas to
+signify OR instead of AND.
+
 # Motivation
 
 Disjoins fill an analogous role to tuples. They're useful where the programmer needs a single-use type who's usage will be localised to a small area of code.
 
 For example, consider this code:
 
-```
+```rust
 fn some_function() -> Result<i32, io::Error> {
   ...
 
@@ -168,6 +171,26 @@ Promoting `!` to a type and allowing it to unify with all other types would
 give it the same behavior as the current `!` syntax, except generalized,
 allowing more kinds of correct code to exist.
 
+It's worth making clear the difference between `struct Void {}` (ie `void`, ie.
+`()`) and `enum Void {}` (ie. `!`). We can think of `struct` and `enum` as
+being dual type operators where `struct {A, B, C}` is `A AND B AND C` and `enum
+{A, B, C}` is `A OR B OR C`. `()` and `!` are then the identities of these
+operators in the sense that adding a `()` member to a struct does not change
+the overall structure of the type (because the member is always instantiated
+with `()` and thus does nothing) and adding a `!` variant to an enum does not
+change the overall structure of the type (because the member can never be
+instantiated and thus does nothing). The reason `()` and `!` have historically
+been neglected as types is that they're so trivial that it doesn't occur to
+people that they even *are* types. `()` only has one value and so it's not
+interesting. Something that can only be in one state cannot carry information
+and a type with that doesn't carry any information has no obvious use in a
+language. `!` has no values and so it's not interesting. A type with no values
+can never exist and a type that can never exist has no obvious use in a
+language.
+
+However they are types, they have their use cases and an algebraic type system
+is not complete without both of them.
+
 # Detailed design
 
 Disjoins have the exact same semantics as named enums and behave the same in
@@ -176,8 +199,7 @@ disjoin type should be marked unreachable and eliminated where possible.
 Functions that return it should be marked with the llvm `NoReturn` attribute.
 The above should also apply to empty named enums.
 
-The typechecker should treat `!` as a subtype of, and allow it to unify with,
-all other types.
+The typechecker should allow `!` to unify with all other types.
 
 The existing compiler support for diverging functions (eg. `FnDiverging`)
 should be removed/replaced.
@@ -193,8 +215,25 @@ Adds it's own complexity to the type system and compiler.
   isomorphic to T). However these aren't enums, aren't algebraic, and would add
   enormous complexity to Rust's type system compared to positional disjoint
   unions.
+* Change the syntax? This might be necessary if the suggested syntax turns out
+  to be ambiguous (see: Unresolved Questions). The `!` in disjoin expressions
+  and patterns could be changed to another character although `!` already
+  has connotations of "no value".
+* Just promote `!` to a type. Although `!` fits naturally into a scheme
+  of anonymous enums this would still be a worthwhile change if done
+  independently. This would be a smaller change in the sense that it would
+  involve removing restrictions on an existing feature rather than adding a
+  whole new feature.
 
 # Unresolved questions
 
-None AFAICS.
+Is the suggested syntax unambiguous? The '|' character is already used for
+closures, bitwise OR and disjunctive match patterns. The '!' character is used
+for the not-operator and negative trait bounds. I can't see any of these being
+a problem but I'm not sure.
+
+Could `!` be treated as a subtype of all other types? Theoretically, yes, but
+the implementation might be a headache. Allowing `!` to unify with all other
+types would be simpler and good enough for most cases. And we don't treat `()`
+as a supertype of all other types either.
 
