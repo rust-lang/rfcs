@@ -72,13 +72,25 @@ Below are several alternative ways of exposing a high level API. They are
 ordered in the author's personal preference, but neither is strictly better than
 the others designs.
 
-1. Exposing `redirect` methods via separate `StdioExt` struct: It will live in
+1.
+Exposing `redirect` methods via separate `StdioExt` struct: It will live in
 `std::os::$platform::process`, thus making it apparent to the caller that they
 are using an OS specific extension when importing it. This design offers large
 flexibility in external libraries need only define `AsRaw*` or have access to
 the raw OS handle itself (which would trivially define `AsRaw*` for itself).
 
-2. Exposing `redirect` methods via trait, e.g. `ToStdio`: This design will give
+```rust
+pub struct StdioExt;
+impl StdioExt {
+   // Take ownership of the handle
+   pub fn redirect<T: AsRaw*>(t: T) -> Stdio;
+   // Unsafely borrow the handle, letting caller ensure it is valid
+   pub unsafe fn redirect_by_ref<T: AsRaw*>(t: T) -> Stdio;
+}
+```
+
+2.
+Exposing `redirect` methods via trait, e.g. `ToStdio`: This design will give
 greatest control to us (std) as to what can be used for redirection, however, it
 gives less flexibility to external libraries as they may need to implement
 additional traits. Moreover, and any blanket impls over `AsRaw*` invalidate the
@@ -87,11 +99,36 @@ what to name this trait as there are no such clear patterns established in the
 standard libraries or on `crates.io`. For example, the trait could be `ToStdio`,
 `To<Stdio>`, `Into<Stdio>`, etc.
 
-3. Expose `redirect` methods directly on `Stdio`: Cutting out the middleman
+```rust
+pub trait ToStdio {
+    unsafe fn to_stdio<T: AsRaw*>(t: T) -> Stdio;
+}
+
+impl<T> ToStdio for T where T: AsRaw* {
+    // Unsafely borrow the handle, letting caller ensure it is valid
+    unsafe fn to_stdio<T: AsRaw*>(t: T) -> Stdio;
+}
+```
+
+3.
+Expose `redirect` methods directly on `Stdio`: Cutting out the middleman
 (middletrait?) and defining the methods directly on the source minimizes APIs
 that will be eventually stabilized. This design, however, blurs the distinction
 that OS specifics apply (e.g. a file and socket are both file descriptors on
 Unix, but not necessarily HANDLEs on Windows).
+
+```rust
+impl Stdio {
+    pub fn piped() -> Stdio;
+    pub fn inherit() -> Stdio;
+    pub fn null() -> Stdio;
+
+    // Take ownership of the handle
+    pub fn redirect<T: AsRaw*>(t: T) -> Stdio;
+    // Unsafely borrow the handle, letting caller ensure it is valid
+    pub unsafe fn redirect_by_ref<T: AsRaw*>(t: T) -> Stdio;
+}
+```
 
 Example API usage based on the `StdioExt` design described above:
 
