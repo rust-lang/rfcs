@@ -30,7 +30,9 @@ the compiler's sysroot [specifically `<sysroot>/lib/<target>`]. This is quite co
 and we loose all the advantages of the previous method:
 
  - Packages may link or not link against libs in that directory as they please, with Cargo being
-   none the wiser.
+   none the wiser. For the foreseeable future, libstd should be the only crate in that directory
+   which stable Rust code link, but unstable Rust code can also freely link std's deps, or anything
+   that ends up there by mistake.
 
  - Cargo-built crates with the same name as those in there will collide, as the sysroot libs don't
    have their names frobbed.
