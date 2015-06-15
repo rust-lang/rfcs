@@ -5,23 +5,26 @@
 
 # Summary
 
-Update the standard library API with the ability to redirect stdio of child
-processes to any opened file handle or equivalent.
+Update the standard library with a cross-platform high level API for redirecting
+stdio of child processes to any opened file handle or equivalent.
 
 # Motivation
 
-The current API in `std::process` allows to either pipe stdio between parent and
-child process or redirect stdio to `/dev/null`. It would also be largely useful
-to allow stdio redirection to any currently opened file or pipe handles. This
-would allow redirecting stdio with a physical file or even another process (via
-OS pipe) without forcing the parent process to buffer the data itself.
+The current API in `std::process` allows the usage of raw file descriptors or
+HANDLEs for child process stdio redirection by leveraging the `FromRaw{Fd,
+Handle}` and `AsRaw{Fd, Handle}` trait implementations on `Stdio` and
+`ChildStd{In, Out, Err}`, respectively.
 
-For example, one may wish to spawn a process which prints gigabytes
-of data (e.g. logs) and use another process to filter through it, and save the
-result to a file. The current API would force the parent process to dedicate a
-thread just to buffer all data between child processes and disk, which is
-impractical given that the OS can stream the data for us via pipes and file
-redirection.
+Unfortunately, since the actual methods pertaining to `FromRaw*` and `AsRaw*`
+are OS specific, their usage requires either constant `cfg` checks or OS
+specific code duplication. Moreover, the conversion to `Stdio` is `unsafe` and
+requires the caller to ensure the OS handle remains valid until spawning the
+child. In the event that a caller wishes to give a child exclusive ownership of
+an OS handle, they must still go through the headache of manually keeping the
+handle alive and valid.
+
+Developing a high level cross-platform API will make stdio redirection more
+ergonomic and reduce code noise.
 
 # Detailed design
 
