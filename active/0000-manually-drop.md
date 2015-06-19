@@ -17,9 +17,12 @@ automatically) to inline data, i.e. not requiring allocation or other
 indirection like the pointer types.
 
 The motivating example of this is a `SmallVec<T>` type
-(e.g. [those defined by servo][servosmallvec]), where vector instances
+(e.g. servo's [smallvec], or @bluss's [arrayvec]), where vector instances
 with a small number of elements are stored directly inline, not on the
 heap. Something like
+
+[smallvec]: https://github.com/servo/rust-smallvec
+[arrayvec]: https://github.com/bluss/arrayvec
 
 ```rust
 struct SmallVec<T> {
@@ -29,8 +32,6 @@ struct SmallVec<T> {
     inline: [T, .. 8]
 }
 ```
-
-[servosmallvec]: https://github.com/servo/servo/blob/bc9127c499793177bd3826dd3c1c77ff294cede3/src/components/util/smallvec.rs
 
 As an example of its behaviour consider:
 
@@ -101,7 +102,7 @@ that are valid and no others.
 
 
 To be precise, at the time of writing, Rust defines that destructors
-are safe to run on zeroed values (and guarantees it via the so called
+are safe to run on destroyed values (and guarantees it via the so called
 "drop flag"), meaning this can currently be made safe via:
 
 ```rust
@@ -109,15 +110,20 @@ impl<T> Drop for SmallVec<T> {
     fn drop(&mut self) {
         // same as above.
 
-        // zero the whole array: it's fine for the `inner` field to be
-        // redestroyed now.
-        mem::set_memory(&mut self.inner as *mut T, 0, self.inner.len());
+        // flag the whole array as dropped: it's fine for the `inner`
+        // field to be redestroyed now.
+        ptr::write_bytes(&mut self.inner as *mut T, mem::POST_DROP_U8, self.inner.len());
     }
 }
 ```
 
-However, the drop flag is likely to disappear:
-[#5016](https://github.com/mozilla/rust/issues/5016).
+However, the drop flag is likely to disappear: [#5016].
+
+[#5016]: https://github.com/mozilla/rust/issues/5016
+
+NB. not running destructors is now safe in Rust, so this type isn't
+inherently `unsafe`, except for the fact that it is designed to store
+invalid instances of other types.
 
 # Detailed design
 
@@ -125,7 +131,7 @@ A new lang-item type equivalent to
 
 ```rust
 pub struct ManuallyDrop<T> {
-    pub data: T
+    data: T
 }
 ```
 
@@ -150,16 +156,34 @@ would print only `0`, *not* `1`.
 This would be modelled after the `UnsafeCell` type, providing similar
 methods:
 
+- `const fn new(x: T) -> ManuallyDrop<T>`
 - `fn get(&self) -> *const T`
 - `fn get_mut(&mut self) -> *mut T`
-- `unsafe fn unwrap(self) -> T`
+- `unsafe fn into_inner(self) -> T`
 
-The `data` field is public to allow for static initialisation (again,
-similar to `UnsafeCell`).
+Additional initialisation functions can be made available:
 
-# Drawbacks
+- `fn zeroed()`
+- `fn uninitialized()`
 
-This is quite dangerous.
+(These would be `const fn` if possible, but it is not clear to me that
+it is right now.)
+
+The `ManuallyDrop` type would be a black box for representation
+optimisations: it is explicitly designed to be able to store arbitrary
+junk, and so the assumptions made by the compiler conventionally may
+not hold (for example, the `Option` null pointer optimisation [will
+break] if a pointer is null). As a concrete example:
+
+[will break]: https://github.com/servo/rust-smallvec/issues/5
+
+```rust
+type T = Option<Box<u8>>;
+type T_MD = Option<ManuallyDrop<Box<u8>>>;
+
+assert_eq!(size_of::<T>(),     8);
+assert_eq!(size_of::<T_MD>(), 16);
+```
 
 # Alternatives
 
@@ -171,15 +195,57 @@ This is quite dangerous.
   parameters, so something like `struct SmallVec<T, n> { ... inner: ManuallyDrop<[T, .. n]> }`
   would work, allowing for `SmallVec<T, 2>`, `SmallVec<T, 100>` etc.
 
-- Continue relying on the drop flag/zeroing.
-
 - A struct `UninterpretedBytesOfSize<T>` equal to
   `[u8, .. size_of::<T>()]`, that is, a chunk of memory large enough
   to store a `T`, but treated as raw memory (i.e. `u8`s). This has the
-  (large) downside of losing all type information, interfering with the
-  compiler's reachability analysis (e.g. for `UnsafeCell`), and making
-  it easier for the programmer to make mistakes w.r.t. an incorrect or
-  forgotten coercion (it's would be identical to C's `void*`).
+  (large) downside of losing all type information, interfering with
+  the compiler's reachability analysis (e.g. for `UnsafeCell`), and
+  making it easier for the programmer to make mistakes w.r.t. an
+  incorrect or forgotten coercion (it's would be identical to C's
+  `void*`).  This is getting more feasible with [`const fn`] support.
+
+- Change drop to have (semantically) take full ownership of its
+  contents, so that `mem::forget` works, e.g. `trait Drop { fn
+  drop(self); }` or a design like that in [@eddyb's comment].
+
+- Make no change and just perform manual ownership control via
+  `Option<T>`: a data type can store `Option<T>` instead of `T` with
+  the invariant that the `Option` is always `Some` except for when the
+  destructor runs. This allows one to implement the previous
+  alternative with `take`. E.g. `ManuallyDrop` can be shimmed as
+  something like:
+
+  ```rust
+  struct ManuallyDrop<T> { x: Option<T> }
+  impl<T> ManuallyDrop<T> {
+      const fn new(x: T) -> ManuallyDrop<T> {
+          ManuallyDrop { x: Some(x) }
+      }
+      fn get(&self) -> *const T {
+          self.x.as_ref().unwrap()
+      }
+      fn get_mut(&mut self) -> *mut T {
+          self.x.as_ref_mut().unwrap()
+      }
+      unsafe fn into_inner(self) -> T {
+          self.x.unwrap()
+      }
+  }
+
+  impl Drop for ManuallyDrop {
+      fn drop(&mut self) { mem::forget(self.x.take()) }
+  }
+  ```
+
+  This approach is used by [arrayvec] but has many downsides:
+
+  - (much) larger compiled code when not using `unsafe` (`unwrap`
+    includes branches and unwinding etc.)
+  - more invariants to track
+  - larger data types
+
+[`const fn`]: https://github.com/rust-lang/rfcs/blob/master/text/0911-const-fn.md
+[@eddyb's comment]: https://github.com/rust-lang/rfcs/pull/197#issuecomment-110850383
 
 # Unresolved questions
 
