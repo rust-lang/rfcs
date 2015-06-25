@@ -36,11 +36,57 @@ Structs that should implement these new methods are:
 * std::collections::BTreeSet
 * std::collections::HashSet
 
+
 Some structs might implement these new methods, but their benefit besides
 consistency is unclear since it would only apply for `usize`:
 
 * std::collections::VecMap
 * std::collections::BitSet
+
+New API methods:
+
+```
+impl<K: Ord, V> BTreeMap<K, V> {
+    // ...
+
+    pub fn keyed_get<Q: ?Sized>(&self, key: &Q) -> Option<(&K, &V)> where K: Borrow<Q>, Q: Ord;
+    pub fn keyed_get_mut<Q: ?Sized>(&mut self, key: &Q) -> Option<(&K, &mut V)> where K: Borrow<Q>, Q: Ord;
+    pub fn keyed_insert(&mut self, mut key: K, mut value: V) -> Option<(K, V)>;
+    pub fn keyed_remove<Q: ?Sized>(&mut self, key: &Q) -> Option<(K, V)> where K: Borrow<Q>, Q: Ord;
+}
+
+impl<T: Ord> BTreeSet<T> {
+    // ...
+
+    pub fn get<Q: ?Sized>(&self, value: &Q) -> Option<&T> where T: Borrow<Q>, Q: Ord;
+    pub fn insert_item(&mut self, value: T) -> Option<T>;
+    pub fn remove_item<Q: ?Sized>(&mut self, value: &Q) -> Option<T> where T: Borrow<Q>, Q: Ord;
+}
+
+impl<K, V, S> HashMap<K, V, S>
+    where K: Eq + Hash, S: HashState
+{
+    // ...
+
+    pub fn keyed_get<Q: ?Sized>(&self, k: &Q) -> Option<(&K, &V)>
+        where K: Borrow<Q>, Q: Hash + Eq;
+    pub fn get_mut<Q: ?Sized>(&mut self, k: &Q) -> Option<(&K, &mut V)>;
+    pub fn keyed_insert(&mut self, k: K, v: V) -> Option<(K, V)>;
+    pub fn keyed_remove<Q: ?Sized>(&mut self, k: &Q) -> Option<(K, V)>;
+}
+
+impl<T, S> HashSet<T, S>
+    where T: Eq + Hash, S: HashState {
+    // ...
+
+    pub fn get<Q: ?Sized>(&self, value: &Q) -> Option<&T>
+        where T: Borrow<Q>, Q: Hash + Eq;
+    pub fn remove_item<Q: ?Sized>(&mut self, value: &Q) -> Option<T>
+        where T: Borrow<Q>, Q: Hash + Eq;
+    pub fn insert_item(&mut self, value: T) -> Option<T>;
+}
+```
+
 
 # Drawbacks
 
