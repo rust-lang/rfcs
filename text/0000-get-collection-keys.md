@@ -87,6 +87,20 @@ impl<T, S> HashSet<T, S>
 }
 ```
 
+The existing `OccupiedEntry` could benefit from these new methods and provide
+its own pretty API on top:
+
+```
+
+impl<'a, K, V> OccupiedEntry<'a, K, V> {
+    fn key(&self) -> &K;
+    fn keyed_remove(self) -> (K, V);
+    fn keyed_get_mut(&mut self) -> (&K, &mut V);
+    fn keyed_get(&self) -> (&K, &V);
+    fn keyed_into_mut(self) -> (&'a K, &'a mut V);
+}
+
+```
 
 # Drawbacks
 
