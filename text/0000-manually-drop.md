@@ -203,16 +203,19 @@ assert_eq!(size_of::<T_MD>(), 16);
   the compiler's reachability analysis (e.g. for `UnsafeCell`), and
   making it easier for the programmer to make mistakes w.r.t. an
   incorrect or forgotten coercion (it's would be identical to C's
-  `void*`).  This is getting more feasible with [`const fn`] support.
+  `void*`).  This is getting more feasible with [`const fn`]
+  support. There needs to be support for explicitly specifying the
+  alignment of the type too (to match `T`).
 
 - Change drop to have (semantically) take full ownership of its
   contents, so that `mem::forget` works, e.g. `trait Drop { fn
   drop(self); }` or a design like that in [@eddyb's comment].
 
 - Make no change and just perform manual ownership control via
-  `Option<T>`: a data type can store `Option<T>` instead of `T` with
-  the invariant that the `Option` is always `Some` except for when the
-  destructor runs. This allows one to implement the previous
+  `Option<T>` (or something similar, designed to avoid invalid layout
+  optimisations): a data type can store `Option<T>` instead of `T`
+  with the invariant that the `Option` is always `Some` except for
+  when the destructor runs. This allows one to implement the previous
   alternative with `take`. E.g. `ManuallyDrop` can be shimmed as
   something like:
 
