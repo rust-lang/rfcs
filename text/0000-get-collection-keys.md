@@ -45,7 +45,7 @@ consistency is unclear since it would only apply for `usize`:
 
 New API methods:
 
-```
+```rust
 impl<K: Ord, V> BTreeMap<K, V> {
     // ...
 
@@ -90,7 +90,7 @@ impl<T, S> HashSet<T, S>
 The existing `OccupiedEntry` could benefit from these new methods and provide
 its own pretty API on top:
 
-```
+```rust
 
 impl<'a, K, V> OccupiedEntry<'a, K, V> {
     fn key(&self) -> &K;
