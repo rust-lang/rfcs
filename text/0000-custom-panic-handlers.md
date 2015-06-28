@@ -5,121 +5,76 @@
 
 # Summary
 
-Allow the registration of alternative *panic handlers* to customize the output of the `panic!` macro.
+Allow control over what happens beside unwinding when a thread panic by **replacing** the *panic handler* of **a specific thread**.
 
 # Motivation
 
+Custom panic handlers would allow for a more flexible handling of panics: threads could, for example, send a message to a channel, write status information to a file, display a more user-friendly message. `Error` objects could be passed by panic to the parent thread for finer-grained handling later on without a long chain of `Result`s.
 
-There is currently no way to prevent the call of `panic!` from writing an error message along with the thread, file and line number to `stderr`, even if the panic is caught with [`std::thread::catch_panic`](http://doc.rust-lang.org/nightly/std/thread/fn.catch_panic.html) or happens within a child thread.
+There is currently no way to prevent the call of `panic!` from writing an error message along with the thread, file and line number to `stderr`, even if the panic is caught with [`std::thread::catch_panic`](http://doc.rust-lang.org/nightly/std/thread/fn.catch_panic.html) or happens within a child thread. This is problematic because `panic!` enables returning from a chain of deeply nested functions in an exceptional situation without complicating their signatures.
 
-This is problematic because `panic!` enables returning from a chain of deeply nested functions in an exceptional situation without complicating their signatures.
+An example: you have a function, ten levels deep in a child thread. After small additions to the code, it can now encounter a non-recoverable error.
+Is it better to refactor ten functions to use `Result` for a one-time, unrecoverable error which should exit the thread anyway, or use `panic!`? I'm not advocating the overuse of `panic!` as a cheap error handling mechanism, but it has its uses. Otherwise, panics would just crash the whole program instead of being possibly caught.
 
-An example: you have a function, ten levels deep in a child thread, that suddently can encounter a non-recoverable error (after additions to the code). Do you want to refactor ten functions to use `Result` - at a point where you have not yet decided what the best long-term approach is, as it could require heavy refactoring of the existing codebase - or use `panic!` for a while to experiment without hurting user experience (by that I mean, displaying messages best used for debugging to the user - does the user really care about the thread and line number a function failed in?). I'm not advocating the overuse of `panic!` as a cheap error handling mechanism, but it has its uses. Otherwise it would just crash the whole program instead of being possibly caught.
-
-Using `Result`s or `Option`s and creating new enums (to use with `Result`) just to handle these exceptional situations feels overkill, adds a lot of boilerplate while providing little extra functionality, and makes it harder to move around these functions without modifying their return types, while `panic!` gives very similar functionality without all the boilerplate, but since `panic!()` clutters logs with messages appropriate for debugging but not for the end user, one is often forced to resort to the former.
+Using `Result`s or `Option`s and creating new enums (to use with `Result`) just to handle these exceptional situations feels overkill, adds a lot of boilerplate while providing little extra functionality, and makes it harder to move around these functions without modifying their return types, while `panic!` gives very similar functionality without all the boilerplate, but since `panic!()` clutters logs with messages appropriate for debugging but not for the end user, one is often forced to resort to the former. Moreover, using Result in this situation creates a lot of unnecessary branching.
 
 Another concern is that some third-party library functions you have no control upon may panic on exceptional situations, and it is often not desirable to output debugging information to the user in this case.
 
+Currently, it is partially possible to customize the panic behavior by registering new callbacks with [`rt::unwind::register`](http://doc.rust-lang.org/std/rt/unwind/fn.register.html), however this solution is limited because it allows a maximum of 16 callbacks, and those are global, whereas the proposed solution uses a thread-local handler.
 
 # Detailed design
 
-The current panic handler is defined [here](https://github.com/rust-lang/rust/blob/2b8c9b12f91c0bf2c1e6278a5f803c2df3698432/src/libstd/panicking.rs#L28).
-
-This RFC proposes to allow control over what happens beside unwinding when a thread panic by **changing** the *panic handler* of this thread, instead of simply adding new ones with [`rt::unwind::register`](http://doc.rust-lang.org/std/rt/unwind/fn.register.html).
-
-
-A few common handlers would be added to `std::thread`: **`debug`**, **`basic`** and **`silent`**.  
-The `debug` handler would be the default and have a behavior similar to the current `on_panic`, to avoid modifying the behavior of existing code.
-`basic` would print whatever is passed to `panic!()` without adding information to the message.
-`silent` would never output anything. 
-
-A handler (or a *callback*, as this was called in `rt::unwind`'s code) is registered with `thread::on_panic`. It has the following signature:
-
+Handlers are functions with the [Callback](https://doc.rust-lang.org/std/rt/unwind/type.Callback.html) type:
 ``` rust
-fn(msg: &Any + Send, file: &'static str, line: u32) -> bool
+fn(msg: &Any + Send, file: &'static str, line: u32)
 ```
 
-It is almost the same as the current [`Callback`](http://doc.rust-lang.org/std/rt/unwind/type.Callback.html) signature, except that it returns a `bool` to indicate whether handler execution should go on after the execution of the callee. 
+They are thread-local. Since function pointers are `Copy`, a thread's panic handler is stored in a `Cell`.  
+The panic handler of a thread is changed by a setter function, `set_panic_handler`, which sets the inner value of the Cell to the new pointer.
 
-Handlers that simply add a layer of logging return `true` to execute the next one in the list, and 'overriding' handlers return `false` to stop there.  
-Handlers are called in reverse order of registration (first registered, last called), to place the 'most important' ones (usually one of `thread::handlers`) at the top.  
+No handlers other than the default one would be added to `std`, because it is trivial to define more advanced handlers tailored to the needs of the program in user code. Common, reusable handlers can grow on crates.io without being tied to the standard library.
 
+`std::rt::unwind::begin_unwind_inner` would call the thread's panic handler before processing callbacks, without needing synchronization.
 
-This new API would be used as follows:
+If the user wishes not to log panics, he can define an empty function following the `Callback` signature and pass it to `set_panic_handler`.
 
+### Summary of the proposed changes
+
+* Add a thread-local handler to `rt::unwind`, defaulting to the [current default panic handler](https://github.com/rust-lang/rust/blob/2b8c9b12f91c0bf2c1e6278a5f803c2df3698432/src/libstd/panicking.rs#L28):
 ```rust
-use std::thread;
+thread_local! { static ON_PANIC: Cell<Callback> = Cell::new(panicking::on_panic) }
+```
 
-fn main() {
-    thread::spawn(|| {
-        // use the default panic handler, `debug`, the one we currently have
-
-        some_optional.unwrap();
-    }).join();
-
-    thread::spawn(|| {
-        // Always use the `silent` handler
-        thread::on_panic(thread::handlers::silent);
-
-        // This will never display a message
-        
-        // Use cases:
-        // - abort thread silently on errors unrecoverable at its level,
-        //   but recoverable at the process level, and spawn a new one
-        a_third_party_function_that_could_fail();
-    }).join();
-
-    thread::spawn(|| {
-        // Always use the `basic` handler
-        thread::on_panic(thread::handlers::basic);
-
-        // This will simply display whatever is passed to `panic!` on panic,
-        // much like println!()
-        
-        // Use cases:
-        // - abort thread on invalid input with a user-friendly message
-        if !is_valid(input) {
-            panic!("Invalid input - please try again");
-        } else {
-            // ...
-        }
-        
-    }).join();
-    
-    
+* Add a function to `std::rt::unwind` or `std::thread` (see unresolved questions) to set a new panic handler:
+``` rust
+pub fn set_panic_handler(new_handler: Callback) {
+  ON_PANIC.with(|cb_cell| cb_cell.set(new_handler));
 }
 ```
-
-Users wishing to have `debug` messages on debug builds and `basic` messages on release builds could simply do this:
-
-```rust
-thread::on_panic(
-    if cfg!(debug) {
-        thread::handlers::debug
-    } else {
-        thread::handlers::basic
-    }
-);
+* Replace the `unsafe` block registering the default callback in [`std::rt::unwind::begin_unwind_inner`](https://github.com/rust-lang/rust/blob/9cc0b2247509d61d6a246a5c5ad67f84b9a2d8b6/src/libstd/rt/unwind/mod.rs#L241-L254) with a plain call to the thread's handler:
+``` rust
+let (file, line) = *file_line;
+ON_PANIC.with(|cb_cell| cb_cell.get()(&*msg, file, line));
 ```
-
-
-**The `basic` handler does *not* print a newline when `panic!` is called without arguments**, to allow silencing `panic!` in specific cases (silent recovery by spawning a new thread) without hiding other `panic` messages which may be useful for debugging.
 
 
 # Drawbacks
 
-As this doesn't break existing code, the only one I can think of is that this will require a pretty heavy refactoring of `rt::unwind`.
+This proposed solution does not implement inheritance of panic handlers between threads (that is, if thread A has the handler `foo` and spawns a second thread B, B will also have `foo` as a handler).
+However, this can be implemented later in `std::thread` and it should be relatively easy to do so (read the calling thread's panic handler and set the new thread's handler to it). For now, it is probably best to keep the changes minimal.
 
 
 # Alternatives
 
-The original solution I proposed was to just make `panic!()` output nothing to `stderr` when called without arguments, instead of calling `panic!("explicit panic")` internally. This is simpler to implement and requires less changes to `rt::unwind`.
+The original solution I proposed was to just make `panic!()` output nothing to `stderr` when called without arguments, instead of calling `panic!("explicit panic")` internally. This is simpler to implement and requires less changes to `rt::unwind`. However, it turned out a more flexible implementation would be better to support most use cases; one does not always have control over the functions he calls, and hence cannot prevent them from panicking and logging a debug message without rewriting their code.
 
-However, it turns out a more flexible implementation would be better to support most use cases; one does not always have control over the functions he calls, and hence cannot prevent them from panicking and logging a debug message without rewriting their code.
+We could also not change anything to the panicking mechanisms, use `catch_panic` to react differently on panics and ignore unwanted panic messages, or run the panicking process from a wrapper which removes all "thread {} panicked" entries from the output of the program before forwarding it. However, this approach is much more cumbersome than the proposed solution and much less efficient as it requires running a new wrapper process.
 
-We could also not change anything to the panicking mechanisms and accept unwanted messages in log files.
+In case one simply wishes to prevent logging of panics in a specific thread entirely, they can also use [this workaround](https://github.com/rust-lang/rust/issues/24099#issuecomment-89908401).
 
 
 # Unresolved questions
 
-How should the `rt::unwind` functions be refactored to implement this modified panic callback / handler mechanism?
+Should `set_panic_handler` live in `std::rt`, or in `std::thread`?
+
+Should the current unstable implementation of callbacks be removed, since a single panic handler can call other handlers, eliminating the need for a callback list? They still allow global panic handlers, however if a new RFC for handler inheritance between threads land later, they will effictively have lost most of their interest.
