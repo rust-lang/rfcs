@@ -55,6 +55,10 @@ the direction the language is evolving in.
 * [1040-duration-reform.md](text/1040-duration-reform.md)
 * [1044-io-fs-2.1.md](text/1044-io-fs-2.1.md)
 * [1066-safe-mem-forget.md](text/1066-safe-mem-forget.md)
+* [1096-remove-static-assert.md](text/1096-remove-static-assert.md)
+* [1122-language-semver.md](text/1122-language-semver.md)
+* [1131-likely-intrinsic.md](text/1131-likely-intrinsic.md)
+* [1156-adjust-default-object-bounds.md](text/1156-adjust-default-object-bounds.md)
 
 ## Table of Contents
 [Table of Contents]: #table-of-contents
@@ -169,7 +173,7 @@ to the pull request number), at which point the RFC is 'active', or
 reject it by closing the pull request.
 
 ## The role of the shepherd
-[The role of the shepherd]: the-role-of-the-shepherd
+[The role of the shepherd]: #the-role-of-the-shepherd
 
 During triage, every RFC will either be closed or assigned a shepherd.
 The role of the shepherd is to move the RFC through the process. This
