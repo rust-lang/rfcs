@@ -99,11 +99,11 @@ Weep before the might of combinatorics, destroyer of API designs.
 
 # Alternatives
 
-```
-fn pred(&self, Bound<Q>)
-fn succ(&self, Bound<Q>)
-fn pred_mut(&self, Bound<Q>)
-fn succ_mut(&self, Bound<Q>)
+```rust
+fn pred(&self, Bound<&Q>)
+fn succ(&self, Bound<&Q>)
+fn pred_mut(&self, Bound<&Q>)
+fn succ_mut(&self, Bound<&Q>)
 ```
 
 where `pred(Unbounded)` is max, and `succ(Unbounded)` in min by assuming you're getting the
