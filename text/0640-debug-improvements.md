@@ -134,8 +134,8 @@ HashMap {
     "c": 3
 }
 ```
-* Struct and tuple struct output is printed with one field per line, indented
-    four spaces, and fields printed with the `#` modifier as well: e.g.
+* Struct and struct variant output is printed with one field per line,
+indented four spaces, and fields printed with the `#` modifier as well: e.g.
 ```rust
 Foo {
     field1: "hi",
@@ -143,12 +143,16 @@ Foo {
     field3: false
 }
 ```
+* Tuple, tuple struct and enum variant output is printed in a single line,
+without adding newlines after any field: e.g.
 ```rust
-Foo(
-    "hi",
-    10,
-    false
-)
+("hi", 10, false)
+```
+```rust
+Foo("hi", 10, false)
+```
+```rust
+Some(1)
 ```
 
 In all cases, pretty printed and non-pretty printed output should differ *only*
