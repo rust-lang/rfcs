@@ -60,9 +60,17 @@ emitting `error: too few type parameters provided: expected N
 parameter(s) , found M parameter(s) [E0089]`, it mechanically fills in
 the remaining `N - M` parameters with `_`.
 
+This RFC only applies to expressions. It is not proposing that it be
+legal to abbreviate `let x: Foo<T, _>` as `let x: Foo<T>`.
+
 # Drawbacks
 
-None right now.
+- It is not possible to specify that all type parameters are
+  specified, so that it is an error and requires adjustment if more
+  are added upstream. It isn't so clear to the author which default is
+  right (syntax for "closing" a specification list could be added if
+  the version in this RFC is decided to be the right default but being
+  definite is still desirable).
 
 # Alternatives
 
