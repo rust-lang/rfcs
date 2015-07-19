@@ -1,5 +1,5 @@
 - Feature Name: integer_casts
-- Start Date: 2015-07-15
+- Start Date: 2015-07-19
 - RFC PR: (leave this empty)
 - Rust Issue: (leave this empty)
 
@@ -27,8 +27,9 @@ casts and casts where truncation should be considered an error.
 
 Assume T and U are built-in integer types, then `Into<U>` is implemented for `T` and `From<T>` is
 implemented for `U` iff the conversion from `T` to `U` is always lossless.
-A good visualization (without `usize` and `isize`) can be found [1](here).
-Implementations for `usize` and `isize` are platform dependent. This is by design. If code is ported
+A good visualization (without `usize` and `isize`) can be found [here][1].
+
+Implementations for `usize` and `isize` are platform dependent by design. If code is ported
 to a new platform and some of `into()` conversions are not lossless anymore, they have to be
 reviewed and replaced with checked casts. The porting effort shouldn't be large and potentially
 caught mistakes can easily outweight it, for example, porting Rust codebase from 64-bit Windows to
@@ -47,10 +48,11 @@ trait IntegerCast<Target> {
 
 The methods are analogous to methods for arithmetic operations like `add`/`wrapping_add`/
 `overflowing_add`/`saturating_add`.
-`cast()` is equivalent to `as` but panics when the conversion is lossy and debug assertions are on.
-`wrapping_cast()` is completely equivalent to `as`, it wraps (=truncates) the value.
-`overflowing_cast()` is equivalent to `as` but also supplies overflow flag as a second result.
-`saturating_cast()` clamps the value into the range of the target type.
+- `cast()` is equivalent to `as` but panics when the conversion is lossy and debug assertions are on.
+- `wrapping_cast()` is completely equivalent to `as`, it wraps (=truncates) the value.
+- `overflowing_cast()` is equivalent to `as` but also supplies overflow flag as a second result.
+- `saturating_cast()` clamps the value into the range of the target type.
+
 Statistically, `cast()` is the most common of these four methods, `wrapping_cast()` is less common
 and usually related to hashes, random numbers or serialization, and the other methods are rare and
 highly specialized.
@@ -61,7 +63,7 @@ potentially lossy on other).
 
 ## Make `usize` default type parameter for `Index`, `IndexMut`, `Shl` and `Shr`
 
-It will make type inference in index position possible in cases like:
+These traits don't currently have default type parameters and setting them will make type inference in index position possible in cases like:
 ```
 let a: u16 = 10;
 let b = c[a.into()];
@@ -71,7 +73,7 @@ let b = c[a.into()];
 With flat memory model and no validity guarantees raw pointers are essentially weird integers and
 they are relatively often converted to normal integers (usually `usize`) and back with operator
 `as`. However, operator `as` can truncate a pointer even to `i8` without blinking an eye, so it
-would be nice to have a checked conversion method instead of it - the checking in this case is
+would be nice to have a dedicated checked conversion method instead of it - the checking in this case is
 purely compile time. As a bonus, the conversion method doesn't usually require specifying the target
 `usize`.
 
@@ -101,13 +103,13 @@ impl AsPtr for $Source {
 ```
 
 where `$Target` and `$Source` belong to the set `{usize, isize, underlying_type(usize),
-underlying_type(isize)}`. `underlying_type(T)` here is a fixed-size type equivalent to T, for
-example `underlying_type(usize) == u64` on 64-bit platforms.
+underlying_type(isize)}`. `underlying_type(T)` here is a fixed-size type equivalent of `T`, for
+example `underlying_type(usize) == u64` on 64-bit platforms.  
 `as_ptr` and `as_mut_ptr` can arguably be inherent methods.
 
 ## Implementation
 An experiment implementing similar but somewhat different design and evaluating its practical
-impact is described [2](here).
+impact is described [here][2].
 
 # Drawbacks
 
@@ -125,27 +127,29 @@ and overflows never happen in code written by a reasonable programmer.
 
 2. Use a separate trait for lossless conversions instead of `Into`, e.g.
 
-pub trait Widen<Target>: Sized {
-    fn widen(self) -> Target;
-}
+    ```
+    pub trait Widen<Target>: Sized {
+        fn widen(self) -> Target;
+    }
+    ```
 
-It would still make sense to implement `Into` for lossless integer conversions, because they are
+    It would still make sense to implement `Into` for lossless integer conversions, because they are
 totally reasonable conversions and `Into` is by definition a trait for, well, reasonable
 conversions. In this case a separate trait `Widen` would feel like a duplication.
-The trait `Widen` will have to live in the prelude, just like `Into`, otherwise it will be rarely
+The trait `Widen` will have to live in the prelude, like `Into`, otherwise it will be rarely
 used, because the alternative (`as`) doesn't require importing anything (something similar already
 happens with `ptr::null` vs `0 as *const T`). Adding new names to the prelude may be considered a
 drawback.
 
-3. Core language solution for lossless conversions, e.g. new operator `as^` or `lossless_as`.
-This is much more intrusive and doesn't probably pull its weight.
+3. Core language solution for lossless conversions, e.g. new operator `as^` or `lossless_as` or
+unary plus. This is much more intrusive and doesn't probably pull its weight.
 It would still make sense to implement `Into` for lossless integer conversions, because they are
 reasonable conversions. There's a non-zero chance that `Into` will get its own language sugar
 somewhere in the remote future.
 
 4. Make lossless integer conversions implicit at language level. This alternative is not pursued.
 In the relevant thread on internals many people spoke against this alternative and it had no
-consensus. Moreover, originally the absence of these conversions is [4](by design) and not just an
+consensus. Moreover, originally the absence of these conversions is [by design][4] and not just an
 omission.
 
 5. Methods `as()`/`wrapping_as()/...` may look better but `as` can't be used as a method name.
@@ -155,7 +159,7 @@ Theoretically `as` can be made a context dependent keyword, then the names will 
 there's not much sense in multiplying entities - `IntegerCast` is ought to be implemented for a
 limited set of types and all its methods always go in group.
 
-7. Sign conversions with fixed target type described in [2] are subsumed by `IntegerCast` in this
+7. Sign conversions with fixed target type described in [the experiment][2] are subsumed by `IntegerCast` in this
 design, but they can probably be useful by themselves. They would also have to be provided in
 several variants - `as_signed()/as_signed_wrapping()/...`.
 
@@ -165,7 +169,7 @@ several variants - `as_signed()/as_signed_wrapping()/...`.
 
 None so far
 
-[1] https://internals.rust-lang.org/t/implicit-widening-polymorphic-indexing-and-similar-ideas/1141/45
-[2] https://internals.rust-lang.org/t/implicit-widening-polymorphic-indexing-and-similar-ideas/1141/70
-[3] https://internals.rust-lang.org/t/implicit-widening-polymorphic-indexing-and-similar-ideas/1141
-[4] http://graydon2.dreamwidth.org/2015/07/03/
+[1]: https://internals.rust-lang.org/t/implicit-widening-polymorphic-indexing-and-similar-ideas/1141/45
+[2]: https://internals.rust-lang.org/t/implicit-widening-polymorphic-indexing-and-similar-ideas/1141/70
+[3]: https://internals.rust-lang.org/t/implicit-widening-polymorphic-indexing-and-similar-ideas/1141
+[4]: http://graydon2.dreamwidth.org/2015/07/03/
