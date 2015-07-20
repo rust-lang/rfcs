@@ -7,28 +7,29 @@
 
 Add the following to BTreeMap
 
-* pred_inc
-* pred_exc
-* succ_inc
-* succ_exc
-* first
-* last
-* pred_inc_mut
-* pred_exc_mut
-* succ_inc_mut
-* succ_exc_mut
-* first_mut
-* last_mut
+* min
+* max
+* get_le
+* get_lt
+* get_ge
+* get_gt
+
+* min_mut
+* max_mut
+* get_le_mut
+* get_lt_mut
+* get_ge_mut
+* get_gt_mut
+
 
 and to BTreeSet:
 
-* pred_inc
-* pred_exc
-* succ_inc
-* succ_exc
-* first
-* last
-
+* min
+* max
+* get_le
+* get_lt
+* get_ge
+* get_gt
 
 
 
@@ -53,27 +54,27 @@ It is also siginificantly more ergonomic/discoverable to have `pred_inc_mut(&K)`
 
 The BTreeMap APIs are as follows:
 
-(pred|succ)_(inc|exc):
+get_(le|lt|gt|ge):
 
 ```rust
-fn pred_inc<Q: ?Sized>(&self, &Q) -> Option<(&K, &V)>
+fn get_le<Q: ?Sized>(&self, &Q) -> Option<(&K, &V)>
     where K: Borrow<Q>;
 ```
 
-(pred|succ)_(inc|exc)_mut:
+get_(le|lt|gt|ge)_mut:
 
 ```rust
-fn pred_inc_mut<Q: ?Sized>(&mut self, &Q) -> Option<(&K, &mut V)>
+fn get_le_mut<Q: ?Sized>(&mut self, &Q) -> Option<(&K, &mut V)>
     where K: Borrow<Q>;
 ```
 
-first|last:
+min|max:
 
 ```rust
 fn first(&self) -> Option<(&K, &V)>;
 ```
 
-(first|last)_mut:
+(min|max)_mut:
 
 ```rust
 fn first_mut(&mut self) -> Option<(&K, &mut V)>;
@@ -108,7 +109,7 @@ fn succ_mut(&self, Bound<&Q>)
 
 where `pred(Unbounded)` is max, and `succ(Unbounded)` in min by assuming you're getting the
 predecessor and successor of positive and negative infinity. This RFC does not propose this
-API because it is crazy-pants and would make our users cry.
+API because it is in the author's opinion awful and would make our users cry.
 
 --------
 
