@@ -41,15 +41,17 @@ caught mistakes can easily outweight it, for example, porting Rust codebase from
 trait IntegerCast<Target> {
     fn cast(self) -> Target;
     fn wrapping_cast(self) -> Target;
+    fn checked_cast(self) -> Option<Target>;
     fn overflowing_cast(self) -> (Target, bool);
     fn saturating_cast(self) -> Target;
 }
 ```
 
-The methods are analogous to methods for arithmetic operations like `add`/`wrapping_add`/
-`overflowing_add`/`saturating_add`.
+The methods correspond to methods for arithmetic operations like `add`/`wrapping_add`/
+`checked_add`/`overflowing_add`/`saturating_add`.
 - `cast()` is equivalent to `as` but panics when the conversion is lossy and debug assertions are on.
 - `wrapping_cast()` is completely equivalent to `as`, it wraps (=truncates) the value.
+- `checked_cast()` returns `None` if the conversion is lossy and `Some(self as Target)` otherwise.
 - `overflowing_cast()` is equivalent to `as` but also supplies overflow flag as a second result.
 - `saturating_cast()` clamps the value into the range of the target type.
 
@@ -66,7 +68,8 @@ potentially lossy on other).
 These traits don't currently have default type parameters and setting them will make type inference in index position possible in cases like:
 ```
 let a: u16 = 10;
-let b = c[a.into()];
+let b = c[a.into()]; // With default type parameter
+let b = c[a.into(): usize]; // Without default type parameter, but with type ascription, still more verbose than necessary
 ```
 
 ## Bonus: Conversions between integers and raw pointers
