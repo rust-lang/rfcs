@@ -5,9 +5,8 @@
 
 # Summary
 
-Define all exclusively owned, allocated, and never-initialized memory as being
-one-way re-interpretable as valid `[u8]`. In other words, all (allocated) byte
-arrays are valid byte arrays.
+Expose an std function for marking potentially uninitialized bytes as
+initialized.
 
 # Motivation
 
@@ -17,8 +16,10 @@ safe and defined):
 ```rust
 impl Vec<u8> {
     pub fn grow_uninitialized(&mut self, amount: usize) {
-        self.reserve(amount);
+        unsafe {
         let len = self.len();
+        self.reserve(amount);
+        mem::assume_initialized(self.as_mut_ptr().offset(len), amount);
         self.set_len(len + amount);
     }
 }
@@ -26,11 +27,27 @@ impl Vec<u8> {
 
 And would make it much easier to implement fast IO code.
 
-# Design/Argument
+# Detailed Design
+
+Specifically, this proposal recommends that the following function be added to
+the standard library along with an associated intrinsic for telling LLVM that a
+section of memory should be considered initialized.
+
+```rust
+mod mem {
+    unsafe fn assume_initialized(ptr: *mut u8, size: usize);
+    // ...
+}
+```
+
+This function takes a pointer and a size to avoid introducing uninitialized but
+safely dereferencable types.
+
+# Why
 
 Every addressable byte in allocated memory is a valid u8 (byte) by definition.
-On Linux at least, one can read `/proc/self/mem` into a buffer so the following
-two functions are (virtually) indistinguishable at runtime (on Linux):
+On Linux at least, one can (usually) read `/proc/self/mem` into a buffer so the
+following two functions are (virtually) indistinguishable at runtime (on Linux):
 
 ```rust
 use std::fs::File;
@@ -52,6 +69,7 @@ fn fake_uninitialized() -> Vec<u8> {
 fn real_uninitialized() -> Vec<u8> {
     let mut v = Vec::new();
     v.reserve(100);
+    // tell LLVM that v should be considered initialized.
     v.set_len(100);
     v
 }
@@ -60,9 +78,6 @@ fn real_uninitialized() -> Vec<u8> {
 Given that this is already possible to do without writing any unsafe code,
 there's no reason not to make it safe to do efficiently (i.e. replace all
 instances of `fake_uninitialized` with `real_uninitialized`).
-
-This proposal defines all exclusively owned never-initialized memory, as one-way
-in-place re-interpretable as valid `[u8]`.
 
 # Drawbacks
 
