@@ -63,7 +63,7 @@ highly specialized.
 conversion (this is needed for portability, some conversions can be lossless on one platform and
 potentially lossy on other).
 
-## Make `usize` default type parameter for `Index`, `IndexMut`, `Shl` and `Shr`
+## Make `usize` default type parameter for `Index` and `IndexMut`
 
 These traits don't currently have default type parameters and setting them will make type inference in index position possible in cases like:
 ```
@@ -71,44 +71,6 @@ let a: u16 = 10;
 let b = c[a.into()]; // With default type parameter
 let b = c[a.into(): usize]; // Without default type parameter, but with type ascription, still more verbose than necessary
 ```
-
-## Bonus: Conversions between integers and raw pointers
-With flat memory model and no validity guarantees raw pointers are essentially weird integers and
-they are relatively often converted to normal integers (usually `usize`) and back with operator
-`as`. However, operator `as` can truncate a pointer even to `i8` without blinking an eye, so it
-would be nice to have a dedicated checked conversion method instead of it - the checking in this case is
-purely compile time. As a bonus, the conversion method doesn't usually require specifying the target
-`usize`.
-
-```
-// in core::ptr
-trait AsInteger<Target = usize> {
-    fn as_integer(self) -> Target;
-}
-
-impl<T> AsInteger<$Target> for *const T {
-    fn as_integer(self) -> $Target{ self as $Target }
-}
-impl<T> AsInteger<$Target> for *mut T {
-    fn as_integer(self) -> $Target{ self as $Target }
-}
-
-// in core::num
-trait AsPtr {
-    fn as_ptr<T>() -> *const T;
-    fn as_mut_ptr<T>() -> *mut T;
-}
-
-impl AsPtr for $Source {
-    fn as_ptr<T>() -> *const T { $Source as *const T }
-    fn as_mut_ptr<T>() -> *mut T { $Source as *mut T }
-}
-```
-
-where `$Target` and `$Source` belong to the set `{usize, isize, underlying_type(usize),
-underlying_type(isize)}`. `underlying_type(T)` here is a fixed-size type equivalent of `T`, for
-example `underlying_type(usize) == u64` on 64-bit platforms.  
-`as_ptr` and `as_mut_ptr` can arguably be inherent methods.
 
 ## Implementation
 An experiment implementing similar but somewhat different design and evaluating its practical
