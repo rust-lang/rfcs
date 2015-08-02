@@ -20,7 +20,7 @@ This method would be a static method on `Box` named `leak`.
 Example Implementation:
 ```rust
 impl<T : ?Sized> Box<T> {
-    pub fn leak<'a>(b: Self) -> &'a mut T {
+    pub fn leak<'a>(b: Self) -> &'a mut T where T: 'a {
         unsafe { mem::transmute(b) }
     }
 }
