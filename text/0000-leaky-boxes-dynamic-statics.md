@@ -45,6 +45,8 @@ impl<T : ?Sized + 'static> Box<T> {
 
 If we don't implement `Box::leak`, the safe action of leaking a `Box<T>` into a `&'static mut T` will not be possible without using unsafe rust, although it will be very easy for crates to implement this functionality themselves.
 
+This method could also be potentially useful on structs like `Vec` and `String` in the future to make it easier to leak them into `&'static mut [T]` and `&'static mut str` respectively. This potentially suggests a pattern, and the possibility of `leak` being a method on a `Leakable` trait. However, it may just be easier to implement other `leak` methods seperately, as being generic over `Leakable` is unlikely to be a common or useful use case.
+
 # Unresolved questions
 
 Should the method include a `'static` bound on it's type parameter `T`, and always produce a `&'static mut T`, rather than a `&'a mut T` for any lifetime `'a`?
