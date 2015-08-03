@@ -76,35 +76,41 @@ A "complex NT" is an NT that is not simple.  That is,
 `$foo:ty` is a simple NT but `$($foo:ty)+` is not. `FOLLOW(NT)` is the set of
 allowed tokens for the given NT's fragment specifier, and is defined below.
 
-`CHECK(M, F):` *input*: a sequence of tokens `M` and a set of tokens `F`; *output*: whether M is valid.
+`CHECK(M, P):`  
+  `M`: sequence of tokens comprising the matcher   
+  `P`: set of successor tokens that may follow `M` "on the level above"  
+  *output*: whether M is valid.
   1. If `M` is empty, accept.
   2. Set `t = HEAD(M)`
   3. If `t` is not an NT, skip to 7.
   4. Find `S`, the set of possible successors of `t`:
-    1. If `TAIL(M)` is empty, set `S = F`,
-    2. Else, `S = FIRST(TAIL(M))`.
+    1. `S = FIRST(TAIL(M))`
+    2. If `ε` is in `S`, `S = S - {ε} + P`.  
+       In other words, if the rest of `M` could match an empty string, we should 
+       also consider the set of successors `P`.
   5. If `t` is a simple NT, check that `S` is a subset of `FOLLOW(t)`.
      If so, skip to 7, else, reject.
   6. Else, `t` is a complex NT.
-      1. If `t` has the form `$(Q)+` or `$(Q)*`, run `CHECK(Q, S)`.
+      1. If `t` has the form `$(Q)+` or `$(Q)*`, run `CHECK(Q, FIRST(Q) + S)`.
          If it accepts, skip to 7, else, reject.
       2. If `t` has the form `$(Q)u+` or `$(Q)u*` for some token `u`,
-         run `CHECK(Q, S + {u})` If it accepts, skip to 7, else, reject.
+         run `CHECK(Q, {u} + S)`. If it accepts, skip to 7, else, reject.
   7. Set `M = TAIL(M)`, goto 1.
 
-`FIRST(S):` Returns the set of all possible tokens that may begin input sequence matched by `S`.
-  1. If `S` is empty, return `{}`.
-  2. Set `t = HEAD(S)`
+`FIRST(M):` Returns the set of all possible tokens that may begin input sequence matched by `M`.
+  1. If `M` is empty, return `{ε}`.
+  2. Set `t = HEAD(M)`
   3. If `t` is not a complex NT, return `{t}`.
   4. If `t` is a complex NT:
      1. If `t` has the form `$(Q)+` or `$(Q)u+`, return `FIRST(Q)`.
-     2. If `t` has the form `$(Q)*` or `$(Q)u*`, return `FIRST(Q) + FIRST(TAIL(S))`.
+     2. If `t` has the form `$(Q)*` or `$(Q)u*`, return `FIRST(Q) + FIRST(TAIL(M))`.
 
-`HEAD(M)` Returns the first token in sequence `M`.
-`TAIL(M)` Returns sequence `M` with the first token removed.
+`HEAD(M)` Returns the first token in sequence `M`.   
+`TAIL(M)` Returns sequence `M` with first token removed.  
+(both `HEAD` and `TAIL` are not defined if `M` is empty)
 
 This algorithm should be run on every matcher in every `macro_rules`
-invocation, with `F` as `{}` (empty set). If it rejects a matcher, an error should be
+invocation, with `P` as `{}` (empty set). If it rejects a matcher, an error should be
 emitted and compilation should not complete.
 
 The current legal fragment specifiers are: `item`, `block`, `stmt`, `pat`,
@@ -121,7 +127,53 @@ The current legal fragment specifiers are: `item`, `block`, `stmt`, `pat`,
 - `FOLLOW(item)` = any token
 - `FOLLOW(meta)` = any token
 
-(Note that open and close delimiters are valid following any NT.)
+##### Example 1
+CHECK(M = (`$a:expr` `$b:expr`), P = {})
+
+1. M is not empty
+2. t = `$a:expr`
+3. t is NT
+4. S = FIRST(TAIL(`$a:expr` `$b:expr`))  
+     = { `$b:expr` }
+5. S not in FOLLOW(`expr`) => REJECT  
+
+##### Example 2
+CHECK(M = (`$a:expr` `$( : $b:expr),*` `$c:expr`), P = {})
+
+1. M is not empty
+2. t = `$a:expr`
+3. t is NT
+4. S = FIRST(TAIL(`$a:expr` `$( ; $b:expr),*` `$c:expr`))  
+     = FIRST( `$(; $b:expr),*` `$c:expr` )  
+     = FIRST( `;` `$b:expr` ) + FIRST(`$c:expr`) [by rule FIRST.4.2]  
+     = { `;` `$c:expr` }
+5. S not in FOLLOW(`expr`) because of `$c:expr` => REJECT
+
+##### Example 3
+
+CHECK(M = (`$($a:expr)*`), P = {})
+
+1. M is not empty
+2. t = `$($a:expr)*`
+3. t is NT
+4.  
+  1. S = FIRST(TAIL(`$($a:expr)*`)) = FIRST() = {`ε`}
+  2. S = S - {`ε`} + P = {}
+5. t is not a simple NT
+6. CHECK( `$a:expr`, FIRST(`$a:expr`) + {}) [by rule CHECK.6.1]
+   
+nested CHECK(M = (`$a:expr`), P = {`$a:expr`})
+
+1. M is not empty
+2. t = `$a:expr`
+3. t is NT
+4.  
+  1. S = FIRST(TAIL(`$a:expr`))  
+     = FIRST()
+     = {`ε`}
+  2.  S = S - {`ε`} + P = { `$a:expr` }
+5. t is a simple NT, S not in FOLLOW(`expr`) => REJECT
+
 
 # Drawbacks
 
