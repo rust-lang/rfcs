@@ -43,7 +43,7 @@ whole search path). A BTreeMap with parent pointers could potentially avoid any 
 modulo, but this is a more general problem for the *ordered map* API. There are surely types for
 which a straight-up query will be cheaper than iterator initialization.
 
-It is also siginificantly more ergonomic/discoverable to have `pred_inc_mut(&K)` over
+It is also significantly more ergonomic/discoverable to have `get_le_mut(&K)` over
 `range_mut(Bound::Unbounded, Bound::Inclusive(&K)).next_back()`.
 
 
@@ -71,13 +71,13 @@ fn get_le_mut<Q: ?Sized>(&mut self, &Q) -> Option<(&K, &mut V)>
 min|max:
 
 ```rust
-fn first(&self) -> Option<(&K, &V)>;
+fn min(&self) -> Option<(&K, &V)>;
 ```
 
 (min|max)_mut:
 
 ```rust
-fn first_mut(&mut self) -> Option<(&K, &mut V)>;
+fn min_mut(&mut self) -> Option<(&K, &mut V)>;
 ```
 
 
@@ -100,6 +100,8 @@ Weep before the might of combinatorics, destroyer of API designs.
 
 # Alternatives
 
+## Use Bounds to unify inc/exc/extreme
+
 ```rust
 fn pred(&self, Bound<&Q>)
 fn succ(&self, Bound<&Q>)
@@ -111,13 +113,51 @@ where `pred(Unbounded)` is max, and `succ(Unbounded)` in min by assuming you're 
 predecessor and successor of positive and negative infinity. This RFC does not propose this
 API because it is in the author's opinion awful and would make our users cry.
 
---------
 
-We could also give `&mut` access to the keys in the `_mut` variants. This would enable
-changing "unimportant" information in the keys without resorting to interior mutability
-mechanisms. It would allow BTreeSet to have _mut variants of all these methods. This RFC
-does not propose this because it's probably a really big footgun while also being quite niche.
 
+## Use a custom enum to capture all variability
+
+Take enums instead of having many methods:
+
+```rust
+enum Query<T> {
+    Min,
+    Lt(T),
+    Le(T),
+    Ge(T),
+    Gt(T),
+    Max,
+}
+
+impl<K, V> Map<K, V> {
+    fn query<Q: ?Sized>(&self, query: Query<&Q>) -> Option<(&K, &V)>
+       where K: Borrow<Q>;
+       
+    fn query_mut<Q: ?Sized>(&self, query: Query<&Q>) -> Option<(&K, &mut V)>
+       where K: Borrow<Q>;
+}
+```
+
+But this is just shuffling around the complexity, and making a more painful calling convention
+that involves importing names:
+
+```rust
+let result = map.query(Query::Lt("hello"));
+let result = map.query_mut(Query::Max);
+
+// pulled in enum
+let result = map.query(Lt("hello"));
+let result = map.query_mut(Max);
+```
+
+vs
+
+```rust
+let result = map.get_lt("hello");
+let result = map.max_mut();
+```
+
+##
 
 
 
