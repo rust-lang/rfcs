@@ -142,10 +142,12 @@ But this is just shuffling around the complexity, and making a more painful call
 that involves importing names:
 
 ```rust
+use std::collections::Query;
 let result = map.query(Query::Lt("hello"));
 let result = map.query_mut(Query::Max);
 
 // pulled in enum
+use std::collections::Query::*;
 let result = map.query(Lt("hello"));
 let result = map.query_mut(Max);
 ```
@@ -157,8 +159,14 @@ let result = map.get_lt("hello");
 let result = map.max_mut();
 ```
 
-##
 
+
+## Give mutable access to keys
+
+We could also give `&mut` access to the keys in the `_mut` variants. This would enable
+changing "unimportant" information in the keys without resorting to interior mutability
+mechanisms. It would allow BTreeSet to have _mut variants of all these methods. This RFC
+does not propose this because it's probably a really big footgun while also being quite niche.
 
 
 
