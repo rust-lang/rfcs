@@ -71,34 +71,46 @@ rather than any possible arbitrary matcher.
 # Detailed design
 
 The algorithm for recognizing valid matchers `M` follows. Note that a matcher
-is merely a token tree. A "simple NT" is an NT without repetitions. That is,
+is merely a token tree. A "simple NT" is an NT without repetitions.
+A "complex NT" is an NT that is not simple.  That is,
 `$foo:ty` is a simple NT but `$($foo:ty)+` is not. `FOLLOW(NT)` is the set of
 allowed tokens for the given NT's fragment specifier, and is defined below.
-`F` is used for representing the separator in complex NTs.  In `$($foo:ty),+`,
-`F` would be `,`, and for `$($foo:ty)+`, `F` would be `EOF`.
 
-*input*: a token tree `M` representing a matcher and a token `F`
+`CHECK(M, P):`  
+  `M`: sequence of tokens comprising the matcher   
+  `P`: set of successor tokens that may follow `M` "on the level above"  
+  *output*: whether M is valid.
+  1. If `M` is empty, accept.
+  2. Set `t = HEAD(M)`
+  3. If `t` is not an NT, skip to 7.
+  4. Find `S`, the set of possible successors of `t`:
+    1. `S = FIRST(TAIL(M))`
+    2. If `ε` is in `S`, `S = S - {ε} + P`.  
+       In other words, if the rest of `M` could match an empty string, we should 
+       also consider the set of successors `P`.
+  5. If `t` is a simple NT, check that `S` is a subset of `FOLLOW(t)`.
+     If so, skip to 7, else, reject.
+  6. Else, `t` is a complex NT.
+      1. If `t` has the form `$(Q)+` or `$(Q)*`, run `CHECK(Q, FIRST(Q) + S)`.
+         If it accepts, skip to 7, else, reject.
+      2. If `t` has the form `$(Q)u+` or `$(Q)u*` for some token `u`,
+         run `CHECK(Q, {u} + S)`. If it accepts, skip to 7, else, reject.
+  7. Set `M = TAIL(M)`, goto 1.
 
-*output*: whether M is valid
+`FIRST(M):` Returns the set of all possible tokens that may begin input sequence matched by `M`.
+  1. If `M` is empty, return `{ε}`.
+  2. Set `t = HEAD(M)`
+  3. If `t` is not a complex NT, return `{t}`.
+  4. If `t` is a complex NT:
+     1. If `t` has the form `$(Q)+` or `$(Q)u+`, return `FIRST(Q)`.
+     2. If `t` has the form `$(Q)*` or `$(Q)u*`, return `FIRST(Q) + FIRST(TAIL(M))`.
 
-For each token `T` in `M`:
-
-1. If `T` is not an NT, continue.
-2. If `T` is a simple NT, look ahead to the next token `T'` in `M`. If
-   `T'` is `EOF` or a close delimiter of a token tree, replace `T'` with
-   `F`. If `T'` is in the set `FOLLOW(NT)`, `T'` is EOF, or `T'` is any close
-   delimiter, continue. Otherwise, reject.
-3. Else, `T` is a complex NT.
-    1. If `T` has the form `$(...)+` or `$(...)*`, run the algorithm on the
-       contents with `F` set to the token following `T`. If it accepts,
-       continue, else, reject.
-    2. If `T` has the form `$(...)U+` or `$(...)U*` for some token `U`, run
-       the algorithm on the contents with `F` set to `U`. If it accepts,
-       check that the last token in the sequence can be followed by `F`. If
-       so, accept. Otherwise, reject.
+`HEAD(M)` Returns the first token in sequence `M`.   
+`TAIL(M)` Returns sequence `M` with first token removed.  
+(both `HEAD` and `TAIL` are not defined if `M` is empty)
 
 This algorithm should be run on every matcher in every `macro_rules`
-invocation, with `F` as `EOF`. If it rejects a matcher, an error should be
+invocation, with `P` as `{}` (empty set). If it rejects a matcher, an error should be
 emitted and compilation should not complete.
 
 The current legal fragment specifiers are: `item`, `block`, `stmt`, `pat`,
@@ -106,7 +118,7 @@ The current legal fragment specifiers are: `item`, `block`, `stmt`, `pat`,
 
 - `FOLLOW(pat)` = `{FatArrow, Comma, Eq}`
 - `FOLLOW(expr)` = `{FatArrow, Comma, Semicolon}`
-- `FOLLOW(ty)` = `{Comma, FatArrow, Colon, Eq, Gt, Ident(as)}`
+- `FOLLOW(ty)` = `{Comma, FatArrow, Colon, Semicolon, Eq, Gt, Ident(as)}`
 - `FOLLOW(stmt)` = `FOLLOW(expr)`
 - `FOLLOW(path)` = `FOLLOW(ty)`
 - `FOLLOW(block)` = any token
@@ -115,7 +127,53 @@ The current legal fragment specifiers are: `item`, `block`, `stmt`, `pat`,
 - `FOLLOW(item)` = any token
 - `FOLLOW(meta)` = any token
 
-(Note that close delimiters are valid following any NT.)
+##### Example 1
+CHECK(M = (`$a:expr` `$b:expr`), P = {})
+
+1. M is not empty
+2. t = `$a:expr`
+3. t is NT
+4. S = FIRST(TAIL(`$a:expr` `$b:expr`))  
+     = { `$b:expr` }
+5. S not in FOLLOW(`expr`) => REJECT  
+
+##### Example 2
+CHECK(M = (`$a:expr` `$( : $b:expr),*` `$c:expr`), P = {})
+
+1. M is not empty
+2. t = `$a:expr`
+3. t is NT
+4. S = FIRST(TAIL(`$a:expr` `$( ; $b:expr),*` `$c:expr`))  
+     = FIRST( `$(; $b:expr),*` `$c:expr` )  
+     = FIRST( `;` `$b:expr` ) + FIRST(`$c:expr`) [by rule FIRST.4.2]  
+     = { `;` `$c:expr` }
+5. S not in FOLLOW(`expr`) because of `$c:expr` => REJECT
+
+##### Example 3
+
+CHECK(M = (`$($a:expr)*`), P = {})
+
+1. M is not empty
+2. t = `$($a:expr)*`
+3. t is NT
+4.  
+  1. S = FIRST(TAIL(`$($a:expr)*`)) = FIRST() = {`ε`}
+  2. S = S - {`ε`} + P = {}
+5. t is not a simple NT
+6. CHECK( `$a:expr`, FIRST(`$a:expr`) + {}) [by rule CHECK.6.1]
+   
+nested CHECK(M = (`$a:expr`), P = {`$a:expr`})
+
+1. M is not empty
+2. t = `$a:expr`
+3. t is NT
+4.  
+  1. S = FIRST(TAIL(`$a:expr`))  
+     = FIRST()
+     = {`ε`}
+  2.  S = S - {`ε`} + P = { `$a:expr` }
+5. t is a simple NT, S not in FOLLOW(`expr`) => REJECT
+
 
 # Drawbacks
 
