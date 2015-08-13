@@ -24,7 +24,7 @@ Currently, it is partially possible to customize the panic behavior by registeri
 
 # Detailed design
 
-Sample implementation: https://github.com/filsmick/rust/commit/8a5ae75e41863648f7c8cbbae3145e30bd260372
+**Edit: this implementation only allows for the use of function pointers; using `Fn` closures instead appears more flexible, and I'm currently working on a design using them.**
 
 In order to allow later extension of the data passed, as per [@sfackler's comment](https://github.com/rust-lang/rfcs/pull/1100#discussion_r33882931), handlers are functions accepting a `PanicData` parameter.
 
