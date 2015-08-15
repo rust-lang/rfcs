@@ -7,6 +7,7 @@
 
 Allow control over what happens beside unwinding when a thread panic by **replacing** the *panic handler* of **a specific thread**.
 
+
 # Motivation
 
 Custom panic handlers would allow for a more flexible handling of panics: threads could, for example, send a message to a channel, write status information to a file, display a more user-friendly message. `Error` objects could be passed by panic to the parent thread for finer-grained handling later on without a long chain of `Result`s.
@@ -22,77 +23,54 @@ Another concern is that some third-party library functions you have no control u
 
 Currently, it is partially possible to customize the panic behavior by registering new callbacks with [`rt::unwind::register`](http://doc.rust-lang.org/std/rt/unwind/fn.register.html), however this solution is limited because it allows a maximum of 16 callbacks, and those are global, whereas the proposed solution uses a thread-local handler.
 
+
 # Detailed design
 
-**Edit: this implementation only allows for the use of function pointers; using `Fn` closures instead appears more flexible, and I'm currently working on a design using them.**
+Handlers are `Fn(&PanicData) + 'static` closures.  
+The `PanicData` struct holds all the data related to a given panic, in order to allow later extension of the data passed later on (see [@sfackler's comment](https://github.com/rust-lang/rfcs/pull/1100#discussion_r33882931)).
 
-In order to allow later extension of the data passed, as per [@sfackler's comment](https://github.com/rust-lang/rfcs/pull/1100#discussion_r33882931), handlers are functions accepting a `PanicData` parameter.
 
+Handlers are also thread-local. Since `Fn()` closures cannot be cloned, threads store a `RefCell<Rc<Fn(&PanicData)>>` in order to allow accessing a handler after it has been set. A thread's handler is initialized to the default handler defined in libstd/panicking.rs, `on_panic`.
 
-The unstable [`Callback`](https://doc.rust-lang.org/std/rt/unwind/type.Callback.html) type is renamed to `PanicHandler` and changes from:
-``` rust
-fn(msg: &Any + Send, file: &'static str, line: u32)
-```
+`rt::unwind` exposes two accessor functions:
 
-to:
 ```rust
-fn(panic_data: &PanicData)
+pub fn set_panic_handler<T: Fn(&PanicData) + 'static>(new_handler: T) {
+  ON_PANIC.with(|cb_refcell| *cb_refcell.borrow_mut() = Rc::new(new_handler));
+}
+
+pub fn get_panic_handler() -> Rc<Fn(&PanicData) + 'static> {
+  ON_PANIC.with(|cb_refcell| cb_refcell.borrow().clone())
+}
 ```
-where `PanicData` is an opaque struct with `msg`, `file` and `line` accessors, returning `&(Any + Send)`, `&'static str` and `u32`, respectively. This lets us add more fields to `PanicData` later, like backtrace data, for example.
 
+Since `rt` is unstable, `thread` defines similar accessors that simply forward their arguments to those in `rt::unwind` (I'm unaware of any other way to expose unstable items in a stable module).
 
-Handlers are thread-local. Since function pointers are `Copy`, a thread's panic handler is stored in a `Cell`.  
-The panic handler of a thread is changed by a setter function, `set_panic_handler`, which sets the inner value of the Cell to the new pointer.
+```rust
+pub fn set_panic_handler<T: Fn(&PanicData) + 'static>(handler: T) {
+  unwind::set_panic_handler(handler);
+}
 
-No handlers other than the default one would be added to `std`, because it is trivial to define more advanced handlers tailored to the needs of the program in user code. Common, reusable handlers can grow on crates.io without being tied to the standard library.
+pub fn get_panic_handler() -> Rc<Fn(&PanicData) + 'static> {
+  unwind::get_panic_handler()
+}
+```
 
-`std::rt::unwind::begin_unwind_inner` would call the thread's panic handler before processing callbacks, without needing synchronization.
+`panicking::on_panic` is modified to take a `&PanicData` and thereby match the `Fn(&PanicData) + 'static` signature.
+
+`std::rt::unwind::begin_unwind_inner` calls the thread's panic handler before processing regular callbacks from the old implementation (unless they are removed - see unresolved questions), without needing synchronization.
 
 If the user wishes not to log panics, he can define an empty function following the `Callback` signature and pass it to `set_panic_handler`.
 
-### Summary of the proposed changes
+No handlers other than the default one are added to `std`, as it is trivial to define more advanced handlers tailored to the needs of the program in user code. Common, reusable handlers can grow on crates.io without being tied to the standard library.
 
-* Add a thread-local handler to `rt::unwind`, defaulting to the [current default panic handler](https://github.com/rust-lang/rust/blob/2b8c9b12f91c0bf2c1e6278a5f803c2df3698432/src/libstd/panicking.rs#L28):
-```rust
-thread_local! { static ON_PANIC: Cell<Callback> = Cell::new(panicking::on_panic) }
-```
+**For implementation details, please see [this diff](https://github.com/filsmick/rust-tlcph-poc/compare/d2ec6c375aeebacb8e792cbcb9e0f770c236a120...master) and [this example of usage](https://gist.github.com/filsmick/e0505d7171c997b45a53)**
 
-* Add a function to `std::rt::unwind` or `std::thread` (see unresolved questions) to set a new panic handler:
-``` rust
-pub fn set_panic_handler(new_handler: PanicHandler) {
-  ON_PANIC.with(|cb_cell| cb_cell.set(new_handler));
-}
-```
-
-* Add a `PanicData` struct to `std::rt::unwind` or `std::thread` (see unresolved questions) which contains data associated to a call to `panic!`, and change the `PanicHandler` signature to a function which takes a `&PanicData`:
-```rust
-pub struct PanicData<'a> {
-  msg: &'a (Any + Send),
-  file: &'static str,
-  line: u32
-}
-
-// `impl` omitted (getter functions)
-
-pub type PanicHandler = fn(panic_data: &PanicData);
-```
-
-* Change [`std::rt::unwind::begin_unwind_inner`](https://github.com/rust-lang/rust/blob/9cc0b2247509d61d6a246a5c5ad67f84b9a2d8b6/src/libstd/rt/unwind/mod.rs#L241-L276) to accomodate for the other changes, by constructing a `PanicData` struct and passing it to the panic handler(s)
-
-* Change `rt::panicking::on_panic` to match the new `PanicHandler` signature:
-```rust
-pub fn on_panic(panic_data: &PanicData) {
-    let obj = panic_data.msg();
-    let file = panic_data.file();
-    let line = panic_data.line();
-    // ...
-}
-```
 
 # Drawbacks
 
 This proposed solution does not implement inheritance of panic handlers between threads (that is, if thread A has the handler `foo` and spawns a second thread B, B will also have `foo` as a handler).
-However, this can be implemented later in `std::thread` and it should be relatively easy to do so (read the calling thread's panic handler and set the new thread's handler to it). For now, it is probably best to keep the changes minimal.
+For now, it is probably best to keep the changes minimal and let this new API mature, as this can be implemented later in the thread spawning code relatively easily (read the calling thread's panic handler and set the new thread's handler to it).
 
 
 # Alternatives
@@ -106,6 +84,4 @@ In case one simply wishes to prevent logging of panics in a specific thread enti
 
 # Unresolved questions
 
-Should `set_panic_handler` live in `std::rt`, or in `std::thread`?
-
-Should the [current unstable implementation of callbacks](http://doc.rust-lang.org/std/rt/unwind/fn.register.html) be removed, since a single panic handler can call other handlers, eliminating the need for a callback list? They still allow global panic handlers, however if a new RFC for handler inheritance between threads land later, they will effictively have lost most of their interest.
+What should happen to the [current unstable implementation of callbacks](http://doc.rust-lang.org/std/rt/unwind/fn.register.html)? A single custom panic handler as proposed in this RFC can call other handlers, eliminating the need for a callback list, but the old mechanism still allows for global panic handlers. However if a new RFC for handler inheritance between threads land later, they will effectively have lost most of their interest.
