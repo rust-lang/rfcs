@@ -5,14 +5,18 @@
 
 # Summary
 
-This RFC describes a set of macros to be added to the language - named `cfg_int!(name)`,
-`cfg_str!(name)`, `cfg_float!(name)`, and `cfg_ident!(name)`. A call to one of these
-macros will expand to the value of the configuration flag with the given name as a compile time literal,
-generating a compile time error if the flags do not exist, or cannot be converted into the specified type.
+This RFC describes a set of macros to be added to the language - named `cfg_integer!(name)`,
+`cfg_str!(name)`, `option_cfg_integer!(name)`, and `option_cfg_str!(name)`. A call to one of these
+macros will expand to the value of the configuration flag with the given name, either as a compile time literal,
+`Some(literal)`, or `None`. 
+
+`option_cfg_str!(name)` and  `option_cfg_integer!(name)` will expand into
+* `Some(literal)` if `name` is defined and is a valid string or integer
 
 For example, `cfg_str!(target_os)` will expand to the string literal `"linux"` when targeting Linux,
-`cfg_int!(target_pointer_width)` will expand to the integer literal `64` when targeting a 64-bit
-machine, and `cfg_ident!(target_env)` will expand to the identifier `gnu` on a Gnu system.
+`cfg_integer!(target_pointer_width)` will expand to the integer literal `64` when targeting a 64-bit
+machine, and `option_cfg_str!(target_env)` will expand to the value `Some("gnu")` on a Gnu system and
+`None` on a Windows system.
 
 # Motivation
 
@@ -32,48 +36,29 @@ int_module! { isize, 32 }
 int_module! { isize, 64 }
 ```
 
-And
-
-``` rust
-#[cfg(target_os = "android")]   pub mod android;
-#[cfg(target_os = "bitrig")]    pub mod bitrig;
-#[cfg(target_os = "dragonfly")] pub mod dragonfly;
-// ..
-// ..
-#[cfg(target_os = "macos")]     pub mod macos;
-#[cfg(target_os = "nacl")]      pub mod nacl;
-#[cfg(target_os = "netbsd")]    pub mod netbsd;
-#[cfg(target_os = "openbsd")]   pub mod openbsd;
-```
-
-Which could be made more generic and simplier with a call to `cfg_int!(target_pointer_width)` or
-`cfg_ident!(target_os)` respectively.
+Which could be made more generic and simplier with a call to `cfg_integer!(target_pointer_width)`.
 
 
 # Detailed design
 
 Note that I already have a working implementation [here](https://github.com/dylanmckay/rust/tree/cfg-flag-as-int).
 
-This will add four macros - `cfg_int`, `cfg_float`, `cfg_str`, and `cfg_ident`, under the `cfg_values` feature gate.
+This will add four macros - `cfg_integer`, `option_cfg_integer`, `cfg_str`, and `option_cfg_str`, under the `cfg_values` feature gate.
 Each one will take a single argument - the name of the configuration flag, and will expand to some kind of compile
 time constant or identifier.
 
-For each of these macros, if the configuration flag requestion does not exist, a compile time error will be
-generated.
+The `option_` variants will expand to `None` if a configuration flag does not exist, or cannot be converted to the specified type
+(i.e. `option_cfg_integer!(target_os) == None`).
 
-## `cfg_int` macro
+The other variants (`cfg_integer!`, and `cfg_str!`) will expand to a compile time integer or string literal, generating an error if 
+their respective flags are not defined, or cannot be converted to a string or an integer.
 
-The `cfg_int!(flag_name)` macro will find the configuration flag named `flag_name`, convert it into an unsuffixed
+## `cfg_integer` macro
+
+The `cfg_integer!(flag_name)` macro will find the configuration flag named `flag_name`, convert it into an unsuffixed
 integer literal (so that users of the macro can use type inference to avoid unnecessary casting).
 
 If the value of the flag is not a valid integer, the compiler will generate an error.
-
-## `cfg_float` macro
-
-The `cfg_float!(flag_name`) macro will work identically to the integral version, but with floats. It will evaluate
-to an unsuffixed floating point literal, and generate an error if the flag's value is not floating point. This will
-work with all values that `cfg_int!(flag_name)` works with - i.e. if `cfg_int!(flag)` maps to `12`, then
-`cfg_float!(flag)` maps to `12.0`.
 
 ## `cfg_str` macro
 
@@ -83,21 +68,10 @@ value of the configuration flag is. All cfg flags are valid strings, and so ther
 It expands into a string literal - for example, `cfg_str!(target_os)` would be the same as writing `"windows"` on
 a Windows machine.
 
-## `cfg_ident` macro
+## `option_cfg_integer!(flag_name)` and `option_cfg_str!(flag_name)` macros
 
-`cfg_ident!` expands to the value of the cfg flag as if it were an identifier embedded directly in the code.
-
-For example
-``` rust
-#[cfg(target_os = "android")]   pub mod android;
-```
-
-Could be written as
-``` rust
-pub mod cfg_ident(target_os);
-```
-
-If the value of the flag is not a valid identifier, an error will be generated.
+These macros work exactly the same as their unprefixed counterparts, but instead of expanding to a literal on success
+and an error on failure, they are expanded to `Some(literal)` on success, and `None` on failure.
 
 # Drawbacks
 
@@ -118,7 +92,7 @@ way support for the feature could be implemented.
 In order to minimize the number of macros defined, we could instead define the macros
 like so:
 
-* `cfg_int!(flag)` => `cfg_value!(flag: int)`
+* `cfg_integer!(flag)` => `cfg_value!(flag: int)`
 * `cfg_str!(flag)` => `cfg_value!(flag: str)`
 
 Mimicing Rust's variable declartion style.
