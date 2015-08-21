@@ -5,7 +5,7 @@
 
 # Summary
 
-Provide the size and alignment of a type as associated constant.
+Provide the size and alignment of a type as associated constants.
 
 # Motivation
 
@@ -21,8 +21,8 @@ respectively.
 
 # Drawbacks
 
-`SIZE` and `ALIGNMENT` or what the constants are going to be called are going
-to be members of every type, as such they are a slight backward incompatiblity.
+`SIZE` and `ALIGNMENT` (names still up to debate) are going to be members of
+every type, as such they are a slight backward incompatiblity.
 
 # Alternatives
 
