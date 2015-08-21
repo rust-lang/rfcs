@@ -5,13 +5,8 @@
 
 # Summary
 
-Stabilize convenience methods for converting between OS strings and Rust's utf-8
-string types, specifically stabilize the following APIs:
-
-* `OsString::from_platform_bytes` (renamed from `OsString::from_bytes`)
-* `OsStr::from_platform_bytes` (added API to mirror `OsString`)
-* `OsStr::to_bytes`
-* `OsStr::to_cstring`
+Tweak convenience methods for converting between OS strings and Rust's utf-8
+string types, placing them on track for stabilization.
 
 # Motivation
 
@@ -62,46 +57,54 @@ supporting a large number of cases right off the bat for both Unix and Windows.
 
 # Detailed design
 
-First, functions for converting from an array of bytes into an OS string will be
-stabilized, the two signatures in question are:
+For converting an array of bytes into an OS string the following functions will
+be provided.
 
 ```rust
 impl OsString {
-    fn from_platform_bytes(bytes: Vec<u8>) -> Option<OsString>;
+    fn from_narrow(bytes: Vec<u8>) -> Result<OsString, FromNarrowError>;
+    fn from_narrow_lossy(bytes: &[u8]) -> Cow<OsStr>;
 }
 
 impl OsStr {
-    fn from_platform_bytes(bytes: &[u8]) -> Option<&OsStr>;
+    fn from_narrow(bytes: &[u8]) -> Option<&OsStr>;
+}
+
+impl FromNarrowError {
+    fn into_bytes(self) -> Vec<u8>;
 }
 ```
 
 > Note: the `OsString::from_bytes` function today has been renamed here and the
 > generics have been removed.
 
-The name contains "platform" to indicate that the function has platform specific
-behavior, and the semantics will be:
+* On Unix, simply transmute the provided bytes and always succeed.
+* On Windows, the fallible variants will only succeed if the bytes are valid
+  utf-8 and the lossy case is the same as `String::from_utf8_lossy`.
 
-* On Unix, return `Some(mem::transmute(bytes))`
-* On Windows, interpret the bytes as utf-8, returning `Some` if this succeeded
-  or `None` if it failed.
-
-Next, some convenience functions will be stabilized for extracting a list of
-bytes out of an OS string:
+Next, the following methods will be available for extracting a sequence of bytes
+out of an OS string.
 
 ```rust
 impl OsStr {
-    fn to_bytes(&self) -> Option<&[u8]>;
-    fn to_cstring(&self) -> Option<CString>;
+    fn to_narrow(&self) -> Option<&[u8]>;
+    fn to_narrow_lossy(&self) -> Cow<[u8]>;
+    fn to_cstring(&self) -> Result<CString, ToCStringError>;
+    fn to_cstring_lossy(&self) -> Result<CString, NulError>;
+}
+
+impl ToCStringError {
+    fn nul_error(&self) -> Option<&NulError>;
 }
 ```
 
 The semantics of these functions will be:
 
-* On Unix, return `Some` always on `to_bytes` and call `CString::new(..).ok()`
-  for `to_cstring`.
+* On Unix always succeed by just working on the internal list of bytes.
 * On Windows, attempt to interpret the `&[u16]` as utf-16, and if successful
   convert to utf-8 and perform the same as Unix. If the utf-16 interpretation
-  fails then `None` is returned.
+  fails an error is returned. The lossy functions will be equivalent to using
+  `String::from_utf16_lossy` to get a list of bytes.
 
 # Drawbacks
 
