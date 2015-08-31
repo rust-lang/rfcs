@@ -1,4 +1,4 @@
-- Feature Name: Cargo_stdlib_awareness
+- Feature Name: cargo_stdlib_awareness
 - Start Date: 2015-05-26
 - RFC PR: (leave this empty)
 - Rust Issue: (leave this empty)
@@ -29,7 +29,7 @@ continue to need them for the foreseeable future), the most elegant thing to do 
 cross-compile the standard library. This is suitable for libraries and binaries alike, and most
 easily ensures the library and it's consumers will be built to the exact same target
 specification. For examples of how this is rigged up, see my simple
-https://github.com/RustOS-Fork-Holding-Ground/rust/tree/rustos/Cargo, and the more flexible
+https://github.com/RustOS-Fork-Holding-Ground/rust/tree/rustos/cargo, and the more flexible
 https://github.com/hackndev/rust-libcore.
 
 The problem with this is that each and every library that is used must be forked and made to
@@ -38,7 +38,7 @@ freestanding use, but also for different freestanding projects, as there is curr
 Cargoization of the standard library. We want to be able to somehow "inject" our Cargoized standard
 library as an extra dependency to a library written without this injection in mind.
 
-Already, we have a means for overriding dependencies with Cargo, `.Cargo/config` files. Suppose that
+Already, we have a means for overriding dependencies with Cargo, `.cargo/config` files. Suppose that
 one could specify an override for core, alloc, std, etc, and then all packages would be built with
 that override as dependency instead of the binary that came with `rustc`. This precisely solves the
 problem of using libraries in both contexts.
@@ -54,7 +54,7 @@ number of crates behind the facade actually decreased---presumably to ease rapid
 approached. Clearly then, to keep the door open for finer-grained crates behind the facade, we
 should not do anything that would motivate stabilizing the names of those crates. Instead, we can
 have Cargo look in the sysroot before calling `rustc`, and only accept overrides from
-`.Cargo/config` that either match a dependency, or a crate in the sysroot.
+`.cargo/config` that either match a dependency, or a crate in the sysroot.
 
 ## Long-Term Needs
 
@@ -110,7 +110,7 @@ the Cargo file, or implicitly `extern-crate` std, but explicitly whitelist depen
 both of these are naturally well-defined from the definition of `no_std` and the contents of this
 RFC.
 
-For the record, I first raised this issue [here](https://github.com/rust-lang/Cargo/issues/1096).
+For the record, I first raised this issue [here](https://github.com/rust-lang/cargo/issues/1096).
 
 
 # Detailed design
