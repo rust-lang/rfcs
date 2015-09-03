@@ -117,6 +117,8 @@ For the record, I first raised this issue [here](https://github.com/rust-lang/ca
 
 ## Interface
 
+### Explicit Dependencies
+
 First, we need to allow packages to opt out of implicitly depending on all standard library
 crates. A new optional Boolean field is added called called `implicit-deps` to the `Cargo.toml`
 schema.`implicit-deps` is true by default to maintain compatibility with existing packages. When
@@ -134,6 +136,21 @@ which will declare a dependency on a crate called `std` which must be part of th
 It is an error to explicitly depend on a standard library crate when the entire standard library is
 already depended-upon implicitly, as the explicit dependency is redundant. This can be relaxed in
 the future if a need arises.
+
+### Overrides
+
+Normal (non-stdlib) dependencies will be overridden the same as today. An override will apply if one
+of:
+
+ 1. The package name of the override is the name of a normally dependency. [Today]
+
+ 2. The package in question has implicit deps, and the package name of the override is the name of a
+    crate in the standard library.
+
+ 3. The package in question does not have implicit deps, and the package name matches the name of an
+    explicit stdlib dependency.
+
+Note that 1 and 3 can be combined by ignoring the type of (explicit) dependency.
 
 ## Implementation
 
@@ -169,7 +186,11 @@ standard library dependency with a given (crate) name is valid.
 
 # Drawbacks
 
-Adds a notion of standard library dependencies that may be superfluous---see first alternative.
+ - Adds a notion of standard library dependencies that may be superfluous---see first alternative.
+
+ - For the time being, dependencies *within* the standard library are unspecified, so that an
+   override of, e.g, collections would not cause cargo to try to rebuilt std or complain it is
+   unable to do so.
 
 
 # Alternatives
@@ -195,7 +216,14 @@ Adds a notion of standard library dependencies that may be superfluous---see fir
 
    - While unstable compiler users can just package the standard library and depend on it as a
      normal crate, it would be weird to have freestanding projects coalesce around some bootleg
-     libcore on crates.io.
+     core on crates.io.
+
+ - Make it so that packages with implicit dependencies only depend on std. This would break
+   existing packages, but only those that cannot be published to crates.io or can but don't
+   build. This is elegant because it eliminates redundancy, while still providing a concise common
+   case (just one slightly more narrowly defined): packages that use stdlib crates besides std must
+   be explicit. If we want to do this, we have to act fast because core might be stabilized soon.
+
 
  - Make it so all dependencies, even libstd, must be explicit. C.f. Cabal and base. Simpler to
    implement, but breaks nearly all existing packages.
