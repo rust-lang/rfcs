@@ -9,7 +9,7 @@ Add compiler support for hardware interrupt calling conventions.
 
 # Motivation
 
-Low-level systems software must often interrupt interrupt service routines
+Low-level systems software must often include interrupt service routines
 (ISRs) to implement certain functionality. In some cases this is a way to
 improve the system's efficiency, while in others it is required for correct
 operation.
@@ -21,9 +21,10 @@ providing fast interrupt entry and exit in software is an important goal.
 
 In Rust today, the only option for implementation of such an ISR is to build the
 ISR entry point as assembly which may call into Rust code. For example,
-[RustOS][https://github.com/ryanra/RustOS], a simple x86 OS kernel implemented
-in Rust, currently implements ISRs as callbacks to a single "master" interrupt
-handler:
+[RustOS][rustos], a simple x86 OS kernel implemented in Rust, currently
+implements ISRs as callbacks to a single "master" interrupt handler:
+
+[rustos]: https://github.com/ryanra/RustOS
 
 ```
 .macro make_callback num
@@ -47,18 +48,13 @@ make_all_callbacks
 ```
 
 This pair of assembler macros generate 50 different ISRs each of which simply
-call the master handler with the interrupt vector number, which in turn
-dispatches to code to actually handle the interrupt. This kind of double
+call the master handler with the interrupt vector number as a parameter, which
+in turn dispatches to code to actually handle the interrupt. This kind of double
 dispatch, while functional, is extremely inefficient in all of code size (even
 unused ISRs must be generated), runtime memory usage (the double dispatch for
 every interrupt requires a minimum of 12 additional bytes on the stack), and
 speed (many ISRs are relatively simple, and the overhead of double dispatch may
 have a significant effect on performance).
-
-Assembly is required for this task because typically hardware interrupts require
-that the ISR preserve the values of all registers. Failure to do so will lead to
-unpredictable (inconsistent, even) behavior of the interrupted code. On some
-architectures, interrupt exit requires a special instruction like `iret` on x86.
 
 This kind of pattern is common in current bare-metal Rust programs: because the
 language provides no satisfactory way to approach the need for ISRs, programmers
@@ -67,6 +63,12 @@ competitive with other systems programming languages. By comparison, exposing
 this information to the compiler both eliminates these inefficiencies and
 exposes more information to the compiler's optimizer for even greater potential
 gains.
+
+Assembly is required for this task because typically hardware interrupts require
+that the ISR preserve the values of all registers. Failure to do so will lead to
+unpredictable (inconsistent, even) behavior of the interrupted code. On some
+architectures, interrupt exit also requires a special instruction, such as
+`iret` on x86.
 
 # Detailed design
 
