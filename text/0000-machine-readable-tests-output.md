@@ -5,8 +5,7 @@
 
 # Summary
 
-Replace current test output with machine-readable one and add thin compatibility
-layer on top of that.
+Replace current test output with machine-readable one.
 
 # Motivation
 
@@ -85,7 +84,7 @@ Fields:
 | Name         | Description                                                                    |
 | ----         | -----------                                                                    |
 | `type`       | MUST be `test`.                                                                |
-| `subtype`    | SHOULD be one of `test`, `bench` or `should_panic`.                            |
+| `subtype`    | SHOULD be one of `test`, `bench` or `should_panic`. Defaults to `test`.        |
 | `status`     | MUST be one of `ok`, `fail` or `ignore`.                                       |
 | `reason`     | MUST describe of failure if `status` is `fail`. Otherwise MUST NOT be present. |
 | `label`      | MUST be unique identifier of test.                                             |
