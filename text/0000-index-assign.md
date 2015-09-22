@@ -83,71 +83,67 @@ trait IndexAssign<Index, Rhs> {
 
 ## Type checking `a[b] = c`
 
-Today, the expression `a[b] = c` is always "evaluated" as an assignment, where the LHS may be
-evaluated:
+The type checker logic will be extended as follows:
 
-- using "built-in" indexing (which is only applicable to the types `[T]` and `[T; N]`), or
-- using the `IndexMut` trait, i.e. as `*a.index_mut(b)`
+> Whenever the expression `a[b] = c` is encountered, the compiler will check if `A` (`a` has type
+> `A`) has *any* implementation of the `IndexAssign` trait; if that's the case then it will proceed
+> to look for an applicable implementation and evaluate the expression as `a.index_assign(b, c)`,
+> or, if no implementation is applicable, it will raise an error. On the other hand, if `A` doesn't
+> have any `IndexAssign` implementation then the compiler will use today's logic: evaluate the
+> expression as an assignment where the LHS is evaluated as an lvalue using either built-in
+> indexing or the `IndexMut` trait.
 
-The type check section of the compiler will choose which evaluation form to use based on the types
-of `a`, `b` and `c`, and the traits that `a` implements, or raise an error if neither form is
-applicable.
-
-To additionally support evaluating `a[b] = c` as `a.index_assign(b, c)`, the type checking logic
-will be *extended* as follows:
-
-> Just like today, try to evaluate `a[b] = c` as an assignment, if the expression can't be
-> evaluated as an assignment, then instead of raising an error, try to evaluate the expression
-> as an indexed assignment using the `IndexAssign` trait.
-
-Here's an example of how type checking will work:
+Three cases are worth analyzing:
 
 ``` rust
-struct Array([i32; 32]);
+// A
+impl IndexAssign<Bar, Baz> for Foo { .. }
+impl Index<Bar> for Foo { type Output = Baz; .. }
+impl IndexMut<Bar> for Foo { .. }
 
-impl IndexMut<Range<usize>> for Array {
-    fn index_mut(&mut self, r: Range<usize>) -> &mut [i32] {
-        &mut self.0[r]
-    }
-}
-
-impl IndexAssign<Range<usize>, i32> for Array {
-    fn index_assign(&mut self, r: Range<usize>, rhs: i32) {
-        for lhs in &mut self[r] {
-            *lhs = rhs;
-        }
-    }
-}
-
-// type check as assignment
-//     `IndexMut<Range<usize>>` is not applicable because RHS is `i32`, expected `[i32]`
-// type check as indexed assignment
-//     `IndexAssign<Range<usize>, i32>` is applicable
-// -> Expression will be evaluated as `array.index_assign(4..10, 0)`
-array[4..10] = 0;
+let (foo, bar, baz): (Foo, Bar, Baz);
+// ..
+foo[bar] = baz;
 ```
 
-From the extended type check logic, it follows that in the case that both `IndexMut` and
-`IndexAssign` are applicable, the `IndexMut` implementation will be favored [1].
+Here `Foo` has an applicable `IndexAssign` implementation, so `foo[bar] = baz` is evaluated as
+`foo.index_assign(bar, baz)`. Note that the `IndexMut` implementation is ignored even though
+`*foo.index_mut(bar) = baz` is a valid evaluation form of `foo[bar] = baz`. Finally, one can use
+the `*&mut foo[bar] = baz` expression to use `IndexMut` instead of `IndexAssign`.
 
 ``` rust
-impl IndexMut<usize> for Array {
-    fn index_mut(&mut self, i: usize) -> &mut i32 {
-        &mut self.0[i]
-    }
-}
+// B
+impl IndexAssign<Bar, Quux> for Foo { .. }
+impl Index<Baz> for Foo { type Output = Quux; .. }
+impl IndexMut<Baz> for Foo { .. }
 
-impl IndexAssign<usize, i32> for Array {
-    fn index_assign(&mut self, _: usize, _: i32) {
-        unreachable!()
-    }
-}
-
-// type check as assignemnt
-//     `IndexMut<usize, Output=i32>` is applicable
-// -> Expression will be evaluated as `*array.index_mut(0) = 1`
-array[0] = 1;
+let (foo, baz, quux): (Foo, Baz, Quux);
+// ..
+foo[baz] = quux;
+//~^ error: expected `Bar`, found `Baz`
 ```
+
+In this case, `Foo` has an `IndexAssign` implementation but it's not applicable to
+`foo[baz] = quux` so a compiler error is raised. Although the expression could have been evaluated
+as `*foo.index_mut(baz) = quux`, the compiler won't attempt to "fall back" to the `IndexMut` trait.
+See the alternatives section for a version of this RFC where the compiler does fall back to
+`IndexMut`.
+
+``` rust
+// C
+impl Index<Bar> for Foo { type Output = Baz; .. }
+impl IndexMut<Bar> for Foo { .. }
+
+let (foo, bar, baz): (Foo, Bar, Baz);
+// ..
+foo[bar] = baz;
+```
+
+The third case points out a breaking-change hazard to library authors. If the author adds e.g.
+`impl IndexAssign<Baz, Quux> for Foo` to their library, the change will break all the downstream
+crates that use the `IndexMut<Bar>` implementation in the form of `foo[bar] = baz`. To prevent
+breakage, the author must add a `IndexAssign<Bar, Baz>` implementation (that preserves the
+semantics of `foo[bar] = baz`) to `Foo` before adding any other `IndexAssign` implementation.
 
 ## Feature gating
 
@@ -202,46 +198,80 @@ Adding this feature is a backward compatible change because expressions like `a[
 today, will continue to work with unaltered semantics.
 
 The proposed library changes are also backward compatible, because they will enable expressions
-like `map[&key] = value` and `map[key] = value` which don't compile today.
+like `map[&key].foo_mut()` and `map[key] = value` which don't compile today.
 
 # Drawbacks
 
-None that I can think of
+There is sugar for map insertion (`map[xey] = value`), but not for updating the value associated to
+an existing key (some people actually consider that this is actually a good thing). The closest
+thing to sugar for the update operation is `*&mut map[&key] = value`, which is totally not obvious.
+
+This situation could be improved using an extension trait (which doesn't even need to be defined in
+the `std` crate):
+
+``` rust
+/// `mem::replace` as a method
+trait Swap {
+    /// `mem::replace(self, new_value)`
+    fn swap(&mut self, new_value: Self) -> Self;
+}
+
+impl<T> Swap for T {
+    fn swap(&mut self, value: T) -> T {
+        mem::replace(self, value)
+    }
+}
+
+let mut map: HashMap<String, Thing>;
+let (new_thing, another_new_thing) = (Thing, Thing);
+// ..
+// Update the value associated to `"foo"`, the old value is discarded
+map["foo"].swap(new_thing);  // instead of the more obscure `*&mut map["foo"] = new_thing`
+
+// As a bonus, you can actually retrieve the old value
+let old_thing = map["bar"].swap(another_new_thing);
+```
 
 # Alternatives
 
-## Bridge `IndexAssign` and `IndexMut`
+## Fall back to `IndexMut`
 
-Because `IndexMut` has "higher priority" than `IndexAssign`, it's possible to (unintentionally?)
-change the semantics of the `a[b] = c` expression when a `IndexMut` implementation is added [2].
-For example:
+As shown in the case B of the type checking section, when checking `a[b] = c` the compiler will
+error if none of the `IndexAssign` implementations is applicable, even if a `IndexMut`
+implementation could have been used. This alternative proposes falling back to the `IndexMut`
+trait in such scenario. Under this alternative the case B example would compile and `foo[baz] =
+quux` would be evaluated as `*foo.index_mut(baz) = quux`.
+
+The most visible consequence of this change is that we'd have sugar for updating a key value pair
+in a map:
 
 ``` rust
-struct Map(..);
-
-impl IndexAssign<i32, i32> for Map {
-    fn index_assign(&mut self, key: i32, value: i32) {
-        println!("via IndexAssign");
-        ..
-    }
-}
-
-// Expression will be evaluated as `map.index_assign(0, 1)`
-map[0] = 1;  // prints "via IndexAssign"
-
-// But if this implementation is added
-impl IndexMut<i32> for Map {
-    fn index_mut(&mut self, k: i32) -> &mut i32 {
-        panic!("no indexing for you")
-    }
-}
-
-// Now the expression will be evaluated as `*map.index_mut(0) = 1`
-map[0] = 1;  // nows panics
+map[key] = value;       // insert a `(key, value)` pair
+map[&key] = new_value;  // update the value associated to `key`
 ```
 
-This hazard (?) can be avoided by "bridging" the `IndexMut` and `IndexAssign` traits with a blanket
-implementation:
+However, some people deem this as a footgun because its easy to confuse the insertion operation
+and the update one resulting in programs that always panic:
+
+``` rust
+let (key, value): (&Key, Value);
+// ..
+let mut map: HashMap<Key, Value> = HashMap::new();
+map[key] = value;  // Compiles, but always panics!
+```
+
+The programmer meant to write `map[key.clone()] = value` to use the insertion operation, but they
+won't notice the problem until the program crashes at runtime.
+
+For more details about this alternative check the previous git revision of this RFC, where this
+alternative was the main proposal.
+
+## Bridge `IndexAssign` and `IndexMut`
+
+As shown in the case C of the type checking section adding an `IndexAssign` implementation to a
+struct that already implements the `IndexMut` trait can cause breakage of downstream crates if one
+is not careful. This hazard can be eliminated by "bridging" the `IndexMut` and `IndexAssign` traits
+with a blanket implementation:
 
 ``` rust
 impl<Idx, T> IndexAssign<Idx, T::Output> for T where
@@ -253,8 +283,9 @@ impl<Idx, T> IndexAssign<Idx, T::Output> for T where
 }
 ```
 
-Now it's impossible to implement `IndexMut<B, Output=C>` on a type `A`, if it already implements
-`IndexAssign<B, C>` and vice versa.
+Now it's impossible to forget to implement `IndexAssign<B, C>` on a type `A` that already
+implements `IndexMut<B, Output=C>` because it's automatically handled by the blanket
+implementation.
 
 However this blanket implementation creates coherence problems for the planned changes to
 `BTreeMap` and `HashMap`:
@@ -283,43 +314,3 @@ So it's not a viable alternative.
 # Unresolved questions
 
 None so far
-
----
-
-### Author notes
-
-[1] The compiler does something similar when type checking an expression where both built-in
-indexing and the `Index[Mut]` trait are applicable - it favors built-in indexing.
-
-[2] `a[b]` is another expression where one can change its semantics by implementing a trait:
-
-``` rust
-struct Array([i32; 32]);
-
-impl Deref for Array {
-    type Target = [i32; 32];
-
-    fn deref(&self) -> &[i32; 32] {
-        println!("via Deref")
-        &self.0
-    }
-}
-
-// Will be evaluated as `array.deref()[0]`
-array[0];  // prints "via Deref"
-
-impl Index<usize> for Array {
-    type Output = i32;
-
-    fn index(&self, _: usize) -> &i32 {
-        panic!("no indexing for you")
-    }
-}
-
-// Now will be evaluated as `*array.index(0)`
-array[0];  // now panics
-```
-
-However, I don't think either case is a problem in practice. It seems unlikely that a library
-author will purposefully override the semantics of an operator, and it seems less likely that they
-would do it unintentionally, without triggering a unit test failure.
