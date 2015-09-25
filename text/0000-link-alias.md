@@ -243,11 +243,10 @@ ensure that they work in all situations. Worse still, the `#[link]` annotations
 on an `extern` block are not required on any other platform to work correctly,
 meaning that it will be common that these attributes are left off by accident.
 
-Unfortunately, however, there doesn't seem to be a "zero annotation" solution to
-the dllimport/dllexport problem on MSVC (e.g. even C libraries need to annotate
-correctly). Given that annotations are required in *some* form or another, the
-solution here is relatively lightweight and easy to add backwards compatibly to
-libraries desiring MSVC support.
+It may be possible in the future for the compiler to parse the output of the
+linker for MSVC and detect common error messages which look like dllimport or
+dllexport aren't being applied, in which case the compiler could provide a much
+nicer error message about how to deal with the problem.
 
 Another drawback is that the CLI syntax is a little wonky with three `=`
 characters in some situations.
