@@ -22,6 +22,9 @@ with only one “success” path. This is particularly useful for unwrapping
 types like `Option`. However, an if-let expression can only create bindings
 within its body, which can force rightward drift and excessive nesting.
 
+let-else statements move the “failure” case into the body, while allowing
+the “success” case to continue without additional nesting.
+
 ## Example
 
 For example, this code written with current Rust syntax:
