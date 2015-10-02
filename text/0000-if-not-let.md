@@ -8,7 +8,7 @@
 Introduce a new `if !let PAT = EXPR { BODY }` construct (informally called an
 **if-not-let statement**).
 
-If the pattern match succeeds, its binding are introduced *into the
+If the pattern match succeeds, its bindings are introduced *into the
 surrounding scope*.  If it does not succeed, it must diverge (e.g., return or
 break).  You can think of if-not-let as a “refutable `let` statement.”
 
@@ -18,7 +18,7 @@ also simplifying some common error-handling patterns.
 # Motivation
 
 [if-let expressions][if-let] offer a succinct syntax for pattern matching
-with only one "success" path. This is particularly useful for unwrapping
+with only one “success” path. This is particularly useful for unwrapping
 types like `Option`. However, an if-let expression can only create bindings
 within its body, which can force rightward drift and excessive nesting.
 
@@ -33,9 +33,9 @@ For example, this code written with current Rust syntax:
 if let Some(a) = x {
     if let Some(b) = y {
         if let Some(c) = z {
-            /*
-             * do something with a, b, and c
-             */
+            // ...
+            do_something_with(a, b, c);
+            // ...
         } else {
             return Err("bad z");
         }
@@ -59,9 +59,9 @@ if !let Some(b) = y {
 if !let Some(c) = z {
     return Err("bad z");
 }
-/*
- * do something with a, b, and c
- */
+// ...
+do_something_with(a, b, c);
+// ...
 ```
 
 ## Versus `match`
@@ -86,7 +86,7 @@ if !let Some(ref subpage_layer_info) = layer_properties.subpage_layer_info {
 ```
 
 The Swift programming language, which inspired Rust's if-let expression, also
-includes a [guard-let-else][swift] statement which are equivalent to this
+includes a [guard-let-else][swift] statement which is equivalent to this
 proposal except for the choice of keywords.
 
 # Detailed design
