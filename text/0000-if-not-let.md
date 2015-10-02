@@ -148,8 +148,9 @@ match expression {
 * Don't make any changes; use existing syntax like `if let` and `match` as
   shown above, or write macros to simplify the code.
 
-* Consider alternate syntaxes for this feature, perhaps closer to Swift's `guard
-  let else`.
+* Change the syntax to `let PAT = EXPR else { BODY }`, to make it more obvious
+  that this statement is introducing a new binding in the surrounding scope.
+  (Aside from the syntax, the statement works as described above.)
 
 # Unresolved questions
 
