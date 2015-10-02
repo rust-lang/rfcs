@@ -149,5 +149,7 @@ match expression {
 
 # Unresolved questions
 
+* Is it feasible to implement the check that the body diverges?
+
 [if-let]: https://github.com/rust-lang/rfcs/blob/master/text/0160-if-let.md
 [swift]: https://developer.apple.com/library/prerelease/ios/documentation/Swift/Conceptual/Swift_Programming_Language/ControlFlow.html#//apple_ref/doc/uid/TP40014097-CH9-ID525
