@@ -22,6 +22,8 @@ within its body, which can force rightward drift and excessive nesting.
 `if !let` is a logical extension of `if let` that moves the failure case into
 the body, and allows the success case to follow without extra nesting.
 
+## Example
+
 For example, this code written with current Rust syntax:
 
 ```rust
@@ -58,6 +60,8 @@ if !let Some(c) = z {
  * do something with a, b, and c
  */
 ```
+
+## Versus `match`
 
 It's possible to use `match` statements to emulate this today, but at a
 significant cost in length and readability.  For example, this real-world code
