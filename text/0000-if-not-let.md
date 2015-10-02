@@ -6,8 +6,11 @@
 # Summary
 
 Introduce a new `if !let PAT = EXPR { BODY }` construct (informally called an
-**if-not-let statement**).  This works much like an if-let expression, but
-executes its body when pattern matching fails.
+**if-not-let statement**).
+
+If the pattern match succeeds, its binding are introduced *into the
+surrounding scope*.  If it does not succeed, it must diverge (e.g., return or
+break).  You can think of if-not-let as a “refutable `let` statement.”
 
 This narrows the gap between regular `if` syntax and `if let` syntax, while
 also simplifying some common error-handling patterns.
