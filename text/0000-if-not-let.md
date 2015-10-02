@@ -12,8 +12,8 @@ If the pattern match succeeds, its bindings are introduced *into the
 surrounding scope*.  If it does not succeed, it must diverge (e.g., return or
 break).  You can think of let-else as a “refutable `let` statement.”
 
-This narrows the gap between regular `if` syntax and `if let` syntax, while
-also simplifying some common error-handling patterns.
+This simplifies some common error-handling patterns, and reduces the need for
+special-purpose control flow macros.
 
 # Motivation
 
