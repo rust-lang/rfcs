@@ -133,6 +133,9 @@ match expression {
 
 # Drawbacks
 
+* “Must diverge” is an unusual requirement, which might be difficult to
+  explain or lead to confusing errors for programmers new to this feature.
+
 * Allowing a block expression to create bindings that live outside of its body
   may be surprising.
 
