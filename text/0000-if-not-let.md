@@ -1,16 +1,16 @@
-- Feature Name: if-not-let statement
+- Feature Name: let-else statement
 - Start Date: 2015-09-30
 - RFC PR:
 - Rust Issue:
 
 # Summary
 
-Introduce a new `if !let PAT = EXPR { BODY }` construct (informally called an
-**if-not-let statement**).
+Introduce a new `let PAT = EXPR else { BODY }` construct (informally called an
+**let-else statement**).
 
 If the pattern match succeeds, its bindings are introduced *into the
 surrounding scope*.  If it does not succeed, it must diverge (e.g., return or
-break).  You can think of if-not-let as a “refutable `let` statement.”
+break).  You can think of let-else as a “refutable `let` statement.”
 
 This narrows the gap between regular `if` syntax and `if let` syntax, while
 also simplifying some common error-handling patterns.
@@ -21,9 +21,6 @@ also simplifying some common error-handling patterns.
 with only one “success” path. This is particularly useful for unwrapping
 types like `Option`. However, an if-let expression can only create bindings
 within its body, which can force rightward drift and excessive nesting.
-
-`if !let` is a logical extension of `if let` that moves the failure case into
-the body, and allows the success case to follow without extra nesting.
 
 ## Example
 
@@ -50,13 +47,13 @@ if let Some(a) = x {
 would become:
 
 ```rust
-if !let Some(a) = x {
+let Some(a) = x else {
     return Err("bad x");
 }
-if !let Some(b) = y {
+let Some(b) = y else {
     return Err("bad y");
 }
-if !let Some(c) = z {
+let Some(c) = z else {
     return Err("bad z");
 }
 // ...
@@ -77,10 +74,10 @@ let subpage_layer_info = match layer_properties.subpage_layer_info {
 };
 ```
 
-is equivalent to this much simpler if-not-let statement:
+is equivalent to this much simpler let-else statement:
 
 ```rust
-if !let Some(ref subpage_layer_info) = layer_properties.subpage_layer_info {
+let Some(ref subpage_layer_info) = layer_properties.subpage_layer_info else {
     return
 }
 ```
@@ -94,26 +91,23 @@ proposal except for the choice of keywords.
 Extend the Rust statement grammar to include the following production:
 
 ```
-stmt_if_not_let = 'if' '!' 'let' pat '=' expr block
+stmt_let_else = 'let' pat '=' expr 'else' block
 ```
 
-The pattern must be refutable.  The body of the if-not-let statement (the
+The pattern must be refutable.  The body of the let-else statement (the
 `block`) is evaluated only if the pattern match fails.  Any bindings created
-by the pattern match will be in scope after the if-not-let statement (but not
+by the pattern match will be in scope after the let-else statement (but not
 within its body).
 
 The body must diverge (i.e., it must panic, loop infinitely, call a diverging
 function, or transfer control out of the enclosing block with a statement such
 as `return`, `break`, or `continue`).  Therefore, code immediately following
-the if-not-let statement is evaluated only if the pattern match succeeds.
-
-An if-not-let statement has no `else` clause, because it is not needed.
-(Instead of an `else` clause, code can simply be placed after the body.)
+the let-else statement is evaluated only if the pattern match succeeds.
 
 The following code:
 
 ```rust
-if !let pattern = expression {
+let pattern = expression else {
     body
 }
 ```
@@ -128,30 +122,25 @@ let (a, b, c, ...) = match expression {
 };
 ```
 
-
 # Drawbacks
 
 * “Must diverge” is an unusual requirement, which might be difficult to
   explain or lead to confusing errors for programmers new to this feature.
 
-* Allowing an `if` statement to create bindings that live outside of its body
-  may be surprising.
-
-* `if !let` is not very visually distinct from `if let` due to the
-  similarities between the `!` and `l` glyphs.
+* To a human scanning the code, it's not obvious when looking at the start of
+  a statement whether it is a `let ... else` or a regular `let` statement.
 
 # Alternatives
 
 * Don't make any changes; use existing syntax like `if let` and `match` as
   shown above, or write macros to simplify the code.
 
-* Change the syntax to `let PAT = EXPR else { BODY }`, to make it more obvious
-  that this statement is introducing a new binding in the surrounding scope.
-  (Aside from the syntax, the statement works as described above.)
+* Use the same semantics with different syntax. For example, the original
+  version of this RFC used `if !let PAT = EXPR { BODY }`.
 
 # Unresolved questions
 
-* Is it feasible to implement the check that the body diverges?
+* How much implementation complexity does this add?
 
 [if-let]: https://github.com/rust-lang/rfcs/blob/master/text/0160-if-let.md
 [swift]: https://developer.apple.com/library/prerelease/ios/documentation/Swift/Conceptual/Swift_Programming_Language/ControlFlow.html#//apple_ref/doc/uid/TP40014097-CH9-ID525
