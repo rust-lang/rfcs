@@ -1,4 +1,4 @@
-- Feature Name: if-not-let expression
+- Feature Name: if-not-let statement
 - Start Date: 2015-09-30
 - RFC PR:
 - Rust Issue:
@@ -6,12 +6,11 @@
 # Summary
 
 Introduce a new `if !let PAT = EXPR { BODY }` construct (informally called an
-**if-not-let expression**).  This works much like an if-let expression, but
+**if-not-let statement**).  This works much like an if-let expression, but
 executes its body when pattern matching fails.
 
-This narrows the gap between regular `if` expressions and `if let`
-expressions, while also providing a simpler syntax for some common
-error-handling patterns.
+This narrows the gap between regular `if` syntax and `if let` syntax, while
+also simplifying some common error-handling patterns.
 
 # Motivation
 
@@ -71,7 +70,7 @@ let subpage_layer_info = match layer_properties.subpage_layer_info {
 };
 ```
 
-is equivalent to this much simpler if-not-let expression:
+is equivalent to this much simpler if-not-let statement:
 
 ```rust
 if !let Some(ref subpage_layer_info) = layer_properties.subpage_layer_info {
@@ -80,31 +79,29 @@ if !let Some(ref subpage_layer_info) = layer_properties.subpage_layer_info {
 ```
 
 The Swift programming language, which inspired Rust's if-let expression, also
-includes [guard-let-else][swift] expressions which are equivalent to this
+includes a [guard-let-else][swift] statement which are equivalent to this
 proposal except for the choice of keywords.
 
 # Detailed design
 
-Extend the Rust expression grammar to include the following production:
+Extend the Rust statement grammar to include the following production:
 
 ```
-expr_if_not_let = 'if' '!' 'let' pat '=' expr block
+stmt_if_not_let = 'if' '!' 'let' pat '=' expr block
 ```
 
-The pattern must be refutable.  The body of the if-not-let expression (the
+The pattern must be refutable.  The body of the if-not-let statement (the
 `block`) is evaluated only if the pattern match fails.  Any bindings created
-by the pattern match will be in scope after the if-not-let expression (but not
+by the pattern match will be in scope after the if-not-let statement (but not
 within its body).
 
 The body must diverge (i.e., it must panic, loop infinitely, call a diverging
 function, or transfer control out of the enclosing block with a statement such
 as `return`, `break`, or `continue`).  Therefore, code immediately following
-the if-not-let expression is evaluated only if the pattern match succeeds.
+the if-not-let statement is evaluated only if the pattern match succeeds.
 
-An if-not-let expression has no `else` clause, because it is not needed.
-(Instead of an `else` clause, code can simply be placed after the expression.)
-
-The type of an if-not-let expression is `()`.
+An if-not-let statement has no `else` clause, because it is not needed.
+(Instead of an `else` clause, code can simply be placed after the body.)
 
 The following code:
 
@@ -136,7 +133,7 @@ match expression {
 * “Must diverge” is an unusual requirement, which might be difficult to
   explain or lead to confusing errors for programmers new to this feature.
 
-* Allowing a block expression to create bindings that live outside of its body
+* Allowing an `if` statement to create bindings that live outside of its body
   may be surprising.
 
 * `if !let` is not very visually distinct from `if let` due to the
@@ -153,8 +150,6 @@ match expression {
 # Unresolved questions
 
 * Is it feasible to implement the check that the body diverges?
-
-* Should if-not-let be an expression, or a statement?
 
 [if-let]: https://github.com/rust-lang/rfcs/blob/master/text/0160-if-let.md
 [swift]: https://developer.apple.com/library/prerelease/ios/documentation/Swift/Conceptual/Swift_Programming_Language/ControlFlow.html#//apple_ref/doc/uid/TP40014097-CH9-ID525
