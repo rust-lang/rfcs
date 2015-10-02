@@ -113,25 +113,19 @@ An if-not-let statement has no `else` clause, because it is not needed.
 The following code:
 
 ```rust
-{
-    if !let pattern = expression {
-        /* handle error */
-    }
-    /* do something with `pattern` here */
+if !let pattern = expression {
+    body
 }
 ```
 
 is equivalent to this code in current Rust:
 
 ```rust
-match expression {
-    pattern => {
-        /* do something with `pattern` here */
-    }
-    _ => {
-        /* handle error */
-    }
-}
+// `(a, b, c, ...)` is the list of all bindings in `pattern`.
+let (a, b, c, ...) = match expression {
+    pattern => (a, b, c, ...),
+    _ => { body }
+};
 ```
 
 
