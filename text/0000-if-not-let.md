@@ -74,7 +74,7 @@ let subpage_layer_info = match layer_properties.subpage_layer_info {
 is equivalent to this much simpler if-not-let expression:
 
 ```rust
-if !let Some(subpage_layer_info) = match layer_properties.subpage_layer_info {
+if !let Some(ref subpage_layer_info) = layer_properties.subpage_layer_info {
     return
 }
 ```
