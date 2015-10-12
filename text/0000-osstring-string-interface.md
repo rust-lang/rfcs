@@ -18,18 +18,47 @@ will offer a full-fledged string API."  This is intended as a step in
 that direction.
 
 Having an ergonomic way to manipulate OS strings is needed to allow
-programs to easily handle non-UTF-8 data received from the operating
+programs to easily handle non-Unicode data received from the operating
 system.  Currently, it is common for programs to just convert OS data
 to `String`s, which leads to undesirable panics in the unusual case
-where the input is not UTF-8.  For example, currently, calling rustc
-with a non-UTF-8 command line argument will result in an immediate
-panic.  Fixing that in a way that actually handles non-UTF-8 data
-correctly (as opposed to, for example, just interpreting it lossily as
-UTF-8) would be very difficult with the current OS string API.  Most
-of the functions proposed here were motivated by the OS string
-processing needs of rustc.
+where the input is not Unicode.  For example, currently, calling rustc
+with a non-Unicode command line argument will result in an immediate
+panic.  Fixing that in a way that actually handles non-Unicode data
+correctly (as opposed to, for example, just interpreting it lossily)
+would be very difficult with the current OS string API.
 
 # Detailed design
+
+The overall design of this API is to treat OS strings as mixtures of
+Unicode code points and other system-specific things.  It allows the
+Unicode portions to be manipulated as if they were part of a `str`,
+treating the non-Unicode portions surrounding them as uninterpretable
+objects.  A very limited set of operations are provided that can
+examine and manipulate the non-Unicode portions, but it is expected
+that any real interpretation of those sections will have to be done in
+platform-specific code.
+
+The method for deciding which portions of an `OsStr` correspond to
+Unicode code points tries to be as inclusive as possible, treating a
+section as Unicode if there is any possible interpretation of it in
+the platform's standard Unicode encoding.
+
+* In Windows, OS strings are sequences of ill-formed UTF-16 code
+  units.  (Rust's internal representation is a WTF-8 encoded string,
+  but, aside from determining what operations can be performed
+  efficiently, this is not exposed in the interface.)  Unpaired
+  surrogates are identified as non-Unicode, and everything else is
+  treated as valid UTF-16.
+
+* In Unix, OS strings are arbitrary byte sequences, which are often
+  interpreted as UTF-8.  A byte is treated as being part of a Unicode
+  section if there is any substring containing that byte that is a
+  valid UTF-8 encoded character.  The self-synchronization property of
+  UTF-8 guarantees that there can be at most one such substring for a
+  given byte.  These code points are treated as Unicode characters,
+  and all other bytes are treated as non-Unicode.  Note that this
+  means that any byte with value less than 128 will be interpreted as
+  Unicode.
 
 ## `OsString`
 
@@ -38,132 +67,303 @@ processing needs of rustc.
 /// Converts an `OsString` into a `String`, avoiding a copy if possible.
 ///
 /// Any non-Unicode sequences are replaced with U+FFFD REPLACEMENT CHARACTER.
-pub fn into_string_lossy(self) -> String;
+fn into_string_lossy(self) -> String;
 
 ```
 
 This is analogous to the existing `OsStr::to_string_lossy` method, but
 transfers ownership.  This operation can be done without a copy if the
-`OsString` contains UTF-8 data or if the platform is Windows.
+`OsString` contains Unicode data or if the platform is Windows.
 
 ## `OsStr`
 
-OsStr will get the following new methods:
+OsStr will get the following new methods (with supporting code
+and explanations interspersed):
 ```rust
-/// Returns true if the string starts with a valid UTF-8 sequence
-/// equal to the given `&str`.
-fn starts_with_str(&self, prefix: &str) -> bool;
-
-/// If the string starts with the given `&str`, returns the rest
-/// of the string.  Otherwise returns `None`.
-fn remove_prefix_str(&self, prefix: &str) -> Option<&OsStr>;
-
-/// Retrieves the first character from the `OsStr` and returns it
-/// and the remainder of the `OsStr`.  Returns `None` if the
-/// `OsStr` does not start with a character (either because it it
-/// empty or because it starts with non-UTF-8 data).
-fn slice_shift_char(&self) -> Option<(char, &OsStr)>;
-
-/// If the `OsStr` starts with a UTF-8 section followed by
-/// `boundary`, returns the sections before and after the boundary
-/// character.  Otherwise returns `None`.
-fn split_off_str(&self, boundary: char) -> Option<(&str, &OsStr)>;
-
-/// Returns an iterator over sections of the `OsStr` separated by
-/// the given character.
+/// Returns an iterator over the Unicode and non-Unicode sections
+/// of the string.  Sections will always be nonempty and Unicode
+/// and non-Unicode sections will always alternate.
 ///
-/// # Panics
+/// # Example
 ///
-/// Panics if the boundary character is not ASCII.
-fn split<'a>(&'a self, boundary: char) -> Split<'a>;
-```
+/// ```
+/// use std::ffi::{OsStr, OsStrSection};
+/// let string = OsStr::new("Hello!");
+/// match string.split_unicode().next().unwrap() {
+///     OsStrSection::Unicode(s) => assert_eq!(s, "Hello!"),
+///     OsStrSection::NonUnicode(s) => panic!("Got non-Unicode: {:?}", s),
+/// }
+/// ```
+fn split_unicode<'a>(&'a self) -> SplitUnicode<'a>;
 
-These methods fall into two categories.  The first four
-(`starts_with_str`, `remove_prefix_str`, `slice_shift_char`, and
-`split_off_str`) interpret a prefix of the `OsStr` as UTF-8 data,
-while ignoring any non-UTF-8 parts later in the string.  The last is a
-restricted splitting operation.
-
-### `starts_with_str`
-
-`string.starts_with_str(prefix)` is logically equivalent to
-`string.remove_prefix_str(prefix).is_some()`, but is likely to be a
-common enough special case to warrant it's own clearer syntax.
-
-### `remove_prefix_str`
-
-This could be used for things such as removing the leading "--" from
-command line options as is common to enable simpler processing.
-Example:
-```rust
-let opt = OsString::from("--path=/some/path");
-assert_eq!(opt.remove_prefix_str("--"), Some(OsStr::new("path=/some/path")));
-```
-
-### `slice_shift_char`
-
-This performs the same function as the similarly named method on
-`str`, except that it also returns `None` if the `OsStr` does not
-start with a valid UTF-8 character.  While the `str` version of this
-function may be removed for being redundant with `str::chars`, the
-functionality is still needed here because it is not clear how an
-iterator over the contents of an `OsStr` could be defined in a
-platform-independent way.
-
-An intended use for this function is for interpreting bundled
-command-line switches.  For example, with switches from rustc:
-
-```rust
-let mut opts = &OsString::from("vL/path")[..]; // Leading '-' has already been removed
-while let Some((ch, rest)) = opts.slice_shift_char() {
-    opts = rest;
-    match ch {
-        'v' => { verbose = true; }
-        'L' => { /* interpret remainder as a link path */ }
-        ....
-    }
+struct SplitUnicode<'a> { ... }
+impl<'a> Clone for SplitUnicode<'a> { ... }
+impl<'a> Iterator for SplitUnicode<'a> {
+    type Item = OsStrSection<'a>;
+    ...
 }
-```
+impl<'a> DoubleEndedIterator for SplitUnicode<'a> { ... }
 
-### `split_off_str`
-
-This is intended for interpreting "tagged" OS strings, for example
-rustc's `-L [KIND=]PATH` arguments.  It is expected that such tags
-will usually be UTF-8.  Example:
-```rust
-let s = OsString::from("dylib=/path");
-
-let (name, kind) = match s.split_off_str('=') {
-    None => (&*s, cstore::NativeUnknown),
-    Some(("dylib", name)) => (name, cstore::NativeUnknown),
-    Some(("framework", name)) => (name, cstore::NativeFramework),
-    Some(("static", name)) => (name, cstore::NativeStatic),
-    Some((s, _)) => { error(...) }
-};
-```
-
-### `split`
-
-This is similar to the similarly named function on `str`, except the
-splitting boundary is restricted to be an ASCII character instead of a
-general pattern.  ASCII characters have well-defined meanings in both
-flavors of OS string, and the portions before and after such a
-character are always well-formed OS strings.
-
-This is intended for interpreting OS strings containing several paths.
-Using this function will generally restrict the allowed paths to those
-not containing the separator, but this is a common limitation already
-in such interfaces.  For example, rustc's `--emit dep-info=bar.d,link`
-could be processed as:
-```rust
-let arg = OsString::from("dep-info=bar.d,link");
-
-for part in arg.split(',') {
-    match part.split_off_str('=') {
-        ...
-    }
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum OsStrSection<'a> {
+    Unicode(&'a str),
+    NonUnicode(&'a OsStr),
 }
+
 ```
+
+This provides access to the Unicode and non-Unicode sections of the
+string, as defined above.
+
+
+```rust
+/// Returns true if `needle` is a substring of `self`.
+fn contains_os<S: AsRef<OsStr>>(&self, needle: S) -> bool;
+
+/// Returns true if `needle` is a prefix of `self`.
+fn starts_with_os<S: AsRef<OsStr>>(&self, needle: S) -> bool;
+
+/// Returns true if `needle` is a suffix of `self`.
+fn ends_with_os<S: AsRef<OsStr>>(&self, needle: S) -> bool;
+
+/// Replaces all occurrences of one string with another.
+fn replace<T: AsRef<OsStr>, U: AsRef<OsStr>>(&self, from: T, to: U) -> OsString;
+```
+
+These functions work with `OsStr` substrings of an `OsStr`, and ignore
+any possible Unicode meanings.  They consider OS strings to be
+composed of a sequence of platform-defined atomic objects (bytes for
+Unix and code units for Windows), and then perform standard substring
+operations with these "OS characters".
+
+```rust
+use std::str::pattern::{DoubleEndedSearcher, Pattern, ReverseSearcher};
+
+/// An iterator over the non-empty substrings of `self` that
+/// contain no whitespace and are separated by whitespace.
+fn split_whitespace<'a>(&'a self) -> SplitWhitespace<'a>;
+
+struct SplitWhitespace<'a> { ... }
+impl<'a> Clone for SplitWhitespace<'a> { ... }
+impl<'a> Iterator for SplitWhitespace<'a> {
+    type Item = &'a OsStr;
+    ...
+}
+impl<'a> DoubleEndedIterator for SplitWhitespace<'a> { ... }
+
+/// An iterator over the lines of `self`, separated by `\n` or
+/// `\r\n`.  This does not return an empty string after a trailing
+/// `\n`.
+fn lines<'a>(&'a self) -> Lines<'a>;
+
+struct Lines<'a> { ... }
+impl<'a> Clone for Lines<'a> { ... }
+impl<'a> Iterator for Lines<'a> {
+    type Item = &'a OsStr;
+    ...
+}
+impl<'a> DoubleEndedIterator for Lines<'a> { ... }
+
+/// Returns true if `self` matches `pat`.
+///
+/// Note that patterns can only match Unicode sections of the `OsStr`.
+fn contains<'a, P>(&'a self, pat: P) -> bool where P: Pattern<'a> + Clone;
+
+/// Returns true if the beginning of `self` matches `pat`.
+///
+/// Note that patterns can only match Unicode sections of the `OsStr`.
+fn starts_with<'a, P>(&'a self, pat: P) -> bool where P: Pattern<'a>;
+
+/// Returns true if the end of `self` matches `pat`.
+///
+/// Note that patterns can only match Unicode sections of the `OsStr`.
+fn ends_with<'a, P>(&'a self, pat: P) -> bool
+    where P: Pattern<'a>, P::Searcher: ReverseSearcher<'a>;
+
+/// An iterator over substrings of `self` separated by characters
+/// matched by a pattern.  See `str::split` for details.
+///
+/// Note that patterns can only match Unicode sections of the `OsStr`.
+fn split<'a, P>(&'a self, pat: P) -> Split<'a, P> where P: Pattern<'a>;
+
+struct Split<'a, P> where P: Pattern<'a> { ... }
+impl<'a, P> Clone for Split<'a, P>
+    where P: Pattern<'a> + Clone, P::Searcher: Clone { ... }
+impl<'a, P> Iterator for Split<'a, P> where P: Pattern<'a> + Clone {
+    type Item = &'a OsStr;
+    ...
+}
+impl<'a, P> DoubleEndedIterator for Split<'a, P>
+    where P: Pattern<'a> + Clone, P::Searcher: DoubleEndedSearcher<'a> { ... }
+
+/// An iterator over substrings of `self` separated by characters
+/// matched by a pattern, in reverse order.  See `str::rsplit` for
+/// details.
+///
+/// Note that patterns can only match Unicode sections of the `OsStr`.
+fn rsplit<'a, P>(&'a self, pat: P) -> RSplit<'a, P> where P: Pattern<'a>;
+
+struct RSplit<'a, P> where P: Pattern<'a> { ... }
+impl<'a, P> Clone for RSplit<'a, P>
+    where P: Pattern<'a> + Clone, P::Searcher: Clone { ... }
+impl<'a, P> Iterator for RSplit<'a, P>
+    where P: Pattern<'a> + Clone, P::Searcher: ReverseSearcher<'a> {
+    type Item = &'a OsStr;
+    ...
+}
+impl<'a, P> DoubleEndedIterator for RSplit<'a, P>
+    where P: Pattern<'a> + Clone, P::Searcher: DoubleEndedSearcher<'a> { ... }
+
+/// Equivalent to `split`, except the trailing substring is
+/// skipped if empty.  See `str::split_terminator` for details.
+///
+/// Note that patterns can only match Unicode sections of the `OsStr`.
+fn split_terminator<'a, P>(&'a self, pat: P) -> SplitTerminator<'a, P>
+    where P: Pattern<'a>;
+
+struct SplitTerminator<'a, P> where P: Pattern<'a> { ... }
+impl<'a, P> Clone for SplitTerminator<'a, P>
+    where P: Pattern<'a> + Clone, P::Searcher: Clone { ... }
+impl<'a, P> Iterator for SplitTerminator<'a, P> where P: Pattern<'a> + Clone {
+    type Item = &'a OsStr;
+    ...
+}
+impl<'a, P> DoubleEndedIterator for SplitTerminator<'a, P>
+    where P: Pattern<'a> + Clone, P::Searcher: DoubleEndedSearcher<'a> { ... }
+
+/// Equivalent to `rsplit`, except the trailing substring is
+/// skipped if empty.  See `str::rsplit_terminator` for details.
+///
+/// Note that patterns can only match Unicode sections of the `OsStr`.
+fn rsplit_terminator<'a, P>(&'a self, pat: P) -> RSplitTerminator<'a, P>
+    where P: Pattern<'a>;
+
+struct RSplitTerminator<'a, P> where P: Pattern<'a> { ... }
+impl<'a, P> Clone for RSplitTerminator<'a, P>
+    where P: Pattern<'a> + Clone, P::Searcher: Clone { ... }
+impl<'a, P> Iterator for RSplitTerminator<'a, P>
+    where P: Pattern<'a> + Clone, P::Searcher: ReverseSearcher<'a> {
+    type Item = &'a OsStr;
+    ...
+}
+impl<'a, P> DoubleEndedIterator for RSplitTerminator<'a, P>
+    where P: Pattern<'a> + Clone, P::Searcher: DoubleEndedSearcher<'a> { ... }
+
+/// An iterator over substrings of `self` separated by characters
+/// matched by a pattern, restricted to returning at most `count`
+/// items.  See `str::splitn` for details.
+///
+/// Note that patterns can only match Unicode sections of the `OsStr`.
+fn splitn<'a, P>(&'a self, count: usize, pat: P) -> SplitN<'a, P>
+    where P: Pattern<'a>;
+
+struct SplitN<'a, P> where P: Pattern<'a> { ... }
+impl<'a, P> Clone for SplitN<'a, P>
+    where P: Pattern<'a> + Clone, P::Searcher: Clone { ... }
+impl<'a, P> Iterator for SplitN<'a, P> where P: Pattern<'a> + Clone {
+    type Item = &'a OsStr;
+    ...
+}
+
+/// An iterator over substrings of `self` separated by characters
+/// matched by a pattern, in reverse order, restricted to returning
+/// at most `count` items.  See `str::rsplitn` for details.
+///
+/// Note that patterns can only match Unicode sections of the `OsStr`.
+fn rsplitn<'a, P>(&'a self, count: usize, pat: P) -> RSplitN<'a, P>
+    where P: Pattern<'a>;
+
+struct RSplitN<'a, P> where P: Pattern<'a> { ... }
+impl<'a, P> Clone for RSplitN<'a, P>
+    where P: Pattern<'a> + Clone, P::Searcher: Clone { ... }
+impl<'a, P> Iterator for RSplitN<'a, P>
+    where P: Pattern<'a> + Clone, P::Searcher: ReverseSearcher<'a> {
+    type Item = &'a OsStr;
+    ...
+}
+
+/// An iterator over matches of a pattern in `self`.  See
+/// `str::matches` for details.
+///
+/// Note that patterns can only match Unicode sections of the `OsStr`.
+fn matches<'a, P>(&'a self, pat: P) -> Matches<'a, P> where P: Pattern<'a>;
+
+struct Matches<'a, P> where P: Pattern<'a> { ... }
+impl<'a, P> Clone for Matches<'a, P>
+    where P: Pattern<'a> + Clone, P::Searcher: Clone { ... }
+impl<'a, P> Iterator for Matches<'a, P> where P: Pattern<'a> + Clone {
+    type Item = &'a str;
+    ...
+}
+impl<'a, P> DoubleEndedIterator for Matches<'a, P>
+    where P: Pattern<'a> + Clone, P::Searcher: DoubleEndedSearcher<'a> { ... }
+
+/// An iterator over matches of a pattern in `self`, in reverse
+/// order.  See `str::rmatches` for details.
+///
+/// Note that patterns can only match Unicode sections of the `OsStr`.
+fn rmatches<'a, P>(&'a self, pat: P) -> RMatches<'a, P> where P: Pattern<'a>;
+
+struct RMatches<'a, P> where P: Pattern<'a> { ... }
+impl<'a, P> Clone for RMatches<'a, P>
+    where P: Pattern<'a> + Clone, P::Searcher: Clone { ... }
+impl<'a, P> Iterator for RMatches<'a, P>
+    where P: Pattern<'a> + Clone, P::Searcher: ReverseSearcher<'a> {
+    type Item = &'a str;
+    ...
+}
+impl<'a, P> DoubleEndedIterator for RMatches<'a, P>
+    where P: Pattern<'a> + Clone, P::Searcher: DoubleEndedSearcher<'a> { ... }
+
+/// Returns a `&OsStr` with leading and trailing whitespace removed.
+fn trim(&self) -> &OsStr;
+
+/// Returns a `&OsStr` with leading whitespace removed.
+fn trim_left(&self) -> &OsStr;
+
+/// Returns a `&OsStr` with trailing whitespace removed.
+fn trim_right(&self) -> &OsStr;
+
+/// Returns a `&OsStr` with leading and trailing matches of `pat`
+/// repeatedly removed.
+fn trim_matches<'a, P>(&'a self, pat: P) -> &'a OsStr
+    where P: Pattern<'a> + Clone, P::Searcher: DoubleEndedSearcher<'a>;
+
+/// Returns a `&OsStr` with leading matches of `pat` repeatedly
+/// removed.
+fn trim_left_matches<'a, P>(&'a self, pat: P) -> &'a OsStr
+    where P: Pattern<'a>;
+
+/// Returns a `&OsStr` with trailing matches of `pat` repeatedly
+/// removed.
+fn trim_right_matches<'a, P>(&'a self, pat: P) -> &'a OsStr
+    where P: Pattern<'a>, P::Searcher: ReverseSearcher<'a>;
+```
+
+These functions implement a subset of the string pattern matching
+functionality of `str`.  They act the same as the `str` versions,
+except that some of them require an additional `Clone` bound on the
+pattern (because patterns are single-use objects and each Unicode
+segment must be treated separately).  Patterns can only match Unicode
+sections of the `OsStr`, but operations such as `split` can return
+partially non-Unicode data.
+
+### Methods not included
+
+Most of he `str` methods not proposed for `OsStr` are those that take
+or return indexes into the `str`.  Additionally, `slice_shift_at` was
+left out due to its instability and likely upcoming removal from
+`str`; `chars` and `parse` were left out because they don't make sense
+(although a `chars_lossy` or something returning `u8`/`u16` newtype on
+Unix/Windows would be possible); and `to_lowercase` and `to_uppercase`
+were left out on the grounds that applying Unicode transformations to
+an `OsStr` seems likely to be an unusual operation (and they can be
+easily written in terms of existing functionality if someone needs
+them).
+
+Some kind of escaping function (along the lines of
+`str::escape_default` or `str::escape_unicode`) might be useful, but
+the correct form of such a function is unclear.
 
 ## `SliceConcatExt`
 
@@ -176,64 +376,77 @@ impl<S> SliceConcatExt<OsStr> for [S] where S: Borrow<OsStr> {
 ```
 
 This has the same behavior as the `str` version, except that it works
-on OS strings.  It is intended as a more convenient and efficient way
-of building up an `OsString` from parts than repeatedly calling
-`push`.
+on OS strings.  It is a more convenient and efficient way of building
+up an `OsString` from parts than repeatedly calling `push`.
 
 # Drawbacks
 
-This is a somewhat unusual string interface in that much of the
-functionality either accepts or returns a different type of string
-than the one the interface is designed to work with (`str` instead of
-the probably expected `OsStr`).
-
-# Alternatives
-
-## Interfaces without `str`
-
-Versions of the `*_str` functions that take or return `&OsStr`s seem
-more natural, but in at least some of the cases it is not possible to
-implement such an interface.  For example, on Windows, the following
-should hold using a hypothetical `remove_prefix(&self, &OsStr) ->
-Option<&OsStr>`:
+This is a somewhat unusual string interface in that many of the
+functions only accept Unicode data, while the type can encode more
+general strings.  Unfortunately, in many cases it is not possible to
+generalize the interface to accept non-Unicode input.  For example, on
+Windows, the following should hold using a hypothetical `split(&self,
+&OsStr) -> Split`:
 
 ```rust
 let string = OsString::from("😺"); // [0xD83D, 0xDE3A] in UTF-16
 let prefix: OsString = OsStringExt::from_wide(&[0xD83D]);
 let suffix: OsString = OsStringExt::from_wide(&[0xDE3A]);
 
-assert_eq!(string.remove_prefix(&prefix[..]), Some(&suffix[..]));
+assert_eq!(string.split(&suffix[..]).next(), Some(&prefix[..]));
 ```
 
-However, the slice `&suffix[..]` (internally `[0xED, 0xB8, 0xBA]`)
-does not occur anywhere in `string` (internally `[0xF0, 0x9F, 0x98,
-0xBA]`), so there would be no way to construct the return value of
-such a function.
+However, `string` is represented internally as the WTF-8 bytes `[0xF0,
+0x9F, 0x98, 0xBA]`, and the slice `&prefix[..]` would be represented
+as `[0xED, 0xA0, 0xBD]`.  Since this sequence of bytes does not occur
+anywhere in `string`, there is no way to construct the borrowed return
+value.
 
-## Different forms for `split`
+It would be possible to design an interface that returned
+`Cow<OsStr>`, but this would be a significant departure from the `str`
+interface.  If such functions are determined to be sufficiently useful
+they can be added at a later time.
 
-The restriction of the argument of `split` to ASCII characters is a
-very conservative choice.  It would be possible to allow any Unicode
-character as the divider, at the expense of creating somewhat strange
-situations where, for example, applying `split` followed by `concat`
-produces a string containing the divider character.  As any interface
-manipulating OS strings is generally non-Unicode, needing to split on
-non-ASCII characters is likely rare.
+# Alternatives
 
-In some ways, it would be more natural to split on bytes in Unix and
-16-bit code units in Windows, but it would be difficult to present a
-cross-platform interface for such functionality and implementations on
-Windows would have similar issues to those in the `remove_prefix`
-example above.
+Create a new API without copying `str` as closely as possible.
+
+## Stricter bounds on the pattern-accepting iterator constructors
+
+The proposed bounds on the pattern-accepting functions are the weakest
+possible.  This means that one can often construct an "iterator" that
+does not actually implement the `Iterator` trait.  For example, one
+can call `split` with any `P: Pattern<'a>`, but the resulting `Split`
+struct only implements the `Iterator` trait if `P` is additionally
+`Clone`. This is likely to be confusing, so tightening the bounds may
+be desirable.
 
 # Unresolved questions
 
-It is not obvious that the `split` function's restriction to ASCII
-dividers is the correct interface.
+The correct behavior of `split`, `matches`, and similar functions with
+a pattern that matches the empty string is not clear.  Possibilities
+include:
 
-There are many directions this interface could be extended in.  It
-would be possible to proved a subset of this functionality using
-`OsStr` rather than `str` in the interface, and it would also be
-possible to create functions that interacted with non-prefix portions
-of `OsStr`s.  It is not clear whether the usefulness of these
-interfaces is high enough to be worth pursuing them at this time.
+* panic
+* match on "character boundaries", probably defined as the ends of the
+  string and adjacent to each Unicode character.
+* define the behavior to commute with `to_string_lossy` (assuming the
+  pattern does not match anything including the replacement character)
+
+In any case, care should be taken to handle patterns that can match
+both the empty string and non-empty strings correctly.
+
+# Future work
+
+There are many common operations that, while possible to perform using
+this interface, are still undesirably difficult.  It may be desirable
+to add functions to simplify these operations, but such a proposal
+should consider modifying the `str` interface at the same time, and so
+is out of scope of this RFC.
+
+(An example of such a difficult operation is reading and removing a
+pattern match from the start of a string.  For an `OsStr` this will
+most likely be performed by using both `matches` and `splitn`, which
+duplicates the work of performing the pattern matching.  For `str`
+this operation can be performed using a single search followed by
+slicing.)
