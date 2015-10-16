@@ -184,7 +184,8 @@ fn ends_with<'a, P>(&'a self, pat: P) -> bool
 /// matched by a pattern.  See `str::split` for details.
 ///
 /// Note that patterns can only match Unicode sections of the `OsStr`.
-fn split<'a, P>(&'a self, pat: P) -> Split<'a, P> where P: Pattern<'a>;
+fn split<'a, P>(&'a self, pat: P) -> Split<'a, P>
+    where P: Pattern<'a> + Clone;
 
 struct Split<'a, P> where P: Pattern<'a> { ... }
 impl<'a, P> Clone for Split<'a, P>
@@ -201,7 +202,8 @@ impl<'a, P> DoubleEndedIterator for Split<'a, P>
 /// details.
 ///
 /// Note that patterns can only match Unicode sections of the `OsStr`.
-fn rsplit<'a, P>(&'a self, pat: P) -> RSplit<'a, P> where P: Pattern<'a>;
+fn rsplit<'a, P>(&'a self, pat: P) -> RSplit<'a, P>
+    where P: Pattern<'a> + Clone, P::Searcher: ReverseSearcher<'a>;
 
 struct RSplit<'a, P> where P: Pattern<'a> { ... }
 impl<'a, P> Clone for RSplit<'a, P>
@@ -219,7 +221,7 @@ impl<'a, P> DoubleEndedIterator for RSplit<'a, P>
 ///
 /// Note that patterns can only match Unicode sections of the `OsStr`.
 fn split_terminator<'a, P>(&'a self, pat: P) -> SplitTerminator<'a, P>
-    where P: Pattern<'a>;
+    where P: Pattern<'a> + Clone;
 
 struct SplitTerminator<'a, P> where P: Pattern<'a> { ... }
 impl<'a, P> Clone for SplitTerminator<'a, P>
@@ -236,7 +238,7 @@ impl<'a, P> DoubleEndedIterator for SplitTerminator<'a, P>
 ///
 /// Note that patterns can only match Unicode sections of the `OsStr`.
 fn rsplit_terminator<'a, P>(&'a self, pat: P) -> RSplitTerminator<'a, P>
-    where P: Pattern<'a>;
+    where P: Pattern<'a> + Clone, P::Searcher: ReverseSearcher<'a>;
 
 struct RSplitTerminator<'a, P> where P: Pattern<'a> { ... }
 impl<'a, P> Clone for RSplitTerminator<'a, P>
@@ -255,7 +257,7 @@ impl<'a, P> DoubleEndedIterator for RSplitTerminator<'a, P>
 ///
 /// Note that patterns can only match Unicode sections of the `OsStr`.
 fn splitn<'a, P>(&'a self, count: usize, pat: P) -> SplitN<'a, P>
-    where P: Pattern<'a>;
+    where P: Pattern<'a> + Clone;
 
 struct SplitN<'a, P> where P: Pattern<'a> { ... }
 impl<'a, P> Clone for SplitN<'a, P>
@@ -271,7 +273,7 @@ impl<'a, P> Iterator for SplitN<'a, P> where P: Pattern<'a> + Clone {
 ///
 /// Note that patterns can only match Unicode sections of the `OsStr`.
 fn rsplitn<'a, P>(&'a self, count: usize, pat: P) -> RSplitN<'a, P>
-    where P: Pattern<'a>;
+    where P: Pattern<'a> + Clone, P::Searcher: ReverseSearcher<'a>;
 
 struct RSplitN<'a, P> where P: Pattern<'a> { ... }
 impl<'a, P> Clone for RSplitN<'a, P>
@@ -286,7 +288,8 @@ impl<'a, P> Iterator for RSplitN<'a, P>
 /// `str::matches` for details.
 ///
 /// Note that patterns can only match Unicode sections of the `OsStr`.
-fn matches<'a, P>(&'a self, pat: P) -> Matches<'a, P> where P: Pattern<'a>;
+fn matches<'a, P>(&'a self, pat: P) -> Matches<'a, P>
+    where P: Pattern<'a> + Clone;
 
 struct Matches<'a, P> where P: Pattern<'a> { ... }
 impl<'a, P> Clone for Matches<'a, P>
@@ -302,7 +305,8 @@ impl<'a, P> DoubleEndedIterator for Matches<'a, P>
 /// order.  See `str::rmatches` for details.
 ///
 /// Note that patterns can only match Unicode sections of the `OsStr`.
-fn rmatches<'a, P>(&'a self, pat: P) -> RMatches<'a, P> where P: Pattern<'a>;
+fn rmatches<'a, P>(&'a self, pat: P) -> RMatches<'a, P>
+    where P: Pattern<'a> + Clone, P::Searcher: ReverseSearcher<'a>;
 
 struct RMatches<'a, P> where P: Pattern<'a> { ... }
 impl<'a, P> Clone for RMatches<'a, P>
@@ -411,15 +415,16 @@ they can be added at a later time.
 
 Create a new API without copying `str` as closely as possible.
 
-## Stricter bounds on the pattern-accepting iterator constructors
+## Looser bounds on the pattern-accepting iterator constructors
 
-The proposed bounds on the pattern-accepting functions are the weakest
-possible.  This means that one can often construct an "iterator" that
-does not actually implement the `Iterator` trait.  For example, one
-can call `split` with any `P: Pattern<'a>`, but the resulting `Split`
-struct only implements the `Iterator` trait if `P` is additionally
-`Clone`. This is likely to be confusing, so tightening the bounds may
-be desirable.
+The proposed bounds on the pattern-accepting iterator functions are
+stronger than necessary.  All of the functions from `split` through
+`rmatches` in the above list can be implemented using only `P:
+Pattern<'a>`.  Constructing an object without the tighter bounds would
+not be very useful, however, as it would not implement `Iterator`.  As
+that behavior would be confusing, bounds matching those on the
+corresponding `Iterator` implementations have been proposed.  This
+appears to be the same route taken in `str`.
 
 # Unresolved questions
 
