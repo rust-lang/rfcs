@@ -106,7 +106,7 @@ The current legal fragment specifiers are: `item`, `block`, `stmt`, `pat`,
 
 - `FOLLOW(pat)` = `{FatArrow, Comma, Eq}`
 - `FOLLOW(expr)` = `{FatArrow, Comma, Semicolon}`
-- `FOLLOW(ty)` = `{Comma, FatArrow, Colon, Eq, Gt, Ident(as)}`
+- `FOLLOW(ty)` = `{Comma, FatArrow, Colon, Eq, Gt, Ident(as), Semi}`
 - `FOLLOW(stmt)` = `FOLLOW(expr)`
 - `FOLLOW(path)` = `FOLLOW(ty)`
 - `FOLLOW(block)` = any token
@@ -139,3 +139,8 @@ reasonable freedom and can be extended in the future.
    same issue would come up.
 3. Do nothing. This is very dangerous, and has the potential to essentially
    freeze Rust's syntax for fear of accidentally breaking a macro.
+
+# Edit History
+
+- Updated by https://github.com/rust-lang/rfcs/pull/1209, which added
+  semicolons into the follow set for types.
