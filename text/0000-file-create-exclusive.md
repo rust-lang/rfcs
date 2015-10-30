@@ -55,3 +55,5 @@ functionality are under way.
 I have looked over the code, and implementation looks straightforward, so I do
 not anticipate any issues. There may however be other opinions over how this
 functionality should be exposed.
+
+I am not certain what testing should be implemented.
