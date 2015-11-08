@@ -96,6 +96,14 @@ mismatch with `sizeof`/`alignof` in C. No platforms with non-8-bit bytes
 or sub-byte addressing are expected to be supported by Rust in the foreseeable
 future, so there are no practical benefits in bitwise units.
 
+Instead of adding more special cases to `#[cfg(...)]`, an in-language
+solution has been suggested, checking Rust expressions at compile time
+similar to [static if][D-static-if] in D. Such a feature would be a much
+more extensive addition to the language, so it should be described in
+detail in its own RFC in order to be considered for its merits.
+
+[D-static-if]: http://dlang.org/version.html#StaticIfCondition
+
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
