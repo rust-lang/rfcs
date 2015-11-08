@@ -79,7 +79,7 @@ express more complex conditions:
 # Drawbacks
 [drawbacks]: #drawbacks
 
-None known.
+The microlanguage of `#[cfg(...)]` is getting more complex.
 
 # Alternatives
 [alternatives]: #alternatives
