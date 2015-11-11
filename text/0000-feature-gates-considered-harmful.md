@@ -81,3 +81,8 @@ macros and `#[allow_internal_unstable]`?
 Should we go one step further and remove any mention of unstable items from
 rustdoc's output, except when building unstable docs for nightly? I believe
 this topic has come up occasionally in previous discussions.
+
+Shall this also apply to `unstable` trait implementations? Rust currently
+has a problem with landing unstable features that add new trait implementations
+to existing types, since they will become "insta-stable". We could also change
+resolution to avoid considering those traits unless the feature is opted into.
