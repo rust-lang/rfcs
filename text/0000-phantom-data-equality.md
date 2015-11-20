@@ -38,12 +38,12 @@ The implementation of this change should be trivial, and very similar to the
 existing implementations of `Sync`, `Send` and `Sized`.
 
 ```rust
-impl PartialEq<Rhs = T> for PhantomData<T> {
+impl PartialEq<Rhs = PhantomData<T>> for PhantomData<T> {
   fn eq(&self, _other: &Rhs) -> bool { true }
   fn ne(&self, _other: &Rhs) -> bool { false }
 }
 
-impl Eq for PhantomData<T>
+impl Eq<PhantomData<T>> for PhantomData<T>
 ```
 
 `PartialEq` will only be implemented by default on values of the same enclosed
