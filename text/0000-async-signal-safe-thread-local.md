@@ -64,8 +64,8 @@ A new language item and trait `Interrupt` is added to the language:
 pub unsafe trait Interrupt { }
 ```
 
-A type can be the type of a `#[thread_local]` global variable if and only if it
-implements this trait.
+A type can be the type of an immutable `#[thread_local]` global variable if and
+only if it implements this trait.
 
 # Drawbacks
 [drawbacks]: #drawbacks
