@@ -36,7 +36,38 @@ let z = foo::<u8>();
 let w = foo::<u8, _>();
 ```
 
-One concrete motivation for this is a new design for the
+A major motivation for this is it allows generalising a function by
+adding new (usually-inferrable) type parameters to a function, without
+breaking users who already specify existing parameters. This makes the
+API evolution story for Rust code more flexible. For example, consider
+these two definitions of `foo`:
+
+``` rust
+fn foo<T>(x: &str) { ... }
+fn foo<T, U>(x: U) { ... }
+```
+
+A library version `1.0.0` might include the first `foo`, and users
+would call it like `foo::<i32>("bar")`. Later, it is
+realised that `foo` can be generalised to the second one (presumably
+with some trait bounds on `U`, in practice), and so `1.1.0` is
+released with the new definition, which would unfortunately break our
+existing caller, with an message like:
+
+```
+error: too few type parameters provided: expected 2 parameters, found 1 parameter [E0089]
+     foo::<i32>("bar")
+     ^~~~~~~~~~
+```
+
+This case can be completely addressed by instead calling `foo::<i32,
+_>`, letting the compiler do all the work to infer `U`. This RFC
+allows this this `_` insertion to happen implicitly, and so the
+`1.1.0` release with its new definition of `foo` would not break the
+`foo::<i32>("bar")` call at all: it would just continue to work.
+
+
+Another concrete motivation for this is a new design for the
 `rand::random` to allow more flexibility. It would have signature:
 
 ```rust
