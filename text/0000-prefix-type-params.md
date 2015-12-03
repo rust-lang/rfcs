@@ -112,6 +112,9 @@ legal to abbreviate `let x: Foo<T, _>` as `let x: Foo<T>`.
   e.g. `random::<u8, ...>`. This defeats much of the syntactic point,
   and also means it is less helpful for backwards-compatibility
   tricks.
+- Require opting-in for parameters that can be elided, e.g. have a
+  "default" type parameter of `_`, `fn foo<T, U, V: Bar = _>()` would
+  allow `foo::<u8, u32>` but not `foo::<u8>`.
 
 # Unresolved questions
 
