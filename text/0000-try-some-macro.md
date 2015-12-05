@@ -41,6 +41,8 @@ would be useful:
 Whole functionality is already implemented in [`soma` crate][soma], but I think
 it would be useful to have that in `libcore`.
 
+[soma]: https://github.com/hauleth/soma
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
