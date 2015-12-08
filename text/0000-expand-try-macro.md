@@ -11,11 +11,10 @@ Add additional `try!(expr => return)` that will return without value.
 # Motivation
 [motivation]: #motivation
 
-After I have created [Soma][soma] crate there was [suggestion in Reddit
-post][reddit] to do so.
+Sometimes there is need to early escape function on `Result::Err(..)`. This
+proposal provide simpler (nicer?) way to deal with that cases.
 
 [reddit]: https://www.reddit.com/r/rust/comments/3vblc5/soma_simple_solution_to_rfc_1303/cxnhbfs
-[soma]: https://github.com/hauleth/soma
 
 # Detailed design
 [design]: #detailed-design
@@ -47,5 +46,6 @@ Left as is. We can use `if let …` syntax in the same manner.
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
-Would it be usable and would be seen as a good practise to implicitly reject
-`Err(…)` value?
+- Would it be usable and would be seen as a good practise to implicitly reject
+  `Err(…)` value?
+- Should it be `try!($expr => $expr)` to allow custom return block?
