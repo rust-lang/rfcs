@@ -160,7 +160,7 @@ tandem with types provided by the stdlib, such as `Box<T>`.
   foo(box some_expr());
   ```
   the type inference system attempts to unify the type `Box<SomeTrait>`
-  with the return-type of `::protocol::Boxed::finalize(place)`.
+  with the return-type of `::protocol::Place::finalize(place)`.
   This may also be due to weakness in the compiler, but that is not
   immediately obvious.
 
@@ -295,26 +295,26 @@ macro_rules! in_ {
         let value = $value;
         unsafe {
             ::std::ptr::write(raw_place, value);
-            ::protocol::InPlace::finalize(place)
+            ::protocol::Place::finalize(place)
         }
     } }
 }
 
 macro_rules! box_ {
     ($value:expr) => { {
-        let mut place = ::protocol::BoxPlace::make_place();
+        let mut place = ::protocol::Boxer::make_place();
         let raw_place = ::protocol::Place::pointer(&mut place);
         let value = $value;
         unsafe {
             ::std::ptr::write(raw_place, value);
-            ::protocol::Boxed::finalize(place)
+            ::protocol::Place::finalize(place)
         }
     } }
 }
 
 // Note that while both desugarings are very similar, there are some
 // slight differences.  In particular, the placement-`in` desugaring
-// uses `InPlace::finalize(place)`, which is a `finalize` method that
+// uses `Place::finalize(place)`, which is a `finalize` method that
 // is overloaded based on the `place` argument (the type of which is
 // derived from the `<place-expr>` input); on the other hand, the
 // overloaded-`box` desugaring uses `Boxed::finalize(place)`, which is
@@ -341,16 +341,30 @@ mod protocol {
 /// The client is responsible for two steps: First, initializing the
 /// payload (it can access its address via `pointer`). Second,
 /// converting the agent to an instance of the owning pointer, via the
-/// appropriate `finalize` method (see the `InPlace`.
+/// `finalize` method.
 ///
 /// If evaluating EXPR fails, then the destructor for the
 /// implementation of Place to clean up any intermediate state
 /// (e.g. deallocate box storage, pop a stack, etc).
-pub trait Place<Data: ?Sized> {
+pub unsafe trait Place<Data: ?Sized> {
+    /// `Owner` is the type of the end value of `in PLACE { BLOCK }`
+    ///
+    /// Note that when `in PLACE { BLOCK }` is solely used for
+    /// side-effecting an existing data-structure,
+    /// e.g. `Vec::emplace_back`, then `Owner` need not carry any
+    /// information at all (e.g. it can be the unit type `()` in that
+    /// case).
+    type Owner;
+
     /// Returns the address where the input value will be written.
     /// Note that the data at this address is generally uninitialized,
     /// and thus one should use `ptr::write` for initializing it.
     fn pointer(&mut self) -> *mut Data;
+
+    /// Converts self into the final value, shifting deallocation/cleanup
+    /// responsibilities (if any remain), over to the returned instance of
+    /// `Owner` and forgetting self.
+    unsafe fn finalize(self) -> Self::Owner;
 }
 
 /// Interface to implementations of  `in PLACE { BLOCK }`.
@@ -364,42 +378,24 @@ pub trait Place<Data: ?Sized> {
 /// let value = { BLOCK };
 /// unsafe {
 ///     std::ptr::write(raw_place, value);
-///     InPlace::finalize(place)
+///     Place::finalize(place)
 /// }
 /// ```
 ///
 /// The type of `in PLACE { BLOCK }` is derived from the type of `PLACE`;
 /// if the type of `PLACE` is `P`, then the final type of the whole
-/// expression is `P::Place::Owner` (see the `InPlace` and `Boxed`
-/// traits).
+/// expression is `P::Place::Owner` (see the `Place` trait).
 ///
 /// Values for types implementing this trait usually are transient
 /// intermediate values (e.g. the return value of `Vec::emplace_back`)
 /// or `Copy`, since the `make_place` method takes `self` by value.
-pub trait Placer<Data: ?Sized> {
+pub unsafe trait Placer<Data: ?Sized> {
     /// `Place` is the intermedate agent guarding the
     /// uninitialized state for `Data`.
-    type Place: InPlace<Data>;
+    type Place: Place<Data>;
 
     /// Creates a fresh place from `self`.
     fn make_place(self) -> Self::Place;
-}
-
-/// Specialization of `Place` trait supporting `in PLACE { BLOCK }`.
-pub trait InPlace<Data: ?Sized>: Place<Data> {
-    /// `Owner` is the type of the end value of `in PLACE { BLOCK }`
-    ///
-    /// Note that when `in PLACE { BLOCK }` is solely used for
-    /// side-effecting an existing data-structure,
-    /// e.g. `Vec::emplace_back`, then `Owner` need not carry any
-    /// information at all (e.g. it can be the unit type `()` in that
-    /// case).
-    type Owner;
-
-    /// Converts self into the final value, shifting
-    /// deallocation/cleanup responsibilities (if any remain), over to
-    /// the returned instance of `Owner` and forgetting self.
-    unsafe fn finalize(self) -> Self::Owner;
 }
 
 /// Core trait for the `box EXPR` form.
@@ -407,34 +403,24 @@ pub trait InPlace<Data: ?Sized>: Place<Data> {
 /// `box EXPR` effectively desugars into:
 ///
 /// ```
-/// let mut place = BoxPlace::make_place();
+/// let mut place = Boxer::make_place();
 /// let raw_place = Place::pointer(&mut place);
 /// let value = $value;
 /// unsafe {
 ///     ::std::ptr::write(raw_place, value);
-///     Boxed::finalize(place)
+///     Place::finalize(place)
 /// }
 /// ```
 ///
 /// The type of `box EXPR` is supplied from its surrounding
 /// context; in the above expansion, the result type `T` is used
 /// to determine which implementation of `Boxed` to use, and that
-/// `<T as Boxed>` in turn dictates determines which
-/// implementation of `BoxPlace` to use, namely:
-/// `<<T as Boxed>::Place as BoxPlace>`.
-pub trait Boxed {
-    /// The kind of data that is stored in this kind of box.
-    type Data;  /* (`Data` unused b/c cannot yet express below bound.) */
-    type Place; /* should be bounded by BoxPlace<Self::Data> */
+/// `<T as Boxer>` in turn dictates determines which
+/// implementation of `Place` to use, namely:
+/// `<<T as Boxer>::Place as Place>`.
+pub unsafe trait Boxer<Data: ?Sized>: Sized {
+    type Place: Place<Data, Owner=Self>;
 
-    /// Converts filled place into final owning value, shifting
-    /// deallocation/cleanup responsibilities (if any remain), over to
-    /// returned instance of `Self` and forgetting `filled`.
-    unsafe fn finalize(filled: Self::Place) -> Self;
-}
-
-/// Specialization of `Place` trait supporting `box EXPR`.
-pub trait BoxPlace<Data: ?Sized> : Place<Data> {
     /// Creates a globally fresh place.
     fn make_place() -> Self;
 }
@@ -465,39 +451,31 @@ mod impl_box_for_box {
         BoxPlace { fake_box: Some(Box::new(t)) }
     }
 
-    unsafe fn finalize<T>(mut filled: BoxPlace<T>) -> Box<T> {
-        let mut ret = None;
-        mem::swap(&mut filled.fake_box, &mut ret);
-        ret.unwrap()
-    }
-
-    impl<'a, T> proto::Placer<T> for HEAP {
+    unsafe impl<'a, T> proto::Placer<T> for HEAP {
         type Place = BoxPlace<T>;
         fn make_place(self) -> BoxPlace<T> { make_place() }
     }
 
+    unsafe impl<T> proto::Boxer<T> for Box<T> {
+        type Place = BoxPlace<T>;
+        fn make_place() -> BoxPlace<T> { make_place() }
+    }
+
     impl<T> proto::Place<T> for BoxPlace<T> {
+        type Owner = Box<T>;
+
         fn pointer(&mut self) -> *mut T {
             match self.fake_box {
                 Some(ref mut b) => &mut **b as *mut T,
                 None => panic!("impossible"),
             }
         }
-    }
 
-    impl<T> proto::BoxPlace<T> for BoxPlace<T> {
-        fn make_place() -> BoxPlace<T> { make_place() }
-    }
-
-    impl<T> proto::InPlace<T> for BoxPlace<T> {
-        type Owner = Box<T>;
-        unsafe fn finalize(self) -> Box<T> { finalize(self) }
-    }
-
-    impl<T> proto::Boxed for Box<T> {
-        type Data = T;
-        type Place = BoxPlace<T>;
-        unsafe fn finalize(filled: BoxPlace<T>) -> Self { finalize(filled) }
+        unsafe fn finalize<T>(mut self) -> Box<T> {
+            let mut ret = None;
+            mem::swap(&mut filled.fake_box, &mut ret);
+            ret.unwrap()
+        }
     }
 }
 
@@ -515,6 +493,8 @@ mod impl_box_for_rc {
     struct RcPlace<T> { fake_box: Option<Rc<T>> }
 
     impl<T> proto::Place<T> for RcPlace<T> {
+        type Owner = Rc<T>;
+
         fn pointer(&mut self) -> *mut T {
             if let Some(ref mut b) = self.fake_box {
                 if let Some(r) = rc::get_mut(b) {
@@ -523,24 +503,22 @@ mod impl_box_for_rc {
             }
             panic!("impossible");
         }
+
+        unsafe fn finalize(mut self) -> Rc<T> {
+            let mut ret = None;
+            mem::swap(&mut filled.fake_box, &mut ret);
+            ret.unwrap()
+        }
     }
 
-    impl<T> proto::BoxPlace<T> for RcPlace<T> {
+    unsafe impl<T> proto::Boxer<T> for RcPlace<T> {
+        type Place = RcPlace<T>;
+
         fn make_place() -> RcPlace<T> {
             unsafe {
                 let t: T = mem::zeroed();
                 RcPlace { fake_box: Some(Rc::new(t)) }
             }
-        }
-    }
-
-    impl<T> proto::Boxed for Rc<T> {
-        type Data = T;
-        type Place = RcPlace<T>;
-        unsafe fn finalize(mut filled: RcPlace<T>) -> Self {
-            let mut ret = None;
-            mem::swap(&mut filled.fake_box, &mut ret);
-            ret.unwrap()
         }
     }
 }
@@ -562,33 +540,24 @@ mod impl_in_for_vec_emplace_back {
         fn emplace_back(&mut self) -> VecPlacer<T> { VecPlacer { v: self } }
     }
 
-    impl<'a, T> proto::Placer<T> for VecPlacer<'a, T> {
+    unsafe impl<'a, T> proto::Placer<T> for VecPlacer<'a, T> {
         type Place = VecPlace<'a, T>;
-        fn make_place(self) -> VecPlace<'a, T> { VecPlace { v: self.v } }
+        fn make_place(self) -> VecPlace<'a, T> {
+            selv.v.reserve(1);
+            VecPlace { v: self.v }
+        }
     }
 
     impl<'a, T> proto::Place<T> for VecPlace<'a, T> {
+        type Owner = ();
         fn pointer(&mut self) -> *mut T {
             unsafe {
-                let idx = self.v.len();
-                self.v.push(mem::zeroed());
-                &mut self.v[idx]
+                self.v.as_mut_ptr().offset(self.v.len())
             }
         }
-    }
-    impl<'a, T> proto::InPlace<T> for VecPlace<'a, T> {
-        type Owner = ();
         unsafe fn finalize(self) -> () {
-            mem::forget(self);
-        }
-    }
-
-    #[unsafe_destructor]
-    impl<'a, T> Drop for VecPlace<'a, T> {
-        fn drop(&mut self) {
-            unsafe {
-                mem::forget(self.v.pop())
-            }
+            // checked by reserve.
+            self.v.set_len(self.v.len() + 1)
         }
     }
 }
@@ -634,28 +603,33 @@ fn main() { }
 
 macro_rules! box_ {
     ($value:expr) => { {
-        let mut place = ::BoxPlace::make();
+        let mut place = ::Boxer::make_place();
         let raw_place = ::Place::pointer(&mut place);
         let value = $value;
         unsafe { ::std::ptr::write(raw_place, value); ::Boxed::fin(place) }
     } }
 }
 
+
 // (Support traits and impls for examples below.)
 
-pub trait BoxPlace<Data: ?Sized> : Place<Data> { fn make() -> Self; }
-pub trait Place<Data: ?Sized> { fn pointer(&mut self) -> *mut Data; }
-pub trait Boxed { type Place; fn fin(filled: Self::Place) -> Self; }
+trait Place<Data: ?Sized> {
+    type Owner;
+    fn pointer(&mut self) -> *mut Data;
+    unsafe fn finalize(self) -> Self::Owner;
+}
+unsafe trait Boxer<Data: ?Sized>: Sized {
+    type Place: Place<Data, Owner=Self>;
+    fn make_place() -> Self;
+}
 
 struct BP<T: ?Sized> { _fake_box: Option<Box<T>> }
-
-impl<T> BoxPlace<T> for BP<T> { fn make() -> BP<T> { make_pl() } }
-impl<T: ?Sized> Place<T> for BP<T> { fn pointer(&mut self) -> *mut T { pointer(self) } }
-impl<T: ?Sized> Boxed for Box<T> { type Place = BP<T>; fn fin(x: BP<T>) -> Self { finaliz(x) } }
-
-fn make_pl<T>() -> BP<T> { loop { } }
-fn finaliz<T: ?Sized>(mut _filled: BP<T>) -> Box<T> { loop { } }
-fn pointer<T: ?Sized>(_p: &mut BP<T>) -> *mut T { loop { } }
+unsafe impl<T> Boxer<T> for BP<T> { fn make_place() -> BP<T> { loop { } } }
+impl<T: ?Sized> Place<T> for BP<T> {
+    type Owner = Box<T>;
+    fn pointer(&mut self) -> *mut T { loop { } }
+    fn finalize(x: BP<T>) -> Self { loop { } }
+}
 
 // START HERE
 
@@ -701,7 +675,7 @@ including the cases where type-inference fails in the desugaring.
 /tmp/foo6.rs:7:1: 14:2 note: in expansion of box_!
 /tmp/foo6.rs:37:64: 37:76 note: expansion site
 /tmp/foo6.rs:9:25: 9:41 error: the trait `core::marker::Sized` is not implemented for the type `core::ops::Fn()` [E0277]
-/tmp/foo6.rs:9         let mut place = ::BoxPlace::make();
+/tmp/foo6.rs:9         let mut place = ::Boxer::make_place();
                                        ^~~~~~~~~~~~~~~~
 /tmp/foo6.rs:7:1: 14:2 note: in expansion of box_!
 /tmp/foo6.rs:37:64: 37:76 note: expansion site
@@ -713,7 +687,7 @@ error: aborting due to 2 previous errors
 /tmp/foo6.rs:7:1: 14:2 note: in expansion of box_!
 /tmp/foo6.rs:52:51: 52:64 note: expansion site
 /tmp/foo6.rs:9:25: 9:41 error: the trait `core::marker::Sized` is not implemented for the type `[T]` [E0277]
-/tmp/foo6.rs:9         let mut place = ::BoxPlace::make();
+/tmp/foo6.rs:9         let mut place = ::Boxer::make_place();
                                        ^~~~~~~~~~~~~~~~
 /tmp/foo6.rs:7:1: 14:2 note: in expansion of box_!
 /tmp/foo6.rs:52:51: 52:64 note: expansion site
