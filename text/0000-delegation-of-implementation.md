@@ -124,7 +124,9 @@ impl<K: PartialOrd, V: PartialOrd> PartialOrd for BTreeMap<K, V> use self.iter()
 
 Unless explicitly set associated types and constants should default to the surrogate implementation value of the corresponding items.
 
-## Inverse delegating expressions
+## Possible extensions
+
+### Inverse delegating expressions
 
 Can we handle cases as this one
 ```rust
@@ -145,7 +147,7 @@ impl<T: Clone> Clone for BinaryHeap<T> use self.data, BinaryHeap { data: super.c
 ```
 Here the `super` keyword corresponds to an instance of the surrogate type. It is the symmetric of `self`. The whole expression must have type `Self`. Both direct and inverse delegating expressions may be given at the same time or possibly just one of them if only one conversion is needed.
 
-## Combined delegation
+### Combined delegation
 
 It would be nice if delegation could be combined for multiple traits so that
 ```rust
@@ -171,7 +173,7 @@ could be reduced to the single line
 impl PartialEq + PartialOrd + Ord for PackageId use &*self.inner;
 ```
 
-## Function-based delegation
+### Function-based delegation
 
 Sometimes implementations are trait-free but the same pattern is found like in
 ```rust
@@ -190,7 +192,7 @@ Here we have no trait to delegate but the same method signatures are reused and 
 impl<'t, 'a,'tcx> fn node_ty for MemCategorizationContext<'t, 'a, 'tcx> use self.typer;
 ```
 
-## More complex delegation
+### More complex delegation
 
 `Self` can also appear inside more complex parameter/result types like `Option<Self>` or `&[Self]`. If we had HKT in Rust a partial solution based on [functor types][functors] might have been possible. It could still be possible to handle specific cases like precisely options and slices but I have not thought hard about it. The complexity might not be worth it.
 
@@ -219,7 +221,7 @@ Some people noticed a similarity with trait `Deref`. A main limitation is that y
 
 ## Compiler plugin
 
-I was suggested to write a compiler plugin. But I was also told that [type information is not accessible][type_information] (unless you can annotate the surrogate type yourself, which implies you must own it). Moreover I'm not sure a plugin could easily solve the partial delegation cases.
+I was suggested to write a compiler plugin. But I was also told that [type information is not accessible][type_information] (unless you can annotate the delegated trait yourself, which implies you must own it). Moreover I'm not sure a plugin could easily solve the partial delegation cases.
 
 [type_information]: http://stackoverflow.com/questions/32641466/when-writing-a-syntax-extension-can-i-look-up-information-about-types-other-tha
 
