@@ -61,14 +61,14 @@ static S: Type;
 const C: Type;
 ```
 
-where `Bounds` is a collection of trait and lifetime bounds. Users of `T`
-definition can only use the properties exposed by the bounds. And where `Type`
-is an arbitrary (possibly extern) type.
+where `Bounds` is a collection of trait and lifetime bounds. Users of `T` can
+only use the properties exposed by the bounds. And where `Type` is an arbitrary
+(possibly extern) type.
 
 ## Defining extern items
 
 The `#[extern]` attribute can be applied in the `#[extern = path]` form to
-define an extern items. For example
+define an extern item. For example
 
 ```rust
 #[extern = "alloc::Default"]
