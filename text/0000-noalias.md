@@ -74,10 +74,6 @@ If `x` and `y` are different noalias pointers and `a` and `b` are two pointers
 `x` and `y` respectively, then memory access via `a` and `b` does not
 alias.
 
-If `x` is a noalias pointer, `y` is a reference, and `a` and `b` are two
-pointers based on `x` and `y` respectively, then memory access via `a` and `b`
-does not alias.
-
 If `x` is a noalias pointer, `a` is based on `x`, and `b` is any pointer, then
 memory access via `a` and `b` does not alias unless `b` is based on `x`.
 
