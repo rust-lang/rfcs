@@ -55,6 +55,9 @@ might overwrite the value stored in `x`.
 # Detailed design
 [design]: #detailed-design
 
+Two memory accesses are said to alias if at least one of them mutates memory
+and the memory ranges they access intersect.
+
 Add a `noalias` language item and wrapper struct:
 
 ```rust
@@ -62,11 +65,17 @@ Add a `noalias` language item and wrapper struct:
 pub struct NoAlias<T: ?Sized>(*const T);
 ```
 
-Memory access via a pointer `x`
-[based on](http://llvm.org/docs/LangRef.html#pointeraliasing) a pointer `y`
-wrapped in a `NoAlias` struct does
-[not alias](http://llvm.org/docs/LangRef.html#noalias-and-alias-scope-metadata)
-with memory access via pointers not based on `y`.
+A pointer is called a noalias pointer if it is stored in a `NoAlias` object. Two
+noalias pointers are said to be different if they are stored in different
+objects. (Note: Two different noalias pointers can point to the same address.)
+
+If `x` and `y` are different noalias pointers and `a` and `b` are two pointers
+[based on](http://llvm.org/docs/LangRef.html#pointeraliasing)
+`x` and `y` respectively, then memory access via `a` and `b` does not
+alias.
+
+If `x` is a noalias pointer, `a` is based on `x`, and `b` is any pointer, then
+memory access via `a` and `b` does not alias unless `b` is based on `x`.
 
 # Drawbacks
 [drawbacks]: #drawbacks
