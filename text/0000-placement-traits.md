@@ -62,7 +62,7 @@ The new trait hierarchy is as follows:
 pub trait Placer<Data: ?Sized, Owner> {
     /// `Place` is the intermedate agent guarding the
     /// uninitialized state for `Data`.
-    type Place: Place<Data, Owner=Owner>;
+    type Place: Place<Data=Data, Owner=Owner>;
 
     /// Creates a fresh place from `self`.
     fn make_place(self) -> Self::Place
@@ -92,7 +92,7 @@ pub trait Boxer<Data: ?Sized, A>: Sized
     where A: Allocator
 {
     /// The place that will negotiate the storage of the data.
-    type Place: Place<Data, Owner=Self>;
+    type Place: Place<Data=Data, Owner=Self>;
 
     /// Creates a globally fresh place from a given allocator.
     fn make_place(allocator: A) -> Self::Place
@@ -117,7 +117,7 @@ pub trait Boxer<Data: ?Sized, A>: Sized
 /// If evaluating EXPR fails, then the destructor for the
 /// implementation of Place is run to clean up any intermediate state
 /// (e.g. deallocate box storage, pop a stack, etc).
-pub unsafe trait Place<Data: ?Sized> {
+pub unsafe trait Place {
     /// `Owner` is the type of the end value of both `PLACE <- EXPR` and
     /// `box EXPR`.
     ///
@@ -127,10 +127,13 @@ pub unsafe trait Place<Data: ?Sized> {
     /// case).
     type Owner;
 
+    /// `Data` is the type of the value to be emplaced.
+    type Data: ?Sized;
+
     /// Returns the address where the input value will be written.
     /// Note that the data at this address is generally uninitialized,
     /// and thus one should use `ptr::write` for initializing it.
-    fn pointer(&mut self) -> *mut Data;
+    fn pointer(&mut self) -> *mut Self::Data;
 
     /// Converts self into the final value, shifting deallocation/cleanup
     /// responsibilities (if any remain), over to the returned instance of
