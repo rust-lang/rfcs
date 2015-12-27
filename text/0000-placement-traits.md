@@ -116,7 +116,7 @@ pub trait Boxer<Data: ?Sized, A>: Sized
 ///
 /// If evaluating EXPR fails, then the destructor for the
 /// implementation of Place is run to clean up any intermediate state
-/// (e.g. deallocate box storage, pop a stack, etc).
+/// (e.g. deallocate box storage, pop a stack frame, etc).
 pub unsafe trait Place {
     /// `Owner` is the type of the end value of both `PLACE <- EXPR` and
     /// `box EXPR`.
