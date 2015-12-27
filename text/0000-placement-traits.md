@@ -19,9 +19,9 @@ There are now three traits:
 
 ## Allocators
 
-Boxer's now make Places from Allocators. This means that any type implementing
-`Boxer` can be allocated with any Allocator using placement in syntax (see the
-detailed design for more).
+`Boxer`s now make `Place`s from `Allocator`s. This means that any type
+implementing `Boxer` can be allocated with any `Allocator` using placement in
+syntax (see the detailed design for more).
 
 ## DSTs
 
