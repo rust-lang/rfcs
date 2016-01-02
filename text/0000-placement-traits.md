@@ -11,17 +11,19 @@ allocators into account, and pin down the story on DST placement.
 
 ## Traits
 
-There are now three traits:
+There are now four traits:
 
 1. `Placer` -- Placement in syntax:  `let owner = PLACE <- value`.
 2. `Boxer` -- Box syntax: `let boxed: Box<_> = box value`.
 3. `Place` -- An "out" pointer.
+4. `Allocate` -- A trait that allows boxing and placing into `Allocator`s.
 
 ## Allocators
 
-`Boxer`s now make `Place`s from `Allocator`s. This means that any type
-implementing `Boxer` can be allocated with any `Allocator` using placement in
-syntax (see the detailed design for more).
+This RFC adds a new `Allocate` trait that can be implemented by any type that
+takes an allocator. Implementing `Allocate` automatically implements `Boxer`
+for boxing into allocators that implement `Default` and allows the type to be
+allocated with a custom allocator using the `ALLOCATOR <- value` syntax.
 
 ## DSTs
 
@@ -74,7 +76,7 @@ pub trait Placer<Data: ?Sized, Owner> {
 /// `box EXPR` effectively desugars into:
 ///
 /// ```rust,ignore
-/// let mut place = Boxer::make_place(Default::default());
+/// let mut place = Boxer::make_place();
 /// let raw_place = Place::pointer(&mut place);
 /// let value = EXPR;
 /// unsafe {
@@ -86,16 +88,14 @@ pub trait Placer<Data: ?Sized, Owner> {
 /// The type of `box EXPR` is supplied from its surrounding
 /// context; in the above expansion, the result type `T` is used
 /// to determine which implementation of `Boxer` to use, and that
-/// `<T as Boxer>` in turn dictates determines both which `Allocator`
-/// to use and which implementation of `Place` to use.
-pub trait Boxer<Data: ?Sized, A>: Sized
-    where A: Allocator
-{
+/// `<T as Boxer>` in turn dictates which implementation of `Place` to use
+/// (specifically, `<T as Boxer<typeof(EXPR)>>::Place`).
+pub trait Boxer<Data: ?Sized>: Sized {
     /// The place that will negotiate the storage of the data.
     type Place: Place<Data=Data, Owner=Self>;
 
-    /// Creates a globally fresh place from a given allocator.
-    fn make_place(allocator: A) -> Self::Place
+    /// Creates a globally fresh place.
+    fn make_place() -> Self::Place
         where Data: Sized;
 }
 
@@ -141,34 +141,60 @@ pub unsafe trait Place {
     unsafe fn finalize(self) -> Self::Owner;
 }
 
+/// All types implemeinting this trait can be constructed using using the `box`
+/// keyword (iff the associated `Allocator` implements `Default`) or by placing
+/// (`<-`) a value into an instance of the associated `Allocator`.
+///
+/// ```norun
+/// let boxed1: Box<i32, SomeAllocator> = box 1; // where SomeAllocator: Default
+/// let boxed2: Box<i32, SomeAllocator> = SomeAllocator::new() <- 1;
+/// ```
+pub trait Allocate<Data: ?Sized>: Sized {
+    /// The place that will negotiate the storage of the data.
+    type Place: Place<Data=Data, Owner=Self>;
+    /// The allocator for this type.
+    type Allocator: Allocator;
+
+    /// Create a `Place` for `Self` with the given `Allocator`.
+    fn allocate(with: Self::Allocator) -> Self::Place
+        where Data: Sized;
+}
+
 ```
 
-First, `box` desugaring constructs the allocator with `Default::default()`. This
-means that `let boxed: Box<_, A> = box value;` works for all allocators `A:
-Default`. It's reasonable to construct new allocators on the fly like this
-because allocators are intended to be passed to collection constructors by
-value.
-
-Additionally, we define the following blanket impl that turns every `Allocator`
-into a `Placer` for all `Boxer`s.
+Additionally, we define the following blanket impls to allow anything
+implementing `Allocate` to be allocated in any `Allocator`. When specialization
+lands, these can be marked default.
 
 ```rust
-impl<T, D, B> Placer<D, B> for T
+// Allows `let owner: T = ALLOCATOR <- thing;`
+impl<T, D, A> Placer<D, A> for T
     where T: Allocator,
-          B: Boxer<D, T>
+          A: Allocate<D, Allocator=T>
 {
-    type Place = B::Place;
+    type Place = A::Place;
 
     fn make_place(self) -> Self::Place
         where Self: Sized
     {
-        B::make_place(self)
+        A::allocate(self)
+    }
+}
+
+// Allows `let owner: T = box thing;`
+impl<A, D> Boxer<D> for A
+    where A: Allocate<D>,
+          A::Allocator: Default
+{
+    type Place = A::Place;
+
+    fn make_place() -> Self::Place
+        where Self: Sized
+    {
+        A::allocate(Default::default())
     }
 }
 ```
-
-This means that `let boxed_thing: Type<_> = HEAP <- thing` works out of the box
-as long as `HEAP` is an `Allocator` and `Type` implements `Boxer`.
 
 Finally, to support DST placement, this RFC explicitly loosens the placement
 protocol guarantees. Specifically, the place in placement in/new is not
@@ -274,6 +300,22 @@ cases, `Placer` will only be defined for one `Owner` per type.
 # Alternatives
 [alternatives]: #alternatives
 
+## Get rid of Placer
+
+Instead of having a `Placer`, we could allow placing directly into `Place`s.
+Unfortunately, to allow expressions that may or may not be placed into (e.g.
+`map.entry(k) <- v`), the `Place` would have to allocate in `Place::pointer`
+instead of on construction to avoid allocating unnecessarily. This, in turn,
+means that the `Place` would have to manually keep track of whether or not it
+has allocated. Using a `Placer` allows us to store this in the type system
+itself which:
+
+1. Is less error prone.
+2. Is probably more optimizable.
+
+
+## Placer with an associated Owner
+
 Instead of making the `Placer` trait take `Owner` as a type argument, we could
 add the following default method to the `Allocator` trait:
 
@@ -308,8 +350,13 @@ impl<A, B, D> Placer<D> for BoxPlacer<A, B>
 We could then use `let boxed = HEAP.emplace::<Type<_>>() <- value;` to select
 the output type. However, IMO, this is much less ergonomic.
 
+## The Allocate trait
+
+Instead of having an `Allocate` trait, we could have all `Boxer`s take
+`Allocator`s. However, as @nagisa has pointed out, not all `Boxer`s will need
+an `Allocator` (some may, e.g., use object pools).
+
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
-Does `Place::pointer` need to return an `&mut T` (or some other special pointer)
-to ensure RVO? Should it return `std::ptr::Unique`?
+None.
