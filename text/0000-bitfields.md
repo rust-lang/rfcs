@@ -23,7 +23,7 @@ compiled for an unexpected target, such code will silently fail. In particular,
 code that assumes that bitfields are placed into the integer in increasing bit
 order will likely break on big-endian machines.
 
-Appending A contains various examples of the (to some) surprising behavior of
+Appendix A contains various examples of the (to some) surprising behavior of
 bitfields on the x86-64 linux platform.
 
 This rfc introduces a single attribute that can be applied to fields inside of
