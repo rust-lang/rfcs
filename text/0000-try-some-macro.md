@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-Add `try_some!` macro for `Option` equivalent to `try!` for `Result`.
+Add `maybe!` macro for `Option` equivalent to `try!` for `Result`.
 
 # Motivation
 [motivation]: #motivation
@@ -19,7 +19,7 @@ It would simplify some `Option` related functions.
 Just simple macro that would be almost the same as `try!` macro:
 
 ```rust
-macro_rules! try_some {
+macro_rules! maybe {
     ($expr:expr) => (match $expr {
         Some(val) => val,
         None => return None,
@@ -56,4 +56,4 @@ Left as is.
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
-What should be macro name? Is `try_some!` ok? Would it be desired in community?
+What should be macro name? Is `maybe!` ok? Would it be desired in community?
