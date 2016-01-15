@@ -1,13 +1,3 @@
-TODO
-
-#![feature(default_type_parameter_fallback)] - for function generics
-don't need import flag
-cast references
-rvalue stuff
-match
-unsized enums
-
-
 - Feature Name: variant_types
 - Start Date: 2016-01-07
 - RFC PR: (leave this empty)
@@ -15,17 +5,14 @@ unsized enums
 
 # Summary
 
-This is something of a two-part RFC, it proposes
+Make enum variants first-class types. Variant types can be used just like any
+other type. When a new instance of an enum is created, or we use `@` syntax in a
+match expression to create a variable know to be a particular variant, we choose
+between the enum and variant type in a similar way to the treatment of integers.
+We default to the enum type to preserve backwards compatability.
 
-* making enum variants first-class types,
-* untagged enums (aka unions).
-
-The latter is part of the motivation for the former and relies on the former to
-be ergonomic.
-
-In the service of making variant types work, there is some digression into
-default type parameters for functions. However, that needs its own RFC to be
-spec'ed properly.
+This RFC previously included a proposal for untagged enums as a kind of union
+data type. That has been removed.
 
 
 # Motivation
@@ -43,16 +30,8 @@ within the variant and pass the struct (duplicating data structures for no good
 reason). It would be much nicer if we could refer to the variant directly in the
 type system.
 
-When working with FFI code, we need to communicate with C programs which may use
-union data types. There is no way to represent a union in Rust, and thus working
-with such types is awkward and involves bug-prone transmutes. We should provide
-some way for Rust to handle such types.
 
-As we'll see below, variant types allow for an elegant solution to the union
-problem.
-
-
-# Detailed design - variant types
+# Detailed design
 
 Consider the example enum `Foo`:
 
@@ -82,31 +61,6 @@ struct Baz {
     field: Foo::Variant3,
 }
 ```
-
-Both enums and their variants can currently be imported:
-
-```rust
-use Foo;
-use Foo::Variant1;
-```
-
-Importing an enum imports it into both the value and type namespace. Importing
-a variant imports it only into the value namespace. To maintain backwards
-compatibility, this will remain the default. In order to import an enum variant
-into the type namespace, one must use the `import_variant_type` attribute:
-
-```rust
-use Foo;
-#[import_variant_type]
-use Foo::Variant1;
-
-fn bar(v: Variant1) {
-    let _ = Variant1;
-}
-```
-
-When we release Rust v2.0, we may choose to import variants into both namespaces
-by default and remove the attribute.
 
 
 ## Constructors
@@ -159,12 +113,37 @@ Due to the default type parameter, we remain backwards compatible:
 let x: &Fn(i32, &'static str) -> Foo = &Foo::Variant2;
 ```
 
-Note that this is an innovation. Default type parameters on functions have
+Note that default type parameters on functions have
 [recently](https://github.com/rust-lang/rust/pull/30724) been feature-gated for
-more consideration. The compiler has never accepted referencing a generic
-function without specifying type parameters, even when there is a default.
-However, I think this should be the expected behaviour. This should be discussed
-further in a separate RFC.
+more consideration. The compiler will only accept referencing a generic function
+without specifying type parameters if using the
+`default_type_parameter_fallback` feature.
+
+
+## Matching
+
+When matching an enum, the whole variable can be assigned to a variable using
+`@` syntax. Currently such a variable has enum type. With this RFC it would get
+the same treatment as newly constructed variants, i.e., it could be inferred to
+have either the variant or enum type, with the enum type by default.
+
+Example:
+
+```
+fn bar(f: Foo) {
+    match f {
+        v1 @ Foo::Variant1 => {
+            let f: Foo = v1;
+        }
+        v2 @ Foo::Variant2(..) => {
+            let v: Foo::Variant2 = v2;
+        }
+        _ => {}
+    }
+}
+```
+
+Both branches type check.
 
 
 ## Representation
@@ -192,6 +171,9 @@ let _ = b as Foo::Variant2; // Runtime error
 let _ = b as Foo::Variant1; // Ok
 ```
 
+See alternatives below, it may be better to not support down-casting.
+
+
 ## impls
 
 `impl`s may exist for both enum and variant types. There is no explicit sharing
@@ -201,91 +183,42 @@ method would apply to the enum type, it can be called on a variant value due to
 coercion performed by the dot operator.
 
 
-# Detailed design - untagged enums
+## Extension - unsized enums
 
-An enum may have `#[repr(union)]` as an attibute. This implies `#[repr(C)]`,
-i.e., variants will have the layout expected for C structs. More importantly, it
-means that the enum is untagged: there is no discriminant. Matching (and `if
-let`, etc.) are not allowed on such enums.
+With the above representation, enum variants are the same size as the enum
+itself, which is the size of the largest enum plus the discriminant. This makes
+conversion between the variant and enum types easy, and should be the default.
+However, there are some use cases where it is preferable to have a more minimal
+size for variant values. For example, where variants are of wildly different
+sizes and where we usually deal with individual variants and rarely the whole
+enum.
 
-The size of a union value is exactly the size of the largest variant (including
-any padding). There is no discriminant, nor is it possible to have drop flags.
+For such use cases, we could support an `#[unsized]` attribute on the enum. This
+affects the representation of the variants: a variant value is not padded, it
+still has the discriminant, but there is no padding to the enum size, the value
+is the size of the individual variant (plus the discriminant, of course).
 
-There is no restriction on the kind of variants that can be used with
-`#[repr(union)]`. Unit-like, tuple-like, and struct-like can all be used. Note
-that if all variants are unit-like, then the enum is a zero-sized type. If there
-are other variants, then unit-like variant values are all padding. I don't see
-the utility of such variants, but I see no reason to ban them.
+The enum type (but not the variant types) are considered unsized. The effect is
+that they may not appear in a Rust program by value, only by reference. There is
+no 'unsizing information' (c.f., slices or trait objects) so a pointer to an
+unsized enum is a regular pointer, not a fat pointer.
 
-The only operation that can be performed on a union value is casting. An enum
-value can be cast to a variant type. This is not checked (it cannot be, since
-there is no discriminant) and thus is *unsafe*. Variants can also be cast
-'sideways' to other variant types (also unsafe). Like other enums, a variant
-value can be implicitly coerced to the enum type; this is a safe operation.
+Casting/coercion of enum/variant values can still work as before, since we'll
+never access the enum and find a different variant.
 
-impls work exactly like regular enums.
+### Further extension - remove the discriminant
 
-## Example
-
-```rust
-#[repr(union)]
-enum MyUnion {
-    MyInt(i64),
-    MyBytes(u8, u8, u8, u8),
-}
-
-fn foo(m: MyUnion) -> i64 {
-    #[import_variant_type]
-    use MyUnion::*;
-
-    assert!(size_of::<MyUnion>() == 8);
-    assert!(size_of::<MyInt>() == 8);
-    assert!(size_of::<MyBytes>() == 8); // 4 bytes of inaccessible padding
-
-    if consult_magic_8_ball() == 42 {
-        unsafe {
-            process_bytes(m as MyBytes)
-        }
-    } else {
-        unsafe { m as MyInt }.0
-    }
-}
-
-fn process_bytes(bytes: MyUnion::MyBytes) -> i64 {
-    // safe code
-    ...
-}
-```
-
-## Destructors
-
-It would be unsafe for the compiler to assume that a union is a particular
-variant, therefore it cannot run destructors for any fields in the union. For
-consistency, destructors will not be run even if the union value has a variant
-type.
-
-There are two ways to achieve this, either it is forbidden for any field in a
-union to implement `Drop`; or, even if a field implements `Drop`, this is
-ignored. A compromise solution is that the programmer must opt-in to ignoring
-`Drop` on a per-field, per-variant, or per-enum basis, and otherwise fields
-which implement `Drop` are forbidden, either with an attribute, or with a
-`ManuallyDrop` type (see [RFC PR 197](https://github.com/rust-lang/rfcs/pull/197)).
-I prefer this compromise solution.
-
-It will be legal to implement `Drop` for an enum type, but illegal to implement
-`Drop` for a variant type (if the variant belongs to an untagged enum). I fear
-this must just be an ad-hoc check in the compiler.
+We don't need the discriminant when we have a value with variant type. We can't
+have a value with enum type. When we have a pointer with enum type, we could put
+the discriminant in the pointer (making it a fat pointer like we use with other
+unsized types). This should all work at the expense of some added complexity in
+coercion and matching.
 
 
 # Drawbacks
 
-The variant types proposal is a little bit hairy, in part due to trying to
-remain backwards compatible.
-
-One could argue that having both tagged and untagged enums in a language is
-confusing. However, I believe the guidance here can be very clear: only use
-`#[repr(union)]` for C/FFI interop. The fact that it is an attribute should make
-it an obvious second choice.
+The proposal is a little bit hairy, in part due to trying to remain backwards
+compatible.
 
 
 # Alternatives
@@ -296,40 +229,7 @@ be equivalent to variant types, or could have all variants as members, making it
 equivalent to the enum type. Although more powerful, this approach is more
 complex, and I do not believe the complexity is justified.
 
-
-## Unsafe enums
-
-See [RFC PR 724](https://github.com/rust-lang/rfcs/pull/724) and
-[internals dicussion](https://internals.rust-lang.org/t/pre-rfc-unsafe-enums-now-including-a-poll/2873).
-
-Uses `unsafe` rather than an attribute to indicate that an enum is untagged.
-Uses an unsafe, irrefutable pattern match (let syntax) to destructure the enum,
-giving access to its fields.
-
-Using variant types and unsafe casting as proposed here should be more ergonomic
-- it better isolates the operation which is unsafe (discriminating the enum),
-from the safe operations (operating on the fields themselves).
-
-## Union structs
-
-See [RFC PR 1444](https://github.com/rust-lang/rfcs/pull/1444).
-
-Annotates structs rather than enums. This has the advantage over RFC 724 that
-fields can be accessed directly which is an ergonomic improvement (also true
-with this proposal). However, since all field access must be unsafe, it still
-requires more unsafe code than you might want.
-
-My preference is for an enum approach (as oppossed to structs) since a union
-offers multiple choices of data, like an enum, rather than combining data
-together like a struct. That is, enums and unions both 'or' data together,
-whereas structs 'and' data together. (In C, structs and unions are syntactically
-similar, but semantically very different).
-
-Furthermore, by using enums we allow union variants to have more than one field.
-While this is strictly more powerful than is needed for C interop, it is useful
-in general. For example, when dealing with binary data, formats will often have
-fields which are a given size, but may contain data of different types, an
-untagged enum is perfect for this.
+We could remove support for casting from enums to variants, relying on matching.
 
 
 # Unresolved questions
@@ -341,5 +241,3 @@ trait bounds, e.g., a struct is a bound on any structs which inherit from it),
 then perhaps enum types should be considered bounds on their variant types.
 There are also interesting questions around subtyping. However, without a
 concrete proposal, it is difficult to deeply consider the issues here.
-
-See destructor question above.
