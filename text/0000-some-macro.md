@@ -88,6 +88,11 @@ for that RFC, but some of those issues could be hashed out here. If `?` *does* w
 with `Option` types, then I would think we would want a symetric macro to `try!`
 as well.
 
+Another alternative would be to extend the `try!` macro so that it works
+with both `Option` and `Result` types. I am not sure if this is possible
+(I would think it is), but that may actually be a better solution,
+considering the fact that it would mirror `unwrap`'s use with both types.
+
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
