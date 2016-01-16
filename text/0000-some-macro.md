@@ -77,7 +77,7 @@ make it the best option in my opinion.
 [drawbacks]: #drawbacks
 
 Adding new functions/macros to the stdlib of a lanuage, particularly for symbols that are
-used automatically without import should also be done slowly and cautiously.
+used automatically without import should always be done slowly and cautiously.
 
 # Alternatives
 [alternatives]: #alternatives
