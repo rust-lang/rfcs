@@ -30,7 +30,9 @@ in appendix A. For example, the following language item corresponds to the
 
 ```rust
 #[lang = "atomic_cxchg"]
-fn atomic_cxchg<T>(dst: *mut T, old: T, src: T) -> T;
+fn atomic_cxchg<T>(dst: *mut T, old: T, src: T) -> T {
+    // implementation omitted
+}
 ```
 
 When a call to one of the atomic intrinsics cannot be translated to a native
