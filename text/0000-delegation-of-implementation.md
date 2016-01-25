@@ -124,6 +124,32 @@ impl<K: PartialOrd, V: PartialOrd> PartialOrd for BTreeMap<K, V> use self.iter()
 
 Unless explicitly set associated types and constants should default to the surrogate implementation value of the corresponding items.
 
+## Types and delegation
+
+All the examples above deal with structs and delegation to subfields. However no restriction is required. Delegating types and surrogates types might be of any kind (structs, tuples, enums, arrays, lambdas, ...) provided it makes sense. An illustrative example with enums:
+```rust
+enum HTMLColor { White, Silver, Gray, Black,
+	Red, Maroon, Yellow, Olive,
+	Lime, Green, Aqua, Teal,
+	Blue, Navy, Fuchsia, Purple };
+
+impl Coordinates for HTMLColor {
+	fn get_red(&self) -> f32 { ... }
+	fn get_green(&self) -> f32 { ... }
+	fn get_blue(&self) -> f32 { ... }
+	fn get_hue(&self) -> f32 { ... }
+	fn get_saturation(&self) -> f32 { ... }
+	fn get_brightness(&self) -> f32 { ... }
+}
+
+enum ThreeBitColor { Black, Blue, Green, Cyan,
+	Red, Magenta, Yellow, White };
+
+fn to_html_color(color: &ThreeBitColor) -> HTMLColor { ... }
+
+impl Coordinates for ThreeBitColor use to_html_color(&self);
+```
+
 ## Possible extensions
 
 ### Inverse delegating expressions
@@ -197,6 +223,25 @@ impl<'t, 'a,'tcx> fn node_ty for MemCategorizationContext<'t, 'a, 'tcx> use self
 `Self` can also appear inside more complex parameter/result types like `Option<Self>`, `Box<Self>` or `&[Self]`. If we had HKT in Rust a partial solution based on [functor types][functors] might have been possible. It could still be possible to handle specific cases like precisely the ones above but the complexity might not be worth the benefit.
 
 [functors]: https://wiki.haskell.org/Functor
+
+### Value-dependent surrogate type
+
+Let's consider a new example:
+```rust
+enum TextBoxContent { Number(f64), String(Str) }
+
+// how to delegate?
+impl Hash for TextBoxContent use ??? ;
+```
+It seems that in theory we should be able to delegate meaningfully given that for any value of `TextBoxContent` there is an obvious existing implementation for `Hash`. The problem is we cannot select a **single** surrogate type. The actual surrogate type should indeed be chosen based on the runtime value of `Self`. To handle this case I slightly modify the delegation syntax by using a variation of blaenk's proposition: `impl Tr for B use delegatingExpression.impl;`. Now this new syntax could be extended to solve our current issue:
+```rust
+impl Hash for TextBoxContent use (match self { Number(n) => n.impl, String(s) => s.impl });
+```
+Here the delegating expression can contain several branches that does not need to unify from a type perspective. The `.impl` syntax should be replaced by a call to the actual delegated method. Note that although this pattern may occur naturally with enums it can again apply to any kind of types:
+```rust
+impl Tr for BStruct use (if self.condition { self.field1.impl } else { self.field2.impl });
+```
+However this kind of delegation for value-dependent surrogate types has a limitation: it does not work for methods with multiple `Self` parameters. Indeed there is no guarantee the runtime values for different parameters will select the same branch and then define a consistent surrogate.
 
 # Drawbacks
 [drawbacks]: #drawbacks
