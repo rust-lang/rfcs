@@ -38,13 +38,13 @@ rust-lang/rust    | 845                                |
 rust-lang/cargo   | 38                                 |
 servo/servo       | 314                                |
 
-It would be an improvement if we alleviate the composition pattern so that it can remain/become a privileged tool for code reuse while being as terse as the inheritance-based equivalent. Related discussions:
+It would be an improvement if we alleviated the composition pattern so that it can remain/become a privileged tool for code reuse while being as terse as the inheritance-based equivalent. Related discussions:
 * [pre-rfc][pre_rfc]
 * [some related reddit thread][comp_over_inh] (I didn't participate in)
 
 [pre_rfc]: https://internals.rust-lang.org/t/syntactic-sugar-for-delegation-of-implementation/2633
 [comp_over_inh]: https://www.reddit.com/r/rust/comments/372mqw/how_do_i_composition_over_inheritance/
-[object_composition]: https://en.wikipedia.org/wiki/Object_composition
+[object_composition]: https://en.wikipedia.org/wiki/Composition_over_inheritance
 
 # Detailed design
 [design]: #detailed-design
@@ -60,11 +60,11 @@ and
 impl Encodable for HighResolutionStamp use self.0;
 ```
 
-Again this feature adds no new concept. It just simplify an existing code pattern. However it is interesting to understand the similarities and differences with inheritance. The *delegating type* (`H<'a>` in the first example) implicitely "inherit" methods (`hash`) of the *delegated trait* (`Hash`) from the *surrogate type* (`&'static str` which is the type of the expression `self.name`) like a subclass inherit methods from its superclass(es). A fundamental difference is that the delegating type is not a subtype of the surrogate type in the sense of Liskov. There is no external link between the types. The surrogate may even be less visible than the delegating type. Another difference is that the developer has a total control on which part of the surrogate type to reuse whereas class hierarchy forces him/her to import the entire public interface of the superclass (this is because a superclass plays two roles: the one of the surrogate type and the one of the delegated trait).
+Again this feature adds no new concept. It just simplifies an existing code pattern. However it is interesting to understand the similarities and differences with inheritance. The *delegating type* (`H<'a>` in the first example) implicitely "inherits" methods (`hash`) of the *delegated trait* (`Hash`) from the *surrogate type* (`&'static str` which is the type of the *delegating expression* `self.name`) like a subclass inherits methods from its superclass(es). A fundamental difference is that the delegating type is not a subtype of the surrogate type in the sense of Liskov. There is no external link between the types. The surrogate may even be less visible than the delegating type. Another difference is that the developer has a total control on which part of the surrogate type to reuse whereas class hierarchy forces him/her to import the entire public interface of the superclass (this is because a superclass plays two roles: the role of the surrogate type and the role of the delegated trait).
 
 ## Partial delegation 
 
-If we consider this code
+If we consider this piece of code:
 ```rust
 // from rust/src/libsyntax/attr.rs
 impl AttrMetaMethods for Attribute {
@@ -102,7 +102,7 @@ impl AttrMetaMethods for Attribute use self.meta() {
 ```
 Only missing methods are automatically implemented.
 
-In some other cases the compiler just cannot generate the appropriate method. For example when `self` is moved rather than passed by reference, unless the delegating expression produces a result that can itself be moved the borrow checker will complain. In that kind of situations the developer can again provide a custom implementation where necessary and let the compiler handle the rest of the methods.
+In some other cases the compiler just cannot generate the appropriate method. For example when `self` is moved rather than borrowed, unless the delegating expression produces a result that can itself be moved the borrow checker will complain. In that kind of situations the developer can again provide a custom implementation where necessary and let the compiler handle the rest of the methods.
 
 ## Delegation for other parameters 
 
@@ -143,7 +143,7 @@ impl<T: Clone> Clone for BinaryHeap<T> {
 ```
 where `Self` is used as a return type? Yes but we need a second expression for that.
 ```rust
-impl<T: Clone> Clone for BinaryHeap<T> use self.data, BinaryHeap { data: super.clone() };
+impl<T: Clone> Clone for BinaryHeap<T> use self.data, BinaryHeap { data: super };
 ```
 Here the `super` keyword corresponds to an instance of the surrogate type. It is the symmetric of `self`. The whole expression must have type `Self`. Both direct and inverse delegating expressions may be given at the same time or possibly just one of them if only one conversion is needed.
 
@@ -194,7 +194,7 @@ impl<'t, 'a,'tcx> fn node_ty for MemCategorizationContext<'t, 'a, 'tcx> use self
 
 ### More complex delegation
 
-`Self` can also appear inside more complex parameter/result types like `Option<Self>` or `&[Self]`. If we had HKT in Rust a partial solution based on [functor types][functors] might have been possible. It could still be possible to handle specific cases like precisely options and slices but I have not thought hard about it. The complexity might not be worth it.
+`Self` can also appear inside more complex parameter/result types like `Option<Self>`, `Box<Self>` or `&[Self]`. If we had HKT in Rust a partial solution based on [functor types][functors] might have been possible. It could still be possible to handle specific cases like precisely the ones above but the complexity might not be worth the benefit.
 
 [functors]: https://wiki.haskell.org/Functor
 
@@ -210,14 +210,14 @@ impl<'t, 'a,'tcx> fn node_ty for MemCategorizationContext<'t, 'a, 'tcx> use self
 ## OOP inheritance
 
 As mentioned before, inheritance can handle similar cases with the advantage its concepts and mechanisms are well known. But with some drawbacks:
-* Multiple inheritance is possible but to my knowledge no serious proposition has been made for Rust and I doubt anyone wants to end up with a system as complex and tricky as C++ inheritance (whereas delegation is naturally "multiple delegation")
+* Multiple inheritance is possible but to my knowledge no serious proposition has been made for Rust and I doubt anyone wants to end up with a system as complex and tricky as C++ inheritance (whereas delegation is **naturally multiple delegation**)
 * As said before inheritance mixes orthogonal concepts (code reuse and subtyping) and does not allow fine grain control over which part of the superclass interface is inherited.
 
 ## Multiple derefs
 
 Some people noticed a similarity with trait `Deref`. A main limitation is that you can only deref to a single type. However one could imagine implementing multiple derefs by providing the target type as a generic parameter (`Deref<A>`) rather than as an associated type. But again you can find limitations:
 * As for inheritance visibility control is impossible: if `B` can be derefed to `A` then the entire public interface of `A` is accessible.
-* `Deref` only offers a superficial similarity. If `A` implements trait `Tr`, instances of `B` can sometimes be used where `Tr` is expected but as a counter example a `[B]` array is not assignable to `fn f(t: [T]) where T : Tr`. Derefs do not interact nicely with bounded generic parameters.
+* `Deref` only offers a superficial similarity. If `A` implements trait `Tr`, instances of `B` can sometimes be used where `Tr` is expected but as a counter example a `&[B]` slice is not assignable to `fn f(t: &[T]) where T : Tr`. Derefs do not interact nicely with bounded generic parameters.
 
 ## Compiler plugin
 
