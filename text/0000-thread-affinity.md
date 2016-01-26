@@ -12,7 +12,7 @@ The locked threads are then not scheduled so they do not ever move to other core
 # Motivation
 [motivation]: #motivation
 
-My motivation derives from a personal use-case of creating a fiber-based server/client application framework for Rust in my spare time. I need the ability to set thread affinity of Rust threads in an OS-indepedent manager to CPU cores to minimize cache misses and thread context switching.
+My motivation derives from a personal use-case of creating a fiber-based server/client application framework for Rust in my spare time. I need the ability to set thread affinity of Rust threads in an OS-indepedent manner to CPU cores to minimize cache misses and thread context switching.
 
 The proposed feature provides a performance optimization for servers. It would also be useful for MIO and similar frameworks where the main event-loop is locked to one core and passes connections to workers that are also locked to the remaining cores so it takes advantage of cache-locality.
 
@@ -36,7 +36,7 @@ let t = thread::spawn(move || {
 Here's the equivalent but with some syntatical sugar to hide the lock if the user doesn't care to access it:
 
 ```
-let t = thread::spawn(move || {
+let t = thread::lock(move || {
     // thread logic goes here
     // the cpu_lock will unlock from the CPU core once out of scope
 });
@@ -58,8 +58,8 @@ let t = thread::spawn(move || {
 
 ```
 // locks thread to cpu core 2
-let t = thread::spawn(move || {
-    let cpu_no = 2;
+let cpu_no = 2;
+let t = thread::lock_on(2,move || {
     let cpu_lock = CpuLock::lock_on(cpu_no).unwrap(); // the current thread is now locked to an arbitrary free CPU core
     let cpu_id = cpu_lock.cpu_id();
     // thread logic goes here
@@ -75,7 +75,7 @@ let t = thread::spawn(move || {
     let cpu_lock = CpuLock::lock().unwrap(); // the current thread is now locked to an arbitrary free CPU core    
     // thread logic goes here
     cpu_lock.unlock();
-
+    // other thead logic - like cleanup, etc.
 });
 ```
 
