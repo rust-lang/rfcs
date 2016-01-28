@@ -197,15 +197,29 @@ impl<A, D> Boxer<D> for A
 ```
 
 Finally, to support DST placement, this RFC explicitly loosens the placement
-protocol guarantees. Specifically, the place in placement in/new is not
-guaranteed to be allocated before the evaluation of the expression on the right
-hand side. DST placement needs this to be able to compute the size of the DST
-before allocating the place. This means that, in the following cases, whether or
-not the `Box` is ever allocated is explicitly undefined:
+protocol guarantees. Specifically, while `PLACE <- THING` is still guaranteed to
+be evaluated left-to-right, the place is not guaranteed to be allocated before
+of the expression on the right hand side has been fully evaluated. That is,
+`Placer::make_place` may be called any time during the evaluation of `THING`.
+DST placement needs this to be able to compute the size of the DST before
+allocating the place.
+
+For example, in the following cases, whether or not the `Box` is ever allocated
+is explicitly undefined:
 
 ```rust
 let _: Box<_> = box panic!();
 let _: Box<_> = HEAP <- panic!();
+```
+
+However, in the following case, "here" will always be printed because the
+expression is still guaranteed to be evaluated left-to-right:
+
+```rust
+let _: Box<_> = {
+    println!("here");
+    HEAP
+} <- panic!();
 ```
 
 For completeness, I've included the following DST placement traits to
