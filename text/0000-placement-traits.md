@@ -141,7 +141,7 @@ pub unsafe trait Place {
     unsafe fn finalize(self) -> Self::Owner;
 }
 
-/// All types implemeinting this trait can be constructed using using the `box`
+/// All types implementing this trait can be constructed using using the `box`
 /// keyword (iff the associated `Allocator` implements `Default`) or by placing
 /// (`<-`) a value into an instance of the associated `Allocator`.
 ///
