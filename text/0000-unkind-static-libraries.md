@@ -20,7 +20,7 @@ These issues have led to [confusion](https://github.com/rust-lang/rust/issues/27
 
 `kind=better_static` can be applied the same way as any of the other `kind`s, whether via flags passed to cargo via build scripts or `#[link]` attributes.
 
-The behavior is that when a library is given such a `kind`, `rustc` will __not__` look for that library itself (unlike `kind=static`). Instead it will trust that it exists and pass it to the first immediate linker invocation (but not to later downstream linker invocations unlike `kind=dynamic`).
+The behavior is that when a library is given such a `kind`, `rustc` will __not__ look for that library itself (unlike `kind=static`). Instead it will trust that it exists and pass it to the first immediate linker invocation (but not to later downstream linker invocations unlike `kind=dynamic`).
 
 ## Example
 
