@@ -103,6 +103,21 @@ special effects:
   be inlined within a `#[clear_stack_on_return]` function, as if they
   were `#[inline(always)]`.
 
+Note that the implicit `Drop` created by `#[clear_on_drop]` is marked
+`#[clear_stack_on_return]`, so its clearing can also be delayed as
+described above.
+
+Additionally, when a `#[clear_stack_on_return]` function calls another
+function which is *not* marked as `#[clear_stack_on_return]`, it has to
+be careful with the contents of registers, since they might get spilled
+and not overwritten (even ones which are not callee-saved, since for
+instance pushing a useless register is a common idiom to realign the
+stack); it should spill and overwrite them all before the call.
+Conceptually, the `#[clear_stack_on_return]` function could at its end
+also overwrite all the locations any called function saved register
+contents to, but it's much simpler to overwrite them before they can
+leak into the stack.
+
 Any closures created within a `#[clear_stack_on_return]` function are
 also treated as if they were marked with `#[clear_stack_on_return]`.
 
@@ -161,6 +176,37 @@ The `#[clear_stack_on_return]` attribute, on the other hand, will
 probably need to be implemented deep in the LLVM layer, and passed from
 Rust as a LLVM function attribute.
 
+## Lints
+
+To prevent easy-to-make mistakes which would nullify the benefits of
+these attributes, a few lints could be implemented.
+
+The first one would warn if a function which is not marked
+`#[clear_stack_on_return]` is accessing non-`pub` fields of a
+`#[clear_on_drop]` type (this includes constructing the type). If a
+function which manipulates the fields of a type does not clear its stack
+and registers, there is a risk of the contents of the fields leaking in
+compiler-generated temporaries, or even local variables.
+
+The second one would warn if a `#[clear_on_drop]` type contains a
+pointer, or contains a type which contains a pointer (recursively). This
+includes things like `Vec`. While this can be done safely, for instance
+by using `Vec::with_capacity`, never resizing it (perhaps with the help
+of `.into_boxed_slice()`), and carefully overwriting its contents on
+`Drop::drop` (note that this needs either a "secure memset", or
+something like the `test::black_box` function to defeat dead store
+optimizations), it's not easy; the `#[allow]` for the lint would serve
+as a warning to the reader (much like `unsafe`).
+
+The third one would warn if a function marked `#[clear_stack_on_return]`
+calls a function which is not `#[inline]` and which is not marked
+`#[clear_stack_on_return]`. While the compiler can be careful to prevent
+data from accidentally leaking in registers, it cannot prevent data from
+being explicitly passed in a parameter. Without this lint, forgetting to
+mark an internal function as `#[clear_stack_on_return]` could lose the
+benefits of that attribute; with this lint, the programmer would be
+warned of the mistake.
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
@@ -169,6 +215,13 @@ are many types and functions which obviously should be marked (cypher
 and hash state objects, their internal functions, and bignum libraries
 designed for public key operations), but for some it's not obvious. For
 instance, should a plaintext buffer be protected by these attributes?
+
+The clearing made by `#[clear_stack_on_return]` can be delayed until the
+return to any non-`#[clear_stack_on_return]` function, that is, until
+the transition from "sensitive" to "non-sensitive" code. If too much
+code is marked with `#[clear_stack_on_return]`, for instance by an
+overzealous developer who believes "everything is sensitive", the
+clearing might happen later than expected.
 
 This design only does a "shallow" clear. For instance, if a
 `#[clear_on_drop]` object (or a `#[clear_stack_on_return]` function)
@@ -185,6 +238,13 @@ implementing `#[clear_stack_on_return]` requires changing LLVM.
 
 # Alternatives
 [alternatives]: #alternatives
+
+It might be simpler to initially forbid the use of `#[clear_on_drop]` on
+`Copy` types, since it implies a `Drop` trait, and currently `Copy`
+cannot be used together with `Drop`. This shouldn't be too limiting,
+since most uses of this attribute would be with non-`Copy` types, and
+`Clone` would still work. Once `Drop` works with `Copy`, this limitation
+could be removed.
 
 The `#[clear_on_drop]` attribute can be emulated by a hand-written
 `Drop` impl, combined with the unstable inline assembly feature, as long
@@ -223,3 +283,6 @@ analyzed, either through software (`ptrace()` and others) or hardware
 [unresolved]: #unresolved-questions
 
 What should be done when a `#[clear_stack_on_return]` function panics?
+
+What would be the names for the lints described above? Are they enough
+to prevent mistakes?
