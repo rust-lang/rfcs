@@ -44,7 +44,11 @@ impl Atomic<i8> { // And other integer types. i64/u64 only if supported by targe
 # Motivation
 [motivation]: #motivation
 
-Why are we doing this? What use cases does it support? What is the expected outcome?
+Many lock-free algorithms require a two-value `compare_exchange`, which is effectively twice the size of a `usize`. This would be implemented by atomically swapping a struct containing two members.
+
+Another use case is to support Linux's futex API. This API is based on atomic `i32` variables, which currently aren't available on x86_64 because `AtomicIsize` is 64-bit.
+
+Finally, many people coming from C++ will expect a generic atomic type like `std::atomic<T>`.
 
 # Detailed design
 [design]: #detailed-design
