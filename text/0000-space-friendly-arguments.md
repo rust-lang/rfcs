@@ -24,7 +24,7 @@ This design corresponds to clang's with `-Xlinker <val>` and `-mllvm <val>`.
 # Drawbacks
 [drawbacks]: #drawbacks
 
-We could leave rustc crippled and avoid having multiple arguments for passing arguments.
+This results in multiple ways to pass on arguments (without spaces) to the linker and LLVM.
 
 # Alternatives
 [alternatives]: #alternatives
