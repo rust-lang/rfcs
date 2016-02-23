@@ -20,7 +20,7 @@ impl<T: Copy> Atomic<T> {
     pub const fn new(val: T) -> Atomic<T>;
     pub fn load(&self, order: Ordering) -> T;
     pub fn store(&self, val: T, order: Ordering);
-    pub fn swap(&self, val: T, order: Ordering) -> T;
+    pub fn exchange(&self, val: T, order: Ordering) -> T;
     pub fn compare_exchange(self, current: T, new: T, success: Ordering, failure: Ordering) -> T;
     pub fn compare_exchange_weak(self, current: T, new: T, success: Ordering, failure: Ordering) -> (T, bool);
 }
@@ -55,7 +55,7 @@ Finally, many people coming from C++ will expect a generic atomic type like `std
 
 ## `Atomic<T>`
 
-This is fairly straightforward: `load`, `store`, `swap`, `compare_exchange` and `compare_exchange_weak` are implemented for all atomic types. `bool` and integer types have additional `fetch_*` functions, which match those in `AtomicBool`, `AtomicIsize` and `AtomicUsize`.
+This is fairly straightforward: `load`, `store`, `exchange`, `compare_exchange` and `compare_exchange_weak` are implemented for all atomic types. `bool` and integer types have additional `fetch_*` functions, which match those in `AtomicBool`, `AtomicIsize` and `AtomicUsize`.
 
 The only complication is that `compare_exchange` does a bitwise comparison, which may fail due to differences in the padding bytes of `T`. This is solved with an intrinsic that explicitly clears the padding bytes of a value using a mask. We have to do this ourselves rather than relying on the user because Rust struct layouts are imlpementation-defined.
 
@@ -113,4 +113,4 @@ Several other designs have been suggested [here](https://internals.rust-lang.org
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
-Should we also rename `swap` to `exchange` while we're at it? It's more consistent with the new `compare_exchange` functions.
+None
