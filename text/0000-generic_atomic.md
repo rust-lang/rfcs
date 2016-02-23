@@ -113,4 +113,4 @@ Several other designs have been suggested [here](https://internals.rust-lang.org
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
-None
+How should we deal with architectures that don't support native atomic operations (for example, ARMv5)? Should we disallow atomics entirely? Should we silently fall back to lock-based implementations?
