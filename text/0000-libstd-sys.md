@@ -24,7 +24,7 @@ With the current state of libstd, it is hard to see which parts depend on
 external operating-system provided libraries like libc, libpthread, etc. This in
 turn makes it difficult to begin work on implementing the standard library
 without using these libraries. For example, it is hard to determine whether it
-is better for the pc-windows-mscv targets to use libc or whether they should
+is better for the pc-windows-msvc targets to use libc or whether they should
 depend only on Operating System APIs (the Win32 API, or even a smaller subset of
 the Win32 API). As another example, it is difficult to estimate the practicality
 of porting the full Rust standard library to platforms that are very different
