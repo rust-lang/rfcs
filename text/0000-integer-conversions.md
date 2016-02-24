@@ -5,32 +5,35 @@
 
 # Summary
 
-Implement new trait `IntCast` for checked and wrapping casts for potentially lossy integer conversions
+Implement new methods for checked and wrapping casts for potentially lossy integer conversions
 analogous to checked and wrapping arithmetic operations.
 
 # Motivation
 
 Overflow checks proved to be useful for arithmetic operations, they can also be useful for
-casts, but operator `as` doesn't perform such checks and just truncates (wraps) the results.
+casts, but operator `as` doesn't perform such checks and just truncates/wraps the results.
 The proposed new methods allow to separate potentially lossy conversions into intentionally wrapping
 casts and casts where truncation should be considered an error.
 
-`IntCast` and already implemented `Into`/`From` for lossless integer conversions are supposed to
+These methods and already implemented `Into`/`From` for lossless integer conversions are supposed to
 replace most uses of operator `as` for conversions between integers.
 
 # Detailed design
 
-## Introduce new trait `IntCast` into `std::num` (and `core::num`)
+## Introduce new inherent methods for all the primitive integer types
 
 ```
-trait IntCast<Target> {
-    fn cast(self) -> Target;
-    fn wrapping_cast(self) -> Target;
-    fn checked_cast(self) -> Option<Target>;
-    fn overflowing_cast(self) -> (Target, bool);
-    fn saturating_cast(self) -> Target;
+impl i32 {
+    fn cast<Target: __UnspecifiedTrait>(self) -> Target;
+    fn wrapping_cast<Target: __UnspecifiedTrait>(self) -> Target;
+    fn checked_cast<Target: __UnspecifiedTrait>(self) -> Option<Target>;
+    fn overflowing_cast<Target: __UnspecifiedTrait>(self) -> (Target, bool);
+    fn saturating_cast<Target: __UnspecifiedTrait>(self) -> Target;
 }
 ```
+
+`__UnspecifiedTrait` is a private unstable trait used as an implementation detail. It is guaranteed
+that this trait is implemented for all the primitive integer types.
 
 The methods correspond to existing methods for arithmetic operations like `add`/`wrapping_add`/
 `checked_add`/`overflowing_add`/`saturating_add`.
@@ -45,9 +48,9 @@ Statistically, `cast()` is the most common of these methods, `wrapping_cast()` i
 and usually related to hashes, random numbers or serialization, and the other methods are rare and
 highly specialized.
 
-`IntCast` is implemented for all pairs of built-in integer types including pairs with lossless
-conversion (this is needed for portability, some conversions can be lossless on one platform and
-potentially lossy on other).
+The conversion methods are implemented for all pairs of built-in integer types including pairs with
+lossless conversions (this is required for portability, some conversions can be lossless on one
+platforms and potentially lossy on others).
 
 ## Implementation
 An experiment implementing similar but somewhat different design and evaluating its practical
@@ -55,19 +58,12 @@ impact is described [here][2].
 
 ## Why `std` and not an external crate
 
-First, people will likely not bother depending on external crate for such a simple functionality and
+People will likely not bother depending on external crate for such a simple functionality and
 will just use `as` instead, but using `as` is exactly what we would like to avoid.
-Second, `IntCast` and similar arithmetic traits and methods should preferably go through
-stabilization process together and have consistent interfaces.
 
 # Drawbacks
 
-`IntCast` is modeled after the trait `Into` and its design is not fully ergonomic without type
-inference fallback based on default type parameters (sometimes  `cast()` needs redundant type hints)
-and without type ascription (there's no way to give a type hint for the target type of `Into`
-inline). The first problem is currently resolved, but the solution is feature-gated, removal of the
-feature-gate will reduce the need in type hints to the minimum. The second problem will hopefully be
-resolved too in the near future.
+None.
 
 # Alternatives
 
@@ -79,9 +75,9 @@ and overflows never happen in code written by a reasonable programmer.
 can't be used as a method name. Theoretically `as` can be made a context dependent keyword, then the
 names will become available.
 
-3. `IntCast` can be splitted into several traits - `IntCast/WrappingIntCast/...`, but
-there's not much sense in multiplying entities - `IntCast` is ought to be implemented for a
-limited set of types and all its methods always go in group.
+3. Use methods of a trait `IntCast` instead of inherent methods. The library team is unwilling to
+expose numeric traits from the standard library even if they are unstable and brought in scope by
+the prelude.
 
 4. Diverge from arithmetic operations and always panic in `cast()`, not only with enabled assertions.
 This would make `cast()` equivalent to `checked_cast().unwrap()`.
@@ -92,7 +88,7 @@ in several variants - `as_signed()/as_signed_wrapping()/...`.
 
 # Unresolved questions
 
-None so far
+None.
 
 [1]: https://internals.rust-lang.org/t/implicit-widening-polymorphic-indexing-and-similar-ideas/1141/45
 [2]: https://internals.rust-lang.org/t/implicit-widening-polymorphic-indexing-and-similar-ideas/1141/70
