@@ -65,7 +65,7 @@ static DEFAULT<T>: T where T: ConstDefault = T::DEFAULT;
 
 - Both the type and the initializer can depend on generic parameters.  As usual, they are resolved and typechecked before generic substitution based on the constraints present.
 
-- Generic `static`s are monomorphized to a separate static allocation per specialization.  (They are guaranteed to have different addresses iff separately written static declarations are so guaranteed; I'm not sure if Rust plans to support coalescing identical truly-immutable statics.)
+- Generic `static`s are monomorphized on demand to a separate static allocation per specialization.  (They are guaranteed to have different addresses iff separately written static declarations are so guaranteed; I'm not sure if Rust plans to support coalescing identical truly-immutable statics.)
 
 - As with generic `fn`s, generic `static`s should not be located in an `extern` block or marked `#[no_mangle]`.  (For some reason, in the `fn` case, the former is currently a hard error while the latter is only a warn-by-default lint; this RFC leaves it up to the implementers whether to preserve this behavior for `static`s.)
 
