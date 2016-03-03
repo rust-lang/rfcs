@@ -222,19 +222,6 @@ impl<const N: usize> PascalStr[N] {
 }
 ```
 
-Any type which is, currently, something like
-
-
-```rust
-struct CStr([u8]);
-// or
-struct Wrapper(u16, PascalStr);
-```
-
-will be treated just as they are today. A pointer to a `CStr` will be a 
-`{ptr, usize}`, and a pointer to a `Wrapper` will be a `{ptr, ()}` (although it
-will still be very difficult to create a `Wrapper`).
-
 One more type which is always brought up when one talks about DSTs is the trait
 object; this won't allow us to write trait objects in the standard library, or
 anything, but it is interesting to look at how the compiler will see trait
@@ -296,5 +283,5 @@ Index traits.
 
 How should these fat pointers be passed, if they are larger than two pointers?
 
-We likely need an equivalent to the C `sizeof(unsized)`; what should that
-function be?
+Should you be able to implement a `Dst` without an `Unsize` coercion? My guts on
+yes.
