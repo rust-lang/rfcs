@@ -60,8 +60,12 @@ intrinsics (the names are up for bikeshedding):
 mod ptr {
     pub use intrinsics::{fat_ptr_meta, make_fat_ptr, make_fat_ptr_mut};
 }
+mod mem {
+    pub use intrinsics::size_of_prelude;
+}
 mod intrinsics {
     extern "rust-intrinsic" {
+        fn size_of_prelude<T: ?Sized>() -> usize;
         fn fat_ptr_meta<T: ?Sized + Dst>(ptr: *const T) -> T::Meta;
         fn make_fat_ptr<T: ?Sized + Dst>(data: *const (), meta: T::Meta) -> *const T;
         fn make_fat_ptr_mut<T: ?Sized + Dst>(data: *mut (), meta: T::Meta) -> *mut T;
@@ -163,7 +167,7 @@ impl Dst for PascalStr {
 }
 unsafe impl Sizeable for PascalStr {
     fn size_of_val(&self) -> usize {
-        std::mem::size_of::<usize>() + self.len
+        std::mem::size_of_prelude::<Self>() + self.len
     }
 }
 
