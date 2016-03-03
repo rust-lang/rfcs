@@ -34,9 +34,9 @@ fn hash_wrapper<T: HashToUsize>(a: *const u8) -> usize {
 }
 
 static HKD<T: Eq + HashToUsize>: HashKeyData = HashKeyData {
-    size: size_of::<T>(),
-    eq: eq_wrapper<T>,
-    hash: hash_wrapper<T>,
+    size: size_of::<T>(),  // Note: this example also fails because size_of is
+    eq: eq_wrapper<T>,     // not a const fn, but improvements there are
+    hash: hash_wrapper<T>, // already planned.
 }
 ```
 
@@ -83,6 +83,8 @@ static DEFAULT<T>: T where T: ConstDefault = T::DEFAULT;
 - Support only one of `const` and `static`.  Either would be able to satisfy the motivation, but the features are similar enough that this would almost certainly confuse more than it helped.
 
 - As previously mentioned, supporting references to outer generic parameters inside inner items could be seen as an alternative, as it enables workarounds.  While I believe this should be done for other reasons, there doesn't seem to be much reason to require a workaround when the direct solution is simple enough.
+
+(One such reason: the `ConstDefault` trait above can be written today, but cannot be generically impl'd.)
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
