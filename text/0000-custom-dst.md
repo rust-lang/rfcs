@@ -35,11 +35,11 @@ unsafe trait Dst {
 
 #[lang = "unsize"]
 unsafe trait Unsize<T: Dst + ?Sized> {
-    const fn unsize(&self) -> &Self::Output;
+    const fn unsize(&self) -> &T;
 }
 ```
 
-This trait should be unsafe, because it's very easy to give an incorrect
+The `Dst` trait should be unsafe, because it's very easy to give an incorrect
 implementation of `size_of_val`, and safe and unsafe code *must* rely on it
 being correct to not create undefined behavior.
 
@@ -47,6 +47,8 @@ Note that it is specified that, if `size_of::<<T as Dst>::Meta>() == 0`, then
 `size_of::<*const T>()` == `size_of::<*const ()>`. This is really important for
 C compatibility, because our current compatibility with flexible arrays is
 really terrible.
+
+The `Unsize` trait must be unsafe for much the same reasons.
 
 To actually get use of the improved fat pointers, we must add four new
 intrinsics (the names are up for bikeshedding):
