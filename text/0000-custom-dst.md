@@ -188,14 +188,19 @@ compatibility with C libraries that use flexible length arrays):
 
 ```rust
 #[repr(C)]
-struct PascalStr {
+struct PascalStr[const N: usize] {
     len: usize,
-    buffer: [u8],
+    buffer: [u8; N],
+}
+unsafe impl<const N: usize> Unsize<PascalStr> for PascalStr[N] {
+    const fn unsize(&self) -> &PascalStr {
+        unsafe {
+            std::ptr::make_fat_ptr(self, ())
+        }
+    }
 }
 impl Dst for PascalStr {
     type Meta = ();
-}
-unsafe impl Sizeable for PascalStr {
     fn size_of_val(&self) -> usize {
         std::mem::size_of_prelude::<Self>() + self.len
     }
@@ -205,16 +210,14 @@ impl PascalStr {
     pub fn len(&self) {
         self.len
     }
-    pub fn from_str(s: &str) -> Box<PascalStr> {
-        let backing_store = vec![0; std::mem::size_of::<usize>() + s.len()];
-        let ptr = Box::into_raw(backing_store.into_boxed_slice()) as *mut ();
-        let ps = Box::from_raw(std::ptr::make_fat_ptr_mut(ptr as *mut (), ()));
-        ps.len = s.len();
-        unsafe {
-            std::ptr::copy_nonoverlapping(s, ps.buffer.as_mut_ptr(), ps.len)
-        }
+}
 
-        ps
+impl<const N: usize> PascalStr[N] {
+    pub fn from_bstr(s: &[u8; N]) -> PascalStr[N] {
+        PascalStr {
+            len: N,
+            buf: *s,
+        }
     }
 }
 ```
