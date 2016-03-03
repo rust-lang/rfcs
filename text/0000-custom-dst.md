@@ -1,5 +1,5 @@
 - Feature Name: custom\_dst
-- Start Date: 01 March, 2016
+- Start Date: 02 March, 2016
 - RFC PR: (leave this empty)
 - Rust Issue: (leave this empty)
 
@@ -20,37 +20,33 @@ pixel buffers. In many places, something other than the Rust slice type is
 needed (if you have both a width and a height, or if you have a width, height,
 and stride, or even further).
 
-This doesn't make it very *nice* to work with custom DSTs; it makes it possible,
-and makes sure there's a strong base so that's there's a lot of room to grow.
-
 # Detailed design
 [design]: #detailed-design
 
-The most important addition to the language shall be two new traits:
+The most important addition to the language shall be one new trait, a
+modification of the Unsize trait, and a bit of new syntax (introduced later):
 
 ```rust
 #[lang = "dst"]
-trait Dst {
+unsafe trait Dst {
     type Meta: Copy;
-}
-#[lang = "sizeable"]
-pub unsafe trait Sizeable {
     fn size_of_val(&self) -> usize;
+}
+
+#[lang = "unsize"]
+unsafe trait Unsize<T: Dst + ?Sized> {
+    const fn unsize(&self) -> &Self::Output;
 }
 ```
 
-Sizeable should be unsafe, because it's very easy to give an incorrect
-implementation, and safe and unsafe code *must* rely on it being correct to not
-create undefined behavior.
+This trait should be unsafe, because it's very easy to give an incorrect
+implementation of `size_of_val`, and safe and unsafe code *must* rely on it
+being correct to not create undefined behavior.
 
 Note that it is specified that, if `size_of::<<T as Dst>::Meta>() == 0`, then
 `size_of::<*const T>()` == `size_of::<*const ()>`. This is really important for
 C compatibility, because our current compatibility with flexible arrays is
 really terrible.
-
-`Sizeable` *must* be implemented for all types, and shall be automatically
-implemented for any type which does not implement `Dst`, and will be defined
-as the `size_of_val` of each of the members.
 
 To actually get use of the improved fat pointers, we must add four new
 intrinsics (the names are up for bikeshedding):
@@ -67,22 +63,35 @@ mod intrinsics {
     extern "rust-intrinsic" {
         fn size_of_prelude<T: ?Sized>() -> usize;
         fn fat_ptr_meta<T: ?Sized + Dst>(ptr: *const T) -> T::Meta;
-        fn make_fat_ptr<T: ?Sized + Dst>(data: *const (), meta: T::Meta) -> *const T;
-        fn make_fat_ptr_mut<T: ?Sized + Dst>(data: *mut (), meta: T::Meta) -> *mut T;
+        fn make_fat_ptr<U: Dst + ?Sized, T: Unsize<U>>(data: *const T,
+            meta: U::::Meta) -> *const U;
+        fn make_fat_ptr_mut<U: Dst + ?Sized, T: Unsize<U>>(data: *mut T,
+            meta: U::::Meta) -> *mut U;
     }
 }
 ```
 
-The following is an example implementation of `[T]`:
+These shall, very importantly, be closely tied to integer generics, and will not
+be viable until integer generics are in the language. Fortunately, integer
+generics are coming soon™.
 
 ```rust
-// The last field of a type that implements Dst must be a 0 sized array
+// The [const N] means that the N parameter is optional, and if left off,
+// unsizing coercion shall be done
 #[lang = "slice"]
-struct Slice<T>([T]);
-impl<T> Dst for [T] {
-    type Meta = usize;
+struct Slice<T>[const N: usize]([T; N]);
+// The last member of a struct like this must be Unsize
+
+unsafe impl<T, const N: usize> Unsize<[T]> for [T; N] {
+    const fn unsize(&self) -> &[T] {
+        unsafe {
+            std::ptr::make_fat_ptr(self, N)
+        }
+    }
 }
-unsafe impl<T> Sizeable for [T] {
+
+unsafe impl<T> Dst for Slice<T> {
+    type Meta = usize;
     fn size_of_val(&self) -> usize {
         if self.len() > 0 {
             core::mem::size_of_val(&self[0]) * self.len()
@@ -92,6 +101,7 @@ unsafe impl<T> Sizeable for [T] {
     }
 }
 
+// impl<T> Slice<T>
 impl<T> [T] {
     pub fn len(&self) -> usize {
         unsafe {
@@ -102,12 +112,14 @@ impl<T> [T] {
     pub fn as_ptr(&self) -> *const T {
         unsafe {
             &self.0 as *const [T] as *const T
+            // importantly, you still have access to the last member of the
+            // struct; it is the Output of Unsize on the last member
         }
     }
 
     pub unsafe fn from_raw_parts(buf: *const T, len: usize) -> &[T] {
         unsafe {
-            &*core::intrinsics::make_fat_ptr(buf as *const (), len)
+            &*core::intrinsics::make_fat_ptr(buf as *const [T; 1], len)
         }
     }
 }
@@ -125,28 +137,29 @@ And the following, an example implementation of a pixel buffer; this is the real
 meat of the RFC, custom fat pointers for libraries:
 
 ```rust
-struct PixelBuffer([f32]);
+struct PixelBuffer[const W: usize, const H: usize]([f32; W * H]);
+
+unsafe impl<const W: usize, const H: usize> Unsize<PixelBuffer> for PixelBuffer[W, H] {
+    const fn unsize(&self) -> &PixelBuffer {
+        unsafe {
+            std::ptr::make_fat_ptr(self, (W, H))
+        }
+    }
+}
 impl Dst for PixelBuffer {
     type Meta = (usize, usize);
-}
-unsafe impl Sizeable for PixelBuffer {
     fn size_of_val(&self) -> usize {
         std::mem::size_of::<f32>() * self.width() * self.height()
     }
 }
-impl PixelBuffer {
-    pub fn new_zeroed(width: usize, height: usize) -> Box<PixelBuffer> {
-        if height != 0 {
-            assert!(usize::max_value() / height > width);
-        }
-        let backing_store = vec![0.0; height * width];
-        let ptr = Box::into_raw(backing_store.into_boxed_slice()) as *mut ();
-        unsafe {
-            Box::from_raw(
-                std::ptr::make_fat_ptr_mut(ptr, (width, height)))
-        }
-    }
 
+impl<const W: usize, const H: usize> PixelBuffer[W, H] {
+    const fn from_array(arr: [[f32; W]; H]) -> Self {
+        Self(arr)
+    }
+}
+
+impl PixelBuffer {
     pub fn width(&self) -> usize {
         unsafe {
             std::ptr::fat_ptr_meta(self).0
@@ -159,6 +172,13 @@ impl PixelBuffer {
         }
     }
 }
+
+// ---
+
+fn main() {
+    let pixels: Box<PixelBuffer> = Box::new(PixelBuffer::from_array([[0.0; 1280]; 960);
+}
+
 ```
 
 And now, an example implementation of a Pascal string type (this is good for
@@ -211,20 +231,36 @@ will be treated just as they are today. A pointer to a `CStr` will be a
 will still be very difficult to create a `Wrapper`).
 
 One more type which is always brought up when one talks about DSTs is the trait
-object. Unfortunately, this change won't help trait objects that much; it will
-allow us to get rid of `std::repr` for them, but most of it is compiler magic.
-The implementation of these DST traits should looks something like the
-following, however (unfortunately, inside the compiler because we can't impl
-across all trait objects):
+object; this won't allow us to write trait objects in the standard library, or
+anything, but it is interesting to look at how the compiler will see trait
+objects in the context of wider DSTs:
 
 ```rust
-// trait is a separate type
-impl Dst for Trait { 
-    type Meta = TraitVtable;
+trait Trait {
+    fn func1();
 }
-unsafe impl Sizeable for Trait {
+struct TraitVtable {
+    size: usize,
+    func1: fn(),
+}
+unsafe impl<T: Trait> Unsize<Trait> for T {
+    const fn unsize(&self) -> &Trait {
+        static vt = TraitVtable {
+            size: size_of::<T>(),
+            func1: Self::func1
+        };
+        unsafe {
+            std::ptr::make_fat_ptr(self, vt)
+        }
+    }
+}
+
+unsafe impl Dst for Trait { 
+    type Meta = TraitVtable;
     fn size_of_val(&self) -> {
-        // intrinsic
+        unsafe {
+            std::ptr::fat_ptr_meta(self).size
+        }
     }
 }
 ```
@@ -241,9 +277,9 @@ More complication in the language.
 which unfortunately doesn't give us things that can't be represented with
 existentials, like a rectangular window into one of those `PixelBuffer`s.
 
-My original idea had two types in `Dst`, Meta, and Data, where Data was similar
-to the `[T]` at the end of the struct. This isn't nice for types like
-`PascalStr`.
+I originally had an idea where the DSTs were the first class types, because I
+was afraid of putting integer generics into my proposal. The current proposal
+is, in my opinion, far nicer.
 
 You could define a struct type
 `PixelBuffer<'a> { width: usize, height: usize, ptr: &'a f32 }`, and a similar
