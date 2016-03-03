@@ -76,7 +76,7 @@ mod intrinsics {
 The following is an example implementation of `[T]`:
 
 ```rust
-// The last field of a type that implements Dst must be a slice
+// The last field of a type that implements Dst must be a 0 sized array
 #[lang = "slice"]
 struct Slice<T>([T]);
 impl<T> Dst for [T] {
@@ -108,6 +108,14 @@ impl<T> [T] {
     pub unsafe fn from_raw_parts(buf: *const T, len: usize) -> &[T] {
         unsafe {
             &*core::intrinsics::make_fat_ptr(buf as *const (), len)
+        }
+    }
+}
+
+impl<T: Drop> Drop for [T] {
+    fn drop(&mut self) {
+        for el in self {
+            drop_in_place(el)
         }
     }
 }
