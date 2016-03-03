@@ -223,8 +223,8 @@ slice-like types. However, this is not necessary for the actual RFC.
 
 ```rust
 #[lang = "unsize"]
-unsafe trait Unsize<T: Dst + ?Sized> {
-    const fn unsize(&self) -> &T;
+trait Unsize<T: Dst + ?Sized> {
+    const fn unsize(&self) -> T::Meta;
 }
 ```
 
@@ -247,12 +247,9 @@ struct Slice<T>[const N: usize]([T; N]);
 
 unsafe impl<T> Unsize<[T]> for [T; N] {
     const fn unsize(&self) -> &[T] {
-        unsafe {
-            std::ptr::make_fat_ptr(self, N)
-        }
+        N
     }
 }
-
 ```
 
 # Drawbacks
