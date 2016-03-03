@@ -23,19 +23,13 @@ and stride, or even further).
 # Detailed design
 [design]: #detailed-design
 
-The most important addition to the language shall be one new trait, a
-modification of the Unsize trait, and a bit of new syntax (introduced later):
+The most important addition to the language shall be one new trait:
 
 ```rust
 #[lang = "dst"]
 unsafe trait Dst {
     type Meta: Copy;
     fn size_of_val(&self) -> usize;
-}
-
-#[lang = "unsize"]
-unsafe trait Unsize<T: Dst + ?Sized> {
-    const fn unsize(&self) -> &T;
 }
 ```
 
@@ -48,15 +42,18 @@ Note that it is specified that, if `size_of::<<T as Dst>::Meta>() == 0`, then
 C compatibility, because our current compatibility with flexible arrays is
 really terrible.
 
-The `Unsize` trait must be unsafe for much the same reasons.
-
 To actually get use of the improved fat pointers, we must add four new
 intrinsics (the names are up for bikeshedding):
 
 ```rust
 // core
 mod ptr {
-    pub use intrinsics::{fat_ptr_meta, make_fat_ptr, make_fat_ptr_mut};
+    pub use intrinsics::{make_fat_ptr, make_fat_ptr_mut};
+    pub fn fat_ptr_meta<T: Dst + ?Sized>(ptr: &T) -> T::Meta {
+        unsafe {
+            core::intrinsics::fat_ptr_meta(ptr)
+        }
+    }
 }
 mod mem {
     pub use intrinsics::size_of_prelude;
@@ -65,34 +62,22 @@ mod intrinsics {
     extern "rust-intrinsic" {
         fn size_of_prelude<T: ?Sized>() -> usize;
         fn fat_ptr_meta<T: ?Sized + Dst>(ptr: *const T) -> T::Meta;
-        fn make_fat_ptr<U: Dst + ?Sized, T: Unsize<U>>(data: *const T,
-            meta: U::::Meta) -> *const U;
-        fn make_fat_ptr_mut<U: Dst + ?Sized, T: Unsize<U>>(data: *mut T,
-            meta: U::::Meta) -> *mut U;
+        fn make_fat_ptr<T: Dst + ?Sized>(data: *const (),
+            meta: U::::Meta) -> *const T;
+        fn make_fat_ptr_mut<T: Dst + ?Sized>(data: *mut (),
+            meta: U::::Meta) -> *mut T;
     }
 }
 ```
 
-These shall, very importantly, be closely tied to integer generics, and will not
-be viable until integer generics are in the language. Fortunately, integer
-generics are coming soon™.
+This is an example implementation of `[T]`:
 
 ```rust
-// The [const N] means that the N parameter is optional, and if left off,
-// unsizing coercion shall be done
-#[lang = "slice"]
-struct Slice<T>[const N: usize]([T; N]);
 // The last member of a struct like this must be Unsize
+#[lang = "slice"]
+struct Slice<T>([T]);
 
-unsafe impl<T, const N: usize> Unsize<[T]> for [T; N] {
-    const fn unsize(&self) -> &[T] {
-        unsafe {
-            std::ptr::make_fat_ptr(self, N)
-        }
-    }
-}
-
-unsafe impl<T> Dst for Slice<T> {
+unsafe impl<T> Dst for [T] {
     type Meta = usize;
     fn size_of_val(&self) -> usize {
         if self.len() > 0 {
@@ -106,22 +91,18 @@ unsafe impl<T> Dst for Slice<T> {
 // impl<T> Slice<T>
 impl<T> [T] {
     pub fn len(&self) -> usize {
-        unsafe {
-            core::intrinsics::fat_ptr_meta(self)
-        }
+        core::intrinsics::fat_ptr_meta(self)
     }
 
     pub fn as_ptr(&self) -> *const T {
         unsafe {
             &self.0 as *const [T] as *const T
-            // importantly, you still have access to the last member of the
-            // struct; it is the Output of Unsize on the last member
         }
     }
 
     pub unsafe fn from_raw_parts(buf: *const T, len: usize) -> &[T] {
         unsafe {
-            &*core::intrinsics::make_fat_ptr(buf as *const [T; 1], len)
+            &*core::intrinsics::make_fat_ptr(buf as *const (), len)
         }
     }
 }
@@ -139,48 +120,37 @@ And the following, an example implementation of a pixel buffer; this is the real
 meat of the RFC, custom fat pointers for libraries:
 
 ```rust
-struct PixelBuffer[const W: usize, const H: usize]([f32; W * H]);
+struct PixelBuffer([f32]);
 
-unsafe impl<const W: usize, const H: usize> Unsize<PixelBuffer> for PixelBuffer[W, H] {
-    const fn unsize(&self) -> &PixelBuffer {
-        unsafe {
-            std::ptr::make_fat_ptr(self, (W, H))
-        }
-    }
-}
-impl Dst for PixelBuffer {
+unsafe impl Dst for PixelBuffer {
     type Meta = (usize, usize);
     fn size_of_val(&self) -> usize {
         std::mem::size_of::<f32>() * self.width() * self.height()
     }
 }
 
-impl<const W: usize, const H: usize> PixelBuffer[W, H] {
-    const fn from_array(arr: [[f32; W]; H]) -> Self {
-        Self(arr)
-    }
-}
-
 impl PixelBuffer {
-    pub fn width(&self) -> usize {
-        unsafe {
-            std::ptr::fat_ptr_meta(self).0
+    pub fn new_zeroed(width, height) -> Box<PixelBuffer> {
+        if width > 0 {
+            assert!(usize::max_value() / width > height);
         }
+        let backing = vec![0.0; width * height];
+        let ptr = Box::into_raw(backing.into_boxed_slice()) as *mut ();
+        unsafe {
+            Box::from_raw(
+                std::ptr::make_fat_ptr(ptr, (width, height))
+            )
+        }
+    }
+
+    pub fn width(&self) -> usize {
+        std::ptr::fat_ptr_meta(self).0
     }
 
     pub fn height(&self) -> usize {
-        unsafe {
-            std::ptr::fat_ptr_meta(self).1
-        }
+        std::ptr::fat_ptr_meta(self).1
     }
 }
-
-// ---
-
-fn main() {
-    let pixels: Box<PixelBuffer> = Box::new(PixelBuffer::from_array([[0.0; 1280]; 960);
-}
-
 ```
 
 And now, an example implementation of a Pascal string type (this is good for
@@ -188,16 +158,9 @@ compatibility with C libraries that use flexible length arrays):
 
 ```rust
 #[repr(C)]
-struct PascalStr[const N: usize] {
+struct PascalStr {
     len: usize,
-    buffer: [u8; N],
-}
-unsafe impl<const N: usize> Unsize<PascalStr> for PascalStr[N] {
-    const fn unsize(&self) -> &PascalStr {
-        unsafe {
-            std::ptr::make_fat_ptr(self, ())
-        }
-    }
+    buffer: [u8],
 }
 impl Dst for PascalStr {
     type Meta = ();
@@ -209,15 +172,6 @@ impl Dst for PascalStr {
 impl PascalStr {
     pub fn len(&self) {
         self.len
-    }
-}
-
-impl<const N: usize> PascalStr[N] {
-    pub fn from_bstr(s: &[u8; N]) -> PascalStr[N] {
-        PascalStr {
-            len: N,
-            buf: *s,
-        }
     }
 }
 ```
@@ -250,11 +204,51 @@ unsafe impl<T: Trait> Unsize<Trait> for T {
 unsafe impl Dst for Trait { 
     type Meta = TraitVtable;
     fn size_of_val(&self) -> {
+        std::ptr::fat_ptr_meta(self).size
+    }
+}
+```
+
+# Future Extensions
+[future extensions]: #extensions
+
+A future extension could add unsizing coercions very easily, especially with
+integer generics. We could use this syntax, allowing you to define the same
+struct for both the sized and unsized versions. This would make for very nice
+slice-like types. However, this is not necessary for the actual RFC.
+
+```rust
+#[lang = "unsize"]
+unsafe trait Unsize<T: Dst + ?Sized> {
+    const fn unsize(&self) -> &T;
+}
+```
+
+```rust
+mod intrinsics {
+    fn make_fat_ptr<U: Dst + ?Sized, T: Unsize<U>>(data: *const T,
+        meta: U::::Meta) -> *const U;
+    fn make_fat_ptr_mut<U: Dst + ?Sized, T: Unsize<U>>(data: *mut T,
+        meta: U::::Meta) -> *mut U;
+}
+```
+
+```rust
+// The [const N] means that the N parameter is optional, and if left off,
+// unsizing coercion shall be done
+#[lang = "slice"]
+struct Slice<T>[const N: usize]([T; N]);
+// The last member, in these types, shall be an array, and will be turned into a
+// slice for the Unsize coercion
+
+unsafe impl<T> Unsize<[T]> for [T; N] {
+    const fn unsize(&self) -> &[T] {
         unsafe {
-            std::ptr::fat_ptr_meta(self).size
+            std::ptr::make_fat_ptr(self, N)
         }
     }
 }
+
 ```
 
 # Drawbacks
