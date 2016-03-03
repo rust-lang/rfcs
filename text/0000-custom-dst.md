@@ -56,7 +56,11 @@ mod ptr {
     }
 }
 mod mem {
-    pub use intrinsics::size_of_prelude;
+    pub fn size_of_prelude<T: ?Sized>() -> usize {
+        unsafe {
+            core::intrinsics::size_of_prelude::<T>()
+        }
+    }
 }
 mod intrinsics {
     extern "rust-intrinsic" {
@@ -276,6 +280,3 @@ Index traits.
 [unresolved]: #unresolved-questions
 
 How should these fat pointers be passed, if they are larger than two pointers?
-
-Should you be able to implement a `Dst` without an `Unsize` coercion? My guts on
-yes.
