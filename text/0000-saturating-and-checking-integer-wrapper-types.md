@@ -56,16 +56,16 @@ impl BitAnd<W<T>> for W<T> { type Output = W<T>; ... }
 impl Shl<usize>   for W<T> { type Output = W<T>; ... }
 impl Shr<usize>   for W<T> { type Output = W<T>; ... }
 
-impl AddAssign<W<T>>    for W<T> { type Output = W<T>; ... }
-impl SubAssign<W<T>>    for W<T> { type Output = W<T>; ... }
-impl MulAssign<W<T>>    for W<T> { type Output = W<T>; ... }
-impl DivAssign<W<T>>    for W<T> { type Output = W<T>; ... }
-impl RemAssign<W<T>>    for W<T> { type Output = W<T>; ... }
-impl ShlAssign<usize>   for W<T> { type Output = W<T>; ... }
-impl ShrAssign<usize>   for W<T> { type Output = W<T>; ... }
-impl BitXorAssign<W<T>> for W<T> { type Output = W<T>; ... }
-impl BitOrAssign<W<T>>  for W<T> { type Output = W<T>; ... }
-impl BitAndAssign<W<T>> for W<T> { type Output = W<T>; ... }
+impl AddAssign<W<T>>    for W<T> { ... }
+impl SubAssign<W<T>>    for W<T> { ... }
+impl MulAssign<W<T>>    for W<T> { ... }
+impl DivAssign<W<T>>    for W<T> { ... }
+impl RemAssign<W<T>>    for W<T> { ... }
+impl ShlAssign<usize>   for W<T> { ... }
+impl ShrAssign<usize>   for W<T> { ... }
+impl BitXorAssign<W<T>> for W<T> { ... }
+impl BitOrAssign<W<T>>  for W<T> { ... }
+impl BitAndAssign<W<T>> for W<T> { ... }
 ```
 
 The `*Assign` trait implementations will perform the requested operation with the same semantics
