@@ -1,5 +1,5 @@
 - Feature Name: saturating-and-checking-integer-wrapper-types
-- Start Date: (fill me in with today's date, YYYY-MM-DD)
+- Start Date: 2016-03-07
 - RFC PR: (leave this empty)
 - Rust Issue: (leave this empty)
 
