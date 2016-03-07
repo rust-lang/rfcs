@@ -186,3 +186,9 @@ was proposed. The latter also introduced `Wrapping<T>`.
 
 * The saturation behavior of `>>` on signed integers. Currently this is specified to saturate to
   `-1` since that is the right-shift behavior according to two's complement (ie. keep the sign bit).
+
+* The name of `Checked<T>`.
+
+  Currently the checked arithmetic provided by the primitive types (through `checked_*` methods)
+  do not panic on overflow. Naming the type `Checked<T>` when it instead panics on overflow could
+  confuse people. Another option mentioned was `Strict<T>`.
