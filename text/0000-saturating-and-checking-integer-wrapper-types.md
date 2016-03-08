@@ -94,8 +94,9 @@ assert_eq!(Saturating(128u8) << 1, Saturating(255u8));
   integers.
 
 * `/` and `%` cannot overflow on unsigned integers. For signed integers `MIN / -1` and `MIN % -1`
-  can overflow since signed types follow two's complement: `-1 * MIN = MAX + 1` and `MIN` is
-  always even. The proposed results are `MIN / -1 = MAX` and `MIN % -1 = MAX`.
+  can overflow since signed types follow two's complement: `-1 * MIN = MAX + 1`.
+
+  The proposed results are `MIN / -1 = MAX` and `MIN % -1 = 0`.
 
 * Unary `-` (negation) of `MIN` in signed integers should saturate to `MAX` in the case of `-MIN`.
 
@@ -176,13 +177,6 @@ was proposed. The latter also introduced `Wrapping<T>`.
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
-
-* The saturation behavior of `/` and `%` on signed integers with the parameters `MIN` and `-1`.
-
-  Since they both evaluate to `MAX + 1` according to two's complement there is an argument to be
-  made that they should saturate to `MAX`. The primitive signed integers keep their thread panic
-  for the parameters `MIN` and `-1` for division and remainder, while multiplication wraps.
-  Keeping in line with this behavior could be desired.
 
 * The saturation behavior of `>>` on signed integers. Currently this is specified to saturate to
   `-1` since that is the right-shift behavior according to two's complement (ie. keep the sign bit).
