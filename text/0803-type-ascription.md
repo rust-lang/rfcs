@@ -8,8 +8,6 @@
 Add type ascription to expressions. (An earlier version of this RFC covered type
 ascription in patterns too, that has been postponed).
 
-Type ascription on expression has already been implemented.
-
 See also discussion on [#354](https://github.com/rust-lang/rfcs/issues/354) and
 [rust issue 10502](https://github.com/rust-lang/rust/issues/10502).
 
@@ -24,8 +22,7 @@ sometimes impossible due to lifetime issues. Specifically, where a variable has
 lifetime of its enclosing scope, but a sub-expression's lifetime is typically
 limited to the nearest semi-colon.
 
-Typical use cases are where a function's return type is generic (e.g., collect)
-and where we want to force a coercion.
+The typical use case is where a function's return type is generic (e.g., collect).
 
 Type ascription can also be used for documentation and debugging - where it is
 unclear from the code which type will be inferred, type ascription can be used
@@ -58,26 +55,6 @@ let z = if ... {
 };
 ```
 
-Coercion:
-
-```
-fn foo<T>(a: T, b: T) { ... }
-
-// Current.
-let x = [1u32, 2, 4];
-let y = [3u32];
-...
-let x: &[_] = &x;
-let y: &[_] = &y;
-foo(x, y);
-
-// With type ascription.
-let x = [1u32, 2, 4];
-let y = [3u32];
-...
-foo(x: &[_], y: &[_]);
-```
-
 Generic return type and coercion:
 
 ```
@@ -91,7 +68,6 @@ let x: T = {
 let x: T = foo(): U<_>;
 ```
 
-
 # Detailed design
 
 The syntax of expressions is extended with type ascription:
@@ -103,60 +79,33 @@ e ::= ... | e: T
 where `e` is an expression and `T` is a type. Type ascription has the same
 precedence as explicit coercions using `as`.
 
-When type checking `e: T`, `e` must have type `T`. The `must have type` test
-includes implicit coercions and subtyping, but not explicit coercions. `T` may
-be any well-formed type.
-
-At runtime, type ascription is a no-op, unless an implicit coercion was used in
-type checking, in which case the dynamic semantics of a type ascription
-expression are exactly those of the implicit coercion.
-
-@eddyb has implemented the expressions part of this RFC,
-[PR](https://github.com/rust-lang/rust/pull/21836).
+When type checking `e: T`, `e` must have the exact type `T`. Neither
+subtyping nor coercions are permitted. `T` may be any well-formed
+type. At runtime, type ascription is a no-op.
 
 This feature should land behind the `ascription` feature gate.
 
+### coercion vs `:`
 
-### coercion and `as` vs `:`
+In contrast to the `as` keyword, the `:` type ascription operator
+equates the type of the expression it is applied to, rather than
+applying coercions. One of the reasons for this is that many
+expressions in Rust can serve two rules.  For example, consider a
+variable reference like `path`.
 
-A downside of type ascription is the overlap with explicit coercions (aka casts,
-the `as` operator). To the programmer, type ascription makes implicit coercions
-explicit (however, the compiler makes no distinction between coercions due to
-type ascription and other coercions). In RFC 401, it is proposed that all valid
-implicit coercions are valid explicit coercions. However, that may be too
-confusing for users, since there is no reason to use type ascription rather than
-`as` (if there is some coercion). Furthermore, if programmers do opt to use `as`
-as the default whether or not it is required, then it loses its function as a
-warning sign for programmers to beware of.
+- In the expression `&path`, `path` denotes the address of the local variable
+  `path`.
+- In the expression `f(path)`, the value of the local variable is being used.
 
-To address this I propose two lints which check for: trivial casts and trivial
-numeric casts. Other than these lints we stick with the proposal from #401 that
-unnecessary casts will no longer be an error.
+So one must then decide whether to treat `path: T` as an lvalue or an rvalue.
+If we permit coercions or subtyping with type ascription, neither choice is
+satisfactory.
 
-A trivial cast is a cast `x as T` where `x` has type `U` and `x` can be
-implicitly coerced to `T` or is already a subtype of `T`.
-
-A trivial numeric cast is a cast `x as T` where `x` has type `U` and `x` is
-implicitly coercible to `T` or `U` is a subtype of `T`, and both `U` and `T` are
-numeric types.
-
-Like any lints, these can be customised per-crate by the programmer. Both lints
-are 'warn' by default.
-
-Although this is a somewhat complex scheme, it allows code that works today to
-work with only minor adjustment, it allows for a backwards compatible path to
-'promoting' type conversions from explicit casts to implicit coercions, and it
-allows customisation of a contentious kind of error (especially so in the
-context of cross-platform programming).
-
-
-### Type ascription and temporaries
-
-There is an implementation choice between treating `x: T` as an lvalue or
-rvalue. Note that when an rvalue is used in 'reference context' (e.g., the
-subject of a reference operation), then the compiler introduces a temporary
-variable. Neither option is satisfactory, if we treat an ascription expression
-as an lvalue (i.e., no new temporary), then there is potential for unsoundness:
+**Treating ascription as lvalues.** If we said that `path: T` is an
+lvalue, that introduces the potential for unsoundness unless we know
+that `typeof(path) == T`. Consider this example, where we apply the
+`&mut` operator to a coercion `foo: T` (here, we imagine both that `S
+<: T` and the `:` operator permitted subtyping):
 
 ```
 let mut foo: S = ...;
@@ -167,26 +116,24 @@ let mut foo: S = ...;
 // Whoops, foo has type T, but the compiler thinks it has type S, where potentially T </: S
 ```
 
-If we treat ascription expressions as rvalues (i.e., create a temporary in
-lvalue position), then we don't have the soundness problem, but we do get the
-unexpected result that `&(x: T)` is not in fact a reference to `x`, but a
-reference to a temporary copy of `x`.
+**Treat ascription as rvalues.** If we treat ascription expressions as
+rvalues (i.e., create a temporary in lvalue position), then we don't
+have the soundness problem, but we do get the unexpected result that
+`&(x: T)` is not in fact a reference to `x`, but a reference to a
+temporary copy of `x`.
 
-The proposed solution is that type ascription expressions inherit their
-'lvalue-ness' from their underlying expressions. I.e., `e: T` is an lvalue if
-`e` is an lvalue, and an rvalue otherwise. If the type ascription expression is
-in reference context, then we require the ascribed type to exactly match the
-type of the expression, i.e., neither subtyping nor coercion is allowed. These
-reference contexts are as follows (where `<expr>` is a type ascription
-expression):
+An earlier draft of this RFC proposed a compromise, where type
+ascription expressions inherit their 'lvalue-ness' from their
+underlying expressions, but the semantics of an ascription varies
+depending on its context. In particular, in a reference context, type
+equality was used, but otherwise coercions and subtyping
+were permitted. However, this rule was later jduged to be too subtle.
+It is hard to explain and annoying to implement.
 
-```
-&[mut] <expr>
-let ref [mut] x = <expr>
-match <expr> { .. ref [mut] x .. => { .. } .. }
-<expr>.foo() // due to autoref
-<expr> = ...;
-```
+Therefore, the RFC was amended to simply use type equality all the
+time, sidestepping the problem. This still preserves the major use
+case for type ascription, which is annotating the return type of a
+function in an ergonomic way.
 
 # Drawbacks
 
