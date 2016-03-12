@@ -49,10 +49,10 @@ would be backwards-compatible, as it will allow all existing Rust code to compil
 The `unsafe` keyword would have similar precedence to any other prefix unary operator.
 As a demonstration, consider the following expressions equivalent...
 
-`unsafe a.m().n()` => `unsafe { a.m().n() }`
-`unsafe a[i].foo()` => `unsafe { a[i].foo() }`
-`unsafe a[i].foo() + 1` => `unsafe { a[i].foo() } + 1`
-`(unsafe a.()).n()` => `unsafe { a.m() }.n()`
+- `unsafe a.m().n()` => `unsafe { a.m().n() }`
+- `unsafe a[i].foo()` => `unsafe { a[i].foo() }`
+- `unsafe a[i].foo() + 1` => `unsafe { a[i].foo() } + 1`
+- `(unsafe a.()).n()` => `unsafe { a.m() }.n()`
 
 We have another similar (unstable) keyword in the language already: `box`. It would
 make sense to tie these two together with the same precedence in the language.
