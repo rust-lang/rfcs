@@ -669,64 +669,6 @@ topic is discussed in the [Future Directions](#futuredirections)
 section briefly. (The author expects to propose another RFC including
 some kind of `#[repr]` annotations for achieving this goal.)
 
-### Coercion between sub- and super-struct
-
-Because embedded structs are guaranteed to appear at the prefix,
-it is tempting to say that we should be able to coerce a reference to
-a struct/trait into a reference to some embedded struct. For example,
-given the `GuiNode` trait we defined earlier:
-
-```rust
-// Note: these fields are private, since this struct
-// is effectively an implementation detail of `GuiNode`.
-pub struct GuiNodeFields {
-    position: Point,
-    children: Vec<GuiNode>,
-}
-
-pub trait GuiNode {
-    ..GuiNodeFields
-}
-```
-
-One might assume that a `&GuiNode` or `&mut GuiNode` should be coercible
-to a `&GuiNodeFields` or `&mut GuiNodeFields`. This sort of coercion is explicitly not
-supported by this RFC because it would enable **object slicing**. For example,
-given such coercions, it would then be possible to write a function like:
-
-```rust
-pub fn swap_gui_fields(a: &mut GuiNode, b: &mut GuiNode) {
-    let a_f: &mut GuiNodeFields = a;
-    let b_f: &mut GuiNodeFields = b;
-    mem::swap(a_f, b_f);
-}
-```
-
-This would take two arbitrary `GuiNode` objects and swap their common
-fields. Note that the code can do this swap *even though the fields
-are private*. However, because those two `GuiNode` objects may
-represent distinct kinds of `GuiNodes`, there is no reason to think
-that this swap makes sense. For example, some of those common fields
-may be a set of flags that are specific to the kind of `GuiNode` that
-we are working with, in which case swapping them doesn't make any
-sense at all.
-
-What is happening here fundamentally is a kind of object slicing, a
-well-known C++ hazard. That is, the type `GuiNodeFields` only
-represents a small slice of the fields of a complete `GuiNode`. If you
-recall from the "Example", the type `GuiNodeFields` was in fact
-intentionally used to represent an incompletely constructed `GuiNode`
-object. If we allow coercion from `&mut GuiNode` to `&mut
-GuiNodeFields`, we lose the distinction between a completely
-constructed `GuiNode` and a reference to its common fields. Note that
-this is distinction is also reflected in the fact that `GuiNode` is
-not sized whereas `GuiNodeFields` is, precisely because in case of
-`GuiNode` we don't know the full set of types that follow.
-
-(Lest you be tempted to think that this hazard is specific to `&mut`
-references, the same problem can arise with `&` references that
-include cells.)
-
 ### Extended enums
 
 An alternative area of exploration for virtual structs has been the
