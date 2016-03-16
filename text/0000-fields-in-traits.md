@@ -659,30 +659,15 @@ incorrect.)
 
 This approach is convenient, but it is limited to single inheritance.
 There is no way to express the idea that a certain set of fields are
-available, but not necessarily at the very prefix of a struct. In
-contrast, the approach in this RFC allows one to declare a trait that
-means "these fields are found in a prefix" as well as a trait that
-means "these fields are found somewhere":
+available, but not necessarily at the very prefix of a struct. This is
+in tension with the rest of the trait design, which emphasizes
+composability (that is, implementing one trait does not generally
+prevent you from implementing another).
 
-```rust
-/// This trait can be used when you wish to ensure
-/// that fields are located at a prefix.
-pub struct Fields { pub f: u32 }
-pub trait Prefix {
-    ..Fields
-}
-
-/// This trait can be used when you just wish
-/// to ensure that a field `f` is available somewhere.
-trait Somewhere {
-    f: u32
-}
-```
-
-Using traits does imply a certain amount of syntactic overhead. For
-example, structs will have to implement the traits to be usable with a
-generic fn. But the flexibility seems important and worthwhile (and this
-implementation is very lightweight).
+This RFC does not include any way to specify prefix layout, though the
+topic is discussed in the [Future Directions](#futuredirections)
+section briefly. (The author expects to propose another RFC including
+some kind of `#[repr]` annotations for achieving this goal.)
 
 ### Coercion between sub- and super-struct
 
