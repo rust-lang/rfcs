@@ -564,7 +564,7 @@ struct Bar {
 
 In addition, this notation could be used in traits:
 
-```
+```rust
 trait Baz {
     ..Bar // roughly equivalent to `bar: Bar`, but fields can be accessed directly 
 }
