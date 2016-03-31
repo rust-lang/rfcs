@@ -16,7 +16,7 @@ Examples:
 
 #![cfg_assert(any(target_arch = "x86", target_arch = "x86_64"), "This library only works on x86")]
 
-#![cfg_assert(all(feature = "foo", feature = "bar"), "The `foo` and `bar` features can't both be enabled at once")]
+#![cfg_assert(not(all(feature = "foo", feature = "bar")), "The `foo` and `bar` features can't both be enabled at once")]
 ```
 
 # Motivation
