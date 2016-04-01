@@ -1,6 +1,6 @@
 - Feature Name: Stream wrappers standardization
 - Start Date: 2016-03-31
-- RFC PR: 
+- RFC PR: [rust-lang/rfcs#1568](https://github.com/rust-lang/rfcs/pull/1568)
 - Rust Issue: 
 
 # Summary
