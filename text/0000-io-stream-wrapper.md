@@ -1,4 +1,4 @@
-- Feature Name: (fill me in with a unique ident, my_awesome_feature)
+- Feature Name: Stream wrappers standardization
 - Start Date: 2016-03-31
 - RFC PR: 
 - Rust Issue: 
@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-One para explanation of the feature.
+Standardization stream wrappers like compression, encryption and etc.
 
 # Motivation
 [motivation]: #motivation
@@ -37,21 +37,73 @@ Currenctly compression libraries have handling thing differently:
 # Detailed design
 [design]: #detailed-design
 
-This is the bulk of the RFC. Explain the design in enough detail for somebody familiar
-with the language to understand, and for somebody familiar with the compiler to implement.
-This should get into specifics and corner-cases, and include examples of how the feature is used.
+For standardization stream wrappers the proposed adding traits to
+standard library (`src/libstd/io/mod.rs`) traits:
+```rust
+pub trait ReadWrapper<R: Read>: Read {
+    fn reader(&self) -> &R;
+
+    fn finish(self) -> (R, Result<()>);
+}
+
+pub trait WriteWrapper<W: Write>: Write {
+    fn writer(&self) -> &W;
+
+    fn finish(self) -> (W, Result<()>);
+}
+```
+
+This traits add to standard `Write`/`Read` traits method:
+
+ * `reader`/`writer` for accessing wrapped stream.
+
+   This method is useful, for example, for get statistic information
+   from wrapped stream.
+   Rust borrow checker guarantee safety of this method: user can't
+   change wrapper object state with this method.
+
+ * `WriteWrapper::finish` for write end of stream mark and unwrap
+   original writer.
+
+   This method used for explict write end of stream mark and unwrap
+   stream. End of stream mark SHOULD NOT write in `drop` method,
+   because on some write error preffer to get "unexpected end of
+   stream" error instead of false positive "correct" stream end.
+
+ * `ReadWrapper::finish` for unwrap original writer.
+
+   This method is creater for `WriteWrapper::finish` symmetric and
+   SHOULD BE used for unwrap original stream after end of stream
+   reached.
+
+   If end of stream is not reached then result of this method is
+   depends by implementation.
+
+## WriteWrapper example
+
+Example of `WriteWrapper` using:
+```rust
+let mut f = try! (File::create("foo.cer"));
+// Write private key
+try! (f.write_all(b"-----BEGIN CERTIFICATE-----\n"));
+let mut e = Base64Wrapper::new(f);
+try! (e.write_all(certificate));
+let mut f = try! (e.finish());
+try! (f.write_all(b"-----END CERTIFICATE-----\n"));
+```
 
 # Drawbacks
 [drawbacks]: #drawbacks
 
-Why should we *not* do this?
+Support for this feature entails the loss of compatibility with many
+libraries.
 
 # Alternatives
 [alternatives]: #alternatives
 
-What other designs have been considered? What is the impact of not doing this?
+Keep as is.
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
-What parts of the design are still TBD?
+None.
