@@ -52,7 +52,7 @@ fn main() {
 }
 ```
 
-It also requires an unforntunate amount of macros to link in the generated
+It also requires an unfortunate amount of macros to link in the generated
 file, with a command like:
 
 ```rust
@@ -213,7 +213,7 @@ that Rust adopt the
 [JavaScript Source Map](https://source-map.github.io/)
 [v3 specification](https://docs.google.com/document/d/1U1RGAehQwRypUTovF1KRlpiOFze0b-_2gc6fAH0KY0k/edit)
 This would be done in order to simplify the implementation
-since there are already a number of X-to-JavaScript sourcemap generators.
+since there are already a number of X-to-JavaScript Source Map generators.
 
 ## Source Search Paths
 [paths]: #paths
