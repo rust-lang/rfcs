@@ -45,6 +45,10 @@ member of the original type it was a part of, in the original place it was in,
 or through reading fields of the original type. Otherwise, how they are treated
 in all cases is implementation defined behavior.
 
+A `ptr::read` of type `T` from a pointer where a `T` was not last written shall
+result in an implementation defined value in any place that `T` has
+"Implementation Defined" bytes.
+
 A value of type `T` can be in one of two states: "Valid", or "Invalid". Using an
 "Invalid" value is Undefined Behavior. Note that the definition of "Valid" and
 "Invalid" do not mean that a given value is correct for all uses; only that it
