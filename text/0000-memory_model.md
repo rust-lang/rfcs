@@ -42,7 +42,8 @@ ever; examples are `std::mem::uninitialized()`, and padding bytes.
 are either "Defined" or "Undefined" depending on implementation details, like
 layout of structs. An "Implementation Defined" byte is only legal to read as a
 member of the original type it was a part of, in the original place it was in,
-or through reading fields of the original type.
+or through reading fields of the original type. Otherwise, how they are treated
+in all cases is implementation defined behavior.
 
 A value of type `T` can be in one of two states: "Valid", or "Invalid". Using an
 "Invalid" value is Undefined Behavior. Note that the definition of "Valid" and
@@ -65,7 +66,8 @@ not equal to the null pointer.
 
 Function pointer values will be "Valid" if each byte is "Defined", and are not
 equal to zero. Note that the size of function pointers is implementation
-defined, and not guaranteed equal to `*const ()`.
+defined, and not guaranteed equal to `*const ()`; however, a function pointer
+shall be compatible for FFI with a C function pointer of the same type.
 
 --
 
@@ -308,9 +310,7 @@ writes and reads happened in order.
 ## Typecasting
 
 Typecasting through pointers is fine. The clear example of this is `transmute`.
-However, "Implementation Defined" bytes are only readable as either the source
-type, or in an implementation defined way (see `std::repr`). Otherwise, if the
-type read is valid, then the type read is valid. The following are examples:
+The following are examples:
 
 ```rust
 // The following is completely valid
@@ -385,3 +385,5 @@ Are signaling NaNs "Invalid"?
 
 What's the deal with `UnsafeCell`? Probably something similar to raw pointers,
 except that it only applies to the array of bytes that make up the `UnsafeCell`.
+
+May different types of function pointers have different sizes?
