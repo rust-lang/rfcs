@@ -287,8 +287,8 @@ In order to make this work with Syntex, the pretty printer would have to grow
 the ability to physically output tokens in the same line and column so that
 each token wouldn't need to be annotated with the correct positioning.
 
-Another option would be to just adopt the [DWARF](...) debuginfo format,
-but it would be much more complicated to produce.
+Another option would be to just adopt the [DWARF](http://dwarfstd.org/)
+debuginfo format, but it would be much more complicated to produce.
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
