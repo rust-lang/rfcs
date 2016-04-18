@@ -129,6 +129,12 @@ Adds more syntax and another concept that people will need to learn.
 [alternatives]: #alternatives
 
 * Not do this.
+* Consider using a different syntax. The `(H; T)` syntax was chosen to resemble
+  the `[T; N]` syntax for arrays (on the theory that a tuple type is defined by
+  the type of its element and the type of its tail whereas an array type is
+  defined by the type of its elements and its length). Another possible syntax
+  would be `(a, b, ...more_elems)` although this would conflict with the
+  inclusive ranges RFC.
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
