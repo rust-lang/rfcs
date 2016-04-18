@@ -245,6 +245,32 @@ In addition to the relevant questions for `parse_generics!`...
 
 * *Go down to the pub and drink until this all blows over.* - I don't drink, the doors are locked, and I've hidden the keys.  No booze until you sort this mess out!
 
+* *More explicit invocation syntax.* - Invocation could be changed to the following syntax, which is more robust against potential future changes:
+
+  ```rust
+  parse_generics! {
+      then callback! { callback arguments ... },
+      { < 'a, 'b: 'a, T, U: 'a + Clone, ... > tail ... }
+  }
+  ```
+
+  Placing the tail in an explicit delimited `tt` ensures the callback parameter can be dropped without *any* possibility for ambiguity (imagine a user-defined syntax in which an optional generic parameter list is followed by a literal `then` token).
+
+* *Dropping field names.* - Expansion could drop the use of "field names" in favour of relying on position.  The expansion from the first example would become:
+
+  ```rust
+  callback! {
+      callback arguments ...
+      {
+          [ 'a, 'b: 'a, T, U: 'a + Clone, ..., ]
+          [ 'a, 'b, T, U, ..., ]
+          [ 'a, 'b, ]
+          [ T, U, ..., ]
+      },
+      tail ...
+  }
+  ```
+
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
