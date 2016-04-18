@@ -11,7 +11,7 @@ Introduce two macros to the standard library: `parse_generics!` and `parse_where
 # Motivation
 [motivation]: #motivation
 
-Currently, there is a significant hole in `macro_rules!` and its ability to parse Rust constructs: generics.  Specifically, this is the product of `macro_rules!`'s inability to "back out" of a grammar production.  It is possible to parse a generic parameter list *without* lifetimes, but not *with* lifetimes.
+Currently, there is a significant hole in `macro_rules!` and its ability to parse Rust constructs: generics.  Specifically, this is the product of `macro_rules!`'s inability to "back out" of a grammar production.  It is possible to parse a generic parameter list *without* lifetimes, but not *with* lifetimes. \[1]
 
 This means that, *in general*, `macro_rules!` is simply not capable of parsing any Rust construct that might contain a generic parameter list as part of its declaration.
 
@@ -40,6 +40,8 @@ As such, this RFC proposes what the author believes to be the absolute minimum n
 [A proof of concept implementation](https://github.com/DanielKeep/rust-parse-generics-poc) has been written, along with examples demonstrating that the two macros have the necessary power.  It is the author's hope that these can be stabilised within a single cycle, making more useful macros possible as close to immediately as one can get with the trains.
 
 In addition, the author plans to follow this RFC up with another which would permit the use of `macro_rules!`-defined macros in `#[derive]` attributes.  Without these two macros, `macro_rules!`-based derivations will be of significantly limited value.
+
+\[1]: This is true even *if* a lifetime token matcher were to be introduced.  `macro_rules!` would *still* have to be able to distinguish between `$t:ltime` and `$t:ident` in the same position, which it cannot currently do for *any* matchers.
 
 # Detailed design
 [design]: #detailed-design
