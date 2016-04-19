@@ -44,9 +44,11 @@ Introduce a new `macro_rules!` matcher kind called `vis`.  It should call `Parse
 
 The `vis` matcher's follow set should consist of *at least* the following tokens:
 
-    <Ident>
+    <Ident> <Comma>
     const enum extern fn mod
     static struct trait type use
+
+The `priv` reserved keyword should be excluded from the follow set, on the basis that it *might* be re-introduced as a visibility qualifier in the future.
 
 ## Test Case (Normative)
 
