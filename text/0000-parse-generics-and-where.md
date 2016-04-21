@@ -54,6 +54,7 @@ This macro will parse a generic parameter list from a sequence of token trees.  
 
 ```rust
 parse_generics! {
+    { constr, params, ltimes, tnames },
     then callback! { callback arguments ... },
     < 'a, 'b: 'a, T, U: 'a + Clone, ... > tail ...
 }
@@ -76,10 +77,97 @@ callback! {
 }
 ```
 
+The first part consists of a list of fields to include in the expansion.  Each field can be invoked once, and will appear in the same order in the output.  This allows users to specify what information they need.  As another example:
+
+```rust
+parse_generics! {
+    { tnames, ltimes },
+    then callback! { callback arguments ... },
+    <'a, T, U, V> tail ...
+}
+```
+
+Expands to:
+
+```rust
+callback! {
+    callback arguments ...
+    {
+        tnames: [ T, U, V, ],
+        ltimes: [ 'a, ],
+    },
+    tail ...
+}
+```
+
+As a convenience, the list of fields may be written `{..}` (like a "catch-all" struct pattern):
+
+```rust
+parse_generics! {
+    { .. }, then callback! { callback arguments ... },
+    < 'a, 'b: 'a, T, U: 'a + Clone, ... > tail ...
+}
+```
+
+Expands to:
+
+```rust
+callback! {
+    callback arguments ...
+    {
+        constr: [ 'a, 'b: 'a, T, U: 'a + Clone, ..., ],
+        params: [ 'a, 'b, T, U, ..., ],
+        ltimes: [ 'a, 'b, ],
+        tnames: [ T, U, ..., ],
+        ..
+    },
+    tail ...
+}
+```
+
+The trailing `..` in the expansion is to encourage users to match everything after the input they're interested in using `$($other:tt)*`, as the set of fields may expand in the future.
+
+Finally, fields may be suffixed with an `?` to indicate that the field might not exist.  Such fields are included if they are recognised, and ignored otherwise.  This exists as a forward-compatibility defence; it allows users to change behaviour based on the existence or non-existence of features, without needing to resort to version matching and conditional compilation.
+
+For example:
+
+```rust
+parse_generics! {
+    { tnames, cnames? }, then callback! { callback arguments ... },
+    <A, B> tail ...
+}
+```
+
+Would expand under the current implementation as:
+
+```rust
+callback! {
+    callback arguments ...
+    {
+        tnames: [ A, B, ],
+    },
+    tail ...
+}
+```
+
+But might expand to the following under a future version (such as one where `const` generic parameters exist):
+
+```rust
+callback! {
+    callback arguments ...
+    {
+        tnames: [ A, B, ],
+        cnames: [],
+    },
+    tail ...
+}
+```
+
 It is also valid for the invocation to have *no* generic parameter list whatsoever:
 
 ```rust
 parse_generics! {
+    { constr, params, ltimes, tnames },
     then callback! { callback arguments ... },
     tail ...
 }
@@ -157,7 +245,19 @@ The "output" (which is, in fact, the *input* to the callback macro) consists of:
 
   - `tnames`: necessary where you wish to constrain type parameters, such as for mechanically derived trait implementations.
 
-* *Why in that order?* - it roughly matches the order in which they appear: you introduce generic parameters first, then you use them.  `ltimes` and `tnames` are in the same order that they must appear in generic parameter lists.  This order also roughly matches the frequency of *use*, allowing less frequently used fields to be consumed as `$($other:tt)*`, if convenient.
+* *Why specify fields?* - This has a few benefits:
+
+  1. It means users cannot be confused about the order of the outputs: they are in whatever order the user specified.
+
+  2. If they forget and misspell the name of a field, the macro can emit an actual error, as opposed to a `macro_rules!` matching failure (which can often refer to an unrelated token).
+
+  3. It allows fields not important to the task at hand to be omitted, saving matching effort.
+
+  4. It allows new fields to be introduced in a backward-compatible manner.
+
+  5. Allowing non-existent fields to be denoted with `?` affords forward compatibility.
+
+  6. The `{ .. }` shorthand provides a compromise between robustness against future changes and convenience.
 
 * *Why comma terminators, rather than comma separators?* - These are easier for `macro_rules!` to parse, particularly for recursive rules.
 
@@ -167,7 +267,7 @@ This macro will parse a `where` clause from a sequence of token trees.  It has t
 
 ```rust
 parse_where! {
-    then callback! { callback arguments ... },
+    { preds }, then callback! { callback arguments ... },
     where 'a: 'b, A: 'a + B, ... tail ...
 }
 ```
@@ -190,7 +290,7 @@ It is also valid for the invocation to have *no* `where` clause:
 
 ```rust
 parse_where! {
-    then callback! { callback arguments ... },
+    { preds }, then callback! { callback arguments ... },
     tail ...
 }
 ```
@@ -207,6 +307,8 @@ callback! {
 }
 ```
 
+The field list behaves the same way as the `parse_generics!` field list.
+
 Aside from similar components in the output of `parse_generics!`, `parse_where!`'s output consists of:
 
 - `preds` - a list of `where` predicates, with a terminating comma, provided the list is non-empty.
@@ -219,7 +321,7 @@ In addition to the relevant questions for `parse_generics!`...
 
   These could be equality constraints, or perhaps value constraints.  It might be worthwhile to extract these into independent sections.  Or it might not.
 
-  On the whole, this could be fairly easily replaced with a single `[...]` token tree without much issue.
+  On the whole, this could be fairly easily replaced with a single `[...]` token tree without much issue, *at the moment.*
 
 * *Why not include the `where` keyword?* - Six of one, a half dozen of the other.  Having the `where` keyword included in the `preds` list simplifies passing predicates through unmodified, but makes appending new predicates more difficult.  The current solution makes appending new predicates easy, but passthru more difficult.
 
@@ -247,11 +349,24 @@ In addition to the relevant questions for `parse_generics!`...
 
 * *Go down to the pub and drink until this all blows over.* - I don't drink, the doors are locked, and I've hidden the keys.  No booze until you sort this mess out!
 
+* *Less explicit invocation syntax.* - Invocation could be changed to the following syntax, which is easier to explain and implement:
+
+  ```rust
+  parse_generics! {
+      // Note: no field list:
+      then callback! { callback arguments ... },
+      tail ...
+  }
+  ```
+
+  The output would always contain all fields, in a hard-coded order.  Whilst simpler, this will introduce both forward- and backward-compatibility problems if the output ever needs to expand (which is not unlikely).
+
 * *More explicit invocation syntax.* - Invocation could be changed to the following syntax, which is more robust against potential future changes:
 
   ```rust
   parse_generics! {
-      then callback! { callback arguments ... },
+      { .. }, then callback! { callback arguments ... },
+      // Note: input in a delimited tt:
       { < 'a, 'b: 'a, T, U: 'a + Clone, ... > tail ... }
   }
   ```
@@ -272,6 +387,8 @@ In addition to the relevant questions for `parse_generics!`...
       tail ...
   }
   ```
+
+  This also has similar issues with simply dropping the field list from the input.
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
