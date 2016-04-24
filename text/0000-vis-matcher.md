@@ -44,9 +44,11 @@ Introduce a new `macro_rules!` matcher kind called `vis`.  It should call `Parse
 
 The `vis` matcher's follow set should consist of *at least* the following tokens:
 
-    <Ident> <Comma>
+    <Ident> <Comma> <ModSep> <NtIdent> <NtTy>
     const enum extern fn mod
     static struct trait type use
+
+The follow set is chosen to match all currently extant tokens that can follow a visibility: item keywords, identifiers (in a record struct), and types (in a tuple struct).
 
 The `priv` reserved keyword should be excluded from the follow set, on the basis that it *might* be re-introduced as a visibility qualifier in the future.
 
@@ -110,6 +112,20 @@ mod with_pub_restricted {
     vis_passthru! { pub(crate) use A as I; }
 }
 
+mod garden {
+    mod with_pub_restricted_path {
+        vis_passthru! { pub(::garden) const A: i32 = 0; }
+        vis_passthru! { pub(::garden) enum B {} }
+        vis_passthru! { pub(::garden) extern "C" fn c() {} }
+        vis_passthru! { pub(::garden) mod d {} }
+        vis_passthru! { pub(::garden) static E: i32 = 0; }
+        vis_passthru! { pub(::garden) struct F; }
+        vis_passthru! { pub(::garden) trait G {} }
+        vis_passthru! { pub(::garden) type H = i32; }
+        vis_passthru! { pub(::garden) use A as I; }
+    }
+}
+
 /*
 Ensure that the `:vis` matcher works in a more complex situation: parsing a
 struct definition.
@@ -128,9 +144,23 @@ macro_rules! vis_parse_struct {
     ($(#[$($attrs:tt)*])* struct $name:ident {$($body:tt)*}) => {
         vis_parse_struct! { @parse_fields $(#[$($attrs)*])*, , $name, $($body)* }
     };
-    
+
+    ($(#[$($attrs:tt)*])* pub($($vis:tt)*) struct $name:ident ($($body:tt)*);) => {
+        vis_parse_struct! { @parse_tuple $(#[$($attrs)*])*, pub($($vis)*), $name, $($body)* }
+    };
+    ($(#[$($attrs:tt)*])* pub struct $name:ident ($($body:tt)*);) => {
+        vis_parse_struct! { @parse_tuple $(#[$($attrs)*])*, pub, $name, $($body)* }
+    };
+    ($(#[$($attrs:tt)*])* struct $name:ident ($($body:tt)*);) => {
+        vis_parse_struct! { @parse_tuple $(#[$($attrs)*])*, , $name, $($body)* }
+    };
+
     (@parse_fields $(#[$attrs:meta])*, $vis:vis, $name:ident, $($fvis:vis $fname:ident: $fty:ty),* $(,)*) => {
         $(#[$attrs])* $vis struct $name { $($fvis $fname: $fty,)* }
+    };
+
+    (@parse_tuple $(#[$attrs:meta])*, $vis:vis, $name:ident, $($fvis:vis $fty:ty),* $(,)*) => {
+        $(#[$attrs])* $vis struct $name ( $($fvis $fty,)* );
     };
 }
 
@@ -138,6 +168,10 @@ mod test_struct {
     vis_parse_struct! { pub(crate) struct A { pub a: i32, b: i32, pub(crate) c: i32 } }
     vis_parse_struct! { pub struct B { a: i32, pub(crate) b: i32, pub c: i32 } }
     vis_parse_struct! { struct C { pub(crate) a: i32, pub b: i32, c: i32 } }
+
+    vis_parse_struct! { pub(crate) struct A (pub i32, i32, pub(crate) i32); }
+    vis_parse_struct! { pub struct B (i32, pub(crate) i32, pub i32); }
+    vis_parse_struct! { struct C (pub(crate) i32, pub i32, i32); }
 }
 
 fn main() {}
