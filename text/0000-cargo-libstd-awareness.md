@@ -226,6 +226,16 @@ changing the proposed interface. But my optimism is no more that---speculation.
  - Cargo doesn't currently have any unstable features, so giving them that requires work and
    planning.
 
+ - Only some crates in the rust repo (at least `core`, `alloc` and `collections`) can properly be
+   built just based upon their `Cargo.toml`. However it's precisely only these "foundational" crates
+   that will be of interest to freestanding developers. Hosted developers can get pre-built sysroots
+   with `rustup`, and those working on the standard library would use this in conjunction with its
+   build system which can deal with such things.
+
+ - No means of compiling compiler-rt is proposed. But just as freestanding developers need to
+   provide `rlibc` or similar to successfully link, I think that for the time-being they can be left
+   to provide this themselves when linking.
+
 
 # Alternatives
 
