@@ -3,13 +3,20 @@
 - RFC PR: (leave this empty)
 - Rust Issue: (leave this empty)
 
+
 # Summary
 
 Currently, Cargo doesn't know what parts of the standard library packages depend on. This makes
-Cargo unsuitable for packages that are typically cross compiled and only use some of the crates
-behind the facade--in other words, libraries intended for freestanding use. If/when the standard
-library is Cargoized in the future, the proposed fixes will also allow projects to better take
-advantage of that.
+Cargo difficult to use when both the standard library (or a portion of it) and some consumer of it
+need to be built together. Examples of this need are freestanding development, where the exact
+compilation target is usually custom-tailed to the specific project at hand, and working on rustc or
+the standard library itself.
+
+This new interfaces are simple, as is the the proposed implementation. However, the proposed
+implementation also comes with some limitations, and past proposals of the RFC have been deemed
+under-specified. I therefore suggest that this RFC be accepted an on experimental basis as an
+unstable feature.
+
 
 # Motivation
 
@@ -115,82 +122,109 @@ For the record, I first raised this issue [here](https://github.com/rust-lang/ca
 
 # Detailed design
 
+
 ## Interface
 
 ### Explicit Dependencies
 
 First, we need to allow packages to opt out of implicitly depending on all standard library
 crates. A new optional Boolean field is added called called `implicit-deps` to the `Cargo.toml`
-schema.`implicit-deps` is true by default to maintain compatibility with existing packages. When
-true, the package will implicitly depend on all crates that are part of the standard library.
+schema. When true, the package will implicitly depend on all crates that are part of the standard
+library.
 
 Second, we need a way for packages that have opted-out of these implicit dependencies to explicitly
-depend on a subset of standard library crates. For this we add a new type of dependency, in addition
-to the git, local path, and crates.io dependencies we support today. Packages will able to declare:
+depend on a subset of standard library crates. For this we add a new "virtual version". Packages will
+able to declare:
+```toml
+[dependencies]
+std = "stdlib"
+```
+or
 ```toml
 [dependencies.std]
-stdlib = true
+version = "stdlib"
 ```
 which will declare a dependency on a crate called `std` which must be part of the standard library.
 
-It is an error to explicitly depend on a standard library crate when the entire standard library is
-already depended-upon implicitly, as the explicit dependency is redundant. This can be relaxed in
-the future if a need arises.
+When no explicit dependencies are specified, `implicit-deps` defaults to `true`. (This is necessary
+for compatibility with existing packages.) When an explicit stdlib dependency is specified this
+defaults to `false`. It possible to have no explicit stdlib dependencies specified, and set
+`implicit-deps` to be `false` --- this would be used by `core` for example. However the reverse is
+prohibited: it is not allowed to specify explicit stdlib dependencies yet also use implicit stdlib
+dependencies.
 
-### Overrides
+### `[replace]` and `.cargo/config` Overrides.
 
-Normal (non-stdlib) dependencies will be overridden the same as today. An override will apply if one
-of:
+In keeping with "stdlib" being a "virtual version", one can do
+```
+[replace]
+"some-crate:std-lib" = ...
+```
+to replace a std-lib crate with one of ones choosing. This is useful when developing the standard
+library and a consumer of it, like `rustc`, together.
 
- 1. The package name of the override is the name of a normally dependency. [Today]
+`.cargo/config` overrides are likewise extended as one would expect. If the Cargo package at the given
+path matches a stdlib crate, the override is used instead.
 
- 2. The package in question has implicit deps, and the package name of the override is the name of a
-    crate in the standard library.
-
- 3. The package in question does not have implicit deps, and the package name matches the name of an
-    explicit stdlib dependency.
-
-Note that 1 and 3 can be combined by ignoring the type of (explicit) dependency.
 
 ## Implementation
 
-Here is how we can implement this interface until future infrastructure changes.
+On to the gritty details! With this RFC, there are two ways to depend on std library
+crates. Likewise, for the immediate future at least, we to support either building the needed parts
+of the standard library from source (the main purpose of this rfc!) or using pre-built sysroot
+binaries. This yields 4 combinations.
 
-`rustc` will gain the ability to not use a sysroot, in which case only the information specified in
-`--extern` and `-L` flags will be used to find dependencies. For backwards compatibility, a sysroot
-will be used by default. To control this a `--use-sysroot=<true|false>` flag is added, with the
-obvious meaning. It is an error to specify `--use-sysroot=false` and a custom sysroot with
-`--sysroot=<some path>`.
+As a prerequisite, `rustc` will need one new flag `--sysroot-whitelist=[crates]`, a whitelist of
+crates it is allowed to look for in the sysroot. Importantly this only restricts immediate `extern
+crate`s in the current compilation unit; no restrictions are placed on opening transitive
+dependencies.
 
-The way in which Cargo builds packages will be modified as follows. When the standard library is
-depended-on implicitly, everything happens as it does today. When the standard library isn't
-depended the following two extra steps happen when Cargo is gathering all dependency metadata to see
-if a build is possible.
+### Explicit dependencies and freshly-built stdlib
 
- 1. Cargo queries `rustc` for the default sysroot. The means in which it does this is not specified
- nor stabilized.
+Explicit stdlib dependencies, if not overridden, are simply desugared to git dependencies on
+`http://github.com/rust-lang/rust` with the revision given by `rustc`. (On start-up, Cargo already
+queries `rustc` for its verbose version, which includes the git revision.) Additionally for any
+crate with `implicit-deps = true`, `--sysroot-whitelist=` (i.e. the empty whitelist) is passed to
+`rustc` as sysroot binaries should never be used.
 
- 2. Cargo computes gathers all explicit standard library dependencies of the current package and its
- dependencies, and collects their paths within the sysroot. If it cannot find a build in the sysroot
- for any gathered dependency, Cargo errs.
+### Implicit dependencies and freshly-built stdlib
 
-Finally, when Cargo invokes `rustc` to actually build something, it does so with
-`--use-sysroot=false`, and passes in any explicitly-depended-on standard library crates (immediate,
-not transitive dependencies) with `--extern`.
+Exactly what parts of the standard library do we need to build? One can assume implicit deps on
+`std` and `core`, as those are the only stable crates today. Keep in mind however that since Cargo
+doesn't currently know what crates constitute the standard library for a given `rustc`, that there
+is no simple way to correctly implement `.cargo/config` and `[replace]` overrides. Because this is
+an experimental feature, I propose just punting and erring should overrides be given.
 
-Remember that Cargo current aims to work with multiple versions of `rustc`, and also that the crates
-behind the facade are not stabilized. This is why Cargo needs to both query `rustc` for the sysroot
-location, and use the contents of the sysroot rather than some hard-coded list to decide whether a
-standard library dependency with a given (crate) name is valid.
+### Explicit dependencies and pre-built stdlib from sysroot
+
+Build as today, but pass via `--sysroot-whitelist` the list of explicit stdlib dependencies whenever
+`implicit-deps` is false. That way, we can be sure regardless of the built strategy that no
+undeclared stdlib dependencies "leak in".
+
+For overrides, one could filter the writelist of any crates that were overridden. On the other hand
+this doesn't take into account other std-lib crates that depended on the overridden crates---they
+two should be freshly built and not pulled from the sysroot so as to depend on the overridden
+crates. It may be better to punt again then.
+
+### Implicit dependencies and pre-built stdlib from sysroot
+
+This is today, and should work as today. Again, punt on the newly-proposed types of overrides.
 
 
 # Drawbacks
 
- - Adds a notion of standard library dependencies that may be superfluous---see first alternative.
+Notably, all of these relate to the suggested implementation, and not the interface that is the core
+of this RFC. I remain optimistic that over time these implementation issues can be resolved without
+changing the proposed interface. But my optimism is no more that---speculation.
 
- - For the time being, dependencies *within* the standard library are unspecified, so that an
-   override of, e.g, collections would not cause cargo to try to rebuilt std or complain it is
-   unable to do so.
+ - The override limitations already specified within the implementation section.
+
+ - Due to the way git dependencies work, if we naively desugar explicit stdlib dependencies to them
+   as proposed, packages will be able to depend on *any* crate in the `rust` repo, including the
+   various `rustc_*` crates there is no intention of keeping around.
+
+ - Cargo doesn't currently have any unstable features, so giving them that requires work and
+   planning.
 
 
 # Alternatives
@@ -200,13 +234,12 @@ standard library dependency with a given (crate) name is valid.
    versions of the standard library, there is only one that works with any given version of `rustc`.
 
    Specifically, we can have it so whenever Cargo comes across a wildcard crates.io dependency it
-   can't resolve, fallback on looking in the sysroot. In the future, the standard library could
-   actually be put in crates.io, released every time a compiler is released.
+   can't resolve, assume it is a std lib dependency and either resolve it as such (desugar to git
+   dependencies) or leave it for `rustc` to find in the sysroot according to the build type.
 
-   I moved this to be an alternative because it might be a bit too magical. Also, I don't know how
-   much Cargo is aware of different Rust / `rustc` versions at the moment, and this RFC depends on
-   that awareness in some form. Finally, Semver won't be able to understand the release
-   trains---pre-release/beta builds are allowed in its grammar but have different semantics.
+   I made this to be an alternative because it might be a bit too magical. Also, Semver won't be
+   able to understand the release trains---pre-release/beta builds are allowed in its grammar but
+   have different semantics.
 
  - Simply have `implicit-deps = false` make Cargo pass `--use-sysroot=false` to `rustc`, and don't
    have any way to explicitly depend on things in the sysroot.
@@ -218,15 +251,11 @@ standard library dependency with a given (crate) name is valid.
      normal crate, it would be weird to have freestanding projects coalesce around some bootleg
      core on crates.io.
 
- - Make it so that packages with implicit dependencies only depend on std. This would break
-   existing packages, but only those that cannot be published to crates.io or can but don't
-   build. This is elegant because it eliminates redundancy, while still providing a concise common
-   case (just one slightly more narrowly defined): packages that use stdlib crates besides std must
-   be explicit. If we want to do this, we have to act fast because core might be stabilized soon.
+ - Make it so that packages with implicit dependencies only depend on std. This would be more
+   elegant, but breaks packages (including ones using stable Rust) that just depend on crates.io.
 
-
- - Make it so all dependencies, even libstd, must be explicit. C.f. Cabal and base. Simpler to
-   implement, but breaks nearly all existing packages.
+ - Make it so all dependencies, even libstd, must be explicit. C.f. Cabal and base. Simple and
+   elegant, but breaks all existing packages.
 
  - Don't do this, and be stuck with problems detailed in the motivation section.
 
@@ -236,8 +265,8 @@ standard library dependency with a given (crate) name is valid.
  - There are multiple lists of dependencies for different things (e.g. tests, build-time). How
    should `implicit-deps = false` affect them?
 
- - Just as make libstd a real dependency, we can make `rustc` a real dev dependency. The standard
-   library can thus be built with Cargo by depending on the associated unstable compiler. Cargo
-   would need to be taught an "x can build for y" relation for stable/unstable compiler
-   compatibility however, rather than simply assuming all distinct compilers are mutually
-   incompatible. This almost certainly is better addressed in a later RFC.
+ - Just as this makes the standard library a real dependency, we can make `rustc` a real
+   dev-dependency. The standard library can thus be built with Cargo by depending on the associated
+   unstable compiler. Cargo would need to be taught an "x can build for y" relation for
+   stable/unstable compiler compatibility however, rather than simply assuming all distinct
+   compilers are mutually incompatible. This almost certainly is better addressed in a later RFC.
