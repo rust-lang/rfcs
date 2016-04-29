@@ -33,7 +33,7 @@ This increases the complexity of the libcore code slightly.
 # Alternatives
 [alternatives]: #alternatives
 
-* Delete all floating-point code from libcore
+* Move all float-free code to another crate and re-export it from core
 * Do nil, and let users who need this patch their own libcore
 * Switch to soft-float rather than disable if the flag is false
 
