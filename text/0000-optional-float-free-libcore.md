@@ -40,4 +40,5 @@ This increases the complexity of the libcore code slightly.
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
-None so far
+* Will this affect code generation, or will that be left to the `features` flag?
+* If `has_floating_point` is false, is it legal to use `f32` and `f64`?
