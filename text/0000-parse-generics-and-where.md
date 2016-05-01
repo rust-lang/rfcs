@@ -37,9 +37,11 @@ Thus, this author believes that parsing generics *should* be possible in Rust *w
 
 As such, this RFC proposes what the author believes to be the absolute minimum necessary to enable `macro_rules!` to parse generic Rust items: two new macros to be added to the standard library.
 
-[A proof of concept implementation](https://github.com/DanielKeep/rust-parse-generics-poc) has been written, along with examples demonstrating that the two macros have the necessary power.  It is the author's hope that these can be stabilised within a single cycle, making more useful macros possible as close to immediately as one can get with the trains.
+[A proof of concept implementation](https://github.com/DanielKeep/rust-parse-generics) has been written, along with examples demonstrating that the two macros have the necessary power.
 
-In addition, the author plans to follow this RFC up with another which would permit the use of `macro_rules!`-defined macros in `#[derive]` attributes.  Without these two macros, `macro_rules!`-based derivations will be of significantly limited value.
+In addition, a stable shim crate has been written which provides a subset of the functionality of these macros.  The shims allow the underlying implementation to the swapped out for the proof of concept plugin, providing a path for both experimentation and migration.  This allows crates in the wider ecosystem to begin adopting them ahead of stabilisation.
+
+Finally, the author plans to follow this RFC up with another which would permit the use of `macro_rules!`-defined macros in `#[derive]` attributes.  Without these two macros, `macro_rules!`-based derivations will be of significantly limited value.
 
 \[1]: This is true even *if* a lifetime token matcher were to be introduced.  `macro_rules!` would *still* have to be able to distinguish between `$t:ltime` and `$t:ident` in the same position, which it cannot currently do for *any* matchers.
 
@@ -267,7 +269,7 @@ This macro will parse a `where` clause from a sequence of token trees.  It has t
 
 ```rust
 parse_where! {
-    { preds }, then callback! { callback arguments ... },
+    { clause, preds }, then callback! { callback arguments ... },
     where 'a: 'b, A: 'a + B, ... tail ...
 }
 ```
@@ -280,6 +282,7 @@ It expands to the following:
 callback! {
     callback arguments ...
     {
+        clause: [ where 'a: 'b, A: 'a + B, ..., ],
         preds: [ 'a: 'b, A: 'a + B, ..., ],
     },
     tail ...
@@ -290,7 +293,7 @@ It is also valid for the invocation to have *no* `where` clause:
 
 ```rust
 parse_where! {
-    { preds }, then callback! { callback arguments ... },
+    { clause, preds }, then callback! { callback arguments ... },
     tail ...
 }
 ```
@@ -301,6 +304,7 @@ Expands to:
 callback! {
     callback arguments ...
     {
+        clause: [],
         preds: [],
     },
     tail ...
@@ -311,21 +315,23 @@ The field list behaves the same way as the `parse_generics!` field list.
 
 Aside from similar components in the output of `parse_generics!`, `parse_where!`'s output consists of:
 
-- `preds` - a list of `where` predicates, with a terminating comma, provided the list is non-empty.
+- `clause` - contains *either* a complete `where` clause, *or* nothing at all.  This is to allow the clause to be passed through unmodified.
+
+- `preds` - a list of `where` predicates, with a terminating comma, provided the list is non-empty.  This is to optimise for adding additional predicates where there may or may not be existing ones.
 
 ### Explanations
 
 In addition to the relevant questions for `parse_generics!`...
 
-* *Why use record syntax when there is only one field?* - A desire for uniformity.  It also means that additional fields can be added in the future with less hassle on the part of users.
+* *Why use record syntax when there are only two fields?* - A desire for uniformity.  It also means that additional fields can be added in the future with less hassle on the part of users.
 
   These could be equality constraints, or perhaps value constraints.  It might be worthwhile to extract these into independent sections.  Or it might not.
 
-  On the whole, this could be fairly easily replaced with a single `[...]` token tree without much issue, *at the moment.*
+  In an earlier revision of this RFC, there was *only* the `preds` field.  `clause` was introduced for practical considerations.  It is not unthinkable for this to happen again in the future.
 
-* *Why not include the `where` keyword?* - Six of one, a half dozen of the other.  Having the `where` keyword included in the `preds` list simplifies passing predicates through unmodified, but makes appending new predicates more difficult.  The current solution makes appending new predicates easy, but passthru more difficult.
+* *Why both `clause` and `preds`?* - Six of one, a half dozen of the other.  Having the `where` keyword included in `clause` simplifies passing predicates through unmodified, but makes appending new predicates more difficult.
 
-  I propose that the *better* solution is to accept the short-term inconvenience and instead push to have `where` clauses accept sequences of zero predicates, which solves the issue once and for all.
+  I propose that the *optimal* solution is to push to have `where` clauses accept sequences of zero predicates, which simplifies the problem dramatically.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -390,7 +396,15 @@ In addition to the relevant questions for `parse_generics!`...
 
   This also has similar issues with simply dropping the field list from the input.
 
+* *Stick to the stable shim implemenations.* - The majority of the functionality of these macros can be handled in stable `macro_rules!`.  It would be simpler to just use those instead.
+
+  However, this runs into several serious problems: the stable macros require a *significant* amount of recursion (proportional to the number of tokens), and can only support a limited, fixed set of lifetime names.  To put it nicely, the shims only *mostly* work, *some* of the time.
+
 # Unresolved questions
 [unresolved]: #unresolved-questions
+
+* During implementation of the shim library, a third kind of complex production was found: generic parameter constraints.  Although *typically* subsumed by `parse_generics!` and `parse_where!`, it is not unthinkable that being able to parse them independently might be of use.
+
+  Although unlikely to be added to this proposal, it might be worth considering support for them, as the current abilities of `macro_rules!` are *even more* woefully inadequate for parsing them.
 
 * The exact invocation and expansion syntaxes.
