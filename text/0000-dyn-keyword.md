@@ -44,6 +44,8 @@ Traits are classes of types, not types them self.
 Secondly, we add a deprecation lint against the current syntax, where traits
 are treated like types.
 
+The parsing is done in a context-specific manner (alike #1444 and #243).
+
 # Examples
 
 ```rust
