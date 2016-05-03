@@ -36,8 +36,11 @@ Add an optional `has_floating_point` property in target spec, default true, gate
 [alternatives]: #alternatives
 
 * Move all float-free code to another crate and re-export it from core
+* Split up core into more crates, i.e. core façade
+* Make dependence on libcore explicit and add feature to libcore to enable or disable floating-point
 * Do nil, and let users who need this patch their own libcore
 * Switch to soft-float rather than disable if the flag is false
+* Have `needs_floating_point` attribute which enables floating-point instruction emission for an item, and add it to all items which need it
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
@@ -45,3 +48,4 @@ Add an optional `has_floating_point` property in target spec, default true, gate
 * Will this affect code generation, or will that be left to the `features` flag?
 * If `has_floating_point` is false, is it legal to use `f32` and `f64`?
 * Would any other global target properties have this pattern?
+* Might we need to do so for libstd also?
