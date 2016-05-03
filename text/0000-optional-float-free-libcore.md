@@ -8,7 +8,7 @@
 # Summary
 [summary]: #summary
 
-Add target `has_floating_point` property and disable floating-point instruction emission when compiling libcore if false.
+Add `has_floating_point` property of target in target spec and disable floating-point parts of libcore if false.
 
 # Motivation
 [motivation]: #motivation
@@ -23,12 +23,14 @@ Even if floating-point features of libcore are not used, when it is built for a 
 # Detailed design
 [design]: #detailed-design
 
-Add an optional `has_floating_point` property, default true, gated as `cfg_target_has_floating_point`. Disable all floating-point use in libcore if this flag is false.
+Add an optional `has_floating_point` property in target spec, default true, gated as `cfg_target_has_floating_point`. Add a `cfg` flag `target_has_floating_point` which has the same value as the target property. Add `#[cfg(target_has_floating_point)]` attribute to all items of libcore involving floating-point.
 
 # Drawbacks
 [drawbacks]: #drawbacks
 
-This increases the complexity of the libcore code slightly.
+* This increases the complexity of the libcore code slightly.
+* "Conditionally removing parts of core is not great!" - brson
+* Crates would potentially and surprisingly fail in `not(target_has_floating_point)` environment.
 
 # Alternatives
 [alternatives]: #alternatives
@@ -42,3 +44,4 @@ This increases the complexity of the libcore code slightly.
 
 * Will this affect code generation, or will that be left to the `features` flag?
 * If `has_floating_point` is false, is it legal to use `f32` and `f64`?
+* Would any other global target properties have this pattern?
