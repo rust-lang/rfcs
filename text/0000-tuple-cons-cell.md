@@ -129,10 +129,10 @@ the type `(H; T)` is only valid when `T: Tuple`.
 The main problem with implementing this RFC is the question of representation.
 At the memory level, in current Rust, there is no guarantee that the
 representation of an `(a; b)` contains the representation of a `b`. The
-solution proposed here to this problem is two-fold. First, we allow types to
-have separate stride and size as per RFC issue #1397. Secondly, we layout
-tuples in reverse order. Under this scheme, the tuple
-`(A, B, C) : (u16, u16, u32)` would be represented as
+solution proposed here is two-fold. First, we allow types to have separate
+stride and size as per RFC issue #1397. Secondly, we layout tuples in reverse
+order. Under this scheme, the tuple `(A, B, C) : (u16, u16, u32)` would be
+represented as
 
 ```
 ------------------------------------------------
@@ -152,10 +152,10 @@ And it's tail `(B, C) : (u16, u32)` would be represented as
 ------------------------------------------------
 ```
 
-Crucially, the stride of this type is only 6 bytes. This means that a `&mut
-(u16, u32)` can not be used to modify the two "padding" bytes at the end of the
-tuple's memory as a tuple (accessed through a reference) may be the tail of a
-larger tuple.
+Crucially, the stride of this type is only 6 bytes. This means that a
+`&mut (u16, u32)` can not be used to modify the tuple's two trailing "padding"
+bytes as any tuple (accessed through a reference) may be the tail of a larger
+tuple.
 
 ## Example
 
@@ -231,7 +231,7 @@ impl<H0: Debug, H1: Debug, T: TupleExt> Debug for (H0, H1; T) {
   very similar to range syntax and may be confusing.
 * Consider a different layout. By packing tuples less efficiently we could
   obviate the need for the stride/size distinction and make updating the head
-  elements of tuples more efficient. Overall though I'm not convinced this
+  elements of tuples more efficient. Overall though I'm not sure this
   would be a win. The efficiency hit associated with the proposed design only
   happens when modifying a tuple through a mutable reference. Also the reference
   must be to the tuple itself, not to an element in the tuple like what one
@@ -239,7 +239,7 @@ impl<H0: Debug, H1: Debug, T: TupleExt> Debug for (H0, H1; T) {
   must happen to the head element of the tuple and the head element must be
   small. Conversely, packing tuples less efficiently would often result in
   significantly less efficient layout (eg. `(u16, u16, u32)` taking 12 bytes
-  instead of 8. [More knowledgeable people than me disagree though](https://github.com/rust-lang/rfcs/issues/1397#issuecomment-213311508)
+  instead of 8). [More knowledgeable people than me disagree though](https://github.com/rust-lang/rfcs/issues/1397#issuecomment-213311508),
   so it would be worth discussing this further and trying to obtain data to
   inform a decision with.
 * Sidestep the representation issue by disallowing references to the tail of a
