@@ -158,7 +158,7 @@ dependencies.
 In keeping with "stdlib" being a "virtual version", one can do
 ```
 [replace]
-"some-crate:std-lib" = ...
+"some-crate:stdlib" = ...
 ```
 to replace a std-lib crate with one of ones choosing. This is useful when developing the standard
 library and a consumer of it, like `rustc`, together.
