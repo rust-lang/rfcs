@@ -53,4 +53,5 @@ When an owned pointer is created to a variable (e.g. on the stack) the owner of 
 - `IndexMove` trait to handle moving out of collection types in a similar way to `DerefMove`
 - Should (can?) the `box` destructuring pattern be implemented using `DerefMove`?
 - Potential interactions of what happens when a `&move` is stored
+- Should `&move` allow mutation without annotations?
 
