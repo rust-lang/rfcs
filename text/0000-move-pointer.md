@@ -17,9 +17,14 @@ This provides an elegant solution to passing DSTs by value, allowing `Box<FnOnce
 [design]: #detailed-design
 
 - Add a new pointer type `&move T`
+ - This pointer will get the same lifetime rules as `&` and `&mut` (such that it cannot outlive the allocation)
+ - but, it will allow the value to become invalid before the allocation does.
+ - Deref coercions as per RFC #241 apply.
 - Add a new unary operation `&move <value>`. With a special case such that `&move |x| x` parses as a move closure, requiring parentheses to parse as an owned pointer to a closure.
+ - This precedence can be implemented by ignoring the `move` when parsing unary operators if it is followed by a `|` or `||` token.
 - Add a new operator trait `DerefMove` to allow smart pointer types to return owned pointers to their contained data. 
- - ```rust
+
+```rust
 trait DerefMove: DerefMut
 {
     /// Return an owned pointer to inner data
@@ -28,7 +33,6 @@ trait DerefMove: DerefMut
     fn deallocate(self);
 }
 ```
-
 
 When an owned pointer is created to a variable (e.g. on the stack) the owner of the pointer takes responsability of calling the destructor on the pointed-to data (and can do any operation assuming that it has full ownership of the object). The original owner still controls the memory allocation used to hold the type, and will deallocate that memory in the same way as if the object had been passed by value.
 
@@ -48,4 +52,5 @@ When an owned pointer is created to a variable (e.g. on the stack) the owner of 
 
 - `IndexMove` trait to handle moving out of collection types in a similar way to `DerefMove`
 - Should (can?) the `box` destructuring pattern be implemented using `DerefMove`?
+- Potential interactions of what happens when a `&move` is stored
 
