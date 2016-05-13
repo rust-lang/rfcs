@@ -23,18 +23,41 @@ This provides an elegant solution to passing DSTs by value, allowing `Box<FnOnce
 - Add a new unary operation `&move <value>`. With a special case such that `&move |x| x` parses as a move closure, requiring parentheses to parse as an owned pointer to a closure.
  - This precedence can be implemented by ignoring the `move` when parsing unary operators if it is followed by a `|` or `||` token.
 - Add a new operator trait `DerefMove` to allow smart pointer types to return owned pointers to their contained data. 
+ - A type that implements `DerefMove` cannot implement `Drop` (as `DerefMove` provides equivalent functinality)
 
 ```rust
 trait DerefMove: DerefMut
 {
     /// Return an owned pointer to inner data
     fn deref_move(&mut self) -> &move Self::Target;
-    /// Drop self without calling destructor for Self::Target
-    fn deallocate(self);
+    /// Equivalent to `Drop::drop` except that the destructor for `Self::Target` is not called
+    fn deallocate(&mut self);
 }
 ```
 
-When an owned pointer is created to a variable (e.g. on the stack) the owner of the pointer takes responsability of calling the destructor on the pointed-to data (and can do any operation assuming that it has full ownership of the object). The original owner still controls the memory allocation used to hold the type, and will deallocate that memory in the same way as if the object had been passed by value.
+When an owned pointer is dropped (without having been moved out of), the destructor for the contained data is called (unlike `&mut` pointers, which are just borrows). The backing memory for this pointer is not freed until a point after the `&move` is dropped (likely either at the end of the statement, or at the end of the owning block).
+
+For example, the following code moves out of a `Box<T>` into a `&move T` and passes it to a function
+```rust
+fn takes_move(val: &move SomeStruct) {
+    // ...
+}
+fn main() {
+    let val = Box::new( SomeStruct::new() );
+    takes_move( &move val );
+    println!("Hello");
+}
+```
+This becomes the following operations
+```rust
+fn main() {
+    let val = Box::new( SomeStruct::new() );
+    takes_move( DerefMove::deref_move(&mut val) );
+    DerefMove::deallocate(&mut val);
+    println!("Hello");
+}
+```
+
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -45,7 +68,8 @@ When an owned pointer is created to a variable (e.g. on the stack) the owner of 
 [alternatives]: #alternatives
 
 - Previous discussions have used `&own` as the pointer type
- - Since `own` is not a reserved word, such a change would be breaking.
+ - This name is far closer to the actual nature of the pointer.
+ - But, since `own` is not a reserved word, such a change would be breaking.
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
