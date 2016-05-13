@@ -20,6 +20,7 @@ This provides an elegant solution to passing DSTs by value, allowing `Box<FnOnce
  - This pointer will get the same lifetime rules as `&` and `&mut` (such that it cannot outlive the allocation)
  - but, it will allow the value to become invalid before the allocation does.
  - Deref coercions as per RFC #241 apply.
+ - Variables of type `&move T` will only allow mutating `T` if they themselves are `mut`
 - Add a new unary operation `&move <value>`. With a special case such that `&move |x| x` parses as a move closure, requiring parentheses to parse as an owned pointer to a closure.
  - This precedence can be implemented by ignoring the `move` when parsing unary operators if it is followed by a `|` or `||` token.
 - Add a new operator trait `DerefMove` to allow smart pointer types to return owned pointers to their contained data. 
@@ -76,6 +77,25 @@ fn main() {
 
 - `IndexMove` trait to handle moving out of collection types in a similar way to `DerefMove`
 - Should (can?) the `box` destructuring pattern be implemented using `DerefMove`?
-- Potential interactions of what happens when a `&move` is stored
-- Should `&move` allow mutation without annotations?
+- Potential interactions of what happens when a `&move` is stored.
+ - If a `&move` is stored in the current scope, when is the original storage freed?
+ - If a `&move` isn't stored, is the storage freed right then, or when it would have otherwise gone out of scope?
+
+
+# Appendix: Implementations of `DerefMove`
+```rust
+impl<T: ?Sized> DerefMove for Box<T>
+{
+    fn deref_move(&mut self) -> &move Self::Target {
+        unsafe {
+            &move *(self.0)
+        }
+    }
+    fn deallocate(&mut self) {
+        unsafe {
+            heap::deallocate(self.0, mem::size_of_val(&*self.0), mem::align_of_val(&*self.0));
+        }
+    }
+}
+```
 
