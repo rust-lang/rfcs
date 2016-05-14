@@ -89,6 +89,11 @@ binaries: .local/bin
   be alleviated by providing library functions for Cargo related tools and a
   command line to tell which paths are in use.
 
+* It can also complicate tutorials that tell users how Cargo works. The
+  tutorials should probably reference the Cargo subcommand that displays the
+  used locations. However it's still more complicated than static directory
+  name (it's in a weird location for Windows users though).
+
 # Alternatives
 
 * OS X could also use the XDG specification. This would remove the difference
