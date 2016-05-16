@@ -75,11 +75,13 @@ fn main() {
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
-- `IndexMove` trait to handle moving out of collection types in a similar way to `DerefMove`
-- Should (can?) the `box` destructuring pattern be implemented using `DerefMove`?
 - Potential interactions of what happens when a `&move` is stored.
  - If a `&move` is stored in the current scope, when is the original storage freed?
  - If a `&move` isn't stored, is the storage freed right then, or when it would have otherwise gone out of scope?
+
+- `IndexMove` trait to handle moving out of collection types in a similar way to `DerefMove`
+- Should (can?) the `box` destructuring pattern be implemented using `DerefMove`?
+ - This would be a larger RFC specifying the `box` pattern using the `Deref` family of traits
 
 
 # Appendix: Implementations of `DerefMove`
