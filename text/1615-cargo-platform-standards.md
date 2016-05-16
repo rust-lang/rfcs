@@ -66,15 +66,7 @@ config:   AppData\Roaming\Cargo
 binaries: AppData\Local\Programs\Cargo
 ```
 
-## OS X
-
-```
-cache:    Library/Caches/Cargo
-config:   Library/Cargo
-binaries: Library/Cargo/bin
-```
-
-## Other unixy systems (Linux, BSDs)
+## Unixy systems (OS X, Linux, BSDs)
 
 Here, we're following the XDG spec:
 
@@ -96,8 +88,8 @@ binaries: .local/bin
 
 # Alternatives
 
-* OS X could also use the XDG specification. This would remove the difference
-  between OS X and other unixy OSs. This is also done by Python's pip.
+* OS X could also use the `Library` folder for storing its data. This is mostly
+  done by UI applications.
 
 * One could only change the Windows paths, as the Windows integration is
   currently the worst.
