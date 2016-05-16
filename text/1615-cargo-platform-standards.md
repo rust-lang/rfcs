@@ -29,7 +29,7 @@ include:
 * Putting caches in designated cache directories allows backup tools to ignore
   them.
 * Using a `.cargo` directory on Windows is not idiomatic at all, no programs
-  for Windows would such a directory.
+  for Windows would use such a directory.
 * Platform specific clean-up tools such as the Disk Cleanup Wizard work with
   Cargo (it wouldn't be very useful to try to modify the Wizard instead of
   Cargo to make this work).
