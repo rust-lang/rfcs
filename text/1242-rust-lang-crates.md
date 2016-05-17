@@ -163,7 +163,8 @@ nursery crates which runs the test suite on older Rust versions. If a change is
 made that breaks compatibility with an older Rust version, then the version can
 be dropped if it was before two stable releases ago (e.g. by updating the
 continuous integration configuration), or the change must wait to land
-otherwise.
+otherwise. If the minimum vesion of Rust is increased then this is not
+considered a breaking change (e.g. does not require a new major release).
 
 Crates are allowed to experiment with new stable features in Rust, however, that
 are behind off-by-default Cargo features. For example the `panic::catch_unwind`
