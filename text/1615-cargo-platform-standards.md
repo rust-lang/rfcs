@@ -68,7 +68,9 @@ binaries: AppData\Local\Programs\Cargo
 
 ## Unixy systems (OS X, Linux, BSDs)
 
-Here, we're following the XDG spec:
+Here, we're following the [XDG specification](https://specifications.freedesktop.org/basedir-spec/basedir-spec-0.7.html).
+By default, if no further variables are set, this means that we'll be using the
+following subdirectories of the home directory.
 
 ```
 cache:    .cache/cargo
