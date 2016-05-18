@@ -151,12 +151,12 @@ ownership can be transferred externally.
 
 ### Compatibility with older compilers
 
-The rust-lang-nursery crates will currently be guaranteed to compile on the
-**previous two stable releases** of Rust and forward. That is, if the current
-stable release is 1.10, all nursery crates will compile successfully on both
-1.8 and 1.9. Some nursery crates may compile on older versions, but this is not
-guaranteed and changes to the crate are allowed which bump the minimum rustc
-version requirement.
+The current version of rust-lang-nursery crates will currently be guaranteed to
+compile on the **previous two stable releases** of Rust and forward. That is, if
+the current stable release is 1.10, all nursery crates will compile successfully
+on both 1.8 and 1.9. Some nursery crates may compile on older versions, but this
+is not guaranteed and changes to the crate are allowed which bump the minimum
+rustc version requirement.
 
 This will be implemented in practice by adding continuous integration to all
 nursery crates which runs the test suite on older Rust versions. If a change is
@@ -170,6 +170,10 @@ Crates are allowed to experiment with new stable features in Rust, however, that
 are behind off-by-default Cargo features. For example the `panic::catch_unwind`
 API, stabilized, in 1.10, could be behind a feature flag for crates until 1.12
 is released.
+
+Note that this policy may change over time. For example if LTS releases of the
+compiler as created then it is likely that nursery crates will guarantee
+compatibility with an LTS release.
 
 ## Advertising
 
