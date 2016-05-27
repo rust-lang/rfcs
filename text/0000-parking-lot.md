@@ -54,6 +54,7 @@ Here are some benchmark results of `parking_lot` synchronization primitives
 compare to those of the standard library, showing the rate of lock acquisition:
 - [x86_64 Linux](https://gist.github.com/Amanieu/6a4b4151b89b78224992106f9bc4374f)
 - [x86_64 Windows](https://gist.github.com/Amanieu/6812507e66c5cbaa6ab5ab04d9c71eac)
+- [AArch64 Linux](https://gist.github.com/Amanieu/0f10ea5b2acb2819b75442390f2855f8)
 
 # Detailed design
 [design]: #detailed-design
