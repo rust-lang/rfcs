@@ -97,6 +97,12 @@ T`. Casting the integer to a different type from the original, i.e. `*const T ->
 uptr -> *const U`, shall result in implementation defined behavior (as in
 section 5).
 
+7) As a second exception to the above rule: casting a literal `0` of any integer
+type to any pointer type shall result in a null pointer of that pointer type. This
+must be done in a single cast from a literal to a pointer: `0 as *const i32` would
+result in a null pointer; `let x = 0; x as *const i32` does not necessarily. This
+also is an exception to 2; `0 as [pointer type]` would not warn.
+
 Sources:
 
 [CHERI](https://www.cl.cam.ac.uk/research/security/ctsrd/cheri/cheri-faq.html)
