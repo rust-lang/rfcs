@@ -29,7 +29,7 @@ This also means that there's no more confusion when writing FFI code, where
 really. Creating this function:
 
 ```rust
-extern fn takes_slice_from_c(ptr: *const libc::int, len: usize) {
+extern fn takes_slice_from_c(ptr: *const i32, len: usize) {
   let slice = std::slice::from_raw_parts(ptr, len);
 }
 ```
@@ -37,13 +37,13 @@ extern fn takes_slice_from_c(ptr: *const libc::int, len: usize) {
 How do you convert this to C?
 
 ```C
-void takes_slice_from_c(int const* ptr, size_t len); // ?
+void takes_slice_from_c(int32_t const* ptr, size_t len); // ?
 ```
 
 or
 
 ```C
-void takes_slice_from_c(int const* ptr, uintptr_t len); // ?
+void takes_slice_from_c(int32_t const* ptr, uintptr_t len); // ?
 ```
 
 One gives the right semantics, but is wrong by the standard; the other gives the
@@ -54,6 +54,11 @@ Rust reference). You could always take a `libc::size_t`, but Rust programmers
 often don't seem to do that: they like their Rust types, and we don't even warn
 anymore on using usize as an external type. Even `libc::size_t` is just 
 `pub type size_t = usize`.
+
+`usize` currently serves a dual purpose. When you use `usize`, you could be
+using it as an object size, or you could be using it as a pointer integer, (or
+you could be using it in another, unforseen way). Having an explicit `uptr` type
+allows us to semantically differentiate these two purposes.
 
 # Detailed design
 [design]: #detailed-design
@@ -109,6 +114,15 @@ More complexity.
 Continue doing what we're doing.
 
 Define `isize` as the upper bound always.
+
+Make some guarantees about pointers which don't compare equal resulting in
+`uptr`/`iptr` that don't compare equal, some guarantees around pointers
+which are inside the same object, and a guarantee that if you convert a pointer
+to a uptr and back to the original pointer type, it will compare equal. We would
+then define it everywhere, and keep the language about casts back having
+implementation defined behavior. This would allow us to write a CHERI Rust
+compiler, for example, but also allow us to write a Hash for pointers that works
+everywhere, and a memmove that works everywhere.
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
