@@ -109,6 +109,8 @@ of the closure:
 - Do nothing. It remains very easy to write unsound code using `CString` and `CStr::as_ptr`.
 - Move the `temporary_cstring_as_ptr` lint, which warns on the most common way to write said unsound
 code (calling `as_ptr` on a temporary `CString`) from Clippy to rustc.
+- Deprecate `as_ptr` and introduce a new function that does the same thing (we would have to bikeshed
+the name), but mark it `unsafe` due to the potential for unsoundness in combination with unsafe code.
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
