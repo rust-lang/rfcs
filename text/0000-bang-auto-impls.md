@@ -7,8 +7,7 @@
 [summary]: #summary
 
 Make `!` automatically implement traits for which it has only a single possible
-implementation. Add a `#[dont_impl_for_bang]` trait attribute to opt-out of
-this behaviour.
+implementation.
 
 # Motivation
 [motivation]: #motivation
@@ -77,48 +76,44 @@ implementation automatically derived. This includes all traits *except*:
 * Traits which have an associated type:
   Because there are many possible choices for the type.
 
-## The `#[dont_impl_for_bang]` attribute
+## Opting-out
 
 Even where it's possible to infer the impl for `!` there may be cases where
 people don't want this behaviour. For example, someone might define a marker
 trait `trait Marker { }` whose purpose is to only include some small class of
-types, not including `!`. For these cases this RFC proposes adding a
-`#[dont_impl_for_bang]` trait attribute used like this:
+types, not including `!`. For these cases this RFC proposes allowing the
+following to opt-out of automatically implementing a trait.
 
 ```rust
-#[dont_impl_for_bang]
-trait Marker {
-}
+impl !Marker for ! {}
 ```
 
 # Drawbacks
 [drawbacks]: #drawbacks
 
 * Add's more complexity to the language and compiler.
-* People who aren't aware of this feature might be surprised to learn that their
-  trait implements `!`. In most cases this won't be a huge problem since their
-  trait *should* implement `!`, however in the cases where it shouldn't they
-  will need to know about the likely-to-remain-obscure `#[dont_impl_for_bang]`
-  attribute to avoid it. At any rate, `!` is already a rather surprising type in
-  that it can magically transform into other types under the right conditions.
-  This is possible essentially because there is exactly one possible
-  implementation of `Into<T>` for `!` for all `T`, and the transformation only
-  occurs in dead code anyway. The author sees this RFC as a kind-of extension
-  of this behaviour.
+* People who aren't aware of this feature might be surprised to learn that
+  their trait implements `!`. In most cases this won't be a huge problem since
+  their trait *should* implement `!`, however in the cases where it shouldn't
+  they will need to know to opt-out. At any rate, `!` is already a rather
+  surprising type in that it can magically transform into other types under the
+  right conditions.  This is possible essentially because there is exactly one
+  possible implementation of `Into<T>` for `!` for all `T`, and the
+  transformation only occurs in dead code anyway. The author sees this RFC as
+  an extension in spirit of this behaviour.
 
 # Alternatives
 [alternatives]: #alternatives
 
 * Not do this.
-* Add an opt-in trait attribute instead.
-  Using a `#[derive_impl_for_bang]` attribute on traits which have an
-  inferable impl for `!` would be less cumbersome than writing these impls out
-  by hand. However it still comes with the problems of clutter and that most
-  traits could use this attribute but people won't think or won't bother to add
-  it.
+* Add a way to opt-in to derivining impls instead.  Using a `#[derive_impl(!)]`
+  attribute on traits which have an inferable impl for `!` would be less
+  cumbersome than writing these impls out by hand. However it still comes with
+  the problems of clutter and that most traits could use this attribute but
+  people won't think or won't bother to add it.
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
-Is there a more sensible name than`#[dont_impl_for_bang]`?
+* None known
 
