@@ -92,8 +92,8 @@ impl !Marker for ! {}
 [drawbacks]: #drawbacks
 
 * Add's more complexity to the language and compiler.
-* People who aren't aware of this feature might be surprised to learn that
-  their trait implements `!`. In most cases this won't be a huge problem since
+* People who aren't aware of this feature might be surprised to learn that `!`
+  implements their trait. In most cases this won't be a huge problem since
   their trait *should* implement `!`, however in the cases where it shouldn't
   they will need to know to opt-out. At any rate, `!` is already a rather
   surprising type in that it can magically transform into other types under the
