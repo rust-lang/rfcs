@@ -93,11 +93,11 @@ impl !Marker for ! {}
 
 * Add's more complexity to the language and compiler.
 * People who aren't aware of this feature might be surprised to learn that `!`
-  implements their trait. In most cases this won't be a huge problem since
-  their trait *should* implement `!`, however in the cases where it shouldn't
+  implements their trait. In most cases this won't be a huge problem since `!`
+  *should* implement their trait, however in the cases where it shouldn't
   they will need to know to opt-out. At any rate, `!` is already a rather
   surprising type in that it can magically transform into other types under the
-  right conditions.  This is possible essentially because there is exactly one
+  right conditions. This is possible essentially because there is exactly one
   possible implementation of `Into<T>` for `!` for all `T`, and the
   transformation only occurs in dead code anyway. The author sees this RFC as
   an extension in spirit of this behaviour.
