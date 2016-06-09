@@ -63,7 +63,13 @@ match self.basic_blocks[*start] {
 ## &move
 
 Add a new mutability `move`. `&move` references are references that own their
-contents, but not the memory they refer to.
+contents, but not the memory they refer to. Of course, `*move` raw pointers
+exist too as another family of newtyped integers.
+
+`&move` references are covariant in both their lifetime and type parameters
+(and `*move` pointers are covariant in their type parameter) for the same
+reason `Box` is - unlike `&mut`, there is nobody to return control to that
+can observe the changed type.
 
 When parsing a `move` closure, `&move |..` is parsed as `& (move |..` -
 as creating a `move` closure and taking an immutable reference to it, rather
@@ -74,10 +80,24 @@ Unlike some other proposals, the [RFC1214] rules remain the same - a
 `&'a move T` reference requires that `T: 'a`. We may want to relax these
 rules.
 
-`&move` references are tracked by the move checker just like ordinary
-values. They are linear - when they are dropped, their unmoved contents
-are dropped. It is possible to initialize/reinitialize them just like normal
-variables.
+Dereferences of `&move` references are tracked by the move checker like
+local variables. It is possible to move values in and out, both partially
+and completely, and the move checker will make sure that when the `&move`
+goes out of scope, the contained value is dropped only if it was not moved out.
+
+Dereferences of `*move` pointers behave similarly, except they are not dropped
+when they go out of scope, and are always treated by the move checker as fully
+initialized.
+
+For example, this is well-behaved code with `&move` but double-drops if
+`t` is changed to an `*move`:
+
+```Rust
+fn example(t: &move Option<Box<u32>>) {
+    drop(*t);
+    *t = None;
+}
+```
 
 Outside of the move checker, `&move` references always have valid contents.
 If you want to create a temporary uninitialized `&move` reference, you can
