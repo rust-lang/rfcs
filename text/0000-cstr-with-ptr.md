@@ -127,3 +127,5 @@ the name), but mark it `unsafe` due to the potential for unsoundness in combinat
     which might be convenient but would make it easier to "leak" the pointer (as easy as
     `let ptr = s.with_ptr(|p| p);`).
 
+- Does `f(CString::new(...).unwrap().as_ptr())` actually invoke undefined behavior, if `f` doesn't store the pointer? The author's reading of the Rust reference implies that the `CString` temporary is kept alive for the entire expression, so it's fine. However, some commenters in the RFC thread have opined that the behavior of this code is unspecified at best.
+
