@@ -124,7 +124,8 @@ fn example<T>(data: T) -> T {
 ```
 
 It is also restricted in the same manner as `Drop` with regards to
-implementations and dropck.
+implementations and dropck. Of course, a type is allowed to implement
+both `Drop` and `DerefMove` - `Box` implements them both.
 
 If a type implements `DerefMove`, then the move checker treats it
 as a tree:
