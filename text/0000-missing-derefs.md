@@ -120,13 +120,17 @@ the rules.
 Of course, it is possible to borrow `&move` references as either `&` or
 `&mut`, and not possible to borrow `&` or `&mut` references as `&move`.
 
+Taking an `&move` reference from a projection based on an rvalue behaves
+in the natural way - the rvalue is converted to an lvalue, and is (partially)
+dropped at the end of the relevant temporary scope.
+
 ## DerefMove
 
 This allows moving out of user-defined types.
 
 Add a `DerefMove` trait:
 ```Rust
-pub trait DerefMove: DerefMut + DerefPure {
+pub trait DerefMove: DerefMut {
     fn deref_move(&mut self) -> &move Self::Target;
 }
 ```
@@ -160,7 +164,31 @@ When such a type is dropped, `*x` (aka `x.deref_move()`) is dropped
 first if it was not moved from already, similarly to `Box` today. Then
 the normal destructor and the destructors of the fields are called.
 
-This means that `Vec<T>` can be implemented as
+### Impure `DerefMove`
+
+The natural lvalue-based behaviour of `DerefMove` is not possible if
+it is impure. However, the natural call-based translation is also
+problematic - it would involve an explicit call to `DerefMove`.
+
+Instead, these calls are handled a bit specially:
+    * The smart pointer is borrowed in an `&move` mode. If the smart pointer
+      was an rvalue, a drop for it is scheduled at the end of the current
+      temporary scope as usual.
+    * A special `NEW_TEMP = deref_move LVALUE` terminator is placed.
+      When executed, it marks the borrowed smart pointer's *interior* as
+      dropped - a second `DerefMove` will not be executed even if the call
+      to `DerefMove::deref_move` panics.
+    * A drop of `NEW_TEMP` is scheduled to the end of the current temporary
+      scope as usual.
+    * `*NEW_TEMP` is the lvalue result of the deref.
+
+Because `NEW_TEMP` is a value of type `&move _`, its exterior destructor
+is a no-op - if the interior is moved out immediately, the second drop
+scheduled has no effect.
+
+### Pure Example - `Vec<T>`:
+
+`Vec<T>` can now be implemented in this way:
 
 ```Rust
 pub struct Vec<T> {
@@ -201,6 +229,46 @@ unsafe impl<T> ops::DerefPure for Vec<T> {}
 // that
 ```
 
+### Impure `Vec<T>`
+
+If we neglected to implement `DerefPure` for `Vec<T>`, things will
+mostly work. Obviously, `Vec<T>` will not be usable with box patterns,
+but other things will work fairly well.
+
+```Rust
+fn this works() {
+    // here `*v` is moved out immediately by the `&move` borrow,
+    // and we remain with the exterior drop scheduled.
+    let v = vec![box 0, box 1];
+    let ptr = &move *v;
+
+    // similarly, `*v` is moved out immediately once, and the
+    // exterior drop remains.
+    let v = vec![box 0, box 1];
+    match *v {
+        [a, b] => { /* .. */ },
+	ref move _j => { /* .. */ }
+    }
+
+    let v = vec![box 0, box 1];
+    {
+	// unlike the previous example, `*v` is not moved out of.
+	// It will be dropped at the end of the temporary scope - i.e
+	// the block.
+	//
+	// The exterior will be dropped at the end of the function,
+	// of course.
+	//
+	// If `Vec` is `DerefPure` however, this operation will be a
+	// no-op, and the entirety of `v` will be dropped at EOS.
+	match *v {
+	    [a, b] if false => { /* .. */ } // force a move
+	    _ => {}
+	}
+    }
+}
+```
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
@@ -221,6 +289,12 @@ equivalent to `Unique<T>`.
 Add more features of the move checker to the type-system, e.g. strongly
 linear `&out`. That is quite complex, and requires more considerations
 wrt. panics.
+
+A call to an impure `DerefMove` that panics before generating the move
+pointer will leak the interior. I think this is better than potentially
+double-dropping the interior (if a panic occurs *after* the move pointer
+is created) - in any case, attempting to drop the interior will call
+`DerefMove` again, which is very likely to cause a double panic and crash.
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
