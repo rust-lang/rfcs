@@ -60,6 +60,10 @@ match self.basic_blocks[*start] {
 };
 ```
 
+Because of the special interactions with `DerefMove`, `DerefPure` has to
+be treated like `DerefMove`/`Drop` with respect to impls - impls have to
+be per-ADT.
+
 ## &move
 
 Add a new mutability `move`. `&move` references are references that own their
@@ -186,6 +190,50 @@ Because `NEW_TEMP` is a value of type `&move _`, its exterior destructor
 is a no-op - if the interior is moved out immediately, the second drop
 scheduled has no effect.
 
+This means that using `DerefMove` has different drop orders depending on
+whether `DerefPure` is implemented:
+
+```Rust
+fn exmaple() {
+    let x = Box::new((4, NoisyDrop));
+    {
+        let _i = &move (x.0);
+    }
+    mark()
+}
+```
+
+If `Box` is `DerefPure`, then ignoring unwinding, the code is desugared into
+```
+    tmp0 = (4, NoisyDrop)
+    x = call Box::new(tmp1)
+block:
+    _i = &move (*x).0 ; `_i` is a `&move i32` - it does not need to be dropped
+block_end:
+    call mark()
+    drop x ; all of `x`, including `(*x).1`, is dropped here
+```
+
+If it is not, then the code is desugared into
+```
+    tmp0 = (4, NoisyDrop)
+    x = Box::new(tmp1)
+block:
+    tmp1 = deref_move x
+    _i = &move tmp1.0
+    drop tmp1 ; this drops `(*x).1`
+block_end:
+    call mark()
+    drop x ; this drops the rest of `x` - i.e. the allocation
+```
+
+Observe that in the first case `NoisyDrop` is dropped *after* the call
+to mark, while in the second case it is dropped *before*.
+
+Because multiple copies of the block can be within a conditional, I don't
+see an easy way of avoiding it short of having `DerefMove` require
+`DerefPure`.
+
 ### Pure Example - `Vec<T>`:
 
 `Vec<T>` can now be implemented in this way:
@@ -295,6 +343,10 @@ pointer will leak the interior. I think this is better than potentially
 double-dropping the interior (if a panic occurs *after* the move pointer
 is created) - in any case, attempting to drop the interior will call
 `DerefMove` again, which is very likely to cause a double panic and crash.
+
+Impure `DerefMove` has a different destruction order from pure
+`DerefMove` - should we forbid it? Is there a nice way to implement
+the "pure" destruction order?
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
