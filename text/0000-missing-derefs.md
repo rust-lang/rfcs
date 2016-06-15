@@ -68,7 +68,7 @@ be per-ADT.
 
 Add a new mutability `move`. `&move` references are references that own their
 contents, but not the memory they refer to. Of course, `*move` raw pointers
-exist too as another family of newtyped integers.
+exist too as another family of pointers.
 
 `&move` references are covariant in both their lifetime and type parameters
 (and `*move` pointers are covariant in their type parameter) for the same
