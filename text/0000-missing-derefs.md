@@ -68,7 +68,7 @@ be per-ADT.
 
 Add a new mutability `move`. `&move` references are references that own their
 contents, but not the memory they refer to. Of course, `*move` raw pointers
-exist too as another family of newtyped integers.
+exist too as another family of pointers.
 
 `&move` references are covariant in both their lifetime and type parameters
 (and `*move` pointers are covariant in their type parameter) for the same
@@ -175,11 +175,11 @@ it is impure. However, the natural call-based translation is also
 problematic - it would involve an explicit call to `DerefMove`.
 
 Instead, these calls are handled a bit specially:
-    * The smart pointer is borrowed in an `&move` mode. If the smart pointer
-      was an rvalue, a drop for it is scheduled at the end of the current
-      temporary scope as usual.
-    * A special `NEW_TEMP = deref_move LVALUE` terminator is placed.
-      When executed, it marks the borrowed smart pointer's *interior* as
+    * The value being dereferenced is borrowed in an `&move` mode. If it is an
+      rvalue, a drop for it is scheduled at the end of the current temporary
+      scope, as usual.
+    * A special `NEW_TEMP = deref_move LVALUE` instruction is placed.
+      When executed, it marks the borrowed value's *interior* as
       dropped - a second `DerefMove` will not be executed even if the call
       to `DerefMove::deref_move` panics.
     * A drop of `NEW_TEMP` is scheduled to the end of the current temporary
