@@ -60,6 +60,16 @@ There are two ways to specify generic bounds on closures:
 
 When using the `where` syntax, the braces around the closure body are mandatory.
 
+If the `move` keyword is used then it must appear before the generic parameter list:
+
+```rust
+move <T: Debug>|x: T| println!("{:?}", x);
+
+move <T>|x: T| where T: Debug {
+    println!("{:?}", x);
+}
+```
+
 ## Implementation
 
 The generated closure type will have generic implementations of `Fn`, `FnMut` and `FnOnce` with the provided type bounds. This is similar to the way closures currently have generic implementations over lifetimes.
@@ -77,4 +87,4 @@ None
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
-None
+What are the syntax interactions of `move` generic closures with the proposed `&move` reference type?
