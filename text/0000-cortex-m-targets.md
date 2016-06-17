@@ -27,8 +27,8 @@ Currently, cross compiling for a Cortex-M microcontroller requires:
 5. A linker script that describes the memory layout (Flash, RAM, memory mapped peripherals, etc.) of
    the target device if building an executable.
 
-This RFC aims to ease the cross compilation setup by providing a new `rust-core` "component" that
-can be installed via `rustup` and packages most of the requirements listed above:
+This RFC aims to ease the cross compilation setup by providing a `rust-std` "component" that can be
+installed via `rustup` and packages most of the requirements listed above:
 
 - [x] **Target specification file**. Writing this file requires not only knowing which processor one
   wants to compile for but also the many LLVM options that control code generation. Furthermore, the
@@ -37,11 +37,11 @@ can be installed via `rustup` and packages most of the requirements listed above
 - [x] **Standard crates**. Cross compiling these crates is relatively easy now that the Rust
   repository has a Cargo based build system. However, the user still has to manually package the
   compiled crates in a "sysroot" and then manage a sysroot (e.g. recompile it when they update their
-  nightly compiler) for each Cortex-M target they want to work with. Once the `rust-core` component
+  nightly compiler) for each Cortex-M target they want to work with. Once the `rust-std` component
   is available, users will be able to use tools like `rustup` to easily manage several sysroots
   across the different Rust channels.
 - [x] `compiler-rt`. Cross compiling `compiler-rt` is (slightly) annoying as its build system
-  requires having `cmake` and `llvm-config` installed. The `rust-core` component will ship with a
+  requires having `cmake` and `llvm-config` installed. The `rust-std` component will ship with a
   pre-compiled `libcompiler-rt.a` library.
 - [ ] **Cross linker**. Automatic installation of toolchains or SDKs is out of scope for this RFC as
   the ideal solution must be general enough to support other targets like Android and iOS.
@@ -241,9 +241,10 @@ that this ensures maximum interoperability with pre-compiled C libraries. For ex
 library has been compiled for the Cortex-M3, which doesn't have a FPU, it can still be linked with
 objects compiled for the `cortex-m4f` target because they also use the soft-float ABI.
 
-## The `rust-core` component
+## The `rust-std` component
 
-The build system will learn to package a new `rust-core` component that will look like this:
+The build system will learn to package a slightly modified `rust-std` component that will look like
+this:
 
 ```
 $ tree .
@@ -259,10 +260,11 @@ $ tree .
             └── librustc_unicode-$HASH.rlib
 ```
 
-This new component will be similar to the existing `rust-std` component. The only difference is that
-the `rust-core` component will ship with a smaller set of standard crates; only the ones that are
-*freestanding*. A freestanding crate is a crate that doesn't depend on an underlying OS, kernel or
-runtime. Currently, this is the full list of freestanding crates:
+The only difference between the `rust-std` component for Cortex-M targets and the `rust-std`
+component for other targets is that the `rust-std` component will ship with a smaller set of
+standard crates; only the ones that are *freestanding*. A freestanding crate is a crate that doesn't
+depend on an underlying OS, kernel or runtime. Currently, this is the full list of freestanding
+crates:
 
 - `alloc`
 - `collections`
@@ -279,7 +281,7 @@ Once these changes are in place, this is how the user experience will look like:
 
 ### Building a library
 
-Should be as straightforward as installing the `rust-core` component for the desired target (via
+Should be as straightforward as installing the `rust-std` component for the desired target (via
 rustup or any other mean) and using the `--target` flag.
 
 ```
@@ -489,7 +491,7 @@ Although more standard these target triples are more cryptic. It's unclear that 
 `cortex-m*` targets make the election of the target obvious. This issue can be addressed with
 documentation, though.
 
-In the case of the `thumbv7em-none-eabi*` targets, the crates that ship with the `rust-core`
+In the case of the `thumbv7em-none-eabi*` targets, the crates that ship with the `rust-std`
 component are always compiled without CPU optimizations and, as a consequence, don't contain any FPU
 instruction as all their floating point operations get lowered to intrinsics. This means that a
 program compiled with flags that enable FPU instructions *may* (\*) still end up using intrinsics
