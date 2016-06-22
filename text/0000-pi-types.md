@@ -38,7 +38,7 @@ time.
 
 ## Type checking
 
-Type checking is done eagerly by evaluating the bounds and constexprs.
+Type checking is done lazily by evaluating the bounds and constexprs.
 
 # Motivation
 [motivation]: #motivation
@@ -136,30 +136,50 @@ function is invoked given constant parameters `<a, b...>`, the compiler
 evaluates this expression, and if it returns `false`, an aborting error is
 invoked.
 
+To sum up, the check happens at monomorphization, thus a function can type
+check until it is called (note that this is already possible in present day
+Rust, through `where` bounds).
+
 ## The type grammar
 
 These extensions expand the type grammar to:
 
-    T = scalar (i32, u32, ...)        // Scalars
-      | X                             // Type variable
-      | Id<P0..Pn>                    // Nominal type (struct, enum)
-      | &r T                          // Reference (mut doesn't matter here)
-      | O0..On+r                      // Object type
-      | [T]                           // Slice type
-      | for<r..> fn(T1..Tn) -> T0     // Function pointer
-      | <P0 as Trait<P1..Pn>>::Id     // Projection
-      | C                             // const types
-    F = c                             // const fn name
-    C = E                             // Pi constructed const type
-    P = r                             // Region name
-      | T                             // Type
-    O = for<r..> TraitId<P1..Pn>      // Object type fragment
-    r = 'x                            // Region name
-    E = F(E)                          // Constant function application.
-      | p                             // const type parameter
-      | [...]                         // etc.
+         T = scalar (i32, u32, ...)        // Scalars
+           | X                             // Type variable
+           | Id<P0..Pn>                    // Nominal type (struct, enum)
+           | &r T                          // Reference (mut doesn't matter here)
+           | O0..On+r                      // Object type
+           | [T]                           // Slice type
+           | for<r..> fn(T1..Tn) -> T0     // Function pointer
+           | <P0 as Trait<P1..Pn>>::Id     // Projection
+    +      | C                             // const types
+    +    F = c                             // const fn name
+    +    C = E                             // Pi constructed const type
+         P = r                             // Region name
+           | T                             // Type
+         O = for<r..> TraitId<P1..Pn>      // Object type fragment
+         r = 'x                            // Region name
+    +    E = F(E)                          // Constant function application.
+    +      | p                             // const type parameter
+    +      | [...]                         // etc.
 
 Note that the `const` prefix is only used when declaring the parameter.
+
+## `impl` unification
+
+Only one `where` bound can be specified on each disjoint implementations (for
+possible extensions, see below).
+
+To find the right implementation, we use the data from the type inference (see
+the inference rules above). Since the parameters are, in fact, not much
+semantically different from normal generic parameters, we can resolve it is a
+normal manner.
+
+Likewise are disjointness checks based on structural equality.
+
+Since not all parameters' edges are necessarily the identity function,
+dispatching these would be undecidable. A way to solve this problem is to
+introduce some syntax allowing to specify the `impl` parameters.
 
 ## An example
 
@@ -241,9 +261,9 @@ _arguments_ instead of constant _parameters_. This allows for bounds on e.g.
 fn do_something(const x: u32) -> u32 where x < 5 { x }
 ```
 
-### Angle brackets
+### Square brackets
 
-Use angle brackets for dependent parameters:
+Use square brackets for dependent parameters:
 
 ```rust
 fn do_something[x: u32]() -> u32 where x < 5 { x }
@@ -260,6 +280,11 @@ fn do_something<const x: u32>() -> u32 where x < 5 { x }
 
 do_something::<2>();
 ```
+
+### Allow multiple implementation bounds
+
+Allow overlapping implementations carrying bounds, such that only one of the
+conditions may be true under monomorphization.
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
