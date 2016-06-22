@@ -52,6 +52,8 @@ There is a whole lot of other usecases as well. These allows certain often
 requested features to live in standalone libraries (e.g., bounded-integers,
 type level arithmetics, lattice types).
 
+It allows for creating powerful abstractions without type-level hackery.
+
 # Detailed design
 [design]: #detailed-design
 
@@ -245,6 +247,34 @@ fn main() {
 }
 ```
 
+# How we teach this
+
+This RFC aims to keep a "symmetric" syntax to the current construct, giving an
+intuitive behavior, however there are multiple things that are worth explaining
+and/or clearing up:
+
+1. What are Π-types? How are they different from those from other languages?
+
+2. One will have to understand what `const fn`s are and how they are linked to
+   Π-types.
+
+3. What are the usecases?
+
+4. What are the edge cases, and how can one work around those (e.g. failed
+   unification)?
+
+5. How can I use this to create powerful abstractions?
+
+6. Extensive examples.
+
+Moreover, we need to "informalize" the rules defined in this RFC.
+
+I believe this subject is complex enough to have its own chapter in The Holy
+Book, answering these questions in detail.
+
+Lastly, the FAQ will need to be updated to answer various questions related to
+this.
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
@@ -325,3 +355,5 @@ Should we segregate the value parameters and type parameters by `;`?
 Should disjoint implementations satisfying some bound be allowed?
 
 Should there be a way to parameterize functions dynamically?
+
+What API would need to be rewritten to take advantage of Π-types?
