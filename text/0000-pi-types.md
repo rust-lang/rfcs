@@ -9,7 +9,36 @@
 We propose a simple, yet sufficiently expressive, addition of dependent-types
 (also known as, Π-types and value-types).
 
-Type checking remains decidable.
+Type checking will not require SMT-solvers or other forms of theorem provers.
+
+## Generic value parameters
+
+A `const` type parameter acts like a generic parameter, containing a constant
+expression. Declaring a generic parameter `a: const usize`, creates a constant
+variable `a` of type `usize`.
+
+One can create implementations, structs, enums, and traits, abstracting over
+this generic value parameter.
+
+We use the syntax `a: const value` to denote the constant type parameter, `a`,
+of constant value, `value`.  This can be used at both type-level (as parameter)
+and value-level (as expression).
+
+## Compile time calculations on constant parameters
+
+Since it is simply consisting of constexprs, one can apply constant functions
+(`const fn`) to the parameter, to perform compile time, type level calculations
+on the parameter. This allows for great expressiveness as `const fn` improves.
+
+## Expression `where` bounds
+
+The second construct added is the constant expression in `where` bounds. These
+contains statements about the constant parameters, which are checked at compile
+time.
+
+## Type checking
+
+Type checking is done eagerly by evaluating the bounds and constexprs.
 
 # Motivation
 [motivation]: #motivation
@@ -67,7 +96,7 @@ function.
 
 ## Type inference
 
-Since we are able to evaluate the function on compile time, we can easily infer
+Since we are able to evaluate the function at compile time, we can easily infer
 const types, by adding an unification relation, from the rule above.
 
 The relational edge between two const types is simple a const fn, which is
@@ -179,4 +208,5 @@ more complex as well.
 
 What syntax is preferred? How does this play together with HKP? Can we improve
 the converse type inference? What should be the naming conventions? Should we
-segregate the value parameters and type parameters by `;`?
+segregate the value parameters and type parameters by `;`? Disjoint
+implementations satisfying some bound?
