@@ -156,7 +156,7 @@ struct Array<n: const usize, T> {
 impl<n: const usize, T> Array<n, T> {
     // This is simple statically checked indexing.
     fn const_index<i: const usize>(&self) -> &T where i < n {
-    //                        note that this is constexpr  ^^^^^
+    //                   note that this is constexpr  ^^^^^
         unsafe { self.content.unchecked_index(i) }
     }
 
@@ -202,6 +202,41 @@ Another draw back is the lack of implication proves.
 
 Use full SMT-based dependent types. These are more expressive, but severely
 more complex as well.
+
+## Alternative syntax
+
+The syntax is described above is, in fact, ambiguous, and multiple other better or worse
+candidates exists:
+
+### Blending the value parameters into the arguments
+
+This one is an interesting one. It allows for defining functions with constant
+_arguments_ instead of constant _parameters_. This allows for bounds on e.g.
+`atomic::Ordering`.
+
+```rust
+fn do_something(const x: u32) -> u32 where x < 5 { x }
+```
+
+### Angle brackets
+
+Use angle brackets for dependent parameters:
+
+```rust
+fn do_something[x: u32]() -> u32 where x < 5 { x }
+
+do_something::[2]();
+```
+
+### `const` _before_ the parameter
+
+Use the proposed syntax in similar manner to constant definitions:
+
+```rust
+fn do_something<const x: u32>() -> u32 where x < 5 { x }
+
+do_something::<2>();
+```
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
