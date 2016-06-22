@@ -14,15 +14,15 @@ Type checking will not require SMT-solvers or other forms of theorem provers.
 ## Generic value parameters
 
 A `const` type parameter acts like a generic parameter, containing a constant
-expression. Declaring a generic parameter `a: const usize`, creates a constant
+expression. Declaring a generic parameter `const a: usize`, declares a constant
 variable `a` of type `usize`.
 
 One can create implementations, structs, enums, and traits, abstracting over
 this generic value parameter.
 
-We use the syntax `a: const value` to denote the constant type parameter, `a`,
-of constant value, `value`.  This can be used at both type-level (as parameter)
-and value-level (as expression).
+Such a parameter acts type-like in the context of types, generics, and
+polymorphism, and value-like in the context of expressions, function bodies,
+and applications.
 
 ## Compile time calculations on constant parameters
 
@@ -38,7 +38,8 @@ time.
 
 ## Type checking
 
-Type checking is done lazily by evaluating the bounds and constexprs.
+Type checking is done by using a transitive rule, such that `where` bounds must
+be implied by the caller.
 
 # Motivation
 [motivation]: #motivation
@@ -56,24 +57,25 @@ type level arithmetics, lattice types).
 
 ## The new value-type construct, `const`
 
-The first construct, we will introduce is `ε → τ` constructor, `const`. All this
-does is taking a const-expr (struct construction, arithmetic expression, and so
-on) and constructs a _type-level version_ of this.
+The first construct, we will introduce one allowing us to declare `ε → τ`
+constructors (value dependent types).
 
-In particular, we extend the type grammar with an additional `const C`, a type
-whose semantics can be described as follows,
+In a sense, `const` "bridges" between types and values.
 
-    ValueTypeRepresentation:
-      Π ⊢ x: const c
+Declaring a parameter `const x: T` allows use in both expression context (as a
+value of type `T`) and type context (as a type parameter).
+
+Such a parameter is declared, like type parameters, in angle brackets.
+
+The expr behavior is described as:
+
+    ValueParameterDeclaration:
+      Π ⊢ const x: T
       --------------
-      Π ⊢ x = c
+      Π ⊢ x: T
 
-In other words, if `x` has type `const c`, its value _is_ `c`. That is, any
-constexpr, `c`, will either be of its underlying type or of the type, `const
-c`.
-
-It is important to understand that values of `const c` are constexprs, and
-follows their rules.
+On the type level, we use the very same semantics as the ones generic
+parameters currently follows.
 
 ## `const fn`s as Π-constructors
 
@@ -82,34 +84,36 @@ complications such as SMT-solvers and so on.
 
 Thus, we follow a purely constructible model, by using `const fn`s.
 
-Let `f` be a `const fn` function. From the rules of `const fn`s and constexprs,
-we can derive the rule,
-
-    PiConstructorInference:
-      Π ⊢ x: const c
-      Π ⊢ f(c): τ
-      -----------------
-      Π ⊢ f(x): const τ
-
 This allows one to take some const parameter and map it by some arbitrary, pure
-function.
+function, following the rules described in [RFC 0911](https://github.com/rust-lang/rfcs/blob/master/text/0911-const-fn.md#detailed-design).
 
 ## Type inference
 
 Since we are able to evaluate the function at compile time, we can easily infer
-const types, by adding an unification relation, from the rule above.
+const parameters, by adding an unification relation, simply
 
-The relational edge between two const types is simple a const fn, which is
+    PiRelationInference
+      Γ ⊢ y = f(x)
+      Γ ⊢ T: U<y>
+      --------------
+      Γ ⊢ T: U<f(x)>
+
+The relational edge between two const parameters is simple a const fn, which is
 resolved under unification.
 
 We add an extra rule to improve inference:
 
-    PiDependencyInference:
+    DownLiftEquality:
       Γ ⊢ T: A → 𝓤
+      Γ ⊢ c: A
+      Γ ⊢ x: A
       Γ ⊢ a: T<c>
       Γ ⊢ a: T<x>
       --------------
-      Γ ⊢ x: const c
+      Γ ⊢ c = x
+
+So, if two types share constructor by some Π-constructor, share a value, their
+value parameter is equal.
 
 This allows us infer:
 
@@ -136,20 +140,21 @@ function is invoked given constant parameters `<a, b...>`, the compiler
 evaluates this expression, and if it returns `false`, an aborting error is
 invoked.
 
-To sum up, the check happens at monomorphization, thus a function can type
-check until it is called (note that this is already possible in present day
-Rust, through `where` bounds).
+To sum up, the check happens at monomorphization. The callers bounds must imply
+the invoked functions' bounds:
 
-### (Optional extension:) Transitivity of bounds.
+### Transitivity of bounds.
 
-An optional extension is to require a bound of a function to imply the bounds
-of the functions it calls, through a simple unification + alpha-substitution
-algorithm.
+We require a bound of a function to imply the bounds of the functions it calls,
+through a simple unification + alpha-substitution algorithm.
 
 The compiler would then enforce that if `f` calls `g`, `unify(bound(g))	⊆
 unify(bound(f))` (by structural equality).
 
-## The type grammar
+This is done under type unification. Thus, we only need to check the bounds at
+the top level.
+
+## The grammar
 
 These extensions expand the type grammar to:
 
@@ -172,7 +177,7 @@ These extensions expand the type grammar to:
     +      | p                             // const type parameter
     +      | [...]                         // etc.
 
-Note that the `const` prefix is only used when declaring the parameter.
+Note that the `const` syntax is only used when declaring the parameter.
 
 ## `impl` unification
 
@@ -198,17 +203,17 @@ This is the proposed syntax:
 use std::{mem, ptr};
 
 // We start by declaring a struct which is value dependent.
-struct Array<n: const usize, T> {
+struct Array<const n: usize, T> {
     // `n` is a constexpr, sharing similar behavior with `const`s, thus this
     // is possible.
     content: [T; n],
 }
 
 // We are interested in exploring the `where` clauses and Π-constructors:
-impl<n: const usize, T> Array<n, T> {
+impl<const n: usize, T> Array<n, T> {
     // This is simple statically checked indexing.
-    fn const_index<i: const usize>(&self) -> &T where i < n {
-    //                   note that this is constexpr  ^^^^^
+    fn checked_index<const i: usize>(&self) -> &T where i < n {
+        //                 note that this is constexpr  ^^^^^
         unsafe { self.content.unchecked_index(i) }
     }
 
@@ -234,9 +239,9 @@ impl<n: const usize, T> Array<n, T> {
 fn main() {
     let array: Array<2, u32> = Array { content: [1, 2] };
 
-    assert_eq!(array.const_index::<0>(), 1);
-    assert_eq!(array.const_index::<1>(), 2);
-    assert_eq!(array.push(3).const_index::<2>(), 3);
+    assert_eq!(array.checked_index::<0>(), 1);
+    assert_eq!(array.checked_index::<1>(), 2);
+    assert_eq!(array.push(3).checked_index::<2>(), 3);
 }
 ```
 
@@ -247,7 +252,7 @@ If we want to have type-level Turing completeness, the halting problem is
 inevitable. One could "fix" this by adding timeouts, like the current recursion
 bounds.
 
-Another draw back is the lack of implication proves.
+Another drawback is the lack of implication proves.
 
 # Alternatives
 [alternatives]: #alternatives
@@ -257,8 +262,8 @@ more complex as well.
 
 ## Alternative syntax
 
-The syntax is described above is, in fact, ambiguous, and multiple other better or worse
-candidates exists:
+The syntax is described above is, in fact, ambiguous, and multiple other better
+or worse candidates exists:
 
 ### Blending the value parameters into the arguments
 
@@ -270,6 +275,8 @@ _arguments_ instead of constant _parameters_. This allows for bounds on e.g.
 fn do_something(const x: u32) -> u32 where x < 5 { x }
 ```
 
+From the callers perspective, this one is especially nice to work with.
+
 ### Square brackets
 
 Use square brackets for dependent parameters:
@@ -280,15 +287,24 @@ fn do_something[x: u32]() -> u32 where x < 5 { x }
 do_something::[2]();
 ```
 
-### `const` _before_ the parameter
+### `const` as an value-type constructor
 
 Use the proposed syntax in similar manner to constant definitions:
 
 ```rust
-fn do_something<const x: u32>() -> u32 where x < 5 { x }
+fn do_something<x: const u32>() -> u32 where x < 5 { x }
 
 do_something::<2>();
 ```
+
+### `with` instead of `where`
+
+Some have raised concerns of mixing things up there. Thus one can use the
+syntax `with` to denote bounds instead.
+
+### Lazily type check without transitivity rule
+
+Simply evaluate the bounds when calling. Remove the requirement of implication.
 
 ### Allow multiple implementation bounds
 
@@ -298,7 +314,14 @@ conditions may be true under monomorphization.
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
-What syntax is preferred? How does this play together with HKP? Can we improve
-the converse type inference? What should be the naming conventions? Should we
-segregate the value parameters and type parameters by `;`? Disjoint
-implementations satisfying some bound?
+What syntax is preferred?
+
+How does this play together with HKP?
+
+What should be the naming conventions?
+
+Should we segregate the value parameters and type parameters by `;`?
+
+Should disjoint implementations satisfying some bound be allowed?
+
+Should there be a way to parameterize functions dynamically?
