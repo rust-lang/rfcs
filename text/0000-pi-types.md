@@ -319,13 +319,33 @@ do_something::[2]();
 
 ### `const` as an value-type constructor
 
-Use the proposed syntax in similar manner to constant definitions:
+Create a keyword, `const`:
 
 ```rust
 fn do_something<x: const u32>() -> u32 where x < 5 { x }
 
 do_something::<2>();
 ```
+
+### An extension: A constexpr type constructor
+
+Add some language item type constructor, `Const<T>`, allowing for constructing
+a constexpr-only types.
+
+`x: T` can coerce into `Const<T>` if `x` is constexpr. Likewise, can `Const<T>`
+coerce into `T`.
+
+```rust
+fn do_something(x: Const<u32>) -> u32 { x }
+
+struct Abc {
+    constfield: Const<u32>,
+}
+```
+
+It is unclear how it plays together with `where` bounds.
+
+The pro is that it adds ability to implement e.g. constant indexing, `Index<Const<usize>>`.
 
 ### `with` instead of `where`
 
