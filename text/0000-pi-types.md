@@ -140,6 +140,15 @@ To sum up, the check happens at monomorphization, thus a function can type
 check until it is called (note that this is already possible in present day
 Rust, through `where` bounds).
 
+### (Optional extension:) Transitivity of bounds.
+
+An optional extension is to require a bound of a function to imply the bounds
+of the functions it calls, through a simple unification + alpha-substitution
+algorithm.
+
+The compiler would then enforce that if `f` calls `g`, `unify(bound(g))	⊆
+unify(bound(f))` (by structural equality).
+
 ## The type grammar
 
 These extensions expand the type grammar to:
