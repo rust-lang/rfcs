@@ -127,7 +127,7 @@ fn foo<const n: usize, const l: [u32; n]>() -> [u32; n] {
 }
 
 // We know n from the length of the array.
-let l = baz::<_, [1, 2, 3, 4, 5, 6]>();
+let l = foo::<_, [1, 2, 3, 4, 5, 6]>();
 //            ^   ^^^^^^^^^^^^^^^^
 ```
 
