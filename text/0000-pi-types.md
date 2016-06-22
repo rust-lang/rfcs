@@ -73,7 +73,7 @@ The expr behavior is described as:
 
     ValueParameterDeclaration:
       Π ⊢ const x: T
-      --------------
+      ──────────────
       Π ⊢ x: T
 
 On the type level, we use the very same semantics as the ones generic
@@ -97,7 +97,7 @@ const parameters, by adding an unification relation, simply
     PiRelationInference
       Γ ⊢ y = f(x)
       Γ ⊢ T: U<y>
-      --------------
+      ──────────────
       Γ ⊢ T: U<f(x)>
 
 The relational edge between two const parameters is simple a const fn, which is
@@ -111,7 +111,7 @@ We add an extra rule to improve inference:
       Γ ⊢ x: A
       Γ ⊢ a: T<c>
       Γ ⊢ a: T<x>
-      --------------
+      ──────────────
       Γ ⊢ c = x
 
 So, if two types share constructor by some Π-constructor, share a value, their
