@@ -88,7 +88,7 @@ we can derive the rule,
     PiConstructorInference:
       Π ⊢ x: const c
       Π ⊢ f(c): τ
-      --------------
+      -----------------
       Π ⊢ f(x): const τ
 
 This allows one to take some const parameter and map it by some arbitrary, pure
@@ -101,6 +101,29 @@ const types, by adding an unification relation, from the rule above.
 
 The relational edge between two const types is simple a const fn, which is
 resolved under unification.
+
+We add an extra rule to improve inference:
+
+    PiDependencyInference:
+      Γ ⊢ T: A → 𝓤
+      Γ ⊢ a: T<c>
+      Γ ⊢ a: T<x>
+      --------------
+      Γ ⊢ x: const c
+
+This allows us infer:
+
+```rust
+// [T; N] is a constructor, T → usize → 𝓤 (parameterize over T and you get A → 𝓤).
+fn foo<n: const usize, l: const [u32; n]>() -> [u32; n] {
+    // ^ note how l depends on n.
+    l
+}
+
+// We know n from the length of the array.
+let l = baz::<_, [1, 2, 3, 4, 5, 6]>();
+//            ^   ^^^^^^^^^^^^^^^^
+```
 
 ## `where` clauses
 
