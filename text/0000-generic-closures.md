@@ -77,14 +77,26 @@ The generated closure type will have generic implementations of `Fn`, `FnMut` an
 # Drawbacks
 [drawbacks]: #drawbacks
 
-None
+Increased language complexity.
 
 # Alternatives
 [alternatives]: #alternatives
 
-None
+If the given syntax is determined to be ambiguous, this one can be used instead:
+
+```rust
+for<T: Debug>|x: T| println!("{:?}", x);
+
+for<T>|x: T| where T: Debug {
+    println!("{:?}", x);
+}
+```
+
+We could just not add this, however it would make generic operations on tuples less ergonomic. This feature is going to be even more useful when variadic generics are added in the future.
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
 What are the syntax interactions of `move` generic closures with the proposed `&move` reference type?
+
+Is the syntax in this RFC ambiguous for the parser?
