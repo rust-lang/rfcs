@@ -555,55 +555,57 @@ This RFC aims to keep a "symmetric" syntax to the current construct, giving an
 intuitive behavior, however there are multiple things that are worth explaining
 and/or clearing up:
 
-Q: What are dependent types?
+**What are dependent types?**
 
-A: Dependent types are types, which _depends_ on values, instead of types. For
-   example, [T; 3], is dependent since it depends on the value, `3`, for
-   constructing the type. Dependent types, in a sense, is similar to normal
-   generics, where types can depend on other types (e.g. `Vec<T>`), whereas
-   dependent types depends on values.
+Dependent types are types, which _depend_ on values, instead of types. For
+example, [T; 3], is dependent since it depends on the value, `3`, for
+constructing the type. Dependent types, in a sense, are similar to normal
+generics, where types can depend on other types (e.g. `Vec<T>`), whereas
+dependent types depend on values.
 
-Q: We achieve this by using const fns, which allow us to take ...
+**We achieve this by using const fns, which allow us to take ...**
 
-A: Various other languages have dependent type systems. Strictly speaking, all
-   that is required for a dependent type system is value-to-type constructors,
-   although some languages (coq, agda, etc.) goes a step further and remove the
-   boundary between value and type. Unfortunately, as cool as it sounds, it has
-   some severe disadvantages: most importantly, the type checking becomes
-   undecidable. Often you would need some form of theorem prover to type check
-   the program, and those have their limitations too.
+Various other languages have dependent type systems. Strictly speaking, all
+that is required for a dependent type system is value-to-type constructors,
+although some languages (coq, agda, etc.) goes a step further and remove the
+boundary between value and type. Unfortunately, as cool as it sounds, it has
+some severe disadvantages: most importantly, the type checking becomes
+undecidable. Often you would need some form of theorem prover to type check
+the program, and those have their limitations too.
 
-Q: What are `const fn` and how is it linked to this RFC?
+**Q: What are `const fn` and how is it linked to this RFC?**
 
-A: `const fn` is a function, which can be evaluated at compile time. While it
-   is currently rather limited, in the future it will be extended (see
-   [Miri](https://github.com/solson/miri)). You can use constexprs to take one
-   type-level value, and non-trivially calculate a new one.
+`const fn` is a function, which can be evaluated at compile time. While it
+is currently rather limited, in the future it will be extended (see
+[Miri](https://github.com/solson/miri)). You can use constexprs to take one
+type-level value, and non-trivially calculate a new one.
 
-Q: What are the usecases?
+**Q: What are the usecases?**
 
-A: There are many usecases for this. The most prominent one, perhaps, is
-   abstracting over generically sized arrays. Dependent types allows one to lift
-   the length of the array up to the type-level, effectively allowing one to
-   parameterize over them.
+There are many usecases for this. The most prominent one, perhaps, is
+abstracting over generically sized arrays. Dependent types allows one to lift
+the length of the array up to the type-level, effectively allowing one to
+parameterize over them.
 
-Q: What are the edge cases, and how can one work around those (e.g. failed
-   unification)?
+**Q: What are the edge cases, and how can one work around those (e.g. failed
+   unification)?**
 
-A: If you use this a lot, you will likely encounter edge cases, where the
-   compiler isn't able to figure out implication, since the reductive rules are
-   dumb. However, there is hope! Say your function calls some function, where
-   the compiler cannot prove the bound. You can work around this by simply
-   adding the called function's `where` bound to the caller's `where` bound.
-   While, this is a minor annoyance, working around it is relatively easy.
+If you use this a lot, you will likely encounter edge cases, where the
+compiler isn't able to figure out implication, since the reductive rules are
+dumb. However, there is hope! Say your function calls some function, where
+the compiler cannot prove the bound. You can work around this by simply
+adding the called function's `where` bound to the caller's `where` bound.
+While, this is a minor annoyance, working around it is relatively easy.
 
-Q: How can I use this to create powerful abstractions?
+**Q: How can I use this to create powerful abstractions?**
 
-A: ...
+...
 
-Q: Extensive examples.
+**Q: Can you show some more extensive examples?**
 
-A: Refer to the rest of the RFC.
+Refer to the rest of the RFC.
+
+- - - -
 
 Moreover, we need to "informalize" the rules defined in this RFC.
 
