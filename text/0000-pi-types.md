@@ -38,7 +38,7 @@ time.
 
 ## Type checking
 
-Type checking is done by using a transitive rule, such that `where` bounds must
+Type checking is done by using a [transitive rule](#transitivity-of-bounds), such that `where` bounds must
 be implied by the caller.
 
 # Motivation
@@ -49,8 +49,8 @@ length arrays. The current proposals are often limited to integers or even lack
 of value maps, and other critical features.
 
 There is a whole lot of other usecases as well. These allows certain often
-requested features to live in standalone libraries (e.g., bounded-integers,
-type level arithmetics, lattice types).
+requested features to live in standalone libraries (e.g., [bounded-integers](#bounded-integersinterval-arithmetics),
+[type level numerals](#array-generics), [statically checked indexing](#statically-checked-indexing), lattice types).
 
 It allows for creating powerful abstractions without type-level hackery.
 
@@ -66,14 +66,14 @@ Yet, we do not want:
 1. SMT-solvers, due to not only undecidability (note, although, that SAT is
    decidable) and performance, but the complications it adds to `rustc`.
 2. Monomorphisation-time errors, i.e. errors that happens during codegen of
-   generic functins. We try to avoid adding _more_ of these (as noted by
+   generic functions. We try to avoid adding _more_ of these (as noted by
    petrochenkov, these [already exists](https://github.com/rust-lang/rfcs/pull/1657#discussion_r68202733))
 
 ## Examples
 
 ### Bounded integers/interval arithmetics
 
-One can define the so called "bounded integers" (integers which carries an
+One can define the so called "bounded integers" (integers which carry an
 upper and lower bound, checked at compile time):
 
 ```rust
@@ -164,10 +164,10 @@ impl<const n: usize, T: Clone> Clone for [T; n] {
 ```rust
 use std::ops;
 
-impl<const n: usize, T: Clone> ops::Index<BoundedInt<0, n>> for [T; n] {
+impl<const n: usize, T: Clone> ops::Index<BoundedInt<0, n - 1>> for [T; n] {
     type Output = T;
 
-    fn index(&self, ind: BoundedInt<0, n>) -> &T {
+    fn index(&self, ind: BoundedInt<0, n - 1>) -> &T {
         unsafe {
             // This is safe due to the bound on `ind`.
             self.unchecked_index(*ind)
@@ -181,15 +181,13 @@ impl<const n: usize, T: Clone> ops::Index<BoundedInt<0, n>> for [T; n] {
 
 ## The new value-type construct, `const`
 
-The first construct, we will introduce one allowing us to declare `ε → τ`
-constructors (value dependent types).
+Declaring a parameter `const x: T` allows using `x` in both an expression context
+(as a value of type `T`) and a type context (as a type parameter). In a sense,
+const "bridges" the world between values and types, since it allows us to
+declare value dependent types ([`ε → τ` constructors](https://en.wikipedia.org/wiki/Dependent_type)).
 
-In a sense, `const` "bridges" between types and values.
-
-Declaring a parameter `const x: T` allows use in both expression context (as a
-value of type `T`) and type context (as a type parameter).
-
-Such a parameter is declared, like type parameters, in angle brackets.
+Such a parameter is declared, like type parameters, in angle brackets (e.g.
+`struct MyStruct<const x: usize>`).
 
 The expr behavior is described as:
 
@@ -198,18 +196,20 @@ The expr behavior is described as:
       ──────────────
       Π ⊢ x: T
 
+In human language, this simply means that one can use a constant parameter,
+`const x: T`, in expression context, as a value of type `T`.
+
 On the type level, we use the very same semantics as the ones generic
 parameters currently follows.
 
 ## `const fn`s as Π-constructors
 
 We are interested in value dependency, but at the same time, we want to avoid
-complications such as SMT-solvers and so on.
+complications such as [SMT-solvers](https://en.wikipedia.org/wiki/Satisfiability_modulo_theories).
 
-Thus, we follow a purely constructible model, by using `const fn`s.
-
-This allows one to take some const parameter and map it by some arbitrary, pure
-function, following the rules described in [RFC 0911](https://github.com/rust-lang/rfcs/blob/master/text/0911-const-fn.md#detailed-design).
+We achieve this by `const fn`, which allows us to take some const parameter and
+map it by some arbitrary, pure function, following the rules described in [RFC
+0911](https://github.com/rust-lang/rfcs/blob/master/text/0911-const-fn.md#detailed-design).
 
 ## Type inference
 
@@ -256,8 +256,8 @@ let l = foo::<_, [1, 2, 3, 4, 5, 6]>();
 ## `where` clauses
 
 Often, it is wanted to have some statically checked clause satisfied by the
-constant parameters. To archive this, in a reasonable manner, we use const
-exprs, returning a boolean.
+constant parameters (e.g., for the sake of compile-time bound checking). To
+archive this, in a reasonable manner, we use const exprs, returning a boolean.
 
 We allow such constexprs in `where` clauses of functions. Whenever the
 function is invoked given constant parameters `<a, b...>`, the compiler
@@ -271,9 +271,12 @@ bounds must imply the invoked functions' bounds:
 ### Transitivity of bounds.
 
 We require a bound of a function to imply the bounds of the functions it calls,
-through a simple unification + alpha-substitution algorithm.
+through a simple reductive, unification algorithm. In particular, this means
+that a statement is reduced by some specified rules (see below), that ensures
+termination. A statement implies another statement, if the set of statements it
+reduces to is a superset of the other statement's reduction set.
 
-The compiler would then enforce that if `f` calls `g`, `unify(bound(g))	⊆
+The compiler would enforce that if `f` calls `g`, `unify(bound(g))	⊆
 unify(bound(f))` (by structural equality):
 
     ExpandBooleanAnd:
@@ -364,7 +367,7 @@ mathematical limitations.
 
 These extensions expand the type grammar to:
 
-         T = scalar (i32, u32, ...)        // Scalars
+         T = scalar (...)                  // Scalars (basic types s.a. primitive types)
            | X                             // Type variable
            | Id<P0..Pn>                    // Nominal type (struct, enum)
            | &r T                          // Reference (mut doesn't matter here)
@@ -392,14 +395,18 @@ possible extensions, see below).
 
 To find the right implementation, we use the data from the type inference (see
 the inference rules above). Since the parameters are, in fact, not much
-semantically different from normal generic parameters, we can resolve it is a
-normal manner.
+semantically different from normal generic parameters, we can resolve it in a
+normal manner (that is, by treating the value parameters as if they were actual
+type parameters).
 
-Likewise are disjointness checks based on structural equality.
+Likewise are disjointness checks based on structural equality. That is, we only
+care about structural equality, not `Eq` or something else. This allows us to
+reason more rigorously about the behavior.
 
 Since not all parameters' edges are necessarily the identity function,
 dispatching these would be undecidable. A way to solve this problem is to
-introduce some syntax allowing to specify the `impl` parameters.
+introduce some syntax allowing to specify the `impl` parameters. This is not
+something we consider in this proposal, but a secondary RFC can introduce these.
 
 ## Division by zero
 
@@ -463,19 +470,54 @@ This RFC aims to keep a "symmetric" syntax to the current construct, giving an
 intuitive behavior, however there are multiple things that are worth explaining
 and/or clearing up:
 
-1. What are Π-types? How are they different from those from other languages?
+Q: What are dependent types?
 
-2. One will have to understand what `const fn`s are and how they are linked to
-   Π-types.
+A: Dependent types are types, which _depends_ on values, instead of types. For
+   example, [T; 3], is dependent since it depends on the value, `3`, for
+   constructing the type. Dependent types, in a sense, is similar to normal
+   generics, where types can depend on other types (e.g. `Vec<T>`), whereas
+   dependent types depends on values.
 
-3. What are the usecases?
+Q: We achieve this by using const fns, which allow us to take ...
 
-4. What are the edge cases, and how can one work around those (e.g. failed
+A: Various other languages have dependent type systems. Strictly speaking, all
+   that is required for a dependent type system is value-to-type constructors,
+   although some languages (coq, agda, etc.) goes a step further and remove the
+   boundary between value and type. Unfortunately, as cool as it sounds, it has
+   some severe disadvantages: most importantly, the type checking becomes
+   undecidable. Often you would need some form of theorem prover to type check
+   the program, and those has their limitations too.
+
+Q: What are `const fn` and how is it linked to this RFC?
+
+A: `const fn` is a function, which can be evaluated at compile time. While it
+   is currently rather limited, in the future it will be extended (see
+   [Miri](https://github.com/solson/miri)). You can use constexprs to take one
+   type-level value, and non-trivially calculate a new one.
+
+Q: What are the usecases?
+
+A: There are many usecases for this. The most prominent one, perhaps, is the
+   generically sized arrays. Dependent types allows one to lift the length of the
+   array up to the type-level, effectively allowing one to parameterize over them.
+
+Q: What are the edge cases, and how can one work around those (e.g. failed
    unification)?
 
-5. How can I use this to create powerful abstractions?
+A: If you use this a lot, you will likely encounter edge cases, where the
+   compiler isn't able to figure out implication, since the reductive rules are
+   dumb. However, there is hope! Say your function calls some function, where
+   the compiler cannot prove the bound. You can work around this by simply
+   adding the called function's `where` bound to the caller's `where` bound.
+   While, this is a minor annoyance, working around it is relatively easy.
 
-6. Extensive examples.
+Q: How can I use this to create powerful abstractions?
+
+A: ...
+
+Q: Extensive examples.
+
+A: Refer to the rest of the RFC.
 
 Moreover, we need to "informalize" the rules defined in this RFC.
 
