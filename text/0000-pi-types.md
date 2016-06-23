@@ -286,6 +286,10 @@ unify(bound(f))` (by structural equality):
       a = b
       ─────
       P(b)
+    DoubleNegation:
+      ¬¬x
+      ───
+      x
 
 These rules are "exhausting" (recursing downwards the tree and decreasing the
 structure), and thus it is possible to check, in this language, that `a ⇒ b`
@@ -309,6 +313,8 @@ of these in the `where` clause unfolding, it returns "True":
         f(x) >= f(x)
     EqReflexive:
         f(x) = f(x)
+    NegFalseIsTrue:
+        ¬false
 
 #### An example
 
@@ -375,6 +381,12 @@ Likewise are disjointness checks based on structural equality.
 Since not all parameters' edges are necessarily the identity function,
 dispatching these would be undecidable. A way to solve this problem is to
 introduce some syntax allowing to specify the `impl` parameters.
+
+## Division by zero
+
+If some function contain a constexpr divisor, dependent on some value parameter
+of the function, that is (`a / f(x)`), the compiler must ensure that the bound
+implies that `f(x) != 0`.
 
 ## An example
 
