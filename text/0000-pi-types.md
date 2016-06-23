@@ -291,9 +291,9 @@ unify(bound(f))` (by structural equality):
       ───
       x
 
-These rules are "exhausting" (recursing downwards the tree and decreasing the
+These rules are "eliminatory" (recursing downwards the tree and decreasing the
 structure), and thus it is possible to check, in this language, that `a ⇒ b`
-relatively quickly (`O(n)`).
+relatively quickly (`O(n)`). For a proof of see the section below.
 
 More rules can be added in the future. It is however important to preserve the
 "sequential property" (that is, each step is a reduction, not an expansion),
@@ -302,19 +302,37 @@ allowing one to check the implication in linear time.
 This is done under type unification. Thus, we only need to check the bounds at
 the top level.
 
+#### Decidability of this rule set
+
+One can show this by considering each case:
+
+1. `ExpandBooleanAnd` eliminates `{P && Q} ⊢ {P, Q}`. The right hand side's
+   depth is `max(dep(P), dep(Q))`, which is smaller than the original,
+   `max(dep(P), dep(Q)) + 1`
+2. `SubstituteEquality` eliminates `{a = b, P} ⊢ {P[b/a]}`, which is an
+   elimination, since `dep(P) + 1 > dep(P[b/a]) = dep(P)`.
+3. `DoubleNegation` eliminates `{¬¬x} ⊢ {x}`, which is an elimination, since
+   `dep(x) + 2 > dep(x)`.
+
 #### (Optional extension:) "Exit-point" identities
 
 These are simply identities which always holds. Whenever the compiler reach one
 of these in the `where` clause unfolding, it returns "True":
 
     LeqReflexive:
-        f(x) <= f(x)
+        f(x) <= f(x) for x primitive integer
     GeqReflexive:
-        f(x) >= f(x)
+        f(x) >= f(x) for x primitive integer
     EqReflexive:
         f(x) = f(x)
     NegFalseIsTrue:
         ¬false
+    TrueAndTrue:
+        true && true
+    OrTrue1:
+        P || true
+    OrTrue2:
+        true || P
 
 #### An example
 
@@ -323,10 +341,11 @@ We will quickly give an example of a possible proof. Say we want to show that
 prove this, by simple unification (which already exists in the Rust type
 checker):
 
-    x = b && x < a
-    ∴ x = b  (ExpandBooleanAnd)
-      x < a
-    ∴ b < a  (SubstituteEquality)
+    x = b && ¬¬(x < a)
+    ∴ x = b      (ExpandBooleanAnd)
+      ¬¬(x < a)
+    ∴ ¬¬(b < a)  (SubstituteEquality)
+    ∴ b < a      (DoubleNegation)
       ¯¯¯¯¯
 
 ### Contradictive or unsatisfiable bounds
