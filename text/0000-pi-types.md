@@ -54,6 +54,113 @@ type level arithmetics, lattice types).
 
 It allows for creating powerful abstractions without type-level hackery.
 
+## Examples
+
+### Bounded integers/interval arithmetics
+
+One can define the so called "bounded integers" (integers which carries an
+upper and lower bound, checked at compile time):
+
+```rust
+use std::ops;
+
+/// A bounded integer.
+///
+/// This has two value parameter, respectively representing an upper and a lower bound.
+pub struct BoundedInt<const lower: usize, const upper: usize>
+    where lower <= upper {
+    /// The inner runtime value.
+    n: usize,
+}
+
+// To see how this holds the `where` clause above, see the section on `identities`.
+impl<const n: usize> BoundedInt<n, n> {
+    fn new() -> Self {
+        BoundedInt {
+            n: n,
+        }
+    }
+}
+
+/// Addition of two `BoundedInt` will simply add their bounds.
+///
+/// We check for overflow making it statically overflow-free calculations.
+impl<const upper_a: usize,
+     const lower_a: usize,
+     const upper_b: usize,
+     const lower_b: usize> ops::Add<BoundedInt<lower_b, upper_b>> for BoundedInt<lower_a, lower_b>
+     where lower_a <= upper_a,
+           lower_b <= upper_b,
+           // Check for overflow by some `const fn`.
+           is_overflow_safe(upper_a, upper_b) {
+    // These parameters are constant expression.
+    type Output = BoundedInt<lower_a + lower_b, upper_a + upper_b>;
+
+    fn add(self, rhs: BoundedInt<lower_b, upper_b>) -> Self::Output {
+        BoundedInt {
+            n: self.n + rhs.n,
+        }
+    }
+}
+
+impl<const upper_a: usize,
+     const lower_a: usize,
+     const upper_b: usize,
+     const lower_b: usize> From<BoundedInt<lower_b, upper_b>> for BoundedInt<lower_a, lower_b>
+     where lower_a <= upper_a,
+           lower_b <= upper_b,
+           // We will only extend the bound, never shrink it without runtime
+           // checks, thus we add this clause:
+           lower_b <= lower_a && upper_b >= upper_a {
+    fn from(from: BoundedInt<lower_b, upper_b>) -> Self {
+        BoundedInt {
+            n: from.n,
+        }
+    }
+}
+```
+
+### Homogeneous varargs
+
+We can use arbitrarily length arrays to simulate homogeneous varargs:
+
+```rust
+fn my_func<const n: usize>(args: [u32; n]) { /* whatever */ }
+
+my_func([1, 2, 3]);
+my_func([1, 2, 3, 4]);
+```
+
+### Array generics
+
+Currently libcore only implements various traits up to arrays of length 32.
+This allows for implementing them for arrays of arbitrary length:
+
+```rust
+impl<const n: usize, T: Clone> Clone for [T; n] {
+    fn clone(&self) -> [T; n] {
+        // Clone it...
+    }
+}
+```
+
+### Statically checked indexing
+
+```rust
+use std::ops;
+
+impl<const n: usize, T: Clone> ops::Index<BoundedInt<0, n>> for [T; n] {
+    type Output = T;
+
+    fn index(&self, ind: BoundedInt<0, n>) -> &T {
+        unsafe {
+            // This is safe due to the bound on `ind`.
+            self.unchecked_index(*ind)
+        }
+    }
+}
+```
+
 # Detailed design
 [design]: #detailed-design
 
@@ -169,13 +276,24 @@ These rules are "exhausting" (recursing downwards the tree and decreasing the
 structure), and thus it is possible to check, in this language, that `a ⇒ b`
 relatively quickly (`O(n)`).
 
-More rules can be added in the future (e.g., reflexive equality, common true
-statements, etc.). It is however important to preserve the "sequential
-property" (that is, each step is a reduction, not an expansion), allowing one
-to check the implication in linear time.
+More rules can be added in the future. It is however important to preserve the
+"sequential property" (that is, each step is a reduction, not an expansion),
+allowing one to check the implication in linear time.
 
 This is done under type unification. Thus, we only need to check the bounds at
 the top level.
+
+#### (Optional extension:) "Exit-point" identities
+
+These are simply identities which always holds. Whenever the compiler reach one
+of these in the `where` clause unfolding, it returns "True":
+
+    LeqReflexive:
+        f(x) <= f(x)
+    GeqReflexive:
+        f(x) >= f(x)
+    EqReflexive:
+        f(x) = f(x)
 
 #### An example
 
