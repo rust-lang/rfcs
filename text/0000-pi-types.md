@@ -222,6 +222,8 @@ const parameters, by adding an unification relation, simply
       ──────────────
       Γ ⊢ T: U<f(x)>
 
+Informally, this means that, you can substitute equal terms (in this case, `const fn` relations).
+
 The relational edge between two const parameters is simple a const fn, which is
 resolved under unification.
 
@@ -237,9 +239,10 @@ We add an extra rule to improve inference:
       Γ ⊢ c = x
 
 So, if two types share constructor by some Π-constructor, share a value, their
-value parameter is equal.
+value parameter is equal. Take `a: [u8; 4]` as an example. If we have some
+unknown variable `x`, such that `a: [u8; x]`, we can infer that `x = 4`.
 
-This allows us infer:
+This allows us infer e.g. array length parameters in functions:
 
 ```rust
 // [T; N] is a constructor, T → usize → 𝓤 (parameterize over T and you get A → 𝓤).
@@ -284,15 +287,25 @@ unify(bound(f))` (by structural equality):
       ──────
       P
       Q
+
+This simply means that `a && b` means `a` and `b`.
+
     SubstituteEquality:
       P(a)
       a = b
       ─────
       P(b)
+
+This is an important inference rule, when doing unification. This means that
+you can substitute all `a` for all free `b`s, if `a = b`.
+
     DoubleNegation:
       ¬¬x
       ───
       x
+
+The last rule for now is simply stating that double negation is identity, that
+is, `!!a` means that `a` is true.
 
 These rules are "eliminatory" (recursing downwards the tree and decreasing the
 structure), and thus it is possible to check, in this language, that `a ⇒ b`
