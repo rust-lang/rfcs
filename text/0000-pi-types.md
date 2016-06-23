@@ -537,6 +537,10 @@ fn main() {
 
 ## Candidates for additional rules
 
+Currently, the set of rules is rather conservative for rewriting. To make it
+easier to work with, one can add multiple new reductive rules, at the expense
+of implementation complexity:
+
     RewriteOr:
       P ∨ Q
       ──────────
@@ -654,7 +658,7 @@ constructing the type. Dependent types, in a sense, are similar to normal
 generics, where types can depend on other types (e.g. `Vec<T>`), whereas
 dependent types depend on values.
 
-**We achieve this by using const fns, which allow us to take ...**
+**How does this differ from other languages' implementations of dependent types?**
 
 Various other languages have dependent type systems. Strictly speaking, all
 that is required for a dependent type system is value-to-type constructors,
