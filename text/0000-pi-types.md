@@ -816,14 +816,27 @@ do_something::<2>();
 Some have raised concerns of mixing things up there. Thus one can use the
 syntax `with` to denote bounds instead.
 
-## Lazily type check without transitivity rule
-
-Simply evaluate the bounds when calling. Remove the requirement of implication.
-
 ## Allow multiple implementation bounds
 
 Allow overlapping implementations carrying bounds, such that only one of the
 conditions may be true under monomorphization.
+
+## Type/`where` clause checking
+
+### Lazily type check without transitivity rule
+
+Simply evaluate the bounds when calling. Remove the requirement of implication.
+This introduces errors at monomorphization time.
+
+### Inheriting `where` clauses
+
+An interesting idea to investigate is to let functions inherit called
+function's `where` clauses. This allows for non-monomorphization, yet
+ergonomic, `where` clauses.
+
+An important symmetry is lost, though: trait bounds in `where` clauses. These
+are not inherited, but explicit. A way to avoid this asymmetry, [`with` could
+be used](#with-instead-of-where).
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
