@@ -392,6 +392,8 @@ mathematical limitations.
 
 ### SMT-solvers?
 
+This RFC doesn't propose such thing, but future possibilities are worth discussing:
+
 #### What a Rusty SMT-solver would look like
 
 The simplest and least obstructive SMT-solver is the SAT-based one. SAT is a
