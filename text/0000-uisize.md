@@ -16,13 +16,11 @@ object-sized.
 [motivation]: #motivation
 
 We want to support the embedded space, and new CPUs like the CHERI. These CPUs
-do not support `usize` == `uptr`, and, in the case of the CHERI, don't support
-`uptr` at all. Most CPUs don't actually support the idea that `uptr == usize`:
-just the currently popular ones.
+do not support `usize` == `uptr`.
 
-We really want to support usecases where `uptr != usize`. The embedded space,
-where segmented architectures are still very popular, is a very good case for
-separating `uptr` and `usize`.
+I would assert that we want to support usecases where `uptr != usize`. The
+embedded space, where segmented architectures are still very popular, is a very
+good case for separating `uptr` and `usize`.
 
 This also means that there's no more confusion when writing FFI code, where
 `usize` and `size_t` aren't the same, but neither are `usize` and `uintptr_t`,
@@ -69,7 +67,8 @@ pointer types. This would mean that `usize` is instead the maximum size of an
 object, like `size_t` in C, and that `isize` is the difference type for
 pointers, like `ptrdiff_t`.  Note that this also changes `usize` to be the upper
 bound of objects: implementations (like rustc) may continue to choose to use
-`isize` as the upper bound, because of buggy code in the backend.
+`isize` as the upper bound. This is like the `RSIZE_MAX` bound in the C11
+standard.
 
 2) Issue a breaking-change report, and start a warning for any integer to
 pointer cast or transmute which is from a type which isn't `uptr` or `iptr`. Do
@@ -79,35 +78,70 @@ implementation defined.
 3) Add a new #[cfg] constant to the language: `target_size_bits`, which would
 give the size of `usize` and `isize` in bits.
 
-4) Add two new primitive integer types: `iptr` and `uptr`. They would not be
-defined on platforms like the CHERI where going from pointer -> int -> pointer
-is not fully supported.
+4) Add two new primitive integer types: `iptr` and `uptr`.
 
 5) Casting an integer to a pointer results in an implementation defined value;
 casting a pointer to an integer results in an implementation defined value.
 These are already the rules, this is just making these rules explicit.
 
-6) However, as an exception to the above rule: if `iptr` and `uptr` are defined,
-then casting a pointer type to one of the two, then casting back to the original
-pointer type from the resulting value, will result in a pointer which is
-equivalent to the original pointer; i.e., as if it were a copy of the original
-pointer. Casting the integer to the other mutability of the same pointer type,
-i.e., `*const T -> uptr -> *mut T`, it shall be equivalent to `*const T -> *mut
-T`. Casting the integer to a different type from the original, i.e. `*const T ->
-uptr -> *const U`, shall result in implementation defined behavior (as in
-section 5).
+6) However, as an exception to the above rule: then casting a pointer type to
+one of `iptr` or `uptr`, then casting back to the original pointer type from the
+resulting value, will result in a pointer which compares equal to the original
+pointer.
 
-7) As a second exception to the above rule: casting a literal `0` of any integer
-type to any pointer type shall result in a null pointer of that pointer type. This
-must be done in a single cast from a literal to a pointer: `0 as *const i32` would
-result in a null pointer; `let x = 0; x as *const i32` does not necessarily. This
-also is an exception to 2; `0 as [pointer type]` would not warn.
+7) As a second exception to the above rule: casting a `0` of any integer type to
+any pointer type shall result in a null pointer of that pointer type.
+
+8) Casting the same pointer to `iptr` shall always result in the same value.
+
+9) Casting the same pointer to `uptr` shall always result in the same value.
 
 Sources:
 
 [CHERI](https://www.cl.cam.ac.uk/research/security/ctsrd/cheri/cheri-faq.html)
 
-[Backend Bugs](http://trust-in-soft.com/objects-larger-than-ptrdiff_max-bytes/)
+# How do we teach this?
+
+Currently, what we do is we teach `isize` and `usize` as the "pointer-sized
+integer type[s]". 
+
+The book teaches them as follows:
+
+> Rust also provides types whose size depends on the size of a pointer of the
+> underlying machine. These types have ‘size’ as the category, and come in
+> signed and unsigned varieties. This makes for two types: isize and usize.
+
+As far as I can tell, after reading this, I still have no idea what an `isize`
+or a `usize` is. The new documentation would look like this:
+
+> Rust also provides types whose size depends on the underlying machine. `usize`
+> and `isize` are used to represent the size of things, for example, how many
+> elements an array has. `uptr` and `iptr` are meant for use with pointers.
+
+And further on, in "FFI"
+
+```rust
+#[link(name = "snappy")]
+extern {
+  fn snappy_max_compressed_length(source_length: size_t) -> size_t;
+}
+```
+
+becomes
+
+```rust
+#[link(name = "snappy")]
+extern {
+  fn snappy_max_compressed_length(source_length: usize) -> usize;
+}
+```
+
+with appropriate explanation:
+
+> rustc guarantees that `usize` is the same as C's `size_t`.
+
+And hopefully, we would add an example of a function taking `intptr_t` or
+`uintptr_t`, which would become `iptr` or `uptr`.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -120,15 +154,6 @@ More complexity.
 Continue doing what we're doing.
 
 Define `isize` as the upper bound always.
-
-Make some guarantees about pointers which don't compare equal resulting in
-`uptr`/`iptr` that don't compare equal, some guarantees around pointers
-which are inside the same object, and a guarantee that if you convert a pointer
-to a uptr and back to the original pointer type, it will compare equal. We would
-then define it everywhere, and keep the language about casts back having
-implementation defined behavior. This would allow us to write a CHERI Rust
-compiler, for example, but also allow us to write a Hash for pointers that works
-everywhere, and a memmove that works everywhere.
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
