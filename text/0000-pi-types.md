@@ -293,7 +293,7 @@ that a statement is reduced by some specified rules (see below), that ensures
 termination. A statement implies another statement, if the set of statements it
 reduces to is a superset of the other statement's reduction set.
 
-The compiler would enforce that if `f` calls `g`, `unify(bound(g))	⊆
+The compiler would enforce that if `f` calls `g`, `unify(bound(g)) ⊆
 unify(bound(f))` (by structural equality):
 
     ExpandBooleanAnd:
@@ -535,6 +535,27 @@ fn main() {
 
 # Experimental extensions open to discussion
 
+## Structural equality will prevail!
+
+When `const fn` methods arrive, we can extend the concept of structural
+equality beyond the "simple" types (e.g., vectors).
+
+Structural equality, in this case, is defined as an equivalence relation, which
+allows substitution without changing semantics.
+
+This trat should be unsafe, and defined as
+
+```rust
+unsafe trait StructuralEq {
+    const fn structural_eq(&self, &Self) -> bool;
+}
+```
+
+This allows us to compare values at type level without loosing the substitution
+property.
+
+Such a thing is unevitable, if we want to be able depend on non-structural values.
+
 ## Candidates for additional rules
 
 Currently, the set of rules is rather conservative for rewriting. To make it
@@ -644,6 +665,26 @@ of these when unfolding the `where` clause, it returns "True":
     OrTrue2:
         true ∨ P
 
+### A constexpr type constructor
+
+Add some language item type constructor, `Const<T>`, allowing for constructing
+a constexpr-only types.
+
+`x: T` can coerce into `Const<T>` if `x` is constexpr. Likewise, can `Const<T>`
+coerce into `T`.
+
+```rust
+fn do_something(x: Const<u32>) -> u32 { x }
+
+struct Abc {
+    constfield: Const<u32>,
+}
+```
+
+It is unclear how it plays together with `where` bounds.
+
+The pro is that it adds ability to implement e.g. constant indexing, `Index<Const<usize>>`.
+
 # How we teach this
 
 This RFC aims to keep a "symmetric" syntax to the current construct, giving an
@@ -683,7 +724,7 @@ the length of the array up to the type-level, effectively allowing one to
 parameterize over them.
 
 **What are the edge cases, and how can one work around those (e.g. failed
-   unification)?**
+  unification)?**
 
 If you use this a lot, you will likely encounter edge cases, where the
 compiler isn't able to figure out implication, since the reductive rules are
@@ -721,6 +762,14 @@ Another drawback is the lack of implication proves.
 
 # Alternatives
 [alternatives]: #alternatives
+
+## Use purely symbolic `where` clause checking
+
+We can simplify things somewhat, by using a purely symbolic model of
+implication. Say that a set of clause, `A`, implies a set of clause `B`, iff.
+`B ⊆ A`.
+
+## SMT
 
 Use full SMT-based dependent types. These are more expressive, but severely
 more complex as well.
@@ -767,36 +816,16 @@ fn do_something<x: const u32>() -> u32 where x < 5 { x }
 do_something::<2>();
 ```
 
-### An extension: A constexpr type constructor
-
-Add some language item type constructor, `Const<T>`, allowing for constructing
-a constexpr-only types.
-
-`x: T` can coerce into `Const<T>` if `x` is constexpr. Likewise, can `Const<T>`
-coerce into `T`.
-
-```rust
-fn do_something(x: Const<u32>) -> u32 { x }
-
-struct Abc {
-    constfield: Const<u32>,
-}
-```
-
-It is unclear how it plays together with `where` bounds.
-
-The pro is that it adds ability to implement e.g. constant indexing, `Index<Const<usize>>`.
-
 ### `with` instead of `where`
 
 Some have raised concerns of mixing things up there. Thus one can use the
 syntax `with` to denote bounds instead.
 
-### Lazily type check without transitivity rule
+## Lazily type check without transitivity rule
 
 Simply evaluate the bounds when calling. Remove the requirement of implication.
 
-### Allow multiple implementation bounds
+## Allow multiple implementation bounds
 
 Allow overlapping implementations carrying bounds, such that only one of the
 conditions may be true under monomorphization.
