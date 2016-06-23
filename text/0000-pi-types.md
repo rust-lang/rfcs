@@ -142,8 +142,9 @@ function is invoked given constant parameters `<a, b...>`, the compiler
 evaluates this expression, and if it returns `false`, an aborting error is
 invoked.
 
-To sum up, the check happens at monomorphization. The callers bounds must imply
-the invoked functions' bounds:
+To sum up, the check happens when typechecking the function calls (that is,
+checking if the parameters satisfy the trait bounds, and so on). The caller's
+bounds must imply the invoked functions' bounds:
 
 ### Transitivity of bounds.
 
@@ -151,10 +152,55 @@ We require a bound of a function to imply the bounds of the functions it calls,
 through a simple unification + alpha-substitution algorithm.
 
 The compiler would then enforce that if `f` calls `g`, `unify(bound(g))	⊆
-unify(bound(f))` (by structural equality).
+unify(bound(f))` (by structural equality):
+
+    ExpandBooleanAnd:
+      P && Q
+      ──────
+      P
+      Q
+    SubstituteEquality:
+      P(a)
+      a = b
+      ─────
+      P(b)
+
+These rules are "exhausting" (recursing downwards the tree and decreasing the
+structure), and thus it is possible to check, in this language, that `a ⇒ b`
+relatively quickly (`O(n)`).
+
+More rules can be added in the future (e.g., reflexive equality, common true
+statements, etc.). It is however important to preserve the "sequential
+property" (that is, each step is a reduction, not an expansion), allowing one
+to check the implication in linear time.
 
 This is done under type unification. Thus, we only need to check the bounds at
 the top level.
+
+#### An example
+
+We will quickly give an example of a possible proof. Say we want to show that
+`x = b && x < a ⇒ b < a`. Starting with the left hand side, we can sequentially
+prove this, by simple unification (which already exists in the Rust type
+checker):
+
+    x = b && x < a
+    ∴ x = b  (ExpandBooleanAnd)
+      x < a
+    ∴ b < a  (SubstituteEquality)
+      ¯¯¯¯¯
+
+### Contradictive or unsatisfiable bounds
+
+Contradictive or unsatisfiable bounds (like `a < b, b < a`) cannot be detected,
+since such a thing would be undecidable.
+
+These bounds doesn't break anything, they are simply malformed and unreachable.
+
+Take `a < b, b < a` as an example. We know the values of `a` and `b`, we can
+thus calculate the two bounds, which will clearly fail. We cannot, however,
+stop such malformed bounds in _declarations_ and _function definitions_, due to
+mathematical limitations.
 
 ## The grammar
 
