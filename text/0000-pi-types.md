@@ -285,7 +285,23 @@ To sum up, the check happens when typechecking the function calls (that is,
 checking if the parameters satisfy the trait bounds). The caller's bounds must
 imply the invoked functions' bounds:
 
-### Transitivity of bounds.
+## Structural equality
+
+Structural equality plays a key role in type checking of dependent types.
+
+Structural equality, in this case, is defined as an equivalence relation, which
+allows substitution without changing semantics.
+
+Any constant parameter must have the `structural_match` property as defined in
+[RFC #1445](https://github.com/rust-lang/rfcs/pull/1445). This property, added
+through the `#[structural_match]` attribute, essentially states that the `Eq`
+implementation is structural.
+
+Without this form of equality, substitution wouldn't be possible, and thus
+typechecking an arbitrarily value-depending type constructor would not be
+possible.
+
+### Transitivity of bounds
 
 We require a bound of a function to imply the bounds of the functions it calls,
 through a simple reductive, unification algorithm. In particular, this means
@@ -534,27 +550,6 @@ fn main() {
 ```
 
 # Experimental extensions open to discussion
-
-## Structural equality will prevail!
-
-When `const fn` methods arrive, we can extend the concept of structural
-equality beyond the "simple" types (e.g., vectors).
-
-Structural equality, in this case, is defined as an equivalence relation, which
-allows substitution without changing semantics.
-
-This trat should be unsafe, and defined as
-
-```rust
-unsafe trait StructuralEq {
-    const fn structural_eq(&self, &Self) -> bool;
-}
-```
-
-This allows us to compare values at type level without loosing the substitution
-property.
-
-Such a thing is unevitable, if we want to be able depend on non-structural values.
 
 ## Candidates for additional rules
 
@@ -833,16 +828,29 @@ conditions may be true under monomorphization.
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
-What syntax is preferred?
+## Syntactical/conventional
 
-How does this play together with HKP?
+What syntax is preferred?
 
 What should be the naming conventions?
 
 Should we segregate the value parameters and type parameters by `;`?
 
-Should disjoint implementations satisfying some bound be allowed?
+## Compatibility
+
+How does this play together with HKP?
+
+How can one change bounds without breaking downstream? Shall some form of
+judgemental OR be added?
+
+What API would need to be rewritten to take advantage of Π-types?
+
+## Features
 
 Should there be a way to parameterize functions dynamically?
 
-What API would need to be rewritten to take advantage of Π-types?
+## Semantics
+
+Find some edge cases, which can be confusing.
+
+Are there other rules to consider?
