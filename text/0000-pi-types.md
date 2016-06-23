@@ -83,6 +83,7 @@ use std::ops;
 ///
 /// This has two value parameter, respectively representing an upper and a lower bound.
 pub struct BoundedInt<const lower: usize, const upper: usize>
+    // Compile time constraints.
     where lower <= upper {
     /// The inner runtime value.
     n: usize,
@@ -103,7 +104,8 @@ impl<const n: usize> BoundedInt<n, n> {
 impl<const upper_a: usize,
      const lower_a: usize,
      const upper_b: usize,
-     const lower_b: usize> ops::Add<BoundedInt<lower_b, upper_b>> for BoundedInt<lower_a, lower_b>
+     const lower_b: usize> ops::Add<BoundedInt<lower_b, upper_b>> for BoundedInt<lower_a, upper_a>
+     // We have to satisfy the constraints set out in the struct definition.
      where lower_a <= upper_a,
            lower_b <= upper_b,
            // Check for overflow by some `const fn`.
@@ -121,7 +123,7 @@ impl<const upper_a: usize,
 impl<const upper_a: usize,
      const lower_a: usize,
      const upper_b: usize,
-     const lower_b: usize> From<BoundedInt<lower_b, upper_b>> for BoundedInt<lower_a, lower_b>
+     const lower_b: usize> From<BoundedInt<lower_b, upper_b>> for BoundedInt<lower_a, upper_a>
      where lower_a <= upper_a,
            lower_b <= upper_b,
            // We will only extend the bound, never shrink it without runtime
@@ -161,6 +163,8 @@ impl<const n: usize, T: Clone> Clone for [T; n] {
 
 ### Statically checked indexing
 
+One can perform simple, interval based, statically checked indexing:
+
 ```rust
 use std::ops;
 
@@ -174,6 +178,16 @@ impl<const n: usize, T: Clone> ops::Index<BoundedInt<0, n - 1>> for [T; n] {
         }
     }
 }
+```
+
+### Fancy number stuff
+
+```rust
+struct Num<const n: usize>;
+
+trait Divides<const m: usize> {}
+
+impl<const a: usize, const b: usize> Divides<b> for Num<a> where b % a == 0 {}
 ```
 
 # Detailed design
@@ -235,14 +249,14 @@ We add an extra rule to improve inference:
       Γ ⊢ x: A
       Γ ⊢ a: T<c>
       Γ ⊢ a: T<x>
-      ──────────────
+      ────────────
       Γ ⊢ c = x
 
 So, if two types share constructor by some Π-constructor, share a value, their
 value parameter is equal. Take `a: [u8; 4]` as an example. If we have some
 unknown variable `x`, such that `a: [u8; x]`, we can infer that `x = 4`.
 
-This allows us infer e.g. array length parameters in functions:
+This allows us to infer e.g. array length parameters in functions:
 
 ```rust
 // [T; N] is a constructor, T → usize → 𝓤 (parameterize over T and you get A → 𝓤).
@@ -268,8 +282,8 @@ evaluates this expression, and if it returns `false`, an aborting error is
 invoked.
 
 To sum up, the check happens when typechecking the function calls (that is,
-checking if the parameters satisfy the trait bounds, and so on). The caller's
-bounds must imply the invoked functions' bounds:
+checking if the parameters satisfy the trait bounds). The caller's bounds must
+imply the invoked functions' bounds:
 
 ### Transitivity of bounds.
 
@@ -332,8 +346,8 @@ One can show this by considering each case:
 
 #### (Optional extension:) "Exit-point" identities
 
-These are simply identities which always holds. Whenever the compiler reach one
-of these in the `where` clause unfolding, it returns "True":
+These are simply identities which always holds. Whenever the compiler reaches one
+of these when unfolding the `where` clause, it returns "True":
 
     LeqReflexive:
         f(x) <= f(x) for x primitive integer
@@ -369,12 +383,54 @@ checker):
 Contradictive or unsatisfiable bounds (like `a < b, b < a`) cannot be detected,
 since such a thing would be undecidable.
 
-These bounds doesn't break anything, they are simply malformed and unreachable.
+These bounds don't break anything, they are simply malformed and unreachable.
 
 Take `a < b, b < a` as an example. We know the values of `a` and `b`, we can
 thus calculate the two bounds, which will clearly fail. We cannot, however,
 stop such malformed bounds in _declarations_ and _function definitions_, due to
 mathematical limitations.
+
+### SMT-solvers?
+
+#### What a Rusty SMT-solver would look like
+
+The simplest and least obstructive SMT-solver is the SAT-based one. SAT is a
+class of decision problem, where a boolean formula, with some arbitrary number
+of free variables, is determined to be satisfiable or not. Obviously, this is
+decidable (bruteforcing is the simplest algorithm, since the search space is
+finite, bruteforcing is guaranteed to terminate).
+
+SAT is NP-complete, and even simple statements such as `x + y = y + x` can take
+a long time to prove. A non-SAT (symbolic) SMT-solver is strictly more
+expressive, due to not being limited to finite integers, however first-order
+logic is not generally decidable, and thus such solvers are often returning
+"Satisfiable", "Not satisfiable", "Not known".
+
+In general, such algorithms are either slow or relatively limited. An example
+of such a limitation is in the [Dafny
+language](https://github.com/Microsoft/dafny), where programs exist that
+compile when having the bound `a \/ b`, but fails when having the bound `b \/
+a`. This can be relatively confusing the user.
+
+It is worth noting that the technology on this area is still improving, and
+these problems will likely be marginalized in a few years.
+
+Another issue which is present in Rust, is that you don't have any logical
+(invariant) information about the return values. Thus, a SMT-solver would work
+relatively poorly (if at all) non-locally (e.g. user defined functions).
+
+That issue is not something that prevents us from adopting a SMT-solver, but it
+limits the experience with having one.
+
+#### Backwards compatibility
+
+While I am against adding SMT-solvers to `rustc`, it is worth noting that this
+change is, in fact, compatible with future extensions for more advanced theorem
+provers.
+
+The only catch with adding a SMT-solver is that errors on unsatisfiability or
+contradictions would be a breaking change. By throwing a warning instead, you
+essentially get the same functionality.
 
 ## The grammar
 
@@ -404,7 +460,8 @@ Note that the `const` syntax is only used when declaring the parameter.
 ## `impl` unification
 
 Only one `where` bound can be specified on each disjoint implementations (for
-possible extensions, see below).
+possible extensions, see below). In other words, no overlap is allowed, even if
+the `where` bounds are mutually exclusive.
 
 To find the right implementation, we use the data from the type inference (see
 the inference rules above). Since the parameters are, in fact, not much
@@ -415,6 +472,21 @@ type parameters).
 Likewise are disjointness checks based on structural equality. That is, we only
 care about structural equality, not `Eq` or something else. This allows us to
 reason more rigorously about the behavior.
+
+Any non-identity-related term is threated as an unknown parameter, since reasoning about uniqueness of those is undecidable. For example,
+
+```rust
+impl<const x: usize> Trait<x * x> for Struct<x> where some_fn(x)
+```
+
+is, when checking for implementation uniqueness, semantically behaving like
+
+```rust
+impl<const x: usize, const y: usize> Trait<y> for Struct<x>
+```
+
+since we cannot prove injectivity. Note that this is only about behavior under
+_uniqueness checking_.
 
 Since not all parameters' edges are necessarily the identity function,
 dispatching these would be undecidable. A way to solve this problem is to
@@ -499,7 +571,7 @@ A: Various other languages have dependent type systems. Strictly speaking, all
    boundary between value and type. Unfortunately, as cool as it sounds, it has
    some severe disadvantages: most importantly, the type checking becomes
    undecidable. Often you would need some form of theorem prover to type check
-   the program, and those has their limitations too.
+   the program, and those have their limitations too.
 
 Q: What are `const fn` and how is it linked to this RFC?
 
@@ -510,9 +582,10 @@ A: `const fn` is a function, which can be evaluated at compile time. While it
 
 Q: What are the usecases?
 
-A: There are many usecases for this. The most prominent one, perhaps, is the
-   generically sized arrays. Dependent types allows one to lift the length of the
-   array up to the type-level, effectively allowing one to parameterize over them.
+A: There are many usecases for this. The most prominent one, perhaps, is
+   abstracting over generically sized arrays. Dependent types allows one to lift
+   the length of the array up to the type-level, effectively allowing one to
+   parameterize over them.
 
 Q: What are the edge cases, and how can one work around those (e.g. failed
    unification)?
@@ -570,7 +643,12 @@ _arguments_ instead of constant _parameters_. This allows for bounds on e.g.
 fn do_something(const x: u32) -> u32 where x < 5 { x }
 ```
 
-From the callers perspective, this one is especially nice to work with.
+From the callers perspective, this one is especially nice to work with, however
+it can lead to confusion about mixing up constargs and runtime args. One
+possible solution is to segregate the constargs from the rest arguments by a
+`;` (like in array types).
+
+Another way to semantically justify such a change is by the [`Const` type constructor](#an-extension-a-constexpr-type-constructor)
 
 ### Square brackets
 
