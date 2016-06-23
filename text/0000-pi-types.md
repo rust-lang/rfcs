@@ -54,6 +54,21 @@ type level arithmetics, lattice types).
 
 It allows for creating powerful abstractions without type-level hackery.
 
+## What we want, and what we don't want
+
+We have to be very careful to avoid certain things, while still preserving the core features:
+
+1. Ability to use, manipulate, and constraint values at type-level.
+2. The ability to use said values on expression-level (runtime).
+
+Yet, we do not want:
+
+1. SMT-solvers, due to not only undecidability (note, although, that SAT is
+   decidable) and performance, but the complications it adds to `rustc`.
+2. Monomorphisation-time errors, i.e. errors that happens during codegen of
+   generic functins. We try to avoid adding _more_ of these (as noted by
+   petrochenkov, these [already exists](https://github.com/rust-lang/rfcs/pull/1657#discussion_r68202733))
+
 ## Examples
 
 ### Bounded integers/interval arithmetics
