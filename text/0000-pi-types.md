@@ -297,12 +297,12 @@ The compiler would enforce that if `f` calls `g`, `unify(bound(g))	⊆
 unify(bound(f))` (by structural equality):
 
     ExpandBooleanAnd:
-      P && Q
+      P ∧ Q
       ──────
       P
       Q
 
-This simply means that `a && b` means `a` and `b`.
+This simply means that `a ∧ b` means `a` and `b`.
 
     SubstituteEquality:
       P(a)
@@ -318,8 +318,8 @@ you can substitute all `a` for all free `b`s, if `a = b`.
       ───
       x
 
-The last rule for now is simply stating that double negation is identity, that
-is, `!!a` means that `a` is true.
+This rule is simply stating that double negation is identity, that is, `!!a`
+means that `a` is true.
 
 These rules are "eliminatory" (recursing downwards the tree and decreasing the
 structure), and thus it is possible to check, in this language, that `a ⇒ b`
@@ -336,7 +336,7 @@ the top level.
 
 One can show this by considering each case:
 
-1. `ExpandBooleanAnd` eliminates `{P && Q} ⊢ {P, Q}`. The right hand side's
+1. `ExpandBooleanAnd` eliminates `{P ∧ Q} ⊢ {P, Q}`. The right hand side's
    depth is `max(dep(P), dep(Q))`, which is smaller than the original,
    `max(dep(P), dep(Q)) + 1`
 2. `SubstituteEquality` eliminates `{a = b, P} ⊢ {P[b/a]}`, which is an
@@ -344,34 +344,16 @@ One can show this by considering each case:
 3. `DoubleNegation` eliminates `{¬¬x} ⊢ {x}`, which is an elimination, since
    `dep(x) + 2 > dep(x)`.
 
-#### (Optional extension:) "Exit-point" identities
-
-These are simply identities which always holds. Whenever the compiler reaches one
-of these when unfolding the `where` clause, it returns "True":
-
-    LeqReflexive:
-        f(x) <= f(x) for x primitive integer
-    GeqReflexive:
-        f(x) >= f(x) for x primitive integer
-    EqReflexive:
-        f(x) = f(x)
-    NegFalseIsTrue:
-        ¬false
-    TrueAndTrue:
-        true && true
-    OrTrue1:
-        P || true
-    OrTrue2:
-        true || P
+In fact, this set of rule is strictly reductive (like equality-based unification).
 
 #### An example
 
 We will quickly give an example of a possible proof. Say we want to show that
-`x = b && x < a ⇒ b < a`. Starting with the left hand side, we can sequentially
+`x = b ∧ x < a ⇒ b < a`. Starting with the left hand side, we can sequentially
 prove this, by simple unification (which already exists in the Rust type
 checker):
 
-    x = b && ¬¬(x < a)
+    x = b ∧ ¬¬(x < a)
     ∴ x = b      (ExpandBooleanAnd)
       ¬¬(x < a)
     ∴ ¬¬(b < a)  (SubstituteEquality)
@@ -551,6 +533,113 @@ fn main() {
 }
 ```
 
+# Experimental extensions open to discussion
+
+## Candidates for additional rules
+
+    RewriteOr:
+      P ∨ Q
+      ──────────
+      ¬(¬P ∧ ¬Q)
+
+This rule states that if `a` nor `b`, none of them can be true. It allows us to
+rewrite OR in terms of NOT and AND.
+
+`RewriteOr` does not reduce depth. In fact, it does increase depth, but that
+rule is only triggered by `∨`, which no other rules infer. Thus, there is no
+way, we can enter a cycle, since `RewriteOr(P)` is a reduction of `P` with
+respect to `∨`.
+
+    DisjunctiveSyllogism:
+      ¬(P ∧ Q)
+      P
+      ─────
+      ¬Q
+
+Basically, this states that if two propositions are mutually exclusive (that
+is, not both of them can be true), and one of them is true, the other must be
+false, due to being disjunctive.
+
+This is strictly reductive.
+
+Now let's go funky:
+
+    AdditiveCancelationRR:
+      a + c = b + c
+      ─────────────
+      a = b
+    AdditiveCancelationLL:
+      c + a = c + b
+      ─────────────
+      a = b
+    AdditiveCancelationRL:
+      a + c = c + b
+      ─────────────
+      a = b
+    AdditiveCancelationLR:
+      c + a = b + c
+      ─────────────
+      a = b
+    MultiplicativeCancelationRR:
+      ac = bc
+      ─────────────
+      a = b
+    MultiplicativeCancelationLL:
+      ca = cb
+      ─────────────
+      a = b
+    MultiplicativeCancelationRL:
+      ac = cb
+      ─────────────
+      a = b
+    MultiplicativeCancelationLR:
+      ca = bc
+      ─────────────
+      a = b
+
+These are all reductive.
+
+## Expression reduction rules
+
+We might want to have expression reduction rules beyond the basic const
+folding. This would allow certain symbolic comparation to improve.
+
+    DistributiveMultiplicationLhs:
+      c(a + b) ↦ ca + cb
+    DistributiveMultiplicationRhs:
+      (a + b)c ↦ ca + cb
+
+This is simply the distributive property of multiplication.
+
+    AdditionLeftAssociate:
+      a + (b + c) ↦ (a + b) + c
+    MultiplicationLeftAssociate:
+      a(bc) ↦ (ab)c
+
+This rules allows us to observe that `a(bc)` is no different from `(ab)c`
+
+All these rules are reductive.
+
+## "Exit-point" identities
+
+These are simply identities which always holds. Whenever the compiler reaches one
+of these when unfolding the `where` clause, it returns "True":
+
+    LeqReflexive:
+        f(x) <= f(x) for x primitive integer
+    GeqReflexive:
+        f(x) >= f(x) for x primitive integer
+    EqReflexive:
+        f(x) = f(x)
+    NegFalseIsTrue:
+        ¬false
+    TrueAndTrue:
+        true ∧ true
+    OrTrue1:
+        P ∨ true
+    OrTrue2:
+        true ∨ P
+
 # How we teach this
 
 This RFC aims to keep a "symmetric" syntax to the current construct, giving an
@@ -575,21 +664,21 @@ some severe disadvantages: most importantly, the type checking becomes
 undecidable. Often you would need some form of theorem prover to type check
 the program, and those have their limitations too.
 
-**Q: What are `const fn` and how is it linked to this RFC?**
+**What are `const fn` and how is it linked to this RFC?**
 
 `const fn` is a function, which can be evaluated at compile time. While it
 is currently rather limited, in the future it will be extended (see
 [Miri](https://github.com/solson/miri)). You can use constexprs to take one
 type-level value, and non-trivially calculate a new one.
 
-**Q: What are the usecases?**
+**What are the usecases?**
 
 There are many usecases for this. The most prominent one, perhaps, is
 abstracting over generically sized arrays. Dependent types allows one to lift
 the length of the array up to the type-level, effectively allowing one to
 parameterize over them.
 
-**Q: What are the edge cases, and how can one work around those (e.g. failed
+**What are the edge cases, and how can one work around those (e.g. failed
    unification)?**
 
 If you use this a lot, you will likely encounter edge cases, where the
@@ -599,11 +688,11 @@ the compiler cannot prove the bound. You can work around this by simply
 adding the called function's `where` bound to the caller's `where` bound.
 While, this is a minor annoyance, working around it is relatively easy.
 
-**Q: How can I use this to create powerful abstractions?**
+**How can I use this to create powerful abstractions?**
 
 ...
 
-**Q: Can you show some more extensive examples?**
+**Can you show some more extensive examples?**
 
 Refer to the rest of the RFC.
 
