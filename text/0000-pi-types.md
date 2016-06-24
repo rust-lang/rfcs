@@ -370,11 +370,11 @@ In fact, this set of rule is strictly reductive (like equality-based unification
 #### An example
 
 We will quickly give an example of a possible proof. Say we want to show that
-`x = b ∧ x < a ⇒ b < a`. Starting with the left hand side, we can sequentially
+`(x = b) ∧ ¬¬(x < a) ⇒ b < a`. Starting with the left hand side, we can sequentially
 prove this, by simple unification (which already exists in the Rust type
 checker):
 
-    x = b ∧ ¬¬(x < a)
+    (x = b) ∧ ¬¬(x < a)
     ∴ x = b      (ExpandBooleanAnd)
       ¬¬(x < a)
     ∴ ¬¬(b < a)  (SubstituteEquality)
