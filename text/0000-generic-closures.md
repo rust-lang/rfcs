@@ -70,6 +70,8 @@ move <T>|x: T| where T: Debug {
 }
 ```
 
+All generic parameters must be used in the closure argument list. This is necessary to ensure that the closure can implement all the required `Fn` traits.
+
 ## Implementation
 
 The generated closure type will have generic implementations of `Fn`, `FnMut` and `FnOnce` with the provided type bounds. This is similar to the way closures currently have generic implementations over lifetimes.
