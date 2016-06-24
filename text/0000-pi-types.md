@@ -190,6 +190,11 @@ trait Divides<const m: usize> {}
 impl<const a: usize, const b: usize> Divides<b> for Num<a> where b % a == 0 {}
 ```
 
+### Playground
+
+[This repo](https://github.com/ticki/rfc-1657-playground) is a playground for
+usecases of such a feature. Refer to that for more examples.
+
 # Detailed design
 [design]: #detailed-design
 
@@ -314,7 +319,7 @@ unify(bound(f))` (by structural equality):
 
     ExpandBooleanAnd:
       P ∧ Q
-      ──────
+      ─────
       P
       Q
 
@@ -566,6 +571,8 @@ It will likely not be hard to implement itself, by using an external SMT-solver
 
 ## Candidates for additional rules
 
+### Propositional logic
+
 Currently, the set of rules is rather conservative for rewriting. To make it
 easier to work with, one can add multiple new reductive rules, at the expense
 of implementation complexity:
@@ -586,7 +593,7 @@ respect to `∨`.
     DisjunctiveSyllogism:
       ¬(P ∧ Q)
       P
-      ─────
+      ────────
       ¬Q
 
 Basically, this states that if two propositions are mutually exclusive (that
@@ -596,6 +603,8 @@ false, due to being disjunctive.
 This is strictly reductive.
 
 Now let's go funky:
+
+### Cancelation
 
     AdditiveCancelationRR:
       a + c = b + c
@@ -632,6 +641,87 @@ Now let's go funky:
 
 These are all reductive.
 
+### Inequalities
+
+Inequalities are something, we are interested in simplifying. These carry many
+interesting properties, which shall be covered:
+
+    RewriteGeq:
+      a ≥ b
+      ─────
+      b ≤ a
+
+Here, we rewrite greater than or equal to a form of less than or equal.
+
+    RewriteLessThan:
+      a < b
+      ────────
+      a ≤ b
+      ¬(a = b)
+    RewriteGreaterThan:
+      a > b
+      ────────
+      a ≥ b
+      ¬(a = b)
+
+This allows us to rewrite less than (`<`) and greater than (`>`), in terms of
+their equality accepting versions.
+
+    LeqAdditiveCancelationRR:
+      a + c ≤ b + c
+      ─────────────
+      a ≤ b
+    LeqAdditiveCancelationLL:
+      c + a ≤ c + b
+      ─────────────
+      a ≤ b
+    LeqAdditiveCancelationRL:
+      a + c ≤ c + b
+      ─────────────
+      a ≤ b
+    LeqAdditiveCancelationLR:
+      c + a ≤ b + c
+      ─────────────
+      a ≤ b
+    LeqMultiplicativeCancelationRR:
+      ac ≤ bc
+      ─────────────
+      a ≤ b
+    LeqMultiplicativeCancelationLL:
+      ca ≤ cb
+      ─────────────
+      a ≤ b
+    LeqMultiplicativeCancelationRL:
+      ac ≤ cb
+      ─────────────
+      a ≤ b
+    LeqMultiplicativeCancelationLR:
+      ca ≤ bc
+      ─────────────
+      a ≤ b
+
+These are known as the cancelation laws, and are essentially the inequality
+version, of those stated for equal.
+
+    LeqNegation:
+      ¬(a ≤ b)
+      ────────
+      a > b
+
+This allows us to define the _negation_ of less than or equals to.
+
+---
+
+Unfortunately, transitivity is not reductive.
+
+### Other relational definitions
+
+Non-eqaulity is defined by:
+
+    a ≠ b
+    ────────
+    ¬(a = b)
+
 ## Expression reduction rules
 
 We might want to have expression reduction rules beyond the basic const
@@ -651,6 +741,11 @@ This is simply the distributive property of multiplication.
 
 This rules allows us to observe that `a(bc)` is no different from `(ab)c`
 
+Lastly, we are nterested in rewriting subtraction in terms of addition:
+
+    SubtractionToAddition:
+      a - b ↦ a + (-b)
+
 All these rules are reductive.
 
 ## "Exit-point" identities
@@ -659,9 +754,9 @@ These are simply identities which always holds. Whenever the compiler reaches on
 of these when unfolding the `where` clause, it returns "True":
 
     LeqReflexive:
-        f(x) <= f(x) for x primitive integer
+        f(x) ≤ f(x) for x primitive integer
     GeqReflexive:
-        f(x) >= f(x) for x primitive integer
+        f(x) ≥ f(x) for x primitive integer
     EqReflexive:
         f(x) = f(x)
     NegFalseIsTrue:
