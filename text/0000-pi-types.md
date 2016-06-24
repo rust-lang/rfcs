@@ -770,7 +770,7 @@ An example is:
 // Note: This should be read from bottom to top!
 
 // Now, we replace a with a + 3 in our postcondition, and get a + 3 = 42 in our precondition.
-a = a + 2;
+a = a + 3;
 // Assume we know that a = 42 here.
 ```
 
@@ -851,7 +851,7 @@ It should be obvious that this extension is a big change, both internally and
 externally. It makes Rust much more complicated, and drives it in a direction,
 which might not be wanted.
 
-It aligns with Rust's goals: effective statical checking. As such, runtime
+It aligns with Rust's goals: effective static checking. As such, runtime
 assertions are to a less extend needed.
 
 # How we teach this
