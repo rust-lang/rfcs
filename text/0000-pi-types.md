@@ -388,50 +388,6 @@ thus calculate the two bounds, which will clearly fail. We cannot, however,
 stop such malformed bounds in _declarations_ and _function definitions_, due to
 mathematical limitations.
 
-### SMT-solvers?
-
-This RFC doesn't propose such thing, but future possibilities are worth discussing:
-
-#### What a Rusty SMT-solver would look like
-
-The simplest and least obstructive SMT-solver is the SAT-based one. SAT is a
-class of decision problem, where a boolean formula, with some arbitrary number
-of free variables, is determined to be satisfiable or not. Obviously, this is
-decidable (bruteforcing is the simplest algorithm, since the search space is
-finite, bruteforcing is guaranteed to terminate).
-
-SAT is NP-complete, and even simple statements such as `x + y = y + x` can take
-a long time to prove. A non-SAT (symbolic) SMT-solver is strictly more
-expressive, due to not being limited to finite integers, however first-order
-logic is not generally decidable, and thus such solvers are often returning
-"Satisfiable", "Not satisfiable", "Not known".
-
-In general, such algorithms are either slow or relatively limited. An example
-of such a limitation is in the [Dafny
-language](https://github.com/Microsoft/dafny), where programs exist that
-compile when having the bound `a \/ b`, but fails when having the bound `b \/
-a`. This can be relatively confusing the user.
-
-It is worth noting that the technology on this area is still improving, and
-these problems will likely be marginalized in a few years.
-
-Another issue which is present in Rust, is that you don't have any logical
-(invariant) information about the return values. Thus, a SMT-solver would work
-relatively poorly (if at all) non-locally (e.g. user defined functions).
-
-That issue is not something that prevents us from adopting a SMT-solver, but it
-limits the experience with having one.
-
-#### Backwards compatibility
-
-While I am against adding SMT-solvers to `rustc`, it is worth noting that this
-change is, in fact, compatible with future extensions for more advanced theorem
-provers.
-
-The only catch with adding a SMT-solver is that errors on unsatisfiability or
-contradictions would be a breaking change. By throwing a warning instead, you
-essentially get the same functionality.
-
 ## The grammar
 
 These extensions expand the type grammar to:
@@ -550,6 +506,58 @@ fn main() {
 ```
 
 # Experimental extensions open to discussion
+
+## SMT-solvers?
+
+This RFC doesn't propose such thing, but future possibilities are worth discussing:
+
+### What a Rusty SMT-solver would look like
+
+The simplest and least obstructive SMT-solver is the SAT-based one. SAT is a
+class of decision problem, where a boolean formula, with some arbitrary number
+of free variables, is determined to be satisfiable or not. Obviously, this is
+decidable (bruteforcing is the simplest algorithm, since the search space is
+finite, bruteforcing is guaranteed to terminate).
+
+SAT is NP-complete, and even simple statements such as `x + y = y + x` can take
+a long time to prove. A non-SAT (symbolic) SMT-solver is strictly more
+expressive, due to not being limited to finite integers, however first-order
+logic is not generally decidable, and thus such solvers are often returning
+"Satisfiable", "Not satisfiable", "Not known".
+
+In general, such algorithms are either slow or relatively limited. An example
+of such a limitation is in the [Dafny
+language](https://github.com/Microsoft/dafny), where programs exist that
+compile when having the bound `a \/ b`, but fails when having the bound `b \/
+a`. This can be relatively confusing the user.
+
+It is worth noting that the technology on this area is still improving, and
+these problems will likely be marginalized in a few years.
+
+Another issue which is present in Rust, is that you don't have any logical
+(invariant) information about the return values. Thus, a SMT-solver would work
+relatively poorly (if at all) non-locally (e.g. user defined functions). This
+is often solved by having an exression of "unknown function", which can have
+any arbitrary body.
+
+That issue is not something that prevents us from adopting a SMT-solver, but it
+limits the experience with having one.
+
+### Backwards compatibility
+
+While I am against adding SMT-solvers to `rustc`, it is worth noting that this
+change is, in fact, compatible with future extensions for more advanced theorem
+provers.
+
+The only catch with adding a SMT-solver is that errors on unsatisfiability or
+contradictions would be a breaking change. By throwing a warning instead, you
+essentially get the same functionality.
+
+### Implementation complications
+
+It will likely not be hard to implement itself, by using an external SMT-solver
+(e.g., Z3). The real proble lies in the probles with performance and
+"obviousness" of the language.
 
 ## Candidates for additional rules
 
