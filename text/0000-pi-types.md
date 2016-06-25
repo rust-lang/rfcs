@@ -716,7 +716,7 @@ Unfortunately, transitivity is not reductive.
 
 ### Other relational definitions
 
-Non-eqaulity is defined by:
+Non-equality is defined by:
 
     a ≠ b
     ────────
@@ -741,7 +741,7 @@ This is simply the distributive property of multiplication.
 
 This rules allows us to observe that `a(bc)` is no different from `(ab)c`
 
-Lastly, we are nterested in rewriting subtraction in terms of addition:
+Lastly, we are interested in rewriting subtraction in terms of addition:
 
     SubtractionToAddition:
       a - b ↦ a + (-b)
@@ -937,7 +937,7 @@ if a {
 
 Runtime calls are parameterized over runtime values. These allows the compiler
 to semantically reason about the value of some variable. Thus, the bound can be
-enforced on compile time, by making sure the statements of the value iplies
+enforced on compile time, by making sure the statements of the value implies
 whatever bound that must be satisfied.
 
 #### Advantages and tradeoffs
