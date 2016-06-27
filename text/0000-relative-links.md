@@ -77,6 +77,8 @@ Since this is more complicated, not precluded by my proposal, and doesn't help w
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
-I have fully implemented the proposed solution and it works well, so all known open questions are about design and are already covered in Alternatives and Drawbacks.
+### Cross-Crate Links
+
+This RFC is intentionally modest, leaving the larger design space open for the future. However, it's tempting to expand scope one notch and support cross-crate links. This would look something like, `::crate_name/`, and would resolve to the crate's local documentation build, assuming cargo has built its dependencies' documentation.
 
 [commonmark-plugin]: https://talk.commonmark.org/t/generic-directives-plugins-syntax
