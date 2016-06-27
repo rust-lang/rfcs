@@ -195,6 +195,19 @@ impl Singleton for T {
 
 Then `a != b` can be thought of as `a: !Singleton<Elem = b>`.
 
+### Avoiding breakage
+
+If a crate adds an implementation, which another crate assume is nonexistent, a
+breakage is possible. Thus, we require the absence of such implementation to be
+guaranteed.
+
+Outside the crate itself, one cannot assume `Type: !Trait`, unless it is
+explicitly stated, through the syntax:
+
+```rust
+impl !Trait for Type;
+```
+
 ### (Optional:) The `Destructor` trait
 
 `Drop` is a highly unusual trait, and it is generally not suitable, unless we
