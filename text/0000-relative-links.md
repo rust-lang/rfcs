@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-Allow `::/` as a prefix in documentation links to specify module-relative links.
+Allow `::/` as a prefix in documentation links to indicate a module-relative link.
 
 # Motivation
 [motivation]: #motivation
