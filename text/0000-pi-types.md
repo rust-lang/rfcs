@@ -279,7 +279,7 @@ let l = foo::<_, [1, 2, 3, 4, 5, 6]>();
 
 Often, it is wanted to have some statically checked clause satisfied by the
 constant parameters (e.g., for the sake of compile-time bound checking). To
-archive this, in a reasonable manner, we use const exprs, returning a boolean.
+archive this, in a reasonable manner, we use constexprs, returning a boolean.
 
 We allow such constexprs in `where` clauses of functions. Whenever the
 function is invoked given constant parameters `<a, b...>`, the compiler
@@ -547,7 +547,7 @@ these problems will likely be marginalized in a few years.
 Another issue which is present in Rust, is that you don't have any logical
 (invariant) information about the return values. Thus, a SMT-solver would work
 relatively poorly (if at all) non-locally (e.g. user defined functions). This
-is often solved by having an exression of "unknown function", which can have
+is often solved by having an expression of "unknown function", which can have
 any arbitrary body.
 
 That issue is not something that prevents us from adopting a SMT-solver, but it
@@ -566,7 +566,7 @@ essentially get the same functionality.
 ### Implementation complications
 
 It will likely not be hard to implement itself, by using an external SMT-solver
-(e.g., Z3). The real proble lies in the probles with performance and
+(e.g., Z3). The real problem lies in the issues with performance and
 "obviousness" of the language.
 
 ## Candidates for additional rules
@@ -718,9 +718,10 @@ Unfortunately, transitivity is not reductive.
 
 Non-equality is defined by:
 
-    a ≠ b
-    ────────
-    ¬(a = b)
+    NeqDefinition:
+      a ≠ b
+      ────────
+      ¬(a = b)
 
 ## Expression reduction rules
 
@@ -768,7 +769,7 @@ of these when unfolding the `where` clause, it returns "True":
     OrTrue2:
         true ∨ P
 
-### A constexpr type constructor
+## A constexpr type constructor
 
 Add some language item type constructor, `Const<T>`, allowing for constructing
 a constexpr-only types.
@@ -831,7 +832,7 @@ As it stands currently, one cannot "mix up" runtime values and value parameter
 It turns out reasoning about invariants is not as hard as expected. [Hoare
 logic](https://en.wikipedia.org/wiki/Hoare_logic) allows for this.
 
-One need not SMT solvers for such a feature. In fact, one can reason from the
+One need not SMT-solvers for such a feature. In fact, one can reason from the
 rules, we have already provided. With the addition of MIR, this might turn out
 to be more frictionless than previously thought.
 
