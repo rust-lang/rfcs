@@ -62,7 +62,9 @@ Another drawback is that this change will make it slightly harder to switch to a
 
 ### Spelling
 
-This could be spelled `mod:/`, which is attractive since we could consider the `mod:` part to be a URI scheme. In practice, `mod:/` is a bit longer, and because it looks less strange, it's easier to miss that it's special.
+This could just be spelled `/`, which is what a naive user might do anyway. The behavior could be surprising to a naive user, but I don't see the harm in that. I can't think of a case where you'd really want to force a true root-relative link with the classic meaning of `/`.
+
+This could be spelled `rust:/`, which is attractive since we could consider the `rust:` part to be a URI scheme. In practice, `rust:/` is a bit longer, and because it looks less strange, it's easier to miss that it's special.
 
 This could be spelled `/::/` if there's worry about colon processing in future markdown processors.
 
