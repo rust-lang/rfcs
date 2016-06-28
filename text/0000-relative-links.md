@@ -74,11 +74,15 @@ Maybe we don't need to wait for CommonMark extensions and a new markdown process
 
 Since this is more complicated, not precluded by my proposal, and doesn't help with non-item links, I think it's best left to the future.
 
+### Cross-Crate Links
+
+We could add a slight bit of semantic meaning by allowing a crate name to be provided, like `::crate_name/`. This doesn't buy much since rustdoc places docs for dependencies in sibling trees to the main crate docs, so `::/crate_name/` works well. Also, adding that syntax would require either error handling for cases when no dependencies are documented, or some way to form absolute links. This form would most benefit linking to libstd since those docs are not generated for each crate consumer.
+
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
-### Cross-Crate Links
+Unresolved questions are largely mentioned inline in Alternatives and Drawbacks.
 
-This RFC is intentionally modest, leaving the larger design space open for the future. However, it's tempting to expand scope one notch and support cross-crate links. This would look something like, `::crate_name/`, and would resolve to the crate's local documentation build, assuming cargo has built its dependencies' documentation.
+Should there be error handling to forbid constructions like `::foo/` that we won't support initially, but may support in the future? Given the current proposal that constuction would be rendered literally.
 
 [commonmark-plugin]: https://talk.commonmark.org/t/generic-directives-plugins-syntax
