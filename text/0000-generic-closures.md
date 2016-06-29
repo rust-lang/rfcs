@@ -76,6 +76,23 @@ All generic parameters must be used in the closure argument list. This is necess
 
 The generated closure type will have generic implementations of `Fn`, `FnMut` and `FnOnce` with the provided type bounds. This is similar to the way closures currently have generic implementations over lifetimes.
 
+The closure itself still only has a single type, but it has a generic implementation of the `Fn` traits. Example:
+
+```rust
+<T: Debug>|x: T| println!("{:?}", x);
+
+// Is expanded to:
+struct Closure;
+impl<T: Debug> FnOnce<(T,)> for Closure {
+    type Output = ();
+    extern "rust-call" fn call_once(self, args: (T,)) {
+        println!("{:?}", x);
+    }
+}
+```
+
+This implementation means that a closure may not be generic over its return type only (unless that type is also used in the argument list), since that would not result in a valid impl.
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
