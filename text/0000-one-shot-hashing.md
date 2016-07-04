@@ -6,8 +6,7 @@
 # Summary
 [summary]: #summary
 
-Extend the `Hasher` trait with a `fn delimit` method. Add an unstable Farmhash
-implementation to the standard library.
+Extend the `Hasher` trait with a `fn delimit` method.
 
 # Motivation
 [motivation]: #motivation
@@ -48,45 +47,16 @@ trait Hasher {
 }
 ```
 
-Farmhash is introduced as an unstable struct at `core::hash::FarmHasher`. It
-should not be exposed in to users of stable Rust.
-
-It may be implemented in the standard library as follows.
-
-```rust
-struct FarmHasher {
-    hash: u64
-}
-
-impl Hasher for FarmHasher {
-    fn write(&mut self, input: &[u8]) {
-        self.hash = farmhash::hash64(input);
-    }
-
-    fn delimit(&mut self, _len: usize) {
-        // Nothing to do.
-    }
-
-    fn finish(&mut self) -> u64 {
-        self.hash
-    }
-}
-```
-
 # Drawbacks
 [drawbacks]: #drawbacks
 
-* There will be yet another hashing algorithm to maintain in the standard library.
 * The `Hasher` trait becomes larger.
 
 # Alternatives
 [alternatives]: #alternatives
 
-* Leaving out either or both of these. This means adaptive hashing won't work for
+* Leaving out this, which means adaptive hashing may not work for
   string and slice types.
-* Introducing Farmhash as an unstable function.
-* Adding the `fn delimit` method, but leaving out Farmhash.
-* Using MetroHash or some other algorithm instead of Farmhash.
 * Changing SipHash to ignore the first delimiter.
 
 # Unresolved questions
