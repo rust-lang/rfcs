@@ -20,10 +20,10 @@ compound types produce unique streams. For example, hashing `("ab", "c")` and
 
 Hashing in one shot is possible even today with a custom hasher for constant-
 sized types. However, HashMap keys are often strings and slices. In order to
-allow fast, specialized hashing for more types, we need a clean way of
-handling single writes. Hashing of strings and slices performs two writes to a
-stream: one for a delimiter and the other for the content. We need a way of
-conveying the distinction between the delimiter and actual content. In the
+allow fast, specialized hashing for variable-length types, we need a clean way
+of handling single writes. Hashing of strings and slices performs two writes
+to a stream: one for a delimiter and the other for the content. We need a way
+of conveying the distinction between the delimiter and actual content. In the
 case of one-shot hashing, the delimiter can be ignored.
 
 # Detailed design
