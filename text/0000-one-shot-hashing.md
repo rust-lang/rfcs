@@ -11,25 +11,47 @@ Extend the `Hasher` trait with a `fn delimit` method.
 # Motivation
 [motivation]: #motivation
 
-The current hashing architecture is suitable for streaming hashing.
+Streaming hashing is a way of hashing values of any type. Every significant
+byte of the hashed value is included in a stream. The entire stream is hashed.
+One-shot hashing is a simplification of streaming hashing. It is limited to a
+single scalar value.
+
+The current hashing architecture is used for streaming hashing. However, it is
+unfit for optimal one-shot hashing. Consider the following interface for
+one-shot hashing, based on Farmhash.
+
+```rust
+extern crate farmhash;
+
+struct FarmHasher {
+    result: u64
+}
+
+impl Hasher for FarmHasher {
+    fn write(&mut self, msg: &[u8]) {
+        self.result = farmhash::hash64(msg);
+    }
+    
+    fn finish(&self) -> u64 {
+        self.result
+    }
+}
+```
+
+This `FarmHasher` will work for constant-sized primitive types. That is:
+integers, raw pointers, and `char`. It will give wrong results when hashing
+`&str`, and may do unnecessary work when hashing `&[T]`. Why doesn't it work
+for variable-sized types?
 
 In general, for each type which implements Hasher, there cannot be two values
-that produce the same stream. Delimiters are inserted so that values of
-compound types produce unique streams. For example, hashing `("ab", "c")` and
-`("a", "bc")` must produce different results.
-
-Hashing in one shot is possible even today with a custom hasher for constant-
-sized types. However, HashMap keys are often strings and slices. In order to
-allow fast, specialized hashing for variable-length types, we need a clean way
-of handling single writes. Hashing of strings and slices performs two writes
-to a stream: one for a delimiter and the other for the content. We need a way
-of conveying the distinction between the delimiter and actual content. In the
-case of one-shot hashing, the delimiter can be ignored.
+that produce the same stream. For example, hashing `("ab", "c")` and `("a",
+"bc")` must produce different results. To ensure that, a special value is
+inserted in the stream after the contents of every string. One-shot hashing
+should be able to ignore such delimiters, because compound types can't be
+hashed in one shot.
 
 # Detailed design
 [design]: #detailed-design
-
-The functionality of streaming hashers remains the same.
 
 A `delimit` method with default implementation is added to the `Hasher` trait as
 follows.
@@ -38,14 +60,35 @@ follows.
 trait Hasher {
     // ...
 
-    /// Emit a delimiter for an array of length `len`.
+    /// Emit a delimiter.
     #[inline]
     #[unstable(feature = "hash_delimit", since = "...", issue="...")]
-    fn delimit(&mut self, len: usize) {
-        self.write_usize(len);
+    fn delimit<T: Hash>(&mut self, delimiter: T) {
+        delimiter.hash(self);
     }
 }
 ```
+
+Implementations of `Hash` for `str` and `[T]` are changed as follows.
+
+```rust
+impl Hash for str {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        state.write(self.as_bytes());
+        state.delimit(0xff_u8);
+    }
+}
+
+impl<T: Hash> Hash for [T] {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        state.delimit(self.len());
+        Hash::hash_slice(self, state)
+    }
+}
+```
+
+The functionality of streaming hashers remains the same. One-shot hashing is
+not yet in the standard library.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -57,7 +100,7 @@ trait Hasher {
 
 * Leaving out this, which means adaptive hashing may not work for
   string and slice types.
-* Changing SipHash to ignore the first delimiter.
+* Changing SipHash to ignore the first or the last delimiter.
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
