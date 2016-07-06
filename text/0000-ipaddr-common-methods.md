@@ -42,6 +42,14 @@ These implementations would be written as `match`es like the one given above, si
 [the implementation of net::SocketAddr.ip()](https://github.com/rust-lang/rust/blob/master/src/libstd/net/addr.rs#L63-68),
 which is a method that seems to exist for the same reason.
 
+The method signatures should be as follows:
+``` rust
+impl IpAddr {
+    fn is_loopback(&self) -> bool { ... }
+    fn is_multicast(&self) -> bool { ... }
+}
+```
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
