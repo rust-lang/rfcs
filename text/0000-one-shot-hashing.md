@@ -14,7 +14,7 @@ Extend the `Hasher` trait with a `fn delimit` method.
 Streaming hashing is a way of hashing values of any type. Every significant
 byte of the hashed value is included in a stream. The entire stream is hashed.
 One-shot hashing is a simplification of streaming hashing. It is limited to a
-single scalar value.
+single primitive value.
 
 The current hashing architecture is used for streaming hashing. However, it is
 unfit for optimal one-shot hashing. Consider the following interface for
@@ -47,8 +47,8 @@ In general, for each type which implements Hasher, there cannot be two values
 that produce the same stream. For example, hashing `("ab", "c")` and `("a",
 "bc")` must produce different results. To ensure that, a special value is
 inserted in the stream after the contents of every string. One-shot hashing
-should be able to ignore such delimiters, because compound types can't be
-hashed in one shot.
+should be able to ignore such delimiters, because compound types can't even
+be hashed in one shot.
 
 # Detailed design
 [design]: #detailed-design
