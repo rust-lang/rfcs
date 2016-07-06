@@ -6,9 +6,8 @@
 # Summary
 [summary]: #summary
 
-As of Rust v1.7.0, net::Ipv4Addr and net::Ipv6Addr both expose `is_loopback()` and `is_multicast()`.
+net::Ipv4Addr and net::Ipv6Addr both expose methods like `is_loopback()` and `is_multicast()`.
 net::IpAddr should expose those directly rather than requiring a redundant `match`.
-This should carry forward as [more methods are stabilized](https://github.com/rust-lang/rust/issues/27709).
 
 # Motivation
 [motivation]: #motivation
@@ -32,10 +31,10 @@ Additionally, net::SocketAddr.ip() and .port() do the same thing elsewhere in th
 # Detailed design
 [design]: #detailed-design
 
-Since `is_loopback()` and `is_multicast()` are stable as of Rust v1.7.0 in both
+Since several methods, like `is_loopback()` and `is_multicast()`, exist in both
 [net::Ipv4Addr](https://doc.rust-lang.org/std/net/struct.Ipv4Addr.html) and
 [net::Ipv6Addr](https://doc.rust-lang.org/std/net/struct.Ipv6Addr.html),
-it seems natural to add those methods, and any others that are shared and stable, to
+it seems natural to add those methods to
 [net::IpAddr](https://doc.rust-lang.org/std/net/enum.IpAddr.html).
 
 These implementations would be written as `match`es like the one given above, similarly to
@@ -45,8 +44,11 @@ which is a method that seems to exist for the same reason.
 The method signatures should be as follows:
 ``` rust
 impl IpAddr {
+    fn is_unspecified(&self) -> bool { ... }
     fn is_loopback(&self) -> bool { ... }
+    fn is_global(&self) -> bool { ... }
     fn is_multicast(&self) -> bool { ... }
+    fn is_documentation(&self) -> bool { ... }
 }
 ```
 
@@ -54,7 +56,7 @@ impl IpAddr {
 [drawbacks]: #drawbacks
 
 This makes the standard library slightly larger and increases overhead in changes to Ipv4Addr and Ipv6Addr
-(since newly stable methods in both structs would be added to IpAddr as well).
+(since new methods in both structs would be added to IpAddr as well).
 
 # Alternatives
 [alternatives]: #alternatives
@@ -65,4 +67,4 @@ As such, to simply leave things as they are would be the primary alternative.
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
-Was this a deliberate omission or just something nobody asked for yet?
+Are Ipv4Addr.is_link_local() and Ipv6Addr.is_unicast_link_local() the same? If so, which name should be used in IpAddr?
