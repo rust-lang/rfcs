@@ -1,4 +1,4 @@
-- Feature Name: custom\_dst
+- Feature Name: `custom_dst`
 - Start Date: 02 March, 2016
 - RFC PR: (leave this empty)
 - Rust Issue: (leave this empty)
@@ -6,249 +6,286 @@
 # Summary
 [summary]: #summary
 
-Allow Rust code to define custom fat pointers, and define slice code in terms of
-these new operators (instead of the current `std::raw::Repr`).
+Allow Rust code to define dynamically sized types with custom fat pointers, and
+define slice functions in terms of these, instead of transmute.
 
 # Motivation
 [motivation]: #motivation
 
-One major missing feature of Rust is custom dynamically sized types; it's
-impossible to implement a slice type in Rust, for example. This has led to
-things like the `std::raw::Repr` trait, a stopgap measure. It's also very
-difficult to represent things like views into 2d slices; for example,
-pixel buffers. In many places, something other than the Rust slice type is
-needed (if you have both a width and a height, or if you have a width, height,
-and stride, or even further).
+Many standard Rust features rely on references. The `Deref*` and `Index*` traits
+are two major features where references are used to create lvalues on the other
+side. Unfortunately, what can be a reference is very much restricted by the
+language.
+
+Let's look at a DST which is already in the language: `[T]`. There are three
+main types which are connected to `[T]`: Heap (`Vec<T>`), Sized (`[T; n]`), and
+Borrowed (`[T]`). We already have the ability to write the Heap part of custom
+DSTs right now, and it looks something like this:
+
+```rust
+struct Vec<T> {
+  ptr: Unique<T>,
+  length: usize,
+  capacity: usize,
+}
+```
+
+The Borrowed and Sized types are both defined inside the compiler. The Heap type
+is the easy part of the story. Being able to define your own is a capability in
+the vast majority of languages. What this RFC attempts to do is allow defining
+the Borrowed type inside user code. In current Rust, `[T]`'s special handling is
+really nice when you want to deal with slices: they're very easy to use,
+thankfully, for such a major feature. It means, on the other hand, that no one
+else can make their own `[T]`-alikes. Let's look now at the original motivating
+example:
+
+Owned:
+
+```rust
+struct PixelBuffer {
+  ptr: Unique<f32>,
+  width: usize,
+  height: usize,
+}
+```
+
+Borrowed:
+
+```rust
+struct Pixels {
+  // ?
+}
+```
+
+The Borrowed type is undefineable. What you really want is `Pixels` to be a two
+dimensional "slice". However, the important thing is that `Pixels` is, itself,
+not a pointer. As `[T]` is just a block of memory, `Pixels` should just be a
+block of memory. The crazy stuff happens in the pointer to `Pixels`, which you
+want to be a {pointer, width, stride, height}. So, how do we do that?
+
+Note: we can't just make a new struct for things like this, something like:
+
+```rust
+// represents an &Pixels from above
+struct Pixels {
+  ptr: *const f32,
+  width: usize,
+  stride: usize,
+  height: usize,
+}
+
+// represents an &mut Pixels from above
+struct PixelsMut {
+  ptr: *mut f32,
+  width: usize,
+  stride: usize,
+  height: usize,
+}
+```
+
+because `Index` and `Deref` return references.
 
 # Detailed design
 [design]: #detailed-design
 
-The most important addition to the language shall be one new trait:
+The real center of this RFC is `unsafe impl !Sized for T`:
 
 ```rust
-#[lang = "dst"]
-unsafe trait Dst {
-    type Meta: Copy;
-    fn size_of_val(&self) -> usize;
+// not technically a trait, but it looks enough like one
+unsafe trait !Sized {
+  // this is the "metadata"; for [T], it would be a usize. For Pixels, it
+  // would be a struct { width: usize, stride: usize, height: usize }
+  type Meta: Copy;
+  // should eventually (before stabilization) be const fn
+  // returns the number of contiguous bytes readable through this type
+  // equivalently, how much a Box<T> must allocate for that value of T
+  // for example:
+  // size_of_val::<Pixels>(p) // size_of::<f32>() * height * stride
+  fn size_of_val(&self) -> usize;
 }
 ```
 
-The `Dst` trait should be unsafe, because it's very easy to give an incorrect
-implementation of `size_of_val`, and safe and unsafe code *must* rely on it
-being correct to not create undefined behavior.
+It's unsafe to implement `!Sized` because it's so easy to create undefined
+behavior with an incorrectly implemented `size_of_val`.
 
-Note that it is specified that, if `size_of::<<T as Dst>::Meta>() == 0`, then
-`size_of::<*const T>()` == `size_of::<*const ()>`. This is really important for
-C compatibility, because our current compatibility with flexible arrays is
-really terrible.
+If `size_of::<<T as DynamicallySized>::Meta>()` is zero, then `size_of::<&T>()`
+shall be equal to `size_of::<&()>()`.
 
-To actually get use of the improved fat pointers, we must add four new
-intrinsics (the names are up for bikeshedding):
+These three intrinsics shall be added to the language:
 
 ```rust
-// core
+mod intrinsics {
+  extern "rust-intrinsic" {
+    // shall return the size of the beginning part of the struct, without the
+    // dynamic data. This is equivalent to C's sizeof(struct with flexible
+    // array member). If it's called on a Sized type T, it shall be equivalent
+    // to size_of::<T>()
+    fn size_of_prelude<T: ?Sized>() -> usize;
+    // shall return the metadata of a fat pointer value. For example, with &[T],
+    // returns the length
+    fn fat_ptr_meta<T: !Sized>(ptr: *const T) -> T::Meta;
+    // creates a fat pointer from it's requisite parts.
+    fn make_fat_ptr<T: !Sized>(data: *const (), meta: T::Meta) -> *const T;
+  }
+}
+```
+
+And shall be stabilized (eventually) as:
+
+```rust
 mod ptr {
-    pub use intrinsics::{make_fat_ptr, make_fat_ptr_mut};
-    pub fn fat_ptr_meta<T: Dst + ?Sized>(ptr: &T) -> T::Meta {
-        unsafe {
-            core::intrinsics::fat_ptr_meta(ptr)
-        }
+  pub unsafe fn make_fat_ptr<T: !Sized>(
+      data: *const (), meta: T::Meta) -> *const T {
+    intrinsics::make_fat_ptr(data, meta)
+  }
+
+  pub fn fat_ptr_meta<T: !Sized>(ptr: &T) -> T::Meta {
+    unsafe {
+      core::intrinsics::fat_ptr_meta(ptr)
     }
+  }
 }
 mod mem {
-    pub fn size_of_prelude<T: ?Sized>() -> usize {
-        unsafe {
-            core::intrinsics::size_of_prelude::<T>()
-        }
+  pub fn size_of_prelude<T: ?Sized>() -> usize {
+    unsafe {
+      core::intrinsics::size_of_prelude::<T>()
     }
-}
-mod intrinsics {
-    extern "rust-intrinsic" {
-        fn size_of_prelude<T: ?Sized>() -> usize;
-        fn fat_ptr_meta<T: ?Sized + Dst>(ptr: *const T) -> T::Meta;
-        fn make_fat_ptr<T: Dst + ?Sized>(data: *const (),
-            meta: U::::Meta) -> *const T;
-        fn make_fat_ptr_mut<T: Dst + ?Sized>(data: *mut (),
-            meta: U::::Meta) -> *mut T;
-    }
+  }
 }
 ```
 
 This is an example implementation of `[T]`:
 
 ```rust
-// The last member of a struct like this must be Unsize
+// The last field of a !Sized type must be zero sized
+// You may use it as the "jumping off point" for indexing into your block of
+// memory
 #[lang = "slice"]
-struct Slice<T>([T]);
+struct Slice<T>([T; 0]);
 
-unsafe impl<T> Dst for [T] {
-    type Meta = usize;
-    fn size_of_val(&self) -> usize {
-        if self.len() > 0 {
-            core::mem::size_of_val(&self[0]) * self.len()
-        } else {
-            0
-        }
-    }
+unsafe impl<T> !Sized for [T] {
+  type Meta = usize;
+  fn size_of_val(&self) -> usize {
+    mem::size_of::<T>() * self.len()
+  }
 }
 
 // impl<T> Slice<T>
 impl<T> [T] {
-    pub fn len(&self) -> usize {
-        core::intrinsics::fat_ptr_meta(self)
-    }
+  pub fn len(&self) -> usize {
+    ptr::fat_ptr_meta(self)
+  }
 
-    pub fn as_ptr(&self) -> *const T {
-        unsafe {
-            &self.0 as *const [T] as *const T
-        }
+  pub fn as_ptr(&self) -> *const T {
+    unsafe {
+      &self.0 as &[T] as *const [T] as *const T
     }
+  }
 
-    pub unsafe fn from_raw_parts(buf: *const T, len: usize) -> &[T] {
-        unsafe {
-            &*core::intrinsics::make_fat_ptr(buf as *const (), len)
-        }
+  pub unsafe fn from_raw_parts(buf: *const T, len: usize) -> &[T] {
+    unsafe {
+      &*ptr::make_fat_ptr(buf as *const (), len)
     }
+  }
 }
 
 impl<T: Drop> Drop for [T] {
-    fn drop(&mut self) {
-        for el in self {
-            drop_in_place(el)
-        }
+  fn drop(&mut self) {
+    for el in self {
+      drop_in_place(el)
     }
+  }
 }
 ```
 
-And the following, an example implementation of a pixel buffer; this is the real
-meat of the RFC, custom fat pointers for libraries:
+And the following is an example of a custom Borrow type:
 
 ```rust
-struct PixelBuffer([f32]);
+struct PixelBuffer {
+  ptr: *const f32,
+  width: usize,
+  stride: usize,
+  height: usize
+}
 
-unsafe impl Dst for PixelBuffer {
-    type Meta = (usize, usize);
-    fn size_of_val(&self) -> usize {
-        std::mem::size_of::<f32>() * self.width() * self.height()
+struct Pixels([f32; 0]);
+
+#[derive(Copy, Clone)]
+struct PixelMeta {
+  width: usize,
+  stride: usize,
+  height: usize
+}
+
+unsafe impl !Sized for Pixels {
+  type Meta = PixelMeta;
+  fn size_of_val(&self) -> usize {
+    std::mem::size_of::<f32>() * self.stride() * self.height()
+  }
+}
+
+impl Deref for PixelBuffer {
+  type Target = Pixels;
+
+  fn deref(&self) -> &Pixels {
+    unsafe {
+      &*ptr::make_fat_ptr(self.ptr as *const (),
+        PixelMeta {
+          width: self.width,
+          stride: self.width,
+          height: self.height
+        })
     }
+  }
 }
 
-impl PixelBuffer {
-    pub fn new_zeroed(width, height) -> Box<PixelBuffer> {
-        if width > 0 {
-            assert!(usize::max_value() / width > height);
-        }
-        let backing = vec![0.0; width * height];
-        let ptr = Box::into_raw(backing.into_boxed_slice()) as *mut ();
-        unsafe {
-            Box::from_raw(
-                std::ptr::make_fat_ptr(ptr, (width, height))
-            )
-        }
+impl DerefMut for PixelBuffer {
+  fn deref_mut(&mut self) -> &mut Pixels {
+    unsafe {
+      &mut *ptr::make_fat_ptr(self.ptr as *const (),
+        PixelMeta {
+          width: self.width,
+          stride: self.width,
+          height: self.height
+        }) as *mut _
     }
+  }
+}
 
-    pub fn width(&self) -> usize {
-        std::ptr::fat_ptr_meta(self).0
+impl Pixels {
+  pub fn from_raw_parts(ptr: *const f32, 
+      width: usize, stride: usize, height: usize) -> &Pixels {
+    &*std::ptr::make_fat_ptr(ptr as *const (),
+      PixelMeta { width: width, stride: stride, height: height })
+  }
+
+  pub fn width(&self) -> usize {
+    std::ptr::fat_ptr_meta(self).width
+  }
+
+  pub fn stride(&self) -> usize {
+    std::ptr::fat_ptr_meta(self).stride
+  }
+
+  pub fn height(&self) -> usize {
+    std::ptr::fat_ptr_meta(self).height
+  }
+}
+
+impl Index<Range<usize>> for Pixels {
+  type Output = PixelBuffer;
+
+  fn index(&self, idx: Range<usize>) -> &Pixels {
+    assert!(idx.start <= idx.end);
+    assert!(idx.end <= self.);
+    unsafe {
+      Pixels::from_raw_parts(
+        self.as_ptr().offset(index.start as isize),
+        index.end - index.start,
+        self.stride,
+        self.height)
     }
-
-    pub fn height(&self) -> usize {
-        std::ptr::fat_ptr_meta(self).1
-    }
-}
-```
-
-And now, an example implementation of a Pascal string type (this is good for
-compatibility with C libraries that use flexible length arrays):
-
-```rust
-#[repr(C)]
-struct PascalStr {
-    len: usize,
-    buffer: [u8],
-}
-impl Dst for PascalStr {
-    type Meta = ();
-    fn size_of_val(&self) -> usize {
-        std::mem::size_of_prelude::<Self>() + self.len
-    }
-}
-
-impl PascalStr {
-    pub fn len(&self) {
-        self.len
-    }
-}
-```
-
-One more type which is always brought up when one talks about DSTs is the trait
-object; this won't allow us to write trait objects in the standard library, or
-anything, but it is interesting to look at how the compiler will see trait
-objects in the context of wider DSTs:
-
-```rust
-trait Trait {
-    fn func1();
-}
-struct TraitVtable {
-    size: usize,
-    func1: fn(),
-}
-unsafe impl<T: Trait> Unsize<Trait> for T {
-    const fn unsize(&self) -> &Trait {
-        static vt = TraitVtable {
-            size: size_of::<T>(),
-            func1: Self::func1
-        };
-        unsafe {
-            std::ptr::make_fat_ptr(self, vt)
-        }
-    }
-}
-
-unsafe impl Dst for Trait { 
-    type Meta = TraitVtable;
-    fn size_of_val(&self) -> {
-        std::ptr::fat_ptr_meta(self).size
-    }
-}
-```
-
-# Future Extensions
-[future extensions]: #extensions
-
-A future extension could add unsizing coercions very easily, especially with
-integer generics. We could use this syntax, allowing you to define the same
-struct for both the sized and unsized versions. This would make for very nice
-slice-like types. However, this is not necessary for the actual RFC.
-
-```rust
-#[lang = "unsize"]
-trait Unsize<T: Dst + ?Sized> {
-    const fn unsize(&self) -> T::Meta;
-}
-```
-
-```rust
-mod intrinsics {
-    fn make_fat_ptr<U: Dst + ?Sized, T: Unsize<U>>(data: *const T,
-        meta: U::::Meta) -> *const U;
-    fn make_fat_ptr_mut<U: Dst + ?Sized, T: Unsize<U>>(data: *mut T,
-        meta: U::::Meta) -> *mut U;
-}
-```
-
-```rust
-// The [const N] means that the N parameter is optional, and if left off,
-// unsizing coercion shall be done
-#[lang = "slice"]
-struct Slice<T>[const N: usize]([T; N]);
-// The last member, in these types, shall be an array, and will be turned into a
-// slice for the Unsize coercion
-
-unsafe impl<T> Unsize<[T]> for [T; N] {
-    const fn unsize(&self) -> &[T] {
-        N
-    }
+  }
 }
 ```
 
@@ -262,18 +299,14 @@ More complication in the language.
 
 @eddyb's original idea of existentials `struct [T] = for<N: usize> [T; N];`,
 which unfortunately doesn't give us things that can't be represented with
-existentials, like a rectangular window into one of those `PixelBuffer`s.
+existentials, like a rectangular window into one of those `PixelBuffer`s (as
+seen with `Pixels`).
 
-I originally had an idea where the DSTs were the first class types, because I
-was afraid of putting integer generics into my proposal. The current proposal
-is, in my opinion, far nicer.
-
-You could define a struct type
-`PixelBuffer<'a> { width: usize, height: usize, ptr: &'a f32 }`, and a similar
-PixelBufferMut struct, but this is *very* annoying, and cannot be returned by
-Index traits.
+We could use an unsized type as the last type, instead of a zero sized type.
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
 How should these fat pointers be passed, if they are larger than two pointers?
+
+What should the last type actually be? A zero sized type seems the least bad.
