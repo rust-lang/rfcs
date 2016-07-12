@@ -22,7 +22,7 @@ However Cargo does not know about the standard library, so builds of it are take
 For cross-compiling, one can often download standard library binaries with rustup.
 This is convenient, but one cannot expect pre-built binaries for all platforms.
 In particular, embedded systems often have detailed configurations to convey as much information as possible about the hardware to the compiler.
-Furthermore, not all of the stdlib is available on every platform---there is an RFC in the works to pre-build a smaller set of crates for [Cortex-M microcontrollers[(https://github.com/rust-lang/rfcs/pull/1645).
+Furthermore, not all of the stdlib is available on every platform---there is an RFC in the works to pre-build a smaller set of crates for [Cortex-M microcontrollers](https://github.com/rust-lang/rfcs/pull/1645).
 It would be nice to know if the available subset is adequate before attempting a build.
 We can only do that if all packages have explicit standard library deps to cross-reference with platform requirements of each standard library crate.
 
