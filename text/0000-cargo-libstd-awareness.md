@@ -53,9 +53,12 @@ First and foremost, one will now be able to depend on standard library crates by
 This will work just as if `std` was on crates.io---features and other modifiers are supported.
 
 For backwards compatibility, Cargo must inject such standard library dependencies for existing packages.
-Exactly which dependencies is unresolved, but a requirement at least as strong as `std = "^1.0"` as a primary and build dependency is assured.
+These injected standard library dependencies are called "implicit dependencies" because the user does not specify them explicitly.
+Exactly which dependencies will be enjected is unresolved, but a requirement at least as strong as `std = "^1.0"` as a primary and build dependency is assured.
+We also have to account for `core` somehow, as it is now stable so packages using it implicitly too cannot be broken.
+Other dependencies of `std` besides core we don't need to worry about, because they are only transitive dependencies through `std`, not direct dependencies.
 
-Now, not all crates depend on `std`, so there must be a way to opt out.
+Now, not all crates depend on `std`, or whatever the implicit dependencies are decided to be, so there must be a way to opt out.
 For this, we introduce a new `implicit-dependencies` key.
 It is defined by default as:
 ```toml
@@ -153,6 +156,10 @@ After the last compiler is build, an additional mini-stage of building just the 
 
  - Users of the stable compiler should be able to build the stdlib from source, since it is trusted, but cannot because it uses unstable features.
    Some notion of a trusted package/registry or way to route the secret bootstrap key would be required to fix this.
+
+ - It is unclear how `core` should be an implicit dependency.
+   `core = "^1.0"` might work but is a little weird as that core 1.0 is not stabalized.
+   This relies on users to not `extern crate core;` if they don't use it, to get around the stability warning on older versions of rust, which is rather sketchy.
 
  - It is unclear what should go in the lockfile when building with sysroot binaries.
 
