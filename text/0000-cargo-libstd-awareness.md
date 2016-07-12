@@ -56,14 +56,14 @@ For backwards compatibility, Cargo must inject such standard library dependencie
 Exactly which dependencies is unresolved, but a requirement at least as strong as `std = "^1.0"` as a primary and build dependency is assured.
 
 Now, not all crates depend on `std`, so there must be a way to opt out.
-For this, we introduce a new `implicit-deps` key.
+For this, we introduce a new `implicit-dependencies` key.
 It is defined by default as:
 ```toml
 implicit-dependencies = ["primary", "build", "dev"]
 ```
 This indicates each of `dependencies`, `build-dependencies`, and `dev-dependencies` maps (respectively) is augmented with implicit elements.
 A manual definition may be that or almost any subset, in which case only the included dependency maps are augmented.
-The one additional rule is `"build"` must be included in the set: we have no plan for Cargoizing the default test runner (either the attribute syntax manipulation or runtime), and wish to be forward-compatible with doing so in the future.
+The one additional rule is `"dev"` must be included in the set: we have no plan for Cargoizing the default test runner (either the attribute syntax manipulation or runtime), and wish to be forward-compatible with doing so in the future.
 
 Finally, if an (explicit) dependency conflicts with one of the implicit defaults, that category of implicit dependency will be skipped.
 For example, if a crate explicit depends on `std` as a build-dependency, neither `std` nor any other implicit build dependency will be injected.
@@ -109,7 +109,7 @@ Cargo likewise will have to be conservative with other metadata, e.g. both abort
 The mock registry will have dead last priority in the default chain, even behind the source registry.
 The "building" of such a package in the mock registry will consist of copying the binary into the target directory.
 
-[System packages would like to build Rust libraries 1 per system packages, and for this Cargo will need to gain some understand of prebuilt binaries.
+[System packages would like to build Rust libraries 1 per system packages, and for this Cargo will need to gain some understanding of prebuilt binaries.
 It is hoped that when it does, the mock registry can be removed and the use of sysroot binaries will be less of a one-off hack.]
 
 Since Cargo will copy any binaries it needs from the sysroot when packages from the mock registry are part of the build plan, it would be nice to always prevent rustc from looking in the sysroot when compiling on Cargo's behalf.
