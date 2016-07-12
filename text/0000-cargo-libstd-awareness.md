@@ -98,8 +98,14 @@ Rustup may be able to put it there if the default download does not contain it a
 ## Cargo implementation
 
 The one thing this RFC requires of the upcoming registry implementation is the ability to chain registries providing defaults and fallbacks when a registry is not manually specified.
-This is used so crates not on crates.io are instead provided by the compiler.
-[Ideally, we'd put the "interface" on crates.io to help ensure compiler-specific implementations conform, but such a mechanism is not being proposed at this time.]
+By default, crates.io is used, but somebody may wish to prohibit that, or have Cargo first check a repository of local forks before falling back on crates.io.
+This overlaps with `[[replace]]` a bit awkwardly, but is generally useful when the exact set of overrides is subject to change out of band with the current project:
+the project's `Cargo.toml` would specify something like `default-registry = [ "local-forks", "crates-io" ]`, along with the defintion of "local-forks".
+
+This mechanism is used here used so standard library crates not on crates.io (or whatever the users' `default-registry` fallback chains happens to be) are instead provided by the compiler.
+We need to avoid forcing users' packages to enumerate the contents of the compiler registry because exactly what packages the compiler provides changes from one version of Rust to the next.
+For example, if a portable `collections` is written for example, Cargo should use that rather than the compiler's own package.
+This allows transparently making the standard library less-compiler spefific.
 
 The injection of implicit dependencies is completely defined by the rules described in the first subsection, so this subsection will focus on the meaning of the `--resolve-compiler-specific=` flag.
 
@@ -141,6 +147,10 @@ After the last compiler is build, an additional mini-stage of building just the 
  - No means of compiling `compiler-rt` is proposed.
    But just as freestanding developers need to provide `rlibc` or similar to successfully link, I think that for the time-being they deal with this themselves.
    This is no step backwards.
+
+ - Compilers could provided crates in their sysroot that don't match the Rust specification, and Cargo would be none the wiser.
+   [Technically, this probablem already exists with falling back on the sysroot binaries, but users will probably expect better when they can specify standard library dependencies explicitly.]
+   Since the *interface* of the stdlib is specified, it would be neet if we could but a big crate type/interfacex on crates.io, which compiler implementations would need to match.
 
 
 # Alternatives
