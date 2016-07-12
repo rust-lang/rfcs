@@ -13,7 +13,7 @@ Even though mutable statics can be initialized safely at runtime in a couple of 
 - By using the lazy initialization idiom. Drawback: incurs a small performance overhead by having to check that the item is initialized every time it is used.
 - By using the RAII idiom in the form of initialization guards, where the existence of an initialization guard variable is a guarantee that the initialization has happened. Drawback: very poor ergonomics.
 
-Instead, I propose a true zero-cost initialization scheme that is also ergonomic.
+Instead, I propose a safe runtime initialization system for statics which causes no overhead to access-times and is also ergonomic.
 
 # Detailed design
 
