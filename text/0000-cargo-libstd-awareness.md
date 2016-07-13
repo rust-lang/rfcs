@@ -44,7 +44,7 @@ We don't yet have a plan yet to track the language itself, but by tracking stand
 
 # Detailed design
 
-The subsections with "interface" in their title form the normitive part of this RFC.
+The subsections with "interface" in their title form the normative part of this RFC.
 The rest of this section just illustrate hows they would likely be implemented.
 
 ## `Cargo.toml` Interface
@@ -67,7 +67,6 @@ implicit-dependencies = ["primary", "build", "dev"]
 ```
 This indicates each of `dependencies`, `build-dependencies`, and `dev-dependencies` maps (respectively) is augmented with implicit elements.
 A manual definition may be that or almost any subset, in which case only the included dependency maps are augmented.
-The one additional rule is `"dev"` must be included in the set: we have no plan for Cargoizing the default test runner (either the attribute syntax manipulation or runtime), and wish to be forward-compatible with doing so in the future.
 
 Finally, if an (explicit) dependency conflicts with one of the implicit defaults, that category of implicit dependency will be skipped.
 For example, if a crate explicit depends on `std` as a build-dependency, neither `std` nor any other implicit build dependency will be injected.
@@ -101,12 +100,12 @@ Rustup may be able to put it there if the default download does not contain it a
 The one thing this RFC requires of the upcoming registry implementation is the ability to chain registries providing defaults and fallbacks when a registry is not manually specified.
 By default, crates.io is used, but somebody may wish to prohibit that, or have Cargo first check a repository of local forks before falling back on crates.io.
 This overlaps with `[[replace]]` a bit awkwardly, but is generally useful when the exact set of overrides is subject to change out of band with the current project:
-the project's `Cargo.toml` would specify something like `default-registry = [ "local-forks", "crates-io" ]`, along with the defintion of "local-forks".
+the project's `Cargo.toml` would specify something like `default-registry = [ "local-forks", "crates-io" ]`, along with the definition of "local-forks".
 
 This mechanism is used here used so standard library crates not on crates.io (or whatever the users' `default-registry` fallback chains happens to be) are instead provided by the compiler.
 We need to avoid forcing users' packages to enumerate the contents of the compiler registry because exactly what packages the compiler provides changes from one version of Rust to the next.
 For example, if a portable `collections` is written for example, Cargo should use that rather than the compiler's own package.
-This allows transparently making the standard library less-compiler spefific.
+This allows transparently making the standard library less-compiler specific.
 
 The injection of implicit dependencies is completely defined by the rules described in the first subsection, so this subsection will focus on the meaning of the `--resolve-compiler-specific=` flag.
 
@@ -150,8 +149,8 @@ After the last compiler is build, an additional mini-stage of building just the 
    This is no step backwards.
 
  - Compilers could provided crates in their sysroot that don't match the Rust specification, and Cargo would be none the wiser.
-   [Technically, this probablem already exists with falling back on the sysroot binaries, but users will probably expect better when they can specify standard library dependencies explicitly.]
-   Since the *interface* of the stdlib is specified, it would be neet if we could but a big crate type/interfacex on crates.io, which compiler implementations would need to match.
+   [Technically, this problem already exists with falling back on the sysroot binaries, but users will probably expect better when they can specify standard library dependencies explicitly.]
+   Since the *interface* of the stdlib is specified, it would be neat if we could but a big crate type/interface on crates.io, which compiler implementations would need to match.
 
 
 # Alternatives
@@ -162,14 +161,13 @@ After the last compiler is build, an additional mini-stage of building just the 
  - Previous versions of this RFC were a simpler but more brittle.
    Please refer to the git history to see them.
 
-
 # Unresolved questions
 
  - Users of the stable compiler should be able to build the stdlib from source, since it is trusted, but cannot because it uses unstable features.
    Some notion of a trusted package/registry or way to route the secret bootstrap key would be required to fix this.
 
  - It is unclear how `core` should be an implicit dependency.
-   `core = "^1.0"` might work but is a little weird as that core 1.0 is not stabalized.
+   `core = "^1.0"` might work but is a little weird as that core 1.0 is not stabilized.
    This relies on users to not `extern crate core;` if they don't use it, to get around the stability warning on older versions of rust, which is rather sketchy.
 
  - It is unclear what should go in the lockfile when building with sysroot binaries.
@@ -178,3 +176,9 @@ After the last compiler is build, an additional mini-stage of building just the 
 
  - Should `cargo new` specify `std`, or any other stdlib crates explicitly by default?
    I'd hope so!
+
+ - Should one be able to opt-out of implicit build and development dependencies?
+   I'd like to create a new crate containing testing annotations as compiler plugins, but this entails creating a new sort of test-only plugin dependency (combination of development and build).
+   Additionally, Currently, it makes sense to always make `std` avaiable for `build.rs` since it must exist for the compiler.
+   But if platform-specific parts of the `std` are exposed only with features or "scenarios" (a newly-proposed mechanism specifically for handling environment differences), then we loose an opertunity to be able to express mandatory cross-compiling.
+   Finally, in the far future it may be possible to build rustc on platforms where all of `std` isn't available, invalidating the reasoning that `std` is never unavailable as a build dependency.
