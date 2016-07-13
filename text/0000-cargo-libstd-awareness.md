@@ -54,7 +54,7 @@ This will work just as if `std` was on crates.io---features and other modifiers 
 
 For backwards compatibility, Cargo must inject such standard library dependencies for existing packages.
 These injected standard library dependencies are called "implicit dependencies" because the user does not specify them explicitly.
-Exactly which dependencies will be enjected is unresolved, but a requirement at least as strong as `std = "^1.0"` as a primary, build, and development dependency is assured.
+Exactly which dependencies will be injected is unresolved, but a requirement at least as strong as `std = "^1.0"` as a primary, build, and development dependency is assured.
 We also have to account for `core` somehow, as it is now stable so packages using it implicitly too cannot be broken.
 Other dependencies of `std` besides core we don't need to worry about, because they are only transitive dependencies through `std`, not direct dependencies.
 `test`, the built-in testing framework's runtime, will also be an implicit development dependency.
@@ -123,7 +123,7 @@ This is different from other deps, whose binaries are placed in Cargo's output d
 
 Since Cargo is using `--extern` for deps in all cases, rustc's sysroot lookup can and should be bypassed.
 This will prevent users using the sysroot from depending on more crates than their cargo file declares (implicitly or explicitly)..
-A `--no-resolve-sysroot` flag will be added for this purpose. Cargo will alway use it.
+A `--no-resolve-sysroot` flag will be added for this purpose. Cargo will always use it.
 
 ## Rustbuild improvements
 
@@ -179,6 +179,6 @@ After the last compiler is build, an additional mini-stage of building just the 
 
  - Should one be able to opt-out of implicit build and development dependencies?
    I'd like to create a new crate containing testing annotations as compiler plugins, but this entails creating a new sort of test-only plugin dependency (combination of development and build).
-   Additionally, Currently, it makes sense to always make `std` avaiable for `build.rs` since it must exist for the compiler.
-   But if platform-specific parts of the `std` are exposed only with features or "scenarios" (a newly-proposed mechanism specifically for handling environment differences), then we loose an opertunity to be able to express mandatory cross-compiling.
+   Additionally, Currently, it makes sense to always make `std` available for `build.rs` since it must exist for the compiler.
+   But if platform-specific parts of the `std` are exposed only with features or "scenarios" (a newly-proposed mechanism specifically for handling environment differences), then we loose an opportunity to be able to express mandatory cross-compiling.
    Finally, in the far future it may be possible to build rustc on platforms where all of `std` isn't available, invalidating the reasoning that `std` is never unavailable as a build dependency.
