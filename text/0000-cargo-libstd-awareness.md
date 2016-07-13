@@ -83,6 +83,23 @@ It is assumed that the version of all sysroot rlibs is the same as the version o
 If `src` is included, Cargo will fallback on a compiler-provided package registry when other registries (e.g. crates.io) fail to provide a package.
 For backwards compatibility, the default is `--resolve-compiler-specific=bin`.
 
+## Compiler command-line interface
+
+As will be explained, with these changes Cargo will always use `--extern` to pass dependencies, so rustc's sysroot lookup can and should be bypassed.
+This will prevent users using the sysroot from depending on more crates than their cargo file declares (implicitly or explicitly)..
+A `--no-resolve-sysroot` flag will be added for this purpose.
+Compilers that don't have sysroot binaries should except this flag and ignore it.
+Note that even if this flag is passed, rustc should still pass the sysroot to the linker for the sake of `compiler-rt`.
+A `--no-link-sysroot` flag will be added to prevent that.
+
+Additionally, compilers besides rustc may have version numbers distinct from the version of Rust they implement.
+For this purpose, the verbose version output (`$COMPILER -vV` should contain an additional line:
+```
+language-version: $version
+```
+For now, `$version` should be a version, not version requirement, and the patch number must be zero as patch numbers don't make sense for interfaces.
+[This may be relaxed in the future for compilers which implement multiple versions.]
+
 ## Compiler source packaging
 
 While the standard library *interface* defined with each rustc version, the implementation, by virtue of using unstable features, is compiler-specific.
@@ -113,17 +130,14 @@ If `src` is included in the set passed with that flag, Cargo appends a local reg
 In other words, if a package is in none of the user-specified registries contain a package, Cargo will look in the registry provided by the compiler.
 
 If `bin` is included in the set passed with that flag (or inferred from the default), Cargo will build a mock registry by examining the contents of the sysroot.
-Any binary in there will be added to the mock registry, with a version deduced the best Cargo can (e.g. from the version of the compiler).
+Any binary in there will be added to the mock registry, with a version
+taken either from the `language-version` described above, or the compiler version if that key is not present (as it would be with existing rustc releases).
 Cargo likewise will have to be conservative with other metadata, e.g. both aborting if any feature is requested of a dep that is resolved to this mock registry, and also aborting if `default-features = false` is specified in such a dep.
 The mock registry will have dead last priority in the default chain, even behind the source registry.
 Packages in the mock registry are not built, and when they are (transitive) deps cargo passes them in with `--extern` and their sysroot location.
 This is different from other deps, whose binaries are placed in Cargo's output directory, and sysroot deps today, where `--extern` isn't used as all.
 
-## Rustc command-line interface
-
-Since Cargo is using `--extern` for deps in all cases, rustc's sysroot lookup can and should be bypassed.
-This will prevent users using the sysroot from depending on more crates than their cargo file declares (implicitly or explicitly)..
-A `--no-resolve-sysroot` flag will be added for this purpose. Cargo will always use it.
+Since `--extern` is used even in the sysroot binary case, rustc can and will pass `--no-resolve-sysroot` to rustc in all cases.
 
 ## Rustbuild improvements
 
@@ -160,6 +174,9 @@ After the last compiler is build, an additional mini-stage of building just the 
 
  - Previous versions of this RFC were a simpler but more brittle.
    Please refer to the git history to see them.
+
+ - Should `--no-resolve-sysroot` influence linking after all, and `core` have a dep on some `compiler-rt-sys` crate?
+   This dependency could be a default feature.
 
 # Unresolved questions
 
