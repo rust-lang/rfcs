@@ -174,3 +174,6 @@ After the last compiler is build, an additional mini-stage of building just the 
  - It is unclear what should go in the lockfile when building with sysroot binaries.
 
  - Whether to add the `--no-resolve-sysroot` flag to rustc, as described above.
+
+ - Should `cargo new` specify `std`, or any other stdlib crates explicitly by default?
+   I'd hope so!
