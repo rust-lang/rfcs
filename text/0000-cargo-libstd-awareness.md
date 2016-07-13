@@ -199,3 +199,8 @@ After the last compiler is build, an additional mini-stage of building just the 
    Additionally, Currently, it makes sense to always make `std` available for `build.rs` since it must exist for the compiler.
    But if platform-specific parts of the `std` are exposed only with features or "scenarios" (a newly-proposed mechanism specifically for handling environment differences), then we loose an opportunity to be able to express mandatory cross-compiling.
    Finally, in the far future it may be possible to build rustc on platforms where all of `std` isn't available, invalidating the reasoning that `std` is never unavailable as a build dependency.
+
+ - It is somewhat unclear how Cargo should deal with architecture-specific configuration that is not captured in the target spec nor Cargo feature flags (like CPU features).
+   [RFC #1645](https://github.com/rust-lang/rfcs/pull/1645) proposes just adding some such configuration to the target triple, whereas https://internals.rust-lang.org/t/pre-rfc-a-vision-for-platform-architecture-configuration-specific-apis/3502/26 proposes a new "scenarios" interfaces.
+   When building from source, this question is orthogonal to this RFC because it just reuses Cargo's existing methods of keeping binaries for different configurations separate.
+   When building with sysroot binaries, however, this does matter because cargo needs to deduce or assume exactly what configuration beyond the target triple applies.
