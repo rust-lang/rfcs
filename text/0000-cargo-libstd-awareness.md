@@ -71,7 +71,7 @@ The one additional rule is `"dev"` must be included in the set: we have no plan 
 Finally, if an (explicit) dependency conflicts with one of the implicit defaults, that category of implicit dependency will be skipped.
 For example, if a crate explicit depends on `std` as a build-dependency, neither `std` nor any other implicit build dependency will be injected.
 
-## Cargo Command Line Interface
+## Cargo command-line interface
 
 A flag will be added
 ```
@@ -116,14 +116,14 @@ If `bin` is included in the set passed with that flag (or inferred from the defa
 Any binary in there will be added to the mock registry, with a version deduced the best Cargo can (e.g. from the version of the compiler).
 Cargo likewise will have to be conservative with other metadata, e.g. both aborting if any feature is requested of a dep that is resolved to this mock registry, and also aborting if `default-features = false` is specified in such a dep.
 The mock registry will have dead last priority in the default chain, even behind the source registry.
-The "building" of such a package in the mock registry will consist of copying the binary into the target directory.
+Packages in the mock registry are not built, and when they are (transitive) deps cargo passes them in with `--extern` and their sysroot location.
+This is different from other deps, whose binaries are placed in Cargo's output directory, and sysroot deps today, where `--extern` isn't used as all.
 
-[System packages would like to build Rust libraries 1 per system packages, and for this Cargo will need to gain some understanding of prebuilt binaries.
-It is hoped that when it does, the mock registry can be removed and the use of sysroot binaries will be less of a one-off hack.]
+## Rustc command-line interface
 
-Since Cargo will copy any binaries it needs from the sysroot when packages from the mock registry are part of the build plan, it would be nice to always prevent rustc from looking in the sysroot when compiling on Cargo's behalf.
-This would prevent users using the sysroot from forgetting to specify any non-default standard library dependencies.
-A `--no-resolve-sysroot` flag could be added for this purpose, but this is not necessary.
+Since Cargo is using `--extern` for deps in all cases, rustc's sysroot lookup can and should be bypassed.
+This will prevent users using the sysroot from depending on more crates than their cargo file declares (implicitly or explicitly)..
+A `--no-resolve-sysroot` flag will be added for this purpose. Cargo will alway use it.
 
 ## Rustbuild improvements
 
