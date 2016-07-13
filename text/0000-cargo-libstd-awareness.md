@@ -54,9 +54,10 @@ This will work just as if `std` was on crates.io---features and other modifiers 
 
 For backwards compatibility, Cargo must inject such standard library dependencies for existing packages.
 These injected standard library dependencies are called "implicit dependencies" because the user does not specify them explicitly.
-Exactly which dependencies will be enjected is unresolved, but a requirement at least as strong as `std = "^1.0"` as a primary and build dependency is assured.
+Exactly which dependencies will be enjected is unresolved, but a requirement at least as strong as `std = "^1.0"` as a primary, build, and development dependency is assured.
 We also have to account for `core` somehow, as it is now stable so packages using it implicitly too cannot be broken.
 Other dependencies of `std` besides core we don't need to worry about, because they are only transitive dependencies through `std`, not direct dependencies.
+`test`, the built-in testing framework's runtime, will also be an implicit development dependency.
 
 Now, not all crates depend on `std`, or whatever the implicit dependencies are decided to be, so there must be a way to opt out.
 For this, we introduce a new `implicit-dependencies` key.
