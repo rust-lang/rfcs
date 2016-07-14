@@ -71,7 +71,7 @@ Generalizing the arithmetic functionality into a trait, will have the following 
     `checked_*` functions.
 
 Philosophically, one might argue that a solid trait for machine-arithmetic might pave the way
-for saner arithmetic hierarcies: machine-level arithmetic is seldom easily expressible in terms of
+for saner arithmetic hierarchies: machine-level arithmetic is seldom easily expressible in terms of
 abstract algebra; indeed this RFC may be said to enforce a separation of concerns in library design.
 
 # Detailed design
@@ -182,7 +182,7 @@ of functionality:
 # Alternatives
 [alternatives]: #alternatives
 
-The current implementation is perfectly usable, if a little more unweildy for generics.
+The current implementation is perfectly usable, if a little more unwieldy for generics.
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
