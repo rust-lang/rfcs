@@ -179,6 +179,10 @@ of functionality:
 - A separate trait for types with a negative/positive may be desirable.
 - A separate trait for the `pow` function, similar to `std::ops::*`.
 
+Further, some code breakage may happen. I don't have concrete examples, but for instance the
+expression `i32::wrapping_add(a, b)` may face an issue if `wrapping_add` is no longer a part of
+the `i32` type.
+
 # Alternatives
 [alternatives]: #alternatives
 
