@@ -81,7 +81,7 @@ Static | Dllimport | Dllimport | Error
 [alternatives]: #alternatives
 
 * Don't do this and make me very sad.
-* Change the behavior of `kind=static`. Would have poor backwards compatibility though.
+* Change the behavior of `kind=static`. Remove the bundling aspect and simply make it provide the knowledge to rustc that the symbols are static instead of dynamic. Since Cargo ensures the non-Rust static library will hang around until link time anyway, this would not really break anything for most people. Only a few people would be broken by this and it would be fairly easy to fix. Has the advantage of not adding another `kind`.
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
