@@ -35,7 +35,7 @@ pub fn abs(self) -> Self {
 This RFC proposes to add the following:
 
 ```rust
-pub fn checking_abs(self) -> Option<Self> {
+pub fn checked_abs(self) -> Option<Self> {
 	if self.is_negative() {
 		self.checked_neg()
 	} else {
