@@ -39,5 +39,5 @@ Adds further complexity to the ways in which rustc can be invoked, especially si
 [unresolved]: #unresolved-questions
 
 * Should there be other environment variables to control other aspects of compilation and linking?
-* Could this be applied to other platforms, perhaps musl?
+* Could this be applied to other platforms, perhaps musl? Musl can be linked either statically or dynamically, so this environment variable could likely apply to musl as well, although the finer implementation details will likely differ significantly from msvc. Are there other platforms like musl and msvc that have options like this?
 * Bikeshedding on the name and structure of the environment variable.
