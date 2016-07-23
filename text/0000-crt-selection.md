@@ -15,6 +15,8 @@ On Windows code can choose to link to either statically link the CRT or dynamica
 
 The choice of an environment variable allows both rustc and build scripts to be able to react to it, and doesn't require any special support in Cargo. The choice of adding the target to the environment variable is so that it doesn't mess up the host target when cross compiling.
 
+Related issue: https://github.com/rust-lang/libc/issues/290
+
 # Detailed design
 [design]: #detailed-design
 
