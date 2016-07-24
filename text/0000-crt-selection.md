@@ -36,6 +36,7 @@ Adds further complexity to the ways in which rustc can be invoked, especially si
 
 * Some sort of command line parameter to rustc. Would be a hassle to pass along to all rustc invocations, and build scripts wouldn't be able to take advantage of it, unless special support was added to Cargo to set an environment variable for build scripts and pass it to all rustc invocations.
 * Add new targets for using the static version of the CRT. Will result in even more targets that will need to be tested, and a significant amount of package duplication.
+* Add a option in `Cargo.toml` in the `[profile.*]` sections to choose which CRT to use. However `[profile]` suffers from not handling target specific options very well.
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
