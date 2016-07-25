@@ -173,10 +173,9 @@ Currently the only expressions that satisfies this rule are the `if` and `if let
       do_this()
   } else match bar() {
       A => do_that(),
-      B => do_the_other(),
-      _ => do_something_else()
+      B => do_the_other()
   } else {
-      // syntax error
+      do_something_else()
   }
   ```
 
@@ -189,10 +188,9 @@ Currently the only expressions that satisfies this rule are the `if` and `if let
   } else {
       match bar() {
           A => do_that(),
-          B => do_the_other(),
-          _ => do_something_else()
+          B => do_the_other()
       } else {
-          // syntax error
+          do_something_else()
       }
   }
   ```
@@ -204,7 +202,10 @@ Currently the only expressions that satisfies this rule are the `if` and `if let
 # Alternatives
 [alternatives]: #alternatives
 
-Don't do this.
+Apply this rule only to `match` expressions. This is to make code feel less "magic" as `match`
+expressions are very similar to `if` expressions.
+
+Or, don't do this.
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
