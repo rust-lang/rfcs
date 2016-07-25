@@ -133,7 +133,7 @@ Here's a good example from the 'rand' crate:
 Sample code for each crate capability should be as simple as possible and side effect free. In the
 rand crate, thread safe RNG is demonstrated 5 lines of code:
 
-```
+```rust
 use rand::Rng;
 
 let mut rng = rand::thread_rng();
