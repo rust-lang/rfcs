@@ -28,8 +28,7 @@ if foo() {
 } else {
     match baz() {
         A => do_that(),
-        B => do_the_other(),
-        _ => do_something_else()
+        B => do_the_other()
     }
 }
 ```
@@ -43,8 +42,7 @@ if foo() {
     do_this_other_thing()
 } else match baz() {
     A => do_that(),
-    B => do_the_other(),
-    _ => do_something_else()
+    B => do_the_other()
 }
 ```
 
@@ -60,33 +58,28 @@ if foo() {
 ```
 
 An interesting observation is that this type of syntax already exists in the form of an `else if`
-clause. An `else if` clause can be expanded into an equivalent nested `else ... { if ... }`. This
-proposal can be seen as the natural progression from the previous syntax to the other expressions.
+clause. An `else if` clause can be expanded into an equivalent nested `else ... { if ... }`.
 
 # Detailed design
 [design]: #detailed-design
+
+This proposal can be seen as the natural progression from an `else if` clause to the other
+expressions.
 
 Braces can only be omitted around the body of an `else` if the body is a single expression which
 itself requires braces.
 
 This applies to the following expressions:
 
+- `if`
+- `if let`
 - `for`
 - `loop`
 - `while`
+- `while let`
 - `match`
 
 The following code:
-
-```
-if foo() {
-    do_this()
-} else <expr> {
-    do_that()
-}
-```
-
-can be expanded to:
 
 ```
 if foo() {
@@ -98,34 +91,44 @@ if foo() {
 }
 ```
 
+can be flattened to:
+
+```
+if foo() {
+    do_this()
+} else <expr> {
+    do_that()
+}
+```
+
 where `<expr>` is a valid expression from the previously-stated list.
 
-This rule applies to *all* `else` clause for any expression. So, if in the future we have something
-similar to:
+Additional `else` clauses after the `else <expr>` clause can only be valid as long as the
+previous expression has a valid `else` clause.
 
 ```
-loop {
+// the following code is valid
+
+if foo() {
+    do_this()
+} else <expr> {
+    do_that()
+} else {
+    do_something()
+}
+
+// as long as
+
+<expr> {
     // ...
 } else {
-    match bar() {
-        A() => abc(),
-        B() => def(),
-        _   => ghi()
-    }
-}
-```
-
-it can be rewritten into the following code.
-
-```
-loop {
     // ...
-} else match bar() {
-    A() => abc(),
-    B() => def(),
-    _   => ghi()
 }
+
+// is valid
 ```
+
+Currently the only expression that satisfies this rule are the `if` and `if let` expressions.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -144,23 +147,26 @@ loop {
   }
   ```
 
-  There's no solution for this, other than allowing `else` clauses on these expressions. For the
-  previous example, `match` *does* have a sort of `else` clause in the form of an `_ => ...` match.
-  So something like:
+  This does *not* work, because `match` doesn't have have an `else` clause. The previous code
+  actually gets expanded to:
 
   ```
   if foo() {
       do_this()
-  } else match bar() {
-      A => do_that(),
-      B => do_the_other()
-  } else { // hypothetical syntax
-      do_something_else()
+  } else {
+      match bar() {
+          A => do_that(),
+          B => do_the_other(),
+          _ => do_something_else()
+      } else {
+          // syntax error
+      }
   }
   ```
 
-  should theoretically work. However this does not exist yet in current Rust and is outside the
-  scope of this proposal.
+  Ideally most of the supported expressions should have an `else` clause. For example, the `match`
+  expression can have an equivalent `else` for the `_ => ...` match. This is outside the scope
+  of this RFC and should be addressed in a separate proposal.
 
 # Alternatives
 [alternatives]: #alternatives
