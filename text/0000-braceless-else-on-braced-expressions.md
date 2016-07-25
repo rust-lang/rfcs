@@ -18,7 +18,7 @@ the bodies of `if` and `else`.
 This is good because it avoids the ambiguity and the potential for mistakes around nested `if`s and
 `else`s that exists in other C-family languages.
 
-But this can get sverbose when writing single nested expressions after `else` clauses.
+But this can get needlessly verbose when writing single nested expressions after `else` clauses.
 
 ```rust
 if foo() {
@@ -33,7 +33,8 @@ if foo() {
 }
 ```
 
-A better solution would be to *omit* the braces around the body of an `else`.
+A better solution would be to *omit* the braces around the body of an `else`. This leads to a
+more flattened and easily navigable hierarchy.
 
 ```
 if foo() {
@@ -46,8 +47,8 @@ if foo() {
 }
 ```
 
-This type of syntax should only be allowed on *single expressions that require braced blocks*. This
-is to prevent `goto fail` errors when writing code.
+Additionally, this type of syntax should only be allowed on *single expressions that require braced
+blocks*. This is to prevent `goto fail` errors when writing code.
 
 ```
 if foo() {
@@ -57,13 +58,10 @@ if foo() {
     do_the_other(); // oops, this line always runs
 ```
 
-An interesting observation is that this type of syntax already exists in the form of an `else if`
-clause. An `else if` clause can be expanded into an equivalent nested `else ... { if ... }`.
-
 # Detailed design
 [design]: #detailed-design
 
-This proposal can be seen as the natural progression from an `else if` clause to the other
+This proposal can be seen as the generalized version of `else if` that extends to include other
 expressions.
 
 Braces can only be omitted around the body of an `else` if the body is a single expression which
@@ -128,7 +126,7 @@ if foo() {
 // is valid
 ```
 
-Currently the only expression that satisfies this rule are the `if` and `if let` expressions.
+Currently the only expressions that satisfies this rule are the `if` and `if let` expressions.
 
 # Drawbacks
 [drawbacks]: #drawbacks
