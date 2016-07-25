@@ -48,7 +48,7 @@ if foo() {
 ```
 
 Additionally, this type of syntax should only be allowed on *single expressions that require braced
-blocks*. This is to prevent `goto fail` errors when writing code.
+blocks*. This is to prevent `goto fail`-type errors when writing code.
 
 ```
 if foo() {
@@ -101,10 +101,8 @@ if foo() {
 This proposal can be seen as the generalized version of `else if` that extends to include other
 expressions.
 
-Braces can only be omitted around the body of an `else` if the body is a single expression which
-itself requires braces.
-
-This applies to the following expressions:
+Braces can be omitted around the body of an `else` if the body is a single expression which itself
+requires braces. This includes the following expressions:
 
 - `if`
 - `if let`
@@ -119,6 +117,16 @@ The following code:
 ```
 if foo() {
     do_this()
+} else <expr> {
+    do_that()
+}
+```
+
+is expanded to:
+
+```
+if foo() {
+    do_this()
 } else {
     <expr> {
         do_that();
@@ -126,20 +134,10 @@ if foo() {
 }
 ```
 
-can be flattened to:
-
-```
-if foo() {
-    do_this()
-} else <expr> {
-    do_that()
-}
-```
-
 where `<expr>` is a valid expression from the previously-stated list.
 
-Additional `else` clauses after the `else <expr>` clause can only be valid as long as the
-previous expression has a valid `else` clause.
+Additional `else` clauses after the `else <expr>` clause is only be valid as long as the previous
+expression has a valid `else` clause.
 
 ```
 // the following code is valid
