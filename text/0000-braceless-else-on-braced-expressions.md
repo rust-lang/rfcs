@@ -134,6 +134,8 @@ if foo() {
 An extra `else` clause should be declared as a syntax error if the previous `else <expr>` has no
 `else` clause.
 
+This is invalid:
+
 ```
 if foo() {
     do_this()
@@ -145,7 +147,7 @@ if foo() {
 }
 ```
 
-As this is equivalent to:
+as it's equivalent to:
 
 ```
 if foo() {
@@ -189,7 +191,7 @@ As of writing this includes all expressions except `if`.
   } else match bar() {
       A => do_that(),
       B => do_the_other()
-  } else { // hypothetical
+  } else { // hypothetical syntax
       do_something_else()
   }
   ```
