@@ -53,9 +53,10 @@ crate](https://doc.rust-lang.org/log/log/index.html):
 
 There are several things that make this a good introduction section:
     
-* A concise explanation of the crate's purpose.  * The summary describes how the crate behaves in 3
-short paragraphs.  * Even if you don't want to read the rest of the `README`, you have enough to get
-started.  * Readable by a layman, no jargon is introduced in the first few paragraphs.
+* A concise explanation of the crate's purpose.
+* The summary describes how the crate behaves in 3 short paragraphs.
+* Even if you don't want to read the rest of the `README`, you have enough to get started.
+* Readable by a layman, no jargon is introduced in the first few paragraphs.
     
 What do we mean by "no jargon is introduced in the first few paragraphs"? Using the `rand` crate as
 an example - the crate's initial documentation probably should _not_ include a discussion of
@@ -78,8 +79,8 @@ Let's look at a sample of a good first example of a crate. Notice that the autho
 getting started, showing how to import and use the crate, and a few simple uses of common
 functionality.
 
-```
-rust #[macro_use] 
+```rust
+#[macro_use] 
 extern crate log;
 
 pub fn shave_the_yak(yak: &Yak) {
@@ -97,7 +98,8 @@ pub fn shave_the_yak(yak: &Yak) {
             }
         }
     }
-} ```
+}
+```
 
 ## Crate Capabilities
 
