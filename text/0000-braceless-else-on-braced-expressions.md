@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-Make braces around `else` body optional on single expressions that require braces to increase
+Make braces around an `else` body optional on single expressions that require braces to increase
 brevity.
 
 # Motivation
@@ -18,7 +18,7 @@ the bodies of `if` and `else`.
 This is good because it avoids the ambiguity and the potential for mistakes around nested `if`s and
 `else`s that exists in other C-family languages.
 
-But this can be too verbose when writing stuff like `match` statements inside `else` clauses.
+But this can get sverbose when writing single nested expressions after `else` clauses.
 
 ```rust
 if foo() {
@@ -48,8 +48,8 @@ if foo() {
 }
 ```
 
-However, there's another problem. If we do this for *any* time of expression or statement, a
-potential bug may occur.
+This type of syntax should only be allowed on *single expressions that require braced blocks*. This
+is to prevent `goto fail` errors when writing code.
 
 ```
 if foo() {
@@ -59,40 +59,9 @@ if foo() {
     do_the_other(); // oops, this line always runs
 ```
 
-A solution is to limit this behavior to only *single expressions which itself require braces*. This
-includes `match`, `for`, `loop`, and `while`.
-
 An interesting observation is that this type of syntax already exists in the form of an `else if`
-clause. Writing the following code:
-
-```rust
-if foo() {
-    do_this()
-} else if bar() {
-    do_that()
-} else if baz() {
-    do_this_other_thing();
-}
-```
-
-is the same as writing:
-
-```rust
-if foo() {
-    do_this()
-} else {
-    if bar() {
-        do_that()
-    } else {
-        if baz() {
-            do_this_other_thing();
-        }
-    }
-}
-```
-
-This proposal can be seen as the natural progression from the previous syntax to the other
-expressions.
+clause. An `else if` clause can be expanded into an equivalent nested `else ... { if ... }`. This
+proposal can be seen as the natural progression from the previous syntax to the other expressions.
 
 # Detailed design
 [design]: #detailed-design
@@ -100,69 +69,63 @@ expressions.
 Braces can only be omitted around the body of an `else` if the body is a single expression which
 itself requires braces.
 
-So these examples are valid:
+This applies to the following expressions:
+
+- `for`
+- `loop`
+- `while`
+- `match`
+
+The following code:
 
 ```
 if foo() {
     do_this()
-} else match bar() {
-    A => do_that(),
-    B => do_the_other()
-}
-
-if foo() {
-    do_this()
-} else loop {
-    do_this_forever();
-}
-
-if foo() {
-    do_this()
-} else for x in 0..10 {
-    do_this_ten_times();
+} else <expr> {
+    do_that()
 }
 ```
 
-This example however is not:
-
-```
-if foo() {
-    do_this()
-} else do_that();
-```
-
-An extra `else` clause should be declared as a syntax error if the previous `else <expr>` has no
-`else` clause.
-
-This is invalid:
-
-```
-if foo() {
-    do_this()
-} else match bar() {
-    A => do_that(),
-    B => do_the_other()
-} else {
-    // syntax error
-}
-```
-
-as it's equivalent to:
+can be expanded to:
 
 ```
 if foo() {
     do_this()
 } else {
-    match bar() {
-        A => do_that(),
-        B => do_the_other()
-    } else {
-        // syntax error
+    <expr> {
+        do_that();
     }
 }
 ```
 
-As of writing this includes all expressions except `if`.
+where `<expr>` is a valid expression from the previously-stated list.
+
+This rule applies to *all* `else` clause for any expression. So, if in the future we have something
+similar to:
+
+```
+loop {
+    // ...
+} else {
+    match bar() {
+        A() => abc(),
+        B() => def(),
+        _   => ghi()
+    }
+}
+```
+
+it can be rewritten into the following code.
+
+```
+loop {
+    // ...
+} else match bar() {
+    A() => abc(),
+    B() => def(),
+    _   => ghi()
+}
+```
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -202,7 +165,7 @@ As of writing this includes all expressions except `if`.
 # Alternatives
 [alternatives]: #alternatives
 
-None.
+Don't do this.
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
