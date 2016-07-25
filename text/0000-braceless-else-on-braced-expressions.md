@@ -61,6 +61,43 @@ if foo() {
 # Detailed design
 [design]: #detailed-design
 
+## Examples
+
+```
+if foo() {
+    do_this()
+} else match baz() {
+    A => do_that(),
+    B => do_the_other()
+}
+```
+
+```
+if foo() {
+    do_this()
+} else for i in 0..10 {
+    do_something_ten_times(i);
+}
+```
+
+```
+if foo() {
+    do_this()
+} else loop {
+    do_something_forever();
+}
+```
+
+```
+if foo() {
+    do_this()
+} else while let ("Bacon", b) = get_dish() {
+    println!("Bacon is served with {}", b);
+}
+```
+
+## Description
+
 This proposal can be seen as the generalized version of `else if` that extends to include other
 expressions.
 
