@@ -178,14 +178,19 @@ More important, it would be nice to move stdlib crates that don't use unstable f
 With something like what is described in the first paragraph, it could be possible for individual packages instruct Cargo to first check crates.io, and then the compiler source registry, for stdlib crates.
 But this shifts the burden to individual packages, and means we'd still need to vendor source of any crate moved to crates.io in the compiler source registry for packages that didn't make the switch.
 
-More interesting would be to change Cargo's behavior so packages not found with the compiler src or in the sysroot are retrieved from crates.io---or vice versa (crates.io, then compiler/sysroot).
-Unioning the sources in either fashion would allow standard library crates to be seamlessly moved out of the compiler registry and onto crates.io without extra work per package.
-We don't want to commit either priority or even unioning at all in this RFC, however, so we instead want to keep all 3 options open (no unioning, crates.io over compiler-specific, compiler-specific over crates.io).
-To achieve this, the goal is that the sysroot/compiler source registry and crates.io should contain disjoint packages.
-That way the sources can be unioned without conflict.
-As a guideline, all but the most transient stdlib crates should have their name reserved on crates.io.
-As a policy, crates.io should only allow pushing packages whose stdlib deps are reserved.
-This will keep our options open.
+More interesting would be to change Cargo's *default* behavior to check both the compiler-specific sources (compiler source registry and sysroot binary mock registry) and crates.io.
+This would allow standard crates to seamless migrate to crates.io without extra work per package.
+This could be either be done where crates.io overrides the compiler-specific sources, or the compiler specific sources override crates.io.
+We don't want to commit to either variant in this RFC, however, so we instead want to keep all 3 options open (no fallback, crates.io over compiler-specific, compiler-specific over crates.io).
+To achieve this, we want to keep sysroot/compiler source registry and crates.io should contain disjoint packages.
+That way unioning them together with either priority (the fallback scheme effectively crates a union source) has the same affect because there are no packages provided by both.
+
+The easiest way to achieve this is to make sure that standard library crates use names reserved on crates.io.
+We don't want to bake crates.io policy into Cargo however, so instead of absolutely prohibiting stdlib deps with non-reserved names, crates.io will just lint packages being uploaded.
+Also, care will be taken so that any stdlib crate that is stabalized must use a reserved name or already be published on crates.io.
+That still doesn't protect unpublished packages using unstable stdlib crates without reserved names from breakage, but due to their use of unstable interfaces we have no obligation to keep them working.
+Also, once we have an option to explicit provide the source for stdlib deps, they can force the behavior they want.
+This seems good enough.
 
 
 # Drawbacks
