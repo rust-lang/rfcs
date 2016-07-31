@@ -117,6 +117,7 @@ fields are shown as "diff"s.
 ``` diff
      "target-pointer-width": "32",
 +    "cpu": "cortex-m0",
++    "features": "+strict-align",
 +    "llvm-target": "thumbv6m-none-eabi",
  }
 ```
@@ -126,6 +127,7 @@ fields are shown as "diff"s.
 ``` diff
      "target-pointer-width": "32",
 +    "cpu": "cortex-m0plus",
++    "features": "+strict-align",
 +    "llvm-target": "thumbv6m-none-eabi",
  }
 ```
@@ -135,6 +137,7 @@ fields are shown as "diff"s.
 ``` diff
      "target-pointer-width": "32",
 +    "cpu": "cortex-m1",
++    "features": "+strict-align",
 +    "llvm-target": "thumbv6m-none-eabi",
  }
 ```
@@ -218,8 +221,9 @@ Behind the election of these values for the fields of the target specifications:
 - `target-pointer-width`. (For conditional compilation). All the existing Cortex-M processors are
   32-bit processors.
 - `cpu`. (Enables CPU specific optimizations). The value pretty much matches the target name.
-- `features`. (Used to control the generation of FPU instructions). Only needed on the Cortex-M4 and
-  Cortex-M7 targets.
+- `features`. (Tweaks further the codege). On the Cortex-M4 and Cortex-M7 targets this tweaks the
+  use of FPU instructions. ARMv6-M based microcontrollers use `+strict-align` to prevent the
+  mis-optimization of the `copy_nonoverlapping` function.
 - `llvm-target`. (Controls code generation). Meaning of each field of the triple:
   - `thumbv*m`. `thumb` indicates that the targets will use the Thumb instruction set instead of the
     (older) ARM instruction set ("These processors support the Thumb instruction set only. -
