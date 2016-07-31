@@ -440,7 +440,8 @@ following smaller set of targets:
 - `thumbv7em-none-eabi`: Subsumes the `cortex-m4` and `cortex-m7` targets. No FPU instructions.
   Soft-float calling convention.
 - `thumbv7em-none-eabihf`: Like `thumbv7em-none-eabi` but uses the hard-float calling convention.
-  Also no FPU instructions.
+  With FPU instructions; the FPU will be set to the lowest common denominator between the cortex-m4
+  and the cortex-m7.
   
 ### Emulating the targets of the original proposal
 
