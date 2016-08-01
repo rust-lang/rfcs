@@ -34,7 +34,7 @@ Cargo would be able to infer both of these options by inspecting all crates in t
 
 Rustbuild must currently perform multiple `cargo builds`, the first to build the standard library and the rest to build things which depend on the standard library.
 If rustc, rustfmt, etc, and their deps (some of which come from crates.io, and thus aren't specially tailored for building rust) declare deps on std, rustbuild wouldn't need multiple lockfiles.
-Keeping multiple lockfiles in sync is nuisance, and this gets us one step closer to a single `cargo build` building rustc.
+Keeping multiple lockfiles in sync is a nuisance, and this gets us one step closer to a single `cargo build` building rustc.
 
 The use-cases so far mainly benefit niche corners of the Rust community, but the last should be useful for just about everyone.
 Now that multiple versions of Rust have been released, it can be useful to specify the minimum version.
@@ -46,11 +46,11 @@ We don't yet have a plan yet to track the language itself, but by tracking stand
 
 ## Standard library dependencies
 
-First and foremost, one will now be able to explicitly on standard library, e.g. with `std = { version = "1.10", stdlib = true }`.
-From the users's perspective, `stdlib = true` simply indicates that the dependendend on crate is from the standard library.
+First and foremost, one will now be able to explicitly depend on the standard library, e.g. with `std = { version = "1.10", stdlib = true }`.
+From the users's perspective, `stdlib = true` simply indicates that the depended on crate is from the standard library.
 The version for stdlib crates comes from the version of Rust their interfaces are defined in.
 A version requirement must be specified.
-The full beadth of options available with our existing dependencies, e.g. features and overrides, will be supported.
+The full breadth of options available with our existing dependencies, e.g. features and overrides, will be supported.
 
 ## Implicit dependencies
 
@@ -71,11 +71,11 @@ test = { version = "^1.0", stdlib = true }
 core = { version = "^1.0", stdlib = true }
 std  = { version = "^1.0", stdlib = true }
 ```
-The version requirement for `core` of `^1.0` may seem odd because core was not stable at the time, but anything else would either break newer packages using core, or prevent older packages from working on versions of Rust predating cores stabilization.
-Remember that rustc only complains if a unstable crate is actually imported, so the Cargo dependency on its own is harmless.
+The version requirement for `core` of `^1.0` may seem odd because core was not stable at the time, but anything else would either break newer packages using core, or prevent older packages from working on versions of Rust predating core's stabilization.
+Remember that rustc only complains if an unstable crate is actually imported, so the Cargo dependency on its own is harmless.
 
 `test` is a similar scenario.
-While importing it explicitly remains unstable, is it currently injected and thus needs to be built.
+While importing it explicitly remains unstable, it's currently injected and thus needs to be built.
 Other dependencies of `std` besides core we don't need to worry about, because they are only transitive dependencies through `std`, not direct dependencies.
 
 Now, not all crates depend on these crates, so there must be a way to opt out.
@@ -97,7 +97,7 @@ An exception is `core` itself, which must of course not depend on `core` or `std
 As will be explained, with these changes Cargo will always use `--extern` to pass dependencies, so rustc's sysroot lookup can and should be bypassed.
 This will prevent users using the sysroot from depending on more crates than their cargo file declares (implicitly or explicitly)..
 A `--no-resolve-sysroot` flag will be added for this purpose.
-Compilers that don't have sysroot binaries should except this flag and ignore it.
+Compilers that don't have sysroot binaries should accept this flag and ignore it.
 Note that even if this flag is passed, rustc should still pass the sysroot to the linker for the sake of `compiler-rt`.
 A `--no-link-sysroot` flag will be added to prevent that.
 
@@ -106,18 +106,18 @@ For this purpose, the verbose version output (`$COMPILER -vV` should contain an 
 ```
 language-version: $version
 ```
-For now, `$version` should be a version, not version requirement, and the patch number must be zero as patch numbers don't make sense for interfaces.
+For now, `$version` should be a version, not a version requirement, and the patch number must be zero as patch numbers don't make sense for interfaces.
 [This may be relaxed in the future for compilers which implement multiple versions.]
 
 ## Compiler source packaging
 
-While the standard library *interface* defined with each rustc version, the implementation of many crates, by virtue of using unstable features, is compiler-specific.
+While the standard library *interface* is defined with each rustc version, the implementation of many crates, by virtue of using unstable features, is compiler-specific.
 This makes the standard library unfit for crates.io.
 (Additionally, the issue of dealing with nightly also makes crates.io hard to use, but that is a less clear-cut obstacle.)
 
 Cargo will soon gain the ability to create custom registries, as described in
 https://github.com/rust-lang/cargo/pull/2857 .
-Compiler's should package the source of their implementation of the standard library as a registry, which can be distributed with the compiler.
+Compilers should package the source of their implementation of the standard library as a registry, which can be distributed with the compiler.
 In practice, rustc will optionally contain the source in its sysroot.
 Rustup may be able to put it there if the default download does not contain it already.
 This registry will be called the "compiler source registry".
@@ -128,7 +128,7 @@ Whenever Cargo encounters a `Cargo.toml`, the first thing it always does is inje
 The idea is that by doing this so early on, most of Cargo can stay the same in only knowing or caring about explicit deps, simplifying both this RFC and its implementation.
 This process is completely defined by the rules described in the first subsection, so there is really nothing to elaborate upon here.
 
-Cargo has an "source" abstraction for providers of packages.
+Cargo has a "source" abstraction for providers of packages.
 Examples of this are file-system paths, git repositories, and the upcoming registries.
 For the time being, `stdlib = true` will act like another source, instructing the compiler to look at the compiler source registry, and if that is missing, then the sysroot binaries.
 The remainder of this section will clarify this.
@@ -149,16 +149,16 @@ The awkward scenario is when packages from the sysroot binary mock registry need
 Because Cargo doesn't know much about the sysroot binaries, it must be very conservative when deciding whether or not they can be used.
 For example, Cargo may assume they are built with only default features enabled but it can't know what those are.
 If features are explicitly requested, or the default features are disabled (by all dependent packages) then the binaries are ineligible for the build plan being resolved.
-Cargo likewise will have to be conservative with other metadata,
+Cargo likewise will have to be conservative with other metadata.
 Packages in the mock binaries registry are not built by Cargo, since they are prebuilt, and when they serve as (transitive) dependencies, Cargo passes them in with `--extern` and their sysroot location.
 This is different from other deps, whose binaries are placed in Cargo's output directory, and sysroot deps today, where `--extern` isn't used as all.
-Since `--extern` is used even in the sysroot binary case, rustc can and will pass `--no-resolve-sysroot` to rustc in all cases.
+Since `--extern` is used even in the sysroot binary case, cargo can and will pass `--no-resolve-sysroot` to rustc in all cases.
 
 ## Rustbuild improvements
 
 As advertised in the motivation section, with this RFC, rustbuild can use a single workspace to build the standard library and all executables.
 
-One complication with the RFC is that that no sysroot binaries or source associated with the bootstrap compiler (or previous stage) are never used; one needs to bypass the compiler source registry and sysroot binary mock registry.
+One complication with the RFC is that that no sysroot binaries or source associated with the bootstrap compiler (or previous stage) are ever used; one needs to bypass the compiler source registry and sysroot binary mock registry.
 To accomplish this, rustbuild's workspace will need to use `[replace]` to redirect all stdlib deps to use the workspace's packages.
 
 All binaries for a specific phase can be built with a single `cargo build` (barring special requirements for individual libraries).
@@ -167,29 +167,29 @@ After the last compiler is build, an additional mini-stage of building just the 
 
 ## Forward Compatibility
 
-The custom registries [PR #2857](https://github.com/rust-lang/cargo/pull/2857) starts with just mirroring existing registries.
+The custom registries [PR #2857](https://github.com/rust-lang/cargo/pull/2857) start with just mirroring existing registries.
 As followup work, it expected that packages (probably just the workspace root, definitely not non-packages like cargo config) will be able to specify the "default" source, i.e. the one used when none is specified (today this is always crates.io).
-Similarly, one could specify a "stdlib" source, to be used for `std = true` deps instead of the compiler source binary registry or sysroot binary mock registry.
+Similarly, one could specify a "stdlib" source, to be used for `stdlib = true` deps instead of the compiler source binary registry or sysroot binary mock registry.
 This would simplify rustbuild as it could use that once instead of `[replace]` for each package.
 This doesn't require any planning from this RFC.
 
-More important, it would be nice to move stdlib crates that don't use unstable features to crates.io.
+More importantly, it would be nice to move stdlib crates that don't use unstable features to crates.io.
 `collections` and `test` almost don't use any unstable and are thus good candidates for this.
-With something like what is described in the first paragraph, it could be possible for individual packages instruct Cargo to first check crates.io, and then the compiler source registry, for stdlib crates.
+With something like what is described in the first paragraph, it could be possible for individual packages to instruct Cargo to first check crates.io, and then the compiler source registry, for stdlib crates.
 But this shifts the burden to individual packages, and means we'd still need to vendor source of any crate moved to crates.io in the compiler source registry for packages that didn't make the switch.
 
 More interesting would be to change Cargo's *default* behavior to check both the compiler-specific sources (compiler source registry and sysroot binary mock registry) and crates.io.
-This would allow standard crates to seamless migrate to crates.io without extra work per package.
+This would allow standard crates to seamlessly migrate to crates.io without extra work per package.
 This could be either be done where crates.io overrides the compiler-specific sources, or the compiler specific sources override crates.io.
 We don't want to commit to either variant in this RFC, however, so we instead want to keep all 3 options open (no fallback, crates.io over compiler-specific, compiler-specific over crates.io).
-To achieve this, we want to keep sysroot/compiler source registry and crates.io should contain disjoint packages.
-That way unioning them together with either priority (the fallback scheme effectively crates a union source) has the same affect because there are no packages provided by both.
+To achieve this, we want to keep the set of packages in sysroot/compiler source registry and crates.io disjoint.
+That way unioning them together with either priority (the fallback scheme effectively crates a union source) has the same effect because there are no packages provided by both.
 
 The easiest way to achieve this is to make sure that standard library crates use names reserved on crates.io.
 We don't want to bake crates.io policy into Cargo however, so instead of absolutely prohibiting stdlib deps with non-reserved names, crates.io will just lint packages being uploaded.
 Also, care will be taken so that any stdlib crate that is stabalized must use a reserved name or already be published on crates.io.
 That still doesn't protect unpublished packages using unstable stdlib crates without reserved names from breakage, but due to their use of unstable interfaces we have no obligation to keep them working.
-Also, once we have an option to explicit provide the source for stdlib deps, they can force the behavior they want.
+Also, once we have an option to explicitly provide the source for stdlib deps, they can force the behavior they want.
 This seems good enough.
 
 
@@ -205,14 +205,14 @@ This seems good enough.
    But just as freestanding developers need to provide `rlibc` or similar to successfully link, I think that for the time-being they deal with this themselves.
    This is no step backwards.
 
- - Compilers could provided crates in their sysroot that don't match the Rust specification, and Cargo would be none the wiser.
-   [Technically, this problem already exists with falling back on the sysroot binaries, but users will probably expect better when they can specify standard library dependencies explicitly.]
-   Since the *interface* of the stdlib is specified, it would be neat if we could but a big crate type/interface on crates.io, which compiler implementations would need to match.
+ - Compilers could provide crates in their sysroot that don't match the Rust specification, and Cargo would be none the wiser.
+   (Technically, this problem already exists with falling back on the sysroot binaries, but users will probably expect better when they can specify standard library dependencies explicitly.)
+   Since the *interface* of the stdlib is specified, it would be neat if we could put a big crate type/interface on crates.io, which compiler implementations would need to match.
 
 
 # Alternatives
 
- - Instead of copying binaries from the sysroot, we could just leave rustc to find them.
+ - Instead of copying binaries from the sysroot, we could just leave it to rustc to find them.
    But then a simple `--no-resolve-sysroot` would not work, and the logic for passing `--extern` would need be more complicated.
 
  - Previous versions of this RFC were a simpler but more brittle.
@@ -235,8 +235,8 @@ This seems good enough.
 
  - Should one be able to opt-out of implicit build and development dependencies?
    I'd like to create a new crate containing testing annotations as compiler plugins, but this entails creating a new sort of test-only plugin dependency (combination of development and build).
-   Additionally, Currently, it makes sense to always make `std` available for `build.rs` since it must exist for the compiler.
-   But if platform-specific parts of the `std` are exposed only with features or "scenarios" (a newly-proposed mechanism specifically for handling environment differences), then we loose an opportunity to be able to express mandatory cross-compiling.
+   Additionally, currently, it makes sense to always make `std` available for `build.rs` since it must exist for the compiler.
+   But if platform-specific parts of the `std` are exposed only with features or "scenarios" (a newly-proposed mechanism specifically for handling environment differences), then we lose an opportunity to be able to express mandatory cross-compiling.
    Finally, in the far future it may be possible to build rustc on platforms where all of `std` isn't available, invalidating the reasoning that `std` is never unavailable as a build dependency.
 
  - It is somewhat unclear how Cargo should deal with architecture-specific configuration that is not captured in the target spec nor Cargo feature flags (like CPU features).
