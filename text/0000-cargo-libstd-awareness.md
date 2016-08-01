@@ -46,8 +46,8 @@ We don't yet have a plan yet to track the language itself, but by tracking stand
 
 ## Standard library dependencies
 
-First and foremost, one will now be able to explicitly depend on the standard library, e.g. with `std = { version = "1.10", stdlib = true }`.
-From the users's perspective, `stdlib = true` simply indicates that the depended on crate is from the standard library.
+First and foremost, one will now be able to explicitly depend on standard library crates, e.g. with `std = { version = "1.10", stdlib = true }`.
+From the users's perspective, `stdlib = true` simply indicates that the depended-on crate is from the standard library.
 The version for stdlib crates comes from the version of Rust their interfaces are defined in.
 A version requirement must be specified.
 The full breadth of options available with our existing dependencies, e.g. features and overrides, will be supported.
@@ -167,7 +167,7 @@ After the last compiler is build, an additional mini-stage of building just the 
 
 ## Forward Compatibility
 
-The custom registries [PR #2857](https://github.com/rust-lang/cargo/pull/2857) start with just mirroring existing registries.
+The custom registries PR https://github.com/rust-lang/cargo/pull/2857 starts with just mirroring existing registries.
 As followup work, it expected that packages (probably just the workspace root, definitely not non-packages like cargo config) will be able to specify the "default" source, i.e. the one used when none is specified (today this is always crates.io).
 Similarly, one could specify a "stdlib" source, to be used for `stdlib = true` deps instead of the compiler source binary registry or sysroot binary mock registry.
 This would simplify rustbuild as it could use that once instead of `[replace]` for each package.
@@ -182,8 +182,8 @@ More interesting would be to change Cargo's *default* behavior to check both the
 This would allow standard crates to seamlessly migrate to crates.io without extra work per package.
 This could be either be done where crates.io overrides the compiler-specific sources, or the compiler specific sources override crates.io.
 We don't want to commit to either variant in this RFC, however, so we instead want to keep all 3 options open (no fallback, crates.io over compiler-specific, compiler-specific over crates.io).
-To achieve this, we want to keep the set of packages in sysroot/compiler source registry and crates.io disjoint.
-That way unioning them together with either priority (the fallback scheme effectively crates a union source) has the same effect because there are no packages provided by both.
+To achieve this, we want to keep the sysroot/compiler source registry and crates.io disjoint: no package should be contained in both sources.
+That way unioning them together with either priority (the fallback scheme effectively crates a union source) has the same effect.
 
 The easiest way to achieve this is to make sure that standard library crates use names reserved on crates.io.
 We don't want to bake crates.io policy into Cargo however, so instead of absolutely prohibiting stdlib deps with non-reserved names, crates.io will just lint packages being uploaded.
@@ -234,8 +234,7 @@ This seems good enough.
    I'd hope so!
 
  - Should one be able to opt-out of implicit build and development dependencies?
-   I'd like to create a new crate containing testing annotations as compiler plugins, but this entails creating a new sort of test-only plugin dependency (combination of development and build).
-   Additionally, currently, it makes sense to always make `std` available for `build.rs` since it must exist for the compiler.
+   Currently, it makes sense to always make `std` available for `build.rs` since it must exist for the compiler.
    But if platform-specific parts of the `std` are exposed only with features or "scenarios" (a newly-proposed mechanism specifically for handling environment differences), then we lose an opportunity to be able to express mandatory cross-compiling.
    Finally, in the far future it may be possible to build rustc on platforms where all of `std` isn't available, invalidating the reasoning that `std` is never unavailable as a build dependency.
 
