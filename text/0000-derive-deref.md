@@ -34,12 +34,14 @@ struct MyType<T> {
 # Drawbacks
 [drawbacks]: #drawbacks
 
-None.
+This encourages using `Deref` for non-pointer types, which could be considered
+an anti-pattern.
 
 # Alternatives
 [alternatives]: #alternatives
 
-None.
+Newtype derive, where every implementation of the inner type is reimplemented
+for the newtype.
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
