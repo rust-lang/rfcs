@@ -119,6 +119,7 @@ fields are shown as "diff"s.
 +    "cpu": "cortex-m0",
 +    "features": "+strict-align",
 +    "llvm-target": "thumbv6m-none-eabi",
++    "max-atomic-width": 0,
  }
 ```
 
@@ -129,6 +130,7 @@ fields are shown as "diff"s.
 +    "cpu": "cortex-m0plus",
 +    "features": "+strict-align",
 +    "llvm-target": "thumbv6m-none-eabi",
++    "max-atomic-width": 0,
  }
 ```
 
@@ -139,6 +141,7 @@ fields are shown as "diff"s.
 +    "cpu": "cortex-m1",
 +    "features": "+strict-align",
 +    "llvm-target": "thumbv6m-none-eabi",
++    "max-atomic-width": 0,
  }
 ```
 
@@ -232,6 +235,9 @@ Behind the election of these values for the fields of the target specifications:
   - `none`. Indicates the lack of an operating system.
   - `eabi`. Indicates that the target uses the soft-float calling convention instead of the
     hard-float calling convention (more details about this below).
+- `max-atomic-width`. ARMv6-M microcontrollers set this field to 0 to indicate that they don't
+  support atomics (there is no `dmb` instruction in their instruction set). This effectively removes
+  `AtomicI8` et al. from `core`.
 
 [ARM]: http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.set.cortexm/index.html
 
