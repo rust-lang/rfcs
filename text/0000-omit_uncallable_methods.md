@@ -9,11 +9,11 @@ implementations.
 
 # Motivation
 
-These methods impls are superfluous and clutter code. Having to write out
-"what" their implementation is seems weird when they don't really have an
+These methods impls are superfluous and clutter code. Having to specify an
+implementation for them seems weird when they don't really have an
 implementation at all.
 
-For example, consider the trait impls in libcore/libstd for `!`:
+For example, consider the trait impls for `!` in libcore/libstd:
 
 ```rust
 impl PartialEq for ! {
@@ -47,7 +47,7 @@ impl Display for ! {
 }
 ```
 
-As `&Self` is uninhabited in all these methods, with this RFC these could be
+`&Self` is uninhabited in all these methods. With this RFC these could be
 reduced to:
 
 ```rust
@@ -63,8 +63,15 @@ impl Display for ! {}
 ```
 
 Another way to think about this is that we already allow infallible
-pattern-matching in function argument lists. This RFC would, in some sense, be
-an extension of this feature to unreachable patterns.
+pattern-matching in function argument lists. For example:
+
+```rust
+struct Foo { x: u32, y: u32 }
+fn foo(Foo {x, y}: Foo) -> u32 { x + y }
+```
+
+This RFC would, in some sense, be an extension of this feature to unreachable
+patterns.
 
 # Detailed design
 
@@ -91,7 +98,7 @@ misleading. Rather, by setting `Timeout = !` they've indicated that the method
 should be, in some sense, deleted (or at least rendered unusable) similar to
 how `!` can be used to "delete" unwanted enum variants.
 
-As such, the impl should be able to be written as
+As such, the impl should be able to be written simply as:
 
 ```rust
 impl Handler for Foo {
