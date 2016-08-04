@@ -98,8 +98,7 @@ As will be explained, with these changes Cargo will always use `--extern` to pas
 This will prevent users using the sysroot from depending on more crates than their cargo file declares (implicitly or explicitly)..
 A `--no-resolve-sysroot` flag will be added for this purpose.
 Compilers that don't have sysroot binaries should accept this flag and ignore it.
-Note that even if this flag is passed, rustc should still pass the sysroot to the linker for the sake of `compiler-rt`.
-A `--no-link-sysroot` flag will be added to prevent that.
+Once [Rust PR #35021](https://github.com/rust-lang/rust/pull/35021/files) lands in some form, `compiler-rt` will be a Cargoized dependency so rustc won't use the sysroot for linking either.
 
 Additionally, compilers besides rustc may have version numbers distinct from the version of Rust they implement.
 For this purpose, the verbose version output (`$COMPILER -vV` should contain an additional line:
@@ -201,10 +200,6 @@ This seems good enough.
    However it's precisely only these "foundational" crates that will be of interest to freestanding developers.
    Hosted developers can likely get pre-built binaries for the platform they need with `rustup`, just as they do today.
 
- - No means of compiling `compiler-rt` is proposed.
-   But just as freestanding developers need to provide `rlibc` or similar to successfully link, I think that for the time-being they deal with this themselves.
-   This is no step backwards.
-
  - Compilers could provide crates in their sysroot that don't match the Rust specification, and Cargo would be none the wiser.
    (Technically, this problem already exists with falling back on the sysroot binaries, but users will probably expect better when they can specify standard library dependencies explicitly.)
    Since the *interface* of the stdlib is specified, it would be neat if we could put a big crate type/interface on crates.io, which compiler implementations would need to match.
@@ -217,9 +212,6 @@ This seems good enough.
 
  - Previous versions of this RFC were a simpler but more brittle.
    Please refer to the git history to see them.
-
- - Should `--no-resolve-sysroot` influence linking after all, and `core` have a dep on some `compiler-rt-sys` crate?
-   This dependency could be a default feature.
 
 # Unresolved questions
 
