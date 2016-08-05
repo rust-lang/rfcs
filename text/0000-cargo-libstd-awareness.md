@@ -210,7 +210,7 @@ This seems good enough.
  - Instead of copying binaries from the sysroot, we could just leave it to rustc to find them.
    But then a simple `--no-resolve-sysroot` would not work, and the logic for passing `--extern` would need be more complicated.
 
- - Previous versions of this RFC were a simpler but more brittle.
+ - Previous versions of this RFC were simpler but more brittle.
    Please refer to the git history to see them.
 
 # Unresolved questions
