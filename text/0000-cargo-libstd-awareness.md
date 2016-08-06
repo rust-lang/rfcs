@@ -7,7 +7,7 @@
 # Summary
 
 Currently, Cargo doesn't know what parts of the standard library packages depend on.
-By giving it this knowledge, we can make cross compilation and exotic platform development easier, simplify rustbuild, and allow anyone to easily specify bounds on the standard library for their packages.
+By giving it this knowledge, we can make cross compilation and exotic platform development easier, simplify rustbuild, and allow anyone to easily specify semver requirements on the standard library for their packages.
 This will allow building parts of the standard library from source, but in order to not disrupt existing workflows, the binaries that come with rustc will still be used by default.
 
 
