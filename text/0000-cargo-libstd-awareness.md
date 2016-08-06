@@ -84,11 +84,11 @@ It is defined by default as:
 ```toml
 implicit-dependencies = ["primary", "build", "dev"]
 ```
-This indicates each of `dependencies`, `build-dependencies`, and `dev-dependencies` maps (respectively) is augmented with implicit elements.
+This indicates each of `dependencies`, `build-dependencies`, and `dev-dependencies` maps (respectively) is augmented with implicit dependencies.
 A manual definition may be that or almost any subset, in which case only the included dependency maps are augmented.
 
-Finally, if an (explicit) dependency conflicts with one of the implicit defaults, that category of implicit dependency will be skipped.
-For example, if a crate explicit depends on `std` as a build-dependency, neither `std` nor any other implicit build dependency will be injected.
+Finally, if an (explicit) dependency conflicts with one of the implicit defaults, implicit dependencies of the same sort will be skipped.
+For example, if a crate explicit depends on `std` as a build dependency, neither `std` nor any other implicit build dependency will be injected.
 This final rule means must packages won't need to use the implicit-dependencies key, because either implicit dependencies will be used, or a `core` or `std` explicit dependency will be present.
 An exception is `core` itself, which must of course not depend on `core` or `std` implicitly or explicitly.
 
