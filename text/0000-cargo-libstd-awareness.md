@@ -130,7 +130,7 @@ This process is completely defined by the rules described in the first subsectio
 
 Cargo has a "source" abstraction for providers of packages.
 Examples of this are file-system paths, git repositories, and the upcoming registries.
-For the time being, `stdlib = true` will act like another source, instructing the compiler to look at the compiler source registry, and if that is missing, then the sysroot binaries.
+For the time being, `stdlib = true` will be another source, instructing Cargo to look at the compiler source registry, and if that is missing, then the sysroot binaries.
 The remainder of this section will clarify this.
 
 The compiler source registry is expected to be located in `${$CARGO_RUSTC --print sysroot}/lib/rustlib/src`.
