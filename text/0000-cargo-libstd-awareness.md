@@ -203,6 +203,8 @@ This seems good enough.
  - Compilers could provide crates in their sysroot that don't match the Rust specification, and Cargo would be none the wiser.
    (Technically, this problem already exists with falling back on the sysroot binaries, but users will probably expect better when they can specify standard library dependencies explicitly.)
    Since the *interface* of the stdlib is specified, it would be neat if we could put a big crate type/interface on crates.io, which compiler implementations would need to match.
+   [That is, the interface of the stable crates.
+   Unstable crates behind the std facade are a compiler-specific implementation detail, and thus it would be counter-productive, even to likewise constrain their interfaces.]
 
 
 # Alternatives
