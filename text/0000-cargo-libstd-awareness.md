@@ -71,7 +71,7 @@ test = { version = "^1.0", stdlib = true }
 core = { version = "^1.0", stdlib = true }
 std  = { version = "^1.0", stdlib = true }
 ```
-The version requirement for `core` of `^1.0` may seem odd because core was not stable at the time, but anything else would either break newer packages using core, or prevent older packages from working on versions of Rust predating core's stabilization.
+The version requirement for `core` of `^1.0` may seem odd because core was not stable in Rust 1.0, but anything else would either break newer packages using core, or prevent older packages from working on versions of Rust predating core's stabilization.
 Remember that rustc only complains if an unstable crate is actually imported, so the Cargo dependency on its own is harmless.
 
 `test` is a similar scenario.
