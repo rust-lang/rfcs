@@ -194,7 +194,8 @@ This seems good enough.
 
 # Drawbacks
 
- - The mock registry for sysroot binaries is a disgusting hack.
+ - The mock registry for sysroot binaries is a complicated special case whose implementation will probably span many parts of Cargo.
+   In the near future, it is unlikely to be generalized into something more elegant.
 
  - Even with this RFC and a nightly compiler, a single `cargo build` is incapable of building the entire standard library due to external dependencies.
    But I believe we will eventually reach that goal, and furthermore this RFC will help us reach it.
