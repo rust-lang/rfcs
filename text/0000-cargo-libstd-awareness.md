@@ -39,7 +39,8 @@ Keeping multiple lockfiles in sync is a nuisance, and this gets us one step clos
 The use-cases so far mainly benefit niche corners of the Rust community, but the last should be useful for just about everyone.
 Now that multiple versions of Rust have been released, it can be useful to specify the minimum version.
 If and when Rust 2, a version with breaking changes, comes out, this will be all the more important.
-We don't yet have a plan yet to track the language itself, but by tracking standard library dependencies we make it trivial to specify version requirements like any other package.
+We don't yet have a plan yet to track which version of Rust is used in the current crate (in order to opt in to the use of a hitherto unstable feature).
+However, because the versions of standard library crate are required to be the same as the version of the language supported by the compiler, specifying the semver requirements of a crate in the sysroot effectively specifies the semver requirements of the language itself.
 
 
 # Detailed design
