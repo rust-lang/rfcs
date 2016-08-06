@@ -101,7 +101,7 @@ Compilers that don't have sysroot binaries should accept this flag and ignore it
 Once [Rust PR #35021](https://github.com/rust-lang/rust/pull/35021/files) lands in some form, `compiler-rt` will be a Cargoized dependency so rustc won't use the sysroot for linking either.
 
 Additionally, compilers besides rustc may have version numbers distinct from the version of Rust they implement.
-For this purpose, the verbose version output (`$COMPILER -vV` should contain an additional line:
+For this purpose, the verbose version output (`$COMPILER -vV`) should contain an additional line:
 ```
 language-version: $version
 ```
