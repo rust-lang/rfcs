@@ -186,7 +186,7 @@ That way unioning them together with either priority (the fallback scheme effect
 
 The easiest way to achieve this is to make sure that standard library crates use names reserved on crates.io.
 We don't want to bake crates.io policy into Cargo however, so instead of absolutely prohibiting stdlib deps with non-reserved names, crates.io will just lint packages being uploaded.
-Also, care will be taken so that any stdlib crate that is stabalized must use a reserved name or already be published on crates.io.
+Also, care will be taken so that any stdlib crate that is stabilized must use a reserved name or already be published on crates.io.
 That still doesn't protect unpublished packages using unstable stdlib crates without reserved names from breakage, but due to their use of unstable interfaces we have no obligation to keep them working.
 Also, once we have an option to explicitly provide the source for stdlib deps, they can force the behavior they want.
 This seems good enough.
@@ -196,9 +196,8 @@ This seems good enough.
 
  - The mock registry for sysroot binaries is a disgusting hack.
 
- - Only some crates in the rust repo (at least `core`, `alloc` and `collections`) can properly be built just based upon their `Cargo.toml`.
-   However it's precisely only these "foundational" crates that will be of interest to freestanding developers.
-   Hosted developers can likely get pre-built binaries for the platform they need with `rustup`, just as they do today.
+ - Even with this RFC and a nightly compiler, a single `cargo build` is incapable of building the entire standard library due to external dependencies.
+   But I believe we will eventually reach that goal, and furthermore this RFC will help us reach it.
 
  - Compilers could provide crates in their sysroot that don't match the Rust specification, and Cargo would be none the wiser.
    (Technically, this problem already exists with falling back on the sysroot binaries, but users will probably expect better when they can specify standard library dependencies explicitly.)
