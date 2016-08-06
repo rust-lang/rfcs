@@ -84,7 +84,7 @@ It is defined by default as:
 ```toml
 implicit-dependencies = ["primary", "build", "dev"]
 ```
-This indicates each of `dependencies`, `build-dependencies`, and `dev-dependencies` maps (respectively) is augmented with implicit dependencies.
+This indicates each of the `dependencies`, `build-dependencies`, and `dev-dependencies` maps (respectively) are augmented with implicit dependencies.
 A manual definition may be that or almost any subset, in which case only the included dependency maps are augmented.
 
 Finally, if an (explicit) dependency conflicts with one of the implicit defaults, implicit dependencies of the same sort will be skipped.
