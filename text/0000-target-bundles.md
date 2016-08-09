@@ -107,7 +107,7 @@ keep everything else unstable for some duration.
 
 ### Proposed JSON key-values
 
-```json
+```js
 {
     // REQUIRED
     "llvm-target": "x86_64-unknown-linux-gnu",              // LLVM target triple (does not need to match with rustc triple)
@@ -124,7 +124,7 @@ keep everything else unstable for some duration.
         "target_pointer_width": "64",
         "target_env": "gnu",
         "target_vendor": "unknown",
-        "target_has_atomic": ["8", "16", "32", "64"],       // any of #[cfg(target_has_atomic={"8", "16", "32", "64")] work.
+        "target_has_atomic": ["8", "16", "32", "64"],       // any of #[cfg(target_has_atomic={"8","16","32","64"}] work.
         "target_has_atomic_ptr": null,
         "target_thread_local": null,
         "unix": null
