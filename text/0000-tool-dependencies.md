@@ -89,6 +89,14 @@ that use the cargo API should continue to work.)
 # Alternatives
 [alternatives]: #alternatives
 
+Today, packages could detect the version of Cargo or other build tools in
+`build.rs`, and fail the build if they don't have a new enough version.  This
+RFC provides a purely declarative dependency instead.  Cargo can parse such a
+declarative dependency in advance to determine if the build will succeed.
+Other tools, such as package management systems, can translate such a
+declarative dependency into a build dependency on their package of the
+corresponding build tool.
+
 Rather than introducing a new crate namespace, Cargo and crates.io could
 instead reserve special crate names, such as `cargo-bin` or `tool-cargo`.
 However, this would potentially conflict with an existing crate name, including
