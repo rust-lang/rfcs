@@ -30,6 +30,12 @@ use in the ways currently not supported by our current infrastructure (sans maki
 compiler itself, of course), and noted that the current scheme is not very feasible in the long
 run. This RFC should go a great amount towards fixing the issues.
 
+Then, there also is a strong need to be able to inspect arbitrary parts of target specification,
+regardless of their origin. For example, in a cross-compilation setting, when the crate uses a
+build.rs script, `#[cfg]` variables are for the host, rather than the target. This way the author
+is forced to parse the target triple and figure out particularities of the target on their own, as
+rustc does not provide any way to inspect any of the built-in targets.
+
 # Detailed design
 [design]: #detailed-design
 
