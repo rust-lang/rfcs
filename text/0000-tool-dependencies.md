@@ -74,6 +74,11 @@ actually require such a crate.  In particular, if a crate declares an optional
 build tool dependency in its Cargo.toml, builds that do not require satisfying
 that dependency will still complete successfully with older versions of Cargo.
 
+In addition to Cargo's own handling of build tool dependencies, other tools
+working with crates, such as package management systems, can translate these
+declarative dependencies into build time dependencies on the corresponding
+packages of build tools.
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
