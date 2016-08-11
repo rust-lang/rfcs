@@ -220,15 +220,21 @@ There might be more complicated cases to optimize for and is outside the scope o
 # Alternatives
 [alternatives]: #alternatives
 
-Not an alternative but an addition to the proposal: `if match` expressions. This would modify the
-grammar as so:
+Not an alternative but an addition to the proposal: `if match` expressions. This would add an
+additional grammar rule and modify an existing one:
 
 ```
-+ if_match_expr : "if" match_expr else_tail ? ;
+ expr : literal | path | tuple_expr | unit_expr | struct_expr
+      | block_expr | method_call_expr | field_expr | array_expr
+      | idx_expr | range_expr | unop_expr | binop_expr
+      | paren_expr | call_expr | lambda_expr | while_expr
+      | loop_expr | break_expr | continue_expr | for_expr
+      | if_expr | match_expr | if_let_expr | while_let_expr
+~     | if_match_expr | return_expr ;
 
-else_tail : "else" [ if_expr | if_let_expr
-+                  | if_match_expr | match_expr
-                   | '{' block '}' ] ;
+...
+
++ if_match_expr : "if" match_expr else_tail ? ;
 ```
 
 Should work nearly the same as `else match`.
