@@ -16,7 +16,7 @@ statements.
 
 It also makes code similar to:
 
-```rs
+```rust
 let flag = false;
 
 if foo() {
@@ -35,7 +35,7 @@ if flag {
 
 simpler and more concise:
 
-```rs
+```rust
 if foo() {
     do_this();
 } else match bar() {
@@ -55,7 +55,7 @@ Though rare, this pattern does exist in several Rust projects.
 
 Before:
 
-```rs
+```rust
 /// Clamp the given size by the given `min` and `max` constraints.
 pub fn clamp(&self, other: Au) -> Au {
     if other < self.min {
@@ -71,7 +71,7 @@ pub fn clamp(&self, other: Au) -> Au {
 
 After:
 
-```rs
+```rust
 /// Clamp the given size by the given `min` and `max` constraints.
 pub fn clamp(&self, other: Au) -> Au {
     if other < self.min {
@@ -89,7 +89,7 @@ pub fn clamp(&self, other: Au) -> Au {
 
 Before:
 
-```rs
+```rust
 if !self.typ.is_number() {
     pieces.push(empty()); pieces.push(empty());
 } else {
@@ -105,7 +105,7 @@ if !self.typ.is_number() {
 
 After:
 
-```rs
+```rust
 if !self.typ.is_number() {
     pieces.push(empty()); pieces.push(empty());
 } else match self.online {
@@ -123,7 +123,7 @@ if !self.typ.is_number() {
 
 Before:
 
-```rs
+```rust
 if class == self.class {
   match rr.get_rr_type() {
     RecordType::ANY | RecordType::AXFR | RecordType::IXFR => return Err(ResponseCode::FormErr),
@@ -154,7 +154,7 @@ if class == self.class {
 
 After:
 
-```rs
+```rust
 if class == self.class {
   match rr.get_rr_type() {
     RecordType::ANY | RecordType::AXFR | RecordType::IXFR => return Err(ResponseCode::FormErr),
