@@ -178,7 +178,7 @@ if class == self.class {
     }
   },
 } else {
-  return Err(ResponseCode::FormErr)
+  return Err(ResponseCode::FormErr);
 }
 ```
 
@@ -220,7 +220,18 @@ There might be more complicated cases to optimize for and is outside the scope o
 # Alternatives
 [alternatives]: #alternatives
 
-Don't do this.
+Not an alternative but an addition to the proposal: `if match` expressions. This would modify the
+grammar as so:
+
+```
++ if_match_expr : "if" match_expr else_tail ? ;
+
+else_tail : "else" [ if_expr | if_let_expr
++                  | if_match_expr | match_expr
+                   | '{' block '}' ] ;
+```
+
+Should work nearly the same as `else match`.
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
