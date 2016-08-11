@@ -210,7 +210,7 @@ When an arbitrary expression `exp` in `else match <exp>` fails to match any of t
 ### Dead code
 
 An `else match` block with a `_ => ...` match means the next clause (if exists) will never run.
-There might be more complicated cases to optimize for, and is outside the scope of this document.
+There might be more complicated cases to optimize for and is outside the scope of this document.
 
 # Drawbacks
 [drawbacks]: #drawbacks
