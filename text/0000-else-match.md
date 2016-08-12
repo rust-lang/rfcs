@@ -33,6 +33,7 @@ if foo() {
     do_this();
 } else match bar() {
     baz() => do_that()
+    _ => flag = true
 }
 ```
 
