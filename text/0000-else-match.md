@@ -13,6 +13,8 @@ Extend the `if` expression to accept an `else match` block.
 
 This proposal is meant to reduce the verbosity of writing `if ... else { match ... } ` expressions.
 
+Code such as:
+
 ```rust
 if foo() {
     do_this();
@@ -24,7 +26,7 @@ if foo() {
 }
 ```
 
-simpler and more concise:
+can be simpler and more concise:
 
 ```rust
 if foo() {
