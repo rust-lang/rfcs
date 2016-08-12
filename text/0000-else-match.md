@@ -11,14 +11,9 @@ Extend the `if` expression to accept an `else match` block.
 # Motivation
 [motivation]: #motivation
 
-This proposal is meant to reduce the verbosity of writing `if ... else { match ... } ` style
-statements.
-
-It also makes code similar to:
+This proposal is meant to reduce the verbosity of writing `if ... else { match ... } ` expressions.
 
 ```rust
-let flag = false;
-
 if foo() {
     do_this();
 } else {
@@ -26,10 +21,6 @@ if foo() {
         baz() => do_that(),
         _ => flag = true
     }
-}
-
-if flag {
-    do_something();
 }
 ```
 
@@ -40,48 +31,12 @@ if foo() {
     do_this();
 } else match bar() {
     baz() => do_that()
-} else {
-    do_something();
 }
 ```
 
 ## Use-cases
 
 Though rare, this pattern does exist in several Rust projects.
-
-### [Servo](https://github.com/servo/servo)
-
-<https://github.com/servo/servo/blob/master/components/layout/model.rs#L557>
-
-Before:
-
-```rust
-/// Clamp the given size by the given `min` and `max` constraints.
-pub fn clamp(&self, other: Au) -> Au {
-    if other < self.min {
-        self.min
-    } else {
-        match self.max {
-            Some(max) if max < other => max,
-            _ => other
-        }
-    }
-}
-```
-
-After:
-
-```rust
-/// Clamp the given size by the given `min` and `max` constraints.
-pub fn clamp(&self, other: Au) -> Au {
-    if other < self.min {
-        self.min
-    } else match self.max {
-        Some(max) if max < other => max,
-        _ => other
-    }
-}
-```
 
 ### [xsv](https://github.com/BurntSushi/xsv)
 
@@ -177,8 +132,7 @@ if class == self.class {
       _ => (),
     }
   },
-} else {
-  return Err(ResponseCode::FormErr);
+  _ => return Err(ResponseCode::FormErr),
 }
 ```
 
@@ -194,28 +148,27 @@ This proposal modifies the
 [if expression grammar](https://doc.rust-lang.org/grammar.html#if-expressions).
 
 ```
-else_tail : "else" [ if_expr | if_let_expr
-+                  | match_expr
-                   | '{' block '}' ] ;
+ else_tail : "else" [ if_expr | if_let_expr
++                   | match_expr
+                    | '{' block '}' ] ;
 ```
 
 ## Execution
 
-An `else match` block should be treated similar to an `else` block with a single `match`
-expression, with one key addition:
-
-When an arbitrary expression `exp` in `else match <exp>` fails to match any of the cases in the
-`else match` block, the next block (if it exists) is run.
+An `else match` block should be treated exactly the same as an `else` block with a single `match`
+expression.
 
 ### Dead code
 
-An `else match` block with a `_ => ...` match means the next clause (if exists) will never run.
-There might be more complicated cases to optimize for and is outside the scope of this document.
+The next `else` block after an `else match` is never run. This is because `match` itself does not
+take on an `else` block. Whether `match` should allow an `else` or not should be addressed in a
+separate proposal.
 
 # Drawbacks
 [drawbacks]: #drawbacks
 
 - Slight maintainability problems whenever you need to add additional logic to an `else` block.
+- Can be more of a stylistic issue than an ergonomics issue.
 
 # Alternatives
 [alternatives]: #alternatives
@@ -224,17 +177,18 @@ Not an alternative but an addition to the proposal: `if match` expressions. This
 additional grammar rule and modify an existing one:
 
 ```
++ if_match_expr : "if" match_expr else_tail ? ;
+```
+
+```
  expr : literal | path | tuple_expr | unit_expr | struct_expr
       | block_expr | method_call_expr | field_expr | array_expr
       | idx_expr | range_expr | unop_expr | binop_expr
       | paren_expr | call_expr | lambda_expr | while_expr
       | loop_expr | break_expr | continue_expr | for_expr
       | if_expr | match_expr | if_let_expr | while_let_expr
-~     | if_match_expr | return_expr ;
-
-...
-
-+ if_match_expr : "if" match_expr else_tail ? ;
+-     | return_expr ;
++     | if_match_expr | return_expr ;
 ```
 
 Should work nearly the same as `else match`.
@@ -242,4 +196,5 @@ Should work nearly the same as `else match`.
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
-None.
+Whether to allow `match` to take on an `else` block. This should be addressed
+in a separate proposal.
