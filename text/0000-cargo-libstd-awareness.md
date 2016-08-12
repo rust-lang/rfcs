@@ -218,6 +218,11 @@ This seems good enough.
  - Previous versions of this RFC were simpler but more brittle.
    Please refer to the git history to see them.
 
+ - Should the "stdlib" virtual source instead be called "sysroot" (e.g. `core =  { sysroot = true, .. }`)?
+   This emphasizes how those dependencies are resolved as opposed to what they are for.
+
+ - If a way to specify the language version like #1709 or #1707 is added, the version of stdlib dependencies could be pulled from that.
+
 
 # Unresolved questions
 
