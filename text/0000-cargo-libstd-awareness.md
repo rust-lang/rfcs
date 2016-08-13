@@ -169,6 +169,14 @@ Because of this use of `--extern` and `-L` with the binary mock source, rustc wh
 To prevent it from doing so with broken packages, Cargo will also pass rustc `--sysroot=` (i.e. the empty path) to prevent it from doing so.
 [Once [Rust PR #35021](https://github.com/rust-lang/rust/pull/35021/files) lands in some form, `compiler-rt` will be a Cargoized dependency so the sysroot won't be needed for linking either.]
 
+By default, stdlib packages will be excluded from the lockfile.
+Putting stdlib version numbers in lockfiles would mean you have to have an exact compiler version to build code with lockfiles, which is inconvenient.
+Not having stdlib crates in lockfiles doesn't pose much
+risk of failed compiles since the backwards compatibility of stdlib crates is already a high priority, and linchpin upon which the whole Rust ecosystem already depends.
+
+This is just a default however.
+The Rust repo, for example, *should* track stdlib crates in its lockfile because that's a large part of what it builds, and it does indeed need to be booted from a precise version of rust.
+
 ## Rustbuild improvements
 
 As advertised in the motivation section, with this RFC, rustbuild can use a single workspace to build the standard library and all executables.
