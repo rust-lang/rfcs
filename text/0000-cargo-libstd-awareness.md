@@ -60,6 +60,8 @@ The version for stdlib crates comes from the version of Rust their interfaces ar
 A version requirement must be specified.
 The full breadth of options available with our existing dependencies, e.g. features and overrides, will be supported.
 
+For the initial roll out of the feature, only normal dependencies, not build or dev dependencies, will be allowed to include explicit stdlib dependencies.
+
 ## Implicit dependencies
 
 For backwards compatibility, Cargo must inject such standard library dependencies for existing packages.
@@ -87,18 +89,16 @@ While importing it explicitly remains unstable, it's currently injected and thus
 Other dependencies of `std` besides core we don't need to worry about, because they are only transitive dependencies through `std`, not direct dependencies.
 
 Now, not all crates depend on these crates, so there must be a way to opt out.
-For this, we introduce a new `implicit-dependencies` key.
-It is defined by default as:
-```toml
-implicit-dependencies = ["primary", "build", "dev"]
-```
-This indicates each of the `dependencies`, `build-dependencies`, and `dev-dependencies` maps (respectively) are augmented with implicit dependencies.
-A manual definition may be that or almost any subset, in which case only the included dependency maps are augmented.
+The primary way is just to create a conflict.
+If an (explicit) dependency has the same name as one of the implicit defaults, implicit dependencies of the same sort will be skipped.
+For example, if a crate explicit depends on `std` as a regular dependency, neither `std` nor any other implicit regular dependency will be injected.
+Since currently regular dependencies can be included stdlib dependencies, only regular dependencies can be opted out of.
+This means we are free to change the implicit dev and build dependencies without breaking anything.
 
-Finally, if an (explicit) dependency conflicts with one of the implicit defaults, implicit dependencies of the same sort will be skipped.
-For example, if a crate explicit depends on `std` as a build dependency, neither `std` nor any other implicit build dependency will be injected.
-This final rule means must packages won't need to use the implicit-dependencies key, because either implicit dependencies will be used, or a `core` or `std` explicit dependency will be present.
-The one current exception is `core` itself, which must of course not depend on `core` or `std` implicitly or explicitly.
+Opting out via conflict as described above is adequate for almost all cases.
+The one exception is `core` itself, which must of course not depend on `core` or `std` implicitly or explicitly---or anything else for that matter.
+For it, a key, `implicit-dependencies = <true|false>`, will be introduced.
+Because it doesn't generalize if we make the implicit build or dev stdlib deps optional, this key will be permanently unstable.
 
 ## Compiler language version
 
@@ -227,6 +227,8 @@ This seems good enough.
    This emphasizes how those dependencies are resolved as opposed to what they are for.
 
  - If a way to specify the language version like #1709 or #1707 is added, the version of stdlib dependencies could be pulled from that.
+
+ - This has been deemed sufficiently complicated to warrant the introduction of unstable features to Cargo.
 
 
 # Unresolved questions
