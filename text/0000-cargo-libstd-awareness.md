@@ -152,9 +152,11 @@ Because Cargo doesn't know much about the sysroot binaries, it must be very cons
 For example, Cargo may assume they are built with only default features enabled but it can't know what those are.
 If features are explicitly requested, or the default features are disabled (by all dependent packages) then the binaries are ineligible for the build plan under construction.
 Cargo likewise will have to be conservative inferring any other package metadata it may use.
+
 Packages in the binary mock source are not built by Cargo, since they are prebuilt, and when they serve as immediate dependencies, Cargo passes them in with `--extern` and their sysroot location.
 This is different from other deps, whose binaries are placed in Cargo's output directory, and sysroot deps today, where `--extern` isn't used as all.
 Also whenever they are in any way part of the build plan, Cargo also must pass `-L dependency=<sysroot>/lib/rustlib/<target-triple>/lib` so rustc can find transitive deps here. This is needed both because the binary mock source crates may in fact be transitive deps of the crates built from source, and also because they *themselves* may also have arbitrary binary mock source deps.
+
 Because of this use of `--extern` and `-L` with the binary mock source, rustc when invoked with Cargo should never need fallback looking for binaries in the sysroot.
 To prevent it from doing so with broken packages, Cargo will also pass rustc `--sysroot=` (i.e. the empty path) to prevent it from doing so.
 [Once [Rust PR #35021](https://github.com/rust-lang/rust/pull/35021/files) lands in some form, `compiler-rt` will be a Cargoized dependency so the sysroot won't be needed for linking either.]
