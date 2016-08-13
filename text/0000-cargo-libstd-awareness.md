@@ -60,6 +60,10 @@ The version for stdlib crates comes from the version of Rust their interfaces ar
 A version requirement must be specified.
 The full breadth of options available with our existing dependencies, e.g. features and overrides, will be supported.
 
+Just like regular dependencies, `version = "*"` is supported meaning no requirement at all, but is prohibited on `crates.io`.
+For backwards compatibility, Cargo allows skipping the version field altogether for crates.io deps, in which case `version = "*"` is inferred.
+This, and other such accommodations can be dropped fro stdlib dependencies since they are new.
+
 For the initial roll out of the feature, only normal dependencies, not build or dev dependencies, will be allowed to include explicit stdlib dependencies.
 
 ## Implicit dependencies
