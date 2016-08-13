@@ -177,17 +177,6 @@ risk of failed compiles since the backwards compatibility of stdlib crates is al
 This is just a default however.
 The Rust repo, for example, *should* track stdlib crates in its lockfile because that's a large part of what it builds, and it does indeed need to be booted from a precise version of rust.
 
-## Rustbuild improvements
-
-As advertised in the motivation section, with this RFC, rustbuild can use a single workspace to build the standard library and all executables.
-
-One complication with the RFC is that that no sysroot binaries or source associated with the bootstrap compiler (or previous stage) are ever used; one needs to bypass the compiler source and sysroot binary mock source.
-To accomplish this, rustbuild's workspace will need to use `[replace]` to redirect all stdlib deps to use the workspace's packages.
-
-All binaries for a specific phase can be built with a single `cargo build` (barring special requirements for individual libraries).
-Rather than have a multitude of build artifact directories per stage, only one is needed.
-After the last compiler is build, an additional mini-stage of building just the standard library could be performed, but distributions wishing to build all deps from source in a standardized fashion (e.g. probably NixOS) would forgo this.
-
 ## Forward Compatibility
 
 The custom registries PR https://github.com/rust-lang/cargo/pull/2857 starts with just mirroring existing registries.
@@ -214,6 +203,20 @@ Also, care will be taken so that any stdlib crate that is stabilized must use a 
 That still doesn't protect unpublished packages using unstable stdlib crates without reserved names from breakage, but due to their use of unstable interfaces we have no obligation to keep them working.
 Also, once we have an option to explicitly provide the source for stdlib deps, they can force the behavior they want.
 This seems good enough.
+
+## Unstability and implementation road map
+
+This feature, and the way it affects the ecosystem, has been deemed significant enough to warrant the addition of unstable features to Crates.io.
+This hasn't been designed yet, but at a minimum the version with Cargo released with stable Rust will prohibit the use of unstable features.
+
+The first implementation step is to get stdlib deps build with the compiler source working.
+In lieu of the sysroot binary mock source, an unstable flag will simply prune stdlib deps giving us the staus quo.
+This will be enough to enable porting rustbuild to the new system and experimentation by the nightly ecosystem in parallel with the rest of the PR.
+
+Once the remaining aspects of this are implemente---the binary mock source and lockfile filtering of stdlib deps, and rustbuild uses the new system---this feature is eligible to be stabilized.
+The temporary stdlib-pruning key will be deprecated but kept around for two rust releases, however.
+This will allow official Rust crates that only use `core` to express this with explicit stdlib deps, without breaking the version of Cargo the old Rust releases they must support was distributed with.
+After that, the pruning key can be removed because the mock sysroot registry will offer a wholly safer way to use pre-built binaries.
 
 
 # Drawbacks
