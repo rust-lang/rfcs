@@ -148,7 +148,7 @@ taken either from the `language-version` key described above, or the compiler ve
 If the compiler source exists, that is used to resolve `stdlib = true` deps, and the sysroot binary mock source need not even be built.
 If the compile source is absent, then the binary mock source is used.
 Note that this prioritization doesn't depend on the outgoing dependencies trying to be resolved.
-Once the source backing stdlib deps is picked, it is the only one used even if the other source also exists and contains the missing package---sticking arbitrarily named rlibs in the sysroot will not effect Cargo when everything is being built from source.
+Once the source backing stdlib deps is picked, it is the only one used even if the other source also exists and contains a missing package---sticking arbitrarily named rlibs in the sysroot will not effect Cargo when everything is being built from source.
 
 When the build plan just involves the compiler source and/or existing types of sources, it can be executed just like today.
 The awkward scenario is when packages from the sysroot binary mock source need to be used in the build plan.
