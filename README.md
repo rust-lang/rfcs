@@ -67,6 +67,7 @@ the direction the language is evolving in.
 * [1492-dotdot-in-patterns.md](text/1492-dotdot-in-patterns.md)
 * [1498-ipv6addr-octets.md](text/1498-ipv6addr-octets.md)
 * [1504-int128.md](text/1504-int128.md)
+* [1506-adt-kinds.md](text/1506-adt-kinds.md)
 * [1513-less-unwinding.md](text/1513-less-unwinding.md)
 * [1522-conservative-impl-trait.md](text/1522-conservative-impl-trait.md)
 * [1535-stable-overflow-checks.md](text/1535-stable-overflow-checks.md)
@@ -76,10 +77,18 @@ the direction the language is evolving in.
 * [1552-contains-method-for-various-collections.md](text/1552-contains-method-for-various-collections.md)
 * [1559-attributes-with-literals.md](text/1559-attributes-with-literals.md)
 * [1560-name-resolution.md](text/1560-name-resolution.md)
+* [1561-macro-naming.md](text/1561-macro-naming.md)
+* [1576-macros-literal-matcher.md](text/1576-macros-literal-matcher.md)
+* [1581-fused-iterator.md](text/1581-fused-iterator.md)
 * [1590-macro-lifetimes.md](text/1590-macro-lifetimes.md)
+* [1623-static.md](text/1623-static.md)
+* [1640-duration-checked-sub.md](text/1640-duration-checked-sub.md)
 * [1644-default-and-expanded-rustc-errors.md](text/1644-default-and-expanded-rustc-errors.md)
+* [1649-atomic-access.md](text/1649-atomic-access.md)
 * [1653-assert_ne.md](text/1653-assert_ne.md)
 * [1660-try-borrow.md](text/1660-try-borrow.md)
+* [1679-panic-safe-slicing.md](text/1679-panic-safe-slicing.md)
+* [1681-macros-1.1.md](text/1681-macros-1.1.md)
 
 
 ## Table of Contents
