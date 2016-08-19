@@ -56,4 +56,7 @@ would have to be provided by the compiler and standard library.
  - Should a different naming scheme be used?
    - It seems beneficial to use exactly the same as used by backtraces for
      consistency
- - Should the hash at the end be included or not?
+   - Should the hash at the end be included or not?
+   - Using names as in the code seems more intuitive, i.e.
+     `hello::bar::Foo<T>::new` instead of
+     `_<hello..bar..Foo<T>>::new::hee51585ff2209513`
