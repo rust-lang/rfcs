@@ -25,16 +25,14 @@ without even having to look into the source code.
 [design]: #detailed-design
 
 This feature would have an equivalent design and implementation to
-`std::file`. It would return the fully qualified function name, which would be
-the same as seen with `RUST_BACKTRACE=1`, e.g.
+`std::file`. It would return the fully qualified function name, e.g.
 
- - `hello::main::h14dbb225e6ef2d49` for function `main` crate `hello`
- - `hello::bar::foo::h98c67baa13aa8344` for function `foo` in crate `hello`
-   and module `bar`
- - `hello::bar::Foo::new::hc3a143caab084f76` for function `new` in
-   implementation of struct `Foo`, in crate `hello` and module `bar`
- - `_<hello..bar..Foo<T>>::new::hee51585ff2209513` for function `new` in
-   implementation of struct `Foo<T>`, in crate `hello` and module `bar`
+ - `hello::main` for function `main` crate `hello`
+ - `hello::bar::foo` for function `foo` in crate `hello` and module `bar`
+ - `hello::bar::Foo::new` for function `new` in implementation of struct
+   `Foo`, in crate `hello` and module `bar`
+ - `hello::bar::Foo<T>::new` for function `new` in implementation of struct
+   `Foo<T>`, in crate `hello` and module `bar`
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -54,9 +52,5 @@ would have to be provided by the compiler and standard library.
 [unresolved]: #unresolved-questions
 
  - Should a different naming scheme be used?
-   - It seems beneficial to use exactly the same as used by backtraces for
-     consistency
-   - Should the hash at the end be included or not?
-   - Using names as in the code seems more intuitive, i.e.
-     `hello::bar::Foo<T>::new` instead of
-     `_<hello..bar..Foo<T>>::new::hee51585ff2209513`
+   - An alternative would be using the naming scheme of backtraces, but
+     that is implementation defined and more disconnected from the code
