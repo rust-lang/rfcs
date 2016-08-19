@@ -31,14 +31,14 @@ The front page of the crate should cover four main points.  In this RFC, we cove
 ## Introduction text to the crate
 
 The first thing potential users of your crates will see is the introductory summary. This section is
-a good place to introduce the what and the why the crate. A good introduction is concise but also
+a good place to introduce the what and the why of the crate. A good introduction is concise but also
 provides enough information for the reader to understand the purpose of the crate. In addition, a
 good introduction provides a learning path for the user as they read the rest of the documentation.
 
 Here's an example of a good introduction from the [log
 crate](https://doc.rust-lang.org/log/log/index.html):
     
-> A lightweight logging facade.  
+> A lightweight logging facade.
 >
 > A logging facade provides a single logging API that abstracts over the actual logging
 > implementation. Libraries can use the logging API provided by this crate, and the consumer
@@ -46,7 +46,9 @@ crate](https://doc.rust-lang.org/log/log/index.html):
 >
 > If no logging implementation is selected, the facade falls back to a "noop" implementation
 > that ignores all log messages. The overhead in this case is very small - just an integer load,
-> comparison and jump.  > > A log request consists of a target, a level, and a body. A target
+> comparison and jump.
+>
+> A log request consists of a target, a level, and a body. A target
 > is a string which defaults to the module path of the location of the log request, though that
 > default may be overridden. Logger implementations typically use the target to filter requests
 > based on some user configuration.
@@ -58,11 +60,12 @@ There are several things that make this a good introduction section:
 * Even if you don't want to read the rest of the `README`, you have enough to get started.
 * Readable by a layman, no jargon is introduced in the first few paragraphs.
     
-What do we mean by "no jargon is introduced in the first few paragraphs"? Using the `rand` crate as
-an example - the crate's initial documentation probably should _not_ include a discussion of
-cryptographically secure random number generators since its primary purpose, for most Rust
-developers, will be to produce any random number. This information should instead be provided in a
-separate section that specifically discusses cryptographically secure random number generation.
+What do we mean by "no jargon is introduced in the first few paragraphs"? Using the
+[`rand` crate](https://doc.rust-lang.org/rand/rand/index.html) as an example - the crate's initial
+documentation probably should _not_ include a discussion of cryptographically secure random number
+generators since its primary purpose, for most Rust developers, will be to produce any random
+number. This information should instead be provided in a separate section that specifically
+discusses cryptographically secure random number generation.
 
 In general - it's good to give a developer a place to easily learn what your crate is about. Once
 they have the general idea, you can dive into more details that are specific to your crate,
@@ -112,7 +115,7 @@ so on.
 It's helpful to introduce and give a clear description for each capability separately to help your
 readers understand each concept individually before they begin to combine capabilities.
 
-Here's a good example from the 'rand' crate:
+Here's a good example from the `rand` crate:
     
 > ## Thread-local RNG 
 > 
@@ -131,7 +134,7 @@ Here's a good example from the 'rand' crate:
 ## Capability Examples
 
 Sample code for each crate capability should be as simple as possible and side effect free. In the
-rand crate, thread safe RNG is demonstrated 5 lines of code:
+`rand` crate, thread safe RNG is demonstrated in 5 lines of code:
 
 ```rust
 use rand::Rng;
