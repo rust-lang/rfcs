@@ -19,7 +19,7 @@ Multiple flags exist to instruct rustc on how to find these crates.
 `--extern <name>=<path>` tells rustc to find the crate with the given name at the given path.
 This has the highest priority, overriding locations specified or inferred via other means.
 `-L <kind>=<dir>` has the second highest priority, telling rustc to look for matching crates in the given directory.
-The `<kind>=` part is optionally, but one variant that is crucial for Cargo's purposes is `-L dependeny=<dir>`.
+The `<kind>=` part is optionally, but one variant that is crucial for Cargo's purposes is `-L dependency=<dir>`.
 The `dependeny=` part tells rustc to only look in the directory when resolving transitives deps ("deps of deps"), as opposed to `extern crate`s in the current crate.
 As a last resort, rustc will look within the sysroot (specifically `<sysroot>/lib/rustlib/<target-triple>/lib`). The sysroot is a hard-coded location relative to rustc, but can also be overridden with `--sysroot=<path>`.
 
