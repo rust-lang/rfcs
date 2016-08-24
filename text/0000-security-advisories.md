@@ -82,21 +82,23 @@ A correct invocation makes Cargo do the following:
 1. Cargo will open `$EDITOR` with a file ending with `.toml` that looks like
    this:
 
-      [vulnerability]
-      # Edit this as you wish
-      package = "mypackage"
-      versions = ["1.2.0", "1.2.3", "1.2.4", "1.2.5"]
+   ```
+   [vulnerability]
+   # Edit this as you wish
+   package = "mypackage"
+   versions = ["1.2.0", "1.2.3", "1.2.4", "1.2.5"]
 
-      # It is recommended to request a CVE at https://iwantacve.org/ and
-      # reference the assigned number here.
-      # cve = "CVE-YYYY-XXXX"
-      cve = false
+   # It is recommended to request a CVE at https://iwantacve.org/ and
+   # reference the assigned number here.
+   # cve = "CVE-YYYY-XXXX"
+   cve = false
 
-      # Enter a short-form description of the vulnerability here. Preferrably a
-      # single paragraph.
-      description = """
-      
-      """
+   # Enter a short-form description of the vulnerability here. Preferrably a
+   # single paragraph.
+   description = """
+   
+   """
+   ```
 
 2. After `$EDITOR` exits, Cargo validates the content. This includes verifying
    that:
