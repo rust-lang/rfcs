@@ -127,7 +127,7 @@ vuln`, and then release the versions that contain the security fix.
 
       Downloading foo vx.y.z
       Downloading bar vx.y.z
-      Warning: bar vx.y.z is vulnerable. See https://crates.io/... for details.
+      Warning: bar vx.y.z (dependency of foo vx.y.z) is vulnerable. See https://crates.io/... for details.
 
 - Similarly `cargo test` will refuse to compile or use vulnerable packages.
 
@@ -141,6 +141,10 @@ all the above-described warnings and errors:
 
     [dependencies]
     iron = { version = "0.4", allow_vulnerable = true }
+
+This doesn't affect other crates that depend on ``iron==0.4``. Cargo will still
+print warnings etc. if another package in the dependency graph depends on the
+vulnerable ``iron==0.4``.
 
 To prevent preemptive usage of `allow_vulnerable` or other misuse, `cargo
 build` will issue an error if `iron` is not vulnerable but `allow_vulnerable`
