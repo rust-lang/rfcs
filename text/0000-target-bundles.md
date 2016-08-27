@@ -28,7 +28,7 @@ use-cases.
 We’ve observed a considerable amount of desire by users of the language to customize targets they
 use in the ways currently not supported by our current infrastructure (sans making changes to the
 compiler itself, of course), and noted that the current scheme is not very feasible in the long
-run. This RFC should go a great amount towards fixing the issues.
+run. This RFC should go a long way towards fixing the issues.
 
 Then, there also is a strong need to be able to inspect arbitrary parts of target specification,
 regardless of their origin. For example, in a cross-compilation setting, when the crate uses a
@@ -94,13 +94,14 @@ while LLVM appears to use the highest supported version of Dwarf by default.
 * similarly for many other variables which tweak the way compilation is done.
 
 ¹: Technically, `target_pointer_width` is used in trans, but it does not provide any extra
-information over `data_layout`, which is what it should be using.
+information over `data_layout`, which is already used elsewhere in the compiler to calculate
+layout, sizing information and alignment of all types, including the pointers.
 
 This would allow selectively reusing various conditional implementations that are present in the
 compiler for a custom target, when none of the `is_like_*` variables would fully suit the target.
 Moreover, being able to specify arbitrary cfg variables would allow easily adapting for various
 miniscule details related to the targets. For example, the targets for ARM CPUs with NEON support
-could export `target_has_neon` without any extra language support.
+could export `target_has_neon` without any extra language or compiler support.
 
 That being said, it might make sense to have a whitelist of stable options and cfg variables and
 keep everything else unstable for some duration.
@@ -110,11 +111,11 @@ keep everything else unstable for some duration.
 ```js
 {
     // REQUIRED
-    "llvm-target": "x86_64-unknown-linux-gnu",              // LLVM target triple (does not need to match with rustc triple)
-    "data-layout": "e-m:e-i64:64-f80:128-n8:16:32:64-S128", // DataLayout for the target
+    "llvm_target": "x86_64-unknown-linux-gnu",              // LLVM target triple (does not need to match with rustc triple)
+    "data_layout": "e-m:e-i64:64-f80:128-n8:16:32:64-S128", // DataLayout for the target
     "arch": "x86_64",                                       // Architecture of the target
 
-    // OPTIONAL
+    // OPTIONAL (should have sane defaults)
     // Configuration variables injected into the compilation units.
     "cfg": {
         "target_os": "linux",
@@ -131,64 +132,59 @@ keep everything else unstable for some duration.
     },
 
     // Type of, and the linker used
-    "linker-kind": "gnu",                                   // previously linker_is_gnu: bool
+    "linker_kind": "gnu",                                   // previously linker_is_gnu: bool
+                                                            // possible values: "gnu", "msvc", "osx"
     "linker": "cc",
     "ar": "ar",
-    "archive-format": "gnu",
+    "archive_format": "gnu",
 
-    // Various stuff adjusting how compilation is done
-    "function-sections": true,
-    "dynamic-linking": true,
-    "disable-redzone": false,
-    "obj-is-bitcode": false,
-    "allow-asm": true,
-    "allows-weak-linkage": true,
-    "no-default-libraries": true,
-    "custom-unwind-resume": false,                          // might make sense to merge into below
-    "eh-method": "dwarf",                                   // NEW: what EH method to use
-    "dll-storage-attrs": false,                             // NEW: should use dll storage attrs?
-    "debug-info": ["Dwarf", 4],                             // NEW: what debug info format
-    "system-abi": "C",                                      // NEW: what "system" ABI means
-    "c-abi-kind": "cabi_x86_64",                            // NEW: what C-ABI implementation to use
+    "function_sections": true,
+    "dynamic_linking": true,
+    "disable_redzone": false,
+    "obj_is_bitcode": false,
+    "allow_asm": true,
+    "allows_weak_linkage": true,
+    "no_default_libraries": true,
+    "custom_unwind_resume": false,                          // might make sense to merge into below
+    "eh_method": "dwarf",                                   // NEW: what EH method to use
+    "dll_storage_attrs": false,                             // NEW: should use dll storage attrs?
+    "debug_info": ["Dwarf", 4],                             // NEW: what debug info format
+    "system_abi": "C",                                      // NEW: what "system" ABI means
+    "c_abi_kind": "cabi_x86_64",                            // NEW: what C_ABI implementation to use
 
-    // Various stuff adjusting how linkage is done
-    "pre-link-args": ["-Wl,--as-needed", "-Wl,-z,noexecstack"],
-    "post-link-args": [],
-    "pre-link-objects-dll": [],
-    "pre-link-objects-exe": [],
-    "post-link-objects": [],
-    "late-link-args": [],
-    "gc-sections-args": [],                                 // NEW: how to strip sections
-    "rpath-prefix": "$ORIGIN",                              // CHANGED: to allow specifying rpath prefix, null to disable rpath altogether
-    "no-compiler-rt": false,
-    "metadata-section": ".note.rustc",                      // NEW: name of section for metadata
-    "has-frameworks": false,                                // NEW: is concept of frameworks supported?
-    "position-independent-executables": true,               // should become a plain linker argument?
+    "pre_link_args": ["_Wl,__as_needed", "_Wl,_z,noexecstack"],
+    "post_link_args": [],
+    "pre_link_objects_dll": [],
+    "pre_link_objects_exe": [],
+    "post_link_objects": [],
+    "late_link_args": [],
+    "gc_sections_args": [],                                 // NEW: how to strip sections
+    "rpath_prefix": "$ORIGIN",                              // CHANGED: to allow specifying rpath prefix, null to disable rpath altogether
+    "no_compiler_rt": false,
+    "metadata_section": ".note.rustc",                      // NEW: name of section for metadata
+    "has_frameworks": false,                                // NEW: is concept of frameworks supported?
+    "position_independent_executables": true,               // should become a plain linker argument?
     "lib_allocation_crate": "alloc_system",
     "exe_allocation_crate": "alloc_jemalloc",
-    // should become templates? `lib{}.so` is much nicer
+    // should become a template? `lib{}.so` is much nicer
     "dll_prefix": "lib",
     "dll_suffix": ".so",
     "exe_suffix": "",
     "staticlib_prefix": "lib",
     "staticlib_suffix": ".a",
 
-    // LLVM options
-    "cpu": "x86-64",                                        // CPU of the target
+    "cpu": "x86_64",                                        // CPU of the target
     "features": "",                                         // LLVM features
     "relocation_model": "pic",
     "code_model": "default",
-    "eliminate-frame-pointer": true,
+    "eliminate_frame_pointer": true,
 
-    // Apparently OS X is so much of a special case that even moving all the special cases into
-    // configuration is painful.
-    is_like_osx: false,
-
-    // is_like_solaris is handled by the extra gc-sections key
-    // is_like_msvc is handled by the extra metadata-section, linker-kind, eh-method,
-    // dll-storage-attrs, debug-info keys
-    // is_like_windows is handled by the extra system-abi and c-abi-kind keys
-    // is_like_android is handled by the extra debug-info key
+    // is_like_solaris is handled by the extra gc_sections_args key
+    // is_like_msvc is handled by the extra metadata_section, linker_kind, eh_method,
+    // dll_storage_attrs, debug_info keys
+    // is_like_windows is handled by the extra system_abi and c_abi_kind keys
+    // is_like_android is handled by the extra debug_info key
+    // is_like_osx is handled by linker_kind: "osx", rpath_prefix, has_frameworks, c_abi_kind
 }
 ```
 
@@ -240,6 +236,11 @@ values, though.
 
 This RFC is still very viable without the proposed changes to JSON keys (the “target quirks and
 cfg” as well as the “proposed JSON key-values” sections).
+
+Keep distributing all the built-in targets with the rustc package.
+
+Since we’re already tweaking the structure of the target json spec, instead of allowing comments in
+JSON, just switch to TOML.
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
