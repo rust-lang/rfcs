@@ -25,9 +25,15 @@ without even having to look into the source code.
 [design]: #detailed-design
 
 This feature would have an equivalent design and implementation to
-`std::file`. It would return the fully qualified function name, e.g.
+`std::file`. It would return a fully qualified function name but the actual
+string returned is implementation defined. The string is meant to be used by
+the user to get an idea about the context of the code in e.g. debug output,
+and should be meaningful for a human, but is not meant to be analyzed by a
+program.
 
- - Plain functions use their name, e.g.
+For example the following scheme could be used:
+
+ - Plain functions use their name, e.g. `some_function` for
 
 ````
     fn some_function(arg: SomeThing) {
@@ -35,9 +41,8 @@ This feature would have an equivalent design and implementation to
     }
 ````
 
-   would result in `some_function`
-
  - Generic functions use their name, followed by the generic arguments, e.g.
+   `some_function<T, U>` for
 
 ````
     fn some_function<T, U>(arg: SomeThing) {
@@ -45,11 +50,9 @@ This feature would have an equivalent design and implementation to
     }
 ````
 
-   would result in `some_function<T, U>`
-
-
  - Functions inside non-generic `impl` blocks for structs would use the name of the
    struct, followed by `::` and the function name, e.g.
+   `SomeStruct::some_function` for
 
 ````
     struct SomeStruct {...}
@@ -60,11 +63,10 @@ This feature would have an equivalent design and implementation to
     }
 ````
 
-   would result in `SomeStruct::some_function`
-
  - Functions inside generic `impl` blocks for structs would use the name of the
    struct, followed by the generic parameters as given by the `impl` block,
    followed by `::` and the function name, e.g.
+   `SomeStruct<i32>::some_function` for
 
 ````
     struct SomeStruct<T> {...}
@@ -75,7 +77,7 @@ This feature would have an equivalent design and implementation to
     }
 ````
 
-   would result in `SomeStruct<i32>::some_function` and e.g.
+ - Similar for generic `impl` blocks, e.g. `SomeStruct<T>::some_function` for
 
 ````
     struct SomeStruct<T> {...}
@@ -86,11 +88,10 @@ This feature would have an equivalent design and implementation to
     }
 ````
 
-   would result in `SomeStruct<T>::some_function`
-
  - Functions inside trait `impl` blocks would use, enclosed in angle brackets,
    the name of the type, followed by `as`, followed by the trait name, and
    then `::` followed by the name of the function, e.g.
+   `<SomeStruct as SomeTrait>::some_function` for
 
 ````
     impl SomeTrait for SomeStruct {
@@ -99,11 +100,10 @@ This feature would have an equivalent design and implementation to
     }
 ````
 
-   would result in `<SomeStruct as SomeTrait>::some_function`
-
  - Closures are using the name of the surrounding function, followed by `::`
-   and the string `<closure>`. As closures are not named, coming up with a
-   meaningful name for them automatically is not possible.
+   and the string `<closure/definition_line_number>`, where `definition_line_number` is the number
+   of the line where the closure is defined. As closures are not named, coming
+   up with a meaningful name for them automatically is not easily possible.
 
 # Drawbacks
 [drawbacks]: #drawbacks
