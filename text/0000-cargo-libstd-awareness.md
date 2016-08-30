@@ -215,7 +215,7 @@ This feature, and the way it affects the ecosystem, has been deemed significant 
 This hasn't been designed yet, but at a minimum the version with Cargo released with stable Rust will prohibit the use of unstable features.
 
 The first implementation step is to get stdlib deps build with the compiler source working.
-In lieu of the sysroot binary mock source, stdlib deps (implicit or explicit) will be pruned by default---yielding the status quo---with an unstable flag to enable them.
+In lieu of the sysroot binary mock source, stdlib deps (implicit or explicit) will be pruned by default---yielding the status quo---with an unstable `keep-stdlib-dependencies` configuration option to enable them.
 This will be enough to enable porting rustbuild to the new system and experimentation by the nightly ecosystem in parallel with the rest of the PR.
 
 Once the remaining aspects of this are implemente---the binary mock source and lockfile filtering of stdlib deps, and rustbuild uses the new system---this feature is eligible to be stabilized.
