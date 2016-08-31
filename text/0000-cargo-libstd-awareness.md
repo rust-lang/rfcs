@@ -215,13 +215,20 @@ This feature, and the way it affects the ecosystem, has been deemed significant 
 This hasn't been designed yet, but at a minimum the version with Cargo released with stable Rust will prohibit the use of unstable features.
 
 The first implementation step is to get stdlib deps build with the compiler source working.
-In lieu of the sysroot binary mock source, stdlib deps (implicit or explicit) will be pruned by default---yielding the status quo---with an unstable `keep-stdlib-dependencies` configuration option to enable them.
+In lieu of the sysroot binary mock source, stdlib deps (implicit or explicit) will be pruned by default---yielding the status quo---with an unstable `keep-stdlib-dependencies` configuration key to enable them.
 This will be enough to enable porting rustbuild to the new system and experimentation by the nightly ecosystem in parallel with the rest of the PR.
 
-Once the remaining aspects of this are implemente---the binary mock source and lockfile filtering of stdlib deps, and rustbuild uses the new system---this feature is eligible to be stabilized.
-The temporary stdlib-pruning key will be deprecated but kept around for two rust releases, however.
-This will allow official Rust crates that only use `core` to express this with explicit stdlib deps, without breaking the version of Cargo the old Rust releases they must support was distributed with.
-After that, the pruning key can be removed because the mock sysroot registry will offer a wholly safer way to use pre-built binaries.
+Additionally, an unstable `custom-implicit-stdlib-dependencies` key will allow changing which crates are added as implicit defaults.
+The tentative plan is to start disallowing unstable features on crates.io, yet that would also prevent the nightly `#![no_std]` ecosystem from broadly trying out this feature.
+This workaround will allow projects to operate as if their dependencies used explicit stdlib deps to avoid depending on `std`.
+It is unorthodox for `.cargo/config` to affect the build plan this much, but as a short-term workaround this is acceptable.
+
+It may be possible to stabilize explicit stdlib deps before the mock syroot binary is ready for wide use---the explicit stdlib deps addition to the `Cargo.toml` *language* is far simpler than the the sysroot mock binary registry *implementation*.
+In that case, the `keep-stdlib-dependencies` will continue to keep the builds of users working as is, but since the prohibition of explicit stdlib deps on crates.io will disappear, `custom-implicit-stdlib-dependencies` can be removed.
+
+Once the remaining aspects of this are implemente---the binary mock source and lockfile filtering of stdlib deps, and rustbuild uses the new system---the `keep-stdlib-dependencies` key can also be removed: the pruning key can be removed because the mock sysroot registry will offer a wholly safer way to use pre-built binaries.
+If, at that point, there is any official policy on how many prior Rust versions official crates need to work with, the removal can be delayed.
+This will allow official crates to use explicit deps without breaking the old versions of Cargo those supported old Rust releases were distributed with.
 
 
 # Drawbacks
