@@ -53,11 +53,15 @@ It would be an improvement if we alleviated the composition pattern so that it c
 
 Let's add a syntactic sugar so that the examples above become:
 ```rust
-impl<'a> Hash for H<'a> use self.name;
+impl<'a> Hash for H<'a> {
+    use self.name;
+}
 ```
 and
 ```rust
-impl Encodable for HighResolutionStamp use self.0;
+impl Encodable for HighResolutionStamp {
+    use self.0;
+}
 ```
 
 Again this feature adds no new concept. It just simplifies an existing code pattern. However it is interesting to understand the similarities and differences with inheritance. The *delegating type* (`H<'a>` in the first example) implicitely "inherits" methods (`hash`) of the *delegated trait* (`Hash`) from the *surrogate type* (`&'static str` which is the type of the *delegating expression* `self.name`) like a subclass inherits methods from its superclass(es). A fundamental difference is that the delegating type is not a subtype of the surrogate type in the sense of Liskov. There is no external link between the types. The surrogate may even be less visible than the delegating type. Another difference is that the developer has a total control on which part of the surrogate type to reuse whereas class hierarchy forces him/her to import the entire public interface of the superclass (this is because a superclass plays two roles: the role of the surrogate type and the role of the delegated trait).
@@ -88,6 +92,9 @@ impl AttrMetaMethods for Attribute {
 we can identify the recurring expression `self.meta()` but 2 of the 5 methods are more complex. This heterogeneity can be handled simply if we allow partial delegation like in
 ```rust
 impl AttrMetaMethods for Attribute use self.meta() {
+
+    use self.meta() for name, value_str, span;
+
     fn check_name(&self, name: &str) -> bool {
         let matches = name == &self.name()[..];
         if matches {
@@ -100,9 +107,40 @@ impl AttrMetaMethods for Attribute use self.meta() {
     }
 }
 ```
-Only missing methods are automatically implemented.
+Only specified methods are automatically implemented with the syntax:
+```rust
+use delegating_expression for list_of_delegated_methods;
+```
 
 In some other cases the compiler just cannot generate the appropriate method. For example when `self` is moved rather than borrowed, unless the delegating expression produces a result that can itself be moved the borrow checker will complain. In that kind of situations the developer can again provide a custom implementation where necessary and let the compiler handle the rest of the methods.
+
+## Mixed partial delegation 
+
+Partial delegation allows an even more powerful pattern: delegating to different surrogate types depending on the method:
+```rust
+trait Tr {
+    fn do_something_1( … );
+    fn do_something_2( … );
+    fn do_something_3( … );
+    fn do_something_4( … );
+}
+
+impl Tr for A { … }
+impl Tr for B { … }
+
+struct C { a: A, b: B, … }
+
+impl Tr for C {
+    // do_something_1 is delegated to surrogate type A
+    use self.a for do_something_1;
+    
+    // do_something_1 is delegated to surrogate type B
+    use self.b for do_something_2, do_something_3;
+    
+    // do_something_4 is directly implemented
+    fn do_something_4( … ) { … }
+}
+```
 
 ## Delegation for other parameters 
 
@@ -117,7 +155,9 @@ impl<K: PartialOrd, V: PartialOrd> PartialOrd for BTreeMap<K, V> {
 ```
 becomes 
 ```rust
-impl<K: PartialOrd, V: PartialOrd> PartialOrd for BTreeMap<K, V> use self.iter();
+impl<K: PartialOrd, V: PartialOrd> PartialOrd for BTreeMap<K, V> {
+    use self.iter();
+}
 ```
 
 ## Associated types/constants 
@@ -134,20 +174,22 @@ enum HTMLColor { White, Silver, Gray, Black,
 	Blue, Navy, Fuchsia, Purple };
 
 impl Coordinates for HTMLColor {
-	fn get_red(&self) -> f32 { ... }
-	fn get_green(&self) -> f32 { ... }
-	fn get_blue(&self) -> f32 { ... }
-	fn get_hue(&self) -> f32 { ... }
-	fn get_saturation(&self) -> f32 { ... }
-	fn get_brightness(&self) -> f32 { ... }
+	fn get_red(&self) -> f32 { … }
+	fn get_green(&self) -> f32 { … }
+	fn get_blue(&self) -> f32 { … }
+	fn get_hue(&self) -> f32 { … }
+	fn get_saturation(&self) -> f32 { … }
+	fn get_brightness(&self) -> f32 { … }
 }
 
 enum ThreeBitColor { Black, Blue, Green, Cyan,
 	Red, Magenta, Yellow, White };
 
-fn to_html_color(color: &ThreeBitColor) -> HTMLColor { ... }
+fn to_html_color(color: &ThreeBitColor) -> HTMLColor { … }
 
-impl Coordinates for ThreeBitColor use to_html_color(&self);
+impl Coordinates for ThreeBitColor {
+    use to_html_color(&self);
+}
 ```
 
 ## Possible extensions
@@ -169,7 +211,9 @@ impl<T: Clone> Clone for BinaryHeap<T> {
 ```
 where `Self` is used as a return type? Yes but we need a second expression for that.
 ```rust
-impl<T: Clone> Clone for BinaryHeap<T> use self.data, BinaryHeap { data: super };
+impl<T: Clone> Clone for BinaryHeap<T> {
+    use self.data, BinaryHeap { data: super };
+}
 ```
 Here the `super` keyword corresponds to an instance of the surrogate type. It is the symmetric of `self`. The whole expression must have type `Self`. Both direct and inverse delegating expressions may be given at the same time or possibly just one of them if only one conversion is needed.
 
@@ -194,12 +238,14 @@ impl Ord for PackageId {
     }
 }
 ```
-could be reduced to the single line
+could be reduced to:
 ```rust
-impl PartialEq + PartialOrd + Ord for PackageId use &*self.inner;
+impl PartialEq + PartialOrd + Ord for PackageId {
+    use &*self.inner;
+}
 ```
 
-### Function-based delegation
+### Trait-free delegation
 
 Sometimes implementations are trait-free but the same pattern is found like in
 ```rust
@@ -213,9 +259,47 @@ impl<'t, 'a,'tcx> MemCategorizationContext<'t, 'a, 'tcx> {
     }
 }
 ```
-Here we have no trait to delegate but the same method signatures are reused and semantically the situation is close to a trait-based implementation. A simple possibility could be to introduce a new trait. An alternative is to allow delegation at method level.
+Here we have no trait to delegate but the same method signatures are reused and semantically the situation is close to a trait-based implementation. A simple possibility could be to introduce a new trait. An alternative is to allow delegation even without traits but with the name of the method becoming mandatory:
 ```rust
-impl<'t, 'a,'tcx> fn node_ty for MemCategorizationContext<'t, 'a, 'tcx> use self.typer;
+impl<'t, 'a,'tcx> MemCategorizationContext<'t, 'a, 'tcx> {
+    use self.typer for node_ty;
+}
+```
+
+### Renaming delegation
+
+Maybe the method you want to delegate does not come from the same trait, it also has a distinct original name but it just happens to have the same signature.
+
+```rust
+impl A { 
+    fn do_something(&mut self, predicate: P) -> Option<i32> where P: FnMut(&str) -> bool { … }
+    fn do_something_else(&self) -> i32 { … }
+    …
+}
+
+trait Tr {
+    fn select_first(&mut self, predicate: P) -> Option<i32> where P: FnMut(&str) -> bool;
+    fn count(&self) -> i32;
+    …
+}
+
+fun to_a(b : &B) -> &A { … }
+
+impl Tr for B {
+    // here we are mapping distinct methods with same signatures:
+    // B::select_first <- A::do_something
+    // B::count <- A::do_something_else
+    use do_something, do_something_else in to_a(self) for select_first, count;
+    …
+}
+```
+The general syntax becomes:
+```rust
+use list_of_surrogate_methods in delegating_expression for list_of_delegated_methods;
+```
+and the previous syntax is now just a shortcut for:
+```rust
+use list_of_delegated_methods in delegating_expression for list_of_delegated_methods;
 ```
 
 ### More complex delegation
@@ -228,18 +312,23 @@ impl<'t, 'a,'tcx> fn node_ty for MemCategorizationContext<'t, 'a, 'tcx> use self
 
 Let's consider a new example:
 ```rust
-enum TextBoxContent { Number(f64), String(Str) }
+enum TextBoxContent { Number(f64), String(&str) }
 
-// how to delegate?
-impl Hash for TextBoxContent use ??? ;
+impl Hash for TextBoxContent {
+    use ??? ; // how to delegate?
+}
 ```
-It seems that in theory we should be able to delegate meaningfully given that for any value of `TextBoxContent` there is an obvious existing implementation for `Hash`. The problem is we cannot select a **single** surrogate type. The actual surrogate type should indeed be chosen based on the runtime value of `Self`. To handle this case I slightly modify the delegation syntax by using a variation of blaenk's proposition: `impl Tr for B use delegatingExpression.impl;`. Now this new syntax could be extended to solve our current issue:
+It seems that in theory we should be able to delegate meaningfully given that for any value of `TextBoxContent` there is an obvious existing implementation for `Hash`. The problem is we cannot select a **single** surrogate type. The actual surrogate type should indeed be chosen based on the runtime value of `Self`. To handle this case I slightly modify the delegation syntax by using a variation of blaenk's proposition: `impl Tr for B { use delegatingExpression.impl; }`. Now this new syntax could be extended to solve our current issue:
 ```rust
-impl Hash for TextBoxContent use (match self { Number(n) => n.impl, String(s) => s.impl });
+impl Hash for TextBoxContent {
+    use (match self { Number(n) => n.impl, String(s) => s.impl });
+}
 ```
 Here the delegating expression can contain several branches that does not need to unify from a type perspective. The `.impl` syntax should be replaced by a call to the actual delegated method. Note that although this pattern may occur naturally with enums it can again apply to any kind of types:
 ```rust
-impl Tr for BStruct use (if self.condition { self.field1.impl } else { self.field2.impl });
+impl Tr for BStruct {
+    use (if self.condition { self.field1.impl } else { self.field2.impl });
+}
 ```
 However this kind of delegation for value-dependent surrogate types has a limitation: it does not work for methods with multiple `Self` parameters. Indeed there is no guarantee the runtime values for different parameters will select the same branch and then define a consistent surrogate.
 
