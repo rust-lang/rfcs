@@ -91,7 +91,7 @@ impl AttrMetaMethods for Attribute {
 ```
 we can identify the recurring expression `self.meta()` but 2 of the 5 methods are more complex. This heterogeneity can be handled simply if we allow partial delegation like in
 ```rust
-impl AttrMetaMethods for Attribute use self.meta() {
+impl AttrMetaMethods for Attribute {
 
     use self.meta() for name, value_str, span;
 
@@ -114,7 +114,7 @@ use delegating_expression for list_of_delegated_methods;
 
 In some other cases the compiler just cannot generate the appropriate method. For example when `self` is moved rather than borrowed, unless the delegating expression produces a result that can itself be moved the borrow checker will complain. In that kind of situations the developer can again provide a custom implementation where necessary and let the compiler handle the rest of the methods.
 
-## Mixed partial delegation 
+### Mixed partial delegation 
 
 Partial delegation allows an even more powerful pattern: delegating to different surrogate types depending on the method:
 ```rust
