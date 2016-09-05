@@ -39,10 +39,14 @@ When referencing the symbols within the same binary, `dllimport` will __not__ be
 
 ## Example
 
+Given these files:
+
 * `foo.lib` is an external library. Can also be an external object file as `foo.obj`.
 * `a.rlib` is a Rust rlib that depends on the native library `foo.lib`.
 * `b.dll` is a Rust dylib that depends on `a.rlib`.
 * `c.exe` is a Rust executable that depends on `b.dll`.
+
+Here are some scenarios:
 
 * If I specify `kind=static` `foo.lib` is bundled into `a.rlib` by `rustc` and __not__ passed to the linker invocations for `b.dll` and `c.exe`. `a.rlib` and `b.dll` do __not__ use `dllimport` for symbols they reference from `foo.lib`. `b.dll` will `dllexport` any symbols from `foo.lib` that are reachable and `c.exe` will `dllimport` any symbols from `foo.lib` that it uses.
 * If I specify `kind=dylib` `foo.lib` is passed to the linker invocations for `b.dll` and `c.exe`. `a.rlib` `b.dll` and `c.exe` will all use `dllimport` when referencing symbols from `foo.lib` and `b.dll` will __not__ `dllexport` any of the symbols from `foo.lib`.
