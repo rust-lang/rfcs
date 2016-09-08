@@ -105,6 +105,15 @@ For example the following scheme could be used:
    of the line where the closure is defined. As closures are not named, coming
    up with a meaningful name for them automatically is not easily possible.
 
+ - Nested functions are using the same scheme as closures, but instead of the
+   string `closure` they use their name. The line number of the definition is
+   included to prevent ambiguity with multiple nested functions with the same
+   name defined inside the same function.
+
+   If a nested function defines another nested function, the names are
+   appended to each other and separated by `::`, e.g.
+   `<fn1/definition_line_number_of_fn1::fn2/definition_line_number_of_fn2>`.
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
