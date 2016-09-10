@@ -86,7 +86,6 @@ A correct invocation makes Cargo do the following:
 
    ```
    [vulnerability]
-   # Edit this as you wish
    package = "mypackage"
    versions = ["1.2.0", "1.2.3", "1.2.4", "1.2.5"]
 
@@ -98,9 +97,12 @@ A correct invocation makes Cargo do the following:
    # dwf = "CVE-YYYY-XXXX"
    # dwf = ["CVE-YYYY-XXXX", "CVE-ZZZZ-WWWW"]
 
+   # URL to a long-form description of this issue, e.g. a blogpost announcing
+   # the release or a changelog entry (optional)
+   url = false
 
    # Enter a short-form description of the vulnerability here. Preferrably a
-   # single paragraph.
+   # single paragraph (required)
    description = """
    
    """
