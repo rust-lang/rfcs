@@ -88,10 +88,14 @@ A correct invocation makes Cargo do the following:
    package = "mypackage"
    versions = ["1.2.0", "1.2.3", "1.2.4", "1.2.5"]
 
-   # It is recommended to request a CVE at https://iwantacve.org/ and
+   # It is strongly recommended to request a CVE, or alternatively a DWF, and
    # reference the assigned number here.
-   # cve = "CVE-YYYY-XXXX"
-   cve = false
+   # - CVE: https://iwantacve.org/
+   # - DWF: https://distributedweaknessfiling.org/
+   dwf = false
+   # dwf = "CVE-YYYY-XXXX"
+   # dwf = ["CVE-YYYY-XXXX", "CVE-ZZZZ-WWWW"]
+
 
    # Enter a short-form description of the vulnerability here. Preferrably a
    # single paragraph.
@@ -108,6 +112,7 @@ A correct invocation makes Cargo do the following:
    - the `description` contains not only whitespace. More text than a paragraph
      should be allowed, but not wished.
    - `package` exists on Crates.io and the versions specified in `versions` exist
+   - `dwf` is not an empty array. It should be ``false`` if there are none.
    
    If not, Cargo should print an error message and wait for the user to either
    hit enter or `^C`. In the former case, open the editor with the same file
@@ -129,13 +134,14 @@ vuln`, and then release the versions that contain the security fix.
       Downloading bar vx.y.z
       Warning: bar vx.y.z (dependency of foo vx.y.z) is vulnerable. See https://crates.io/... for details.
 
-- Similarly `cargo test` will refuse to compile or use vulnerable packages.
+- `cargo test` make those warnings hard errors.
 
 - `cargo publish` will refuse to upload a crate if the latest version of a
   direct dependency satisfying the constraints in `Cargo.toml` is vulnerable.
+  Indirect dependencies should not trigger this behavior.
 
 The author of a crate that directly depends on a vulnerable crate may disable
-this behavior with a switch in their `Cargo.toml`. If `iron==0.4.x` is
+these warnings/errors with a switch in their `Cargo.toml`. If `iron==0.4.x` is
 vulnerable, the dependent author may use the `allow_vulnerable` key to disable
 all the above-described warnings and errors:
 
@@ -143,7 +149,7 @@ all the above-described warnings and errors:
     iron = { version = "0.4", allow_vulnerable = true }
 
 This doesn't affect other crates that depend on ``iron==0.4``. Cargo will still
-print warnings etc. if another package in the dependency graph depends on the
+print warnings if another package in the dependency graph depends on the
 vulnerable ``iron==0.4``.
 
 To prevent preemptive usage of `allow_vulnerable` or other misuse, `cargo
@@ -153,14 +159,76 @@ is `true`.
 # Drawbacks
 [drawbacks]: #drawbacks
 
-Why should we *not* do this?
+There is a risk that users will abuse this system to mark their versions as
+deprecated or to call out other kinds of critical bugs such as data loss. This
+would make the ``vulnerable``-flag semantically worthless.
 
 # Alternatives
 [alternatives]: #alternatives
 
-What other designs have been considered? What is the impact of not doing this?
+## Extending yanking for security advisories
+
+It has been proposed to [extend the semantics of yanking such that it could be
+used for security advisories](https://github.com/rust-lang/cargo/issues/2608).
+While this alternative meets the popular aesthetic preference of having generic
+commands with a large variety of usecases (over single-purpose commands), using
+yanking this way has a few drawbacks:
+
+- Cargo dosen't allow yanked packages to be used in new packages. In the
+  author's opinion, people who know what they're doing should be allowed to
+  depend on vulnerable packages, as they might use the crate in a way that
+  poses no security threat.
+
+  Some vulnerabilities can be mitigated in ways other than upgrading a crate,
+  like making local configuration changes. Some vulnerabilities may affect
+  optional functionality not everyone is using, or functionality that can be
+  compiled out by e.g. disabling certain cargo feature settings for that crate.
+  Some may be relatively innocuous and/or hard-to-exploit and therefore not
+  warrant an immediate upgrade. Sometimes no action (other than setting
+  ``allow_vulnerable = true``) is required at all because the dependent crate
+  never used the vulnerable functionality to begin with.
+
+  At the same time it doesn't make sense to depend on packages that don't
+  compile, and currently yanking is primarily used to mark such packages.
+
+- Cargo doesn't give any advice about further procedure when yanking a package.
+  I think in the context of security vulnerabilities this is very much needed,
+  as few OSS maintainers are exposed to this problem regularly enough to know
+  what they're doing.
+
+- Lastly, the data exposed via the Crates.io would be a lot less structured.
+  Automatic security notifications via third-party tooling would be impossible
+  because there is no way to determine whether a package was yanked because of
+  a security vulnerability or not.
+
+Most of these problems can be fixed by asking the user to attach a "reason" to
+their yanked packages, such as ``security``, ``deprecation``, ``broken`` (and
+then make Cargo's behavior dependent on that). However, at that that point
+``yank`` is no longer generic (as in a function having type parameters), but
+simply a lot of single-purpose commands stuffed into one (as in function
+overloading in Java).  And the name "yank" wouldn't make sense for crate
+versions that may still be available (depending on the "reason").
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
-What parts of the design are still TBD?
+## DWF vs CVE
+
+- It may be counterintuitive that one can specify CVEs in the DWF parameter.
+  Should it be called ``cve`` instead even though it can also be used for DWFs?
+
+Comparison:
+
+- CVEs are more popular
+- Applying for a CVE number is a manual process and requires review by a human.
+  DWFs can be automatically managed assigned by Crates.io
+
+## What to do if dwf = false
+
+- Crates.io could apply for blocks of DWF IDs and automatically assign them if
+  the user didn't specify one in the vulnerability report (``dwf = false``).
+
+
+## CVSS
+
+- Scoring vulnerabilities. Should a new field for the usage of CVSS be created?
