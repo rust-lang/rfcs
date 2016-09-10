@@ -55,12 +55,14 @@ version is displayed.
 A command called `vuln` will be added to Cargo. Here is an excerpt of its help
 page:
 
-    $ cargo vuln --help
+```
+$ cargo vuln --help
 
-    Usage:
-        cargo vuln [options] -- [<crate>]
-        --vers VERSION      Versions to mark as vulnerable. Can be specified multiple times.
-        [...]
+Usage:
+    cargo vuln [options] -- [<crate>]
+    --vers VERSION      Versions to mark as vulnerable. Can be specified multiple times.
+    [...]
+```
 
 `vuln` has a similar CLI compared to `yank`.
 
@@ -130,9 +132,11 @@ vuln`, and then release the versions that contain the security fix.
   package used, regardless of whether this package is already compiled,
   downloaded or otherwise cached, or whether it is a direct dependency or not:
 
-      Downloading foo vx.y.z
-      Downloading bar vx.y.z
-      Warning: bar vx.y.z (dependency of foo vx.y.z) is vulnerable. See https://crates.io/... for details.
+  ```
+  Downloading foo vx.y.z
+  Downloading bar vx.y.z
+  Warning: bar vx.y.z (dependency of foo vx.y.z) is vulnerable. See https://crates.io/... for details.
+  ```
 
 - `cargo test` make those warnings hard errors.
 
@@ -145,8 +149,10 @@ these warnings/errors with a switch in their `Cargo.toml`. If `iron==0.4.x` is
 vulnerable, the dependent author may use the `allow_vulnerable` key to disable
 all the above-described warnings and errors:
 
-    [dependencies]
-    iron = { version = "0.4", allow_vulnerable = true }
+```
+[dependencies]
+iron = { version = "0.4", allow_vulnerable = true }
+```
 
 This doesn't affect other crates that depend on ``iron==0.4``. Cargo will still
 print warnings if another package in the dependency graph depends on the
