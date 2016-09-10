@@ -50,28 +50,28 @@ version is displayed.
 
 ## Cargo
 
-### `cargo vuln`
+### `cargo advisory`
 
-A command called `vuln` will be added to Cargo. Here is an excerpt of its help
+A command called `advisory` will be added to Cargo. Here is an excerpt of its help
 page:
 
 ```
-$ cargo vuln --help
+$ cargo advisory --help
 
 Usage:
-    cargo vuln [options] -- [<crate>]
+    cargo advisory [options] -- [<crate>]
     --vers VERSION      Versions to mark as vulnerable. Can be specified multiple times.
     [...]
 ```
 
-`vuln` has a similar CLI compared to `yank`.
+`advisory` has a similar CLI compared to `yank`.
 
 - It takes exactly the same positional arguments, defaulting to the crate in
   the current working directory.
 
 - Like `yank` it takes a `--vers` option, with two differences:
 
-  - if a version is not specified, `vuln` will default to marking all existing
+  - if a version is not specified, `advisory` will default to marking all existing
     versions on Crates.io as vulnerable.
 
   - Version ranges such as `<1.2.6, >1.0.0` can be specified. This is
@@ -124,7 +124,7 @@ A correct invocation makes Cargo do the following:
    summary, ask the user for confirmation and upload it to the package index.
 
 The recommended workflow is to first file the vulnerability report with `cargo
-vuln`, and then release the versions that contain the security fix.
+advisory`, and then release the versions that contain the security fix.
 
 ### Using vulnerable packages
 
