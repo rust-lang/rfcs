@@ -13,11 +13,10 @@ same purpose and warn about vulnerable crate versions during compilation.
 # Motivation
 [motivation]: #motivation
 
-When compared to other ecosystems such as Python's, Rust's packaging tooling
-encourages many single-purpose crates instead of larger monoliths. This
-situation, together with the strongly encouraged practice of pinning MINOR
-versions of dependencies, slows down the propagation of critical security
-fixes.
+When compared to other ecosystems such as Python's, Rust's broader community
+prefers many single-purpose crates over larger monoliths. This situation,
+together with the strongly encouraged practice of pinning MINOR versions of
+dependencies, slows down the propagation of critical security fixes.
 
 Assume a crate `W`, which depends on `X`, which depends on `Y`, which depends
 on `Z`.  If `Z` releases a new MINOR version including a security fix, it
