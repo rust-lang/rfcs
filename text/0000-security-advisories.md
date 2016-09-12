@@ -25,12 +25,13 @@ security fix to `W`. What makes this situation worse is that the author of `W`
 is never notified that they were running a vulnerable version of `Z` all the
 time.
 
-An added API to Crates.io as described above would allow for the creation of
-third-party tooling that notifies the author of `Z` about security releases.
-
-The warning emitted by Cargo would further help downstream distributors (Linux
-packagers for example) and end users of Rust applications to identify potential
-risks in their usage.
+Tooling that builds on top of the API provided by Crates.io (such as Cargo)
+could alert crate users of their vulnerabilities, which in turn spurs them to
+update their dependencies accordingly. Even if that does not happen, the
+additional metadata at least makes it clear which crates are potentially
+dangerous to use and which ones not. This not only helps Rust programmers, but
+potentially also distributors (such as packagers of Linux distros) and
+end-users.
 
 # Detailed design
 [design]: #detailed-design
