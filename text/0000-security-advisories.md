@@ -141,9 +141,13 @@ advisory`, and then release the versions that contain the security fix.
 
 - `cargo test` make those warnings hard errors.
 
-- `cargo publish` will refuse to upload a crate if the latest version of a
-  direct dependency satisfying the constraints in `Cargo.toml` is vulnerable.
+- `cargo publish` will refuse to upload a crate if any version of a direct
+  dependency satisfying the constraints in `Cargo.toml` is vulnerable. 
   Indirect dependencies should not trigger this behavior.
+
+  For example, if I have a dependency such as ``bar = "^1.2.3"``, this means
+  ``publish`` should refuse to upload my crate even if ``bar=1.2.3`` is not
+  vulnerable, as another version satisfying that constraint may be.
 
 The author of a crate that directly depends on a vulnerable crate may disable
 these warnings/errors with a switch in their `Cargo.toml`. If `iron==0.4.x` is
