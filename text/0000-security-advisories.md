@@ -108,11 +108,10 @@ A correct invocation makes Cargo do the following:
    """
    ```
 
-2. After `$EDITOR` exits, Cargo validates the content. This includes verifying
-   that:
+2. After `$EDITOR` exits, Cargo validates the content. Some rules:
 
    - the file is valid TOML
-   - none of the table keys have ben removed
+   - Optional keys may be either `false` or absent.
    - the `description` contains not only whitespace. More text than a paragraph
      should be allowed, but not wished.
    - `package` exists on Crates.io and the versions specified in `versions` exist
