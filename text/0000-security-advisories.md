@@ -6,9 +6,9 @@
 # Summary
 [summary]: #summary
 
-Crates.io should offer an API to mark crate versions as vulnerable, accompanied
-by a structured vulnerability report. Cargo should offer a new command for the
-same purpose and warn about vulnerable crate versions during compilation.
+Crates.io should offer an API to release security advisories for crates. Cargo
+should offer a new command for the same purpose and warn about vulnerable crate
+versions during compilation.
 
 # Motivation
 [motivation]: #motivation
@@ -38,15 +38,18 @@ end-users.
 
 ## Crates.io
 
-Similar to yanking, Crates.io should provide an API that allows Cargo to attach
-a "vulnerable" flag and, if that flag is set, a vulnerability report as
-detailed below.
+Similar to yanking, Crates.io should provide an API that allows a user of Cargo
+to attach an arbitrary amount of so-called security advisories to crates they
+own.
 
-Each version at Crates.io already has a corresponding webpage with an URL of
-the format `https://crates.io/crates/<crate>/<version>`. Such webpages should
-include a human-readable version of the vulnerability report, if any. The same
-applies to the URL `https://crates.io/crates/<crate>/`, where the latest
-version is displayed.
+Each advisory gets assigned an ID that is unique within the set of advisories
+for the affected crate.  Every advisory should have a unique URL, for example
+`https://crates.io/crates/<crate>/advisory/<id>`, where `<id>` is the
+advisory's ID. On that URL a human-readable representation of the advisory
+should be stored.
+
+Other pages on Crates.io should link to those advisories prominently where
+appropriate.
 
 ## Cargo
 
@@ -65,9 +68,9 @@ Usage:
                          If `-` is given, generated advisories are printed to
                          stdout and advisories to upload are read from stdin.
 
-    --vers VERSION       Versions to mark as vulnerable. Can be specified
-                         multiple times. Only valid in conjunction with
-                         --generate.
+    --vers VERSION       Versions to release this advisory for. Can be
+                         specified multiple times. Only valid in conjunction
+                         with --generate.
 
     --upload/--generate  Whether to upload or generate a advisory. The default
                          is to generate. These options are mutually exclusive.
@@ -76,8 +79,8 @@ Usage:
 
 Like `yank` it takes a `--vers` option, with two differences:
 
-- if a version is not specified, `advisory` will default to marking all
-  existing versions on Crates.io as vulnerable.
+- if a version is not specified, `advisory` will default to all existing
+  versions.
 
 - Version ranges such as `<1.2.6, >1.0.0` can be specified. This is comparable
   to the syntax used for specifying dependencies in the `Cargo.toml`, with the
@@ -126,11 +129,13 @@ Here's the workflow:
    
    If not, Cargo should print one or more error messages and exit.
 
-3. When the vulnerability report is found to be valid, Cargo should print a
-   summary, ask the user for confirmation and upload it to the package index.
+3. When the advisory is found to be valid, Cargo should print a summary, ask
+   the user for confirmation and upload it to the package index.  The
+   vulnerability ID assigned by Crates.io and optionally the corresponding URL
+   should be printed to stdout.
 
-The recommended workflow is to first file the vulnerability report with `cargo
-advisory`, and then release the versions that contain the security fix.
+The recommended workflow is to first file the advisory with `cargo advisory`,
+and then release the versions that contain the security fix.
 
 ### Using vulnerable packages
 
@@ -155,29 +160,35 @@ advisory`, and then release the versions that contain the security fix.
   vulnerable, as another version satisfying that constraint may be.
 
 The author of a crate that directly depends on a vulnerable crate may disable
-these warnings/errors with a switch in their `Cargo.toml`. If `iron==0.4.x` is
-vulnerable, the dependent author may use the `allow_vulnerable` key to disable
-all the above-described warnings and errors:
+these warnings/errors with a switch in their `Cargo.toml`. If `iron==0.4.x` has
+an advisory with the ID `deadbeef`, the dependent author may use the
+`allow_vulnerable` parameter to disable all the above-described warnings and
+errors for this vulnerability:
 
 ```
 [dependencies]
-iron = { version = "0.4", allow_vulnerable = true }
+iron = { version = "0.4", allow_vulnerable = ["deadbeef"] }
 ```
 
-This doesn't affect other crates that depend on ``iron==0.4``. Cargo will still
-print warnings if another package in the dependency graph depends on the
-vulnerable ``iron==0.4``.
 
-To prevent preemptive usage of `allow_vulnerable` or other misuse, `cargo
-build` will issue an error if `iron` is not vulnerable but `allow_vulnerable`
-is `true`.
+This only affects the warnings for `deadbeef` for the current crate. Cargo will
+still print warnings:
+
+- for other vulnerabilities.  Each warning has to be explicitly disabled by
+  appending its ID to that array.
+- if another package in the dependency graph uses a version of `iron` that has
+  the `deadbeef` vulnerability, but does not have `allow_vulnerable =
+  ["deadbeef"]` set.
+
+
+Cargo must reject nonexistent vulnerability IDs with a fatal error.
 
 # Drawbacks
 [drawbacks]: #drawbacks
 
 There is a risk that users will abuse this system to mark their versions as
 deprecated or to call out other kinds of critical bugs such as data loss. This
-would make the ``vulnerable``-flag semantically worthless.
+would make the entire advisory system as semantically worthless.
 
 # Alternatives
 [alternatives]: #alternatives
@@ -242,7 +253,7 @@ Comparison:
 ## What to do if dwf = false
 
 - Crates.io could apply for blocks of DWF IDs and automatically assign them if
-  the user didn't specify one in the vulnerability report (``dwf = false``).
+  the user didn't specify one in the advisory (``dwf = false``).
 
 
 ## CVSS
