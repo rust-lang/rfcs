@@ -57,32 +57,38 @@ page:
 
 ```
 $ cargo advisory --help
+Generate and upload security advisories for the given or the current crate.
 
 Usage:
     cargo advisory [options] -- [<crate>]
-    --vers VERSION      Versions to mark as vulnerable. Can be specified multiple times.
+    --filename PATH      The filename to use. Defaults to `./Advisory.toml`.
+                         If `-` is given, generated advisories are printed to
+                         stdout and advisories to upload are read from stdin.
+
+    --vers VERSION       Versions to mark as vulnerable. Can be specified
+                         multiple times. Only valid in conjunction with
+                         --generate.
+
+    --upload/--generate  Whether to upload or generate a advisory. The default
+                         is to generate. These options are mutually exclusive.
     [...]
 ```
 
-`advisory` has a similar CLI compared to `yank`.
+Like `yank` it takes a `--vers` option, with two differences:
 
-- It takes exactly the same positional arguments, defaulting to the crate in
-  the current working directory.
+- if a version is not specified, `advisory` will default to marking all
+  existing versions on Crates.io as vulnerable.
 
-- Like `yank` it takes a `--vers` option, with two differences:
+- Version ranges such as `<1.2.6, >1.0.0` can be specified. This is comparable
+  to the syntax used for specifying dependencies in the `Cargo.toml`, with the
+  exception that `x.y.z` is not equivalent to `^x.y.z`, but means the exact
+  version.
 
-  - if a version is not specified, `advisory` will default to marking all existing
-    versions on Crates.io as vulnerable.
+Here's the workflow:
 
-  - Version ranges such as `<1.2.6, >1.0.0` can be specified. This is
-    comparable to the syntax used for specifying dependencies in the
-    `Cargo.toml`, with the exception that `x.y.z` is not equivalent to
-    `^x.y.z`, but means the exact version.
-
-A correct invocation makes Cargo do the following:
-
-1. Cargo will open `$EDITOR` with a file ending with `.toml` that looks like
-   this:
+1. The user invokes `cargo advisory` without the `--upload` option. Cargo will
+   generate a file under `filename`. Cargo should abort if the file already
+   exists. The content looks like this:
 
    ```
    [vulnerability]
@@ -108,18 +114,17 @@ A correct invocation makes Cargo do the following:
    """
    ```
 
-2. After `$EDITOR` exits, Cargo validates the content. Some rules:
+2. The user invokes `cargo advisory --upload`. Cargo verifies the passed file
+   against the following rules:
 
-   - the file is valid TOML
+   - the file exists and is valid TOML
    - Optional keys may be either `false` or absent.
    - the `description` contains not only whitespace. More text than a paragraph
-     should be allowed, but not wished.
+     should be allowed, but not necessarily recommended.
    - `package` exists on Crates.io and the versions specified in `versions` exist
    - `dwf` is not an empty array. It should be ``false`` if there are none.
    
-   If not, Cargo should print an error message and wait for the user to either
-   hit enter or `^C`. In the former case, open the editor with the same file
-   again.
+   If not, Cargo should print one or more error messages and exit.
 
 3. When the vulnerability report is found to be valid, Cargo should print a
    summary, ask the user for confirmation and upload it to the package index.
