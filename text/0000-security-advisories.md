@@ -149,8 +149,6 @@ and then release the versions that contain the security fix.
   Warning: bar vx.y.z (dependency of foo vx.y.z) is vulnerable. See https://crates.io/... for details.
   ```
 
-- `cargo test` make those warnings hard errors.
-
 - `cargo publish` will refuse to upload a crate if any version of a direct
   dependency satisfying the constraints in `Cargo.toml` is vulnerable. 
   Indirect dependencies should not trigger this behavior.
@@ -160,7 +158,7 @@ and then release the versions that contain the security fix.
   vulnerable, as another version satisfying that constraint may be.
 
 The author of a crate that directly depends on a vulnerable crate may disable
-these warnings/errors with a switch in their `Cargo.toml`. If `iron==0.4.x` has
+these warnings with a switch in their `Cargo.toml`. If `iron==0.4.x` has
 an advisory with the ID `deadbeef`, the dependent author may use the
 `allow_vulnerable` parameter to disable all the above-described warnings and
 errors for this vulnerability:
