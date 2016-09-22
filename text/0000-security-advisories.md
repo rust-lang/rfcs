@@ -15,23 +15,37 @@ versions during compilation.
 
 When compared to other ecosystems such as Python's, Rust's broader community
 prefers many single-purpose crates over larger monoliths. This situation,
-together with the strongly encouraged practice of pinning MINOR versions of
-dependencies, slows down the propagation of critical security fixes.
+together with the strongly encouraged practice of pinning version ranges or
+even exact versions of dependencies, slows down the propagation of critical
+security fixes.
 
-Assume a crate `W`, which depends on `X`, which depends on `Y`, which depends
-on `Z`.  If `Z` releases a new MINOR version including a security fix, it
-requires the attention of `Y`'s  and `X`'s maintainers to propagate that
-security fix to `W`. What makes this situation worse is that the author of `W`
-is never notified that they were running a vulnerable version of `Z` all the
-time.
+Here's an example. Assume that:
 
-Tooling that builds on top of the API provided by Crates.io (such as Cargo)
-could alert crate users of their vulnerabilities, which in turn spurs them to
-update their dependencies accordingly. Even if that does not happen, the
-additional metadata at least makes it clear which crates are potentially
-dangerous to use and which ones not. This not only helps Rust programmers, but
-potentially also distributors (such as packagers of Linux distros) and
-end-users.
+- There are two crates, `A` and `B`.
+- The latest version of `B` is `1.0.0`, which is a complete rewrite and comes
+  with an entirely new API. There are no bugfixes, but the API of `0.x` became
+  gradually more quirky, to a point that it had to be completely overhauled.
+- `A` depends on `B = ^0.9.0`, and did so before `B = 1.0.0` was released. The
+  author of `A` doesn't care about updating their code because why change a
+  running system?
+- The author of `B` doesn't officially support `0.9` anymore. No bugfixes or
+  security updates.
+
+If there is now a security issue in all existing versions of `B` (including the
+`0.9` and `1.0` series), `B` will get a security patch. However, that patch
+will only be available for `1.0` as a backport is costly. The author of `A` is
+never notified that they were running a vulnerable version of `B` all the time,
+unless they take extra measures to keep themselves informed. Especially in
+open-source development (not sponsored by a multinational company) that is
+unlikely to be the case.
+
+In any case it could be easier. Cargo and other tooling that builds on top of
+the proposed new API for Crates.io could alert crate users of their
+vulnerabilities, which in turn spurs them to update their dependencies
+accordingly. Even if that does not happen, the additional metadata at least
+makes it clear which crates are potentially dangerous to use and which ones
+not. This not only helps Rust programmers, but potentially also distributors
+(such as packagers of Linux distros) and end-users.
 
 # Detailed design
 [design]: #detailed-design
