@@ -16,7 +16,8 @@ versions during compilation.
 When compared to other ecosystems such as Python's, Rust's broader community
 prefers many single-purpose crates over larger monoliths. This situation,
 together with the strongly encouraged practice of pinning version ranges or
-even exact versions of dependencies, slows down the propagation of critical
+even exact versions of dependencies (as opposed to using `"*"` as a version
+identifier, which Crates.io rejects), slows down the propagation of critical
 security fixes.
 
 Here's an example. Assume that:
