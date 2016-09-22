@@ -206,6 +206,21 @@ would make the entire advisory system as semantically worthless.
 # Alternatives
 [alternatives]: #alternatives
 
+## Ability to mark versions as deprecated
+
+The problem of people using unsupported versions that don't recieve security
+updates can be also mitigated by adding the ability to mark versions as
+unsupported. [npm](https://www.npmjs.com/) has this feature in the form of `npm
+deprecate`.
+
+However, there's a big difference between a version being unsupported and a
+version actually having issues. People who use versions that are
+semver-incompatible with the latest one are usually aware that they should
+eventually update (and in fact there's already tooling to keep on top of that,
+such as [cargo-outdated](https://github.com/kbknapp/cargo-outdated)), but, like
+in the example in [Motivation](#motivation), don't yet have a good reason to do
+so. A security issue would be a good reason.
+
 ## Extending yanking for security advisories
 
 It has been proposed to [extend the semantics of yanking such that it could be
