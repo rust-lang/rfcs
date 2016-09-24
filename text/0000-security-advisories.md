@@ -13,14 +13,18 @@ versions during compilation.
 # Motivation
 [motivation]: #motivation
 
-When compared to other ecosystems such as Python's, Rust's broader community
-prefers many single-purpose crates over larger monoliths. This situation,
-together with the strongly encouraged practice of pinning version ranges or
-even exact versions of dependencies (as opposed to using `"*"` as a version
-identifier, which Crates.io rejects), slows down the propagation of critical
-security fixes.
+Keeping on top of security vulnerabilities for all dependencies of a typical
+Rust application is currently extremely hard, if not impossible. Particularly
+for Rust this task is relatively hard, since Rust's broader community prefers
+many single-purpose crates over larger "collections" of tools (like Boost in
+C++).
 
-Here's an example. Assume that:
+One might think that a regular `cargo update` may help in such situations.
+However, the application developer still does not know which updates were
+security updates, and which were not, and therefore doesn't know if a new
+release of their application is needed or not. `cargo update` doesn't even
+suffice to automatically recieve all security updates. Here's an example.
+Assume that:
 
 - There are two crates, `A` and `B`.
 - The latest version of `B` is `1.0.0`, which is a complete rewrite and comes
@@ -40,13 +44,13 @@ unless they take extra measures to keep themselves informed. Especially in
 open-source development (not sponsored by a multinational company) that is
 unlikely to be the case.
 
-In any case it could be easier. Cargo and other tooling that builds on top of
-the proposed new API for Crates.io could alert crate users of their
-vulnerabilities, which in turn spurs them to update their dependencies
-accordingly. Even if that does not happen, the additional metadata at least
-makes it clear which crates are potentially dangerous to use and which ones
-not. This not only helps Rust programmers, but potentially also distributors
-(such as packagers of Linux distros) and end-users.
+Cargo and other tooling that builds on top of the proposed new API for
+Crates.io could alert crate users of their vulnerabilities, which in turn spurs
+them to update their dependencies accordingly. Even if that does not happen,
+the additional metadata at least makes it clear which crates are potentially
+dangerous to use and which ones not. This not only helps Rust programmers, but
+potentially also distributors (such as packagers of Linux distros) and
+end-users.
 
 # Detailed design
 [design]: #detailed-design
@@ -219,7 +223,8 @@ semver-incompatible with the latest one are usually aware that they should
 eventually update (and in fact there's already tooling to keep on top of that,
 such as [cargo-outdated](https://github.com/kbknapp/cargo-outdated)), but, like
 in the example in [Motivation](#motivation), don't yet have a good reason to do
-so. A security issue would be a good reason.
+so. A security issue would be a good reason, but marking a package as
+deprecated does not imply that.
 
 ## Extending yanking for security advisories
 
