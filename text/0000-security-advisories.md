@@ -234,7 +234,7 @@ While this alternative meets the popular aesthetic preference of having generic
 commands with a large variety of usecases (over single-purpose commands), using
 yanking this way has a few drawbacks:
 
-- Cargo dosen't allow yanked packages to be used in new packages. In the
+- Cargo doesn't allow yanked packages to be used in new packages. In the
   author's opinion, people who know what they're doing should be allowed to
   depend on vulnerable packages, as they might use the crate in a way that
   poses no security threat.
