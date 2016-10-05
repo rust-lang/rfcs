@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-Specify `panic=abort` in `Cargo.toml` when the user does `cargo new --bin`.
+Specify abort-by-default in `Cargo.toml` when the user does `cargo new --bin`, as well as various other refinements to the panick strategy system.
 
 # Motivation
 [motivation]: #motivation
@@ -36,9 +36,22 @@ You often see people abusing `std::panic::catch_unwind` for exception handling. 
 # Detailed design
 [design]: #detailed-design
 
-Have `cargo` generate `panic=abort` to the `Cargo.toml`. Whenever the user inteacts with `cargo` (by using a command) and the `Cargo.toml` has no specified panicking strategy, it will add `panic=unwind` and leave a note to the user:
+First of all, we add a new possible value to the `panic` field. We call this `any`. It specifies that the library or binary is compatible with any panicking strategy. `any` will default to the `abort` strategy, if compatible with all of its dependencies. If not, it will fall back to `unwind`, and leave a warning.
 
-    Warning: No panic strategy was specified, added unwinding to the `Cargo.toml` file, please consider change it to your needs.
+When `cargo new` is invoked, it will generate `panic=any` in the `Cargo.toml`, both for new libraries and new binaries.
+
+Whenever the user inteacts with `cargo` (by using a command) in an existing (binary) crate and the `Cargo.toml` has no specified panicking strategy, it will add `panic=unwind` and leave a note to the user:
+
+    Warning: No panic strategy was specified, added unwinding to the
+             `Cargo.toml` file, please consider change it to your needs. If
+             your crate's behavior does not depend on unwinding, please add
+             `panic=any` instead.
+
+This will not happen to libraries, since they must only rely on unwind, if the specify it. Instead, it will add `panic=any` to libraries and give warning:
+
+    Warning: No panic strategy was specified, so we default to aborting. If
+             your crate depends on unwinding, please put `panic=unwind` in
+             `Cargo.toml`.
 
 ## Libraries
 
@@ -46,7 +59,7 @@ For libraries, the `Cargo.toml` is not modified, as they inherit the strategy of
 
 ### Relying on unwinding
 
-If a library specifies `panic=unwind`, it will stored in a rlib metadata field, `unwind_needed`. If this field does not match with the crate which is linking against the library, `rustc` will produce an error.
+If a library specifies `panic=unwind`, it will stored in a rlib metadata field, `unwind_needed`. If this field does not match with the crate which is linking against the library (`abort`), `rustc` will produce an error.
 
 This is done in order to make sure that applications can rely on unwinding without leading to unsafety when being linked against by an aborting runtime.
 
@@ -78,7 +91,9 @@ Use unwind in `debug` and abort in `release`.
 
 Make use of more exotic instructions like `bound`, allowing e.g. overflow or bound checking without branches. This comes at the expense of error output.
 
+Use crate attributes instead.
+
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
-None.
+Is there any way we can detect crates which do not rely on unwinding? Search for `catch_unwind`?
