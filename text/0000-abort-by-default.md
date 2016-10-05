@@ -36,11 +36,21 @@ You often see people abusing `std::panic::catch_unwind` for exception handling. 
 # Detailed design
 [design]: #detailed-design
 
-Have `cargo` generate `panic=abort` to the `Cargo.toml`. Whenever the user inteacts with `cargo` (by using a command) and the `Cargo.toml` has no specified panicking strategy, it will add `panic=unwind` and leave a note to the user: 
+Have `cargo` generate `panic=abort` to the `Cargo.toml`. Whenever the user inteacts with `cargo` (by using a command) and the `Cargo.toml` has no specified panicking strategy, it will add `panic=unwind` and leave a note to the user:
 
     Warning: No panic strategy was specified, added unwinding to the `Cargo.toml` file, please consider change it to your needs.
 
-For libraries, nothing is modified, as they inherit the strategy of the binary.
+## Libraries
+
+For libraries, the `Cargo.toml` is not modified, as they inherit the strategy of the binary.
+
+### Relying on unwinding
+
+If a library specifies `panic=unwind`, it will stored in a rlib metadata field, `unwind_needed`. If this field does not match with the crate which is linking against the library, `rustc` will produce an error.
+
+This is done in order to make sure that applications can rely on unwinding without leading to unsafety when being linked against by an aborting runtime.
+
+## Extensions
 
 After several release cycles, an extension could be added, which makes specifying the strategy mandatory.
 
