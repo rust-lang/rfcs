@@ -51,6 +51,12 @@ It makes panics global by default (i.e., panicking in some thread will abort the
 
 It might make it tempting to ignore the existence of an unwind option and consequently shaping the code after panicking being aborting.
 
+## Unwinding is not bad per se
+
+Unwinding has numerous advantages. Especially for certain classes of applications. These includes better error handling and better cleanup.
+
+Unwinding is especially important to long-running applications.
+
 # Alternatives
 [alternatives]: #alternatives
 
