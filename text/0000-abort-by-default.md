@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-Use abort as the standard panic method rather than unwind.
+Specify `panic=abort` in `Cargo.toml` when the user does `cargo new --bin`.
 
 # Motivation
 [motivation]: #motivation
@@ -36,18 +36,16 @@ You often see people abusing `std::panic::catch_unwind` for exception handling. 
 # Detailed design
 [design]: #detailed-design
 
-Default to `panic=abort`.
+Have `cargo` generate `panic=abort` to the `Cargo.toml`. Whenever the user inteacts with `cargo` (by using a command) and the `Cargo.toml` has no specified panicking strategy, it will add `panic=unwind` and leave a note to the user: 
 
-## Backwards compatibility
+    Warning: No panic strategy was specified, added unwinding to the `Cargo.toml` file, please consider change it to your needs.
 
-No code should rely on a particular default panicking strategy, and code which do is already broken. However, this broken code might start actually encountering the issues. In a sense, that is actually positive, since it reveals that the code is broken.
+For libraries, nothing is modified, as they inherit the strategy of the binary.
 
-No invariants are broken, and no code is going to emit Undefined Behavior due to this change (this can be seen by observing that aborting is globally diverging, and hence no code is run after).
+After several release cycles, an extension could be added, which makes specifying the strategy mandatory.
 
 # Drawbacks
 [drawbacks]: #drawbacks
-
-While not breaking, the behavior of certain broken programs can change.
 
 It makes panics global by default (i.e., panicking in some thread will abort the whole program).
 
