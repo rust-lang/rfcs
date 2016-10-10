@@ -68,7 +68,7 @@ For the initial roll out of the feature, only normal dependencies, not build or 
 It will also be illegal to replace a crate with a stdlib dependency as that would allow the prior rule to be circumvented.
 
 Finally, an explicit `stdlib = false` will, at least initially, also be prohibited.
-Firstly, a valid reason for the user to want a create that must *not* the standard library has not been demonstrated.
+Firstly, a valid reason for the user to depend on a crate that must *not* be part of the standard library has not been demonstrated.
 Secondly, exactly which crates constitute the standard library is not completely decided---perhaps someday official rust-lang crates currently on crates.io will be deemed part of the standard library.
 
 ## Implicit dependencies
