@@ -18,13 +18,13 @@ borrows. In effect, it makes the following possible:
 
   // ...
 
-  *string_map.entry("foo").or_insert(0) += 1;  // Clones if "foo" not in map.
-  *string_map.entry("bar".to_string()) += 1;   // By-value, never clones.
+  *string_map.entry("foo").or_insert(0) += 1;                  // Clones if "foo" not in map.
+  *string_map.entry("bar".to_string()).or_insert(0) += 1;      // By-value, never clones.
 
-  clone_map.entry(&Cloneable::new());          // Clones if key not in map.
-  clone_map.entry(Cloneable::new());           // By-value, never clones.
+  *clone_map.entry(&Cloneable::new()).or_insert(0) += 1;       // Clones if key not in map.
+  *clone_map.entry(Cloneable::new()).or_insert(0) += 1;        // By-value, never clones.
 
-  nonclone_map.entry(NonCloneable::new());     // Can't and doesn't clone.
+  *nonclone_map.entry(NonCloneable::new()).or_insert(0) += 1;  // Can't and doesn't clone.
 ```
 
 See [playground](https://is.gd/0lpGej) for a concrete demonstration.
