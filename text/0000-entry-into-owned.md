@@ -139,7 +139,7 @@ implementation would cause. Then we modify the `entry` signature to
 
 and add a new `Q: IntoOwned<K>` type parameter to `Entry`. This can be done
 backwards-compatibly with a `Q=K` default. The new `Entry` type will store
-`key: Q` and call `into_owned` on insert-like calls, while using Q directly on
+`key: Q` and call `into_owned` on insert-like calls, while using `Q` directly on
 get-like calls.
 
 # Drawbacks
@@ -154,7 +154,7 @@ get-like calls.
 2. It does not offer a way of recovering a `!Clone` key when no `insert`
    happens. This is somewhat orthogonal though and could be solved in a number
    of different ways eg. an `into_key` method on `Entry` or via an `IntoOwned`
-   impl on a `&mut Option<T>`-like.
+   impl on a `&mut Option<T>`-like type.
 
 3. Further depend on specialisation in its current form for a public API. If the
    exact parameters of specialisation change, and this particular pattern
