@@ -149,7 +149,8 @@ get-like calls.
    never needs to manually implement. If there was support for `where A != B`
    clauses we could get rid of the `RefIntoOwned` trait, but that would still
    leave `IntoOwned` (which is strictly more general than the existing `ToOwned`
-   trait).
+   trait). On the other hand `IntoOwned` may be independently useful in generic
+   contexts.
 
 2. It does not offer a way of recovering a `!Clone` key when no `insert`
    happens. This is somewhat orthogonal though and could be solved in a number
@@ -159,6 +160,9 @@ get-like calls.
 3. Further depend on specialisation in its current form for a public API. If the
    exact parameters of specialisation change, and this particular pattern
    doesn't work anymore, we'll have painted ourselves into a corner.
+
+4. The implementation would be insta-stable. There's no real way of
+   feature-gating this.
 
 # Alternatives
 [alternatives]: #alternatives
