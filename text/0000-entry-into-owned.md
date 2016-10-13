@@ -7,9 +7,9 @@
 [summary]: #summary
 
 Enable the map Entry API to take borrowed keys as arguments, cloning only when
-necessary. The proposed implementation introduces a new trait
-`std::borrow::IntoOwned` which enables the existing `entry` methods to accept
-borrows. In effect, it makes the following possible:
+necessary (in `VacantEntry::insert`). The proposed implementation introduces a
+new trait `std::borrow::AsBorrowOf` which enables the existing `entry` methods
+to accept borrows. In effect, it makes the following possible:
 
 ```rust
   let string_map: HashMap<String, u64> = ...;
@@ -27,7 +27,8 @@ borrows. In effect, it makes the following possible:
   *nonclone_map.entry(NonCloneable::new()).or_insert(0) += 1;  // Can't and doesn't clone.
 ```
 
-See [playground](https://is.gd/0lpGej) for a concrete demonstration.
+See [playground](https://is.gd/XBVgDe) and [prototype
+implementation](https://github.com/rust-lang/rust/pull/37143).
 
 # Motivation
 [motivation]: #motivation
@@ -80,8 +81,6 @@ Specifically we're looking for a fix which supports the following cases
 # Detailed design
 [design]: #detailed-design
 
-[Playground Proof of Concept](https://is.gd/0lpGej)
-
 ## Approach
 To justify the approach taken by this proposal, first consider the following
 (unworkable) solution:
@@ -94,75 +93,92 @@ To justify the approach taken by this proposal, first consider the following
 ```
 
 This would support (2) and (3) but not (1) because `ToOwned`'s blanket
-implementation requires `Clone`. To work around this limitation we take a trick
-out of `IntoIterator`'s book and add a new `std::borrow::IntoOwned` trait:
+implementation requires `Clone`. To work around this limitation we define a
+different trait `std::borrow::AsBorrowOf`:
 
 ```rust
-pub trait IntoOwned<T> {
+pub trait AsBorrowOf<T, B: ?Sized>: Sized where T: Borrow<B> {
     fn into_owned(self) -> T;
+    fn as_borrow_of(&self) -> &B;
 }
 
-impl<T> IntoOwned<T> for T {
-    default fn into_owned(self) -> T { self }
+impl<T> AsBorrowOf<T, T> for T {
+    fn into_owned(self) -> T { self }
+    fn as_borrow_of(&self) -> &Self { self }
 }
 
-impl<T: RefIntoOwned> IntoOwned<T::Owned> for T {
-    default fn into_owned(self) -> T::Owned { self.ref_into_owned() }
-}
-
-trait RefIntoOwned {
-    type Owned: Sized;
-    fn ref_into_owned(self) -> Self::Owned;
-}
-
-impl<'a, T: ?Sized + ToOwned> RefIntoOwned for &'a T {
-    type Owned = <T as ToOwned>::Owned;
-    fn ref_into_owned(self) -> T::Owned { (*self).to_owned() }
+impl<'a, B: ToOwned + ?Sized> AsBorrowOf<B::Owned, B> for &'a B {
+    fn into_owned(self) -> B::Owned { self.to_owned() }
+    fn as_borrow_of(&self) -> &B { *self }
 }
 ```
 
-The auxilliary `RefIntoOwned` trait is needed to avoid the coherence issues
-which an
+This trait defines a relationship between three types `T`, `B` and `Self` with
+the following properties:
+
+  1. There is a by-value conversion `Self` -> `T`.
+  2. Both `T` and `Self` can be borrowed as `&B`.
+
+These properties are precisely what we need an `entry` query: we need (2) to
+hash and/or compare the query against exiting keys in the map and we need (1) to
+convert the query into a key on vacant insertion.
+
+The two impl-s capture that
+
+  1. `T` can always be converted to `T` and borrowed as `&T`. This enables
+     by-value keys.
+  2. `&B` can be converted to `B::Owned` and borrowed as `&B`, when B:
+     `ToOwned`. This enables borrows of `Clone` types.
+
+Then we modify the `entry` signature (for `HashMap`, but similar for `BTreeMap`)
+to
 
 ```rust
-impl<'a, T: ?Sized + ToOwned> IntoOwned<T::Owned> for &'a T {
-    fn into_owned(self) -> T::Owned { (*self).to_owned() }
+pub fn entry<'a, Q, B>(&'a self, k: Q) -> Entry<'a, K, V, Q>
+      where Q: AsBorrowOf<K, B>
+            K: Borrow<B>,
+            B: Hash + Eq {
+    // use `hash(key.as_borrow_of())` and `key.as_borrow_of() == existing_key.borrow()`
+    // for comparisions and `key.into_owned()` on `VacantEntry::insert`.
 }
 ```
 
-implementation would cause. Then we modify the `entry` signature to
+## Detailed changes:
 
-```rust
-  pub fn entry<'a, Q>(&'a self, k: Q) -> Entry<'a, K, V, Q>
-        where Q: Hash + Eq + IntoOwned<K>
-```
+Also see [working implementation](https://github.com/rust-lang/rust/pull/37143)
+for diff.
 
-and add a new `Q: IntoOwned<K>` type parameter to `Entry`. This can be done
-backwards-compatibly with a `Q=K` default. The new `Entry` type will store
-`key: Q` and call `into_owned` on insert-like calls, while using `Q` directly on
-get-like calls.
+  1. Add `std::borrow::Borrow` as described in previous section.
+  2. Change `Entry` to add a `Q` type parameter defaulted to `K` for backwards
+     compatibility (for `HashMap` and `BTreeMap`).
+  3. `Entry::key`, `VacantEntry::key` and `VacantEntry::into_key` are moved to a
+     separate `impl` block to be implemented only for the `Q=K` case.
+  4. `Entry::or_insert`, `Entry::or_insert_with` and `VacantEntry::insert` gain
+     a `B` type parameter and appropriate constraints: `where Q: AsBorrowOf<K, B>, K: Borrow<B>, B: Hash + Eq`.
+
 
 # Drawbacks
 [drawbacks]: #drawbacks
 
-1. The docs of `entry` get uglier and introduce two new traits the user
-   never needs to manually implement. If there was support for `where A != B`
-   clauses we could get rid of the `RefIntoOwned` trait, but that would still
-   leave `IntoOwned` (which is strictly more general than the existing `ToOwned`
-   trait). On the other hand `IntoOwned` may be independently useful in generic
-   contexts.
+1. The docs of `entry` get uglier and introduce a new trait the user
+   never needs to manually implement.
 
 2. It does not offer a way of recovering a `!Clone` key when no `insert`
    happens. This is somewhat orthogonal though and could be solved in a number
-   of different ways eg. an `into_key` method on `Entry` or via an `IntoOwned`
-   impl on a `&mut Option<T>`-like type.
+   of different ways eg. an `into_query` method on `Entry`.
 
-3. Further depend on specialisation in its current form for a public API. If the
-   exact parameters of specialisation change, and this particular pattern
-   doesn't work anymore, we'll have painted ourselves into a corner.
+4. The changes to `entry` would be insta-stable (not the new traits). There's
+   no real way of feature-gating this.
 
-4. The implementation would be insta-stable. There's no real way of
-   feature-gating this.
+5. May break inference for uses of maps where `entry` is the only call (`K` can
+   no longer be necessarily inferred as the arugment of `entry`). May also hit
+   issue [#37138](https://github.com/rust-lang/rust/issues/37138).
+
+6. The additional `B` type parameter on `on_insert_with` is a backwards
+   compatibility hazard, since it breaks explicit type parameters
+   (e.g. `on_insert_with::<F>` would need to become `on_insert_with::<F, _>`).
+   This seems very unlikely to happen in practice: F is almost always a closure
+   and even when it isn't `on_insert_with` can always infer the type of `F`.
 
 # Alternatives
 [alternatives]: #alternatives
@@ -177,16 +193,87 @@ get-like calls.
 
      3. Pro: Solves the recovery of `!Clone` keys.
 
+2. Add a `entry_or_clone` with an `Q: Into<Cow<K>>` bound.
+
+     1. Con: Adds a new method as well as new `Entry` types for all maps.
+
+     2. Con: Passes on the problem to any generic users of maps with every layer
+        of abstraction needing to provide an `or_clone` variant.
+
+     3. Pro: probably clearest backwards compatible solution, doesn't introduce
+        any new traits.
+
+3. Split `AsBorrowOf` into `AsBorrowOf` and `IntoOwned`. This is closer to the
+   original proposal:
+
+     1. Con: Requires introducing three new traits.
+
+     2. Con: Requires specialisation to implement a public API, tying us closer
+        to current parameters of specialisation.
+
+     3. Pro: `IntoOwned` may be independently useful as a more general
+        `ToOwned`.
+
+     4. Pro: no additional `B` type parameter on `on_insert` and
+        `on_insert_with`.
+
+Code:
+```rust
+pub trait IntoOwned<T> {
+    fn into_owned(self) -> T;
+}
+
+impl<T> IntoOwned<T> for T {
+    default fn into_owned(self) -> Self {
+        self
+    }
+}
+
+impl<T> IntoOwned<T::Owned> for T
+    where T: RefIntoOwned
+{
+    default fn into_owned(self) -> T::Owned {
+        self.ref_into_owned()
+    }
+}
+
+pub trait AsBorrowOf<T, B: ?Sized>: IntoOwned<T> where T: Borrow<B> {
+    fn as_borrow_of(&self) -> &B;
+}
+
+impl<T> AsBorrowOf<T, T> for T {
+    default fn as_borrow_of(&self) -> &Self {
+        self
+    }
+}
+
+impl<'a, B: ToOwned + ?Sized> AsBorrowOf<B::Owned, B> for &'a B {
+    default fn as_borrow_of(&self) -> &B {
+        *self
+    }
+}
+
+// Auxilliary trait to get around coherence issues.
+pub trait RefIntoOwned {
+    type Owned: Sized;
+
+    fn ref_into_owned(self) -> Self::Owned;
+}
+
+impl<'a, T: ?Sized> RefIntoOwned for &'a T
+    where T: ToOwned
+{
+    type Owned = <T as ToOwned>::Owned;
+
+    fn ref_into_owned(self) -> T::Owned {
+        (*self).to_owned()
+    }
+}
+
+```
+
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
-1. Should these traits ever be stabilised? `RefIntoOwned` in particular can go
-   away with the inclusion of `where A != B` clauses:
-
-   ```rust
-   impl<'a, T: ?Sized + ToOwned> IntoOwned<T::Owned> for &'a T
-       where T::Owned != &'a T
-   {
-       fn into_owned(self) -> T::Owned { (*self).to_owned() }
-   }
-   ```
+1. Are the backwards compatibility hazards acceptable?
+2. Is the `IntoOwned` version preferable?
