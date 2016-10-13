@@ -38,8 +38,61 @@ Without handling unwinding, the closure could unwind and invoke destructors on
 the invalid value. Thus we use "exit guards" which are placed in the stack
 frame (as a variable) and holds a destructor exiting the program.
 
-This behavior is rather specific and it is not certain that it will be kept in
-the future, so we leave the unwinding behavior unspecified for now.
+This behavior is simply specified to match the one of panicking inside
+unwinding destructors. This has the nice property of allowing error messages in
+the libcore implementation.
+
+## Implementation
+
+```rust
+/// A guarding type which will abort upon drop.
+///
+/// This is used for catching unwinding and transforming it into abort.
+///
+/// The destructor should never be called naturally (use `mem::forget()`), and only when unwinding.
+struct ExitGuard;
+
+impl Drop for ExitGuard {
+    fn drop(&mut self) {
+        // To avoid unwinding, we abort (we panic, which is equivalent to abort inside an unwinding
+        // destructor) the program, which ensures that the destructor of the invalidated value
+        // isn't runned, since this destructor ought to be called only if unwinding happens.
+        panic!("`replace_with` closure unwinded. For safety reasons, this will \
+                abort your program. Check the documentation");
+    }
+}
+
+/// Temporarily takes ownership of a value at a mutable location, and replace it with a new value
+/// based on the old one.
+///
+/// We move out of reference temporarily, to apply a closure, returning a new value, which is then
+/// placed at the original value's location.
+///
+/// # An important note
+///
+/// The behavior on panic (or to be more precise, unwinding) is specified to match the behavior of
+/// panicking inside a destructor, which itself is simply specified to not unwind.
+#[inline]
+#[unstable(feature = "replace_with", issue = "...")]
+pub fn replace_with<T, F>(val: &mut T, replace: F)
+    where F: FnOnce(T) -> T {
+    // Guard against unwinding. Note that this is critical to safety, to avoid the value behind the
+    // reference `val` is not dropped twice during unwinding.
+    let guard = ExitGuard;
+
+    unsafe {
+        // Take out the value behind the pointer.
+        let old = ptr::read(val);
+        // Run the closure.
+        let new = closure(old);
+        // Put the result back.
+        ptr::write(val, new);
+    }
+
+    // Forget the guard, to avoid panicking.
+    mem::forget(guard);
+}
+```
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -53,8 +106,6 @@ clear for everyone.
 1. Specify the unwinding behavior to abort.
 
 2. Use `catch_unwind` and print an error on unwinding (in libstd).
-
-3. Require `T: Default` and replace the value as such on panic, so we are sure the dropping value is in fact valid.
 
 4. Leave it out of the standard library.
 
