@@ -119,16 +119,16 @@ the following properties:
   1. There is a by-value conversion `Self` -> `T`.
   2. Both `T` and `Self` can be borrowed as `&B`.
 
-These properties are precisely what we need an `entry` query: we need (2) to
-hash and/or compare the query against exiting keys in the map and we need (1) to
-convert the query into a key on vacant insertion.
+These properties are precisely what we need from an `entry` query: we need (2)
+to hash and/or compare the query against existing keys in the map and we need (1)
+to convert the query into a key on `VacantEntry::insert`.
 
 The two impl-s capture that
 
   1. `T` can always be converted to `T` and borrowed as `&T`. This enables
-     by-value keys.
+     by-value queries regardless of their `Clone`-ability.
   2. `&B` can be converted to `B::Owned` and borrowed as `&B`, when B:
-     `ToOwned`. This enables borrows of `Clone` types.
+     `ToOwned`. This enables queries via borrows of `Clone` types.
 
 Then we modify the `entry` signature (for `HashMap`, but similar for `BTreeMap`)
 to
@@ -148,13 +148,19 @@ pub fn entry<'a, Q, B>(&'a self, k: Q) -> Entry<'a, K, V, Q>
 Also see [working implementation](https://github.com/rust-lang/rust/pull/37143)
 for diff.
 
-  1. Add `std::borrow::Borrow` as described in previous section.
+  1. Add `std::borrow::AsBorrowOf` as described in previous section.
+  2. Change the signature of `{HashMap,BTreeMap}::entry` to the one described
+     above. Change the implementation to use `key.as_borrow_of()` to search the
+     map.
   2. Change `Entry` to add a `Q` type parameter defaulted to `K` for backwards
-     compatibility (for `HashMap` and `BTreeMap`).
-  3. `Entry::key`, `VacantEntry::key` and `VacantEntry::into_key` are moved to a
+     compatibility (for `HashMap` and `BTreeMap`). `VacantEntry` will now store
+     a query of type `Q` rather than an actual key of type `K`. On `insert` a
+     call to `Q::into_owned` is made to convert the query into an owned key to
+     use in the map.
+  3. Move `Entry::key`, `VacantEntry::key` and `VacantEntry::into_key` to a
      separate `impl` block to be implemented only for the `Q=K` case.
-  4. `Entry::or_insert`, `Entry::or_insert_with` and `VacantEntry::insert` gain
-     a `B` type parameter and appropriate constraints: `where Q: AsBorrowOf<K, B>, K: Borrow<B>, B: Hash + Eq`.
+  4. Add to`Entry::or_insert`, `Entry::or_insert_with` and `VacantEntry::insert`
+     a `B` type parameter with appropriate constraints: `where Q: AsBorrowOf<K, B>, K: Borrow<B>, B: Hash + Eq`.
 
 
 # Drawbacks
@@ -171,7 +177,7 @@ for diff.
    no real way of feature-gating this.
 
 5. May break inference for uses of maps where `entry` is the only call (`K` can
-   no longer be necessarily inferred as the arugment of `entry`). May also hit
+   no longer be necessarily inferred as the argument of `entry`). May also hit
    issue [#37138](https://github.com/rust-lang/rust/issues/37138).
 
 6. The additional `B` type parameter on `on_insert_with` is a backwards
@@ -193,7 +199,7 @@ for diff.
 
      3. Pro: Solves the recovery of `!Clone` keys.
 
-2. Add a `entry_or_clone` with an `Q: Into<Cow<K>>` bound.
+2. Add a new `entry_or_clone` method with an `Q: Into<Cow<K>>` bound.
 
      1. Con: Adds a new method as well as new `Entry` types for all maps.
 
@@ -204,9 +210,9 @@ for diff.
         any new traits.
 
 3. Split `AsBorrowOf` into `AsBorrowOf` and `IntoOwned`. This is closer to the
-   original proposal:
+   original proposal in this RFC:
 
-     1. Con: Requires introducing three new traits.
+     1. Con: Requires introducing three new traits instead of one.
 
      2. Con: Requires specialisation to implement a public API, tying us closer
         to current parameters of specialisation.
