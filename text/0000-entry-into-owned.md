@@ -246,7 +246,10 @@ for diff.
      3. Pro: probably clearest backwards compatible solution, doesn't introduce
         any new traits.
 
-3. Split `AsBorrowOf` into `AsBorrowOf` and `IntoOwned`. This is closer to the
+3. Be more honest about the purpose of the trait and call it
+   `std::collections::Query` with `into_key`, `borrow_as_key` methods.
+
+4. Split `AsBorrowOf` into `AsBorrowOf` and `IntoOwned`. This is closer to the
    original proposal in this RFC:
 
      1. Con: Requires introducing three new traits instead of one.
@@ -259,9 +262,6 @@ for diff.
 
      4. Pro: no additional `B` type parameter on `on_insert` and
         `on_insert_with`.
-
-4. Be more honest about the purpose of the trait and call it
-   `std::collections::Query` with `into_key`, `borrow_as_key` methods.
 
 Code:
 ```rust
