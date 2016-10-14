@@ -143,12 +143,12 @@ pub fn entry<'a, Q, B>(&'a self, k: Q) -> Entry<'a, K, V, Q>
 }
 ```
 
-### Deref coercions and backwards compatibility.
+### Deref coercions and backwards compatibility
 
 An unexpected backwards compatibility hazard comes from deref coercions.
 Consider:
 
-```
+```rust
 fn increment<'a>(map: &mut HashMap<&'a str, u32>, key: &'a String) {
     *map.entry(key).or_insert(0) += 1;
 }
