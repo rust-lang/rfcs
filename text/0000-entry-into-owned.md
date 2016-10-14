@@ -188,15 +188,13 @@ for diff.
   2. Change the signature of `{HashMap,BTreeMap}::entry` to the one described
      above. Change the implementation to use `key.as_borrow_of()` to search the
      map.
-  2. Change `Entry` to add a `Q` type parameter defaulted to `K` for backwards
-     compatibility (for `HashMap` and `BTreeMap`). `VacantEntry` will now store
-     a query of type `Q` rather than an actual key of type `K`. On `insert` a
-     call to `Q::into_owned` is made to convert the query into an owned key to
-     use in the map.
+  2. Change `Entry` to add `Q` and `B` type parameters defaulted to `K` for
+     backwards compatibility (for `HashMap` and `BTreeMap`). `VacantEntry` will
+     now store a query of type `Q` rather than an actual key of type `K`. On
+     `insert` a call to `AsBorrowOf::<K, B>::into_owned` is made to convert the
+     query into an owned key to use in the map.
   3. Move `Entry::key`, `VacantEntry::key` and `VacantEntry::into_key` to a
      separate `impl` block to be implemented only for the `Q=K` case.
-  4. Add to`Entry::or_insert`, `Entry::or_insert_with` and `VacantEntry::insert`
-     a `B` type parameter with appropriate constraints: `where Q: AsBorrowOf<K, B>, K: Borrow<B>, B: Hash + Eq`.
 
 
 # Drawbacks
@@ -212,15 +210,18 @@ for diff.
 4. The changes to `entry` would be insta-stable (not the new traits). There's
    no real way of feature-gating this.
 
-5. May break inference for uses of maps where `entry` is the only call (`K` can
-   no longer be necessarily inferred as the argument of `entry`). May also hit
-   issue [#37138](https://github.com/rust-lang/rust/issues/37138).
+5. Like any change of this nature (changing a concrete parameter to trait bound
+   type), it is not fully backwards compatibile since it may break inference in
+   a few places:
+     * Uses of maps where `entry` is the only call (`K` can no longer be
+       inferred as the argument of `entry` if `K` is a reference type).
+     * Uses of `entry(something.into())` may become ambiguous if `something` is
+       a reference.
+     * Inference may also hit issue [#37138](https://github.com/rust-lang/rust/issues/37138).
 
-6. The additional `B` type parameter on `on_insert_with` is a backwards
-   compatibility hazard, since it breaks explicit type parameters
-   (e.g. `on_insert_with::<F>` would need to become `on_insert_with::<F, _>`).
-   This seems very unlikely to happen in practice: F is almost always a closure
-   and even when it isn't `on_insert_with` can always infer the type of `F`.
+6. The additional `B` type parameter on `Entry` is superfluous and exposed to
+   any non-`Entry<K, V, K, K>` wrappers of `Entry`. It would be great if we
+   could make `B` an associated type (see 'Unresolved Questions').
 
 # Alternatives
 [alternatives]: #alternatives
@@ -258,6 +259,9 @@ for diff.
 
      4. Pro: no additional `B` type parameter on `on_insert` and
         `on_insert_with`.
+
+4. Be more honest about the purpose of the trait and call it
+   `std::collections::Query` with `into_key`, `borrow_as_key` methods.
 
 Code:
 ```rust
@@ -321,3 +325,9 @@ impl<'a, T: ?Sized> RefIntoOwned for &'a T
 2. Is the `IntoOwned` version preferable?
 3. Do we include the `Deref` impl for `AsBorrowOf` to keep deref coercions
    working?
+4. The `B` parameter of `AsBorrowOf` is really inconvenient, especially because
+   it propagates to the `Entry` types. Conceptually, it's an associated type
+   (for a `K, Q` pair, there's only one `B` for which `Q: AsBorrowOf<K, B>`, but
+   I wasn't able to get coherence to work with a `type Borrowed`. Can it be
+   done?
+
