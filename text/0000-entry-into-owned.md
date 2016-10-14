@@ -221,7 +221,9 @@ for diff.
 
 6. The additional `B` type parameter on `Entry` is superfluous and exposed to
    any non-`Entry<K, V, K, K>` wrappers of `Entry`. It would be great if we
-   could make `B` an associated type (see 'Unresolved Questions').
+   could make `B` an associated type but it doesn't seem possible. Another
+   option is to remove them only from `Entry`, by replacing `Q, B` with
+   `Q: Into<K>` with a default of `Q=Query<K, K>`, where
 
 # Alternatives
 [alternatives]: #alternatives
@@ -246,88 +248,114 @@ for diff.
      3. Pro: probably clearest backwards compatible solution, doesn't introduce
         any new traits.
 
-3. Be more honest about the purpose of the trait and call it
-   `std::collections::Query` with `into_key`, `borrow_as_key` methods.
-
-4. Split `AsBorrowOf` into `AsBorrowOf` and `IntoOwned`. This is closer to the
+3. Split `AsBorrowOf` into `AsBorrowOf` and `IntoOwned`. This is closer to the
    original proposal in this RFC:
 
      1. Con: Requires introducing three new traits instead of one.
 
-     2. Con: Requires specialisation to implement a public API, tying us closer
-        to current parameters of specialisation.
+     2. Con: Requires introducing three new traits instead of one.
 
-     3. Pro: `IntoOwned` may be independently useful as a more general
+     3. Con: Doesn't support the `Deref` trick (might work with lattice rule).
+
+     4. Pro: `IntoOwned` may be independently useful as a more general
         `ToOwned`.
 
-     4. Pro: no additional `B` type parameter on `on_insert` and
-        `on_insert_with`.
+     5. Pro: no additional `B` type parameter in `Entry`.
 
-Code:
-```rust
-pub trait IntoOwned<T> {
-    fn into_owned(self) -> T;
-}
+  Code:
+  ```rust
+  pub trait IntoOwned<T> {
+      fn into_owned(self) -> T;
+  }
 
-impl<T> IntoOwned<T> for T {
-    default fn into_owned(self) -> Self {
-        self
-    }
-}
+  impl<T> IntoOwned<T> for T {
+      default fn into_owned(self) -> Self {
+          self
+      }
+  }
 
-impl<T> IntoOwned<T::Owned> for T
-    where T: RefIntoOwned
-{
-    default fn into_owned(self) -> T::Owned {
-        self.ref_into_owned()
-    }
-}
+  impl<T> IntoOwned<T::Owned> for T
+      where T: RefIntoOwned
+  {
+      default fn into_owned(self) -> T::Owned {
+          self.ref_into_owned()
+      }
+  }
 
-pub trait AsBorrowOf<T, B: ?Sized>: IntoOwned<T> where T: Borrow<B> {
-    fn as_borrow_of(&self) -> &B;
-}
+  pub trait AsBorrowOf<T, B: ?Sized>: IntoOwned<T> where T: Borrow<B> {
+      fn as_borrow_of(&self) -> &B;
+  }
 
-impl<T> AsBorrowOf<T, T> for T {
-    default fn as_borrow_of(&self) -> &Self {
-        self
-    }
-}
+  impl<T> AsBorrowOf<T, T> for T {
+      default fn as_borrow_of(&self) -> &Self {
+          self
+      }
+  }
 
-impl<'a, B: ToOwned + ?Sized> AsBorrowOf<B::Owned, B> for &'a B {
-    default fn as_borrow_of(&self) -> &B {
-        *self
-    }
-}
+  impl<'a, B: ToOwned + ?Sized> AsBorrowOf<B::Owned, B> for &'a B {
+      default fn as_borrow_of(&self) -> &B {
+          *self
+      }
+  }
 
-// Auxilliary trait to get around coherence issues.
-pub trait RefIntoOwned {
-    type Owned: Sized;
+  // Auxilliary trait to get around coherence issues.
+  pub trait RefIntoOwned {
+      type Owned: Sized;
 
-    fn ref_into_owned(self) -> Self::Owned;
-}
+      fn ref_into_owned(self) -> Self::Owned;
+  }
 
-impl<'a, T: ?Sized> RefIntoOwned for &'a T
-    where T: ToOwned
-{
-    type Owned = <T as ToOwned>::Owned;
+  impl<'a, T: ?Sized> RefIntoOwned for &'a T
+      where T: ToOwned
+  {
+      type Owned = <T as ToOwned>::Owned;
 
-    fn ref_into_owned(self) -> T::Owned {
-        (*self).to_owned()
-    }
-}
+      fn ref_into_owned(self) -> T::Owned {
+          (*self).to_owned()
+      }
+  }
 
-```
+  ```
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
 1. Are the backwards compatibility hazards acceptable?
+
 2. Is the `IntoOwned` version preferable?
+
 3. Do we include the `Deref` impl for `AsBorrowOf` to keep deref coercions
    working?
-4. The `B` parameter of `AsBorrowOf` is really inconvenient, especially because
+
+4. Should we be more honest about the purpose of the trait and call it
+   `std::collections::Query` with `into_key`, `borrow_as_key` methods?
+
+5. The `B` parameter of `AsBorrowOf` is really inconvenient, especially because
    it propagates to the `Entry` types. Conceptually, it's an associated type
    (for a `K, Q` pair, there's only one `B` for which `Q: AsBorrowOf<K, B>`, but
    I wasn't able to get coherence to work with a `type Borrowed`. Can it be
    done?
 
+   Another option to get rid of it only in the `Entry` types is to add a
+   `Q: Into<K>` parameter to `Entry` instead of `Q, B`. The default becomes
+   `Q=Query<K, K>` where `Query` is
+
+   ```rust
+   struct Query<Q, B: ?Sized> {
+       value: Q,
+       _phantom: PhantomData<B>,
+   }
+
+   // Abuse our std-powers to provide a generic `From` impl.
+   impl<K, Q, B: ?Sized> From<Query<Q, B>> for K
+       where K: Borrow<B>, Q: AsBorrowOf<K, B>
+   {
+      fn from(query: Query<Q, B>) -> K {
+          query.value.into_owned()
+      }
+   }
+
+   impl<Q: Debug, B: ?Sized> Debug for Query<Q, B> { /* ... */ }
+
+   // etc.
+   ```
