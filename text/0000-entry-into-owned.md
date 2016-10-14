@@ -143,6 +143,42 @@ pub fn entry<'a, Q, B>(&'a self, k: Q) -> Entry<'a, K, V, Q>
 }
 ```
 
+### Deref coercions and backwards compatibility.
+
+An unexpected backwards compatibility hazard comes from deref coercions.
+Consider:
+
+```
+fn increment<'a>(map: &mut HashMap<&'a str, u32>, key: &'a String) {
+    *map.entry(key).or_insert(0) += 1;
+}
+```
+
+Currently this compiles just fine: `&'a String` is coerced to `&'a str` because
+`String: Deref<str>`, but if `entry` becomes generic, deref coercions stop
+working automatically. We can either accept this backwards incompatibility, or
+we can use specialisation and introduce a new `AsBorrowOf` impl:
+
+```rust
+// Same as before, but with specialisable `default` methods.
+impl<T> AsBorrowOf<T, T> for T {
+    default fn into_owned(self) -> T { self }
+    default fn as_borrow_of(&self) -> &Self { self }
+}
+
+// Allow `&'a T` to be used as queries in a map with `&'a U` keys as long as
+// `T: Deref<Target=U>`.
+impl<'a, T: Deref> AsBorrowOf<&'a T::Target, T::Target> for &'a T {
+    default fn into_owned(self) -> &'a T::Target { self.deref() }
+    default fn as_borrow_of(&self) -> &T::Target { self.deref() }
+}
+
+// ... (impl for `ToOwned` stays unchanged) ...
+```
+
+I think this `impl` is worth the downside of bringing in specialisation into the
+mix, compared to the downside of backwards incompatibility.
+
 ## Detailed changes:
 
 Also see [working implementation](https://github.com/rust-lang/rust/pull/37143)
@@ -283,3 +319,5 @@ impl<'a, T: ?Sized> RefIntoOwned for &'a T
 
 1. Are the backwards compatibility hazards acceptable?
 2. Is the `IntoOwned` version preferable?
+3. Do we include the `Deref` impl for `AsBorrowOf` to keep deref coercions
+   working?
