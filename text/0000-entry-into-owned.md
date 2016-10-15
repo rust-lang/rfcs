@@ -220,10 +220,8 @@ for diff.
      * Inference may also hit issue [#37138](https://github.com/rust-lang/rust/issues/37138).
 
 6. The additional `B` type parameter on `Entry` is superfluous and exposed to
-   any non-`Entry<K, V, K, K>` wrappers of `Entry`. It would be great if we
-   could make `B` an associated type but it doesn't seem possible. Another
-   option is to remove them only from `Entry`, by replacing `Q, B` with
-   `Q: Into<K>` with a default of `Q=Query<K, K>`, where
+   any non-`Entry<K, V, K, K>` wrappers of `Entry`. See `Unresolved Questions`
+   for some imperfect ways of removing it.
 
 # Alternatives
 [alternatives]: #alternatives
