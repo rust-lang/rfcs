@@ -140,7 +140,8 @@ Here's the workflow:
    against the following rules:
 
    - the file exists and is valid TOML
-   - Optional keys may be either `false` or absent.
+   - When an optional key is `false`, this is semantically equivalent to it
+     being omitted.
    - the `description` contains not only whitespace. More text than a paragraph
      should be allowed, but not necessarily recommended.
    - `package` exists on Crates.io
