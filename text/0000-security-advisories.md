@@ -143,7 +143,9 @@ Here's the workflow:
    - Optional keys may be either `false` or absent.
    - the `description` contains not only whitespace. More text than a paragraph
      should be allowed, but not necessarily recommended.
-   - `package` exists on Crates.io and the versions specified in `versions` exist
+   - `package` exists on Crates.io
+   - `versions` is non-empty and only contains versions of `package` published
+     on Crates.io
    - `dwf` is not an empty array. It should be ``false`` if there are none.
    
    If not, Cargo should print one or more error messages and exit.
