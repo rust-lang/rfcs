@@ -179,11 +179,11 @@ and then release the versions that contain the security fix.
   ``publish`` should refuse to upload my crate even if ``bar=1.2.3`` is not
   vulnerable, as another version satisfying that constraint may be.
 
-The author of a crate that directly depends on a vulnerable crate may disable
-these warnings with a switch in their `Cargo.toml`. If `iron==0.4.x` has
-an advisory with the ID `deadbeef`, the dependent author may use the
-`allow_vulnerable` parameter to disable all the above-described warnings and
-errors for this vulnerability:
+The author of a crate that directly depends on a vulnerable crate may still use
+vulnerable packages using switch in their `Cargo.toml`. If `iron==0.4.x` has an
+advisory with the ID `deadbeef`, the dependent author may use the
+`allow_vulnerable` parameter to disable the warnings for `build` and `install`
+and the errors for `publish` due to this vulnerability:
 
 ```
 [dependencies]
