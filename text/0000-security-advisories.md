@@ -295,3 +295,16 @@ Comparison:
 ## CVSS
 
 - Scoring vulnerabilities. Should a new field for the usage of CVSS be created?
+
+## Undoing an advisory
+
+Should it be possible to undo an advisory?
+
+## Moderator intervention
+
+Should moderators intervene if a crate is vulnerable but is not marked as
+vulnerable?
+
+## Commiting Advisory.toml
+
+Should `cargo new/init` add `Advisory.toml` to `.gitignore`?
