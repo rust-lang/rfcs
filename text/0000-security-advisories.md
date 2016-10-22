@@ -121,8 +121,8 @@ Here's the workflow:
    # reference the assigned number here.
    # - CVE: https://iwantacve.org/
    # - DWF: https://distributedweaknessfiling.org/
-   dwf = false
-   # dwf = "CVE-YYYY-XXXX"
+   dwf = []
+   # dwf = ["CVE-YYYY-XXXX"]
    # dwf = ["CVE-YYYY-XXXX", "CVE-ZZZZ-WWWW"]
 
    # URL to a long-form description of this issue, e.g. a blogpost announcing
@@ -147,7 +147,7 @@ Here's the workflow:
    - `package` exists on Crates.io
    - `versions` is non-empty and only contains versions of `package` published
      on Crates.io
-   - `dwf` is not an empty array. It should be ``false`` if there are none.
+   - `dwf` an array of strings. May be empty.
    
    If not, Cargo should print one or more error messages and exit.
 
@@ -289,7 +289,7 @@ Comparison:
 ## What to do if dwf = false
 
 - Crates.io could apply for blocks of DWF IDs and automatically assign them if
-  the user didn't specify one in the advisory (``dwf = false``).
+  the user didn't specify one in the advisory.
 
 
 ## CVSS
