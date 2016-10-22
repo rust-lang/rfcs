@@ -201,7 +201,9 @@ still print warnings:
   ["deadbeef"]` set.
 
 
-Cargo must reject nonexistent vulnerability IDs with a fatal error.
+Note that `deadbeef` represents the vulnerability ID assigned by Crates.io, not
+a CVE or DWF ID. Cargo must reject nonexistent vulnerability IDs with a fatal
+error.
 
 # Drawbacks
 [drawbacks]: #drawbacks
