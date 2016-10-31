@@ -250,8 +250,8 @@ yanking this way has a few drawbacks:
   compiled out by e.g. disabling certain cargo feature settings for that crate.
   Some may be relatively innocuous and/or hard-to-exploit and therefore not
   warrant an immediate upgrade. Sometimes no action (other than setting
-  ``allow_vulnerable = true``) is required at all because the dependent crate
-  never used the vulnerable functionality to begin with.
+  ``allow_vulnerable``) is required at all because the dependent crate never
+  used the vulnerable functionality to begin with.
 
   At the same time it doesn't make sense to depend on packages that don't
   compile, and currently yanking is primarily used to mark such packages.
