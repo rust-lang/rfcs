@@ -182,12 +182,12 @@ and then release the versions that contain the security fix.
 The author of a crate that directly depends on a vulnerable crate may still use
 vulnerable packages using switch in their `Cargo.toml`. If `iron==0.4.x` has an
 advisory with the ID `deadbeef`, the dependent author may use the
-`allow_vulnerable` parameter to disable the warnings for `build` and `install`
+`allow-vulnerable` parameter to disable the warnings for `build` and `install`
 and the errors for `publish` due to this vulnerability:
 
 ```
 [dependencies]
-iron = { version = "0.4", allow_vulnerable = ["deadbeef"] }
+iron = { version = "0.4", allow-vulnerable = ["deadbeef"] }
 ```
 
 
@@ -197,7 +197,7 @@ still print warnings:
 - for other vulnerabilities.  Each warning has to be explicitly disabled by
   appending its ID to that array.
 - if another package in the dependency graph uses a version of `iron` that has
-  the `deadbeef` vulnerability, but does not have `allow_vulnerable =
+  the `deadbeef` vulnerability, but does not have `allow-vulnerable =
   ["deadbeef"]` set.
 
 
@@ -250,7 +250,7 @@ yanking this way has a few drawbacks:
   compiled out by e.g. disabling certain cargo feature settings for that crate.
   Some may be relatively innocuous and/or hard-to-exploit and therefore not
   warrant an immediate upgrade. Sometimes no action (other than setting
-  ``allow_vulnerable``) is required at all because the dependent crate never
+  ``allow-vulnerable``) is required at all because the dependent crate never
   used the vulnerable functionality to begin with.
 
   At the same time it doesn't make sense to depend on packages that don't
