@@ -58,7 +58,7 @@ The lint would not apply to casts to types that are appropriately sized on the c
 
 - In cases where truncation is desired, `ptr as usize as u32` is fairly ugly.  On the other hand, it makes it more clear that truncation is occurring.
 
-- Users developing cross-platform code that casts `usize` to `u32`, intending truncation to occur on 64-bit platforms, won't see the warning if they happen to be developing on a 32-bit platform.  This isn't the end of the world, and should be addressed eventually be scenarios.
+- Users developing cross-platform code that casts `usize` to `u32`, intending truncation to occur on 64-bit platforms, won't see the warning if they happen to be developing on a 32-bit platform; anyone compiling it for a 64-bit platform will then get a spurious warning.  This isn't the end of the world, and should be addressed eventually by scenarios.
 
 - Each new lint adds to compilation time.
 
