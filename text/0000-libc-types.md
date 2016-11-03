@@ -23,6 +23,8 @@ A more interesting case is that of bindings for C libraries which can work in a 
 
 Finally, a separate `libc_types` crate would allow Rust on Windows to avoid linking to the MS CRT entirely. This would make Rust executables more portable since they would not require a user to install a Visual Studio redistributable package.
 
+The types in the `libc` cannot be used in these situations because the `libc` crate will cause the resulting binary to link to the platform C library, which is undesirable.
+
 Relevant discussions on [internals](https://internals.rust-lang.org/t/solve-std-os-raw-c-void/3268) and on [Github](https://github.com/rust-lang/rust/issues/31536).
 
 # Detailed design
@@ -70,11 +72,12 @@ To preserve backward compatibility, these types will be re-exported by the `libc
 # Drawbacks
 [drawbacks]: #drawbacks
 
-- Adds an additional crate to the standard library.
+- Adds an additional crate to the standard library. Although users will only import this crate from crates.io, it must still be distributed as part of the standard library since it is a dependency of the `libc` crate. The version distributed with the standard library will of course be unstable and hidden behind the same feature flag as `libc`.
 
 # Alternatives
 [alternatives]: #alternatives
 
+- Put these types in `libcore` instead. This was proposed on the internals thread, but the consensus seems to be that C FFI types do not belong in `libcore.
 - Do nothing. Freestanding code will have to use standard rust types and write their own bindings for C libraries.
 
 # Unresolved questions
