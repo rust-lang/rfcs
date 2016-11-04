@@ -65,6 +65,8 @@ pub type ssize_t;
 
 pub type c_long;
 pub type c_ulong;
+
+pub type c_char;
 ```
 
 To preserve backward compatibility, these types will be re-exported by the `libc` crate. This is not a breaking change since the `c_void` type still only comes from a single source, so there will not be conflicting definitions. Thus only a minor version bump is required, which avoids extensive breakage across the ecosystem similar to what happened when the `libc` version was bumped to 0.2.
