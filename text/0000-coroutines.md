@@ -66,7 +66,7 @@ The two variants of this enum correspond to **yield** and **return** statements.
 to determine when a coroutine has run to completion:
 
 ```rust
-while let Yield(x) = coro1 {
+while let Yield(x) = coro1() {
     print!("{} ", x); // prints "0 1 2 3 4 5 6 7 8 9 " 
 }
 ```
@@ -87,8 +87,7 @@ let coro2 = |a1, a2, a3| {
     return result;
 };
 ```
-(Aside: I've also considered implicitly rebinding arguments to new values after each yield point,
-however this felt a bit too magical).
+For an alternative way of dealing with coroutine parameters see [this](#implicitly-binding-coroutine-arguments).
 
 To recap:
 - No coroutine code is executed when it is created (other than initializing the closure environment).
@@ -187,10 +186,10 @@ struct CoroClosure1234 {
     // closed-over variables of the containing function (upvars) also go here
 }
 
-impl Fn<(A1, A2, A3)> for CoroClosure1234 {
+impl FnMut<(A1, A2, A3)> for CoroClosure1234 {
     type Output = CoResult<(typeof y1, y2), (typeof result)>;
 
-    fn call(&mut self, a1:A1, a2:A2, a3: A3) -> Self::Output {
+    fn call_mut(&mut self, a1:A1, a2:A2, a3: A3) -> Self::Output {
         // The body of a coroutine is not expressible in plain Rust,
         // so I am using a MIR-like notation here.
         entry: {
@@ -241,21 +240,32 @@ impl Fn<(A1, A2, A3)> for CoroClosure1234 {
 And on the caller side:
 ```rust
 let coroutine = CoroClosure1234 { state: 0, i = mem::uninitialized(), ... };
-while let Yield(result) = coroutine.call(a1, a2, a3) {
+while let Yield(result) = coroutine.call_mut(a1, a2, a3) {
     // ... process result
 }
 ```
 
+# How We Teach This
+
+Coroutines are a pretty well established concept in Computer Science.  This particular brand of coroutines 
+is likely to be known to new Rust users from other languages.
+
+There will need to ba a new chapter in _The Rust Programming Language_, which should briefly introduce the 
+concept and give examples of usage (perhaps the very same as can be found in [appendix](#appendix-motivating-examples)).
+
+
 # Drawbacks
 
-Besides the usual, i.e. "extra language complexity", one drawback of asynchronous code implemented in this style is that it tends
-to be infectious: once there is a single async leaf function, the rest of the code between this function and the root of the 
+One drawback of asynchronous code implemented in this style is that it tends to be infectious: 
+once there is a single async leaf function, the rest of the code between this function and the root of the 
 dispatch loop of the application also needs to be async.  In comparison, [stackful coroutines](#stackful-coroutines) do not suffer 
 from this issue; they are transparent to intermediate layers of code. (Though they come with their own problems - see below).  
 
 # Alternatives
 
-## Stackful coroutines
+## Alternatives to stackless coroutines
+
+### Stackful coroutines
 
 Stackful coroutines are amenable to library implementation and, in the first approximation, do not require language-level support. 
 Indeed, [crates.io](https://crates.io/search?q=coroutine) already contains at least half a dozen of such crates.
@@ -266,34 +276,74 @@ They also come with some drawbacks:
 - Switching stacks is fragile: operating systems often make the assumption that they are the only ones managing 
   thread's register context. 
 
-## Source transformations
+### Source transformations
 
 There are precedents in other languages of implementing similar functionality via purely source transformations. 
 One such example is [F#'s "Computation Expressions"](http://msdn.microsoft.com/en-us/library/dd233182.aspx).  
-This approach had been tried with Rust, but implementations tend to run into difficulties with the borrow checker when mutable variables 
-come into play.  An account of one such attempt may be found [here](http://erickt.github.io/blog/2016/01/27/stateful-in-progress-generators/). 
-The consensus seems to be that fully supporting all Rust features using *just* source transformations is probably impossilbe.   
+
+The exact F# approach is unlikely to work in Rust because of Rust's strong ownership semantics.  F# workflows transform 
+control flow constructs into a tree of nested closures, which share variables with the parent closure.  In Rust such sharing 
+is prohibited when variables are mutable.
+
+Another plausible approach is a source-to-source transformation into an state machine, where states are represented 
+as variants of an enum, each containing hoisted variables that are live during transition to that state. 
+An example of such approach is [Stateful](https://github.com/erickt/stateful) 
+([blog post](http://erickt.github.io/blog/2016/01/27/stateful-in-progress-generators/)).  
+The difficulty here is in computing liveless and types of local variables.  The former is needed to decide 
+which variables need to be hoisted, the latter - to declare their types in the "State" enum.
+It seems that an implementation would either need to replicate may Rust compiler passes (name resolution,
+type inference, possibly borrow checking), or find some clever way to leverage the compiler to compute this 
+information.  In the end, it is probably much easier to implement such transformation as a MIR transform, 
+which is what this RFC is about.
+
+## Alternatives designs
+
+### Implicitly binding coroutine arguments
+Under the current design, the values of parameters with which a coroutine is resumed, are returned as a tuple
+from the **yield** expression.
+This looks a bit awkward, especially for single-argument coroutines, where it would be cleaner to return the argument 
+itself, instead of a 1-tuple wrapping it:
+```rust
+|a1| {
+    let (b1,) = yield x;
+}
+```
+An alternative would be to implicitly bind coroutine arguments to the same names after each yield point:
+```rust
+|a1| {
+    yield x;  // actually means let (a1,) = yield x; 
+}
+```
 
 # Unresolved questions
 
-### Should coroutines be introduced with a special keyword,- to distinguish them from regular closures?  
+## Should coroutines be introduced with a special keyword,- to distinguish them from regular closures?  
 For example, ```coro |a, b| { ... }```
 
 A: Technically, there is not need for that, the coroutine-ness may be inferred from the presence of
 **yield** expressions (as was done in Python).
 
+## Should the "[No borrows across yield points](#no-borrows-across-yield-points)" rule be relaxed when coroutine environment is "pinned"?
+If a coroutine yields references borrowing from the coroutine's environment, the environment would become "pinned", 
+as external code would know about the outstanding borrow and will not permit coroutine environment to be moved.
+In other words, the coroutine closure would satisfy this bound:
+```rust
+F: FnMut(...)->CoResult<&'a T + 'a, ...>
+```
+Under these circumstances, borrows could be allowed to live across yield points.
+
 # Appendix: Motivating Examples
 
 ### Iterators
 
-With a help of the following adapter,
+With the help of this adapter,
 ```rust
-impl<T> Iterator for FnMut() -> CoResult<T,()> {
+impl<T,F> Iterator for F where F: FnMut()->CoResult<T,()> {
     type Item = T;
     fn next(&mut self) -> Option<T> {
-        match self.call() {
+        match self() {
             Yield(x) => Some(x),
-            Return(*) => None
+            Return(..) => None
         }
     }
 }
@@ -315,25 +365,26 @@ impl<T> [T] {
 
 ### Double-ended iterators
 
-Similarly, a double ended iterator can be implemented as follows:
+Similarly, a double-ended iterator can be implemented as follows:
 ```rust
 enum IterEnd {
     Head,
     Tail
 }
 
-impl<T> DoubleEndedIterator for FnMut(IterEnd) -> CoResult<T,()> {
+impl<T,F> Iterator for F where F: FnMut(IterEnd) -> CoResult<T,()> {
     type Item = T;
-
     fn next(&mut self) -> Option<T> {
-        match self.call(Tail) {
+        match self(IterEnd::Tail) {
             Yield(x) => Some(x),
             Return(..) => None
         }
     }
+}
 
+impl<T,F> DoubleEndedIterator for F where F: FnMut(IterEnd)->CoResult<T,()> {
     fn next_back(&mut self) -> Option<T> {
-        match (*self)(Head) {
+        match self(IterEnd::Head) {
             Yield(x) => Some(x),
             Return(..) => None
         }
@@ -364,43 +415,71 @@ impl<T> [T] {
 
 ### Asynchronous I/O
 
-This is an implemenation of `tokio_core::io::copy` with a coroutine:
+This is an implementation of [`tokio_core::io::copy`](https://github.com/tokio-rs/tokio-core/blob/0588204048f7562b9f31dc4bd5afba19bd5c7f69/src/io/copy.rs#L32)
+using a coroutine:
 
 ```rust
-use futures;
-use tokio_core::io;
+use futures::future::Future;
+use std::io;
 
-pub fn copy<R, W>(reader: R, writer: W) -> impl Future<usize, Error>
-    where R: Read, W: Write
+pub fn copy<R, W>(mut reader: R, mut writer: W) -> impl Future<Item=usize, Error=io::Error>
+    where R: io::Read, W: io::Write
 {
-    coroutine_future(|| {
-        let mut total: i64 = 0;
-        let buffer = [u8; 64 * 1024];
+    || {
+        let mut total: usize = 0;
+        let mut buffer = [0u8; 64 * 1024];
         loop {
-            let read = await!(io::read(reader, buffer));
+            let read = await_nb!(reader.read(&mut buffer));
+            if read == 0 { return Ok(total) }
             total += read;
             let mut written = 0;
             while written < read {
-                written += await!(io::write(writer, &buffer[written..read]));
+                written += await_nb!(writer.write(&buffer[written..read]));
             }
         }
-        total
+    }
+}
+
+////// Syntax sugar and plumbing
+
+impl<T,E,F> Future for F where F: FnMut() -> CoResult<(), Result<T,E>> {
+    type Item = T;
+    type Error = E;
+    fn poll(&mut self) -> Poll<T, E> {
+        match self() {
+            Yield(()) => Ok(Async::NotReady),
+            Return(Ok(r)) => Ok(Async::Ready(r)),
+            Return(Err(e)) => Err(e),
+        }
+    }
+}
+
+// Awaiter for Future's
+macro_rules! await {
+    ($e:expr) => ({
+        let mut future = $e;
+        loop {
+            match future.poll() {
+                Ok(Async::Ready(r)) => break r,
+                Ok(Async::NotReady) => yield,
+                Err(e) => return Err(e.into()),
+            }
+        }
     })
 }
 
-// Some syntax sugar and plumbing
-
-macro_rules! await(
-    ($e:expr) => {
-        let future = $e;
-        yield &future;
-        // Execution resumes when `future` becomes ready, so it is safe to unwrap()
-        future.poll().unwrap()
-    }
-)
-
-// Returns a future that completes when the underlying coroutine reaches a return point.
-fn coroutine_future<T>(f: FnMut() -> CoResult<&Future, T>) -> impl Future<T, Error> {
-    // TBD
+// Awaiter for non-blocking I/O.
+macro_rules! await_nb {
+    ($e:expr) => (
+        loop {
+            match $e {
+                Ok(r) => break r,
+                Err(ref e) if e.kind() == ::std::io::ErrorKind::WouldBlock => yield,
+                Err(e) => Err(e.into(),
+            }
+      )
 }
+
+// `await` and `await_nb` can probably be unified using sufficiently advanced abstraction.
+
 ```
