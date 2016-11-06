@@ -118,14 +118,25 @@ dependency may be provided somehow.
 # Drawbacks
 [drawbacks]: #drawbacks
 
-Why should we *not* do this?
+This adds more functionality to both cargo and rustc. The distinction between
+"conditional" dependencies and "optional" dependencies is sort of subtle and
+will have to be explained to users. More complexity always has a downside.
 
 # Alternatives
 [alternatives]: #alternatives
 
-What other designs have been considered? What is the impact of not doing this?
+We considered options like allowing the orphan rules to be broken by certain
+crates that were recognized as "sibling" crates by a parent, as a way to get
+around the orphan rule issue. However, this alternative would create a
+soundness hole in the orphan rules and violate good layering, by making them
+only fully enforced by cargo and not by rustc. Ultimately, conditionally
+altering the shape of code compiled by the flags passed by cargo seemed like
+a better solution to the problem.
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
-What parts of the design are still TBD?
+The specific mechanisms used by cargo and crates.io to determine conditional
+dependencies and to prevent cycles are rather unspecified in this RFC. It may
+have interactions with other cargo features that haven't been fully thought
+through.
