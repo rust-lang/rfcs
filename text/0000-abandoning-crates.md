@@ -42,7 +42,7 @@ In the future, cargo itself could make this process easier and more automated. H
 adding this functionality may pose it's own drawbacks and so will not be detailed in
 this RFC.
 
-## github group
+## Github group
 
 The current solution is to simply have a group of volunteers under the umbrella of a
 github group do the administrative effort of accepting ownership of abandoned crates
@@ -71,7 +71,7 @@ Because crates.io already supports github groups, this process should be
 fairly easy to maintain and require very little oversight. It only requires
 a small group of volunteers to keep up with the issue tracker.
 
-## documentation changes
+## Documentation changes
 
 In addition to the github group being formed, documentation should be added
 to the [getting started](http://doc.crates.io/index.html) guide at crates.io
