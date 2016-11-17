@@ -70,7 +70,10 @@ The process is similar for claiming an abandoned crate:
 
 Because crates.io already supports github groups, this process should be
 fairly easy to maintain and require very little oversight. It only requires
-a small group of volunteers to keep up with the issue tracker.
+a small group of volunteers to keep up with the issue tracker. Additionally,
+when the reclaimer team is satisfied with the process that is in place,
+most (or possibly even all) of this process can be automated by something
+like a jenkins bot, requiring very little manual effort.
 
 ## Documentation changes
 
