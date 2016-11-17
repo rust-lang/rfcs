@@ -108,7 +108,7 @@ type, which are not a part of this RFC.
 
 ## Features of associated type constructors
 
-### Declaring an associated type constructor
+### Declaring & assigning an associated type constructor
 
 This RFC proposes a very simple syntax for defining an associated type
 constructor, which looks a lot like the syntax for creating aliases for type
@@ -121,44 +121,31 @@ trait StreamingIterator {
 }
 ```
 
-Here, it is clear that `Item` is a type constructor, because it carries a
-parameter. Associated type constructors can carry any number of type and
-lifetime parameters, as in:
+It is clear that the `Item` associated item is a type constructor, rather than
+a type, because it has a type parameter attached to it.
+
+Associated type constructors can be bounded, just like associated types can be:
 
 ```rust
-trait FooBar {
-    type Baz<'a, T, U>;
+trait Iterable {
+    type Item<'a>;
+    type Iter<'a>: Iterator<Item = Item<'a>>;
+    
+    fn iter<'a>(&'a self) -> Self::Iter<'a>;
 }
 ```
 
-Associated type constructors can be followed by `where` clauses, which place
-trait bounds on the types constructed by this constructor. For example:
+This bound is applied to the "output" of the type constructor, and the parameter
+is treated as a higher rank parameter. That is, the above bound is roughly
+equivalent to adding this bound to the trait:
 
 ```rust
-trait Collection<T> {
-    type Iter<'a> where for<'a> Self::Iter<'a>: Iterator<Item=&'a T>;
-    type IterMut<'a> where for<'a> Self::IterMut<'a>: Iterator<Item=&'a mut T>;
-    type IntoIter: Iterator<Item=T>;
-}
+for<'a> Self::Iter<'a>: Iterator<Item = Self::Item<'a>>
 ```
 
-A `where` clause is used to avoid the impression that this is providing a
-bound on the constructor itself. Note the contrast to `IntoIter`, which is
-not a type constructor. Also note that this involves an extension to HRTB,
-which is discussed later in this RFC.
-
-As a last note, these `where` clauses do not need to involve HRTB, but can
-instead apply type/lifetime parameters or concrete types/lifetimes that are
-in scope to the type constructor, as in:
-
-```rust
-trait Foo<T> {
-    type Bar<X> where Self::Bar<T>: Display;
-    type Baz<'a> where Self::Baz<'static>: Send;
-}
-```
-
-### Assigning an associated type constructor
+Currently, this RFC only proposes adding associated type constructor of **lifetime**
+arguments, but it is intended to be extended to type arguments once higher rank
+type parameters are included.
 
 Assigning associated type constructors in impls is very similar to the syntax
 for assigning associated types:
@@ -170,25 +157,12 @@ impl<T> StreamingIterator for StreamIterMut<T> {
 }
 ```
 
-Note that this example makes use of partial application (see the later section
-on partial application for more information about this feature). The parameter
-to this argument is quite clear, because it is the argument associated with
-the type constructor. If there were multiple lifetimes involved, it would still
-be unambiguous which was being applied and which isn't, for example:
-
-```rust
-impl<'a> StreamingIterator for FooStreamIter<'a> {
-    type Item<'b> = &'b mut [Foo<'a>];
-}
-```
-
 ### Using an associated type constructor to construct a type
 
 Once a trait has an associated type constructor, it can be applied to any
-type/lifetime parameters or concrete types/lifetimes that are in scope. This
-can be done both inside the body of the trait and outside of it, using syntax
-which is analogous to the syntax for using associated types. Here are some
-examples:
+parameters or concrete term that are in scope. This can be done both inside the
+body of the trait and outside of it, using syntax which is analogous to the
+syntax for using associated types. Here are some examples:
 
 ```rust
 trait StreamingIterator {
@@ -204,12 +178,11 @@ struct Foo<T: StreamingIterator> {
 ```
 
 Associated type constructors can also be used to construct other type
-constructors through partial application (see the later section on partial
-application for more information about this feature).
+constructors:
 
 ```rust
 trait Foo {
-    type Bar<'a, T>;
+    type Bar<'a, 'b>;
 }
 
 trait Baz {
@@ -217,7 +190,7 @@ trait Baz {
 }
 
 impl<T> Baz for T where T: Foo {
-    type Quux<'a> = <T as Foo>::Bar<'a, usize>;
+    type Quux<'a> = <T as Foo>::Bar<'a, 'static>;
 }
 ```
 
@@ -244,117 +217,114 @@ fn foo<T: for<'a> StreamingIterator<Item<'a>=&'a [i32]>>(iter: T) { ... }
 fn foo<T>(iter: T) where T: StreamingIterator, for<'a> T::Item<'a>: Display { ... }
 ```
 
-See the section on extending HRTBs for more information about that aspect of
-this feature.
-
 This RFC does not propose allowing any sort of bound by the type constructor
 itself, whether an equality bound or a trait bound (trait bounds of course are
-also impossible). That is, one can do the former but not the latter here:
+also impossible). 
+
+#### `let` introduction of parameters in bound
+
+The `for` syntax for HRTB is widely considered inaccessible and difficult to learn.
+The problem here is not that the underlying concept of a higher rank parameter is
+particularly challenging, but that the syntax introduces too much jargony syntax
+which distracts from the underlying idea.
+
+This RFC proposes adding a new syntax for higher rank parameters which appear in the
+type position of the bound. A user can simply introduce a new parameter with the `let`
+keyword:
 
 ```rust
-// Valid
-fn foo<T: for<X> Foo<Bar<X>=Vec<X>>>(x: T) { ... }
-
-// Invalid
-fn foo<T: Foo<Bar=Vec>>(x: T) { ... }
+where T: Iterable, T::Item<let 'a>: &'a str
+//equivalent to
+where T: Iterable, for<'a> T::Item<'a>: &'a str
 ```
 
-HRTBs allow us to express the same bounds without adding quite as radical a
-new feature as adding bounds by equality of type constructors.
+The variable introduced by the `let` is scoped only to this bound. Shadowing existing
+type variables in scope is not permitted by a `let`, just as it is not permitted with
+the existing `for` syntax. The `let` keyword is necessary to make it unambiguous that
+the user intends to introduce a new variable here.
 
-## Partial Application
+The `let` syntax is valid for any type constructor being bound, including those which
+are not associated items. As an arbitrary example:
 
-In order for this feature to be useful, we will have to allow for type
-constructors to partially applied. Many languages with higher-kinded
-polymorphism use currying as an alternative to partial application. Rust does
-not have currying at the level of expressions, and currying would not be
-sufficient to enable the use cases that exist for type constructors, so this
-RFC does not propose using currying for higher-kinded polymorphism.
-
-As an example, the reference operator has the kind `lifetime, type -> type`,
-taking both a lifetime and a type to produce a new type. With currying, the two
-parameters to the reference operator would have to have a defined order, and it
-would be possible to partially apply only one of the parameters to the
-reference operator. That is, if it were `lifetime -> type -> type`, one could
-apply it to a lifetime to produce a `type -> type` operator, but one could not
-apply it to a type to produce a `lifetime -> type` operator. If it were defined
-as `type -> lifetime -> type`, it would be  restricted in the opposite way.
-Because Rust makes use of two base kinds, currying would severely restrict the
-forms of abstraction enabled by Rust.
-
-Instead, when defining an associated type constructor, an anonymous type
-constructor can be constructed from a type constructor with more parameters by
-applying any of the parameters to that type constructor. The syntax discussed
-below makes it unambiguous and easy to see which parameters remain undetermined
-at the point of assigning the associated type constructor to a concrete type
-constructor.
-
-When used in a type position, of course, all of the parameters to an associated
-type constructor must have been applied to concrete types or type parameters that
-are in scope, so that it can be evaluated to a proper type.
-
-## Extending HRTBs
-
-Providing bounds on the types constructed by associated type constructors
-requires heavy use of HRTBs, or higher-ranked trait bounds. This exists in Rust
-today, but in a limited form, and it is an obscure feature primarily used in
-the background to make function traits behave as expected.
-
-In brief, a higher-ranked trait bound is one in which a type or lifetime
-parameter is introduced only for the scope of that trait bound. A classic
-example of how this can be useful is in the contrast between these two
-functions:
-
-```rust
-fn foo1<T, F>(x: T, id: F) -> T where F: Fn(T) -> T {
-    id(x)
-}
-
-fn foo2<T, F>(x: T, id: F) -> T where F: for<X> Fn(X) -> X {
-    id(x)
-}
-
-// Valid (evaluates to 4)
-foo1::<i32, _>(2, |x| x + x)
-
-// Invalid (type error)
-foo2::<i32, _>(2, |x| x + x)
+```
+where vec::Iter<let 'a, T>: ExactSizeIterator
 ```
 
-In the second function, we _guarantee_ that the `id` argument is the identity
-function (ignoring side effects), because it must be a valid function of `X`
-to `X` for _all_ `X`, whereas the first can be specialized to only be a valid
-function for the type `T`, in this case `i32`.
+Hypothetically, the `let` syntax could be expanded to positions outside of bounds, but
+this RFC proposes no such extension.
 
-Higher-ranked trait bounds have several other use cases. Currently, Rust uses
-them to declare that arguments with different lifetimes can be passed to
-function types, by requiring that that function be valid for all lifetimes,
-rather than just for some single lifetime parameter.
+## Restrictions on ATCs
 
-In order to bound associated type constructors, we use higher-ranked types to
-require that the type constructor constructs type which meet some bound. This
-can be done both in the declaration and when bounding a type parameter by a
-trait, and can be both a trait bound and a type equality bound. Here are
-examples in code, with their meanings written out:
+In order to be forward compatible with higher order type constructors - which is commonly
+called "full higher kinded types" - this RFC imposes certain restrictions on the kinds of
+constructors which can be used as associated items. Background on this reasoning can be
+found here: http://smallcultfollowing.com/babysteps/blog/2016/11/09/associated-type-constructors-part-4-unifying-atc-and-hkt/
+
+The restriction is simple: Each lifetime argument of the constructor must be applied, in
+order, and must be the left-most arguments of the type constructor. So all of these are
+valid:
 
 ```rust
-trait Sequence<T> {
-    // For every lifetime, this constructor applied to that lifetime must
-    // produce a type which is an iterator of references of that lifetime
-    type Iter<'a> where for<'a> Iter<'a>: Iterator<Item=&'a T>;
-}
-
-// For every lifetime, the associated type constructor Item applied to
-// that lifetime produces a reference of that lifetime to a slice of bytes.
-struct Foo<T> where T: for<'a> StreamingIterator<Item=&'a mut [u8]> {
-   ...
+impl Trait for Type {
+    type Foo<'a> = &'a u32;
+    type Bar<'a> = SomeType<'a, 'static>;
+    type Baz<'a, 'b> = SomeType<'a, 'b>;
+    type Quux<'a> = Self::Foo<'a>;
 }
 ```
 
-Enabling this requires extending HRTBs to support type parameters as well as
-lifetime parameters. This would also imply that HRTBs could introduce type
-parameters that themselves have bounds. The syntax for this is left to another
-RFC.
+But these are not valid:
+
+```rust
+impl Trait for Type {
+    type Foo<'a> = String; // ERROR! Argument never used.
+    type Bar<'a> = SomeType<'static, 'a>; // ERROR! Argument must be left-most.
+    type Baz<'a, 'b> = SomeType<'b, 'a>; // ERROR! Arguments are used in wrong order.
+    type Quux<'a> = (&'a i32, &'a i32); // ERROR! Argument is used more than once.
+}
+```
+
+All of these restrictions can be avoided (unpleasantly) with newtypes and phantomdata:
+
+```rust
+struct ValidFoo<'a>(String, PhantomData<&'a ()>);
+struct ValidBar<'a>(SomeType<'static, 'a>);
+struct ValidBaz<'a, 'b>(SomeType<'a, 'b>);
+struct Quux<'a>(&'a i32, &'a i32);
+```
+
+If this feature is extended to type arguments, the restriction remains the same within each
+kind - so the same restriction with "lifetime" replaced with "type" is also added, but they do
+not intermingle.
+
+## Future extensions
+
+The most immediate future extension to this feature is extending it to type arguments.
+
+For example:
+
+```rust
+trait Foo {
+    type Bar<T>;
+}
+```
+
+This sort of extension would enable to this feature to encode all forms of higher kinded
+polymorphism, with some boilerplate, using the "family" pattern:
+
+```rust
+trait PointerFamily {
+    type Pointer<T>: Deref<Target = T>;
+    fn new<T>(value: T) -> Self::Poiner<T>;
+}
+
+struct Foo<P: PointerFamily> {
+    bar: P::Pointer<String>,
+}
+```
+
+Beyond this, this feature is intended to be compatible with extensions to "full HKT"
+in the future.
 
 ## Benefits of implementing only this feature before other higher-kinded polymorphisms
 
@@ -457,22 +427,16 @@ only allows for some of the types that associated type constructors can
 express, and is in generally a hacky attempt to work around the limitation
 rather than an equivalent alternative.
 
-## Only add associated type constructors whose arguments are lifetimes
+## Do not impose restrictions on associated type constructors
 
-If associated type constructors could only take lifetime arguments, much of the
-work extending HRTBs would not be necessary. Associated type constructors with
-lifetime parameters only covers the primary known use cases for this feature.
-Though it is inelegant to treat lifetime parameters differently from type
-parameters here, at least as an implementation strategy it may make sense to
-first implement this feature with lifetime parameters, and later extend it to
-type parameters as well.
+The restrictions imposed on this feature are only to be forward compatible
+with other forms of higher kinded polymorphism. If we decided that we didn't
+want to include those features ever, or that we were fine with those features
+being totally disjoint from this one, we could not include those restrictions
+in this RFC.
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
 This design does not resolve the question of introducing more advanced forms of
-higher-kinded polymorphism. This document does not describe the details of
-implementing this RFC in terms of rustc's current typeck, because the author
-is not familiar with that code. This document is certainly inadequate in its
-description of this feature, most likely in relation to partial application,
-because of the author's ignorance and personal defects.
+higher-kinded polymorphism.
