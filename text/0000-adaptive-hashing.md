@@ -14,7 +14,7 @@ Hash DoS is an example of a DoS attack. The goal of DoS attacks is a denial of s
 creating a HashMap from a given list of keys:
 
 ```rust
-    fn make_map(keys: Vec<usize>) => HashMap<usize> {
+    fn make_map(keys: Vec<usize>) -> HashMap<usize> {
         let mut map = HashMap::new();
         for key in keys {
             map.insert(key, 0);
@@ -33,7 +33,7 @@ example code takes O(n) time. The entire function executes in O(n**2) time. The 
 like a typical dynamic array. We might as well write:
 
 ```rust
-    fn make_map(keys: Vec<usize>) => HashMap<usize> {
+    fn make_map(keys: Vec<usize>) -> HashMap<usize> {
         let mut map = vec![];
         for key in keys {
             if let Some(index) = map.position(|(k, _)| k == key) {
@@ -153,20 +153,20 @@ because SipHash’s round involves 30 32-bit operations.
 ## For the HashMap API
 
 One day, we may want to hash HashMaps. The hashing infrastructure can be changed to allow it. The
-implementation of Hash for HashMap can hash the hashes stored in every map, rather than  However,
-adaptive hashing makes it harder to write a correct and performant implementation of Hash for
-HashMap. If two HashMaps (that can be compared) have equal values, they must hash to the same
-integer. However, with adaptive hashing, HashMap can switch to the safe mode, which means it no
-longer stores the same hashes as other HashMaps that remain in ‘fast’ mode. The only way to handle
-the situation for the safe mode is to rehash all keys as if the HashMap were in ‘fast’ mode, which
-may take a significant time.
+implementation of Hash for HashMap can hash the hashes stored in the map, rather than hash the
+contents of each key in the map. However, adaptive hashing makes it harder to write a correct and
+performant implementation of Hash for HashMap. If two HashMaps (that can be compared) have equal
+values, they must hash to the same integer. However, with adaptive hashing, HashMap can switch to
+the safe mode, which means it no longer stores the same hashes as other HashMaps that remain in the
+fast mode. The only way to handle the situation for the safe mode is to rehash all keys as if the
+HashMap were in the fast mode, which may take a significant time.
 
 ## For the order of iteration
 
 Currently, HashMaps have nondeterministic order of iteration by default. This is seen as a good
-thing, because programmers that test programs won’t learn to rely on a fixed iteration order.
-Otherwise, programmers might not know that their programs only work with a specific iteration order.
-To keep nondeterministic order, SipHash’s thread-local seed may be used for all hashers.
+thing, because testing will catch code that relies on a specific iteration order. Otherwise,
+programmers might not know that their programs only work with a fixed iteration order. To keep
+nondeterministic order, SipHash’s thread-local seed may be used for all hashers.
 
 # Drawbacks
 
@@ -179,7 +179,7 @@ code.
 - We can restrict adaptive hashing to integer keys. With this limitation, we don't need Farmhash in
   the standard library.
 - We can use some other fast one-shot hasher instead of Farmhash.
-- We can add use an additional fast hash function for fast streaming hashing. The improvement would
+- We can use an additional fast hash function for fast streaming hashing. The improvement would
   be small.
 - We can set FarmHash's seed to a random value for nondeterminism.
 - When a map is emptied, its hash function does not matter anymore. As a special case, we can detect
