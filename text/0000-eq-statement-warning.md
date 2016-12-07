@@ -37,11 +37,13 @@ We can rectify this by giving a warning to the user.
 I'd like to quote @mbrubeck to provide additional motivation
 for why this is a good candidate for an on-by-default builtin lint:
 
-- It catches a typo that is easy to make and difficult to spot, and that won't be caught by type checking.
+- It catches a typo that is easy to make and difficult to spot,
+  and that won't be caught by type checking.
 
-- It can be very narrowly targeted, only matching statements of the form EXPR == EXPR;.
+- It can be very narrowly targeted, only matching statements of the form `EXPR == EXPR;`.
 
-- False positives are unlikely, because == should rarely if ever have side effects, so it almost never makes sense to discard its result.
+- False positives are unlikely, because `==` should rarely if ever have side effects,
+  so it almost never makes sense to discard its result.
 
 # Detailed design
 [design]: #detailed-design
