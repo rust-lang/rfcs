@@ -67,6 +67,16 @@ more explicitly.
 # Alternatives
 [alternatives]: #alternatives
 
+## [RFC 886](https://github.com/rust-lang/rfcs/pull/886)
+
+[RFC 886](https://github.com/rust-lang/rfcs/pull/886) proposes allowing the `must_use` attribute
+on functions. With this, `PartialEq::eq` could be marked `must_use`.
+
+This RFC was closed, but it should be reconsidered with this use case serving as
+additional motivation.
+
+## Clippy
+
 Clippy already has a lint that warns about this, called `no_effect`.
 
 It looks like this:
