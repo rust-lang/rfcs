@@ -91,6 +91,10 @@ warning: statement with no effect, #[warn(no_effect)] on by default
 However, not everyone uses clippy, and I believe this is a common enough mistake
 to justify including a lint for it in rustc itself.
 
+The `no_effect` lint itself could also be considered for inclusion into rustc
+and enabled by default. Note however that `no_effect` is larger in scope than
+`eq_statement`, and thus more prone to yield false positives.
+
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
