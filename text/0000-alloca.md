@@ -18,8 +18,8 @@ known at runtime. Reserving space on the heap always takes a performance hit, an
 increase memory fragmentation, possibly slightly degrading allocation performance further down the road.
 
 If Rust included this zero-cost abstraction, more of these algorithms could run at full speed – and would be available
-on systems without an allocator, e.g. embedded, soft-real-time systems. The option of using a fixed slice up to a
-certain size and using a heap-allocated slice otherwise (as afforded by
+on systems without an allocator, e.g. embedded, soft- or hard-real-time systems. The option of using a fixed slice up
+to a certain size and using a heap-allocated slice otherwise (as afforded by
 [SmallVec](https://crates.io/crates/smallvec)-like classes) has the drawback of decreasing memory locality if only a
 small part of the fixed-size allocation is used – and even those implementations could potentially benefit from the
 increased memory locality.
@@ -105,14 +105,14 @@ The doc comments for the macro should contain text like the following:
 /// do not use this feature unless you understand the implications extremely
 /// well.
 ///
-/// The `stack!` macro works much like an unboxed array, except the size
+/// The `alloca!` macro works much like an unboxed array, except the size
 /// is determined at runtime. The allocated memory resides on the thread stack;
 /// when allocating, be careful not to exceed the size of the stack, or
 /// the *entire process* will crash. The stack size of the main thread 
 /// is operating system dependent, and stack size of newly spawned threads 
 /// can be set using `std::thread::Builder::stack_size`.
 ///
-/// The `stack!` macro is primarily useful on embedded systems where heap
+/// The `alloca!` macro is primarily useful on embedded systems where heap
 /// allocation is either impossible or too costly, where it can be used
 /// to obtain scratch space for algorithms, e.g. in sorting, traversal,
 /// parsing, etc.
@@ -133,12 +133,10 @@ leads to segfaults at best and undefined behavior at worst (at least until the a
 place). On unices, the stack can usually be extended at runtime, whereas on Windows main thread stack size is set at
 link time (default to 1MB). The `thread::Builder` API has a method to set the stack size for spawned threads, however.
 
-- With this functionality, we lose the ability to statically reason about stack space. Worse, since it can be used to
-reserve space arbitrarily, it can blow past the guard page that operating systems usually employ to secure programs
-against stack overflow. Hilarity ensues. However, it can be argued that static stack reservations (e.g. `let _ = [0u64;
-9999999999];`) already suffices to do this. Perhaps someone should write a
-[clippy](https://github.com/Manishearth/rust-clippy) lint against this. It certainly won't be allowed in MISRA Rust, if
-such a thing ever happens to come into existence.
+- With this functionality, trying to statically reason about stack usage, even in an approximate way, gains a new
+degree of complexity, as maximum stack depth now depends not only on control flow alone, which can sometimes be
+predictable, but also on arbitrary computations. It certainly won't be allowed in MISRA Rust, if such a thing ever
+happens to come into existence.
 
 - Adding this will increase implementation complexity and require support from possible alternative implementations /
 backends (e.g. MIRI, Cretonne, WebASM). However, as all of them have C frontend support, they'll want to implement such
