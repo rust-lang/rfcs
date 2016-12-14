@@ -57,17 +57,17 @@ should arguably check this in release mode, too (which would be feasible without
 probes, which have not been available from LLVM despite being hailed LLVM's preferred solution to stack overflow
 problems), but writing this within Rustc would duplicate work that LLVM is poised to do anyway.
 
-This feature would be available via a builtin macro `stack!(..)` taking any of the following arguments:
+This feature would be available via a builtin macro `alloca!(..)` taking any of the following arguments:
 
-- `stack![x; <num>]` reserves an area large enough for *num* (where num is an expression evaluating to a `usize`) `x`
+- `alloca![x; <num>]` reserves an area large enough for *num* (where num is an expression evaluating to a `usize`) `x`
 instances on the stack, fills it with `x` and returns a slice to it; this requires that `x` be of a `Copy`able type
 
-- `stack![x, y, z, ..]` (analogous to `vec![..]`). This is not actually needed as current arrays do mostly the same
+- `alloca![x, y, z, ..]` (analogous to `vec![..]`). This is not actually needed as current arrays do mostly the same
 thing, but will likely reduce the number of frustrated users
 
-- `stack![for <iter>]` (where iter is an expression that returns an `std::iter::ExactSizeIterator`)
+- `alloca![for <iter>]` (where iter is an expression that returns an `std::iter::ExactSizeIterator`)
 
-- `unsafe { stack![Ty * num] }` reserves an uninitialized area large enough for *num* elements of the given type `Ty`,
+- `unsafe { alloca![Ty * num] }` reserves an uninitialized area large enough for *num* elements of the given type `Ty`,
 giving people seeking performance a cheap dynamically sized scratch space for their algorithms
 
 All variants return a slice to the reserved stack space which will live until the end of the current function (same as
@@ -79,14 +79,18 @@ exertions to put the values in the reserved space, depending on variant) that wi
 in MIR and LLVM IR. The type of the expression will be rigged in HIR to have a lifetime until the function body ends.
 
 Te iterator version will return a shorter slice than reserved if the iterator returns `None` early. SHould the iterator
-panic, the macro will `forget(_)` all values inserted so far and re-raise the panic.
+panic, all values inserted so far will be dropped. This makes it useful for things like file descriptors, where the
+drop implementation carries out additional cleanup tasks.
 
-If the macro is invoked with unsuitable input (e.g. `stack![Ty]`, `stack![]`, etc., it should at least report an error
+If the macro is invoked with unsuitable input (e.g. `alloca![Ty]`, `alloca![]`, etc., it should at least report an error
 outlining the valid modes of operation. If we want to improve the ergonomics, we could try to guess which one the user
 has actually attempted and offer a suggestion to that effect.
 
 Translating the MIR to LLVM bytecode will produce the corresponding `alloca` operation with the given type and number
 expression.
+
+Because LLVM currently lacks the ability to insert stack probes, the safety of this feature cannot be guaranteed. It is
+thus advisable to keep this feature unstable until Rust has a working stack probe implementation.
 
 # How we teach this
 [teaching]: #how-we-teach-this
@@ -95,17 +99,23 @@ The doc comments for the macro should contain text like the following:
 
 
 ```Rust
-/// *** WARNING *** stay away from this feature unless you absolutely need it.
-/// Using it will destroy your ability to statically reason about stack size.
-/// 
-/// Apart from that, this works much like an unboxed array, except the size is
-/// determined at runtime. Since the memory resides on the stack, be careful
-/// not to exceed the stack limit (which depends on your operating system),
-/// otherwise the resulting stack overflow will at best kill your program. You
-/// have been warned.
-/// 
-/// Valid uses for this is mostly within embedded system without heap allocation
-/// to claim some scratch space for algorithms, e.g. in sorting, traversal, etc.
+/// **Warning:** the Rust runtime currently does not reliably check for
+/// stack overflows. Use of this feature, even in safe code, may result in
+/// undefined behavior and exploitable bugs. Until the Rust runtime is fixed,
+/// do not use this feature unless you understand the implications extremely
+/// well.
+///
+/// The `stack!` macro works much like an unboxed array, except the size
+/// is determined at runtime. The allocated memory resides on the thread stack;
+/// when allocating, be careful not to exceed the size of the stack, or
+/// the *entire process* will crash. The stack size of the main thread 
+/// is operating system dependent, and stack size of newly spawned threads 
+/// can be set using `std::thread::Builder::stack_size`.
+///
+/// The `stack!` macro is primarily useful on embedded systems where heap
+/// allocation is either impossible or too costly, where it can be used
+/// to obtain scratch space for algorithms, e.g. in sorting, traversal,
+/// parsing, etc.
 ///
 /// This macro has four modes of operation:
 /// ..
@@ -119,17 +129,20 @@ about it, trumpets will chime, and the world will be a little brighter than befo
 [drawbacks]: #drawbacks
 
 - Even more stack usage means the dreaded stack limit will probably be reached even sooner. Overflowing the stack space
-leads to segfaults at best and undefined behavior at worst. On unices, the stack can usually be extended at runtime,
-whereas on Windows stack size is set at link time (default to 1MB).
+leads to segfaults at best and undefined behavior at worst (at least until the aforementioned stack probes are in
+place). On unices, the stack can usually be extended at runtime, whereas on Windows main thread stack size is set at
+link time (default to 1MB). The `thread::Builder` API has a method to set the stack size for spawned threads, however.
 
 - With this functionality, we lose the ability to statically reason about stack space. Worse, since it can be used to
 reserve space arbitrarily, it can blow past the guard page that operating systems usually employ to secure programs
-against stack overflow. Hilarity ensues. However, it can be argued that static stack reservations (e.g.
-`let _ = [0u64; 9999999999];` already suffices to do this. Perhaps someone should write a lint against this. It
-certainly won't be allowed in MISRA Rust, if such a thing ever happens to come into existence.
+against stack overflow. Hilarity ensues. However, it can be argued that static stack reservations (e.g. `let _ = [0u64;
+9999999999];`) already suffices to do this. Perhaps someone should write a
+[clippy](https://github.com/Manishearth/rust-clippy) lint against this. It certainly won't be allowed in MISRA Rust, if
+such a thing ever happens to come into existence.
 
 - Adding this will increase implementation complexity and require support from possible alternative implementations /
-backends (e.g. Cretonne, WebASM).
+backends (e.g. MIRI, Cretonne, WebASM). However, as all of them have C frontend support, they'll want to implement such
+a feature anyway.
 
 # Alternatives
 [alternatives]: #alternatives
@@ -158,5 +171,7 @@ compiler would become somewhat more complex (though a simple incomplete escape a
 [unresolved]: #unresolved-questions
 
 - Is the feature as defined above ergonomic? Should it be?
+
+- How do we deal with the current lack of stack probes?
 
 - Bikeshedding: Can we find a better name?
