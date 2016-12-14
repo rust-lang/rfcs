@@ -93,7 +93,8 @@ to justify including a lint for it in rustc itself.
 
 The `no_effect` lint itself could also be considered for inclusion into rustc
 and enabled by default. Note however that `no_effect` is larger in scope than
-`eq_statement`, and thus more prone to yield false positives.
+`eq_statement`, so it is more likely to _potentially_ have false positives, though
+none have been found to date.
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
