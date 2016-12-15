@@ -74,6 +74,8 @@ All variants return a slice to the reserved stack space which will live until th
 C's `alloca(..)` builtin). Because this is a compiler-builtin, we can make use of the type of the values in determining
 the type of the expression, so we don't need to restate the type (unless it's not available, as in the unsafe version).
 
+The macro should live in `core::mem` and be reexported from `std::mem` and may be imported in the prelude.
+
 The macro will expand to a newly introduced `DynArray{ ty: Ty, num: Expr }` `rustc::hir::ExprKind` variant (plus some
 exertions to put the values in the reserved space, depending on variant) that will be mapped to an `alloca` operation
 in MIR and LLVM IR. The type of the expression will be rigged in HIR to have a lifetime until the function body ends.
