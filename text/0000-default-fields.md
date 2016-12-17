@@ -18,6 +18,7 @@ struct Foo {
 let foo = Foo {
     a: "Hello",
     c: 42,
+    ..
 };
 ```
 
@@ -64,17 +65,19 @@ struct Foo {
 
 // Overriding a single field default
 let foo = Foo {
-    b: false
+    b: false,
+    ..
 };
 
 // Override multiple field defaults
 let foo = Foo {
     a: "Overriden",
     c: 1,
+    ..
 };
 
 // Override no field defaults
-let foo = Foo {};
+let foo = Foo { .. };
 ```
 
 # Detailed design
@@ -125,6 +128,7 @@ Field defaults are like a shorthand for the 'real' initialiser, where values for
 let foo = Foo {
     a: "Hello",
     c: 42,
+    ..
 };
 ```
 
@@ -141,6 +145,19 @@ let foo = Foo {
 The mechanism isn't exactly a shorthand because the structure can still be initialised using field defaults even if `b` is private. The caller still can't interact with private fields directly so privacy isn't violated.
 
 When a caller doesn't supply a field value during initialisation and there is no default available then the `E0063` missing field error applies.
+
+Field defaults are only considered for missing fields when the caller supplies a `..` at the end of the initialiser. Otherwise the standard `E0063` error applies with additional help when the field has a default value available:
+
+```rust
+let foo = Foo {
+    a: "Hello",
+    c: 42,
+};
+
+// error: missing field `b` in initializer of `Foo`.
+// help: `b` has a default value. Try adding `..` so its default value will be used:
+// `let foo = Foo { a: "Hello", c: 42, .. }`
+```
 
 ## Order of precedence
 
@@ -197,16 +214,18 @@ mod data {
     pub struct Foo {
         pub a: &'static str,
         pub c: i32,
+        _marker: () = ()
     }
 }
 
 let foo = data::Foo {
     a: "Hello",
     c: 42,
+    ..
 }
 ```
 
-We can add a new field `b` to this `struct` with a default value, and the calling code doesn't change:
+Using a private marker field with a default value forces callers to opt-in to field defaults. We can now add a new field `b` to this `struct` with a default value, and the calling code doesn't change:
 
 ```rust
 mod data {
@@ -214,12 +233,14 @@ mod data {
         pub a: &'static str,
         pub b: bool = true,
         pub c: i32,
+        _marker: () = ()
     }
 }
 
 let foo = data::Foo {
     a: "Hello",
     c: 42,
+    ..
 }
 ```
 
@@ -237,6 +258,7 @@ mod data {
 let foo = data::Foo {
     a: "Hello",
     c: 42,
+    ..
 }
 ```
 
@@ -293,13 +315,11 @@ struct Foo {
 
 This has the effect of simplifying the definition, but also requiring readers to manually work out what the type of the right-hand-side is. This could be less of an issue with IDE support.
 
-## Explicit syntax for opting into field defaults
+## Implicit syntax for opting into field defaults
 
-Field defaults could require callers to use an opt-in syntax like `..`. This would make it clearer to callers that additional code could be run on struct initialisation, weakening arguments against more powerful default expressions. However it would prevent field default from being used to maintain backwards compatibility, and reduce overall ergonomics. If it's unclear whether or not a particular caller will use a default field value then its addition can't be treated as a non-breaking change. 
+Invoke field defaults implicitely instead of requiring a `..` in the struct initialiser. This would be more in line with how other languages handle default values, but is less explicit. It would also be different from pattern matching for structures, that require a `..` to ignore unnamed fields.
 
-This could be worked around by adding a private field to a `struct` that does nothing, forcing a caller to opt-in to potential field defaults.
-
-The goal of the design proposed in this RFC is to let users build a struct as if its default fields weren't there.
+A future RFC could propose making the `..` optional for all places it's required when dealing with structures.
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
