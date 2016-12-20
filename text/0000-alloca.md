@@ -144,6 +144,10 @@ happens to come into existence.
 backends (e.g. MIRI, Cretonne, WebASM). However, as all of them have C frontend support, they'll want to implement such
 a feature anyway.
 
+- The special type *and* lifetime couples two different concerns together, which may trip up people trying to follow
+the code. Alternative designs like lifetime ascription and dynamic arrays would keep them apart, leading to a more
+elegant, orthogonal design.
+
 # Alternatives
 [alternatives]: #alternatives
 
@@ -152,7 +156,13 @@ work well enough and have the added benefit of limiting stack usage. Except, no,
 makes you wonder if using a `Vec` wouldn't have been the better option.
 
 - dynamically sized arrays are a potential solution, however, those would need to have a numerical type that is only
-fully known at runtime, requiring complex type system gymnastics.
+fully known at runtime. It would be possible (and indeed not straying too far from this proposal) to allow for the
+syntax `[t; n]` (with two expressions) for dynamically sized arrays. The type of those arrays would be `[T]: !Sized`,
+that is without known size at runtime. Also those types would still be bound by their scope lifetime, unless...
+
+- lifetime ascription is the idea that we use labels as lifetimes (they are denoted the same anyway) and allow them
+also on plain blocks (as in `'foo: { .. }`). This gives us a way to easily extend the lifetime of a value, unify the
+concepts of labels and lifetimes and also be an awesome teaching device. 
 
 - use a function instead of a macro. This would be more complex for essentially no gain.
 
