@@ -88,8 +88,18 @@ let foo = Foo { .. };
 In the definition of a `struct`, a default value expression can be optionally supplied for a field:
 
 ```
-struct_field ::= vis? ident ':' type_path |
-                 vis? ident ':' type_path '=' expr
+struct_field : vis? ident ':' type_path |
+               vis? ident ':' type_path '=' expr
+```
+
+Initialisers can then opt-in to use field defaults for missing fields by adding `..` to the end of the initialiser:
+
+```
+struct_init_fields : struct_field_init ? [ ',' struct_field_init ] *
+
+struct_init : '{' 
+    struct_init_fields [ ".." | ".." expr ] ?
+'}'
 ```
 
 The syntax is modeled after constant expressions. Field defaults for tuple structs are not supported.
@@ -265,6 +275,19 @@ let foo = data::Foo {
 ## Field Privacy
 
 Default values for fields are opted into by the `struct` definition, rather than the caller initialising the structure. Field privacy doesn't need to be violated to initialise a structure.
+
+# How We Teach This
+[how-we-teach-this]: #how-we-teach-this
+
+Field defaults look similar to functional record updates, but solve different problems. New users could be confused by the similarity and be unsure when to use either feature. We can easily distinguish the two for new users:
+
+- If you're in control of the structure definition, you should opt for field defaults.
+- If you're only initialising structures, you should opt for functional record updates.
+
+As for constructors, structure literals and builders, we can recommend the following rule of thumb:
+
+- If your initialiser needs non-constant expressions or various default values can be logically grouped, you should opt for constructor functions.
+- If your initialiser needs non-constant expressions, has many common permutations or is otherwise too complex for structure literals or constructors, then you should opt for builders.
 
 # Drawbacks
 [drawbacks]: #drawbacks
