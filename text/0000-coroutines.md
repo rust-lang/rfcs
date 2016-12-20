@@ -58,8 +58,8 @@ defined as follows:
 ```rust
 #[lang="coresult"]
 enum CoResult<Y,R> {
-    Yield<Y>,
-    Return<R>
+    Yield(Y),
+    Return(R)
 }
 ```
 The two variants of this enum correspond to **yield** and **return** statements.  Callers may use this 
