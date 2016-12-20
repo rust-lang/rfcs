@@ -430,12 +430,12 @@ pub fn copy<R, W>(mut reader: R, mut writer: W) -> impl Future<Item=usize, Error
         let mut total: usize = 0;
         let mut buffer = [0u8; 64 * 1024];
         loop {
-            let read = await_nb!(reader.read(&mut buffer));
+            let read = await_nb!(reader.read(&mut buffer))?;
             if read == 0 { return Ok(total) }
             total += read;
             let mut written = 0;
             while written < read {
-                written += await_nb!(writer.write(&buffer[written..read]));
+                written += await_nb!(writer.write(&buffer[written..read]))?;
             }
         }
     }
@@ -461,9 +461,9 @@ macro_rules! await {
         let mut future = $e;
         loop {
             match future.poll() {
-                Ok(Async::Ready(r)) => break r,
+                Ok(Async::Ready(r)) => break Ok(r),
                 Ok(Async::NotReady) => yield,
-                Err(e) => return Err(e.into()),
+                Err(e) => break Err(e.into()),
             }
         }
     })
@@ -474,9 +474,9 @@ macro_rules! await_nb {
     ($e:expr) => (
         loop {
             match $e {
-                Ok(r) => break r,
+                Ok(r) => break Ok(r),
                 Err(ref e) if e.kind() == ::std::io::ErrorKind::WouldBlock => yield,
-                Err(e) => Err(e.into(),
+                Err(e) => break Err(e.into(),
             }
       )
 }
