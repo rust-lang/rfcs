@@ -152,7 +152,7 @@ let foo = Foo {
 };
 ```
 
-The mechanism isn't exactly a shorthand because the structure can still be initialised using field defaults even if `b` is private. The caller still can't interact with private fields directly so privacy isn't violated.
+The mechanism isn't exactly a shorthand because the `struct` can still be initialised using field defaults even if `b` is private. The caller still can't interact with private fields directly so privacy isn't violated.
 
 When a caller doesn't supply a field value during initialisation and there is no default available then the `E0063` missing field error applies.
 
@@ -274,20 +274,17 @@ let foo = data::Foo {
 
 ## Field Privacy
 
-Default values for fields are opted into by the `struct` definition, rather than the caller initialising the structure. Field privacy doesn't need to be violated to initialise a structure.
+Default values for fields are opted into by the `struct` definition, rather than the caller initialising the `struct`. Field privacy doesn't need to be violated to initialise a `struct`.
 
 # How We Teach This
 [how-we-teach-this]: #how-we-teach-this
 
 Field defaults look similar to functional record updates, but solve different problems. New users could be confused by the similarity and be unsure when to use either feature. We can easily distinguish the two for new users:
 
-- If you're in control of the structure definition, you should opt for field defaults.
-- If you're only initialising structures, you should opt for functional record updates.
+- If you're in control of the `struct` definition, you can use field defaults.
+- If you're only initialising `struct`s that don't have defaults or private fields, you can use functional record updates.
 
-As for constructors, structure literals and builders, we can recommend the following rule of thumb:
-
-- If your initialiser needs non-constant expressions or various default values can be logically grouped, you should opt for constructor functions.
-- If your initialiser needs non-constant expressions, has many common permutations or is otherwise too complex for structure literals or constructors, then you should opt for builders.
+Field defaults are a tool for producers and functional record updates are a tool for consumers.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -340,9 +337,9 @@ This has the effect of simplifying the definition, but also requiring readers to
 
 ## Implicit syntax for opting into field defaults
 
-Invoke field defaults implicitely instead of requiring a `..` in the struct initialiser. This would be more in line with how other languages handle default values, but is less explicit. It would also be different from pattern matching for structures, that require a `..` to ignore unnamed fields.
+Invoke field defaults implicitely instead of requiring a `..` in the initialiser. This would be more in line with how other languages handle default values, but is less explicit. It would also be different from pattern matching for `struct`s, that require a `..` to ignore unnamed fields.
 
-A future RFC could propose making the `..` optional for all places it's required when dealing with structures.
+A future RFC could propose making the `..` optional for all places it's required when dealing with `struct`s.
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
