@@ -116,11 +116,11 @@ Coroutines shall implement the `FnMut` trait:
   track of the current state.
 
 ### Hoisting of locals
-Local variables in coroutine body, whose lifetime straddles any yield point, must be preserved while 
+Local variables and temporaries whose lifetime straddles any yield point must be preserved while 
 the coroutine is suspended, and so they are hoisted into the coroutine environment.
-Note that this only moves their storage location, the lifetimes stay intact.  In the simplest case, 
-each hoisted variable gets its own unique storage space.
-A further optimization would be to overlay storage of variables which are not live simultaneously. 
+Note that this only moves their storage location, the lifetimes stay intact.
+In the simplest case, each hoisted variable gets its own unique storage space.   A further optimization 
+would be to overlay storage of variables which are not live simultaneously. 
 
 ### No borrows across yield points
 Consider this code: 
