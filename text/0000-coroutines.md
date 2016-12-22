@@ -37,7 +37,8 @@ coroutine becomes bounded and may be stored much more compactly than traditional
 
 A popular implementation (which we are also going to follow) is to transform coroutine control flow into an explicit state 
 machine, with state snapshot stored in a structure, whose pointer is passed to the coroutine code each time it is
-resumed (in this respect coroutines are remarkably similar to regular closures with their "closure environments").
+resumed (In this respect coroutines are remarkably similar to regular closures with their "closure environments".  
+In fact, to an outside observer, a coroutine is not distinguishable from a closure that happens to return a `CoResult`).
 
 ### Syntax
 Coroutines use the same syntax as regular closures with an addition of a "yield" expression:
@@ -72,7 +73,7 @@ while let Yield(x) = coro1() {
 ```
 
 Coroutines may also have parameters; in this case the first invocation of the coroutine binds passed-in
-parameters to the declared arguments, here - a1, a2 ans a3.  Parameters passed on subsequent invocations 
+parameters to the declared arguments, here - a1, a2 and a3.  Parameters passed on subsequent invocations 
 are returned as a tuples from **yield** expressions:
 ```rust
 let coro2 = |a1, a2, a3| {
