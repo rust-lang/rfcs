@@ -108,6 +108,12 @@ The types of coroutine signature are subject to normal type inference with a few
 - The tuple of coroutine arguments and the return types of all **yield** expressions must be of the same type `A`. 
   In other words, `typeof (a1,a2,a3)` == `typeof (b1,b2,b3)` == `typeof (c1,c2,c3)`.
 
+### Fn* traits
+Coroutines shall implement the `FnMut` trait:
+- they cannot just implement `FnOnce`, because then the environment would get destroyed after the first yield,
+- they cannot implement `Fn`, because at the very least they need to modify the field which keeps
+  track of the current state.
+
 ### Hoisting of locals
 Local variables in coroutine body, whose lifetime straddles any yield point, must be preserved while 
 the coroutine is suspended, and so they are hoisted into the coroutine environment.
@@ -150,12 +156,6 @@ impl Drop for CoroClosure1234 {
 }
 
 ```
-
-### Fn* traits
-Coroutines shall implement the `FnMut` trait:
-- they cannot just implement `Fn`, because at the very least they need to modify the field which keeps
-  track of the current state,
-- they cannot implement `FnOnce`, because then the environment would get destroyed after the first yield.
 
 ### Translation
 - Most rustc passes stay the same as for regular closures.
