@@ -307,6 +307,8 @@ itself, instead of a 1-tuple wrapping it:
 ```rust
 |a1| {
     let (b1,) = yield x;
+    // or
+    let b1 = (yield x).0;
 }
 ```
 An alternative would be to implicitly bind coroutine arguments to the same names after each yield point:
@@ -315,6 +317,8 @@ An alternative would be to implicitly bind coroutine arguments to the same names
     yield x;  // actually means let (a1,) = yield x; 
 }
 ```
+The drawback of this approach is that if yield is wrapped in a macro, the macro will not be able to make use
+of the passed-in values, as it has no way of knowing the names of the coroutine parameters.
 
 # Unresolved questions
 
@@ -368,6 +372,7 @@ impl<T> [T] {
 
 Similarly, a double-ended iterator can be implemented as follows:
 ```rust
+#[derive(Copy, Clone)]
 enum IterEnd {
     Head,
     Tail
@@ -400,12 +405,12 @@ impl<T> [T] {
             while i < j {
                 match which_end {
                     Tail => {
-                         which_end = yield self[i];
+                         which_end = (yield self[i]).0;
                          i += 1;
                     },
                     Head => {
                         j -= 1;
-                        which_end = yield self[j];
+                        which_end = (yield self[j]).0;
                     }
                 }
             }
