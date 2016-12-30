@@ -55,7 +55,7 @@ impl Executor for () {
     type Blocked = !;
 }
 ```
-Here we give `Blocked` the never type. This means that our executor can only run generators which do return `Blocked` from the `State` enum; since there aren't any instances of `!`. Our executor can only run generators which cannot block. This is why we call `()` the synchronous executor.
+Here we give `Blocked` the never type. This means that our executor can only run generators which don't return `Blocked` from the `State` enum; since there aren't any instances of `!`. Our executor can only run generators which cannot block. This is why we call `()` the synchronous executor.
 
 We can now define a function which runs generators which do not yield and do not block using our executor. Note that generators which cannot block and cannot yield are just regular closures from a caller perspective.
 ```rust
@@ -93,7 +93,7 @@ Let's look at suspend points in detail. Inside a generator, `await`, `await for`
 ```rust
 let object = <f>;
 loop {
-    match <object as Generator<Yield=!>>::resume(executor) {
+    match Generator::<Yield=!>::resume(&mut object, executor) {
         State::Complete(v) => break v,
         State::Blocked(b) => suspend State::Blocked(b),
     }
@@ -106,7 +106,7 @@ Where `executor` is the executor argument passed to `resume`.
 let generator = <g>;
 'await: loop {
     let <v> = loop {
-        match <generator as Generator>::resume(executor) {
+        match Generator::resume(&mut generator, executor) {
             State::Yielded(v) => break v,
             State::Complete(v) => break 'await v,
             State::Blocked(b) => suspend State::Blocked(b),
@@ -399,7 +399,7 @@ fn count_to_10() -> impl Stream<EventLoop, Return=Result<(), CountingError>, Yie
 ```
 We can then implement a function which doubles the output of the above stream, handling errors:
 ```rust
-fn doubling_count_to_10() -> impl Stream<EventLoop, Return=Result<(), CountingError> {
+fn doubling_count_to_10() -> impl Stream<EventLoop, Return=Result<(), CountingError>, Yield=usize> {
     await for i in count_to_10() {
         yield 2*i;
     }?
