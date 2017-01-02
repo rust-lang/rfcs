@@ -8,7 +8,8 @@
 
 Allow crates to declare versioned dependencies on tools they use, such as cargo
 and rustc.  Declare these as dependencies on special crate names such as
-`tool:cargo`, which can appear anywhere a dependency can currently appear.
+`tool:cargo` and `tool:rustc`, which can appear anywhere a dependency can
+currently appear.
 
 # Motivation
 [motivation]: #motivation
@@ -20,8 +21,22 @@ valid values for these environment variables will fail to build on an older
 version of Cargo.  However, such a crate cannot currently declare a dependency
 on the version of Cargo it expects.
 
+In addition, some crates want to remain compatible with older versions of Rust,
+avoiding newer language and library features to preserve that compatibility.
+Declaring minimum versions will make it easier to detect intended
+compatibility, and preserve that compatibility, such as by detecting when a
+crate's dependencies have a newer version requirement than the crate itself, or
+by using the metadata to run test builds with the corresponding versions.
+
+This would also avoid conflating the semantic version of a crate with the
+version of rust that it depends on.  Some crates incorporate changes in minimum
+Rust versions into their semver as either minor-version or major-version bumps;
+tool dependencies would allow expressing such changes via explicitly declared
+dependency versions instead.
+
 To avoid conflicts with any existing crate, this RFC introduces a namespace for
-"tool" crate names, `tool:`, and defines one such build tool, `tool:cargo`.
+"tool" crate names, `tool:`, and defines two such build tools, `tool:cargo` and
+`tool:rustc`.
 
 # Detailed design
 [design]: #detailed-design
@@ -37,13 +52,24 @@ allow a name prefixed by `tool:`, such as `"tool:cargo"`.  For example:
 "tool:cargo" = "^1.8"
 
 [target.'cfg(unix)'.dependencies]
-"tool:cargo" = "^1.42"
+"tool:rustc" = "^1.13"
+
+[features]
+nightly = ["tool:rustc/unstable"]
 ```
 
 Cargo should recognize specific tool names internally, and behave as though the
 corresponding `tool:` crate existed with an associated version.  In particular,
-Cargo should recognize `tool:cargo`, and behave as though that crate existed
-with a version number corresponding to the version of Cargo itself.
+Cargo should behave as though `tool:cargo` exists with a version number equal
+to that of Cargo itself, and behave as though `tool:rustc` exists with a
+version number equal to rustc.
+
+For `tool:rustc`, Cargo should additionally provide a feature `unstable`, if
+building with a compiler that allows unstable features; this allows crates that
+depend on nightly Rust to declare such a requirement, and allows environments
+that require stable Rust (such as Linux distributions) to recognize and avoid
+such dependencies.  Future work may introduce additional feature names for
+`tool:` crates, such as specific Rust feature-gate names.
 
 A `tool:` name does not refer to a crate; Cargo must recognize tool names
 intrinsically.  If Cargo sees a tool dependency that it does not recognize, it
@@ -62,8 +88,8 @@ Cargo could also choose to look for an older version of a crate with compatible
 tool dependencies, rather than failing a build if the latest version of that
 crate requires a newer version of a build tool.
 
-Future definitions of build tools may support defining feature names for build
-tools, analogous to features for crates.
+Future definitions of build tools may support defining other feature names for
+build tools.
 
 Note that versions of Cargo without support for this RFC will still parse such
 a Cargo.toml file, and process it correctly, only failing if the dependencies
@@ -117,11 +143,3 @@ would ignore the new section, rather than treating it as an unknown dependency
 that it doesn't know how to satisfy.  Adding the `tool:` namespace allows a
 build tool dependency to appear anywhere a crate dependency can currently
 appear, and improves backward compatibility with existing versions of Cargo.
-
-# Unresolved questions
-[unresolved]: #unresolved-questions
-
-This RFC intentionally avoids introducing `tool:rustc`, and associated
-versioning and feature names for rustc.  Any such versioning scheme or feature
-names would likely need to take nightly versions into account, to allow crates
-that require nightly rustc feature-gates to express corresponding dependencies.
