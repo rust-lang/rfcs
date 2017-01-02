@@ -80,8 +80,9 @@ packages of build tools.
 [drawbacks]: #drawbacks
 
 Tools that parse Cargo.toml files without using cargo itself could potentially
-expect to resolve build tools such as `tool:cargo` as crates, and fail.  (Tools
-that use the cargo API should continue to work.)
+expect to resolve build tools such as `tool:cargo` as crates, and fail.  Such
+tools would require updates.  (Tools that use the cargo API should continue to
+work.)
 
 # Alternatives
 [alternatives]: #alternatives
