@@ -53,17 +53,14 @@ crate declares the dependency as optional, or if a crate declares it in a
 `[dev-dependencies]` section and the current build does not require satisfying
 dev-dependencies.)
 
-Typically, Cargo will provide only one version of a build tool.  However, a
-future definition of a new build tool could specify different behavior, such as
-building a new version of a build tool before building a crate; such a
-definition would need to consider the case of multiple crates specifying
-incompatible version dependencies on build tools.  This RFC specifies only one
-build tool, `tool:cargo`, and Cargo should only provide one version of that
-build tool, corresponding to its own version number
+Typically, Cargo will provide only one version of a build tool at a time.  A
+future definition of a new build tool could specify different behavior.  Other
+tools may provide mechanisms to take advantage of having multiple versions
+available.
 
-Cargo could also choose to look for an older version of a crate whose build
-tool dependencies it can meet, rather than failing a build if the latest
-version of that crate requires a newer version of a build tool.
+Cargo could also choose to look for an older version of a crate with compatible
+tool dependencies, rather than failing a build if the latest version of that
+crate requires a newer version of a build tool.
 
 Future definitions of build tools may support defining feature names for build
 tools, analogous to features for crates.
