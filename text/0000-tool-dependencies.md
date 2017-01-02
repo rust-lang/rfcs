@@ -88,6 +88,11 @@ Cargo could also choose to look for an older version of a crate with compatible
 tool dependencies, rather than failing a build if the latest version of that
 crate requires a newer version of a build tool.
 
+By default, Cargo should enforce tool dependencies and versions.  However,
+Cargo should provide an option to warn but continue.  This simplifies testing
+with older versions, such as prior to loosening the dependency, or as part of
+detecting whether a crate actually uses any features from the target version.
+
 Future definitions of build tools may support defining other feature names for
 build tools.
 
