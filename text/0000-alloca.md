@@ -6,9 +6,7 @@
 # Summary
 [summary]: #summary
 
-Add a builtin `alloca!(type, number_of_elements)` macro that reserves space for the given number of elements of type
-`T` on the stack and returns a slice over the reserved memory. The memories' lifetime is artifically restricted to the
-current function's scope, so the borrow checker can ensure that the memory is no longer used when the method returns.
+Add variable-length arrays to the language.
 
 # Motivation
 [motivation]: #motivation
@@ -50,46 +48,20 @@ benefits of memory frugality.
 # Detailed design
 [design]: #detailed-design
 
-There are a few constraints we have to keep: First, we want to allow for mostly free usage of the memory, while keeping
-borrows to it limited to the current function's scope – this makes it possible to use it in a loop, increasing its
-usefulness. The macro should include a check in debug mode to ensure the stack limit is not exceeded. Actually, it
-should arguably check this in release mode, too (which would be feasible without giving up performance using stack
-probes, which have not been available from LLVM despite being hailed LLVM's preferred solution to stack overflow
-problems), but writing this within Rustc would duplicate work that LLVM is poised to do anyway.
+So far, the `[T]` type could not be constructed in valid Rust code. It will now represent compile-time unsized (also
+known as "variable-length") arrays. The syntax to construct them could simply be `[t; n]` where `t` is a valid value of
+the type (or `mem::uninitialized`) and `n` is an expression whose result is of type `usize`. Type ascription can be used
+to disambiguate cases where the type could either be `[T]` or `[T; n]` for some value of `n`.
 
-This feature would be available via a builtin macro `alloca!(..)` taking any of the following arguments:
+The AST for the unsized array will be simply `syntax::ast::ItemKind::Repeat(..)`, but removing the assumption that the
+second expression is a constant value. The same applies to `rustc::hir::Expr_::Repeat(..)`.
 
-- `alloca![x; <num>]` reserves an area large enough for *num* (where num is an expression evaluating to a `usize`) `x`
-instances on the stack, fills it with `x` and returns a slice to it; this requires that `x` be of a `Copy`able type
-
-- `alloca![x, y, z, ..]` (analogous to `vec![..]`). This is not actually needed as current arrays do mostly the same
-thing, but will likely reduce the number of frustrated users
-
-- `alloca![for <iter>]` (where iter is an expression that returns an `std::iter::ExactSizeIterator`)
-
-- `unsafe { alloca![Ty * num] }` reserves an uninitialized area large enough for *num* elements of the given type `Ty`,
-giving people seeking performance a cheap dynamically sized scratch space for their algorithms
-
-All variants return a slice to the reserved stack space which will live until the end of the current function (same as
-C's `alloca(..)` builtin). Because this is a compiler-builtin, we can make use of the type of the values in determining
-the type of the expression, so we don't need to restate the type (unless it's not available, as in the unsafe version).
-
-The macro should live in `core::mem` and be reexported from `std::mem` and may be imported in the prelude.
-
-The macro will expand to a newly introduced `DynArray{ ty: Ty, num: Expr }` `rustc::hir::ExprKind` variant (plus some
-exertions to put the values in the reserved space, depending on variant) that will be mapped to an `alloca` operation
-in MIR and LLVM IR. The type of the expression will be rigged in HIR to have a lifetime until the function body ends.
-
-Te iterator version will return a shorter slice than reserved if the iterator returns `None` early. SHould the iterator
-panic, all values inserted so far will be dropped. This makes it useful for things like file descriptors, where the
-drop implementation carries out additional cleanup tasks.
-
-If the macro is invoked with unsuitable input (e.g. `alloca![Ty]`, `alloca![]`, etc., it should at least report an error
-outlining the valid modes of operation. If we want to improve the ergonomics, we could try to guess which one the user
-has actually attempted and offer a suggestion to that effect.
+Type inference should – in the best case – apply the sized type where applicable, only resorting to the unsized type
+where necessary to fulfil the requirements. We could implement traits like `IntoIterator` for unsized arrays, which
+may allow us to improve the ergonomics of arrays in general.
 
 Translating the MIR to LLVM bytecode will produce the corresponding `alloca` operation with the given type and number
-expression.
+expression. It will also require alignment inherent to the type (which is done via a third argument).
 
 Because LLVM currently lacks the ability to insert stack probes, the safety of this feature cannot be guaranteed. It is
 thus advisable to keep this feature unstable until Rust has a working stack probe implementation.
@@ -97,35 +69,12 @@ thus advisable to keep this feature unstable until Rust has a working stack prob
 # How we teach this
 [teaching]: #how-we-teach-this
 
-The doc comments for the macro should contain text like the following:
+We need to extend the book to cover the distinction between sized and unsized arrays and especially the cases where
+type ascription is required. Having good error messages in case of type error around the sizedness of arrays will also
+help people to learn the correct use of the feature.
 
-
-```Rust
-/// **Warning:** the Rust runtime currently does not reliably check for
-/// stack overflows. Use of this feature, even in safe code, may result in
-/// undefined behavior and exploitable bugs. Until the Rust runtime is fixed,
-/// do not use this feature unless you understand the implications extremely
-/// well.
-///
-/// The `alloca!` macro works much like an unboxed array, except the size
-/// is determined at runtime. The allocated memory resides on the thread stack;
-/// when allocating, be careful not to exceed the size of the stack, or
-/// the *entire process* will crash. The stack size of the main thread 
-/// is operating system dependent, and stack size of newly spawned threads 
-/// can be set using `std::thread::Builder::stack_size`.
-///
-/// The `alloca!` macro is primarily useful on embedded systems where heap
-/// allocation is either impossible or too costly, where it can be used
-/// to obtain scratch space for algorithms, e.g. in sorting, traversal,
-/// parsing, etc.
-///
-/// This macro has four modes of operation:
-/// ..
-```
-
-The documentation should be sufficient to explain the use of the feature. Also the book should be extended with
-examples of all modes of operation. Once stabilized, the release log should advertise the new feature. Blogs will rave
-about it, trumpets will chime, and the world will be a little brighter than before.
+WHile stack probes remain unimplemented on some platforms, the documentation for this feature should warn of possible
+dire consequences of stack overflow.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -141,12 +90,8 @@ predictable, but also on arbitrary computations. It certainly won't be allowed i
 happens to come into existence.
 
 - Adding this will increase implementation complexity and require support from possible alternative implementations /
-backends (e.g. MIRI, Cretonne, WebASM). However, as all of them have C frontend support, they'll want to implement such
+backends (e.g. MIRI, Cretonne, WebASM). However, as all of them have C frontend support, they'll need to implement such
 a feature anyway.
-
-- The special type *and* lifetime couples two different concerns together, which may trip up people trying to follow
-the code. Alternative designs like lifetime ascription and dynamic arrays would keep them apart, leading to a more
-elegant, orthogonal design.
 
 # Alternatives
 [alternatives]: #alternatives
@@ -155,20 +100,15 @@ elegant, orthogonal design.
 work well enough and have the added benefit of limiting stack usage. Except, no, they turn into hideous assembly that
 makes you wonder if using a `Vec` wouldn't have been the better option.
 
-- dynamically sized arrays are a potential solution, however, those would need to have a numerical type that is only
-fully known at runtime. It would be possible (and indeed not straying too far from this proposal) to allow for the
-syntax `[t; n]` (with two expressions) for dynamically sized arrays. The type of those arrays would be `[T]: !Sized`,
-that is without known size at runtime. Also those types would still be bound by their scope lifetime, unless...
+- make the result's lifetime function-scope bound (which is what C's `alloca()` does). This is mingling two concerns
+together that should be handled separately. A `'fn` lifetime will be however suggested in a sibling RFC.
 
-- lifetime ascription is the idea that we use labels as lifetimes (they are denoted the same anyway) and allow them
-also on plain blocks (as in `'foo: { .. }`). This gives us a way to easily extend the lifetime of a value, unify the
-concepts of labels and lifetimes and also be an awesome teaching device. 
+- use a special macro or function to initialize the arrays. Both seem like hacks compared to the suggested syntax.
 
-- use a function instead of a macro. This would be more complex for essentially no gain.
+- mark the use of unsized arrays as `unsafe` regardless of values given due to the potential stack overflowing problem.
+The author of this RFC does not deem this necessary if the feature gate is documented with a stern warning.
 
-- mark the use of the macro as `unsafe` regardless of values given due to the potential stack overflowing problem.
-
-- Copy the design from C `fn alloca()`, possibly wrapping it later. This doesn't work in Rust because the returned
+- Copy the design from C `alloca()`, possibly wrapping it later. This doesn't work in Rust because the returned
 slice could leave the scope, giving rise to unsoundness.
 
 - Use escape analysis to determine which allocations could be moved to the stack. This could potentially benefit even
@@ -180,8 +120,5 @@ compiler would become somewhat more complex (though a simple incomplete escape a
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
-- Is the feature as defined above ergonomic? Should it be?
-
-- How do we deal with the current lack of stack probes?
-
-- Bikeshedding: Can we find a better name?
+- does the MIR need to distinguish between arrays of statically-known size and unsized arrays (apart from the type
+information)?
