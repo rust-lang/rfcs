@@ -232,8 +232,7 @@ impl FnMut<(A1, A2, A3)> for CoroClosure1234 {
         }
 
         invalid: {
-            ...
-            std::rt::begin_panic(const "invalid state!")
+            assert(false, "Invalid state!");
         }
     }
 }
