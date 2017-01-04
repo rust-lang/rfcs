@@ -250,6 +250,55 @@ while let Yield(result) = coroutine.call_mut(a1, a2, a3) {
 }
 ```
 
+### Trait implementations
+
+In order to make coroutines immediately useful for creation of iterators, the following blanket 
+implementations shall be added to the standard library.
+The [Motivating Examples](#appendix-motivating-examples) section contains the corresponding user code.
+
+#### Iterator
+
+```rust
+impl<T,F> Iterator for F where F: FnMut()->CoResult<T,()> {
+    type Item = T;
+    fn next(&mut self) -> Option<T> {
+        match self() {
+            Yield(x) => Some(x),
+            Return(..) => None
+        }
+    }
+}
+```
+
+#### DoubleEndedIterator
+
+```rust
+#[derive(Copy, Clone)]
+enum IterEnd {
+    Head,
+    Tail
+}
+
+impl<T,F> Iterator for F where F: FnMut(IterEnd) -> CoResult<T,()> {
+    type Item = T;
+    fn next(&mut self) -> Option<T> {
+        match self(IterEnd::Tail) {
+            Yield(x) => Some(x),
+            Return(..) => None
+        }
+    }
+}
+
+impl<T,F> DoubleEndedIterator for F where F: FnMut(IterEnd)->CoResult<T,()> {
+    fn next_back(&mut self) -> Option<T> {
+        match self(IterEnd::Head) {
+            Yield(x) => Some(x),
+            Return(..) => None
+        }
+    }
+}
+```
+
 # How We Teach This
 
 Coroutines are a pretty well established concept in Computer Science.  This particular brand of coroutines 
@@ -343,21 +392,10 @@ Under these circumstances, borrows could be allowed to live across yield points.
 
 # Appendix: Motivating Examples
 
-### Iterators
+### Collection iterators
 
-With the help of this adapter,
-```rust
-impl<T,F> Iterator for F where F: FnMut()->CoResult<T,()> {
-    type Item = T;
-    fn next(&mut self) -> Option<T> {
-        match self() {
-            Yield(x) => Some(x),
-            Return(..) => None
-        }
-    }
-}
-```
-... we can implement a collection iterator in "procedural" style:
+With the help of the [iterator adapter impl](#iterator) we've seen earlier, we can implement a collection iterator in "procedural" style:
+
 ```rust
 impl<T> [T] {
     ...
@@ -375,32 +413,8 @@ impl<T> [T] {
 ### Double-ended iterators
 
 Similarly, a double-ended iterator can be implemented as follows:
+
 ```rust
-#[derive(Copy, Clone)]
-enum IterEnd {
-    Head,
-    Tail
-}
-
-impl<T,F> Iterator for F where F: FnMut(IterEnd) -> CoResult<T,()> {
-    type Item = T;
-    fn next(&mut self) -> Option<T> {
-        match self(IterEnd::Tail) {
-            Yield(x) => Some(x),
-            Return(..) => None
-        }
-    }
-}
-
-impl<T,F> DoubleEndedIterator for F where F: FnMut(IterEnd)->CoResult<T,()> {
-    fn next_back(&mut self) -> Option<T> {
-        match self(IterEnd::Head) {
-            Yield(x) => Some(x),
-            Return(..) => None
-        }
-    }
-}
-
 impl<T> [T] {
     fn iter(&'a self) -> impl DoubleEndedIterator<T> + 'a {
         |which_end: mut IterEnd| {
@@ -490,6 +504,6 @@ macro_rules! await_nb {
       )
 }
 
-// `await` and `await_nb` can probably be unified using sufficiently advanced abstraction.
+// `await` and `await_nb` can probably be unified using a sufficiently advanced abstraction.
 
 ```
