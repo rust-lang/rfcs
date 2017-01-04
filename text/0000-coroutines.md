@@ -115,6 +115,11 @@ Coroutines shall implement the `FnMut` trait:
 - they cannot implement `Fn`, because at the very least they need to modify the field which keeps
   track of the current state.
 
+That said, the *internal* execution flow of a coroutine runs from entry to return at most once.
+This means that coroutine code may be allowed to perform operations normally reserved for `FnOnce` 
+closures, such as moving out captured objects (if there are no loops that might return execution flow 
+back to the same point, of course).
+
 ### Hoisting of locals
 Local variables and temporaries whose lifetime straddles any yield point must be preserved while 
 the coroutine is suspended, and so they are hoisted into the coroutine environment.
