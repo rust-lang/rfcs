@@ -17,6 +17,8 @@ Crate features are *additive*. If two crates need different features from the sa
 
 This can cause issues when one of these features is *negative*. In particular, a crate may provide a `no_std` feature, which restricts its API so that it works with just the `core` library. But because features can only be enabled, not disabled, any consumer which enables `no_std` here will also enable it for every other user of this crate. Most of the time, this is not what the user wants to do.
 
+While there are other examples of negative features out there, `no_std` is by far the most prominent. This is because without knowing about Cargo's algorithms, it would seem logical to toggle `#![no_std]` support using a feature of the same name.
+
 As of this writing, there are [28 crates] on crates.io (0.4% of 7,426 total) with a feature that contains `no_` as a substring. Out of these, 21 of them have `no_std`. As for the remaining seven:
 
 - `gif` has a `raii_no_panic` feature. When enabled, any I/O errors are ignored when the write buffer is dropped. In the author's opinion, the library should expose an explicit `.flush()` method and avoid panicking altogether. Verdict: **change**.
