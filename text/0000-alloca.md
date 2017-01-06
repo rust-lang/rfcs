@@ -50,15 +50,14 @@ benefits of memory frugality.
 
 So far, the `[T]` type could not be constructed in valid Rust code. It will now represent compile-time unsized (also
 known as "variable-length") arrays. The syntax to construct them could simply be `[t; n]` where `t` is a valid value of
-the type (or `mem::uninitialized`) and `n` is an expression whose result is of type `usize`. Type ascription can be used
+the type (or `mem::uninitialized`) and `n` is an expression whose result is of type `usize`. Type ascription must be used
 to disambiguate cases where the type could either be `[T]` or `[T; n]` for some value of `n`.
 
 The AST for the unsized array will be simply `syntax::ast::ItemKind::Repeat(..)`, but removing the assumption that the
 second expression is a constant value. The same applies to `rustc::hir::Expr_::Repeat(..)`.
 
-Type inference should – in the best case – apply the sized type where applicable, only resorting to the unsized type
-where necessary to fulfil the requirements. We could implement traits like `IntoIterator` for unsized arrays, which
-may allow us to improve the ergonomics of arrays in general.
+Type inference must apply the sized type unless otherwise ascribed. We should implement traits like `IntoIterator` for
+unsized arrays, which may allow us to improve the ergonomics of arrays in general.
 
 Translating the MIR to LLVM bytecode will produce the corresponding `alloca` operation with the given type and number
 expression. It will also require alignment inherent to the type (which is done via a third argument).
@@ -73,7 +72,7 @@ We need to extend the book to cover the distinction between sized and unsized ar
 type ascription is required. Having good error messages in case of type error around the sizedness of arrays will also
 help people to learn the correct use of the feature.
 
-WHile stack probes remain unimplemented on some platforms, the documentation for this feature should warn of possible
+While stack probes remain unimplemented on some platforms, the documentation for this feature should warn of possible
 dire consequences of stack overflow.
 
 # Drawbacks
@@ -107,6 +106,9 @@ together that should be handled separately. A `'fn` lifetime will be however sug
 
 - mark the use of unsized arrays as `unsafe` regardless of values given due to the potential stack overflowing problem.
 The author of this RFC does not deem this necessary if the feature gate is documented with a stern warning.
+
+- allow for some type inference with regards to sizedness. This is likely to lead to surprises when some value ends up
+unsized when a sized one was expected.
 
 - Copy the design from C `alloca()`, possibly wrapping it later. This doesn't work in Rust because the returned
 slice could leave the scope, giving rise to unsoundness.
