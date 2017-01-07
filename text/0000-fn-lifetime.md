@@ -53,8 +53,6 @@ The change incurs a considerable implementation cost, although a more complete "
   fn somewhat_awkward<'a, T>(Foo<'a>) -> Box<T> + 'a 'wha { .. }
   ```
 
-What other designs have been considered? What is the impact of not doing this?
-
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
@@ -66,5 +64,3 @@ What other designs have been considered? What is the impact of not doing this?
   A downside is `continue 'a` will still only make sense when `'a` is bound to a loop, and `break 'a` won't make sense when `'a` is a lifetime parameter.
   That means users will need to understand their are three tiers of lifetimes: loop, block (including `'fn`), and, parameter, where each is less usable than the last.
   Today loop lables and lifetimes are disjoint in that neither can be used where the other is expected, though they do share the same syntax.
-
-What parts of the design are still TBD?
