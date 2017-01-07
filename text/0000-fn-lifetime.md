@@ -30,7 +30,26 @@ fn foo() {
 # Detailed design
 [design]: #detailed-design
 
-The compiler is extended to recognise the `'fn` lifetime, and bind the region of the resulting type to the scope of the body of the current item or closure.
+There are three steps
+
+1. Bind `'fn` in every closure or function body, representing the lifetime of the body.
+   This is equivalent to adding an additional `'fn` lifetime parameter to every function that cannot be used in the function's type (argument declaration or where clause), nor manually instantiated by a caller.
+   Closure literals currently do not allow explicit parameters, but the desugaring would be the same if they did.
+   Note that the `'fn` lifetimes will shadow each other, whereas we don't currently allow lifetime shadowing.
+
+2. Allow items inside functions to use lifetimes, including `'fn`, bound by the enclosing functions.
+   Unclear how this interfacts with current well-formedness rules.
+
+3. Change axioms of borrowing so it is fine if the lifetime is already entered, as long as the borrow does not outlive it *from* the point of borrowing *after*. For example:
+   ```rust
+   fn foo<'a>() {
+       /* do stuff */
+       let a = 0;
+       let b: &'a i32 = &a;
+   }
+   ```
+   This is currently prohibited because the function body is entered before a is initialized (and thus able to be borrowed).
+   Under the new rules, this would be allowed because `a` is uninitialized when the function happens, and the "past" before the borrow begins can be ignored.
 
 # Drawbacks
 [drawbacks]: #drawbacks
