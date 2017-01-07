@@ -286,6 +286,8 @@ Field defaults look similar to functional record updates, but solve different pr
 
 Field defaults are a tool for producers and functional record updates are a tool for consumers.
 
+We should document field defaults in the Rust Reference sections 6.1.5 "Structs" and 7.2.4 "Struct expressions", with a one-sentence mention in 6.1.6 "Enumerations" that struct-like enum variants can have default fields just like structs.
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
