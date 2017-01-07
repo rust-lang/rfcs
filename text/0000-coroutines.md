@@ -174,12 +174,12 @@ impl Drop for CoroClosure1234 {
     - A "master switch" is added at the top of the function to transfer control to the correct location 
       according to the current state.
     - **yield** expressions are translated as 
-        ```rust
+        ```
         self.state = <N>; 
         return Yield(expr);
         ```
     - **return** statements and the tail expression are translated as 
-        ```rust
+        ```
         self.state = -1; 
         return Return(<expr>);
         ```
@@ -345,9 +345,9 @@ An example of such approach is [Stateful](https://github.com/erickt/stateful)
 ([blog post](http://erickt.github.io/blog/2016/01/27/stateful-in-progress-generators/)).  
 The difficulty here is in computing liveless and types of local variables.  The former is needed to decide 
 which variables need to be hoisted, the latter - to declare their types in the "State" enum.
-It seems that an implementation would either need to replicate may Rust compiler passes (name resolution,
+It seems that an implementation would either need to replicate many of Rust compiler passes (name resolution,
 type inference, possibly borrow checking), or find some clever way to leverage the compiler to compute this 
-information.  In the end, it is probably much easier to implement such transformation as a MIR transform, 
+information.  In the end, it is probably much easier to implement such transformation as a MIR pass, 
 which is what this RFC is about.
 
 ## Alternatives designs
