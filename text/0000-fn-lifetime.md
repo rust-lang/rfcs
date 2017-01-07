@@ -17,14 +17,16 @@ containing scope, allowing us to "allocate" recursive data structures (e.g.
 linked lists) on the stack, as in:
 
 ```rust
-struct Node<T> {
-    data: T,
-    next: Option<&'fn Node>,
-}
+fn foo() {
+    struct Node<T> {
+        data: T,
+        next: Option<&'fn Node>,
+    }
 
-let mut head : Node = Node { data: 0, None };
-for i in iter {
-    head = Node { data: i, Some(head) }
+    let mut head : Node = Node { data: 0, &None };
+    for i in iter {
+        head = Node { data: i, Some(head) }
+    }
 }
 ```
 
