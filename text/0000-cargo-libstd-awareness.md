@@ -19,7 +19,7 @@ Multiple flags exist to instruct rustc on how to find these crates.
 `--extern <name>=<path>` tells rustc to find the crate with the given name at the given path.
 This has the highest priority, overriding locations specified or inferred via other means.
 `-L <kind>=<dir>` has the second highest priority, telling rustc to look for matching crates in the given directory.
-The `<kind>=` part is optionally, but one variant that is crucial for Cargo's purposes is `-L dependency=<dir>`.
+The `<kind>=` part is optional, but one variant that is crucial for Cargo's purposes is `-L dependency=<dir>`.
 The `dependeny=` part tells rustc to only look in the directory when resolving transitives deps ("deps of deps"), as opposed to `extern crate`s in the current crate.
 As a last resort, rustc will look within the sysroot (specifically `<sysroot>/lib/rustlib/<target-triple>/lib`). The sysroot is a hard-coded location relative to rustc, but can also be overridden with `--sysroot=<path>`.
 
@@ -132,9 +132,9 @@ To implement this, Cargo will gain knowledge of of a new source, the "compiler s
 The compiler source, if it is present, will be located in the sysroot in `<sysroot>/lib/rustlib/src`.
 The exact format this takes will be determined during implementation and added back to this RFC before stabilization, but that of a "local registry" is likely, now that
 https://github.com/rust-lang/cargo/pull/2857 has landed.
-Compilers should include the source of each crate of their implementation of the standard library in side.
+Compilers should include the source of each crate of their implementation of the standard library inside their compiler source.
 
-It is presumed that, Rustup may be able to put it there if the default download does not contain it already.
+It is presumed that Rustup may be able to put it there if the default download does not contain it already.
 
 ## Cargo Pipeline
 
@@ -248,6 +248,8 @@ This will allow official crates to use explicit deps without breaking the old ve
  - The name "compiler source" is unfortunate because it sounds like the source of the compiler itself.
    But perhaps the best solution is to rename Cargo's "source" abstraction (and the traits that go with it).
 
+ - This has been deemed sufficiently complicated to warrant the introduction of unstable features to Cargo.
+
 
 # Alternatives
 
@@ -258,8 +260,6 @@ This will allow official crates to use explicit deps without breaking the old ve
    This emphasizes how those dependencies are resolved as opposed to what they are for.
 
  - If a way to specify the language version like #1709 or #1707 is added, the version of stdlib dependencies could be pulled from that.
-
- - This has been deemed sufficiently complicated to warrant the introduction of unstable features to Cargo.
 
 
 # Unresolved questions
