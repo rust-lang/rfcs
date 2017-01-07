@@ -388,7 +388,8 @@ In other words, the coroutine closure would satisfy this bound:
 ```rust
 F: FnMut(...)->CoResult<&'a T + 'a, ...>
 ```
-Under these circumstances, borrows could be allowed to live across yield points.
+~~Under these circumstances, borrows could be allowed to live across yield points.~~  
+Edit: On second thought, this is incorrect: once caller drops the yielded value, the coroutine would become movable.
 
 # Appendix: Motivating Examples
 
