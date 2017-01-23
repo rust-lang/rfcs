@@ -81,9 +81,9 @@ feeling like the same welcoming Rust experience they would get on IRC.
 *3) Related: it creates confusion which channel is the official channel for meetings and the place to engage
 with core developers.*
 
-If necessary, this RFC can be revised to include recommendation, though currently subteams pick
-their own communication channels.  Officially setting subteam meeting channels would probably be
-better as a separate RFC.
+If necessary, this RFC can be revised to include such a recommendation, though currently subteams pick
+their own communication channels.  If we wish to officially set the subteam meeting channels, 
+that may be better left to a separate RFC.
 
 *4) There is some concern specifically about Slack and its role in open source, as it is a closed
 platform.*
