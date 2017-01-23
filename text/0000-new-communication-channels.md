@@ -78,7 +78,14 @@ This is in part why I suggest we make these official channels and encourage the 
 them. The best way for them to not feel second tier is to keep the quality high and keep the channel
 feeling like the same welcoming Rust experience they would get on IRC.
 
-*3) There is some concern specifically about Slack and its role in open source, as it is a closed
+*3) Related: it creates confusion which channel is the official channel for meetings and the place to engage
+with core developers.*
+
+If necessary, this RFC can be revised to include recommendation, though currently subteams pick
+their own communication channels.  Officially setting subteam meeting channels would probably be
+better as a separate RFC.
+
+*4) There is some concern specifically about Slack and its role in open source, as it is a closed
 platform.*
 
 Since the RFC recommends continuing to use IRC, advocates of IRC can continue to use it. Rather,
@@ -87,18 +94,11 @@ number of closed-source solutions (eg GitHub, twitter, cloud infra, etc), and we
 seek out alternatives if the closed-source solution begins to hinder the community and Rust's
 growth.
 
-*4) These new channels increase the moderation burden and may require the moderation team to grow to
+*5) These new channels increase the moderation burden and may require the moderation team to grow to
 accomodate.*
 
 The moderation team has previously mentioned they would be willing to grow to accomodate, but it's
 worth noting here as well.
-
-*5) It creates confusion which channel is the official channel for meetings and the place to engage
-with core developers.*
-
-If necessary, this RFC can be revised to include recommendation, though currently subteams pick
-their own communication channels.  Officially setting subteam meeting channels would probably be
-better as a separate RFC.
 
 # Alternatives
 [alternatives]: #alternatives
