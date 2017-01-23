@@ -60,8 +60,8 @@ Prior to this RFC, there have been
 [on-going discussions](https://users.rust-lang.org/t/a-possible-rust-slack-channel/7433) about
 standing up new communication channels. To summarize the drawbacks:
 
-* This creates a fork in the community where part of the community will use one communication
-channel rather than another, which risks splintering us.
+*This creates a fork in the community where part of the community will use one communication
+channel rather than another, which risks splintering us.*
 
 This is a risk, though it assumes that the community won't expand its scope to accomodate. Some of
 us will likely just add a few more browser tabs for the new channels so that as a whole switching
