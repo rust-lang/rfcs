@@ -60,15 +60,15 @@ Prior to this RFC, there have been
 [on-going discussions](https://users.rust-lang.org/t/a-possible-rust-slack-channel/7433) about
 standing up new communication channels. To summarize the drawbacks:
 
-*This creates a fork in the community where part of the community will use one communication
+*1) This creates a fork in the community where part of the community will use one communication
 channel rather than another, which risks splintering us.*
 
 This is a risk, though it assumes that the community won't expand its scope to accomodate. Some of
 us will likely just add a few more browser tabs for the new channels so that as a whole switching
 between then becomes largely a non-issue over time.
 
-* This may create an "us vs them" where all the "good stuff" happens on one of the other
-communication channels.
+*2) This may create an "us vs them" where all the "good stuff" happens on one of the other
+communication channels.*
 
 Some of this is natural and avoidable. Already there is plenty of good Rust work going on that is
 in other languages, other locales, and even just other times of day than what any one person can
@@ -78,8 +78,8 @@ This is in part why I suggest we make these official channels and encourage the 
 them. The best way for them to not feel second tier is to keep the quality high and keep the channel
 feeling like the same welcoming Rust experience they would get on IRC.
 
-* There is some concern specifically about Slack and its role in open source, as it is a closed
-platform.
+*3) There is some concern specifically about Slack and its role in open source, as it is a closed
+platform.*
 
 Since the RFC recommends continuing to use IRC, advocates of IRC can continue to use it. Rather,
 this RFC attempts to expand to welcome Slack users in addition to IRC users. Rust is supported by a
@@ -87,14 +87,14 @@ number of closed-source solutions (eg GitHub, twitter, cloud infra, etc), and we
 seek out alternatives if the closed-source solution begins to hinder the community and Rust's
 growth.
 
-* These new channels increase the moderation burden and may require the moderation team to grow to
-accomodate.
+*4) These new channels increase the moderation burden and may require the moderation team to grow to
+accomodate.*
 
 The moderation team has previously mentioned they would be willing to grow to accomodate, but it's
 worth noting here as well.
 
-* It creates confusion which channel is the official channel for meetings and the place to engage
-with core developers.
+*5) It creates confusion which channel is the official channel for meetings and the place to engage
+with core developers.*
 
 If necessary, this RFC can be revised to include recommendation, though currently subteams pick
 their own communication channels.  Officially setting subteam meeting channels would probably be
