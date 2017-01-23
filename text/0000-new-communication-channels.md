@@ -1,5 +1,5 @@
 - Feature Name: new_communication_channels
-- Start Date: 2016-12-08
+- Start Date: 2017-01-23
 - RFC PR: (leave this empty)
 - Rust Issue: (leave this empty)
 
@@ -14,10 +14,13 @@ focus on IRC. This RFC proposes creating additional official Rust communication 
 # Motivation
 [motivation]: #motivation
 
-The motivation is fairly simple: some people just don't like IRC. By requiring people to use IRC,
-we're creating an boundary between the Rust community and potential contributors. Since all subteam
-meetings are on IRC, this also prevents these potential contributors from being part of the on-going
-conversations in these channels.
+The motivation is fairly simple: IRC is struggles in terms of usability, and to some, this is a
+barrier for entry.  More recent chat platforms like gitter and Slack have filled in the usability
+gap, and are now preferred over IRC.
+
+At the same time, core developers spend a fair amount of time discussing issues on IRC, so it's an
+essential place to participate if you want to be deeply involved in the project. By requiring people
+to use IRC, we're creating an boundary between the Rust community and potential contributors.
 
 If our goal is to create a warm, welcoming community, then part of that work means working with
 technologies that are more familiar and comfortable to this potential community.
@@ -27,6 +30,14 @@ technologies that are more familiar and comfortable to this potential community.
 
 This RFC proposes that we create two new Rust communication channels: an official Slack channel and
 we make the [unofficial gitter channel](https://gitter.im/rust-lang/rust) official.
+
+Slack has been a request from some new users because they're more used to it, as it's grown
+in popularity with many software companies. This allows them to more seamlessly transition their
+habits to contributing to Rust.
+
+Gitter has grown to over 1200 registered people, the same size as the official #rust channel,
+all without any official Rust promotion.  This seems to point to a potential for Rust to be able to
+reach out to users who prefer alternatives to IRC.
 
 These two new channels would cater to helping new Rust users as well as offer a point contact for
 advanced Rust contributors to interact with each other. This will happen through the use of rooms.
@@ -40,6 +51,7 @@ equivalent of #rust-beginners as well.
 
 The goal is to create helpful landing pads for people comfortable with gitter and Slack, and a place
 for people to grow into Rust contributors and still use their communication channel of choice.
+
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -88,6 +100,13 @@ how will the sense of equality we want to reach be fostered?
 There has also been discussion about possibly not only creating the new channels but in a sense
 unifying them using bots that can bridge between them. Unfortuantely, the current state of these
 bots seems to not be at the level of quality to give a good user experience.
+
+Lastly, this RFC proposes creating new official communication channels, but it does not address
+where the subteams meet.  A variant of this proposal could suggest that, for example, Slack be where
+the subteams meet.  The difficulty here is that there is no consensus around the best communication
+channel for subteam meetings.  As there are likely a number of possibilities here (eg alternating
+in the same way you might alternate meeting times to accomodate different timezones), I propose we
+leave this topic to be explored in follow-up proposals.
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
