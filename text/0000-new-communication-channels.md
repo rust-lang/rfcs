@@ -90,6 +90,16 @@ growth.
 * These new channels increase the moderation burden and may require the moderation team to grow to
 accomodate.
 
+The moderation team has previously mentioned they would be willing to grow to accomodate, but it's
+worth noting here as well.
+
+* It creates confusion which channel is the official channel for meetings and the place to engage
+with core developers.
+
+If necessary, this RFC can be revised to include recommendation, though currently subteams pick
+their own communication channels.  Officially setting subteam meeting channels would probably be
+better as a separate RFC.
+
 # Alternatives
 [alternatives]: #alternatives
 
@@ -97,16 +107,9 @@ One alternative is to use unofficial, rather than official, channels. The drawba
 is that if we don't promote them how will the users they're intended to reach out to find them and
 how will the sense of equality we want to reach be fostered?
 
-There has also been discussion about possibly not only creating the new channels but in a sense
-unifying them using bots that can bridge between them. Unfortuantely, the current state of these
-bots seems to not be at the level of quality to give a good user experience.
-
-Lastly, this RFC proposes creating new official communication channels, but it does not address
-where the subteams meet.  A variant of this proposal could suggest that, for example, Slack be where
-the subteams meet.  The difficulty here is that there is no consensus around the best communication
-channel for subteam meetings.  As there are likely a number of possibilities here (eg alternating
-in the same way you might alternate meeting times to accomodate different timezones), I propose we
-leave this topic to be explored in follow-up proposals.
+There has also been discussion about possibly not only creating the new channels but also unifying
+them using bots that can bridge between them. Unfortuantely, the current state of these bots seems
+to not be at the level of quality to give a good user experience.
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
