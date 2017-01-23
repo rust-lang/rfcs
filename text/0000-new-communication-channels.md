@@ -114,3 +114,8 @@ to not be at the level of quality to give a good user experience.
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
+Some of the points in the drawbacks section may need to be addressed before we can even implement
+this idea.  Namely:
+
+* Can moderation adapt to these new channels?
+* Can we ensure high-quality help to beginners on these new channels?
