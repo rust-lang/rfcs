@@ -542,7 +542,7 @@ that the data is valid.
 Note however, this position means that this is safe:
 
 ```rust
-let b = unsafe { mem::transmute(42u8) };
+let b: bool = unsafe { mem::transmute(42u8) };
 match b {
     c => ...
 }
@@ -552,7 +552,7 @@ This is only a 0-deep match, it does not (necessarily) read the `bool`. This is
 also safe:
 
 ```rust
-let b = unsafe { mem::transmute(42u8) };
+let b: bool = unsafe { mem::transmute(42u8) };
 match (b,) {
     (c,) => ...
 }
@@ -766,7 +766,7 @@ Secondly, even though the {0, 1, 2}-deep matches on `&&!` (as shown a page up)
 are safe and valid, they will still raise unreachable pattern warnings. This is
 because the lint *does* assume that the entire value we're matching on is
 deeply-valid, even the sub-data that we're not applying a sub-pattern to. But
-obeying the line (by deleteing the unreachable arm) may change the semantics of
+obeying the lint (by deleteing the unreachable arm) may change the semantics of
 the code.  I don't think this is a big issue. The only time you'll encounter it
 is if you're working explicitly with a type like `!`/`Void` and not with some
 type parameter `T` where `T = !`. If a user is explicitly handling a `!`, which
