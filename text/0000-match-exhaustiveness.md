@@ -436,7 +436,7 @@ into other types. Alternatively we could also write it like this:
 ```rust
 let t = match never_fails() {
     Ok(t) => t,
-    Err(e) => match {},
+    Err(e) => match e {},
 }
 ```
 
