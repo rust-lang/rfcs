@@ -6,51 +6,24 @@
 # Summary
 [summary]: #summary
 
-Adds a new `kind=better_static` (name entirely open to bikeshedding) that is used to link static libraries by passing them to the linker, unlike `kind=dylib` which is intended for dynamic libraries and `kind=static` which has rustc bundle it instead of passing it to the linker. Also adds a new `kind=object` (or `kind=obj` if you want) that is used to link object files.
+
+Adds a new `kind=object` (alternatively `kind=obj`) that is used to link object files.
 
 # Motivation
 [motivation]: #motivation
 
-Rust currently does not expose the options necessary to have a static library properly linked by the linker. `kind=dylib` doesn't work because it informs Rust that the library is a dynamic library resulting in issues such as passing the library on to later linker invocations beyond the first immediate linker invocation resulting in symbol duplication, and on Windows it would cause dllimport to be emitted for all the symbols which is incorrect for static libraries. `kind=static` doesn't work because it causes rustc to bundle the library into the `*.rlib` instead of passing it along to the linker, which results in rustc looking for the library at compile time instead of leaving the job to the linker, which can result in the library not being found.
+Rust currently does not let you link to an object file directly. You may argue "Oh, can't you just shove the object file into a static library and link to that?". Sometimes the answer to that question is no, you can not. For example, when linking to resource files on Windows you can compile a `.rc` file into a `.res` and link to that, or further into a `.obj` and link to that. However if you create a `.lib` from the `.obj` then attempting to link to it will fail. As a result there needs to be a way to link to the object file directly.
 
-By adding `kind=better_static` Rust will be able to support passing a static library directly to the linker, thus allowing the library to be found in standard linker search paths, but at the same time still treating it as a static library, thus ensuring `dllimport` and `dllexport` are applied correctly.
-
-Rust is also currently incapable of linking object files directly, so adding `kind=object` which expose the ability to do that as well. It would behave similarly to `kind=better_static` where it is passed along to the first linker invocation so it can take care of it.
-
-## Related issues and discussions
-
-* https://github.com/rust-lang/rust/issues/27438
-* https://internals.rust-lang.org/t/meaning-of-link-kinds/2686
-* https://github.com/rust-lang/rfcs/pull/1296
-* https://github.com/rust-lang/rust/issues/31419
+Another use case for object files is that they have higher priority than libraries. By linking an object file you can override symbols from other external libraries without having to worry about order. At least, this is the case for MSVC, I haven't tested other linkers.
 
 # Detailed design
 [design]: #detailed-design
 
-`kind=better_static` can be applied the same way as any of the other `kind`s, whether via flags passed to cargo via build scripts or `#[link]` attributes.
-
-The behavior is that when a library is given such a `kind`, `rustc` will __not__ look for that library itself (unlike `kind=static`). Instead it will trust that it exists and pass it to the first immediate linker invocation (but not to later downstream linker invocations unlike `kind=dynamic`).
+`kind=object` can be applied the same way as any of the other `kind`s, whether via flags passed to cargo via build scripts, flags passed to rustc via the command line, or `#[link]` attributes. Object files will be passed to the linker the same way that `kind=static-nobundle` passes libraries to the linker, which is to pass it to the first immediate linker invocation and **not** bundle it into the rlib.
 
 ## dllimport and dllexport
 
-When external code is linked into a Rust dynamic library `crate_type=dylib` via `kind=better_static` or `kind=object`, the Rust dynamic library must `dllexport` any symbols from the external code which are reachable (aka any public extern symbols as well as anything which can be referenced even transitively from a reachable inlinable/monomorphizable function).
-
-When referencing the symbols within the same binary, `dllimport` will __not__ be applied to those symbols. Once it goes past a dynamic library boundary then `dllimport` will be applied.
-
-## Example
-
-Given these files:
-
-* `foo.lib` is an external library. Can also be an external object file as `foo.obj`.
-* `a.rlib` is a Rust rlib that depends on the native library `foo.lib`.
-* `b.dll` is a Rust dylib that depends on `a.rlib`.
-* `c.exe` is a Rust executable that depends on `b.dll`.
-
-Here are some scenarios:
-
-* If I specify `kind=static` `foo.lib` is bundled into `a.rlib` by `rustc` and __not__ passed to the linker invocations for `b.dll` and `c.exe`. `a.rlib` and `b.dll` do __not__ use `dllimport` for symbols they reference from `foo.lib`. `b.dll` will `dllexport` any symbols from `foo.lib` that are reachable and `c.exe` will `dllimport` any symbols from `foo.lib` that it uses.
-* If I specify `kind=dylib` `foo.lib` is passed to the linker invocations for `b.dll` and `c.exe`. `a.rlib` `b.dll` and `c.exe` will all use `dllimport` when referencing symbols from `foo.lib` and `b.dll` will __not__ `dllexport` any of the symbols from `foo.lib`.
-* If I specify `kind=better_static` `foo.lib` is passed to the linker invocation for `b.dll` but __not__ `c.exe`. `a.rlib` and `b.dll` do __not__ use `dllimport` for symbols they reference from `foo.lib`. `b.dll` will `dllexport` any symbols from `foo.lib` that are reachable and `c.exe` will `dllimport` any symbols from `foo.lib` that it uses.
+Symbols from an object file are assumed to be static symbols, so `dllimport` will *not* be applied. The behavior should match `kind=static-nobundle`.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -60,10 +33,10 @@ Here are some scenarios:
 # Alternatives
 [alternatives]: #alternatives
 
-* Don't do this and make me very sad.
-* Change the behavior of `kind=static`. Remove the bundling aspect and simply make it provide the knowledge to rustc that the symbols are static instead of dynamic. Since Cargo ensures the non-Rust static library will hang around until link time anyway, this would not really break anything for most people. Only a few people would be broken by this and it would be fairly easy to fix. Has the advantage of not adding another `kind`.
+* A current workaround exists where the object file is renamed to have a `.lib` extension and then passed via `kind=dylib`. The linker is smart enough to not trust the extension and so links successfully (tested with both MinGW and MSVC).
+* Add support directly for resource files where rustc invokes the necessary tools to compile the resource file and links it itself. Doesn't cover the use case of linking to object files to override symbols from libraries though.
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
-* The name of the `kind`s. Please bikeshed vigorously.
+* The name of the `kind`. Please bikeshed vigorously.
