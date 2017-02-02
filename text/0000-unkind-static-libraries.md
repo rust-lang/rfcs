@@ -22,9 +22,13 @@ Resource files are a necessary thing for any serious application on Windows. The
 * MSVC: `rc foo.rc` which will create a `foo.res`.
 * MinGW: `windres -i foo.rc -o foo.res` will create a `foo.res`.
 
-The path to the compiled `foo.res` will then be saved so that when rustc does finally invoke the linker, it will pass that `foo.res` to the linker. With MSVC it can choose to either specify `/LIBPATH` and separately just the name `foo.res` or it can pass the full path to `foo.res`. With MinGW it has to specify the full path to `foo.res` because `ld` is picky like that.
+The compiled `foo.res` will then be saved somehow so that when rustc does finally invoke the linker, it will pass that `foo.res` to the linker.
 
 In the future it may be possible to have rustc use a library to compile resource files, eliminating the need for external tools. I know at least one person was working on such a library in Rust.
+
+Due to resource files depending on other files around them like icons and manifests, the resource file has to be compiled on the spot, it cannot be stored to be later compiled.
+
+Due to compiled resource files not working when they are passed to the linker when inside a library, they will have to be separate files that are passed to the linker separately.
 
 ## dllimport and dllexport
 
@@ -44,5 +48,7 @@ Symbols from a resource file are assumed to be static symbols so `dllimport` wil
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
+* Do we just save the path to the compiled `.res` or do we actually store it inside the `.rlib` and then later extract it and pass it to the linker?
 * The name of the `kind`. Please bikeshed vigorously.
+* Does it make sense to be able to have an extern block for a resource file with symbols inside of it? If not, is `#[link]` even the right thing, or is there a better syntax we could use?
 * There are a variety of flags that can be passed to `rc.exe`, most of which I can't find an equivalent to in `windres`. Are any of these flags necessary? Would we need to provide a way to specify these flags?
