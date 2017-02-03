@@ -1,4 +1,4 @@
-- Feature Name: pipe_in_sub_expressions.
+- Feature Name: pipe_in_patterns.
 - Start Date: 2017-02-03
 - RFC PR: (leave this empty)
 - Rust Issue: (leave this empty)
