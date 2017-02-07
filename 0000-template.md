@@ -66,6 +66,9 @@ calls without exhausting any resources.
 ## Implementation
 [implementation]: #implementation
 
+A current, mostly-functioning implementation can be found at
+[DemiMarie/rust](/DemiMarie/rust).
+
 The parser parses `become` exactly how it parses the `return` keyword.  The
 difference in semantics is handled later.
 
