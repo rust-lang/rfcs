@@ -80,7 +80,7 @@ During type checking, the following are checked:
 Later phases in the compiler assert that these requirements are met.
 
 New nodes are added in HIR and HAIR to correspond to `become`.  In MIR, however,
-a new flag is added to the `TerminatorKind::Call` varient.  This flag is only
+a new flag is added to the `TerminatorKind::Call` variant.  This flag is only
 allowed to be set if all of the following are true:
 
 1. The destination is `RETURN_POINTER`.
