@@ -1,4 +1,4 @@
-- Feature Name: (fill me in with a unique ident, my_awesome_feature)
+- Feature Name: proper_tail_calls
 - Start Date: (fill me in with today's date, YYYY-MM-DD)
 - RFC PR: (leave this empty)
 - Rust Issue: (leave this empty)
@@ -67,7 +67,7 @@ calls without exhausting any resources.
 [implementation]: #implementation
 
 A current, mostly-functioning implementation can be found at
-[DemiMarie/rust](/DemiMarie/rust).
+[DemiMarie/rust/tree/explicit-tailcalls](/DemiMarie/rust/tree/explicit-tailcalls).
 
 The parser parses `become` exactly how it parses the `return` keyword.  The
 difference in semantics is handled later.
