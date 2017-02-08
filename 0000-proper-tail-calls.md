@@ -165,3 +165,8 @@ continue to do so if this RFC is not accepted.
 Is there a way to emulate proper tail calls when compiling to targets that don't
 support them?  Is it possible to eliminate the overhead imposed on every
 non-tail call?
+
+# License of this RFC
+[license]: #license
+
+This RFC is licensed under the same terms as Rust itself.
