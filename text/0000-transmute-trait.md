@@ -51,8 +51,7 @@ unsafe extern "rust-intrinsic" fn transmute<T, U>(e: T) -> U
 # How We Teach This
 [how-we-teach-this]: #how-we-teach-this
 
-As this is just encoding the transmutability rules into a trait, we should
-teach this trait whereever we currently teach transmute.
+We should teach about this trait whereever we currently teach about transmute.
 
 # Drawbacks
 [drawbacks]: #drawbacks
