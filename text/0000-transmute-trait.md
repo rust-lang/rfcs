@@ -41,6 +41,13 @@ This trait is automatically implemented for types which can be transmuted to
 match in size and that the output type may not be visibly uninhabited unless
 the input type is aswell.
 
+Change the type of `mem::transmute` to:
+
+```rust
+unsafe extern "rust-intrinsic" fn transmute<T, U>(e: T) -> U
+    where T: Transmute<U>
+```
+
 # How We Teach This
 [how-we-teach-this]: #how-we-teach-this
 
