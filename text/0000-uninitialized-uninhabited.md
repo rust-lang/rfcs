@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-Deprecate the usage of `mem::uninitialized` with possibly-uninhabited types.
+Deprecate the usage of `mem::uninitialized::<T>` for possibly-uninhabited `T`.
 Specifically:
   * Add a built-in `Inhabited` trait which is automatically implemented for
     types known to have at least 1 possible value.
