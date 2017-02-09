@@ -20,45 +20,47 @@ Specifically:
 The concept of "uninitialized data" is extremely problematic when it comes into
 contact with uninhabited types.
 
-For any given type there may be valid and invalid bit-representations. For
-example, the type `u8` consists of a single byte, and all possible bytes can be
+For any given type, there may be valid and invalid bit-representations. For
+example, the type `u8` consists of a single byte and all possible bytes can be
 sensibly interpreted as a value of type `u8`. By contrast, a `bool` also
-consists of a single byte, but not all bytes represent a `bool`: the
-bit-patterns `[00000000]` (false) and `[00000001]` (true) are valid `bool`s
+consists of a single byte but not all bytes represent a `bool`: the
+bit vectors `[00000000]` (`false`) and `[00000001]` (`true`) are valid `bool`s
 whereas `[00101010]` is not. By further contrast, the type `!` has no valid
 bit-representations at all. Even though it's treated as a zero-sized type, the
-empty bit-buffer `[]` is not a valid representation and has no interpretation
+empty bit vector `[]` is not a valid representation and has no interpretation
 as a `!`.
 
 As `bool` has both valid and invalid bit-representations, an uninitialized
-`bool` cannot be known to be invalid until it is inspected. At this point - if
-it is invalid - the compiler is free to invoke undefined behaviour. By
-contrast, an uninitialized `!` can only possibly be invalid. Without even
-inspecting such a value the compiler can assume that it's working in an
-impossible state-of-affairs just by having such a value in scope. This is the
-logical basis for using a return type of `!` to represent diverging functions.
-If we call a function which returns `bool` we can't assume that the returned
-value is invalid. However, if a function call returns `!` we know that the
-function cannot sensibly return. Therefore we can treat everything after the
-call as dead code and if the function **does** return we can write off that
-scenario as undefined behaviour.
+`bool` cannot be known to be invalid until it is inspected. At this point, if
+it is invalid, the compiler is free to invoke undefined behaviour. By contrast,
+an uninitialized `!` can only possibly be invalid. Without even inspecting such
+a value the compiler can assume that it's working in an impossible
+state-of-affairs whenever such a value is in scope. This is the logical basis
+for using a return type of `!` to represent diverging functions.  If we call a
+function which returns `bool` we can't assume that the returned value is
+invalid and we have to handle the possibility that the function returns.
+However if a function call returns `!`, we know that the function cannot
+sensibly return. Therefore we can treat everything after the call as dead code
+and we can write-off the scenario where the function *does* return as being
+undefined behaviour.
 
-The issue then is what to do about `uninitialized::<!>()`?
+The issue then is what to do about `uninitialized::<T>()` where `T = !`?
 `uninitialized::<T>` is meaningless for uninhabited `T` and is currently
-automatic undefined behaviour when `T = !`, even if the "value of type !` is
+automatic undefined behaviour when `T = !` - even if the "value of type `!`" is
 never read. The type signature of `uninitialized::<!>` is, after all, that of a
 diverging function:
 
 ```rust
-mem::uninitialized::<!>() -> !
+fn mem::uninitialized::<!>() -> !
 ```
 
-Yet the function call does not diverge! It just breaks everything instead.
+Yet calling this function does not diverge! It just breaks everything instead.
 
-In this RFC, I propose restricting `uninitialized` to use with types that are
+This RFC proposes restricting the use of `uninitialized` to types that are
 known to be inhabited. I also propose an addition to the standard library of a
 `MaybeUninit` type which offers a much more principled way of handling
-uninitialized data and can be used sensibly with uninhabited types.
+uninitialized data and can be used with uninhabited types without lying to the
+type system.
 
 # Detailed design
 [design]: #detailed-design
@@ -70,7 +72,7 @@ Add the following trait as a lang item:
 trait Inhabited {}
 ```
 
-This trait is automatically implemented for inhabited types.
+This trait is automatically implemented for all inhabited types.
 
 Change the type of `uninitialized` to:
 
@@ -90,7 +92,7 @@ union MaybeUninit<T> {
 }
 ```
 
-For an example of how this type can replace `uninitialized` consider the
+For an example of how this type can replace `uninitialized`, consider the
 following code:
 
 ```rust
@@ -112,8 +114,8 @@ fn catch_an_unwind<T, F: FnOnce() -> T>(f: F) -> Option<T> {
 }
 ```
 
-The problem here is, by the time we get to the second line we're already saying
-we have a value of type `T`, which we don't, and which for `T = !` is
+The problem here is, by the time we get to the third line we're already saying
+we have a value of type `T`; which we don't, and which for `T = !` is
 impossible. We can use `MaybeUninit` instead like this:
 
 ```rust
@@ -139,18 +141,19 @@ fn catch_an_unwind<T, F: FnOnce() -> T>(f: F) -> Option<T> {
 }
 ```
 
-Here, we've moved the `unsafe` block to where we actually know we have a `T`.
-This is fine to use with `!` because we can never reach this line (we will
-always take the `Err` branch).
+Here, we've moved the `unsafe` block to the return position where we actually
+know we have a `T`.  This is fine for use with `!` because we can only reach
+the line that extracts `value` from `foo` if `f` returned normally (which it
+couldn't have).
 
 # How We Teach This
 [how-we-teach-this]: #how-we-teach-this
 
-Correct handling of uninitialized data is an advanced topic and should maybe be
-left to The Rustinomicon.
+Correct handling of uninitialized data is an advanced topic and should probably be
+left to The Rustonomicon.
 
-The documentation for `uninitialized` however should explain the motivation for
-these changes and direct people to the `MaybeUninit` type.
+The documentation for `uninitialized` should explain the motivation for these
+changes and direct people to the `MaybeUninit` type.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -169,8 +172,8 @@ pub struct AmIInhabited {
 }
 ```
 
-If this type is exported from its crate or module, it also exports an impl for
-`Inhabited` with it. Now suppose the definition is changed to:
+If this type is exported from its crate or module it will also export an impl
+for `Inhabited`. Now suppose the definition is changed to:
 
 ```rust
 pub struct AmIInhabited {
@@ -179,30 +182,35 @@ pub struct AmIInhabited {
 ```
 
 The author of the crate may expect this change to be private and its effects
-contained to the crate. But in making the change they've also stopped exporting
-the `Inhabited` impl. This could (potentially) break downstream crates.
+contained to within the crate. But in making this change they've also stopped
+exporting the `Inhabited` impl, causing potential breakages for downstream
+users.
 
 Although this is a problem in principal it's unlikely to come up much in
-practice.  It would be strange for someone to change an inhabited exported type
-to being uninhabited. And any library consumers would already be unable to use
+practice. It can't be common for someone to change an inhabited exported type
+to being uninhabited; and any library consumers would already be unable to use
 `uninitialized` with a generic `T`, they'd have to be using it with the
-exported type specifically to hit the regression.
+exported type specifically to hit a regression.
 
 # Alternatives
 [alternatives]: #alternatives
 
 * Not do this.
 * Just make `uninitialized::<!>` panic instead (making `!`'s behaviour
-  suprisingly inconsitent with all the other types).
+  surprisingly inconsistent with all the other types).
 * Adopt these rules but not the `Inhabited` trait. Instead make `uninitialized`
-  behave like `transmute` does today by having restrictions on its type
-  arguments that are enforced outside the trait system.
+  behave like `transmute` does today by having the restrictions on its type
+  arguments enforced outside the trait system.
 * Not add the `Inhabited` trait. Instead add `MaybeUninit` as a lang item,
-  adopt the `Transmute` trait RFC, and replace the `Inhabited` bound on
-  `uninitialized::<T>` with `MaybeUninit<T>: Transmute<T>` to get the same
-  effect.
-* Rename `Inhabited` to `Uninitialized` and add the `uninitialized` function as
-  an unsafe method to the trait.
+  adopt the `Transmute` trait RFC, and change the signature of `uninitialized` to
+
+    ```rust
+    pub unsafe fn uninitialized<T>() -> T
+        where MaybeUninit<T>: Transmute<T>
+    ```
+  to get the same effect.
+* Rename `Inhabited` to `Uninitialized` and move the `uninitialized` function
+  to being an unsafe method on the trait.
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
@@ -212,13 +220,13 @@ None known.
 # Future directions
 
 Ideally, Rust's type system should have a way of talking about initializedness
-statically. In the past there have been propsals for new pointer types which
+statically. In the past there have been proposals for new pointer types which
 could safely handle uninitialized data. We should seriously consider pursuing
 one of these proposals.
 
 This RFC could be a possible stepping-stone to completely deprecating
 `uninitialized`. We would need to see how `MaybeUninit` is used in practice
-beforehand, and it would be nice (though not strictly necessary) to implement
-the additional pointer types beforehand aswell so that users of `uninitialized`
-have the best options to migrate to.
+beforehand, and it would be nice (though not strictly necessary) to also
+implement the additional pointer types beforehand so that users of
+`uninitialized` have the best possible available options to migrate to.
 
