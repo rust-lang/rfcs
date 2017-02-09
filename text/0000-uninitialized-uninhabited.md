@@ -6,13 +6,13 @@
 # Summary
 [summary]: #summary
 
-Deprecate the usage of `mem::uninitialized` for possibly-uninhabited types.
+Deprecate the usage of `mem::uninitialized` with possibly-uninhabited types.
 Specifically:
   * Add a built-in `Inhabited` trait which is automatically implemented for
     types known to have at least 1 possible value.
   * Require an `Inhabited` bound on `T` for `uninitialized::<T>`.
   * Add a `MaybeUninit<T>` union to the standard library for representing
-    possibly-initialized data in a more type-system-friendly way.
+    possibly-initialized data in a more type-system-aware way.
 
 # Motivation
 [motivation]: #motivation
@@ -37,7 +37,7 @@ an uninitialized `!` can only possibly be invalid. Without even inspecting such
 a value the compiler can assume that it's working in an impossible
 state-of-affairs whenever such a value is in scope. This is the logical basis
 for using a return type of `!` to represent diverging functions.  If we call a
-function which returns `bool` we can't assume that the returned value is
+function which returns `bool`, we can't assume that the returned value is
 invalid and we have to handle the possibility that the function returns.
 However if a function call returns `!`, we know that the function cannot
 sensibly return. Therefore we can treat everything after the call as dead code
@@ -46,7 +46,7 @@ undefined behaviour.
 
 The issue then is what to do about `uninitialized::<T>()` where `T = !`?
 `uninitialized::<T>` is meaningless for uninhabited `T` and is currently
-automatic undefined behaviour when `T = !` - even if the "value of type `!`" is
+instant undefined behaviour when `T = !` - even if the "value of type `!`" is
 never read. The type signature of `uninitialized::<!>` is, after all, that of a
 diverging function:
 
@@ -54,13 +54,14 @@ diverging function:
 fn mem::uninitialized::<!>() -> !
 ```
 
-Yet calling this function does not diverge! It just breaks everything instead.
+Yet calling this function does not diverge! It just breaks everything then eats
+your laundry instead.
 
 This RFC proposes restricting the use of `uninitialized` to types that are
 known to be inhabited. I also propose an addition to the standard library of a
 `MaybeUninit` type which offers a much more principled way of handling
-uninitialized data and can be used with uninhabited types without lying to the
-type system.
+uninitialized data and can be used to hold uninitialized uninhabited types
+without lying to the type system.
 
 # Detailed design
 [design]: #detailed-design
@@ -187,7 +188,7 @@ exporting the `Inhabited` impl, causing potential breakages for downstream
 users.
 
 Although this is a problem in principal it's unlikely to come up much in
-practice. It can't be common for someone to change an inhabited exported type
+practice. I doubt it's common for someone to change an inhabited exported type
 to being uninhabited; and any library consumers would already be unable to use
 `uninitialized` with a generic `T`, they'd have to be using it with the
 exported type specifically to hit a regression.
@@ -228,5 +229,5 @@ This RFC could be a possible stepping-stone to completely deprecating
 `uninitialized`. We would need to see how `MaybeUninit` is used in practice
 beforehand, and it would be nice (though not strictly necessary) to also
 implement the additional pointer types beforehand so that users of
-`uninitialized` have the best possible available options to migrate to.
+`uninitialized` have the best possible options available to migrate to.
 
