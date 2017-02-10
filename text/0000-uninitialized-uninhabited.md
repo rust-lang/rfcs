@@ -129,7 +129,7 @@ fn catch_an_unwind<T, F: FnOnce() -> T>(f: F) -> Option<T> {
     match std::panic::catch_unwind(|| {
         let val = f();
         unsafe {
-            (*foo_ref).value = val;
+            ptr::write(&mut (*foo_ref).value, val);
         }
     }) {
         Ok(()) => {
