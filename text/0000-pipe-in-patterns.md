@@ -4,14 +4,14 @@
 - Rust Issue: (leave this empty)
 
 ## Summary
-this RFC proposes allowing the `|` operator to be used within patterns in match
-statements, to allow for pattern matching with less boilerplate.
+this RFC proposes allowing the `|` operator to be used within patterns to
+allow for pattern matching with less boilerplate.
 
 ## Detailed Design
-The current pattern matching in `match` statements is very powerful, however
-there is a lot of boilerplate code needed to fully take advantage of it.
-Consider a situation where you are building a state machine that is iterating
-through `chars_indices`, and when you see `' '`, `'\n'`, `'\r'` or `'\f'`, you
+The current pattern matching is very powerful, however there is a lot of
+boilerplate code needed to fully take advantage of it. Consider a
+situation where you are building a state machine that is iterating through
+`chars_indices`, and when you see `' '`, `'\n'`, `'\r'` or `'\f'`, you
 want to change the state. Currently your match statement would look something
 like the following example. There is no great way of reducing that boilerplate,
 if anything that boilerplate only grows worse as you have more cases, and bigger
@@ -30,7 +30,7 @@ match iter.next() {
 }
 ```
 
-The solution to this would be to allow for `|` to be used within tuples. This
+The solution to this would be to allow for `|` to be used within patterns. This
 will significantly reduce how much boilerplate is required to have conditional
 matches with tuples.
 
