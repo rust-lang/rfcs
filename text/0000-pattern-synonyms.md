@@ -85,9 +85,9 @@ the pattern refers to without having to explicitely write it down.
 ```rust
 impl<'a> Face<'a> {
   /// A triangle.
-  pattern Triangle(a, b, c) => Polygon(a, b, c, &[])
+  pattern Triangle(a, b, c) => Polygon(a, b, c, &[]);
   /// A quadrangle.
-  pattern Quadrangle(a, b, c, d) => Polygon(a, b, c, &[d])
+  pattern Quadrangle(a, b, c, d) => Polygon(a, b, c, &[d]);
 }
 ```
 
@@ -162,7 +162,7 @@ I don’t see any yet.
 # Alternatives
 [alternatives]: #alternatives
 
-The other alternatives is to completely pattern match the pattern. In our case, instead of using
+The other alternative is to completely pattern match the pattern. In our case, instead of using
 `Triangle` for instance, we’d use the following:
 
 ```rust
