@@ -197,6 +197,7 @@ exported type specifically to hit a regression.
 [alternatives]: #alternatives
 
 * Not do this.
+* Deprecate `uninitialized` entirely and force people on to `MaybeUninit`.
 * Just make `uninitialized::<!>` panic instead (making `!`'s behaviour
   surprisingly inconsistent with all the other types).
 * Adopt these rules but not the `Inhabited` trait. Instead make `uninitialized`
