@@ -67,7 +67,7 @@ calls without exhausting any resources.
 [implementation]: #implementation
 
 A current, mostly-functioning implementation can be found at
-[DemiMarie/rust/tree/explicit-tailcalls](/DemiMarie/rust/tree/explicit-tailcalls).
+[DemiMarie/rust/tree/explicit-tailcalls](https://github.com/DemiMarie/rust/tree/explicit-tailcalls).
 
 The parser parses `become` exactly how it parses the `return` keyword.  The
 difference in semantics is handled later.
