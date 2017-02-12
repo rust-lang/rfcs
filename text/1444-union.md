@@ -144,8 +144,8 @@ union field accesses.
 
 Another way to access union fields is to use pattern matching.
 Pattern matching on union fields uses the same syntax as struct patterns,
-except that the pattern must specify exactly one field and `..` is not
-supported. Since pattern matching accesses potentially inactive fields it has
+except that the pattern must specify exactly one field or zero fields and `..`.
+Since pattern matching accesses potentially inactive fields it has
 to be placed in `unsafe` blocks as well.
 
 ```rust
@@ -489,7 +489,7 @@ All accesses to union fields (both reads and writes, and also borrows) require
 `unsafe` blocks.
 The active field/fragment of a union can always be accessed safely, but
 reads of inactive fields/fragments can result in undefined behavior (see
-[Guarantees and undefined behavior](#guarantees-and-undefinde-behavior) for
+[Guarantees and undefined behavior](#guarantees-and-undefined-behavior) for
 more detail).
 
 Write to a union field can potentially overwrite contents of its other fields.  
@@ -541,8 +541,8 @@ Both refutable and irrefutable patterns are supported as usual.
 
 Since union fields are accessed during pattern matching, the code doing it
 needs to be placed into `unsafe` blocks. All the guarantees and rules about
-undefined behavior that are applicable to dot accesses to fields applicable to
-pattern matching accesses as well.  
+undefined behavior that are applicable to dot accesses to fields are applicable
+to pattern matching accesses as well.  
 Pattern matching with zero fields and `..` doesn't require an unsafe block
 because it doesn't access any fields.
 
@@ -568,8 +568,8 @@ const C: MyUnion = MyUnion { f1: 1 };
 
 The active field of a union constant is set once during its creation and
 cannot be changed later since constant evaluation is pure.
-All constant evaluation happens during compilation, so the active fields for
-a certain constant union value is always known.
+All constant evaluation happens during compilation, so the active field for
+a certain constant union value is always known statically.
 
 One notable restriction of unions during constant evaluation is that only this
 known active field can be accessed. Reinterpreting union's memory as a value of
@@ -608,7 +608,7 @@ are expected to be relatively rare. To avoid surprises with unintentional
 leaking of fields, such unions are reported by a special warn-by-default lint.  
 The lint's name is `unions_with_drop_fields`, so the warning can be
 silenced using `#[allow(unions_with_drop_fields)]` attribute if necessary.  
-Lints have to be reported before monomorphization and translation of generics,
+Lints have to be reported before monomorphization of generics,
 so the lint has to work pessimistically and report fields of not yet known
 generic types as well (unless they implement `Copy`, then they are guaranteed
 to be trivally-destructible). Example:
@@ -749,7 +749,7 @@ Rust, unlike C and C++, can easily support this use because it doesn't have to
 support type based aliasing rules.
 
 Further we consider several examples of unions used for type punning and
-disscuss what should be considered a defined behavior and what should not.
+disscuss what should be considered defined behavior and what should not.
 
 ##### Layout compatibility at type level
 
@@ -997,12 +997,14 @@ Consequences of "Guarantee 2":
 - Unions whose fields have the same type are always in valid state. This
   property also requires the "all fields have the same address"
   rule from [Representation attributes](#representation-attributes) section.
+
   ```rust
   union U {
       name: String,
       alias_name: String,
   }
   ```
+
   This guarentee can be used for creating safe "field aliases" with different
   names referring to the same content.
 
@@ -1011,7 +1013,7 @@ Consequences of "Guarantee 2":
 ## Unsafe blocks
 
 The number of `unsafe` blocks required to work with unions can be reduced.  
-Unsafe blocks are burden and many unsafe blocks required now are innecessary.  
+Unsafe blocks are burden and many unsafe blocks required now are unnecessary.  
 These false positives diminish value of blocks containing something actually
 unsafe and requiring attention.
 
@@ -1038,10 +1040,10 @@ union U {
 ```
 It's statically known that all accesses to fragments of this unions are safe
 (given that [initialization checker](#move-and-initialization-checking) is
-enabled) and contain valid values regardless of order of fields assignments,
-but the compiler doesn't know about this and unsafe blocks are still required.
-It would be useful to communicate this knowledge to compiler by marking these
-fields safe.
+enabled) and valid values are accessed regardless of order of fields
+assignments, but the compiler doesn't know about this and unsafe blocks are
+still required. It would be useful to communicate this knowledge to compiler by
+marking these fields safe.
 ```rust
 #[repr(C)]
 union U {
