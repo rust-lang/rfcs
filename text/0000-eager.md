@@ -15,17 +15,36 @@ used in identifier position.
 [motivation]: #motivation
 
 A major use case for macros is syntactic abstraction, using macros to
-create many, similar items. In current Rust this is impeded by the inability to
+create many similar items. In current Rust this is impeded by the inability to
 create new identifiers. There exists a `concat_idents` macro ([docs](https://doc.rust-lang.org/std/macro.concat_idents!.html)),
 but since macros cannot be used in identifier position, it cannot be used when
-creating new items.
+creating new items. Although this is a single, specific issue, it is extremely
+important for the effectiveness of macros in Rust. Generating names is a core
+component of code generation and without it, RUst macros are effectively useless
+in this domain.
+
+More generally, the places a macro can appear in Rust is limited, eager
+expansion allows an 'escape valve' for this restriction, by eagerly expanding a
+macro inside another, a macro can effectively be used in any position.
+
+A further use case is that eager expand allows the *result* of a macro to be
+passed as an argument to another macro. This allows for much more expressive
+macro programs.
+
+Eager expansion provides an elegant solution to both these problems. It
+facilitates both use cases, limits the surface area of the feature to macro
+definitions (no additional complexity for non-macro authors), extends smoothly
+to complex 'hygiene bending' scenarios, and can be used in any context within a
+macro (we do not need to identify desirable locations (such as ident position)
+and individually permit each location).
 
 A straightforward solution would be to allow macros in identifier position.
-However, this has some problems, it is ugly and confusing: e.g, `fn foo!(x)(x:
-u32)` (the double sets of parentheses are hard to read); since an identifier is
-an expression, a macro in expression position can be interpreted as either an
-identifier or an expression; and it would make compiler code around identifiers
-more complex.
+However, this has problems: it is a specific, not general, solution to the
+identifier problem; it does not allow using the results of macros in macros;
+since an identifier is an expression, a macro in expression position can be
+interpreted as either an identifier or an expression; it is ugly and confusing:
+e.g, `fn foo!(x)(x: u32)` (the double sets of parentheses are hard to read); and
+it would make compiler code around identifiers more complex.
 
 Eager expansion solves these issues by allowing macro uses inside macro bodies
 to be expanded before the enclosing macro. Eagerly expanded macros can therefore
@@ -35,13 +54,28 @@ restricts usage to macro definitions.
 # Detailed design
 [design]: #detailed-design
 
-Within a macro definition, the syntax `$!foo(...)` denotes an eagerly expanded
-macro use of `foo` (c.f., `foo!(...)`).
+Within a declarative macro definition, the syntax `$!foo(...)` denotes an
+eagerly expanded macro use of `foo` (c.f., `foo!(...)`).
 
 The brackets used and the arguments passed to the macro follow the same rules as
 other macros. The macro is located by name in the same way as other macros. The
-macro may be procedural or by example. In short, `$!foo` behaves in the same way
+macro may be procedural or declarative. In short, `$!foo` behaves in the same way
 as `foo!`, modulo expansion order.
+
+Eager expansion operates at the token-tree level (c.f., the AST or individual
+tokens). Expansion introduces implicit delimiters, the exact rules here need to
+be specified for all macros 2.0 expansion. At first approximation, it means that
+the result of eager expansion must be a node in the AST, but not necessarily one
+known to the macro system. Parentheses and other delimiters must be
+matched. E.g., an eager-expanded macro can expand to `foo` (an identifier) or
+`(a + b)` an expression, but not `(a + b` (due to unbalanced parentheses) or `a +`
+(a fragment of an expression that cannot be implicitly delimited).
+
+Eager expansion will initially only be supported by
+[declarative macros 2.0](https://github.com/rust-lang/rfcs/blob/master/text/1584-macros.md)
+(which are declared with the `macro` keyword, rather than `macro_rules`). We
+might back-port eager expansion to `macro_rules` macros if it is backwards
+compatible and the implementation effort is justified.
 
 Using eager expansion syntax outside a macro is an error, similar to using macro
 argument syntax.
@@ -50,7 +84,7 @@ argument syntax.
 
 Let's start by considering an example using `concat`, a macro for concatenating
 two identifiers to make a new one (similar to today's `concat_idents`). To be
-clear, this example macros is not part of this RFC.
+clear, this example macro is not part of this RFC.
 
 Let's imagine we have a struct with a bunch of fields and we want to make
 getters and setters for them all because we are feeling nostalgic for Java
@@ -93,11 +127,16 @@ macro foo() {
 
 and macro use `foo!(y)`.
 
+The macro declaration is stored as token trees. The macro use is an AST node,
+the actual arguments are token trees.
+
 When the parser finds the use, it first looks up the macro and selects an arm by
-pattern matching (trivial in this case). Expansion then takes the text from that
-arm, replaces arguments, parses the result (which may trigger further expansion),
-and splices the resulting AST fragment into the AST, replacing the macro use
-(`foo!(y)`).
+pattern matching (trivial in this case). Pattern matching includes parsing the
+actual arguments so that AST matchers can be matched. Expansion then takes the
+text from that arm, replaces arguments (which become interpolated AST nodes in
+the tokens), parses the result (i.e., translates from tokens to AST, which may
+trigger further expansion), and splices the resulting AST fragment into the
+program AST, replacing the macro use (`foo!(y)`).
 
 Text from the example:
 
@@ -205,6 +244,23 @@ other macro uses in the enclosing macro.
 `$!foo($!bar())` `bar` is expanded first, then `foo`, then the rest of the enclosing macro.
 
 
+### Recursion
+
+Recursive uses of eager expanded macros are allowed. Recursion depth should be
+limited by the usual macro expansion limits. E.g., the following program (from
+RFC comments) should work:
+
+```
+macro a {
+    (0) => { 1, 2, 3 };
+    (1) => { [$!a(0)] };
+}
+
+fn main() {
+    let m = a!(1);
+}
+```
+
 ### Hygiene
 
 This section depends to some extent on rules for item hygiene which haven't yet
@@ -271,6 +327,30 @@ mod a {
 ```
 
 because we look up `bar` in the context of `foo`'s definition.
+
+Another example (from the RFC comments):
+
+```
+macro bar { () => { macro baz { ... } } }
+macro foo { () => { $!bar() } }
+```
+
+`bar` is eagerly expanded into `foo`, `baz` does not take any hygiene info from
+`foo` nor the use site of `foo`, so cannot be used outside the definition of `bar`.
+
+A procedural macro can specify that it will expanded without adding expansion
+hygiene info, if `bar` was implemented in that way, `baz` could be named inside
+`foo`, but not where `foo` is used.
+
+```
+macro bar { ($x: ident) => { macro $!concat(baz, $x) { ... } } }
+macro foo { () => { $!bar(a) } }
+```
+
+In this case, (eager) expansion results in a macro called `baza` inside `foo`,
+this can be used in `foo`, but not at the use site of `foo`. It cannot be used
+directly in `bar`, but could be used via `concat`.
+
 
 ### Hygiene implementation
 
@@ -407,18 +487,60 @@ not be obvious when to use either flavour.
 # Alternatives
 [alternatives]: #alternatives
 
-We could special case `concat_idents`, that is the primary motivation for eager
+We could special case `concat_idents`, which is the primary motivation for eager
 expansion. It is not clear that eager expansion pulls its weight without
 `concat_idents`. The special case would probably be more ergonomic, however,
-it is also less flexible and I expect uses might arise in the future.
+it is also less flexible and I expect other use cases to arise in the future.
+
+We could try to make a special-cased `concat_idents` future compatible. For
+example, we could allow eager expand syntax and semantics only for
+`concat_idents`, or use eager expand semantics but not require special syntax.
+Either approach would reduce implementation effort, but would be pretty hacky,
+and a proper solution would not be a great deal harder.
 
 Expansion order: it might be reasonable to expand eager macro uses outside in.
 
+Alternative syntaxes: `$*concat!(a, b)` or `concat!!(a, b)`.
+
+## Let syntax
+
+We could allow using the `let` keyword in a new block in a macro to define
+reusable macro variables. These would only be allowed in the body of the macro.
+Technically, expansion order of macros and using `let` to create variables are
+orthogonal. However, `let` intuitively suggests eager expansion because in
+regular Rust, the right-hand sides of `let` statements are eagerly evaluated.
+
+Example with strawman syntax:
+
+```
+macro accessors {
+    ($x: ident, $t: ty) {
+        let $get_x: ident = concat!(get_, $x);
+        let $set_x: ident = concat!(set_, $x);
+    } => {
+        pub fn $get_x(&self) { self.$x }
+        pub fn $set_x(&self, a: &t) { self.$x = a; }
+    }
+}
+```
+
+Expansion of such a macro proceeds:
+
+* evaluate the right-hand sides of all `let` expressions, in order, substituting
+  macro arguments and previously declared variables as required;
+* substitute macro arguments and `let` variables into the macro body;
+* substitute the macro body into the macro use-site.
+
+One question of this approach is how to deal with hygiene for tokens in the
+macro variables. Can hygiene information from their locations in the macro body
+be layered onto the tokens as the variables are replaced? Is this even
+necessary?
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
-Is there a better syntax for this?
-
 The current `concat_idents` macro should be replaced, it is not flexible enough
 with regards to hygiene. I leave a proper specification for another RFC.
+
+We need a general purpose mechanism for escaping macro variables in macros. This
+should also be extended to eagerly expanding macros.
