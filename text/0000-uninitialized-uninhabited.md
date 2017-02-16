@@ -150,8 +150,12 @@ couldn't have).
 # How We Teach This
 [how-we-teach-this]: #how-we-teach-this
 
-Correct handling of uninitialized data is an advanced topic and should probably be
-left to The Rustonomicon.
+Correct handling of uninitialized data is an advanced topic and should probably
+be left to The Rustonomicon.
+
+The Rust Book should probably have a section on uninhabited types, explaining
+what they are and some of their properties. This should section should make
+mention of the `Inhabited` trait.
 
 The documentation for `uninitialized` should explain the motivation for these
 changes and direct people to the `MaybeUninit` type.
@@ -191,7 +195,8 @@ Although this is a problem in principal it's unlikely to come up much in
 practice. I doubt it's common for someone to change an inhabited exported type
 to being uninhabited; and any library consumers would already be unable to use
 `uninitialized` with a generic `T`, they'd have to be using it with the
-exported type specifically to hit a regression.
+exported type specifically to hit a regression. Also, the same problem affects
+the `Sized` trait but so far hasn't cause any major issues.
 
 # Alternatives
 [alternatives]: #alternatives
