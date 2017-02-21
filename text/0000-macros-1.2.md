@@ -47,7 +47,7 @@ is also very small.
 # Detailed design
 [design]: #detailed-design
 
-As a reminder, Macro 1.1 stabilized a new `proc_macros` crate with a very small public API:
+As a reminder, Macro 1.1 stabilized a new `proc_macro` crate with a very small public API:
 
 ```rust
 pub struct TokenStream { /* private */ }
