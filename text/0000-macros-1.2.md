@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-Stabilize function-like procedural macros (whose usage looks like `foo!(...)`),
+Stabilize function procedural macros (whose usage looks like `foo!(...)`),
 like this was done in “[Macros 1.1]” for custom `derive`,
 before “[Macros 2.0]” is fully ready.
 
@@ -73,7 +73,7 @@ and parse the result, for example with the [syn](https://github.com/dtolnay/syn)
 
 This RFC does *not* propose any such API.
 It propose prioritizing the implementation and stabilization
-of function-like procedural macros, that are defined like this:
+of function procedural macros, that are defined like this:
 
 ```rust
 #[proc_macro]
@@ -103,13 +103,14 @@ as well as the [Procedural Macros](https://doc.rust-lang.org/reference.html#proc
 and [Linkage](https://doc.rust-lang.org/reference.html#linkage)
 (where it mentions `--crate-type=proc-macro`) sections of the reference.
 
-The term *procedural macro* is somewhat ambiguous.
-Once upon a time, it was sometimes used for “old-style” compiler plugins.
-Such usage should be avoided, in favor of *compiler plugin* or *syntax extension*.
+Terminology:
 
-Even so, it can still mean either something defined with `proc_macro`,
-or something defined with any of `proc_macro_derive`, `proc_macro_attribute`, or `proc_macro`.
-*Function-like procedural macro* can be used to disambiguate.
+* *Function procedural macro*: a function declared with the `proc_macro` attribute.
+* *Attribute procedural macro*: a function declared with the `proc_macro_attribute` attribute.
+* *Derive procedural macro*: a function declared with the `proc_macro_derive` attribute.
+* *Procedural macro*: any of the above, unless context disambiguates.
+* *Plugin*, *compiler plugin* (preferred), or *syntax extension*:
+  a plugin registered with legacy `plugin_registrar` system.
 
 
 # Drawbacks
@@ -129,10 +130,6 @@ or complex build scripts at each use site.
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
-
-* Terminology: *function-like procedural macro* is a mouthful.
-  Is *function procedural macro* an acceptable approximation?
-  *Functional procedural macro*?
 
 * In the example above, RFC 1566 [suggests] that the input to `foo` would be the same
   for all three calls: such that `input.to_string() == "..."`,
