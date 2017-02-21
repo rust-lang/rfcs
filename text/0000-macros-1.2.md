@@ -131,34 +131,37 @@ or complex build scripts at each use site.
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
-* In the example above, RFC 1566 [suggests] that the input to `foo` would be the same
-  for all three calls: such that `input.to_string() == "..."`,
-  with no way to tell which kind of braces was used to delimit the macro’s input at the call site.
+In the example above, RFC 1566 [suggests] that the input to `foo` would be the same
+for all three calls: such that `input.to_string() == "..."`,
+with no way to tell which kind of braces was used to delimit the macro’s input at the call site.
 
-  Perhaps that’s fine. There is no way to tell with `macro_rules!` either.
-  If we do want to make that information available, there are two options:
+Perhaps that’s fine. There is no way to tell with `macro_rules!` either.
+If we do want to make that information available,
+it is possible to extend `#[proc_macro]` in the future
+to also accept functions that take an additional argument:
 
-  * Add a `Delimiter` parameter to functions with `#[proc_macro]`. RFC 1566 [proposes] it as:
+```rust
+extern crate proc_macro;
+use proc_macro::{TokenStream, Delimiter};
 
-    ```rust
-    pub enum Delimiter {
-        None,
-        Brace,  // { }
-        Parenthesis,  // ( )
-        Bracket,  // [ ]
-    }
-    ```
+#[proc_macro]
+pub fn foo(braces_kind: Delimiter, input: TokenStream) {
+    // ...
+}
+```
 
-    (The `None` variant would not be used in this case.)
+The `Delimiter` is part of the tokens API [proposed] in RFC 1566:
 
-    However this requires stabilizing `Delimiter`
-    (including the presence or not of a `None` variant, for example),
-    which is contrary to the goal of this RFC to stabilize as little as possible.
+```rust
+pub enum Delimiter {
+    None,
+    Brace,  // { }
+    Parenthesis,  // ( )
+    Bracket,  // [ ]
+}
+```
 
-  * Change the `input: TokenStream` parameter to include the braces.
-    In the first example above: `input.to_string() == "(...)"`.
-    However this requires every macros that don’t care about the style of braces (most of them?)
-    to have additional code to remove the braces in order to access the rest of the input.
+(The `None` variant would not be used in this case.)
 
 [suggests]: https://github.com/rust-lang/rfcs/blob/master/text/1566-proc-macros.md#detailed-design
-[proposes]: https://github.com/rust-lang/rfcs/blob/master/text/1566-proc-macros.md#tokens
+[proposed]: https://github.com/rust-lang/rfcs/blob/master/text/1566-proc-macros.md#tokens
