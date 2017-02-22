@@ -32,9 +32,9 @@ Here, the lifetime of `value` is bounded not just by the specified scope, `'b`, 
 * Second, even `'static` is not flexible enough in all cases. While in many cases it will work, `'static` has meaningful semantic implications of its own and cannot act as a stand-in for any possible lifetime. Case in point:
 
 ```rust
-struct SelfRefStruct<T> {
-    owner: RefCell<T>,
-    borrower: Ref<'static, T>, // Problem, T is not 'static, this type can't exist
+struct SelfRefStruct<'a> {
+    owner: RefCell<MyType<'a>>,
+    borrower: Ref<'static, MyType<'a>>, // Problem, 'a is not 'static, this type can't exist
 }
 ```
 
@@ -59,9 +59,22 @@ struct SelfRefStruct<T> {
 # Detailed design
 [design]: #detailed-design
 
+## Semantics
 Fortunately, the language already has precedent for similar semantics in some contexts, via HRTB or unbounded lifetimes. A lifetime declared within an HRTB bound implicitly satisfies the constraints that are demanded of it within. Similarly, an unbounded lifetime as described in the nomicon can be coerced into any type signature, including cases where even `'static` is inadequate. This RFC proposes merely to allow such a lifetime to be nameable and used within more contexts, such as struct fields.
 
 As raw pointers provide an escape-hatch for the borrow checker to references, so `'unsafe` does to arbitrary types parameterised by lifetime. However, there is an important distinction. Raw pointers may safely exist and be manipulated, but they are unsafe to dereference at the site of use. `'unsafe` has inverted semantics, in that it is unsafe to instantiate a value of such a lifetime in the first place, but after it exists, it may be used as if it were safe. This property is important to maintain lifetime parametricity.
+
+## Inference
+`'unsafe` should never be inferred as a lifetime without being explicitly stated. Even an unbounded lifetime will not infer to be `'unsafe` unless the target value has been explicitly declared to require unsafe lifetime. This will preserve current behavior in all existing code, and by extension backward compatibility.
+
+## Coercion
+As an unbounded lifetime, `'unsafe` will readily decay into a concrete lifetime. It can be considered to be variance-compatible with all other lifetimes. Calling a method on an object of unsafe lifetime can, like any other lifetime, result in a reborrow of a shorter, concrete lifetime for the scope of the call. In this way, `'unsafe` may be consumed by any API without special consideration, since it can reborrow into something meeting the constraints required of that API.
+
+## Drop
+When an owned value of unsafe lifetime reaches the end of a scope, it will be assumed to be valid at that point and dropped as any other owned value would be.
+
+## Optimization
+Since an object of unsafe lifetime cannot be statically known to be valid at any particular time, the compiler should not assume validity merely based on accessibility of the value. Explicit use of such a value is a promise to the compiler that it is valid at that point, but such use should not be reordered relative to other linear code with observable semantics. However, reborrowing `'unsafe` into a concrete lifetime constitutes a promise to the compiler that the reborrow is safe and valid for the duration of the lifetime into which it was coerced, so full optimization may take place as per usual within such scopes.
 
 # How We Teach This
 [how-we-teach-this]: #how-we-teach-this
@@ -87,4 +100,4 @@ This concept is relatively niche and is not something that most rust users will 
 [unresolved]: #unresolved-questions
 
 * Exactly how complex would the implementation of this feature be? Is it just giving a name to a concept that already exists internally, or does it have farther reaching implications?
-* In what contexts would `'unsafe` be permitted exactly. Struct fields are the primary concern, but is it also acceptable to allow it in function parameters? if so, is the function itself unsafe? What does it even mean?
+* In what contexts would `'unsafe` be permitted exactly. Struct fields are the primary concern, but is it also acceptable to allow it in function parameters? if so, is the function itself unsafe?
