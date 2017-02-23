@@ -75,11 +75,13 @@ each element in the original tuple. For example,
 `(A, B, C)::AsRefs = (&A, &B, &C)` and
 `(A, B, C)::AsMuts = (&mut A, &mut B, &mut C)`
 
-The `Tuple` trait should only be implemented for tuples. This would allow
-coherence and type-checking to be extended to assume that no implementations
-of `Tuple` will be added. This enables an increased level of negative
-reasoning making it easier to write blanket implementations of traits for
-tuples.
+The `Tuple` trait should only be implemented for tuples and marked with the
+`#[fundamental]` attribute described in
+[the coherence RFC](https://github.com/rust-lang/rfcs/blob/master/text/1023-rebalancing-coherence.md).
+This would allow coherence and type-checking to be extended to assume that no
+implementations of `Tuple` will be added. This enables an increased level of
+negative reasoning making it easier to write blanket implementations of traits
+for tuples.
 
 ## The `(Head, ...Tail)` Type Syntax
 This syntax would allow for a `Cons`-cell-like representation of tuple types.
@@ -188,11 +190,6 @@ there is an expression immediately before the ellipsis.
 - Implement one of the other variadic designs, such as
 [#1582](https://github.com/rust-lang/rfcs/pull/1582) or
 [#1921](https://github.com/rust-lang/rfcs/pull/1921)
-- Implement this RFC, but leave out the extra-special coherence rules for
-`Tuple`. This would simplify the implementation of the `Tuple` intrinsic
-and remove some of the additional complexity it introduces. However, this
-also makes it much more challenging to write coherent blanket
-implementations for `Tuple`s.
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
