@@ -10,7 +10,7 @@ This RFC proposes the addition of several features to support variadic generics:
 - An intrinsic `Tuple` trait implemented exclusively by tuples
 - `(Head, ...Tail)` syntax for tuple types where `Tail: Tuple`
 - `let (head, ...tail) = tuple;` pattern-matching syntax for tuples
-- `let tuple = (head, tail...);` syntax for joining an element with a tuple
+- `let tuple = (head, ...tail);` syntax for joining an element with a tuple
 
 # Motivation
 [motivation]: #motivation
@@ -92,10 +92,10 @@ This syntax allows for splitting apart the head and tail of a tuple. For
 example, `let (head, ...tail) = (1, 2, 3);` moves the head value, `1`, into
 `head`, and the tail value, `(2, 3)`, into `tail`.
 
-## The `(head, tail...)` Joining Syntax
+## The `(head, ...tail)` Joining Syntax
 This syntax allows pushing an element onto a tuple. It is the natural inverse
 of the pattern-matching operation above. For example,
-`let tuple = (1, (2, 3)...);` would result in `tuple` having a value of
+`let tuple = (1, ...(2, 3));` would result in `tuple` having a value of
 `(1, 2, 3)`.
 
 ## An Example
@@ -156,7 +156,7 @@ so the "best" way to teach one person might not work as well for another. There
 will need to be some investigation into which explanations are more
 suitable to a general audience.
 
-As for the `(head, tail...)` joining syntax, this should be explained as
+As for the `(head, ...tail)` joining syntax, this should be explained as
 taking each part of the tail (e.g. `(2, 3, 4)`) and inlining or un-"tupling"
 them (e.g. `2, 3, 4`). This is nicely symmetrical with the `(head, ...tail)`
 pattern-matching syntax.
@@ -176,10 +176,10 @@ As with any additions to the language, this RFC would increase the number
 of features present in Rust, potentially resulting increased complexity
 of the language.
 
-There is also some unfortunate overlap between the proposed `(head, tail...)`
+There is also some unfortunate overlap between the proposed `(head, ...tail)`
 syntax and the current inclusive range syntax. However, the similarity
-between `start...end` and `tail...` can be disambiguiated by whether or not
-there is an expression immediately following the ellipsis.
+between `start...end` and `...tail` can be disambiguiated by whether or not
+there is an expression immediately before the ellipsis.
 
 # Alternatives
 [alternatives]: #alternatives
