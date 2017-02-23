@@ -32,9 +32,9 @@ Here, the lifetime of `value` is bounded not just by the specified scope, `'b`, 
 * Second, even `'static` is not flexible enough in all cases. While in many cases it will work, `'static` has meaningful semantic implications of its own and cannot act as a stand-in for any possible lifetime. Case in point:
 
 ```rust
-struct SelfRefStruct<'a> {
-    owner: RefCell<MyType<'a>>,
-    borrower: Ref<'static, MyType<'a>>, // Problem, 'a is not 'static, this type can't exist
+struct SelfRefStruct<T> {
+    owner: RefCell<T>,
+    borrower: Ref<'static, T>, // Problem, T is not 'static, this type can't exist
 }
 ```
 
