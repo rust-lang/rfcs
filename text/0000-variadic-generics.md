@@ -196,9 +196,10 @@ implementations for `Tuple`s.
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
-It might be useful in the future to expand on the locations where `Type...`
-can be used. Potential extensions to this RFC could allow `Type...` in
-non-tuple generics or in function argument types, lke `fn foo(args: Args...)`.
+It might be useful in the future to expand on the locations where `...Type`
+can be used. Potential extensions to this RFC could allow `...Type` in
+non-tuple generics or in function argument types, like
+`fn foo<Args>(args: ...Args)`.
 This would allow functions and traits to use variadic generics without
 explicit tuples. This could enable things like the proposed `foo[i, j]` syntax
-using `Index<usize, usize>`.
+using`Index<usize, usize>`.
