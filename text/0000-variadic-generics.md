@@ -138,6 +138,37 @@ The example demonstrates the concise, expressive code enabled
 by this RFC. In order to implement a trait for tuples of any length, all
 that was necessary was to implement the trait for `()` and `(Head, ...Tail)`.
 
+# How We Teach This
+[teach]: #teach
+
+The `(head, ...tail)` and `(Head, ...Tail)` syntax closely mirror established
+patterns for working with `Cons`-cell based lists. Rustaceans coming from
+other functional programming languages will likely be familiar with the concept
+of recursively-defined lists. For those unfamiliar with `Cons`-based
+lists, the concept should be introduced using "structural recursion": there's
+a base case, `()`, and a recursive/inductive case: `(Head, ...Tail)`. Any tuple
+can be thought of in this way
+(for example, `(A, B, C)` is equivalent to `(A, ...(B, ...(C, ...())))`).
+
+The exact mechanisms used to teach this should be determined after getting more
+experience with how Rustaceans learn. After all, Rust users are a diverse crowd,
+so the "best" way to teach one person might not work as well for another. There
+will need to be some investigation into which explanations are more
+suitable to a general audience.
+
+As for the `(head, tail...)` joining syntax, this should be explained as
+taking each part of the tail (e.g. `(2, 3, 4)`) and inlining or un-"tupling"
+them (e.g. `2, 3, 4`). This is nicely symmetrical with the `(head, ...tail)`
+pattern-matching syntax.
+
+The `Tuple` trait is a bit of an oddity. It is probably best not to go too
+far into the weeds when explaining it to new users. The extra coherence
+benefits will likely go unnoticed by new users, as they allow for more
+advanced features and wouldn't result in an error where one didn't exist
+before. The obvious exception is when trying to implement the `Tuple` trait.
+Attempts to implement `Tuple` should resort in a relevant error message,
+such as "The `Tuple` trait cannot be implemented for custom types."
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
