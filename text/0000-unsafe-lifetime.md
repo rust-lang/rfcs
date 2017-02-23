@@ -76,6 +76,9 @@ When an owned value of unsafe lifetime reaches the end of a scope, it will be as
 ## Optimization
 Since an object of unsafe lifetime cannot be statically known to be valid at any particular time, the compiler should not assume validity merely based on accessibility of the value. Explicit use of such a value is a promise to the compiler that it is valid at that point, but such use should not be reordered relative to other linear code with observable semantics. However, reborrowing `'unsafe` into a concrete lifetime constitutes a promise to the compiler that the reborrow is safe and valid for the duration of the lifetime into which it was coerced, so full optimization may take place as per usual within such scopes.
 
+## Safety
+Finally, given all of the above, what manipulations, exactly, of a value of unsafe lifetime require unsafe scope. Since our goal is to allow for encapsulating away the details of an internally unsafe value, merely moving such an object from one binding to another is considered safe. This includes objects that directly expose `'unsafe` in their type signature (e.g. `Ref<'unsafe, i32>`. The only actions that require unsafe permissions are inferring an unspecified lifetime parameter within an expression to be `'unsafe` because the l-value explicitly requires it, or coercing a value of other concrete lifetime into `'unsafe`.
+
 # How We Teach This
 [how-we-teach-this]: #how-we-teach-this
 
