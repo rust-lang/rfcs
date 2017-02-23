@@ -67,7 +67,7 @@ trait Tuple {
 ```
 
 TODO: should the above use `TupleRef<'a>` and `TupleMut<'b>` traits to avoid
-dependency on ACTs? It seems nicer to have them all together in one trait, but
+dependency on ATCs? It seems nicer to have them all together in one trait, but
 it's probably not worth the resulting feature-stacking mess.
 
 The types `AsRefs` and `AsMuts` are the corresponding tuples of references to
