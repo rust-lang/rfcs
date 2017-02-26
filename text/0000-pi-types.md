@@ -1,5 +1,5 @@
 - Feature Name: pi-types
-- Start Date: 2016-06-22
+- Start Date: 2017-02-26
 - RFC PR: (leave this empty)
 - Rust Issue: (leave this empty)
 
@@ -30,17 +30,6 @@ Since it is simply consisting of constexprs, one can apply constant functions
 (`const fn`) to the parameter, to perform compile time, type level calculations
 on the parameter. This allows for great expressiveness as `const fn` improves.
 
-## Expression `where` bounds
-
-The second construct added is the constant expression in `where` bounds. These
-contains statements about the constant parameters, which are checked at compile
-time.
-
-## Type checking
-
-Type checking is done by using a [transitive rule](#transitivity-of-bounds), such that `where` bounds must
-be implied by the caller.
-
 # Motivation
 [motivation]: #motivation
 
@@ -48,9 +37,9 @@ An often requested feature is the "type-level numerals", which enables generic
 length arrays. The current proposals are often limited to integers or even lack
 of value maps, and other critical features.
 
-There is a whole lot of other usecases as well. These allows certain often
-requested features to live in standalone libraries (e.g., [bounded-integers](#bounded-integersinterval-arithmetics),
-[type level numerals](#array-generics), [statically checked indexing](#statically-checked-indexing), lattice types).
+_Note:_ In an earlier version of this RFC, a `where` bound was proposed, but it
+proved too complex, so for now, types with invariants about the constant
+parameter can be used.
 
 It allows for creating powerful abstractions without type-level hackery.
 
@@ -58,7 +47,7 @@ It allows for creating powerful abstractions without type-level hackery.
 
 We have to be very careful to avoid certain things, while still preserving the core features:
 
-1. Ability to use, manipulate, and constraint values at type-level.
+1. Ability to use and manipulate values at type-level.
 2. The ability to use said values on expression-level (runtime).
 
 Yet, we do not want:
@@ -68,132 +57,6 @@ Yet, we do not want:
 2. Monomorphisation-time errors, i.e. errors that happens during codegen of
    generic functions. We try to avoid adding _more_ of these (as noted by
    petrochenkov, these [already exists](https://github.com/rust-lang/rfcs/pull/1657#discussion_r68202733))
-
-## Examples
-
-### Bounded integers/interval arithmetics
-
-One can define the so called "bounded integers" (integers which carry an
-upper and lower bound, checked at compile time):
-
-```rust
-use std::ops;
-
-/// A bounded integer.
-///
-/// This has two value parameter, respectively representing an upper and a lower bound.
-pub struct BoundedInt<const lower: usize, const upper: usize>
-    // Compile time constraints.
-    where lower <= upper {
-    /// The inner runtime value.
-    n: usize,
-}
-
-// To see how this holds the `where` clause above, see the section on `identities`.
-impl<const n: usize> BoundedInt<n, n> {
-    fn new() -> Self {
-        BoundedInt {
-            n: n,
-        }
-    }
-}
-
-/// Addition of two `BoundedInt` will simply add their bounds.
-///
-/// We check for overflow making it statically overflow-free calculations.
-impl<const upper_a: usize,
-     const lower_a: usize,
-     const upper_b: usize,
-     const lower_b: usize> ops::Add<BoundedInt<lower_b, upper_b>> for BoundedInt<lower_a, upper_a>
-     // We have to satisfy the constraints set out in the struct definition.
-     where lower_a <= upper_a,
-           lower_b <= upper_b,
-           // Check for overflow by some `const fn`.
-           is_overflow_safe(upper_a, upper_b) {
-    // These parameters are constant expression.
-    type Output = BoundedInt<lower_a + lower_b, upper_a + upper_b>;
-
-    fn add(self, rhs: BoundedInt<lower_b, upper_b>) -> Self::Output {
-        BoundedInt {
-            n: self.n + rhs.n,
-        }
-    }
-}
-
-impl<const upper_a: usize,
-     const lower_a: usize,
-     const upper_b: usize,
-     const lower_b: usize> From<BoundedInt<lower_b, upper_b>> for BoundedInt<lower_a, upper_a>
-     where lower_a <= upper_a,
-           lower_b <= upper_b,
-           // We will only extend the bound, never shrink it without runtime
-           // checks, thus we add this clause:
-           lower_b <= lower_a && upper_b >= upper_a {
-    fn from(from: BoundedInt<lower_b, upper_b>) -> Self {
-        BoundedInt {
-            n: from.n,
-        }
-    }
-}
-```
-
-### Homogeneous varargs
-
-We can use arbitrarily length arrays to simulate homogeneous varargs:
-
-```rust
-fn my_func<const n: usize>(args: [u32; n]) { /* whatever */ }
-
-my_func([1, 2, 3]);
-my_func([1, 2, 3, 4]);
-```
-
-### Array generics
-
-Currently libcore only implements various traits up to arrays of length 32.
-This allows for implementing them for arrays of arbitrary length:
-
-```rust
-impl<const n: usize, T: Clone> Clone for [T; n] {
-    fn clone(&self) -> [T; n] {
-        // Clone it...
-    }
-}
-```
-
-### Statically checked indexing
-
-One can perform simple, interval based, statically checked indexing:
-
-```rust
-use std::ops;
-
-impl<const n: usize, T: Clone> ops::Index<BoundedInt<0, n - 1>> for [T; n] {
-    type Output = T;
-
-    fn index(&self, ind: BoundedInt<0, n - 1>) -> &T {
-        unsafe {
-            // This is safe due to the bound on `ind`.
-            self.unchecked_index(*ind)
-        }
-    }
-}
-```
-
-### Fancy number stuff
-
-```rust
-struct Num<const n: usize>;
-
-trait Divides<const m: usize> {}
-
-impl<const a: usize, const b: usize> Divides<b> for Num<a> where b % a == 0 {}
-```
-
-### Playground
-
-[This repo](https://github.com/ticki/rfc-1657-playground) is a playground for
-usecases of such a feature. Refer to that for more examples.
 
 # Detailed design
 [design]: #detailed-design
@@ -275,21 +138,6 @@ let l = foo::<_, [1, 2, 3, 4, 5, 6]>();
 //            ^   ^^^^^^^^^^^^^^^^
 ```
 
-## `where` clauses
-
-Often, it is wanted to have some statically checked clause satisfied by the
-constant parameters (e.g., for the sake of compile-time bound checking). To
-archive this, in a reasonable manner, we use constexprs, returning a boolean.
-
-We allow such constexprs in `where` clauses of functions. Whenever the
-function is invoked given constant parameters `<a, b...>`, the compiler
-evaluates this expression, and if it returns `false`, an aborting error is
-invoked.
-
-To sum up, the check happens when typechecking the function calls (that is,
-checking if the parameters satisfy the trait bounds). The caller's bounds must
-imply the invoked functions' bounds:
-
 ## Structural equality
 
 Structural equality plays a key role in type checking of dependent types.
@@ -306,649 +154,17 @@ Without this form of equality, substitution wouldn't be possible, and thus
 typechecking an arbitrarily value-depending type constructor would not be
 possible.
 
-### Transitivity of bounds
+## Parsing
 
-We require a bound of a function to imply the bounds of the functions it calls,
-through a simple reductive, unification algorithm. In particular, this means
-that a statement is reduced by some specified rules (see below), that ensures
-termination. A statement implies another statement, if the set of statements it
-reduces to is a superset of the other statement's reduction set.
+Introducing expr subgrammar in type position isn't possible without setting
+some restrictions to the possible expressions.
 
-The compiler would enforce that if `f` calls `g`, `unify(bound(g)) ⊆
-unify(bound(f))` (by structural equality):
+In this case, we put restrictions to arithmetic and bitwise operations (`+-/!^`
+etc.) and function calls (`myconstfn(a, b, c, ...)` with `a, b, c, ...` being
+`const-expr` fragments).
 
-    ExpandBooleanAnd:
-      P ∧ Q
-      ─────
-      P
-      Q
-
-This simply means that `a ∧ b` means `a` and `b`.
-
-    SubstituteEquality:
-      P(a)
-      a = b
-      ─────
-      P(b)
-
-This is an important inference rule, when doing unification. This means that
-you can substitute all `a` for all free `b`s, if `a = b`.
-
-    DoubleNegation:
-      ¬¬x
-      ───
-      x
-
-This rule is simply stating that double negation is identity, that is, `!!a`
-means that `a` is true.
-
-These rules are "eliminatory" (recursing downwards the tree and decreasing the
-structure), and thus it is possible to check, in this language, that `a ⇒ b`
-relatively quickly (`O(n)`). For a proof of see the section below.
-
-More rules can be added in the future. It is however important to preserve the
-"sequential property" (that is, each step is a reduction, not an expansion),
-allowing one to check the implication in linear time.
-
-This is done under type unification. Thus, we only need to check the bounds at
-the top level.
-
-#### Decidability of this rule set
-
-One can show this by considering each case:
-
-1. `ExpandBooleanAnd` eliminates `{P ∧ Q} ⊢ {P, Q}`. The right hand side's
-   depth is `max(dep(P), dep(Q))`, which is smaller than the original,
-   `max(dep(P), dep(Q)) + 1`
-2. `SubstituteEquality` eliminates `{a = b, P} ⊢ {P[b ← a]}`, which is an
-   elimination, since `dep(P) + 1 > dep(P[b ← a]) = dep(P)`.
-3. `DoubleNegation` eliminates `{¬¬x} ⊢ {x}`, which is an elimination, since
-   `dep(x) + 2 > dep(x)`.
-
-In fact, this set of rule is strictly reductive (like equality-based unification).
-
-#### An example
-
-We will quickly give an example of a possible proof. Say we want to show that
-`(x = b) ∧ ¬¬(x < a) ⇒ b < a`. Starting with the left hand side, we can sequentially
-prove this, by simple unification (which already exists in the Rust type
-checker):
-
-    (x = b) ∧ ¬¬(x < a)
-    ∴ x = b      (ExpandBooleanAnd)
-      ¬¬(x < a)
-    ∴ ¬¬(b < a)  (SubstituteEquality)
-    ∴ b < a      (DoubleNegation)
-      ¯¯¯¯¯
-
-### Contradictive or unsatisfiable bounds
-
-Contradictive or unsatisfiable bounds (like `a < b, b < a`) cannot be detected,
-since such a thing would be undecidable.
-
-These bounds don't break anything, they are simply malformed and unreachable.
-
-Take `a < b, b < a` as an example. We know the values of `a` and `b`, we can
-thus calculate the two bounds, which will clearly fail. We cannot, however,
-stop such malformed bounds in _declarations_ and _function definitions_, due to
-mathematical limitations.
-
-## The grammar
-
-These extensions expand the type grammar to:
-
-         T = scalar (...)                  // Scalars (basic types s.a. primitive types)
-           | X                             // Type variable
-           | Id<P0..Pn>                    // Nominal type (struct, enum)
-           | &r T                          // Reference (mut doesn't matter here)
-           | O0..On+r                      // Object type
-           | [T]                           // Slice type
-           | for<r..> fn(T1..Tn) -> T0     // Function pointer
-           | <P0 as Trait<P1..Pn>>::Id     // Projection
-    +      | C                             // const types
-    +    F = c                             // const fn name
-    +    C = E                             // Pi constructed const type
-         P = r                             // Region name
-           | T                             // Type
-         O = for<r..> TraitId<P1..Pn>      // Object type fragment
-         r = 'x                            // Region name
-    +    E = F(E)                          // Constant function application.
-    +      | p                             // const type parameter
-    +      | [...]                         // etc.
-
-Note that the `const` syntax is only used when declaring the parameter.
-
-## `impl` unification
-
-Only one `where` bound can be specified on each disjoint implementations (for
-possible extensions, see below). In other words, no overlap is allowed, even if
-the `where` bounds are mutually exclusive.
-
-To find the right implementation, we use the data from the type inference (see
-the inference rules above). Since the parameters are, in fact, not much
-semantically different from normal generic parameters, we can resolve it in a
-normal manner (that is, by treating the value parameters as if they were actual
-type parameters).
-
-Likewise are disjointness checks based on structural equality. That is, we only
-care about structural equality, not `Eq` or something else. This allows us to
-reason more rigorously about the behavior.
-
-Any non-identity-related term is threated as an unknown parameter, since reasoning about uniqueness of those is undecidable. For example,
-
-```rust
-impl<const x: usize> Trait<x * x> for Struct<x> where some_fn(x)
-```
-
-is, when checking for implementation uniqueness, semantically behaving like
-
-```rust
-impl<const x: usize, const y: usize> Trait<y> for Struct<x>
-```
-
-since we cannot prove injectivity. Note that this is only about behavior under
-_uniqueness checking_.
-
-Since not all parameters' edges are necessarily the identity function,
-dispatching these would be undecidable. A way to solve this problem is to
-introduce some syntax allowing to specify the `impl` parameters. This is not
-something we consider in this proposal, but a secondary RFC can introduce these.
-
-## Division by zero
-
-If some function contain a constexpr divisor, dependent on some value parameter
-of the function, that is (`a / f(x)`), the compiler must ensure that the bound
-implies that `f(x) != 0`.
-
-## An example
-
-This is the proposed syntax:
-
-```rust
-use std::{mem, ptr};
-
-// We start by declaring a struct which is value dependent.
-struct Array<const n: usize, T> {
-    // `n` is a constexpr, sharing similar behavior with `const`s, thus this
-    // is possible.
-    content: [T; n],
-}
-
-// We are interested in exploring the `where` clauses and Π-constructors:
-impl<const n: usize, T> Array<n, T> {
-    // This is simple statically checked indexing.
-    fn checked_index<const i: usize>(&self) -> &T where i < n {
-        //                 note that this is constexpr  ^^^^^
-        unsafe { self.content.unchecked_index(i) }
-    }
-
-    // "Push" a new element, incrementing its length **statically**.
-    fn push(self, elem: T) -> Array<n + 1, T> {
-        let mut new: [T; n + 1] = mem::uninitialized();
-        //               ^^^^^ constexpr
-        unsafe {
-            ptr::copy(self.content.as_ptr(), new.as_mut_ptr(), n);
-            ptr::write(new.as_mut_ptr().offset(n), elem);
-        }
-
-        // Don't call destructors.
-        mem::forget(self.content);
-
-        // So, the compiler knows the type of `new`. Thus, it can easily check
-        // if the return type is matching. By siply evaluation `n + 1`, then
-        // comparing against the given return type.
-        Array { content: new }
-    }
-}
-
-fn main() {
-    let array: Array<2, u32> = Array { content: [1, 2] };
-
-    assert_eq!(array.checked_index::<0>(), 1);
-    assert_eq!(array.checked_index::<1>(), 2);
-    assert_eq!(array.push(3).checked_index::<2>(), 3);
-}
-```
-
-# Experimental extensions open to discussion
-
-## Remark!
-
-These are _possible_ extensions, and not something that would be a part of the
-initial implementation. These a brought up for the sake of discussion.
-
-## SMT-solvers?
-
-This RFC doesn't propose such thing, but future possibilities are worth discussing:
-
-### What a Rusty SMT-solver would look like
-
-The simplest and least obstructive SMT-solver is the SAT-based one. SAT is a
-class of decision problem, where a boolean formula, with some arbitrary number
-of free variables, is determined to be satisfiable or not. Obviously, this is
-decidable (bruteforcing is the simplest algorithm, since the search space is
-finite, bruteforcing is guaranteed to terminate).
-
-SAT is NP-complete, and even simple statements such as `x + y = y + x` can take
-a long time to prove. A non-SAT (symbolic) SMT-solver is strictly more
-expressive, due to not being limited to finite integers, however first-order
-logic is not generally decidable, and thus such solvers are often returning
-"Satisfiable", "Not satisfiable", "Not known".
-
-In general, such algorithms are either slow or relatively limited. An example
-of such a limitation is in the [Dafny
-language](https://github.com/Microsoft/dafny), where programs exist that
-compile when having the bound `a \/ b`, but fails when having the bound `b \/
-a`. This can be relatively confusing the user.
-
-It is worth noting that the technology on this area is still improving, and
-these problems will likely be marginalized in a few years.
-
-Another issue which is present in Rust, is that you don't have any logical
-(invariant) information about the return values. Thus, a SMT-solver would work
-relatively poorly (if at all) non-locally (e.g. user defined functions). This
-is often solved by having an expression of "unknown function", which can have
-any arbitrary body.
-
-That issue is not something that prevents us from adopting a SMT-solver, but it
-limits the experience with having one.
-
-### Backwards compatibility
-
-While I am against adding SMT-solvers to `rustc`, it is worth noting that this
-change is, in fact, compatible with future extensions for more advanced theorem
-provers.
-
-The only catch with adding a SMT-solver is that errors on unsatisfiability or
-contradictions would be a breaking change. By throwing a warning instead, you
-essentially get the same functionality.
-
-### Implementation complications
-
-It will likely not be hard to implement itself, by using an external SMT-solver
-(e.g., Z3). The real problem lies in the issues with performance and
-"obviousness" of the language.
-
-## Candidates for additional rules
-
-### Propositional logic
-
-Currently, the set of rules is rather conservative for rewriting. To make it
-easier to work with, one can add multiple new reductive rules, at the expense
-of implementation complexity:
-
-    RewriteOr:
-      P ∨ Q
-      ──────────
-      ¬(¬P ∧ ¬Q)
-
-This rule states that if `a` nor `b`, none of them can be true. It allows us to
-rewrite OR in terms of NOT and AND.
-
-`RewriteOr` does not reduce depth. In fact, it does increase depth, but that
-rule is only triggered by `∨`, which no other rules infer. Thus, there is no
-way, we can enter a cycle, since `RewriteOr(P)` is a reduction of `P` with
-respect to `∨`.
-
-    DisjunctiveSyllogism:
-      ¬(P ∧ Q)
-      P
-      ────────
-      ¬Q
-
-Basically, this states that if two propositions are mutually exclusive (that
-is, not both of them can be true), and one of them is true, the other must be
-false, due to being disjunctive.
-
-This is strictly reductive.
-
-Now let's go funky:
-
-### Cancelation
-
-    AdditiveCancelationRR:
-      a + c = b + c
-      ─────────────
-      a = b
-    AdditiveCancelationLL:
-      c + a = c + b
-      ─────────────
-      a = b
-    AdditiveCancelationRL:
-      a + c = c + b
-      ─────────────
-      a = b
-    AdditiveCancelationLR:
-      c + a = b + c
-      ─────────────
-      a = b
-    MultiplicativeCancelationRR:
-      ac = bc
-      ─────────────
-      a = b
-    MultiplicativeCancelationLL:
-      ca = cb
-      ─────────────
-      a = b
-    MultiplicativeCancelationRL:
-      ac = cb
-      ─────────────
-      a = b
-    MultiplicativeCancelationLR:
-      ca = bc
-      ─────────────
-      a = b
-
-These are all reductive.
-
-### Inequalities
-
-Inequalities are something, we are interested in simplifying. These carry many
-interesting properties, which shall be covered:
-
-    RewriteGeq:
-      a ≥ b
-      ─────
-      b ≤ a
-
-Here, we rewrite greater than or equal to a form of less than or equal.
-
-    RewriteLessThan:
-      a < b
-      ────────
-      a ≤ b
-      ¬(a = b)
-    RewriteGreaterThan:
-      a > b
-      ────────
-      a ≥ b
-      ¬(a = b)
-
-This allows us to rewrite less than (`<`) and greater than (`>`), in terms of
-their equality accepting versions.
-
-    LeqAdditiveCancelationRR:
-      a + c ≤ b + c
-      ─────────────
-      a ≤ b
-    LeqAdditiveCancelationLL:
-      c + a ≤ c + b
-      ─────────────
-      a ≤ b
-    LeqAdditiveCancelationRL:
-      a + c ≤ c + b
-      ─────────────
-      a ≤ b
-    LeqAdditiveCancelationLR:
-      c + a ≤ b + c
-      ─────────────
-      a ≤ b
-    LeqMultiplicativeCancelationRR:
-      ac ≤ bc
-      ─────────────
-      a ≤ b
-    LeqMultiplicativeCancelationLL:
-      ca ≤ cb
-      ─────────────
-      a ≤ b
-    LeqMultiplicativeCancelationRL:
-      ac ≤ cb
-      ─────────────
-      a ≤ b
-    LeqMultiplicativeCancelationLR:
-      ca ≤ bc
-      ─────────────
-      a ≤ b
-
-These are known as the cancelation laws, and are essentially the inequality
-version, of those stated for equal.
-
-    LeqNegation:
-      ¬(a ≤ b)
-      ────────
-      a > b
-
-This allows us to define the _negation_ of less than or equals to.
-
----
-
-Unfortunately, transitivity is not reductive.
-
-### Other relational definitions
-
-Non-equality is defined by:
-
-    NeqDefinition:
-      a ≠ b
-      ────────
-      ¬(a = b)
-
-## Expression reduction rules
-
-We might want to have expression reduction rules beyond the basic const
-folding. This would allow certain symbolic comparation to improve.
-
-    DistributiveMultiplicationLhs:
-      c(a + b) ↦ ca + cb
-    DistributiveMultiplicationRhs:
-      (a + b)c ↦ ca + cb
-
-This is simply the distributive property of multiplication.
-
-    AdditionLeftAssociate:
-      a + (b + c) ↦ (a + b) + c
-    MultiplicationLeftAssociate:
-      a(bc) ↦ (ab)c
-
-This rules allows us to observe that `a(bc)` is no different from `(ab)c`
-
-Lastly, we are interested in rewriting subtraction in terms of addition:
-
-    SubtractionToAddition:
-      a - b ↦ a + (-b)
-
-All these rules are reductive.
-
-## "Exit-point" identities
-
-These are simply identities which always holds. Whenever the compiler reaches one
-of these when unfolding the `where` clause, it returns "True":
-
-    LeqReflexive:
-        f(x) ≤ f(x) for x primitive integer
-    GeqReflexive:
-        f(x) ≥ f(x) for x primitive integer
-    EqReflexive:
-        f(x) = f(x)
-    NegFalseIsTrue:
-        ¬false
-    TrueAndTrue:
-        true ∧ true
-    OrTrue1:
-        P ∨ true
-    OrTrue2:
-        true ∨ P
-
-## A constexpr type constructor
-
-Add some language item type constructor, `Const<T>`, allowing for constructing
-a constexpr-only types.
-
-`x: T` can coerce into `Const<T>` if `x` is constexpr. Likewise, can `Const<T>`
-coerce into `T`.
-
-```rust
-fn do_something(x: Const<u32>) -> u32 { x }
-
-struct Abc {
-    constfield: Const<u32>,
-}
-```
-
-It is unclear how it plays together with `where` bounds.
-
-The pro is that it adds ability to implement e.g. constant indexing, `Index<Const<usize>>`.
-
-## Towards a "fully" dependent type system
-
-In the future, we might like to extend it to a fully dependent type system.
-While this is, by definition, a dependent type system, one could extend it to
-allow runtime defind value parameters.
-
-Consider the `index` example. If one wants to index with a runtime defined
-integer, the compiler have to be able to show that this value does, in fact,
-satisfy the `where` clause.
-
-There are multiple ways to go about this. We will investigate the Hoare logic way.
-
-### Is this bloat?
-
-Well, we can't know if it is. It depends on how expressive, const parameters
-are in practice, or more so, if there exists edge cases, which they do not cover.
-
-### "Sizingness"
-
-Certain value parameters have impact on the size of some type (e.g., consider
-`[T; N]`). It would make little to no sense, to allow one to determine the size
-of some value, say a constant sized array, at runtime.
-
-Thus, one must find out if a value parameter is impacting the size of some
-type, before one can allow runtime parameterization.
-
-Currently, only one of such cases exists: constant sized arrays. One could as
-well have a struct containing such a primitive, thus we have to require
-transitivity.
-
-If a value parameter has no impact on the size, nor is used in a parameter of a
-constructor, which is "sizing", we call this value "non-sizing".
-
-Only non-sizing value parameters can be runtime defined.
-
-### Hoare logic invariants and runtime calls
-
-As it stands currently, one cannot "mix up" runtime values and value parameter
-(the value parameters are entirely determined on compile time).
-
-It turns out reasoning about invariants is not as hard as expected. [Hoare
-logic](https://en.wikipedia.org/wiki/Hoare_logic) allows for this.
-
-One need not SMT-solvers for such a feature. In fact, one can reason from the
-rules, we have already provided. With the addition of MIR, this might turn out
-to be more frictionless than previously thought.
-
-Hoare logic can be summarized as a way to reason about a program, by giving
-each statement a Hoare triple. In particular, in addition to the statement
-itself, it carries a post- and precondition. These are simple statements that
-can be incrementally inferred by the provided Hoare rules.
-
-Multiple sets of axioms for Hoare logics exists. The most famous one is the set
-Tony Hoare originally formulated.
-
-For a successful implementation, one would likely only need a tiny subset of
-these axioms:
-
-#### Assignment axiom schema
-
-This is, by no doubt, the most important rule in Hoare logic. It allows us to
-carry an assumption from one side of an assignment to another.
-
-It states:
-
-    ────────────────────
-    {P[x ← E]} x = E {P}
-
-That is, one can take a condition right after the assignment, and move it prior
-to the assignment, by replacing the variable with the assigned value.
-
-An example is:
-
-```rust
-// Note: This should be read from bottom to top!
-
-// Now, we replace a with a + 3 in our postcondition, and get a + 3 = 42 in our precondition.
-a = a + 3;
-// Assume we know that a = 42 here.
-```
-
-This rule propagate "backwards". Floyd formulated a more complicated, but forwards rule.
-
-#### `while` rule
-
-The `while` rule allows us to reason about loop invariants.
-
-Formally, it reads
-
-    {P ∧ B} S {P}
-    ───────────────────────────
-    {P} (while B do S) {¬B ∧ P}
-
-`P`, in this case, is the loop invariant, a condition that much be preserved
-for each iteration of the body.
-
-`B` is the loop condition. The loop ends when `P` is false, thus, as a
-postcondition to the loop, `¬B`.
-
-#### Conditional rule
-
-The conditional rule allows one to reason about path-specific invariants in
-e.g. `if` statements.
-
-Formally, it reads
-
-    {B ∧ P} S {Q}
-    {¬B ∧ P } T {Q}
-    ────────────────────────────
-    {P} (if B then S else T) {Q}
-
-This allows us to do two things:
-
-1. Lift conditionals down to the branch, as precondition.
-
-2. Lift conditions up as postconditions to the branching statement.
-
----
-
-In addition, we propose these Rust specific axioms:
-
-#### Non-termination rule
-
-This can be used for reasoning about assertions and panics, along with aborts
-and other functions returning `!`.
-
-Formally, the rule is:
-
-    f: P → !
-    p: P
-    ───────────────────────────
-    (if P then f p else E) {¬P}
-
-This simply means that:
-
-```rust
-if a {
-    // Do something `!` here, e.g. loop infinitely:
-    loop {}
-} else {
-    // stuff
-}
-// We know, since we reached this, that !a.
-```
-
-#### How this allows runtime calls
-
-Runtime calls are parameterized over runtime values. These allows the compiler
-to semantically reason about the value of some variable. Thus, the bound can be
-enforced on compile time, by making sure the statements of the value implies
-whatever bound that must be satisfied.
-
-#### Advantages and tradeoffs
-
-It should be obvious that this extension is a big change, both internally and
-externally. It makes Rust much more complicated, and drives it in a direction,
-which might not be wanted.
-
-It aligns with Rust's goals: effective static checking. As such, runtime
-assertions are to a less extend needed.
+Additionally, we allow parenthesizes, which can contain any general const-expr
+fragment.
 
 # How we teach this
 
@@ -988,34 +204,6 @@ abstracting over generically sized arrays. Dependent types allows one to lift
 the length of the array up to the type-level, effectively allowing one to
 parameterize over them.
 
-**What are the edge cases, and how can one work around those (e.g. failed
-  unification)?**
-
-If you use this a lot, you will likely encounter edge cases, where the
-compiler isn't able to figure out implication, since the reductive rules are
-dumb. However, there is hope! Say your function calls some function, where
-the compiler cannot prove the bound. You can work around this by simply
-adding the called function's `where` bound to the caller's `where` bound.
-While, this is a minor annoyance, working around it is relatively easy.
-
-**How can I use this to create powerful abstractions?**
-
-...
-
-**Can you show some more extensive examples?**
-
-Refer to the rest of the RFC.
-
-- - - -
-
-Moreover, we need to "informalize" the rules defined in this RFC.
-
-I believe this subject is complex enough to have its own chapter in The Holy
-Book, answering these questions in detail.
-
-Lastly, the FAQ will need to be updated to answer various questions related to
-this.
-
 # Drawbacks
 [drawbacks]: #drawbacks
 
@@ -1028,18 +216,25 @@ Another drawback is the lack of implication proves.
 # Alternatives
 [alternatives]: #alternatives
 
-## Use purely symbolic `where` clause checking
-
-We can simplify things somewhat, by using a purely symbolic model of
-implication. Say that a set of clause, `A`, implies a set of clause `B`, iff.
-`B ⊆ A`.
-
-## SMT
-
-Use full SMT-based dependent types. These are more expressive, but severely
-more complex as well.
-
 ## Alternative syntax
+
+### A constexpr type constructor
+
+Add some language item type constructor, `Const<T>`, allowing for constructing
+a constexpr-only types.
+
+`x: T` can coerce into `Const<T>` if `x` is constexpr. Likewise, can `Const<T>`
+coerce into `T`.
+
+```rust
+fn do_something(x: Const<u32>) -> u32 { x }
+
+struct Abc {
+    constfield: Const<u32>,
+}
+```
+
+The pro is that it adds ability to implement e.g. constant indexing, `Index<Const<usize>>`.
 
 The syntax is described above is, in fact, ambiguous, and multiple other better
 or worse candidates exists:
@@ -1051,7 +246,7 @@ _arguments_ instead of constant _parameters_. This allows for bounds on e.g.
 `atomic::Ordering`.
 
 ```rust
-fn do_something(const x: u32) -> u32 where x < 5 { x }
+fn do_something(const x: u32) -> u32 { x }
 ```
 
 From the callers perspective, this one is especially nice to work with, however
@@ -1066,7 +261,7 @@ Another way to semantically justify such a change is by the [`Const` type constr
 Use square brackets for dependent parameters:
 
 ```rust
-fn do_something[x: u32]() -> u32 where x < 5 { x }
+fn do_something[x: u32]() -> u32 { x }
 
 do_something::[2]();
 ```
@@ -1076,38 +271,10 @@ do_something::[2]();
 Create a keyword, `const`:
 
 ```rust
-fn do_something<x: const u32>() -> u32 where x < 5 { x }
+fn do_something<x: const u32>() -> u32 { x }
 
 do_something::<2>();
 ```
-
-### `with` instead of `where`
-
-Some have raised concerns of mixing things up there. Thus one can use the
-syntax `with` to denote bounds instead.
-
-## Allow multiple implementation bounds
-
-Allow overlapping implementations carrying bounds, such that only one of the
-conditions may be true under monomorphization.
-
-## Type/`where` clause checking
-
-### Lazily type check without transitivity rule
-
-Simply evaluate the bounds when calling. Remove the requirement of implication.
-This introduces errors at monomorphization time.
-
-### Inheriting `where` clauses
-
-An interesting idea to investigate is to let functions inherit called
-function's `where` clauses. This allows for non-monomorphization, yet
-ergonomic, `where` clauses.
-
-An important symmetry is lost, though: trait bounds in `where` clauses. These
-are not inherited, but explicit. A way to avoid this asymmetry, [`with` could
-be used](#with-instead-of-where).
-
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
@@ -1123,9 +290,6 @@ Should we segregate the value parameters and type parameters by `;`?
 
 How does this play together with HKP?
 
-How can one change bounds without breaking downstream? Shall some form of
-judgemental OR be added?
-
 What API would need to be rewritten to take advantage of Π-types?
 
 ## Features
@@ -1135,5 +299,3 @@ Should there be a way to parameterize functions dynamically?
 ## Semantics
 
 Find some edge cases, which can be confusing.
-
-Are there other rules to consider?
