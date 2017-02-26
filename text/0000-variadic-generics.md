@@ -190,6 +190,12 @@ there is an expression immediately before the ellipsis.
 - Implement one of the other variadic designs, such as
 [#1582](https://github.com/rust-lang/rfcs/pull/1582) or
 [#1921](https://github.com/rust-lang/rfcs/pull/1921)
+- Include explicit `Head`, `Tail`, and `Cons<T>` associated types in the `Tuple`
+trait. This could allow the above syntax to be implemented purely as sugar.
+However, this approach introduces a lot of additional complexity. One of the
+complications is that such a trait couldn't be implemented for `()`, so
+there would have to be separate `Cons` and `Split` traits, rather than one
+unified `Tuple`.
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
