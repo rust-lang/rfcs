@@ -74,9 +74,9 @@ Such a parameter is declared, like type parameters, in angle brackets (e.g.
 The expr behavior is described as:
 
     ValueParameterDeclaration:
-      Π ⊢ const x: T
+      Γ ⊢ const x: T
       ──────────────
-      Π ⊢ x: T
+      Γ ⊢ x: T
 
 In human language, this simply means that one can use a constant parameter,
 `const x: T`, in expression context, as a value of type `T`.
