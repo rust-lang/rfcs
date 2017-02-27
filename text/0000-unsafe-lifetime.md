@@ -87,7 +87,7 @@ Any expression in which `'unsafe` is used _literally_ as a lifetime argument, wh
 
 The above condition specifies "literally" in that it is possible, say, for a function parameterized over lifetimes to receive `'unsafe` as its argument, but the internal implementation is unaware of this and can only refer to the argument by its parameter name (e.g. `'a`). In such cases, the standard borrowck logic ensures internal consistency, so any invocations on such a lifetime are considered safe, even if `'a` has, in this particular instance, been bound with `'unsafe`. This is still sound overall since the only way a lifetime parameter can be bound as `'unsafe` is for it to be explicitly named so at some point, and doing so requires unsafe permissions to begin the chain.
 
-Finally, it is legal, but unsafe, to coerce a value of any other lifetime into a value of unsafe lifetime, since doing so constitutes the creation of a new instance of unsafe lifetime.
+Finally, it is considered legal and safe to coerce a value of unbounded lifetime into a value of unsafe lifetime, since doing so implies no additional unsafety.
 
 # How We Teach This
 [how-we-teach-this]: #how-we-teach-this
