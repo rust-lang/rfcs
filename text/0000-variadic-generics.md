@@ -123,7 +123,7 @@ impl<Head, Tail, F, R> TupleMap<F> for (Head, ...Tail)
         let (head, ...tail) = self;
         let mapped_head = f(head);
         let mapped_tail = tail.map(f);
-        (mapped_head, mapped_tail...)
+        (mapped_head, ...mapped_tail)
     }
 }
 ```
