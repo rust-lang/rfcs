@@ -129,7 +129,7 @@ impl<Head, Tail, F, R> TupleMap<F> for (Head, ...Tail)
 ```
 
 This example is derived from
-[a playground example by @eddyb]()
+[a playground example by @eddyb](https://play.rust-lang.org/?gist=8fd29c83271f3e8744a3f618786ca1de&version=nightly&backtrace=0)
 that provided inspiration for this RFC.
 
 The example demonstrates the concise, expressive code enabled
