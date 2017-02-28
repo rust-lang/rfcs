@@ -70,6 +70,8 @@ As raw pointers provide an escape-hatch for the borrow checker to references, so
 ## Coercion
 As an unbounded lifetime, `'unsafe` will readily decay into a concrete lifetime. It can be considered to be variance-compatible with all other lifetimes. Calling a method on an object of unsafe lifetime can, like any other lifetime, result in a reborrow of a shorter, concrete lifetime for the scope of the call. In this way, `'unsafe` may be consumed by any API without special consideration, since it can be coerced into something meeting the constraints required of that API.
 
+If `'unsafe` appears multiple times within the type signature of a value, each instance may be coerced independently; multiple instances of `'unsafe` are not implied to represent the same concrete lifetime after coercion. In this way, `'unsafe` can be thought of as a wildcard.
+
 ## Drop
 When an owned value of unsafe lifetime reaches the end of a scope, it will be assumed to be valid at that point and dropped as any other owned value would be.
 
