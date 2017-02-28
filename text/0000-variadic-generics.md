@@ -137,15 +137,13 @@ that was necessary was to implement the trait for `()` and `(Head, ...Tail)`.
 # How We Teach This
 [teach]: #teach
 
-The `(head, ...tail)` and `(Head, ...Tail)` syntax closely mirror established
-patterns for working with `Cons`-cell based lists. Rustaceans coming from
-other functional programming languages will likely be familiar with the concept
-of recursively-defined lists. For those unfamiliar with `Cons`-based
-lists, the concept should be introduced using "structural recursion": there's
-a base case, `()`, and a recursive/inductive case: `(Head, ...Tail)` or
-`(Front..., Last)`. Any tuple can be thought of in this way
-(for example, `(A, B, C)` is equivalent to `(A, ...(B, ...(C, ...())))`
-and `(...(...(...(), A), B), C)`).
+The `...X` syntax can be thought of as a simple syntax expansion. A good mental
+tool is to think of `...` as simply dropping the parenthesis around a tuple, e.g.
+`...(A, B, C)` expanding to `A, B, C`.
+
+This allows for operations that were previously impossible, such as appending
+to the front or tail of a tuple using `(new_head, ...tuple)` or
+`(...tuple, new_last)`, or even `(new_head, ...tuple, new_tail)`.
 
 When teaching this new syntax, it is important to note that the proposed system
 allows for more complicated matching than traditional `Cons`-lists. For example,
