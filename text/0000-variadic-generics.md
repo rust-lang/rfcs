@@ -8,7 +8,7 @@
 
 This RFC proposes the addition of several features to support variadic generics:
 - An intrinsic `Tuple` trait implemented exclusively by tuples
-- `(Head, ...Tail)` syntax for tuple types where `Tail: Tuple`
+- `...T` syntax for tuple types where `T: Tuple`
 - `let (head, ...tail) = tuple;` pattern-matching syntax for tuples
 - `let tuple = (head, ...tail);` syntax for joining an element with a tuple
 
@@ -142,9 +142,10 @@ patterns for working with `Cons`-cell based lists. Rustaceans coming from
 other functional programming languages will likely be familiar with the concept
 of recursively-defined lists. For those unfamiliar with `Cons`-based
 lists, the concept should be introduced using "structural recursion": there's
-a base case, `()`, and a recursive/inductive case: `(Head, ...Tail)`. Any tuple
-can be thought of in this way
-(for example, `(A, B, C)` is equivalent to `(A, ...(B, ...(C, ...())))`).
+a base case, `()`, and a recursive/inductive case: `(Head, ...Tail)` or
+`(Front..., Last)`. Any tuple can be thought of in this way
+(for example, `(A, B, C)` is equivalent to `(A, ...(B, ...(C, ...())))`
+and `(...(...(...(), A), B), C)`).
 
 When teaching this new syntax, it is important to note that the proposed system
 allows for more complicated matching than traditional `Cons`-lists. For example,
