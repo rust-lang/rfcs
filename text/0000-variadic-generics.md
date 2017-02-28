@@ -178,9 +178,10 @@ of features present in Rust, potentially resulting increased complexity
 of the language.
 
 There is also some unfortunate overlap between the proposed `(head, ...tail)`
-syntax and the current inclusive range syntax. However, the similarity
-between `start...end` and `...tail` can be disambiguiated by whether or not
-there is an expression immediately before the ellipsis.
+syntax and the current inclusive range syntax. There will need to be some
+discussion as to how best to overcome this. One possible path could be to
+use `tail...` instead, as it's not obvious that `x...` is distinct from
+`x..` in a useful way (inclusive vs. exclusive range to infinity).
 
 # Alternatives
 [alternatives]: #alternatives
