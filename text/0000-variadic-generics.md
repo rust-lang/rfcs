@@ -195,6 +195,15 @@ However, this approach introduces a lot of additional complexity. One of the
 complications is that such a trait couldn't be implemented for `()`, so
 there would have to be separate `Cons` and `Split` traits, rather than one
 unified `Tuple`.
+- Allow partial borrows or tuple reference splitting. Previous proposals have
+included a transformation from `&(Head, Tail...)` to `(&Head, &Tail...)`.
+However, this would require that every tuple `(Head, Tail...)` actually
+contain a sub-tuple `tail...`. This would get in the way of desirable
+field-reordering optimizations.
+In order to avoid this restriction, this proposal includes a transformation
+from `&(A, B, C)` to a tuple containing references to all the individual types:
+`(&A, &B, &C)`. Iteration over tuples is then performed by-value (where the
+values are references).
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
