@@ -201,14 +201,14 @@ unified `Tuple`.
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
--It might be useful in the future to expand on the locations where `...Type`
+- It might be useful in the future to expand on the locations where `...Type`
 can be used. Potential extensions to this RFC could allow `...Type` in
 non-tuple generics or in function argument types, like
 `fn foo<Args>(args: ...Args)`.
 This would allow functions and traits to use variadic generics without
 explicit tuples. This could enable things like the proposed `foo[i, j]` syntax
 using`Index<usize, usize>`.
--Should the `Tuple` trait use separate `TupleRef<'a>` and `TupleMut<'b>` traits
+- Should the `Tuple` trait use separate `TupleRef<'a>` and `TupleMut<'b>` traits
 to avoid dependency on ATCs? It seems nicer to have them all together in one
 trait, but it might not be worth the resulting feature-stacking mess.
 
