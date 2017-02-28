@@ -8,7 +8,7 @@
 
 Enable the map Entry API to take borrowed keys as arguments, cloning only when
 necessary (in `VacantEntry::insert`). The proposed implementation introduces a
-new trait `std::borrow::AsBorrowOf` which enables the existing `entry` methods
+new trait `std::collections::Query` which enables the existing `entry` methods
 to accept borrows. In effect, it makes the following possible:
 
 ```rust
@@ -27,14 +27,15 @@ to accept borrows. In effect, it makes the following possible:
   *nonclone_map.entry(NonCloneable::new()).or_insert(0) += 1;  // Can't and doesn't clone.
 ```
 
-See [playground](https://is.gd/XBVgDe) and [prototype
+See [playground](https://is.gd/w2GrUH) and (a slightly out of date) [prototype
 implementation](https://github.com/rust-lang/rust/pull/37143).
 
 # Motivation
 [motivation]: #motivation
 
-The motivation for this change is the same as the one laid out in [#1533](https://github.com/rust-lang/rfcs/pull/1533)
-by @gereeter. Below is an adapted version of their `Motivation` section:
+The motivation for this change is the same as the one laid out in
+[#1533](https://github.com/rust-lang/rfcs/pull/1533) by @gereeter. Below is an
+adapted version of their `Motivation` section:
 
 The Entry API for maps allows users to save time by allowing them to perform
 arbitrary modifications at a given key dependent upon whether that key was
@@ -59,7 +60,7 @@ fn word_count(text: &str) -> HashMap<String, u64> {
 
 For a large enough text corpus, in the vast majority of cases the entry will be
 occupied and the newly allocated owned string will be dropped right away,
-wasting precious cycles. We would like the following to work.
+wasting precious cycles. We would like the following to work:
 
 ```rust
 fn word_count(text: &str) -> HashMap<String, u64> {
@@ -94,38 +95,38 @@ To justify the approach taken by this proposal, first consider the following
 
 This would support (2) and (3) but not (1) because `ToOwned`'s blanket
 implementation requires `Clone`. To work around this limitation we define a
-different trait `std::borrow::AsBorrowOf`:
+different trait `std::collections::Query`:
 
 ```rust
-pub trait AsBorrowOf<T, B: ?Sized>: Sized where T: Borrow<B> {
-    fn into_owned(self) -> T;
-    fn as_borrow_of(&self) -> &B;
+pub trait Query<K, B: ?Sized>: Sized where K: Borrow<B> {
+    fn into_key(self) -> K;
+    fn borrow_as_key(&self) -> &B;
 }
 
-impl<T> AsBorrowOf<T, T> for T {
-    fn into_owned(self) -> T { self }
-    fn as_borrow_of(&self) -> &Self { self }
+impl<K> Query<K, K> for K {
+    fn into_key(self) -> K { self }
+    fn borrow_as_key(&self) -> &Self { self }
 }
 
-impl<'a, B: ToOwned + ?Sized> AsBorrowOf<B::Owned, B> for &'a B {
-    fn into_owned(self) -> B::Owned { self.to_owned() }
-    fn as_borrow_of(&self) -> &B { *self }
+impl<'a, B: ToOwned + ?Sized> Query<B::Owned, B> for &'a B {
+    fn into_key(self) -> B::Owned { self.to_owned() }
+    fn borrow_as_key(&self) -> &B { *self }
 }
 ```
 
-This trait defines a relationship between three types `T`, `B` and `Self` with
+This trait defines a relationship between three types `K`, `B` and `Self` with
 the following properties:
 
-  1. There is a by-value conversion `Self` -> `T`.
-  2. Both `T` and `Self` can be borrowed as `&B`.
+  1. There is a by-value conversion `Self` -> `K`.
+  2. Both `K` and `Self` can be borrowed as `&B`.
 
 These properties are precisely what we need from an `entry` query: we need (2)
-to hash and/or compare the query against existing keys in the map and we need (1)
-to convert the query into a key on `VacantEntry::insert`.
+to hash and/or compare the query against existing keys in the map and we need
+(1) to convert the query into a key on `VacantEntry::insert`.
 
 The two impl-s capture that
 
-  1. `T` can always be converted to `T` and borrowed as `&T`. This enables
+  1. `K` can always be converted to `K` and borrowed as `&K`. This enables
      by-value queries regardless of their `Clone`-ability.
   2. `&B` can be converted to `B::Owned` and borrowed as `&B`, when B:
      `ToOwned`. This enables queries via borrows of `Clone` types.
@@ -134,12 +135,12 @@ Then we modify the `entry` signature (for `HashMap`, but similar for `BTreeMap`)
 to
 
 ```rust
-pub fn entry<'a, Q, B>(&'a self, k: Q) -> Entry<'a, K, V, Q>
-      where Q: AsBorrowOf<K, B>
+pub fn entry<'a, Q, B>(&'a self, query: Q) -> Entry<'a, K, V, Q>
+      where Q: Query<K, B>
             K: Borrow<B>,
             B: Hash + Eq {
-    // use `hash(key.as_borrow_of())` and `key.as_borrow_of() == existing_key.borrow()`
-    // for comparisions and `key.into_owned()` on `VacantEntry::insert`.
+    // use `hash(query.borrow_as_key())` and `query.borrow_as_key() == existing_key.borrow()`
+    // for comparisions and `query.into_key()` on `VacantEntry::insert`.
 }
 ```
 
@@ -157,20 +158,20 @@ fn increment<'a>(map: &mut HashMap<&'a str, u32>, key: &'a String) {
 Currently this compiles just fine: `&'a String` is coerced to `&'a str` because
 `String: Deref<str>`, but if `entry` becomes generic, deref coercions stop
 working automatically. We can either accept this backwards incompatibility, or
-we can use specialisation and introduce a new `AsBorrowOf` impl:
+we can use specialisation and introduce a new `Query` impl:
 
 ```rust
 // Same as before, but with specialisable `default` methods.
-impl<T> AsBorrowOf<T, T> for T {
-    default fn into_owned(self) -> T { self }
-    default fn as_borrow_of(&self) -> &Self { self }
+impl<K> Query<K, K> for K {
+    default fn into_key(self) -> K { self }
+    default fn borrow_as_key(&self) -> &Self { self }
 }
 
 // Allow `&'a T` to be used as queries in a map with `&'a U` keys as long as
 // `T: Deref<Target=U>`.
-impl<'a, T: Deref> AsBorrowOf<&'a T::Target, T::Target> for &'a T {
-    default fn into_owned(self) -> &'a T::Target { self.deref() }
-    default fn as_borrow_of(&self) -> &T::Target { self.deref() }
+impl<'a, T: Deref> Query<&'a T::Target, T::Target> for &'a T {
+    default fn into_key(self) -> &'a T::Target { self.deref() }
+    default fn borrow_as_key(&self) -> &T::Target { self.deref() }
 }
 
 // ... (impl for `ToOwned` stays unchanged) ...
@@ -184,18 +185,17 @@ mix, compared to the downside of backwards incompatibility.
 Also see [working implementation](https://github.com/rust-lang/rust/pull/37143)
 for diff.
 
-  1. Add `std::borrow::AsBorrowOf` as described in previous section.
+  1. Add `std::collections::Query` as described in previous section.
   2. Change the signature of `{HashMap,BTreeMap}::entry` to the one described
-     above. Change the implementation to use `key.as_borrow_of()` to search the
-     map.
+     above. Change the implementation to use `query.borrow_as_key()` to search
+     the map.
   2. Change `Entry` to add `Q` and `B` type parameters defaulted to `K` for
      backwards compatibility (for `HashMap` and `BTreeMap`). `VacantEntry` will
      now store a query of type `Q` rather than an actual key of type `K`. On
-     `insert` a call to `AsBorrowOf::<K, B>::into_owned` is made to convert the
+     `insert` a call to `Query::<K, B>::into_key` is made to convert the
      query into an owned key to use in the map.
   3. Move `Entry::key`, `VacantEntry::key` and `VacantEntry::into_key` to a
      separate `impl` block to be implemented only for the `Q=K` case.
-
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -217,16 +217,46 @@ for diff.
        inferred as the argument of `entry` if `K` is a reference type).
      * Uses of `entry(something.into())` may become ambiguous if `something` is
        a reference.
-     * Inference may also hit issue [#37138](https://github.com/rust-lang/rust/issues/37138).
+     * Inference may also hit issue
+       [#37138](https://github.com/rust-lang/rust/issues/37138).
 
 6. The additional `B` type parameter on `Entry` is superfluous and exposed to
-   any non-`Entry<K, V, K, K>` wrappers of `Entry`. See `Unresolved Questions`
-   for some imperfect ways of removing it.
+   any non-`Entry<K, V, K, K>` wrappers of `Entry`.
+
+7. The `ToOwned` blanket implementation limits some potentially desirable
+   `impl`-s like `&[T]: Query<Box<[T]>, [T]>` since it conflicts with the `Vec`
+   imlementation
 
 # Alternatives
 [alternatives]: #alternatives
 
-1. Keyless entries ([#1533](https://github.com/rust-lang/rfcs/pull/1533)):
+1. A variation on this design would define the `Query` trait as
+
+  ```rust
+  pub trait Query<K>: Sized where K: Borrow<Self::Borrowed> {
+      type Borrowed: ?Sized;
+
+      fn into_key(self) -> K;
+      fn borrow_as_key(&self) -> &B;
+  }
+
+  impl<K> Query<K, K> for K {
+      fn into_key(self) -> K { self }
+      fn borrow_as_key(&self) -> &Self { self }
+  }
+  ```
+
+  instead and dropping the blanket `ToOwned` implementation ([playground link](https://play.rust-lang.org/?gist=9077bce21c3fc05b29cc04dcda6056e8&version=nightly&backtrace=1)).
+
+  This would require explicit `impl`-s for `&[T]: Vec<T>`, `&[T]: Box<[T]>` etc.
+  but it completely solves drawbacks 6 (superfluous `B` type parameter) and 7
+  (inability to define certain `Query`-s like the one for `Box<[T]>`).
+
+  Writing the explicit `impl`-s is a bit of a pain though and adds to the
+  growing mountain of traits required for a `str`-`String`-like pair:
+  `As{Ref,Mut}`, `Borrow{,Mut}`, `Deref{,Mut}` and now `Query`.
+
+2. Keyless entries ([#1533](https://github.com/rust-lang/rfcs/pull/1533)):
 
      1. Con: An additional method to the Map API which is strictly more general,
         yet less ergonomic than `entry`.
@@ -236,7 +266,7 @@ for diff.
 
      3. Pro: Solves the recovery of `!Clone` keys.
 
-2. Add a new `entry_or_clone` method with an `Q: Into<Cow<K>>` bound.
+3. Add a new `entry_or_clone` method with an `Q: Into<Cow<K>>` bound.
 
      1. Con: Adds a new method as well as new `Entry` types for all maps.
 
@@ -246,74 +276,6 @@ for diff.
      3. Pro: probably clearest backwards compatible solution, doesn't introduce
         any new traits.
 
-3. Split `AsBorrowOf` into `AsBorrowOf` and `IntoOwned`. This is closer to the
-   original proposal in this RFC:
-
-     1. Con: Requires introducing three new traits instead of one.
-
-     2. Con: Requires introducing three new traits instead of one.
-
-     3. Con: Doesn't support the `Deref` trick (might work with lattice rule).
-
-     4. Pro: `IntoOwned` may be independently useful as a more general
-        `ToOwned`.
-
-     5. Pro: no additional `B` type parameter in `Entry`.
-
-  Code:
-  ```rust
-  pub trait IntoOwned<T> {
-      fn into_owned(self) -> T;
-  }
-
-  impl<T> IntoOwned<T> for T {
-      default fn into_owned(self) -> Self {
-          self
-      }
-  }
-
-  impl<T> IntoOwned<T::Owned> for T
-      where T: RefIntoOwned
-  {
-      default fn into_owned(self) -> T::Owned {
-          self.ref_into_owned()
-      }
-  }
-
-  pub trait AsBorrowOf<T, B: ?Sized>: IntoOwned<T> where T: Borrow<B> {
-      fn as_borrow_of(&self) -> &B;
-  }
-
-  impl<T> AsBorrowOf<T, T> for T {
-      default fn as_borrow_of(&self) -> &Self {
-          self
-      }
-  }
-
-  impl<'a, B: ToOwned + ?Sized> AsBorrowOf<B::Owned, B> for &'a B {
-      default fn as_borrow_of(&self) -> &B {
-          *self
-      }
-  }
-
-  // Auxilliary trait to get around coherence issues.
-  pub trait RefIntoOwned {
-      type Owned: Sized;
-
-      fn ref_into_owned(self) -> Self::Owned;
-  }
-
-  impl<'a, T: ?Sized> RefIntoOwned for &'a T
-      where T: ToOwned
-  {
-      type Owned = <T as ToOwned>::Owned;
-
-      fn ref_into_owned(self) -> T::Owned {
-          (*self).to_owned()
-      }
-  }
-
-  ```
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
@@ -322,38 +284,7 @@ for diff.
 
 2. Is the `IntoOwned` version preferable?
 
-3. Do we include the `Deref` impl for `AsBorrowOf` to keep deref coercions
+3. Do we include the `Deref` impl for `Query` to keep deref coercions
    working?
 
-4. Should we be more honest about the purpose of the trait and call it
-   `std::collections::Query` with `into_key`, `borrow_as_key` methods?
-
-5. The `B` parameter of `AsBorrowOf` is really inconvenient, especially because
-   it propagates to the `Entry` types. Conceptually, it's an associated type
-   (for a `K, Q` pair, there's only one `B` for which `Q: AsBorrowOf<K, B>`, but
-   I wasn't able to get coherence to work with a `type Borrowed`. Can it be
-   done?
-
-   Another option to get rid of it only in the `Entry` types is to add a
-   `Q: Into<K>` parameter to `Entry` instead of `Q, B`. The default becomes
-   `Q=Query<K, K>` where `Query` is
-
-   ```rust
-   struct Query<Q, B: ?Sized> {
-       value: Q,
-       _phantom: PhantomData<B>,
-   }
-
-   // Abuse our std-powers to provide a generic `From` impl.
-   impl<K, Q, B: ?Sized> From<Query<Q, B>> for K
-       where K: Borrow<B>, Q: AsBorrowOf<K, B>
-   {
-      fn from(query: Query<Q, B>) -> K {
-          query.value.into_owned()
-      }
-   }
-
-   impl<Q: Debug, B: ?Sized> Debug for Query<Q, B> { /* ... */ }
-
-   // etc.
-   ```
+4. Do we do alternative 1 or not?
