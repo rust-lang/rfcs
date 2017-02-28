@@ -79,18 +79,18 @@ implementations of `Tuple` will be added. This enables an increased level of
 negative reasoning making it easier to write blanket implementations of traits
 for tuples.
 
-## The `(Head, ...Tail)` Type Syntax
-This syntax would allow for a `Cons`-cell-like representation of tuple types.
-For example, `(A, ...(B, C))` would be equivalent to `(A, B, C)`. This allows
-users to represent the type of tuples in an inductive style when writing trait
-implementations.
+## The `...T` Type Syntax
+This syntax would allow for expansion of tuple types into a list of types.
+For example, `(A, B, C)` could be represented as `(A, ...(B, C))` or
+`(...(A, B), C)`. This allows users to express type lists of varying arity.
 
-## The `(head, ...tail)` Pattern-Matching Syntax
+## The `...x` Pattern-Matching Syntax
 This syntax allows for splitting apart the head and tail of a tuple. For
 example, `let (head, ...tail) = (1, 2, 3);` moves the head value, `1`, into
-`head`, and the tail value, `(2, 3)`, into `tail`.
+`head`, and the tail value, `(2, 3)`, into `tail`. Similarly, the last element
+of a tuple could be matched out using `let (...front, last) = (1, 2, 3);`.
 
-## The `(head, ...tail)` Joining Syntax
+## The `...x` Joining Syntax
 This syntax allows pushing an element onto a tuple. It is the natural inverse
 of the pattern-matching operation above. For example,
 `let tuple = (1, ...(2, 3));` would result in `tuple` having a value of
@@ -146,6 +146,11 @@ a base case, `()`, and a recursive/inductive case: `(Head, ...Tail)`. Any tuple
 can be thought of in this way
 (for example, `(A, B, C)` is equivalent to `(A, ...(B, ...(C, ...())))`).
 
+When teaching this new syntax, it is important to note that the proposed system
+allows for more complicated matching than traditional `Cons`-lists. For example,
+it is possible to match on `(...Front, Last)` in addition to the familiar
+`(Head, ...Tail)`-style matching.
+
 The exact mechanisms used to teach this should be determined after getting more
 experience with how Rustaceans learn. After all, Rust users are a diverse crowd,
 so the "best" way to teach one person might not work as well for another. There
@@ -193,6 +198,7 @@ unified `Tuple`.
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
+
 -It might be useful in the future to expand on the locations where `...Type`
 can be used. Potential extensions to this RFC could allow `...Type` in
 non-tuple generics or in function argument types, like
