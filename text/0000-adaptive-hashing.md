@@ -120,19 +120,50 @@ very unlikely, and the dotted edge means the state change is enormously unlikely
 
 <img width="800" src="https://cdn.rawgit.com/pczarn/code/d62cd067ca84ff049ef196aa1b7773d67b4189d4/rust/robinhood/adaptive.svg">
 
+## Load factor
+
+We decrease the load factor of `HashMap` from 0.909 to 0.833.
+
 ## Choosing constants
 
-The thresholds of 128 and 512 are chosen to minimize the chance of exceeding them. In particular, we
-want that chance to be less than 10^-8 with a load of 90% and less than 10^-30 with a load of 20%.
-For displacement, the smallest k that fits our needs is 90, so we round that up to 128. For the
-number of forward-shifted buckets, we choose k=512. Keep in mind that the run length is a sum of the
-displacement and the number of forward-shifted buckets, so its threshold is 128+512=640. Even though
-the probability of having a run length of more than 640 buckets may be higher than the probability
-we want, it should be low enough.
+The thresholds of 128 and 1500 are chosen to minimize the chance of exceeding them. In particular,
+we want that chance to be less than 10^-8 with a load of 90% and less than 10^-30 with a load of
+20%. For displacement, the smallest k that fits our needs is 90, so we round that up to 128. For the
+number of forward-shifted buckets, we choose k=1500. Keep in mind that the run length is a sum of
+the displacement and the number of forward-shifted buckets, so its threshold is 128+1500=1628. We
+can allow probability of exceeding our thresholds that is a bit worse than desirable.
 
-<img width="600" src="https://cdn.rawgit.com/pczarn/code/d62cd067ca84ff049ef196aa1b7773d67b4189d4/rust/robinhood/lookup_cost.png">
+### Lookup cost
 
-<img width="600" src="https://cdn.rawgit.com/pczarn/code/d62cd067ca84ff049ef196aa1b7773d67b4189d4/rust/robinhood/run_length.png">
+```
+At load factor 0.909
+Pr{lookup cost >= 100} = 1.0e-9
+Pr{lookup cost >= 128} = 3.1e-12
+Pr{lookup cost >= 150} = 3.3e-14
+```
+
+```
+At load factor 0.833
+Pr{lookup cost >= 100} = 4.1e-16
+Pr{lookup cost >= 128} = 2.0e-20
+Pr{lookup cost >= 150} = 8.0e-24
+```
+
+```
+At load factor 0.2
+Pr{lookup cost >= 100} = 6.2e-116
+```
+
+### Forward shift cost
+
+At load factor near the current limit of 0.909, the cost of forward shift is too high to allow it.
+
+```
+At load factor 0.833
+Pr{forward shift cost >= 1200} = 2.6e-10
+Pr{forward shift cost >= 1500} = 4.1e-12
+Pr{forward shift cost >= 1800} = 6.4e-14
+```
 
 ## Choosing hash functions
 
@@ -141,14 +172,18 @@ strings and slices of integers, we will use FarmHash. (The Hasher trait must all
 for FarmHash.) Using any other key type means your HashMap will do safe hashing.
 
 # Consequences
+## For the hashing API
+
+This RFC does not propose any public-facing changes to the hashing infrastructure.
+
 ## For the performance of Rust programs
 
-The impact is minimal on programs that rarely use HashMaps. The increase in binary size should be
-small. For programs that spend a large portion of their run time using HashMap with primitive keys,
-the speedup should be noticeable.
+The impact is minimal on programs that rarely use HashMaps. The load factor’s new value is well
+within the reasonable range. The increase in binary size should be small. For programs that spend a
+large portion of their run time using HashMap with primitive keys, the speedup should be noticeable.
 
 On 32-bit platforms, the benefit of using a 32-bit hash function instead of SipHash is higher,
-because SipHash’s round involves 30 32-bit operations.
+because each SipHash’s round involves 30 32-bit operations.
 
 ## For the HashMap API
 
@@ -184,10 +219,32 @@ code.
 - We can set FarmHash's seed to a random value for nondeterminism.
 - When a map is emptied, its hash function does not matter anymore. As a special case, we can detect
   operations that clear maps in safe mode, and reset them back to fast mode.
-- We can let user declare their types as one-shot hashable.
+- We can let users declare their types as one-shot hashable. The following public trait may allow
+  such one-shot hashing.
+
+```rust
+#[cfg(not(target_pointer_width = "64"))]
+type ShortHash = u32;
+#[cfg(target_pointer_width = "64")]
+type ShortHash = u64;
+
+trait OneshotHashable {
+  fn hash(&self) -> ShortHash;
+}
+```
 
 # Unresolved questions
 
 Is there any hasher that is faster than Farmhash?
 
 Are the chosen thresholds reasonably low?
+
+# Appendices
+
+## Image for the lookup cost chart
+
+<img width="600" src="https://cdn.rawgit.com/pczarn/code/d62cd067ca84ff049ef196aa1b7773d67b4189d4/rust/robinhood/lookup_cost.png">
+
+## Image for the forward shift cost chart
+
+<img width="600" src="https://cdn.rawgit.com/pczarn/code/def92e19ae60b599e9620afa1bdcad1c36e6e982/rust/robinhood/extrapolated_insertion_cost_4.png">
