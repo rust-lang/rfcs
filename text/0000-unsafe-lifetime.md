@@ -109,6 +109,7 @@ This concept is relatively niche and is not something that most rust users will 
 [alternatives]: #alternatives
 
 * Implement self-referential structs. Many, if perhaps not all, use cases for this could perhaps be also expressed with self-referential structs. However, that is a far more complex feature. In the meantime, the presence of this feature enables the implementation of self-referential structs at the library level today, if not with ideal ergonomics.
+* Use `for<'a> Ref<'a, T>` syntax instead of `Ref<'unsafe, T>`. This is technically a more accurate depiction of the nature of the type, but is arguably misleading in that it does not immediately evoke notions of unsafety.
 * Do nothing. As described above, `'static` or other concrete lifetimes can sometimes be used as stand-ins, or in the worst case additional, redundant lifetime parameters. While certainly not ideal, it is technically possible to handle such cases without this feature.
 
 # Unresolved questions
