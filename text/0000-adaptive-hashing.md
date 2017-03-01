@@ -82,7 +82,7 @@ in one shot. Otherwise, a HashMap with complex keys is always in safe mode.  We 
 mode when the following conditions are met:
 
 - an inserted entry's displacement >= 128, or the number of entries displaced by an inserted
-  entry >= 512
+  entry >= 1500
 - the load of the map is smaller than 20%
 - the map is in the fast mode
 
@@ -95,7 +95,7 @@ The pseudocode for a function that replaces `insert` is:
 ```
 fn safeguarded_insert(map, key):
   entry = insert(map, key)
-  if the entry's displacement >= 128 or the number of entries displaced by entry >= 512:
+  if the entry's displacement >= 128 or the number of entries displaced by entry >= 1500:
     set the flag for reducing displacement
   return entry
 ```
