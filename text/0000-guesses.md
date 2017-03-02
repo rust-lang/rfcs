@@ -21,7 +21,7 @@ Clippy (and some compiler builtin lints) produce "suggestions", which are code
 snippets that can be copy pasted over a part of the linted code to replace,
 enhance or remove the detected suboptimal piece of code. In some cases there is
 a clearly correct solution, like removing one ampersand on the rhs of the following
-let binding (due to it being automatically dereferenced by the compiler anyway):
+`let` binding (due to it being automatically dereferenced by the compiler anyway):
 
 ```rust
 let x: &i32 = &&5;
@@ -101,7 +101,7 @@ that information back out of the sub-diagnostic.
 The backend API is changed to add a `code_hints` field to the main diagnostic, which contains
 an enum with a `Suggestion` and a `Guesses` variant. The actual backend will then destructure
 these variants and apply them as they see fit best. An implementation of this backend change
-exists at https://github.com/rust-lang/rust/pull/39973 (does not implement guesses yet).
+exists [in a rust PR](https://github.com/rust-lang/rust/pull/39973) (does not implement guesses yet).
 
 The command line backend will print guesses as a sequence of "help" messages, just like in the following example
 
@@ -121,7 +121,14 @@ error[E0412]: type name `Iter` is undefined or not in scope
 ```
 
 With the only change being that the `use ...;` is directly inserted into the help messages as shown below.
-This has precedent in the   r
+This has precedent in the diagnostics for unimported traits:
+
+```
+  = help: items from traits can only be used if the trait is in scope; the following trait is implemented but not in scope, perhaps add a `use` for it:
+  = help: candidate #1: `use std::borrow::Borrow;`
+```
+
+For the import guesses this would look like
 
 ```
 error[E0412]: type name `Iter` is undefined or not in scope
@@ -178,22 +185,30 @@ In case there is only a single guess, there are multiple variants on what can ha
 # How We Teach This
 [how-we-teach-this]: #how-we-teach-this
 
+There is concern for the teachability of all the different diagnostic levels of rustc. The full current list is
 
+* fatal
+    * Bug (panic and abort)
+    * Error (abort at the next convenient stage, but continue with reporting more diagnostics)
+* Warning (print and continue)
+* sub-diagnostic
+    * Help (print in its own line and continue)
+    * Note (print inline in the textual output right after the `^^^^^` under the span)
+* code-hints
+    * Suggestion (print like a help)
 
-What names and terminology work best for these concepts and why?
-How is this idea best presented—as a continuation of existing Rust patterns, or as a wholly new one?
+This list would get extended by Guesses under the code hint category
 
-Would the acceptance of this proposal change how Rust is taught to new users at any level?
-How should this feature be introduced and taught to existing Rust users?
+The complexity is not in the diagnostic levels, but in choosing the correct level for a situation. This is fairly straight-forward for errors vs warnings, but in the sub-diagnostic and code-hint levels, it is less clear.
 
-What additions or changes to the Rust Reference, _The Rust Programming Language_, and/or _Rust by Example_ does it entail?
+TODO: add decision graph
 
 # Drawbacks
 [drawbacks]: #drawbacks
 
 ## The new "guess" diagnostic category does not add any benefit
 
-Citing @nrc in https://github.com/rust-lang/rust/pull/39458#issuecomment-277898885
+Citing @nrc in [the original pull request](https://github.com/rust-lang/rust/pull/39458#issuecomment-277898885)
 
 > My work flow for 'automatic application' is that the user opts in to doing this
 > in an IDE or rustfix tool, possibly with some further input.
@@ -236,4 +251,4 @@ This can be done as a later step to improve suggestions
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
-1. Test whether all compiler suggestions are correct by applying them to the run-pass tests (or a new test folder) and checking whether the code still works.
+1. I could not come up with a nice API for multiple guesses each with multiple spans
