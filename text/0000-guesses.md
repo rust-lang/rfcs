@@ -9,7 +9,8 @@
 Add a new kind of compiler diagnostic ("guess"), to distinguish "suggestions"
 from code snippets that are found by a heuristic or have multiple possible
 solutions. Change all current "suggestions" which are not guaranteed to be correct
-to "guesses".
+to "guesses" or make them not emit a suggestion in the corner cases that would
+yield incorrect suggestions.
 
 # Motivation
 [motivation]: #motivation
@@ -61,7 +62,7 @@ pattern in a for loop together with the object being iterated over) are desired,
 one should modify the `Diagnostic` object manually. This might be inconvenient, but
 multispan replacements are very rare (occurring exactly
 [twice in clippy](https://github.com/Manishearth/rust-clippy/search?utf8=%E2%9C%93&q=multispan_sugg))
-and therefor the API should be figured out once/if they become more common.
+and therefore the API should be figured out once/if they become more common.
 
 ## Changes in diagnostic API usage
 
