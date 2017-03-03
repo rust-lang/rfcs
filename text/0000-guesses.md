@@ -201,7 +201,7 @@ This list would get extended by Guesses under the code hint category
 
 The complexity is not in the diagnostic levels, but in choosing the correct level for a situation. This is fairly straight-forward for errors vs warnings, but in the sub-diagnostic and code-hint levels, it is less clear.
 
-TODO: add decision graph
+![chart](https://cloud.githubusercontent.com/assets/332036/23554529/be228b76-0025-11e7-99e7-627d60f5a328.png)
 
 # Drawbacks
 [drawbacks]: #drawbacks
