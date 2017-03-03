@@ -33,8 +33,8 @@ Here, the lifetime of `value` is bounded not just by the specified scope, `'b`, 
 
 ```rust
 struct SelfRefStruct<T> {
-    owner: RefCell<T>,
-    borrower: Ref<'static, T>, // Problem, T is not 'static, this type can't exist
+    owner: ManuallyDrop<Box<RefCell<T>>>,
+    borrower: ManuallyDrop<Ref<'static, T>>, // Problem, T is not 'static, this type can't exist
 }
 ```
 
@@ -42,8 +42,8 @@ Here, `'static` fails us in that it violates the constraints required by the dec
 
 ```rust
 struct SelfRefStruct<'redundant, T: 'redundant> {
-    owner: RefCell<T>,
-    borrower: Ref<'redundant, T>, // Compiler is happy again
+    owner: ManuallyDrop<Box<RefCell<T>>>,
+    borrower: ManuallyDrop<Ref<'redundant, T>>, // Compiler is happy again
 }
 ```
 
@@ -51,8 +51,8 @@ Now the compiler is satisfied, but we've paid a price. Or rather, we passed the 
 
 ```rust
 struct SelfRefStruct<T> {
-    owner: RefCell<T>,
-    borrower: Ref<'unsafe, T>, // Force the compiler to accept this type without an additional parameter.
+    owner: ManuallyDrop<Box<RefCell<T>>>,
+    borrower: ManuallyDrop<Ref<'unsafe, T>>, // Force the compiler to accept this type without an additional parameter.
 }
 ```
 
