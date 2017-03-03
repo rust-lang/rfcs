@@ -246,11 +246,13 @@ This will make it impossible for automatic semantic code rewriting.
 
 This allows changing "help" messages like "did you mean ..." to suggestions, if there are multiple things that apply.
 
-## Also apply all single-guess rules to suggestions to reduce error verbosity
+## Add a new "replacement" category
 
-This can be done as a later step to improve suggestions
+Denotes the automatically applicable code hints, while suggestions stay as the heuristic category.
+This is just nomenclature, but eases the transition, since nothing needs to be changed in existing `span_suggestion` calls.
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
 1. I could not come up with a nice API for multiple guesses each with multiple spans
+2. Also apply all single-guess rules to suggestions to reduce error verbosity? This can be done later.
