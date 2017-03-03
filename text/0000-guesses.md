@@ -199,7 +199,9 @@ There is concern for the teachability of all the different diagnostic levels of 
 
 This list would get extended by Guesses under the code hint category
 
-The complexity is not in the diagnostic levels, but in choosing the correct level for a situation. This is fairly straight-forward for errors vs warnings, but in the sub-diagnostic and code-hint levels, it is less clear.
+The complexity is not in the diagnostic levels themselves, but in choosing the correct level for a situation. This is fairly straight-forward for errors vs warnings, but in the sub-diagnostic and code-hint levels, it is less clear.
+
+The following chart should clarify the decision process for subdiagnostics
 
 ![chart](https://cloud.githubusercontent.com/assets/332036/23554529/be228b76-0025-11e7-99e7-627d60f5a328.png)
 
