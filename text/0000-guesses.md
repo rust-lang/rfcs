@@ -82,9 +82,9 @@ are generated in some form of a loop. If `span_guesses` is used, all
 arbitrary limits on the number of displayed items is removed. This limit
 is instead enforced by the command line diagnostic backend.
 
-## Json diagnostics backend API changes
+## JSON diagnostics backend API changes
 
-The json object gets a new field `guesses` which is an array of
+The JSON object gets a new field `guesses` which is an array of
 `Guess` objects. Every `Guess` object contains an array of span +
 snippet pairs stating which part of the code should be replaced
 with what replacment. There is no need for all guesses to replace
@@ -94,7 +94,7 @@ the same piece of code or even require the same number of replacements.
 
 Currently suggestions are inserted directly into the error structure as a "help" sub-diagnostic
 of the main error, with a special `Option` field set for the replacement text.
-This means that backends like the existing command line backend and json backend will need to
+This means that backends like the existing command line backend and JSON backend will need to
 process the main error's sub-diagnostics to figure out how to treat the suggestion and extract
 that information back out of the sub-diagnostic.
 
