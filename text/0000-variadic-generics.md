@@ -134,6 +134,53 @@ The example demonstrates the concise, expressive code enabled
 by this RFC. In order to implement a trait for tuples of any length, all
 that was necessary was to implement the trait for `()` and `(Head, ...Tail)`.
 
+## Working With References
+
+Since `let (head, ...tail) = tuple;` consumes `tuple`, there is an extra step
+required when implementing traits that take `&self` rather than `self`. Previous
+RFC proposals have included a conversion from `&(Head, ...Tail)` to
+`(&Head, &Tail)`.
+Unfortunately, this would require that every tuple `(Head, Tail...)` contain a
+sub-tuple `Tail` (i.e. `(A, B, C)` would need to contain `(B, C)`).
+This would limit tuple iteration to a single direction and prevent desirable
+field-reordering optimizations.
+
+Instead, this RFC proposes the use of `elements_as_refs` and `elements_as_mut`
+methods to convert from `&(A, B, C)` to `(&A, &B, &C)` and from `&mut (A, B, C)`
+to `(&mut A, &mut B, &mut C)`, respectively.
+
+Using this strategy, `Clone` can be implemented as follows:
+
+```rust
+trait CloneRefsTuple: Tuple {
+    type Output: Tuple;
+    /// Turns `(&A, &B, ...)` into `(A, B, ...)` by cloning each element
+    fn clone_refs_tuple(self) -> Self::Output;
+}
+impl CloneRefsTuple for () {
+    type Output = ();
+    fn clone_refs_tuple(self) -> Self::Output { }
+}
+impl<'a, Head, Tail> CloneRefsTuple for (&'a Head, ...Tail)
+    where Head: Clone, Tail: CloneRefsTuple
+{
+    type Output = (Head, <Tail as CloneRefsTuple>::Output);
+
+    fn clone_refs_tuple(self) -> Self::Output {
+        let (head, ...tail) = self;
+        (head.clone(), tail.clone_refs_tuple())
+    }
+}
+
+impl<T: Tuple> Clone for T where
+    for<'a> T::AsRefs<'a>: CloneRefsTuple<Output=T>
+{
+    fn clone(&self) -> Self {
+        self.elements_as_refs().clone_refs_tuple()
+    }
+}
+```
+
 # How We Teach This
 [teach]: #teach
 
@@ -197,9 +244,10 @@ there would have to be separate `Cons` and `Split` traits, rather than one
 unified `Tuple`.
 - Allow partial borrows or tuple reference splitting. Previous proposals have
 included a transformation from `&(Head, Tail...)` to `(&Head, &Tail)`.
-However, this would require that every tuple `(Head, Tail...)` actually
+However, this would require that every tuple `(Head, Tail...)`
 contain a sub-tuple `Tail` (i.e. `(A, B, C)` would need to contain `(B, C)`).
-This would get in the way of desirable field-reordering optimizations.
+This would limit tuple iteration to a single direction and prevent desirable
+field-reordering optimizations.
 In order to avoid this restriction, this proposal includes a transformation
 from `&(A, B, C)` to a tuple containing references to all the individual types:
 `(&A, &B, &C)`. Iteration over tuples is then performed by-value (where the
