@@ -173,7 +173,7 @@ In case there is only a single guess, there are multiple variants on what can ha
            |    ^^^ did you mean `a::I`
         ```
 * `note` already attched to the main diagnostic
-    * Attach the guess below the note according tho the no-note rules (as if the note were the main diagnostic)
+    * Attach the guess below the note according to the no-note rules (as if the note were the main diagnostic)
     ```
     5 |     ignore(|z| if false { &y } else { z });
       |            ^^^             - `y` is borrowed here
