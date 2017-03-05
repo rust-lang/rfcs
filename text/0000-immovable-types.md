@@ -11,7 +11,7 @@ This add an new built-in trait `Move` which all existing types will implement. T
 # Motivation
 [motivation]: #motivation
 
-Interacting with C/C++ code often require data that cannot change its location in memory. To work around this we allocate such data on the heap. For example the standard library `Mutex` type allocates a platform specific mutex on the heap. This prevents the use of `Mutex` in global variables. If we add immovable types, we can have an alternative immovable mutex type `StaticMutex` which we could store in global variables. If the lifetime of the mutex is limited to a lexical scope, we could also have a `StaticMutex` in the stack frame and avoid the allocation.
+Interacting with C/C++ code may require data that cannot change its location in memory. To work around this we allocate such data on the heap. For example the standard library `Mutex` type allocates a platform specific mutex on the heap. This prevents the use of `Mutex` in global variables. If we add immovable types, we can have an alternative immovable mutex type `StaticMutex` which we could store in global variables. If the lifetime of the mutex is limited to a lexical scope, we could also have a `StaticMutex` in the stack frame and avoid the allocation.
 
 The key motivation for this proposal is to allow generators to have "stack frames" which do not move in memory. The ability to take references to local variables rely on those variable being static in memory. If a generator is moved, the local variables contained inside also move, which invalidates references to them. So references to local variables stored inside the generator cannot be allowed.
 
@@ -31,7 +31,7 @@ All primitive types implement `Move`. Composite types implement `Move` if all th
 
 A new marker struct `ImmovableData` is also introduced in `core::marker`. This struct does not implement `Move` and allows users to make composite immovable types. `PhantomData` should be extended to accept `?Move` types, but `PhantomData` itself should always implement `Move`.
 
-You can freely move values which do not implement `Move` as long as you don't borrow them. Once we borrow such a value, we'd know it's address and code should be able to rely on the address not moving.
+You can freely move values which do not implement `Move` as long as you don't borrow them. Once we borrow such a value, we'd know its address and code should be able to rely on the address not changing. This is sound since the only way to observe the address of a value is to borrow it. Before the first borrow nothing can observe the address and the value can be moved around.
 
 Static variables allow types which do not implement `Move`.
 
@@ -118,6 +118,17 @@ A `?Move` bound on `IntoIterator::IntoIter` and `Iterator::Self` would also be u
 I suggest we do a `crater` run to investigate if these breakages are feasible.
 
 Changing these associated types will be insta-stable. You would be unable to write stable code which would conflict with this proposal. `?Move` bounds would also show up in documentation, although we would be able to filter those out if desired.
+
+## Allowing immovable types in container types
+
+`std::boxed::Box`, `std::rc::Rc`, `std::rc::Weak`, `std::sync::Arc`, `std::sync::Weak` will be changed to allow immovable types inside, but will themselves be movable. These can be used to overcome the limitations of immovable types at the cost of an allocation.
+
+For `Rc` and `Arc` , the function `try_unwrap` would only be allowed on movable types.
+
+In general, we can allow immovable types in an movable container if we either:
+- disallow all methods of accessing the address of the contained immovable types, including references (possible for `Vec`, `HashMap`)
+- prevent the type from actually moving once it's inside (the method suitable for `Box`, `Rc`, `Arc`)
+
 
 # How We Teach This
 [how-we-teach-this]: #how-we-teach-this
