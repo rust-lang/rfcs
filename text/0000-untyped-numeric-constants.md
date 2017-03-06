@@ -39,6 +39,14 @@ let a: i32 = INTEGER;
 let b: u32 = INTEGER;
 ```
 
+It may also be desirable to create constants using simple constant expressions, for example:
+
+```Rust
+const ROOM_TEMPERATURE = INTEGER + 20;
+```
+
+However, this would be much more complicated to support than simply untyped integer constants and can be reserved for a future extension if necessary.
+
 No support for inferring integer constants as floats or vice versa is being proposed.
 
 # How We Teach This
@@ -61,7 +69,7 @@ It will require additions to all the documentation with regards to constants.
 # Alternatives
 [alternatives]: #alternatives
 
-* One alternative is to use macro constants, which involves defining a macro for each constant, and invoking the constant via `FOO!()` instead of `FOO`. It is verbose and ugly, clutters the global macro namespace, and will probably uncover some performance regression in rustc.
+* One alternative is to use macro constants, which involves defining a macro for each constant, and invoking the constant via `FOO!()` instead of `FOO`. It is verbose and ugly, clutters the global macro namespace, and will probably uncover some performance regression in rustc. Macros 2.0 may get rid of the global namespace pollution, and an RFC could make calling the macro as simple as `FOO!` but it is still far from ideal.
 * The status quo of having to decide on a type for each constant, or provide multiple versions of the constant each with a different type.
 
 # Unresolved questions
@@ -69,3 +77,4 @@ It will require additions to all the documentation with regards to constants.
 
 * Is this the right syntax? Is there other syntax that would be preferable?
 * Currently you can explicitly specify the type of an integer literal via suffixes. How would a user explicitly specify the type of a constant? Type ascription?
+* Do we support constant expressions involving arithmetic? What about arbitrary const fn support? This may end up requiring more generalized polymorphic generic support.
