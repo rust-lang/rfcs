@@ -229,6 +229,61 @@ discussion as to how best to overcome this. One possible path could be to
 use `tail...` instead, as it's not obvious that `x...` is distinct from
 `x..` in a useful way (inclusive vs. exclusive range to infinity).
 
+# Future Extensions
+[future]: #future-extensions
+
+## Allow `...T` in Argument Position
+The RFC as proposed would allow for varied-length argument lists to functions
+in the form of explicit tuples. It would allow variadic functions to be
+declared and used like this:
+
+```rust
+trait MyTrait: Tuple {...}
+
+impl MyTrait for () { ... }
+
+impl<Head, Tail> MyTrait for (Head, ...Tail) where Tail: Tuple, ... { ... }
+
+fn foo<T: MyTrait>(args: T) { ... }
+
+// Called like this:
+foo((arg1, arg2, arg3));
+```
+
+However, this approach requires that functions be called with explicit tuple
+arguments, rather than the more natural syntax `foo(arg1, arg2, arg3)`.
+For this reason, it may be beneficial to allow `foo` to be declared like
+`fn foo<T: MyTrait>(...args: ...T)` and called like
+`foo(arg1, arg2, arg3)`.
+
+## Allow `...T` in Generic Type Lists
+Another possible extension would be to allow `...T` in generic type lists,
+e.g. `foo<...T>`. Without this extension, a non-type-inferred call to `foo`
+would be written `foo::<(T1, T2, T3)>(arg1, arg2, arg3)`. However, this is
+unnecessarily verbose and doesn't allow for existing traits and functions
+to support variadic argument lists.
+
+By supporting `...T` in generic type lists, `foo`'s declaration would become
+`fn foo<...T>(...args: ...T) where T: MyTrait`, and it could be called like
+`foo::<T1, T2, T3>(arg1, arg2, arg3)`.
+
+As mentioned before, this extension would allow functions, traits, and types
+to backwards-compatibly support variadic argument lists. For example, the
+`Index<T>` trait could be extended to support indexing like
+`my_vec[i, j]`:
+
+```rust
+pub trait Index<...Idxs> where Idxs: Tuple + ?Sized {
+  type Output: ?Sized;
+  fn index(&self, ...indices: ...Idxs) -> &Self::Output;
+}
+```
+
+Similarly, this extension would allow the currently awkward `fn_traits` to use
+the syntax
+`T: Fn<Arg1, Arg2, Arg3>` instead of the current (unstable) syntax
+`T: Fn<(Arg1, Arg2, Arg3)>`.
+
 # Alternatives
 [alternatives]: #alternatives
 
@@ -255,16 +310,7 @@ values are references).
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
-
-- It might be useful in the future to expand on the locations where `...Type`
-can be used. Potential extensions to this RFC could allow `...Type` in
-non-tuple generics or in function argument types, like
-`fn foo<Args>(args: ...Args)`.
-This would allow functions and traits to use variadic generics without
-explicit tuples. This could enable things like the proposed `foo[i, j]` syntax
-using`Index<usize, usize>`.
 - Should the `Tuple` trait use separate `TupleRef<'a>` and `TupleMut<'b>` traits
 to avoid dependency on ATCs? It seems nicer to have them all together in one
 trait, but it might not be worth the resulting feature-stacking mess.
-
-
+- Should either of the future extensions be included in the initial RFC?
