@@ -20,16 +20,11 @@ Since generators can only move during suspend points we can require that referen
 # Detailed design
 [design]: #detailed-design
 
-A new marker trait `Move` is introduced in `core::marker`. All type parameters (including `Self` for traits) and associated types implement `Move` by default.
+A new unsafe auto trait `Move` is introduced in `core::marker`. References, pointers, `core::ptr::Unique` and `core::ptr::Shared` implement this trait.
+
+All type parameters (including `Self` for traits), trait objects and associated types have a `Move` bound by default.
 
 If you want to allow types which may not implement `Move`, you would use the `?Move` trait bound which means that the type may or may not implement `Move`.
-
-All primitive types implement `Move`. Composite types implement `Move` if all their fields do. The trait implementations for `Move` are provided by the compiler and users cannot implement `Move` themselves. These are the rules for dynamically sized types: 
-- `[T]` is `Move` if `T` is
-- `str` is `Move`
-- Trait objects are not `Move` by default
-
-A new marker struct `ImmovableData` is also introduced in `core::marker`. This struct does not implement `Move` and allows users to make composite immovable types. `PhantomData` should be extended to accept `?Move` types, but `PhantomData` itself should always implement `Move`.
 
 You can freely move values which do not implement `Move` as long as you don't borrow them. Once we borrow such a value, we'd know its address and code should be able to rely on the address not changing. This is sound since the only way to observe the address of a value is to borrow it. Before the first borrow nothing can observe the address and the value can be moved around.
 
@@ -87,6 +82,8 @@ To allow immovable types to be contained in movable types, we introduce a `core:
 pub struct MobileCell<T: ?Move> {
 	value: T,
 }
+
+unsafe impl<T: ?Move> Move for MobileCell<T> {}
 
 impl<T: ?Move> MobileCell<T> {
 	pub const fn new(value: T) -> Movable<T> {
