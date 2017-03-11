@@ -12,36 +12,72 @@ patterns whenever it can be inferred.
 # Motivation
 [motivation]: #motivation
 
-The main goal of this proposal is to improve ergonomics of enums in Rust by
-reducing verbosity.  Currently, there are two convenient ways to use enums.
-One would either:
+Currently, there are two convenient ways to use enums in Rust.  One would
+either:
 
-  - bring the enum type into scope (`use foolib::Foo;`), or
-  - bring the enum variants into scope (`use foolib::Foo::*;`).
+  - (a) bring the enum type into scope (`use foolib::Foo;` or
+    `use foolib::Foo as F;`), or
+  - (b) bring the enum variants into scope (`use foolib::Foo::*;`).
 
 The former is less convenient than the latter, but the latter pollutes the
 namespace more.  One could always write enum variants fully qualified,
 `foolib::Foo::Alpha`, but that is even more tedious.
 
-This proposal intends to make variant expressions as convenient and
-pollution-free as field expressions today.  Whereas field expressions allow
-the user to extract fields of a struct without ever bringing the struct into
-scope, inferred variant constructors allow the user to construct/match
-variants of an enum without ever bringing the enum or its variants into scope.
+The main goal of this proposal is to improve ergonomics of enums in Rust by
+providing an intermediate syntax that:
 
-This could lower the usability barrier for enums, particularly for library
-users.  It would reduce the verbosity of enums to a level similar to
-dynamically typed languages, where strings (e.g. Python) or symbols
-(e.g. Lisps, Ruby) designate ad hoc variants
+  - has less boilerplate than either (a) or (b),
+  - is less verbose than (a) or equally so if `use foolib::Foo as F;` was
+    used, and
+  - avoids the polluting the namespace, in contrast to (a) or (b).
 
-The feature could encourage library writers to use domain-specific enums more
-often, rather than to re-purpose generic enums like `Option` or `Result`,
-leading to more readable code.  It would also allow library writers to use
-longer names for enums without significantly compromising their usability.
+The semantics of the feature are inspired by those of
+[field expressions][field] (`some_struct.some_field` or
+`some_struct.some_method(…)`) and could be considered their [dual][dual] in
+some sense.  Its benefits are therefore analogous to field expressions:
+whereas field expressions allow the user to extract fields of a struct without
+ever bringing the struct into scope, inferred variant constructors allow the
+user to construct/match variants of an enum without ever bringing the enum or
+its variants into scope.
 
-The feature can also provide a slight benefit for refactoring: if the name of
-an enum is changed, code that uses inferred variant constructors would not
-need to be renamed.
+[field]: https://doc.rust-lang.org/reference.html#field-expressions
+[dual]: https://en.wikipedia.org/wiki/Dual_(category_theory)
+
+The proposed feature avoids the `use` boilerplate while also avoiding the
+namespace pollution caused by bringing enums or their variants into scope.
+This lowers the the usability barrier for enums, particularly for library
+users.  It would allow enums to serve a role similar to strings (e.g. Python)
+or symbols (e.g. Lisps, Ruby) in dynamically typed languages where they
+designate ad hoc variants.
+
+This could encourage library writers to use domain-specific enums more often,
+rather than to re-purpose generic enums like `Option` or `Result`.  It would
+also allow library writers to use longer names for enums without significantly
+compromising their usability.
+
+The feature is most beneficial for situations where a large number of enums is
+being used but the number of uses of each enum type is small, which tend to
+occur when using multiple disparate libraries or libraries with a large number
+of features.
+
+The proposed feature can replace certain uses of the “builder pattern”:
+
+~~~rust
+Pizza::new().thin_crust().pineapple().pepperoni()
+~~~
+
+This could be replaced with the more readable:
+
+~~~rust
+Pizza { crust: _::Thin, toppings: &[_::Pineapple, _::Pepperoni] }
+~~~
+
+The record syntax makes the relationship between each field self-evident,
+whereas from the builder pattern it may be unclear whether `pineapple` and
+`pepperoni` are mutually exclusive without reading the documentation of each
+method.  Moreover, builder patterns require a significant amount of
+boilerplate from the library author, therefore it would ideal to avoid it
+where possible.
 
 # Detailed design
 [design]: #detailed-design
@@ -85,23 +121,25 @@ They shall be tentatively called **inferred variant constructors**.  The
 two-token prefix `_::` serves to disambiguate inferred variant constructors
 from ordinary variables or functions.
 
-In an expression, an inferred variant constructor is permissible only in
-contexts where the receiving type of the expression is inferred to be a known
-visible enum, irrespective of whether the type parameters of the enum are
-known.
+  - In an expression, an inferred variant constructor is permissible only in
+    contexts where the receiving type of the expression is inferred to be a
+    known visible enum, irrespective of whether the type parameters of the
+    enum are known.
 
-Dually, in a pattern, an inferred variant constructor is permissible only in
-contexts where the type of the scrutinee is inferred to be a known visible
-enum.
+  - Dually, in a pattern, an inferred variant constructor is permissible only
+    in contexts where the type of the scrutinee is inferred to be a known
+    visible enum.
 
 If the inferred type is a private enum from another module, or a struct, or is
-unknown, then the program is rejected with a type error.  If the enum type is
-known, but the specified variant does not exist within that enum or the
-argument list does not match that variant, then the program is also rejected.
+an abstract type parameter, then the program is rejected with a type error.
+If the enum type is known, but the specified variant does not exist within
+that enum or the argument list does not match that variant, then the program
+is also rejected.
 
-Inferred variant constructors do not take the namespace into consideration at
-all, nor do they affect the namespace.  It is purely type-directed, albeit
-subject to visibility rules.
+Inferred variant constructors do not consider the availability of the enum or
+its variants within the current scope.  They also do not introduce any
+identifiers into the local scope.  The inference is purely type-directed,
+albeit subject to privacy rules as usual.
 
 There should be no change in the behavior of existing programs, as the feature
 is entirely opt-in.
@@ -109,11 +147,97 @@ is entirely opt-in.
 ## Example
 
 ~~~rust
-fn use_foo<V>(foo: Foo<&str, bool, V>) { … }
+mod foolib {
+    pub enum Foo<T, U, V> {
+        Alpha(T),
+        Beta { gamma: U, delta: V },
+    }
+    pub struct Bar {
+        foo: Foo<&'static str, bool, char>,
+    }
+    pub fn use_foo<V>(foo: Foo<&str, bool, V>) { … }
+    pub fn get_foo<V: Default>() -> Foo<&str, bool, V>) { … }
+}
+
+fn get_alpha<T>() -> T {
+    // return type is T
+    // ⇒ t must be T
+    // ⇒ _::Alpha must be a variant of T (?)
+    // ✘ Error: insufficient information to infer enum type
+    let t = _::Alpha(42);
+    t
+}
+
+fn get_beta<T>() -> Foo<T, bool, char> {
+    // return type is Foo<T, bool, char>
+    // ⇒ _::Beta must be a variant of Foo
+    // ⇒ arguments of _::Beta must be { gamma: bool, delta: char }
+    // ✓ Type checks
+    _::Beta { gamma: true, delta: '~' }
+}
 
 fn main() {
+    use foolib::use_foo;
+
+    // definition of use_foo
+    // ⇒ argument must be Foo<&'_ str, bool, _>
+    // ⇒ _::Alpha must be a variant of Foo
+    // ⇒ argument of _::Alpha must be &'_ str
+    // ✓ Type checks
     use_foo(_::Alpha("hi"));
-    use_foo(_::Beta { gamma: true, delta: '~' });
+
+    // definition of use_foo
+    // ⇒ argument must be Foo<&'_ str, bool, _>
+    // ⇒ b must be Foo<&'_ str, bool, _>
+    // ⇒ _::Beta must be a variant of Foo
+    // ⇒ arguments of _::Beta must be { gamma: bool, delta: _ }
+    // ✓ Type checks
+    let b = _::Beta { gamma: true, delta: '~' };
+    use_foo(b);
+
+    // definition of Bar
+    // ⇒ foo field must be Foo<&'static str, bool, char>
+    // ⇒ _::Alpha must be a variant of Foo
+    // ⇒ argument of _::Alpha must be &'static str
+    // ✓ Type checks
+    Bar { foo: _::Alpha("hi") };
+
+    // definition of use_foo
+    // ⇒ argument must be Foo<&'_ str, bool, _>
+    // ⇒ _::Epsilon must be a variant of Foo (✘)
+    // ✘ Error: Epsilon is not a variant of Foo
+    use_foo(_::Epsilon(42));
+
+    // return type of a discarded statement is _
+    // ⇒ _::Alpha must be a variant of _ (?)
+    // ✘ Error: insufficient information to infer enum type
+    _::Alpha("hi");
+
+    // definition of println!'s internal functions
+    // ⇒ argument must be _: Debug
+    // ⇒ _::Alpha must be a variant of _ (?)
+    // ✘ Error: insufficient information to infer enum type
+    println!("{:?}", _::Alpha("hi"));
+
+    // definition of get_foo
+    // ⇒ return type must be Foo<&'_ str, bool, _>
+    // ⇒ _::Alpha and _::Beta must be all the variants of Foo
+    // ✓ Type checks
+    let mut s = String::new();
+    match get_foo() {
+        _::Alpha(_) => {}
+        _::Beta(_, v) => { s.push(v); }
+    }
+
+    // definition of get_foo
+    // ⇒ return type must be Foo<&'_ str, bool, _>
+    // ⇒ _::Alpha and _::Beta must be all the variants of Foo (✘)
+    // ✘ Error: Epsilon is not a variant of Foo
+    // ✘ Error: match is missing Beta case
+    match get_foo() {
+        _::Alpha(_) => {}
+        _::Epsilon(_) => {}
+    }
 }
 ~~~
 
@@ -154,18 +278,36 @@ useful.
 # Drawbacks
 [drawbacks]: #drawbacks
 
+*Like field expressions, this new feature would afflict enums with the same
+problems that structs have today.*
+
+It is possible that over-use of this feature could cause readability problems.
+In some exceptional situations, the type could be inferred mechanically but
+for a user it might require reading the documentation at several disparate
+locations to manually infer the enum type.
+
+This would increase the difficulty of grepping all uses of a particular enum
+without using a tool that understands Rust code, much like how grepping for
+all uses of a struct is nontrivial.  (On the other hand, if the name of an
+enum is changed, code that uses inferred variant constructors would not need
+to be renamed.)
+
 This would make the type inference implementation more complex, and thus the
-compiler as well.  (But it would not negatively affect language users who do
-not use the feature.)
+compiler as well.  It is not clear how much of an impact this would cause.
+(But it would not negatively affect language users who do not use the
+feature.)
+
+*There are also some additional issues specific to this feature.*
+
+Excessive use of domain-specific enums can add to the boilerplate when
+multiple enums are required to interoperate, as domain-specific enums will
+likely have very few helper methods simplify their use.
 
 The feature would occupy the `_::` syntax, which could be used for,
 e.g. inferred static methods of a trait or struct.
 
 This might draw attention away from [more ambitious features][294].  (But it
 would not conflict them.)
-
-It is possible that over-use of this feature may lead to less readable code in
-some contexts.
 
 # Alternatives
 [alternatives]: #alternatives
@@ -193,9 +335,17 @@ types, but does not intend to subsume anonymous sum types entirely.
 
 [294]: https://github.com/rust-lang/rfcs/issues/294
 
-The impact of not doing this is that enums would remain a bit less convenient
-to use in comparison to structs.  This would discourage the use of more
-readable enums, leading to the use of generic enums more frequently.
+There are existing ways to work around the problem.  One could use short
+abbreviations (`use foolib::Foo as F;`), or construct preludes (`use
+foolib::prelude::*;`) at the cost of polluting the user's namespace, or use
+builder patterns as noted earlier.
+
+The impact of not doing this is that enums would lack their analog of field
+expressions for structs.  Therefore, enums would remain slightly less
+convenient to use in comparison to structs, where users can often use its
+fields without ever importing the struct.  This would discourage the use of
+more readable enums in APIs, leading to the use of generic enums or builder
+patterns more frequently.
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
