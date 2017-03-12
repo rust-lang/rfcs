@@ -61,6 +61,11 @@ Yet, we do not want:
 # Detailed design
 [design]: #detailed-design
 
+## Notation
+
+We make use of [the standard type judgement notation](https://en.wikipedia.org/wiki/Type_rule).
+We also make use of the `𝓤` notation for (some) type universe.
+
 ## The new value-type construct, `const`
 
 Declaring a parameter `const x: T` allows using `x` in both an expression context
@@ -100,9 +105,9 @@ const parameters, by adding an unification relation, simply
 
     PiRelationInference
       Γ ⊢ y = f(x)
-      Γ ⊢ T: U<y>
+      Γ ⊢ T: U y
       ──────────────
-      Γ ⊢ T: U<f(x)>
+      Γ ⊢ T: U f(x)
 
 Informally, this means that, you can substitute equal terms (in this case, `const fn` relations).
 
@@ -115,8 +120,8 @@ We add an extra rule to improve inference:
       Γ ⊢ T: A → 𝓤
       Γ ⊢ c: A
       Γ ⊢ x: A
-      Γ ⊢ a: T<c>
-      Γ ⊢ a: T<x>
+      Γ ⊢ a: T c
+      Γ ⊢ a: T x
       ────────────
       Γ ⊢ c = x
 
