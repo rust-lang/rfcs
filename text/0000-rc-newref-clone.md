@@ -11,7 +11,7 @@ This RFC proposes the simple addition of a new_ref method to reference-counted p
 # Motivation
 [motivation]: #motivation
 
-Clone is one of the most loosely defined concept in rust. Clone implementations, as the standard libray puts it "may or may not be expensive". The meaning of Clone can be shallow or deep clones alike.
+Clone is one of the most loosely defined concept in rust. Clone implementations can be shallow or deep clones which, as the [standard libray documentation](https://doc.rust-lang.org/std/clone/trait.Clone.html) puts it "may or may not be expensive".
 
 It is therefore required, when reading code that calls clone to know the exact type of the calling object, because the cloning a ```Vec<T>``` and cloning an ```Arc<Vec<T>>``` have very different semantic and performance implications.
 
@@ -23,14 +23,11 @@ This issue is not specific to clone. The author of this RFC believes that it is 
 # Detailed design
 [design]: #detailed-design
 
+This RFC does not involve any compiler change (only a minor addition to alloc/rc.rs and alloc/arc.rs.
+
 A method ```fn new_ref(&self) -> Self``` is added to ```Rc<T>``` and ```Arc<T>```.
-The ```Clone::clone``` implementations for ```Rc<T>``` and ```Arc<T>``` are ust calls to the respective new_ref methods.
+The ```Clone::clone``` implementations for ```Rc<T>``` and ```Arc<T>``` simply call their respective ```new_ref``` methods.
 
-
-
-This is the bulk of the RFC. Explain the design in enough detail for somebody familiar
-with the language to understand, and for somebody familiar with the compiler to implement.
-This should get into specifics and corner-cases, and include examples of how the feature is used.
 
 # How We Teach This
 [how-we-teach-this]: #how-we-teach-this
@@ -58,5 +55,7 @@ The impact of not accepting this proposal would be that a paper-cut of the langu
 
 Is there a better name than ```new_ref```?
 
-# Footnotes
-[1] TODO: WebRender example.
+# Notes
+[1] Here is an example of code where the similarity between ```Vec<T>::clone()``` and ```Arc<Vec<T>>::clone()``` is a recurrent source of confusion:
+
+[WebRender](https://github.com/servo/webrender)'s [resource_cache.rs](https://github.com/servo/webrender/blob/e1ba6ff8146a0ba7a33bb9af6390b34f6b313b78/webrender/src/resource_cache.rs#L381) now stores CPU image data as an ```Arc<Vec<u8>>```. These were originally simple ```Vec<u8>``` which were cloned each time they were be sent to a separate thread in charge of communicating with the GPU. Images being potentially very large, these clones were quite expensive and we decided to use Arcs to avoid the copy. Since cloning an entire vector and creating a reference-counted reference are both exposed through ```Clone::clone()```, the places where the expensive clones happened read exactly the same now that they only increment an atomic reference count. Long after this change reading ```image.data.clone()``` still rings an alarm when reading or reviewing this code because it _reads_ like an expensive operation (copy the entire image) even though it is a simple atomic increment. People still occasionally talk about fixing these already-fixed copies and reviewers themselves get it wrong. If it was possible to write ```image.data.new_ref()```, this simple code would be a lot less misleading.
