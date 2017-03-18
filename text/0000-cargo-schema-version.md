@@ -112,8 +112,8 @@ normalized hierarchical structure of TOML, rather than the raw text), we have:
 ```ebnf
 <pkg-meta> ::= { name = ..., version = ..., ... }
 <package> ::= <pkg-meta>
-                    | { <number> = <pkg-meta> }
-                    | { <number> = { <number> = <pkg-meta> } }
+            | { <number> = <pkg-meta> }
+            | { <number> = { <number> = <pkg-meta> } }
 <Cargofile> ::= { package = <package>, ... }
 ```
 
