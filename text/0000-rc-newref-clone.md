@@ -6,12 +6,12 @@
 # Summary
 [summary]: #summary
 
-This RFC proposes the simple addition of a new_ref method to reference-counted pointer types (Rc and Arc) in the standard library synonymous to clone, with a more explicit meaning.
+This RFC proposes the simple addition of a new_ref method to reference-counted pointer types (Rc, Arc and repsective weak pointer types) in the standard library synonymous to clone, with a more explicit terminology.
 
 # Motivation
 [motivation]: #motivation
 
-Clone is one of the most loosely defined concept in rust. Clone implementations can be shallow or deep clones which, as the [standard libray documentation](https://doc.rust-lang.org/std/clone/trait.Clone.html) puts it "may or may not be expensive".
+Clone is one of the most vaguely defined concept in rust. Clone implementations can be shallow or deep clones which, as the [standard libray documentation](https://doc.rust-lang.org/std/clone/trait.Clone.html) puts it "may or may not be expensive".
 
 It is therefore required, when reading code that calls clone to know the exact type of the calling object, because the cloning a ```Vec<T>``` and cloning an ```Arc<Vec<T>>``` have very different semantic and performance implications.
 
@@ -67,9 +67,11 @@ Is there a better name than ```new_ref```? The documentation uses the term _poin
 Longer names such as ```new_reference``` or ```new_pointer``` are just as informative, although the extra length goes against the general convention of using short names for common constructs.
 Othe names such as ```new_rc```, ```new_arc```, etc. could be considered.
 
-# Generalization
+# Generalization (open discussion)
 
-The author believes that as in general, types (structures and enums) should provide methods using adequately descriptive names and, _in addition_, implement (usually more abstract) traits using these methods. This way, no compromise is made on the names of the functionality exposed by the type.
+The vagueness of Clone is not criticised, here. Clone, as defined and with its abstraction level, serves its purpose well as a trait for generic operations. The problem comes from _more-specific_ operations and types, which would benefit from being expressed with descriptive terminology, being _only_ usable through high level or abstract terms.
+
+The author of this RFC believes that as in general, types (structures and enums) should provide methods using adequately descriptive names and, _in addition_ to these methods, implement the more abstract traits using these methods. This way, no compromise is made on the names of the functionality exposed by the type. This should of course be taken with a grain of salt. It really depends on how far apart the type and a trait are in terms of the genericity of the concept they embody or describe.
 
 # Example
 Here is an example of code where the similarity between ```Vec<T>::clone()``` and ```Arc<Vec<T>>::clone()``` is a recurrent source of confusion:
