@@ -13,12 +13,12 @@ This RFC proposes the simple addition of a new_ref method to reference-counted p
 
 Clone is one of the most vaguely defined concept in rust. Clone implementations can be shallow or deep clones which, as the [standard libray documentation](https://doc.rust-lang.org/std/clone/trait.Clone.html) puts it "may or may not be expensive".
 
-It is therefore required, when reading code that calls clone to know the exact type of the calling object, because the cloning a ```Vec<T>``` and cloning an ```Arc<Vec<T>>``` have very different semantic and performance implications.
+It is therefore required, when reading code that calls clone to know the exact type of the calling object, because the cloning a ```Vec<T>``` and cloning an ```Arc<Vec<T>>``` have very different logic and performance implications, while their semantic is really mostly driven by the type of ```T```.
 
 This leads to recurrent misunderstandings when reading or reviewing code (See the example section at the end of this document).
 In many cases the code could be a lot easier to understand at a glance if reference counted pointers had a method with a more explicit name to create new reference.
 
-This issue is not specific to clone. The author of this RFC believes that it is generally best to avoid using a high level and vaguely defined concept as the only way to name an operation. ```Clone::clone``` is a prime example because it is at the same time one of the most vague concept, can imply either a very cheap or a very costly operation, and can go from one to the other with simple changes that don't necessarily affect the overal semantic of the progam.
+This issue is not specific to clone. The author of this RFC believes that it is generally best to avoid using a high level and vaguely defined concept as the only way to name an operation. ```Clone::clone``` is a prime example because it is at the same time an intentionally vague concept, can imply either a very cheap or a very costly operation, and can go from one to the other with simple changes to the code that don't necessarily affect the overal semantic of the progam. This RFC therefore concentrates on the case of Clone and reference counted types in the standard library.
 
 # Detailed design
 [design]: #detailed-design
