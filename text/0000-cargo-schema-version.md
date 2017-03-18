@@ -109,7 +109,7 @@ that key must contain the key "name".
 Formalizing this schema as a grammar (for clarity expressed over the parsed and
 normalized hierarchical structure of TOML, rather than the raw text), we have:
 
-```ebnf
+```
 <pkg-meta> ::= { name = ..., version = ..., ... }
 <package> ::= <pkg-meta>
             | { <number> = <pkg-meta> }
@@ -126,7 +126,7 @@ format.  Crates specifying a minimum schema version will have their index
 entries appear in a new file `cratename.idx` alongside the existing index, with
 entries in the following format:
 
-```json
+```
 { "schema": "major.minor", "data" : { ... normal index entry ... } }
 ```
 
