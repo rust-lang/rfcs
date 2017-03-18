@@ -15,7 +15,7 @@ Clone is one of the most loosely defined concept in rust. Clone implementations 
 
 It is therefore required, when reading code that calls clone to know the exact type of the calling object, because the cloning a ```Vec<T>``` and cloning an ```Arc<Vec<T>>``` have very different semantic and performance implications.
 
-This leads to recurrent misunderstandings when reading or reviewing code [1].
+This leads to recurrent misunderstandings when reading or reviewing code (See the example section at the end of this document).
 In many cases the code could be a lot easier to understand at a glance if reference counted pointers had a method with a more explicit name to create new reference.
 
 This issue is not specific to clone. The author of this RFC believes that it is generally best to avoid using a high level and vaguely defined concept as the only way to name an operation. ```Clone::clone``` is a prime example because it is at the same time one of the most vague concept, can imply either a very cheap or a very costly operation, and can go from one to the other with simple changes that don't necessarily affect the overal semantic of the progam.
@@ -23,16 +23,26 @@ This issue is not specific to clone. The author of this RFC believes that it is 
 # Detailed design
 [design]: #detailed-design
 
-This RFC does not involve any compiler change (only a minor addition to alloc/rc.rs and alloc/arc.rs.
+This RFC does not involve any compiler change (only minor additions to alloc/rc.rs and alloc/arc.rs).
 
-A method ```fn new_ref(&self) -> Self``` is added to ```Rc<T>``` and ```Arc<T>```.
-The ```Clone::clone``` implementations for ```Rc<T>``` and ```Arc<T>``` simply call their respective ```new_ref``` methods.
+The following steps apply to ```Rc<T>```, ```Arc<T>```, ```rc::Weal<T>```, ```arc::Weak<T>```.
 
+A method ```fn new_ref(&self) -> Self``` is added to the pointer type, into which the code of the ```Clone::clone``` implementation is moved.
+The ```Clone::clone``` implementations for the pointer type simply becomes a ```new_ref``` call.
+
+The proposed change is simple enough that it may be even simpler to see in code directly than in english.
+It is therefore implemented on the author's [new_ref branch](https://github.com/nical/rust/tree/new_ref):
+ - [Addition of Arc::new_ref](https://github.com/nical/rust/commit/392e105b0dd3ffb44beb8cbf853f75493a5167b5).
+ - [Addition of Rc::new_ref](https://github.com/nical/rust/commit/5903ed4aa3ddb825f8b9b3412b3240f07193b711).
+ - [Addition of arc::Weak::new_ref](https://github.com/nical/rust/commit/6f72fe1e208d96917c806bb4895b7014c1bfe164).
+ - [Addition of rc::Weak::new_ref](https://github.com/nical/rust/commit/ddbd2b5e7e42d6be11194abef4f5d12ec11aa41e).
+
+Note that these commits are missing the proper stable/unstable annotations.
 
 # How We Teach This
 [how-we-teach-this]: #how-we-teach-this
 
-Note that this RFC proposes a more descriptive way to do express an operation, but does not prevent from continuing to use the more generic way (clone still works as expected and remains the abstract way.
+Note that this RFC proposes a more descriptive way to do express an operation, but does not prevent from continuing to use the more generic way (clone still works as expected and remains the generic way to .
 
 It would make sense for ```new_ref``` to be the preferred way to create new reference-counted pointers out of existing one, over the still existing ```clone``` method, since it is more descriptive.
 
@@ -46,16 +56,23 @@ Very short names are quite popular in the rust community for common operations. 
 # Alternatives
 [alternatives]: #alternatives
 
-Finer grained traits could probably be added to express shallow and deep copies, another trait could also be added to express adding a reference to a reference-counted object. It could also be added later
+This RFC tries to remain as straightforard and simple as possible. The tention between deep and shallow clones could maybe also be avoided through the addition of finer grained ShallowClone and DeepClone traits. It is not clear tothe author, however, if the added genericity would be useful in practice.
 
-The impact of not accepting this proposal would be that a paper-cut of the language remains.
+The impact of not accepting this proposal would be that a "paper-cut" annoyance in the standard library remains.
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
-Is there a better name than ```new_ref```?
+Is there a better name than ```new_ref```? The documentation uses the term _pointer_ in many places, although _reference_-counting is also present. ```new_ptr``` would work as well, although _ptr_ seems to be most used in referrence to raw pointers.
+Longer names such as ```new_reference``` or ```new_pointer``` are just as informative, although the extra length goes against the general convention of using short names for common constructs.
+Othe names such as ```new_rc```, ```new_arc```, etc. could be considered.
 
-# Notes
-[1] Here is an example of code where the similarity between ```Vec<T>::clone()``` and ```Arc<Vec<T>>::clone()``` is a recurrent source of confusion:
+# Generalization
 
-[WebRender](https://github.com/servo/webrender)'s [resource_cache.rs](https://github.com/servo/webrender/blob/e1ba6ff8146a0ba7a33bb9af6390b34f6b313b78/webrender/src/resource_cache.rs#L381) now stores CPU image data as an ```Arc<Vec<u8>>```. These were originally simple ```Vec<u8>``` which were cloned each time they were be sent to a separate thread in charge of communicating with the GPU. Images being potentially very large, these clones were quite expensive and we decided to use Arcs to avoid the copy. Since cloning an entire vector and creating a reference-counted reference are both exposed through ```Clone::clone()```, the places where the expensive clones happened read exactly the same now that they only increment an atomic reference count. Long after this change reading ```image.data.clone()``` still rings an alarm when reading or reviewing this code because it _reads_ like an expensive operation (copy the entire image) even though it is a simple atomic increment. People still occasionally talk about fixing these already-fixed copies and reviewers themselves get it wrong. If it was possible to write ```image.data.new_ref()```, this simple code would be a lot less misleading.
+The author believes that as in general, types (structures and enums) should provide methods using adequately descriptive names and, _in addition_, implement (usually more abstract) traits using these methods. This way, no compromise is made on the names of the functionality exposed by the type.
+
+# Example
+Here is an example of code where the similarity between ```Vec<T>::clone()``` and ```Arc<Vec<T>>::clone()``` is a recurrent source of confusion:
+
+[WebRender](https://github.com/servo/webrender)'s [resource_cache.rs](https://github.com/servo/webrender/blob/e1ba6ff8146a0ba7a33bb9af6390b34f6b313b78/webrender/src/resource_cache.rs#L381) now stores CPU image data as an ```Arc<Vec<u8>>```. These were originally simple ```Vec<u8>```s which were cloned each time they were be sent to a separate thread in charge of communicating with the GPU. Images being potentially very large, these clones were quite expensive and we decided to use Arcs to avoid the copy. Since cloning an entire vector and creating a reference-counted reference are both exposed through ```Clone::clone()``` (and _only_ through clone), the places where the expensive clones happened read exactly the same now that they only increment an atomic reference count. Long after this change, reading ```image.data.clone()``` still rings an alarm when going through or reviewing this code because it _reads_ like an expensive operation (copy the entire image) even though it is a simple atomic increment. People still occasionally talk about fixing these already-fixed clones and reviewers themselves have gotten it wrong at times. If it was possible to write ```image.data.new_ref()```, this simple code would be a lot less misleading.
+This example is simple and came up recently, but isn't specific to the type of problem WebRender is solving. There are many other places where clone could be replaced by a more descriptive wording for improved clarity.
