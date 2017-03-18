@@ -106,6 +106,9 @@ version; that key can either contain a single numeric key or the key "name".
 If it has a single numeric key, use that as the minimum schema minor version;
 that key must contain the key "name".
 
+(Note that using the legacy `[project]` section name also implies schema
+version `0.0`.)
+
 Formalizing this schema as a grammar (for clarity expressed over the parsed and
 normalized hierarchical structure of TOML, rather than the raw text), we have:
 
