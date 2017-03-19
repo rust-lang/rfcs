@@ -25,7 +25,7 @@ This issue is not specific to clone. The author of this RFC believes that it is 
 
 This RFC does not involve any compiler change (only minor additions to alloc/rc.rs and alloc/arc.rs).
 
-The following steps apply to ```Rc<T>```, ```Arc<T>```, ```rc::Weal<T>```, ```arc::Weak<T>```.
+The following steps apply to ```Rc<T>```, ```Arc<T>```, ```rc::Weak<T>```, ```arc::Weak<T>```.
 
 A method ```fn new_ref(&self) -> Self``` is added to the pointer type, into which the code of the ```Clone::clone``` implementation is moved.
 The ```Clone::clone``` implementations for the pointer type simply becomes a ```new_ref``` call.
@@ -51,6 +51,8 @@ This is not a big change in the standard library, however, common code examples 
 # Drawbacks
 [drawbacks]: #drawbacks
 
+Adding methods (like ```new_ref``` to pointer types such as ```Rc<T>``` can create conflicts with the methods of the pointee type T. This can be worked around by defining new_ref as ```fn new_ref(this: &Self) -> Self;``` and calling it as follows: ```let thing_bis = Rc::new_ref(&thing);```.
+
 Very short names are quite popular in the rust community for common operations. This RFC proposes a slightly longer name than the existing one.
 
 # Alternatives
@@ -58,12 +60,15 @@ Very short names are quite popular in the rust community for common operations. 
 
 This RFC tries to remain as straightforard and simple as possible. The tention between deep and shallow clones could maybe also be avoided through the addition of finer grained ShallowClone and DeepClone traits. It is not clear tothe author, however, if the added genericity would be useful in practice.
 
+As described in the drawbacks section, ```new_ref``` is a new method on the pointer type which can conflict with the method of the pointee type. Defining the method as ```fn new_ref(this: &Self) -> Self;``` solves the issue. The drawback of using this pattern is that new_ref becomes a lot less simple to call than clone (for example ```let thing_bis = Rc::new_ref(&thing);``` versus ```let thing_bis = thing.clone();```), and the risk is that clone remains the popular way of copying reference counted pointers due to being easier to use.
+If a trait (let's call it ```NewRef```) is added for this purpose, a function working on NewRef types could be added so that the call sites could look like ```let thing_bis = new_ref(&thing);``` which is is lighter, although arguably not as convelinet as clone still, and would require importing the function with a ```use``` statement.
+
 The impact of not accepting this proposal would be that a "paper-cut" annoyance in the standard library remains.
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
-Is there a better name than ```new_ref```? The documentation uses the term _pointer_ in many places, although _reference_-counting is also present. ```new_ptr``` would work as well, although _ptr_ seems to be most used in referrence to raw pointers.
+Is there a better name than ```new_ref```? The documentation uses the term _pointer_ in many places, although _reference_-counting is also present. ```new_ptr``` would work as well, although _ptr_ seems to be most used in referrence to raw pointers. ```clone_ref``` seems like another sufficitently descriptive name.
 Longer names such as ```new_reference``` or ```new_pointer``` are just as informative, although the extra length goes against the general convention of using short names for common constructs.
 Othe names such as ```new_rc```, ```new_arc```, etc. could be considered.
 
