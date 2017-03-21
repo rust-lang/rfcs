@@ -42,11 +42,12 @@ Note that these commits are missing the proper stable/unstable annotations.
 # How We Teach This
 [how-we-teach-this]: #how-we-teach-this
 
-Note that this RFC proposes a more descriptive way to do express an operation, but does not prevent from continuing to use the more generic way (clone still works as expected and remains the generic way to .
+Note that this RFC proposes a more descriptive way to do express an operation, but does not prevent from continuing to use the more generic way (clone still works as expected and remains the generic way to achieve the same result).
 
-It would make sense for ```new_ref``` to be the preferred way to create new reference-counted pointers out of existing one, over the still existing ```clone``` method, since it is more descriptive.
+It would make sense for ```new_ref``` to be the preferred way to create new reference-counted pointers out of existing one, over the still existing ```clone``` method. In order to teach this we should:
 
-This is not a big change in the standard library, however, common code examples in the official documentation and tutorials should be changed if ```new_ref``` becomes the preferred way over ```clone```.
+ - Adapt common code examples in the official documentation and tutorials to use new_ref instead of clone.
+ - Add a linter warning about the usage of clone with reference counted pointers outside of generic code, which would recommand using new_ref instead.
 
 # Drawbacks
 [drawbacks]: #drawbacks
