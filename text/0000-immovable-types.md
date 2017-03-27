@@ -20,13 +20,13 @@ Since generators can only move during suspend points we can require that referen
 # Detailed design
 [design]: #detailed-design
 
-A new unsafe auto trait `Move` is introduced in `core::marker`. References, pointers, `core::ptr::Unique` and `core::ptr::Shared` implement this trait.
+A new unsafe auto trait `Move` is introduced in `core::marker`. Auto traits are implemented for all primitive types and for composite types where the elements also implement the trait. Users can opt-out to this for custom types. References, pointers, `core::ptr::Unique` and `core::ptr::Shared` explicitly implement this trait, since pointers are movable even if they point to immovable types.
 
 All type parameters (including `Self` for traits), trait objects and associated types have a `Move` bound by default.
 
 If you want to allow types which may not implement `Move`, you would use the `?Move` trait bound which means that the type may or may not implement `Move`.
 
-You can freely move values which do not implement `Move` as long as you don't borrow them. Once we borrow such a value, we'd know its address and code should be able to rely on the address not changing. This is sound since the only way to observe the address of a value is to borrow it. Before the first borrow nothing can observe the address and the value can be moved around.
+You can freely move values which are known to implement `Move` after they are borrowed, however you cannot move types which aren't known to implement `Move` after they have been borrowed. Once we borrow an immovable type, we'd know its address and code should be able to rely on the address not changing. This is sound since the only way to observe the address of a value is to borrow it. Before the first borrow nothing can observe the address and the value can be moved around.
 
 Static variables allow types which do not implement `Move`.
 
