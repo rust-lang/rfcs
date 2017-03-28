@@ -59,25 +59,54 @@ Very short names are quite popular in the rust community for common operations. 
 # Alternatives
 [alternatives]: #alternatives
 
-This RFC tries to remain as straightforard and simple as possible. The tention between deep and shallow clones could maybe also be avoided through the addition of finer grained ShallowClone and DeepClone traits. It is not clear tothe author, however, if the added genericity would be useful in practice.
+For alternative naming schemes, see the unresolved questions section.
 
-As described in the drawbacks section, ```new_ref``` is a new method on the pointer type which can conflict with the method of the pointee type. Defining the method as ```fn new_ref(this: &Self) -> Self;``` solves the issue. The drawback of using this pattern is that new_ref becomes a lot less simple to call than clone (for example ```let thing_bis = Rc::new_ref(&thing);``` versus ```let thing_bis = thing.clone();```), and the risk is that clone remains the popular way of copying reference counted pointers due to being easier to use.
-If a trait (let's call it ```NewRef```) is added for this purpose, a function working on NewRef types could be added so that the call sites could look like ```let thing_bis = new_ref(&thing);``` which is is lighter, although arguably not as convelinet as clone still, and would require importing the function with a ```use``` statement.
+## Not change the standard library
 
-The impact of not accepting this proposal would be that a "paper-cut" annoyance in the standard library remains.
+A case can be made that writing ```let image2 = Rc::clone(&image1);``` is sufficient to avoid the confusion between deep and shallow clones. The advantage of this approach is that it does not require any addition to the standard library. The dowside is that it is know to very few, and strictly less convenient than writing ```let image2 = image1.clone();```. It also requires importing ```Rc``` into the module with a ```use``` directive. Unless the standard tool chain aggressively warns against calling clone with the method syntax, it is unlikely that the more explicit function syntax will be used in practice.
+
+## new_ref as an external function instread of a method on the pointer types
+
+As described in the drawbacks section, ```new_ref``` is a new method on the pointer type which can conflict with the method of the pointee type. Defining the method as ```fn new_ref(this: &Self) -> Self;``` solves the issue. The drawbacks of using this pattern are the same as using the function syntax for clone, with the added benefit that the function name is less vague than "clone". new_ref becomes is still a less simple to call than clone (for example ```let image2 = Rc::new_ref(&image1);``` versus ```let image2 = image1.clone();```), and the risk is that clone remains the popular way of copying reference counted pointers due to being easier to use.
+
+## Adding a trait
+
+A trait (let's call it ```NewRef```) could be added for this purpose.
+
+The trait definition could resemble the code below:
+```
+trait NewRef {
+    fn new_ref(&self) -> Self;
+}
+
+// In their respective modules the implementations could be (equivalent to):
+impl<T: ?Sized> NewRef for std::rc::Rc<T> { self.clone() }
+impl<T: ?Sized> NewRef for std::rc::Weak<T> { self.clone() }
+impl<T: ?Sized> NewRef for std::sync::Arc<T> { self.clone() }
+impl<T: ?Sized> NewRef for std::sync::Weak<T> { self.clone() }
+```
+
+One downside of exposing this method as a trait is that this trait needs to be explicitly imported with a ```use``` directive, which adds some friction compared to using clone, and makes new_ref less discoverable, although the method would not conflict with potentially existing new_ref methods on the pointee type. Perhaps this could be mitigated by adding the trait to the prelude, with the caveat that the method would then potentially conflict.
+
+A function working on NewRef types could be added so that the call sites could look like ```let thing_bis = new_ref(&thing);``` which is is lighter, although arguably not as convenient as clone still, and would also require importing the function with a ```use``` directive.
+
+
+## Impact of not accepting this proposal or
+
+The impact of not accepting this proposal or another proposal aiming at solving the same problem would be that a "paper-cut" annoyance in the standard library remains. This annoyance does not affect the soundness of the language, although it tends to make common code patterns easy to misinterpret.
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
 Is there a better name than ```new_ref```? The documentation uses the term _pointer_ in many places, although _reference_-counting is also present. ```new_ptr``` would work as well, although _ptr_ seems to be most used in referrence to raw pointers. ```clone_ref``` seems like another sufficitently descriptive name.
 Longer names such as ```new_reference``` or ```new_pointer``` are just as informative, although the extra length goes against the general convention of using short names for common constructs.
-Othe names such as ```new_rc```, ```new_arc```, etc. could be considered.
+Other names such as ```new_rc```, ```new_arc```, etc. could be considered.
 
 # Generalization (open discussion)
 
 The vagueness of Clone is not criticised, here. Clone, as defined and with its abstraction level, serves its purpose well as a trait for generic operations. The problem comes from _more-specific_ operations and types, which would benefit from being expressed with descriptive terminology, being _only_ usable through high level or abstract terms.
 
-The author of this RFC believes that as in general, types (structures and enums) should provide methods using adequately descriptive names and, _in addition_ to these methods, implement the more abstract traits using these methods. This way, no compromise is made on the names of the functionality exposed by the type. This should of course be taken with a grain of salt. It really depends on how far apart the type and a trait are in terms of the genericity of the concept they embody or describe.
+The author of this RFC believes that, in general, types (structures and enums) should provide methods using adequately descriptive names and, _in addition_ to these methods, implement the more abstract traits using these methods. This way, no compromise is made on the names of the functionality exposed by the type. This should of course be taken with a grain of salt. It really depends on how far apart the type and a trait are in terms of the genericity of the concept they embody or describe.
 
 # Example
 Here is an example of code where the similarity between ```Vec<T>::clone()``` and ```Arc<Vec<T>>::clone()``` is a recurrent source of confusion:
