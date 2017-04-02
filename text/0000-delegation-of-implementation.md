@@ -66,7 +66,25 @@ impl Encodable for HighResolutionStamp {
 
 Again this feature adds no new concept. It just simplifies an existing code pattern. However it is interesting to understand the similarities and differences with inheritance. The *delegating type* (`H<'a>` in the first example) implicitely "inherits" methods (`hash`) of the *delegated trait* (`Hash`) from the *surrogate type* (`&'static str` which is the type of the *delegating expression* `self.name`) like a subclass inherits methods from its superclass(es). A fundamental difference is that the delegating type is not a subtype of the surrogate type in the sense of Liskov. There is no external link between the types. The surrogate may even be less visible than the delegating type. Another difference is that the developer has a total control on which part of the surrogate type to reuse whereas class hierarchy forces him/her to import the entire public interface of the superclass (this is because a superclass plays two roles: the role of the surrogate type and the role of the delegated trait).
 
-## Partial delegation 
+Other syntaxes have been proposed, including:
+```rust
+impl<'a> Hash for H<'a> use self.name {}
+
+#[delegate(self.name)]
+impl<'a> Hash for H<'a> {}
+
+#[delegate(field = name)]
+impl<'a> Hash for H<'a> {}
+
+// on the type itself
+struct H<'a> {
+    #[delegate(Hash)]
+    name : &'static str,
+    …
+}
+```
+
+## Partial delegation
 
 If we consider this piece of code:
 ```rust
@@ -89,7 +107,7 @@ impl AttrMetaMethods for Attribute {
     fn span(&self) -> Span { self.meta().span }
 }
 ```
-we can identify the recurring expression `self.meta()` but 2 of the 5 methods are more complex. This heterogeneity can be handled simply if we allow partial delegation like in
+we can identify the recurring expression `self.meta()` but 2 of the 5 methods are more complex. This heterogeneity can be handled simply if we allow partial delegation like in:
 ```rust
 impl AttrMetaMethods for Attribute {
 
@@ -111,12 +129,11 @@ Only specified methods are automatically implemented with the syntax:
 ```rust
 use delegating_expression for list_of_delegated_methods;
 ```
+For other methods the developer can provide a custom implementation.
 
-In some other cases the compiler just cannot generate the appropriate method. For example when `self` is moved rather than borrowed, unless the delegating expression produces a result that can itself be moved the borrow checker will complain. In that kind of situations the developer can again provide a custom implementation where necessary and let the compiler handle the rest of the methods.
+### Mixed partial delegation
 
-### Mixed partial delegation 
-
-Partial delegation allows an even more powerful pattern: delegating to different surrogate types depending on the method:
+Partial delegation can naturally be extended to an even more powerful pattern: delegating to different surrogate types depending on the method.
 ```rust
 trait Tr {
     fn do_something_1( … );
@@ -134,37 +151,43 @@ impl Tr for C {
     // do_something_1 is delegated to surrogate type A
     use self.a for do_something_1;
     
-    // do_something_1 is delegated to surrogate type B
+    // do_something_2 and do_something_3 are delegated to surrogate type B
     use self.b for do_something_2, do_something_3;
     
     // do_something_4 is directly implemented
     fn do_something_4( … ) { … }
 }
 ```
+In this pattern, multiple delegated expressions can be provided with each one declaring a list of methods it is expected to handle. 
 
-## Delegation for other parameters 
+## Delegating expressions and the type of `self`
 
-If `Self` is used for other parameters, everything works nicely and no specific treatment is required.
+In Rust the actual type of the `self` parameter can vary depending on the method in the trait. It is either `Self`, `&mut Self` or `&Self`. This means that:
+* each method locally defines the type of `self`;
+* for a delegating expression to be valid it must type-check with all delegated methods.
+
+Because inherited mutability apply to expressions like `self.2` and `self.my_field`, they may be used to handle methods where `self` have different type. Furthermore as [auto-referencing and auto-dereferencing][auto] is implicitely applied on method call, the return type of the delegating expression may be transformed if possible to match the expected type of ```self```. However for more complex delegating expression that contains function or method calls with non-convertible return types, such flexibility may not be available. In this case mixed partial delegation can be used to handle differently the groups of methods with respective parameter `self`, `&self` and `&mut self` if needed.
+
+The proposed rule for validity of a delegating expression `expression` when handling method `my_method` in trait `Trait` is the same as the validity of the plain equivalent code:
 ```rust
-// from rust/src/libcollections/btree/map.rs
-impl<K: PartialOrd, V: PartialOrd> PartialOrd for BTreeMap<K, V> {
-    fn partial_cmp(&self, other: &BTreeMap<K, V>) -> Option<Ordering> {
-        self.iter().partial_cmp(other.iter())
+impl Trait for MyType {
+    fn my_method(self_parameter, other_parameters… ) {
+        expression.my_method(other_parameters… )
     }
+    …
 }
 ```
-becomes 
-```rust
-impl<K: PartialOrd, V: PartialOrd> PartialOrd for BTreeMap<K, V> {
-    use self.iter();
-}
-```
+Note that technically nothing prevents `expression` to contain several occurences of `self` or even none.
 
-## Associated types/constants 
+In case the code above contains a type error, the compiler must provide an error message indicating that method `my_method` from trait `Trait` cannot be delegated using `expression` (for example because `my_method` is expecting a `&mut self` but `expression` is returning a result of type `&MySurrogateType`).
 
-Unless explicitly set associated types and constants should default to the surrogate implementation value of the corresponding items.
+[auto]: https://doc.rust-lang.org/nomicon/dot-operator.html
 
-## Types and delegation
+## Associated items
+
+Associated types and constants (or anything that is not a `fn`) are not implicitely delegated. Whenever a trait declares such items, implementations must define their actual values.
+
+## About delegating and surrogate types
 
 All the examples above deal with structs and delegation to subfields. However no restriction is required. Delegating types and surrogates types might be of any kind (structs, tuples, enums, arrays, lambdas, ...) provided it makes sense. An illustrative example with enums:
 ```rust
@@ -193,6 +216,27 @@ impl Coordinates for ThreeBitColor {
 ```
 
 ## Possible extensions
+
+Delegation can be extended in a certain number of directions to handle other specific cases. Propositions below are simply invitation for debate and are not part of the main proposition.
+
+### Delegation for other `Self` parameters 
+
+If method `my_method` contains other parameters with type `Self`, `&Self` or `&mut Self`, delegation may still be possible provided that the delegating expression is simultaneously compatible with all those types. In this case for each such parameter `p` the delegating expression can be transformed by replacing all occurences of `self` by `p`. The resulting expression is then inserted at the position where parameter `p` is normally expected. For example
+```rust
+// from rust/src/libcollections/btree/map.rs
+impl<K: PartialOrd, V: PartialOrd> PartialOrd for BTreeMap<K, V> {
+    fn partial_cmp(&self, other: &BTreeMap<K, V>) -> Option<Ordering> {
+        self.iter().partial_cmp(other.iter())
+    }
+}
+```
+could become 
+```rust
+impl<K: PartialOrd, V: PartialOrd> PartialOrd for BTreeMap<K, V> {
+    use self.iter();
+}
+```
+where the delegating expression `self.iter()` is implicitely transformed into `other.iter()` in order to handle the second parameter of method `partial_cmp`.
 
 ### Inverse delegating expressions
 
@@ -304,7 +348,7 @@ use list_of_delegated_methods in delegating_expression for list_of_delegated_met
 
 ### More complex delegation
 
-`Self` can also appear inside more complex parameter/result types like `Option<Self>`, `Box<Self>` or `&[Self]`. If we had HKT in Rust a partial solution based on [functor types][functors] might have been possible. It could still be possible to handle specific cases like precisely the ones above but the complexity might not be worth the benefit.
+`Self` can also appear inside more complex parameter/result types like `Option<Self>`, `Box<Self>` or `&[Self]`. When we have higher-kinded types in Rust a partial solution based on [functor types][functors] may been possible.
 
 [functors]: https://wiki.haskell.org/Functor
 
@@ -312,7 +356,7 @@ use list_of_delegated_methods in delegating_expression for list_of_delegated_met
 
 Let's consider a new example:
 ```rust
-enum TextBoxContent { Number(f64), String(&str) }
+enum TextBoxContent { Number(f64), String(&'static str) }
 
 impl Hash for TextBoxContent {
     use ??? ; // how to delegate?
@@ -355,7 +399,7 @@ Some people noticed a similarity with trait `Deref`. A main limitation is that y
 
 ## Compiler plugin
 
-I was suggested to write a compiler plugin. But I was also told that [type information is not accessible][type_information] (unless you can annotate the delegated trait yourself, which implies you must own it). Moreover I'm not sure a plugin could easily solve the partial delegation cases.
+I was suggested to write a compiler plugin. But I was also told that [type information is not accessible][type_information] (unless you can annotate the delegated trait yourself, which implies you must own it). The problem is that delegation requires to analyse the signatures of methods to be delegated and this is as far as I know not currently possible.
 
 [type_information]: http://stackoverflow.com/questions/32641466/when-writing-a-syntax-extension-can-i-look-up-information-about-types-other-tha
 
@@ -368,4 +412,4 @@ One of my concerns is that the arrival of inheritance in Rust may encourage bad 
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
-The exact syntax is to be discussed. The proposed one is short but does not name the surrogate type explicitly which may hurt readability.
+The exact syntax is to be discussed. The proposed one is short but does not name the surrogate type explicitly which may hurt readability. As mentioned before plenty of alternate syntaxes have been proposed. I have personally no strong preference. However I would prefer we first agree on the scope and validity rules of delegation before bikeshedding about the exact final syntax.
