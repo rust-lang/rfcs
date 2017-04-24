@@ -6,103 +6,85 @@
 # Summary
 [summary]: #summary
 
-Support profile-specific overrides for cargo features and dependencies.
+Support profile-specific overrides for the `default-features` key.
 
 # Motivation
 [motivation]: #motivation
 
 Sometimes, users wish to control the build of their crates in a manner which
-is dependent on which profile it is being built for, because of the differences
-in use cases between the profiles. Today, this is not easy to achieve directly,
-and instead requires hacking with the existing `cfg` options that roughly
-correspond to some of the profiles (such as `test` and `debug_assertions`).
+is dependent on which profile it is being built for. Today, this is not easy to
+achieve directly; what users tend to do is use a `cfg` option that *usually*
+corresponds to the profile being run in, suhc as using `debug_assertions` to
+get a certain behavior in dev that is not desired in release.
 
-This system is ad hoc and doesn't allow downstream users to effectively control
-the way these features are used by their dependencies. To solve this problem,
-we allow profiles to play a first class role in feature and dependency
-resolution.
+For example, a user writing a web service may wish to load their HTML templates
+dynamically during `dev`, so that they can edit the templates without
+recompiling their application. But for both performance and ease of deployment,
+they would want their HTML templates to be compiled into the data section of
+the binary when they perform a `release` build.
+
+The system today has several problems. First, it is very ad hoc, and couples
+what should be independent "feature" based behavior to an unrelated feature
+(debug_assertions). Second, if a library chooses to use a flag like this to
+control which features they provide, it is difficult for downstream users to
+opt out of that behavior (e.g. because they want dev and release to compile the
+same code).
+
+Instead we propose that users should adopt standard `features` for behaviors
+like this. In order to make this easier to do, users will be able to specify
+the `default-features` separately in each profile, causing certain features to
+be turned on in one profile and not in others.
 
 # Detailed design
 [design]: #detailed-design
 
-Each profile gains these additional members:
+## Specifying profile features for your package
 
-* `features`
-* `dependencies`
-* `dev-dependencies`
-* `build-dependencies
-* `target`
+Each profile gains the member `default-features`, which has the same structure
+as the `features.default` member (that is, it is an array of strings, which
+must be feature or dependency names). When preparing a build, if the active
+profile has a `default-features` key present, cargo will use that set of
+features instead of the `features.default` key.
 
-Each of these corresponds to the same top-level object. When compiling in
-a profile, its members under these objects are merged with the top level
-equivalent, overriding any overlapping members. This enables users to configure
-thier builds differently in each profile if necessary.
-
-Specifically:
-
-* The `features` table for a profile is *merged* with the base `features`
-table; each member of the `features` table defined in the profile-specific
-table *replaces* the member in the base table (they are not merged together).
-* An individual object representing a specific dependency is *merged* with the
-base object for that dependency; each member of that object *replaces* the
-member in the base table (they are not merged together).
-
-So from this TOML:
-
-```toml
-[dependencies.foo]
-version = "1.0.0"
-features = ["foo"]
-
-[profile.dev.dependencies.foo]
-version = ["bar"]
-```
-
-In the `dev` profile, the foo dependency looks like:
-
-```toml
-[dependencies.foo]
-version = "1.0.0"
-features = ["bar"] # Note that the foo feature has been dropped
-```
-
-## Use cases
-
-### Profile-specific default features
-
-Some features are intended to be used in different profiles - for example, a
-feature for testing or for optimizations which is intended for bench and
-release. Today, these sorts of things are managed in an ad hoc and imprecise
-way through the `test` and `debug_assertions` cfg flags.
-
-Instead, authors can turn features on by default in only some profiles. For
-example:
+For example, you might write:
 
 ```toml
 [features]
-default = []
-go-fast = []
+dynamic-templates = []
 
-[profile.release.features]
-default = ["go-fast"]
-
-[profile.bench.features]
-default = ["go-fast"]
+[profile.dev]
+default-features = ["dynamic-templates"]
 ```
 
-### Turning on dependency features in specific profiles
+The dynamic-templates feature would be on by default, but only in the dev
+profile.
 
-Possibly, the profile-specific feature is not a default feature for this crate,
-but a feature the user wants in a dependency, but only in some profiles. This
-can be done using by overriding that crate's dependency member in those
-profiles.
+## Controlling profile features from dependencies
+
+Both the `features` and `default-features` members of a dependency object can
+be TOML objects as alternative to their current form. As TOML objects, their
+members are the names of profiles as well as the key `other`; the value at
+each of those keys is the same as what the `features` or `default-features`
+keys would otherwise contain (an array of features or a boolean respectively).
+
+In a particular profile, if these items are objects, that profile's key is used
+to specify this value. If no key is present for this profile, the `other` key
+is used.
+
+For example:
 
 ```toml
-[profile.release.dependencies.another-crate]
-features = ["go-fast"]
+[dependencies.foobar]
+version = "1.2.0"
 
-[profile.bench.dependencies.another-crate]
-features = ["go-fast"]
+[dependencies.foobar.default-features]
+dev = false
+test = false
+other = true
+
+[dependencies.foobar.features]
+dev = ["alpha", "beta"]
+test = ["alpha"]
 ```
 
 # How We Teach This
@@ -141,5 +123,4 @@ turned on by default in one profile.
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
-Does this feature overlap in purpose with `dev-dependencies` at all, and if so
-is there a way to subsume `dev-dependencies` into it & deprecate that feature?
+None known.
