@@ -264,3 +264,8 @@ driven by consensus and community norms, not impose more structure than
 necessary.
 
 [sub-team]: http://www.rust-lang.org/team.html
+
+## License
+
+As an extension of the main Rust repo, the contents of this repository are
+dual-licensed Apache 2.0 and MIT where applicable.
