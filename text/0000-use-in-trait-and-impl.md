@@ -1,4 +1,4 @@
-- Feature Name: use-in-impl-and-match
+- Feature Name: use-in-trait-and-impl
 - Start Date: 2017-04-17
 - RFC PR:
 - Rust Issue:
@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-Allow the usage of `use` inside `impl` blocks and `match` blocks.
+Allow the usage of `use` inside `trait` and `impl` blocks.
 
 # Motivation
 [motivation]: #motivation
@@ -20,32 +20,32 @@ would be less scrolling since the declaration would be closer to the use site.
 # Detailed design
 [design]: #detailed-design
 
+Allow `use declarations` to be inside of `traits`. The bindings that
+the `use declaration` creates would be scoped to the trait block.
+
 Allow `use declarations` to be inside of `implementations`. The bindings that
 the `use declaration` creates would be scoped to the implementation.
-
-Also `use declarations` to be inside of `match expressions` where `match arms`
-are allowed. The bindings that the `use declaration` creates would be
-scoped to all `match arms` and other `use declarations`
 
 These `use declarations` would allow the `pub` modifier. It would do nothing,
 just like it currently does in block expressions.
 
-## Example
+## Example - use in impl
 
-This example uses `use` in both the `impl` and the `match`.
+This example uses `use` in the implementation block to put Ordering and its
+enum variant constructors into scope.
 
-Note that this `impl` could be written without the full match, but it's close
-enough to actual examples.
+Note that this `impl` could be written without the full match, using only the
+not operator, but it's representativge of real usage.
 
 ```rust
 struct ReverseCompare(i32);
 
 impl std::cmp::PartialOrd for ReverseCompare {
     use std::cmp::Ordering
+    use std::cmp::Ordering::*;
 
     fn partial_cmp(&self, other: &ReverseCompare) -> Ordering {
         match (self.0).partial_cmp(other.0) {
-            use Ordering::*;
 
             None => unreachable!(),
             Some(Greater) => Some(Lesser),
@@ -54,15 +54,36 @@ impl std::cmp::PartialOrd for ReverseCompare {
         }
     }
 }
+
+```
+
+## Grammar Changes
+
+In `trait_item`, add a variant `trait_use`.
+
+Define `trait_use` as
+
+```
+trait_use
+: visibility use_item
+;
+```
+
+In `impl_item`, add a variant `impl_use`.
+
+Define `impl_use` as
+
+```
+impl_use
+: visibility use_item
+;
 ```
 
 # How We Teach This
 [how-we-teach-this]: #how-we-teach-this
 
 This is a continuation of current Rust concepts. No new termionlogy needs to
-be taught. That said, if the "use in match" part is accepted, it would be
-useful to coin a new term for the two things that can show up where `match
-arms` currently are in `match expressions`.
+be taught.
 
 _The Rust Reference_ would need to be updated. Specifically the
 `Use Declarations` section would need to be say that it can also be used in
@@ -71,39 +92,35 @@ updated to say the scope of the bindings it creates. Right now only the
 `Block Expression` section discusses the scope of `use declarations` which
 feels like the wrong place.
 
-_The Rust Grammar Reference_ would need to be updated in the `Implementations`
-and `Match Expressions` sections. Although there's currently no
-`Implementations` section at all right now.
+_The Rust Grammar Reference_ would need to be updated in the `Traits` and
+`Implementations` sections. Although, currently, both of those sections
+are completely empty and would have to be written.
 
 Looking at the new _The Rust Programming Language_, there's no discussion on
 where `use declarations` are valid currently, so unless that gets added,
-there's no reason to mention the changes in here explicitly. Except perhaps
-that the allowance where `match arms` could be mentioned in the place where
-`match expressions` are discussed.
+there's no reason to mention the changes in here explicitly.
 
 _Rust by Example_'s "The use declaration" section could have examples added
-for `use declarations` in `implementations` and `match expressions`.
+for `use declarations` in `implementations`. Probably also true for `traits`.
 
 # Drawbacks
 [drawbacks]: #drawbacks
 
-For `use in match`, this means that we can allow things other than
-pattern => expr that are separated by semicolons and not commas.
+None.
 
 # Alternatives
 [alternatives]: #alternatives
 
-Only allow `use` in one of `impl` or `match`. Or do nothing. This is
-purely an ergonomics improvement and doesn't make anything impossible
-possible.
+Do nothing. This is purely an ergonomics improvement and doesn't make anything
+currently impossible actually possible.
 
-The idea of using `_::Greater` to elide the enum name in match arms would
-reduce the added ergonomics of `use declarations` in `match expressions`.
-
-Make `pub use` a hard error in `implementations` and `match expressions`. The
+Make `pub use` a hard error in `implementations`. The
 allowance already exists for block expressions where the `pub` is ignored.
 Macro authors have suggested that allowing it there like that makes it
 easier to write macros with use declarations.
+
+Add a `use Path in Item/Expr` construct. This could also be done, but there's
+no reason not to allow `use` as is in more places.
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
