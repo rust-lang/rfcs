@@ -158,6 +158,22 @@ necessary. As a hypothetical example - your logging crate should not require the
 experience with [diesel](http://diesel.rs/). It's okay to leave these capabilities as an exercise
 left to the reader.
 
+# How We Teach This
+
+This RFC will be linked from the [Rust API guidelines] in a guideline dedicated
+to front page documentation.
+
+[Rust API guidelines]: https://github.com/brson/rust-api-guidelines
+
+As part of the [Libz Blitz], the community and the libs team will evaluate
+high-profile crates against this guideline and file issues where improvement is
+required. With front page documentation improving across the ecosystem, users
+will learn to depend on it and will notice and complain about crates that fall
+short. Those crates can improve their front page experience by using this RFC as
+guidance.
+
+[Libz Blitz]: https://blog.rust-lang.org/2017/05/05/libz-blitz.html
+
 # Drawbacks
 
 A possible drawback of this approach is that it risks over-specifying a format that is ill-served
