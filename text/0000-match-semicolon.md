@@ -51,6 +51,10 @@ match x {
 }
 ```
 
+With this, the `$pat => $expr;` syntax would be de-sugared into `$pat => {$expr;}`. Lints that would
+be triggered on `{$expr;}` would also be triggered on `$expr` - for example,
+`vec.binary_search(&6);` would trigger a `must_use` lint on the `Result` return type.
+
 # How We Teach This
 [how-we-teach-this]: #how-we-teach-this
 
@@ -87,6 +91,7 @@ of the Rust reference, and the [`match` chapter of _The Rust Programming Languag
 
 * Just keep the current system in place
 * Introduce some other syntax for throwing away `match` branch return values, such as `;,`
+* Have match branches automatically throw away return values when other branches return `()`
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
