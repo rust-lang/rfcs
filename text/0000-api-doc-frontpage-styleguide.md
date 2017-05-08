@@ -44,8 +44,9 @@ the reader to understand the purpose of the crate. In addition, a good
 introduction provides a learning path for the user as they read the rest of the
 documentation.
 
-Here's an example of a good introduction from the [log
-crate](https://doc.rust-lang.org/log/log/index.html):
+Here's an example of a good introduction from the [`log`] crate:
+
+[`log`]: https://doc.rust-lang.org/log/log/index.html
 
 > A lightweight logging facade.
 >
@@ -72,12 +73,14 @@ There are several things that make this a good introduction section:
 * Readable by a layman, no jargon is introduced in the first few paragraphs.
 
 What do we mean by "no jargon is introduced in the first few paragraphs"? Using
-the [`rand` crate](https://doc.rust-lang.org/rand/rand/index.html) as an
-example—the crate's initial documentation probably should _not_ include a
-discussion of cryptographically secure random number generators since its
-primary purpose, for most Rust developers, will be to produce any random number.
-This information should instead be provided in a separate section that
-specifically discusses cryptographically secure random number generation.
+the [`rand`] crate as an example—the crate's initial documentation probably
+should _not_ include a discussion of cryptographically secure random number
+generators since its primary purpose, for most Rust developers, will be to
+produce any random number. This information should instead be provided in a
+separate section that specifically discusses cryptographically secure random
+number generation.
+
+[`rand`]: https://doc.rust-lang.org/rand/rand/index.html
 
 In general - it's good to give a developer a place to easily learn what your
 crate is about. Once they have the general idea, you can dive into more details
@@ -171,8 +174,10 @@ will have to read past the code to get the beginning of your API documentation.
 
 You should also avoid examples that require understanding of external crates
 unless it's absolutely necessary. As a hypothetical example - your logging crate
-should not require the user to have experience with [diesel](http://diesel.rs/).
-It's okay to leave these capabilities as an exercise left to the reader.
+should not require the user to have experience with [Diesel]. It's okay to leave
+these capabilities as an exercise left to the reader.
+
+[Diesel]: https://diesel.rs/
 
 # How We Teach This
 
