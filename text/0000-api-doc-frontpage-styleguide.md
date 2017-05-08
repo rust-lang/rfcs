@@ -162,15 +162,13 @@ Here's a good example from the `rand` crate:
 > other random number generators provided by this module are not suitable for
 > such purposes.
 
-Sample code for each crate capability should be as simple as possible and side
-effect free. In the `rand` crate, thread safe RNG is demonstrated in 5 lines of
-code:
+Sample code for each capability should be as simple as possible. In the `rand`
+crate, thread safe RNG is demonstrated in 5 lines of code:
 
 ```rust
 use rand::Rng;
 
 let mut rng = rand::thread_rng();
-
 if rng.gen() { // random bool
     println!("i32: {}, u32: {}", rng.gen::<i32>(), rng.gen::<u32>());
 }
