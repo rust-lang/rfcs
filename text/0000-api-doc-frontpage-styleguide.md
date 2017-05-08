@@ -28,14 +28,14 @@ front page documentation can lead people to pass over it.
 
 # Detailed design
 
-The front page of the crate should cover four main points.  In this RFC, we cover each in turn.
+The front page of the crate should cover three main points. In this RFC, we
+cover each in turn.
 
-* [Introduction text to the crate](#introduction-text-to-the-crate)
+* [Introduction](#introduction)
 * [First Example](#first-example)
-* [Crate Capabilities](#crate-capabilities)
-* [Source Examples](#source-examples)
+* [Capabilities](#capabilities)
 
-## Introduction text to the crate
+## Introduction
 
 The first thing potential users of your crates will see is the introductory summary. This section is
 a good place to introduce the what and the why of the crate. A good introduction is concise but also
@@ -111,7 +111,7 @@ pub fn shave_the_yak(yak: &Yak) {
 }
 ```
 
-## Crate Capabilities
+## Capabilities
 
 The core capabilities of a crate are the main reason people will use your crate.  In the next
 section, you can document what each of these core capabilities are and how to use them.  For
@@ -137,8 +137,6 @@ Here's a good example from the `rand` crate:
 > which reads randomness from the source that the operating system provides (e.g. /dev/urandom
 > on Unixes or CryptGenRandom() on Windows). The other random number generators provided by
 > this module are not suitable for such purposes.
-
-## Capability Examples
 
 Sample code for each crate capability should be as simple as possible and side effect free. In the
 `rand` crate, thread safe RNG is demonstrated in 5 lines of code:
