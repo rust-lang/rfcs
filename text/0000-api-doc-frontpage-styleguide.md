@@ -17,10 +17,14 @@ are also meant to help guide community crate authors.
 
 # Motivation
 
-A user's first experience with a crate is the front page of the crate's documentation. Taken
-together with the API documentation, the front page is a key piece of understanding a crate's
-purpose, how to use it, and its limitations.  Making sure this front page is clear will help users
-of your crate get the most out of it.
+A user's first experience with a crate is often the front page of the crate's
+documentation. Taken together with the API documentation and readme, the front
+page is a critical piece of understanding a crate's purpose, how to use it, and
+its limitations. This RFC furthers our roadmap goal of [providing easy access to
+high quality crates][roadmap]. A crate may be otherwise high quality but shoddy
+front page documentation can lead people to pass over it.
+
+[roadmap]: https://github.com/rust-lang/rust-roadmap/issues/9
 
 # Detailed design
 
