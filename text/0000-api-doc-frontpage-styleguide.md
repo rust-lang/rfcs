@@ -187,12 +187,60 @@ complex examples because smaller examples lose educational value or overall impa
 
 # Alternatives
 
-Alternatively, the format could use fewer sections.  For example, we specify that each discrete
-piece of functionality should be documented separately.  However, by not specifying this to be the
-case, developers could write sections that make sense for their domain, which includes more
-cross-cutting examples.
+### Example size
+
+We may recommend an upper bound on the size of example code that belongs in the
+front page documentation. For example we may say that anything over 40 lines
+probably belongs in its own dedicated file in the `examples` directory.
+
+### Frugal with examples
+
+We may recommend only one or two examples of the most basic sort, and links to
+`examples` or a website for anything more thorough. During your first
+introduction to a crate, links are just as edifying as inline examples. During
+your next 1024 times referring to the rustdoc as reference, you are not forced
+to scroll past the no longer useful example code.
+
+### Usage section
+
+We may recommend a section or just a lone code block that gives the basic
+mechanics of depending on a crate.
+
+```toml
+[build-dependencies]
+gcc = "0.3"
+```
+
+This saves users the effort of:
+
+- Remembering the crate name (crate is gcc, repository is gcc-rs);
+- Figuring out what the latest version is;
+- Knowing which section to put the dependency into.
+
+### Links to homepage, repo, crates.io
+
+Browsing from a rustdoc front page to any of these other references is currently
+obnoxious. On docs.rs they provide these links in a sidebar.
+
+> ![selection_043](https://cloud.githubusercontent.com/assets/1940490/25786542/03e64c0c-334c-11e7-9a1e-868592d663aa.png)
+
+Some crates provide manual cross-links.
+
+> **[Changelog](#) - [API Documentation](#) - [Cargo](#) - [Repository](#)**
+
+We may recommend that crates do something like this in their frontpage. However,
+I believe that this should be a feature request for rustdoc instead.
 
 # Unresolved questions
 
-It is currently unclear how best to document a crate's limitations.
+### Limitations
 
+How best to document a crate's limitations.
+
+### Cargo cfgs
+
+Where documentation for features goes. Serde has this [on the website][serde
+website features] and [in Cargo.toml][serde cargo features] but not in rustdoc.
+
+[serde website features]: https://serde.rs/feature-flags.html
+[serde cargo features]: https://github.com/serde-rs/serde/blob/v1.0.0/serde/Cargo.toml#L26-L75
