@@ -301,3 +301,10 @@ may silently struggle and then abandon the crate without getting help.
 [new serde issue]: https://github.com/serde-rs/serde/issues/new
 
 Does this belong in the readme and/or the rustdoc?
+
+### Migration notes
+
+Migration from v1 to v2 is part of in the [`slog`] front page documentation. Is
+this an appropriate place?
+
+[`slog`]: https://docs.rs/slog/2.0.4/slog/#migrating-from-slog-v1-to-slog-v2
