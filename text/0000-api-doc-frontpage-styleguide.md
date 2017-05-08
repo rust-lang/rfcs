@@ -244,3 +244,13 @@ website features] and [in Cargo.toml][serde cargo features] but not in rustdoc.
 
 [serde website features]: https://serde.rs/feature-flags.html
 [serde cargo features]: https://github.com/serde-rs/serde/blob/v1.0.0/serde/Cargo.toml#L26-L75
+
+### License boilerplate
+
+This crate is licensed under either of Apache License, Version 2.0,
+(LICENSE-APACHE or http://www.apache.org/licenses/LICENSE-2.0) or MIT license
+(LICENSE-MIT or http://opensource.org/licenses/MIT) at your option. Unless you
+explicitly state otherwise, any contribution intentionally submitted bla bla
+bla.
+
+Does this need to be in the readme and/or the rustdoc?
