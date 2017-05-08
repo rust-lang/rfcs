@@ -37,14 +37,18 @@ cover each in turn.
 
 ## Introduction
 
-The first thing potential users of your crates will see is the introductory
-summary. This section is a good place to introduce the what and the why of the
-crate. A good introduction is concise but also provides enough information for
-the reader to understand the purpose of the crate. In addition, a good
-introduction provides a learning path for the user as they read the rest of the
-documentation.
+The purpose of the introduction is to help a user quickly figure out whether
+this is the right crate for them.
 
-Here's an example of a good introduction from the [`log`] crate:
+In designing the introduction, consider a user searching for a crate to fulfill
+some use case, landing on the front page of several similar crates, and trying
+to determine which one to pursue further. The introduction is responsible for
+concisely conveying what the crate does and why somebody might want to use it.
+By the end of the introduction the reader should either be confident that this
+is not what they were looking for, or eager to read the example code and
+capabilities that follow the introduction.
+
+Here is an example of a decent introduction from the [`log`] crate:
 
 [`log`]: https://doc.rust-lang.org/log/log/index.html
 
@@ -64,28 +68,31 @@ Here's an example of a good introduction from the [`log`] crate:
 > that default may be overridden. Logger implementations typically use the
 > target to filter requests based on some user configuration.
 
-There are several things that make this a good introduction section:
+Based on the introduction, this crate is not for somebody hoping to compute a
+logarithm or a Laplacian of Gaussian. If you are writing a library that wants to
+log messages in a way that is governed by the user, or if you are an application
+needing to tap into the log output of your dependencies, you should keep
+reading.
 
-* A concise explanation of the crate's purpose.
-* The summary describes how the crate behaves in 3 short paragraphs.
-* Even if you don't want to read the rest of the `README`, you have enough to
-  get started.
-* Readable by a layman, no jargon is introduced in the first few paragraphs.
-
-What do we mean by "no jargon is introduced in the first few paragraphs"? Using
-the [`rand`] crate as an example—the crate's initial documentation probably
-should _not_ include a discussion of cryptographically secure random number
-generators since its primary purpose, for most Rust developers, will be to
-produce any random number. This information should instead be provided in a
-separate section that specifically discusses cryptographically secure random
-number generation.
+Another example from the [`rand`] crate:
 
 [`rand`]: https://doc.rust-lang.org/rand/rand/index.html
 
-In general - it's good to give a developer a place to easily learn what your
-crate is about. Once they have the general idea, you can dive into more details
-that are specific to your crate, including jargon that would be common with its
-use.
+> Utilities for random number generation
+>
+> The key functions are `random()` and `Rng::gen()`. These are polymorphic and
+> so can be used to generate any type that implements `Rand`. Type inference
+> means that often a simple call to `rand::random()` or `rng.gen()` will
+> suffice, but sometimes an annotation is required, e.g.
+> `rand::random::<f64>()`.
+>
+> See the `distributions` submodule for sampling random numbers from
+> distributions like normal and exponential.
+
+In this introduction it would be valuable to touch on a fundamental question
+that many people evaluating a random number library will need to know: where
+does the randomness come from? Is it from the operating system? Is there a
+pseudorandom number generator? Is it cryptographically secure?
 
 ## First Example
 
