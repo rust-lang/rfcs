@@ -211,6 +211,13 @@ educational value or overall impact.
 
 # Alternatives
 
+### Multi-crate guidance
+
+Serde, Tokio, Diesel, and other large projects are factored across many
+individual crates. We may provide explicit guidance about how to handle front
+page documentation in this situation, beyond just applying this RFC to each
+crate individually.
+
 ### Example size
 
 We may recommend an upper bound on the size of example code that belongs in the
