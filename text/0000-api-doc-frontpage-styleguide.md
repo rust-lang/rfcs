@@ -145,7 +145,7 @@ begin to combine capabilities.
 
 Here is a good example from the `rand` crate:
 
-> ## Thread-local RNG
+> ### Thread-local RNG
 >
 > There is built-in support for a RNG associated with each thread stored in
 > thread-local storage. This RNG can be accessed via `thread_rng`, or used
@@ -154,7 +154,7 @@ Here is a good example from the `rand` crate:
 > and will automatically reseed itself from this source after generating 32 KiB
 > of random data.
 >
-> ## Cryptographic security
+> ### Cryptographic security
 >
 > An application that requires an entropy source for cryptographic purposes must
 > use `OsRng`, which reads randomness from the source that the operating system
