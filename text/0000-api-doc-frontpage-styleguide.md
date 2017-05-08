@@ -148,17 +148,17 @@ Here's a good example from the `rand` crate:
 > ## Thread-local RNG
 >
 > There is built-in support for a RNG associated with each thread stored in
-> thread-local storage. This RNG can be accessed via thread_rng, or used
-> implicitly via random. This RNG is normally randomly seeded from an
-> operating-system source of randomness, e.g. /dev/urandom on Unix systems, and
-> will automatically reseed itself from this source after generating 32 KiB of
-> random data.
+> thread-local storage. This RNG can be accessed via `thread_rng`, or used
+> implicitly via `random`. This RNG is normally randomly seeded from an
+> operating-system source of randomness, e.g. `/dev/urandom` on Unix systems,
+> and will automatically reseed itself from this source after generating 32 KiB
+> of random data.
 >
 > ## Cryptographic security
 >
 > An application that requires an entropy source for cryptographic purposes must
-> use OsRng, which reads randomness from the source that the operating system
-> provides (e.g. /dev/urandom on Unixes or CryptGenRandom() on Windows). The
+> use `OsRng`, which reads randomness from the source that the operating system
+> provides (e.g. `/dev/urandom` on Unixes or `CryptGenRandom()` on Windows). The
 > other random number generators provided by this module are not suitable for
 > such purposes.
 
