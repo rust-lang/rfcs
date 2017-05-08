@@ -96,12 +96,16 @@ pseudorandom number generator? Is it cryptographically secure?
 
 ## First Example
 
-The first example should provide a concise example to help a developer
-understand how they can work with your crate. Ideally, this example should only
-demonstrate your crate and core Rust functionality. Avoid large examples with
-lots of features; larger examples are better fit for the `examples` directory.
+The purpose of the first example is to help the reader imagine themselves as a
+user of your crate. It gives them a sense of how high level or low level the
+crate's primary abstractions are and how some of the verbally described features
+play out in practice.
 
-Let's look at a sample of a good first example of a crate. Notice that the
+Ideally this example should only demonstrate your crate and core Rust
+functionality. Avoid large examples with lots of features; those belong in the
+`examples` directory.
+
+Let's look at a good first example from the [`log`] crate. Notice that the
 author has focused on getting started, showing how to import and use the crate,
 and a few simple uses of common functionality.
 
