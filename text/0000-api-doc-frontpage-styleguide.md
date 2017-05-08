@@ -224,7 +224,7 @@ We may recommend an upper bound on the size of example code that belongs in the
 front page documentation. For example we may say that anything over 40 lines
 probably belongs in its own dedicated file in the `examples` directory.
 
-### Frugal with examples
+### Example budget
 
 We may recommend only one or two examples of the most basic sort, and links to
 `examples` or a website for anything more thorough. During your first
