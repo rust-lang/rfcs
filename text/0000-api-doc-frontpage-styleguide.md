@@ -254,3 +254,19 @@ explicitly state otherwise, any contribution intentionally submitted bla bla
 bla.
 
 Does this need to be in the readme and/or the rustdoc?
+
+### Getting help
+
+The Serde readme has the following stanza. It is designed to catch new users who
+may silently struggle and then abandon the crate without getting help.
+
+> Serde developers live in the #serde channel on [`irc.mozilla.org`]. The #rust
+> channel is also a good resource with generally faster response time but less
+> specific knowledge about Serde. If IRC is not your thing or you don't get a
+> good response, we are happy to respond to [GitHub issues][new serde issue] as
+> well.
+
+[`irc.mozilla.org`]: https://wiki.mozilla.org/IRC
+[new serde issue]: https://github.com/serde-rs/serde/issues/new
+
+Does this belong in the readme and/or the rustdoc?
