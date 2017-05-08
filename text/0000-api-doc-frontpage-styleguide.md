@@ -177,6 +177,9 @@ if rng.gen() { // random bool
 After this example, a user should immediately be able to use a thread safe
 random number generator in their own program.
 
+Examples may go inline under each capability, or all together in an Examples
+section.
+
 More complex source examples should be included as a separate program in the
 `examples` directory. Be wary of putting large examples in your doc where users
 will have to read past the code to get the beginning of your API documentation.
