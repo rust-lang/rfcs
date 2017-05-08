@@ -188,6 +188,10 @@ integrations for the reader to put together themselves.
 
 [Diesel]: https://diesel.rs/
 
+# The readme
+
+This is an unresolved question.
+
 # How We Teach This
 
 This RFC will be linked from the [Rust API guidelines] in a guideline dedicated
@@ -265,6 +269,59 @@ We may recommend that crates do something like this in their frontpage. However,
 I believe that this should be a feature request for rustdoc instead.
 
 # Unresolved questions
+
+### Readme
+
+What goes in the readme? Do we duplicate all or most of the front page doc in
+the readme?
+
+There are some things that have traditionally gone in the readme but not the
+front page doc:
+
+- Requisite system libraries
+- Code of conduct
+- Instructions for developers
+- CI status
+- Semantic versioning philosophy
+- Supported OS and Rust versions
+- Comparison with other crates
+- Benchmark data
+- License boilerplate
+
+Is there a good reason for this distinction?
+
+Here are some projects with very different readmes and front page docs:
+
+- `serde`
+  [readme](https://github.com/serde-rs/serde/blob/master/README.md)
+  and
+  [front page](https://docs.rs/serde/*/serde/)
+- `rocket`
+  [readme](https://github.com/SergioBenitez/Rocket/blob/master/README.md)
+  and
+  [front page](https://docs.rs/rocket/*/rocket/)
+- `tokio-core`
+  [readme](https://github.com/tokio-rs/tokio-core/blob/master/README.md)
+  and
+  [front page](https://docs.rs/tokio-core/*/tokio_core/)
+- `docopt`
+  [readme](https://github.com/docopt/docopt.rs/blob/master/README.md)
+  and
+  [front page](https://docs.rs/docopt/*/docopt/)
+
+Here are some projects with somewhat similar readmes and front page docs:
+
+- `clap`
+  [readme](https://github.com/kbknapp/clap-rs/blob/master/README.md)
+  and
+  [front page](https://docs.rs/clap/*/clap/)
+
+Here are some projects with practically identical readmes and front page docs:
+
+- `serde_json`
+  [readme](https://github.com/serde-rs/json/blob/master/README.md)
+  and
+  [front page](https://docs.rs/serde_json/*/serde_json/)
 
 ### Limitations
 
