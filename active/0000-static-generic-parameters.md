@@ -1,0 +1,190 @@
+- Start Date: 2014-04-29
+- RFC PR #:
+- Rust Issue #:
+
+# Summary
+
+Implement a simple form of a dependent type system similar to C++ and D by
+allowing generics to have static values as parameters in addition to lifetime
+and type parameters.
+
+# Motivation
+
+Generic types are very useful to ensure type-safety while writing generic code
+for a variety of types. Parametrisation over static values extends this feature
+to certain use cases, where it is necessary to maintain type-safety in terms of
+these values.
+
+To illustrate this further, consider the following use cases for this feature:
+
+* *Algebraic types*: algebraic vectors and matrices generally have a certain
+  dimensionality, which changes their behaviour. For example, it does not make
+  sense to add a 2-vector with a 3-vector or multiply a 3x4 matrix by a
+  5-vector. But the algorithms can be written generically in terms of the
+  dimensionality of these types.
+* *Compile-time sizes*: define sizes for small buffers and other data
+  structures at compile-time. This can be quite important to only allocate
+  larger chunks of memory, when they are really required. If this is unlikely,
+  it can have a meaningful impact on performance. For instance,
+  [Servo][servo_macros]
+  currently resorts to a range of types implemented with macros to deal with
+  this issue.
+* *Physical units*: In science one often deals with numerical quantities
+  equipped with units (meters, hours, kilometers per hour, etc.). To avoid
+  errors dealing with these units, it makes sense to include in the data type.
+  For performance reasons, however, having the computational overhead in every
+  single calculation at run-time might be prohibitively slow. Here static
+  values as generic parameters could allow to convert between units and check
+  for consistency at compile-time.
+* *Range and mod types*: This would allow [range and mod types similar to
+  Ada][range_mod_ada] in Rust, which enforce certain range constraints and
+  implement modular arithmetics respectively.
+
+In general, this feature allows for nicer abstractions that are dealt with at
+compile-time and thus have no cost in terms of run-time performance. It is also
+a very expressive feature that Rust is currently lacking in comparison with
+similar languages such as C++ and D.
+
+# Drawbacks
+
+First of all, allowing another kind of parameter for generics adds a certain
+degree of complexity to Rust. Thus the potential merits of this feature have to
+justify this.
+
+Furthermore, it is not entirely clear, how well this feature fits with Rust's
+current approach to meta-programming. When implemented completely, this feature
+requires compile-time function execution (CTFE), which has been
+[discussed][issue_11621] [in the past][ctfe_mail] without a clear outcome. This
+feature would also introduce the possibility for
+[template metaprogramming][template_meta].
+
+# Detailed design
+
+Currently generics can be parametrized over type and lifetime parameters. This
+RFC proposes to additionally allow for static values as parameters. These
+values must be static, since they encode type-information that must be known at
+compile-time.
+
+To propose a concrete syntax, consider this simple generic function:
+
+```rust
+fn add_n<static n: int>(x: int) -> int {
+    x + n
+}
+
+fn main() {
+    add_n<3>(4); // => 7
+}
+
+```
+
+The syntax `<static n: int>` closely resembles the syntax for type parameters
+with trait bounds. There is the additional keyword `static` to clearly
+distinguish it from type parameters. This keyword is already used in a
+different context. This use has a semantic relation to other uses of
+`static` as a keyword. There is no ambiguity due to the context of generic
+parameters in which it appears here either. Therefore it makes sense to use it
+in this context.
+
+Alternatively, one could also omit `static`. Traits would probably not be
+allowed as the type of a static parameter, since they could not be statically
+resolved at compile-time. Therefore the parser should be able to distinguish
+type parameters from static value parameters despite the similarity, even
+without `static`. However, the difference between type parameters and static
+parameters might become less obvious that way.
+
+Structs could be parametrized similarly, as this (incomplete) implementation of
+an arbitrarily-sized algebraic vector illustrates:
+
+```rust
+struct Vector<T, static n: uint> {
+    pub data: [T, ..n]
+}
+
+impl<T, static n: uint> Vector<T, n> {
+    fn new(data: [T, ..n]]) -> Vector<T, n> {
+        Vector{data: data}
+    }
+}
+
+impl<T: Add, static n: uint> Add<Vector<T, n>, Vector<T, n>> for Vector<T, n> {
+    fn add(&self, rhs: &Vector<T, n>) -> Vector<T, n> {
+        let mut new_data: [T, ..n] = [0, ..n];
+        for (i, (&x, &y)) in self.data.iter().zip(rhs.data.iter()).enumerate() {
+            new_data[i] = x + y;
+        }
+        Vector::new(new_data)
+    }
+}
+
+fn main() {
+    assert_eq!(
+        Vector::new([1, 2]) + Vector([2, 3]),
+        Vector::new([3, 4])
+    );
+    assert_eq!(
+        Vector::new([1, 2, 3]) + Vector([2, 3, 7]),
+        Vector::new([3, 4, 5])
+    );
+}
+
+```
+
+It should also be possible to do some algebra with the parameters, like this:
+
+```rust
+fn concatenate<T, static n: uint, static m: uint>
+    (x: Vector<T, n>, y: Vector<T, m>) -> Vector<T, n + m>
+{
+    let mut new_data: [T, ..n + m] = [0, ..n + m];
+    for (i, &xx) in x.data.iter().enumerate() { new_data[i] = xx; }
+    for (i, &yy) in y.data.iter().enumerate() { new_data[i + n] = yy; }
+    Vector::new(new_data)
+}
+
+```
+
+Type inference can potentially become complex, especially when arbitrary
+functions must be executed. First of all, compile-time function execution as
+described in [this issue][issue_11621] is required to instantiate the types
+parametrized with static parameters.
+
+It seems reasonable to restrict the use of algebraic expressions in types in
+such a way, that it is still possible to immediately infer a type from an
+expression without resorting to any kind of function inversion.
+
+So the following function signature would work
+
+```rust
+fn inc<static n: int>(x: T<n>) -> T<n + 1> {...}
+```
+
+while this one wouldn't
+
+```rust
+fn inc<static n: int>(x: T<n - 1>) -> T<n + 1> {...}
+```
+
+Traits and enumerations should also be able to be parametrized like this in the
+same manner.
+
+# Alternatives
+
+Parts of the functionality provided by this change could be achieved using
+macros, which is currently done in some libraries (see for example in
+[Servo][servo_macros] or @sebcrozet's libraries [nalgebra][nalgebra] and
+[nphysics][nphysics]. However, macros are fairly limited in this regard.
+
+# Unresolved questions
+
+* How does type inference work in this context?
+* In how far is compile-time function execution acceptable to support this?
+* How exactly does this work with traits and enums?
+
+[servo_macros]: https://github.com/mozilla/servo/blob/b14b2eca372ea91dc40af66b1f8a9cd510c37abf/src/components/util/smallvec.rs#L475-L525
+[nalgebra]: https://github.com/sebcrozet/nalgebra
+[nphysics]: https://github.com/sebcrozet/nphysics
+[issue_11621]: https://github.com/mozilla/rust/issues/11621
+[ctfe_mail]: https://mail.mozilla.org/pipermail/rust-dev/2014-January/008252.html
+[template_meta]: http://en.wikipedia.org/wiki/Template_metaprogramming
+[range_mod_ada]: http://en.wikipedia.org/wiki/Ada_%28programming_language%29#Data_types
