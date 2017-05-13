@@ -147,6 +147,8 @@ Also, this is more general, but possibly harder to discover, as the appropriate 
 
 * `forward()`: "forwards the result to the next handler"
 * `coalesce()`: "coalesces different Result types into one"
+* `convert()`: "convert the Result (using std::convert)"
+* `adjust()`: "adjust the Result to the following interface"
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
