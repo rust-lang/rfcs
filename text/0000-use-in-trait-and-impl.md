@@ -105,7 +105,9 @@ for `use declarations` in `implementations`. Probably also true for `traits`.
 # Drawbacks
 [drawbacks]: #drawbacks
 
-None.
+All other items in a trait or implementation are public by default and don't
+even allow a visiblity modifier. This would be the first item that would not
+be public.
 
 # Alternatives
 [alternatives]: #alternatives
