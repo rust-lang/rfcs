@@ -26,8 +26,7 @@ the `use declaration` creates would be scoped to the trait block.
 Allow `use declarations` to be inside of `implementations`. The bindings that
 the `use declaration` creates would be scoped to the implementation.
 
-These `use declarations` would allow the `pub` modifier. It would do nothing,
-just like it currently does in block expressions.
+These `use declarations` would not allow the `pub` visibility modifier.
 
 ## Example - use in impl
 
@@ -65,7 +64,7 @@ Define `trait_use` as
 
 ```
 trait_use
-: visibility use_item
+: use_item
 ;
 ```
 
@@ -75,7 +74,7 @@ Define `impl_use` as
 
 ```
 impl_use
-: visibility use_item
+: use_item
 ;
 ```
 
@@ -114,10 +113,10 @@ None.
 Do nothing. This is purely an ergonomics improvement and doesn't make anything
 currently impossible actually possible.
 
-Make `pub use` a hard error in `implementations`. The
-allowance already exists for block expressions where the `pub` is ignored.
-Macro authors have suggested that allowing it there like that makes it
-easier to write macros with use declarations.
+Allow `pub` in use declarations, just like in blocks. A previous version of
+this RFC allowed that, but there have been RFCs for attributing meaning to
+`pub use` in traits and having it do nothing for now would be a back-compat
+hazard.
 
 Add a `use Path in Item/Expr` construct. This could also be done, but there's
 no reason not to allow `use` as is in more places.
