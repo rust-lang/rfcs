@@ -179,6 +179,10 @@ each platform that it targets. The proposals are:
   what the CRT contains. This notably means that a large amount of the current
   contents will be removed on Windows.
 
+Additionally, this crate will provide `errno()` and `set_errno()` functions to
+read and set `errno`. This is necessary to allow Rust programs using `libc`
+functions to properly detect and handle error conditions.
+
 New platforms added to `libc` can decide the set of libraries `libc` will link
 to and bind at that time.
 
