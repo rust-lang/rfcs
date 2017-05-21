@@ -955,23 +955,22 @@ directly if this is not desirable.
 [Seeking]: #seeking
 
 The seeking infrastructure is largely the same as today's, except that
-`tell` is removed and the `seek` signature is refactored with more precise
-types:
+`tell` is removed and the `seek` method is split up into three separate methods:
 
 ```rust
 pub trait Seek {
-    // returns the new position after seeking
-    fn seek(&mut self, pos: SeekFrom) -> Result<u64, Error>;
-}
+    // returns the new position after seeking from the start
+    fn seek_from_start(&mut self, offset: u64) -> Result<u64, Error>;
 
-pub enum SeekFrom {
-    Start(u64),
-    End(i64),
-    Current(i64),
+    // returns the new position after seeking from the current position
+    fn seek_from_end(&mut self, offset: i64) -> Result<u64, Error>;
+
+    // returns the new position after seeking from the end
+    fn seek_from_current(&mut self, offset: i64) -> Result<u64, Error>;
 }
 ```
 
-The old `tell` function can be regained via `seek(SeekFrom::Current(0))`.
+The old `tell` function can be regained via `seek_from_current(0)`.
 
 #### Buffering
 [Buffering]: #buffering
