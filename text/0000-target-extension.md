@@ -44,47 +44,47 @@ are ABI changes, others API changes) and how a crate like `libc` would have to
 deal with them. Please note that some are quite old but could be considered as 
 representative of something that already occurred in the past.
 
-- OpenBSD 5.5 does a big breaking changes in order to be compatible with
+- **OpenBSD 5.5** does a big breaking changes in order to be compatible with
   [year 2038](https://www.openbsd.org/faq/upgrade55.html#time_t): it switches
   from a signed 32 bit counter to signed 64 bit time type.
   See [commit message](http://cvsweb.openbsd.org/cgi-bin/cvsweb/src/sys/sys/_types.h?rev=1.6&content-type=text/x-cvsweb-markup)
   and [diff on types](http://cvsweb.openbsd.org/cgi-bin/cvsweb/src/sys/sys/_types.h.diff?r1=1.5&r2=1.6).
 
-- OpenBSD 6.2 (upcoming) changes `si_addr` type (`char *` to `void *`) in
+- **OpenBSD 6.2** (upcoming) changes `si_addr` type (`char *` to `void *`) in
   `siginfo_t` structure.
   See [commit message](http://cvsweb.openbsd.org/cgi-bin/cvsweb/src/sys/sys/siginfo.h?rev=1.12&content-type=text/x-cvsweb-markup)
   and [diff on sys/siginfo.h](http://cvsweb.openbsd.org/cgi-bin/cvsweb/src/sys/sys/siginfo.h.diff?r1=1.11&r2=1.12).
 
-- FreeBSD 10 changes the `cap_rights_t` type from `uint64_t` to a structure
+- **FreeBSD 10** changes the `cap_rights_t` type from `uint64_t` to a structure
   that they can extend in the future in a backward compatible way.
   See [commit R255129](https://svnweb.freebsd.org/base?view=revision&revision=255219).
 
-- FreeBSD 11 changes signature of `psignal()` to align to POSIX 2008
+- **FreeBSD 11** changes signature of `psignal()` to align to POSIX 2008
   (`unsigned int` to `int` argument).
   See [commit R300997](https://svnweb.freebsd.org/base?view=revision&revision=300997)
   and [diff on signal.h](https://svnweb.freebsd.org/base/head/include/signal.h?r1=300997&r2=300996&pathrev=300997).
 
-- FreeBSD 12 (upcoming) removes `setkey()`, `encrypt()`, `des_setkey()` and
+- **FreeBSD 12** (upcoming) removes `setkey()`, `encrypt()`, `des_setkey()` and
   `des_cipher()` functions.
   See [commit R306651](https://svnweb.freebsd.org/base?view=revision&revision=306651)
   and [diff of unistd.h](https://svnweb.freebsd.org/base/head/include/unistd.h?r1=306651&r2=306650&pathrev=306651).
 
-- FreeBSD 12 (upcoming) adds a new member `fb_memattr` in the middle of the
+- **FreeBSD 12** (upcoming) adds a new member `fb_memattr` in the middle of the
   structure `fb_info` (public under `sys/fbio.h`).
   See [commit R306555](https://svnweb.freebsd.org/base?view=revision&revision=306555)
   and [diff of sys/fbio.h](https://svnweb.freebsd.org/base/head/sys/sys/fbio.h?r1=306555&r2=306554&pathrev=306555).
 
-- NetBSD 7.99 (upcoming 8) adds a new member `mnt_lower` in the middle of
+- **NetBSD 7.99** (upcoming 8) adds a new member `mnt_lower` in the middle of
   the structure `mount` (public under `sys/mount.h`).
   See [commit message](http://cvsweb.netbsd.org/bsdweb.cgi/src/sys/sys/mount.h?rev=1.221&content-type=text/x-cvsweb-markup)
   and [diff of sys/mount.h](http://cvsweb.netbsd.org/bsdweb.cgi/src/sys/sys/mount.h.diff?r1=1.220&r2=1.221).
 
-- NetBSD 7.99 (upcoming 8) changes signature of `scandir()` function to conforms to `IEEE
+- **NetBSD 7.99** (upcoming 8) changes signature of `scandir()` function to conforms to `IEEE
   Std 1003.1-2008` (`const void *` to `const struct dirent **`).
   See [commit message](http://cvsweb.netbsd.org/bsdweb.cgi/src/include/dirent.h?rev=1.36&content-type=text/x-cvsweb-markup&sortby=date)
   and [diff to dirent.h](http://cvsweb.netbsd.org/bsdweb.cgi/src/include/dirent.h.diff?r1=1.35&r2=1.36&sortby=date).
 
-- DragonFly 1.4 switches `ino_t` from 32 bits to 64 bits.
+- **DragonFly 1.4** switches `ino_t` from 32 bits to 64 bits.
   See [commit message](http://gitweb.dragonflybsd.org/dragonfly.git/commit/f91a71dd15504ebdb04387d0822771ef145b25f9?f=sys/sys/types.h)
   and [diff to sys/types.h](http://gitweb.dragonflybsd.org/dragonfly.git/blobdiff/6f1e2b382f6c2ba9b43a1fc106ba998b45499eea..f91a71dd15504ebdb04387d0822771ef145b25f9:/sys/sys/types.h)
 
