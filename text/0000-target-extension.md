@@ -22,7 +22,7 @@ In particular, Rust target definition is missing for:
 
 
 Rust language is aimed to be used on different operating systems following
-themself there own rules. In particular, each operating systems have proper way
+themself there own rules.In particular, each operating systems have proper way
 to deal with breaking changes: if Linux tends to forbid breaking changes by
 policy, all others systems doesn't have such rule. As Rust language tend to be
 a stable language, having a stable way to describe breaking changes on the OS
@@ -47,7 +47,7 @@ representative of something that already occurred in the past.
   [year 2038](https://www.openbsd.org/faq/upgrade55.html#time_t): it switchs
   from a signed 32 bit counter to signed 64 bit time type.
   See [commit message](http://cvsweb.openbsd.org/cgi-bin/cvsweb/src/sys/sys/_types.h?rev=1.6&content-type=text/x-cvsweb-markup)
-  and [diff on types](http://cvsweb.openbsd.org/cgi-bin/cvsweb/src/sys/sys/_types.h.diff?r1=1.5&r2=1.6)
+  and [diff on types](http://cvsweb.openbsd.org/cgi-bin/cvsweb/src/sys/sys/_types.h.diff?r1=1.5&r2=1.6).
 
 - OpenBSD 6.2 (upcoming) changes `si_addr` type (`char *` to `void *`) in
   `siginfo_t` structure.
