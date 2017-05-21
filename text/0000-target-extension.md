@@ -17,8 +17,8 @@ target](https://github.com/rust-lang/rust/blob/7ac844ffb850a73b98cd47cbdec909d1f
 specification we have.
 
 In particular, Rust target definition is missing for:
-- optional OS version
-- optional environment version
+- optional [OS version](https://github.com/llvm-mirror/llvm/blob/343e535d9c38cf57173ace6597380752a18a6a67/include/llvm/ADT/Triple.h#L315)
+- optional [environment version](https://github.com/llvm-mirror/llvm/blob/343e535d9c38cf57173ace6597380752a18a6a67/include/llvm/ADT/Triple.h#L303)
 
 
 Rust language is aimed to be used on different operating systems following
