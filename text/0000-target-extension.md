@@ -23,7 +23,7 @@ definition:
 
 
 Rust language is aimed to be used on different operating systems following
-themself there own rules.In particular, each operating systems have proper way
+them self there own rules.In particular, each operating systems have proper way
 to deal with breaking changes: if Linux tends to forbid breaking changes by
 policy, all others systems doesn't have such rule. As Rust language tend to be
 a stable language, having a stable way to describe breaking changes on the OS
@@ -45,7 +45,7 @@ deal with them. Please note that some are quite old but could be considered as
 representative of something that already occurred in the past.
 
 - OpenBSD 5.5 does a big breaking changes in order to be compatible with
-  [year 2038](https://www.openbsd.org/faq/upgrade55.html#time_t): it switchs
+  [year 2038](https://www.openbsd.org/faq/upgrade55.html#time_t): it switches
   from a signed 32 bit counter to signed 64 bit time type.
   See [commit message](http://cvsweb.openbsd.org/cgi-bin/cvsweb/src/sys/sys/_types.h?rev=1.6&content-type=text/x-cvsweb-markup)
   and [diff on types](http://cvsweb.openbsd.org/cgi-bin/cvsweb/src/sys/sys/_types.h.diff?r1=1.5&r2=1.6).
@@ -84,7 +84,7 @@ representative of something that already occurred in the past.
   See [commit message](http://cvsweb.netbsd.org/bsdweb.cgi/src/include/dirent.h?rev=1.36&content-type=text/x-cvsweb-markup&sortby=date)
   and [diff to dirent.h](http://cvsweb.netbsd.org/bsdweb.cgi/src/include/dirent.h.diff?r1=1.35&r2=1.36&sortby=date).
 
-- DragonFly 1.4 switchs `ino_t` from 32 bits to 64 bits.
+- DragonFly 1.4 switches `ino_t` from 32 bits to 64 bits.
   See [commit message](http://gitweb.dragonflybsd.org/dragonfly.git/commit/f91a71dd15504ebdb04387d0822771ef145b25f9?f=sys/sys/types.h)
   and [diff to sys/types.h](http://gitweb.dragonflybsd.org/dragonfly.git/blobdiff/6f1e2b382f6c2ba9b43a1fc106ba998b45499eea..f91a71dd15504ebdb04387d0822771ef145b25f9:/sys/sys/types.h)
 
@@ -93,7 +93,7 @@ In the current situation, `libc` crate has no way to deal in a stable way with
 these changes. It could only support two incompatible OS version together by
 only defining the common subset.
 
-Additionnally, in order to switch `libc` from one OS version to another, it
+Additionally, in order to switch `libc` from one OS version to another, it
 would be required to do a breaking change at `libc` level (incrementing major
 version of `libc` itself) which is undesirable.
 
