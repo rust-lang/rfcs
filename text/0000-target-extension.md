@@ -134,7 +134,6 @@ This should get into specifics and corner-cases, and include examples of how the
 ## Syntax level
 
 - operators to compare versions in attribute
-
 - behaviour
   - numeric comparaison
     - "2" < "10" : true
@@ -209,7 +208,7 @@ What other designs have been considered? What is the impact of not doing this?
   `libc` code (for only small differencies) at each release.
 
 - statu quo: while no fundamental breaking changes occurs at OS level, no need
-  to do anything. Disclosure: FreeBSD switchs to ino64 could occurs soon.
+  to do anything. Disclosure: FreeBSD switch to ino64 could occurs soon.
 
 
 # Unresolved questions
