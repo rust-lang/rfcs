@@ -135,6 +135,31 @@ This should get into specifics and corner-cases, and include examples of how the
   - `#[cfg(all(target_os="freebsd", any(target_os_version = "10", target_os_version = "11"))]`
 
 
+Here an complete (and simple) example. In OpenBSD 6.2, the structure `siginfo_t`
+changed:
+
+```rust
+pub struct siginfo_t {
+    pub si_signo: ::c_int,
+    pub si_code: ::c_int,
+    pub si_errno: ::c_int,
+
+    #[cfg(target_os_version <  "6.2")]
+    pub si_addr: *mut ::c_char,
+    #[cfg(target_os_version >= "6.2")]
+    pub si_addr: *mut ::c_void,
+
+    #[cfg(target_pointer_width = "32")]
+    __pad: [u8; 112],
+    #[cfg(target_pointer_width = "64")]
+    __pad: [u8; 108],
+}
+```
+
+With this code, it is possible to target `x86_amd64-unknown-openbsd6.1` **and**
+`x86_amd64-unknown-openbsd6.2`.
+
+
 ## Syntax level
 
 - operators to compare versions in attribute
