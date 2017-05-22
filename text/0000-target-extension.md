@@ -94,11 +94,14 @@ representative of something that already occurred in the past.
 
 In the current situation, `libc` crate has no way to deal in a stable way with
 these changes. It could only support two incompatible OS version together by
-only defining the common subset.
+only defining the common subset. Depending the breaking part, it could result
+removed feature in rustc (removing `si_addr` for OpenBSD would break stack
+overflow detection), or even breaking rustc itself (removing `ino_t` for
+FreeBSD).
 
 Additionally, in order to switch `libc` from one OS version to another, it
 would be required to do a breaking change at `libc` level (incrementing major
-version of `libc` itself) which is undesirable.
+version of `libc` itself) which is undesirable for this purpose.
 
 
 The purpose of extending Rust `Target` type to follow LLVM Triple definition is
