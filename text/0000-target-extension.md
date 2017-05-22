@@ -22,9 +22,9 @@ definition:
 - optional [environment version](https://github.com/llvm-mirror/llvm/blob/343e535d9c38cf57173ace6597380752a18a6a67/include/llvm/ADT/Triple.h#L303)
 
 
-Rust language is aimed to be used on different operating systems following
-them self there own rules.In particular, each operating systems have proper way
-to deal with breaking changes: if Linux tends to forbid breaking changes by
+Rust language is aimed to be used on different operating systems following them
+self there own rules. In particular, each operating systems have proper way to
+deal with breaking changes: if Linux tends to forbid breaking changes by
 policy, all others systems doesn't have such rule. As Rust language tend to be
 a stable language, having a stable way to describe breaking changes on the OS
 would be very valuable and could become necessary as time passes.
@@ -122,7 +122,7 @@ This is the bulk of the RFC. Explain the design in enough detail for somebody fa
 with the language to understand, and for somebody familiar with the compiler to implement.
 This should get into specifics and corner-cases, and include examples of how the feature is used.
 
-
+**INCOMPLETE PART: only ideas are presented here for now**
 
 ## Language level: what the user will see ?
 
