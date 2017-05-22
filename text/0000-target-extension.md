@@ -74,6 +74,9 @@ representative of something that already occurred in the past.
   See [commit R306555](https://svnweb.freebsd.org/base?view=revision&revision=306555)
   and [diff of sys/fbio.h](https://svnweb.freebsd.org/base/head/sys/sys/fbio.h?r1=306555&r2=306554&pathrev=306555).
 
+- **FreeBSD ?** wants to switch `ino_t` from 32 bits to 64 bits.
+  See [Status Update and Call for Testing](https://lists.freebsd.org/pipermail/freebsd-fs/2017-April/024684.html).
+
 - **NetBSD 7.99** (upcoming 8) adds a new member `mnt_lower` in the middle of
   the structure `mount` (public under `sys/mount.h`).
   See [commit message](http://cvsweb.netbsd.org/bsdweb.cgi/src/sys/sys/mount.h?rev=1.221&content-type=text/x-cvsweb-markup)
@@ -115,6 +118,65 @@ This is the bulk of the RFC. Explain the design in enough detail for somebody fa
 with the language to understand, and for somebody familiar with the compiler to implement.
 This should get into specifics and corner-cases, and include examples of how the feature is used.
 
+
+
+### Language level: what the user will see ?
+
+- new `target_os_version` and `target_env_version` attributes
+- new operators to deal with symbol (string) comparaison
+- examples
+  - `#[cfg(all(target_os="openbsd", target_os_version <  "5.5")]`
+  - `#[cfg(all(target_os="openbsd", target_os_version >= "5.5")]`
+  - `#[cfg(all(target_os="freebsd", target_os_version >= "10", target_os_version < "12")]`
+  - `#[cfg(all(target_os="freebsd", any(target_os_version = "10", target_os_version = "11"))]`
+
+
+### Syntax level
+
+- operators to compare versions in attribute
+
+- behaviour
+  - numeric comparaison
+    - "2" < "10" : true
+  - able to deal with any number of "." inside the symbol:
+    - "2" < "2.0" : true
+    - "3" < "2.0" : false
+    - "2.0" < "2.0" : false
+    - "10.0" < "10.0.1" : true
+
+
+See `libsyntax/attr.rs`, `libsyntax/config.rs`, `libsyntax/parse/parser.rs`
+(unsure about these files for now).
+
+
+### Backend level
+
+- additional members in `Target`
+  - `target_os_version: String` (could be empty: "")
+  - `target_env_version: String` (could be empty: "")
+
+- drawbacks: it requires a new target per OS version
+- add a flexible code to easily create new target (with just
+  `target_os_version` changing)
+
+See `librustc_back/target/`.
+
+### Session level
+
+- populate and export the new attributes in the default build configuration
+
+See `librustc/session/config.rs`.
+
+
+### Workflow with new OS release
+
+- when a new OS release occurs
+  - adds to `libc` any changes (using `target_os_version` if required)
+  - adds a new target specification
+  - remove target of any unsupported OS version
+
+
+
 # How We Teach This
 [how-we-teach-this]: #how-we-teach-this
 
@@ -131,12 +193,31 @@ What additions or changes to the Rust Reference, _The Rust Programming Language_
 
 Why should we *not* do this?
 
+- additional complexity in attributes for conditional compilation
+- number of targets will grow a lot
+  - not all targets will be testable (requires a particular OS version for
+    running testsuite)
+  - will require to deprecate unsupported OS version (for example OpenBSD
+    officially support only the 2 last releases)
+
 # Alternatives
 [alternatives]: #alternatives
 
 What other designs have been considered? What is the impact of not doing this?
 
+- using `target_os` with the version inside. it would require to duplicate all
+  `libc` code (for only small differencies) at each release.
+
+- statu quo: while no fundamental breaking changes occurs at OS level, no need
+  to do anything. Disclosure: FreeBSD switchs to ino64 could occurs soon.
+
+
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
 What parts of the design are still TBD?
+
+- partial implementation with no additional operator at syntax level. It
+  requires to explicitly list all affected OS/env version on changes. Doable if
+  the list of supported OS/env version is controlled in some way.
+
