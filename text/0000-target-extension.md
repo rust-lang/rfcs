@@ -120,7 +120,7 @@ This should get into specifics and corner-cases, and include examples of how the
 
 
 
-### Language level: what the user will see ?
+## Language level: what the user will see ?
 
 - new `target_os_version` and `target_env_version` attributes
 - new operators to deal with symbol (string) comparaison
@@ -131,7 +131,7 @@ This should get into specifics and corner-cases, and include examples of how the
   - `#[cfg(all(target_os="freebsd", any(target_os_version = "10", target_os_version = "11"))]`
 
 
-### Syntax level
+## Syntax level
 
 - operators to compare versions in attribute
 
@@ -149,7 +149,7 @@ See `libsyntax/attr.rs`, `libsyntax/config.rs`, `libsyntax/parse/parser.rs`
 (unsure about these files for now).
 
 
-### Backend level
+## Backend level
 
 - additional members in `Target`
   - `target_os_version: String` (could be empty: "")
@@ -161,14 +161,14 @@ See `libsyntax/attr.rs`, `libsyntax/config.rs`, `libsyntax/parse/parser.rs`
 
 See `librustc_back/target/`.
 
-### Session level
+## Session level
 
 - populate and export the new attributes in the default build configuration
 
 See `librustc/session/config.rs`.
 
 
-### Workflow with new OS release
+## Workflow with new OS release
 
 - when a new OS release occurs
   - adds to `libc` any changes (using `target_os_version` if required)
