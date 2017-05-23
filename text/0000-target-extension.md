@@ -241,6 +241,10 @@ See `libsyntax/attr.rs`.
   - `target_env_version: String` (could be empty: "")
 
 - drawbacks: it requires a new target per OS version
+  - **XXX** does it possible to autodetect ?
+    - some targets tagged as "template"
+    - if the provided `target` name match the template, complete it
+
 - add a flexible code to easily create new target (with just
   `target_os_version` changing)
 
