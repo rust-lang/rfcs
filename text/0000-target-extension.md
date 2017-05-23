@@ -191,8 +191,6 @@ version).
 
 The addition of new operators in attribute is a syntax extension.
 
-
-
 - operators to compare versions in attribute
 - behaviour
   - numeric comparaison
@@ -203,9 +201,37 @@ The addition of new operators in attribute is a syntax extension.
     - "2.0" < "2.0" : false
     - "10.0" < "10.0.1" : true
 
-
 See `libsyntax/attr.rs`, `libsyntax/config.rs`, `libsyntax/parse/parser.rs`
 (unsure about these files for now).
+
+
+
+Alternatively, using new predicates instead of modifying deeply the syntax.
+Semantics would be the same has operators (numeric comparaison, dealing with
+any number of "." inside the symbol).
+
+```rust
+pub struct siginfo_t {
+    pub si_signo: ::c_int,
+    pub si_code: ::c_int,
+    pub si_errno: ::c_int,
+
+    // A type correction occured in 6.2.
+    // Before it was a `char *` and now it is a `void *`.
+    #[cfg(gt(target_os_version, "6.2"))]
+    pub si_addr: *mut ::c_char,
+    #[cfg(ge("6.2", target_os_version))]
+    pub si_addr: *mut ::c_void,
+
+    #[cfg(target_pointer_width = "32")]
+    __pad: [u8; 112],
+    #[cfg(target_pointer_width = "64")]
+    __pad: [u8; 108],
+}
+```
+
+See `libsyntax/attr.rs`.
+
 
 
 ## Backend level
@@ -299,3 +325,6 @@ What parts of the design are still TBD?
   requires to explicitly list all affected OS/env version on changes. Doable if
   the list of supported OS/env version is controlled in some way.
 
+- additional operators for attribute diverges a lot from current syntax
+  - currently only `#[cfg(name)]` or `#[cfg(name=value)]` + `any()`, `all()` and `not()`
+  - does adding predicates like `gt(n1,n2,...)` and `ge(n1,n2,...)` would be more straightful ?
