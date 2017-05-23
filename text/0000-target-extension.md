@@ -156,7 +156,7 @@ extern {
 ```
 
 
-Another complete (and simple) example. In OpenBSD 6.2, the structure
+Another complete (and simple) example: in OpenBSD 6.2, the structure
 `siginfo_t` changed:
 
 ```rust
@@ -179,10 +179,10 @@ pub struct siginfo_t {
 }
 ```
 
-With this code, it is possible to target `x86_amd64-unknown-openbsd6.1` **and**
-`x86_amd64-unknown-openbsd6.2`, whereas with [current libc
+It would be possible to target `x86_amd64-unknown-openbsd6.1` **and**
+`x86_amd64-unknown-openbsd6.2` whereas with [current libc
 code](https://github.com/rust-lang/libc/blob/6ddc76a27e0678c04ec7337591f8a0e36c065664/src/unix/bsd/netbsdlike/openbsdlike/mod.rs#L106)
-only version before 6.1 is possible, and switching to the other version would
+only one version is possible, and switching from one to the other version would
 be a breaking changes in `libc` (and we would lost OpenBSD 6.1 supported
 version).
 
