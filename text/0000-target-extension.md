@@ -137,7 +137,7 @@ There could be empty ("").
 extern {
     // encrypt() function doesn't exist in freebsd12
 
-    #[cfg(all(target_os="freebsd", target_os_version != "12"))]
+    #[cfg(all(target_os="freebsd", not(target_os_version="12")))]
     pub fn encrypt(block *mut ::c_char, flag ::c_int) -> ::c_int;
 }
 ```
@@ -188,6 +188,10 @@ version).
 
 
 ## Syntax level
+
+The addition of new operators in attribute is a syntax extension.
+
+
 
 - operators to compare versions in attribute
 - behaviour
