@@ -189,7 +189,7 @@ version).
 
 ## Syntax level
 
-The addition of new operators in attribute is a syntax extension.
+The addition of new operators in attribute is a syntax extension (**XXX** maybe too invasive).
 
 - operators to compare versions in attribute
 - behaviour
@@ -206,7 +206,7 @@ See `libsyntax/attr.rs`, `libsyntax/config.rs`, `libsyntax/parse/parser.rs`
 
 
 
-Alternatively, using new predicates instead of modifying deeply the syntax.
+**XXX** Alternatively, using new predicates instead of modifying deeply the syntax.
 Semantics would be the same has operators (numeric comparaison, dealing with
 any number of "." inside the symbol).
 
