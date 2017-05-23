@@ -126,17 +126,38 @@ This should get into specifics and corner-cases, and include examples of how the
 
 ## Language level: what the user will see ?
 
-- new `target_os_version` and `target_env_version` attributes
-- new operators to deal with symbol (string) comparaison
-- examples
-  - `#[cfg(all(target_os="openbsd", target_os_version <  "5.5")]`
-  - `#[cfg(all(target_os="openbsd", target_os_version >= "5.5")]`
-  - `#[cfg(all(target_os="freebsd", target_os_version >= "10", target_os_version < "12")]`
-  - `#[cfg(all(target_os="freebsd", any(target_os_version = "10", target_os_version = "11"))]`
+At language level, new attributes for conditional compilation would be added:
+
+- `target_os_version`
+- `target_env_version`
+
+There could be empty ("").
+
+```rust
+extern {
+    // encrypt() function doesn't exist in freebsd12
+
+    #[cfg(all(target_os="freebsd", target_os_version != "12"))]
+    pub fn encrypt(block *mut ::c_char, flag ::c_int) -> ::c_int;
+}
+```
 
 
-Here an complete (and simple) example. In OpenBSD 6.2, the structure `siginfo_t`
-changed:
+Additionally, in order to simplify matching for several versions, new operators
+to doing comparaison would be added too.
+
+```rust
+extern {
+    // encrypt() function doesn't exist anymore starting with freebsd12
+
+    #[cfg(all(target_os="freebsd", target_os_version < "12"))]
+    pub fn encrypt(block *mut ::c_char, flag ::c_int) -> ::c_int;
+}
+```
+
+
+Another complete (and simple) example. In OpenBSD 6.2, the structure
+`siginfo_t` changed:
 
 ```rust
 pub struct siginfo_t {
@@ -144,6 +165,8 @@ pub struct siginfo_t {
     pub si_code: ::c_int,
     pub si_errno: ::c_int,
 
+    // A type correction occured in 6.2.
+    // Before it was a `char *` and now it is a `void *`.
     #[cfg(target_os_version <  "6.2")]
     pub si_addr: *mut ::c_char,
     #[cfg(target_os_version >= "6.2")]
@@ -192,6 +215,7 @@ See `libsyntax/attr.rs`, `libsyntax/config.rs`, `libsyntax/parse/parser.rs`
   `target_os_version` changing)
 
 See `librustc_back/target/`.
+
 
 ## Session level
 
