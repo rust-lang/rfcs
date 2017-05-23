@@ -218,7 +218,24 @@ How is this idea best presented—as a continuation of existing Rust patterns, o
 Would the acceptance of this proposal change how Rust is taught to new users at any level? 
 How should this feature be introduced and taught to existing Rust users?
 
+
+Modifying the `Target` struct is a low-level change by itself.
+
+From a developer perspective, it adds a new attributes for conditional
+compilation.
+
+For projects using Rust (mozilla in mind), it changes the `--target` argument
+for several existing targets in a breaking way: some targets will disappears
+(`x86_64-unknown-openbsd`) in favor of others targets
+(`x86_64-unknown-openbsd6.0` and `x86_64-unknown-openbsd6.1` at time of
+writing). But it reflects better the reality: OpenBSD 6.0 is different than
+OpenBSD 6.1.
+
+
 What additions or changes to the Rust Reference, _The Rust Programming Language_, and/or _Rust by Example_ does it entail?
+
+- _Rust Reference_: mentioning new attributes in conditional compilation attribute section.
+
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -231,6 +248,7 @@ Why should we *not* do this?
     running testsuite)
   - will require to deprecate unsupported OS version (for example OpenBSD
     officially support only the 2 last releases)
+
 
 # Alternatives
 [alternatives]: #alternatives
