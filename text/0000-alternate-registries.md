@@ -76,6 +76,11 @@ so we propose relaxing a check which ensures that the source for a dependency ma
 registry. We propose that this only performs the check only if the dependency is not the
 default registry, thus allowing private crates to reference public crates on crates.io.
 
+## Making it easier for users using an alternate crates.io registry
+When a user selects a specific crate the Cargo.toml fragment would be updated to include the
+registry URL, thus allowing users to easily copy and paste into their projects Cargo.toml
+file.
+
 # How We Teach This
 [how-we-teach-this]: #how-we-teach-this
 
@@ -101,6 +106,12 @@ It was considered proposing a single crates.io server which performs both cachin
 plus has the ability to have crates pushed to it, however this has the following drawbacks:
 * It requires crates.io to be able to combine two registries, or requires a radical change to the way crates.io works
 * The current proposal could be extended to support this, if a caching server is added at a later stage
+
+## Including registry definitions in a global location
+We considered using a global configuration file (eg ~/.cargo/config) to allow a registry to
+be specified, however this was ruled out on the basis that we believe that the registry to
+use for dependencies is tightly linked to the project and hence it would be wrong to move
+this into global configuration.
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
