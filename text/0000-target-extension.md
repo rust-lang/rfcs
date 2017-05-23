@@ -144,13 +144,16 @@ extern {
 
 
 Additionally, in order to simplify matching for several versions, new operators
-to doing comparaison would be added too.
+to doing comparaison would be added too (**XXX** operator or predicate ?).
 
 ```rust
 extern {
     // encrypt() function doesn't exist anymore starting with freebsd12
 
     #[cfg(all(target_os="freebsd", target_os_version < "12"))]
+    pub fn encrypt(block *mut ::c_char, flag ::c_int) -> ::c_int;
+
+    #[cfg(all(target_os="freebsd", gt(target_os_version, "12")))]
     pub fn encrypt(block *mut ::c_char, flag ::c_int) -> ::c_int;
 }
 ```
