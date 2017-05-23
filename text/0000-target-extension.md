@@ -124,7 +124,7 @@ This should get into specifics and corner-cases, and include examples of how the
 
 **INCOMPLETE PART: only ideas are presented here for now**
 
-## Language level: what the user will see ?
+## Language level: what the user will see ?
 
 At language level, new attributes for conditional compilation would be added:
 
@@ -187,7 +187,7 @@ be a breaking changes in `libc` (and we would lost OpenBSD 6.1 supported
 version).
 
 
-## Syntax level
+## Syntax level
 
 The addition of new operators in attribute is a syntax extension.
 
