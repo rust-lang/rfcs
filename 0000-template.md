@@ -13,7 +13,7 @@ One para explanation of the feature.
 
 Why are we doing this? What use cases does it support? What is the expected outcome?
 
-# Detailed design
+# Detailed Design
 [design]: #detailed-design
 
 This is the bulk of the RFC. Explain the design in enough detail for somebody familiar
@@ -41,7 +41,7 @@ Why should we *not* do this?
 
 What other designs have been considered? What is the impact of not doing this?
 
-# Unresolved questions
+# Unresolved Questions
 [unresolved]: #unresolved-questions
 
 What parts of the design are still TBD?
