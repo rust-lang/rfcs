@@ -74,8 +74,10 @@ representative of something that already occurred in the past.
   See [commit R306555](https://svnweb.freebsd.org/base?view=revision&revision=306555)
   and [diff of sys/fbio.h](https://svnweb.freebsd.org/base/head/sys/sys/fbio.h?r1=306555&r2=306554&pathrev=306555).
 
-- **FreeBSD ?** wants to switch `ino_t` from 32 bits to 64 bits.
-  See [Status Update and Call for Testing](https://lists.freebsd.org/pipermail/freebsd-fs/2017-April/024684.html),
+- **FreeBSD 12** wants to switch `ino_t` from 32 bits to 64 bits.
+  See [commit R318736](https://svnweb.freebsd.org/base?view=revision&revision=318736),
+  [diff on types](https://svnweb.freebsd.org/base/head/sys/sys/_types.h?r1=307756&r2=318736),
+  the [Status Update and Call for Testing](https://lists.freebsd.org/pipermail/freebsd-fs/2017-April/024684.html),
   and [diff on lang/rust (ports tree)](https://github.com/FreeBSDFoundation/freebsd/blob/bc50a841851470d98cf1c219b261133536aa7ee8/ports.patch#L402).
 
 - **NetBSD 7.99** (upcoming 8) adds a new member `mnt_lower` in the middle of
@@ -320,7 +322,7 @@ What other designs have been considered? What is the impact of not doing this?
   `libc` code (for only small differencies) at each release.
 
 - statu quo: while no fundamental breaking changes occurs at OS level, no need
-  to do anything. Disclosure: FreeBSD switch to ino64 could occurs soon.
+  to do anything. Note that FreeBSD 12 will be released with such changes.
 
 
 # Unresolved questions
