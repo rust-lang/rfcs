@@ -58,6 +58,22 @@ libc = { version = "*", registry = "https://github.com/my_awesome_fork/crates.io
 serde_json = "1.0.1"
 ```
 
+## Dependency resolution
+This RFC proposes going to an alternative registry for a dependency only if the registry key
+is present in the dependency. This means that in situations where there is the same name
+crate on both crates.io and the alternate registry, if no registry is provided it will
+use the one from crates.io. There are valid situations where people may wish to override
+a particular crate with an alternate one, however the existing source replacement feature
+seems a better fit to solve that scenario.
+
+## Crate naming on alternate servers
+It would be sensible, on an alternate server, for users not to publish using the same
+name as a public crate as that will cause issues if someone need to use a public and private
+crate with the same name. In order to minimise the risk of this happening I propose
+that an optional field is added to the crates.io config which allows a prefix to be configured,
+when a crate is published, the prefix is checked and the request rejected with a sensible error
+if the crate name does not match.
+
 ## Changes for alternative registries for dependencies
 This boils down to a very simple change, where we previously setup the crate source for the
 crates.io registry, we now just need to check if a registry is provided, if it has the crate
