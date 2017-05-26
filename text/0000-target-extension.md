@@ -22,10 +22,10 @@ definition:
 - optional [environment version](https://github.com/llvm-mirror/llvm/blob/343e535d9c38cf57173ace6597380752a18a6a67/include/llvm/ADT/Triple.h#L303)
 
 
-Rust language is aimed to be used on different operating systems following them
-self there own rules. In particular, each operating systems have proper way to
+Rust language is aimed to be used on different operating systems following themselves
+their own rules. In particular, each operating systems have proper way to
 deal with breaking changes: if Linux tends to forbid breaking changes by
-policy, all others systems doesn't have such rule. As Rust language tend to be
+policy, all others systems doesn't have such rule. As Rust language tends to be
 a stable language, having a stable way to describe breaking changes on the OS
 would be very valuable and could become necessary as time passes.
 
@@ -39,14 +39,14 @@ like for the following triples:
 - `x86_64-unknown-netbsd7.99`
 
 
-As examples, considers the following changes in several operating systems (some
+As examples, consider the following changes in several operating systems (some
 are ABI changes, others API changes) and how a crate like `libc` would have to
 deal with them. Please note that some are quite old but could be considered as 
 representative of something that already occurred in the past.
 
 - **OpenBSD 5.5** does a big breaking changes in order to be compatible with
   [year 2038](https://www.openbsd.org/faq/upgrade55.html#time_t): it switches
-  from a signed 32 bit counter to signed 64 bit time type.
+  from a signed 32 bit counter to a signed 64 bit time type.
   See [commit message](http://cvsweb.openbsd.org/cgi-bin/cvsweb/src/sys/sys/_types.h?rev=1.6&content-type=text/x-cvsweb-markup)
   and [diff on types](http://cvsweb.openbsd.org/cgi-bin/cvsweb/src/sys/sys/_types.h.diff?r1=1.5&r2=1.6).
 
@@ -85,7 +85,7 @@ representative of something that already occurred in the past.
   See [commit message](http://cvsweb.netbsd.org/bsdweb.cgi/src/sys/sys/mount.h?rev=1.221&content-type=text/x-cvsweb-markup)
   and [diff of sys/mount.h](http://cvsweb.netbsd.org/bsdweb.cgi/src/sys/sys/mount.h.diff?r1=1.220&r2=1.221).
 
-- **NetBSD 7.99** (upcoming 8) changes signature of `scandir()` function to conforms to `IEEE
+- **NetBSD 7.99** (upcoming 8) changes signature of `scandir()` function to conform to `IEEE
   Std 1003.1-2008` (`const void *` to `const struct dirent **`).
   See [commit message](http://cvsweb.netbsd.org/bsdweb.cgi/src/include/dirent.h?rev=1.36&content-type=text/x-cvsweb-markup&sortby=date)
   and [diff to dirent.h](http://cvsweb.netbsd.org/bsdweb.cgi/src/include/dirent.h.diff?r1=1.35&r2=1.36&sortby=date).
@@ -97,8 +97,8 @@ representative of something that already occurred in the past.
 
 In the current situation, `libc` crate has no way to deal in a stable way with
 these changes. It could only support two incompatible OS version together by
-only defining the common subset. Depending the breaking part, it could result
-removed feature in rustc (removing `si_addr` for OpenBSD would break stack
+only defining the common subset. Depending on the breaking part, it could result
+in removed feature in rustc (removing `si_addr` for OpenBSD would break stack
 overflow detection), or even breaking rustc itself (removing `ino_t` for
 FreeBSD).
 
@@ -109,7 +109,7 @@ version of `libc` itself) which is undesirable for this purpose.
 
 The purpose of extending Rust `Target` type to follow LLVM Triple definition is
 to be able to deal with such changes at Rust language level. As the target will
-be able to make distinction between particular OS or environment version, it
+be able to distinguish between particular OS or environment versions, it
 would be possible to export the information in the same way we export
 `target_os`, `target_arch`, `target_endian` or `target_pointer_width`.
 
@@ -146,7 +146,7 @@ extern {
 
 
 Additionally, in order to simplify matching for several versions, new operators
-to doing comparaison would be added too (**XXX** operator or predicate ?).
+to doing comparison would be added too (**XXX** operator or predicate?).
 
 ```rust
 extern {
@@ -188,7 +188,7 @@ It would be possible to target `x86_amd64-unknown-openbsd6.1` **and**
 `x86_amd64-unknown-openbsd6.2` whereas with [current libc
 code](https://github.com/rust-lang/libc/blob/6ddc76a27e0678c04ec7337591f8a0e36c065664/src/unix/bsd/netbsdlike/openbsdlike/mod.rs#L106)
 only one version is possible, and switching from one to the other version would
-be a breaking changes in `libc` (and we would lost OpenBSD 6.1 supported
+be a breaking change in `libc` (and we would lose OpenBSD 6.1 supported
 version).
 
 
@@ -198,7 +198,7 @@ The addition of new operators in attribute is a syntax extension (**XXX** maybe 
 
 - operators to compare versions in attribute
 - behaviour
-  - numeric comparaison
+  - numeric comparison
     - "2" < "10" : true
   - able to deal with any number of "." inside the symbol:
     - "2" < "2.0" : true
@@ -212,7 +212,7 @@ See `libsyntax/attr.rs`, `libsyntax/config.rs`, `libsyntax/parse/parser.rs`
 
 
 **XXX** Alternatively, using new predicates instead of modifying deeply the syntax.
-Semantics would be the same has operators (numeric comparaison, dealing with
+Semantics would be the same as operators (numeric comparison, dealing with
 any number of "." inside the symbol).
 
 ```rust
@@ -246,7 +246,7 @@ See `libsyntax/attr.rs`.
   - `target_env_version: String` (could be empty: "")
 
 - drawbacks: it requires a new target per OS version
-  - **XXX** does it possible to autodetect ?
+  - **XXX** is it possible to autodetect ?
     - some targets tagged as "template"
     - if the provided `target` name match the template, complete it
 
@@ -284,14 +284,14 @@ How should this feature be introduced and taught to existing Rust users?
 
 Modifying the `Target` struct is a low-level change by itself.
 
-From a developer perspective, it adds a new attributes for conditional
+From a developer perspective, it adds a new attribute for conditional
 compilation.
 
-For projects using Rust (mozilla in mind), it changes the `--target` argument
-for several existing targets in a breaking way: some targets will disappears
+For projects using Rust (Mozilla in mind), it changes the `--target` argument
+for several existing targets in a breaking way: some targets will disappear
 (`x86_64-unknown-openbsd`) in favor of others targets
 (`x86_64-unknown-openbsd6.0` and `x86_64-unknown-openbsd6.1` at time of
-writing). But it reflects better the reality: OpenBSD 6.0 is different than
+writing). But it reflects better the reality: OpenBSD 6.0 is different from
 OpenBSD 6.1.
 
 
@@ -319,9 +319,9 @@ Why should we *not* do this?
 What other designs have been considered? What is the impact of not doing this?
 
 - using `target_os` with the version inside. it would require to duplicate all
-  `libc` code (for only small differencies) at each release.
+  `libc` code (for only small differences) at each release.
 
-- statu quo: while no fundamental breaking changes occurs at OS level, no need
+- status quo: while no fundamental breaking changes occur at OS level, no need
   to do anything. Note that FreeBSD 12 will be released with such changes.
 
 
@@ -334,6 +334,6 @@ What parts of the design are still TBD?
   requires to explicitly list all affected OS/env version on changes. Doable if
   the list of supported OS/env version is controlled in some way.
 
-- additional operators for attribute diverges a lot from current syntax
+- additional operators for attribute diverge a lot from current syntax
   - currently only `#[cfg(name)]` or `#[cfg(name=value)]` + `any()`, `all()` and `not()`
-  - does adding predicates like `gt(n1,n2,...)` and `ge(n1,n2,...)` would be more straightful ?
+  - would adding predicates like `gt(n1,n2,...)` and `ge(n1,n2,...)` be more straightforward?
