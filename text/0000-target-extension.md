@@ -145,17 +145,14 @@ extern {
 ```
 
 
-Additionally, in order to simplify matching for several versions, new operators
-to doing comparaison would be added too (**XXX** operator or predicate ?).
+Additionally, in order to simplify matching for several versions, new predicates
+to doing version comparaison would be added too.
 
 ```rust
 extern {
     // encrypt() function doesn't exist anymore starting with freebsd12
 
-    #[cfg(all(target_os="freebsd", target_os_version < "12"))]
-    pub fn encrypt(block *mut ::c_char, flag ::c_int) -> ::c_int;
-
-    #[cfg(all(target_os="freebsd", gt(target_os_version, "12")))]
+    #[cfg(all(target_os="freebsd", version_lt(target_os_version, "12")))]
     pub fn encrypt(block *mut ::c_char, flag ::c_int) -> ::c_int;
 }
 ```
@@ -172,9 +169,9 @@ pub struct siginfo_t {
 
     // A type correction occured in 6.2.
     // Before it was a `char *` and now it is a `void *`.
-    #[cfg(target_os_version <  "6.2")]
+    #[cfg(version_lt(target_os_version, "6.2"))]
     pub si_addr: *mut ::c_char,
-    #[cfg(target_os_version >= "6.2")]
+    #[cfg(version_ge(target_os_version, "6.2"))]
     pub si_addr: *mut ::c_void,
 
     #[cfg(target_pointer_width = "32")]
@@ -194,46 +191,39 @@ version).
 
 ## Syntax level
 
-The addition of new operators in attribute is a syntax extension (**XXX** maybe too invasive).
+The addition of new predicates in attribute is a syntax extension.
 
-- operators to compare versions in attribute
+It permits to easily make a piece of code available to a range version.
+
+Predicates would be:
+
+- `version_eq()` : equal
+- `version_lt()` : less-than
+- `version_le()` : less-or-equal
+- `version_gt()` : greater-than
+- `version_ge()` : greater-or-equal
+
+The choice of an explicit name is to unhidden that the comparaison is done on
+strings with a specific format (`major.minor.micro`).
+
+Having a predicate instead of an operator (`version_lt()` vs `<`) avoid a too
+intrusive syntax's modification too.
+
+
 - behaviour
   - numeric comparaison
-    - "2" < "10" : true
+    - `version_lt("2", "10")` : true
+
   - able to deal with any number of "." inside the symbol:
-    - "2" < "2.0" : true
-    - "3" < "2.0" : false
-    - "2.0" < "2.0" : false
-    - "10.0" < "10.0.1" : true
+    - `version_lt("3", "2.0")` : false
+    - `version_lt("2.0", "2.0")` : false
+    - `version_lt("10.0", "10.0.1")` : true
 
-See `libsyntax/attr.rs`, `libsyntax/config.rs`, `libsyntax/parse/parser.rs`
-(unsure about these files for now).
+  - LLVM assumes "2" to be equivalent to "2.0.0"
+    - `version_eq("2", "2.0")` : true
 
-
-
-**XXX** Alternatively, using new predicates instead of modifying deeply the syntax.
-Semantics would be the same has operators (numeric comparaison, dealing with
-any number of "." inside the symbol).
-
-```rust
-pub struct siginfo_t {
-    pub si_signo: ::c_int,
-    pub si_code: ::c_int,
-    pub si_errno: ::c_int,
-
-    // A type correction occured in 6.2.
-    // Before it was a `char *` and now it is a `void *`.
-    #[cfg(gt(target_os_version, "6.2"))]
-    pub si_addr: *mut ::c_char,
-    #[cfg(ge("6.2", target_os_version))]
-    pub si_addr: *mut ::c_void,
-
-    #[cfg(target_pointer_width = "32")]
-    __pad: [u8; 112],
-    #[cfg(target_pointer_width = "64")]
-    __pad: [u8; 108],
-}
-```
+  - allow more than 2 arguments in the predicate
+    - `version_le("3", "4", "5")` : true
 
 See `libsyntax/attr.rs`.
 
@@ -330,10 +320,6 @@ What other designs have been considered? What is the impact of not doing this?
 
 What parts of the design are still TBD?
 
-- partial implementation with no additional operator at syntax level. It
+- partial implementation with no additional predicate at syntax level. It
   requires to explicitly list all affected OS/env version on changes. Doable if
   the list of supported OS/env version is controlled in some way.
-
-- additional operators for attribute diverges a lot from current syntax
-  - currently only `#[cfg(name)]` or `#[cfg(name=value)]` + `any()`, `all()` and `not()`
-  - does adding predicates like `gt(n1,n2,...)` and `ge(n1,n2,...)` would be more straightful ?
