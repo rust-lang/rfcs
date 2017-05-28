@@ -145,8 +145,9 @@ extern {
 ```
 
 
-Additionally, in order to simplify matching for several versions, new predicates
-to doing version comparaison would be added too.
+Additionally, in order to simplify conditional compilation when changes are
+accross several versions, new predicates would be added too in order to do
+version comparaison.
 
 ```rust
 extern {
