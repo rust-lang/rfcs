@@ -230,6 +230,14 @@ See `libsyntax/attr.rs`.
 
 
 
+## Session level
+
+- populate and export the new attributes in the default build configuration
+
+See `librustc/session/config.rs`.
+
+
+
 ## Backend level
 
 - additional members in `Target`
@@ -247,11 +255,6 @@ See `libsyntax/attr.rs`.
 See `librustc_back/target/`.
 
 
-## Session level
-
-- populate and export the new attributes in the default build configuration
-
-See `librustc/session/config.rs`.
 
 
 ## Workflow with new OS release
