@@ -70,9 +70,9 @@ type error, because there are multiple possible types for the literal 42
 it to be `i64`.
 
 ```rust
-const THE_ANSWER = 42; // nothing in RHS indicates this must be i16
+const THE_ANSWER = 42; // nothing in RHS indicates this must be i64
 
-fn get_big_number() -> i16 {
+fn get_big_number() -> i64 {
     THE_ANSWER
 }
 ```
