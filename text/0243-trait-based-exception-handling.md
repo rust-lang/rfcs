@@ -6,6 +6,8 @@
 
 # Summary
 
+** Amended by RFC [fill in RFC number] **. See the RFC for details.
+
 Add syntactic sugar for working with the `Result` type which models common
 exception handling constructs.
 
@@ -314,11 +316,11 @@ However, it was removed for the following reasons:
 - There was some concern about potential user confusion about two aspects:
   - `catch { }` yields a `Result<T,E>` but `catch { } match { }` yields just `T`;
   - `catch { } match { }` handles all kinds of errors, unlike `try/catch` in other languages which let you pick and choose.
- 
+
 It may be worth adding such a sugar in the future, or perhaps a
 variant that binds irrefutably and does not immediately lead into a
 `match` block.
- 
+
 ## Choice of keywords
 
 The RFC to this point uses the keyword `catch`, but there are a number
