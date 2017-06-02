@@ -129,11 +129,14 @@ removing annotations from their examples of `const` and `static` items (see
 
 * Some users may find it more difficult to understand large constant expressions
   without a type annotation. Better IDE support for inferred types would help
-  mitigate this issue.
-* Const functions may make it more difficult for a programmer to infer the type
-  of a const/static item just be reading it. Most likely, though, most uses of
-  const functions in this context will be things like `AtomicUsize::new(0)`
-  where the type is obvious.
+  mitigate this issue, and a "best practice" of annotating the types on
+  particularly complicated items where documentation is important should be
+  encouraged.
+  * Const functions in particular may make manually inferring a type
+    difficult. Given
+    [the original motivation for const functions](https://github.com/rust-lang/rfcs/blob/master/text/0911-const-fn.md),
+    though, most uses in this context will likely be things like
+    `AtomicUsize::new(0)` where the type is obvious.
 
 # Alternatives
 [alternatives]: #alternatives
