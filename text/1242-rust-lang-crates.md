@@ -149,6 +149,32 @@ Deprecated crates move to rust-lang-deprecated and are subsequently minimally
 maintained. Alternatively, if someone volunteers to maintain the crate,
 ownership can be transferred externally.
 
+### Compatibility with older compilers
+
+The current version of rust-lang-nursery crates will currently be guaranteed to
+compile on the **previous two stable releases** of Rust and forward. That is, if
+the current stable release is 1.10, all nursery crates will compile successfully
+on both 1.8 and 1.9. Some nursery crates may compile on older versions, but this
+is not guaranteed and changes to the crate are allowed which bump the minimum
+rustc version requirement.
+
+This will be implemented in practice by adding continuous integration to all
+nursery crates which runs the test suite on older Rust versions. If a change is
+made that breaks compatibility with an older Rust version, then the version can
+be dropped if it was before two stable releases ago (e.g. by updating the
+continuous integration configuration), or the change must wait to land
+otherwise. If the minimum vesion of Rust is increased then this is not
+considered a breaking change (e.g. does not require a new major release).
+
+Crates are allowed to experiment with new stable features in Rust, however, that
+are behind off-by-default Cargo features. For example the `panic::catch_unwind`
+API, stabilized, in 1.10, could be behind a feature flag for crates until 1.12
+is released.
+
+Note that this policy may change over time. For example if LTS releases of the
+compiler as created then it is likely that nursery crates will guarantee
+compatibility with an LTS release.
+
 ## Advertising
 
 Part of the reason for having rust-lang crates is to have a clear, short list of
