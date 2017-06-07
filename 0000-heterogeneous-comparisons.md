@@ -11,7 +11,7 @@ Allow to compare integer values of different signedness and size.
 # Motivation
 [motivation]: #motivation
 
-Right now every comparison between different integral types requires a cast. These casts not only clutter the code, but also encourage writing incorrect code.
+Right now every comparison between different integral types requires a cast. These casts don't only clutter the code, but also encourage writing incorrect code.
 
 The easiest way to compare signed and unsigned values is to cast unsigned value to signed type. It works most of the time, but it will silently ignore overflows.
 
