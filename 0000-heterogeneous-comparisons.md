@@ -1,47 +1,49 @@
-- Feature Name: (fill me in with a unique ident, my_awesome_feature)
-- Start Date: (fill me in with today's date, YYYY-MM-DD)
+- Feature Name: heterogeneous_comparisons
+- Start Date: 2017-06-06
 - RFC PR: (leave this empty)
 - Rust Issue: (leave this empty)
 
 # Summary
 [summary]: #summary
 
-One para explanation of the feature.
+Allow to compare integer values of different signedness and size.
 
 # Motivation
 [motivation]: #motivation
 
-Why are we doing this? What use cases does it support? What is the expected outcome?
+Inability to elegantly and safely mix signed and unsigned types is rather frustrating.
+
+Comparison between values of different integer types is always well-defined.
 
 # Detailed design
 [design]: #detailed-design
 
-This is the bulk of the RFC. Explain the design in enough detail for somebody familiar
-with the language to understand, and for somebody familiar with the compiler to implement.
-This should get into specifics and corner-cases, and include examples of how the feature is used.
+`Ord` and `Eq` traits should be modified to allow `Rhs` type not equal to `Self`.
+
+After that `PartialEq`, `Eq`, `PartialOrd` and `Ord` should be implemented for all pairs of signed/unsigend 8/16/32/64/(128) bit integers and `isize`/`usize` variants.
+
+Implementation for signed-singed and unsigned-unsigned pairs should promote values to larger type first, then perform comparison.
+
+Implementation for signed-unsigned pairs should first check if signed value less than zero. If not, then it should promote both values to signed type with the same size as larger argument type and perform comparison.
 
 # How We Teach This
 [how-we-teach-this]: #how-we-teach-this
 
-What names and terminology work best for these concepts and why? 
-How is this idea best presented—as a continuation of existing Rust patterns, or as a wholly new one?
-
-Would the acceptance of this proposal change how Rust is taught to new users at any level? 
-How should this feature be introduced and taught to existing Rust users?
-
-What additions or changes to the Rust Reference, _The Rust Programming Language_, and/or _Rust by Example_ does it entail?
+No changes I can find or think of.
 
 # Drawbacks
 [drawbacks]: #drawbacks
 
-Why should we *not* do this?
+* Correct signed-unsigned comparison requires one more operation than regular comparison. Proposed change hides this performance cost. If user doesn't care about correctness in his particular use case, then cast and comparison is faster.
+* The rest of rust math prohibits mixing different types and requires explicit casts. Allowing heterogeneous comparisons (and only comparisons) makes rust math somewhat inconsistent.
 
 # Alternatives
 [alternatives]: #alternatives
 
-What other designs have been considered? What is the impact of not doing this?
+* Keep things as is.
+* Add generic helper function for cross-type comparisons.
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
-What parts of the design are still TBD?
+Is `Ord` between float and int values as bad idea as it seems?
