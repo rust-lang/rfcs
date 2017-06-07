@@ -24,16 +24,36 @@ Comparison between values of different integer types is always well-defined. The
 
 Implementation for signed-singed and unsigned-unsigned pairs should promote values to larger type first, then perform comparison.
 
-Implementation for signed-unsigned pairs should first check if signed value less than zero. If not, then it should promote both values to unsigned type with the same size as larger argument type and perform comparison.
+Example:
+
+```
+fn less_than(a: i8, b: i16) -> bool {
+    (a as i16) < b
+}
+```
+
+Implementation for signed-unsigned pairs where unsigned type is smaller than machine word size can promote both values to smallest signed type fully covering values of both argument types, then perform comparison.
 
 Example:
 
 ```
-fn less_than(a: i32, b: u16) -> bool {
+fn less_than(a: i8, b: u16) -> bool {
+    // i32 is the smallest signed type
+    // which can contain any u16 value
+    (a as i32) < (b as i32)
+}
+```
+
+Implementation for signed-unsigned pairs where unsigned type is as big as machine word size or larger should first check if signed value less than zero. If not, then it should promote both values to unsigned type with the same size as larger argument type and perform comparison.
+
+Example (for 32-bit system):
+
+```
+fn less_than(a: i64, b: u32) -> bool {
     if a < 0 {
-        return true;
+        true
     } else {
-        return (a as u32) < (b as u32);
+        (a as u64) < (b as u64)
     }
 }
 ```
