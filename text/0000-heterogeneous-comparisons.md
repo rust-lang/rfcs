@@ -20,13 +20,33 @@ Comparison between values of different integer types is always well-defined. The
 # Detailed design
 [design]: #detailed-design
 
-`Ord` and `Eq` traits should be modified to allow `Rhs` type not equal to `Self`.
-
-After that `PartialEq`, `Eq`, `PartialOrd` and `Ord` should be implemented for all pairs of signed/unsigend 8/16/32/64/(128) bit integers and `isize`/`usize` variants.
+`PartialEq` and `PartialOrd` should be implemented for all pairs of signed/unsigend 8/16/32/64/(128) bit integers and `isize`/`usize` variants.
 
 Implementation for signed-singed and unsigned-unsigned pairs should promote values to larger type first, then perform comparison.
 
-Implementation for signed-unsigned pairs should first check if signed value less than zero. If not, then it should promote both values to signed type with the same size as larger argument type and perform comparison.
+Implementation for signed-unsigned pairs should first check if signed value less than zero. If not, then it should promote both values to unsigned type with the same size as larger argument type and perform comparison.
+
+Example:
+
+```
+fn less_than(a: i32, b: u16) -> bool {
+    if a < 0 {
+        return true;
+    } else {
+        return (a as u32) < (b as u32);
+    }
+}
+```
+
+Optionally `Ord` and `Eq` can be modified to allow `Rhs` type not equal to `Self`:
+
+```
+pub trait Eq<Rhs = Self>: PartialEq<Rhs> { }
+
+pub trait Ord<Rhs = Self>: Eq<Rhs> + PartialOrd<Rhs> {
+    fn cmp(&self, other: &Rhs) -> Ordering;
+}
+```
 
 # How We Teach This
 [how-we-teach-this]: #how-we-teach-this
@@ -49,4 +69,4 @@ No changes I can find or think of.
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
-Is `Ord` between float and int values as bad idea as it seems?
+Is `PartialOrd` between float and int values as bad idea as it seems?
