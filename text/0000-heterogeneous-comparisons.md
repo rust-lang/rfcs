@@ -44,19 +44,16 @@ fn less_than(a: i8, b: u16) -> bool {
 }
 ```
 
-Implementation for signed-unsigned pairs where unsigned type is as big as machine word size or larger should first check if signed value less than zero. If not, then it should promote both values to unsigned type with the same size as larger argument type and perform comparison.
+Implementation for signed-unsigned pairs where unsigned type is as big as machine word size or larger should first check if signed value less than zero. If not, then it should promote both values to unsigned type with the same size as larger argument type and perform comparison. For most platforms it should be possible to implement it without actual branching.
 
 Example (for 32-bit system):
 
 ```
 fn less_than(a: i64, b: u32) -> bool {
-    if a < 0 {
-        true
-    } else {
-        (a as u64) < (b as u64)
-    }
+    (a < 0) || ((a as u64) < (b as u64))
 }
 ```
+
 
 Optionally `Ord` and `Eq` can be modified to allow `Rhs` type not equal to `Self`:
 
@@ -79,6 +76,7 @@ No changes I can find or think of.
 * It might break some code relying on return type polymorphism. It won't be possible to infer type of the second argument from type of the first one for `Eq` and `Ord`.
 * Correct signed-unsigned comparison requires one more operation than regular comparison. Proposed change hides this performance cost. If user doesn't care about correctness in his particular use case, then cast and comparison is faster.
 * The rest of rust math prohibits mixing different types and requires explicit casts. Allowing heterogeneous comparisons (and only comparisons) makes rust math somewhat inconsistent.
+* For some platforms it might be necessary or more efficient to use branching in signed-unsigned comparisons (arm thumb?). Using branching will turn comparison into a non-constant-time operation. Any value-dependant operation in cryptography code is a potential security risk because of timing attacks. On other hand, on some platforms even multiplication is not guaranteed to be a constant-time operation.
 
 # Alternatives
 [alternatives]: #alternatives
@@ -89,4 +87,5 @@ No changes I can find or think of.
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
-Is `PartialOrd` between float and int values as bad idea as it seems?
+* Is `PartialOrd` between float and int values as bad idea as it seems?
+* Which platforms might need branching in signed-unsigned comparison implementation?
