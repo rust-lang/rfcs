@@ -97,7 +97,7 @@ The concept of immovable types is likely familiar to users of C, C++ and C FFIs.
 # Drawbacks
 [drawbacks]: #drawbacks
 
-This adds a new builtin trait and more logic to the borrow checker. It also requires `?Move` bounds. It may also break existing programs.
+This adds a new builtin trait and another checker pass. It also requires `?Move` bounds. It may also break existing programs.
 
 # Alternatives
 [alternatives]: #alternatives
