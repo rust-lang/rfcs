@@ -309,6 +309,29 @@ syntax is that many users will be able to use types which have assocaited type
 constructors without even being aware that this has something to do with a type
 system feature called higher-kindedness.
 
+# How We Teach This
+[how-we-teach-this]: #how-we-teach-this
+
+This RFC uses the terminology "associated type constructor," which has become
+the standard way to talk about this feature in the Rust community. This is not
+a very accessible framing of this concept; in particular the term "type
+constructor" is an obscure piece of jargon from type theory which most users
+cannot be expected to be familiar with.
+
+Upon accepting this RFC, we should begin (with haste) refering to this concept
+as simply "generic associated types." Today, associated types cannot be
+generic; after this RFC, this will be possible. Rather than teaching this as
+a separate feature, it will be taught as an advanced use case for associated
+types.
+
+Patterns like "family traits" should also be taught in some way, possible in
+the book or possibly just through supplemental forms of documentation like
+blog posts.
+
+This will also likely increase the frequency with which users have to employ
+higher rank trait bounds; we will want to put additional effort into teaching
+and making teachable HRTBs.
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
