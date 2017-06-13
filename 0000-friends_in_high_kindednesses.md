@@ -142,10 +142,6 @@ equivalent to adding this bound to the trait:
 for<'a> Self::Iter<'a>: Iterator<Item = Self::Item<'a>>
 ```
 
-Currently, this RFC only proposes adding associated type constructor of **lifetime**
-arguments, but it is intended to be extended to type arguments once higher rank
-type parameters are included.
-
 Assigning associated type constructors in impls is very similar to the syntax
 for assigning associated types:
 
@@ -220,43 +216,10 @@ This RFC does not propose allowing any sort of bound by the type constructor
 itself, whether an equality bound or a trait bound (trait bounds of course are
 also impossible). 
 
-#### `let` introduction of parameters in bound
+## Associated type constructors of type arguments
 
-The `for` syntax for HRTB is widely considered inaccessible and difficult to learn.
-The problem here is not that the underlying concept of a higher rank parameter is
-particularly challenging, but that the syntax introduces too much jargony syntax
-which distracts from the underlying idea.
-
-This RFC proposes adding a new syntax for higher rank parameters which appear in the
-type position of the bound. A user can simply introduce a new parameter with the `let`
-keyword:
-
-```rust
-where T: Iterable, T::Item<let 'a>: &'a str
-//equivalent to
-where T: Iterable, for<'a> T::Item<'a>: &'a str
-```
-
-The variable introduced by the `let` is scoped only to this bound. Shadowing existing
-type variables in scope is not permitted by a `let`, just as it is not permitted with
-the existing `for` syntax. The `let` keyword is necessary to make it unambiguous that
-the user intends to introduce a new variable here.
-
-The `let` syntax is valid for any type constructor being bound, including those which
-are not associated items. As an arbitrary example:
-
-```
-where vec::Iter<let 'a, T>: ExactSizeIterator
-```
-
-Hypothetically, the `let` syntax could be expanded to positions outside of bounds, but
-this RFC proposes no such extension.
-
-## Future extensions
-
-The most immediate future extension to this feature is extending it to type arguments.
-
-For example:
+All of the examples in this RFC have focused on associated type constructors of
+lifetime arguments, however, this RFC proposes adding ATCs of types as well:
 
 ```rust
 trait Foo {
@@ -264,8 +227,13 @@ trait Foo {
 }
 ```
 
-This sort of extension would enable to this feature to encode all forms of higher kinded
-polymorphism, with some boilerplate, using the "family" pattern:
+This RFC does **not** propose extending HRTBs to take type arguments, which
+makes these less expressive than they could be. Such an extension is desired,
+but out of scope for this RFC.
+
+Type arguments can be used to encode other forms of higher kinded polymorphism
+using the "family" pattern. For example, Using the `PointerFamily` trait, you
+can abstract over Arc and Rc:
 
 ```rust
 trait PointerFamily {
@@ -273,13 +241,28 @@ trait PointerFamily {
     fn new<T>(value: T) -> Self::Pointer<T>;
 }
 
+struct ArcFamily;
+
+impl PointerFamily for ArcFamily {
+    type Pointer<T> = Arc<T>;
+    fn new<T>(value: T) -> Self::Pointer<T> {
+        Arc::new(value)
+    }
+}
+
+struct RcFamily;
+
+impl PointerFamily for RcFamily {
+    type Pointer<T> = Rc<T>;
+    fn new<T>(value: T) -> Self::Pointer<T> {
+        Rc::new(value)
+    }
+}
+
 struct Foo<P: PointerFamily> {
     bar: P::Pointer<String>,
 }
 ```
-
-Beyond this, this feature is intended to be compatible with extensions to "full HKT"
-in the future.
 
 ## Benefits of implementing only this feature before other higher-kinded polymorphisms
 
