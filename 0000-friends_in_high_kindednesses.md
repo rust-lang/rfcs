@@ -15,7 +15,6 @@ system compared to other forms of higher-kinded polymorphism, and is forward
 compatible with more complex forms of higher-kinded polymorphism that may be
 introduced in the future.
 
-
 # Motivation
 [motivation]: #motivation
 
@@ -253,50 +252,6 @@ where vec::Iter<let 'a, T>: ExactSizeIterator
 Hypothetically, the `let` syntax could be expanded to positions outside of bounds, but
 this RFC proposes no such extension.
 
-## Restrictions on ATCs
-
-In order to be forward compatible with higher order type constructors - which is commonly
-called "full higher kinded types" - this RFC imposes certain restrictions on the kinds of
-constructors which can be used as associated items. Background on this reasoning can be
-found here: http://smallcultfollowing.com/babysteps/blog/2016/11/09/associated-type-constructors-part-4-unifying-atc-and-hkt/
-
-The restriction is simple: Each lifetime argument of the constructor must be applied, in
-order, and must be the left-most arguments of the type constructor. So all of these are
-valid:
-
-```rust
-impl Trait for Type {
-    type Foo<'a> = &'a u32;
-    type Bar<'a> = SomeType<'a, 'static>;
-    type Baz<'a, 'b> = SomeType<'a, 'b>;
-    type Quux<'a> = Self::Foo<'a>;
-}
-```
-
-But these are not valid:
-
-```rust
-impl Trait for Type {
-    type Foo<'a> = String; // ERROR! Argument never used.
-    type Bar<'a> = SomeType<'static, 'a>; // ERROR! Argument must be left-most.
-    type Baz<'a, 'b> = SomeType<'b, 'a>; // ERROR! Arguments are used in wrong order.
-    type Quux<'a> = (&'a i32, &'a i32); // ERROR! Argument is used more than once.
-}
-```
-
-All of these restrictions can be avoided (unpleasantly) with newtypes and phantomdata:
-
-```rust
-struct ValidFoo<'a>(String, PhantomData<&'a ()>);
-struct ValidBar<'a>(SomeType<'static, 'a>);
-struct ValidBaz<'a, 'b>(SomeType<'a, 'b>);
-struct Quux<'a>(&'a i32, &'a i32);
-```
-
-If this feature is extended to type arguments, the restriction remains the same within each
-kind - so the same restriction with "lifetime" replaced with "type" is also added, but they do
-not intermingle.
-
 ## Future extensions
 
 The most immediate future extension to this feature is extending it to type arguments.
@@ -427,13 +382,52 @@ only allows for some of the types that associated type constructors can
 express, and is in generally a hacky attempt to work around the limitation
 rather than an equivalent alternative.
 
-## Do not impose restrictions on associated type constructors
+## Impose restrictions on ATCs
 
-The restrictions imposed on this feature are only to be forward compatible
-with other forms of higher kinded polymorphism. If we decided that we didn't
-want to include those features ever, or that we were fine with those features
-being totally disjoint from this one, we could not include those restrictions
-in this RFC.
+What is often called "full higher kinded polymorphism" is allowing the use of
+type constructors as input parameters to other type constructors - higher order
+type constructors, in other words. Without any restrictions, multiparameter
+higher order type constructors present serious problems for type inference.
+
+For example, if you are attempting to infer types, and you know you have a
+constructor of the form `type, type -> Result<(), io::Error>`, without any
+restrictions it is difficult to determine if this constructor is
+`(), io::Error -> Result<(), io::Error>` or `io::Error, () -> Result<(), io::Error>`.
+
+Because of this, languages with first class higher kinded polymorphism tend to
+impose restrictions on these higher kinded terms, such as Haskell's currying
+rules.
+
+If Rust were to adopt higher order type constructors, it would need to impose
+similar restrictions on the kinds of type constructors they can receive. But
+associated type constructors, being a kind of alias, inherently mask the actual
+structure of the concrete type constructor. In other words, if we want to be
+able to use ATCs as arguments to higher order type constructors, we would need
+to impose those restrictions on *all* ATCs.
+
+We have a list of restrictions we believe are necessary and sufficient; more
+background can be found in [this blog post](http://smallcultfollowing.com/babysteps/blog/2016/11/09/associated-type-constructors-part-4-unifying-atc-and-hkt/)
+by nmatsakis:
+
+* Each argument to the ATC must be applied
+* They must be applied in the same order they appear in the ATC
+* They must be applied exactly once
+* They must be the left-most arguments of the constructor
+
+These restrictions are quite constrictive; there are several applications of
+ATCs that we already know about that would be frustrated by this, such as the
+definition of `Iterable` for `HashMap` (for which the item `(&'a K, &'a V)`,
+applying the lifetime twice).
+
+For this reason we have decided **not** to apply these restrictions to all
+ATCs. This will mean that if higher order type constructors are ever added to
+the language, they will not be able to take an abstract ATC as an argument.
+However, this can be maneuvered around using newtypes which do meet the
+restrictions, for example:
+
+```rust
+struct IterItem<'a, I: Iterable>(I::Item<'a>);
+```
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
