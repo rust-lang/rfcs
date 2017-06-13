@@ -270,7 +270,7 @@ polymorphism, with some boilerplate, using the "family" pattern:
 ```rust
 trait PointerFamily {
     type Pointer<T>: Deref<Target = T>;
-    fn new<T>(value: T) -> Self::Poiner<T>;
+    fn new<T>(value: T) -> Self::Pointer<T>;
 }
 
 struct Foo<P: PointerFamily> {
