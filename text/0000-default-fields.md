@@ -272,9 +272,25 @@ let foo = data::Foo {
 }
 ```
 
+## Symmetry with Destructuring
+
+Field defaults allow `struct`s to be non-exhaustively constructed and deconstructed using the same syntax:
+
+```rust
+// Construct
+let foo = Foo {
+    a: "Hello",
+    c: 42,
+    ..
+}
+
+// Deconstruct
+let Foo { a, c, .. } = foo;
+```
+
 ## Field Privacy
 
-Default values for fields are opted into by the `struct` definition, rather than the caller initialising the `struct`. Field privacy doesn't need to be violated to initialise a `struct`.
+Default values for fields are opted into by the `struct` definition, rather than the caller initialising the `struct`. Field privacy doesn't need to be violated to initialise a `struct` with private default values.
 
 # How We Teach This
 [how-we-teach-this]: #how-we-teach-this
