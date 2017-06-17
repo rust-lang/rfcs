@@ -120,11 +120,6 @@ specifically for the targeted version.
 # Detailed design
 [design]: #detailed-design
 
-This is the bulk of the RFC. Explain the design in enough detail for somebody familiar
-with the language to understand, and for somebody familiar with the compiler to implement.
-This should get into specifics and corner-cases, and include examples of how the feature is used.
-
-**INCOMPLETE PART: only ideas are presented here for now**
 
 ## Language level: what the user will see ?
 
@@ -194,7 +189,8 @@ version).
 
 The addition of new predicates in attribute is a syntax extension.
 
-It permits to easily make a piece of code available to a range version.
+It permits to easily make a piece of code available to a range version. It is a
+facility to manipulate the new attributes defined at language level.
 
 Predicates would be:
 
@@ -231,13 +227,6 @@ println!("allow more than 2 arguments in the predicate: 3 <= 4 <= 5");
 See `libsyntax/attr.rs`.
 
 
-## Session level
-
-- populate and export the new attributes in the default build configuration
-
-See `librustc/session/config.rs`.
-
-
 
 ## Backend level
 
@@ -258,12 +247,22 @@ See `librustc_back/target/`.
 
 
 
-## Workflow with new OS release
+### Workflow with new OS release
 
 - when a new OS release occurs
   - adds to `libc` any changes (using `target_os_version` if required)
   - adds a new target specification
   - remove target of any unsupported OS version
+
+
+
+## Session level
+
+At the session level, rustc should populate and export the new attributes
+(values taken from targeted backend) in the default build configuration.
+
+
+See `librustc/session/config.rs`.
 
 
 
