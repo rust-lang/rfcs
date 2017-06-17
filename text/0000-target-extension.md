@@ -314,7 +314,8 @@ What other designs have been considered? What is the impact of not doing this?
   `libc` code (for only small differences) at each release.
 
 - status quo: while no fundamental breaking changes occur at OS level, no need
-  to do anything. Note that FreeBSD 12 will be released with such changes.
+  to do anything. Note that FreeBSD 12 will be released with such changes (see
+  [issue #42681](https://github.com/rust-lang/rust/issues/42681)).
 
 
 # Unresolved questions
