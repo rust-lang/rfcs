@@ -302,7 +302,7 @@ Why should we *not* do this?
   - not all targets will be testable (requires a particular OS version for
     running testsuite)
   - will require to deprecate unsupported OS version (for example OpenBSD
-    officially support only the 2 last releases)
+    officially support only the 2 last releases) to limit the number of targets
 
 
 # Alternatives
