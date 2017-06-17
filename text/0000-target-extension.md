@@ -210,20 +210,23 @@ strings with a specific format (`major.minor.micro`).
 Having a predicate instead of an operator (`version_lt()` vs `<`) avoid a too
 intrusive syntax's modification too.
 
+```rust
+#[cfg(version_lt("2", "10"))]
+println!("numeric comparaison: 2 < 10");
 
-- behaviour
-  - numeric comparison
-    - `version_lt("2", "10")` : true
-  - able to deal with any number of "." inside the symbol:
-    - `version_lt("3", "2.0")` : false
-    - `version_lt("2.0", "2.0")` : false
-    - `version_lt("10.0", "10.0.1")` : true
+#[cfg(version_lt("3", "2.0")]
+println!("able to deal with any number of '.': 3 < 2.0 (false)");
+#[cfg(version_lt("2.0", "2.0")]
+println!("able to deal with any number of '.': 2.0 < 2.0 (false)");
+#[cfg(version_lt("10.0", "10.0.1")]
+println!("able to deal with any number of '.':10.0 < 10.0.1");
 
-  - LLVM assumes "2" to be equivalent to "2.0.0"
-    - `version_eq("2", "2.0")` : true
+#[cfg(version_eq("2", "2.0")]
+println!("LLVM assumes \"2\" to be equivalent to \"2.0.0\");
 
-  - allow more than 2 arguments in the predicate
-    - `version_le("3", "4", "5")` : true
+#[cfg(version_le("3", "4", "5")]
+println!("allow more than 2 arguments in the predicate: 3 <= 4 <= 5");
+```
 
 See `libsyntax/attr.rs`.
 
