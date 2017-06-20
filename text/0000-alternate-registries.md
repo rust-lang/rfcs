@@ -79,6 +79,15 @@ This boils down to a very simple change, where we previously setup the crate sou
 crates.io registry, we now just need to check if a registry is provided, if it has the crate
 source is created using the registry URL, otherwise the crates.io server is used.
 
+### Index files changes
+As Cargo requires the index file to include all the dependencies, the crates.io index file
+format is updated to include the registry in the dependency. The registry is an optional field,
+where by default it is None, and will only be set when using an alternate crate server.
+
+Validation of the depdencies on crates.io is also updated so that local registry crates are
+checked for their existance on the local registry, they will not however validate any
+external dependencies, instead they will be assumed to be valid.
+
 ## Blocking requests to push to a registry
 There are two parts to this, the first is a change to Cargo which checks if the registry
 provided in the registry matches the host for the publish, if it does not it gets rejected.
@@ -128,6 +137,13 @@ We considered using a global configuration file (eg ~/.cargo/config) to allow a 
 be specified, however this was ruled out on the basis that we believe that the registry to
 use for dependencies is tightly linked to the project and hence it would be wrong to move
 this into global configuration.
+
+## Validating external dependencies
+It would be possible to check that external dependencies exist, however I think that this
+would need to be optional as there could be situations where the alternate crates.io
+server would be unable to contact the external dependencies and hence would not be
+possible. This is certainly something that could be added at a later stage if there is
+sufficient demand.
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
