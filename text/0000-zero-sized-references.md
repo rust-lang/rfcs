@@ -56,7 +56,7 @@ Therefore, I propose to assume that whenever you find a self reference (or multi
 decide the reference is not Zero-Sized, since there most likely WILL be other data somewhere in the chain.
 This is most relevant to unions, which could have self-references and be instantiated at the same time.
 
-### *const and *mut pointers
+### `*const` and `*mut` pointers
 [pointers]: #pointers
 
 It is possible to convert a reference to a pointer. Currently, a reference to ZST points to an arbitrary location,
