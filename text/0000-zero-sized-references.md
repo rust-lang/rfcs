@@ -1,6 +1,6 @@
 - Feature Name: zero_sized_references
 - Start Date: 2017-06-23
-- RFC PR: (leave this empty)
+- RFC PR: [#2040](https://github.com/rust-lang/rfcs/pull/2040)
 - Rust Issue: (leave this empty)
 
 # Summary
@@ -74,7 +74,7 @@ Converting in the other direction, the value of the pointer will be silently dro
 # How We Teach This
 [how-we-teach-this]: #how-we-teach-this
 
-For most rust users, this change will be invisible. Thier code will just become a tiny bit smaller.
+For most rust users, this change will be invisible. Their code will just become a tiny bit smaller.
 
 Users of unsafe rust might encounter this case. Therefore there should probably be a note in the nomicon that references might be optimized away for ZST.
 
@@ -94,6 +94,10 @@ The system that is now works well, and does not have to be changed.
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
+
+### Definition of `&`
+
+Is the definition of `&` state that we guarantee it's a pointer? Or do we only promise you can use it to access the data?
 
 ### FFI + Escape mechanism
 
@@ -131,6 +135,9 @@ Safe rust code should be affected positively by this change. However unsafe code
 
 FFI is especially vulnurable to this change, as shown above.
 Are there better ways to deal with these errors without user involvement?
+
+(Unsafe code might break - are there examples of VALID code that breaks? Or does only invalid uses of references break?
+And what is our stance on breaking invalid code, assuming there is a large amount of it?)
 
 ### Specific examples - Pro
 
