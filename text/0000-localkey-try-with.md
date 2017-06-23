@@ -7,7 +7,8 @@
 [summary]: #summary
 
 Add a `try_with` method to `std::thread::LocalKey`, which attempts to borrow the value.
-This replaces the current `state` method, which will be marked as deprecated along with its return value `LocalKeyState`.
+This replaces many use cases of current `state` method,
+but the `state` method will not be deprecated to ensure further usability.
 It will return an error if the value has been destroyed, but will panic if the value initializer panics.
 
 # Motivation
@@ -62,8 +63,6 @@ pub struct LocalKeyError {
 Implementing this is trivial. The main difference from the existing `with` method implementation
 is changing a `.expect` to a `?`.
 
-`LocalKey::state` and `LocalKeyState` will both be marked as deprecated.
-
 # How We Teach This
 [how-we-teach-this]: #how-we-teach-this
 
@@ -75,17 +74,12 @@ the usual rustdoc.
 # Drawbacks
 [drawbacks]: #drawbacks
 
-- This makes it hard to check if a `LocalKey` can be borrowed without borrowing it.
-  However, I haven't encountered and cannot think of a situation where that would be necessary.
-  In addition, `RefCell` currently has a `try_borrow` but no way of checking its state.
-  If a situation necessitating `state` comes up, the existing `state` method can be kept while still adding `try_with`.
 - `try_with` panicking instead of returning an error if the initializer fails may be unexpected to many users.
   However, this is far better than building in a `catch_unwind` (because of the flaws of `catch_unwind`).
 
 # Alternatives
 [alternatives]: #alternatives
 
-- Don't deprecate `state` but still add `try_with`.
 - Instead of returning a `Result` from `try_with`, pass a `Result` to the closure.
 - The error type for the `Result` could be an enum, or just `()`.
 
