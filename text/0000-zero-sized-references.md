@@ -28,7 +28,7 @@ In both of these cases, it will be an advantage for the references to be Zero-Si
 # Detailed design
 [design]: #detailed-design
 
-## Calculating size
+### Calculating size
 [calculating-size]: #calculating-size
 
 Disclaimer: The writer of this RFC is not familiar with the inworkings of the compiler.
@@ -56,7 +56,7 @@ Therefore, I propose to assume that whenever you find a self reference (or multi
 decide the reference is not Zero-Sized, since there most likely WILL be other data somewhere in the chain.
 This is most relevant to unions, which could have self-references and be instantiated at the same time.
 
-## *const and *mut pointers
+### *const and *mut pointers
 [pointers]: #pointers
 
 It is possible to convert a reference to a pointer. Currently, a reference to ZST points to an arbitrary location,
@@ -81,7 +81,7 @@ Users of unsafe rust might encounter this case. Therefore there should probably 
 # Drawbacks
 [drawbacks]: #drawbacks
 
-## Breaking code
+### Breaking code
 
 Any place that assumed a reference holds a pointer might introduce bugs.
 
@@ -95,7 +95,7 @@ The system that is now works well, and does not have to be changed.
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
-## FFI + Escape mechanism
+### FFI + Escape mechanism
 
 Do we need a way to remove the optimization? For example, if we have
 ```rust
@@ -117,7 +117,7 @@ impl !Sized for ExternalStruct;
 ```
 and maybe it should require `unsafe`.
 
-## Errors of conversion
+### Errors of conversion
 
 Do we want to give an error or a warning for converting references to pointers?
 
@@ -125,18 +125,18 @@ The code above is an example where we break working code, so an error might be n
 
 However, some conversions might be meaningless and wouldn't affect the execution, so the programmer might allow the conversion.
 
-## Mitigating breakage
+### Mitigating breakage
 
 Safe rust code should be affected positively by this change. However unsafe code might break.
 
 FFI is especially vulnurable to this change, as shown above.
 Are there better ways to deal with these errors without user involvement?
 
-## Specific examples - Pro
+### Specific examples - Pro
 
 The RFC isn't well-justified until it has at least one detailed use case where it helps.
 Please share specific examples of code where Zero-Sized references are useful.
 
-## Specific examples against
+### Specific examples against
 
 If you have specific examples where this change is detrimental, please share them.
