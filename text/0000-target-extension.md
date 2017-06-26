@@ -117,6 +117,14 @@ This way, a crate like `libc` could export raw bindings of platform
 specifically for the targeted version.
 
 
+It also has been mentioned in
+[pre-rfc discussion](https://internals.rust-lang.org/t/pre-rfc-target-extension-dealing-with-breaking-changes-at-os-level/5289/11),
+that it could be benefical to some others OS (like Windows) to have versioned
+targets too: for the end-user "knowing what version he is targeting means he can
+decide what symbols he can link to normally, and what symbols he has to
+dynamically load, and what fallbacks he has to implement."
+
+
 # Detailed design
 [design]: #detailed-design
 
