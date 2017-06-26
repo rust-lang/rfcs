@@ -319,13 +319,15 @@ From downstream perspective, it permits to use Rust to target several OS
 versions whereas the versions are incompatibles.
 
 From Rust developer perspective, it adds a new attributes for conditional
-compilation.
+compilation, and extent the syntax with new predicates in convenient way.
 
-Regarding documentation, additions have to be done on:
+Regarding documentation, additions have to be done on _Rust Reference_ in order
+to mention new attributes in conditional compilation attribute section, with
+related new predicates.
 
-- _Rust Reference_: mentioning new attributes in conditional compilation attribute section.
-- **TODO**: mentioning new predicates
-- **TODO**: mentioning targets (by OS version)
+Visible changes should also occur on main rust-lang.org site on pages about
+rustc distribution: rustup will be able to distribute binaries for more
+platforms (per OS version), or about platform support.
 
 
 # Drawbacks
@@ -342,6 +344,11 @@ It will require to regulary deprecate old targets (for unsupported OS version)
 in order to not keep too much old stuff. The end-user has still the possibility
 to use flexible target using external JSON file for these targets, if the
 corresponding code for this particular version is still in `libc` crate.
+
+Projects using Rust with binary distribution will have to update in order to
+cover a more important number of platforms. In particular rustc itself (with
+and without rustup). It will mean more ressources to build more targets. But
+the resulting binaries will work on all targets.
 
 
 # Alternatives
