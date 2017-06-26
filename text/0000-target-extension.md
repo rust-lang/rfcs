@@ -307,25 +307,25 @@ See `librustc/session/config.rs`.
 # How We Teach This
 [how-we-teach-this]: #how-we-teach-this
 
-**TODO**
+If modifying the `Target` struct is a low-level change by itself, the current
+RFC proposes it in order to change an implicit paradigm in targets (the
+targeting OS will be stable accross version, which is false).
 
-Modifying the `Target` struct is a low-level change by itself.
+With the RFC, Rust become able to express this lack of stability on the OS, in
+a stable way. In a sens, it extents the ability of Rust to targets several OS
+by refining to targets several OS version.
 
-From a developer perspective, it adds a new attribute for conditional
+From downstream perspective, it permits to use Rust to target several OS
+versions whereas the versions are incompatibles.
+
+From Rust developer perspective, it adds a new attributes for conditional
 compilation.
 
-For projects using Rust (Firefox in mind), it changes the `--target` argument
-for several existing targets in a breaking way: some targets will disappear
-(`x86_64-unknown-openbsd`) in favor of others targets
-(`x86_64-unknown-openbsd6.0` and `x86_64-unknown-openbsd6.1` at time of
-writing). But it reflects better the reality: OpenBSD 6.0 is different from
-OpenBSD 6.1.
-
-
-What additions or changes to the Rust Reference, _The Rust Programming Language_, and/or _Rust by Example_ does it entail?
+Regarding documentation, additions have to be done on:
 
 - _Rust Reference_: mentioning new attributes in conditional compilation attribute section.
-- **TODO**
+- **TODO**: mentioning new predicates
+- **TODO**: mentioning targets (by OS version)
 
 
 # Drawbacks
