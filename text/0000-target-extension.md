@@ -230,32 +230,67 @@ See `libsyntax/attr.rs`.
 
 ## Backend level
 
-**TODO**
+### Target structure
 
-- additional members in `Target`
-  - `target_os_version: String` (could be empty: "")
-  - `target_env_version: String` (could be empty: "")
+At the backend level, the `Target` structure gains two new members:
 
-- drawbacks: it requires a new target per OS version
-  - **XXX** is it possible to autodetect ?
-    - some targets tagged as "template"
-    - if the provided `target` name match the template, complete it
+- `target_os_version: String`
+- `target_env_version: String`
 
-- add a flexible code to easily create new target (with just
-  `target_os_version` changing)
+to represent the (possibly empty) versions of the OS and environment.
+
+
+### Implication on targets number
+
+It should be noted it will implied a new target per OS version (for each
+architecture), as soon as a breaking change occurs (new target required), or on
+each major release (as it could be more simple for the end user to know which
+target to use).
+
+As example, FreeBSD has currently 3 targets (one per supported architecture:
+`x86_64`, `i686` and `aarch64`). If we want to be able to express targets for 3
+releases (two currently supported and one upcoming), the number of target will
+grow to 9 targets.
+
+
+### Version tracking per OS
+
+The exact way to tracking the OS version (creating a new target) should be done
+per OS, because OS has different expectations regarding breaking changes
+between versions.
+
+As example, FreeBSD keep ABI/API accross minor versions, and a breaking change
+should only occur at major version (but not necessary).
+
+So, the targets should be (for `x86_64` architecture):
+- `x86_64-unknown-freebsd10` (currently supported)
+- `x86_64-unknown-freebsd11` (currently supported)
+- `x86_64-unknown-freebsd12` (in development)
+
+At the opposite, OpenBSD only release major versions (even if expressed with
+two digits versions), and a breaking change could occur at each version:
+- `x86_64-unknown-openbsd6.0` (currently supported)
+- `x86_64-unknown-openbsd6.1` (currently supported)
+- `x86_64-unknown-openbsd6.2` (in development)
+
+
+### Default OS version for a target
+
+It could be noted that the current unversioned target (like
+`x86_64-unknown-openbsd`) could be still used as an alias of some versioned
+target.
+
+If so, the semantic have to be defined (tracking the oldest or most recent
+supported version).
+
+Keeping the unversioned target would avoid a breaking change in command-line.
+But the change could be useful too as it permits to downstream to be aware that
+targeting particular OS version (FreeBSD 11 for example) could result unusable
+binary for others OS versions (FreeBSD 12).
+
+
 
 See `librustc_back/target/`.
-
-
-
-
-### Workflow with new OS release
-
-- when a new OS release occurs
-  - adds to `libc` any changes (using `target_os_version` if required)
-  - adds a new target specification
-  - remove target of any unsupported OS version
-
 
 
 ## Session level
