@@ -241,6 +241,20 @@ to represent the (possibly empty) versions of the OS and environment.
 
 See `librustc_back/target/`.
 
+
+### Specifics compilations options
+
+It could be noted that some platforms could require additionnal compilation
+options, like macOS and `-mmacosx-version-min` for specifying the minimal
+version (it affects e.g.  dynamic library loader).
+
+No additional changes is required for this support: `TargetOptions` structure
+already contains array for such options: `pre_link_args`, `late_link_args` and
+`post_link_args`.
+
+Having a per version target permits to have different options per target.
+
+
 ### Implication on targets number
 
 It should be noted it will implied a new target per OS version (for each
