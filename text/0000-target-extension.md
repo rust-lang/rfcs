@@ -330,7 +330,7 @@ What additions or changes to the Rust Reference, _The Rust Programming Language_
 # Drawbacks
 [drawbacks]: #drawbacks
 
-At language level, it adds additional complexity for defining new predicates
+At syntax level, it adds additional complexity for defining new predicates
 for manipulating version numbers.
 
 At backend level, the number of targets will grow a lot. It means that not all
@@ -350,8 +350,10 @@ The more simple approch is to use `target_os` with the OS version inside
 (`freebsd12`).  But it would require to duplicate all `libc` code (for only
 small differences) at each release. Having a separated attribute is more simple.
 
-Having only parts of the current RFC is also possible: new predicates at
-language level are only a way simplify code expression.
+Having only parts of the current RFC is also possible: new predicates at syntax
+level are only a way simplify code expression. It would requires to explicitly
+list all affected OS/env version on changes. It is doable if the list of
+supported/OS/env versions is controlled in some way.
 
 But without some way to express breaking changes existence at OS level, Rust is
 unable to targeting simultaneous several OS version. Regarding
@@ -363,8 +365,8 @@ FreeBSD itself still support them) or not supporting FreeBSD 12.
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
+**TODO**
+
 What parts of the design are still TBD?
 
-- partial implementation with no additional predicate at syntax level. It
-  requires to explicitly list all affected OS/env version on changes. Doable if
-  the list of supported OS/env version is controlled in some way.
+- unversioned target for CLI
