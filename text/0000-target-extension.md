@@ -249,15 +249,15 @@ target to use).
 
 As example, FreeBSD has currently 3 targets (one per supported architecture:
 `x86_64`, `i686` and `aarch64`). If we want to be able to express targets for 3
-releases (two currently supported and one upcoming), the number of target will
+releases (two currently supported and one upcoming), the number of targets will
 grow to 9 targets.
 
 
 ### Version tracking per OS
 
 The exact way to tracking the OS version (creating a new target) should be done
-per OS, because OS has different expectations regarding breaking changes
-between versions.
+per OS, because OS has different expectations regarding when a breaking change
+could occur accross versions.
 
 As example, FreeBSD keep ABI/API accross minor versions, and a breaking change
 should only occur at major version (but not necessary).
