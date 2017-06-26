@@ -239,6 +239,7 @@ At the backend level, the `Target` structure gains two new members:
 
 to represent the (possibly empty) versions of the OS and environment.
 
+See `librustc_back/target/`.
 
 ### Implication on targets number
 
@@ -283,14 +284,14 @@ target.
 If so, the semantic have to be defined (tracking the oldest or most recent
 supported version).
 
+It could be convenient thing for compiler users, but any serious work should
+rely on versioned OS target (as compiling for one target version could mean
+unusable binary on other OS version).
+
 Keeping the unversioned target would avoid a breaking change in command-line.
 But the change could be useful too as it permits to downstream to be aware that
-targeting particular OS version (FreeBSD 11 for example) could result unusable
-binary for others OS versions (FreeBSD 12).
+targeting particular OS doesn't mean the binary will work on other version.
 
-
-
-See `librustc_back/target/`.
 
 
 ## Session level
@@ -365,8 +366,5 @@ FreeBSD itself still support them) or not supporting FreeBSD 12.
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
-**TODO**
-
-What parts of the design are still TBD?
-
-- unversioned target for CLI
+As unresolved-question, the question about the unversioned target on
+command-line is open. Does it makes sens to have it or not ?
