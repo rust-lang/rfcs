@@ -268,7 +268,7 @@ So, the targets should be (for `x86_64` architecture):
 - `x86_64-unknown-freebsd12` (in development)
 
 At the opposite, OpenBSD only release major versions (even if expressed with
-two digits versions), and a breaking change could occur at each version:
+two digits version), and a breaking change could occur at each version:
 - `x86_64-unknown-openbsd6.0` (currently supported)
 - `x86_64-unknown-openbsd6.1` (currently supported)
 - `x86_64-unknown-openbsd6.2` (in development)
@@ -313,7 +313,7 @@ Modifying the `Target` struct is a low-level change by itself.
 From a developer perspective, it adds a new attribute for conditional
 compilation.
 
-For projects using Rust (Mozilla in mind), it changes the `--target` argument
+For projects using Rust (Firefox in mind), it changes the `--target` argument
 for several existing targets in a breaking way: some targets will disappear
 (`x86_64-unknown-openbsd`) in favor of others targets
 (`x86_64-unknown-openbsd6.0` and `x86_64-unknown-openbsd6.1` at time of
@@ -330,27 +330,34 @@ What additions or changes to the Rust Reference, _The Rust Programming Language_
 # Drawbacks
 [drawbacks]: #drawbacks
 
-Why should we *not* do this?
+At language level, it adds additional complexity for defining new predicates
+for manipulating version numbers.
 
-- additional complexity in attributes for conditional compilation
-- number of targets will grow a lot
-  - not all targets will be testable (requires a particular OS version for
-    running testsuite)
-  - will require to deprecate unsupported OS version (for example OpenBSD
-    officially support only the 2 last releases) to limit the number of targets
+At backend level, the number of targets will grow a lot. It means that not all
+targets will be testable (too much required ressources and it would require a
+particular OS version for testing too).
+
+It will require to regulary deprecate old targets (for unsupported OS version)
+in order to not keep too much old stuff. The end-user has still the possibility
+to use flexible target using external JSON file for these targets, if the
+corresponding code for this particular version is still in `libc` crate.
 
 
 # Alternatives
 [alternatives]: #alternatives
 
-What other designs have been considered? What is the impact of not doing this?
+The more simple approch is to use `target_os` with the OS version inside
+(`freebsd12`).  But it would require to duplicate all `libc` code (for only
+small differences) at each release. Having a separated attribute is more simple.
 
-- using `target_os` with the version inside. it would require to duplicate all
-  `libc` code (for only small differences) at each release.
+Having only parts of the current RFC is also possible: new predicates at
+language level are only a way simplify code expression.
 
-- status quo: while no fundamental breaking changes occur at OS level, no need
-  to do anything. Note that FreeBSD 12 will be released with such changes (see
-  [issue #42681](https://github.com/rust-lang/rust/issues/42681)).
+But without some way to express breaking changes existence at OS level, Rust is
+unable to targeting simultaneous several OS version. Regarding
+[issue #42681](https://github.com/rust-lang/rust/issues/42681) for FreeBSD 12,
+it means Rust should either deprecating older FreeBSD versions support (whereas
+FreeBSD itself still support them) or not supporting FreeBSD 12.
 
 
 # Unresolved questions
