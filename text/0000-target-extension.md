@@ -391,8 +391,9 @@ unable to targeting simultaneous several OS version. Regarding
 it means Rust should either deprecating older FreeBSD versions support (whereas
 FreeBSD itself still support them) or not supporting FreeBSD 12.
 
-A possible alternative is to replace `libc` with runtime detection of system
-interface. But it isn't suitable for cross-building.
+A possible alternative is to replace `libc` with FFI bindings generation at
+compile-time (using [rust-bindgen](https://github.com/servo/rust-bindgen) for
+example). But it isn't suitable for cross-building.
 
 
 # Unresolved questions
