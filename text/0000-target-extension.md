@@ -1,7 +1,7 @@
 - Feature Name: `target extension`
-- Start Date: 2017-05-21
-- RFC PR: 
-- Rust Issue: 
+- Start Date: 2017-06-27
+- RFC PR: (leave this empty)
+- Rust Issue: (leave this empty)
 
 # Summary
 [summary]: #summary
