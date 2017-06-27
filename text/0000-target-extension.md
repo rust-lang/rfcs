@@ -391,9 +391,19 @@ unable to targeting simultaneous several OS version. Regarding
 it means Rust should either deprecating older FreeBSD versions support (whereas
 FreeBSD itself still support them) or not supporting FreeBSD 12.
 
+A possible alternative is to replace `libc` with runtime detection of system
+interface. But it isn't suitable for cross-building.
+
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
 As unresolved-question, the question about the unversioned target on
 command-line is open. Does it makes sens to have it or not ?
+
+
+# Related previous discussions
+[discussions]: #previous-discussions
+
+- [libc#7570: How to deal with breaking changes on platform ?](https://github.com/rust-lang/libc/issues/570)
+- [Rust Internals: Pre-RFC: target extension (dealing with breaking changes at OS level)](https://internals.rust-lang.org/t/pre-rfc-target-extension-dealing-with-breaking-changes-at-os-level/5289)
