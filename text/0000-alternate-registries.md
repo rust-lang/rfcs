@@ -40,8 +40,8 @@ The following changes for Cargo.toml are proposed as part of this RFC:
 * Add an optional 'registry' field to be specified as part of the package dependencies
 * Add an optional 'registry' field to be specified in the package definition
 
-Both of the registry entries take a value of a crates.io git repository. If one is not
-provided then the default crates.io repository is assumed, this ensures that it is
+Both of the registry entries take a value of a crates.io web server. If one is not
+provided then the default crates.io URL is assumed, this ensures that it is
 back compatible with all current crates.
 
 Below is an example of the change that we are proposing to make:
@@ -51,12 +51,25 @@ Below is an example of the change that we are proposing to make:
 name = "registry-test"
 version = "0.1.0"
 authors = ["Christopher Swindle <christopher.swindle@metaswitch.com>"]
-registry = "https://github.com/my_awesome_fork/crates.io-index"
+registry = "https://www.my_awesome_fork.com/"
 
 [dependencies]
-libc = { version = "*", registry = "https://github.com/my_awesome_fork/crates.io-index" }
+libc = { version = "*", registry = "https://www.my_awesome_fork.com/" }
 serde_json = "1.0.1"
 ```
+
+## Mapping Between Registry and Git Repository
+Currently the Git repository is used internally within Cargo, in order for Cargo to map
+between the servers URL and a Git respository for the crates.io web server, the server
+exposes a set endpoint which provides the Git repository to use, for example:
+
+```
+  http://crates.io/git
+```
+
+This will just return the Git repository to use, which the server already knows. When cargo
+needs to perform an action on an alternate registry it just performs a GET request
+on the URL and then uses the Git repository returned.
 
 ## Dependency resolution
 This RFC proposes going to an alternative registry for a dependency only if the registry key
@@ -82,18 +95,20 @@ source is created using the registry URL, otherwise the crates.io server is used
 ### Index files changes
 As Cargo requires the index file to include all the dependencies, the crates.io index file
 format is updated to include the registry in the dependency. The registry is an optional field,
-where by default it is None, and will only be set when using an alternate crate server.
+where by default it is None, and will only be set when using an alternate crate server. The
+official public crates.io server will block any publish requests which contain a registry
+in dependencies, so for crates.io this will always be set to None.
 
 Validation of the depdencies on crates.io is also updated so that local registry crates are
 checked for their existance on the local registry, they will not however validate any
 external dependencies, instead they will be assumed to be valid.
 
 ## Blocking requests to push to a registry
-There are two parts to this, the first is a change to Cargo which checks if the registry
-provided in the registry matches the host for the publish, if it does not it gets rejected.
-The second part is a change to crates.io which will just reject the request to publish the
-crate if the configured repository on the crates.io server does not match the registry
-specified in the package or dependencies.
+Cargo will by try and publish to the registry that is provided in the Cargo.toml (if one is
+provided), if the registry has been override and it does not match the entry in Cargo.toml it will
+be rejected. The second part is a change to crates.io which will just reject the request to
+publish the crate if the configured registry on the crates.io server does not match the
+registry specified in the package or dependencies.
 
 ## Allow publishing when referencing external dependencies
 We still want to support private crates having dependencies on the public crates.io server,
@@ -104,7 +119,9 @@ default registry, thus allowing private crates to reference public crates on cra
 ## Making it easier for users using an alternate crates.io registry
 When a user selects a specific crate the Cargo.toml fragment would be updated to include the
 registry URL, thus allowing users to easily copy and paste into their projects Cargo.toml
-file.
+file. Below is an example of how this might look:
+
+<img src="http://i.imgur.com/znMMwAc.jpg" alt="Example layout of crates.io with URL in fragment" />
 
 # How We Teach This
 [how-we-teach-this]: #how-we-teach-this
