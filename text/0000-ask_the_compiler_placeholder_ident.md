@@ -4,13 +4,15 @@
 
 # Summary
 
-Imageine a tool for making compile time queries (inspired by haskell holes): Add a 'placeholder ident' to the AST; this passes through type inference; it does not resolve to an actual symbol, but instead assumes it is 'whatever needed' to fit the demands around it, and allows the rest of the program to contiue compiling (resolving/typechecking). 
+This is inspired by haskell holes: Add a 'placeholder identifier' to the AST; when encountered passes through type inference; it does not resolve to an actual definition, but instead assumes it is 'whatever needed' to fit the demands around it, and allows the rest of the program to contiue compiling (resolving/typechecking). 
 
 Compiling a program with placeholders will fail, but gives extra informative error messages reporting (a) the types at that point, and (b) potential symbols that fit.
 
 # Motivation
 
-This is to assist navigation and discovery whilst programming, doing a similar job to IDE 'dot-autocomplete', but leveraging  Rust's more advanced 2-way type inference. Already people use the trick of 'let _:()=expr_'  to query the type as an error, but these 'deliberate' queries would allow the inference engine to work harder.
+This is to assist navigation and discovery during the compile-edit cycle, doing a similar job to IDE 'dot-autocomplete', but leveraging  Rust's more advanced 2-way type inference by making deliberate queries with more information.
+
+Already people use the trick of 'let _:()=expr_'  to query the type as an error, but these queries would allow the inference engine to work harder.
 
 Improving compile time feedback pushes the community forward whilst we wait for IDE tools (with more complex integration) to stabilize and refine.
 
@@ -19,24 +21,29 @@ Improving compile time feedback pushes the community forward whilst we wait for 
 see earlier forum post,
 https://internals.rust-lang.org/t/ask-the-compiler-syntax-e-g--/700
 
-The placeholder could be configurable (by commandline option or lang item?) to avoid clash, but a sane default would be a single underscore in a function,trait,or variable spot, because no one would use that for a real symbol. By making it a configurable legal ident, it will not take any syntax space. This is distinct to the underscore character in the type context (where it already performs a different function).
+The placeholder would be configurable (by commandline option) to avoid any clash, but a sane default would be a single underscore.
+The placeholder is relevant to function,trait,or variable identifiers.
 
-The query could be used in the following ways (I note that as of 2017, the rust compiler already gives a bit of assistance in some of these cases)
+By making it a configurable legal ident, it will not take any syntax space.
 
-fn foo<T:_>( a:T) { a.do_something() } // ask what traits have a method 'do_something()'
+This is distinct to the underscore character in the type context (which performs a different function, it leaves a gap where the surrounding context is enough to infer *exactly* what is going on).
 
-fn foo(a:&X)->Y { _(a) } // ask for functions close to fitting the signature ( &X)->Y 
-fn foo(a:&X)->Z { a._()._()} // ask for any functions X->Y , Y->Z and possible 'Y'
+The query could be used in the following ways 
 
-_::bar(x,y,z) // ask for full paths of any functions bar(..)
+```fn foo<T:_>( a:T) { a.do_something() } // ask what traits have a method 'do_something()'```
 
-foo._.bar - ... what member has a sub-member .bar (maybe make it also show,
+```fn foo(a:&X)->Y { _(a) } // ask for functions close to fitting the signature ( &X)->Y ```
+```fn foo(a:&X)->Z { a._()._()} // ask for any functions X->Y , Y->Z and possible 'Y'```
 
-foo._._.bar foo._._._.bar, i.e. search the object graph.. this is a big deal with complex data structures. )
+```_::bar(x,y,z) // ask for full paths of any functions bar(..)```
 
-fn foo(a,b,c)->_ {... do stuff...} .. Do full inference from calls to 'foo', and report what signature this function needs to fit it's uses.. the scenario when you factor code out.
+```foo._.bar - ... what member has a sub-member .bar (maybe make it also show,```
 
-{ ... foo(_) ... } report the arguments 'foo' should take
+```foo._._.bar foo._._._.bar, i.e. search the object graph.. this is a big deal with complex data structures. )```
+
+```fn foo(a,b,c)->_ {... do stuff...} .. Do full whole-program inference from any calls TO 'foo', and report what signature this function needs to fit it's uses.. the scenario appears when you factor code out.```
+
+```{ ... foo(_) ... } report the arguments 'foo' should take```
 
 
 If the compiler output was formatted nicely (I dont know the full plan with the RLS) perhaps this could be used directly for IDE/editor integration; imagine if output of underscore queries could be collected by an IDE and placed in dropbox menus under the text; this could yield a unique editing experience beyond existing autocomplete IDEs?.
