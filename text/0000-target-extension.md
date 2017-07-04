@@ -94,6 +94,15 @@ representative of something that already occurred in the past.
   See [commit message](http://gitweb.dragonflybsd.org/dragonfly.git/commit/f91a71dd15504ebdb04387d0822771ef145b25f9?f=sys/sys/types.h)
   and [diff to sys/types.h](http://gitweb.dragonflybsd.org/dragonfly.git/blobdiff/6f1e2b382f6c2ba9b43a1fc106ba998b45499eea..f91a71dd15504ebdb04387d0822771ef145b25f9:/sys/sys/types.h)
 
+- **MSVC 2015** has several breaking changes.
+  See [Visual C++ change history 2003 - 2015](https://msdn.microsoft.com/en-us/library/bb531344.aspx),
+  in particular section about *C Runtime* and *STL* breaking changes.
+  In particular: some functions like [gets](https://msdn.microsoft.com/en-us/library/2029ea5f.aspx)
+  or [`_cgets`](https://msdn.microsoft.com/en-us/library/3197776x.aspx) have been
+  removed. In order to conform to C++11, old names for type traits from an earlier
+  version of the C++ draft standard have been remamed.
+  This one is an example of environment version.
+
 
 In the current situation, `libc` crate has no way to deal in a stable way with
 these changes. It could only support two incompatible OS version together by
