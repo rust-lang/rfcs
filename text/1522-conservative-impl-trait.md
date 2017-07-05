@@ -534,6 +534,47 @@ But basically, without this feature certain things remain hard or impossible to 
 in Rust, like returning a efficiently usable type parameterized by
 types private to a function body, for example an iterator adapter containing a closure.
 
+## Alternative to returnning unboxed closures
+
+Theoratically, if we are defining a function need to return an unboxed closure, it can always
+rewritten to a function that takes more parameters.
+
+For example, a fix point function takes a `Fn(T) -> R` and returns a `Fn(T) -> R` like this
+with the proposed `impl Trait` feature:
+
+```rust
+fn fix<T, R, F>(f: &F) -> impl Fn(T) -> R
+    where F: Fn(T) -> R
+{
+    f(|t| fix(f)(t))
+}
+...
+let closure = fix(func);
+```
+
+can be re-written as
+
+```rust
+fn fix<T, R, F>(f: F, t:T) -> R
+    where F: Fn(T) -> R
+{
+    f(|t|fix(f, t), t)
+}
+...
+let closure = |t|fix(func, t);
+```
+
+We can see in the calling site it is slightly different, but with some clever macros this can be 
+made more like the former.
+
+If we improve the code generator such that it can generate target code for the later when the source code
+is written in the former, we will achieve the same outcome without any further change on the other parts
+of the language.
+
+This technology can also be used for traits other than the `FnXXX` ones. What we need is a grammar
+to construct a trait implementation on the fly, like the closure grammar above. Once we have that,
+a translater can adjust the function signature and add the trait constructor in the calling site.
+
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
