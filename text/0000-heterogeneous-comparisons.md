@@ -68,7 +68,11 @@ pub trait Ord<Rhs = Self>: Eq<Rhs> + PartialOrd<Rhs> {
 # How We Teach This
 [how-we-teach-this]: #how-we-teach-this
 
-No changes I can find or think of.
+As of now I can't find anything about comparisons in "The Rust Programming Language". The most reasonable place seems to be in chapter "3.2 Data Types", in or just after "Numeric Operations" paragraph (for second edition).
+
+We just need to mention that Rust allows comparison between different numeric types and that it returns mathematically correct result. Optionally, potential overhead can be mentioned, even though I'm not sure that's the right place to mention it.
+
+Rust reference seems to describe language itself and doesn't go into details about any traits/operators implementation. I can't find any reasonable place to cover it there.
 
 # Drawbacks
 [drawbacks]: #drawbacks
