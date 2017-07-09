@@ -36,6 +36,61 @@ Another possiblity would be to restrict it to modules that are allowed to impeme
 
 Either restriction would prevent the issue of [[2]](https://github.com/rust-lang/rust/issues/26940).
 
+Say there is the following struct [(taken from here)](https://github.com/rust-lang/rust/issues/26940#issuecomment-120502565):
+```rust
+pub struct MaybeCrashOnDrop { c: bool }
+impl Drop for MaybeCrashOnDrop {
+    fn drop(&mut self) {
+        if self.c {
+            unsafe { *(1 as *mut u8) = 0 }
+        }
+    }
+}
+pub struct InteriorUnsafe { pub m: MaybeCrashOnDrop }
+impl InteriorUnsafe {
+    pub fn new() -> InteriorUnsafe {
+        InteriorUnsafe { m: MaybeCrashOnDrop{ c: true } }
+    }
+}
+impl Drop for InteriorUnsafe {
+    fn drop(&mut self) {
+        self.m.c = false;
+    }
+}
+```
+
+## Approach 1:
+```rust
+let i = InteriorUnsafe::new();
+unsafe {
+     let InteriorUnsafe { m: does_crash } = i;
+}
+```
+Here full responsibility is given to the user, ensuring that the destructuring is sound.
+
+Pros: More flexibility without resorting to ptr::read & mem::forget.
+
+Cons: It is still a special case of destructuring and requires an `unsafe` block.
+
+## Approach 2:
+```rust
+// somewhere in the same module where InteriorUnsafe was declared
+let i = InteriorUnsafe::new();
+let InteriorUnsafe { m: does_crash } = i;
+```
+Destructuring does not require an `unsafe` block, but is limited to the module where the type to be destructured was defined.
+This ensures no third party may create unsound behaviour by incorrectly destructuring a foreign type.
+
+Pros: No unsafe block required
+
+Cons: If a struct implementing Drop needs to be destructured outside the module of definiton, the ptr::read & mem::forget are still required. However this will only affect structs with public fields.
+
+## Approach 1 & 2:
+Inside the module of declaration, no `unsafe` block is required. Otherwhise an `unsafe` block is required.
+
+Pros: does not require an `unsafe` block in most cases.
+Cons: more complexity than required.
+
 # How We Teach This
 [how-we-teach-this]: #how-we-teach-this
 
