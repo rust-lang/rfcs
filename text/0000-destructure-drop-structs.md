@@ -39,6 +39,8 @@ Either restriction would prevent the issue of [[2]](https://github.com/rust-lang
 # How We Teach This
 [how-we-teach-this]: #how-we-teach-this
 
+Probably with a small section in the Nomicon, that explains why destrcuturing might be dangerous and under what circumstances it is allowed.
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
