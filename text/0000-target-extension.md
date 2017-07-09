@@ -385,6 +385,8 @@ the resulting binaries will work on all targets.
 # Alternatives
 [alternatives]: #alternatives
 
+## Simply appending the version in the target name
+
 The more simple approch is to use `target_os` with the OS version inside
 (`freebsd12`).  But it would require to duplicate all `libc` code (for only
 small differences) at each release. Having a separated attribute is more simple.
@@ -399,6 +401,21 @@ unable to targeting simultaneous several OS version. Regarding
 [issue #42681](https://github.com/rust-lang/rust/issues/42681) for FreeBSD 12,
 it means Rust should either deprecating older FreeBSD versions support (whereas
 FreeBSD itself still support them) or not supporting FreeBSD 12.
+
+## Runtime detection
+
+Runtime detection is already in use for [Android](https://github.com/rust-lang/rust/blob/13157c4ebcca735a0842bd03c3dad1de7c429f9f/src/libstd/sys/unix/android.rs#L70-L93).
+It has the advantage to permit rustc to target *several* OS with the same binary.
+
+It is based on OS version detection (with symbol existence for example) and on
+providing fallback or alternative for function calls.
+
+But it couldn't cover all aspects of ABI breaking, specially changes in
+structures (member size or offset change). It would require to replace
+structure's member access by function calls doing runtime detection, adding an
+overhead.
+
+## Dynamic bindings generation
 
 A possible alternative is to replace `libc` with FFI bindings generation at
 compile-time (using [rust-bindgen](https://github.com/servo/rust-bindgen) for
