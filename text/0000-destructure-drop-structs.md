@@ -91,6 +91,9 @@ Inside the module of declaration, no `unsafe` block is required. Otherwhise an `
 Pros: does not require an `unsafe` block in most cases.
 Cons: more complexity than required.
 
+## Suggested approach: 
+This RFC proposes solution Approch 1.
+
 # How We Teach This
 [how-we-teach-this]: #how-we-teach-this
 
