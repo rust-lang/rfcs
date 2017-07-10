@@ -91,6 +91,15 @@ Inside the module of declaration, no `unsafe` block is required. Otherwhise an `
 Pros: does not require an `unsafe` block in most cases.
 Cons: more complexity than required.
 
+## Approach 3:
+Introduce an `unsafe` auto-trait `IndependentDrop`.
+It is automatically derived when all fields implement `IndependentDrop`.
+
+Destructuring of structs is possible if they do not implement `Drop`, or when they implement `IndependentDrop`.
+
+Pros: No `unsafe` block required and destructuring is not limited to the same module.
+Cons: Requires an additional trait that authors have to be aware of.
+
 ## Suggested approach: 
 This RFC proposes solution Approch 1.
 
