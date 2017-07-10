@@ -97,7 +97,7 @@ This RFC proposes solution Approch 1.
 # How We Teach This
 [how-we-teach-this]: #how-we-teach-this
 
-Probably with a small section in the Nomicon, that explains why destrcuturing might be dangerous and under what circumstances it is allowed.
+Probably with a small section in the Nomicon, that explains why destructuring might be dangerous and under what circumstances it is allowed.
 
 # Drawbacks
 [drawbacks]: #drawbacks
