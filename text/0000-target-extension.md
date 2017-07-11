@@ -412,8 +412,8 @@ providing fallback or alternative for function calls.
 
 But it couldn't cover all aspects of ABI breaking, specially changes in
 structures (member size or offset change). It would require to replace
-structure's member access by function calls doing runtime detection, adding an
-overhead.
+structure's member access by function calls doing runtime detection. The
+possible overhead could be removed by using lazy detection and caching.
 
 ## Dynamic bindings generation
 
