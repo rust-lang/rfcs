@@ -13,9 +13,9 @@ Rust signatures can become quite heavy with nested angle-bracketed types, lifeti
 Conversely, rust has a very powerful inference engine. 
 
 Also,coming from C++, the need to write traits before you can 'overload' comes as a shock. 
-If however the informtion in the trait declaration was used to avoid repeating detailed information, they would come across as more of a virtue: writing them would more directly *save* future repition when writing many functions following a similar pattern.
+If however the informtion in the trait declaration was used to avoid repeating detailed information, they would come across as more of a virtue: writing them would directly *save* future repition when writing many functions following a similar pattern.
 
-Note that this would not make writing the implementation any harder: Unlike with general purpose inference , the constraining informtion has already been supplied in the trait itself; the compiler already knows that one must match the other, and when it doesn't it reports an error. Compared to C++, Rusts syntax allows the ommision of types whilst still parsing in a straightforward manner, creating this opportunity.
+Note that this would not make writing the implementation any harder: Unlike with general purpose whole-program inference , constraining is already implied by the trait itself; the compiler already knows that one must match the other, and when it doesn't it reports an error. Compared to C++, Rusts syntax allows the ommision of types whilst still parsing parameter names in a straightforward manner, creating this opportunity.
 
 Behaviour of this type can be seen in the Haskell language, e.g
 
