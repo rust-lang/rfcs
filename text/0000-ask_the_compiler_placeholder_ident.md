@@ -8,12 +8,12 @@ allow the ommision of function parameter types and the return type in the implem
 
 # Motivation
 
-Rust signatures can become quite heavy with nested angle-bracketed types, lifetimes etc, 
+Rust signatures can become quite heavy with nested angle-bracketed types, trait-bounds, lifetimes etc, 
 Also,coming from C++, the need to write and reference traits *before* you can 'overload' functions comes as a shock. 
 
-If,however, the informtion in the trait declaration was used to avoid repeating detailed information, they would come across as more of a virtue: writing/referenceing them would directly *save* repition when writing many functions following a similar pattern.
+However, if the informtion in the trait declaration was used to avoid repeating information, they would come across as more of a virtue: writing and referenceing them would directly *save* repetition when writing many functions following a similar pattern.
 
-Note that this would not make writing the implementation any harder: Unlike with general purpose whole-program inference , constraining is already implied by the trait itself; the compiler already knows that one must match the other, and when it doesn't it reports an error. Compared to C++, Rusts syntax allows the ommision of types whilst still parsing parameter names in a straightforward manner, creating this opportunity.
+Note that this would not make writing the implementation any harder: Unlike with general purpose whole-program inference , constraining is already implied by the trait itself; the compiler already knows that one must match the other, and when it doesn't it reports an error. Compared to C++, Rusts syntax allows the ommision of types whilst still parsing parameter names in a straightforward manner, creating this opportunity. The lack of overloading *within* a trait/impl means there is no need to write the types to disambiguate the functions; you would be fully leveraging the trait name to do that.
 
 Behaviour of this type can be seen in the Haskell language, e.g
 
