@@ -4,21 +4,32 @@
 
 # Summary
 
-Allow the ommision of function parameters and return types, in the implementaiton of a trait for a type; infer this information directly from the trait declaration.
+Allow the ommision of function parameters and return types, in the implementaiton of a trait for a type; 
+infer this information directly from the trait declaration.
 
 # Motivation
 
 Rust signatures can become quite heavy with nested angle-bracketed types, trait-bounds, lifetimes etc, 
-Also,coming from C++, the need to write (and reference) traits *before* you can 'overload' functions comes as a shock. 
+Also,coming from C++, the need to write (and reference) traits *before* you write 'overloads' functions comes as a shock,
+especially for people trying to escape the repitition of 'header files'.
 
-However, if the informtion in the trait declaration was used to avoid repeating information, they would come across as more of a virtue: they would directly *save* repetition when writing many functions following a similar pattern. You would leverage the trait name to specify many signatures.
+However, if the trait declaration was used to avoid repeating information, 
+they would come across as more of a virtue: 
+they would directly *save* repetition when writing many functions following a similar pattern. 
+You would leverage the trait name to specify many signatures.
 
-Note that this would not make writing the implementation any harder: Unlike with general purpose whole-program inference , constraining is already implied by the trait itself; the compiler already knows that one must match the other, and when it doesn't it reports an error. Compared to C++, Rusts syntax allows the ommision of types whilst still parsing parameter names in a straightforward manner, creating this opportunity. The lack of overloading *within* a trait/impl means there is no need to write the types to disambiguate the functions; you would be fully leveraging the trait name to do that.
+Note that this would not make writing the implementation any harder: 
+Unlike with general purpose whole-program inference , constraining is already implied by the trait itself; 
+the compiler already knows that one must match the other, and when it doesn't it reports an error. 
+Compared to C++, Rusts syntax allows the ommision of types whilst still parsing parameter names in a straightforward manner, 
+creating this opportunity. 
+The lack of overloading *within* a trait/impl means there is no need to write the types to disambiguate the functions; 
+you would be fully leveraging the trait name to do that.
 
 Behaviour of this type can be seen in the Haskell language, e.g
 
     class FooBar f where                  -- typeclass definition (roughly = Rust trait)
-      foo::f->i32->[i32]->String          -- only write function names and function signatures
+      foo::f->i32->[i32]->String          -- only write function signatures
       bar::f->[String]->String->Maybe String
   
     instance FooBar Apple where     -- typeclass instance (roughly = Rust impl)
@@ -28,6 +39,7 @@ Behaviour of this type can be seen in the Haskell language, e.g
     instance FooBar Banana where
       foo s x y = ..3..             -- only write the argument names and function definition
       bar s z w = ..4..
+      
 
 (..1.. etc denote function definition bodies)
 
@@ -35,7 +47,8 @@ In particular with the traits for operator overloads, the type information is mo
 
 # Detailed design
 
-by example: the proposal is to allow the following (..1.. etc denote the function definition bodies roughly equivalent to the pattern above)
+by example: the proposal is to allow the following to compile
+(..1.. etc denote the function definition bodies roughly equivalent to the pattern above)
 
     struct Apple(i32);  struct Banana(String)
     trait FooBar {
@@ -61,13 +74,25 @@ by example: the proposal is to allow the following (..1.. etc denote the functio
 
 One potential objection is that you can no longer see the types when you read the impl. 
 
-However, whilst engaged in the compile-edit cycle, the compiler can directly report what the types should be if you make an error; also the programmer *must* have the trait documentation or original source at hand (or gain enough guidance from the error message) in order to actually write the implementation in the first place.
+However, whilst engaged in the compile-edit cycle, the compiler can directly report what the types should be,
+if you make an error; 
+also the programmer *must* have the trait documentation or original source at hand 
+(or gain enough guidance from the error message) in order to actually write the implementation in the first place.
+
+As such , this should not be a problem - even for cross-module implementations
 
 
 # Alternatives
 
 allowing more general whole-program inference;
-another way to streamline the number of mental steps when writing trait 'impls' would be to swap the trait/self-type order as this is more coherent with the function declarations themselves (no need to mentally swap them back and forth), as well as 'trait object casting' (type as trait) and disambiguation syntax <X as Trait>::method_name() ; this would be the subject of another RFC. It would be an alternate declaration syntax complemeting the existing one. impl type as trait {..}, or impl type:trait {} It would complement this suggestion.
+another way to streamline the number of mental steps when writing trait 'impls' 
+would be to swap the trait/self-type order as this is more coherent with the function declarations themselves 
+(no need to mentally swap them back and forth), as well as 'trait object casting' (type as trait) 
+and disambiguation syntax <X as Trait>::method_name() ; 
+this would be the subject of another RFC (a very different request aimed at an overlapping scenario)
+It would be an alternate declaration syntax complemeting the existing one. 
+impl type as trait {..}, or impl type:trait {} It would complement this suggestion.
+
 
 # Unresolved questions
 
