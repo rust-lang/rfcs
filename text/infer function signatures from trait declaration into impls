@@ -4,23 +4,24 @@
 
 # Summary
 
-Allow the ommision of function parameters and return types, in the implementaiton of a trait for a type; 
-infer this information directly from the trait declaration.
+Allow the ommision of function parameters and return types, in the implementation of a trait for a type; 
+Infer this information directly from the trait declaration.
 
 # Motivation
 
 Rust signatures can become quite heavy with nested angle-bracketed types, trait-bounds, lifetimes etc, 
-Also,coming from C++, the need to write (and reference) traits *before* you write 'overloads' functions comes as a shock,
+Also,coming from C++, the need to write (and reference) traits *before* you can write 'overloads' comes as a shock,
 especially for people trying to escape the repitition of 'header files'.
 
-However, if the trait declaration was used to avoid repeating information, 
+However, if the trait was used to avoid repeating information, 
 they would come across as more of a virtue: 
 they would directly *save* repetition when writing many functions following a similar pattern. 
-You would leverage the trait name to specify many signatures.
+You would leverage the trait name to specify many detailed signatures.
 
-Note that this would not make writing the implementation any harder: 
+Note that this would not make writing the implementation any harder:-
+
 Unlike with general purpose whole-program inference , constraining is already implied by the trait itself; 
-the compiler already knows that one must match the other, and when it doesn't it reports an error. 
+The compiler already knows that one must match the other, and when it doesn't it reports an error. 
 Compared to C++, Rusts syntax allows the ommision of types whilst still parsing parameter names in a straightforward manner, 
 creating this opportunity. 
 The lack of overloading *within* a trait/impl means there is no need to write the types to disambiguate the functions; 
@@ -42,13 +43,12 @@ Behaviour of this type can be seen in the Haskell language, e.g
       
 
 (..1.. etc denote function definition bodies)
-
-In particular with the traits for operator overloads, the type information is more directly specified in the trait itself
+ 
 
 # Detailed design
 
 by example: the proposal is to allow the following to compile
-(..1.. etc denote the function definition bodies roughly equivalent to the pattern above)
+(/*..1..*/ etc denote the function definition bodies roughly equivalent to the pattern above)
 
     struct Apple(i32);  struct Banana(String)
     trait FooBar {
@@ -57,13 +57,13 @@ by example: the proposal is to allow the following to compile
     }
 
     impl FooBar for Apple {
-        fn foo(&self, x,y){ ..1.. }   // no need to repeat :i32 :Vec<i32> ->i32
-        fn bar(&self, z,w){ ..2.. }   // no need to repeat :&Vec<String> , :String -> Option<String>
+        fn foo(&self, x,y){ /*..1..*/ }   // no need to repeat :i32 :Vec<i32> ->i32
+        fn bar(&self, z,w){ /*..2..*/ }   // no need to repeat :&Vec<String> , :String -> Option<String>
     }
     
     impl FooBar for Banana {
-        fn foo(&self, x,y){ ..3.. }   // no need to repeat  :i32 ->i32
-        fn bar(&self, z,w){ ..4.. }   // no need to repeat :Vec<String> , :String -> Option<String>
+        fn foo(&self, x,y){ /*..3..*/ }   // no need to repeat  :i32 ->i32
+        fn bar(&self, z,w){ /*..4..*/ }   // no need to repeat :Vec<String> , :String -> Option<String>
     }
     
 
