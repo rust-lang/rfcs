@@ -6,10 +6,14 @@
 # Summary
 [summary]: #summary
 
-Infer `extern crate` declarations from the arguments passed to `rustc`.
+This RFC reduces redundant boilerplate when including external crates.
+`extern crate` declarations will be inferred from the arguments passed to
+`rustc`.
 With this change, projects using Cargo will no longer have to specify
 `extern crate`: adding dependencies to `Cargo.toml` will result in the
 module being automatically imported.
+Projects which require more flexibility can still use manual `extern crate`
+and will be unaffected by this RFC.
 
 # Motivation
 [motivation]: #motivation
@@ -27,6 +31,11 @@ the `extern crate` declarations.
 
 This duplication causes unnecessary effort and results in one more opportunity
 for mistakes when working with conditionally-enabled dependencies.
+Allowing the omission of the redundant `extern crate` syntax contributes to the
+roadmap goals of
+[improving Rust's ergonomics](https://github.com/rust-lang/rust-roadmap/issues/17)
+and
+[providing easy access to high-quality crates.](https://github.com/rust-lang/rust-roadmap/issues/9)
 
 # Guide-Level Explanation
 [guide]: #guide
@@ -55,13 +64,26 @@ fn main() {
 # Reference-Level Explanation
 [reference]: #reference
 
-External crates are passed to the rust compiler using the `-L` or `-l` flags.
+External crates are passed to the rust compiler using the
+`--extern CRATE_NAME=PATH` flag.
+For example, `cargo build`-ing a crate `my_crate` with a dependency on `rand`
+results in a call to rustc that looks something like
+`rustc --crate-name mycrate src/main.rs --extern rand=/path/to/librand.rlib ...`.
+
 When an external crate is specified this way, an `extern crate name_of_crate;`
-declaration will be added to the current crate root.
+declaration will be added to the current crate root
+(note: this behavior won't occur when including a library using the `-l`
+or `-L` flags).
 
 However, for backwards-compatibility with legacy `extern crate` syntax, no
 automatic import will occur if an `extern crate` declaration for the same
 external dependency appears anywhere within the crate.
+For example, if `rand = "0.3"` is listed as a dependency in Cargo.toml
+and `extern crate rand;` appears somwhere in the crate being compiled,
+then no implicit `extern crate rand;` will be added.
+If Cargo.toml were to also list another dependency, `log = "0.3"`, and no
+`extern crate log;` appears in the crate being compiled,
+then an `extern crate log;` would be implicitly added.
 
 Additionally, items such as modules, types, or functions that conflict with
 the names of implicitly imported crates will cause the implicit `extern crate`
@@ -77,6 +99,15 @@ It will still be necessary to use the `extern crate` syntax when using
 `#[macro_use]` to import macros from a crate. This is necessary in order to
 prevent macros from being automatically brought into scope and changing the
 behavior of existing code.
+However, as specified in
+[RFC 1561](https://github.com/rust-lang/rfcs/blob/master/text/1561-macro-naming.md#importing-macros),
+macros 2.0 will no longer require `#[macro_use]`, replacing it with
+normal `use` declarations, for which no `extern crate` is required.
+
+One final remaining use case of `extern crate` syntax is for aliasing, i.e.
+`extern crate foo as bar;`. There is no way to infer aliasing information from
+Cargo.toml, so aliased crates will need to be specied using `extern crate`
+syntax.
 
 # Alternatives
 [alternatives]: #alternatives
@@ -98,6 +129,3 @@ It seems like a useful warning, but it's also a potential
 backwards-compatibility hazard for crates which previously depended on a
 crate, didn't import it with `extern crate`, and had a root-level item with
 an overlapping name (although this seems like an extreme edge case).
-- How can we prevent having to use `extern crate` whenever we need to import
-a macro? In a future "macros 2.0" world it may be possible to import macros
-using some other syntax, which could resolve this issue.
