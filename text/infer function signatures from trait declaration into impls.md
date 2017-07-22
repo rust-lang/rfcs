@@ -50,7 +50,7 @@ The trait is still usually very easy to find - thanks to Rusts syntax, declarati
 # Detailed design
 
 by example: the proposal is to allow the following to compile
-(/*..1..*/ etc denote the function definition bodies roughly equivalent to the pattern above)
+(```/*..1..*/``` etc denote the function definition bodies roughly equivalent to the pattern above)
 
     struct Apple(i32);  struct Banana(String)
     trait FooBar {
