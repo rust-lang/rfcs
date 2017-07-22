@@ -13,7 +13,7 @@ Rust signatures can become quite heavy with nested angle-bracketed types, trait-
 Also,coming from C++, the need to write (and reference) traits *before* you can write 'overloads' comes as a shock,
 especially for people trying to escape the repitition of 'header files'.
 
-However, if the trait was used to avoid repeating information, 
+However, if the trait was used to *avoid* repeating information, 
 they would come across as more of a virtue: 
 they would directly *save* repetition when writing many functions following a similar pattern. 
 You would leverage the trait name to specify many detailed signatures.
@@ -44,6 +44,8 @@ Behaviour of this type can be seen in the Haskell language, e.g
 
 (..1.. etc denote function definition bodies)
  
+ 
+The trait is still usually very easy to find - thanks to Rusts syntax, declarations are easy to grep for.
 
 # Detailed design
 
@@ -66,7 +68,9 @@ by example: the proposal is to allow the following to compile
         fn bar(&self, z,w){ /*..4..*/ }   // no need to repeat :Vec<String> , :String -> Option<String>
     }
     
+## concern about return values
 
+A variation would be to require a trailing placeholder ```->_``` to make it clearer if there is a return value
 
 
 # Drawbacks
