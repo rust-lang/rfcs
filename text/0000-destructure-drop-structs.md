@@ -101,7 +101,7 @@ Pros: No `unsafe` block required and destructuring is not limited to the same mo
 Cons: Requires an additional trait that authors have to be aware of.
 
 ## Suggested approach: 
-This RFC proposes solution Approch 1.
+This RFC proposes solution Approch 2.
 
 # How We Teach This
 [how-we-teach-this]: #how-we-teach-this
