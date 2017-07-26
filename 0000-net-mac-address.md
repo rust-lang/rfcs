@@ -16,8 +16,11 @@ Currently there is no standard way to communicate physical (or ethernet) address
 There is also a proliferation of implementations which are not compatible with each other, forcing developers to manually implement the data type again and again, reducing the opportunity for code re-use and convenience. `nom`[1], `libpnet`[2] and `diesel`[3] being a couple of examples.
 
 [1] https://github.com/moosingin3space/pktparse-rs/blob/master/src/ethernet.rs
+
 [2] https://github.com/libpnet/libpnet/blob/master/src/util.rs
+
 [3] http://docs.diesel.rs/diesel/pg/types/sql_types/struct.MacAddr.html
+
 
 # Detailed design
 [design]: #detailed-design
