@@ -1,4 +1,4 @@
-- Feature Name: (net_address_mac)
+- Feature Name: `net_address_mac`
 - Start Date: 2017-07-26
 - RFC PR: (leave this empty)
 - Rust Issue: (leave this empty)
