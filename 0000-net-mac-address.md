@@ -25,7 +25,7 @@ There is also a proliferation of implementations which are not compatible with e
 # Detailed design
 [design]: #detailed-design
 
-It is proposed that the existing `crate` `eui48` be used (http://crate.io/eui48) as a basis for this RFC, thus the code below is copied directly from that implementation.
+It is proposed that the existing `crate` `eui48` be used (https://crates.io/crates/eui48) as a basis for this RFC, thus the code below is copied directly from that implementation.
 
 The following struct would be added to `std::net`:
 
