@@ -43,7 +43,7 @@ and
 When you add a dependency to your `Cargo.toml`, it is immediately usable within
 the source of your crate:
 
-```toml
+```
 # Cargo.toml:
 name = "my_crate"
 version = "0.1.0"
