@@ -7,11 +7,11 @@
 [summary]: #summary
 
 This RFC reduces redundant boilerplate when including external crates.
-`extern crate` declarations will be inferred from the arguments passed to
-`rustc`.
-With this change, projects using Cargo will no longer have to specify
-`extern crate`: adding dependencies to `Cargo.toml` will result in the
-module being automatically imported.
+`extern crate` declarations will be inferred from the arguments passed to `rustc`.
+With this change, projects using Cargo
+(or other build systems using the same mechanism)
+will no longer have to specify `extern crate`:
+dependencies added to `Cargo.toml` will be automatically imported.
 Projects which require more flexibility can still use manual `extern crate`
 and will be unaffected by this RFC.
 
@@ -64,22 +64,27 @@ fn main() {
 # Reference-Level Explanation
 [reference]: #reference
 
-External crates are passed to the rust compiler using the
+External crates can be passed to the rust compiler using the
 `--extern CRATE_NAME=PATH` flag.
 For example, `cargo build`-ing a crate `my_crate` with a dependency on `rand`
 results in a call to rustc that looks something like
 `rustc --crate-name mycrate src/main.rs --extern rand=/path/to/librand.rlib ...`.
 
-When an external crate is specified this way, an `extern crate name_of_crate;`
-declaration will be added to the current crate root
-(note: this behavior won't occur when including a library using the `-l`
-or `-L` flags).
+When an external crate is specified this way,
+the crate will automatically brought into scope as if an
+`extern crate name_of_crate;`
+declaration had been added to the current crate root.
+This behavior won't occur when including a library using the `-l`
+or `-L` flags.
 
-However, for backwards-compatibility with legacy `extern crate` syntax, no
-automatic import will occur if an `extern crate` declaration for the same
+We will continue to support the current `extern crate` syntax,
+both for backwards compatibility and to enable users who want to use manual
+`extern crate` in order to have more fine grained control-- say, if they wanted
+to import an external crate only inside an inner module.
+No automatic import will occur if an `extern crate` declaration for the same
 external dependency appears anywhere within the crate.
 For example, if `rand = "0.3"` is listed as a dependency in Cargo.toml
-and `extern crate rand;` appears somwhere in the crate being compiled,
+and `extern crate rand;` appears somewhere in the crate being compiled,
 then no implicit `extern crate rand;` will be added.
 If Cargo.toml were to also list another dependency, `log = "0.3"`, and no
 `extern crate log;` appears in the crate being compiled,
