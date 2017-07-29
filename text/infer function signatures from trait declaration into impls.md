@@ -23,7 +23,8 @@ You would leverage the trait name to specify many detailed signatures.
 Note that this would not make writing the implementation any harder:-
 
 Unlike with general purpose whole-program inference , constraining is already implied by the trait itself; 
-The compiler already knows that one must match the other, and when it doesn't it reports an error. 
+The compiler already knows that one must match the other, and when it doesn't it reports an error.
+
 Compared to C++, Rusts syntax allows the ommision of types whilst still parsing parameter names in a straightforward manner, 
 creating this opportunity. 
 The lack of overloading *within* a trait/impl means there is no need to write the types to disambiguate the functions; 
@@ -85,8 +86,8 @@ if you make an error;
 also the programmer *must* have the trait documentation or original source at hand 
 (or gain enough guidance from the error message) in order to actually write the implementation in the first place.
 
-as far as users go, the point is the trait should suffice; there may be example code close to the trait decl;
-trait implemenations are easy to search for, thanks to rusts syntax.
+as far as users go, the point is refering to the trait should suffice; there may be example code close to the trait decl;
+trait implemenations are easy to search for, thanks to rusts syntax. *RustDoc* already gives browseable reference; trait declarations are very easy to grep for, and future IDE tools may have other interactive assists.
 
 As such , this should not be a problem - even for cross-module implementations
 
