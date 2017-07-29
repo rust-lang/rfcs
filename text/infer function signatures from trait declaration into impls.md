@@ -13,6 +13,8 @@ Rust signatures can become quite heavy with nested angle-bracketed types, trait-
 Also,coming from C++, the need to write (and reference) traits *before* you can write 'overloads' comes as a shock,
 especially for people trying to escape the repitition of 'header files'.
 
+(Furthermore, the types are in a different location ```type argname``` vs ```argname:type```. )
+
 However, if the trait was used to *avoid* repeating information, 
 they would come across as more of a virtue: 
 they would directly *save* repetition when writing many functions following a similar pattern. 
@@ -91,8 +93,8 @@ As such , this should not be a problem - even for cross-module implementations
 
 # Alternatives
 
-allowing more general whole-program inference;
-another way to streamline the number of mental steps when writing trait 'impls' 
+* allowing more general whole-program inference;
+* another way to streamline the number of mental steps when writing trait 'impls' 
 would be to swap the trait/self-type order as this is more coherent with the function declarations themselves 
 (no need to mentally swap them back and forth), as well as 'trait object casting' (type as trait) 
 and disambiguation syntax <X as Trait>::method_name() ; 
@@ -100,6 +102,7 @@ this would be the subject of another RFC (a very different request aimed at an o
 It would be an alternate declaration syntax complemeting the existing one. 
 impl type as trait {..}, or impl type:trait {} It would complement this suggestion.
 
+* Getting back to the expectations from C++, if writing the types out, one might expect the reverse: that the language could infer which *trait* is being implemented, allowing that to be ommitted; unfortunately this goes against the idea that the trait is part of the function's namespace.
 
 # Unresolved questions
 
