@@ -122,14 +122,23 @@ will be added to the `Cargo.toml` format.
 Users who want to use the `rand` crate but call it `random` instead can now
 write `rand = { version = "0.3", alias = "random" }`.
 
-When compiling, an external crate is only included if it is used
+When compiling, an external crate is only linked if it is used
 (through either `extern crate`, `use`, or absolute paths).
-This prevents unnecessary inclusion of crates when compiling crates with
-both `lib` and `bin` targets, or which bring in a large number of possible
-dependencies (such as
-[the current Rust Playground](https://users.rust-lang.org/t/the-official-rust-playground-now-has-the-top-100-crates-available/11817)).
-It also prevents `no_std` crates from accidentally including `std`-using
-crates.
+This prevents unused crates from being linked, which is helpful in a number of
+scenarios:
+- Some crates have both `lib` and `bin` targets and want to avoid linking both
+`bin` and `lib` dependencies.
+- `no_std` crates need a way to avoid accidentally linking `std`-using crates.
+- Other crates have a large number of possible dependencies (such as
+[the current Rust Playground](https://users.rust-lang.org/t/the-official-rust-playground-now-has-the-top-100-crates-available/11817)),
+and want to avoid linking all of them.
+
+In order to prevent linking of unused crates,
+after macro expansion has occurred, the compiler will resolve
+`use`, `extern crate`, and absolute paths looking for a reference to external
+crates or items within them. Crates which are unreferenced in these paths
+will not be linked.
+
 
 # Alternatives
 [alternatives]: #alternatives
