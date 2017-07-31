@@ -1,4 +1,4 @@
-- Feature Name: infer-extern-crate
+- Feature Name: immediately-usable-extern-crates
 - Start Date: (fill me in with today's date, YYYY-MM-DD)
 - RFC PR: (leave this empty)
 - Rust Issue: (leave this empty)
@@ -7,13 +7,12 @@
 [summary]: #summary
 
 This RFC reduces redundant boilerplate when including external crates.
-`extern crate` declarations will be inferred from the arguments passed to `rustc`.
 With this change, projects using Cargo
 (or other build systems using the same mechanism)
 will no longer have to specify `extern crate`:
-dependencies added to `Cargo.toml` will be automatically imported.
-Projects which require more flexibility can still use manual `extern crate`
-and will be unaffected by this RFC.
+dependencies added to `Cargo.toml` will be automatically `use`able.
+We continue to support `extern crate` for backwards compatibility
+with the option of phasing it out in future Rust epochs.
 
 # Motivation
 [motivation]: #motivation
@@ -41,7 +40,8 @@ and
 [guide]: #guide
 
 When you add a dependency to your `Cargo.toml`, it is immediately usable within
-the source of your crate:
+the source of your crate. For example, imagine that you needed to print a random
+character. You'd start by adding the `rand` crate to your `Cargo.toml`:
 
 ```
 # Cargo.toml:
@@ -53,11 +53,26 @@ authors = ["Me" <me@mail.com>]
 rand = "0.3"
 ```
 
+And then you can immediately `use` the crate:
+
 ```rust
 // src/main.rs:
+use rand;
 
 fn main() {
-    println!"A random character: {}", rand::random::<char>());
+    let c: char = rand::random();
+    println!("A random character: {}", c);
+}
+```
+
+Alternatively, we can `use` just the specific function we need:
+
+```rust
+use rand::random;
+
+fn main() {
+    let c: char = random();
+    println!("A random character: {}", c);
 }
 ```
 
@@ -70,29 +85,21 @@ For example, `cargo build`-ing a crate `my_crate` with a dependency on `rand`
 results in a call to rustc that looks something like
 `rustc --crate-name mycrate src/main.rs --extern rand=/path/to/librand.rlib ...`.
 
-When an external crate is specified this way,
-the crate will automatically brought into scope as if an
-`extern crate name_of_crate;`
-declaration had been added to the current crate root.
-This behavior won't occur when including a library using the `-l`
+When an external crate is specified this way, it will be automatically
+available to any module in the current crate through `use` statements or
+absolute paths (e.g. `::rand::random()`). It will _not_ be automatically
+imported at root level as happens with current `extern crate`.
+None of this behavior will occur when including a library using the `-l`
 or `-L` flags.
 
-We will continue to support the current `extern crate` syntax,
-both for backwards compatibility and to enable users who want to use manual
-`extern crate` in order to have more fine grained control-- say, if they wanted
-to import an external crate only inside an inner module.
-No automatic import will occur if an `extern crate` declaration for the same
-external dependency appears anywhere within the crate.
-For example, if `rand = "0.3"` is listed as a dependency in Cargo.toml
-and `extern crate rand;` appears somewhere in the crate being compiled,
-then no implicit `extern crate rand;` will be added.
-If Cargo.toml were to also list another dependency, `log = "0.3"`, and no
-`extern crate log;` appears in the crate being compiled,
-then an `extern crate log;` would be implicitly added.
+We will continue to support the current `extern crate` syntax for backwards
+compatibility. `extern crate foo;` will behave just like it does currently.
+Writing `extern crate foo;` will not affect the availability of `foo` in
+`use` and absolute paths as specified by this RFC.
 
 Additionally, items such as modules, types, or functions that conflict with
-the names of implicitly imported crates will cause the implicit `extern crate`
-declaration to be removed.
+the names of implicitly imported crates will result in a warning and will
+require the external crate to be brought in manually using `extern crate`.
 Note that this is different from the current behavior of the
 implicitly-imported `std` module.
 Currently, creating a root-level item named `std` results in a name conflict
@@ -109,10 +116,20 @@ However, as specified in
 macros 2.0 will no longer require `#[macro_use]`, replacing it with
 normal `use` declarations, for which no `extern crate` is required.
 
-One final remaining use case of `extern crate` syntax is for aliasing, i.e.
-`extern crate foo as bar;`. There is no way to infer aliasing information from
-Cargo.toml, so aliased crates will need to be specied using `extern crate`
-syntax.
+One remaining use case of `extern crate` syntax is for aliasing, i.e.
+`extern crate foo as bar;`. In order to support aliasing, a new "alias" key
+will be added to the `Cargo.toml` format.
+Users who want to use the `rand` crate but call it `random` instead can now
+write `rand = { version = "0.3", alias = "random" }`.
+
+When compiling, an external crate is only included if it is used
+(through either `extern crate`, `use`, or absolute paths).
+This prevents unnecessary inclusion of crates when compiling crates with
+both `lib` and `bin` targets, or which bring in a large number of possible
+dependencies (such as
+[the current Rust Playground](https://users.rust-lang.org/t/the-official-rust-playground-now-has-the-top-100-crates-available/11817)).
+It also prevents `no_std` crates from accidentally including `std`-using
+crates.
 
 # Alternatives
 [alternatives]: #alternatives
@@ -134,3 +151,7 @@ It seems like a useful warning, but it's also a potential
 backwards-compatibility hazard for crates which previously depended on a
 crate, didn't import it with `extern crate`, and had a root-level item with
 an overlapping name (although this seems like an extreme edge case).
+- `extern crate foo` has linking side effects even if `foo` isn't visibly
+used from Rust source. After this change, `use foo;` would have similar
+effects. This seems potentially undesirable-- what's the right way of handling
+crates which are brough in only for their side effects?
