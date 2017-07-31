@@ -154,4 +154,4 @@ an overlapping name (although this seems like an extreme edge case).
 - `extern crate foo` has linking side effects even if `foo` isn't visibly
 used from Rust source. After this change, `use foo;` would have similar
 effects. This seems potentially undesirable-- what's the right way of handling
-crates which are brough in only for their side effects?
+crates which are brought in only for their side effects?
