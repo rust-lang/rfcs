@@ -224,8 +224,8 @@ Several zero-size structs implementing `Distribution` specify simple distributio
     and is implemented for `f32` and `f64`
 *   `Closed01` is like `Uniform01` but for `[0, 1]` (thus including 1.0)
 *   `Open01` is like `Uniform01` but for `(0, 1)` (thus excluding 0.0)
-*   `Default` chooses `Uniform` or `Uniform01` depending on type, and could
-    be extended to other types.
+*   `Default` uses `Uniform` or `Uniform01` depending on type (and can be
+    extended for other types)
 
 `Rand<Default>` is roughly the same as the
 [old `Rand`](https://docs.rs/rand/0.3.15/rand/trait.Rand.html); currently it doesn't
@@ -260,6 +260,64 @@ data access).
 
 Most distributions are implemented in public sub-modules, then *also* imported
 into `distributions` via `pub use`. Possibly the sub-modules should be hidden.
+
+### `Rand` vs `Distribution`
+
+You may have noticed that there is some redundancy between `Rand` and
+`Distribution`, namely that one implements the other automatically:
+
+```
+/// Types (distributions) that can be used to create a random instance of `T`.
+pub trait Distribution<T> {
+    /// Generate a random value of `T`, using `rng` as the
+    /// source of randomness.
+    fn sample<R: Rng+?Sized>(&self, rng: &mut R) -> T;
+}
+
+/// Generic trait for sampling random values from some distribution
+pub trait Rand<Dist> {
+    fn rand<R: Rng+?Sized>(rng: &mut R, dist: Dist) -> Self;
+}
+
+impl<T, D: Distribution<T>> Rand<D> for T {
+    fn rand<R: Rng+?Sized>(rng: &mut R, dist: D) -> Self {
+        dist.sample(rng)
+    }
+}
+```
+
+This means that for any implementation of a distribution, there are two
+equivalent ways of using it:
+
+```
+impl Distribution<i64> for Uniform { ... }
+
+// via Rand:
+let x = i64::rand(rng, Uniform);
+// via Distribution:
+let x: i64 = Uniform.sample(rng);
+```
+
+We could remove this redundancy in one of two ways:
+
+1.  Remove `Rand`. `fn random()` would become `Default.sample(&mut thread_rng())`.
+2.  Remove the `Distribution` trait and implement `Rand<D>` directly. In this
+    case `Default`, `Uniform` etc. stay, but no longer implement a common trait.
+
+Should we keep both? As a third option, we could replace `Rand<D>` with a
+simpler `Rand`:
+
+```
+pub trait Rand {
+    fn rand<R: Rng+?Sized>(rng: &mut R) -> Self;
+}
+
+impl<T> Rand for T where Default: Distribution<T> {
+    fn rand<R: Rng+?Sized>(rng: &mut R) -> Self {
+        Default.sample(rng)
+    }
+}
+```
 
 ### Convenience functions and more distributions
 
