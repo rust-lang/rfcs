@@ -194,43 +194,126 @@ pub trait SeedableRng<Seed>: Rng {
 This section concerns creating random values of various types and with various
 distributions given a generator (`Rng`).
 
-This part of the design already has a fairly good story in the strawman design,
-namely the [`Rand` trait] and associated
-[`Distribution` trait and impl of Rand](https://github.com/dhardy/rand/blob/master/src/distributions/mod.rs#L58), the available distributions, and the
-[`random`](https://dhardy.github.io/rand/rand/fn.random.html) and
-[`random_with`](https://dhardy.github.io/rand/rand/fn.random_with.html)
-convenience functions.
+The strawman design showcases two traits for generating random values of the
+current type, the [`Rand`] trait and [`SimpleRand`]. It is the intention to only
+keep one of these, and name whichever remains `Rand`. The first, (currently
+named) [`Rand`], supports parameterisation by a distribution, thus giving
+explicit control over how values are generated. The second, [`SimpleRand`] lacks this
+parameterisation, making simple usage simpler but requiring usage of
+distributions directly for other cases.
 
-The `Rand::rand(rng, distribution)` function takes the `distribution` parameter
-by value; this might cause extra copying in some cases. But most distributions
-are small or zero-size; the `Gamma`-derived ones are the only ones larger than
-three `f64`s, and the copy can likely be optimised out(?).
+Both "Rand" traits work in concert with the [`Distribution`] trait; more on that
+below. For these examples we'll use two implementations: the "best-for-the-type"
+[`Default`] distribution and the [`Range`] distribution.
+
+Now to some [`Rand`] examples:
+
+```rust
+use rand::distributions::{Rand, Default, Range};
+let mut rng = rand::thread_rng();
+
+// Type annotation needed; two options:
+let byte: u8 = Rand::rand(&mut rng, Default);
+let byte = u8::rand(&mut rng, Default);
+
+// For ranges, the generated type is the same as the parameter type:
+let ranged = Rand::rand(&mut rng, Range::new(-99, 100));
+```
+
+And some [`SimpleRand`] examples:
+
+```rust
+use rand::distributions::{SimpleRand, Distribution, Range};
+let mut rng = rand::thread_rng();
+
+// Again, type annotation is needed; two options:
+let byte: u8 = SimpleRand::simple_rand(&mut rng);
+let byte = u8::simple_rand(&mut rng);
+
+// SimpleRand does not support other distributions, so we have to use the
+// distribution directly:
+let ranged = Range::new(-99, 100).sample(&mut rng);
+```
+
+Note that the `Default` distribution also supports direct sampling, so we don't
+need *either* version of `Rand`:
+
+```
+use rand::distributions::{Distribution, Default};
+let mut rng = rand::thread_rng();
+
+let byte: u8 = Default.sample(&mut rng);
+```
+
+#### Pass by copy?
+
+Currently [`Rand::rand`] takes the distribution parameter by value. This is the
+best option for zero-size distribution types like [`Default`] and [`Open01`], since
+it allows call syntax like `Rand::rand(&mut rng, Default)` (second parameter
+does not need to be referenced).
+
+Most distribution types are fairly small, e.g. `Range` is two or three values
+of the parameterised type, so for the most part pass-by-value is reasonable,
+although for example `Gamma` is 40 bytes. Can the compiler optimise this?
+
+On the other hand, `Distribution::sample` takes itself by reference. This is
+required for the special `Weighted` distribution, which does not support `Copy`.
+Does this add overhead? Note that currently `rand` is implemented using
+`sample`, which in some ways is the worst of both worlds. Should distributions
+be required to support `Copy` or, at least, should `sample` take `self` by
+value?
 
 ### Distributions
 
-The [`Distribution`](https://dhardy.github.io/rand/rand/distributions/trait.Distribution.html)
-trait replaces `rand`'s current
-[`IndependentSample`](https://docs.rs/rand/0.3.15/rand/distributions/trait.IndependentSample.html)
+The [`Distribution`] trait replaces `rand`'s current [`IndependentSample`]
 trait. The `Sample` trait is removed; I believe it was originally intended for use
 in random processes like random walks; these are discrete-time (stochastic)
 models, thus `advance_state()` and `get_state()` functions are more applicable
 than `sample()`; in any case this is beyond the scope of `rand`.
 
-Several zero-size structs implementing `Distribution` specify simple distributions:
+The surviving trait is quite simple:
 
-*   `Uniform` specifies uniform distribution over the entire range available, and
+```rust
+/// Types (distributions) that can be used to create a random instance of `T`.
+pub trait Distribution<T> {
+    /// Generate a random value of `T`, using `rng` as the
+    /// source of randomness.
+    fn sample<R: Rng+?Sized>(&self, rng: &mut R) -> T;
+}
+```
+
+This could be extended with other functions such as
+`fn map<F: Fn(T) -> T>(&self, f: F) -> MappedDistribution<T, F>`, but I do not
+see a good rationale.
+
+Any implementation, such as [`Default`], supports usage via `sample`:
+`Default.sample(&mut rng)`. (Note that `struct Default;` is valueless; Rust
+allows objects to be created without any extra syntax: `let x = Default;`.)
+
+Several zero-size structs implementing [`Distribution`] specify simple distributions:
+
+*   [`Uniform`] specifies uniform distribution over the entire range available, and
     is implemented for all integer types and `bool`
-*   `Uniform01` specifies uniform distribution over the half-open range `[0, 1)`,
+*   [`Uniform01`] specifies uniform distribution over the half-open range `[0, 1)`,
     and is implemented for `f32` and `f64`
-*   `Closed01` is like `Uniform01` but for `[0, 1]` (thus including 1.0)
-*   `Open01` is like `Uniform01` but for `(0, 1)` (thus excluding 0.0)
-*   `Default` uses `Uniform` or `Uniform01` depending on type (and can be
+*   [`Closed01`] is like [`Uniform01`] but for `[0, 1]` (thus including 1.0)
+*   [`Open01`] is like [`Uniform01`] but for `(0, 1)` (thus excluding 0.0)
+*   [`Default`] uses [`Uniform`] or [`Uniform01`] depending on type (and can be
     extended for other types)
 
-`Rand<Default>` is roughly the same as the
+[`Default`] has roughly the same capabilities as the
 [old `Rand`](https://docs.rs/rand/0.3.15/rand/trait.Rand.html); currently it doesn't
 support arrays, tuples, `Option`, etc., but it could conceivably, and probably
-also `derive(Rand)`. The others are new.
+also `derive(Rand<Default>)` or something similar.
+
+It should be noted that there is no agreement on using the name `Default`. In
+particular, there is a naming conflict with `std::default::Default`, which can
+lead to surprising compiler messages if the user forgets to
+`use rand::Default;`. Similarly, `Uniform` and `Uniform01` are open to
+adjustment. All three could be replaced with a single `Uniform`; this just
+leaves two semantic issues: the range differs by type, and some possible
+type-dependent implementations (such as for `Option`) cannot practically have
+uniform distribution.
 
 There is one further uniform distribution:
 
@@ -250,8 +333,8 @@ current `rand`:
 *   `Normal`, `LogNormal`
 *   `Gamma`, `ChiSquared`, `FisherF`, `StudentT`
 
-Currently these are only implemented for `f64`. Probably they could be extended
-to `f32` quite easily.
+Currently these are only implemented for `f64`. They could be extended to `f32`
+but this might require adding some more lookup tables to the crate.
 
 Internally, `Exp(1)` and `N(0, 1)` (standard normal) fixed distributions are
 used; these could be exposed via new zero-size distribution structs.
@@ -263,72 +346,66 @@ into `distributions` via `pub use`. Possibly the sub-modules should be hidden.
 
 ### `Rand` vs `Distribution`
 
-You may have noticed that there is some redundancy between `Rand` and
-`Distribution`, namely that one implements the other automatically:
+As suggested above, both `Rand` traits are basically wrappers around
+`Distribution`:
 
-```
-/// Types (distributions) that can be used to create a random instance of `T`.
-pub trait Distribution<T> {
-    /// Generate a random value of `T`, using `rng` as the
-    /// source of randomness.
-    fn sample<R: Rng+?Sized>(&self, rng: &mut R) -> T;
-}
-
-/// Generic trait for sampling random values from some distribution
-pub trait Rand<Dist> {
-    fn rand<R: Rng+?Sized>(rng: &mut R, dist: Dist) -> Self;
-}
-
+```rust
 impl<T, D: Distribution<T>> Rand<D> for T {
-    fn rand<R: Rng+?Sized>(rng: &mut R, dist: D) -> Self {
-        dist.sample(rng)
+    fn rand<R: Rng+?Sized>(rng: &mut R, distr: D) -> Self {
+        distr.sample(rng)
     }
 }
-```
 
-This means that for any implementation of a distribution, there are two
-equivalent ways of using it:
-
-```
-impl Distribution<i64> for Uniform { ... }
-
-// via Rand:
-let x = i64::rand(rng, Uniform);
-// via Distribution:
-let x: i64 = Uniform.sample(rng);
-```
-
-We could remove this redundancy in one of two ways:
-
-1.  Remove `Rand`. `fn random()` would become `Default.sample(&mut thread_rng())`.
-2.  Remove the `Distribution` trait and implement `Rand<D>` directly. In this
-    case `Default`, `Uniform` etc. stay, but no longer implement a common trait.
-
-Should we keep both? As a third option, we could replace `Rand<D>` with a
-simpler `Rand`:
-
-```
-pub trait Rand {
-    fn rand<R: Rng+?Sized>(rng: &mut R) -> Self;
-}
-
-impl<T> Rand for T where Default: Distribution<T> {
-    fn rand<R: Rng+?Sized>(rng: &mut R) -> Self {
+impl<T> SimpleRand for T where Default: Distribution<T> {
+    fn simple_rand<R: Rng+?Sized>(rng: &mut R) -> Self {
         Default.sample(rng)
     }
 }
 ```
 
+This implies that the `Rand` traits could be removed altogether without any
+loss of functionality. Alternatively, we could remove the `Distribution` trait,
+keep the distributions (`Default`, `Range`, etc.), and implement `Rand`
+directly:
+
+```rust
+impl<u32> Rand<Uniform> for u32 {
+    fn rand<R: Rng+?Sized>(rng: &mut R, _distr: Uniform) -> Self {
+        rng.next_u32()
+    }
+}
+```
+
+For the user, this leaves a choice between:
+
+```rust
+// simple Rand (SimpleRand in this document):
+use rand::Rand;
+let x = i64::rand(rng);
+
+// complex Rand:
+use rand::Rand;
+let y = i64::rand(rng, Default);
+
+// no Rand:
+use rand::Distribution;
+let z: i64 = Default.sample(rng);
+
+// in all cases, we can still have:
+let a: i64 = rand::random();
+```
+
 ### Convenience functions and more distributions
 
-At the top-level of the crate, two convenience functions are available; the
-first is roughly equivalent to that in the current `rand` while the second is
-new:
+The above examples all get randomness from `thread_rng()`. For this case, two
+convenience functions are available:
 
-*   `random() -> T` using the thread-local `Rng` and generating any value
-    supporting `Rand<Default>`
-*   `random_with(distribution) -> T` instead generating values using the given
-    `distribution` (which can be of any type supporting `Distribution`)
+*   [`random`], essentially `fn random() { Default.sample(&mut thread_rng()) }`
+*   [`random_with`], essentially
+    `fn random_with<D: Distribution>(distr: D) { distr.sample(&mut thread_rng()) }`
+
+These do not require a `Rand` trait. Since calling `thread_rng()` has a little
+overhead, these functions are slightly inefficient when called multiple times.
 
 Additionally, within the `distributions` module, some more convenience functions
 are available:
@@ -340,11 +417,15 @@ It is debatable whether these are worth keeping and possibly extending to includ
 `uniform01(rng) -> T` etc. They are convenient when used with iterators (see below).
 
 A couple more distributions are available using functions of the same form,
-but (currently) without a `Distribution` implementor representing them:
+but (currently) without a `Distribution` implemention representing them:
 
-*   `codepoint(rng) -> char` generating values uniformly distributed over all valid
-    Unicode codepoints, even though many are unassigned. (This may be useless?)
-*   `ascii_word_char(rng) -> char` uniformly selects from `A-Z`, `a-z` and `0-9`
+*   [`codepoint`] `(rng) -> char` generating values uniformly distributed over all valid
+    Unicode codepoints, even though many are unassigned. This may be useless
+    but is the most obvious implementation of `Distribution<char>` for
+    [`Uniform`] and [`Default`].
+*   [`ascii_word_char`] `(rng) -> char` uniformly selects from `A-Z`, `a-z` and
+    `0-9`, thus is convenient for producing basic random "words" (see usage
+    with iterators below).
 
 ### Iteration
 
@@ -404,6 +485,23 @@ decent compromise could be reached.
 We *could* leave `rand` as is for now. We could even stabilise the current design.
 But I haven't seen anyone advocate this option.
 
+@Lokathor proposed an alternative design for distributions: make each a trait:
+
+```rust
+pub trait Rand: Sized {
+    fn rand<R: Rng+?Sized>(rng: &mut R) -> Self;
+}
+
+pub trait RangedRand: Rand + PartialOrd {
+    fn rand_range<R: Rng+?Sized>(rng: &mut R, low: Self, high: Self) -> Self;
+}
+```
+
+This however lacks a way of separating parameterisation of the distribution
+from sampling; for example `Range` does some calculations in `Range::new`,
+creates a simple object with two or three values, then does minimal work during
+sampling (`my_range.sample(&mut rng)`).
+
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
@@ -415,7 +513,27 @@ derive `Rand<Default>` or maybe even support custom distributions. In the
 strawman design I simply deleted this sub-crate since I have no interest in
 creating random values this way.
 
+Should we introduce `RangeTo::new(high)` (same as `Range::new(0, high)`) to save
+extra add/subtract? No...?
+
+Maybe we should replace `Range` with `RangeInt`, `RangeFloat` etc.?
+
 [Crate evaluation thread]: https://internals.rust-lang.org/t/crate-evaluation-for-2017-07-25-rand/5505
 [Strawman design PR]: https://github.com/rust-lang-nursery/rand/pull/161
 [Strawman design doc]: https://dhardy.github.io/rand/rand/index.html
-[`Rand` trait]: https://dhardy.github.io/rand/rand/distributions/trait.Rand.html
+[`Rand`]: https://dhardy.github.io/rand/rand/distributions/trait.Rand.html
+[`SimpleRand`]: https://dhardy.github.io/rand/rand/distributions/trait.SimpleRand.html
+[`Distribution`]: https://dhardy.github.io/rand/rand/distributions/trait.Distribution.html
+[`Default`]: https://dhardy.github.io/rand/rand/struct.Default.html
+[`Uniform`]: https://dhardy.github.io/rand/rand/distributions/struct.Uniform.html
+[`Uniform01`]: https://dhardy.github.io/rand/rand/distributions/struct.Uniform01.html
+[`Open01`]: https://dhardy.github.io/rand/rand/distributions/struct.Open01.html
+[`Closed01`]: https://dhardy.github.io/rand/rand/distributions/struct.Closed01.html
+[`Range`]: https://dhardy.github.io/rand/rand/distributions/range/struct.Range.html
+[`Rand::rand`]: https://dhardy.github.io/rand/rand/distributions/trait.Rand.html#tymethod.rand
+[`random`]: https://dhardy.github.io/rand/rand/fn.random.html
+[`random_with`]: https://dhardy.github.io/rand/rand/fn.random_with.html
+[`IndependentSample`]: https://docs.rs/rand/0.3.16/rand/distributions/trait.IndependentSample.html
+[`rand_derive`]: https://docs.rs/rand_derive/0.3.0/rand_derive/
+[`codepoint`]: https://dhardy.github.io/rand/rand/distributions/fn.codepoint.html
+[`ascii_word_char`]: https://dhardy.github.io/rand/rand/distributions/fn.ascii_word_char.html
