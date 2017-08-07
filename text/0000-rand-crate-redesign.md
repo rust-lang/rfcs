@@ -194,6 +194,10 @@ pub trait SeedableRng<Seed>: Rng {
 This section concerns creating random values of various types and with various
 distributions given a generator (`Rng`).
 
+Most of this functionality is contained in the [`distributions`] module.
+(For a time this module was renamed `dist` for brevity, but renamed back to
+avoid confusion. `distr` might be another possibility.)
+
 The strawman design showcases two traits for generating random values of the
 current type, the [`Rand`] trait and [`SimpleRand`]. It is the intention to only
 keep one of these, and name whichever remains `Rand`. The first, (currently
@@ -317,17 +321,19 @@ uniform distribution.
 
 There is one further uniform distribution:
 
-*   `Range` specifies uniform distribution over a range `[a, b)` and supports
+*   [`Range`] specifies uniform distribution over a range `[a, b)` and supports
     integer and floating-point types
 
-This `Range` is unchanged from the current `rand`, and cannot be extended to
-user-defined types despite the presence of a backing trait, `SampleRange`.
-Possibly this should be adapted, although it should be noted that the internal
-details are designed to support a specific set of types, and in any case a
-user may create a new `MyRange` type implementing `Distribution`.
+This [`Range`] is minimally changed from the current `rand`, and supports
+extension to user-defined types by exposing its internal fields. An alternative
+implementation, [`range2`], has been written in an attempt to improve extension
+to other types and avoid the need for an unused `zone` field with float types,
+but has some drawbacks, perhaps most notably that `Range` is parameterised so
+that `Range::new(low, high)` must be replaced with `new_range(low, high)` or
+`Range::<T>::new(low, high)`.
 
-Finally, there are several non-uniform distributions, unchanged from the
-current `rand`:
+Finally, there are several more [`distributions`],
+unchanged from the current `rand`:
 
 *   `Exp`
 *   `Normal`, `LogNormal`
@@ -523,7 +529,14 @@ sampling (`my_range.sample(&mut rng)`).
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
-Lots and lots; see above.
+Lots and lots; perhaps the biggest ones:
+
+*   TODO: generators
+*   Rename the `distributions` module?
+*   Rename `Uniform`, `Default`, etc.?
+*   Keep the parameterised `Rand<Distr>`, replace with the simple `Rand` or
+    remove both?
+*   Replace [`range`] with [`range2`] ?
 
 The `derive_rand` sub-crate of the current `rand` provides another method to
 generate random values of the current type. This could probably be adjusted to
@@ -555,3 +568,6 @@ Maybe we should replace `Range` with `RangeInt`, `RangeFloat` etc.?
 [`rand_derive`]: https://docs.rs/rand_derive/0.3.0/rand_derive/
 [`codepoint`]: https://dhardy.github.io/rand/rand/distributions/fn.codepoint.html
 [`ascii_word_char`]: https://dhardy.github.io/rand/rand/distributions/fn.ascii_word_char.html
+[`range`]: https://dhardy.github.io/rand/rand/distributions/range/index.html
+[`range2`]: https://dhardy.github.io/rand/rand/distributions/range2/index.html
+[`distributions`]: (https://dhardy.github.io/rand/rand/distributions/index.html)
