@@ -467,6 +467,24 @@ supports sampling one element from a sequence (`Choose`), sampling several
 [`WeightedChoice`](https://dhardy.github.io/rand/rand/sequences/struct.WeightedChoice.html)
 is a support type allowing weighted sampling from a sequence.
 
+### `rand_derive`
+
+The current `rand` has a sub-crate, [`rand_derive`]
+([source code](https://github.com/rust-lang-nursery/rand/tree/master/rand-derive)).
+Probably something similar could be designed for [`Default`] or `Rand<Default>`,
+but due to the current author's lack of interest this has not been investigated.
+
+## `no_std` support
+
+This was requested, and has been implemented in the refactor by hiding many
+parts of rand behind `#[cfg(feature="std")]`. Without `std` quite a few features
+are removed, including `thread_rng()`, `random()`, and the entire `os` module
+which normally provides entropy for initialisation.
+
+API doc can be generated via `cargo doc --no-default-features`, but is not
+currently hosted (TODO), and `no_std` support is not automatically tested
+(TODO; use `cargo build --no-default-features` for now).
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
