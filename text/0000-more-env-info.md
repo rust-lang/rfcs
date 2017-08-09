@@ -18,14 +18,11 @@ As a system programming language, it would be good for Rust to know the system i
 # Detailed design
 [design]: #detailed-design
 
-This RFC would like to introduce the following fields to `std::env::consts`:
+This RFC would like to introduce the following field to `std::env::consts`:
 
 ```rust
 /// Conventional linebreak of current platform.
 pub const LINEBREAK: &'static str;
-/// Word size in bits the program has been compiled into.
-/// Commonly 32 or 64.
-pub const WORD_SIZE: &'static u32;
 ```
 
 Since rust is a compiled language, these information has to be derived from the compiler.
@@ -39,8 +36,3 @@ Introduce more items into the standard library. It also requires the compiler to
 [alternatives]: #alternatives
 
 These information can partly be retrieved through system APIs. However, doing so can make programs less adaptive because there is no unified interface.
-
-# Unresolved questions
-[unresolved]: #unresolved-questions
-
-The datatype returned by `word_size()` is not yet determined.
