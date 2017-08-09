@@ -21,22 +21,14 @@ As a system programming language, it would be good for Rust to know the system i
 This RFC would like to introduce the following functions to `std::env`:
 
 ```rust
-/// Platform architecture.
-/// e.g. `arm`, `x86_64` and `i686`.
-pub fn arch() -> String;
 /// Conventional linebreak of current platform.
 pub fn linebreak() -> String;
-/// Current operating system.
-/// e.g. `windows`, `linux` and `darwin`.
-pub fn os() -> String;
 /// Word size in bits the program has been compiled into.
 /// Commonly 32 or 64.
 pub fn word_size() -> u32;
 ```
 
 Since rust is a compiled language, these information has to be derived from the compiler.
-
-Documentation should list all possible results for `arch()` and `os()`.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -48,11 +40,7 @@ Introduce more items into the standard library. It also requires the compiler to
 
 These information can partly be retrieved through system APIs. However, doing so can make programs less adaptive because there is no unified interface.
 
-It's been considered to use enum over string to carry information for `arch()` and `os()`, but it seems less adaptive as time going and new thing coming.
-
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
 The datatype returned by `word_size()` is not yet determined.
-
-Should we provide the entire target triplet like `x86_64-unknown-linux` in `target()` rather than separating them into `arch()` and `os()`?
