@@ -11,21 +11,21 @@ Introduce more potentially useful environment-related functions to `std::env`.
 # Motivation
 [motivation]: #motivation
 
-Programs sometimes need to know about their working environment to do their job properly. For example, linebreak convention differs for Windows and *NIX. Such discrepancy can lead to problems easily, especially when a program needs to communicate with aged third-party libraries.
+Programs sometimes need to know about their working environment to do their job properly. For example, linebreak convention differs for Windows and \*NIX. Such discrepancy can lead to problems easily, especially when a program needs to communicate with aged third-party libraries.
 
 As a system programming language, it would be good for Rust to know the system it works on.
 
 # Detailed design
 [design]: #detailed-design
 
-This RFC would like to introduce the following functions to `std::env`:
+This RFC would like to introduce the following fields to `std::env::consts`:
 
 ```rust
 /// Conventional linebreak of current platform.
-pub fn linebreak() -> String;
+pub const LINEBREAK: &'static str;
 /// Word size in bits the program has been compiled into.
 /// Commonly 32 or 64.
-pub fn word_size() -> u32;
+pub const WORD_SIZE: &'static u32;
 ```
 
 Since rust is a compiled language, these information has to be derived from the compiler.
