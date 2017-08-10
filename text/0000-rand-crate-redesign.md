@@ -9,13 +9,20 @@
 Evaluate options for the future of `rand` regarding both cryptographic and
 non-cryptographic uses.
 
+There is a strawman design which implements or demonstrates many of the changes
+suggested in this document, but is not entirely in-sync with the suggestions
+here.
+
 See also:
 
 * [Crate evaluation thread]
 * [Strawman design PR]
 * [Strawman design doc]
 
-# Motivation
+# Introduction
+[introduction]: #introduction
+
+## Motivation
 [motivation]: #motivation
 
 The [crate evaluation thread] brought up the issue of stabilisation of the `rand`
@@ -27,7 +34,48 @@ approach to random number generation is sufficient (*good enough*) or whether
 splitting the crate into two is the better option: one focussed on cryptography,
 the other on numerical applications.
 
-# Guide-level explanation
+## Background
+[background]: #background
+
+A *Pseudo-Random Number Generator*, abbreviated PRNG or simply RNG, is a
+deterministic algorithm for generating *random-like* numbers. Such algorithms
+typically have a fixed-size state space, a *seed* function to produce an initial
+state from some value, an *advance* function to step from one state to the next,
+and a *generate* function to yield a value in the output domain (type). This
+implies the following properties:
+
+*   Generated numbers are reproducible, when the algorithm and seed (or initial
+    state) is known
+*   All PRNGs have a finite period: eventually the *advance* function will
+    reproduce a prior state (not necessarily the initial one), and the sequence
+    of numbers will repeat
+
+Given a fixed state-space of `k` bits, at most `2^k` states are possible. A
+good PRNG should have a large period, possibly close to `2^k`; this period
+may depend on the seed value, but good PRNGs should ensure a large period for
+all seeds.
+
+To be useful, a PRNGs should usually also have the following properties:
+
+*   Require little memory and have fast computation
+*   Generated values are uniformly distributed across the output domain
+*   The distribution of each value is indepedent of previously generated
+    values(1)
+*   For cryptographic applications, it is not possible to predict knowledge of
+    prior values does not aid in predicting the next value(1)
+
+Note (1): obviously once a PRNG has completed its initial period and started
+repeating itself, the above properties are no longer possible. It is therefore
+required that the period is very long.
+
+Further, a PRNG may offer a *jump-ahead* function to quickly calculate the
+state after a large arbitrary number of steps `v`. This allows a random number
+stream to be deterministically partitioned into a number of sub-streams.
+
+L'Ecuyer provides some more background on PRNGs in
+[Random Number Generation](https://scholar.google.com/citations?view_op=view_citation&hl=en&user=gDxovowAAAAJ&citation_for_view=gDxovowAAAAJ:d1gkVwhDpl0C) (Springer, 2012).
+
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 Since this concerns one (or more) crates outside the standard library, it is
@@ -38,11 +86,19 @@ still needs writing, but must wait on design decisions.
 [reference-level-explanation]: #reference-level-explanation
 
 ## Generation API
+[generation-API]: #generation-API
 
-This section concerns the `Rng` trait, but not specifically implementations or
-generation of values of other types.
+This section concerns the `Rng` trait and extension traits, but not
+specifically implementations or generation of values of other types.
 
-Aside: one proposal is to rename `Rng` to `Generator`.
+The `Rng` trait covers *generation* of values. It is not specific to
+[deterministic] PRNGs; instead there is an extension trait `SeedableRng: Rng`
+covering deterministic seeding.
+
+It has been proposed to rename `Rng` to `Generator`; this proposal has not
+seen a lot of support.
+
+### `Rng`
 
 The `Rng` trait governs what types can be generated directly, and there appears
 to be consensus on removing all convenience functions not concerned with
@@ -66,15 +122,23 @@ proposed to remove `next_f32` and `next_f64`. This simplifies the API and remove
 non-trivial integer to float conversions from the trait, but is not truely
 necessary.
 
-Next, it has been suggested that `next_u8`, `next_u16` and (where supported)
-`next_u128` should be added. That gives:
+It has been suggested that `next_u8`, `next_u16` and (where supported)
+`next_u128` functions should be added. However, provided that default
+implementations are included, these can be added to the trait in the future if
+desired. It seems unlikely that PRNGs would offer faster generation of `u8` and
+`u16` values than simply casting (`next_u32() as u8`), and the only curent
+alternative, OS-based-generation, has high overhead; therefore there appears
+little use for `next_u8` and `next_u16` functions. `next_u128` on the other
+hand may have some utility: [native 128-bit generators already
+exist](http://www.math.sci.hiroshima-u.ac.jp/~m-mat/MT/SFMT/). This may provide
+some performance benefit to applications requiring many pairs of 64-bit values,
+but I suggest not adding `next_u128` for now unless specifically requested.
 
 ```
 trait Rng {
-    fn next_u8(&mut self) -> u8
-    fn next_u16(&mut self) -> u16
     fn next_u32(&mut self) -> u32
     fn next_u64(&mut self) -> u64
+    // and possibly:
     fn next_u128(&mut self) -> u128
     
     fn fill_bytes(&mut self, dest: &mut [u8])
@@ -82,9 +146,9 @@ trait Rng {
 ```
 
 For crypto purposes, it has been suggested that `fill_bytes` alone would be
-sufficient. For non-crypto purposes, the other methods (at least 32-bit and
-64-bit variants) are desirable for performance, since many RNGs natively
-produce `u32` or `u64` values.
+sufficient. For non-crypto purposes, at least `next_u32` and `next_u64`
+are desirable for performance, since many RNGs natively
+produce these values.
 
 Further to this, there is discussion on whether these methods should all return
 a `Result`. Apparently, some crypto RNGs can estimate available entropy and
@@ -99,53 +163,115 @@ functions to each return a `Result`.
 From the point of view of non-cryptographic numeric random number generation,
 RNGs are usually fast, deterministic functions which have no means to detect
 errors. Some may be able to detect lack of initialisation, but some implementations
-always initialise with a fixed seed if no custom seed is provided. These may cycle,
-likely will be unable to detect cycles (note that returning the same value twice
-does not imply a cycle). Thus for non-crypto usage, returning a `Result` is
-unnecessary, would require extra error handling code or `unwrap`s, and ahs some
-performance penalty. (Note that all distributions would probably need to return
-a `Result` too.)
+always initialise with a fixed seed if no custom seed is provided. PRNGs could
+cycle, but usually have a very long period and no practical way of detecting
+cycles (note that returning the same value twice does not imply a cycle, and
+that a cycle may return to a state later than the initial state). There is
+therefore little use in non-crypto PRNGs returning a `Result`; doing so
+would also require extra error handling in user code or `unwrap` within the
+library, as well as some performance overhead. All distributions would need to
+be adapted.
 
 There is therefore a conflict of design here; [Brian Smith suggests separate
 crypto and non-crypto APIs](https://internals.rust-lang.org/t/crate-evaluation-for-2017-07-25-rand/5505/59?u=dhardy)
 (and presumably crates). This would allow a minimal crypto trait with a single
 `fill_bytes(..) -> Result<..>` method, without impacting performance or
-correctness (`unwrap`) of non-crypto code.
+correctness (`unwrap`) of non-crypto code, while PRNGs have simple methods like
+`next_u32(&mut self) -> u32`.
 
-My personal feeling is that
-[relying on the OS](https://internals.rust-lang.org/t/crate-evaluation-for-2017-07-25-rand/5505/37)
-where there are strong crypto requirements is the best choice, and that where a
-user-space crypto RNG is required, the best design would be something like as
-follows (but I have little experience with cryptography, and this does not allow
-error on cycle detection):
+In support of this split, there is a strong argument that cryptographic
+applications should [relying on OS
+generators](https://internals.rust-lang.org/t/crate-evaluation-for-2017-07-25-rand/5505/37)
+where possible. Further, keeping cryptography-related crates small may be
+useful for security reviews.
 
+If `rand`/`Rng` is split into multiple parts, several approaches are possible;
+what to do here is very much undecided.
+
+First, "strong RNGs" designed for cryptographic usage could:
+
+1.  Use a dedicated `CryptoRng` trait, indepedant of `Rng`, with methods
+    returning a `Result` on failure
+2.  As (1), but add a wrapper struct implementing `Rng` for a `CryptoRng` which
+    panics on errors
+3.  Use the standard `Rng` trait and be designed such that the only time
+    failure is possible is during creation (`fn new() -> Result<Self>`)
+4.  Do not include any generators which may fail in `rand` (leave to dedicated
+    crypto libraries, if at all) [practically, this is equivalent to 3 aside
+    from choice of generators to include]
+
+**Current preference:** undecided, possibly 3
+
+Second, the `rand` crate could:
+
+1.  Remain a single crate
+2.  Have a sub-crate `os_rand` covering only the `OsRng` functionality (via
+    simple functions), and have `rand` depend on `os_rand` for initialisation
+3.  Have a `rand_core` sub-crate including `OsRng` functionality, the `Rng`
+    and/or `CryptoRng` trait(s), and a crypto-approved PRNG; `rand` would
+    depend on `rand_core`
+4.  Keep all generators in `rand` and move all distributions (including
+    `random()`) to a `distributions` crate (or same split but with `rng` and
+    `rand` crate names)
+5.  Split into even more crates...
+
+**Current preference:** undecided
+
+
+### Extension traits
+
+The `SeedableRng` trait should remain as is:
+
+```rust
+pub trait SeedableRng<Seed>: Rng {
+    fn reseed(&mut self, Seed);
+    fn from_seed(seed: Seed) -> Self;
+}
 ```
-let mut seed_buf = [u8; LEN];
-rand::try_fill_from_os(&mut buf)?;  // this may fail
-let mut rng = SomeRng::from_seed(seed_buf);
-// after creation, rng can be assumed not to fail
+
+Another trait could be added to allow jump-ahead:
+
+```rust
+pub trait JumpableRng: Rng {
+    /// Return a copy of self, mutated as if `next_u32` had been called `steps`
+    /// times
+    fn jump_u32(&self, steps: usize) -> Self;
+    
+    // Also jump_u64() ? For most 64-bit generators they should be the same;
+    // for 32-bit generators, jump_u64 should jump twice as fast.
+}
 ```
 
-Besides the issue of `next_u32` etc. and `fill_bytes` potentially failing,
-another advantage of separate crypto and numeric `rand` crates would be absolute
-simplicity of the crypto API and crate. Presumably in this case the numeric
-crate would still depend on the crypto crate for correct initialisation.
+And a trait could allow entropy injection. (Does the type `T` need to be a
+template parameter?)
 
-Further, should the `Rng` trait allow entropy injection and estimation of
-available entropy? Obviously many RNGs won't be able to do the latter.
-Entropy injection might be a viable alternative to periodic reseeding.
+```rust
+pub trait InjectableRng<T>: Rng {
+    /// Add entropy to the RNG, adjusting the sequence of numbers produced.
+    fn inject(&mut self, entropy: T);
+}
+```
+
+These traits can be added in the future without breaking compatibility, however
+they may be worth discussing now.
 
 ## Generators
 
-This section concerns implementations of `Rng`.
+This section concerns implementations of `Rng`;
+[the API is discussed above](generation-API).
 
-`OsRng` currently implements `Rng` by directly sampling from whatever OS
-functionality is available. It might be preferable to implement a
-platform-specific `try_fill_from_os(buf: &mut [u8]) -> Result<()>` function,
-and (possibly) implement `OsRng` as a wrapper around this.
-This approach might be slightly less performant when pulling random numbers
-directly from the OS, but the overhead is probably insignificant relative to
-the system call, and may often be zero.
+In no particular order, this section attempts to cover:
+
+*   which generators should be provided by this library
+*   the story for generators in other crates
+*   requirements of generators included in this library
+*   seeding PRNGs
+
+### Current state of the `rand` crate
+
+Rand currently provides three PRNG algorithms, and a wrapper (`OsRng`) to
+OS-provided numbers. It also provides a couple of simple wrappers, and two
+traits, [`Rng` and `SeedableRng`](generation-API).
 
 Three user-space RNGs are currently provided. Should this change? And should the
 aim be to build a selection of high quality generators or keep the list short?
@@ -162,6 +288,8 @@ the concept is good, the name is weird.
 that seeds from `OsRng`. Possibly this should be replaced with two wrapper structs
 or simply re-bound names: `FastRng` and `CryptoRng`.
 
+TODO: `ReadRng`
+
 `thread_rng()` current constructs a reference-counted periodically-reseeding
 `StdRng` per thread on first use. TODO: allow user override via dynamic dispatch?
 Rename to `crypto_rng()`?
@@ -171,6 +299,49 @@ time it is called. Rename to `fast_rng()` and make it use a `FastRng` type?
 What about `random()`, should for example the documentation point out that
 creating a `weak_rng()` may be useful for performance where crypto-strength
 generation is not needed?
+
+#### OS provision
+
+`OsRng` currently implements `Rng` by directly sampling from whatever OS
+functionality is available.
+The `OsRng` struct is useful in that it separates initialisation from generation
+and that it stores any state required; this is not however as important as it
+might appear.
+
+Initialisation is trivial on most platforms; the exceptions are:
+
+*   Linux: implementation tests whether the `getrandom()` system call is
+    available by calling it, once, using synchronisation primitives;
+    on failure the implementation tries to construct a reader on `/dev/urandom`;
+    the latter can in theory fail but is present since Linux 1.3.30.
+*   Redox constructs a reader on `rand:`; in theory this can fail
+*   NaCl queries an interface, then either explicitly returns an `Err` or, on
+    success, asserts that it has a function pointer then succeeds
+
+After initialisation, panics are possible if:
+
+*   (Linux) getrandom returns an unexpected error
+*   (Linux via urandom, Redox): file read fails
+*   (IOS, FreeBSD, OpenBSD, Fuchsia, Windows, NaCl): system call returns an
+    error
+
+It may be worth investigating which of these panics could conceivably happen,
+and add appropriate testing during initialisation.
+
+On the other hand, since the primary use of `OsRng` is to seed another RNG
+(single use), and since all possible platforms can in theory cause an error
+after initialisation, it might be preferable to replace `OsRng` with a simple
+`try_fill_bytes` function. This would entail doing all synchronisation on first
+use (via a simple synchronisation primitive or thread-local memory), and
+somehow adapting this and/or each `Rng`'s `new_from_rng` function to work
+together (possibly replacing `new_from_rng(other_rng)` with a simple
+`new_from_os()`).
+
+Contrary to the above, an implementation of `Rng` using only the OS may be
+exactly what some users want, since this can be used just like any other `Rng`,
+aside from the lower performance.
+
+### Traits
 
 ### Generator adaptors
 
@@ -531,7 +702,14 @@ sampling (`my_range.sample(&mut rng)`).
 
 Lots and lots; perhaps the biggest ones:
 
-*   TODO: generators
+*   Remove `next_f32` and `next_f64` from `Rng`?
+*   Add `next_u128` to `Rng`?
+*   Add a `CryptoRng` trait or otherwise split out cryptographic generators?
+*   Split the `rand` crate?
+*   Add `JumpableRng` trait?
+*   Add `InjectableRng` trait?
+*   Replace `OsRng` with an `os::try_fill_bytes` function?
+*   TODO: `thread_rng()`, `weak_rng()`, `StdRng`
 *   Rename the `distributions` module?
 *   Rename `Uniform`, `Default`, etc.?
 *   Keep the parameterised `Rand<Distr>`, replace with the simple `Rand` or
