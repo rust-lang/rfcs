@@ -28,7 +28,7 @@ plugins such as lints.
 
 Currently, custom attributes (i.e., those not known to the compiler, e.g.,
 `rustfmt_skip`) are unstable. There is a future compatibility hazard with custom
-attributes: if we add `#[foo]` to the language, than any users using a `foo`
+attributes: if we add `#[foo]` to the language, then any users using a `foo`
 custom attribute will suffer breakage.
 
 There is a potential problem with the interaction between custom attributes and
