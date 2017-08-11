@@ -164,6 +164,11 @@ sufficient demand.
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
-As mentioned in the design section, this does not answer all of the questions for
-supporting a private crates.io server, but it provides the first steps in that
-direction, with the remaining areas considered out of scope for this RFC.
+As mentioned in the design section, this RFC does not answer all of the questions for
+supporting a private crates.io server, but it provides the first steps in that direction,
+with the remaining areas considered out of scope for this RFC. However, the following issues
+will need to be solved before this RFC can be fully implemented, although not
+necessarily directly as part of this RFC:
+
+* There needs to be a mechanism for unstable features in cargo
+* A public API needs to be available for the registry format prior to this feature being available in stable builds
