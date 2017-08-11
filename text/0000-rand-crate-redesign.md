@@ -102,7 +102,7 @@ covering deterministic seeding.
 It has been proposed to rename `Rng` to `Generator`; this proposal has not
 seen a lot of support.
 
-### `Rng`
+### `Rng` trait
 
 The `Rng` trait governs what types can be generated directly, and there appears
 to be consensus on removing all convenience functions not concerned with
@@ -258,6 +258,26 @@ pub trait InjectableRng<T>: Rng {
 
 These traits can be added in the future without breaking compatibility, however
 they may be worth discussing now.
+
+### Creation of RNGs
+
+The `Rng` trait does not cover creation of new RNG objects. It is recommended
+(but not required) that each RNG implement:
+
+*   `pub fn new() -> Self`, setting a new seed obtained from... where?
+*   `pub fn new_from_rng<R: Rng+?Sized>(rng: &mut R) -> Self`
+*   `SeedableRng<Seed>` for some type `Seed`
+
+Other constructors are discouraged; e.g. all current generators have a
+`new_unseeded` function; realistically no one should use this except certain
+tests, where `SeedableRng::from_seed(seed) -> Self` could be used instead.
+
+TODO: is `new_from_rng` a good idea? E.g. naively seeding from another
+generator of the same type can unwittingly create a clone.
+
+TODO: what should be the usual story for creating a new RNG: should the seed
+come from `thread_rng()` allowing deterministic operation or from `OsRng`,
+ensuring "safe" seeding?
 
 ## Generators
 
