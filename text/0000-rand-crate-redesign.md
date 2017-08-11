@@ -264,18 +264,21 @@ they may be worth discussing now.
 The `Rng` trait does not cover creation of new RNG objects. It is recommended
 (but not required) that each RNG implement:
 
-*   `pub fn new() -> Self`, setting a new seed obtained from... where?
+*   `pub fn new() -> Self`, taking a seed from... where? (See below)
 *   `pub fn new_from_rng<R: Rng+?Sized>(rng: &mut R) -> Self`
 *   `SeedableRng<Seed>` for some type `Seed`
+
+Note that the above won't be applicable to all `Rng` implementations; e.g.
+`ReadRng` can only be constructed with a readable object.
 
 Other constructors are discouraged; e.g. all current generators have a
 `new_unseeded` function; realistically no one should use this except certain
 tests, where `SeedableRng::from_seed(seed) -> Self` could be used instead.
 
-TODO: is `new_from_rng` a good idea? E.g. naively seeding from another
+**Question**: is `new_from_rng` a good idea? E.g. naively seeding from another
 generator of the same type can unwittingly create a clone.
 
-TODO: what should be the usual story for creating a new RNG: should the seed
+**Question**: what should be the usual story for creating a new RNG: should the seed
 come from `thread_rng()` allowing deterministic operation or from `OsRng`,
 ensuring "safe" seeding?
 
@@ -291,40 +294,62 @@ In no particular order, this section attempts to cover:
 *   requirements of generators included in this library
 *   seeding PRNGs
 
-### Current state of the `rand` crate
+### PRNG algorithms
 
 Rand currently provides three PRNG algorithms, and a wrapper (`OsRng`) to
 OS-provided numbers. It also provides a couple of simple wrappers, and two
 traits, [`Rng` and `SeedableRng`](generation-API).
 
-Three user-space RNGs are currently provided. Should this change? And should the
-aim be to build a selection of high quality generators or keep the list short?
-Are there any other RNGs worth adding now?
+* [`IsaacRng`] (32-bit) and [`Isaac64Rng`]
+* [`ChaChaRng`]
+* [`XorShiftRng`]
 
-* `IsaacRng` (32-bit) and `Isaac64Rng`
-* `ChaChaRng`
-* `XorShiftRng`
+**Question:** which of these should be kept in `rand`? Likely [`XorShiftRng`]
+should be removed.
 
-The appropriate 32 or 64 variant of Isaac is exposed as `IsaacWordRng`. While
-the concept is good, the name is weird.
+**Question:** what other PRNGs should we consider adding — should we keep the
+crate minimal or add several good generators? Should we add [`Xoroshiro128+`]
+([Wikipedia article](https://en.wikipedia.org/wiki/Xoroshiro128%2B))?
+Should we allow historical generators like MT19937? (Note that the question of
+whether `rand` should be split into multiple crates affects this question.)
 
-`StdRng` is currently a wrapper around `IsaacWordRng`, with a `new()` method
-that seeds from `OsRng`. Possibly this should be replaced with two wrapper structs
-or simply re-bound names: `FastRng` and `CryptoRng`.
+There are a couple of wrapper/renamed implementations:
 
-TODO: `ReadRng`
+*   [`IsaacWordRng`] is [`Isaac64Rng`] on 64-bit pointer machines, [`IsaacRng`] on
+    32-bit pointer machines [other name suggestions welcome]
+*   [`StdRng`] is currently a wrapper around [`IsaacWordRng`], with a `new()`
+    method that seeds from [`OsRng`]. Ideally this `new` behaviour should be
+    moved to the PRNG itself so that [`StdRng`] does not need the wrapping struct
+    (TODO).
 
-`thread_rng()` current constructs a reference-counted periodically-reseeding
-`StdRng` per thread on first use. TODO: allow user override via dynamic dispatch?
-Rename to `crypto_rng()`?
+**Question:** should we rename `StdRng` to `FastRng` or `CryptoRng`? Should
+we introduce another name? My understanding is that ISAAC is faster than ChaCha
+and mostly secure, but has some weak states, and is therefore effectively a
+compromise between a speedy generator like `XorShift` and a strong cryptographic
+generator. Several people have suggested that even simulations not requiring
+cryptographic generators should be using them for their stronger statistical
+indepedence guarantees. This does not imply that non-cryptographic PRNGs have
+no good uses (e.g. games usually do not require good quality generators).
 
-`weak_rng()` currently constructs a new `XorShiftRng` seeded via `OsRng` each
-time it is called. Rename to `fast_rng()` and make it use a `FastRng` type?
-What about `random()`, should for example the documentation point out that
-creating a `weak_rng()` may be useful for performance where crypto-strength
-generation is not needed?
+### Special `Rng` implementations
 
-#### OS provision
+[`ReadRng`] is an adaptor implementing `Rng` by returning data from any source
+supporting `Read`, e.g. files. It is used by `OsRng` to read from
+`/dev/urandom`.
+
+[`ReseedingRng`] is a wrapper which counts the number of bytes returned, and
+after some threshold reseeds the enclosed generator. Its only real use would be
+to periodically adjust a random number stream to recover entropy after loss
+(e.g. a process fork) or where there was insufficient entropy to begin with
+(seeding from the OS generator too soon after boot — but probably all OSs
+deal with this problem anyway; e.g. Linux saves a "seed file", and Intel's
+`RDRAND` instruction can be used as an extra source of entropy, even if not
+trusted).
+
+Note that if an "entropy injection" trait can be added, we should use
+that instead of reseeding from scratch.
+
+### OS provision
 
 `OsRng` currently implements `Rng` by directly sampling from whatever OS
 functionality is available.
@@ -365,24 +390,15 @@ Contrary to the above, an implementation of `Rng` using only the OS may be
 exactly what some users want, since this can be used just like any other `Rng`,
 aside from the lower performance.
 
-### Traits
+### Convenience functions
 
-### Generator adaptors
+`thread_rng()` currently constructs a reference-counted periodically-reseeding
+`StdRng` per thread on first use. TODO: allow user override via dynamic dispatch?
+Rename to `crypto_rng()`?
 
-`ReseedingRng` is a wrapper which periodically reseeds the enclosed RNG.
-
-Should a similar wrapper to periodically inject entropy from the OS be added?
-Of course this shouldn't be necessary normally, but it might help when (a) the
-initial OS-provided seed had little entropy and (b) cycles might otherwise occur.
-
-The `SeedableRng` trait is an optional extra allowing reseeding:
-
-```
-pub trait SeedableRng<Seed>: Rng {
-    fn reseed(&mut self, _: Seed);
-    fn from_seed(seed: Seed) -> Self;
-}
-```
+`weak_rng()` currently constructs a new `XorShiftRng` seeded via `OsRng` each
+time it is called. **Question:** can we replace this with `XorShiftRng::new()`,
+or usage via a wrapper/new name: `FastRng::new()`?
 
 ### Testing generators
 
@@ -408,6 +424,11 @@ generator in documentation and/or benchmarks:
 
 Currently there are benchmarks of generation time, but this *might* not truely
 represent the amortised time due to infrequent update cycles.
+
+### Notes
+
+Should we worry about generator algorithms not *exactly* matching the domain
+(`u32` or `u64`)? For example, Xoroshiro apparently never generates zero.
 
 ## Random values
 
@@ -569,6 +590,17 @@ data access).
 
 Most distributions are implemented in public sub-modules, then *also* imported
 into `distributions` via `pub use`. Possibly the sub-modules should be hidden.
+
+#### Notes on conversion to floating point
+
+This article points out that the common method of generating floats in the
+range `[0, 1)` or `(0, 1)` is wrong. It is worth pointing out that our existing
+code *does not use this method*, however it may still be worth reading the
+article: [Generating Pseudo-random Floating-Point
+Values](https://readings.owlfolio.org/2007/generating-pseudorandom-floating-point-values/).
+
+[More on the topic here](http://xoroshiro.di.unimi.it/), under the heading
+"Generating uniform doubles ...".
 
 ### `Rand` vs `Distribution`
 
@@ -778,6 +810,8 @@ There are many questions above; perhaps the biggest ones are:
 *   Split the `rand` crate?
 *   Add `JumpableRng` trait?
 *   Add `InjectableRng` trait?
+*   Which constructors should `Rng` impls have?
+*   Which `Rng` implementations should `rand` contain?
 *   Replace `OsRng` with an `os::try_fill_bytes` function?
 *   TODO: `thread_rng()`, `weak_rng()`, `StdRng`
 *   Rename the `distributions` module?
@@ -800,14 +834,6 @@ Should we introduce `RangeTo::new(high)` (same as `Range::new(0, high)`) to save
 extra add/subtract? No...?
 
 Maybe we should replace `Range` with `RangeInt`, `RangeFloat` etc.?
-
-## Mapping to floats
-
-This article points out that the common method of generating floats in the
-range `[0, 1)` or `(0, 1)` is wrong. It is worth pointing out that our existing
-code *does not use this method*, however it may still be worth reading the
-article: [Generating Pseudo-random Floating-Point
-Values](https://readings.owlfolio.org/2007/generating-pseudorandom-floating-point-values/).
 
 ## Only crypto-PRNGs
 
@@ -848,3 +874,12 @@ Values](https://readings.owlfolio.org/2007/generating-pseudorandom-floating-poin
 [`range`]: https://dhardy.github.io/rand/rand/distributions/range/index.html
 [`range2`]: https://dhardy.github.io/rand/rand/distributions/range2/index.html
 [`distributions`]: (https://dhardy.github.io/rand/rand/distributions/index.html)
+[`ReadRng`]: https://dhardy.github.io/rand/rand/struct.ReadRng.html
+[`ReseedingRng`]: https://dhardy.github.io/rand/rand/reseeding/struct.ReseedingRng.html
+[`IsaacRng`]: https://dhardy.github.io/rand/rand/prng/struct.IsaacRng.html
+[`Isaac64Rng`]: https://dhardy.github.io/rand/rand/prng/struct.Isaac64Rng.html
+[`IsaacWordRng`]: https://dhardy.github.io/rand/rand/prng/struct.IsaacWordRng.html
+[`ChaChaRng`]: https://dhardy.github.io/rand/rand/prng/struct.ChaChaRng.html
+[`XorShiftRng`]: https://dhardy.github.io/rand/rand/prng/struct.XorShiftRng.html
+[`Xoroshiro128+`]: http://xoroshiro.di.unimi.it/
+[`StdRng`]: https://dhardy.github.io/rand/rand/struct.StdRng.html
