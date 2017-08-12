@@ -421,6 +421,21 @@ A possible alternative is to replace `libc` with FFI bindings generation at
 compile-time (using [rust-bindgen](https://github.com/servo/rust-bindgen) for
 example). But it isn't suitable for cross-building.
 
+## Adding cfg attribute using build.rs
+
+It is possible to do some compile time detection (or using cargo feature) to
+select a particular OS version in `libc`. It has been [proposed for resolving
+the FreeBSD 12 ABI issue](https://github.com/rust-lang/libc/pull/721).
+
+With such code, the `libc` code is right regarding the selected version.
+
+The drawback is such detection is fragile, and crosscompilation more complex
+(it requires cargo feature usage).
+
+Additionally, a larger problem is mixing code with different OS version would
+be possible (no error at compile time): for example using libstd from rustup
+targeting one version, and using with crate locally compiled for another
+version. It would produce bad code and crash could occurs at runtime.
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
