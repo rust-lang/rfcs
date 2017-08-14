@@ -16,8 +16,9 @@ here.
 See also:
 
 * [Crate evaluation thread]
-* [Strawman design PR]
-* [Strawman design doc]
+* [Strawman revision PR]
+* [Strawman revision code]
+* [Strawman revision doc]
 
 # Introduction
 [introduction]: #introduction
@@ -26,7 +27,7 @@ See also:
 [motivation]: #motivation
 
 The [crate evaluation thread] brought up the issue of stabilisation of the `rand`
-crate, however there appears to be widespread dissatisfaction with the current
+crate, however there appears to be significant dissatisfaction with the current
 design. This RFC looks at a number of ways that this crate can be improved.
 
 The most fundamental question still to answer is whether a one-size-fits-all
@@ -40,8 +41,9 @@ should be included, what `thread_rng` should do, and so on.
 
 Once some progress has been made to answering these questions, I will update
 the strawman revision accordingly, and if necessary split the corresponding PR
-into reviewable chunks. Once this is done, we can talk about stabilising parts
-of `rand`.
+into reviewable chunks. Each chunk can have its own PR discussion as necessary.
+Once this is done, we can talk about stabilising parts of `rand` in a separate
+PR or RFC.
 
 ## Background
 [background]: #background
@@ -214,8 +216,6 @@ First, "strong RNGs" designed for cryptographic usage could:
     crypto libraries, if at all) [practically, this is equivalent to 3 aside
     from choice of generators to include]
 
-**Current preference:** undecided, possibly 3
-
 Second, the `rand` crate could:
 
 1.  Remain a single crate
@@ -229,7 +229,9 @@ Second, the `rand` crate could:
     `rand` crate names)
 5.  Split into even more crates...
 
-**Current preference:** undecided
+*Personally,* I feel that we should stick to a single `Rng` trait as above. I
+am not against splitting the implementation into multiple crates, but see
+little benefit (a split *might* facilitate review of cryptographic code).
 
 ### Debug
 
@@ -283,23 +285,28 @@ they may be worth discussing now.
 The `Rng` trait does not cover creation of new RNG objects. It is recommended
 (but not required) that each RNG implement:
 
-*   `pub fn new() -> Self`, taking a seed from... where? (See below)
+*   `pub fn new() -> Self`, taking a seed from [`OsRng`], see below
 *   `pub fn new_from_rng<R: Rng+?Sized>(rng: &mut R) -> Self`
 *   `SeedableRng<Seed>` for some type `Seed`
 
 Note that the above won't be applicable to all `Rng` implementations; e.g.
 `ReadRng` can only be constructed with a readable object.
 
-Other constructors are discouraged; e.g. all current generators have a
+Other constructors should be discouraged; e.g. all current generators have a
 `new_unseeded` function; realistically no one should use this except certain
 tests, where `SeedableRng::from_seed(seed) -> Self` could be used instead.
 
 **Question**: is `new_from_rng` a good idea? E.g. naively seeding from another
 generator of the same type can unwittingly create a clone.
 
-**Question**: what should be the usual story for creating a new RNG: should the seed
-come from `thread_rng()` allowing deterministic operation or from `OsRng`,
-ensuring "safe" seeding?
+**Question**: should be the usual story for creating a new RNG be to use
+`OsRng`? This has two advantages: (1) avoids the possibility of issues where
+constructing sub-generators compromises the security of generation (or even
+leads to multiple generators returning the same values), and (2) allows new
+generators to be well-seeded even when the parent has been replaced via
+`set_thread_rng` or lost entropy due to entropy-deprevation-attack; however
+this also has a disadvantage: it doesn't use `thread_rng` so cannot be made
+deterministic for testing purposes.
 
 ## Generators
 
@@ -311,13 +318,14 @@ In no particular order, this section attempts to cover:
 *   which generators should be provided by this library
 *   the story for generators in other crates
 *   requirements of generators included in this library
-*   seeding PRNGs
+*   benchmarks, testing and documentation on included generators
+*   convenience new types and functions
 
 ### PRNG algorithms
 
 Rand currently provides three PRNG algorithms, and a wrapper (`OsRng`) to
 OS-provided numbers. It also provides a couple of simple wrappers, and two
-traits, [`Rng` and `SeedableRng`](generation-API). The included PRNGs are:
+traits, [`Rng` and `SeedableRng`](#generation-API). The included PRNGs are:
 
 *   [`IsaacRng`] (32-bit) and [`Isaac64Rng`]; a very fast cryptographic
     generator, but with potential attacks on weak states
@@ -949,8 +957,9 @@ interest in creating random values this way.
 -------------------------------------------------------------------------------
 
 [Crate evaluation thread]: https://internals.rust-lang.org/t/crate-evaluation-for-2017-07-25-rand/5505
-[Strawman design PR]: https://github.com/rust-lang-nursery/rand/pull/161
-[Strawman design doc]: https://dhardy.github.io/rand/rand/index.html
+[Strawman revision PR]: https://github.com/rust-lang-nursery/rand/pull/161
+[Strawman revision code]: https://github.com/dhardy/rand
+[Strawman revision doc]: https://dhardy.github.io/rand/rand/index.html
 [`Rand`]: https://dhardy.github.io/rand/rand/distributions/trait.Rand.html
 [`SimpleRand`]: https://dhardy.github.io/rand/rand/distributions/trait.SimpleRand.html
 [`Distribution`]: https://dhardy.github.io/rand/rand/distributions/trait.Distribution.html
