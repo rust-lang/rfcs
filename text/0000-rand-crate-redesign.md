@@ -189,6 +189,7 @@ generators](https://internals.rust-lang.org/t/crate-evaluation-for-2017-07-25-ra
 where possible. Further, keeping cryptography-related crates small may be
 useful for security reviews.
 
+**Question:**
 If `rand`/`Rng` is split into multiple parts, several approaches are possible;
 what to do here is very much undecided.
 
@@ -221,6 +222,14 @@ Second, the `rand` crate could:
 
 **Current preference:** undecided
 
+### Debug
+
+The strawman design now specifies `pub trait Rng: Debug {...}`, i.e. requires
+all implementations to implement `Debug`. In many cases this requires only
+that implementing types are prefixed with `#[derive(Debug)]`, although in some
+cases it adds requirements on internal values.
+
+Is this useful?
 
 ### Extension traits
 
@@ -260,6 +269,7 @@ These traits can be added in the future without breaking compatibility, however
 they may be worth discussing now.
 
 ### Creation of RNGs
+[creation-of-rngs]: #creation-of-rngs
 
 The `Rng` trait does not cover creation of new RNG objects. It is recommended
 (but not required) that each RNG implement:
@@ -298,20 +308,35 @@ In no particular order, this section attempts to cover:
 
 Rand currently provides three PRNG algorithms, and a wrapper (`OsRng`) to
 OS-provided numbers. It also provides a couple of simple wrappers, and two
-traits, [`Rng` and `SeedableRng`](generation-API).
+traits, [`Rng` and `SeedableRng`](generation-API). The included PRNGs are:
 
-* [`IsaacRng`] (32-bit) and [`Isaac64Rng`]
-* [`ChaChaRng`]
-* [`XorShiftRng`]
+*   [`IsaacRng`] (32-bit) and [`Isaac64Rng`]; a very fast cryptographic
+    generator, but with potential attacks on weak states
+*   [`ChaChaRng`]; a cryptographic generator used by Linux and by Google for TLS,
+    among other uses
+*   [`XorShiftRng`]; a very fast generator, generally inferior to Xoroshiro
 
 **Question:** which of these should be kept in `rand`? Likely [`XorShiftRng`]
-should be removed.
+should be removed, since `Xoroshiro` is generally superior.
 
 **Question:** what other PRNGs should we consider adding — should we keep the
-crate minimal or add several good generators? Should we add [`Xoroshiro128+`]
-([Wikipedia article](https://en.wikipedia.org/wiki/Xoroshiro128%2B))?
-Should we allow historical generators like MT19937? (Note that the question of
+crate minimal or add several good generators? (Note that the question of
 whether `rand` should be split into multiple crates affects this question.)
+
+*   Should we add [`Xoroshiro128+`] as a replacement for XorShift?
+    ([Wikipedia article](https://en.wikipedia.org/wiki/Xoroshiro128%2B))
+*   Should we add implementations for other promising crypto-PRNGs, e.g.
+    Fortuna/Yarrow (apparently used by *BSD, OSX, and iOS)?
+*   Should we add an implementation of [`RDRAND`]? This is supposed to be
+    secure and fast, but not everyone trusts closed-source hardware, and it may
+    not be the fastest. If we do, how should we handle platforms without this
+    feature?
+*   Wikipedia [mentions an improved `ISAAC+` variant](https://en.wikipedia.org/wiki/ISAAC_(cipher)#Cryptanalysis) of ISAAC; what is this?
+*   The [eSTREAM project](http://www.ecrypt.eu.org/stream/)
+    ([Wiki article](https://en.wikipedia.org/wiki/ESTREAM)) selected several
+    new stream cipher algorithms; these should all be usable as crypto PRNGs.
+*   If the rand crate is split somehow or a "rand_extra" crate added, should
+    this accept good quality implementations of any known PRNG?
 
 There are a couple of wrapper/renamed implementations:
 
@@ -319,11 +344,12 @@ There are a couple of wrapper/renamed implementations:
     32-bit pointer machines [other name suggestions welcome]
 *   [`StdRng`] is currently a wrapper around [`IsaacWordRng`], with a `new()`
     method that seeds from [`OsRng`]. Ideally this `new` behaviour should be
-    moved to the PRNG itself so that [`StdRng`] does not need the wrapping struct
-    (TODO).
+    moved to the PRNG itself (see [creation-of-rngs]); in this case `SndRng`
+    could just be a new type name, not a wrapper
 
-**Question:** should we rename `StdRng` to `FastRng` or `CryptoRng`? Should
-we introduce another name? My understanding is that ISAAC is faster than ChaCha
+**Question:** should we rename `StdRng` to `FastRng` or `CryptoRng`, or perhaps
+have `CryptoRng` for the ChaCha generator and `FastRng` for either the
+Xoroshift or ISAAC generators? My understanding is that ISAAC is faster than ChaCha
 and mostly secure, but has some weak states, and is therefore effectively a
 compromise between a speedy generator like `XorShift` and a strong cryptographic
 generator. Several people have suggested that even simulations not requiring
@@ -332,6 +358,13 @@ indepedence guarantees. This does not imply that non-cryptographic PRNGs have
 no good uses (e.g. games usually do not require good quality generators).
 
 ### Special `Rng` implementations
+
+[`ConstRng`] is a special implementation yielding a given constant repeatedly.
+It is sometimes useful for testing.
+
+**Question:** are there any good reasons *not* to include [`ConstRng`]? Or
+perhaps `rand` should also include a looping-sequence generator or a counting
+generator, or a generator based on an iterator?
 
 [`ReadRng`] is an adaptor implementing `Rng` by returning data from any source
 supporting `Read`, e.g. files. It is used by `OsRng` to read from
@@ -392,13 +425,44 @@ aside from the lower performance.
 
 ### Convenience functions
 
-`thread_rng()` currently constructs a reference-counted periodically-reseeding
-`StdRng` per thread on first use. TODO: allow user override via dynamic dispatch?
-Rename to `crypto_rng()`?
+`thread_rng` is a function returning a reference to an automatically
+initialised thread-local generator.
 
-`weak_rng()` currently constructs a new `XorShiftRng` seeded via `OsRng` each
-time it is called. **Question:** can we replace this with `XorShiftRng::new()`,
-or usage via a wrapper/new name: `FastRng::new()`?
+In the current `rand` crate, [`thread_rng`](https://docs.rs/rand/0.3.16/rand/fn.thread_rng.html) constructs a reference-counted
+periodically-reseeding [`StdRng`] (ISAAC) per thread on first use. This is
+"reasonably fast" and "reasonably secure", which can be viewed either as a good
+compromise or as combining the worst aspects of both options — is this a good
+default generator?
+
+One school of thought is that the default generator should be [`OsRng`], thus
+aiming for maximal security and letting users deal with performance if and only
+if that is a problem. In light of this, the strawman revision uses [`OsRng`] as
+the default, but allowing the generator used by [`thread_rng`] to be replaced
+on a per-thread basis:
+
+*   [`thread_rng`] returns a reference to a boxed `Rng` (using dynamic dispatch)
+*   [`set_thread_rng`] replaces the `Rng` used by the current thread
+*   [`set_new_thread_rng`] changes how new thread-RNGs are created
+
+Note that the ability to override the generator used by `thread_rng` has certain
+uses in testing, limited uses in improving performance (for ultimate
+performance and for reproducibility, and may be preferable to avoid using
+`thread_rng` at all), and has security implications, in that libraries cannot
+rely on `thread_rng` being secure due to binaries and other libraries having
+the option to replace the generator. It may therefore be better not to allow
+override and possibly to use a "fast/secure compromise" PRNG like the current
+`rand` crate.
+
+In the current `rand` crate, a second convenience generator is available:
+[`weak_rng`] constructs a new `XorShiftRng` seeded via `OsRng` each
+time it is called. (The `SomeRng::new()` syntax can replace the need for
+this type of function; see [creation-of-rngs].) The strawman revision simply
+removes `weak_rng`.
+
+Two functions using [`thread_rng`] are included:
+
+*   [`random`], generating random values via the default distribution
+*   [`random_with`], generating random values via a specified distribution
 
 ### Testing generators
 
@@ -602,6 +666,11 @@ Values](https://readings.owlfolio.org/2007/generating-pseudorandom-floating-poin
 [More on the topic here](http://xoroshiro.di.unimi.it/), under the heading
 "Generating uniform doubles ...".
 
+#### Testing distributions
+
+Distributions should test exact output with several specified inputs, via usage
+of [`ConstRng`] or similar. (TODO: implement such tests.)
+
 ### `Rand` vs `Distribution`
 
 As suggested above, both `Rand` traits are basically wrappers around
@@ -802,7 +871,9 @@ sampling (`my_range.sample(&mut rng)`).
 
 ## Summary of above
 
-There are many questions above; perhaps the biggest ones are:
+There are many questions above; perhaps the biggest ones are as follows.
+
+API:
 
 *   Remove `next_f32` and `next_f64` from `Rng`?
 *   Add `next_u128` to `Rng`?
@@ -811,9 +882,17 @@ There are many questions above; perhaps the biggest ones are:
 *   Add `JumpableRng` trait?
 *   Add `InjectableRng` trait?
 *   Which constructors should `Rng` impls have?
-*   Which `Rng` implementations should `rand` contain?
+
+Generators:
+
+*   Which PRNGs `rand` contain?
+*   Which testing `Rng` impls, if any, should `rand` contain?
 *   Replace `OsRng` with an `os::try_fill_bytes` function?
-*   TODO: `thread_rng()`, `weak_rng()`, `StdRng`
+*   Allow generator behind `thread_rng` to be switched?
+*   Include `StdRng` and `weak_rng` wrappers?
+
+Distributions:
+
 *   Rename the `distributions` module?
 *   Rename `Uniform`, `Default`, etc.?
 *   Keep the parameterised `Rand<Distr>`, replace with the simple `Rand` or
@@ -883,3 +962,9 @@ Maybe we should replace `Range` with `RangeInt`, `RangeFloat` etc.?
 [`XorShiftRng`]: https://dhardy.github.io/rand/rand/prng/struct.XorShiftRng.html
 [`Xoroshiro128+`]: http://xoroshiro.di.unimi.it/
 [`StdRng`]: https://dhardy.github.io/rand/rand/struct.StdRng.html
+[`RDRAND`]: https://en.wikipedia.org/wiki/RdRand
+[`ConstRng`]: https://dhardy.github.io/rand/rand/struct.ConstRng.html
+[`thread_rng`]: https://dhardy.github.io/rand/rand/fn.thread_rng.html
+[`set_thread_rng`]: https://dhardy.github.io/rand/rand/fn.set_thread_rng.html
+[`set_new_thread_rng`]: https://dhardy.github.io/rand/rand/fn.set_new_thread_rng.html
+[`OsRng`]: https://dhardy.github.io/rand/rand/struct.OsRng.html
