@@ -316,13 +316,13 @@ traits, [`Rng` and `SeedableRng`](generation-API). The included PRNGs are:
     among other uses
 *   [`XorShiftRng`]; a very fast generator, generally inferior to Xoroshiro
 
-**Question:** which of these should be kept in `rand`? Likely [`XorShiftRng`]
-should be removed, since `Xoroshiro` is generally superior.
+**Question:** should any of the above be removed? What other PRNGs should we
+consider adding — should we keep the crate minimal or add several good
+generators? (Note that the questions of whether `rand` should be split into
+multiple crates and whether a separate crypto trait should be added affects
+this question.) [bhickey has some thoughts on this.](https://github.com/rust-lang-nursery/rand/pull/161#issuecomment-320483055).
 
-**Question:** what other PRNGs should we consider adding — should we keep the
-crate minimal or add several good generators? (Note that the question of
-whether `rand` should be split into multiple crates affects this question.)
-
+*   Likely [`XorShiftRng`] should be removed, since `Xoroshiro` is generally superior.
 *   Should we add [`Xoroshiro128+`] as a replacement for XorShift?
     ([Wikipedia article](https://en.wikipedia.org/wiki/Xoroshiro128%2B))
 *   Should we add implementations for other promising crypto-PRNGs, e.g.
@@ -434,6 +434,18 @@ periodically-reseeding [`StdRng`] (ISAAC) per thread on first use. This is
 compromise or as combining the worst aspects of both options — is this a good
 default generator?
 
+[@zackw points out that the default random number generator should be secure](https://internals.rust-lang.org/t/crate-evaluation-for-2017-07-25-rand/5505/68):
+
+> I think it’s vital that the *default* primitive random number generator, the
+> one you get if you don’t do anything special, is an automatically-seeded
+> CSPRNG. This is because people will reach for the equivalent of C’s
+> [rand(3)](http://man7.org/linux/man-pages/man3/rand.3.html) in situations
+> where they *need* a CSPRNG but don’t realize it, such as generation of HTTP
+> session cookies. Yes, there are *better* ways to generate HTTP session
+> cookies, but if the rand-equivalent is an auto-seeded CSPRNG, the low bar
+> goes from “catastrophically insecure” to “nontrivial to exploit,” and that’s
+> valuable.
+
 One school of thought is that the default generator should be [`OsRng`], thus
 aiming for maximal security and letting users deal with performance if and only
 if that is a problem. In light of this, the strawman revision uses [`OsRng`] as
@@ -452,6 +464,9 @@ rely on `thread_rng` being secure due to binaries and other libraries having
 the option to replace the generator. It may therefore be better not to allow
 override and possibly to use a "fast/secure compromise" PRNG like the current
 `rand` crate.
+
+Another school of thought is that [`thread_rng` and `random` etc. should not be
+included at all](https://internals.rust-lang.org/t/crate-evaluation-for-2017-07-25-rand/5505/82).
 
 In the current `rand` crate, a second convenience generator is available:
 [`weak_rng`] constructs a new `XorShiftRng` seeded via `OsRng` each
@@ -624,6 +639,8 @@ leaves two semantic issues: the range differs by type, and some possible
 type-dependent implementations (such as for `Option`) cannot practically have
 uniform distribution.
 
+#### Range
+
 There is one further uniform distribution:
 
 *   [`Range`] specifies uniform distribution over a range `[a, b)` and supports
@@ -637,7 +654,12 @@ but has some drawbacks, perhaps most notably that `Range` is parameterised so
 that `Range::new(low, high)` must be replaced with `new_range(low, high)` or
 `Range::<T>::new(low, high)`.
 
-Finally, there are several more [`distributions`],
+Possibly the current `range` function should be removed, then `new_range` from
+[`range2`] and an equivalent for [`Range`] could be named `range`.
+
+#### Non-uniform distributions
+
+Finally, there are several [`distributions`]
 unchanged from the current `rand`:
 
 *   `Exp`
@@ -655,9 +677,17 @@ data access).
 Most distributions are implemented in public sub-modules, then *also* imported
 into `distributions` via `pub use`. Possibly the sub-modules should be hidden.
 
-#### Notes on conversion to floating point
+#### Conversion to floating point
 
-This article points out that the common method of generating floats in the
+Currently this is implemented via `impl Distribution<f32> for Uniform01` and
+the `f64` equivalent in the strawman refactor, and within the `Rng` trait in
+the current `rand`. It has been suggested that this should be implemented in
+a simple function (used by `Rand` / `Uniform01`) so that users only wanting to
+use a small subset of the library for cryptography do not need to use the
+distributions code. This is only really useful if the `rand` crate is split
+into a minimal crypto sub-set and the rest building on that.
+
+The following article points out that the common method of generating floats in the
 range `[0, 1)` or `(0, 1)` is wrong. It is worth pointing out that our existing
 code *does not use this method*, however it may still be worth reading the
 article: [Generating Pseudo-random Floating-Point
@@ -724,14 +754,14 @@ let a: i64 = rand::random();
 
 ### Convenience functions and more distributions
 
-The above examples all get randomness from `thread_rng()`. For this case, two
+The above examples all get randomness from [`thread_rng`]. For this case, two
 convenience functions are available:
 
 *   [`random`], essentially `fn random() { Default.sample(&mut thread_rng()) }`
 *   [`random_with`], essentially
     `fn random_with<D: Distribution>(distr: D) { distr.sample(&mut thread_rng()) }`
 
-These do not require a `Rand` trait. Since calling `thread_rng()` has a little
+These do not require a [`Rand`] trait. Since calling [`thread_rng`] has a little
 overhead, these functions are slightly inefficient when called multiple times.
 
 Additionally, within the `distributions` module, some more convenience functions
@@ -906,28 +936,6 @@ generate random values of the current type. This could probably be adjusted to
 derive `Rand<Default>` or maybe even support custom distributions. In the
 strawman design I simply deleted this sub-crate since I have no interest in
 creating random values this way.
-
-## Misc. ranges
-
-Should we introduce `RangeTo::new(high)` (same as `Range::new(0, high)`) to save
-extra add/subtract? No...?
-
-Maybe we should replace `Range` with `RangeInt`, `RangeFloat` etc.?
-
-## Only crypto-PRNGs
-
-[@zackw points out that the default random number generator should be secure](https://internals.rust-lang.org/t/crate-evaluation-for-2017-07-25-rand/5505/68):
-
-> I think it’s vital that the *default* primitive random number generator, the
-> one you get if you don’t do anything special, is an automatically-seeded
-> CSPRNG. This is because people will reach for the equivalent of C’s
-> [rand(3)](http://man7.org/linux/man-pages/man3/rand.3.html) in situations
-> where they *need* a CSPRNG but don’t realize it, such as generation of HTTP
-> session cookies. Yes, there are *better* ways to generate HTTP session
-> cookies, but if the rand-equivalent is an auto-seeded CSPRNG, the low bar
-> goes from “catastrophically insecure” to “nontrivial to exploit,” and that’s
-> valuable.
-
 
 -------------------------------------------------------------------------------
 
