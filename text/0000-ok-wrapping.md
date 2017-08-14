@@ -10,19 +10,29 @@
 # Summary
 [summary]: #summary
 
-Allow functions and catch blocks that produce a `T: Try` to internally return
-`T::Ok`, eliminating the need to manually wrap that value in an `Ok`, `Some`,
-`Poll::Ready`, etc.  In particular, avoid the need to end functions returning
-`Result<(), E>` with an `Ok(())`.
+Add additional help for writing functions in an error handling mindset.
+Support a `?` on function definitions and `catch` blocks that automatically
+wraps the result in an `Ok`, `Some`, `Poll::Ready`, etc.  In particular,
+allow function authors to avoid the need for `Ok(())` at the end of
+functions returning `Result<(), E>`.
+
+(Note that this _ok wrapping_ only ever applies to the success case.  At no
+point would this allow a function to implicitly return `Err(e)`, `None`,
+`Poll::NotReady`, etc.)
 
 # Motivation
 [motivation]: #motivation
 
-Thanks to [RFC 1937], we can now use `?` in `main`.  This is a big help in
-using it earlier in the teaching process, instead of encouraging `.unwrap()`.
+The question mark operator ([RFC 243]) has made great strides in the
+ergonomics of error handling in Rust.  Having an explicit-but-short marker
+for fallible locations that propagates the error on failure allows function
+authors to operate in an error handling mindset, concentrating on the
+success path while acknowledging the failure path.
 
-But there's still a touch of unfortunateness with it.  Take this example from
-that RFC:
+There's still one place where this model breaks down, though: when
+generating the return value.
+
+Take this example from [RFC 1937]:
 
 ```rust
 fn main() -> Result<(), Box<Error>> {
@@ -46,17 +56,46 @@ fn main() -> Result<(), Box<Error>> {
 }
 ```
 
-It's a shame that using `?`, and thus returning a `Result`, forces the
-introduction of the `Ok(())`.  In comparison, the `unwrap` code could just use
-the more-ergonomic `()` default from statements.
+And compare the `unwrap`-equivalent one might see without that RFC:
+
+```rust
+fn main() {
+    let argv = env::args();
+    let _ = argv.next();
+    let data_path = argv.next().unwrap();
+    let city = argv.next().unwrap();
+
+    let file = File::open(data_path).unwrap();
+    let mut rdr = csv::Reader::from_reader(file);
+
+    for row in rdr.decode::<Row>() {
+        let row = row.unwrap();
+
+        if row.city == city {
+            println!("{}, {}: {:?}",
+                row.city, row.country, row.population.unwrap());
+        }
+    }
+}
+```
+
+Two of the differences are fundamental to error handling:
+
+1. The signature is different.
+2. The `.unwrap()`s have turned into `?`s.
+
+But then there's the ergonomically-unfortunate piece:
+
+3. An `Ok(())` showed up.
 
 This is especially true since it's just noise.  It was fine for "getting to
 the end of `main`" to mean success before, so it can be fine now.  Having
-this mean success is by no means unusual, either.  `#[test]`s are also
-successful if they reach the end.
+this mean success is by no means unusual either.  `#[test]`s are also
+successful if they reach the end.  And the `?` operator only further
+emphasizes this, as many functions using it only error via propagation.
 
-Supporting the success wrapping also increases consistency.  The same RFC
-also contains this example:
+In practice, `Ok(())` is so unergonomic that people go out of their way to
+avoid it.  The same RFC also contains this example:
 
 ```rust
 fn main() -> Result<(), io::Error> {
@@ -76,23 +115,24 @@ typing `Ok(())`; otherwise it'd be the more-consistent `stdout.flush()?;`.
 
 This inconsistency has various suboptimal implications:
 
-* If flushing is needed in other places, it cannot just be copy-pasted.
-* If additional logic is added after it, the line will need to be touched
-  anyway, and the diff will be worse than it could be.
-* If a non-`io` error type is encountered (say a `ParseIntError`) and the
-  return type needs to be changed, the direct return doesn't have the error
-  conversion that `?` does, so will stop working.
 * Not having the `?` obscures the property from [RFC 243] that the question
   mark "lets the reader determine at a glance where an exception may or may
   not be thrown".
 * For the writer, this blocks the "always put a `?` after every fallible
   method call" muscle memory.
+* If a non-`io` error type is encountered (say a `ParseIntError`) and the
+  return type needs to be changed, the direct return doesn't have the error
+  conversion that `?` does, so will stop working.  (Note that, unlike the
+  earlier example, this doesn't use `Result<(), Box<Error>>`.)
+* If additional logic is added after it, the line will need to be touched
+  anyway, and the diff will be worse than it could be.
+* If flushing is needed in other places, it cannot just be copy-pasted.
 
 These same advantages to ok-wrapping occur with non-`()` values as well.
 For example, this RFC would allow the following:
 
 ```rust
-fn checked_mul_add(x: i32, y: i32, z: i32) -> Option<i32> {
+fn checked_mul_add(x: i32, y: i32, z: i32)? -> Option<i32> {
     x.checked_mul(y)?.checked_add(z)?
 }
 ```
@@ -100,9 +140,26 @@ fn checked_mul_add(x: i32, y: i32, z: i32) -> Option<i32> {
 That way the `checked_*` methods consistently have a `?`, and there's no
 need to put the whole thing in a distracting `Some()`.
 
+This consistency particularly helps when a previously-infallible method
+needs to start calling something fallible or when a fallible form of
+something that currently just panics is needed.
+
+As a simple example, the previous snippit is the checked equivalent of
+
+```rust
+fn mul_add(x: i32, y: i32, z: i32) -> i32 {
+    x.mul(y).add(z)
+}
+```
+
+The translation between the two is simple, and only involves touching
+things where failure points are introduced:
+
+1. Change the definition from `-> i32` to `? -> Option<i32>`
+2. Introduce fallible calls by changing `.foo(w)` to `.checked_foo(w)?`
+
 Ok-wrapping also avoids the explicit ["'unwrap' only to 'wrap' again"] that
-can happen when using custom error types.  Today (as seen in that thread)
-the code ends up being
+can happen when using custom error types.  Today the code ends up being
 
 ["'unwrap' only to 'wrap' again"]: https://internals.rust-lang.org/t/unified-errors-a-non-proliferation-treaty-and-extensible-types/5361
 
@@ -125,9 +182,14 @@ This all also applies to `catch` blocks -- so much so that [RFC 243] in fact
 catch { foo()?.bar()?.baz()? }
 ```
 
-This [was not implemented](https://github.com/rust-lang/rust/issues/41414).
-Adding ok-wrapping will allow use of `catch` as designed by that RFC while
-keeping its behaviour equivalent to that of function bodies.
+This [was not implemented](https://github.com/rust-lang/rust/issues/41414)
+out of a desire to keep function bodies and `catch` bodies in sync.
+
+With this RFC, the example would become
+
+```rust
+catch? { foo()?.bar()?.baz()? }
+```
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -143,7 +205,7 @@ use std::io;
 use std::io::Read;
 use std::fs::File;
 
-fn read_username_from_file() -> Result<String, io::Error> {
+fn read_username_from_file()? -> Result<String, io::Error> {
     let mut f = File::open("hello.txt")?;
     let mut s = String::new();
     f.read_to_string(&mut s)?;
@@ -151,10 +213,12 @@ fn read_username_from_file() -> Result<String, io::Error> {
 }
 ```
 
-A function that returns `Result<T, E>` can optionally be written as though it
-just returned a `T`.  In that case, Rust will automatically wrap that value
-into an `Ok`.  This lets the function look nearly identical to an infallible
-body, other than the `?`s marking the locations of possible errors.
+By adding the `?` to the definition, the function body opts into ok-wrapping.
+This allows the function to be written from an error handling mindset,
+concentrating on the success path and marking possible failure points with
+`?`.  Ok-wrapping will automatically wrap the value of the function body in
+`Ok`.  In this case, it means the function must return `String`, not a
+`Result`.  As such, `Err`s can only come through `?`.
 
 This is particularly helpful for functions that don't need to return anything
 in the success case:
@@ -164,7 +228,7 @@ use std::io;
 use std::io::Read;
 use std::fs::File;
 
-fn print_username_from_file() -> Result<(), io::Error> {
+fn print_username_from_file()? -> Result<(), io::Error> {
     let mut f = File::open("hello.txt")?;
     let mut s = String::new();
     f.read_to_string(&mut s)?;
@@ -173,34 +237,38 @@ fn print_username_from_file() -> Result<(), io::Error> {
 }
 ```
 
-This is analagous to the infallible case, where `-> ()` methods don't need to
+This is analogous to the infallible case, where `-> ()` methods don't need to
 explicitly return the `()` value.
 
-Note that, even with ok wrapping, a function body must still have a single
-type.  For example, this is still an error:
+Ok-wrapping can be used with any return type that implements `Try`:
 
 ```rust
-fn read_username_or_anonymous_from_file() -> Result<String, io::Error> {
-    let mut f = File::open("hello.txt")?;
-    let mut s = String::new();
-    f.read_to_string(&mut s)?;
-    if s.is_empty() { return Ok(String::from("anonymous")); }
-    s // Error: expected enum `std::result::Result`, found struct `std::string::String`
+fn get_two<T>(slice: &[T], i: usize, j: usize)? -> Option<(&T,&T)> {
+    (slice.get(i)?, slice.get(j)?)
 }
 ```
-
-The syntactic return and block value here must both be `String`s or both be
-`Result`s.  This can be made to compile by switching the syntactic return
-to just `return String::from("anonymous");`.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-All code that compiled before this RFC continues to compile and behave
-exactly as it did before.
+## Grammar updates
 
-Otherwise, functions that return `T: Try` are rewritten as follows (using
-the same ["block break"] as in [RFC 243]):
+[Closure Types](https://doc.rust-lang.org/grammar.html#closure-types)
+
+```diff
+ closure_type := [ 'unsafe' ] [ '<' lifetime-list '>' ] '|' arg-list '|'
++                [ '?' ]
+                 [ ':' bound-list ] [ '->' type ]
+```
+
+Similarly for functions, an optional `?` before the `->`.
+
+And for `catch`, an optional `?` before the block.
+
+## Desugar
+
+Functions and closure that opt into ok-wrapping are rewritten as follows
+(using the same ["block break"] as in [RFC 243]):
 
 ["block break"]: https://github.com/rust-lang/rfcs/blob/master/text/0243-trait-based-exception-handling.md#early-exit-from-any-block
 
@@ -214,15 +282,15 @@ need wrapping in `Try::from_ok`.
 (`Try::from_ok` was introduced in anticipation of this purpose in [RFC 1859],
 though that RFC does not use it itself.)
 
-Returning to this example:
+Take this example:
 
 ```rust
-fn read_username_or_anonymous_from_file() -> Result<String, io::Error> {
+fn read_username_or_anonymous_from_file()? -> Result<String, io::Error> {
     let mut f = File::open("hello.txt")?;
     let mut s = String::new();
     f.read_to_string(&mut s)?;
-    if s.is_empty() { return Ok(String::from("anonymous")); }
-    s // Error: expected enum `std::result::Result`, found struct `std::string::String`
+    if s.is_empty() { return String::from("anonymous"); }
+    s
 }
 ```
 
@@ -234,16 +302,13 @@ fn read_username_or_anonymous_from_file() -> Result<String, io::Error> {
         let mut f = File::open("hello.txt")?;
         let mut s = String::new();
         f.read_to_string(&mut s)?;
-        if s.is_empty() { break 'a Ok(String::from("anonymous")); }
-        s // Error: expected enum `std::result::Result`, found struct `std::string::String`
+        if s.is_empty() { break 'a String::from("anonymous"); }
+        s
     })
 }
 ```
 
-Thus the type error happens from the mismatch between the break and the
-final expression in the block.
-
-Removing the incorrect `Ok` and desugaring the `?`s as well gives
+Desugaring the `?`s as well gives
 
 ```rust
 fn read_username_or_anonymous_from_file() -> Result<String, io::Error> {
@@ -266,31 +331,66 @@ fn read_username_or_anonymous_from_file() -> Result<String, io::Error> {
 
 This shows the untouched `return`s in the `?` desugar.
 
+## Error messages
+
+With just the desugar above, this example
+
+```rust
+fn foo()? -> i32 { 4 }
+```
+
+Will give the error "the trait bound `i32: std::ops::Try` is not satisfied",
+but will likely point to the result of the function, not the return type.
+
+Instead, it should give an error pointing at the question mark with an
+error like "cannot use ok-wrapping in a function that returns `i32`",
+with a suggestion such as "consider changing the return type to
+`Result<i32, Box<Error>>`".
+
+Because ok-wrapping is explicitly requested, type mismatch errors will
+happen naturally in both directions:
+
+```rust
+fn always_five() -> Result<i32, !> { 5 } // Error: expected enum `std::result::Result`, found integral variable
+fn always_five()? -> Result<i32, !> { Ok(5) } // Error: expected i32, found enum `std::result::Result`
+```
+
+And the function author chooses explicitly how the type of its body
+should be inferred:
+
+```rust
+fn def1() -> Option<i32> { Default::default() } // gives None
+fn def2()? -> Option<i32> { Default::default() } // gives Some(0)
+```
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
-The main drawback to this design is that it's implicit, so may not trigger
-when it was expected.
+The `?` appears to be part of the signature, but it's not.  A function like
+`fn foo()? -> Option<i32>` coerces to `fn()->Option<i32>`; there's no such
+thing as a `fn()?->Option<i32>`.  This is not the only thing that appears in
+function definitions that's not part of their type, however.  Patterns for
+parameters, particularly `mut`, are also part of the definition without
+affecting the signature.  And having the `?` there means it mirrors the
+position of a `?` used when calling the function: `let x: i32 = foo()?;`.
 
-A function such as the following compiles, while being almost certainly not
-what was desired:
-```rust
-fn some_default<T: Default>() -> Option<T> { Default::default() } // Produces None, never using the bound
-```
-But could be accidentally written after a number of other functions in which
-the author relied upon the `T` -> `Option<T>` ok wrapping.
-
+Needing an explicit `?` on `main` to avoid `Ok(())` means one more thing
+to teach in order to use `?` in main.  The first non-`main` function a
+newcomer will write will likely be infallible, and thus will not have the
+`?`, adding another difference.  `main` is already special in a number of
+ways, however, and a definition like `fn main() -> Result<(), Box<Error>>`
+is complex enough even without ok-wrapping that the book may avoid it
+anyway for a first program.
 
 # Rationale and Alternatives
 [alternatives]: #alternatives
 
-The chosen design places restrictions to enforce consistency inside a method
-and limit the locations where this is applicable:
+The desugaring is chosen to enforce consistency inside a method.
 
 * Only one level of ok-wrapping will be applied
 
 ```rust
-fn foo() -> Option<Option<i32> {
+fn foo()? -> Option<Option<i32>> {
     5 // Error: expected enum `std::option::Option`, found integral variable
 }
 ```
@@ -298,16 +398,10 @@ fn foo() -> Option<Option<i32> {
 * All returns, implicit and explicit, must have the same type
 
 ```rust
-fn checked_neg(x: i32) -> Option<i32> {
+fn checked_neg(x: i32)? -> Option<i32> {
     if x == i32::min_value() { return None }
     -x // Error: expected enum `std::option::Option`, found i32
 }
-```
-
-* Ok-wrapping only applies at existing `?` boundaries
-
-```rust
-let x: Option<i32> = 4; // Error: expected enum `std::option::Option`, found integral variable
 ```
 
 ## Make this a general coercion
@@ -324,39 +418,47 @@ Coercions have properties that are undesirable from this feature however:
 * Coercions apply in far more locations than are `?` boundaries.  Notably
   function arguments are a coercion site, so adding a "try coercion" would
   mean the ["into trick"] would happen on everything taking an `Option`.
-  It would also allow hetrogeneous-appearing array literals
+  It would also allow heterogeneous-appearing array literals
   like `[4, Ok(4), 7, Err(())]`.
 
 ["into trick"]: http://www.suspectsemantics.com/blog/2016/11/29/the-into-trick/
 
-## Use an explicit marker on the functions/blocks
+## Omit the explicit marker on the functions/blocks
 
-Having some sort of explicit request for this behaviour would eliminate
-the ambiguous cases.
+It may be possible to allow the compiler to apply ok-wrapping
+automatically in situations where the code doesn't compile today.
 
-One possible design would be to allow `?` in function definitions,
-mirroring its use in function calls:
+That would be simpler to use, but can have surprising behaviours.
+
+A function such as the following compiles, while being almost certainly not
+what was desired:
+
 ```rust
-fn always_five()? -> Result<i32, !> { 5 }
-```
-That allows errors in both directions
-```rust
-fn always_five() -> Result<i32, !> { 5 } // Error: expected enum `std::result::Result`, found integral variable
-fn always_five()? -> Result<i32, !> { Ok(5) } // Error: expected i32, found enum `std::result::Result`
-```
-And lets one choose explicitly how the body's type should be inferred:
-```rust
-fn def1() -> Option<i32> { Default::default() } // gives None
-fn def2()? -> Option<i32> { Default::default() } // gives Some(0)
+fn some_default<T: Default>() -> Option<T> { Default::default() } // Produces None, never using the bound
 ```
 
-This RFC asserts that introducing such a syntax is unnecessary in practice.
-It would be particularly unfortunate to need such a sigil on `main` at the
-very beginning, as the first non-main functions written by a beginner would
-not have it.
+But could be accidentally written after a number of other functions in which
+the author relied upon the `T` -> `Option<T>` ok wrapping.
 
-(The particular demonstration syntax above has the problem that the `?`
-looks like it's part of the type, but isn't.)
+There are also ordering complications since in certain examples it's
+unclear which of multiple possible blocks should have ok-wrapping
+applied.  Take this example:
+
+```rust
+let _: Option<i32> =
+    catch {
+       let x = catch { 4 };
+       println!("{:?}", x);
+    };
+```
+
+Both `4` and `Some(4)` are logically-consistent output, depending which
+catch block is chosen to do the wrapping. (Yes,
+`let _: i32 = do catch { 4 };` compiles today (2017-08-07) in nightly
+play. If that changes, the example still applies by adding another
+level of `Option<>`.)
+
+An equivalent example can also be produced using closures.
 
 ## Don't touch `return`s
 
@@ -384,6 +486,27 @@ other types.  This might be done by adding a coercion from `()` to
 This would make the "usually `?` but sometimes not" inconsistency worse,
 however, as it'd only be fixed for `()`.
 
+## `-> T throws E` syntax
+
+This was [mentioned] as a future possibility in [RFC 243].  It proposes
+`-> T throws E` where this RFC has `? -> Result<T, E>`.
+
+[mentioned]: https://github.com/rust-lang/rfcs/blob/master/text/0243-trait-based-exception-handling.md#throw-and-throws
+
+Restricting this to `Result` would be a real shame when [RFC 1859] was
+just accepted to extend `?` to more types, `Option` particularly.  The
+two general options are 1) a new type variable with a `Try` bound, or
+2) `impl Try<Ok=T, Error=E>`.
+
+Unfortunately, neither of those are backwards compatible to use this
+with an existing `Result`-returning method.  A new variable cannot be
+inferred by use with `?`, nor with inherent methods.  `impl Try` could
+allow some combinators (`and` could be written on the existing trait)
+but not all (`map` needs ATC, which don't exist yet and isn't on the
+trait).  And even on new methods, these both lose the valuable
+distinction between `Result` and `Option`, in terms of `must_use` as
+well as things like `ok` vs `ok_or` inherent methods.
+
 ## Do nothing
 
 Always an option.  This doesn't increase the power of the language, and
@@ -393,30 +516,7 @@ understanding the expression-orientated nature of Rust.
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
-## Types in nested wraps
-
-What should the following method do, for example?
-
-```rust
-let _: Option<i32> =
-    catch {
-       let x = catch { 4 };
-       println!("{:?}", x);
-    };
-```
-
-Both `4` and `Some(4)` are logically-consistent output, depending which
-catch block is chosen to do the wrapping. (Yes, `let _: i32 = do catch { 4 };`
-compiles today (2017-08-07) in nightly play.  If that changes, the example
-still applies by adding another level of options.)
-
-An equivalent example can also be produced using closures.
-
-## Additional restrictions
-
-Are there any further limitations that could be placed on it to restrict
-surprises without losing the ergonomic advantages?  Perhaps it should only
-be allowed in methods that use `?`?
+* Bikeshedding on syntax
 
 # Future Possibilities
 
@@ -427,13 +527,22 @@ in the same method, it may encourage a pattern like this:
 
 ```rust
 struct IntMinError;
-fn checked_neg(x: i32) -> Result<i32, IntMinError> {
+fn checked_neg(x: i32)? -> Result<i32, IntMinError> {
     if x == i32::min_value() { Err(IntMinError)? }
     -x
 }
 ```
 
-It may be nice to add a [`throw x`] sugar to avoid `Err(x)?`, but as in
-[RFC 243], that can be left for the future.
+It may be nice to add a [`throw x`] sugar to avoid `Err(x)?`:
+
+```rust
+struct IntMinError;
+fn checked_neg(x: i32)? -> Result<i32, IntMinError> {
+    if x == i32::min_value() { throw IntMinError }
+    -x
+}
+```
+
+But as in [RFC 243], it can be left for the future.
 
 [`throw x`]: https://github.com/rust-lang/rfcs/blob/master/text/0243-trait-based-exception-handling.md#throw-and-throws
