@@ -4,7 +4,6 @@
 - Rust Issue: (leave this empty)
 
 # Summary
-[summary]: #summary
 
 Evaluate options for the future of `rand` regarding both cryptographic and
 non-cryptographic uses.
@@ -21,10 +20,8 @@ See also:
 * [Strawman revision doc]
 
 # Introduction
-[introduction]: #introduction
 
 ## Motivation
-[motivation]: #motivation
 
 The [crate evaluation thread] brought up the issue of stabilisation of the `rand`
 crate, however there appears to be significant dissatisfaction with the current
@@ -46,7 +43,6 @@ Once this is done, we can talk about stabilising parts of `rand` in a separate
 PR or RFC.
 
 ## Background
-[background]: #background
 
 A *Pseudo-Random Number Generator*, abbreviated PRNG or simply RNG, is a
 deterministic algorithm for generating *random-like* numbers. Such algorithms
@@ -87,7 +83,6 @@ L'Ecuyer provides some more background on PRNGs in
 [Random Number Generation](https://scholar.google.com/citations?view_op=view_citation&hl=en&user=gDxovowAAAAJ&citation_for_view=gDxovowAAAAJ:d1gkVwhDpl0C) (Springer, 2012).
 
 ## Guide-level explanation
-[guide-level-explanation]: #guide-level-explanation
 
 Since this concerns one (or more) crates outside the standard library, it is
 assumed that these crates should be self-documenting. Much of this documentation
@@ -98,10 +93,8 @@ in the crate API documentation should be moved to a book or example project.
 They are well written, but do not really belong in API documentation.
 
 # Reference-level explanation
-[reference-level-explanation]: #reference-level-explanation
 
 ## Generation API
-[generation-API]: #generation-API
 
 This section concerns the `Rng` trait and extension traits, but not
 specifically implementations or generation of values of other types.
@@ -280,7 +273,6 @@ These traits can be added in the future without breaking compatibility, however
 they may be worth discussing now.
 
 ### Creation of RNGs
-[creation-of-rngs]: #creation-of-rngs
 
 The `Rng` trait does not cover creation of new RNG objects. It is recommended
 (but not required) that each RNG implement:
@@ -308,10 +300,15 @@ generators to be well-seeded even when the parent has been replaced via
 this also has a disadvantage: it doesn't use `thread_rng` so cannot be made
 deterministic for testing purposes.
 
+**Question**: should `new` return a `Result`? In theory `OsRng` can fail to be
+created, but on most platforms creation will always succeed; on the other hand
+a panic during usage is a little more likely, but a panic is more difficult to
+capture.
+
 ## Generators
 
 This section concerns implementations of `Rng`;
-[the API is discussed above](generation-API).
+[the API is discussed above](#generation-api).
 
 In no particular order, this section attempts to cover:
 
@@ -325,7 +322,7 @@ In no particular order, this section attempts to cover:
 
 Rand currently provides three PRNG algorithms, and a wrapper (`OsRng`) to
 OS-provided numbers. It also provides a couple of simple wrappers, and two
-traits, [`Rng` and `SeedableRng`](#generation-API). The included PRNGs are:
+traits, [`Rng` and `SeedableRng`](#generation-api). The included PRNGs are:
 
 *   [`IsaacRng`] (32-bit) and [`Isaac64Rng`]; a very fast cryptographic
     generator, but with potential attacks on weak states
@@ -432,13 +429,11 @@ On the other hand, since the primary use of `OsRng` is to seed another RNG
 after initialisation, it might be preferable to replace `OsRng` with a simple
 `try_fill_bytes` function. This would entail doing all synchronisation on first
 use (via a simple synchronisation primitive or thread-local memory), and
-somehow adapting this and/or each `Rng`'s `new_from_rng` function to work
-together (possibly replacing `new_from_rng(other_rng)` with a simple
-`new_from_os()`).
+adapting each `Rng`'s `fn new() -> Self` function.
 
 Contrary to the above, an implementation of `Rng` using only the OS may be
 exactly what some users want, since this can be used just like any other `Rng`,
-aside from the lower performance.
+aside from the lower performance; **probably [`OsRng`] will stay as-is**.
 
 ### Convenience functions
 
