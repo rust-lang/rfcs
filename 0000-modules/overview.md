@@ -135,7 +135,7 @@ visible outside of this crate, because the full path to that item is not
 `exported`.
 
 If a user wants to make one of their file submodules a part of their API, they
-can do so using the `export keyword (no `use`), followed by the name of the
+can do so using the `export` keyword (no `use`), followed by the name of the
 module, in that module's parent:
 
 ```rust

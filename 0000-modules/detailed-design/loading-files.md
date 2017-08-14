@@ -191,4 +191,4 @@ making all files "inlined" into their directory and/or using the filename to
 determine the visibility of a module. We've decided not to steps that are this
 radical right now.
 
-[migrations]: detailed-design/migrations.md
+[migrations]: migrations.md
