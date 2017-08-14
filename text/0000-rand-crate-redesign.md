@@ -9,7 +9,7 @@
 Evaluate options for the future of `rand` regarding both cryptographic and
 non-cryptographic uses.
 
-There is a strawman design which implements or demonstrates many of the changes
+There is a strawman revision which implements or demonstrates many of the changes
 suggested in this document, but is not entirely in-sync with the suggestions
 here.
 
@@ -33,6 +33,15 @@ The most fundamental question still to answer is whether a one-size-fits-all
 approach to random number generation is sufficient (*good enough*) or whether
 splitting the crate into two is the better option: one focussed on cryptography,
 the other on numerical applications.
+
+At the finer level, there are many questions, e.g. which members the `Rng`
+trait needs, what the `Rand` trait should look like, which PRNG algorithms
+should be included, what `thread_rng` should do, and so on.
+
+Once some progress has been made to answering these questions, I will update
+the strawman revision accordingly, and if necessary split the corresponding PR
+into reviewable chunks. Once this is done, we can talk about stabilising parts
+of `rand`.
 
 ## Background
 [background]: #background
@@ -224,7 +233,7 @@ Second, the `rand` crate could:
 
 ### Debug
 
-The strawman design now specifies `pub trait Rng: Debug {...}`, i.e. requires
+The strawman revision now specifies `pub trait Rng: Debug {...}`, i.e. requires
 all implementations to implement `Debug`. In many cases this requires only
 that implementing types are prefixed with `#[derive(Debug)]`, although in some
 cases it adds requirements on internal values.
@@ -518,7 +527,7 @@ Most of this functionality is contained in the [`distributions`] module.
 (For a time this module was renamed `dist` for brevity, but renamed back to
 avoid confusion. `distr` might be another possibility.)
 
-The strawman design showcases two traits for generating random values of the
+The strawman revision showcases two traits for generating random values of the
 current type, the [`Rand`] trait and [`SimpleRand`]. It is the intention to only
 keep one of these, and name whichever remains `Rand`. The first, (currently
 named) [`Rand`], supports parameterisation by a distribution, thus giving
@@ -680,7 +689,7 @@ into `distributions` via `pub use`. Possibly the sub-modules should be hidden.
 #### Conversion to floating point
 
 Currently this is implemented via `impl Distribution<f32> for Uniform01` and
-the `f64` equivalent in the strawman refactor, and within the `Rng` trait in
+the `f64` equivalent in the strawman revision, and within the `Rng` trait in
 the current `rand`. It has been suggested that this should be implemented in
 a simple function (used by `Rand` / `Uniform01`) so that users only wanting to
 use a small subset of the library for cryptography do not need to use the
@@ -934,8 +943,8 @@ Distributions:
 The `derive_rand` sub-crate of the current `rand` provides another method to
 generate random values of the current type. This could probably be adjusted to
 derive `Rand<Default>` or maybe even support custom distributions. In the
-strawman design I simply deleted this sub-crate since I have no interest in
-creating random values this way.
+strawman revision I simply deleted this sub-crate since I have no personal
+interest in creating random values this way.
 
 -------------------------------------------------------------------------------
 
