@@ -187,4 +187,4 @@ root of this crate. To access the root of this crate, you need to prefix paths
 `crate`.
 
 [extern-crate]: https://github.com/rust-lang/rfcs/pull/2088
-[loading-files]: /0000-modules/detailed-design/loading-files.md
+[loading-files]: detailed-design/loading-files.md

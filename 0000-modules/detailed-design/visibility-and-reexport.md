@@ -171,4 +171,4 @@ appealing properties, such as grepability and clarity of naming.
 We could make the error on a non-exposed `export` item a warning instead of a
 hard error.
 
-[migration]: 0000-modules/detailed-design/migration.md
+[migration]: detailed-design/migration.md

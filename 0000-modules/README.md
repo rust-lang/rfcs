@@ -26,9 +26,9 @@ sections:
 Each of the detailed design subsections contains its own description of
 drawbacks and alternatives.
 
-[motivation]: 0000-modules/motivation.md
-[overview]: 0000-modules/overview.md
-[loading-files]: 000-modules/detailed-design/loading-files.md
-[paths]: 000-modules/detailed-design/paths.md
-[visibility]: 000-modules/detailed-design/visibility-and-reexport.md
-[migration]: 000-modules/detailed-design/migration.md
+[motivation]: motivation.md
+[overview]: overview.md
+[loading-files]: detailed-design/loading-files.md
+[paths]: detailed-design/paths.md
+[visibility]: detailed-design/visibility-and-reexport.md
+[migration]: detailed-design/migration.md
