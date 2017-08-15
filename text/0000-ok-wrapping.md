@@ -518,6 +518,23 @@ understanding the expression-orientated nature of Rust.
 
 * Bikeshedding on syntax
 
+## Semantics of `catch` blocks
+
+[RFC 243] mandates ok-wrapping for _all_ catch blocks; the current
+implementation [never]((https://github.com/rust-lang/rust/issues/41414))
+does ok-wrapping.  The hope in the issue was that both would automatically
+do it where needed, but designs for that ran into trouble, hence the
+`catch` vs `catch?` split.
+
+Should the semantics just stay those originally approved?  That seems best:
+
+* `catch { foo }` is useless without ok-wrapping
+* `catch { foo? }` is either better than `catch { Ok(foo?) }` (because error
+  conversion is desired), or can be simplified to just `foo`
+* `catch { foo? + 1 }` benefits from the wrapping
+* `catch { foo?.bar()? }` is better than `catch { foo?.bar() }` for the same
+  reasons as discussed in the motivation section
+
 # Future Possibilities
 
 ## `throw` sugar
