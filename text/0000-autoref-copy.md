@@ -21,7 +21,7 @@ fn by_mut_ref(_: &mut S) {}
 fn main() {
     let s = S(5);
     by_val(s);
-    by_ref(s);
+    by_ref(s); // This works after this RFC.
     // by_mut_ref(s); // ERROR -- expected `&mut S`, found `S`
 }
 ```
@@ -30,9 +30,50 @@ fn main() {
 [motivation]: #motivation
 
 When working with `Copy` data, the distinction between borrowed and owned data
-is often unimportant. However, generic code often results in function which
-expect a reference rather than an owned value. In these cases, users have to
-add manually create a reference by adding `&` at the call site.
+is often unimportant. However, generic code often results in code which will
+only accept a particular variant of a `Copy` type (`T`, `&T`, `&&T`, ...).
+This is a frustration in many places:
+
+```rust
+// Comparisons:
+let v = vec![0, 1, 2, 3];
+v.iter().filter(|x| x > 1); // ERROR: expected &&_, found integral variable
+// These work:
+0 > 1;
+&0 > &1;
+// But these don't:
+&0 > 1;
+0 > &1;
+
+// Trait instantiations:
+let mut map: HashMap::new();
+map.insert(0, "Hello");
+map.insert(1, "world!");
+map[0]; // ERROR: expected &{integer}, found integral variable
+// or
+map.get(1); // ERROR: expected `&{integer}`, found integral variable
+
+// Numeric operators:
+// These work:
+&0 + &1;
+0 + &1;
+&0 + 1;
+// But these don't:
+&&0 + 1;
+&&0 + &1;
+&&0 + &&1;
+```
+
+These interactions confuse both new and experienced users without providing
+any significant value. It's clear what's intended by `map.get(1)` or
+`vec.iter().filter(|x| x > 1)`. When users encounter these errors in practice,
+the only reasonable thing they can do is add `&` and `*` as necessary to make
+their code compile.
+
+This RFC seeks to address one particular variant of this problem: passing
+owned `Copy` data where a reference was expected.
+
+Example:
 
 ```rust
 use std::collections::HashMap;
@@ -126,7 +167,8 @@ fn main() {
 [drawbacks]: #drawbacks
 
 - This increases the special behavior of `Copy` types, making it potentially
-confusing to new users.
+confusing to new users. Some simple, non-generic code becomes more confusing
+because `fn foo(x: &i32) { ... }` can now be called like `foo(5)`;
 - The existing coercion mechanism doesn't allow for coercion of generic
 arguments, nor does it use coercions in trait lookup. Because of this, users
 will still need to manually add `&` when trying to, for example, index into
@@ -152,6 +194,7 @@ which could be difficult to identify when attempting to optimize code.
 [unresolved]: #unresolved-questions
 - Can we make it easier to use copy values where references are expected when
 working with traits and generic code? In particular, it would be nice to make
-operators such as `Index` auto-reference. One possible way of doing this would
-be to introduce default implementations such as
-`Index<&Idx>` for `T: Index<Idx>`.
+operators such as `Index` or `Add` auto-reference and auto-dereference.
+It would also be great if we could find some way to trigger existing deref
+coercions in generic cases such as passing `&Rc<MyT>` to
+`fn foo<T: SomeTrait>(t: &T)`.
