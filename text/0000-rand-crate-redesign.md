@@ -525,19 +525,49 @@ Most of this functionality is contained in the [`distributions`] module.
 (For a time this module was renamed `dist` for brevity, but renamed back to
 avoid confusion. `distr` might be another possibility.)
 
-The strawman revision showcases two traits for generating random values of the
-current type, the [`Rand`] trait and [`SimpleRand`]. It is the intention to only
-keep one of these, and name whichever remains `Rand`. The first, (currently
-named) [`Rand`], supports parameterisation by a distribution, thus giving
-explicit control over how values are generated. The second, [`SimpleRand`] lacks this
-parameterisation, making simple usage simpler but requiring usage of
-distributions directly for other cases.
+### Traits governing generation
 
-Both "Rand" traits work in concert with the [`Distribution`] trait; more on that
-below. For these examples we'll use two implementations: the "best-for-the-type"
-[`Default`] distribution and the [`Range`] distribution.
+The current `rand` crate has a [`Rand`](https://docs.rs/rand/0.3.16/rand/trait.Rand.html)
+trait implementable by any type which can
+be "randomly constructed", with quite a few (but not exhaustive) implementations
+for various Rust types, one for a standard library type (`Option`), and even
+implementations for `Rng` types.
 
-Now to some [`Rand`] examples:
+The strawman revision showcases two variations on `Rand`: a [`Rand`] trait
+parameterisable by distributions and a [`SimpleRand`] trait, similar to the
+current `Rand`. The intention was to keep only one of these, however my current
+preference is to remove both (more on this in a moment).
+
+Current `rand` has two traits for generating values from distributions,
+[`Sample`](https://docs.rs/rand/0.3.16/rand/distributions/trait.Sample.html) and
+[`IndependentSample`]. I believe the purpose of `Sample` was to allow
+implementation for random processes (e.g. random walks and Lévy flight);
+however such processes are usually better interacted with via `advance_state()`
+and `get_state()` functions, and are in any case beyond the scope of the `rand`
+crate. The strawman revision therefore removes `Sample` and renames
+[`IndependentSample`] to [`Distribution`], better reflecting the trait's
+purpose.
+
+The strawman revision adds several new distributions, namely `Uniform`,
+`Uniform01`, and `Default` (see below). These distributions allow creation of
+random values for arbitrary types, replacing the need for a `Rand` trait. The
+[`Rand`] and [`SimpleRand`] traits in the strawman revision are simply
+wrappers around distributions, specifically `Default`.
+
+Additionally, the strawman revision adds a trait called [`Sample`]. This is
+simply an extension to [`Rng`], adding some convenience functions to access
+functionality from the `Default` and `Range` distributions, as well as
+iterators.
+
+So the strawman revision currently has *three* convenience wrappers around
+distributions: [`Rand`], [`SimpleRand`] and [`Sample`]. My feeling is that the
+most convenient of these is [`Sample`] and the other two serve no real purpose
+(note that implementing random value creation for user-defined types is
+now handled via `impl Distribution<T> for Default`).
+
+#### Examples
+
+Some [`Rand`] examples:
 
 ```rust
 use rand::distributions::{Rand, Default, Range};
@@ -551,7 +581,7 @@ let byte = u8::rand(&mut rng, Default);
 let ranged = Rand::rand(&mut rng, Range::new(-99, 100));
 ```
 
-And some [`SimpleRand`] examples:
+Some [`SimpleRand`] examples:
 
 ```rust
 use rand::distributions::{SimpleRand, Distribution, Range};
@@ -566,21 +596,36 @@ let byte = u8::simple_rand(&mut rng);
 let ranged = Range::new(-99, 100).sample(&mut rng);
 ```
 
-Note that the `Default` distribution also supports direct sampling, so we don't
-need *either* version of `Rand`:
+Some [`Sample`] examples:
+
+```rust
+use rand::distributions::{Sample, Rand, Default, Range};
+let mut rng = rand::thread_rng();
+
+// Type annotation needed:
+let byte: u8 = rng.gen();
+
+// For ranges, the generated type is the same as the parameter type:
+let ranged = rng.gen_range(-99, 100);
+```
+
+Equivalent code without using any of the wrappers:
 
 ```
-use rand::distributions::{Distribution, Default};
+use rand::distributions::{Distribution, Default, Range};
 let mut rng = rand::thread_rng();
 
 let byte: u8 = Default.sample(&mut rng);
+
+let ranged = Range::new(-99, 100).sample(&mut rng);
 ```
 
 #### Pass by copy?
 
-Currently [`Rand::rand`] takes the distribution parameter by value. This is the
-best option for zero-size distribution types like [`Default`] and [`Open01`], since
-it allows call syntax like `Rand::rand(&mut rng, Default)` (second parameter
+Currently [`Rand::rand`] and [`Sample::sample`] take the distribution parameter
+by value. This is the best option for zero-size distribution types like
+[`Default`] and [`Open01`], since it allows call syntax like
+`Rand::rand(&mut rng, Default)` (second parameter
 does not need to be referenced).
 
 Most distribution types are fairly small, e.g. `Range` is two or three values
@@ -594,15 +639,10 @@ Does this add overhead? Note that currently `rand` is implemented using
 be required to support `Copy` or, at least, should `sample` take `self` by
 value?
 
-### Distributions
+### Distributions trait
 
 The [`Distribution`] trait replaces `rand`'s current [`IndependentSample`]
-trait. The `Sample` trait is removed; I believe it was originally intended for use
-in random processes like random walks; these are discrete-time (stochastic)
-models, thus `advance_state()` and `get_state()` functions are more applicable
-than `sample()`; in any case this is beyond the scope of `rand`.
-
-The surviving trait is quite simple:
+trait. It is quite simple:
 
 ```rust
 /// Types (distributions) that can be used to create a random instance of `T`.
@@ -618,8 +658,10 @@ This could be extended with other functions such as
 see a good rationale.
 
 Any implementation, such as [`Default`], supports usage via `sample`:
-`Default.sample(&mut rng)`. (Note that `struct Default;` is valueless; Rust
+`Default.sample(&mut rng)`. (Note that `struct Default;` is a unit type (like `()`); Rust
 allows objects to be created without any extra syntax: `let x = Default;`.)
+
+#### Simple distributions
 
 Several zero-size structs implementing [`Distribution`] specify simple distributions:
 
@@ -631,20 +673,31 @@ Several zero-size structs implementing [`Distribution`] specify simple distribut
 *   [`Open01`] is like [`Uniform01`] but for `(0, 1)` (thus excluding 0.0)
 *   [`Default`] uses [`Uniform`] or [`Uniform01`] depending on type (and can be
     extended for other types)
+*  [`AsciiWordChar`] samples uniformly from the ASCII characters 0-9, A-Z and a-z
 
-[`Default`] has roughly the same capabilities as the
-[old `Rand`](https://docs.rs/rand/0.3.15/rand/trait.Rand.html); currently it doesn't
-support arrays, tuples, `Option`, etc., but it could conceivably, and probably
-also `derive(Rand<Default>)` or something similar.
+[`Default`] has roughly the same capabilities as the the current `rand` crate's
+[`Rand`](https://docs.rs/rand/0.3.15/rand/trait.Rand.html); currently it doesn't
+support arrays, tuples, `Option`, etc., but support for thes could conceivably
+be added, and probably also an equivalent to `derive_rand`.
 
 It should be noted that there is no agreement on using the name `Default`. In
 particular, there is a naming conflict with `std::default::Default`, which can
 lead to surprising compiler messages if the user forgets to
-`use rand::Default;`. Similarly, `Uniform` and `Uniform01` are open to
-adjustment. All three could be replaced with a single `Uniform`; this just
-leaves two semantic issues: the range differs by type, and some possible
+`use rand::Default;`.
+Potentially `Default` could be renamed to `Rand`; my personal feeling is that
+the name `Default` works well.
+
+Similarly, `Uniform` and `Uniform01` are open to
+adjustment. All three (including `Default`) could be replaced with a single
+`Uniform`; but using three names does solve
+two semantic issues: (1) the range of sampled values differs by type, especially
+between integer and floating-point types, and (2) some possible
 type-dependent implementations (such as for `Option`) cannot practically have
-uniform distribution.
+a uniform distribution.
+
+[`AsciiWordChar`] is currently an oddity, used in many tests but with no hard
+requirements on form or function. This could be renamed and augmented in line
+with [Regex character classes](https://en.wikipedia.org/wiki/Regular_expression#Character_classes).
 
 #### Range
 
@@ -654,15 +707,27 @@ There is one further uniform distribution:
     integer and floating-point types
 
 This [`Range`] is minimally changed from the current `rand`, and supports
-extension to user-defined types by exposing its internal fields. An alternative
+extension to user-defined types by exposing its internal fields.
+
+An alternative
 implementation, [`range2`], has been written in an attempt to improve extension
 to other types and avoid the need for an unused `zone` field with float types,
 but has some drawbacks, perhaps most notably that `Range` is parameterised so
-that `Range::new(low, high)` must be replaced with `new_range(low, high)` or
+that `Range::new(low, high)` must be replaced with `range(low, high)` or
 `Range::<T>::new(low, high)`.
 
-Possibly the current `range` function should be removed, then `new_range` from
-[`range2`] and an equivalent for [`Range`] could be named `range`.
+**Question:** which `range` implementation should we choose?
+
+Unfortunately `range2` exposes more public types like `RangeInt<X>` and
+`RangeFloat<X>`, and must retain the `SampleRange` trait but *only* to identify
+types for which a `Range` implementation is available. (Suggestions to improve
+this code welcome.)
+
+Note that while `Range` is open to implementation for user-defined types, its
+API with a "low" and "high" may not be appropriate for many types; e.g. a
+complex type may want "low_real", "high_real", "low_complex" and "high_complex"
+parameters. For such uses, it is suggested the user create a new distribution
+(e.g. `ComplexRange`) and not try to extend `Range`.
 
 #### Non-uniform distributions
 
@@ -984,3 +1049,6 @@ interest in creating random values this way.
 [`set_thread_rng`]: https://dhardy.github.io/rand/rand/fn.set_thread_rng.html
 [`set_new_thread_rng`]: https://dhardy.github.io/rand/rand/fn.set_new_thread_rng.html
 [`OsRng`]: https://dhardy.github.io/rand/rand/struct.OsRng.html
+[`Sample`]: https://dhardy.github.io/rand/rand/trait.Sample.html
+[`Sample::sample`]: https://dhardy.github.io/rand/rand/trait.Sample.html#tymethod.sample
+[`AsciiWordChar`]: https://dhardy.github.io/rand/rand/distributions/struct.AsciiWordChar.html
