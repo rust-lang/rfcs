@@ -92,6 +92,13 @@ In my opinion, [the extensive examples](https://docs.rs/rand/0.3.16/rand/#exampl
 in the crate API documentation should be moved to a book or example project.
 They are well written, but do not really belong in API documentation.
 
+## Note on type parameters
+
+Very often we make use of type parameters with a restriction like
+`R: Rng + ?Sized`. This is *almost* the same as just `R: Rng`, except for one
+thing: `R: Rng` doesn't work for dynamic dispatch (where the parameter is a
+trait object like `let mut rng: &mut Rng = &mut thread_rng();`).
+
 # Reference-level explanation
 
 ## Generation API
@@ -259,15 +266,9 @@ pub trait JumpableRng: Rng {
 }
 ```
 
-And a trait could allow entropy injection. (Does the type `T` need to be a
-template parameter?)
-
-```rust
-pub trait InjectableRng<T>: Rng {
-    /// Add entropy to the RNG, adjusting the sequence of numbers produced.
-    fn inject(&mut self, entropy: T);
-}
-```
+And a trait could allow entropy injection, however I don't believe this belongs
+in `rand`. See [suggested trait](https://github.com/rust-lang/rfcs/pull/2106#issuecomment-322414869)
+and [my thoughts](https://github.com/rust-lang/rfcs/pull/2106#issuecomment-322705482).
 
 These traits can be added in the future without breaking compatibility, however
 they may be worth discussing now.
@@ -278,32 +279,26 @@ The `Rng` trait does not cover creation of new RNG objects. It is recommended
 (but not required) that each RNG implement:
 
 *   `pub fn new() -> Self`, taking a seed from [`OsRng`], see below
-*   `pub fn new_from_rng<R: Rng+?Sized>(rng: &mut R) -> Self`
+*   `pub fn from_rng<R: Rng+?Sized>(rng: &mut R) -> Self`
 *   `SeedableRng<Seed>` for some type `Seed`
 
 Note that the above won't be applicable to all `Rng` implementations; e.g.
 `ReadRng` can only be constructed with a readable object.
 
+`from_rng` is a bit special: in some cases a naive implementation used to seed
+a PRNG from another of the same type could effectively make a clone.
+Implementations should be careful to prevent this from happening by sampling
+extra values and/or mutating the state. It should also be clear that this method
+does not add entropy, therefore should not be used for cryptography.
+
 Other constructors should be discouraged; e.g. all current generators have a
 `new_unseeded` function; realistically no one should use this except certain
 tests, where `SeedableRng::from_seed(seed) -> Self` could be used instead.
 
-**Question**: is `new_from_rng` a good idea? E.g. naively seeding from another
-generator of the same type can unwittingly create a clone.
-
-**Question**: should be the usual story for creating a new RNG be to use
-`OsRng`? This has two advantages: (1) avoids the possibility of issues where
-constructing sub-generators compromises the security of generation (or even
-leads to multiple generators returning the same values), and (2) allows new
-generators to be well-seeded even when the parent has been replaced via
-`set_thread_rng` or lost entropy due to entropy-deprevation-attack; however
-this also has a disadvantage: it doesn't use `thread_rng` so cannot be made
-deterministic for testing purposes.
-
-**Question**: should `new` return a `Result`? In theory `OsRng` can fail to be
-created, but on most platforms creation will always succeed; on the other hand
-a panic during usage is a little more likely, but a panic is more difficult to
-capture.
+Alternatively, `new` could seed from `thread_rng` or similar, or not exist
+forcing users to use `from_rng` or the `SeedableRng` trait. However, I believe
+`new` should exist and seed from `OsRng`, since this makes the easiest way to
+create an RNG secure and well seeded.
 
 ## Generators
 
