@@ -81,6 +81,8 @@ These all come from the discussion thread [here](https://github.com/rust-lang/rf
 
 - Show fully-qualified names only for expanded items on the doc. Collapsed items would show in the current format. However, this does not serve the case where you know the types and just want to read about the item.
 
+- This proposal except that we would show fully-qualified names only for types that are ambiguous (or as others have put it "go up levels until all ambiguities get resolved"). Unfortunately, a name may be unambiguous without it being clear to a reader that it is unambiguous. For example, in the example above, it turns out that `io::Error` would have been unambiguous because `tokio::io` does not contain an `Error` type; however, this is far from obvious to a reader who is not familiar to `tokio::io`.
+
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
