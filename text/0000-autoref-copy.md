@@ -184,12 +184,10 @@ annoying for new users, and the solution is relatively simple.
 
 Another alternative would be to also add the following conversions for
 `T: Copy`:
-
--`T` to `&mut T`: This conversion has the potential to introduce hidden
+- `T` to `&mut T`: This conversion has the potential to introduce hidden
 mutations. With this change, passing a variable to a function could allow
 the function to change the value of the variable, even if no `&mut` is present.
-
--`&mut T` and `&T` to `T`: This conversion would cause extra copies to occur
+- `&mut T` and `&T` to `T`: This conversion would cause extra copies to occur
 which could be difficult to identify when attempting to optimize code.
 
 # Unresolved questions
