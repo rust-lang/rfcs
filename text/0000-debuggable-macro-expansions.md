@@ -44,9 +44,7 @@ assert-like, so the panic/crash stack use case really needs to have it both
 ways depending on the nature of the macro in the same build
 
 3. Since Firefox supports profiling the same builds that are delivered to
-users by the means of the [Gecko Profiler](https://developer.mozilla.org /en-
-US/docs/Mozilla/Performance/Profiling_with_the_Built-in_Profiler), solutions
-that address the profiling use case should not require a special build.
+users by the means of the [Gecko Profiler](https://developer.mozilla.org/en-US/docs/Mozilla/Performance/Profiling_with_the_Built-in_Profiler), solutions that address the profiling use case should not require a special build.
 
 Changing the default behavior to the current behavior of `-Zdebug-macros` of
 the location info reflecting the macro definition allows the debugging, crash
@@ -60,7 +58,7 @@ addressed.
 [guide-level-explanation]: #guide-level-explanation
 
 (Assume a guide section title like "Debug info for code expanded from
-(macros".)
+macros".)
 
 By default, debug location information for code expanded from macros reflects
 the location of the corresponding source text, as one would expect. That is,
@@ -169,7 +167,7 @@ When expanding a macro that is annotated with `#[collapse_debuginfo]`, use the
 code that currently runs by default.
 
 Add `#[collapse_debuginfo]` to the macros in `src/libstd/macros.rs` as well as
-macros whose name starts with `assert_` elsewhere in the standard library.
+to macros whose name starts with `assert_` elsewhere in the standard library.
 
 
 ## Reference text
