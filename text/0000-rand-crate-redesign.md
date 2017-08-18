@@ -270,6 +270,14 @@ And a trait could allow entropy injection, however I don't believe this belongs
 in `rand`. See [suggested trait](https://github.com/rust-lang/rfcs/pull/2106#issuecomment-322414869)
 and [my thoughts](https://github.com/rust-lang/rfcs/pull/2106#issuecomment-322705482).
 
+Further, serialisation could be allowed by conditionally supporting [Serde].
+This should be an optional feature to avoid depending on Serde where not
+needed. Serialisation has been requested
+[in this PR](https://github.com/rust-lang-nursery/rand/pull/119).
+For now this has not been implemented since [`serde_derive` does not support
+`Wrapping`](https://github.com/serde-rs/serde/issues/1020) (and I'm too lazy to
+write a workaround).
+
 These traits can be added in the future without breaking compatibility, however
 they may be worth discussing now.
 
@@ -1052,3 +1060,4 @@ interest in creating random values this way.
 [`Sample`]: https://dhardy.github.io/rand/rand/trait.Sample.html
 [`Sample::sample`]: https://dhardy.github.io/rand/rand/trait.Sample.html#tymethod.sample
 [`AsciiWordChar`]: https://dhardy.github.io/rand/rand/distributions/struct.AsciiWordChar.html
+[Serde]: https://serde.rs/
