@@ -1,5 +1,5 @@
 - Feature Name: result-pass
-- Start Date: (fill me in with today's date, YYYY-MM-DD)
+- Start Date: 2017-05-09
 - RFC PR: (leave this empty)
 - Rust Issue: (leave this empty)
 
