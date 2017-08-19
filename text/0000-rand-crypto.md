@@ -23,18 +23,18 @@ pub enum Error {
     pub Unspecified,
 }
 
-pub trait Generator {
+pub trait CryptoRng {
     fn try_fill(&self, dest: &mut [u8]) -> Result<(), Error>;
 }
 ```
 
 Associated with this, create another crate called `crypto-rng-os` which defines
-a struct `OsGen`, implementing `Generator` via OS functionality (using code from
+a struct `OsRng`, implementing `CryptoRng` via OS functionality (using code from
 [rand/os.rs](https://github.com/rust-lang-nursery/rand/blob/master/src/os.rs)
 and/or
 [ring/rand.rs](https://github.com/briansmith/ring/blob/master/src/rand.rs).
 
-This RFC does not directly propose adding other implementations of `Generator`,
+This RFC does not directly propose adding other implementations of `CryptoRng`,
 but if any are written to be shared, they can be placed in a small crate named
 `crypto-rand-NAME`.
 
@@ -43,10 +43,9 @@ All crates should be adopted into
 [rust-lang](https://github.com/rust-lang), or another community-maintained
 collection of repositories. This should prevent crates from becoming orphaned.
 
-Finally, add an impl for `rand::Rng` of `crypto_rand::Generator` so that the
-`rand` crate can use this `OsGen`. (Alternatively, `rand` could create a wrapper
-`OsRng` maintaining the current functionality. `rand::Rng` may get renamed.
-This is beyond the scope of this RFC.)
+Finally, add an impl for `rand::Rng` of `CryptoRng` so that the
+`rand` crate can use this `OsRng`. (Alternatively, `rand` could create a wrapper
+`rand::OsRng` maintaining the current functionality. This is beyond the scope of this RFC.)
 
 `rand::Rng` is not the subject of this RFC, but it is assumed here that this
 trait will have an API like the following:
@@ -83,7 +82,7 @@ own version of [rand](https://github.com/rust-lang-nursery/rand)'s `Rng` and
 `OsRng` since it desires a slightly different interface. With this change, the
 "OS RNG" code need not be duplicated. Further, cryptographic PRNG
 implementations can be used by cryptographic-specific code as well as used by
-numerical applications through the implementation of `rand::Rng` for `Generator`.
+numerical applications through the implementation of `rand::Rng` for `CryptoRng`.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -105,24 +104,24 @@ crate.]
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-The `Generator` trait and `Error` enum are specified above. We should make it
+The `CryptoRng` trait and `Error` enum are specified above. We should make it
 clear that although `Error::Unspecified` is directly accessible, `Error` could
 be extended in the future (is formal specification of this possible?).
 
 The `crypto-rng-os` crate should contain a single public member:
 
 ```rust
-pub struct OsGen {
+pub struct OsRng {
     // private internals
 }
 
-impl OsGen {
-    pub fn new() -> OsGen {
+impl OsRng {
+    pub fn new() -> OsRng {
         // ...
     }
 }
 
-impl crypto_rand::Generator for OsGen {
+impl CryptoRng for OsRng {
     // ...
 }
 ```
@@ -143,10 +142,9 @@ See alternatives below.
 We may prefer *not to have multiple RNG traits*; Aaron Turon
 [advocates avoiding a hard split](https://internals.rust-lang.org/t/crate-evaluation-for-2017-07-25-rand/5505/57).
 In this case, the single generator trait could still be placed in its own crate,
-`crypto-rand` or another name.
+`crypto-rand` or `rand-core`. See [an alternative proposal for the `Rng` trait](https://github.com/rust-lang/rfcs/pull/2106#issuecomment-323511494).
 
-Alternatively, we could have separate `Rng` and `CryptoRng` traits (where
-`CryptoRng` is another name for the `Generator` of this RFC), but where
+Alternatively, we could have separate `Rng` and `CryptoRng` traits, but where
 `CryptoRng: Rng`. [See joshjf's proposed design](https://github.com/rust-lang/rfcs/pull/2106#issuecomment-323388931).
 In this case, possibly both traits should be in the `crypto-rand` crate or
 possibly there should be no such separation of crates.
@@ -159,13 +157,13 @@ implementation is going to want to return a transient failure: Linux's
 the only interface I am aware of likely to have a transient failure, but under
 normal usage it would simply block, and in any case we never use it).
 
-Many other names could be used instead of `Generator`: `Rng` (as in `rand`),
-`SecureRandom` (as in `ring`), `CryptoRng`, `CryptoGenerator`, ...
+Many other names could be used instead of `CryptoRng`: `Rng` (as in `rand`),
+`SecureRandom` (as in `ring`), `Generator`, `CryptoGenerator`, ...
 Brian Smith argues for the name `Generator` [here](https://internals.rust-lang.org/t/crate-evaluation-for-2017-07-25-rand/5505/49) and [here](https://github.com/rust-lang/rfcs/pull/2106#discussion_r133107790).
 
-In line with [RFC #356], `OsGen` could simply be named `Generator` within the
+In line with [RFC #356], `OsRng` could simply be named `Generator` within the
 `crypto_rng_os` crate. Personally I do not like the idea of using the same name
-for a trait and its implementation.
+for a trait and its implementation. Another possible name would be `OsGen`.
 
 The `crypto-rng-os` name may not be the best; however (a) having a common prefix
 for random number generators and (b) a common prefix for crypto-rand crates
@@ -180,10 +178,10 @@ and `csrand-*` along with `rand` and `rand-*`.
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
-Given that some implementations of `OsGen` require a file handle (e.g. to
+Given that some implementations of `OsRng` require a file handle (e.g. to
 `/dev/urandom` on older versions of Linux), it is questionable how this should
-interact with threading and users who keep an `OsGen` object. Possibly the best
-option would be for `OsGen` to internally use a single handle via `lazy_static`
+interact with threading and users who keep an `OsRng` object. Possibly the best
+option would be for `OsRng` to internally use a single handle via `lazy_static`
 guarded by a mutex for threads, thus avoiding using many file handles within
 the same process.
 
