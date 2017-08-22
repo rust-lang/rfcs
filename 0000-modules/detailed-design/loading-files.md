@@ -1,8 +1,8 @@
 # Loading Files
 
-When building a Rust project, rustc will and parse some files as Rust code in
-addition to the root module. These will be used to construct a module tree. By
-default, cargo will generate the list of files to load in this way for you,
+When building a Rust project, rustc will load and parse some files as Rust code
+in addition to the root module. These will be used to construct a module tree.
+By default, cargo will generate the list of files to load in this way for you,
 though you can generate such a list yourself and specify it in your
 `Cargo.toml`, or you can generate the list in another way for your non-cargo
 build system.
@@ -13,24 +13,30 @@ module hierarchy.
 
 ## Detailed design
 
-### Processing the `--module` list (rustc)
+### Processing the `--modules` list (rustc)
 
-rustc takes a new argument called `--module`. Each `--module` argument passes
-the name of a file to treat as a module. rustc will attempt to open and parse
-all of these files, and report any errors if it is unable to. It will mount
+rustc takes a new argument called `modules`, which takes a space separated list
+of files. Each file will be treated as a module, and rustc will attempt to open
+and parse every file listed, reporting errors if it is unable to. It will mount
 these files as a tree of Rust modules using rules which mirror the current
 rules for looking up modules.
 
-It will not attempt to open or parse files if the paths meet these conditions:
+It will not attempt to open or parse files where:
 
 * The file name is not a valid Rust identifier followed by `.rs`.
-* The file is not a subdirectory of the directory containing the root module.
+* The file is not in a subdirectory of the directory containing the root
+module.
 * Any of the subdirectories of the root module in the path to this file are not
 valid Rust identifiers.
 
-(Cargo's default system will not pass any files that would be ignored by these
+Cargo's default system will not pass any files that would be ignored by these
 conditions, but if they are passed by some other system, they are ignored
-regardless.)
+regardless. For example, in a cargo managed crate with no dependencies, this
+would be a valid way to invoke rustc by hand:
+
+```
+rustc src/lib.rs --modules src/*.rs src/**/*.rs
+```
 
 Rust will mount files as modules using these rules:
 
@@ -44,9 +50,10 @@ All modules mounted this way are visible to the entire crate, but are not (by
 default) visible in the external API of this crate.
 
 If, during parsing, a `mod` statement is encountered which would cause Rust to
-load a file which was a part of the `--module` list, Rust does not
-attempt to load that file. Instead, a warning is issued that that `mod`
-statement is dead code. (See [migrations][migrations] for more info.)
+load a file which was a part of the `--modules` list, this statement will be
+used to control the visibility of that module. If the module was not a part of
+the `--modules` list, it will be loaded in the same way that it is loaded
+today.
 
 If a module is mounted multiple times, or there are multiple possible files
 which could define a module, that continues to be an error.
@@ -75,12 +82,30 @@ lib.rs
 This mounts a submodule `foo` with two items in it: submodules `bar` and `baz`.
 There is no compiler error.
 
-### Gathering the `--module` list (cargo)
+#### The `#[ignore]` attribute
+
+Additinally, modules can be annotated with the `ignore` attribute. This
+attribute will be treated as a kind of unsatisfiable cfg attribute - a module
+tagged `#[ignore]` will not be compiled.
+
+The ignore attribute can take any number of attribute arguments, which are
+paths. These are relative paths to items (usually modules) which should be
+ignored. Without an argument, `#[ignore]` is `#[ignore(self)]`. But you could
+also write:
+
+```rust
+#![ignore(foo, bar::baz)]
+```
+
+To ignore both `foo` and `bar::baz` submodules of this module, and all of their
+submodules.
+
+### Gathering the `--modules` list (cargo)
 
 #### Library and binary crates
 
 When building a crate, cargo will collect a list of paths to pass to rustc's 
-`--module` argument. It will only gather files for which the file name
+`--modules` argument. It will only gather files for which the file name
 has the form of a valid Rust identifier, followed by the characters `.rs`.
 
 cargo will recursively walk the directory tree, gathering all appropriate
@@ -106,22 +131,22 @@ problematic crates today are those which have both a `src/lib.rs` and a
 
 While gathering the default module list, cargo will determine if any other
 crate is rooted in a directory which would be collected by the default module
-list, and will instead not pass a `--module` list and issue a warning in
+list, and will instead not pass a `--modules` list and issue a warning in
 that case, informing users that they need to rearrange their crates or provide
 a list of modules themselves.
 
-(**Note:** These projects will receive a warning, but will not immediately be
-broken, because the `mod` statements they already contain will continue to pick
-up files.)
+(**Note:** These projects will receive a warning, but will not be broken,
+because the `mod` statements they already contain will continue to pick up
+files.)
 
 #### Tests, examples, and benchmarks
 
 Test, example, and benchmark crates follow a different set of rules. If the
 crate is located in the appropriate top-level directory (`tests`, `examples`,
-and so on), no `--module` list will be collected by default. However,
+and so on), no `--modules` list will be collected by default. However,
 subdirectories of these directories will be treated as individual binary
 crates: a `main.rs` file will be treated as the root module, and all other
-appropriately named files will be passed as `--module`, using the same
+appropriately named files will be passed as `--modules`, using the same
 rules described above.
 
 So if you have an examples directory like this:
@@ -144,13 +169,27 @@ However, today, cargo does not make it particularly easy to have tests,
 examples, or benchmarks that are multiple files. This design will create a
 pattern to enable users to do this.
 
-#### Providing your own module list
+#### The `load-modules` target flag
 
-The target section of the `Cargo.toml` will  gain a new item called `modules`.
-This item is expected to be an array of strings, which are relative paths from
-the cargo manifest directory to files containing Rust source code. If this item
-is specified, cargo will canonicalize these paths and pass them to rustc as the
-`--module` argument when building this target.
+Target items in the Cargo.toml have a `load-modules` flag, which is set to true
+by default. Setting it to false causes cargo not to pass a `--modules` list at
+all.
+
+For example, a crate with just a library that does not want cargo to calculate
+a modules list would have a toml like this:
+
+```toml
+[package]
+name = "foo"
+authors = ["Without Boats <woboats@gmail.com>"]
+version = "1.0.0"
+
+[lib]
+load-modules = false
+```
+
+In practice, setting this flag to false will make mod statements necessary for
+loading additional files in the project.
 
 ## Drawbacks
 
@@ -175,7 +214,7 @@ concern, the RFC allows users to explicitly specify their module lists at the
 build layer, instead of the source layer. This has some disadvantages, in that
 users may prefer to not have to open the build configuration either.
 
-This will require migrating users away from `mod` statements toward the new
+This will involve migrating users away from `mod` statements toward the new
 system.
 
 ## Alternatives
@@ -190,5 +229,3 @@ During the design process, we considered other, more radical redesigns, such as
 making all files "inlined" into their directory and/or using the filename to
 determine the visibility of a module. We've decided not to steps that are this
 radical right now.
-
-[migrations]: migrations.md

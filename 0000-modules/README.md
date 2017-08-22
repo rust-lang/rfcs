@@ -18,10 +18,10 @@ use the new system as a whole
 * **Detailed design** - the details of the proposal, broken into multiple
 sections:
     * **[Loading Files][loading-files]**
-    * **[Paths][paths]**
-    * **[Visibility and Re-exporting][visibility]**
-    * **[Migration][migration]** - this proposal involves migrating from one
-    system to another, and this section describes it in detail.
+    * **[The `local` keyword][local]**
+    * **[Use, mod, and export][use-mod-export]**
+* **[Migration][migration]** - this proposal involves migrating from one system
+to another, and this section describes it in detail.
 
 Each of the detailed design subsections contains its own description of
 drawbacks and alternatives.
@@ -29,6 +29,6 @@ drawbacks and alternatives.
 [motivation]: motivation.md
 [overview]: overview.md
 [loading-files]: detailed-design/loading-files.md
-[paths]: detailed-design/paths.md
-[visibility]: detailed-design/visibility-and-reexport.md
-[migration]: detailed-design/migration.md
+[local]: detailed-design/local.md
+[use-mod-export]: detailed-design/use-mod-export.md
+[migration]: migration.md

@@ -62,39 +62,43 @@ The major difference from today is that a `mod` statement is no longer
 necessary to get rustc to look up and load your files. The `mod` keyword still
 exists to support inline modules (`mod foo { ... }`).
 
-### Making items public to the rest of your crate
+### Making items visible to the rest of your crate
 
-By default, all modules are public to the rest of the crate. However, all
+By default, all modules are visible to the rest of the crate. However, all
 items inside them - like types, functions, traits, etc - are private to that
-module. To make them public to the rest of the crate, the can use the `pub`
-keyword:
+module. To make them visible to outside of the module, users add a visibility
+modifier. There are two visibility modifiers in the future Rust:
+
+* `pub` - this means them item is visible in the public API of this crate
+* `local` - this means the item is visible only inside this crate. It can take
+a modifier to restrict it even further, like `local(super)`.
+
+For users writing binaries, the difference between `pub` and `local` does not
+matter. For users writing libraries, `pub` items which are not actually
+accessible from outside the crate will be linted against.
 
 ```rust
 // Private to this module
 struct Foo;
 
-// Public to the crate
+// Publicly visible
 pub struct Bar;
 ```
-
-Users can make it public to only part of your crate using the `pub(restricted)`
-syntax that already exists.
 
 There are two significant differences from today:
 
 * All modules which are automatically loaded are public to the rest of the
 crate, rather than taking a visibility modifier.
-* The `pub` keyword means *public to this crate* - the equivalent of today's
-`pub(crate)`. A new keyword is introduced to mean a part of the public API;
-this is discussed in a subsequent section.
+* The new `local` visibility is added, equivalent to `pub(crate)`, and
+restricted visibilites are moved to the `local` visibility instead of `pub`.
 
 ### Importing items from other parts of your crate
 
-Once a user has a `pub` item in another module, they can import it using the
+Once a user has a public item in another module, they can import it using the
 `use` statement, just like items from external dependencies. Paths to items in
 modules of this crate work like this:
 
-* All these paths begin with the `crate` keyword, which means "this crate."
+* All these paths begin with the `local` keyword, because they are local paths.
 * All modules in the `src` directory are mounted in the root module, all
 modules in other directories are mounted inside the module for that directory.
 * Items are mounted in the module that defines them.
@@ -109,11 +113,11 @@ pub struct Bar;
 They can access it with `use` and absolute paths like this:
 
 ```rust
-use crate::foo::Bar;
-::crate::foo::Bar;
+use local::foo::Bar;
+::local::foo::Bar;
 ```
 
-The major difference from today is that the `crate` keyword is used to prefix
+The major difference from today is that the `local` keyword is used to prefix
 items inside this crate, so that users can distinguish external dependencies
 from modules in this crate by only looking at the import statement.
 
@@ -122,32 +126,50 @@ from modules in this crate by only looking at the import statement.
 ### Exporting things from your crate
 
 When a user writing a library wants to declare something exported from their
-crate, they can use the `export` visibility modifier to declare it as an
-exported item:
+crate, they can use the `pub` visibility modifier to declare it as a part of
+their public API:
 
 ```rust
 // This is exported
-export struct Foo;
+pub struct Foo;
 ```
 
-Items marked `export` inside of files which have not been exported are not
-visible outside of this crate, because the full path to that item is not
-`exported`.
-
-If a user wants to make one of their file submodules a part of their API, they
-can do so using the `export` keyword (no `use`), followed by the name of the
-module, in that module's parent:
+Items marked `pub` inside of files which are not public are not visible outside
+of this crate, because the full path to that item is not `pub`. Instead, they
+need to provide a public mod statement to make that module public:
 
 ```rust
 // In `src/lib.rs` Imagine that there is a `src/foo.rs` as well.
-export foo;
+pub mod foo;
 ```
 
-(This is actually an instance of the re-export functionality described in the
-next section.)
+Mod statements exist in this system to control the visibility of modules. If
+the `local` visibility is sufficient for your use cases, you do not need to use
+`mod` statements.
 
-The major difference from today is that `export` has been added as a keyword,
-meaning the same thing that `pub` does today.
+### Hiding items that shouldn't be exported
+
+In a library, items which are marked `pub` must be publicly accessible in the
+library's API; a lint warns users when they are not. For items which are not
+intended to be a part of the API, the `local` visibility makes them visible
+only inside the library:
+
+```rust
+// only visible "locally" - inside this crate
+local struct Foo;
+```
+
+Even in a public module, a local item won't be visible in the public API. The
+local visibility can also take restrictions, to make it more restricted than
+the default localness, such as:
+
+```rust
+// Only visible in the parent module
+local(super) struct Foo;
+```
+
+The `local` visibility takes the same role that `pub(restricted)` takes in the
+current system.
 
 ### Re-exporting items to simplify your public API
 
@@ -158,33 +180,40 @@ using the `export` keyword with a relative path (just like all non-`use`
 paths):
 
 ```rust
-export foo::Foo;
-export bar::Bar;
+local mod foo;
+local mod bar;
+
+pub export foo::Foo;
+pub export bar::Bar;
 ```
 
-This will create a new exported path to the item, even if the canonical path to
-the item is not exported. The item itself needs to be exported, or this is an
+This will create a new public path to the item, even if the canonical path to
+the item is not public. The item itself needs to be marked `pub`, or this is an
 error.
 
-This replaces the functionality of `pub use` - users can re-export with a
-visibility modifier and a path without a `use` statement.
+This replaces the functionality of `pub use`.
 
-## Deprecations
+## Opt-outs
 
-Over time, this RFC proposes to deprecate and ultimately remove this syntax
-that exists today:
+There are two primary mechanisms for opting out of this system: one, for
+temporarily avoiding compiling a file that would otherwise be compiled, during
+development, and the other, for making mod statements with visibility mandatory
+for your project.
 
-* `mod $ident;` - mod statements used to pick up new `.rs` files
-* `extern crate $ident;` - extern crate statements
-* `pub use` - re-exports using the `use` keyword
-* `pub(crate)` - the `crate` visibility is no longer necessary
+### The `#[ignore]` attribute
 
-All paths inside a module are relative to that module, just like today.
-However, you can make them absolute using the `::` prefix.
+If you want a file to be ignored, you can use the `#[ignore]` attribute on the
+top of it. This file will not be compiled and you will not get errors from it
+unless they were very early parsing errors. That is, this file will not need to
+pass name resolution, typechecking, or ownership & borrow checking. We will
+make a best effort to make the ignore attribute read as early as possible.
 
-Paths prefixed `::` are from the absolute root, which is not (unlike today) the
-root of this crate. To access the root of this crate, you need to prefix paths
-`crate`.
+### The `load-files` directive
+
+If you want module statements to always be required to load files in a crate,
+every target section of the Cargo.toml has a `load-files` directive, which can
+be set to false. This will prevent cargo from telling Rust about module files,
+making `mod` statements necessary to find files.
 
 [extern-crate]: https://github.com/rust-lang/rfcs/pull/2088
 [loading-files]: detailed-design/loading-files.md
