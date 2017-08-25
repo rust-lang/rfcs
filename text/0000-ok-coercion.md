@@ -415,11 +415,12 @@ The worst impression of `Ok(())` is the double parenthesis. Some suggests to cha
 * [`Ok!()`](https://github.com/rust-lang/rfcs/pull/2107#issuecomment-323530196)
 * `Ok()`
 * [`Ok`](https://github.com/rust-lang/rfcs/pull/2107#issuecomment-323521532)
+* [OK](https://github.com/rust-lang/rfcs/pull/2120#issuecomment-324627644)
 * [👌](https://internals.rust-lang.org/t/pre-rfc-throwing-functions/5419/14)
 
-The first and fourth suggestions are trivially implementable. The second one requires the type-checker (which emits
-E0061) to "upgrade" `X()` to `X(())` when applicable. The third is plain impossible since `Ok` itself is a valid value
-of type `fn(T) -> Result<T, E>`.
+The first suggestion is trivially implementable. The second one requires the type-checker (which emits E0061) to
+"upgrade" `X()` to `X(())` when applicable. The third is plain impossible since `Ok` itself is a valid value of type
+`fn(T) -> Result<T, E>`. The last two are applicable with help of [RFC 1945] "*polymorphic constants*".
 
 No matter which choice, the solution is undesirable as the user still needs to add an extra expression at the end of the
 function manually.
@@ -430,6 +431,8 @@ fn foo_1a() -> Result<(), E> {
     Ok  // <- no, not ok.
 }
 ```
+
+[RFC 1945]: https://github.com/rust-lang/rfcs/pull/1945
 
 ### Automatic `Ok` insertion via AST pass
 
