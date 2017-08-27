@@ -52,7 +52,10 @@ There is several requirements for changelogs:
 - Must be written in MarkDown
 - Must contain headers (#) or sub-headers (##) (in case if file starts with
 the header) which start from crate version (`0.1.1` or `[0.1.1]`), except the
-first (sub)-header which can contains "Unreleased" changes
+first (sub)-header which can contain "Unreleased" changes
+
+Everything in the section defined by (sub)-header will be treated as changes
+which were made in the specified version.
 
 The good example to follow can be a format described by [keepachangelog.com](http://keepachangelog.com):
 ```
@@ -113,7 +116,7 @@ on this proposal.
 [alternatives]: #alternatives
 
 This proposal defines minimal format for changelog, leaving as much flexibilty
-for crate authors as possible withoout droping the basic machine readability.
+for crate authors as possible without dropping the basic machine readability.
 
 Alternative would be to specify stricter conventions around changelog content.
 
