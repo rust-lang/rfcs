@@ -138,7 +138,9 @@ detected for unpublished version it will cause `cargo publish` and
 
 Alternatively you can use `CHANGELOG.md` maintained fully manually. If you
 choose this approach you'll need to add `changelog` to `[package]` section of
-your `Cargo.toml`, to enable its rendering on crates.io.
+your `Cargo.toml`, to enable its rendering on crates.io. In case if both
+`changelogs` folder and `changelog` field are presented crates.io will use
+changelog specified in the `changelog` field.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
