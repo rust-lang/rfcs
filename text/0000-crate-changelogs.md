@@ -48,16 +48,25 @@ version = "0.1.0"
 changelog = "CHNAGELOG.md"
 ```
 
-There is several requirements for changelogs:
-- Must be written in MarkDown
-- Must contain headers (#) or sub-headers (##) (in case if file starts with
-the header) which start from crate version (`0.1.1` or `[0.1.1]`), except the
-first (sub)-header which can contain "Unreleased" changes
+There is several requirements for changelogs, in case if one of them is not
+upheld, crates.io will refuse to accept such crate:
+- Must be written in MarkDown (but number of supported markup languages can be
+extended in future)
+- Must contain headlines (#) or sub-headlines (##) (in case if changelog starts
+with the headline) which start with crate version (`0.1.1` or `[0.1.1]`)
+- As a consequence of the last requirement changelog must not contain
+"Unreleased" section
+- All crate versions listed in the changelog must have been published
+earlier on crates.io, except the first entry, version in which could be equal
+to `version` field in `Cargo.toml` (i.e. first entry is for version which going
+to be published)
 
-Everything in the section defined by (sub)-header will be treated as changes
-which were made in the specified version.
+This requirements are enforced only by `cargo publish`.Everything in the section
+defined by (sub)-headline will be treated as changes which were made in the
+specified version.
 
-The good example to follow can be a format described by [keepachangelog.com](http://keepachangelog.com):
+The good example to follow can be a format described by
+[keepachangelog.com](http://keepachangelog.com):
 ```
 # Changelog
 All notable changes to this project will be documented in this file.
@@ -88,6 +97,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 Although it's recommended to write changelogs by hand, you can use other
 tools such as [`clog`](https://crates.io/crates/clog) to generate it based on
 the structured commit history.
+
+Additionally you can include migration notes, which will help crate users to
+upgrade to the new version.
 
 If `changelog` field is specified in the `Cargo.toml`, `cargo publish` will
 check if changelog contains section for the new version and producing error if
