@@ -120,6 +120,9 @@ for crate authors as possible without dropping the basic machine readability.
 
 Alternative would be to specify stricter conventions around changelog content.
 
+Another alternative would be to use link to external resource in the `changelog`
+field instead of path to the readme file.
+
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
