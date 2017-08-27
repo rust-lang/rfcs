@@ -210,3 +210,4 @@ section instead?
 [YANKED]?
 - Should we completely omit versions without changelog files in the full
 changelog or should we add line with version and publishing date?
+- How to handle pre-release versions? (e.g. `1.0.0-rc1`)
