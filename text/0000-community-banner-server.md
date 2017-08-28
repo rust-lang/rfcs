@@ -46,7 +46,7 @@ Specialised ad publishers are not a unusual and regularly have a better rep then
 
 https://github.com/rust-community/rust-campaigns-server/ is a server serving recurring messages relevant to the Rust community. It doesn't track anything and currently does no analysis about the location of the user. For ethical reasons, I'd like to be very conservative on this side, especially as impact analysis isn't the main reason behind this.
 
-It's currently functional with a console only admin backend. There is an exemplary javascript embed code available, which can be used to put an unstyled banner on any website. It also has an API for custom creation of banners. Its goal is to be conscious of users bandwidth, we don't want to apply a lot of styling and find ways to aggressively use browser caches.
+It's currently functional with a console only admin backend. There is an exemplary javascript embed code available, which can be used to put an unstyled banner on any website. It also has an API for custom creation of banners. Note that this API is not stable yet, but might be in the future. Its goal is to be conscious of users bandwidth, we don't want to apply a lot of styling and find ways to aggressively use browser caches.
 
 These embed codes can be used on project pages or the pages of interested community members.
 
