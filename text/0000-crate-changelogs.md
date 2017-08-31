@@ -226,3 +226,5 @@ changelog content.
 
 - Should we check correctness and/or availability of URL in the `changelog`
 field?
+- Should we allow empty "unreleased" section in the changelog, so authors
+will not delete and recreate it every time a release is made.
