@@ -126,40 +126,34 @@ fn main() {
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-`Copy` types will autoreference: at
+`Copy` types autoreference: at
 [coercion sites](https://github.com/rust-lang/rfcs/blob/master/text/0401-coercions.md#coercions),
 when a reference is expected, but an owned
 `Copy` type is found, an `&` will be automatically inserted.
 
-If the `Copy` value is a temporary, its lifetime will be promoted to meet the
-required lifetime of the reference (where possible).
-This behavior is specified in detail in
-[RFC 66](https://github.com/rust-lang/rust/issues/15023) and @nikomatsakis's
-[amendment](https://github.com/nikomatsakis/rfcs/blob/rfc66-amendment/text/0066-better-temporary-lifetimes.md).
+Some types have interior mutability through `UnsafeCell`, so passing them
+via a hidden reference could allow surprising mutations to occur.
+To prevent this, the autoreferencing coercion is limited to types which do not
+directly contain an internal `UnsafeCell`.
+Types which reference an `UnsafeCell` through an indirection can still be
+coerced (e.g. `&MyCopyCell<u8>` to `&&MyCopyCell<u8>`).
 
-When it is not possible to promote the `Copy` value's lifetime to the lifetime
-required by the reference, a customized error will be issued:
-
-```rust
-struct u8Ref<'a>(&'a u8);
-
-fn new_static(x: u8) -> u8Ref<'static> {
-    u8Ref(x) // ERROR: borrowed value does not live long enough
-    //    ^autoreference occurs here, but `x` does not live long enough
-}
-```
-
-If the lifetime of the reference would overlap with a mutable reference or a
-mutation of the referenced value, a custom error will be issued:
+This coercion will not occur if the lifetime of the resulting reference would
+last longer than the call site. For example:
 
 ```rust
-struct u8Ref<'a>(&'a u8);
+// `foo`'s argument can be coerced to from `u8` because it only lasts for the
+// lifetime of the function call:
+fn foo(x: &u8) { ... }
+
+// `bar`'s argument cannot be coerced to from `u8` because the lifetime of the
+// required reference outlives the scope of `bar`.
+fn bar<'a>(x: &'a u8) -> &'a u8 { ... }
 
 fn main() {
-    let mut x = 5;
-    let y = u8Ref(x);
-    //            ^ autoreference of `x` occurs here
-    x = 7; // ERROR: cannot assign to `x` because it is borrowed
+    foo(1); // OK
+
+    let x = bar(5); // ERROR: expected `&u8`, found `u8`.
 }
 ```
 
@@ -174,13 +168,18 @@ arguments, nor does it use coercions in trait lookup. Because of this, users
 will still need to manually add `&` when trying to, for example, index into
 a `HashMap<usize, T>`
 (users will still need to write `x[&5]` instead of `x[5]`).
-- Autoreferencing may produce surprising errors when attempting to mutate data.
 
 # Rationale and Alternatives
 [alternatives]: #alternatives
+One alternative would be to do nothing. However, this issue is frequently annoying for new users, and the solution is relatively simple.
 
-One alternative would be to do nothing. However, this issue is frequently
-annoying for new users, and the solution is relatively simple.
+We could also allow borrows which outlive function call sites, but these could
+produce surprising errors (for example, if the user attempted to mutate a
+variable while it was implicitly borrowed).
+
+We could make the autoreferencing coercion more general and allow `T -> &T`
+for all types which don't contain an `UnsafeCell`. However, this could harm
+users' ability to reason about when variables are `move`d.
 
 Another alternative would be to also add the following conversions for
 `T: Copy`:
