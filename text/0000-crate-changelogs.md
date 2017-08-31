@@ -153,7 +153,7 @@ Anything goes here.
 Anything goes here.
 
 1.0.0-rc1
-=====
+=========
 
 Anything goes here.
 
