@@ -14,18 +14,18 @@ Add changelog support to `cargo` and [crates.io](https://crates.io/).
 Citing [keepachangelog.com](http://keepachangelog.com):
 
 > What is a changelog?
-> 
+>
 >  A changelog is a file which contains a curated, chronologically ordered list of notable changes for each version of a project.
 >
-> Why keep a changelog? 
+> Why keep a changelog?
 >
 > To make it easier for users and contributors to see precisely what notable changes have been made between each release (or version) of the project.
 >
-> Who needs a changelog? 
+> Who needs a changelog?
 >
 > People do. Whether consumers or developers, the end users of software are
 > human beings who care about what's in the software. When the software changes,
-> people want to know why and how. 
+> people want to know why and how.
 
 Encouraging crate authors to keep changelogs and increase its visibility for
 crate users will definitely benefit crates ecosystem.
@@ -39,35 +39,40 @@ This topic was brought several times, most notable notions are:
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-To add changelog support to you crate just add `changelog` field to `[package]`
-section of your `Cargo.toml` with the relative path to your changelog file:
-```
+There is two ways to add changelog support to your crate: providing changelog
+file explicitly or linking to an external resource.
+
+## Explicit changelog file
+
+Add `changelog` field to `[package]` section of your `Cargo.toml` with the
+relative path to your changelog file:
+```toml
 [package]
 name = "foo"
 version = "0.1.0"
 changelog = "CHNAGELOG.md"
 ```
 
-There is several requirements for changelogs, in case if one of them is not
+There is several requirements for changelog files, in case if one of them is not
 upheld, crates.io will refuse to accept such crate:
-- Must be written in MarkDown (but number of supported markup languages can be
+- Must be written in MarkDown (number of supported markup languages can be
 extended in future)
-- Must contain headlines (#) or sub-headlines (##) (in case if changelog starts
-with the headline) which start with crate version (`0.1.1` or `[0.1.1]`)
+- Must contain headlines or sub-headlines (in case if changelog starts with the
+headline) which start with crate version (`0.1.1` or `[0.1.1]`)
 - As a consequence of the last requirement changelog must not contain
 "Unreleased" section
 - All crate versions listed in the changelog must have been published
-earlier on crates.io, except the first entry, version in which could be equal
+earlier on crates.io, except the first entry, version for which can be equal
 to `version` field in `Cargo.toml` (i.e. first entry is for version which going
-to be published)
+to be published).
 
-This requirements are enforced only by `cargo publish`.Everything in the section
-defined by (sub)-headline will be treated as changes which were made in the
-specified version.
+This requirements are enforced only by `cargo publish` and subsequently
+by crates.io. Everything in the sections defined by (sub)-headlines will be
+treated as changes which were made in the respective versions.
 
 The good example to follow can be a format described by
 [keepachangelog.com](http://keepachangelog.com):
-```
+```markdown
 # Changelog
 All notable changes to this project will be documented in this file.
 
@@ -99,10 +104,74 @@ Additionally you can include migration notes, which will help crate users to
 upgrade to the new version.
 
 If `changelog` field is specified in the `Cargo.toml`, `cargo publish` will
-check if changelog contains section for the new version and producing error if
-it will not be found. This behaviour can be disabled with `--allow-no-changelog`
-option. Also crates.io will refuse to accept crates if changelog file does not
-follow rules stated earlier.
+check if changelog contains section for the new version producing error
+otherwise. This behaviour can be disabled with `--allow-no-changelog`
+option. But it will not disable other changelog checks.
+
+### Additionall changelog examples
+
+```markdown
+# Anything goes here
+
+Anything goes here.
+
+## 1.2.3
+
+Anything goes here.
+
+### Anything goes here.
+
+It's still part of the changes made in 1.2.3
+
+#### And this too
+
+Anything goes here.
+
+## 0.2.3
+
+Anything goes here.
+```
+
+```markdown
+# 1.2.3
+
+Anything goes here.
+
+# 0.2.3
+
+Anything goes here.
+
+# 0.0.3
+
+Anything goes here.
+```
+
+```markdown
+1.2.3
+=====
+
+Anything goes here.
+
+1.0.0-rc1
+=====
+
+Anything goes here.
+
+```
+
+## Link to an externall resource
+
+Alternatively you can link to a changelog published on external resource. If
+`changelog` field will start with `http:` or `https:` it will be treated as an
+URL.
+
+```toml
+[package]
+name = "foo"
+version = "0.1.0"
+changelog = "https://github.com/foo/bar/releases"
+```
+
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -112,14 +181,34 @@ Implementation of described features is fairly straightforward.
 Rendering on crates.io can be done through additional link on top bar:
 ![1](https://user-images.githubusercontent.com/329626/29746037-86920e8a-8ad5-11e7-828c-4d32f6ac4cf2.png)
 
+It will lead either to changelog section on crates.io with the rendered
+changelog (for explicilty provided changelog file) or to external resource
+provided in the `changelog` field.
+
+# Future extensions
+[feature-extensions]: #feature-extensions
+
+It will be possible to define additional extensions which will use different
+prefixes from `http` and `https` in the `changelog` field.
+Such extension(s) can be used for example for handling stricter machine readable
+changelog formats which will be generated by externall tools like
+[`clog`](https://crates.io/crates/clog) or other different approaches to
+changelogs.
+
+`changelog` field with such extensions can look like `foo:bar`, where `foo` is
+format prefix and `bar` for example external `cargo` tool which will be executed
+by `cargo publish` and which should produce result specified by `foo` prefix.
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
-- This proposal fixes MD as markup language for changelogs
+- This proposal fixes MarkDown as markup language for changelogs
 - It does not define convention for changelogs, just some bare-bone rules. Which
 will result in different changelog formats used across ecosystem, thus hindering
 machine readability of changelogs and will make it harder to build tools based
 on this proposal.
+- Some people consider proposed requirements for changelog files unnecessary and
+overly strict.
 
 # Rationale and Alternatives
 [alternatives]: #alternatives
@@ -127,12 +216,11 @@ on this proposal.
 This proposal defines minimal format for changelog, leaving as much flexibilty
 for crate authors as possible without dropping the basic machine readability.
 
-Alternative would be to specify stricter conventions around changelog content.
-
-Another alternative would be to use link to external resource in the `changelog`
-field instead of path to the readme file.
+Alternative would be to specify stricter or more relaxed conventions around
+changelog content.
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
-- Should we add a badge for changelog?
+- Should we check correctness and/or availability of URL in the `changelog`
+field?
