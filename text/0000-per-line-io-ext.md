@@ -52,7 +52,7 @@ pub trait ReadLn : Read {
 
 Implementing the trait indicates the reader can read per-line. Implementations themselves decide what char(s) or char sequence(s) should be recognized as raw linebreak. All types possessing per-line reading functionality should implement `ReadLn`. All `read_line()` and `lines()` should be deprecated.
 
-Method `read_ln()` behaves similar to descried in [document of `std::io::BufRead::read_line()`](https://doc.rust-lang.org/std/io/trait.BufRead.html#method.read_line), except for that linebreaks are not copied to `buf` while included in returned value.
+Method `read_ln()` behaves similarly to descried in [document of `std::io::BufRead::read_line()`](https://doc.rust-lang.org/std/io/trait.BufRead.html#method.read_line), except for that linebreaks are not copied to `buf` while included in returned value.
 
 Method `lines()` turns the current reader into an iterator over lines, as described in [document of `std::io::BufRead::lines()`](https://doc.rust-lang.org/std/io/trait.BufRead.html#method.lines).
 
@@ -63,8 +63,7 @@ Method `lines()` turns the current reader into an iterator over lines, as descri
 pub trait WriteLn : Write {
     fn linebreak(&self) -> &str;
     fn set_linebreak(&mut self, lb: &str) -> Result<()>;
-    fn write_ln(&mut self, buf: &str) -> Result<()>;
-    fn write_ln_fmt(&mut self, fmt: Arguments) -> Result<()>;
+    fn write_ln(&mut self, fmt: Arguments) -> Result<()>;
 }
 ```
 
@@ -72,11 +71,25 @@ Implementing the trait indicates the writer can write per-line. Implementations 
 
 Method `linebreak()` and `set_linebreak()` allow users to get or set current linebreak. If the linebreak to be used depends on its platform, `std::env::consts::LINEBREAK` can be passed in. `set_linebreak()` returns `Ok()` if the given linebreak is accepted and will be used by following calls to `write_ln()`.
 
-Method `write_ln()` first concatenates its parameter `buf` with the linebreak set before (or a default one). The resultant string is then written to its destination as described in [document of `std::io::Write::write()`](https://doc.rust-lang.org/std/io/trait.Write.html#tymethod.write).
+Method `write_ln()` first concatenates formatted `fmt` with the linebreak set before (or a default one). The resultant string is then written to its destination as described in [document of `std::io::Write::write_fmt()`](https://doc.rust-lang.org/std/io/trait.Write.html#method.write_fmt).
 
-Method `write_ln_fmt()` works the same as described in [document of `std::io::Write::write_fmt()`](https://doc.rust-lang.org/std/io/trait.Write.html#method.write_fmt).
+Definition of macro `writeln!()` is also adjusted:
 
-`write_ln()` is supposed to use `std::env::consts::LINEBREAK` as its default linebreak. But for different purposes, different linebreaks can be used. e.g. On writing HTTP headers, the default linebreak should always be `\r\n`, as defined in RFC2616.
+```rust
+macro_rules! writeln {
+    ($dst:expr) => (
+        $dst.write_ln(format_args!(""))
+    );
+    ($dst:expr, $fmt:expr) => (
+        $dst.write_ln(format_args!($fmt))
+    );
+    ($dst:expr, $fmt:expr, $($arg:tt)*) => (
+        $dst.write_ln(format_args!($fmt, $($arg)*))
+    );
+}
+```
+
+`write_ln()` is supposed to use `\n` as its default linebreak to minimize influence on existing codes which used `writeln!()`. But for different purposes, different linebreaks can be used. e.g. On writing HTTP headers, the default linebreak should always be `\r\n`, as defined in RFC2616.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -156,4 +169,3 @@ for line in text.lines() {
 
 - How to resolve the name collision between new and old `lines()`?
 - Should `ReadLn` and `WriteLn` allow users to specify what char(s) or char sequence(s) are recognized as raw linebreaks?
-- Should `writeln!()` be deprecated?
