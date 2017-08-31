@@ -32,7 +32,7 @@ The solution to this is recurring messaging: regular spread the message, by re-l
 
 ## Constant recurring messaging: banners
 
-We're already, in the hiding, employing banner-like structures for this: for example, the main rust-lang page has a section that constantly presents a different language feature, forever and ever. Banners are an appropriate place for recurring messaging: they are always at the same place, they can hold different content and they can be placed at different locations.
+We're already, in the hiding, employing banner-like structures for this: for example, the main rust-lang page has a section that constantly presents a different language feature, forever and ever. Banners are an appropriate place for recurring messaging: they are always at the same place and they can hold changing content. Still, they can be flexibly integrated into a website by the owner of the site themselves, allowing them to be displayed at an appropriate place. Care should be taken that they integrate nicely into a page.
 
 Banners have a bad rep because they are usually employed in a very intrusive fashion and don't give much context, but that doesn't make them a generally bad thing. Relevant banners are helpful and welcome, but great care must be taken to keep them relevant. Great care must be taken to optimize the "wow, today I learned"-factor high and keep the annoyance of people that already know about the thing down.
 
@@ -40,7 +40,9 @@ A primary goal here must be to keep the managing work low and easy.
 
 One way to do this is having a central authority that handles publishing and un-publishing and then spreads to publishers.
 
-Specialised ad publishers are not a unusual and regularly have a better rep then large ad networks, because they can easily control relevance and annoyance.
+Specialised central publishers are not a unusual and have a good reputation, as they can easily control relevance and annoyance. In the Rust space, it's relatively easy to build a relevance model of users without relying on invasive techniques.
+
+It is obvious that this resembles the approach that advertising publishers use, but is only related on a technical level: there's no monetary interest involved and the service is to kept free of commercial interests.
 
 ## Example Implementation
 
@@ -58,7 +60,7 @@ There's prior art for this, namely the [Perl Community Ad Server](http://pcas.sz
 Such a service must be maintained and kept running after committing to it, as people choosing to embed these banners
 rely on them not breaking their website.
 
-Review must be done for each an every ad, which requires some
+Review must be done for each an every banner, which requires some
 people committed to this.
 
 # Rationale and Alternatives
@@ -69,4 +71,4 @@ Keep things like they are.
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
-What would be an acceptable policy to measure impact of this?
+What would be an acceptable policy to measure impact of this? Cross-site-tracking and user tracking is definitely out of scope, but for example taking click-numbers per banner could be a useful metric.
