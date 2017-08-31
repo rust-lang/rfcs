@@ -172,6 +172,8 @@ version = "0.1.0"
 changelog = "https://github.com/foo/bar/releases"
 ```
 
+None of the rules described in the previous section will apply to changelogs
+provided this way, even if they link to markdown files directly.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
