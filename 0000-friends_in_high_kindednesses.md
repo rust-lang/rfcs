@@ -128,7 +128,7 @@ Associated type constructors can be bounded, just like associated types can be:
 ```rust
 trait Iterable {
     type Item<'a>;
-    type Iter<'a>: Iterator<Item = Item<'a>>;
+    type Iter<'a>: Iterator<Item = Self::Item<'a>>;
     
     fn iter<'a>(&'a self) -> Self::Iter<'a>;
 }
