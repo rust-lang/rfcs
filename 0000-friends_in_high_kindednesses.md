@@ -264,6 +264,47 @@ struct Foo<P: PointerFamily> {
 }
 ```
 
+## Evaluating bounds and where clauses
+
+### Bounds on associated type constructors
+
+Bounds on associated type constructors are treated as higher rank bounds on the
+trait itself. This makes their behavior consistent with the behavior of bounds
+on regular associated types. For example:
+
+```rust
+trait Foo {
+    type Assoc<'a>: Trait<'a>;
+}
+```
+
+Is equivalent to:
+
+```rust
+trait Foo where for<'a> Self::Assoc<'a>: Trait<'a> {
+    type Assoc<'a>;
+}
+```
+
+### `where` clauses on associated types
+
+In contrast, where clauses on associated types introduce constraints which must
+be proven each time the associated type is used. For example:
+
+```rust
+trait Foo {
+    type Assoc where Self: Sized;
+}
+```
+
+Each invokation of `<T as Foo>::Assoc` will need to prove `T: Sized`, as
+opposed to the impl needing to prove the bound as in other cases.
+
+(@nikomatsakis believes that where clauses will be needed on associated type
+constructors specifically to handle lifetime well formedness in some cases.
+The exact details are left out of this RFC because they will emerge more fully
+during implementation.)
+
 ## Benefits of implementing only this feature before other higher-kinded polymorphisms
 
 This feature is not full-blown higher-kinded polymorphism, and does not allow
