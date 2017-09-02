@@ -1,7 +1,7 @@
-- Feature Name: associated_type_constructors
+- Feature Name: generic_associated_types
 - Start Date: 2016-04-29
-- RFC PR: (leave this empty)
-- Rust Issue: (leave this empty)
+- RFC PR: [rust-lang/rfcs#1598](https://github.com/rust-lang/rfcs/pull/1598)
+- Rust Issue: [rust-lang/rust#44265](https://github.com/rust-lang/rust/issues/44265)
 
 # Summary
 [summary]: #summary
@@ -478,6 +478,3 @@ struct IterItem<'a, I: Iterable>(I::Item<'a>);
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
-
-This design does not resolve the question of introducing more advanced forms of
-higher-kinded polymorphism.
