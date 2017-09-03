@@ -11,8 +11,19 @@ Allow destructuring of structs that implement Drop.
 # Motivation
 [motivation]: #motivation
 
-Currently destructuring of structs that implement Drop, requires to read non-copy fields via 
-`ptr::read(&struct.field)` followed by `mem::forget(struct)`.
+Destructuring allows to reverse the process of creating a struct from individual fields.
+```
+struct Compound<A, B> { a: A, b: B }
+let a: A = ...
+let b: B = ...
+let c = Compound { a: a, b: b } // wraps and into the struct Compound
+let Compound { a: a, b: b } = c; // destructures c into its fields.
+// a and b are now the same they where before c was created
+```
+
+However this is currently not possible if the struct implements `Drop`.
+The current way to destructure these cases anyway, requires to read non-copy fields via 
+`ptr::read(&struct.field)` and then `mem::forget(struct)` to avoid running drop.
 
 This leaves more room for error, than there would have to be: 
 1.  forgetting to read all fields, possibly creating a memory leak,
@@ -22,6 +33,10 @@ This leaves more room for error, than there would have to be:
 Allowing to destructure these types would ensure that:
 1.  unused fields are dropped,
 2.  only owned structs can be destructured.
+
+It is not allowed to implicitly move fields out of structs implementing Drop.
+This would make it too easy to accidentally trigger destructuring by accessing a field,
+which then means that drop does not run and possibly cause a memory leak.
 
 # Detailed design
 [design]: #detailed-design
