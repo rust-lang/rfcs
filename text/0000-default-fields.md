@@ -215,63 +215,6 @@ let foo = Foo::default();
 
 Field defaults allow `#[derive(Default)]` to be used more widely because the types of fields with default values don't need to implement `Default`.
 
-## Enabling backwards compatibility
-
-With no special syntax, additional fields can be added to a struct in a non-breaking fashion. Say we have the following API and consumer:
-
-```rust
-mod data {
-    pub struct Foo {
-        pub a: &'static str,
-        pub c: i32,
-        _marker: () = ()
-    }
-}
-
-let foo = data::Foo {
-    a: "Hello",
-    c: 42,
-    ..
-}
-```
-
-Using a private marker field with a default value forces callers to opt-in to field defaults. We can now add a new field `b` to this `struct` with a default value, and the calling code doesn't change:
-
-```rust
-mod data {
-    pub struct Foo {
-        pub a: &'static str,
-        pub b: bool = true,
-        pub c: i32,
-        _marker: () = ()
-    }
-}
-
-let foo = data::Foo {
-    a: "Hello",
-    c: 42,
-    ..
-}
-```
-
-By using field defaults, callers can use `struct` literals without having to know about any private fields:
-
-```rust
-mod data {
-    pub struct Foo {
-        pub a: &'static str,
-        pub c: i32,
-        private_field: bool = true
-    }
-}
-
-let foo = data::Foo {
-    a: "Hello",
-    c: 42,
-    ..
-}
-```
-
 ## Symmetry with Destructuring
 
 Field defaults allow `struct`s to be non-exhaustively constructed and deconstructed using the same syntax:
@@ -358,6 +301,10 @@ This has the effect of simplifying the definition, but also requiring readers to
 Invoke field defaults implicitely instead of requiring a `..` in the initialiser. This would be more in line with how other languages handle default values, but is less explicit. It would also be different from pattern matching for `struct`s, that require a `..` to ignore unnamed fields.
 
 A future RFC could propose making the `..` optional for all places it's required when dealing with `struct`s.
+
+## Enhancements to functional record updates
+
+Instead of adding a new language feature, provide some alternative desugaring for functional record updates that avoids the problems outlined in [736](https://github.com/rust-lang/rfcs/blob/master/text/0736-privacy-respecting-fru.md) and still works with private fields.
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
