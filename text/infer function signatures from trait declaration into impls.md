@@ -13,7 +13,7 @@ Rust signatures can become quite heavy with nested angle-bracketed types, trait-
 Also,coming from C++, the need to write (and reference) traits *before* you can write 'overloads' comes as a shock,
 especially for people trying to escape the repitition of 'header files'.
 
-(Furthermore, the types are in a different location ```type argname``` vs ```argname:type``` .. although more logical there is a cost to any convention-switch )
+(Furthermore, the types are in a different location ```type argname``` vs ```argname:type``` .. although more logical there is a cost to any reading convention-switch )
 
 However, if the trait was used to *avoid* repeating information, 
 they would come across more obviously as a virtue: 
@@ -45,6 +45,8 @@ Behaviour of this type can be seen in the Haskell language, i.e:-
       
 
 (/*..1..*/ etc denote function definition bodies)
+
+Surprisingly, coming from C++ (where familiar users read ```Type argname```), a seperation into 'just types', and 'just names' is actually easier to adapt to (the absence of a detail, rather than the detail being in a different place)
  
  
 The trait is still usually very easy to find - thanks to Rusts syntax, declarations are easy to grep for.
