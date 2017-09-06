@@ -96,9 +96,9 @@ fn catch_an_unwind<T, F: FnOnce() -> T>(f: F) -> Option<T> {
 
 Naively, this code might look safe. The problem though is that by the time we
 get to `let mut foo_ref` we're already saying we have a value of type `T`. But
-we don't, and for `T = !` this is impossible. If this function is called with a
-diverging callback then it will invoke undefined behaviour before it even gets
-to `catch_unwind`.
+we don't, and for `T = !` this is impossible. And so if this function is called
+with a diverging callback it will invoke undefined behaviour before it even
+gets to `catch_unwind`.
 
 We can fix this by using `MaybeUninit` instead:
 
@@ -125,7 +125,7 @@ fn catch_an_unwind<T, F: FnOnce() -> T>(f: F) -> Option<T> {
 }
 ```
 
-Note the difference: here we're using unsafe in the part of the code which is
+Note the difference: we've moved the unsafe block to the part of the code which is
 actually unsafe - where we have to assert to the compiler that we have a valid
 value. And we only ever tell the compiler we have a value of type `T` where we
 know we actually do have a value of type `T`. As such, this is fine to use with
@@ -135,7 +135,7 @@ to the `unsafe` block and try to read the non-existant value.
 Given that it's so easy for code using `uninitialzed` to hide bugs like this,
 and given that there's a better alternative, this RFC proposes deprecating
 `uninitialized` and introducing the `MaybeUninit` type into the standard
-library.
+library as a replacement.
 
 # Detailed design
 [design]: #detailed-design
@@ -151,7 +151,7 @@ union MaybeUninit<T> {
 
 Deprecate `uninitialized` with a deprecation messages that points people to the
 `MaybeUninit` type. Make calling `uninitialized` on an empty type trigger a
-runtime panic.
+runtime panic which also prints the deprecation message.
 
 # How We Teach This
 [how-we-teach-this]: #how-we-teach-this
