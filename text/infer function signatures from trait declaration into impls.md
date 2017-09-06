@@ -13,16 +13,15 @@ Rust signatures can become quite heavy with nested angle-bracketed types, trait-
 Also,coming from C++, the need to write (and reference) traits *before* you can write 'overloads' comes as a shock,
 especially for people trying to escape the repitition of 'header files'.
 
-(Furthermore, the types are in a different location ```type argname``` vs ```argname:type```. )
+(Furthermore, the types are in a different location ```type argname``` vs ```argname:type``` .. although more logical there is a cost to any convention-switch )
 
 However, if the trait was used to *avoid* repeating information, 
-they would come across as more of a virtue: 
-they would directly *save* repetition when writing many functions following a similar pattern. 
+they would come across more obviously as a virtue: 
 You would leverage the trait name to specify many detailed signatures.
 
 Note that this would not make writing the implementation any harder:-
 
-Unlike with general purpose whole-program inference , constraining is already implied by the trait itself; 
+Unlike with general purpose whole-program inference , constraining is already implied (unambiguously) by the trait itself; 
 The compiler already knows that one must match the other, and when it doesn't it reports an error.
 
 Compared to C++, Rusts syntax allows the ommision of types whilst still parsing parameter names in a straightforward manner, 
@@ -30,22 +29,22 @@ creating this opportunity.
 The lack of overloading *within* a trait/impl means there is no need to write the types to disambiguate the functions; 
 you would be fully leveraging the trait name to do that.
 
-Behaviour of this type can be seen in the Haskell language, e.g
+Behaviour of this type can be seen in the Haskell language, i.e:-
 
     class FooBar f where                  -- typeclass definition (roughly = Rust trait)
       foo::f->i32->[i32]->String          -- only write function signatures
       bar::f->[String]->String->Maybe String
   
     instance FooBar Apple where     -- typeclass instance (roughly = Rust impl)
-      foo s x y = ..1..             -- only write the argument names and function definition
-      bar s z w = ..2..
+      foo s x y = /*..1..*/             -- only write the argument names and function definition
+      bar s z w = /*..2..*/
   
     instance FooBar Banana where
-      foo s x y = ..3..             -- only write the argument names and function definition
-      bar s z w = ..4..
+      foo s x y = /*..3..*/             -- only write the argument names and function definition
+      bar s z w = /*..4..*/
       
 
-(..1.. etc denote function definition bodies)
+(/*..1..*/ etc denote function definition bodies)
  
  
 The trait is still usually very easy to find - thanks to Rusts syntax, declarations are easy to grep for.
@@ -71,6 +70,8 @@ by example: the proposal is to allow the following to compile
         fn bar(&self, z,w){ /*..4..*/ }   // no need to repeat :Vec<String> , :String -> Option<String>
     }
     
+Trait definitions are easy to grep, but to further streamline locating them, a "File:line: -see definition of <trait Foo>" styl error message would tend to bring these into the text-editor as the user steps through error messages in the usual edit-compile cycle.
+    
 ## concern about return values
 
 A variation would be to require a trailing placeholder ```->_``` to make it clearer if there is a return value
@@ -86,7 +87,7 @@ if you make an error;
 also the programmer *must* have the trait documentation or original source at hand 
 (or gain enough guidance from the error message) in order to actually write the implementation in the first place.
 
-as far as users go, the point is refering to the trait should suffice; there may be example code close to the trait decl;
+as far as users go, refering to the trait should suffice; there may be example code close to the trait decl;
 trait implemenations are easy to search for, thanks to rusts syntax. *RustDoc* already gives browseable reference; trait declarations are very easy to grep for, and future IDE tools may have other interactive assists.
 
 As such , this should not be a problem - even for cross-module implementations
