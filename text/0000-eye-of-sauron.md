@@ -231,7 +231,7 @@ Indexing is included in this feature basically because it behaves like the other
 
 Lexicographic ordering feels like the right way to pick the adjustment list, but it might have unexpected edge cases which might justify a more complicated ordering.
 
-### Extended arithmetic fiixup
+### Extended arithmetic fixup
 
 Because the arithmetic fixup does not apply with references, there could be inference issues with integer variables:
 ```
