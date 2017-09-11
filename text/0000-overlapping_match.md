@@ -6,10 +6,9 @@
 # Summary
 [summary]: #summary
 
-This feature is to facilitate the writing and using of `match` statements in a whole new way.
-This feature would allow the ability to write match statements where multiple branches may be
-matched and still allow for code to be used if no branch is matched, similar to the current
-use of the `_` pattern.
+This idea facilitates the writing and using of `match` expressions where multiple branches are
+executed. Writing `match` expressions with this idea allows for multiple branches to be matched
+and for a check on no matches as well, similar to the current use of the `_` pattern.
 
 # Motivation
 [motivation]: #motivation
@@ -47,27 +46,31 @@ match val in {
 
 Benefits of this syntax:
 1. No new keywords need to be used. This is good thing since it means for a relatively small
-addition there would be no breaks.
+addition there would be no code breaks of existing code with this change.
 2. The `in` seems to imply that it sort of like an "iterator" of statements and will go through
 each of them in turn.
 
 Meaning of parts:
-1. The `else` is used in a similar sort of vein to that of the `_` pattern in normal matches and
-could include several of the same warnings. The expression enclosed within this is only executed
-if none of the patterns within the `match/in` statement.
+1. The `else` is used in a similar sort of vein to that of the `_` pattern in normal matches.
+The expression enclosed within this is only executed if none of the patterns within the
+`match/in` expression are matched. If `else` and `_` are both present then the code within the
+`else` would be marked as unreadable.
 
 Edge cases:
 1. If the `_` pattern in present in any of the contained matches and the `else` block is also
-present then a `unreachable_code` lint on the code within the `else` block
+present then a `unreachable_code` lint is emitted on the code within the `else` block
 2. Since the main reason for using a `match` is the exhaustiveness checks as long as there isn't
-an `else` block then the compiler will output an error for `non-exhaustive patterns`.
+an `else` block then the compiler will output an error for `non-exhaustive patterns` if not all
+branches of the `match/in` are exhaustive.
 
 Implementation Assumptions:
-1. Assuming that a `match` statement is currently implemented similar to a long chain of
-`if/else if` statements.
+1. Assuming that a `match` expression is currently implemented similar to a long chain of
+`if/else if` expressions. By this, meaning that each branch is checked one at a time and if it
+matches then it skips checking any of the other branches and jumps to the end of the expression.
 
 Implementation:
-1. This can be implemented as if it was a list of `if` statements.
+1. This can be implemented as if it was a list of `if` expressions. And a flag to check if any
+of the branches have been visited so as to not visit the `else`
 2. To cover the `else` case the location to jump to at the end after checking all the branches
 can be stored, initially set to the start of the `else` block but if it enters any of the
 branches then it is set to immediately after the `else` block.
@@ -75,13 +78,13 @@ branches then it is set to immediately after the `else` block.
 # How We Teach This
 [how-we-teach-this]: #how-we-teach-this
 
-This should be called `match/in` statements since that is the combination of keywords that are
-used similar to `for/in` statements. This idea would be best presented as a continuation of
-existing Rust patterns since it expands on the `match` statement.
+This should be called `match/in` expressions since that is the combination of keywords that are
+used similar to `for/in` expressions. This idea would be best presented as a continuation of
+existing Rust patterns since it expands on the `match` expression.
 
-This proposal should be introduced to new users right after `match` statements are taught. This
+This proposal should be introduced to new users right after `match` expressions are taught. This
 is the best time to teach it since it appears as an extension of that syntax and the ideas that
-are used when using `match` statements.
+are used when using `match` expressions.
 
 Within the _Rust Book_ a section after the section on the `_` placeholder could be called
 _match/in Control Flow Operator Addition_. Within this section the syntax and differences would
@@ -122,6 +125,36 @@ match cmp.compare(&array[left], &array[right]) in {
         merged.push(array[right]);
         right += 1;
     }
+}
+```
+
+Another example is an implementation of fizzbuzz:
+
+```rust
+for x in 1...100 {
+    let mut res = String::from("");
+    if x % 5 == 0 {
+        res += "fizz";
+    }
+    if x % 7 == 0 {
+        res += "buzz";
+    }
+    if res.len() == 0 {
+        res = x.to_string();
+    }
+    println!("{}", res);
+}
+```
+into
+```rust
+for x in 1...100 {
+    match x in {
+        _ if x % 5 == 0 => print!("fizz"),
+        _ if x % 7 == 0 => print!("buzz")
+    } else {
+        print!("{}", x);
+    }
+    println!("");
 }
 ```
 
