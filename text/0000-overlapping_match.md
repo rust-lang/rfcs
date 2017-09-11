@@ -31,12 +31,12 @@ checked for exhaustiveness, be executed if more than one of them match the value
 
 Basic Syntax:
 ```rust
-match val in {
+match fallthrough val {
     pat | pat => expr,
     pat => expr
 }
 
-match val in {
+match fallthrough val {
     pat | pat => expr,
     pat => expr
 } else {
@@ -45,15 +45,16 @@ match val in {
 ```
 
 Benefits of this syntax:
-1. No new keywords need to be used. This is good thing since it means for a relatively small
-addition there would be no code breaks of existing code with this change.
-2. The `in` seems to imply that it sort of like an "iterator" of statements and will go through
-each of them in turn.
+1. Even though a new keyword has been made it will not break any code because Rust is a context
+sensitive language. And adding such a keyword increases the perceptual area of the new syntax
+so as to make it clear which type of match is being used.
+2. The word `fallthrough` is used because it implies that after a branch is finished then the
+control falls through to the check of the next branch.
 
 Meaning of parts:
 1. The `else` is used in a similar sort of vein to that of the `_` pattern in normal matches.
 The expression enclosed within this is only executed if none of the patterns within the
-`match/in` expression are matched. If `else` and `_` are both present then the code within the
+`match/fallthrough` expression are matched. If `else` and `_` are both present then the code within the
 `else` would be marked as unreadable.
 
 Edge cases:
@@ -61,7 +62,7 @@ Edge cases:
 present then a `unreachable_code` lint is emitted on the code within the `else` block
 2. Since the main reason for using a `match` is the exhaustiveness checks as long as there isn't
 an `else` block then the compiler will output an error for `non-exhaustive patterns` if not all
-branches of the `match/in` are exhaustive.
+branches of the `match/fallthrough` are exhaustive.
 
 Implementation Assumptions:
 1. Assuming that a `match` expression is currently implemented similar to a long chain of
@@ -78,9 +79,9 @@ branches then it is set to immediately after the `else` block.
 # How We Teach This
 [how-we-teach-this]: #how-we-teach-this
 
-This should be called `match/in` expressions since that is the combination of keywords that are
-used similar to `for/in` expressions. This idea would be best presented as a continuation of
-existing Rust patterns since it expands on the `match` expression.
+This should be called `match/fallthrough` expressions since that is the combination of keywords
+that are used. This idea would be best presented as a continuation of existing Rust patterns
+since it expands on the `match` expression.
 
 This proposal should be introduced to new users right after `match` expressions are taught. This
 is the best time to teach it since it appears as an extension of that syntax and the ideas that
@@ -116,7 +117,7 @@ match cmp.compare(&array[left], &array[right]) {
 ```
 into
 ```rust
-match cmp.compare(&array[left], &array[right]) in {
+match fallthrough cmp.compare(&array[left], &array[right]) {
     Less | Equal => {
         merged.push(array[left]);
         left += 1;
@@ -148,7 +149,7 @@ for x in 1...100 {
 into
 ```rust
 for x in 1...100 {
-    match x in {
+    match fallthrough x {
         _ if x % 5 == 0 => print!("fizz"),
         _ if x % 7 == 0 => print!("buzz")
     } else {
@@ -180,4 +181,4 @@ to have and so not implementing it could be an option.
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
-Whether or not `match/in` makes sense for this sort of control flow.
+Whether or not `match/fallthrough` makes sense for this sort of control flow.
