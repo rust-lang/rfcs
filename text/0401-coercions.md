@@ -91,10 +91,10 @@ expression, then the relevant sub-expressions in that expression are also
 coercion sites. Propagation recurses from these new coercion sites. Propagating
 expressions and their relevant sub-expressions are:
 
-* Array literals, where the array has type `[U, ..n]`, each sub-expression in
+* Array literals, where the array has type `[U; n]`, each sub-expression in
   the array literal is a coercion site for coercion to type `U`
 
-* Array literals with repeating syntax, where the array has type `[U, ..n]`, the
+* Array literals with repeating syntax, where the array has type `[U; n]`, the
   repeated sub-expression is a coercion site for coercion to type `U`
 
 * Tuples, where a tuple is a coercion site to type `(U_0, U_1, ..., U_n)`, each
@@ -160,6 +160,8 @@ Coercion is allowed between the following types:
 * `T` to `U` if `T` implements `CoerceUnsized<U>` (see below) and `T = Foo<...>`
   and `U = Foo<...>` (for any `Foo`, when we get HKT I expect this could be a
   constraint on the `CoerceUnsized` trait, rather than being checked here)
+
+* `()` to `T` if `T` implements `Try<Ok = ()>`
 
 * From TyCtor(`T`) to TyCtor(coerce_inner(`T`)) (these coercions could be
   provided by implementing `CoerceUnsized` for all instances of TyCtor)
@@ -313,9 +315,8 @@ Alternatively, a receiver coercion may be thought of as a two stage process.
 First, we dereference and then take the address until the source type has the
 same shape (i.e., has the same kind and number of indirection) as the target
 type. Then we try to coerce the adjusted source type to the target type using
-the usual coercion machinery. I believe, but have not proved, that these two
-descriptions are equivalent.
-
+the usual coercion machinery, without the closure → `fn` and `()` → `Try` rules.
+I believe, but have not proved, that these two descriptions are equivalent.
 
 ## Casts
 
@@ -448,5 +449,8 @@ silently ignoring them.
 
 * Updated by [#1558](https://github.com/rust-lang/rfcs/pull/1558), which allows
   coercions from a non-capturing closure to a function pointer.
+
+* Updated by [#2120](https://github.com/rust-lang/rfcs/pull/2120), which adds
+  coercion from `()` to `impl Try<Ok = ()>` to eliminate `Ok(())`.
 
 # Unresolved questions
