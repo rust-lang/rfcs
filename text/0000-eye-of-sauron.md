@@ -168,20 +168,70 @@ And have the obvious effect on values. Adjustments are ordered using the standar
 # Drawbacks
 [drawbacks]: #drawbacks
 
+### Inference Complexity
+
 The 2-argument inference adds more complexity to type-checking. It probably has some "interesting" and unexpected uses in some situations, and we need to gain some experience with it before stabilization.
 
+### Unexpected References
+
 The automatic references can make it less obvious when values are passed by reference or by value. Because operator traits are very general, the created autorefs can easily escape outside of the operator.
+
+First, I don't feel this is worse than the situation with method calls - they can also create unexpected references under pretty much the same situations.
+
+Second, and similarly to method calls, this is somewhat alleviated by the compiler picking the by-value implementation if the type matches, possibly causing move errors even if autoref would have worked:
+
+```Rust,ignore
+struct Bignum(..);
+// fair enough
+impl<'a> Add for &'a Bignum {
+    type Output = Bignum;
+    // ... impl, allocating
+}
+impl<'a> Add<&'a Bignum> for Bignum {
+    type Output = Bignum;
+    // ... impl, not allocating
+}
+
+let a = bignum1 + bignum2; // moves bignum1
+let b = bignum1 + 1; //~ ERROR use of moved value
+
+let c = &bignum3 + bignum4; // allocates, does not use bignum3.
+let d = bignum3 + 1; // works
+```
+
+However, this actually might tempt people to write only by-ref allocating impls for their types to avoid "unexpected" moves. We might want to gather more experience here.
 
 # Rationale and Alternatives
 [alternatives]: #alternatives
 
 The "Eye of Sauron" case is very annoying for mathematical code, and therefore is something we want to fix. This fix feels rather elegant and is contained to binary operators.
 
+## Alternative Solutions
+
 We need to use special coercion logic rather than the "standard" expected type propagation because we are coercing on the basis of trait impls. Therefore, options such as [RFC 2111] will not help in all cases. We could instead try to add trait-impl-based propagation, but that would not solve the "binary" nature of operator traits.
 
-[RFC 2111]: https://github.com/rust-lang/rfcs/pull/2111
+The essential reason we need to consider the "binary" nature is because of the `v.iter().filter(|x| x > 1)` case. If we did method-style inference, we would pick 0 dereferences for `x` - using the `PartialOrd<&&u32> for &&u32` impl combination - and will then fail when trying to coerce the `1`.
+
+If we already want a "binary" solution, this "double method lookup" is the simplest solution I know of.
+
+# Unresolved questions
+[unresolved]: #unresolved-questions
+
+## Flexibility Points
+
+These are small places where the RFC can be changed. I wrote down the version I liked the most, and this RFC was getting too long and pedantic even without me trying to include alternatives.
+
+Possible alternatives are:
+
+### Different set of operators
 
 Indexing is included in this feature basically because it behaves like the other operators. It's possible that this should not be done.
+
+### Different way to pick the adjustment list
+
+Lexicographic ordering feels like the right way to pick the adjustment list, but it might have unexpected edge cases which might justify a more complicated ordering.
+
+### Extended arithmetic fiixup
 
 Because the arithmetic fixup does not apply with references, there could be inference issues with integer variables:
 ```
@@ -191,11 +241,16 @@ x.foo(); //~ ERROR cannot infer the type
 ```
 therefore, We might want to extend the arithmetic fixup to references to integer variables in some way.
 
-We might want to allow mutable autorefs in more cases. That would be more consistent with method lookup, but is probablly a bad idea.
+### Mutable autorefs
 
-# Unresolved questions
-[unresolved]: #unresolved-questions
+We might want to allow mutable autorefs in more cases. That would be more consistent with method lookup, but is probably a bad idea because it allows for too easy implicit mutability.
 
-- Should we change the set of operators?
-- What priority order should operators use? I think lexicographic is best, but there are other options.
-- Should we allow for more general coercions than autoref and autoderef? e.g. function item to function pointer coercions? Is there any use for that? Does it bring disadvantages?
+### Lifetime limits
+
+[RFC 2111] limits the lifetime of implicit autorefs to the containing expression. We might also want to do that here to avoid confusing escaping autorefs.
+
+### General Coercions
+
+We might want to allow for more general coercions than autoref and autoderef. For example, function item to function pointer coercions. Is there any use for that? Does it bring disadvantages?
+
+[RFC 2111]: https://github.com/rust-lang/rfcs/pull/2111
