@@ -74,35 +74,33 @@ Like methods, operators and indexing support automatic referencing and dereferen
 
 Operator type-checking behaves similarly to method type-checking. It works as follows:
 
-## S1. Subexpression checking
+## Step 1 - Subexpression checking
 
 Both the LHS and the RHS (if binary) of the operator are first type-checked with no expected type.
 
 This differs from rustc 1.20, in which an expected type was sometimes propagated from the LHS into the RHS, potentially triggering coercions within the RHS. I should probably come up with an example in which this matters.
 
-## S2. Adjustment selection
+## Step 2 - Adjustment selection
 
 Afterwards, an adjustment list is selected for both operands as follows:
 
-Adjustment lists for the LHS of an indexing operation are selected from these matching the following regular expression:
+Adjustment lists for the LHS of an indexing operator (the `X` in `X[Y]`) are selected from these matching the following regular expression:
 ```
 "Deref"* "Autoref(Immutable)" "ConvertArrayToSlice"?
 ```
 
-Adjustment lists for all other operands (including the RHS of indexing operations) are selected from these matching the following regular expression
+Adjustment lists for all other operands (including the RHS of indexing operator, as well as all operands of all other operators) are selected from these matching the following regular expression
 ```
 "Deref"* ( "Autoref(Immutable)" "ConvertArrayToSlice"? )?
 ```
 
 The adjustment lists selected are the lexicographically first pair of adjustment lists `(lhs_adjust, rhs_adjust)` (or with an unary op, just the `lhs_adjust`) such that
 A1. Both adjustment lists match the relevant regular expressions
-A2. Both adjustment lists must be valid to apply to their operand types.
+A2. Both adjustment lists must be valid to apply to their operand types. If, due to the presence of inference variables, it can't be determined whether these adjustment lists would be valid to apply, and we didn't find a smaller adjustment list that would apply, that is a compilation error (this is the "can't autoderef because of inference variables" case). 
 A3. After applying both adjustment lists, the adjusted operand types are a potential match for the operator trait (if there is an ambiguity because of inference variables, it is counted as a match).
    A3.1. NOTE: the operator trait for overloaded indexing is `Index`, not `IndexMut`, even if indexing is done in a mutable context. rustc 1.20 is inconsistent in that regard.
-
-If the smallest adjustment can't be determined because of the presence of inference variables (because it is not obvious whether an adjustment list would be valid to apply), this is a compilation error.
    
-## S3. Fixups
+## Step 3 - Fixups
 
 After adjustments are selected, the following fixups are made. They do not affect adjustment selection.
 
