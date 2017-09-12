@@ -62,7 +62,7 @@ Allowing method-style autoref could make operator uses as clean as methods and f
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-Like methods, operators and indexing support automatic referencing and dereferencing. When you use an operator, the compiler will automatically add `&`, `&mut` and `*` operators to match the signature of the operator.
+Like methods, operators and indexing support automatic referencing and dereferencing. When you use an operator, the compiler will automatically add `&` and `*` operators to match the signature of the operator.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -248,6 +248,37 @@ We might want to allow mutable autorefs in more cases. That would be more consis
 ### Lifetime limits
 
 [RFC 2111] limits the lifetime of implicit autorefs to the containing expression. We might also want to do that here to avoid confusing escaping autorefs.
+
+### Improving impls
+
+Instead of adding autoderef for operators, we could try adding enough trait impls for operators.
+
+For example, with lattice specialization, we could have a trait with the following impls:
+```Rust
+trait MyAutoderef<T> {}
+impl<T> MyAutoderef for T {}
+impl<'a, U, V> MyAutoderef<U> for V where
+    V: Deref,
+    V::Target: MyAutoderef<U> {}
+// this is the special "lattice join" impl that is needed
+// to make the compiler shut up.
+impl<'a, T> MyAutoderef<T> for T
+    where T: Deref,
+          T::Target: MyAutoderef<T>
+{}
+```
+
+And then we could have impls
+```Rust
+impl<T: MyAutoderef<u32>, V: MyAutoderef<u32>> Add<U> for V {
+   // ...
+}
+```
+
+However:
+A. Lattice specialization requires that specialization will work well, which might take quite a bit of time to figure out.
+B. As written, the operator impls will all conflict with each-other and all other impls of operators and wildly break type inference. For every pair of types `U` and `V`, you'll have to convince the compiler that a type couldn't be both `MyAutoderef<U>` and `MyAutoderef<V>`, which would be non-trivial, or find some way to prioritize the impls, which will add more complexity and won't work cross-crate.
+C. Without autoref, types that are not `Copy` will be moved. For example, with this RFC you can index a `HashMap` with a `String` *without moving the `String`*, which can't be done by an impl.
 
 ### General Coercions
 
