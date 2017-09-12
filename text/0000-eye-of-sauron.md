@@ -96,7 +96,7 @@ Adjustment lists for all other operands (including the RHS of indexing operator,
 
 The adjustment lists selected are the lexicographically first pair of adjustment lists `(lhs_adjust, rhs_adjust)` (or with an unary op, just the `lhs_adjust`) such that
 A1. Both adjustment lists match the relevant regular expressions
-A2. Both adjustment lists must be valid to apply to their operand types. If, due to the presence of inference variables, it can't be determined whether these adjustment lists would be valid to apply, and we didn't find a smaller adjustment list that would apply, that is a compilation error (this is the "can't autoderef because of inference variables" case). 
+A2. Both adjustment lists must be valid to apply to their operand types. If, due to the presence of inference variables, it can't be determined whether these adjustment lists would be valid to apply, and we didn't find a smaller adjustment list that applies and might match the operator trait, that is a compilation error (this is the "can't autoderef because of inference variables" case). 
 A3. After applying both adjustment lists, the adjusted operand types are a potential match for the operator trait (if there is an ambiguity because of inference variables, it is counted as a match).
    A3.1. NOTE: the operator trait for overloaded indexing is `Index`, not `IndexMut`, even if indexing is done in a mutable context. rustc 1.20 is inconsistent in that regard.
    
