@@ -69,41 +69,257 @@ Like methods, operators and indexing support automatic referencing and dereferen
 
 "Operators" here refers to several typeck operators:
 - The "standard" eager binary operators: `+`, `-`, `*`, `/`, `%`, `^`, `&`, `|`, `<<`, `>>`, `==`, `<`, `<=`, `!=`, `>=`, `>`.
+- The "standard" in-place binary operators: `+=`, `-=`, `*=`, `/=`, `%=`, `^=`, `&=`, `|=`, `<<=`, `>>=`. 
 - The "standard" unary operators: `!`, `-`. This does *NOT* include the dereference operator `*`.
 - The indexing operator `...[...]`
 
-Operator type-checking behaves similarly to method type-checking. It works as follows:
-
-## Step 1 - Subexpression checking
+After this RFC, operator type-checking behaves as follows:
 
 Both the LHS and the RHS (if binary) of the operator are first type-checked with no expected type.
 
 This differs from rustc 1.20, in which an expected type was sometimes propagated from the LHS into the RHS, potentially triggering coercions within the RHS. I should probably come up with an example in which this matters.
 
-## Step 2 - Adjustment selection
+Then, it performs method-style lookup as this:
 
-Afterwards, an adjustment list is selected for both operands as follows:
+1. The following dispatchable arguments: argument #0 has uncoerced type `lhs_ty`, and, if this is a binary operator, argument #1 has uncoerced type `rhs_ty`.
+2. For just the LHS of an indexing operator (the `X` in `X[Y]`), and both operands of a comparison operator (i.e. `==`, `<`, `<=`, `!=`, `>=`, `>`), adjustment lists must match the following regular expression:
+    ```
+    "Deref"* "Autoref(Immutable)" "ConvertArrayToSlice"?
+    ```
+    For just the LHS of in-place binary operators, adjustment lists must match the following regular expression:
+    ```
+    "Deref"* "Autoref(Mutable)" "ConvertArrayToSlice"?
+    ```    
+    For all other operators (including the RHS of an indexing operator), adjustment lists must match the following regular expression:
+    ```
+    "Deref"* ( "Autoref(Immutable)" "ConvertArrayToSlice"? )?
+    ```
+3. One method candidate - this is the obvious operator method. For indexing, this is always `Index::index` - if needed, it will be "upgraded" to `IndexMut::index_mut` through a mutability fixup (this might matter for some edge cases in inference, but rustc 1.20 is inconsistent in that regard - sometimes it can combine the lookup and the mutability fixup).
 
-Adjustment lists for the LHS of an indexing operator (the `X` in `X[Y]`) are selected from these matching the following regular expression:
+Then, if indexing was used in a mutable context, the [Mutablity Fixup] will be applied to it.
+    
+## Method-Style Lookup
+
+Now this description depended on a few details of method type-checking, some of them slightly modified.
+
+Operator type-checking behaves similarly to method type-checking.
+
+Now, I normally would have documented the few needed *changes* to method lookup, but it is ill-documented today, so here's a description of it.
+
+Method lookup is parameterized on several things:
+1. An ordered list of (argument #, type) list of unadjusted dispatchable arguments (before this RFC, there could only be 1 dispatchable argument - the method receiver - but the logic generalizes).
+2. For each dispatchable argument, the set of usable adjustment lists for it.
+3. The set of method candidates - this is a set of methods, one of them is to be selected.
+
+### Step 1 - Adjustment list set determination
+
+First, we determine the final set of `(adjustment list, adjusted argument type)` pairs for each dispatchable argument
+
+For each usable adjustment list for that argument:
+- If it can be successfully applied to the (unadjusted) argument type, add the adjustment list along with the adjusted argument type to the final set.
+- If it can be proven to fail when applied to the type, ignore it.
+- Otherwise, this is an ambiguity and a compilation error.
+
+#### EXAMPLE 1.
+
+For example, this code yields a compilation error (in all versions of rustc):
+```Rust
+    trait Id { fn id(self); }
+    impl<T> Id for T { fn id(self) {} }
+
+    let mut x = None;
+    
+    if let Some(ref x) = x {
+        // x: &_ here
+        // the adjustment list `Deref Deref` works only if `_: Deref`, and that
+        // can either fail or succeed, so we get an error. Note that the *empty*
+        // adjustment list would have worked just fine, but we determine the
+        // set of adjustment lists first
+        x.id(); //~ ERROR
+    }
+    
+    x = Some(());
 ```
-"Deref"* "Autoref(Immutable)" "ConvertArrayToSlice"?
+
+Similar examples could be created for operator dispatch (that would not fail in rustc 1.20), and I hope these will not be much of a problem in practice. 
+
+### Step 2 - Adjustment list selection
+
+Then, we pick the assignment of adjustment lists from the cartesian product of the adjustment list sets - one for each dispatchable argument.
+
+We pick the first-in-lexicographic-order assignment where there is at least 1 candidate in the candidate set that might apply to that assignment. If no such assignment exists, it is a compilation error.
+
+A candidate might apply to an assignment unless subtyping the candidate's dispatchable argument types with the assignment's respective adjusted dispatchable argument types proves that one of the candidate's predicates can't hold (if the subtyping can't be done, that vacuously proves that the predicates can't hold).
+
+#### EXAMPLE 2. (Arithmetic)
+
+For example, with operators:
+```Rust
+trait Add<T> {
+    type Output;
+    fn add(self, rhs: Self) -> Self::Output
+        // there's a `where Self: Add<T>` implicit predicate
+        ;
+}
+/* A */ impl Add<u32> for u32 { type Output=u32; /* .. */ } 
+/* B */ impl<'a> Add<&'a u32> for u32 { type Output=u32; /* .. */ }
+/* C */ impl<'b> Add<u32> for &'b u32 { type Output=u32; /* .. */ }
+/* D */ impl<'a, 'b> Add<&'a u32> for &'b u32 { type Output=u32; /* .. */ }
+/* E */ impl Add<i32> for i32 { type Output=i32; /* .. */ }
+/* F */ impl<'a> Add<&'a i32> for i32 { type Output=i32; /* .. */ }
+/* G */ impl<'b> Add<i32> for &'b i32 { type Output=i32; /* .. */ }
+/* H */ impl<'a, 'b> Add<&'a i32> for &'b i32 { type Output=i32; /* .. */ }
+// <possible other impls>
+
+println!("{}", 1 + 1);
 ```
 
-Adjustment lists for all other operands (including the RHS of indexing operator, as well as all operands of all other operators) are selected from these matching the following regular expression
+Our candidate method is `Add::add`, and both arguments have (different) inference variable types `$int0` and `$int1`.
+
+The usable adjustment lists are of the form `"Deref"* ( "Autoref(Immutable)" "ConvertArrayToSlice"? )?`. Because `Deref` and `ConvertArrayToSlice` can't be used on integers, we are left with the following adjustment lists (they set is identical for both locals except the variable changes names):
+
 ```
-"Deref"* ( "Autoref(Immutable)" "ConvertArrayToSlice"? )?
+([], $int0/$int1)
+([Autoref(Immutable)], &$int0/&$int1)
 ```
 
-The adjustment lists selected are the lexicographically first pair of adjustment lists `(lhs_adjust, rhs_adjust)` (or with an unary op, just the `lhs_adjust`) such that:
+The cartesian product, in order, is
+```
+(arg0=([], ty=$int0), arg1=([], ty=$int1))
+(arg0=([Autoref(Immutable)], ty=&$int0), arg1=([], ty=$int1))
+(arg0=([], ty=$int0), arg1=([Autoref(Immutable)], ty=&$int1))
+(arg0=([Autoref(Immutable)], ty=&$int0), arg1=([Autoref(Immutable)], ty=&$int1))
+```
 
- - **A1** – Both adjustment lists match the relevant regular expressions
- - **A2** – Both adjustment lists must be valid to apply to their operand types. If, due to the presence of inference variables, it can't be determined whether these adjustment lists would be valid to apply, and we didn't find a smaller adjustment list that applies and might match the operator trait, that is a compilation error (this is the "can't autoderef because of inference variables" case). 
- - **A3** – After applying both adjustment lists, the adjusted operand types are a potential match for the operator trait (if there is an ambiguity because of inference variables, it is counted as a match).
-   - **A3.1** –  NOTE: the operator trait for overloaded indexing is `Index`, not `IndexMut`, even if indexing is done in a mutable context. rustc 1.20 is inconsistent in that regard.
-   
-## Step 3 - Fixups
+For the first assignment, we see that our candidate might apply: `$int0: Add<$int1>` can hold using both impls `A` and `E`, and there are no other interesting predicates, so we select the first adjustment list and candidate.
 
-After adjustments are selected, the following fixups are made. They do not affect adjustment selection.
+Later on, arithmetic fixup gives us a return type, and at the end inference fallback picks `i32` for the variable.
+
+#### EXAMPLE 3. (Reference arithmetic)
+
+Suppose we are now checking the `>`-operator in following method:
+```Rust
+trait PartialOrd<Rhs> {
+    fn lt(&self, other: &Rhs) -> bool;
+    // (irrelevant code omitted)
+}
+
+/* I */ impl PartialOrd<i32> for i32 { /* .. */ }
+/* J */ impl<'a, 'b, A, B> PartialOrd<&'b B> for &'a A where A: PartialOrd<B>
+    { /* .. */ }
+
+fn foo(v: Vec<i32>) {
+    v.iter().filter(|x: &&i32| x > 0);
+}
+```
+
+In older versions of rustc, this would fail and require playing with inference to make it work. With the new operator semantics, let's see how it works.
+
+`>` is a by-ref operator, so our adjustment lists must include an autoref. For the LHS, we can have either 0, 1, or 2 derefs, and `ConvertArrayToSlice` is irrelevant, so we have the following CLS:
+```
+([Autoref(Immutable)], &&&i32)
+([Deref, Autoref(Immutable)], &&i32)
+([Deref, Deref, Autoref(Immutable)], &i32)
+```
+
+For the RHS, we can't have any non-zero number of derefs, s 
+```
+([Autoref(Immutable)], &$int0)
+```
+
+We then go over the cartesian product:
+```
+lhs=([Autoref(Immutable)], &&&i32),
+rhs=([Autoref(Immutable)], &$int0)
+    - subtype `&Self <: &&&i32, &RHS <: &$int0`
+    - we have Self=&&i32, RHS=$int0
+    - &&i32: PartialOrd<$int0> can't hold, ignoring
+lhs=([Deref, Autoref(Immutable)], &&i32)
+rhs=([Autoref(Immutable)], &$int0)
+    - subtype `&Self <: &&i32, &RHS <: &$int0`
+    - we have Self=&i32, RHS=$int0
+    - &i32: PartialOrd<$int0> can't hold, ignoring
+lhs=([Deref, Deref, Autoref(Immutable)], &i32)
+rhs=([Autoref(Immutable)], &$int0)
+    - subtype `&Self <: &i32, &RHS <: &$int0`
+    - we have Self=i32, RHS=$int0
+    - i32: PartialOrd<$int0> can hold (impl I), success!
+```
+
+So we perform 2 derefs of the LHS and 0 derefs of the RHS (plus 2 autorefs) and succeed.
+
+#### EXAMPLE 4. (Adding strings)
+
+One nice thing this RFC solves is adding strings.
+
+The current (and future) relevant impls are:
+
+```Rust
+/* K */ impl Deref for String { type Target = str; /* .. */ }
+/* L */ impl<'a, B: ?Sized> Deref for Cow<'a, B> { type Target = B; /* .. */ }
+/* M */ impl<'a> Add<&'a str> for String { type Output = String; /* .. */ }
+/* N */ impl<'a> Add<Cow<'a, str>> for Cow<'a, str> { type Output = Self; /* .. */ }
+/* O */ impl<'a> Add<&'a str> for Cow<'a, str> { type Output = Self; /* .. */ }
+```
+
+Now, `String + &str` and `Cow + &str` obviously work. I want to look at the `String + String` and `Cow + Cow` cases.
+
+For `String + String`, we have the following CLS for both the LHS and RHS:
+```
+([], String)
+([Autoref(Immutable)], &String)
+([Deref], str) - yes this is unsized
+([Deref, Autoref(Immutable)], &str)
+```
+
+We then go over the cartesian product:
+```
+lhs=String, rhs=String - no match
+lhs=String, rhs=&String - no match
+lhs=String, rhs=str - no match
+lhs=String, rhs=&str - match!
+```
+
+So we do a deref + autoref of the RHS. This means that only the LHS will be moved out - the RHS will only be borrowed, so you can write:
+```Rust
+let x = "foo".to_string();
+let y = "bar".to_string();
+let z = x + y;
+println!("{} {}", z, y);
+```
+
+This works just as well for `Cow + String`. When adding `Cow + Cow`, the situation is different:
+```
+lhs=Cow<'a, str>, rhs=Cow<'a, str> - match! (using impl N)
+```
+
+This means that we are doing by-value addition, and will move out the RHS (same as today). Removing impl N would be a breaking change at this moment, but it would improve UX so it might we worth investigating.
+
+
+#### EXAMPLE 5. (Adding bignums, refs only)
+
+The relevant impls are just:
+
+```Rust
+struct FieldElement;
+impl<'a, 'b> Add<&'b FieldElement> for &'a FieldElement {
+    type Output = FieldElement;
+    // ..
+}
+```
+
+And we are adding 2 bignums `a + b`. There are no derefs, so the CLS for both the LHS and RHS  are:
+
+### Step 3 - Candidate selection
+
+After adjustments are selected, we select the candidate (for operators, this is trivial, because there is only ever 1 candidate).
+
+- If there is exactly 1 candidate, it is selected
+- If there are multiple candidates, but exactly 1 high-priority candidate, it is selected.
+- Otherwise, this is a compilation error.
+
+
+Then following fixups are made. They do not affect adjustment or candidate selection.
 
 ### Mutability Fixup
 
@@ -121,7 +337,7 @@ If an arithmetic operator was used, and both types are integer or float  inferen
     
 This is required in order to make `1 + 2` (both parameters are integer inference variables) be known to be an integer before integer defaulting.
 
-## Operator Adjustments
+## Adjustments
 
 These are basically the same as method adjustments, but because these are underdocumented: for the purpose of overloaded operators, an adjustment is defined as follows:
 
@@ -144,23 +360,57 @@ enum Adjustment {
 
 Adjustments have the following effect on types
 ```
-adjust(Deref, ty) = /* do immutable autoderef */
-adjust(Autoref(Immutable), ty) = Some(`&$ty`)
-adjust(ConvertArrayToSlice, &[ty; N]) = Some(`&[$ty]`)
-adjust(ConvertArrayToSlice, &mut [ty; N]) = Some(`&mut [$ty]`)
-adjust(ConvertArrayToSlice, _) = None
+~ is eqty, !~ is "not eqty", "!:" is "no impl for any substitution of inference variables".
 
-adjust_list(adjustments, ty) =
-    let mut ty = ty;
-    for adjustment in adjustments {
-        ty = if let Some(ty) = adjust(adjustment, ty) {
-            ty
-        } else {
-            return None;
-        }
-    }
-    Some(ty)
+Adjust rules:
+
+T : Deref
+------------
+adjust(Deref, T) = Success(<T as Deref>::Target)
+
+T !: Deref
+------------
+adjust(Deref, T) = Failure
+
+T type
+------------
+adjust(Autoref(Immutable), T) = Success(&T)
+adjust(Autoref(Mutable), T) = Success(&mut T)
+
+T, E types
+n constant usize
+T ~ &[E; n]
+------------
+adjust(ConvertArrayToSlice, T) = Success(&[E])
+
+T, E types
+n constant usize
+T ~ &mut [E; n]
+------------
+adjust(ConvertArrayToSlice, T) = Success(&mut [E])
+
+T type
+∀E type, n constant usize. T !~ &[E; n]
+∀E type, n constant usize. T !~ &mut [E; n]
+------------
+adjust(ConvertArrayToSlice, T) = Failure
+
+And `adjust_list` is just adjust mapped over lists:
+------------
+adjust_list([], T) = Success(T)
+
+adjust(a, T) = Failure
+------------
+adjust_list([a, as], T) = Failure
+
+RESULT result
+adjust(a, T) = Success(U)
+adjust_list([as], U) = RESULT
+------------
+adjust_list([a, as]) T = RESULT
 ```
+
+The intent of the "included middle"-style rules is that if we can't determine whether we can apply an adjustment due to inference variables, we can't determine success or failure (and that should result in a compilation error).
 
 And have the obvious effect on values. Adjustments are ordered using the standard lexicographical order.
 
@@ -284,3 +534,10 @@ C. Without autoref, types that are not `Copy` will be moved. For example, with t
 We might want to allow for more general coercions than autoref and autoderef. For example, function item to function pointer coercions. Is there any use for that? Does it bring disadvantages?
 
 [RFC 2111]: https://github.com/rust-lang/rfcs/pull/2111
+
+### Appendix A. Method Dispatch
+
+This is supposed to describe method dispatch as it was before this RFC. 
+
+TBD
+
