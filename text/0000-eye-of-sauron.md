@@ -149,7 +149,7 @@ The picked assignment is the first assignment (in lexicographic order) from the 
 
 If no such assignment exists, it is a compilation error.
 
-A candidate might apply to an assignment unless subtyping the candidate's dispatchable argument types with the assignment's respective adjusted dispatchable argument types proves that one of the candidate's predicates can't hold (if the subtyping can't be done, that vacuously proves that the predicates can't hold).
+A candidate might apply to an assignment unless subtyping the candidate's dispatchable argument types with the assignment's respective adjusted dispatchable argument types, proves that one of the candidate's predicates can't hold (if the subtyping can't be done, that vacuously proves that the predicates can't hold).
 
 #### EXAMPLE 2. (Arithmetic)
 
@@ -559,7 +559,20 @@ We might want to allow for more general coercions than autoref and autoderef. Fo
 
 ### Appendix A. Method Dispatch
 
-This is supposed to describe method dispatch as it was before this RFC. 
+This is supposed to describe method dispatch as it is before this RFC.
 
-TBD
+Method dispatch does method-style lookup, with the following parameters:
+1. The only dispatchable argument is the receiver, which must be the first argument.
+2. Adjustments match the following regular expressions:
+    ```
+    "Deref"* ( ( "Autoref(Immutable)" | "Autoref(Mutable)" ) "ConvertArrayToSlice"? )?
+    ```
+3. The applicable candidates are described below.
+    3.1. All (non-static) methods with the right name from traits in scope are normal-priority candidates.
+    3.2. All inherent impl methods with the right name are high-priority candidates.
+    3.3. Let the "autoderef list" be the types that can be received by repeatedly autoderef-ing the receiver (there can be no inference variiables causing ambiguity there, because these are a part of the adjustment regular expression). Then, the following methods are added as high-priority candidates: **NOTE: now that I've wrote these out loud, I see that they might warrant changing in a post-Chalk universe**
+        3.3.1. For each type parameter `T` in the autoderef list, for each where-clause or supertrait of a where-clause in the parameter environment that is equivalent to one of the form `for<...> T: Trait<...>`, every method from that trait with the right name.
+        3.3.2. For each trait object `Trait<..>` in the autoderef list, for each bound on that trait object and each supertrait of it, every method from that bound or supertrait of a bound with the right name.
+        
+If one of the candidates added by rule 3.3 is selected, the respective where-clause or trait-object-bound is unified with the method's trait reference. If this fails, this is a compilation error.
 
