@@ -82,15 +82,15 @@ This differs from rustc 1.20, in which an expected type was sometimes propagated
 Then, it performs method-style lookup with the following parameters:
 
 1. The following dispatchable arguments: argument #0 has uncoerced type `lhs_ty`, and, if this is a binary operator, argument #1 has uncoerced type `rhs_ty`.
-2. For just the LHS of an indexing operator (the `X` in `X[Y]`), and both operands of a comparison operator (i.e. `==`, `<`, `<=`, `!=`, `>=`, `>`), adjustment lists must match the following regular expression:
+2. For just the LHS of an indexing operator (the `X` in `X[Y]`), and both operands of a comparison operator (i.e. `==`, `<`, `<=`, `!=`, `>=`, `>`), adjustments must match the following regular expression:
     ```
     "Deref"* "Autoref(Immutable)" "ConvertArrayToSlice"?
     ```
-    For just the LHS of in-place binary operators, adjustment lists must match the following regular expression:
+    For just the LHS of in-place binary operators, adjustments must match the following regular expression:
     ```
     "Deref"* "Autoref(Mutable)" "ConvertArrayToSlice"?
     ```    
-    For all other operators (including the RHS of an indexing operator), adjustment lists must match the following regular expression:
+    For all other operators (including the RHS of an indexing operator), adjustments must match the following regular expression:
     ```
     "Deref"* ( "Autoref(Immutable)" "ConvertArrayToSlice"? )?
     ```
@@ -104,17 +104,17 @@ This description depended on a few details of method type-checking, some of them
 
 Method lookup is parameterized on several things:
 1. An ordered list of (argument #, type) list of unadjusted dispatchable arguments (before this RFC, there could only be 1 dispatchable argument - the method receiver - but the logic generalizes).
-2. For each dispatchable argument, the set of usable adjustment lists for it.
+2. For each dispatchable argument, the set of usable adjustments for it.
 3. The set of method candidates - this is a set of methods, one of them is to be selected.
 
 Method-style lookup proceeds as follows:
 
 ### Step 1 - Adjustment list set determination
 
-First, final set of `(adjustment list, adjusted argument type)` pairs is determined for each dispatchable argument
+First, final set of `(adjustment, adjusted argument type)` pairs is determined for each dispatchable argument
 
-For each usable adjustment list for that argument:
-- If it can be successfully applied to the (unadjusted) argument type, add the adjustment list along with the adjusted argument type to the final set.
+For each usable adjustment for that argument:
+- If it can be successfully applied to the (unadjusted) argument type, add the adjustment  along with the adjusted argument type to the final set.
 - If it can be proven to fail when applied to the type, ignore it.
 - Otherwise, this is an ambiguity and a compilation error.
 
@@ -129,10 +129,10 @@ For example, this code yields a compilation error (in all versions of rustc):
     
     if let Some(ref x) = x {
         // x: &_ here
-        // the adjustment list `Deref Deref` works only if `_: Deref`, and that
+        // the adjustment `[Deref, Deref]` works only if `_: Deref`, and that
         // can either fail or succeed, so we get an error. Note that the *empty*
-        // adjustment list would have worked just fine, but we determine the
-        // set of adjustment lists first
+        // adjustment would have worked just fine, but we determine the
+        // set of adjustments first
         x.id(); //~ ERROR
     }
     
@@ -143,7 +143,7 @@ Similar examples could be created for operator dispatch (that would not fail in 
 
 ### Step 2 - Adjustment list selection
 
-Then, the best assignment of adjustment lists is picked from the cartesian product of the adjustment list sets - one for each dispatchable argument.
+Then, the best assignment of adjustments is picked from the cartesian product of the adjustment sets - one for each dispatchable argument.
 
 The picked assignment is the first assignment (in lexicographic order) from the cartesian product such that is at least 1 candidate in the candidate set that might apply to that assignment.
 
@@ -176,7 +176,7 @@ println!("{}", 1 + 1);
 
 Our candidate method is `Add::add`, and both arguments have (different) inference variable types `$int0` and `$int1`.
 
-The usable adjustment lists are of the form `"Deref"* ( "Autoref(Immutable)" "ConvertArrayToSlice"? )?`. Because `Deref` and `ConvertArrayToSlice` can't be used on integers, we are left with the following adjustment lists (they set is identical for both locals except the variable changes names):
+The usable adjustments are of the form `"Deref"* ( "Autoref(Immutable)" "ConvertArrayToSlice"? )?`. Because `Deref` and `ConvertArrayToSlice` can't be used on integers, we are left with the following adjustments (they set is identical for both locals except the variable changes names):
 
 ```
 ([], $int0/$int1)
@@ -191,7 +191,7 @@ The cartesian product, in order, is
 (arg0=([Autoref(Immutable)], ty=&$int0), arg1=([Autoref(Immutable)], ty=&$int1))
 ```
 
-For the first assignment, we see that our candidate might apply: `$int0: Add<$int1>` can hold using both impls `A` and `E`, and there are no other interesting predicates, so we select the first adjustment list and candidate.
+For the first assignment, we see that our candidate might apply: `$int0: Add<$int1>` can hold using both impls `A` and `E`, and there are no other interesting predicates, so we select the first adjustment and candidate.
 
 Later on, arithmetic fixup gives us a return type, and at the end inference fallback picks `i32` for the variable.
 
@@ -215,7 +215,7 @@ fn foo(v: Vec<i32>) {
 
 In older versions of rustc, this would fail and require playing with inference to make it work. With the new operator semantics, let's see how it works.
 
-`>` is a by-ref operator, so our adjustment lists must include an autoref. For the LHS, we can have either 0, 1, or 2 derefs, and `ConvertArrayToSlice` is irrelevant, so we have the following CLS:
+`>` is a by-ref operator, so our adjustment must include an autoref. For the LHS, we can have either 0, 1, or 2 derefs, and `ConvertArrayToSlice` is irrelevant, so we have the following CLS:
 ```
 ([Autoref(Immutable)], &&&i32)
 ([Deref, Autoref(Immutable)], &&i32)
@@ -355,10 +355,13 @@ This is required in order to make `1 + 2` (both parameters are integer inference
 
 ## Adjustments
 
-For the purpose of method lookup, adjustments are as follows: for the purpose of overloaded operators, an adjustment is defined as follows:
+For the purpose of method lookup, adjustments are described as follows:
+
+An *adjustment* is a list of *adjustment-steps*, which work in-order when applied. Note that adjustment-steps are lexprs that take lexprs, so when a non-trivial adjustment is performed on a vexpr, a vexpr-to-lexpr conversion (a temporary) is created with the appropriate temporary lifetime before the first step, and a lexpr-to-vexpr conversion happens after the last step.
 
 ```Rust
-type Adjustments = Vec<Adjustment>;
+struct Adjustment = Vec<AdjustmentStep>;
+
 #[derive(PartialOrd, Ord, PartialEq, Eq)]
 enum Mutability {
     Immutable,
@@ -366,7 +369,7 @@ enum Mutability {
 }
 
 #[derive(PartialOrd, Ord, PartialEq, Eq)]
-enum Adjustment {
+enum AdjustmentStep {
     Autoref(Mutability),
     ConvertArrayToSlice,
     // this must be last, and means that k+1 derefs is always > k derefs
@@ -374,56 +377,59 @@ enum Adjustment {
 }
 ```
 
-Adjustments have the following effect on types
+Adjustments are typed using the following rules:
 ```
 ~ is eqty, !~ is "not eqty", "!:" is "no impl for any substitution of inference variables".
 
-Adjust rules:
+******** TYPING RULES FOR EACH STEP ********
 
 T : Deref
 ------------
-adjust(Deref, T) = Success(<T as Deref>::Target)
+adjust-step(Deref, T) = Success(<T as Deref>::Target)
 
 T !: Deref
 ------------
-adjust(Deref, T) = Failure
+adjust-step(Deref, T) = Failure
 
 T type
 ------------
-adjust(Autoref(Immutable), T) = Success(&T)
-adjust(Autoref(Mutable), T) = Success(&mut T)
+adjust-step(Autoref(Immutable), T) = Success(&T)
+adjust-step(Autoref(Mutable), T) = Success(&mut T)
 
 T, E types
 n constant usize
 T ~ &[E; n]
 ------------
-adjust(ConvertArrayToSlice, T) = Success(&[E])
+adjust-step(ConvertArrayToSlice, T) = Success(&[E])
 
 T, E types
 n constant usize
 T ~ &mut [E; n]
 ------------
-adjust(ConvertArrayToSlice, T) = Success(&mut [E])
+adjust-step(ConvertArrayToSlice, T) = Success(&mut [E])
 
 T type
 ∀E type, n constant usize. T !~ &[E; n]
 ∀E type, n constant usize. T !~ &mut [E; n]
 ------------
-adjust(ConvertArrayToSlice, T) = Failure
+adjust-step(ConvertArrayToSlice, T) = Failure
 
-And `adjust_list` is just adjust mapped over lists:
-------------
-adjust_list([], T) = Success(T)
+******** TYPING RULES FOR ADJUST ********
 
-adjust(a, T) = Failure
+`adjust` is just `adjust-step` lifted over a list, but because typing rules are supposed to be formal:
+
 ------------
-adjust_list([a, as], T) = Failure
+adjust([], T) = Success(T)
+
+adjust-step(a, T) = Failure
+------------
+adjust([a, as], T) = Failure
 
 RESULT result
-adjust(a, T) = Success(U)
-adjust_list([as], U) = RESULT
+adjust-step(a, T) = Success(U)
+adjust([as], U) = RESULT
 ------------
-adjust_list([a, as]) T = RESULT
+adjust([a, as]) T = RESULT
 ```
 
 The intent of the "included middle"-style rules is that if we can't determine whether we can apply an adjustment due to inference variables, we can't determine success or failure (and that should result in a compilation error).
@@ -492,9 +498,9 @@ Possible alternatives are:
 
 Indexing is included in this feature basically because it behaves like the other operators. It's possible that this should not be done.
 
-### Different way to pick the adjustment list
+### Different way to pick the adjustment
 
-Lexicographic ordering feels like the right way to pick the adjustment list, but it might have unexpected edge cases which might justify a more complicated ordering.
+Lexicographic ordering feels like the right way to pick the adjustment, but it might have unexpected edge cases which might justify a more complicated ordering.
 
 ### Extended arithmetic fixup
 
