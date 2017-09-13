@@ -295,20 +295,33 @@ lhs=Cow<'a, str>, rhs=Cow<'a, str> - match! (using impl N)
 
 This means that we are doing by-value addition, and will move out the RHS (same as today). Removing impl N would be a breaking change at this moment, but it would improve UX so it might we worth investigating.
 
+#### EXAMPLE 5. (Adding field elements, refs only)
 
-#### EXAMPLE 5. (Adding bignums, refs only)
-
-The relevant impls are just:
+This is the case from Isis Lovecruft's "eye of sauron" example. The relevant impls are just:
 
 ```Rust
 struct FieldElement;
-impl<'a, 'b> Add<&'b FieldElement> for &'a FieldElement {
+/* P */ impl<'a, 'b> Add<&'b FieldElement> for &'a FieldElement {
     type Output = FieldElement;
     // ..
 }
 ```
 
-And we are adding 2 bignums `a + b`. There are no derefs, so the CLS for both the LHS and RHS  are:
+And we are adding 2 field elements `a + b`. There are no derefs, so the CLS for both the LHS and RHS are:
+```
+([], FieldElement)
+([Autoref(Immutable)], &FieldElement)
+```
+
+And we go over the cartesian product, and pick the impl with both autorefs:
+```
+lhs=FieldElement, rhs=FieldElement - no match
+lhs=FieldElement, rhs=&FieldElement - no match
+lhs=&FieldElement, rhs=FieldElement - no match
+lhs=&FieldElement, rhs=&FieldElement - match!
+```
+
+We aren't doing any moves, and everything works!
 
 ### Step 3 - Candidate selection
 
