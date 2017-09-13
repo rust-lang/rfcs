@@ -79,7 +79,7 @@ Both the LHS and the RHS (if binary) of the operator are first type-checked with
 
 This differs from rustc 1.20, in which an expected type was sometimes propagated from the LHS into the RHS, potentially triggering coercions within the RHS. I should probably come up with an example in which this matters.
 
-Then, it performs method-style lookup as this:
+Then, it performs method-style lookup with the following parameters:
 
 1. The following dispatchable arguments: argument #0 has uncoerced type `lhs_ty`, and, if this is a binary operator, argument #1 has uncoerced type `rhs_ty`.
 2. For just the LHS of an indexing operator (the `X` in `X[Y]`), and both operands of a comparison operator (i.e. `==`, `<`, `<=`, `!=`, `>=`, `>`), adjustment lists must match the following regular expression:
@@ -96,24 +96,22 @@ Then, it performs method-style lookup as this:
     ```
 3. One method candidate - this is the obvious operator method. For indexing, this is always `Index::index` - if needed, it will be "upgraded" to `IndexMut::index_mut` through a mutability fixup (this might matter for some edge cases in inference, but rustc 1.20 is inconsistent in that regard - sometimes it can combine the lookup and the mutability fixup).
 
-Then, if indexing was used in a mutable context, the [Mutablity Fixup] will be applied to it.
+Then, if indexing was used in a mutable context, the [Mutablity Fixup](#mutability-fixup) will be applied to it.
     
 ## Method-Style Lookup
 
-Now this description depended on a few details of method type-checking, some of them slightly modified.
-
-Operator type-checking behaves similarly to method type-checking.
-
-Now, I normally would have documented the few needed *changes* to method lookup, but it is ill-documented today, so here's a description of it.
+This description depended on a few details of method type-checking, some of them slightly modified. I normally would have documented the few needed *changes* to method lookup, but it is ill-documented today, so here's a description of it:
 
 Method lookup is parameterized on several things:
 1. An ordered list of (argument #, type) list of unadjusted dispatchable arguments (before this RFC, there could only be 1 dispatchable argument - the method receiver - but the logic generalizes).
 2. For each dispatchable argument, the set of usable adjustment lists for it.
 3. The set of method candidates - this is a set of methods, one of them is to be selected.
 
+Method-style lookup proceeds as follows:
+
 ### Step 1 - Adjustment list set determination
 
-First, we determine the final set of `(adjustment list, adjusted argument type)` pairs for each dispatchable argument
+First, final set of `(adjustment list, adjusted argument type)` pairs is determined for each dispatchable argument
 
 For each usable adjustment list for that argument:
 - If it can be successfully applied to the (unadjusted) argument type, add the adjustment list along with the adjusted argument type to the final set.
@@ -145,9 +143,11 @@ Similar examples could be created for operator dispatch (that would not fail in 
 
 ### Step 2 - Adjustment list selection
 
-Then, we pick the assignment of adjustment lists from the cartesian product of the adjustment list sets - one for each dispatchable argument.
+Then, the best assignment of adjustment lists is picked from the cartesian product of the adjustment list sets - one for each dispatchable argument.
 
-We pick the first-in-lexicographic-order assignment where there is at least 1 candidate in the candidate set that might apply to that assignment. If no such assignment exists, it is a compilation error.
+The picked assignment is the first assignment (in lexicographic order) from the cartesian product such that is at least 1 candidate in the candidate set that might apply to that assignment.
+
+If no such assignment exists, it is a compilation error.
 
 A candidate might apply to an assignment unless subtyping the candidate's dispatchable argument types with the assignment's respective adjusted dispatchable argument types proves that one of the candidate's predicates can't hold (if the subtyping can't be done, that vacuously proves that the predicates can't hold).
 
@@ -325,20 +325,23 @@ We aren't doing any moves, and everything works!
 
 ### Step 3 - Candidate selection
 
-After adjustments are selected, we select the candidate (for operators, this is trivial, because there is only ever 1 candidate).
+After adjustments are selected, the candidate is selected (for operators, this is trivial, because there is only ever 1 candidate) according to the following rules:
 
 - If there is exactly 1 candidate, it is selected
 - If there are multiple candidates, but exactly 1 high-priority candidate, it is selected.
 - Otherwise, this is a compilation error.
 
+### Step 4 - Fixups
 
 Then following fixups are made. They do not affect adjustment or candidate selection.
 
-### Mutability Fixup
+#### Mutability Fixup
 
-If overloaded indexing is used in a mutable context, the `Autoref(Immutable)` adjustment of the LHS is replaced with an `Autoref(Mutable)` adjustment, and the entire chain is required to be consistent with the new mutability (using the `DerefMut` and `IndexMut` traits when needed). If they can't be, this is a compilation error.
+If we performed a mutable autoref, or are performing overloaded indexing in a mutable context, we need to apply a *mutability fixup* to the adjustments and to other lvalue components on the way.
 
-### Arithmetic Fixup
+This proceeds by replacing immutable borrows in the lvalue path with mutable borrows, and adding `DerefMut` and `IndexMut` trait bounds when appropriate. If the trait bounds fail, this is of course a compilation error.
+
+#### Arithmetic Fixup
 
 If an arithmetic operator was used, and both types are integer or float  inference variables, their types are unified as if there existed an impl generic over integer inference variables, e.g.
     ```Rust
@@ -352,7 +355,7 @@ This is required in order to make `1 + 2` (both parameters are integer inference
 
 ## Adjustments
 
-These are basically the same as method adjustments, but because these are underdocumented: for the purpose of overloaded operators, an adjustment is defined as follows:
+For the purpose of method lookup, adjustments are as follows: for the purpose of overloaded operators, an adjustment is defined as follows:
 
 ```Rust
 type Adjustments = Vec<Adjustment>;
