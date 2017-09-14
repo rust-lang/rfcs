@@ -50,9 +50,9 @@ This RFC covers:
 *   Construction & seeding of PRNGs
 
 This RFC does not cover very much of the functionality in `rand`. In fact, the
-only aspect of this RFC which should affect most users (excluding RNG
-implementors and a few crypto users) is construction of PRNGs. Specifically,
-this RFC does not cover:
+only aspects of this RFC which should affect most users (excluding RNG
+implementors and a few crypto users) is construction of PRNGs and the `Sample`
+extension trait (a new one; see below). Specifically, this RFC does not cover:
 
 *   How end-users should use `rand` (for now, the assumption is that all
     necessary items will be re-exported through `rand` to minimise breakage;
@@ -75,7 +75,8 @@ Motivation for this sub-RFC is
 1.  To focus on the core traits
 2.  To answer the question: *how should RNGs published independently be
     implemented, and what `rand` crate dependencies should they have?*
-3.  To address the relevant part of the question of
+3.  To revise how PRNGs should be created
+4.  To address the relevant part of the question of
     how `rand` should be split into multiple crates
 
 # Guide-level explanation
@@ -132,10 +133,20 @@ pub trait Rng {
 }
 ```
 
+Of these functions, only `next_*` and `fill_bytes` are supposed to be
+implemented directly; there is no reason an implementation should override any
+of the other functions. Further, `next_f*` are only of interest to floating
+point generators; there are few pseudo-random algorithms directly producing
+floating-point numbers and I don't believe any of these are in common usage.
+
+There is one other function we may wish to add: `next_u128`. More later.
+
+But before we revise `Rng`, lets go over our goals.
+
 ### Desired properties
 
-[Note: only the last two paragraphs differ from the previous version of this
-section in the parent RFC.]
+[Note: many of these paragraphs are simply copied from the previous version of
+this section in the parent RFC; several more paragraphs have been added.]
 
 The above trait is **long and complex**, and does not cleanly separate core
 functionality (`next_*` / `fill_bytes`) from derived functionality (`gen`,
@@ -165,6 +176,11 @@ performance is in many cases the main reason to use a user-space RNG instead of
 system calls to access OS-provided randomness. The design therefore considers
 performance an important goal for most functionality, although system calls to
 access OS randomness are assumed to be relatively slow regardless.
+
+**Performance** is also the reason there are several generator functions
+(`next_*` and `fill_bytes`). Optimal implementation for each one depends on
+how the generator works, thus there is no implementation of any of these using
+only the other functions which would be optimal for all generators.
 
 **Error handling:**
 algorithmic random number generators tend to be infallible, but external
@@ -528,6 +544,36 @@ several annoying trivial functions (casting or wrapping some provided
 implementation), but there should not end up being a huge number of users
 needing to implement `Rng` (relative to users of `Rng`).
 
+## 128-bit support?
+
+Should we add `fn next_u128(&mut self) -> u128` besides `next_u32` and
+`next_u64`?
+
+Most current PRNG algorithms target the `u32` or `u64` type. Are there any
+native-`u128` algorithms available now? I don't know of any, but several
+algorithms could be adapted from `u32` or `u64` types. Would there be any
+advantages of 128-bit algorithms? Performance *might* be better for applications
+wanting `u128` values or byte streams.
+
+Of course the possible performance advantage for byte-streams can be realised
+without a `next_u128` function anyway. So is anyone likely to want a fast `u128`
+generator? No idea, but I see no reason not to plan for the (reasonable?) future.
+
+Why might we *not* want to add `next_u128`? First, it could be added later
+without breakage, but *only if* it has a default implementation. Second, it's
+more code for implementations to write, especially since `u128` is currently
+unstable and must be used behind a `cfg` attribute; this implies an extra
+configuration must be tested too.
+
+On the whole, the best approach may be to give `next_u128` a default
+implementation regardless of whether it is added now or later, and whether
+other functions have default implementations, simply because very few (if any)
+PRNGs will be able to provide a more efficient implementation than simply
+combining two `u64` values.
+
+Proposal: add `next_u128` now, behind a feature flag, with a default
+implementation.
+
 ## Extension traits
 
 ### Creation of securely-seeded RNGs
@@ -876,6 +922,8 @@ but no real resolution. Hopefully the community can provide some useful
 suggestions here. My personal preference would be to make `CryptoRng`
 use the relatively low bar of "no known feasible attack or significant weakness"
 as mentioned above. I suspect opinions will differ on this.
+
+The `Error` type needs to be defined.
 
 Should `SeedFromRng`, `NewSeeded` and `SeedableRng` all extend the `Rng` trait?
 There seems no real reason for this aside from the name of the third implying
