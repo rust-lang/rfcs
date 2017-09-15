@@ -236,7 +236,7 @@ part of Rust which will not be familiar to many Rust programmers, and it will
 not work at all for binaries configured to abort on panic.
 
 [Benchmarks](https://github.com/rust-lang/rfcs/pull/2106#issuecomment-328161354)
-show no overhead of using `Result` on the `fill_bytes` function at least,
+appear to show no overhead of using `Result` on the `fill_bytes` function at least,
 although it does complicate code a little (on the other hand for the `next_u*`
 functions, there may be a tiny overhead, and code becomes significantly more
 messy).
@@ -290,7 +290,7 @@ impl ::core::fmt::Debug for Error {
 
 Regarding the `next_u*` functions, my opinion is that there should be infallible
 versions of these functions (returning simple numbers) since this is what many
-uses (e.g. the `rand::distributions`) module expect. I have not seen any real
+uses (e.g. the `rand::distributions`) expect. I have not seen any real
 demand for a version of these functions returning a `Result`; hence in my
 opinion we do not need two versions of these functions.
 
@@ -321,7 +321,7 @@ dependent, and is likely outside of the implementor's control (e.g. `OsRng`).
 
 We could instead ask ourselves questions like *how well is the theory behind
 the generator understood?*, *what are the minimum and average cycle lengths?*,
-*are there any bad states?, and *how trusted is the implementation*? It is not
+*are there any bad states?*, and *how trusted is the implementation*? It is not
 possible to give any exact criterion using this approach, and if implementors
 must answer these questions themselves quality will vary, but an external body
 could perhaps give somewhat consistent answers. Unfortunately this would be
@@ -379,7 +379,8 @@ below.
 
 For those designs where `CryptoRng` does not extend or automatically implement
 `Rng`, we could add a wrapper type allowing any `CryptoRng` to be used as an
-`Rng`; but this is likely not necessary.
+`Rng`; but this is likely not necessary. `CryptoRng` implementations could also
+implement `Rng` directly.
 
 For all the following, we could add a wrapper type going the other way, named
 something like `FakeCryptoRng`, allowing any `Rng` to be used as a `CryptoRng`.
@@ -453,10 +454,12 @@ Advantages of this design:
 
 Disadvantages:
 
-*   Implementations of `CryptoRng` should make sure they implement `Rng` too if
-    they wish to provide optimal performance there. On the other hand,
-    implementations may not want to if they wish to avoid all dependence on
-    `Rng`. This could even lead to multiple implementations of an algorithm.
+*   Implementations of `CryptoRng` should implement `Rng` too. This implies
+    that both traits should probably be provided by the same crate.
+*   Users requiring a `CryptoRng` don't get access to `next_u*` unless they
+    also require `Rng`.
+*   Users requiring `Rng` don't get access to a byte-fill function unless
+    `Rng` *also* has such a function (redundancy)
 
 #### Design 4 (not recommended): `RawRng`
 
@@ -587,6 +590,7 @@ construct a securely seeded `ChaChaRng` with:
 ```rust
 use rand::{Rng, OsRng, ChaChaRng};
 
+// OsRng::new() returns a Result
 let mut rng: ChaChaRng = OsRng::new().unwrap().gen();
 ```
 
@@ -596,7 +600,8 @@ This RFC seeks to introduce an alternative:
 // items may be moved to other crates, but for now at least are accessible here:
 use rand::{ChaChaRng, NewSeeded};
 
-let mut rng = ChaChaRng::new();
+// new() returns a Result
+let mut rng = ChaChaRng::new().unwrap();
 ```
 
 Here, `NewSeeded` is a trait providing the `new` function. It is automatically
@@ -662,7 +667,7 @@ So why should we replace the old method of creation at all? There are several
 reasons:
 
 *   The `NewSeeded` trait makes creation of properly-seeded RNGs as simple and
-    intuitive as possible: `MyRng::new()`
+    intuitive as possible: `MyRng::new()?`
 *   Using a trait specific for the purpose, `SeedFromRng`, instead of simply
     implementing [`Rand`] lets us better document that creating RNGs is a
     special thing; one should choose here whether they want determinism or
@@ -678,7 +683,7 @@ reasons:
 #### Alternatives
 
 We may wish to tweak `SeedFromRng::from_rng` to only accept source RNGs of
-type `CryptoRng` (or if we have it, `WeakCryptoRng` or similar). Why? Seeding
+type `CryptoRng` (or if we have it, `NonTrivialRng` or similar). Why? Seeding
 some non-crypto RNGs this way can [accidentally make one a clone of the other](https://play.rust-lang.org/?gist=6c12ea478440e452b135a6354024a909&version=stable).
 This accidental cloning is impossible for even the weakest crypto RNGs (because
 there should be no trivial way to predict future output from past output).
@@ -754,7 +759,7 @@ algorithm will be adjusted in the future). This implies that `StdRng` should not
 implement `SeedableRng` because the underlying generator may be changed; also,
 output is platform-dependent (currently it may be `IsaacRng` or `Isaac64Rng`).
 
-We could suggest that PRNGs implement of `SeedableRng<u64>`.
+We could suggest that PRNGs implement `SeedableRng<u64>`.
 This seed type should not be used for cryptography due to the limited bits, but
 it is perfectly sufficient for simulators and games wanting reproducible output
 (`u32` should also be sufficient). Having standard PRNGs support a common
@@ -806,6 +811,50 @@ rand already has [`ChaChaRng::set_counter`]. This particular PRNG suggests
 using `set_counter` to specify a nonce; another use would be to effectively
 divide a PRNG's output into multiple streams.
 
+We should add a trait supporting seeking, for documentation and to allow wrapper
+types to automatically re-implement seeking. However, we don't yet have a good
+design, so this may be better left until later, if ever. The following proposal
+sort-of works, but is complicated and doesn't support the full 128-bit index
+`ChaChaRng` allows.
+
+```rust
+pub enum SeekMode {
+    /// Seek relative to the start of the stream
+    Abs,
+    /// Seek relative to the current position
+    Rel,
+    /// Only get the position
+    Get,
+}
+
+pub enum SeekBlock {
+    U8,
+    U32,
+    U64,
+    U128,   // if we introduce next_u128
+}
+
+pub trait SeekableRng: Rng {
+    /// Seek to a new position within the stream, then return the position in
+    /// absolute terms (relative to the start).
+    /// 
+    /// `block` specifies units: `U8` implies bytes, `U32` the number of
+    /// `next_u32` calls, etc. Specification is required because some generators
+    /// skip some bits; e.g. `next_u32` may use 64 bits and `try_fill` may
+    /// round up to the next 32 or 64 bit boundary (or other).
+    /// 
+    /// If the requested seek position is unavailable the generator may round
+    /// up, skipping bits in the same way as `next_u*` and `try_fill` do.
+    fn seek_to(&mut self, pos: isize, block: SeekBlock) -> usize;
+}
+```
+
+Unfortunately this ends up being rather complicated since quite a bit of
+functionality is wrapped into a single function. Using multiple functions would
+make reimplementation by wrapper types more tedious, and default implementations
+would not necessarily do the correct thing, in the same way that default
+implementations of functions like `next_u64` could behave incorrectly in
+wrappers.
 
 ## Split into multiple crates
 
@@ -818,9 +867,9 @@ too many extras. We consider the following usage classes:
 *   numeric applications generating values using various distributions
 *   other uses of random numbers
 
-The first of these requires the `Rng` and/or `CryptoRng` traits and optionally
-some extension traits, but shouldn't directly require anything else (except for
-testing).
+The first of these requires the `Rng` and/or `CryptoRng` traits, may use some
+helper "impl" functions, and may use some extension traits, but shouldn't
+directly require anything else (except for testing).
 
 Cryptographic applications may not require code converting RNG outputs to
 other types or distributions mapping to different ranges and/or shapes (this is
@@ -855,7 +904,7 @@ For now, this RFC proposes:
     functions so that most users will not be affected by this RFC
 
 In the future, we may wish to introduce some more crates, as follows. This list
-is provided for insight into the larger picture only; please do use this RFC to
+is provided for insight into the larger picture only; please do not use this RFC to
 comment on these crates (use the [Rand crate revision RFC] instead):
 
 *   a `rand_os` crate exposing `OsRng` and possibly `NewSeeded`
@@ -917,11 +966,9 @@ options; please see the [Rand crate revision RFC] for the history behind this.
 This particular design seems to reasonably well meet all design requirements
 while remaining reasonably simple, but is not obviously *the best option*.
 
-There are several suggestions for the semantic meaning of `CryptoRng` above,
-but no real resolution. Hopefully the community can provide some useful
-suggestions here. My personal preference would be to make `CryptoRng`
-use the relatively low bar of "no known feasible attack or significant weakness"
-as mentioned above. I suspect opinions will differ on this.
+There are several suggestions for the semantic meaning of `CryptoRng` above.
+The most requested seems to be "something suitable for cryptography" or
+"well studied algorithms designed for cryptography", but this is a bit vague.
 
 The `Error` type needs to be defined.
 
@@ -932,8 +979,11 @@ that implementations are `Rng`s, on the other hand all three are designed with
 be used to randomly initialise buffers for example, but this can also be done
 via the `gen()` function or `try_fill`.
 
-There are many more questions regarding the extension traits and seeding of
-PRNGs which only have suggestions for answers above.
+Should we adapt `SeedableRng` for stream support?
+
+Should we add a trait for seek support?
+
+Should we add `next_u128`?
 
 
 [Rand crate revision RFC]: https://github.com/rust-lang/rfcs/pull/2106
