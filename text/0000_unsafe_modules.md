@@ -70,6 +70,11 @@ The use of unsafe may be encouraged.
 
 # Rationale and Alternatives
 It may also be possible to add a compiler option to allow unsafe code without declaration. But this option should offer more control about, what is unsafe.
+Modules may also declared as unsafe using a feature macro like `#[unsafe]` before the module name or inside the module as `#![unsafe]`. Problem: This is syntactically irregular. Then it would be desirable, that you even declare unsafe functions as following:
+```
+#[unsafe]
+fn x() {...}
+```
 
 # Unresolved questions
 Should `use` really be `unsafe`?
