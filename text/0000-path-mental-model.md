@@ -1,10 +1,14 @@
-# Improve and Solidify Path Mental Model
+- Feature Name: path_mental_model
+- Start Date: 2017-09-18
+- RFC PR: (leave this empty)
+- Rust Issue: (leave this empty)
 
-## Summary
-RFC 2126 sought to improve the ergonomics and learnability of rust's module system.
-However, there were key points in that RFC that make rust's module system *more
-difficult*, especially as it relates to the mental models around `self` and
-`super` as they relate to the paths of files.
+# Summary
+[summary]: #summary
+[RFC 2126][1] sought to improve the ergonomics and learnability of rust's
+module system.  However, there were key points in that RFC that make rust's
+module system *more difficult*, especially as it relates to the mental models
+around `self` and `super` as they relate to the paths of files.
 
 This RFC proposes the following:
 - Removing language around using `foo.rs` + `/foo` instead of `foo/mod.rs`.
@@ -18,10 +22,16 @@ This RFC proposes the following:
   `src/`. This will make `crate::foo::bar` mean `crate/foo/bar.rs` instead of
   `src/foo/bar.rs` for the "standard" new project.
 
-## Motivation
+# Motivation
+[motivation]: #motivation
 
-### Preserve the mental model of `self::`
-RFC 2126 posits that the primary benefit of moving to the file-dir model
+One of the core desires of [RFC 2126][1] is that learnability will be improved.
+This RFC aims to show how the file-dir model will hurt learnability, especially
+as it pertains to `self::`. It then goes further to expand on several
+improvements for the beginner's mental model of modules and paths.
+
+## Preserve the mental model of `self::`
+[RFC 2126][1] posits that the primary benefit of moving to the file-dir model
 (and not using `mod.rs`) is:
 
 > From a learnability perspective, the fact that the paths in the module system
@@ -48,7 +58,7 @@ a crate *before* they construct a module, which means they just need to apply
 that knowledge to subdirectories to grow the complexity of their crate. It also
 makes it easier to refactor a sub-module into a sub-crate.
 
-However, the most imporant failing of RFC 2126 on this issue is that it fails
+However, the most imporant failing of [RFC 2126][1] on this issue is that it fails
 to take into account the consistency of the `self::` path. To demonstrate,
 let's look at a project:
 ```
@@ -63,6 +73,7 @@ src
 │   └── mod.rs
 │       1 mod b;
 │       2 pub use self::b::hello;
+│       2 pub use super::c::hello;
 │
 ├── c.rs
 │   1 pub fn hello() {
@@ -82,18 +93,21 @@ user would have to think for the mental model of `pub use self::b::hello;`
 Module System | File | Code | Mental Model
 --------------+------+------+-------------
 `mod.rs`      | `src/a/mod.rs` | `pub use self::b::hello` | `use ./b.rs::hello`
+`mod.rs`      | `src/a/mod.rs` | `pub use super::c::hello` | `use ../c.rs::hello`
 file-dir      | `src/a.rs` | `pub use self::b::hello` | `use ./a/b.rs::hello`
+file-dir      | `src/a.rs` | `pub use super::c::hello` | `use ./c.rs::hello`
 
-> Note that the file-folder mental model shifted from `./b.rs` to `./a/b.rs`.
+> Note that the `self` file-folder mental model shifted from `./b.rs` to `./a/b.rs`.
+> and the `super` mental model shifted from `../c.rs` to `./c.rs`
 
-In *every other context* there is a consistent mental model for `self::`, which
-is that it is the same as the "current directory" (`./`) (we are ignoring
-inline modules). This is true if you are in `foo/mod.rs` or `foo/bar.rs`. The
-file-dir model creates a special case where you can no longer substitute
-`self::foo` for `./foo.rs` in your head. You now have to know if you are in a
-`foo.rs + foo/` situation, and if you are it translates to a path depending on
-the name of the file you are in. This is going to be particularily confusing
-when dealing with RFC 2126's third point:
+In *every other context* there is a consistent mental model for `self::` and
+`super::`, which is that it is the same as the "current directory" (`./`) (we
+are ignoring inline modules). This is true if you are in `foo/mod.rs` or
+`foo/bar.rs`. The file-dir model creates a special case where you can no longer
+substitute `self::foo` for `./foo.rs` in your head. You now have to know if you
+are in a `foo.rs + foo/` situation, and if you are it translates to a path
+depending on the name of the file you are in. This is going to be particularily
+confusing when dealing with [RFC 2126][1]'s third point:
 
 > When refactoring code to introduce submodules, having to use `mod.rs` means you
 > often have to move existing files around. Another papercut.
@@ -127,14 +141,14 @@ that to access `crate::foo` means you have to add `/mod.rs`. The amount of
 "cut" here is not very significiant, and certainly does not pose a risk of
 hurting people's understanding.
 
-#### Comment on inline modules
+### Comment on inline modules
 Inline modules are a fairly confusing subject for newbies, as they don't
 exist in many other languages. However, `self::` is not confusing in
 them, since the user can *see* that they are working in an inline module.
 `self::` refering to the "outer scope" is fairly straightforward from
 that perspective.
 
-### Require full path in `mod` declarations
+## Require full path in `mod` declarations
 Requiring `mod` declarations to use the full path (i.e. `mod self::foo;`) will
 accomplish the following:
 - Make `use` and `mod` both be fully qualified paths to unify their mental model.
@@ -147,7 +161,7 @@ accomplish the following:
   so it is more clear what is going on.
 - Typing `mod self::` repeatedly will help new users understand that `self`
   always coresponds to the file's directory (obviously this depends on removing
-  the file-dir system from RFC 2126, which breaks that mental model)
+  the file-dir system from [RFC 2126][1], which breaks that mental model)
 
 However, it would have a major disadantage: I don't think we would ever
 want to support larger paths (i.e. `mod crate::foo::bar::baz`) as it is
@@ -156,8 +170,8 @@ used to know the sub-modules). So while `self::` is more explicit, the
 user can not get any of the power that they might expect a full path would give
 them.
 
-### Aid in improving the mental model of `crate::`
-When teaching users how to import modules under RFC 2126, the `crate::` keyword
+## Aid in improving the mental model of `crate::`
+When teaching users how to import modules under [RFC 2126][1], the `crate::` keyword
 will be excellent in mapping the file system to the module layout. However, one
 exception will have to be taught: that `crate::` == `src/`. To make the mental
 model complete, this RFC proposes that Cargo's default layout be:
@@ -180,10 +194,11 @@ This will make `crate::foo::bar` **actually mean** `crate/foo/bar.rs`, which
 will be easier to teach in the reference material.
 
 # Guide-level explanation
+[guide-level-explanation]: #guide-level-explanation
 This RFC is primarily focused on making the module system easier to teach
 and learn.
 
-One of the core reasons this RFC exists is to prevent RFC 2126 from corrupting
+One of the core reasons this RFC exists is to prevent [RFC 2126][1] from corrupting
 the mental model of `self::` refering to the relative path of the file, and
 improving `use` declarations to actually refer to a specific path.
 
@@ -223,11 +238,12 @@ mod self::foo;
 ## Creating sub-module directories
 This will not change. One of the benfits of this RFC is that we will
 prevent there being two ways to create submodules without a clear standard
-(RFC 2126 did not suggest that the file-dir model be standardized) and
+([RFC 2126][1] did not suggest that the file-dir model be standardized) and
 that we will prevent documentation churn.
 
-# Implementation Details
-Similar to the proposed `rustfix` solution in RFC 2126, this RFC proposes
+# Reference-level explanation
+[reference-level-explanation]: #reference-level-explanation
+Similar to the proposed `rustfix` solution in [RFC 2126][1], this RFC proposes
 that rustfix automatically converts `mod foo;` into `mod self::foo;` in all
 code. This could probably be done by `rustfmt` as well since `mod foo` implies
 `mod self::foo;`.
@@ -241,8 +257,9 @@ In addition, Cargo's template should use `crate/` instead of `src/` once
 the `crate::` path is stabilized.
 
 # Drawbacks
+[drawbacks]: #drawbacks
 The primary goal of this RFC is to *remove* the drawbacks of the file-dir
-module system presented in RFC 2126. Therefore the primary drawback is that
+module system presented in [RFC 2126][1]. Therefore the primary drawback is that
 we won't have that system.
 
 Drawbacks from other features include:
@@ -253,5 +270,18 @@ Drawbacks from other features include:
 - `crate/` instead of `src/` is a change to a pretty well known convention. It
   may take some time for people to adapt to the new directory structure.
 
+# Rationale and Alternatives
+[alternatives]: #alternatives
+
+- The `mod self::foo;` syntax may not work for technical reasons. Feedback
+  is necessary.
+- There are no outstanding technical challenges.
+- The future of the module system itself will be affected by this change.
+  If we are to be going to a "file-system" based module system, then
+  I believe `mod.rs` is much easier to understand as the "root of the
+  directory" than `foo.rs + foo/`
+
 # Unresolved Questions
 None at this time.
+
+[1]: https://github.com/rust-lang/rfcs/blob/master/text/2126-path-clarity.md
