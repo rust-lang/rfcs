@@ -178,6 +178,11 @@ changelog = "https://github.com/foo/bar/releases"
 None of the rules described in the previous section will apply to changelogs
 provided this way, even if they link to markdown files directly.
 
+Before publishing crate `cargo publish` will attempt to check if provided URL is
+reachable (e.g by checking if returned status code is equal to 200 or 30x),
+returning error if not. This behaviour can be disabled by
+`--allow-no-changelog` option.
+
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
@@ -228,7 +233,5 @@ changelog content.
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
-- Should we check correctness and/or availability of URL in the `changelog`
-field?
 - Should we allow empty "unreleased" section in the changelog, so authors
 will not delete and recreate it every time a release is made.
