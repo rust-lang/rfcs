@@ -727,9 +727,35 @@ pub trait SeedableRng<Seed>: Rng {
 }
 ```
 
-Is the `reseed` function redundant? Possibly, but it is also easy to implement
-(we could provide a default impl in terms of `from_seed`). I don't see much need
-to change this myself.
+Is the `reseed` function redundant? Probably; there is little if any efficiency
+bonus to re-using an old state; there may be some advantage to crypto-generators
+mixing their old state with a fresh seed instead of replacing the old state,
+but it is not clear that this is what the method should be doing (this is an
+importarnt distinction since the primary use of `SeedableRng` is to reproduce a
+stream of "random" numbers from a given seed).
+
+Having a standard way of seeding any RNG from a `u64` could be useful; this does
+not include enough bits for cryptography, but is convenient for many uses where
+reproducibility is important (sims and games), and as
+[pitdicker argues](https://github.com/rust-lang/rfcs/pull/2152#issuecomment-330489156)
+has enough bits that accidental collision of random seeds is very unlikely.
+
+The above parameterised trait has a significant draw-back: generic code cannot
+get the seed type or its size, thus generic code can't use
+`SeedableRng::from_seed` for any type `R: SeedableRng`. Since a single seed
+type should be sufficient, we can fix that by using an associated type, and
+asserting that the type used must be `Sized` (i.e. not a slice).
+
+With these considerations in mind, we propose the adjusting `SeedableRng` to
+the following:
+
+```rust
+pub trait SeedableRng: Rng {
+    type Seed;
+    fn from_seed(&mut self, Self::Seed);
+    fn seed_from_u64(&mut self, seed: u64);
+}
+```
 
 #### Streams
 
@@ -751,8 +777,7 @@ For consistency between generators, streams should probably be selected using
 long as RNGs document how many unique streams are available.
 
 Alternatively, we could ignore streams for normal seeding, but expect all
-generators support a fixed type like `(u64, u64)` (seed, stream); see the
-guideline on `SeedableRng<u64>` below.
+generators support a fixed type like `(u64, u64)`.
 
 #### Implementation guidelines
 
@@ -761,17 +786,6 @@ guideline on `SeedableRng<u64>` below.
 algorithm will be adjusted in the future). This implies that `StdRng` should not
 implement `SeedableRng` because the underlying generator may be changed; also,
 output is platform-dependent (currently it may be `IsaacRng` or `Isaac64Rng`).
-
-We could suggest that PRNGs implement `SeedableRng<u64>`.
-This seed type should not be used for cryptography due to the limited bits, but
-it is perfectly sufficient for simulators and games wanting reproducible output
-(`u32` should also be sufficient). Having standard PRNGs support a common
-seed type like `u64` would make it easier for these applications to switch from
-one generator to another. (Implementation: generators with more than 64 bits of
-internal state could pad the seed with zero or any fixed constant they like; it
-shouldn't matter as long as the generator's seeding requirements are met (this
-may imply a non-zero constant is more appropriate) and the extra bits are
-fixed.)
 
 #### Alternatives
 
