@@ -274,11 +274,14 @@ perhaps use an error type like the following; this may be the best option since
 `cfg`-dependent code.
 
 ```rust
+#[cfg(feature="std")]
 enum Error {
-    // this variant always present:
     Msg(&'static str),
-    // this variant only present when std is available:
     ChainedIo(&'static str, ::std::io::Error),
+}
+#[cfg(not(feature="std"))]
+enum Error {
+    Msg(&'static str),
 }
 
 impl ::core::fmt::Debug for Error {
@@ -574,8 +577,8 @@ other functions have default implementations, simply because very few (if any)
 PRNGs will be able to provide a more efficient implementation than simply
 combining two `u64` values.
 
-Proposal: add `next_u128` now, behind a feature flag, with a default
-implementation.
+Proposal: do nothing now. After the type is made stable, add a `next_u128`
+function to `Rng` with a default implementation in terms of `next_u64`.
 
 ## Extension traits
 
@@ -1005,10 +1008,6 @@ be used to randomly initialise buffers for example, but this can also be done
 via the `gen()` function or `try_fill`.
 
 Should we adapt `SeedableRng` for stream support?
-
-Should we add a trait for seek support?
-
-Should we add `next_u128`?
 
 
 [Rand crate revision RFC]: https://github.com/rust-lang/rfcs/pull/2106
