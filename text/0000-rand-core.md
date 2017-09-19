@@ -803,59 +803,6 @@ a function `fn seed_len() -> u32` to specify the ideal seed length in bytes).
 We could do this in addition to a generic version of `SeedableRng` taking the
 full seed as a `Sized` type, or even without this.
 
-### Seeking
-
-Some PRNG algorithms support seeking to an arbitrary position in their output
-without having to generate all numbers in between (but not all). For example,
-rand already has [`ChaChaRng::set_counter`]. This particular PRNG suggests
-using `set_counter` to specify a nonce; another use would be to effectively
-divide a PRNG's output into multiple streams.
-
-We should add a trait supporting seeking, for documentation and to allow wrapper
-types to automatically re-implement seeking. However, we don't yet have a good
-design, so this may be better left until later, if ever. The following proposal
-sort-of works, but is complicated and doesn't support the full 128-bit index
-`ChaChaRng` allows.
-
-```rust
-pub enum SeekMode {
-    /// Seek relative to the start of the stream
-    Abs,
-    /// Seek relative to the current position
-    Rel,
-    /// Only get the position
-    Get,
-}
-
-pub enum SeekBlock {
-    U8,
-    U32,
-    U64,
-    U128,   // if we introduce next_u128
-}
-
-pub trait SeekableRng: Rng {
-    /// Seek to a new position within the stream, then return the position in
-    /// absolute terms (relative to the start).
-    /// 
-    /// `block` specifies units: `U8` implies bytes, `U32` the number of
-    /// `next_u32` calls, etc. Specification is required because some generators
-    /// skip some bits; e.g. `next_u32` may use 64 bits and `try_fill` may
-    /// round up to the next 32 or 64 bit boundary (or other).
-    /// 
-    /// If the requested seek position is unavailable the generator may round
-    /// up, skipping bits in the same way as `next_u*` and `try_fill` do.
-    fn seek_to(&mut self, pos: isize, block: SeekBlock) -> usize;
-}
-```
-
-Unfortunately this ends up being rather complicated since quite a bit of
-functionality is wrapped into a single function. Using multiple functions would
-make reimplementation by wrapper types more tedious, and default implementations
-would not necessarily do the correct thing, in the same way that default
-implementations of functions like `next_u64` could behave incorrectly in
-wrappers.
-
 ## Split into multiple crates
 
 We propose splitting `rand` into multiple traits, so that the appropriate
@@ -960,6 +907,8 @@ other modifications proposed here.
 # Alternatives
 [alternatives]: #alternatives
 
+## NonCryptoRng
+
 It [has been suggested](https://github.com/rust-lang/rfcs/pull/2152#issuecomment-329804139)
 that `Rng` be renamed to `NonCryptoRng`. With the current trait design, that
 would imply `CryptoRng: NonCryptoRng` and every `CryptoRng` is also a
@@ -974,6 +923,64 @@ quite strong and with no known attack; can be switched should a weakness be
 found). Additionally, with `CryptoRng` right next to `Rng` and good
 documentation, it will be hard to miss the conclusion that `CryptoRng` should
 be preferred for cryptographic usage.
+
+## Seeking
+
+Some PRNG algorithms support seeking to an arbitrary position in their output
+without having to generate all numbers in between (but not all). For example,
+rand already has [`ChaChaRng::set_counter`]. This particular PRNG suggests
+using `set_counter` to specify a nonce; another use would be to effectively
+divide a PRNG's output into multiple streams.
+
+Perhaps
+we should add a trait supporting seeking, for documentation and to allow wrapper
+types to automatically re-implement seeking. However, we don't yet have a good
+design, so this may be better left until later, if ever. The following proposal
+sort-of works, but is complicated and doesn't support the full 128-bit index
+`ChaChaRng` allows.
+
+```rust
+pub enum SeekMode {
+    /// Seek relative to the start of the stream
+    Abs,
+    /// Seek relative to the current position
+    Rel,
+    /// Only get the position
+    Get,
+}
+
+pub enum SeekBlock {
+    U8,
+    U32,
+    U64,
+    U128,   // if we introduce next_u128
+}
+
+pub trait SeekableRng: Rng {
+    /// Seek to a new position within the stream, then return the position in
+    /// absolute terms (relative to the start).
+    /// 
+    /// `block` specifies units: `U8` implies bytes, `U32` the number of
+    /// `next_u32` calls, etc. Specification is required because some generators
+    /// skip some bits; e.g. `next_u32` may use 64 bits and `try_fill` may
+    /// round up to the next 32 or 64 bit boundary (or other).
+    /// 
+    /// If the requested seek position is unavailable the generator may round
+    /// up, skipping bits in the same way as `next_u*` and `try_fill` do.
+    fn seek_to(&mut self, pos: isize, block: SeekBlock) -> usize;
+}
+```
+
+Unfortunately this ends up being rather complicated since quite a bit of
+functionality is wrapped into a single function. Using multiple functions would
+make reimplementation by wrapper types more tedious, and default implementations
+would not necessarily do the correct thing, in the same way that default
+implementations of functions like `next_u64` could behave incorrectly in
+wrappers.
+
+Since we don't have a good solution, this is not a pressing problem, and a
+trait can be added later without breakage, the best option is probably to leave
+this out for now.
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
