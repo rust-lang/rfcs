@@ -957,6 +957,24 @@ rest tof `rand`.
 Even if we didn't split `rand`, I believe we should still seriously consider the
 other modifications proposed here.
 
+# Alternatives
+[alternatives]: #alternatives
+
+It [has been suggested](https://github.com/rust-lang/rfcs/pull/2152#issuecomment-329804139)
+that `Rng` be renamed to `NonCryptoRng`. With the current trait design, that
+would imply `CryptoRng: NonCryptoRng` and every `CryptoRng` is also a
+`NonCryptoRng`; this seems reasonable. On the other hand, this naming has two
+disadvantages: (1) extra breakage from the current `rand` crate, and (2) giving
+a commonly-used type a significantly longer and more complex name for what
+appears to me a weak rationale. It is suggested that we might fall into the same
+trap as C and make the easiest source of random numbers weak; but that is not
+the case: the easiest sources are (and will probably remain) `OsRng::new()` (very
+secure) and `thread_rng()` (not "crypto approved", but still hypothesised to be
+quite strong and with no known attack; can be switched should a weakness be
+found). Additionally, with `CryptoRng` right next to `Rng` and good
+documentation, it will be hard to miss the conclusion that `CryptoRng` should
+be preferred for cryptographic usage.
+
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
