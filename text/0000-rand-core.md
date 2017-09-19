@@ -985,6 +985,19 @@ Since we don't have a good solution, this is not a pressing problem, and a
 trait can be added later without breakage, the best option is probably to leave
 this out for now.
 
+## Crate names: `-` vs `_`
+
+As far as I am aware, both naming conventions have already been used for crates.
+`rand_derive` uses the underscore syntax, as do a few other rand-related crates
+and quite a few others (`lazy_static`, `num_cpus`, `thread_local`).
+The dash syntax may be slightly more common among the most downloaded crates:
+`regex-syntax`, `aho-corasick`, `num-traits`, `pkg-config`, `utf8-ranges`.
+(This looks at only the 25 most downloaded crates. From the first 100,
+I count 15 using `_` and 29 using `-`.)
+
+Personally I don't care a bit on this, but will leave crate names using
+underscore (e.g. `rand_core`) unless I see good rationale for changing it.
+
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
