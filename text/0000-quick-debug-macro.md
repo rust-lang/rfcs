@@ -28,6 +28,21 @@ To increase the utility of the macro, it acts as a pass-through function on the 
 
 While the `log` crate offers a lot of utility, it first has to be used with `extern crate log;`. A logger then has to be set up before expressions can be logged. It is therefore not suitable for introducing newcommers to the language.
 
+## Bikeshed: The name of the macro
+
+Several names has been proposed for the macro. Some of the candidates were:
+
++ `debug!`, which was the original name. This was however already used by the `log`
+crate.
++ `d!`, which was deemded to be too short to be informative and convey intent.
++ `dump!`, which was confused with stack traces.
++ `show!`, inspired by Haskell. `show` was deemed less obvious than `dbg!`.
++ `peek!`, which was also deemed less obvious.
++ `DEBUG!`, which was deemed too screamy.
+
+While it is unfortunate that `debug!` was unavailable, `dbg!` was deemed the
+next best thing, which is why it was picked as the name of the macro.
+
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
@@ -103,6 +118,24 @@ This prints the following to `STDERR`:
 
 This way of using the macro will mostly benefit existing Rust programmers.
 
+Optionally, the default formatting used by the macro can be changed by
+passing in a format as a second argument as done in:
+
+```rust
+fn main() {
+    let p = dbg!(Point { x: 4, y: 5 }, "{:?}");
+}
+```
+
+This prints the following to `STDERR`:
+
+```
+Point { x: 4, y: 5 }
+```
+
+In this case, the main advantage of `dbg` over `println` in this case is that
+the value of the expression is passed back to the "caller" of the macro.
+
 ## On release builds:
 
 The same examples above will print nothing to `STDERR` and will instead simply
@@ -120,7 +153,16 @@ macro_rules! dbg {
             let tmp = $val;
             if cfg!(debug_assertions) {
                 eprintln!("[DEBUGGING, {}:{}:{}]:\n=> {} = {:#?}",
-                    file!(), line!(), column!(), stringify!($val), tmp );
+                    file!(), line!(), column!(), stringify!($val), tmp);
+            }
+            tmp
+        }
+    };
+    ($val: expr, $fmt: expr) => {
+        {
+            let tmp = $val;
+            if cfg!(debug_assertions) {
+                eprintln!($fmt, tmp);
             }
             tmp
         }
@@ -140,6 +182,8 @@ evaluted to the RHS of the equality.
 
 **NOTE:** The exact output format is not meant to be stabilized even when/if the
 macro is stabilized.
+
+By passing in a format as the second optional argument to the macro, the way the value is printed can be changed. This is done in `($val: expr, $fmt: expr)`.
 
 # Drawbacks
 [drawbacks]: #drawbacks
