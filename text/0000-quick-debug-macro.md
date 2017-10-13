@@ -65,11 +65,13 @@ fn main() {
 The program will print the points to `STDERR` as:
 
 ```
-dbg(1:4) Point{x: 1, y: 2,} = Point {
+[DEBUGGING, src/main.rs:1:4]:
+=> Point{x: 1, y: 2,} = Point {
     x: 1,
     y: 2
 }
-dbg(7:4) p = Point {
+[DEBUGGING, src/main.rs:7:4]:
+=> p = Point {
     x: 4,
     y: 5
 }
@@ -88,13 +90,17 @@ fn main() {
 }
 ```
 
-This prints the following to `STDERR` as:
+This prints the following to `STDERR`:
 
 ```
-dbg(1:12) 1 + 2 = 3
-dbg(2:12) x + 1 = 4
-dbg(2:26) 3 = 3
-dbg(3:4) y = 7
+[DEBUGGING, src/main.rs:1:12]:
+=> 1 + 2 = 3
+[DEBUGGING, src/main.rs:2:12]:
+=> x + 1 = 4
+[DEBUGGING, src/main.rs:2:26]:
+=> 3 = 3
+[DEBUGGING, src/main.rs:3:4]:
+=> y = 7
 ```
 
 This way of using the macro will mostly benefit existing Rust programmers.
@@ -107,7 +113,7 @@ evaluate the expressions.
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-The macro `dbg!` will be implemented as:
+The `dbg!` macro will be implemented as:
 
 ```rust
 macro_rules! dbg {
@@ -115,8 +121,8 @@ macro_rules! dbg {
         {
             let tmp = $val;
             if cfg!(debug_assertions) {
-                eprintln!("dbg({}:{}) {} = {:#?}",
-                    line!(), column!(), stringify!($val), tmp );
+                eprintln!("[DEBUGGING, {}:{}:{}]:\n=> {} = {:#?}",
+                    file!(), line!(), column!(), stringify!($val), tmp );
             }
             tmp
         }
@@ -130,9 +136,8 @@ an expression is simply the expression itself. In effect the result is applying
 the identity function on the expression, but the call will be inlined away such
 that the overhead is zero.
 
-The line number and column is included for increased utility when included in
-production quality code. The expression is also stringified, so that the
-developer can easily see the syntactic structure of the expression that
+The file name, line number and column is included for increased utility when included in production quality code. The expression is also stringified, so that
+the developer can easily see the syntactic structure of the expression that
 evaluted to the RHS of the equality.
 
 **NOTE:** The exact output format is not meant to be stabilized even when/if the
@@ -148,8 +153,7 @@ sufficiently ergonomic for both experienced rustaceans and newcomers.
 [alternatives]: #alternatives
 
 The formatting is informative, but could be formatted in other ways depending
-on what is valued. A more terse format could be used if `stringify!` or line and
-column numbers is not deemed beneficial, which this RFC argues it should.
+on what is valued. A more terse format could be used if `stringify!` or `file!()` line and column numbers is not deemed beneficial, which this RFC argues it should.
 
 The impact of not merging the RFC is that the papercut, if considered as such,
 remains.
@@ -160,8 +164,9 @@ remains.
 The format used by the macro should be resolved prior to merging.
 Some questions regarding the format are:
 
-1. Should the line number be included?
-2. Should the column number be included?
+1. Should the `file!()` be included?
+2. Should the line number be included?
+3. Should the column number be included?
 4. Should the `stringify!($val)` be included?
 
 Other questions, which should also be resolved prior to merging, are:
