@@ -175,3 +175,9 @@ Other questions, which should also be resolved prior to merging, are:
    the value of the expression?
 6. Should the macro act as the identity function on release modes?
    If the answer to this is yes, 5. must also be yes, i.e: 6. => 5.
+
+To be revisited once [`specialization`](https://github.com/rust-lang/rfcs/pull/1210)
+has been stabilized:
+
+7. Should expressions and values of non-`Debug` types be usable with this macro
+by using `std::intrinsics::type_name` for such types and the `Debug` impl for `T : Debug` types as done in version 0.1.2 of [`debugit` ](https://docs.rs/debugit/0.1.2/debugit/)? This depends on specialization.
