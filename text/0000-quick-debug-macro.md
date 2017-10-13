@@ -136,7 +136,7 @@ an expression is simply the expression itself. In effect the result is applying
 the identity function on the expression, but the call will be inlined away such
 that the overhead is zero.
 
-The file name, line number and column is included for increased utility when included in production quality code. The expression is also stringified, so that
+The file name, line number and column is included for increased utility when included in non-trivial code. The expression is also stringified, so that
 the developer can easily see the syntactic structure of the expression that
 evaluted to the RHS of the equality.
 
