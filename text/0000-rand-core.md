@@ -44,7 +44,7 @@ design for the core traits.
 This RFC covers:
 
 *   What core traits `rand` should expose
-*   How they should be published (new `rand_core` crate)
+*   How they should be published (new `rand-core` crate)
 *   How PRNG implementations should reference (crate dependencies) and implement
     these traits
 *   Construction & seeding of PRNGs
@@ -83,16 +83,16 @@ Motivation for this sub-RFC is
 [guide-level-explanation]: #guide-level-explanation
 
 For now, most end users should continue using the `rand` crate, and should not
-need to depend on `rand_core` directly. On the other,
+need to depend on `rand-core` directly. On the other,
 some of the traits concerned, such as `Rng` and `SeedableRng`, will be of
 interest to end users and will be documented appropriately.
 
 It is intended that crates publishing RNG implementations will depend on the
-`rand_core` crate directly, and not on the `rand` crate.
+`rand-core` crate directly, and not on the `rand` crate.
 
 Crates mainly using integral (especially `u32` and `u64`) or byte sequence
 (`[u8]`) random values (i.e. cryptographic code) may choose to depend on
-`rand_core` directly.
+`rand-core` directly.
 This may be viable for cryptography-focussed crates, but lacks several useful
 features of `rand`: `thread_rng`, the `ReseedingRng` wrapper, conversion to
 floating point, `Range` distribution, statistical distributions like `Normal`.
@@ -633,10 +633,10 @@ impl<R: SeedFromRng> NewSeeded for R {
 }
 ```
 
-The above code should be included in `rand`, not `rand_core`. Later, if `OsRng`
+The above code should be included in `rand`, not `rand-core`. Later, if `OsRng`
 gets moved to its own crate, this code could be moved there (for discussion in
 a new RFC). The `SeedFromRng` type, on the other hand, needs to be in
-`rand_core`:
+`rand-core`:
 
 ```rust
 /// Support mechanism for creating random number generators seeded by other
@@ -681,7 +681,7 @@ reasons:
     trait or of a distribution trait like [`IndependentSample`] or
     [`Distribution`] could offer similar functionality, but these traits all
     deal with converting RNG output to other types, which (in my opinion)
-    should be an extra layer built on top of (and independent from) `rand_core`
+    should be an extra layer built on top of (and independent from) `rand-core`
 
 #### Alternatives
 
@@ -860,7 +860,7 @@ attacker sending data designed to prevoke worst-case performance).
 
 For now, this RFC proposes:
 
-*   a new `rand_core` crate containing the `Rng` trait, `CryptoRng` (in whatever
+*   a new `rand-core` crate containing the `Rng` trait, `CryptoRng` (in whatever
     form(s) that takes), extension traits like `SeedableRng` and `SeedFromRng`,
     possibly a mock implementation of `Rng`, and functions to aid implementing
     `Rng`
@@ -871,11 +871,11 @@ In the future, we may wish to introduce some more crates, as follows. This list
 is provided for insight into the larger picture only; please do not use this RFC to
 comment on these crates (use the [Rand crate revision RFC] instead):
 
-*   a `rand_os` crate exposing `OsRng` and possibly `NewSeeded`
-*   a `rand_chacha` crate for `ChaChaRng`
-*   a `rand_isaac` crate for the ISAAC RNGs
+*   a `rand-os` crate exposing `OsRng` and possibly `NewSeeded`
+*   a `rand-chacha` crate for `ChaChaRng`
+*   a `rand-isaac` crate for the ISAAC RNGs
 *   other PRNG crates may be adopted, e.g. `pcg_rand`
-*   possibly a `rand_thread` crate for `thread_rng` (very speculative)
+*   possibly a `rand-thread` crate for `thread_rng` (very speculative)
 
 
 ## Generating values
@@ -898,7 +898,7 @@ Existing users need then only `use rand::Sample;`, or if they previously had
 In the future, these member functions could be further tweaked. Please see
 [this mock design](https://dhardy.github.io/rand/rand/trait.Sample.html) for an
 idea; however this is beyond the scope of this RFC which is mainly concerned
-about introducing `rand_core` and tweaking `Rng`.
+about introducing `rand-core` and tweaking `Rng`.
 
 The naming conflict with [`distributions::Sample`] is unfortunate but not
 necessarily a fatal problem since `rand` doesn't currently reexport this trait
@@ -1009,8 +1009,9 @@ The dash syntax may be slightly more common among the most downloaded crates:
 (This looks at only the 25 most downloaded crates. From the first 100,
 I count 15 using `_` and 29 using `-`.)
 
-Personally I don't care a bit on this, but will leave crate names using
-underscore (e.g. `rand_core`) unless I see good rationale for changing it.
+A vote [showed a preference for `rand-core` over `rand_core`](https://github.com/rust-lang/rfcs/pull/2152#issuecomment-333884702).
+The sample implementation was named `rand_core`, but according to this vote
+should be published as `rand-core` instead on acceptance of this RFC.
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
