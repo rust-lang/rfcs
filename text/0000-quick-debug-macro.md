@@ -529,7 +529,49 @@ of the additions would result in: `x = <val>, y = <val>, z = <val>`, the user
 can clearly see which expression on the line that generated the value. The only
 exception to this is if the same expression is used multiple times and crucically
 has side effects altering the value between calls. This scenario is probably
-very uncommon.
+very uncommon. However, the `column!()` isn't very visually disturbing since
+it uses horizontal screen real-estate but not vertical real-estate, which
+may still be a good reason to keep it.
+
+8. Should a trailing newline be added after each `dbg!(exprs...)`? The result
+of answer in the affirmative would be to change the following example:
+
+```
+[DEBUGGING, src/main.rs:85:18]:
+=> a = 1
+[DEBUGGING, src/main.rs:86:25]:
+=> a = 1, b = 2
+[DEBUGGING, src/main.rs:87:30]:
+=> a = 1, b = 2, a + b = 3
+```
+
+into:
+
+```
+[DEBUGGING, src/main.rs:85:18]:
+=> a = 1
+
+[DEBUGGING, src/main.rs:86:25]:
+=> a = 1, b = 2
+
+[DEBUGGING, src/main.rs:87:30]:
+=> a = 1, b = 2, a + b = 3
+```
+
+This may, to many readers, look considerably more readable thanks to visual
+association of a particular set of values with the `DEBUGGING` header and make
+the users own `println!(..)` and `eprintln!(..)` calls stand out more due to the
+absence of the header.
+
+A counter argument to this is that users with IDEs or vertically short terminals
+may have as little as `25%` of vertical screen space allocated for the program's
+output with the rest belonging to the actual code editor. To these users, lines
+are too precious to waste in this manner since scrolling may require the use of
+the mouse or switching of keyboard input focus.
+
+However, it is more unlikely that a user will see the information they are
+looking for in a small window without scrolling. Here, searchability is aided by
+grouping which is visually pleasing to process.
 
 [`specialization`]: https://github.com/rust-lang/rfcs/pull/1210
 
