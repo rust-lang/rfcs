@@ -238,7 +238,7 @@ If possible,
 are used to implement for arrays of arbitrary size,
 otherwise, impls are generated for arrays up to a reasonable size.
 
-## Blanked impl
+## Blanket impl
 
 The blanket impl referred to in [guide-level-explanation] is added and
 overlapping impls are removed.
@@ -250,6 +250,30 @@ They are however altered to produce a `const` item in the trait instead of a
 function, and instead of a trait function call, the following is used for a
 factor `Field` of a product type (tuples structs, normal structs - including
 unit structs): `<Field as ConstDefault>::DEFAULT`.
+
+## In relation to "Default Fields"
+
+[RFC 1806]: https://github.com/rust-lang/rfcs/pull/1806
+
+The currently postponed [RFC 1806], which deals with struct default field values, allows the user to assign default values from `const` expressions to fields when defining a `struct` as in the following example:
+
+```rust
+struct Foo {
+    a: &'static str,
+    b: bool = true,
+    c: i32,
+}
+```
+
+The RFC argues that an alternative to the `const` requirement is to allow the
+use of `Default::default()`  instead of just `const` expressions. However,
+since `Default` may incur non-trival runtime costs which are un-predictable,
+this is not the main recommendation of the RFC. As `<T as ConstDefault>::DEFAULT` is const, this RFC is fully compatible with that RFC.
+
+[RFC 1806] further mandates that when deriving `Default`, supplied field defaults
+are used instead of the field type's `Default` impl. If RFC 1806 is added to this
+language, for the sake of consistency the same logic should also apply to
+`ConstDefault`.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -294,4 +318,6 @@ deprecate it when **and if** any of the more optimal alternatives are added.
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
-There are none (as of yet).
+These questions should be resolved during the RFC process:
+
++ Should a blanket impl be added?
