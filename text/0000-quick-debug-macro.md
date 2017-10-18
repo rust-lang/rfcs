@@ -490,7 +490,6 @@ Some questions regarding the format were:
 
 1. Should the `file!()` be included?
 2. Should the line number be included?
-3. Should the column number be included?
 4. Should the `stringify!($val)` be included?
 
 Other questions, which should also be resolved prior to merging, were:
@@ -504,6 +503,20 @@ Other questions, which should also be resolved prior to merging, were:
 They have all been answered in the affirmative.
 
 ## Currently unresolved
+
+Some questions regarding the format are:
+
+3. Should the column number be included?
+
+It is more likely than not that no more than one `dbg!(...)` will occur. If it
+does, it will most likely be when dealing with binary operators such as with:
+`dbg!(x) + dbg!(y) + dbg!(z)`, or with several arguments to a function/method
+call. However, since the macro prints out `stringify!(expr)`, which in the case
+of the additions would result in: `x = <val>, y = <val>, z = <val>`, the user
+can clearly see which expression on the line that generated the value. The only
+exception to this is if the same expression is used multiple times and crucically
+has side effects altering the value between calls. This scenario is probably
+very uncommon.
 
 [`specialization`]: https://github.com/rust-lang/rfcs/pull/1210
 
