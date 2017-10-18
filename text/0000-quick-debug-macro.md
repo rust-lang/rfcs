@@ -443,6 +443,52 @@ explanation and the example implementation that it locks `STDERR` once and uses
 a buffered writer for efficiency and concistency when dealing with multiple
 threads that write out to `STDERR` concurrently.
 
+On release builds, this macro reduces to:
+
+```rust
+// For #[allow(unused_parens)]:
+#![feature(stmt_expr_attributes)]
+
+#[macro_export]
+macro_rules! dbg {
+    // ...
+    // With label:
+    ($labf: expr => $valf: expr $(, $lab: expr => $val: expr)*) => {
+        #[allow(unused_parens)] // requires: #![feature(stmt_expr_attributes)]
+        {
+            let ret = (
+                {
+                    let tmp = $valf;
+                    tmp
+                }
+                $(, {
+                    {
+                        let tmp = $val;
+                        tmp
+                    }
+                } )*
+            );
+            ret
+        }
+    };
+}
+```
+
+which further reduces to the following, which clearly shows that the invocation
+is nothing more than the identity on the tuple passed:
+
+```rust
+#[macro_export]
+macro_rules! dbg {
+    // ...
+
+    // With label:
+    ($($lab: expr => $val: expr)+) => {{
+        ( $($val),* )
+    }};
+}
+```
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
