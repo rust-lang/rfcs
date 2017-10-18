@@ -483,7 +483,7 @@ macro_rules! dbg {
     // ...
 
     // With label:
-    ($($lab: expr => $val: expr)+) => {{
+    ($($lab: expr => $val: expr),+) => {{
         ( $($val),* )
     }};
 }
@@ -526,7 +526,7 @@ next best thing, which is why it was picked as the name of the macro.
 
 ## How do we teach this?
 
-Part of the [motivation][[for-aspiring-rustaceans]] for this macro was to delay
+Part of the [motivation][for-aspiring-rustaceans] for this macro was to delay
 the point at which aspiring rustaceans have to learn how formatting arguments
 work in the language. For this to be effective, the macro should be taught prior
 to teaching formatting arguments, but after teaching the user to write their
