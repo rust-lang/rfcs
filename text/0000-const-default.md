@@ -315,6 +315,11 @@ This RFC advocates that the more optimal alteratives are sufficiently far into
 the future that the best course of action is to add `ConstDefault` now and then
 deprecate it when **and if** any of the more optimal alternatives are added.
 
+The `ConstDefault` proposed by this RFC was also independently discussed and
+derived in the now closed [RFC 1520](https://github.com/rust-lang/rfcs/pull/1520) as what could be achieved with generic consts. The trait was not the actual suggestion of the RFC but rather discussed in passing. However, the fact that
+the same identical trait was developed independently gives greater confidence in
+its design.
+
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
