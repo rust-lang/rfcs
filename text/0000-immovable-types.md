@@ -20,47 +20,84 @@ Since generators can only move during suspend points we can require that referen
 # Detailed design
 [design]: #detailed-design
 
-A new unsafe auto trait `Move` is introduced in `core::marker`. Auto traits are implemented for all primitive types and for composite types where the elements also implement the trait. Users can opt-out to this for custom types. References, pointers, `core::ptr::Unique` and `core::ptr::Shared` explicitly implement this trait, since pointers are movable even if they point to immovable types.
-
-All type parameters (including `Self` for traits), trait objects and associated types have a `Move` bound by default.
+A new builtin marker trait `Move` is introduced in `core::marker`. All type parameters (including `Self` for traits) and associated types implement `Move` by default.
 
 If you want to allow types which may not implement `Move`, you would use the `?Move` trait bound which means that the type may or may not implement `Move`.
+
+A new marker struct `Immovable` is also introduced in `core::marker`. This struct does not implement `Move` and allows users to make composite immovable types.
 
 You can freely move values which are known to implement `Move` after they are borrowed, however you cannot move types which aren't known to implement `Move` after they have been borrowed. Once we borrow an immovable type, we'd know its address and code should be able to rely on the address not changing. This is sound since the only way to observe the address of a value is to borrow it. Before the first borrow nothing can observe the address and the value can be moved around.
 
 Static variables allow types which do not implement `Move`.
 
+These are the rules to determine if a type implements `Move`:
+- Integers, floats, `char` and `bool` are `Move`
+- Function types and function pointers  are `Move`
+- Closures are `Move` if their captured variables are `Move`
+- Movable generators are `Move` if all values (including capture variables) which are live during a suspension point are `Move`
+- Immovable generators are never `Move`
+- The `Immovable` type is never `Move`
+- Trait objects are `Move` if they have an explicit `Move` bound
+- Struct, enums and tuples are `Move` if all their elements are `Move`
+- Existential types (`impl Trait`) are `Move` if their underlying type are `Move`
+- `[T]` and `[T; n]` are `Move` if `T` is `Move`
+- `str` is `Move`
+
 ## Move checking
 
-To prevent values which may not implement `Move` that have been previously borrowed we introduce a MIR pass. We do a forward dataflow analysis on the MIR marking l-values that have been borrowed. For `a` we mark the path `a` as observed. For `a.b` we mark both `a.b` and the parent `a`, since if you observe `a.b` moving `a` will change the address of `a.b`. For `*a` we do nothing, as the address of `a` isn't observed. For slice indices `a[i]`, we mark `a` as observed. Finally we walk through every move in the MIR and give an error if the moved value could be observed at that point and the type of the value isn't known to implement `Move`.
+We need to ensure that values we have borrowed no longer can be moved. When we borrow a value we can find its address in memory. For example:
+```rust
+struct Foo {
+    field: bool,
+}
+
+fn address(v: &Foo) -> usize {
+    v as *const _ as usize
+}
+
+let a = Foo {
+    field: true
+};
+address(&a)
+```
+We can also find the address of `a.field` in our `address` function using this code:
+```rust
+fn address(v: &Foo) -> usize {
+    &v.field as *const _ as usize
+}
+```
+Thus we say that our borrow `&a` observes both `a` and `a.field`.
+In general, borrowing a value observes all other values stored inside except for values which are reached using an indirection (for example a reference or a `Box`). If any elements of an array is observed, the entire array is also observed. 
+
+Whenever we are moving an value we emit an error if the type does not implement `Move` and the value could also have been observed. We do the same check for any values stored inside; again ignoring indirections.
 
 ## Immovable types contained in movable types
 
-To allow immovable types to be contained in movable types, we introduce a `core::cell::MobileCell` wrapper which itself implements `Move`. It works similarly to `Cell` in that it disallows references to the value inside.
+To allow immovable types to be contained in movable types, we introduce a `core::cell::MovableCell` wrapper which itself implements `Move`. It works similarly to `Cell` in that it disallows references to the value inside.
 ```rust
-#[lang = "mobile_cell"]
-pub struct MobileCell<T: ?Move> {
-	value: T,
+#[lang = "movable_cell"]
+#[derive(Default)]
+pub struct MovableCell<T: ?Move> {
+    value: T,
 }
 
-unsafe impl<T: ?Move> Move for MobileCell<T> {}
+impl<T: ?Move> MovableCell<T> {
+    /// Creates a new MovableCell.
+    pub const fn new(value: T) -> Self {
+        MovableCell {
+            value: value,
+        }
+    }
 
-impl<T: ?Move> MobileCell<T> {
-	pub const fn new(value: T) -> Movable<T> {
-		Movable {
-			value: value,
-		}
-	}
+    /// Extracts the inner value.
+    pub fn into_inner(self) -> T {
+        self.value
+    }
 
-	pub fn into_inner(self) -> T {
-		self.value
-	}
-
-	pub fn replace(&mut self, new_value: T) -> T {
-		let mut result = MobileCell::new(new_value);
-		core::mem::replace(self, &mut result);
-		result.into_inner()
-	}
+    /// Replaces the inner value.
+    pub fn replace(&mut self, new_value: T) -> T {
+        mem::replace(self, MovableCell::new(new_value)).into_inner()
+    }
 }
 ```
 
@@ -85,7 +122,6 @@ For `Rc` and `Arc` , the function `try_unwrap` would only be allowed on movable 
 In general, we can allow immovable types in an movable container if we either:
 - disallow all methods of accessing the address of the contained immovable types, including references (possible for `Vec`, `HashMap`)
 - prevent the type from actually moving once it's inside (the method suitable for `Box`, `Rc`, `Arc`)
-
 
 # How We Teach This
 [how-we-teach-this]: #how-we-teach-this
