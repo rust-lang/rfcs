@@ -38,7 +38,26 @@ To increase the utility of the macro, it acts as a pass-through function on the
 expression by simply printing it and then yielding it. On release builds, the
 macro is the identity function - thus, the macro can be used in release builds
 without hurting performance while allowing the debugging of the program in debug
-builds.
+builds. To see why this is useful, consider starting off with:
+
+```rust
+let c = fun(a) + fun(b);
+let y = self.first().second();
+```
+
+Now you want to inspect what `fun(a)` and `fun(b)` is, but not go through the
+hassle of 1) saving `fun(a)` and `fun(b)` to a variable, 2) printing out the
+variable, 3) then finally use it in the expression as `let c = fa + fb;`.
+The same applies to inspecting the temporary state of `self.first()`. Instead of
+this hassle, you can simply do:
+
+```rust
+let c = dbg!(fun(a)) + dbg!(fun(b));
+let y = dbg!(self.first()).second();
+```
+
+This modification is considerably smaller and disturbs flow while
+developing code to a lesser degree.
 
 Additionally, by allowing the user to pass in multiple expressions and label
 them, the utility is further augmented.
