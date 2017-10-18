@@ -375,17 +375,14 @@ macro_rules! dbg {
             // 2. to ensure that the printed message is not interleaved, which
             // would disturb the readability of the output, by other messages to
             // STDERR.
+            #[cfg(debug_assertions)]
             use ::std::io::Write;
             #[cfg(debug_assertions)]
             let stderr = ::std::io::stderr();
             #[cfg(debug_assertions)]
             let mut err = ::std::io::BufWriter::new(stderr.lock());
 
-            // RELEASE: satisfy the type system with a Writer that's never used.
-            #[cfg(not(debug_assertions))]
-            let mut err = ::std::io::sink();
-
-            if cfg!(debug_assertions) {
+            #[cfg(debug_assertions)] {
                 // Print out source location unless silenced:
                 let p = option_env!("RUST_DBG_NO_LOCATION")
                             .map_or(true, |s| s == "0");
@@ -405,7 +402,7 @@ macro_rules! dbg {
                     // Evaluate, tmp is value:
                     let tmp = $valf;
                     // Print out $lab = tmp:
-                    if cfg!(debug_assertions) {
+                    #[cfg(debug_assertions)] {
                         write!(&mut err, "{} = {:#?}", stringify!($labf), tmp)
                             .unwrap();
                     }
@@ -414,14 +411,14 @@ macro_rules! dbg {
                 }
                 $(, {
                     // Comma separator:
-                    if cfg!(debug_assertions) {
+                    #[cfg(debug_assertions)] {
                         write!(&mut err, ", ").unwrap();
                     }
                     {
                         // Evaluate, tmp is value:
                         let tmp = $val;
                         // Print out $lab = tmp:
-                        if cfg!(debug_assertions) {
+                        #[cfg(debug_assertions)] {
                             write!(&mut err, "{} = {:#?}", stringify!($lab), tmp)
                                 .unwrap();
                         }
@@ -432,7 +429,7 @@ macro_rules! dbg {
             );
 
             // Newline:
-            if cfg!(debug_assertions) { writeln!(&mut err, "").unwrap(); }
+            #[cfg(debug_assertions)] { writeln!(&mut err, "").unwrap(); }
 
             // Return the expression:
             ret
