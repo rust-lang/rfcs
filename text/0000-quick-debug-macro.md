@@ -6,7 +6,11 @@
 # Summary
 [summary]: #summary
 
-Adds a macro `dbg!(expr1 [, expr2, .., exprN])` for quick and dirty `Debug`:ing of expressions to the terminal. The macro evaluates expressions, prints it to `STDERR`, and finally yields a flat tuple of `(expr1 [, expr2, .. exprN])`. On release builds, the macro is the identity function and has no side effects. The macro is added to the prelude of the standard library.
+Adds a macro `dbg!(expr1 [, expr2, .., exprN])` for quick and dirty `Debug`:ing
+of expressions to the terminal. The macro evaluates expressions, prints it to
+`STDERR`, and finally yields a flat tuple of `(expr1 [, expr2, .. exprN])`.
+On release builds, the macro is the identity function and has no side effects.
+The macro is added to the prelude of the standard library.
 
 # Motivation
 [motivation]: #motivation
@@ -14,16 +18,26 @@ Adds a macro `dbg!(expr1 [, expr2, .., exprN])` for quick and dirty `Debug`:ing 
 The motivation to add this new `dbg!` macro is two-fold.
 
 ## For aspiring rustaceans
+[for-aspiring-rustaceans]: #for-aspiring-rustaceans
 
 One of the often asked questions is how to print out variables to the terminal.
-Delaying the need to explain formatting arguments in the statement `println!("{:?}", expr);` can help aspiring rustaceans to quickly learn the language. With `dbg!(expr);` there is no longer such need, which can be delayed until the developer actually cares about the format of the output and not just what value the expression evaluates to.
+Delaying the need to explain formatting arguments in the statement
+`println!("{:?}", expr);` can help aspiring rustaceans to quickly learn the
+language. With `dbg!(expr);` there is no longer such need, which can be delayed
+until the developer actually cares about the format of the output and not just
+what value the expression evaluates to.
 
 ## For experienced developers
 
-By using `dbg!(expr);`, the burden of a common papercut: writing `println!("{:?}", expr);` every time you want to see the evaluted-to value of an expression, can be significantly reduced. The developer no longer has to remember the formatting args and has to type significantly less (12 characters to be exact).
+By using `dbg!(expr);`, the burden of a common papercut: writing
+`println!("{:?}", expr);` every time you want to see the evaluted-to value of an
+expression, can be significantly reduced. The developer no longer has to remember
+the formatting args and has to type significantly less (12 characters to be exact).
 
-To increase the utility of the macro, it acts as a pass-through function on the expression by simply printing it and then yielding it. On release builds, the
-macro is the identity function - thus, the macro can be used in release builds without hurting performance while allowing the debugging of the program in debug
+To increase the utility of the macro, it acts as a pass-through function on the
+expression by simply printing it and then yielding it. On release builds, the
+macro is the identity function - thus, the macro can be used in release builds
+without hurting performance while allowing the debugging of the program in debug
 builds.
 
 Additionally, by allowing the user to pass in multiple expressions and label
@@ -31,14 +45,16 @@ them, the utility is further augmented.
 
 ## Why not use the `log` crate?
 
-While the `log` crate offers a lot of utility, it first has to be used with `extern crate log;`. A logger then has to be set up before expressions can be logged. It is therefore not suitable for introducing newcommers to the language.
+While the `log` crate offers a lot of utility, it first has to be used with
+`extern crate log;`. A logger then has to be set up before expressions can be
+logged. It is therefore not suitable for introducing newcommers to the language.
 
 ## Bikeshed: The name of the macro
 
 Several names has been proposed for the macro. Some of the candidates were:
 
-+ `debug!`, which was the original name. This was however already used by the `log`
-crate.
++ `debug!`, which was the original name. This was however already used by the
+`log` crate.
 + `d!`, which was deemded to be too short to be informative and convey intent.
 + `dump!`, which was confused with stack traces.
 + `show!`, inspired by Haskell. `show` was deemed less obvious than `dbg!`.
@@ -121,7 +137,8 @@ This prints the following to `STDERR`:
 => y = 7
 ```
 
-More expressions may be debugged in one invocation of the macro, as seen in the following example:
+More expressions may be debugged in one invocation of the macro, as seen in the
+following example:
 ```rust
 fn main() {
     let a = 1;
@@ -136,7 +153,9 @@ fn main() {
 }
 ```
 
-As seen in the example, the type of the expression `dbg!(expr)` is the type of `expr`. For `dbg!(expr1, expr2 [, .., exprN])` the type is that of the tuple `(expr1, expr2 [, .., exprN])`.
+As seen in the example, the type of the expression `dbg!(expr)` is the type of
+`expr`. For `dbg!(expr1, expr2 [, .., exprN])` the type is that of the tuple
+`(expr1, expr2 [, .., exprN])`.
 
 The example above prints the following to `STDERR`:
 ```
@@ -156,7 +175,8 @@ The example above prints the following to `STDERR`:
 }
 ```
 
-Furthermore, instead of using `stringify!` on the expressions, which is done by default, the user may provide labels, as done in:
+Furthermore, instead of using `stringify!` on the expressions, which is done by
+default, the user may provide labels, as done in:
 
 ```rust
 fn main() {
@@ -170,7 +190,8 @@ fn main() {
 }
 ```
 
-This allows the user to provide more descriptive names if necessary. With this example, the following is printed to `STDERR`:
+This allows the user to provide more descriptive names if necessary. With this
+example, the following is printed to `STDERR`:
 ```
 [DEBUGGING, src/main.rs:2:4]:
 => "width" = 1, "height" = 2, "area" = 2
@@ -184,7 +205,8 @@ This allows the user to provide more descriptive names if necessary. With this e
 }
 ```
 
-The ways of using the macro used in later (not the first) examples will mostly benefit existing Rust programmers.
+The ways of using the macro used in later (not the first) examples will mostly
+benefit existing Rust programmers.
 
 ### Omitting the source location
 
@@ -216,12 +238,17 @@ The separated versions accept the following:
 2. `($($lab: expr => $val: expr),+)`
 
 The macro only prints something if `cfg!(debug_assertions)` holds, meaning that
-if the program is built as a release build, nothing will be printed, and the result of using the macro on an expressions or expressions is simply the expression
-itself or a flat tuple of the expressions themselves. In effect the result is applying the identity function on the expression(s), but the call will be inlined away such that the overhead is zero.
+if the program is built as a release build, nothing will be printed, and the
+result of using the macro on an expressions or expressions is simply the
+expression itself or a flat tuple of the expressions themselves. In effect the
+result is applying the identity function on the expression(s), but the call will
+be inlined away such that the overhead is zero.
 
 ## The type of `dbg!(expressions)`
 
-"Applying" `dbg` on a non-empty list of expressions `expr1 [, expr2 [, .., exprN])` gives back an expression of the following type and value:
+"Applying" `dbg` on a non-empty list of expressions
+`expr1 [, expr2 [, .., exprN])` gives back an expression of the following type
+and value:
 
 + List of size 1, `dbg!(expr)`: The type is the type of `expr` and the value is
 the value of `expr`.
@@ -231,10 +258,17 @@ of the tuple `(expr1, expr2 [, expr3, .., exprN])` which is the value.
 
 ## Schematic/step-wise explanation
 
-1. Assume `let p = option_env!("RUST_DBG_NO_LOCATION").map_or_else(|| true, |s| s == "0");`. If `p` holds, the file name (given by `file!()`), line number (`line!()`) and column (`column!()`) is included in the print out for increased utility when the macro is used in non-trivial code. This is wrapped by `[DEBUGGING, <location>]:` as in:
+1. Assume
+`let p = option_env!("RUST_DBG_NO_LOCATION").map_or(true, |s| s == "0");`.
+If `p` holds, the file name (given by `file!()`), line number (`line!()`) and
+column (`column!()`) is included in the print out for increased utility when the
+macro is used in non-trivial code. This is wrapped by `[DEBUGGING, <location>]:`
+as in:
+
 ```rust
 eprintln!("[DEBUGGING, {}:{}:{}]:", file!(), line!(), column!());
 ```
+
 If `p` does not hold, this step prints nothing.
 
 2. An arrow is then printed on the next line: `eprint!("=> ");`.
@@ -242,26 +276,30 @@ If `p` does not hold, this step prints nothing.
 3. + For `($($val: expr),+)`
 
 For each `$val` (the expression), the following is printed, comma separated:
-The value of the expression is presented on the right hand side (RHS) of an equality sign `=` while the result of `stringify!(expr)` is presented on the
-left hand side (LHS). This is done so that the developer easily can see the syntactic structure of the expression that evaluted to RHS.
+The value of the expression is presented on the right hand side (RHS) of an
+equality sign `=` while the result of `stringify!(expr)` is presented on the
+left hand side (LHS). This is done so that the developer easily can see the
+syntactic structure of the expression that evaluted to RHS.
 
 In other words, the following: `eprint!("{} = {:#?}", stringify!($lab), tmp);`.
 
 3. + For `($($lab: expr => $val: expr),+)`:
 
 For each `$lab => $val` (the label and expression), the following is printed,
-comma separated: The value of the expression is presented on RHS of an equality sign `=` while the label is presented on LHS.
+comma separated: The value of the expression is presented on RHS of an equality
+sign `=` while the label is presented on LHS.
 
 In other words, the following: `eprint!("{} = {:#?}", stringify!($lab), tmp);`.
 
-**NOTE:** The label is only guaranteed when it is a string slice literal.
+**NOTE:** The label is only guaranteed to work when it is a string slice literal.
 
 **NOTE:** The exact output format is not meant to be stabilized even when/if the
 macro is stabilized.
 
 ## Example implementation
 
-The `dbg!` macro is semantically (with the notable detail that the helper macros and any non-`pub` `fn`s must be inlined in the actual implementation):
+The `dbg!` macro is semantically (with the notable detail that the helper macros
+and any non-`pub` `fn`s must be inlined in the actual implementation):
 
 ```rust
 macro_rules! cfg_dbg {
@@ -410,8 +448,10 @@ sufficiently ergonomic for both experienced rustaceans and newcomers.
 [alternatives]: #alternatives
 
 The formatting is informative, but could be formatted in other ways depending
-on what is valued. A more terse format could be used if `stringify!` or `file!()`, line and column numbers is not deemed beneficial, which this RFC argues it should.
-The RFC argues that the possibility of opting out to this header via an env var strikes a good balance.
+on what is valued. A more terse format could be used if `stringify!` or
+`file!()`, line and column numbers is not deemed beneficial, which this RFC
+argues it should. The RFC argues that the possibility of opting out to this
+header via an env var strikes a good balance.
 
 The impact of not merging the RFC is that the papercut, if considered as such,
 remains.
@@ -442,8 +482,14 @@ They have all been answered in the affirmative.
 
 ## Currently unresolved
 
-To be revisited once [`specialization`](https://github.com/rust-lang/rfcs/pull/1210)
+[`specialization`]: https://github.com/rust-lang/rfcs/pull/1210
+
+To be revisited once [`specialization`]
 has been stabilized:
 
+[`debugit`]: https://docs.rs/debugit/0.1.2/debugit/
+
 7. Should expressions and values of non-`Debug` types be usable with this macro
-by using `std::intrinsics::type_name` for such types and the `Debug` impl for `T : Debug` types as done in version 0.1.2 of [`debugit` ](https://docs.rs/debugit/0.1.2/debugit/)? This depends on specialization.
+by using `std::intrinsics::type_name` for such types and the `Debug` impl for
+`T : Debug` types as done in version 0.1.2 of [`debugit`]? This depends on
+specialization.
