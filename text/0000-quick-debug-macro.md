@@ -49,21 +49,6 @@ While the `log` crate offers a lot of utility, it first has to be used with
 `extern crate log;`. A logger then has to be set up before expressions can be
 logged. It is therefore not suitable for introducing newcommers to the language.
 
-## Bikeshed: The name of the macro
-
-Several names has been proposed for the macro. Some of the candidates were:
-
-+ `debug!`, which was the original name. This was however already used by the
-`log` crate.
-+ `d!`, which was deemded to be too short to be informative and convey intent.
-+ `dump!`, which was confused with stack traces.
-+ `show!`, inspired by Haskell. `show` was deemed less obvious than `dbg!`.
-+ `peek!`, which was also deemed less obvious.
-+ `DEBUG!`, which was deemed too screamy.
-
-While it is unfortunate that `debug!` was unavailable, `dbg!` was deemed the
-next best thing, which is why it was picked as the name of the macro.
-
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
@@ -478,6 +463,21 @@ header via an env var strikes a good balance.
 
 The impact of not merging the RFC is that the papercut, if considered as such,
 remains.
+
+## Bikeshed: The name of the macro
+
+Several names has been proposed for the macro. Some of the candidates were:
+
++ `debug!`, which was the original name. This was however already used by the
+`log` crate.
++ `d!`, which was deemded to be too short to be informative and convey intent.
++ `dump!`, which was confused with stack traces.
++ `show!`, inspired by Haskell. `show` was deemed less obvious than `dbg!`.
++ `peek!`, which was also deemed less obvious.
++ `DEBUG!`, which was deemed too screamy.
+
+While it is unfortunate that `debug!` was unavailable, `dbg!` was deemed the
+next best thing, which is why it was picked as the name of the macro.
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
