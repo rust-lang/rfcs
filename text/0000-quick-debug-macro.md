@@ -475,6 +475,8 @@ Several names has been proposed for the macro. Some of the candidates were:
 + `show!`, inspired by Haskell. `show` was deemed less obvious than `dbg!`.
 + `peek!`, which was also deemed less obvious.
 + `DEBUG!`, which was deemed too screamy.
++ `qdbg!`, which was deemed to hurt searchability and learnability since it
+isn't prefixed with `d`(ebug).
 
 While it is unfortunate that `debug!` was unavailable, `dbg!` was deemed the
 next best thing, which is why it was picked as the name of the macro.
