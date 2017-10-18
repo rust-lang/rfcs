@@ -479,6 +479,17 @@ Several names has been proposed for the macro. Some of the candidates were:
 While it is unfortunate that `debug!` was unavailable, `dbg!` was deemed the
 next best thing, which is why it was picked as the name of the macro.
 
+## How do we teach this?
+
+Part of the [motivation][[for-aspiring-rustaceans]] for this macro was to delay
+the point at which aspiring rustaceans have to learn how formatting arguments
+work in the language. For this to be effective, the macro should be taught prior
+to teaching formatting arguments, but after teaching the user to write their
+first "hello world" and other uses of `println!("<string literal>")` which does
+not involve formatting arguments, which should first be taught when formatting
+is actually interesting, and not as a part of printing out the value of an
+expression.
+
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
