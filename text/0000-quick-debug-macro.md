@@ -376,7 +376,7 @@ macro_rules! dbg {
     ($($lab: expr => $val: expr),+,) => {
         dbg!( $($lab => $val),+ )
     };
-    // Without label, use source of $val as label:
+    // Without label, use source of $val:
     ($($val: expr),+) => {
         dbg!($($val => $val),+)
     };
@@ -384,43 +384,61 @@ macro_rules! dbg {
     ($labf: expr => $valf: expr $(, $lab: expr => $val: expr)*) => {
         #[allow(unused_parens)] // requires: #![feature(stmt_expr_attributes)]
         {
+            // DEBUG: Lock STDERR in a buffered writer.
+            // Motivation:
+            // 1. to avoid needless re-locking of STDERR at every write(ln)!.
+            // 2. to ensure that the printed message is not interleaved, which
+            // would disturb the readability of the output, by other messages to
+            // STDERR.
+            use ::std::io::Write;
+            #[cfg(debug_assertions)]
+            let stderr = ::std::io::stderr();
+            #[cfg(debug_assertions)]
+            let mut err = ::std::io::BufWriter::new(stderr.lock());
+
+            // RELEASE: satisfy the type system with a Writer that's never used.
+            #[cfg(not(debug_assertions))]
+            let mut err = ::std::io::sink();
+
             if cfg!(debug_assertions) {
-                // Print out source location unless silenced by setting
-                // the env var RUST_DBG_NO_LOCATION != 0.
+                // Print out source location unless silenced:
                 let p = option_env!("RUST_DBG_NO_LOCATION")
-                            .map_or_else(|| true, |s| s == "0");
+                            .map_or(true, |s| s == "0");
                 if p {
-                    eprintln!("[DEBUGGING, {}:{}:{}]:",
-                        file!(), line!(), column!());
+                    writeln!(&mut err, "[DEBUGGING, {}:{}:{}]:",
+                        file!(), line!(), column!()).unwrap();
                 }
                 // Print out arrow (on a new line):
-                eprint!("=> ");
+                write!(&mut err, "=> ").unwrap();
             }
 
             // Foreach label and expression:
-            // 1. Evaluate each expression to value,
-            // 2. Print out $lab = value
-            // Separate with comma.
+            //     1. Evaluate each expression,
+            //     2. Print out $lab = value of expression
             let ret = (
                 {
                     // Evaluate, tmp is value:
                     let tmp = $valf;
                     // Print out $lab = tmp:
                     if cfg!(debug_assertions) {
-                        eprint!("{} = {:#?}", stringify!($labf), tmp);
+                        write!(&mut err, "{} = {:#?}", stringify!($labf), tmp)
+                            .unwrap();
                     }
                     // Yield tmp:
                     tmp
                 }
                 $(, {
                     // Comma separator:
-                    if cfg!(debug_assertions) { eprint!(", "); }
+                    if cfg!(debug_assertions) {
+                        write!(&mut err, ", ").unwrap();
+                    }
                     {
                         // Evaluate, tmp is value:
                         let tmp = $val;
                         // Print out $lab = tmp:
                         if cfg!(debug_assertions) {
-                            eprint!("{} = {:#?}", stringify!($lab), tmp);
+                            write!(&mut err, "{} = {:#?}", stringify!($lab), tmp)
+                                .unwrap();
                         }
                         // Yield tmp:
                         tmp
@@ -429,7 +447,7 @@ macro_rules! dbg {
             );
 
             // Newline:
-            if cfg!(debug_assertions) { eprintln!(""); }
+            if cfg!(debug_assertions) { writeln!(&mut err, "").unwrap(); }
 
             // Return the expression:
             ret
@@ -437,6 +455,11 @@ macro_rules! dbg {
     };
 }
 ```
+
+A notable difference to this exact implementation compared to the schematic
+explanation and the example implementation that it locks `STDERR` once and uses
+a buffered writer for efficiency and concistency when dealing with multiple
+threads that write out to `STDERR` concurrently.
 
 # Drawbacks
 [drawbacks]: #drawbacks
