@@ -22,7 +22,9 @@ Delaying the need to explain formatting arguments in the statement `println!("{:
 
 By using `dbg!(expr);`, the burden of a common papercut: writing `println!("{:?}", expr);` every time you want to see the evaluted-to value of an expression, can be significantly reduced. The developer no longer has to remember the formatting args and has to type significantly less (12 characters to be exact).
 
-To increase the utility of the macro, it acts as a pass-through function on the expression by simply printing it and then yielding it. On release builds, the macro is the identity function - thus, the macro can be used in release builds while hurting performance while also helping to debug the program.
+To increase the utility of the macro, it acts as a pass-through function on the expression by simply printing it and then yielding it. On release builds, the
+macro is the identity function - thus, the macro can be used in release builds without hurting performance while allowing the debugging of the program in debug
+builds.
 
 Additionally, by allowing the user to pass in multiple expressions and label
 them, the utility is further augmented.
