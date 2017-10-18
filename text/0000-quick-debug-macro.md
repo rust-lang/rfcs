@@ -381,8 +381,74 @@ macro_rules! dbg {
         dbg!( $($lab => $val),+ )
     };
     // Without label, use source of $val:
-    ($($val: expr),+) => {
-        dbg!($($val => $val),+)
+    ($valf: expr $(, $val: expr)*) => {
+        #[allow(unused_parens)] // requires: #![feature(stmt_expr_attributes)]
+        {
+            // DEBUG: Lock STDERR in a buffered writer.
+            // Motivation:
+            // 1. to avoid needless re-locking of STDERR at every write(ln)!.
+            // 2. to ensure that the printed message is not interleaved, which
+            // would disturb the readability of the output, by other messages to
+            // STDERR.
+            #[cfg(debug_assertions)]
+            use ::std::io::Write;
+            #[cfg(debug_assertions)]
+            let stderr = ::std::io::stderr();
+            #[cfg(debug_assertions)]
+            let mut err = ::std::io::BufWriter::new(stderr.lock());
+
+            #[cfg(debug_assertions)] {
+                // Print out source location unless silenced:
+                let p = option_env!("RUST_DBG_NO_LOCATION")
+                            .map_or(true, |s| s == "0");
+                if p {
+                    writeln!(&mut err, "[DEBUGGING, {}:{}:{}]:",
+                        file!(), line!(), column!()).unwrap();
+                }
+                // Print out arrow (on a new line):
+                write!(&mut err, "=> ").unwrap();
+            }
+
+            // Foreach label and expression:
+            //     1. Evaluate each expression,
+            //     2. Print out $lab = value of expression
+            let ret = (
+                {
+                    // Evaluate, tmp is value:
+                    let tmp = $valf;
+                    // Print out $lab = tmp:
+                    #[cfg(debug_assertions)] {
+                        write!(&mut err, "{} = {:#?}", stringify!($valf), tmp)
+                            .unwrap();
+                    }
+                    // Yield tmp:
+                    tmp
+                }
+                $(, {
+                    // Comma separator:
+                    #[cfg(debug_assertions)] {
+                        write!(&mut err, ", ").unwrap();
+                    }
+                    {
+                        // Evaluate, tmp is value:
+                        let tmp = $val;
+                        // Print out $lab = tmp:
+                        #[cfg(debug_assertions)] {
+                            write!(&mut err, "{} = {:#?}", stringify!($val), tmp)
+                                .unwrap();
+                        }
+                        // Yield tmp:
+                        tmp
+                    }
+                } )*
+            );
+
+            // Newline:
+            #[cfg(debug_assertions)] { writeln!(&mut err, "").unwrap(); }
+
+            // Return the expression:
+            ret
+        }
     };
     // With label:
     ($labf: expr => $valf: expr $(, $lab: expr => $val: expr)*) => {
@@ -422,6 +488,11 @@ macro_rules! dbg {
                     let tmp = $valf;
                     // Print out $lab = tmp:
                     #[cfg(debug_assertions)] {
+                        // Enforce is_literal_string($labf):
+                        let _ = concat!($labf, "");
+                        let _ : &'static str = $labf;
+
+                        // Print:
                         write!(&mut err, "{} = {:#?}", stringify!($labf), tmp)
                             .unwrap();
                     }
@@ -438,6 +509,11 @@ macro_rules! dbg {
                         let tmp = $val;
                         // Print out $lab = tmp:
                         #[cfg(debug_assertions)] {
+                            // Enforce is_literal_string($lab):
+                            let _ = concat!($labf, "");
+                            let _ : &'static str = $labf;
+
+                            // Print:
                             write!(&mut err, "{} = {:#?}", stringify!($lab), tmp)
                                 .unwrap();
                         }
@@ -471,6 +547,26 @@ On release builds, this macro reduces to:
 #[macro_export]
 macro_rules! dbg {
     // ...
+
+    // Without label, use source of $val:
+    ($valf: expr $(, $val: expr)*) => {
+        #[allow(unused_parens)] // requires: #![feature(stmt_expr_attributes)]
+        {
+            let ret = (
+                {
+                    let tmp = $valf;
+                    tmp
+                }
+                $(, {
+                    {
+                        let tmp = $val;
+                        tmp
+                    }
+                } )*
+            );
+            ret
+        }
+    };
     // With label:
     ($labf: expr => $valf: expr $(, $lab: expr => $val: expr)*) => {
         #[allow(unused_parens)] // requires: #![feature(stmt_expr_attributes)]
@@ -500,11 +596,8 @@ is nothing more than the identity on the tuple passed:
 #[macro_export]
 macro_rules! dbg {
     // ...
-
-    // With label:
-    ($($lab: expr => $val: expr),+) => {{
-        ( $($val),* )
-    }};
+    ($(              $val: expr),+) => {{ ( $($val),* ) }};
+    ($($lab: expr => $val: expr),+) => {{ ( $($val),* ) }};
 }
 ```
 
@@ -637,8 +730,7 @@ grouping which is visually pleasing to process.
 
 [`specialization`]: https://github.com/rust-lang/rfcs/pull/1210
 
-To be revisited once [`specialization`]
-has been stabilized:
+To be revisited once [`specialization`] has been stabilized:
 
 [`debugit`]: https://docs.rs/debugit/0.1.2/debugit/
 
@@ -646,3 +738,12 @@ has been stabilized:
 by using `std::intrinsics::type_name` for such types and the `Debug` impl for
 `T : Debug` types as done in version 0.1.2 of [`debugit`]? This depends on
 specialization.
+
+[RFC 1576]: https://github.com/rust-lang/rfcs/pull/1576
+
+To be revisited if and when [RFC 1576] has been stabilized:
+
+9. Should debugging literal expressions as in `dbg!(42);` print out `42 = 42` or
+should it print out `5`? The left hand side of the equality adds no new
+information wherefore it might be a redundant annoyance. On the other hand,
+it may give a sense of symmetry with the non-literal forms such as `a = 42`.
