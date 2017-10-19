@@ -274,10 +274,9 @@ pub enum ErrorKind {
     Failure,
     /// Not ready yet. Recommended to try again a little later.
     Wait,
-    /// Interrupt from user (Ctrl+C). Recommended to retry unless your
-    /// application has a specific handler.
-    Interrupt,
-    // TODO: include "other"? Allow exclusive match?
+    /// Other / unknown error
+    Other,
+    // TODO: allow exclusive match?
 }
 
 #[cfg(feature="std")]
