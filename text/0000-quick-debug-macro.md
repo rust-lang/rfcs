@@ -103,19 +103,18 @@ fn main() {
 The program will print the points to `STDERR` as:
 
 ```
-[DEBUGGING, src/main.rs:1:4]:
+[DEBUGGING, src/main.rs:1]
 => Point{x: 1, y: 2,} = Point {
     x: 1,
     y: 2
 }
-[DEBUGGING, src/main.rs:7:4]:
+
+[DEBUGGING, src/main.rs:7]
 => p = Point {
     x: 4,
     y: 5
 }
 ```
-
-Here, `7:4` is the line and the column.
 
 You may also save the debugged value to a variable or use it in an expression
 since the debugging is pass-through. This is seen in the following example:
@@ -131,13 +130,16 @@ fn main() {
 This prints the following to `STDERR`:
 
 ```
-[DEBUGGING, src/main.rs:1:12]:
+[DEBUGGING, src/main.rs]
 => 1 + 2 = 3
-[DEBUGGING, src/main.rs:2:12]:
+
+[DEBUGGING, src/main.rs]
 => x + 1 = 4
-[DEBUGGING, src/main.rs:2:26]:
+
+[DEBUGGING, src/main.rs]
 => 3 = 3
-[DEBUGGING, src/main.rs:3:4]:
+
+[DEBUGGING, src/main.rs]
 => y = 7
 ```
 
@@ -163,13 +165,16 @@ As seen in the example, the type of the expression `dbg!(expr)` is the type of
 
 The example above prints the following to `STDERR`:
 ```
-[DEBUGGING, src/main.rs:3:18]:
+[DEBUGGING, src/main.rs:3]
 => a = 1
-[DEBUGGING, src/main.rs:4:25]:
+
+[DEBUGGING, src/main.rs:4]
 => a = 1, b = 2
-[DEBUGGING, src/main.rs:5:30]:
+
+[DEBUGGING, src/main.rs:5]
 => a = 1, b = 2, a + b = 3
-[DEBUGGING, src/main.rs:9:31]:
+
+[DEBUGGING, src/main.rs:9]
 => &p = Point {
     x: 4,
     y: 5
@@ -189,35 +194,57 @@ fn main() {
     dbg!("width" => w, "height" => h, "area" => w * h);
 
     let p = Point { x: 4, y: 5 };
-    let q = Point { x: 2, y: 1 };
-    dbg!("first point" => &p, "second point" => &p);
+    dbg!("first point" => &p, "same point" => &p);
 }
 ```
 
 This allows the user to provide more descriptive names if necessary. With this
 example, the following is printed to `STDERR`:
 ```
-[DEBUGGING, src/main.rs:2:4]:
+[DEBUGGING, src/main.rs:2]
 => "width" = 1, "height" = 2, "area" = 2
-[DEBUGGING, src/main.rs:7:4]:
+
+[DEBUGGING, src/main.rs:7]:
 => "first point" = Point {
     x: 4,
     y: 5
-}, "second point" = Point {
-    x: 2,
-    y: 1
+}, "same point" = Point {
+    x: 4,
+    y: 5
 }
 ```
+
+It is important to note here that since the type `Point` is not `Copy`, it has
+move semantics. Since `dbg!(p)` would involve moving `p`, using `dbg!(p, p);`
+would involve moving the value twice, which Rust will not allow. Therefore,
+a borrow to `p` is used in `dbg!("first point" => &p, "second point" => &p);`.
 
 The ways of using the macro used in later (not the first) examples will mostly
 benefit existing Rust programmers.
 
-### Omitting the source location
+### Compact mode:
 
 Those developers who feel the source location header is overly verbose may
-choose to opt-out by setting the environment variable `RUST_DBG_NO_LOCATION` to
+choose to opt-out by setting the environment variable `RUST_DBG_COMPACT` to
 `"0"`. This is a one-time setup cost the developer has to make for all current
 and future Rust projects.
+
+The effect of flipping this switch off is to print out the following instead
+for the two last examples:
+
+```
+[src/main.rs:3] a = 1
+[src/main.rs:4] a = 1, b = 2
+[src/main.rs:5] a = 1, b = 2, a + b = 3
+[src/main.rs:9] &p = Point { x: 4, y: 5}, &q = Point { x: 2, y: 1 }
+```
+
+and:
+
+```
+[src/main.rs:2] "width" = 1, "height" = 2, "area" = 2
+[src/main.rs:7] "first point" = Point { x: 4, y: 5 }, "same point" = Point { x: 4, y: 5 }
+```
 
 ## On release builds
 
@@ -226,6 +253,9 @@ evaluate the expressions.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
+
+**NOTE:** The exact output format is not meant to be stabilized even when/if the
+macro is stabilized.
 
 The macro is called `dbg` and accepts either a non-empty comma-separated or
 comma-terminated list of `expr`, or a non-empty list of `label => expr` which
@@ -260,22 +290,25 @@ the value of `expr`.
 + Otherwise, `dbg!(expr1, expr2 [, expr3, .., exprN])`: The type is the type
 of the tuple `(expr1, expr2 [, expr3, .., exprN])` which is the value.
 
-## Schematic/step-wise explanation
+## Schematic/step-wise explanation (for debug builds)
 
-1. Assume
-`let p = option_env!("RUST_DBG_NO_LOCATION").map_or(true, |s| s == "0");`.
-If `p` holds, the file name (given by `file!()`), line number (`line!()`) and
-column (`column!()`) is included in the print out for increased utility when the
-macro is used in non-trivial code. This is wrapped by `[DEBUGGING, <location>]:`
-as in:
+1. The standard error is locked and wrapped in a buffered writer called `err`.
+
+2. Assume `let p = option_env!("RUST_DBG_COMPACT").map_or(true, |s| s == "0");`.
+
+If `p` holds, the file name (given by `file!()`) and line number (`line!()`) is
+included in the print out for increased utility when the macro is used in
+non-trivial code. This is wrapped by `[DEBUGGING, <location>]\n=> ` as in:
 
 ```rust
-eprintln!("[DEBUGGING, {}:{}:{}]:", file!(), line!(), column!());
+write!(&mut err, "[DEBUGGING, {}:{}]\n=> ", file!(), line!())
 ```
 
-If `p` does not hold, this step prints nothing.
+If `p` does not hold, this instead prints:
 
-2. An arrow is then printed on the next line: `eprint!("=> ");`.
+```rust
+write!(&mut err, "[{}:{}] ", file!(), line!())
+```
 
 3. + For `($($val: expr),+)`
 
@@ -285,7 +318,9 @@ equality sign `=` while the result of `stringify!(expr)` is presented on the
 left hand side (LHS). This is done so that the developer easily can see the
 syntactic structure of the expression that evaluted to RHS.
 
-In other words, the following: `eprint!("{} = {:#?}", stringify!($lab), tmp);`.
+In other words, the following:
+`write!(&mut err, "{} = {:#?}", stringify!($lab), tmp);` is done.
+If `p` holds, `{:?}` is used as the format instead of `{:#?}`.
 
 3. + For `($($lab: expr => $val: expr),+)`:
 
@@ -293,12 +328,12 @@ For each `$lab => $val` (the label and expression), the following is printed,
 comma separated: The value of the expression is presented on RHS of an equality
 sign `=` while the label is presented on LHS.
 
-In other words, the following: `eprint!("{} = {:#?}", stringify!($lab), tmp);`.
+In other words, the following:
+`write!(&mut err, "{} = {:#?}", stringify!($lab), tmp);` is done.
+If `p` holds, `{:?}` is used as the format instead of `{:#?}`.
+The label is also verified to be a string slice literal.
 
-**NOTE:** The label is only guaranteed to work when it is a string slice literal.
-
-**NOTE:** The exact output format is not meant to be stabilized even when/if the
-macro is stabilized.
+4. Finally, a newline is printed, or two newlines in the case `p` holds.
 
 ## Example implementation
 
@@ -306,66 +341,108 @@ The `dbg!` macro is semantically (with the notable detail that the helper macros
 and any non-`pub` `fn`s must be inlined in the actual implementation):
 
 ```rust
-macro_rules! cfg_dbg {
-    ($($x:tt)+) => {
-        if cfg!(debug_assertions) { $($x)* }
+// For #[allow(unused_parens)]:
+#![feature(stmt_expr_attributes)]
+
+pub fn in_detailed_mode() -> bool {
+    option_env!("RUST_DBG_COMPACT").map_or(false, |s| s == "0")
+}
+
+macro_rules! verify_str_lit {
+    ($($expr: expr),*) => {
+        $({
+            let _ = concat!($expr, "");
+            let _ : &'static str = $expr;
+        })*
     };
 }
 
-fn dbg_with_location() -> bool {
-    option_env!("RUST_DBG_NO_LOCATION").map_or_else(|| true, |s| s == "0")
+macro_rules! w {
+    ($err: ident, $($t: tt)+) => { write!(&mut $err, $($t)+).unwrap(); }
 }
 
 macro_rules! dbg_header {
-    ($expr: expr) => {{
-        cfg_dbg! {
-            if dbg_with_location() {
-                eprintln!("[DEBUGGING, {}:{}:{}]:", file!(), line!(), column!());
+    ($err: ident) => {
+        #[cfg(debug_assertions)] {
+            if in_detailed_mode() {
+                w!($err, "[DEBUGGING, {}:{}]\n=> ", file!(), line!())
+            } else {
+                w!($err, "[{}:{}] ", file!(), line!())
             }
-            eprint!("=> ");
         }
-        let ret = $expr;
-        cfg_dbg! { eprintln!(""); }
-        ret
-    }};
+    };
 }
 
-macro_rules! dbg_comma {
-    ($valf: expr) => { $valf };
-    ($valf: expr, $($val: expr),+) => {
-        ( $valf, $({ cfg_dbg! { eprint!(", "); } $val}),+ )
-    }
+macro_rules! dbg_footer {
+    ($err: ident) => {
+        #[cfg(debug_assertions)] {
+            if in_detailed_mode() { w!($err, "\n\n") } else { w!($err, "\n") }
+        }
+    };
 }
 
-macro_rules! dbg_term {
-    ($val: expr) => { dbg_term!($val => $val) };
-    ($lab: expr => $val: expr) => {{
+macro_rules! dbg_expr {
+    ($err: ident, $lab: expr => $val: expr) => {{
         let tmp = $val;
-        cfg_dbg! { eprint!("{} = {:#?}", stringify!($lab), tmp); }
+        #[cfg(debug_assertions)] {
+            let l = stringify!($lab);
+            if in_detailed_mode() { w!($err, "{} = {:#?}", l, tmp) }
+            else { w!($err, "{} = {:?}",  l, tmp) }
+        }
         tmp
-    }};
+    }}
+}
+
+macro_rules! dbg_core {
+    ($labf: expr => $valf: expr $(, $lab: expr => $val: expr)*) => {
+        //#[allow(unused_parens)] // requires: #![feature(stmt_expr_attributes)]
+        {
+            #[cfg(debug_assertions)]
+            use ::std::io::Write;
+            #[cfg(debug_assertions)]
+            let stderr = ::std::io::stderr();
+            #[cfg(debug_assertions)]
+            let mut err = ::std::io::BufWriter::new(stderr.lock());
+
+            dbg_header!(err);
+            let ret = (
+                dbg_expr!(err, $labf => $valf)
+                $(, {
+                    #[cfg(debug_assertions)] w!(err, ", ");
+                    dbg_expr!(err, $lab => $val)
+                } )*
+            );
+            dbg_footer!(err);
+            ret
+        }
+    };
 }
 
 #[macro_export]
 macro_rules! dbg {
+    // Handle trailing comma:
     ($($val: expr),+,) => {
         dbg!( $($val),+ )
     };
     ($($lab: expr => $val: expr),+,) => {
         dbg!( $($lab => $val),+ )
     };
-    ($($val: expr),+) => {
-        dbg_header!(dbg_comma!($(dbg_term!($val)),+))
+    // Without label, use source of $val:
+    ($valf: expr $(, $val: expr)*) => {
+        dbg_core!($valf => $valf $(, $val => $val)*)
     };
-    ($($lab: expr => $val: expr),+) => {
-        dbg_header!(dbg_comma!($(dbg_term!($lab => $val)),+))
-    };
+    // With label:
+    ($labf: expr => $valf: expr $(, $lab: expr => $val: expr)*) => {{
+        verify_str_lit!($labf, $($lab),*);
+        dbg_core!($labf => $valf $(, $lab => $val)*)
+    }};
 }
 ```
 
 ## Exact implementation
 
-The exact implementation is given by:
+The exact implementation, which is authoritative on the semantics of this RFC,
+is given by:
 
 ```rust
 // For #[allow(unused_parens)]:
@@ -397,16 +474,20 @@ macro_rules! dbg {
             #[cfg(debug_assertions)]
             let mut err = ::std::io::BufWriter::new(stderr.lock());
 
-            #[cfg(debug_assertions)] {
-                // Print out source location unless silenced:
-                let p = option_env!("RUST_DBG_NO_LOCATION")
+            // Are we in not in compact mode (detailed)?
+            // If so:
+            // + {:?} is used instead of {:#?},
+            // + Header is: [<location>]
+            #[cfg(debug_assertions)]
+            let detailed = option_env!("RUST_DBG_COMPACT")
                             .map_or(true, |s| s == "0");
-                if p {
-                    writeln!(&mut err, "[DEBUGGING, {}:{}:{}]:",
-                        file!(), line!(), column!()).unwrap();
-                }
-                // Print out arrow (on a new line):
-                write!(&mut err, "=> ").unwrap();
+
+            #[cfg(debug_assertions)] {
+                (if detailed {
+                    write!(&mut err, "[DEBUGGING, {}:{}]\n=> ", file!(), line!())
+                } else {
+                    write!(&mut err, "[{}:{}] ", file!(), line!())
+                }).unwrap()
             }
 
             // Foreach label and expression:
@@ -418,8 +499,12 @@ macro_rules! dbg {
                     let tmp = $valf;
                     // Print out $lab = tmp:
                     #[cfg(debug_assertions)] {
-                        write!(&mut err, "{} = {:#?}", stringify!($valf), tmp)
-                            .unwrap();
+                        let l = stringify!($valf);
+                        (if detailed {
+                            write!(&mut err, "{} = {:#?}", l, tmp)
+                        } else {
+                            write!(&mut err, "{} = {:?}",  l, tmp)
+                        }).unwrap()
                     }
                     // Yield tmp:
                     tmp
@@ -434,8 +519,12 @@ macro_rules! dbg {
                         let tmp = $val;
                         // Print out $lab = tmp:
                         #[cfg(debug_assertions)] {
-                            write!(&mut err, "{} = {:#?}", stringify!($val), tmp)
-                                .unwrap();
+                            let l = stringify!($val);
+                            (if detailed {
+                                write!(&mut err, "{} = {:#?}", l, tmp)
+                            } else {
+                                write!(&mut err, "{} = {:?}",  l, tmp)
+                            }).unwrap()
                         }
                         // Yield tmp:
                         tmp
@@ -444,7 +533,13 @@ macro_rules! dbg {
             );
 
             // Newline:
-            #[cfg(debug_assertions)] { writeln!(&mut err, "").unwrap(); }
+            #[cfg(debug_assertions)] {
+                (if detailed {
+                    writeln!(&mut err, "\n")
+                } else {
+                    writeln!(&mut err, "")
+                }).unwrap()
+            }
 
             // Return the expression:
             ret
@@ -467,16 +562,20 @@ macro_rules! dbg {
             #[cfg(debug_assertions)]
             let mut err = ::std::io::BufWriter::new(stderr.lock());
 
-            #[cfg(debug_assertions)] {
-                // Print out source location unless silenced:
-                let p = option_env!("RUST_DBG_NO_LOCATION")
+            // Are we in not in compact mode (detailed)?
+            // If so:
+            // + {:?} is used instead of {:#?},
+            // + Header is: [<location>]
+            #[cfg(debug_assertions)]
+            let detailed = option_env!("RUST_DBG_COMPACT")
                             .map_or(true, |s| s == "0");
-                if p {
-                    writeln!(&mut err, "[DEBUGGING, {}:{}:{}]:",
-                        file!(), line!(), column!()).unwrap();
-                }
-                // Print out arrow (on a new line):
-                write!(&mut err, "=> ").unwrap();
+
+            #[cfg(debug_assertions)] {
+                (if detailed {
+                    write!(&mut err, "[DEBUGGING, {}:{}]\n=> ", file!(), line!())
+                } else {
+                    write!(&mut err, "[{}:{}] ", file!(), line!())
+                }).unwrap()
             }
 
             // Foreach label and expression:
@@ -493,8 +592,12 @@ macro_rules! dbg {
                         let _ : &'static str = $labf;
 
                         // Print:
-                        write!(&mut err, "{} = {:#?}", stringify!($labf), tmp)
-                            .unwrap();
+                        let l = stringify!($labf);
+                        (if detailed {
+                            write!(&mut err, "{} = {:#?}", l, tmp)
+                        } else {
+                            write!(&mut err, "{} = {:?}",  l, tmp)
+                        }).unwrap()
                     }
                     // Yield tmp:
                     tmp
@@ -510,12 +613,16 @@ macro_rules! dbg {
                         // Print out $lab = tmp:
                         #[cfg(debug_assertions)] {
                             // Enforce is_literal_string($lab):
-                            let _ = concat!($labf, "");
-                            let _ : &'static str = $labf;
+                            let _ = concat!($lab, "");
+                            let _ : &'static str = $lab;
 
                             // Print:
-                            write!(&mut err, "{} = {:#?}", stringify!($lab), tmp)
-                                .unwrap();
+                            let l = stringify!($lab);
+                            (if detailed {
+                                write!(&mut err, "{} = {:#?}", l, tmp)
+                            } else {
+                                write!(&mut err, "{} = {:?}",  l, tmp)
+                            }).unwrap()
                         }
                         // Yield tmp:
                         tmp
@@ -524,7 +631,13 @@ macro_rules! dbg {
             );
 
             // Newline:
-            #[cfg(debug_assertions)] { writeln!(&mut err, "").unwrap(); }
+            #[cfg(debug_assertions)] {
+                (if detailed {
+                    writeln!(&mut err, "\n")
+                } else {
+                    writeln!(&mut err, "")
+                }).unwrap()
+            }
 
             // Return the expression:
             ret
@@ -532,11 +645,6 @@ macro_rules! dbg {
     };
 }
 ```
-
-A notable difference to this exact implementation compared to the schematic
-explanation and the example implementation that it locks `STDERR` once and uses
-a buffered writer for efficiency and concistency when dealing with multiple
-threads that write out to `STDERR` concurrently.
 
 On release builds, this macro reduces to:
 
@@ -647,32 +755,21 @@ not involve formatting arguments, which should first be taught when formatting
 is actually interesting, and not as a part of printing out the value of an
 expression.
 
-# Unresolved questions
-[unresolved]: #unresolved-questions
-
-The format used by the macro should be resolved prior to merging.
-
-## Formerly unresolved
+## Formerly unresolved questions
+[formerly unresolved]: #formerly-unresolved-questions
 
 Some questions regarding the format were:
 
 1. Should the `file!()` be included?
+
+**Yes**, since it would be otherwise difficult to tell where the output is coming
+from in a larger project with multiple files. It is not very useful on
+the [playground](https://play.rust-lang.org), but that exception is acceptable.
+
 2. Should the line number be included?
-4. Should the `stringify!($val)` be included?
 
-Other questions, which should also be resolved prior to merging, were:
-
-5. Should the macro be pass-through with respect to the expression?
-   In other words: should the value of applying the macro to the expression be
-   the value of the expression?
-6. Should the macro act as the identity function on release modes?
-   If the answer to this is yes, 5. must also be yes, i.e: 6. => 5.
-
-They have all been answered in the affirmative.
-
-## Currently unresolved
-
-Some questions regarding the format are:
+**Yes**, for a large file, it would also be difficult to locate the source of the
+output otherwise.
 
 3. Should the column number be included?
 
@@ -684,39 +781,64 @@ of the additions would result in: `x = <val>, y = <val>, z = <val>`, the user
 can clearly see which expression on the line that generated the value. The only
 exception to this is if the same expression is used multiple times and crucically
 has side effects altering the value between calls. This scenario is probably
-very uncommon. However, the `column!()` isn't very visually disturbing since
-it uses horizontal screen real-estate but not vertical real-estate, which
-may still be a good reason to keep it.
+very uncommon. Furthermore, even in this case, one can distinguish between the
+calls since one is first and the second comes next, visually.
 
-8. Should a trailing newline be added after each `dbg!(exprs...)`? The result
-of answer in the affirmative would be to change the following example:
+However, the `column!()` isn't very visually disturbing since it uses horizontal
+screen real-estate but not vertical real-estate, which may still be a good reason
+to keep it. Nonetheless, this argument is not sufficient to keep `column!()`,
+wherefore **this RFC will not include it**.
+
+4. Should the `stringify!($val)` be included? **[answer: yes]**
+
+Other, now resolved, questions, were:
+
+5. Should the macro be pass-through with respect to the expression? 
+   In other words: should the value of applying the macro to the expression be
+   the value of the expression?
+
+**Yes**, the pass-through mechanism allows the macro to be less intrusive as
+discussed in the [motivation].
+
+6. Should the macro act as the identity function on release modes?
+   If the answer to this is yes, 5. must also be yes, i.e: 6. => 5.
+
+**Yes**, since some users who develop programs, and not libraries, can leave
+such `dbg!(..)` invocations in and push it to source control since it won't
+affect debug builds of the program.
+
+8. Should a trailing newline be added after each `dbg!(exprs...)`?
+
+**Short answer: Yes.**
+
+The result of answer in the negative would use the following format:
 
 ```
-[DEBUGGING, src/main.rs:85:18]:
+[DEBUGGING, src/main.rs:85]
 => a = 1
-[DEBUGGING, src/main.rs:86:25]:
+[DEBUGGING, src/main.rs:86]
 => a = 1, b = 2
-[DEBUGGING, src/main.rs:87:30]:
+[DEBUGGING, src/main.rs:87]
 => a = 1, b = 2, a + b = 3
 ```
 
-into:
+instead of:
 
 ```
-[DEBUGGING, src/main.rs:85:18]:
+[DEBUGGING, src/main.rs:85]
 => a = 1
 
-[DEBUGGING, src/main.rs:86:25]:
+[DEBUGGING, src/main.rs:86]
 => a = 1, b = 2
 
-[DEBUGGING, src/main.rs:87:30]:
+[DEBUGGING, src/main.rs:87]
 => a = 1, b = 2, a + b = 3
 ```
 
-This may, to many readers, look considerably more readable thanks to visual
-association of a particular set of values with the `DEBUGGING` header and make
-the users own `println!(..)` and `eprintln!(..)` calls stand out more due to the
-absence of the header.
+The latter format, to many readers, look considerably more readable thanks to
+visual association of a particular set of values with the `DEBUGGING` header and
+make the users own `println!(..)` and `eprintln!(..)` calls stand out more due
+to the absence of the header.
 
 A counter argument to this is that users with IDEs or vertically short terminals
 may have as little as `25%` of vertical screen space allocated for the program's
@@ -728,6 +850,28 @@ However, it is more unlikely that a user will see the information they are
 looking for in a small window without scrolling. Here, searchability is aided by
 grouping which is visually pleasing to process.
 
+This was resolved by having the env var `RUST_DBG_COMPACT = 0` format the above
+example as:
+
+```
+[src/main.rs:85] a = 1
+[src/main.rs:86] a = 1, b = 2
+[src/main.rs:87] a = 1, b = 2, a + b = 3
+```
+
+9. Should debugging literal expressions as in `dbg!(42);` print out `42 = 42` or
+should it print out `5`?
+
+**No**. The left hand side of the equality adds no new information wherefore it
+might be a redundant annoyance. On the other hand, it may give a sense of
+symmetry with the non-literal forms such as `a = 42`. Keeping `5 = 5` is also
+more consistent, wherefore that format will be used. 
+
+# Unresolved questions
+[unresolved]: #unresolved-questions
+
+The format used by the macro should be resolved prior to merging.
+
 [`specialization`]: https://github.com/rust-lang/rfcs/pull/1210
 
 To be revisited once [`specialization`] has been stabilized:
@@ -738,12 +882,3 @@ To be revisited once [`specialization`] has been stabilized:
 by using `std::intrinsics::type_name` for such types and the `Debug` impl for
 `T : Debug` types as done in version 0.1.2 of [`debugit`]? This depends on
 specialization.
-
-[RFC 1576]: https://github.com/rust-lang/rfcs/pull/1576
-
-To be revisited if and when [RFC 1576] has been stabilized:
-
-9. Should debugging literal expressions as in `dbg!(42);` print out `42 = 42` or
-should it print out `5`? The left hand side of the equality adds no new
-information wherefore it might be a redundant annoyance. On the other hand,
-it may give a sense of symmetry with the non-literal forms such as `a = 42`.
