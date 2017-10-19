@@ -73,6 +73,8 @@ logged. It is therefore not suitable for introducing newcommers to the language.
 
 ## On debug builds
 
+[on-debug-builds]: #on-debug-builds
+
 First, some preliminaries:
 
 ```rust
@@ -87,15 +89,9 @@ With the following example, which most newcomers will benefit from:
 
 ```rust
 fn main() {
-    dbg!(Point {
-        x: 1,
-        y: 2,
-    });
+    dbg!(Point { x: 1, y: 2 });
 
-    let p = Point {
-        x: 4,
-        y: 5,
-    };
+    let p = Point { x: 4, y: 5 };
     dbg!(p);
 }
 ```
@@ -109,7 +105,7 @@ The program will print the points to `STDERR` as:
     y: 2
 }
 
-[DEBUGGING, src/main.rs:7]
+[DEBUGGING, src/main.rs:4]
 => p = Point {
     x: 4,
     y: 5
@@ -130,16 +126,16 @@ fn main() {
 This prints the following to `STDERR`:
 
 ```
-[DEBUGGING, src/main.rs]
+[DEBUGGING, src/main.rs:1]
 => 1 + 2 = 3
 
-[DEBUGGING, src/main.rs]
+[DEBUGGING, src/main.rs:2]
 => x + 1 = 4
 
-[DEBUGGING, src/main.rs]
+[DEBUGGING, src/main.rs:2]
 => 3 = 3
 
-[DEBUGGING, src/main.rs]
+[DEBUGGING, src/main.rs:3]
 => y = 7
 ```
 
@@ -201,10 +197,10 @@ fn main() {
 This allows the user to provide more descriptive names if necessary. With this
 example, the following is printed to `STDERR`:
 ```
-[DEBUGGING, src/main.rs:2]
+[DEBUGGING, src/main.rs:3]
 => "width" = 1, "height" = 2, "area" = 2
 
-[DEBUGGING, src/main.rs:7]:
+[DEBUGGING, src/main.rs:6]:
 => "first point" = Point {
     x: 4,
     y: 5
@@ -230,7 +226,7 @@ choose to opt-out by setting the environment variable `RUST_DBG_COMPACT` to
 and future Rust projects.
 
 The effect of flipping this switch off is to print out the following instead
-for the two last examples:
+for the two last examples in [on-debug-builds]:
 
 ```
 [src/main.rs:3] a = 1
@@ -242,14 +238,213 @@ for the two last examples:
 and:
 
 ```
-[src/main.rs:2] "width" = 1, "height" = 2, "area" = 2
-[src/main.rs:7] "first point" = Point { x: 4, y: 5 }, "same point" = Point { x: 4, y: 5 }
+[src/main.rs:3] "width" = 1, "height" = 2, "area" = 2
+[src/main.rs:6] "first point" = Point { x: 4, y: 5 }, "same point" = Point { x: 4, y: 5 }
 ```
 
 ## On release builds
 
 The same examples above will print nothing to `STDERR` and will instead simply
 evaluate the expressions.
+
+## An example from the real world
+
+You have been given a task to implement `n!`, the factorial function - a common
+task for those learning programming, which you have decided to implement using a
+simple recursive solution looking like this:
+
+```rust
+fn factorial(n: u32) -> u32 {
+    if n <= 1 {
+        1
+    } else {
+        n * factorial(n - 1)
+    }
+}
+
+fn main() {
+    factorial(4);
+}
+```
+
+Now, you, as a learner, want to see how the recursion expands, and use the
+`dbg!` macro to your aid:
+
+```rust
+fn factorial(n: u32) -> u32 {
+    if dbg!(n <= 1) {
+        dbg!(1)
+    } else {
+        dbg!(n * factorial(n - 1))
+    }
+}
+
+fn main() {
+    dbg!(factorial(4));
+}
+```
+
+You run the program, and get back a print out which clearly shows the function
+recursively descending into a stack, before ascending and building the final
+value, and then it shows the final answer again.
+
+```
+[DEBUGGING, src/main.rs:1]
+=> n <= 1 = false
+
+[DEBUGGING, src/main.rs:1]
+=> n <= 1 = false
+
+[DEBUGGING, src/main.rs:1]
+=> n <= 1 = false
+
+[DEBUGGING, src/main.rs:1]
+=> n <= 1 = true
+
+[DEBUGGING, src/main.rs:2]
+=> 1 = 1
+
+[DEBUGGING, src/main.rs:4]
+=> n * factorial(n - 1) = 2
+
+[DEBUGGING, src/main.rs:4]
+=> n * factorial(n - 1) = 6
+
+[DEBUGGING, src/main.rs:4]
+=> n * factorial(n - 1) = 24
+
+[DEBUGGING, src/main.rs:9]
+=> factorial(4) = 24
+```
+
+or prints, with `RUST_DBG_COMPACT = 1`:
+
+```
+[src/main.rs:1] n <= 1 = false
+[src/main.rs:1] n <= 1 = false
+[src/main.rs:1] n <= 1 = false
+[src/main.rs:1] n <= 1 = true
+[src/main.rs:2] 1 = 1
+[src/main.rs:4] n * factorial(n - 1) = 2
+[src/main.rs:4] n * factorial(n - 1) = 6
+[src/main.rs:4] n * factorial(n - 1) = 24
+[src/main.rs:9] factorial(4) = 24
+```
+
+But you like labels, so you use them instead:
+
+```rust
+fn factorial(n: u32) -> u32 {
+    if dbg!("are we at the base case?" => n <= 1) {
+        dbg!("base value" => 1)
+    } else {
+        dbg!("ascending with n * factorial(n - 1)" => n * factorial(n - 1))
+    }
+}
+```
+
+which prints:
+
+```
+[DEBUGGING, src/main.rs:1]
+=> "are we at the base case?" = false
+
+[DEBUGGING, src/main.rs:1]
+=> "are we at the base case?" = false
+
+[DEBUGGING, src/main.rs:1]
+=> "are we at the base case?" = false
+
+[DEBUGGING, src/main.rs:1]
+=> "are we at the base case?" = true
+
+[DEBUGGING, src/main.rs:2]
+=> "base value" = 1
+
+[DEBUGGING, src/main.rs:4]
+=> "ascending with n * factorial(n - 1)" = 2
+
+[DEBUGGING, src/main.rs:4]
+=> "ascending with n * factorial(n - 1)" = 6
+
+[DEBUGGING, src/main.rs:4]
+=> "ascending with n * factorial(n - 1)" = 24
+
+[DEBUGGING, src/main.rs:9]
+=> factorial(4) = 24
+```
+
+or prints, with `RUST_DBG_COMPACT = 1`:
+
+```
+[src/main.rs:1] "are we at the base case?" = false
+[src/main.rs:1] "are we at the base case?" = false
+[src/main.rs:1] "are we at the base case?" = false
+[src/main.rs:1] "are we at the base case?" = true
+[src/main.rs:2] "base value" = 1
+[src/main.rs:4] "ascending with n * factorial(n - 1)" = 2
+[src/main.rs:4] "ascending with n * factorial(n - 1)" = 6
+[src/main.rs:4] "ascending with n * factorial(n - 1)" = 24
+[src/main.rs:9] factorial(4) = 24
+```
+
+Finally, you'd also like to see the value of `n` at each recursion step. Using
+the multiple-arguments feature, you write, with very little effort, and run:
+
+```rust
+fn factorial(n: u32) -> u32 {
+    if dbg!(n, (n <= 1)).1 {
+        dbg!(n, 1).1
+    } else {
+        dbg!(n, n * factorial(n - 1)).1
+    }
+}
+```
+
+which outputs:
+
+```
+[DEBUGGING, src/main.rs:1]
+=> n = 4, (n <= 1) = false
+
+[DEBUGGING, src/main.rs:1]
+=> n = 3, (n <= 1) = false
+
+[DEBUGGING, src/main.rs:1]
+=> n = 2, (n <= 1) = false
+
+[DEBUGGING, src/main.rs:1]
+=> n = 1, (n <= 1) = true
+
+[DEBUGGING, src/main.rs:2]
+=> n = 1, 1 = 1
+
+[DEBUGGING, src/main.rs:4]
+=> n = 2, n * factorial(n - 1) = 2
+
+[DEBUGGING, src/main.rs:4]
+=> n = 3, n * factorial(n - 1) = 6
+
+[DEBUGGING, src/main.rs:4]
+=> n = 4, n * factorial(n - 1) = 24
+
+[DEBUGGING, src/main.rs:9]
+=> factorial(4) = 24
+```
+
+or prints, with `RUST_DBG_COMPACT = 1`:
+
+```
+[src/main.rs:1] n = 4, (n <= 1) = false
+[src/main.rs:1] n = 3, (n <= 1) = false
+[src/main.rs:1] n = 2, (n <= 1) = false
+[src/main.rs:1] n = 1, (n <= 1) = true
+[src/main.rs:2] n = 1, 1 = 1
+[src/main.rs:4] n = 2, n * factorial(n - 1) = 2
+[src/main.rs:4] n = 3, n * factorial(n - 1) = 6
+[src/main.rs:4] n = 4, n * factorial(n - 1) = 24
+[src/main.rs:9] factorial(4) = 24
+```
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
