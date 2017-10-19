@@ -44,7 +44,7 @@ design for the core traits.
 This RFC covers:
 
 *   What core traits `rand` should expose
-*   How they should be published (new `rand_core` crate)
+*   How they should be published (new `rand-core` crate)
 *   How PRNG implementations should reference (crate dependencies) and implement
     these traits
 *   Construction & seeding of PRNGs
@@ -83,16 +83,16 @@ Motivation for this sub-RFC is
 [guide-level-explanation]: #guide-level-explanation
 
 For now, most end users should continue using the `rand` crate, and should not
-need to depend on `rand_core` directly. On the other,
+need to depend on `rand-core` directly. On the other,
 some of the traits concerned, such as `Rng` and `SeedableRng`, will be of
 interest to end users and will be documented appropriately.
 
 It is intended that crates publishing RNG implementations will depend on the
-`rand_core` crate directly, and not on the `rand` crate.
+`rand-core` crate directly, and not on the `rand` crate.
 
 Crates mainly using integral (especially `u32` and `u64`) or byte sequence
 (`[u8]`) random values (i.e. cryptographic code) may choose to depend on
-`rand_core` directly.
+`rand-core` directly.
 This may be viable for cryptography-focussed crates, but lacks several useful
 features of `rand`: `thread_rng`, the `ReseedingRng` wrapper, conversion to
 floating point, `Range` distribution, statistical distributions like `Normal`.
@@ -256,38 +256,67 @@ constructing an RNG), what should the error type be?
 
 We wish to make the library `no_std` compatible, so the type cannot depend on
 `std::io::Error`, or `Box` (in the future `Box` should be
-available to some `no_std` environments, but depend on having an allocator).
+available to some `no_std` environments, but depend on having an allocator). On
+the flip side, `OsRng` implementations may have to handle a `std::io::Error`,
+in which case *if* we don't want to throw away the details, our error type
+either needs to be able to hold a *cause* of this type or hold the string
+version, retrieved with type `&str` from `std::error::Error::description`.
 
-Some `no_std` compatible options are `&'static str`, a fixed-length ASCII or
-UTF-8 buffer, a pointer to a statically allocated buffer (possibly), a
-numeric error code, or something like
-`enum Error { Static(&'static str), Dynamic(*mut str) }` where `Error::Dynamic`
-requires the handler to free memory with whichever allocator is in use.
-It is [also possible](https://github.com/rust-lang/rfcs/pull/2106#issuecomment-327442573)
-to cast a dynamically-allocated `Box<String>` to a `&'static str` and leak the
-memory (no free) on recovery — at least, this works when tested.
-
-If different types are used depending on whether `std` is available, we could
-perhaps use an error type like the following; this may be the best option since
-`Error::Msg` is always present and both variants may implement
-`core::fmt::Debug` allowing simple "print and stop/continue" handlers to avoid
-`cfg`-dependent code.
+We propose the following:
 
 ```rust
-#[cfg(feature="std")]
-enum Error {
-    Msg(&'static str),
-    ChainedIo(&'static str, ::std::io::Error),
-}
-#[cfg(not(feature="std"))]
-enum Error {
-    Msg(&'static str),
+/// Error kind which can be matched over.
+pub enum ErrorKind {
+    /// Failure, likely not recoverable without user action
+    Irrecoverable,
+    /// Temporary failure. Recommended to retry a few times, but may also be
+    /// irrecoverable.
+    Failure,
+    /// Not ready yet. Recommended to try again a little later.
+    Wait,
+    /// Interrupt from user (Ctrl+C). Recommended to retry unless your
+    /// application has a specific handler.
+    Interrupt,
+    // TODO: include "other"? Allow exclusive match?
 }
 
-impl ::core::fmt::Debug for Error {
-    // ...
+#[cfg(feature="std")]
+pub struct Error {
+    pub kind: ErrorKind,
+    pub cause: Option<Box<std::error::Error>,
+}
+#[cfg(not(feature="std"))]
+pub struct Error {
+    pub kind: ErrorKind,
+    pub cause: Option<&'static str>,
 }
 ```
+
+Some variations are possible. For more on the *kind* codes,
+[see here](https://github.com/dhardy/rand/issues/9). Regarding the encapsulated
+cause and error type, see the sub-sections below and
+[here](https://github.com/dhardy/rand/issues/10).
+
+##### `String`
+
+We could give the `cause` type `Option<String>` or `Option<Box<str>>` for
+`std`, capturing the output of `std::error::Error::description`.
+Neither of these approaches are available in `no_std` and both depend on the
+existance of an allocator, not a given on embedded systems, so there is little
+reason to do this over capturing the whole source error.
+
+##### `&'static str` only
+
+We could use static strings only. Via [a trick](https://github.com/rust-lang/rfcs/pull/2106#issuecomment-327442573) it is possible
+to cast a dynamically-allocated `Box<String>` to a `&'static str` and leak the
+memory (no free) on recovery — but leaking memory is not generally recommended,
+so likely this would mean not including a cause much of the time.
+
+##### No cause
+
+We could omit the cause altogether (or only in `no_std` mode). In theory it
+should be clear from the context of which generator failed and the *kind* what
+the problem is.
 
 #### Given that at least one function returns a `Result`, do we also need equivalent functions not returning a `Result`?
 
@@ -752,10 +781,10 @@ impl<R: SeedFromRng> NewSeeded for R {
 }
 ```
 
-The above code should be included in `rand`, not `rand_core`. Later, if `OsRng`
+The above code should be included in `rand`, not `rand-core`. Later, if `OsRng`
 gets moved to its own crate, this code could be moved there (for discussion in
 a new RFC). The `SeedFromRng` type, on the other hand, needs to be in
-`rand_core`:
+`rand-core`:
 
 ```rust
 /// Support mechanism for creating random number generators seeded by other
@@ -800,7 +829,7 @@ reasons:
     trait or of a distribution trait like [`IndependentSample`] or
     [`Distribution`] could offer similar functionality, but these traits all
     deal with converting RNG output to other types, which (in my opinion)
-    should be an extra layer built on top of (and independent from) `rand_core`
+    should be an extra layer built on top of (and independent from) `rand-core`
 
 #### Alternatives
 
@@ -875,7 +904,7 @@ attacker sending data designed to prevoke worst-case performance).
 
 For now, this RFC proposes:
 
-*   a new `rand_core` crate containing the `Rng` trait, `CryptoRng` (in whatever
+*   a new `rand-core` crate containing the `Rng` trait, `CryptoRng` (in whatever
     form(s) that takes), extension traits like `SeedableRng` and `SeedFromRng`,
     possibly a mock implementation of `Rng`, and functions to aid implementing
     `Rng`
@@ -886,11 +915,11 @@ In the future, we may wish to introduce some more crates, as follows. This list
 is provided for insight into the larger picture only; please do not use this RFC to
 comment on these crates (use the [Rand crate revision RFC] instead):
 
-*   a `rand_os` crate exposing `OsRng` and possibly `NewSeeded`
-*   a `rand_chacha` crate for `ChaChaRng`
-*   a `rand_isaac` crate for the ISAAC RNGs
+*   a `rand-os` crate exposing `OsRng` and possibly `NewSeeded`
+*   a `rand-chacha` crate for `ChaChaRng`
+*   a `rand-isaac` crate for the ISAAC RNGs
 *   other PRNG crates may be adopted, e.g. `pcg_rand`
-*   possibly a `rand_thread` crate for `thread_rng` (very speculative)
+*   possibly a `rand-thread` crate for `thread_rng` (very speculative)
 
 
 ## Generating values
@@ -913,7 +942,7 @@ Existing users need then only `use rand::Sample;`, or if they previously had
 In the future, these member functions could be further tweaked. Please see
 [this mock design](https://dhardy.github.io/rand/rand/trait.Sample.html) for an
 idea; however this is beyond the scope of this RFC which is mainly concerned
-about introducing `rand_core` and tweaking `Rng`.
+about introducing `rand-core` and tweaking `Rng`.
 
 The naming conflict with [`distributions::Sample`] is unfortunate but not
 necessarily a fatal problem since `rand` doesn't currently reexport this trait
@@ -1024,8 +1053,9 @@ The dash syntax may be slightly more common among the most downloaded crates:
 (This looks at only the 25 most downloaded crates. From the first 100,
 I count 15 using `_` and 29 using `-`.)
 
-Personally I don't care a bit on this, but will leave crate names using
-underscore (e.g. `rand_core`) unless I see good rationale for changing it.
+A vote [showed a preference for `rand-core` over `rand_core`](https://github.com/rust-lang/rfcs/pull/2152#issuecomment-333884702).
+The sample implementation was named `rand_core`, but according to this vote
+should be published as `rand-core` instead on acceptance of this RFC.
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
