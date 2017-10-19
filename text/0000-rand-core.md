@@ -262,29 +262,35 @@ in which case *if* we don't want to throw away the details, our error type
 either needs to be able to hold a *cause* of this type or hold the string
 version, retrieved with type `&str` from `std::error::Error::description`.
 
-We propose the following:
+We propose the following. Note that the `Error` type has public fields and is
+directly constructible and deconstructible by users; this is by design. It is
+unfortunate that `std::error::Error` does not support `PartialEq` or `Clone`,
+but there is no requirement to deny `no_std` this functionality.
 
 ```rust
 /// Error kind which can be matched over.
+#[derive(PartialEq, Eq, Debug, Copy, Clone)]
 pub enum ErrorKind {
-    /// Failure, likely not recoverable without user action
-    Irrecoverable,
-    /// Temporary failure. Recommended to retry a few times, but may also be
+    /// Permanent failure: likely not recoverable without user action.
+    Unavailable,
+    /// Temporary failure: recommended to retry a few times, but may also be
     /// irrecoverable.
-    Failure,
-    /// Not ready yet. Recommended to try again a little later.
-    Wait,
-    /// Other / unknown error
+    Transient,
+    /// Not ready yet: recommended to try again a little later.
+    NotReady,
+    /// Uncategorised error
     Other,
     // TODO: allow exclusive match?
 }
 
 #[cfg(feature="std")]
+// impls: Debug, Display
 pub struct Error {
     pub kind: ErrorKind,
     pub cause: Option<Box<std::error::Error>,
 }
 #[cfg(not(feature="std"))]
+// impls: Debug, Display, Clone, PartialEq, Eq
 pub struct Error {
     pub kind: ErrorKind,
     pub cause: Option<&'static str>,
