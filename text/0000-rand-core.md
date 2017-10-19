@@ -256,38 +256,67 @@ constructing an RNG), what should the error type be?
 
 We wish to make the library `no_std` compatible, so the type cannot depend on
 `std::io::Error`, or `Box` (in the future `Box` should be
-available to some `no_std` environments, but depend on having an allocator).
+available to some `no_std` environments, but depend on having an allocator). On
+the flip side, `OsRng` implementations may have to handle a `std::io::Error`,
+in which case *if* we don't want to throw away the details, our error type
+either needs to be able to hold a *cause* of this type or hold the string
+version, retrieved with type `&str` from `std::error::Error::description`.
 
-Some `no_std` compatible options are `&'static str`, a fixed-length ASCII or
-UTF-8 buffer, a pointer to a statically allocated buffer (possibly), a
-numeric error code, or something like
-`enum Error { Static(&'static str), Dynamic(*mut str) }` where `Error::Dynamic`
-requires the handler to free memory with whichever allocator is in use.
-It is [also possible](https://github.com/rust-lang/rfcs/pull/2106#issuecomment-327442573)
-to cast a dynamically-allocated `Box<String>` to a `&'static str` and leak the
-memory (no free) on recovery — at least, this works when tested.
-
-If different types are used depending on whether `std` is available, we could
-perhaps use an error type like the following; this may be the best option since
-`Error::Msg` is always present and both variants may implement
-`core::fmt::Debug` allowing simple "print and stop/continue" handlers to avoid
-`cfg`-dependent code.
+We propose the following:
 
 ```rust
-#[cfg(feature="std")]
-enum Error {
-    Msg(&'static str),
-    ChainedIo(&'static str, ::std::io::Error),
-}
-#[cfg(not(feature="std"))]
-enum Error {
-    Msg(&'static str),
+/// Error kind which can be matched over.
+pub enum ErrorKind {
+    /// Failure, likely not recoverable without user action
+    Irrecoverable,
+    /// Temporary failure. Recommended to retry a few times, but may also be
+    /// irrecoverable.
+    Failure,
+    /// Not ready yet. Recommended to try again a little later.
+    Wait,
+    /// Interrupt from user (Ctrl+C). Recommended to retry unless your
+    /// application has a specific handler.
+    Interrupt,
+    // TODO: include "other"? Allow exclusive match?
 }
 
-impl ::core::fmt::Debug for Error {
-    // ...
+#[cfg(feature="std")]
+pub struct Error {
+    pub kind: ErrorKind,
+    pub cause: Option<Box<std::error::Error>,
+}
+#[cfg(not(feature="std"))]
+pub struct Error {
+    pub kind: ErrorKind,
+    pub cause: Option<&'static str>,
 }
 ```
+
+Some variations are possible. For more on the *kind* codes,
+[see here](https://github.com/dhardy/rand/issues/9). Regarding the encapsulated
+cause and error type, see the sub-sections below and
+[here](https://github.com/dhardy/rand/issues/10).
+
+##### `String`
+
+We could give the `cause` type `Option<String>` or `Option<Box<str>>` for
+`std`, capturing the output of `std::error::Error::description`.
+Neither of these approaches are available in `no_std` and both depend on the
+existance of an allocator, not a given on embedded systems, so there is little
+reason to do this over capturing the whole source error.
+
+##### `&'static str` only
+
+We could use static strings only. Via [a trick](https://github.com/rust-lang/rfcs/pull/2106#issuecomment-327442573) it is possible
+to cast a dynamically-allocated `Box<String>` to a `&'static str` and leak the
+memory (no free) on recovery — but leaking memory is not generally recommended,
+so likely this would mean not including a cause much of the time.
+
+##### No cause
+
+We could omit the cause altogether (or only in `no_std` mode). In theory it
+should be clear from the context of which generator failed and the *kind* what
+the problem is.
 
 #### Given that at least one function returns a `Result`, do we also need equivalent functions not returning a `Result`?
 
