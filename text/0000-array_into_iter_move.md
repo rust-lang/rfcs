@@ -38,11 +38,13 @@ Proposed implementation:
 
 - a type `array::IntoIter` is created. The `array::into_iter` method is implemented.
 - Inside the method:
-  * Transmute the array so it has `ManuallyDrop<T>` signature. This should be memory safe.
+  * Wrap the array with `ManuallyDrop`.
   * Create a `IntoIter` struct with contents moved.
 - Inside the iterator:
-  * Keep track of valid range (index) and move items out as `next()` is called.
-  * Don't forget to drop the items if the iterator itself is dropped in middle.
+  * Keep track of valid range (index) and move (`ptr::read`) items out as `next()` is called.
+  * Don't forget to drop the items if the iterator itself is dropped in middle. This should be done with `drop_in_place`.
+  
+We should add a lint for redundant Vec in clippy to promote the use of this.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -63,4 +65,4 @@ TBD
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
-TBD
+- What should the type signature look like? Possibly utilizing const generics.
