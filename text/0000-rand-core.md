@@ -16,7 +16,8 @@ Publish a new `rand-core` crate, containing:
 *For now*, re-export all the above in the `rand` crate. Also add two things to
 `rand`:
 
-*   the `NewSeeded` trait and its implementation for `SeedFromRng`
+*   the `NewSeeded` trait and its (blanket) implementation for `SeedFromRng`
+    implementors
 *   a `Sample` trait
 
 ## Links
