@@ -654,6 +654,7 @@ macro_rules! dbg {
     };
     // Without label, use source of $val:
     ($valf: expr $(, $val: expr)*) => {
+        #[allow(unused_must_use)] // for clarification on:  dbg!(expr);
         #[allow(unused_parens)] // requires: #![feature(stmt_expr_attributes)]
         {
             // DEBUG: Lock STDERR in a buffered writer.
@@ -742,6 +743,7 @@ macro_rules! dbg {
     };
     // With label:
     ($labf: expr => $valf: expr $(, $lab: expr => $val: expr)*) => {
+        #[allow(unused_must_use)] // for clarification on:  dbg!(expr);
         #[allow(unused_parens)] // requires: #![feature(stmt_expr_attributes)]
         {
             // DEBUG: Lock STDERR in a buffered writer.
@@ -853,6 +855,7 @@ macro_rules! dbg {
 
     // Without label, use source of $val:
     ($valf: expr $(, $val: expr)*) => {
+        #[allow(unused_must_use)] // for clarification on:  dbg!(expr);
         #[allow(unused_parens)] // requires: #![feature(stmt_expr_attributes)]
         {
             let ret = (
@@ -872,6 +875,7 @@ macro_rules! dbg {
     };
     // With label:
     ($labf: expr => $valf: expr $(, $lab: expr => $val: expr)*) => {
+        #[allow(unused_must_use)] // for clarification on:  dbg!(expr);
         #[allow(unused_parens)] // requires: #![feature(stmt_expr_attributes)]
         {
             let ret = (
@@ -918,6 +922,9 @@ on what is valued. A more terse format could be used if `stringify!` or
 `file!()`, line and column numbers is not deemed beneficial, which this RFC
 argues it should. The RFC argues that the possibility of opting out to this
 header via an env var strikes a good balance.
+
+For more alternatives, questions and how they were resolved,
+see [formerly unresolved] for a more detailed Q & A.
 
 The impact of not merging the RFC is that the papercut, if considered as such,
 remains.
@@ -984,9 +991,11 @@ screen real-estate but not vertical real-estate, which may still be a good reaso
 to keep it. Nonetheless, this argument is not sufficient to keep `column!()`,
 wherefore **this RFC will not include it**.
 
-4. Should the `stringify!($val)` be included? **[answer: yes]**
+4. Should the `stringify!($val)` be included?
 
-Other, now resolved, questions, were:
+**Yes**, it helps the user see the source of the value printed.
+
+Other, now resolved, questions were:
 
 5. Should the macro be pass-through with respect to the expression? 
    In other words: should the value of applying the macro to the expression be
@@ -1061,6 +1070,41 @@ should it print out `5`?
 might be a redundant annoyance. On the other hand, it may give a sense of
 symmetry with the non-literal forms such as `a = 42`. Keeping `5 = 5` is also
 more consistent, wherefore that format will be used. 
+
+10. Should `dbg!(expr);` generate an "unused" warning?
+
+**No**. In the case of:
+
+```rust
+fn main() {
+    let a = 42;
+    dbg!(a);
+}
+```
+
+the macro is used in "print" mode instead of "passhrough inspector" mode.
+Both are expected and supported ways of using this macro wherefore no warning
+should be raised.
+
+11. Should `STDOUT` be used over `STDERR` as the output stream?
+
+**Short answer: No.**
+
+The messages printed using `dbg!(..)` are not usually errors, which is
+one reason to use `STDOUT` instead. However, `STDERR` is often used as a second
+channel for extra messages. This use of `STDERR` often occurs when `STDOUT`
+carries some data which you can't mix with random messages.
+
+If we consider a program such as `ripgrep`, where should hypothetical uses of
+`dbg!(..)` print to in the case of `rg some_word < input_file > matching_lines`?
+Should they end up on the terminal or in the file `matching_lines`? Clearly
+the former is correct in this case.
+
+One could say that this design is a lousy choice by the programmer and that
+debug messages should be logged to a file, but this macro must cater to "lousy"
+programmers who just want to debug quickly.
+
+For these reasons, `STDERR` should be used.
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
