@@ -242,6 +242,36 @@ and:
 [src/main.rs:6] "first point" = Point { x: 4, y: 5 }, "same point" = Point { x: 4, y: 5 }
 ```
 
+## Dealing with panics
+[dealing with panics]: #dealing-with-panics
+
+In the following example we have a panic in the second argument:
+
+```rust
+fn main() {
+    let (a, b) = (1, 2);
+    dbg!(a, panic!(), b);
+}
+```
+
+running this program will print the following to `STDERR`:
+
+```
+[DEBUGGING, src/main.rs:2]
+=> a = 1, panic!() = 
+```
+
+and to `STDOUT`:
+
+```
+thread 'main' panicked at 'explicit panic', src/main.rs:2:12
+```
+
+As can be seen from output, nothing is printed on RHS of `panic!()`. Why?
+Because there's no value to present on RHS. Since a panic may cause necessary
+side effects for subsequent arguments in `dbg!(..)` to not happen, the macro is
+fail-fast on any panic in order to avoid cascading panics and unsafety.
+
 ## On release builds
 
 The same examples above will print nothing to `STDERR` and will instead simply
@@ -530,6 +560,8 @@ The label is also verified to be a string slice literal.
 
 4. Finally, a newline is printed, or two newlines in the case `p` holds.
 
+In both 3. and 4. if RHS should panic, then LHS = shall at least be printed.
+
 ## Example implementation
 
 The `dbg!` macro is semantically (with the notable detail that the helper macros
@@ -578,19 +610,20 @@ macro_rules! dbg_footer {
 
 macro_rules! dbg_expr {
     ($err: ident, $lab: expr => $val: expr) => {{
-        let tmp = $val;
+        #[cfg(debug_assertions)] { w!($err, "{} = ", $lab) }
+        let _tmp = $val;
         #[cfg(debug_assertions)] {
-            let l = stringify!($lab);
-            if in_detailed_mode() { w!($err, "{} = {:#?}", l, tmp) }
-            else { w!($err, "{} = {:?}",  l, tmp) }
+            if in_detailed_mode() { w!($err, "{:#?}", _tmp) }
+            else { w!($err, "{:?}" , _tmp) }
         }
-        tmp
+        _tmp
     }}
 }
 
 macro_rules! dbg_core {
     ($labf: expr => $valf: expr $(, $lab: expr => $val: expr)*) => {
-        //#[allow(unused_parens)] // requires: #![feature(stmt_expr_attributes)]
+        #[allow(unreachable_code)] // for panics.
+        #[allow(unused_parens)] // requires: #![feature(stmt_expr_attributes)]
         {
             #[cfg(debug_assertions)]
             use ::std::io::Write;
@@ -654,6 +687,7 @@ macro_rules! dbg {
     };
     // Without label, use source of $val:
     ($valf: expr $(, $val: expr)*) => {
+        #[allow(unreachable_code)] // for panics.
         #[allow(unused_must_use)] // for clarification on:  dbg!(expr);
         #[allow(unused_parens)] // requires: #![feature(stmt_expr_attributes)]
         {
@@ -689,21 +723,22 @@ macro_rules! dbg {
             // Foreach label and expression:
             //     1. Evaluate each expression,
             //     2. Print out $lab = value of expression
-            let ret = (
+            let _ret = (
                 {
-                    // Evaluate, tmp is value:
-                    let tmp = $valf;
-                    // Print out $lab = tmp:
+                    // Print out $lab = :
                     #[cfg(debug_assertions)] {
-                        let l = stringify!($valf);
-                        (if detailed {
-                            write!(&mut err, "{} = {:#?}", l, tmp)
-                        } else {
-                            write!(&mut err, "{} = {:?}",  l, tmp)
-                        }).unwrap()
+                        write!(&mut err, "{} = ", stringify!($valf)).unwrap()
+                    }
+                    // Evaluate, tmp is value:
+                    let _tmp = $valf; // Won't get further if $val panics.
+                    // Print out tmp:
+                    #[cfg(debug_assertions)] {
+                        (if detailed { write!(&mut err, "{:#?}", _tmp) }
+                         else        { write!(&mut err, "{:?}" , _tmp) }
+                        ).unwrap()
                     }
                     // Yield tmp:
-                    tmp
+                    _tmp
                 }
                 $(, {
                     // Comma separator:
@@ -711,19 +746,20 @@ macro_rules! dbg {
                         write!(&mut err, ", ").unwrap();
                     }
                     {
-                        // Evaluate, tmp is value:
-                        let tmp = $val;
-                        // Print out $lab = tmp:
+                        // Print out $lab = :
                         #[cfg(debug_assertions)] {
-                            let l = stringify!($val);
-                            (if detailed {
-                                write!(&mut err, "{} = {:#?}", l, tmp)
-                            } else {
-                                write!(&mut err, "{} = {:?}",  l, tmp)
-                            }).unwrap()
+                            write!(&mut err, "{} = ", stringify!($val)).unwrap()
+                        }
+                        // Evaluate, tmp is value:
+                        let _tmp = $val; // Won't get further if $val panics.
+                        // Print out tmp:
+                        #[cfg(debug_assertions)] {
+                            (if detailed { write!(&mut err, "{:#?}", _tmp) }
+                             else        { write!(&mut err, "{:?}" , _tmp) }
+                            ).unwrap()
                         }
                         // Yield tmp:
-                        tmp
+                        _tmp
                     }
                 } )*
             );
@@ -738,11 +774,12 @@ macro_rules! dbg {
             }
 
             // Return the expression:
-            ret
+            _ret
         }
     };
     // With label:
     ($labf: expr => $valf: expr $(, $lab: expr => $val: expr)*) => {
+        #[allow(unreachable_code)] // for panics.
         #[allow(unused_must_use)] // for clarification on:  dbg!(expr);
         #[allow(unused_parens)] // requires: #![feature(stmt_expr_attributes)]
         {
@@ -778,26 +815,25 @@ macro_rules! dbg {
             // Foreach label and expression:
             //     1. Evaluate each expression,
             //     2. Print out $lab = value of expression
-            let ret = (
+            let _ret = (
                 {
-                    // Evaluate, tmp is value:
-                    let tmp = $valf;
-                    // Print out $lab = tmp:
+                    // Print out $lab = :
                     #[cfg(debug_assertions)] {
-                        // Enforce is_literal_string($labf):
+                        // Enforce is_literal_string($lab):
                         let _ = concat!($labf, "");
                         let _ : &'static str = $labf;
-
-                        // Print:
-                        let l = stringify!($labf);
-                        (if detailed {
-                            write!(&mut err, "{} = {:#?}", l, tmp)
-                        } else {
-                            write!(&mut err, "{} = {:?}",  l, tmp)
-                        }).unwrap()
+                        write!(&mut err, "{} = ", stringify!($labf)).unwrap()
+                    }
+                    // Evaluate, tmp is value:
+                    let _tmp = $valf; // Won't get further if $valf panics.
+                    // Print out tmp:
+                    #[cfg(debug_assertions)] {
+                        (if detailed { write!(&mut err, "{:#?}", _tmp) }
+                         else        { write!(&mut err, "{:?}" , _tmp) }
+                        ).unwrap()
                     }
                     // Yield tmp:
-                    tmp
+                    _tmp
                 }
                 $(, {
                     // Comma separator:
@@ -805,24 +841,23 @@ macro_rules! dbg {
                         write!(&mut err, ", ").unwrap();
                     }
                     {
-                        // Evaluate, tmp is value:
-                        let tmp = $val;
-                        // Print out $lab = tmp:
+                        // Print out $lab = :
                         #[cfg(debug_assertions)] {
                             // Enforce is_literal_string($lab):
                             let _ = concat!($lab, "");
                             let _ : &'static str = $lab;
-
-                            // Print:
-                            let l = stringify!($lab);
-                            (if detailed {
-                                write!(&mut err, "{} = {:#?}", l, tmp)
-                            } else {
-                                write!(&mut err, "{} = {:?}",  l, tmp)
-                            }).unwrap()
+                            write!(&mut err, "{} = ", stringify!($lab)).unwrap()
+                        }
+                        // Evaluate, tmp is value:
+                        let _tmp = $val; // Won't get further if $valf panics.
+                        // Print out tmp:
+                        #[cfg(debug_assertions)] {
+                            (if detailed { write!(&mut err, "{:#?}", _tmp) }
+                             else        { write!(&mut err, "{:?}" , _tmp) }
+                            ).unwrap()
                         }
                         // Yield tmp:
-                        tmp
+                        _tmp
                     }
                 } )*
             );
@@ -837,7 +872,7 @@ macro_rules! dbg {
             }
 
             // Return the expression:
-            ret
+            _ret
         }
     };
 }
@@ -1105,6 +1140,50 @@ debug messages should be logged to a file, but this macro must cater to "lousy"
 programmers who just want to debug quickly.
 
 For these reasons, `STDERR` should be used.
+
+12. Should `std::panic::catch_unwind` be used to handle panics?
+
+**Short answer: No.**
+
+If `expr` in `dbg!("label" => expr)` panics, should something be printed on the RHS of `"label" => ` as in: `"label" => <panic>` ? If so, should all panics be
+caught such that:
+
+```rust
+fn main() {
+    let (a, b) = (1, 2);
+    dbg!(a, panic!(), b);
+}
+```
+
+prints (using `RUST_DBG_COMPACT = 1`) to `STDERR`:
+
+```rust
+[src/main.rs:2] a = 1, panic!() = <panic>, b = 2
+```
+
+and to `STDOUT`:
+
+```
+thread 'main' panicked at 'explicit panic', src/main.rs:2:12
+```
+
+and a single panic "re-thrown" after everything has been printed?
+
+This is a bad idea for two reasons:
+
+1. If `foo()` panics in `(foo(), bar())`, then `bar()` is not evaluated. The
+user should be able to expect similar semantics from `dbg!(foo(), bar())` to
+`(foo(), bar())`.
+
+2. Given `(foo(), bar())`, a panic in `foo()` entails that the postconditions of
+`foo()` aren't guaranteed. If `bar()` relies on these postconditions of `foo()`
+in its preconditions, then since the postconditions do not always hold, `bar()`
+must not be evaluated.
+
+Now that the second question has been resolved in the negative, we can resolve
+the first one. Since `"label" => ` combined with a message in `STDOUT` as seen
+in [dealing with panics] is sufficiently clear, the overhead of `catch_unwind`
+is for very little gain, wherefore this question is too answered in the negative.
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
