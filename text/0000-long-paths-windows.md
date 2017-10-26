@@ -13,7 +13,7 @@ Rust programs currently cannot access files on Windows 8 and below with paths lo
 
 Windows 8 and below make it difficult but not impossible for a program to access a file with a name longer than `MAX_PATH`.  The kernel APIs have no problem with such paths at all, but the user-mode APIs do.  They require that the path be prefixed with `\\?\`, which disables all normalization.
 
-Fortunately, there is a solution that gets back normalization: if (and only if) the file name *does not* begin with `\??\` or `\\?\`, one can pass it to the Windows API function `GetFullPathNameW`, which supports long paths just fine and can easily be called from Rust.  The resulting path can safely have `\\?\` prepended and then be passed to the underlying Windows API calls.  `GetFullPathNameW`’s documentation claims that it does not support long paths, but it does.  CoreCLR now depends on it doing so, so that won’t change.
+Fortunately, there is a solution that gets back normalization: if (and only if) the file name *does not* begin with `\??\` or `\\?\`, one can pass it to the Windows API function `GetFullPathNameW`, which supports long paths just fine and can easily be called from Rust.  The resulting path can safely have `\\?\` prepended and then be passed to the underlying Windows API calls.  `GetFullPathNameW`’s documentation claims that it does not support long paths, but it in fact does.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -42,4 +42,4 @@ The alternatives are:
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
-None
+None.  This is a bug fix, pure and simple.
