@@ -277,6 +277,43 @@ fail-fast on any panic in order to avoid cascading panics and unsafety.
 The same examples above will print nothing to `STDERR` and will instead simply
 evaluate the expressions.
 
+## Types which are not `Debug`
+
+**This feature will be available once [`specialization`] has been stabilized
+and not before.**
+
+If you are writing generic code and want to debug the value of some expression
+`expr: T` where `T: Debug` might hold, but you don't want to add this to the
+bound, you may simply use `dbg!(expr)`. This may be useful when you are deep
+within some generic algorithm and the hassle of moving up the call stack is
+in the way of productivity. Instead, if `T: Debug` holds implicitly, then the
+debug impl will be used, otherwise we try to give as much helpful information
+as we can.
+
+This is solved via [`specialization`]. The expression is first wrapped in a
+struct which has a `Debug` impl for all types which gives information about the
+type of the expression. For types which are `Debug`, the `Debug` impl of the
+struct is specialized to use the `Debug` implementation of the wrapped type.
+
+With the following example:
+
+```rust
+fn main() {
+    struct X(usize);
+    let a = X(1);
+    dbg!(&a);
+}
+```
+
+the following is printed to `STDERR`:
+
+```
+[DEBUGGING, src/main.rs:3]
+=> &a = [<unknown> of type &main::X is !Debug]
+```
+
+This tells you the typeof `&a`, and that it is not `Debug`.
+
 ## An example from the real world
 
 You have been given a task to implement `n!`, the factorial function - a common
@@ -943,6 +980,42 @@ macro_rules! dbg {
 }
 ```
 
+## Specialization and non-`Debug` types.
+
+**This feature will be available once [`specialization`] has been stabilized
+and not before.** Once that happens, the feature will simply be added to the
+macro without going through another RFC process.
+
+The following is added inside the macro:
+
+```rust
+// All of this is internal to the macro and not exported:
+
+struct WrapDebug<T>(T);
+
+use std::fmt::{Debug, Formatter, Result};
+
+impl<T> Debug for WrapDebug<T> {
+    default fn fmt(&self, f: &mut Formatter) -> Result {
+        use std::intrinsics::type_name;
+        write!(f, "[<unknown> of type {} is !Debug]",
+            unsafe { type_name::<T>() })
+    }
+}
+
+impl<T: Debug> Debug for WrapDebug<T> {
+    fn fmt(&self, f: &mut Formatter) -> Result { self.0.fmt(f) }
+}
+```
+
+This mechanism is inspired by version 0.1.2 of [`debugit`].
+
+Changes in the exact implementation:
+
+The lines with `let _tmp = $valf;` and `let _tmp = $val;` are replaced with
+`let _tmp = WrapDebug($valf);` and `let _tmp = WrapDebug($val);`. The lines
+with `_tmp` are replaced with `_tmp.0`.
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
@@ -995,62 +1068,108 @@ expression.
 ## Formerly unresolved questions
 [formerly unresolved]: #formerly-unresolved-questions
 
-Some questions regarding the format were:
+The following section gives a overview of certain design decisions taken during
+the RFC process and a detailed reasoning behind the decisions. These questions
+are ordered by when they were introduced.
 
-1. Should the `file!()` be included?
+### 1. Should the `file!()` be included?
 
 **Yes**, since it would be otherwise difficult to tell where the output is coming
 from in a larger project with multiple files. It is not very useful on
 the [playground](https://play.rust-lang.org), but that exception is acceptable.
 
-2. Should the line number be included?
+### 2. Should the line number be included?
 
 **Yes**, for a large file, it would also be difficult to locate the source of the
 output otherwise.
 
-3. Should the column number be included?
+### 3. Should the column number be included?
 
-It is more likely than not that no more than one `dbg!(...)` will occur. If it
-does, it will most likely be when dealing with binary operators such as with:
-`dbg!(x) + dbg!(y) + dbg!(z)`, or with several arguments to a function/method
-call. However, since the macro prints out `stringify!(expr)`, which in the case
-of the additions would result in: `x = <val>, y = <val>, z = <val>`, the user
-can clearly see which expression on the line that generated the value. The only
-exception to this is if the same expression is used multiple times and crucically
-has side effects altering the value between calls. This scenario is probably
-very uncommon. Furthermore, even in this case, one can distinguish between the
-calls since one is first and the second comes next, visually.
+**No.** It is more likely than not that no more than one `dbg!(...)` will occur.
+If it does, it will most likely be when dealing with binary operators such as
+with: `dbg!(x) + dbg!(y) + dbg!(z)`, or with several arguments to a
+function / method call. However, since the macro prints out `stringify!(expr)`,
+which in the case of the additions would result in:
+`x = <val>, y = <val>, z = <val>`, the user can clearly see which expression on
+the line that generated the value. The only exception to this is if the same
+expression is used multiple times and crucically has side effects altering the
+value between calls. This scenario is probably very uncommon. Furthermore, even
+in this case, one can distinguish between the calls since one is first and the
+second comes next, visually.
 
 However, the `column!()` isn't very visually disturbing since it uses horizontal
 screen real-estate but not vertical real-estate, which may still be a good reason
 to keep it. Nonetheless, this argument is not sufficient to keep `column!()`,
 wherefore **this RFC will not include it**.
 
-4. Should the `stringify!($val)` be included?
+### 4. Should the `stringify!($val)` be included?
 
 **Yes**, it helps the user see the source of the value printed.
 
-Other, now resolved, questions were:
+### 5. Should the macro be pass-through with respect to the expression?
 
-5. Should the macro be pass-through with respect to the expression? 
-   In other words: should the value of applying the macro to the expression be
-   the value of the expression?
+In other words: should the value of applying the macro to the expression be the
+value of the expression?
 
 **Yes**, the pass-through mechanism allows the macro to be less intrusive as
 discussed in the [motivation].
 
-6. Should the macro act as the identity function on release modes?
-   If the answer to this is yes, 5. must also be yes, i.e: 6. => 5.
+### 6. Should the macro act as the identity function on release modes?
+
+If the answer to this is yes, 5. must also be yes, i.e: 6. => 5.
 
 **Yes**, since some users who develop programs, and not libraries, can leave
 such `dbg!(..)` invocations in and push it to source control since it won't
 affect debug builds of the program.
 
-8. Should a trailing newline be added after each `dbg!(exprs...)`?
+[`specialization`]: https://github.com/rust-lang/rfcs/pull/1210
+[`debugit`]: https://docs.rs/debugit/0.1.2/debugit/
 
-**Short answer: Yes.**
+### 7. Should the macro accept expressions where: `![typeof(expr) : Debug]`?
 
-The result of answer in the negative would use the following format:
+In other words, should expressions and values of non-`Debug` types be accepted
+by the macro via [`specialization`] for `Debug` types?
+
+**Yes**, and for two reasons:
+
++ Avoiding the bound `T: Debug` in generic code.
+
+To see why, let's consider answering this question with a no. Imagine having
+some generic algorithm in your code:
+
+```rust
+fn process_items<I>(iter: I) where I: Iterator {
+    for elem in iter { /* .. */ }
+}
+```
+
+Now you want inspect the value of `elem` is, so you use `dbg!(elem);`:
+
+```rust
+fn process_items<I>(iter: I) where I: Iterator {
+    for elem in iter {
+        dbg!(elt);
+        // ..
+    }
+}
+```
+
+However, since doing `dbg!(elem)` requires that `I::Item : Debug`, you can't.
+If you add the `Debug` bound, you'll also need to add it to any function, where
+`Item` is held generic, which calls `process_items`, and transitively, you may
+need add the bound to several function calls up the stack. Doing such a change
+is not ergonomic as it may require you to even jump through different files.
+With [`specialization`], you can instead use the `Debug` trait implicitly.
+
++ Some information is better than none.
+
+Even if `typeof(expr)` is `!Debug`, valuable information can be displayed to the
+user. By using `std::intrinsics::type_name` for non-`Debug` types, the user can
+at least know what the type of the expression is, which is not nothing.
+
+### 8. Should a trailing newline be added after each `dbg!(exprs...)`?
+
+**Yes.** The result of answer in the negative would use the following format:
 
 ```
 [DEBUGGING, src/main.rs:85]
@@ -1098,15 +1217,14 @@ example as:
 [src/main.rs:87] a = 1, b = 2, a + b = 3
 ```
 
-9. Should debugging literal expressions as in `dbg!(42);` print out `42 = 42` or
-should it print out `5`?
+### 9. Should literals used in `dbg!(lit);` print out `lit = lit` or `lit`?
 
 **No**. The left hand side of the equality adds no new information wherefore it
 might be a redundant annoyance. On the other hand, it may give a sense of
 symmetry with the non-literal forms such as `a = 42`. Keeping `5 = 5` is also
 more consistent, wherefore that format will be used. 
 
-10. Should `dbg!(expr);` generate an "unused" warning?
+### 10. Should `dbg!(expr);` generate an "unused" warning?
 
 **No**. In the case of:
 
@@ -1121,11 +1239,9 @@ the macro is used in "print" mode instead of "passhrough inspector" mode.
 Both are expected and supported ways of using this macro wherefore no warning
 should be raised.
 
-11. Should `STDOUT` be used over `STDERR` as the output stream?
+### 11. Should `STDOUT` be used over `STDERR` as the output stream?
 
-**Short answer: No.**
-
-The messages printed using `dbg!(..)` are not usually errors, which is
+**No.** The messages printed using `dbg!(..)` are not usually errors, which is
 one reason to use `STDOUT` instead. However, `STDERR` is often used as a second
 channel for extra messages. This use of `STDERR` often occurs when `STDOUT`
 carries some data which you can't mix with random messages.
@@ -1141,12 +1257,11 @@ programmers who just want to debug quickly.
 
 For these reasons, `STDERR` should be used.
 
-12. Should `std::panic::catch_unwind` be used to handle panics?
+### 12. Should `std::panic::catch_unwind` be used to handle panics?
 
-**Short answer: No.**
-
-If `expr` in `dbg!("label" => expr)` panics, should something be printed on the RHS of `"label" => ` as in: `"label" => <panic>` ? If so, should all panics be
-caught such that:
+**No.** If `expr` in `dbg!("label" => expr)` panics, should something be printed
+on the RHS of `"label" => ` as in: `"label" => <panic>` ? If so, should all
+panics be caught such that:
 
 ```rust
 fn main() {
@@ -1189,14 +1304,4 @@ is for very little gain, wherefore this question is too answered in the negative
 [unresolved]: #unresolved-questions
 
 The format used by the macro should be resolved prior to merging.
-
-[`specialization`]: https://github.com/rust-lang/rfcs/pull/1210
-
-To be revisited once [`specialization`] has been stabilized:
-
-[`debugit`]: https://docs.rs/debugit/0.1.2/debugit/
-
-7. Should expressions and values of non-`Debug` types be usable with this macro
-by using `std::intrinsics::type_name` for such types and the `Debug` impl for
-`T : Debug` types as done in version 0.1.2 of [`debugit`]? This depends on
-specialization.
+There are currently no unresolved questions.
