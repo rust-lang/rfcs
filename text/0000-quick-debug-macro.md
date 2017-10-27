@@ -605,9 +605,6 @@ The `dbg!` macro is semantically (with the notable detail that the helper macros
 and any non-`pub` `fn`s must be inlined in the actual implementation):
 
 ```rust
-// For #[allow(unused_parens)]:
-#![feature(stmt_expr_attributes)]
-
 pub fn in_detailed_mode() -> bool {
     option_env!("RUST_DBG_COMPACT").map_or(false, |s| s == "0")
 }
@@ -627,60 +624,54 @@ macro_rules! w {
 
 macro_rules! dbg_header {
     ($err: ident) => {
-        #[cfg(debug_assertions)] {
-            if in_detailed_mode() {
-                w!($err, "[DEBUGGING, {}:{}]\n=> ", file!(), line!())
-            } else {
-                w!($err, "[{}:{}] ", file!(), line!())
-            }
+        if in_detailed_mode() {
+            w!($err, "[DEBUGGING, {}:{}]\n=> ", file!(), line!())
+        } else {
+            w!($err, "[{}:{}] ", file!(), line!())
         }
     };
 }
 
 macro_rules! dbg_footer {
     ($err: ident) => {
-        #[cfg(debug_assertions)] {
-            if in_detailed_mode() { w!($err, "\n\n") } else { w!($err, "\n") }
-        }
+        if in_detailed_mode() { w!($err, "\n\n") } else { w!($err, "\n") }
     };
 }
 
 macro_rules! dbg_expr {
     ($err: ident, $lab: expr => $val: expr) => {{
-        #[cfg(debug_assertions)] { w!($err, "{} = ", $lab) }
+        w!($err, "{} = ", $lab);
         let _tmp = $val;
-        #[cfg(debug_assertions)] {
-            if in_detailed_mode() { w!($err, "{:#?}", _tmp) }
-            else { w!($err, "{:?}" , _tmp) }
-        }
+        if in_detailed_mode() { w!($err, "{:#?}", _tmp) }
+        else { w!($err, "{:?}" , _tmp) }
         _tmp
     }}
 }
 
 macro_rules! dbg_core {
-    ($labf: expr => $valf: expr $(, $lab: expr => $val: expr)*) => {
-        #[allow(unreachable_code)] // for panics.
-        #[allow(unused_parens)] // requires: #![feature(stmt_expr_attributes)]
-        {
-            #[cfg(debug_assertions)]
+    ($labf: expr => $valf: expr $(, $lab: expr => $val: expr)*) => {{
+        #[allow(unreachable_code, unused_must_use, unused_parens)]
+        let _r = {
+        #[cfg(not(debug_assertions))] { ($valf $(, $val)*) }
+        #[cfg(debug_assertions)] {
             use ::std::io::Write;
-            #[cfg(debug_assertions)]
             let stderr = ::std::io::stderr();
-            #[cfg(debug_assertions)]
             let mut err = ::std::io::BufWriter::new(stderr.lock());
 
             dbg_header!(err);
             let ret = (
                 dbg_expr!(err, $labf => $valf)
                 $(, {
-                    #[cfg(debug_assertions)] w!(err, ", ");
+                    w!(err, ", ");
                     dbg_expr!(err, $lab => $val)
                 } )*
             );
             dbg_footer!(err);
             ret
         }
-    };
+        };
+        _r
+    }};
 }
 
 #[macro_export]
@@ -698,7 +689,7 @@ macro_rules! dbg {
     };
     // With label:
     ($labf: expr => $valf: expr $(, $lab: expr => $val: expr)*) => {{
-        verify_str_lit!($labf, $($lab),*);
+        verify_str_lit!($labf $(, $lab)*);
         dbg_core!($labf => $valf $(, $lab => $val)*)
     }};
 }
@@ -710,9 +701,6 @@ The exact implementation, which is authoritative on the semantics of this RFC,
 is given by:
 
 ```rust
-// For #[allow(unused_parens)]:
-#![feature(stmt_expr_attributes)]
-
 #[macro_export]
 macro_rules! dbg {
     // Handle trailing comma:
@@ -723,39 +711,34 @@ macro_rules! dbg {
         dbg!( $($lab => $val),+ )
     };
     // Without label, use source of $val:
-    ($valf: expr $(, $val: expr)*) => {
-        #[allow(unreachable_code)] // for panics.
-        #[allow(unused_must_use)] // for clarification on:  dbg!(expr);
-        #[allow(unused_parens)] // requires: #![feature(stmt_expr_attributes)]
-        {
+    ($valf: expr $(, $val: expr)*) => {{
+        // in order: for panics, clarification on: dbg!(expr);, dbg!(expr)
+        #[allow(unreachable_code, unused_must_use, unused_parens)]
+        let _r = {
+        #[cfg(not(debug_assertions))] { ($valf $(, $val)*) }
+        #[cfg(debug_assertions)] {
             // DEBUG: Lock STDERR in a buffered writer.
             // Motivation:
             // 1. to avoid needless re-locking of STDERR at every write(ln)!.
             // 2. to ensure that the printed message is not interleaved, which
             // would disturb the readability of the output, by other messages to
             // STDERR.
-            #[cfg(debug_assertions)]
             use ::std::io::Write;
-            #[cfg(debug_assertions)]
             let stderr = ::std::io::stderr();
-            #[cfg(debug_assertions)]
             let mut err = ::std::io::BufWriter::new(stderr.lock());
 
-            // Are we in not in compact mode (detailed)?
+            // Are we in not in detailed mode (compact)?
             // If so:
             // + {:?} is used instead of {:#?},
             // + Header is: [<location>]
-            #[cfg(debug_assertions)]
             let detailed = option_env!("RUST_DBG_COMPACT")
                             .map_or(true, |s| s == "0");
 
-            #[cfg(debug_assertions)] {
-                (if detailed {
-                    write!(&mut err, "[DEBUGGING, {}:{}]\n=> ", file!(), line!())
-                } else {
-                    write!(&mut err, "[{}:{}] ", file!(), line!())
-                }).unwrap()
-            }
+            (if detailed {
+                write!(&mut err, "[DEBUGGING, {}:{}]\n=> ", file!(), line!())
+            } else {
+                write!(&mut err, "[{}:{}] ", file!(), line!())
+            }).unwrap();
 
             // Foreach label and expression:
             //     1. Evaluate each expression,
@@ -763,208 +746,165 @@ macro_rules! dbg {
             let _ret = (
                 {
                     // Print out $lab = :
-                    #[cfg(debug_assertions)] {
-                        write!(&mut err, "{} = ", stringify!($valf)).unwrap()
-                    }
+                    write!(&mut err, "{} = ", stringify!($valf)).unwrap();
+
                     // Evaluate, tmp is value:
-                    let _tmp = $valf; // Won't get further if $val panics.
+                    let _tmp = $valf;
+                    // Won't get further if $val panics.
+
                     // Print out tmp:
-                    #[cfg(debug_assertions)] {
-                        (if detailed { write!(&mut err, "{:#?}", _tmp) }
-                         else        { write!(&mut err, "{:?}" , _tmp) }
-                        ).unwrap()
-                    }
+                    (if detailed { write!(&mut err, "{:#?}", _tmp) }
+                    else         { write!(&mut err, "{:?}" , _tmp) }).unwrap();
+
                     // Yield tmp:
                     _tmp
                 }
                 $(, {
                     // Comma separator:
-                    #[cfg(debug_assertions)] {
-                        write!(&mut err, ", ").unwrap();
-                    }
-                    {
-                        // Print out $lab = :
-                        #[cfg(debug_assertions)] {
-                            write!(&mut err, "{} = ", stringify!($val)).unwrap()
-                        }
-                        // Evaluate, tmp is value:
-                        let _tmp = $val; // Won't get further if $val panics.
-                        // Print out tmp:
-                        #[cfg(debug_assertions)] {
-                            (if detailed { write!(&mut err, "{:#?}", _tmp) }
-                             else        { write!(&mut err, "{:?}" , _tmp) }
-                            ).unwrap()
-                        }
-                        // Yield tmp:
-                        _tmp
-                    }
+                    write!(&mut err, ", ").unwrap();
+
+                    // Print out $lab = :
+                    write!(&mut err, "{} = ", stringify!($val)).unwrap();
+
+                    // Evaluate, tmp is value:
+                    let _tmp = $val;
+                    // Won't get further if $val panics.
+
+                    // Print out tmp:
+                    (if detailed { write!(&mut err, "{:#?}", _tmp) }
+                     else        { write!(&mut err, "{:?}" , _tmp) }).unwrap();
+
+                    // Yield tmp:
+                    _tmp
                 } )*
             );
 
             // Newline:
-            #[cfg(debug_assertions)] {
-                (if detailed {
-                    writeln!(&mut err, "\n")
-                } else {
-                    writeln!(&mut err, "")
-                }).unwrap()
-            }
+            (if detailed { writeln!(&mut err, "\n") }
+             else        { writeln!(&mut err, "")   }).unwrap();
 
             // Return the expression:
             _ret
         }
-    };
+        };
+        _r
+    }};
     // With label:
-    ($labf: expr => $valf: expr $(, $lab: expr => $val: expr)*) => {
-        #[allow(unreachable_code)] // for panics.
-        #[allow(unused_must_use)] // for clarification on:  dbg!(expr);
-        #[allow(unused_parens)] // requires: #![feature(stmt_expr_attributes)]
-        {
+    ($labf: expr => $valf: expr $(, $lab: expr => $val: expr)*) => {{
+        // in order: for panics, clarification on: dbg!(expr);, dbg!(expr)
+        #[allow(unreachable_code, unused_must_use, unused_parens)]
+        let _r = {
+        #[cfg(not(debug_assertions))] { ($valf $(, $val)*) }
+        #[cfg(debug_assertions)] {
             // DEBUG: Lock STDERR in a buffered writer.
             // Motivation:
             // 1. to avoid needless re-locking of STDERR at every write(ln)!.
             // 2. to ensure that the printed message is not interleaved, which
             // would disturb the readability of the output, by other messages to
             // STDERR.
-            #[cfg(debug_assertions)]
             use ::std::io::Write;
-            #[cfg(debug_assertions)]
             let stderr = ::std::io::stderr();
-            #[cfg(debug_assertions)]
             let mut err = ::std::io::BufWriter::new(stderr.lock());
 
-            // Are we in not in compact mode (detailed)?
+            // Are we in not in detailed mode (compact)?
             // If so:
             // + {:?} is used instead of {:#?},
             // + Header is: [<location>]
-            #[cfg(debug_assertions)]
             let detailed = option_env!("RUST_DBG_COMPACT")
                             .map_or(true, |s| s == "0");
 
-            #[cfg(debug_assertions)] {
-                (if detailed {
-                    write!(&mut err, "[DEBUGGING, {}:{}]\n=> ", file!(), line!())
-                } else {
-                    write!(&mut err, "[{}:{}] ", file!(), line!())
-                }).unwrap()
-            }
+            (if detailed {
+                write!(&mut err, "[DEBUGGING, {}:{}]\n=> ", file!(), line!())
+            } else {
+                write!(&mut err, "[{}:{}] ", file!(), line!())
+            }).unwrap();
 
             // Foreach label and expression:
             //     1. Evaluate each expression,
             //     2. Print out $lab = value of expression
             let _ret = (
                 {
+                    // Enforce is_literal_string($lab):
+                    let _ = concat!($labf, "");
+                    let _ : &'static str = $labf;
+
                     // Print out $lab = :
-                    #[cfg(debug_assertions)] {
-                        // Enforce is_literal_string($lab):
-                        let _ = concat!($labf, "");
-                        let _ : &'static str = $labf;
-                        write!(&mut err, "{} = ", stringify!($labf)).unwrap()
-                    }
+                    write!(&mut err, "{} = ", stringify!($labf)).unwrap();
+
                     // Evaluate, tmp is value:
-                    let _tmp = $valf; // Won't get further if $valf panics.
+                    let _tmp = $valf;
+                    // Won't get further if $val panics.
+
                     // Print out tmp:
-                    #[cfg(debug_assertions)] {
-                        (if detailed { write!(&mut err, "{:#?}", _tmp) }
-                         else        { write!(&mut err, "{:?}" , _tmp) }
-                        ).unwrap()
-                    }
+                    (if detailed { write!(&mut err, "{:#?}", _tmp) }
+                     else        { write!(&mut err, "{:?}" , _tmp) }).unwrap();
+
                     // Yield tmp:
                     _tmp
                 }
                 $(, {
                     // Comma separator:
-                    #[cfg(debug_assertions)] {
-                        write!(&mut err, ", ").unwrap();
-                    }
-                    {
-                        // Print out $lab = :
-                        #[cfg(debug_assertions)] {
-                            // Enforce is_literal_string($lab):
-                            let _ = concat!($lab, "");
-                            let _ : &'static str = $lab;
-                            write!(&mut err, "{} = ", stringify!($lab)).unwrap()
-                        }
-                        // Evaluate, tmp is value:
-                        let _tmp = $val; // Won't get further if $valf panics.
-                        // Print out tmp:
-                        #[cfg(debug_assertions)] {
-                            (if detailed { write!(&mut err, "{:#?}", _tmp) }
-                             else        { write!(&mut err, "{:?}" , _tmp) }
-                            ).unwrap()
-                        }
-                        // Yield tmp:
-                        _tmp
-                    }
+                    write!(&mut err, ", ").unwrap();
+
+                    // Enforce is_literal_string($lab):
+                    let _ = concat!($lab, "");
+                    let _ : &'static str = $lab;
+
+                    // Print out $lab = :
+                    write!(&mut err, "{} = ", stringify!($lab)).unwrap();
+
+                    // Evaluate, tmp is value:
+                    let _tmp = $val;
+                    // Won't get further if $val panics.
+
+                    // Print out tmp:
+                    (if detailed { write!(&mut err, "{:#?}", _tmp) }
+                     else        { write!(&mut err, "{:?}" , _tmp) }).unwrap();
+
+                    // Yield tmp:
+                    _tmp
                 } )*
             );
 
             // Newline:
-            #[cfg(debug_assertions)] {
-                (if detailed {
-                    writeln!(&mut err, "\n")
-                } else {
-                    writeln!(&mut err, "")
-                }).unwrap()
-            }
+            (if detailed { writeln!(&mut err, "\n") }
+             else        { writeln!(&mut err, "")   }).unwrap();
 
             // Return the expression:
             _ret
         }
-    };
+        };
+        _r
+    }};
 }
 ```
 
 On release builds, this macro reduces to:
 
 ```rust
-// For #[allow(unused_parens)]:
-#![feature(stmt_expr_attributes)]
-
 #[macro_export]
 macro_rules! dbg {
-    // ...
-
+    // Handle trailing comma:
+    ($($val: expr),+,) => {
+        dbg!( $($val),+ )
+    };
+    ($($lab: expr => $val: expr),+,) => {
+        dbg!( $($lab => $val),+ )
+    };
     // Without label, use source of $val:
-    ($valf: expr $(, $val: expr)*) => {
-        #[allow(unused_must_use)] // for clarification on:  dbg!(expr);
-        #[allow(unused_parens)] // requires: #![feature(stmt_expr_attributes)]
-        {
-            let ret = (
-                {
-                    let tmp = $valf;
-                    tmp
-                }
-                $(, {
-                    {
-                        let tmp = $val;
-                        tmp
-                    }
-                } )*
-            );
-            ret
-        }
-    };
+    ($valf: expr $(, $val: expr)*) => {{
+        // in order: for panics, clarification on: dbg!(expr);, dbg!(expr)
+        #[allow(unreachable_code, unused_must_use, unused_parens)]
+        let _r = {{ ($valf $(, $val)*) }};
+        _r
+    }};
     // With label:
-    ($labf: expr => $valf: expr $(, $lab: expr => $val: expr)*) => {
-        #[allow(unused_must_use)] // for clarification on:  dbg!(expr);
-        #[allow(unused_parens)] // requires: #![feature(stmt_expr_attributes)]
-        {
-            let ret = (
-                {
-                    let tmp = $valf;
-                    tmp
-                }
-                $(, {
-                    {
-                        let tmp = $val;
-                        tmp
-                    }
-                } )*
-            );
-            ret
-        }
-    };
+    ($labf: expr => $valf: expr $(, $lab: expr => $val: expr)*) => {{
+        // in order: for panics, clarification on: dbg!(expr);, dbg!(expr)
+        #[allow(unreachable_code, unused_must_use, unused_parens)]
+        let _r = {{ ($valf $(, $val)*) }};
+        _r
+    }};
 }
 ```
 
@@ -974,7 +914,8 @@ is nothing more than the identity on the tuple passed:
 ```rust
 #[macro_export]
 macro_rules! dbg {
-    // ...
+    ($($val: expr),+,) => { dbg!( $($val),+ ) };
+    ($($lab: expr => $val: expr),+,) => { dbg!( $($lab => $val),+ ) };
     ($(              $val: expr),+) => {{ ( $($val),* ) }};
     ($($lab: expr => $val: expr),+) => {{ ( $($val),* ) }};
 }
