@@ -1,0 +1,1 @@
+The file for this RFC has been removed, but the RFC is still in force and can be [read on GitHub](https://github.com/rust-lang/rfcs/blob/d046f391fa560839af3569be5b13b477a5aa29f9/text/0195-associated-items.md).
