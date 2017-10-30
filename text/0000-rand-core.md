@@ -3,15 +3,18 @@
 - RFC PR: (leave this empty)
 - Rust Issue: (leave this empty)
 
-# Summary
+# Introduction
+
+## Summary
 [summary]: #summary
 
 Publish a new `rand-core` crate, containing:
 
-*   the `Rng` trait,
-*   possibly a `CryptoRng` trait,
-*   extension traits `SeedFromRng` and `SeedableRng`
-*   helper functions and/or default implementations for `Rng` functions,
+*   the `Rng` trait, cut down to just `next_u32`, `next_u64`, `fill_bytes` and `try_fill` [new]
+*   a [new] `CryptoRng` marker trait as an extension of `Rng`
+*   extension traits `SeedFromRng` [new] and `SeedableRng` (modified)
+*   a [new] `Error` struct with associated `ErrorKind` enum
+*   helper functions for implementing for `Rng` functions
 
 *For now*, re-export all the above in the `rand` crate. Also add two things to
 `rand`:
@@ -84,7 +87,7 @@ Motivation for this sub-RFC is
 [guide-level-explanation]: #guide-level-explanation
 
 For now, most end users should continue using the `rand` crate, and should not
-need to depend on `rand-core` directly. On the other,
+need to depend on `rand-core` directly. On the other hand,
 some of the traits concerned, such as `Rng` and `SeedableRng`, will be of
 interest to end users and will be documented appropriately.
 
@@ -100,6 +103,19 @@ floating point, `Range` distribution, statistical distributions like `Normal`.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
+
+A summary of the proposed changes:
+
+1.  Publish a new `rand-core` crate as a member of
+    `https://github.com/rust-lang-nursery/` using
+    [this code](https://github.com/dhardy/rand/tree/master/rand_core).
+2.  Remove the following from the `rand` crate: `Rng`, `SeedableRng`.
+3.  Publically export (`pub use`) the following `rand-core` items in `rand`:
+    `Rng`, `CryptoRng`, `SeedFromRng`, `SeedableRng`, `ErrorKind`, `Error`.
+4.  Add two new traits to `rand`: `Sample` and `NewSeeded`; additionally
+    implement `NewSeeded` for any type implementing `SeedFromRng`.
+
+Details and justification follow.
 
 ## Core traits
 
