@@ -264,6 +264,8 @@ There are several as-yet unanswered questions:
 
 #### Do we need to return a `Result` for error handling?
 
+Comment thread: [issue #8](https://github.com/dhardy/rand/issues/8)
+
 Relying on being able to catch an unwinding "panic" is not a typical design
 pattern in Rust; although it appears to work, there is no user-prompting of
 unhandled unwind paths (as there is for `Result`), this is a more advanced
@@ -286,77 +288,14 @@ the cycle end are likely to fail without necessarily killing the whole program).
 
 #### What should the error type be?
 
-Assuming we do use a `Result` (and it's useful outside of `Rng` too, e.g. for
-constructing an RNG), what should the error type be?
-
-We wish to make the library `no_std` compatible, so the type cannot depend on
-`std::io::Error`, or `Box` (in the future `Box` should be
-available to some `no_std` environments, but depend on having an allocator). On
-the flip side, `OsRng` implementations may have to handle a `std::io::Error`,
-in which case *if* we don't want to throw away the details, our error type
-either needs to be able to hold a *cause* of this type or hold the string
-version, retrieved with type `&str` from `std::error::Error::description`.
-
-We propose the following. Note that the `Error` type has public fields and is
-directly constructible and deconstructible by users; this is by design. It is
-unfortunate that `std::error::Error` does not support `PartialEq` or `Clone`,
-but there is no requirement to deny `no_std` this functionality.
+Roughly, we settled on the following. [Details later](#error-handling).
 
 ```rust
-/// Error kind which can be matched over.
-#[derive(PartialEq, Eq, Debug, Copy, Clone)]
-pub enum ErrorKind {
-    /// Permanent failure: likely not recoverable without user action.
-    Unavailable,
-    /// Temporary failure: recommended to retry a few times, but may also be
-    /// irrecoverable.
-    Transient,
-    /// Not ready yet: recommended to try again a little later.
-    NotReady,
-    /// Uncategorised error
-    Other,
-    // TODO: allow exclusive match?
-}
-
-#[cfg(feature="std")]
-// impls: Debug, Display
 pub struct Error {
     pub kind: ErrorKind,
-    pub cause: Option<Box<std::error::Error>,
-}
-#[cfg(not(feature="std"))]
-// impls: Debug, Display, Clone, PartialEq, Eq
-pub struct Error {
-    pub kind: ErrorKind,
-    pub cause: Option<&'static str>,
+    pub cause: Option</* omitted */>,
 }
 ```
-
-Some variations are possible. For more on the *kind* codes,
-[see here](https://github.com/dhardy/rand/issues/9). Regarding the encapsulated
-cause and error type, see the sub-sections below and
-[here](https://github.com/dhardy/rand/issues/10).
-
-##### `String`
-
-We could give the `cause` type `Option<String>` or `Option<Box<str>>` for
-`std`, capturing the output of `std::error::Error::description`.
-Neither of these approaches are available in `no_std` and both depend on the
-existance of an allocator, not a given on embedded systems, so there is little
-reason to do this over capturing the whole source error.
-
-##### `&'static str` only
-
-We could use static strings only. Via [a trick](https://github.com/rust-lang/rfcs/pull/2106#issuecomment-327442573) it is possible
-to cast a dynamically-allocated `Box<String>` to a `&'static str` and leak the
-memory (no free) on recovery — but leaking memory is not generally recommended,
-so likely this would mean not including a cause much of the time.
-
-##### No cause
-
-We could omit the cause altogether (or only in `no_std` mode). In theory it
-should be clear from the context of which generator failed and the *kind* what
-the problem is.
 
 #### Given that at least one function returns a `Result`, do we also need equivalent functions not returning a `Result`?
 
@@ -900,6 +839,81 @@ reproducibility or seeding from some other source for embedded
 applications without an OS source.) Never-the-less, `NewSeeded` should be the
 default way to create any new RNG, so it and `new` should have simple short
 names.
+
+## Error handling
+[error-handling]: #error-handling
+
+Comment threads:
+[issue #9 / error type](https://github.com/dhardy/rand/issues/9),
+[issue #10 / error kinds](https://github.com/dhardy/rand/issues/10)
+
+Assuming we do use a `Result` (and it's useful outside of `Rng` too, e.g. for
+constructing an RNG), what should the error type be?
+
+We wish to make the library `no_std` compatible, so the type cannot depend on
+`std::io::Error`, or `Box` (in the future `Box` should be
+available to some `no_std` environments, but depend on having an allocator). On
+the flip side, `OsRng` implementations may have to handle a `std::io::Error`,
+in which case *if* we don't want to throw away the details, our error type
+either needs to be able to hold a *cause* of this type or hold the string
+version, retrieved with type `&str` from `std::error::Error::description`.
+
+We propose the following. Note that the `Error` type has public fields and is
+directly constructible and deconstructible by users; this is by design. It is
+unfortunate that `std::error::Error` does not support `PartialEq` or `Clone`,
+but there is no requirement to deny `no_std` this functionality.
+
+```rust
+/// Error kind which can be matched over.
+#[derive(PartialEq, Eq, Debug, Copy, Clone)]
+pub enum ErrorKind {
+    /// Permanent failure: likely not recoverable without user action.
+    Unavailable,
+    /// Temporary failure: recommended to retry a few times, but may also be
+    /// irrecoverable.
+    Transient,
+    /// Not ready yet: recommended to try again a little later.
+    NotReady,
+    /// Uncategorised error
+    Other,
+    // no hidden members: allow exclusive match
+}
+
+#[cfg(feature="std")]
+// impls: Debug, Display
+pub struct Error {
+    pub kind: ErrorKind,
+    pub cause: Option<Box<std::error::Error>,
+}
+#[cfg(not(feature="std"))]
+// impls: Debug, Display, Clone, PartialEq, Eq
+pub struct Error {
+    pub kind: ErrorKind,
+    pub cause: Option<&'static str>,
+}
+```
+
+##### `String`
+
+We could give the `cause` type `Option<String>` or `Option<Box<str>>` for
+`std`, capturing the output of `std::error::Error::description`.
+Neither of these approaches are available in `no_std` and both depend on the
+existance of an allocator, not a given on embedded systems, so there is little
+reason to do this over capturing the whole source error.
+
+##### `&'static str` only
+
+We could use static strings only. Via [a trick](https://github.com/rust-lang/rfcs/pull/2106#issuecomment-327442573) it is possible
+to cast a dynamically-allocated `Box<String>` to a `&'static str` and leak the
+memory (no free) on recovery — but leaking memory is not generally recommended,
+so likely this would mean not including a cause much of the time.
+
+##### No cause
+
+We could omit the cause altogether (or only in `no_std` mode). In theory it
+should be clear from the context of which generator failed and the *kind* what
+the problem is.
+
 
 ## Split into multiple crates
 
