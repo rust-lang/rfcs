@@ -119,6 +119,24 @@ Details and justification follow.
 
 ## Core traits
 
+Introduce the following new traits:
+
+```rust
+pub trait Rng {
+    fn next_u32(&mut self) -> u32;
+    fn next_u64(&mut self) -> u64;
+    
+    fn fill_bytes(&mut self, dest: &mut [u8]);
+    fn try_fill(&mut self, dest: &mut [u8]) -> Result<(), Error>;
+}
+
+pub trait CryptoRng: Rng {}
+```
+
+Justification follows.
+
+### Current `Rng` trait
+
 The [current `Rng` trait](https://docs.rs/rand/0.3.16/rand/trait.Rng.html) is
 quite large and complex:
 
@@ -426,10 +444,9 @@ useful:
     operations seeding a PRNG, where in some cases use of a weak RNG may
     result in an accidental clone or bad state.
 
-### `Rng` and `CryptoRng` design
+### `Rng` and `CryptoRng` design, including alternatives
 
-Here we come to some actual designs. My current favourite is the first one
-below.
+Here we look at to some actual designs for the traits.
 
 For those designs where `CryptoRng` does not extend or automatically implement
 `Rng`, we could add a wrapper type allowing any `CryptoRng` to be used as an
@@ -442,6 +459,8 @@ I'm not sure if there's much need for this.
 
 #### Design 1: `CryptoRng` extends `Rng` (marker only)
 
+(This is the design used above.)
+
 Provide two related traits:
 
 ```rust
@@ -449,6 +468,7 @@ pub trait Rng {
     fn next_u32(&mut self) -> u32;
     fn next_u64(&mut self) -> u64;
     
+    fn fill_bytes(&mut self, dest: &mut [u8]);
     fn try_fill(&mut self, dest: &mut [u8]) -> Result<(), Error>;
 }
 
@@ -467,6 +487,8 @@ Provide two related traits:
 pub trait Rng {
     fn next_u32(&mut self) -> u32;
     fn next_u64(&mut self) -> u64;
+    
+    fn fill_bytes(&mut self, dest: &mut [u8]);
 }
 
 pub trait CryptoRng: Rng {
@@ -475,14 +497,6 @@ pub trait CryptoRng: Rng {
 ```
 
 As above, we *might* wish to provide a wrapper to convert an `Rng` to a `CryptoRng`.
-
-Advantages of this design:
-
-*   Fairly clean
-
-Disadvantages:
-
-*   No direct bytes output from non-crypto RNGs
 
 #### Design 3: Separate `Rng`, `CryptoRng`
 
@@ -493,7 +507,7 @@ pub trait Rng {
     fn next_u32(&mut self) -> u32;
     fn next_u64(&mut self) -> u64;
     
-    // possibly also a `fill_bytes` function
+    fn fill_bytes(&mut self, dest: &mut [u8]);
 }
 
 pub trait CryptoRng {
@@ -525,15 +539,15 @@ memory overhead). This could be used for a more exotic design like the following
 
 ```rust
 pub trait RawRng<E> {
-    // these *could* also return `Result`, if infallible variants are implemented in `Rng`:
-    fn next_u32(&mut self) -> u32;
-    fn next_u64(&mut self) -> u64;
-    
     fn try_fill(&mut self, dest: &mut [u8]) -> Result<(), E>;
 }
 
 pub trait Rng: RawRng<!> {
-    // implement infallible version for convenience; optional:
+    // These could potentially be moved to RawRng:
+    fn next_u32(&mut self) -> u32;
+    fn next_u64(&mut self) -> u64;
+    
+    // implement infallible version of try_fill for convenience; optional:
     fn fill_bytes(&mut self, dest: &mut [u8]) {
         // the unwrap is safely eliminated iff error type is not representable:
         self.try_fill(dest).unwrap_or_else(|e| e)
@@ -628,8 +642,9 @@ other functions have default implementations, simply because very few (if any)
 PRNGs will be able to provide a more efficient implementation than simply
 combining two `u64` values.
 
-Proposal: do nothing now. After the type is made stable, add a `next_u128`
-function to `Rng` with a default implementation in terms of `next_u64`.
+Proposal: do nothing now. After the type is made stable, consider adding a
+`next_u128` function to `Rng` with a default implementation in terms of
+`next_u64`, but *only* if there is actual usage for the function.
 
 ## Extension traits
 
