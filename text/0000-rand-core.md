@@ -553,10 +553,27 @@ several annoying trivial functions (casting or wrapping some provided
 implementation), but there should not end up being a huge number of users
 needing to implement `Rng` (relative to users of `Rng`).
 
-## 128-bit support?
+## Native 16-bit and 128-bit support?
 
-Should we add `fn next_u128(&mut self) -> u128` besides `next_u32` and
-`next_u64`?
+Should we add `next_u16` and `next_u128` functions besides
+`next_u32` and `next_u64`?
+
+### 16-bit
+
+It might make sense to have a `next_u16` function if a generator interface is
+desired on a 16-bit CPU, but so far there has been little interest in this.
+See [issue #11](https://github.com/dhardy/rand/issues/11) for a discussion on
+this topic.
+
+There appears to be very little in the way of published 16-bit PRNGs, and any
+cryptographic algorithm would likely be quite slow (needing to touch a lot of
+state), so simple weak generators and hardware generators are the most likely
+candidates.
+
+If there is demand for this in the future, it will be possible to add `next_u16`
+with a default implementation.
+
+### 128-bit
 
 Most current PRNG algorithms target the `u32` or `u64` type. Are there any
 native-`u128` algorithms available now? I don't know of any, but several
