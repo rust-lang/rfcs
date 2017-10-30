@@ -10,7 +10,7 @@
 
 Publish a new `rand-core` crate, containing:
 
-*   the `Rng` trait, cut down to just `next_u32`, `next_u64`, `fill_bytes` and `try_fill` [new]
+*   the `Rng` trait, cut down to just `next_u32`, `next_u64`, `fill_bytes` and `try_fill_bytes` [new]
 *   a [new] `CryptoRng` marker trait as an extension of `Rng`
 *   extension traits `SeedFromRng` [new] and `SeedableRng` (modified)
 *   a [new] `Error` struct with associated `ErrorKind` enum
@@ -19,8 +19,7 @@ Publish a new `rand-core` crate, containing:
 *For now*, re-export all the above in the `rand` crate. Also add two things to
 `rand`:
 
-*   the `NewSeeded` trait and its (blanket) implementation for `SeedFromRng`
-    implementors
+*   the `NewSeeded` trait and its implementation for `SeedFromRng`
 *   a `Sample` trait
 
 ## Links
@@ -127,7 +126,7 @@ pub trait Rng {
     fn next_u64(&mut self) -> u64;
     
     fn fill_bytes(&mut self, dest: &mut [u8]);
-    fn try_fill(&mut self, dest: &mut [u8]) -> Result<(), Error>;
+    fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), Error>;
 }
 
 pub trait CryptoRng: Rng {}
@@ -245,15 +244,15 @@ Some direct implications of the above requirements:
 *   There should *probably* not be any more (simplicity of design)
 *   `Rng` cannot derive `CryptoRng`, nor can an impl rule provide the latter implicitly
 *   `Rng` must have `next_u32` and `next_u64` (performance)
-*   `CryptoRng` should likely have a `try_fill(&mut self, dest: &mut [u8]) -> Result<(), E>` function
+*   `CryptoRng` should likely have a `try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), E>` function
 
 That said, there are many less clear things:
 
 *   Should `CryptoRng` extend `Rng`?
-*   If so, should `CryptoRng` have any extra functions (e.g. `try_fill`) or
+*   If so, should `CryptoRng` have any extra functions (e.g. `try_fill_bytes`) or
     should all functions be in the base trait?
 *   Does `Rng` need a byte-sequence function (`fill_bytes`)?
-*   Should we have an infallible `fill_bytes` *and* `try_fill`?
+*   Should we have a `fill_bytes` *and* `try_fill_bytes`?
 *   Do we need `try_next_u32` and similar functions? Hopefully not, for simplicity.
 *   Can we rely on `panic` for error handling and not use `Result`?
 *   If we do use `Result`, what should be the error type?
@@ -279,7 +278,7 @@ functions, there may be a tiny overhead, and code becomes significantly more
 messy).
 
 I think the best answer may be a compromise returing a `Result<(), Error>` from
-`fill_bytes` (renamed to `try_fill`), while leaving the `next_u*` functions
+`fill_bytes` (renamed to `try_fill_bytes`), while leaving the `next_u*` functions
 returning simple numbers (and panicking on error). On the other hand, it is
 arguable that `fill_bytes` should not return a `Result` since most generators
 should be very nearly infallible anyway (only things like external hardware
@@ -305,14 +304,14 @@ uses (e.g. the `rand::distributions`) expect. I have not seen any real
 demand for a version of these functions returning a `Result`; hence in my
 opinion we do not need two versions of these functions.
 
-Regarding `fill_bytes` / `try_fill`, the little benchmarking done shows no
+Regarding `fill_bytes` / `try_fill_bytes`, the little benchmarking done shows no
 performance impact of returning a `Result`. Handling a `Result` involves some
 additional code complexity, but since this function is mostly of interest to
 cryptographic code wanting a sequence of bytes, and these users are the ones
 requesting error handling, this extra code seems reasonable. It is slightly
-unfortunate that any code using `try_fill` on an infallible PRNG must still do
+unfortunate that any code using `try_fill_bytes` on an infallible PRNG must still do
 error handling or use `unwrap`, but this is probably not a big deal. Therefore
-I believe a `try_fill(..) -> Result<(), Error>` function is sufficient and an
+I believe a `try_fill_bytes(..) -> Result<(), Error>` function is sufficient and an
 infallible `fill_bytes` is not needed.
 
 #### What is the purpose of `CryptoRng`?
@@ -408,7 +407,7 @@ pub trait Rng {
     fn next_u64(&mut self) -> u64;
     
     fn fill_bytes(&mut self, dest: &mut [u8]);
-    fn try_fill(&mut self, dest: &mut [u8]) -> Result<(), Error>;
+    fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), Error>;
 }
 
 pub trait CryptoRng: Rng {}
@@ -431,7 +430,7 @@ pub trait Rng {
 }
 
 pub trait CryptoRng: Rng {
-    fn try_fill(&mut self, dest: &mut [u8]) -> Result<(), Error>;
+    fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), Error>;
 }
 ```
 
@@ -450,7 +449,7 @@ pub trait Rng {
 }
 
 pub trait CryptoRng {
-    fn try_fill(&mut self, dest: &mut [u8]) -> Result<(), Error>;
+    fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), Error>;
 }
 ```
 
@@ -478,7 +477,7 @@ memory overhead). This could be used for a more exotic design like the following
 
 ```rust
 pub trait RawRng<E> {
-    fn try_fill(&mut self, dest: &mut [u8]) -> Result<(), E>;
+    fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), E>;
 }
 
 pub trait Rng: RawRng<!> {
@@ -486,10 +485,10 @@ pub trait Rng: RawRng<!> {
     fn next_u32(&mut self) -> u32;
     fn next_u64(&mut self) -> u64;
     
-    // implement infallible version of try_fill for convenience; optional:
+    // implement infallible version of try_fill_bytes for convenience; optional:
     fn fill_bytes(&mut self, dest: &mut [u8]) {
         // the unwrap is safely eliminated iff error type is not representable:
-        self.try_fill(dest).unwrap_or_else(|e| e)
+        self.try_fill_bytes(dest).unwrap_or_else(|e| e)
     }
 }
 
@@ -507,7 +506,7 @@ Disadvantages:
 
 *   The never type `!` is still unstable (although `Void` is not and should allow the same)
 *   Uses one more trait than other designs, and even more variants when parameterised
-*   Function duplication in `Rng`: `try_fill` and `fill_bytes`; if `try_next_u32`
+*   Function duplication in `Rng`: `try_fill_bytes` and `fill_bytes`; if `try_next_u32`
     were used in `RawRng`, `next_u32` would also be needed in `Rng` (so users
     don't have to do the awkward unwrap)
 
@@ -1074,11 +1073,11 @@ pub trait SeekableRng: Rng {
     /// 
     /// `block` specifies units: `U8` implies bytes, `U32` the number of
     /// `next_u32` calls, etc. Specification is required because some generators
-    /// skip some bits; e.g. `next_u32` may use 64 bits and `try_fill` may
+    /// skip some bits; e.g. `next_u32` may use 64 bits and `fill_bytes` may
     /// round up to the next 32 or 64 bit boundary (or other).
     /// 
     /// If the requested seek position is unavailable the generator may round
-    /// up, skipping bits in the same way as `next_u*` and `try_fill` do.
+    /// up, skipping bits in the same way as `next_u*` and `fill_bytes` do.
     fn seek_to(&mut self, pos: isize, block: SeekBlock) -> usize;
 }
 ```
@@ -1108,6 +1107,14 @@ A vote [showed a preference for `rand-core` over `rand_core`](https://github.com
 The sample implementation was named `rand_core`, but according to this vote
 should be published as `rand-core` instead on acceptance of this RFC.
 
+## Function names: `fill_bytes`
+
+Previously `try_fill_bytes` was called as `try_fill`; the rename is for
+consistency [as pointed out here](https://github.com/dhardy/rand/issues/8#issuecomment-338633414).
+In line with the comment, we could use the names `fill` and `try_fill` instead,
+although this is an unnecessary breaking change. Or we could just use
+`fill_bytes` and `try_fill`.
+
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
@@ -1128,7 +1135,7 @@ There seems no real reason for this aside from the name of the third implying
 that implementations are `Rng`s, on the other hand all three are designed with
 `Rng` in mind and may not have alternative uses. In theory `SeedFromRng` could
 be used to randomly initialise buffers for example, but this can also be done
-via the `gen()` function or `try_fill`.
+via the `gen()` function or `fill_bytes`.
 
 Should we adapt `SeedableRng` for stream support?
 
