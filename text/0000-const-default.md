@@ -42,10 +42,13 @@ An additional minor motivation is also having a way of getting a default constan
 value when dealing with `const fn` as well as generics. For such constexpr +
 generics to work well, more traits may however be required in the future.
 
-## Secondary: To enhance `#[derive_unimpl(Trait)]`
+## Secondary: To enhance `#[derive_unfinished(Trait)]`
+
+[`#[derive_unfinished(Trait)]` and `#[unfinished]` RFC]: https://github.com/Centril/rfcs/blob/rfc/derive-unfinished/text/0000-derive-unfinished.md
+[documentation on associated constants]: https://doc.rust-lang.org/1.16.0/book/associated-constants.html
 
 Traits can contain associated `const`s. An example of such a trait, given in the
-[documentation on associated constants](https://doc.rust-lang.org/1.16.0/book/associated-constants.html) is:
+[documentation on associated constants] is:
 
 ```rust
 trait Foo {
@@ -56,7 +59,7 @@ trait Foo {
 ```
 
 If the compiler is to be able to derive an impl for any such trait for any type
-as proposed by the [`#[derive_unimpl(Trait)]` and `#[unimpl]` RFC](TODO:FIX/PATH/TO/RFC),
+as proposed by the [`#[derive_unfinished(Trait)]` and `#[unfinished]` RFC],
 it must be able to give a value for the traits associated constants, if any. As
 proposed in said RFC, one way of doing so, which covers a lot of cases, is by
 having a notion of a constant default for a type.
@@ -64,7 +67,7 @@ having a notion of a constant default for a type.
 Let us assume that `Foo`, as defined above, is given, as well as:
 
 ```rust
-#[derive_unimpl(Foo)]
+#[derive_unfinished(Foo)]
 struct S;
 
 impl ConstDefault for usize {
@@ -73,16 +76,13 @@ impl ConstDefault for usize {
 ```
 
 The compiler, after having resolved `Foo`, knows that `Foo::ID` is of type
-`usize` and can now rewrite `#[derive_unimpl(Foo)]` on `S` into:
+`usize` and can now rewrite `#[derive_unfinished(Foo)]` on `S` into:
 ```rust
 impl Foo for S {
     const ID: usize = usize::DEFAULT;
 }
 ```
 And thus, the `impl` has been derived as promised.
-
-
-Why are we doing this? What use cases does it support? What is the expected outcome?
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -103,7 +103,7 @@ This trait should be directly used if:
 + you want to be sure that the default value does not depend on the runtime.
 + you want to use the default value in a `const fn`.
 + you want to be able to use the type `T` that is to be `ConstDefault` as the
-type of an associated `const` for a trait `Foo` and then `#[derive_unimpl(Foo)]`
+type of an associated `const` for a trait `Foo` and then `#[derive_unfinished(Foo)]`
 for a type (struct/enum/..) as discussed in [motivation].
 
 You may also, at your leisure, continue using `Default` for type `T` which
@@ -320,12 +320,13 @@ This RFC advocates that the more optimal alteratives are sufficiently far into
 the future that the best course of action is to add `ConstDefault` now and then
 deprecate it when **and if** any of the more optimal alternatives are added.
 
+[RFC 1520]: https://github.com/rust-lang/rfcs/pull/1520
+
 The `ConstDefault` proposed by this RFC was also independently discussed and
-derived in the now closed [RFC 1520](https://github.com/rust-lang/rfcs/pull/1520)
-as what could be achieved with generic consts. The trait was not the actual
-suggestion of the RFC but rather discussed in passing. However, the fact that
-the same identical trait was developed independently gives greater confidence
-in its design.
+derived in the now closed [RFC 1520] as what could be achieved with generic consts.
+The trait was not the actual suggestion of the RFC but rather discussed in passing.
+However, the fact that the same identical trait was developed independently gives
+greater confidence in its design.
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
