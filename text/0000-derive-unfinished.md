@@ -129,8 +129,10 @@ module. But this is in the same module, so we can do better still with:
 struct Alice;
 ```
 
+[`DeriveAnyClass`]: https://downloads.haskell.org/~ghc/8.2.1/docs/html/users_guide/glasgow_exts.html#ghc-flag--XDeriveAnyClass
+
 Some developers using Haskell may be familiar with this feature as the
-`DeriveAnyClass` extension, which let's you do:
+[`DeriveAnyClass`] extension, which let's you do:
 
 ```haskell
 {-# LANGUAGE DeriveAnyClass #-}
@@ -1509,6 +1511,11 @@ impl Foo for ! {}
 
 This assumes that this `impl` follows the coherence rules. Some traits in the
 standard library already have such an `impl`.
+
+## A note for history
+
+This feature is not original to Rust, but heavily inspired by an extension in
+the Glasgow Haskell Compiler (GHC) called [`DeriveAnyClass`].
 
 # Drawbacks
 [drawbacks]: #drawbacks
