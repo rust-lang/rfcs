@@ -44,7 +44,7 @@ generics to work well, more traits may however be required in the future.
 
 ## Secondary: To enhance `#[derive_unfinished(Trait)]`
 
-[`#[derive_unfinished(Trait)]` and `#[unfinished]` RFC]: https://github.com/Centril/rfcs/blob/rfc/derive-unfinished/text/0000-derive-unfinished.md
+["derive unfinished" RFC]: https://github.com/Centril/rfcs/blob/rfc/derive-unfinished/text/0000-derive-unfinished.md
 [documentation on associated constants]: https://doc.rust-lang.org/1.16.0/book/associated-constants.html
 
 Traits can contain associated `const`s. An example of such a trait, given in the
@@ -59,10 +59,10 @@ trait Foo {
 ```
 
 If the compiler is to be able to derive an impl for any such trait for any type
-as proposed by the [`#[derive_unfinished(Trait)]` and `#[unfinished]` RFC],
-it must be able to give a value for the traits associated constants, if any. As
-proposed in said RFC, one way of doing so, which covers a lot of cases, is by
-having a notion of a constant default for a type.
+as proposed by the ["derive unfinished" RFC], it must be able to give a value
+for the traits associated constants, if any. As proposed in said RFC, one way of
+doing so, which covers a lot of cases, is by having a notion of a constant
+default for a type.
 
 Let us assume that `Foo`, as defined above, is given, as well as:
 
