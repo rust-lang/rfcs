@@ -46,7 +46,7 @@ which support is optional on the CPU level. However, the compiler may treat
 even guaranteed-supported instructions as being part of an _instruction set
 extension_ in order to be able to refrain from using them e.g. in kernel-mode
 code to make it unnecessary to save some register upon entering a system
-call. (For example, floating point instruction may be treated as an
+call. (For example, floating point instructions may be treated as an
 _instruction set extension_ by the compiler when the compiler is capable of
 refraining from emitting them e.g. for kernel-mode code even when an FPU
 is a guaranteed part of the CPU architecture.)
