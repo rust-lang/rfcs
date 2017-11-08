@@ -7,10 +7,11 @@
 [summary]: #summary
 
 [RFC 2045][1] defines [`[#target_feature]`][2] as applying only to unsafe
-functions. This RFC allows `[#target_feature]` to apply safe functions but
-makes it unsafe to call a function that has instruction set extensions enabled
-that the caller doesn't have enabled (even if the callee isn't marked
-`unsafe`).
+functions. This RFC allows `[#target_feature]` to apply safe functions outside
+trait implementations but makes it unsafe to call a function that has
+instruction set extensions enabled that the caller doesn't have enabled
+(even if the callee isn't marked `unsafe`). Taking a function pointer to a
+safe function that has `[#target_feature]` is prohibited.
 
 [1]: https://github.com/rust-lang/rfcs/blob/master/text/2133-all-the-clones.md
 [2]: https://github.com/rust-lang/rfcs/blob/master/text/2045-target-feature.md#unconditional-code-generation-target_feature
@@ -37,6 +38,10 @@ about the notion of safety.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
+
+`[#target_feature]` is allowed on `unsafe` functions and safe functions that
+are not part of a trait definition or implementation. Taking a function
+pointer to a safe function that has `[#target_feature]` is not allowed.
 
 Each function has a _set of instruction set extensions_ that it is compliled
 with. It is a set of zero or more _instruction set extension_ is a set of
@@ -114,6 +119,12 @@ such that the _set of instruction set extensions_ of the callee is not a
 subset of the caller (in the standard sense of "subset" where a set is a
 subset of itself).
 
+The compiler must prohibit `[#target_feature]` on safe function in trait
+definitions and implementations.
+
+The compiler must prohibit taking a function pointer to a safe function that
+has `[#target_feature]`.
+
 (Issues related to inlining and ABI on the boundary where the caller and
 callee differ in their _set of instruction set extensions_ are out of scope
 of this RFC, because they already arise from `[#target_feature]` without this
@@ -142,7 +153,15 @@ the callee being declared `unsafe`. However, the precedent in Rust is to use
 `unsafe` for all kinds of `unsafe` instead of having a taxonomy of different
 checks that `unsafe` waives.
 
+As an alternative to prohibiting `[#target_feature]` on safe functions in
+trait definitions or implementations, taking a trait object reference to a
+struct in the case where the trait definition or the struct's implementation
+of the trait contains `[#target_feature]` on safe functions could be
+prohibited. This might be less teachable.
+
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
-None known.
+See the last paragraph of the previous section. Should taking the problematic
+kind of trait object be probibited instead of prohibiting `[#target_feature]`
+on safe functions even in the case of static dispatch?
