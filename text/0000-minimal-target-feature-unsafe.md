@@ -13,7 +13,7 @@ instruction set extensions enabled that the caller doesn't have enabled
 (even if the callee isn't marked `unsafe`). Taking a function pointer to a
 safe function that has `[#target_feature]` is prohibited.
 
-[1]: https://github.com/rust-lang/rfcs/blob/master/text/2133-all-the-clones.md
+[1]: https://github.com/rust-lang/rfcs/blob/master/text/2045-target-feature.md
 [2]: https://github.com/rust-lang/rfcs/blob/master/text/2045-target-feature.md#unconditional-code-generation-target_feature
 
 # Motivation
