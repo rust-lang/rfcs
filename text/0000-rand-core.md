@@ -90,7 +90,7 @@ need to depend on `rand-core` directly. On the other hand,
 some of the traits concerned, such as `Rng` and `SeedableRng`, will be of
 interest to end users and will be documented appropriately.
 
-It is intended that crates publishing RNG implementations will depend on the
+It is intended that crates publishing RNG implementations may depend on the
 `rand-core` crate directly, and not on the `rand` crate.
 
 Crates mainly using integral (especially `u32` and `u64`) or byte sequence
@@ -99,6 +99,37 @@ Crates mainly using integral (especially `u32` and `u64`) or byte sequence
 This may be viable for cryptography-focussed crates, but lacks several useful
 features of `rand`: `thread_rng`, the `ReseedingRng` wrapper, conversion to
 floating point, `Range` distribution, statistical distributions like `Normal`.
+
+## Implementing RNGs
+
+Comment thread: [issue #13](https://github.com/dhardy/rand/issues/13)
+
+RNGs may be implemented by implementing the `Rng` trait from `rand-core`.
+
+It is recommended that RNGs implement the following additional traits:
+
+*   RNGs recommendable for use in cryptography should also implement the
+    `CryptoRng` trait.
+*   RNGs should implement the `Debug` trait with a custom implementation which
+    displays only the struct name (e.g. `write!(f, "IsaacRng {{}}")`). This is
+    to avoid accidentally leaking the state of RNGs (especially cryptographic
+    RNGs) in logs.
+*   RNGs should implement `Clone` if and only if they are entirely
+    deterministic: that is, a clone will output the same sequence as the
+    original generator, assuming no additional perturbation. This implies that
+    RNGs using external resources (e.g. `OsRng`, `ReadRng`) should not implement
+    `Clone`.
+*   RNGs should never implement `Copy` since this makes it easy for users to
+    write incorrect code (inadvertently cloning and reusing part of the output
+    sequence)
+*   Non-deterministic RNGs should not implement `Eq` or `PartialEq`. We also do
+    not encourage deterministic RNGs to implement these traits; they do not
+    appear either useful or harmful. (Tests are recommended to use a short
+    sequence of output to test equivalence, e.g.
+    `for _ in 0..16 { assert_eq!(rng1.next_u32(), rng2.next_u32()); }`.)
+*   We recommend deterministic RNGs implement serialization via `serde`
+    behind a feature gate, as in
+    [rand#189](https://github.com/rust-lang-nursery/rand/pull/189). [TODO]
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
