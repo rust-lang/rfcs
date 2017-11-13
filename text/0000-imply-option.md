@@ -9,9 +9,9 @@
 This is an RFC to reduce common boiler plate code when making use of the `Option` type, providing two functions
 ```
     /// Construct `Some(T)`, conditionally on a boolean.
-    Option<T>::on_pred(bool, T);
+    fn Option::<T>::on_pred(bool, T);
     /// A lazy equivalent of `on_pred`.
-    Option<F: FnOnce() -> T>::lazy_pred(bool, F);
+    fn Option::<F: FnOnce() -> T>::lazy_pred(bool, F);
 ```
 Similar in intention and motivation to the `Try` trait for `Result`.
 
