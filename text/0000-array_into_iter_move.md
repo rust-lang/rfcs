@@ -36,15 +36,18 @@ let v: Vec<_> = (0..5).flat_map(|x| [x, x*2]).collect();
 
 Proposed implementation:
 
-- a type `array::IntoIter` is created. The `array::into_iter` method is implemented.
+- a type `array::IntoIter<T>` is created. The `array::into_iter` method is implemented.
+- 0..32 variant is first implemented using macros, then migrated to const generics once it lands.
 - Inside the method:
   * Wrap the array with `ManuallyDrop`.
   * Create a `IntoIter` struct with contents moved.
 - Inside the iterator:
   * Keep track of valid range (index) and move (`ptr::read`) items out as `next()` is called.
   * Don't forget to drop the items if the iterator itself is dropped in middle. This should be done with `drop_in_place`.
-  
-We should add a lint for redundant Vec in clippy to promote the use of this.
+
+Before this lands, a deprecation warning should be implemented in either rustc or clippy to minimize the breakage. (See below for compatibility issues.)
+
+We should also add a lint for redundant Vec usage (instead of array) in clippy to promote the use of this.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -65,4 +68,4 @@ TBD
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
-- What should the type signature look like? Possibly utilizing const generics.
+TBD
