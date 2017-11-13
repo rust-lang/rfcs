@@ -6,18 +6,25 @@
 # Summary
 [summary]: #summary
 
-This is an RFC to reduce common boiler plate code when making use of the `Option` type. Similar in intention and motivation to the `Try` trait for `Result`.
+This is an RFC to reduce common boiler plate code when making use of the `Option` type, providing two functions
+```
+    /// Construct `Some(T)`, conditionally on a boolean.
+    Option<T>::on_pred(bool, T)
+    /// A lazy equivalent of `on_pred`.
+    Option<F: FnOnce() -> T>::lazy_pred(bool, F)
+```
+Similar in intention and motivation to the `Try` trait for `Result`.
 
 # Motivation
 [motivation]: #motivation
 
-This addition will increase the legibility of code segments and assist in defining the thought processes and motivations of programmers through code. The use cases of this addition are solutions which are expressable in the following predicate form:
+This addition will increase the legibility of code segments and assist in defining the thought processes and motivations of programmers through code. The use cases of this addition are problems which are expressable in the following predicate form:
 ```
     P(x) : Predicate on `x`.
     F(y) : Function on `y`
     P(x) -> F(y)
 ```
-Or the following Rust psudocode:
+Or the following Rust pseudocode:
 ```
     if P(x) {
         Some(F(y))
