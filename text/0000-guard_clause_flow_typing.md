@@ -211,7 +211,9 @@ Combining use of a _Guard Clause_ with a `match` to follow should be taboo _in m
 using two separate systems for implementing the same logic.  So raising an explanatory error on why the
 _Guard Clause_ is not to be intermixed with a `match` should appear.  The `match` not allowing a
 preceding _Guard Clause_ should be considered a style warning and not an incompatible use of code.
-To get rid of that warning they should use something like `#[allow(match_after_guard)]`
+To get rid of that warning they should use something like `#[allow(match_after_guard)]`.  I believe
+it's fine to have `match` still require the path be handled even when a _Guard Clause_ and `allow` have
+been used.
 
 An equivalent from the earlier example which does not use pattern matching is:
 
