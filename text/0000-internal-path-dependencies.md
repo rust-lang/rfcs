@@ -88,6 +88,7 @@ target/package/foo-0.1.0/bar/Cargo.toml
 target/package/foo-0.1.0/bar/Cargo.toml.orig
 target/package/foo-0.1.0/bar/src/lib.rs
 target/package/foo-0.1.0/src/main.rs
+target/package/foo-0.1.0.crate
 ```
 
 All manifest files are sanitized and reside with their original files `*.orig`.
