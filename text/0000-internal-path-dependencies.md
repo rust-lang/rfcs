@@ -126,3 +126,5 @@ workspace and thus make it harder to keep the same versions of dependencies.
         not be published or "public" in any way.
     -   `package.internal=true`?
     -   `dependencies.foo.internal=true`?
+-   No restriction for the versions of internal path dependencies?
+-   How should the manifest files be further sanitized?
