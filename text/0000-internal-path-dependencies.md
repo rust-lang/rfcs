@@ -103,9 +103,9 @@ N/A
 # Drawbacks
 [drawbacks]: #drawbacks
 
-This feature does not affect any existing projects or other functionality of
-cargo. Only the published contents of the package will be changed, i.e. adding
-source files of path dependencies, recursively.
+This feature (in theory) should not affect any existing projects or other
+functionality of cargo. Only the published contents of the package will be
+changed, i.e. adding source files of path dependencies, recursively.
 
 # Rationale and alternatives
 [alternatives]: #alternatives
@@ -125,6 +125,7 @@ workspace and thus make it harder to keep the same versions of dependencies.
     -   Some people think `package.publish=false` means the source code should
         not be published or "public" in any way.
     -   `package.internal=true`?
-    -   `dependencies.foo.internal=true`?
 -   No restriction for the versions of internal path dependencies?
 -   How should the manifest files be further sanitized?
+-   Exclude path dependencies from Cargo.lock (except their external deps)?
+-   How to organize the generated content of `cargo doc`?
