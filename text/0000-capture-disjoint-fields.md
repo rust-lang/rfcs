@@ -21,9 +21,9 @@ let _a = &mut foo.a;
 move || foo.b; // Error! cannot move `foo`
 ```
 
-Note that there is open issue relating to this RFC
-([#19004](https://github.com/rust-lang/rust/issues/19004)) where some discussion
-has already taken place.
+Note that some discussion of this has already taken place:
+- rust-lang/rust#19004
+- [Rust internals forum](https://internals.rust-lang.org/t/borrow-the-full-stable-name-in-closures-for-ergonomics/5387)
 
 # Motivation
 [motivation]: #motivation
@@ -31,10 +31,11 @@ has already taken place.
 In the rust language today, any variables named within a closure will be fully
 captured. This was simple to implement but is inconstant with the rest of the
 language because rust normally allows simultaneous borrowing of disjoint fields.
-Remembering this exception adds to the mental burden of the programmer and
-worsens rust's already terrible learning curve.
+Remembering this exception adds to the mental burden of the programmer and makes
+the rules of borrowing and ownership harder to learn.
 
 The following is allowed; why should closures be treated differently?
+
 ```rust
 let _a = &mut foo.a;
 loop { &mut foo.b; } // ok!
@@ -42,6 +43,7 @@ loop { &mut foo.b; } // ok!
 
 This is a particularly annoying problem because closures often need to borrow
 data from `self`:
+
 ```rust
 pub fn update(&mut self) {
     // cannot borrow `self` as immutable because `self.list` is also borrowed as mutable
@@ -101,6 +103,7 @@ impl FirstDuplicated {
 
 There exists an nonoptimal but trivial desugar/workaround that covers all cases
 via the following expansion:
+
 ```
 capture := [|'&'|'&mut '] ident ['.' ident]*
 
@@ -112,11 +115,13 @@ capture := [|'&'|'&mut '] ident ['.' ident]*
 ```
 
 Applied to the first two examples:
+
 ```rust
 let _a = &mut foo.a;
 let b = &mut foo.b;
 || b;
 ```
+
 ```rust
 let _a = &mut foo.a;
 let b = foo.b;
@@ -127,18 +132,28 @@ This proves that the RFC can be safely implemented without violating any
 existing assumptions. Also, because the compiler would become strictly more
 lenient, it is nonbreaking.
 
-This RFC should not be implemented as such a desugar. Rather, the two following
-changes might be made:
+This RFC should *not* be implemented as such a desugar. Rather, the two
+following changes might be made:
+
 - Borrowck rules are altered so that capture-by-reference allows simultaneous
-  borrowing of disjoint fields.
-- Codegen and borrowck are altered so that move closures capture only used
-  fields.
+  borrowing of disjoint fields. Field references are either individually
+  captured or all captured by a single nonexclusive pointer to the whole struct.
+- Codegen and borrowck are altered so that move closures destructure and capture
+  only used fields when possible. This does require some minimal knowledge of
+  destructuring rules (types that implement `Drop` must be fully moved).
+
+The compiler should resolve captures recursively, always producing the minimal
+capture even when encountering complex cases such as a `Drop` type inside a
+destructurable type.
 
 ## Examples of an ideal implementation
+
+Below are examples of how the compiler might idealy handle various captures:
 
 ```rust
 || &mut foo.a;
 ```
+
 - Borrowck passes because `foo` is not borrowed elsewhere.
 - The closure captures a pointer to `foo.a`.
 
@@ -146,6 +161,7 @@ changes might be made:
 let _a = &mut foo.a;
 || &mut foo.b;
 ```
+
 - Borrowck passes because `foo.a` and `foo.b` are disjoint.
 - The closure captures a pointer to `foo.b`.
 
@@ -153,28 +169,49 @@ let _a = &mut foo.a;
 let _a = &mut foo.a;
 || (&mut foo.b, &mut foo.c);
 ```
+
 - Borrowck passes because `foo.a`, `foo.b`, and `foo.c` are disjoint.
 - The closure captures a pointer to `foo`.
 
 ```rust
 move || foo.a;
 ```
+
 - Borrowck passes because `foo` is not borrowed elsewhere.
-- The closure moves and captures `foo.a` but not `foo.b`.
+- The closure moves and captures `foo.a` but not `foo.b` because `foo` can be
+  destructured.
 
 ```rust
 let _a = &mut foo.a;
 move || foo.b;
 ```
+
 - Borrowck passes because `foo.a` and `foo.b` are disjoint.
-- The closure moves and captures `foo.b`.
+- The closure moves and captures `foo.b` because `foo` can be destructured.
+
+```rust
+move || drop_foo.a;
+```
+
+- Borrowck passes because no part of `drop_foo` is borrowed elsewhere.
+- The closure moves and captures all of `drop_foo` because `drop_foo` implements
+  `Drop`.
+
+```rust
+move || foo.drop_hello.a;
+```
+
+- Borrowck passes because `foo` and no part of `drop_hello` are borrowed
+  elsewhere.
+- The closure moves and captures all of `foo.drop_hello` but not `foo.world`
+  because `drop_hello` implements `Drop` but `foo` does not.
 
 # Drawbacks
 [drawbacks]: #drawbacks
 
 This RFC does ruin the intuition that *all* variables named within a closure are
-captured. I argue that that intuition is not really necessary, and killing it is
-worth the cost.
+captured. I argue that that intuition is not common or necessary enough to
+justify the current approach.
 
 # Rationale and alternatives
 [alternatives]: #alternatives
@@ -189,8 +226,8 @@ difference between inlining and heap allocation.
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
-- How exactly does codegen change?
 - Depending on implementation, captured pointers may no longer be exclusive,
   careful with LLVM hints?
-- Can borrowck be simplified as a result of this RFC?
-- What unresolved questions do people have about this RFC?
+- Do non lexical lifetimes have any bearing on this particular inconvenience?
+- Are detailed error messages required for complex cases (e.g.
+  `foo.drop_hello.a` being captured while `foo.drop_hello.b` is borrowed)?
