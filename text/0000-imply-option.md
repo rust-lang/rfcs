@@ -79,8 +79,14 @@ The Rust addition this RFC suggests can be encapsulated as "If `x` is `true`, I 
 ```
 This RFCs initial proposal for how this addition could be implemented is:
 ```
-    impl OptionWrap for bool {
+    trait OptionWrap {
         /// Wrapper around common if/else boiler plate.
+        fn some_if<T>(self, value: T) -> Option<T>;
+        /// A lazy implementation of `some_if`.
+        fn lazy_if<F>(self, func: F) -> Option<T>;
+    }
+    
+    impl OptionWrap for bool {
         fn some_if<T>(self, value: T) -> Option<T> {
             if self {
                 Some(value)
@@ -88,7 +94,6 @@ This RFCs initial proposal for how this addition could be implemented is:
                 None
             }
         }
-        /// A lazy implementation of `some_if`.
         fn lazy_if<F>(self, func: F) -> Option<T>
             where F: FnOnce() -> T {
             if self {
