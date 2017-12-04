@@ -144,4 +144,5 @@ crate organization below `std` seems odd.
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
-None identified.
+Should any compiler flags or crate attributes implicitly lead to linking
+`no_string` instead of liballoc?
