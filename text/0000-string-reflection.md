@@ -65,9 +65,9 @@ dependency graph.
 [api]: #string-reflection-protocol
 
 Libcore implements the dynamic type check for, and downcasting to the content
-of, the owning string type if such exists in the linkage, a couple of external
-symbols that are linked with the implementation crate by the compiler,
-defined approximately as:
+of, the owning string type if such exists in the linked runtime, using a
+couple of external symbols that are linked with the implementation crate
+by the compiler, defined approximately as:
 
 ```rust
 extern {
@@ -78,7 +78,7 @@ extern {
 
 The exact API of these symbols is considered **unstable**.
 The formulation above ignores any representation issues with passing
-TypeId and fat pointers though the ABI; if necessary, the value types
+`TypeId` and fat pointers though the ABI; if necessary, the value types
 can be despecified to raw repr-friendly forms.
 
 ## String reflection attributes
