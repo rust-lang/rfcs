@@ -9,25 +9,19 @@
 1. Adds the trait `ConstDefault` to libcore defined as:
 
 ```rust
-pub trait ConstDefault { const DEFAULT: Self; }
+pub trait ConstDefault: Default { const DEFAULT: Self; }
 ```
 
 2. Adds impls for all types which are `Default` and where the returned value in
 `default` can be `const`. This includes impls for tuples where all factors are
 `ConstDefault`.
 
-3. Adds the blanket impl `impl<T: ConstDefault> Default for T` and removes all
-prior `Default` impls that overlap.
-
-4. Enables deriving of `ConstDefault` for structs iff all fields are also
-`ConstDefault`. 
+3. Enables deriving of `ConstDefault` for structs iff all fields are also
+`ConstDefault`. When `Default` and `ConstDefault` are derived together,
+`fn default()` is derived as `= Self::DEFAULT`.
 
 # Motivation
 [motivation]: #motivation
-
-The motivation is two-fold.
-
-## Primary
 
 The `Default` trait gives a lot of expressive power to the developer. However,
 `Default` makes no compile-time guarantees about the cheapness of using `default`
@@ -38,51 +32,9 @@ With a default `const` value for a type, the developer can be more certain
 (large stack allocated arrays may still be costly) that constructing the default
 value is cheap.
 
-An additional minor motivation is also having a way of getting a default constant
-value when dealing with `const fn` as well as generics. For such constexpr +
-generics to work well, more traits may however be required in the future.
-
-## Secondary: To enhance `#[derive_unfinished(Trait)]`
-
-["derive unfinished" RFC]: https://github.com/Centril/rfcs/blob/rfc/derive-unfinished/text/0000-derive-unfinished.md
-[documentation on associated constants]: https://doc.rust-lang.org/1.16.0/book/associated-constants.html
-
-Traits can contain associated `const`s. An example of such a trait, given in the
-[documentation on associated constants] is:
-
-```rust
-trait Foo {
-    const ID: usize;
-
-    // other stuff...
-}
-```
-
-If the compiler is to be able to derive an impl for any such trait for any type
-as proposed by the ["derive unfinished" RFC], it must be able to give a value
-for the traits associated constants, if any. As proposed in said RFC, one way of
-doing so, which covers a lot of cases, is by having a notion of a constant
-default for a type.
-
-Let us assume that `Foo`, as defined above, is given, as well as:
-
-```rust
-#[derive_unfinished(Foo)]
-struct S;
-
-impl ConstDefault for usize {
-    const DEFAULT: Self = 0;
-}
-```
-
-The compiler, after having resolved `Foo`, knows that `Foo::ID` is of type
-`usize` and can now rewrite `#[derive_unfinished(Foo)]` on `S` into:
-```rust
-impl Foo for S {
-    const ID: usize = usize::DEFAULT;
-}
-```
-And thus, the `impl` has been derived as promised.
+An additional motivation is having a way of getting a default constant
+value when dealing with `const fn` as well as const generics. For such
+constexpr + generics to work well, more traits may however be required in the future.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -92,7 +44,7 @@ And thus, the `impl` has been derived as promised.
 The following trait:
 
 ```rust
-pub trait ConstDefault {
+pub trait ConstDefault: Default {
     const DEFAULT: Self;
 }
 ```
@@ -102,9 +54,6 @@ is added to `core::default` and re-exported in `std::default`.
 This trait should be directly used if:
 + you want to be sure that the default value does not depend on the runtime.
 + you want to use the default value in a `const fn`.
-+ you want to be able to use the type `T` that is to be `ConstDefault` as the
-type of an associated `const` for a trait `Foo` and then `#[derive_unfinished(Foo)]`
-for a type (struct/enum/..) as discussed in [motivation].
 
 You may also, at your leisure, continue using `Default` for type `T` which
 will yield `<T as ConstDefault>::DEFAULT`. This is especially true if you are
@@ -169,29 +118,40 @@ impl<T: ConstDefault> ConstDefault for [T; 2] {
 }
 ```
 
-## Blanket impl
-
-To reduce repetition in the standard library incurred by all the new `impl`s,
-a blanket impl is added:
-
-```rust
-impl<T: ConstDefault> Default for T {
-    fn default() -> Self {
-        <T as ConstDefault>::DEFAULT
-    }
-}
-```
-
-This blanket `impl` will now conflict with those `Default` `impl`s already in
-the standard library. Therefore, those `impl`s are removed. This incurrs no
-breaking change.
-
 ## Deriving
 
 Just as you can `#[derive(Default)]`, so will you be able to
 `#[derive(ConstDefault)]` iff all of the type's fields implement `ConstDefault`.
 When derived, the type will use `<Field as ConstDefault>::DEFAULT` where
 `Field` is each field's type.
+
+Notably also, since `ConstDefault` implies `Default`, it is a logic error on the 
+part of the programmer for `Self::default() != Self::DEFAULT`, wherefore
+the compiler, when seeing `Default` and `ConstDefault` being derived together
+will emit:
+
+```rust
+impl Default for DerivedForType {
+    fn default() -> Self { Self::DEFAULT }
+}
+```
+
+Assuming a struct with type parameters like `struct Foo<A>(A);`,
+the compiler derives:
+
+```rust
+impl<A: Default> Default for Foo<A> {
+    default fn default() -> Self { Foo(A::default()) }
+}
+
+impl<A: ConstDefault> Default for Foo<A> {
+    fn default() -> Self { Self::DEFAULT }
+}
+
+impl<A: ConstDefault> ConstDefault for Foo<A> {
+    const DEFAULT: Self = Foo(A::DEFAULT);
+}
+```
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -202,7 +162,7 @@ The following is added to `core::default` (libcore) as well as `std::default`
 (stdlib, reexported):
 
 ```rust
-pub trait ConstDefault {
+pub trait ConstDefault: Default {
     const DEFAULT: Self;
 }
 ```
@@ -212,16 +172,25 @@ pub trait ConstDefault {
 Impls are added for all types which are `Default` and where the returned
 value in `<T as Default>::default()` can be `const`.
 
-Many of these `Default`
-impls are generated by macros. Such macros are changed to generate `ConstDefault` 
-impls instead.
+Many of these `Default` `impl`s are generated by macros. Such macros are changed
+to generate `ConstDefault` `impl`s as well as a manually encoded "blanket"
+`impl` instead.
 
 An example of how such a changed macro might look like is:
 
 ```rust
+macro_rules! blanket_impl {
+    ($type: ty) => {
+        impl Default for $type {
+            fn default() -> Self { Self::DEFAULT }
+        }
+    };
+}
+
 macro_rules! impl_cd_zero {
     ($($type: ty),+) => {
         $(
+            blanket_impl!($type);
             impl ConstDefault for $type {
                 const DEFAULT: Self = 0;
             }
@@ -232,6 +201,9 @@ macro_rules! impl_cd_zero {
 impl_cd_zero!(u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize);
 ```
 
+These macros are internal to the standard library which is free to achieve
+equivalent results by other means.
+
 [const generics]: https://github.com/rust-lang/rfcs/blob/master/text/2000-const-generics.md
 [const repeat expressions]: https://github.com/Centril/rfcs/blob/rfc/const-repeat-expr/text/0000-const-repeat-expr.md
 
@@ -240,11 +212,6 @@ If implemented [const generics] and [const repeat expressions] can be used to
 implement the trait for arrays of arbitrary size, otherwise, impls can be
 generated by macro for arrays up to a reasonable size.
 
-## Blanket impl
-
-The blanket impl referred to in [guide-level-explanation] is added and
-overlapping impls are removed.
-
 ## Deriving
 
 The mechanism and rules used for deriving `Default` are reused for `ConstDefault`.
@@ -252,6 +219,12 @@ They are however altered to produce a `const` item in the trait instead of a
 function, and instead of a trait function call, the following is used for a
 factor `Field` of a product type (tuples structs, normal structs - including
 unit structs): `<Field as ConstDefault>::DEFAULT`.
+
+The compiler also handles deriving `ConstDefault` in conjunction with `Default`
+specially by emitting an `impl Default` that uses `Self::DEFAULT`. The compiler
+is however not obliged to do this, since `Self::default() != Self::DEFAULT` must
+always be upheld by the programmer. To not uphold this is a logic error.
+Special-casing might however have some compile-time performance benefits.
 
 ## In relation to "Default Fields"
 
@@ -269,7 +242,7 @@ struct Foo {
 }
 ```
 
-The RFC argues that an alternative to the `const` requirement is to allow the
+That RFC argues that an alternative to the `const` requirement is to allow the
 use of `Default::default()`  instead of just `const` expressions. However,
 since `Default` may incur non-trival runtime costs which are un-predictable,
 this is not the main recommendation of the RFC. As `<T as ConstDefault>::DEFAULT`
@@ -284,9 +257,7 @@ language, for the sake of consistency the same logic should also apply to
 [drawbacks]: #drawbacks
 
 As always, adding this comes with the cost incurred of adding a trait and in
-particular all the impls that come with it in the standard library. A mitigating
-factor in this case is that a lot of impls for `Default` can simply be removed
-and replaced with the blanket impl discussed earlier.
+particular all the impls that come with it in the standard library.
 
 # Rationale and alternatives
 [alternatives]: #alternatives
@@ -309,12 +280,6 @@ b) adding a `const` modifier to bounds. Such a proposal, while useful, is only
 realizable far into the future. In the case of the last alternative,
 Rust must be able to encode bounds for trait `fn`s as well as adding marker trait
 which constrains the `fn`s to be const. This is most likely even more futuristic.
-
-If `T: const Default` is the preferred alternative, this RFC still adds value
-even if `ConstDefault` is not stabilized by satisfying the secondary [motivation]
-regarding `#[derive_unimpl(Foo)]` (if such a proposal is implemented). The trait
-may be used for `#[derive_unimpl(Foo)]` only. This will not leak the then-unstable
-API of `ConstDefault`.
 
 This RFC advocates that the more optimal alteratives are sufficiently far into
 the future that the best course of action is to add `ConstDefault` now and then
