@@ -424,13 +424,73 @@ methods actually follow the rules of `const fn` can now be done separately.
 During type checking of a `const fn`, iff a bound `T: const Trait` exists,
 then the type checking allows the use of `T::trait_method()` inside. This also
 applies to bounds on `impl` which allows associated constants to use such
-functions in their definition site.
+functions in their definition site. For normal `fn`s with a const trait bound,
+any `const` bindings inside the `fn` are now allowed to use `T::trait_method()`.
 
 During unification/substitution of type variables for specific/concrete types,
 a lookup is first done to see if the impl exists. So far so normal. If a const
 trait bound exists, then the `is_const` (which is by default false) flag is
 checked for `true`. If it is `true`, then the type is substituted. Otherwise,
 a typeck error is raised.
+
+## 4.1 Static-dispatch existential types (`impl Trait`)
+
+Introduced syntax: In addition to normal (static-dispatch) existential type
+syntax `-> impl Trait` or `-> impl TraitA + TraitB + ..` you may (now) also
+write `-> impl const Trait` or `-> impl const TraitA + traitB + const TraitC`.
+To aid reading, grouping with parenthesis is possible as:
+`-> impl (const Trait)` or `-> impl (const TraitA) + traitB + (const TraitC)`.
+
+As expected, `-> impl const Trait` entails that the returned type now must,
+in addition to providing an `impl` of the `Trait` for the returned anonymous
+type now also do so by having the impl be constant trait impl as done in
+the following example:
+
+```rust
+fn foo() -> impl const Default + const From<()> {
+    struct X;
+    const impl From<()> for X { fn from(_: ()) -> Self { X } }
+    const impl Default for X  { fn default() -> Self { X } }
+    X
+}
+```
+
+### Type checking
+
+A caller of `foo()` may use the result where a universally quantified bound
+`T: const Default + const From<()>` exists and use the methods of `Default`
+and `From<()>` in a `const` context: `const fn`, associated consts,
+const bindings, and array length size.
+
+## 4.2 Static-dispatch universal quantification
+
+Introduced syntax: In addition to normal anonymous (static-dispatch) universally
+quantified type syntax `argument: impl Trait`, you may (now) also write:
+`argument: -> impl const Trait` as in the following example:
+
+```rust
+const fn foo(universal: impl const Into<usize>) -> usize {
+    universal.into()
+}
+```
+
+### Type checking
+
+In the above example, the behaviour is identical to:
+
+```rust
+const fn foo<T: const Into<usize>>(universal: T) -> usize {
+    universal.into()
+}
+```
+
+and treated as such for type-checking purposes.
+The only difference is that the type `T` is anonymous and may now
+not be reused other than by type alias.
+
+## 4.3 `impl trait` type alias
+
+Introduced syntax: As you may write `type Foo = impl Trait;` you may (now) also write: `type Foo = impl const Trait`.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -442,6 +502,10 @@ syntactically. Some users may wish for a smaller language with fewer features.
 
 - The usefulness of `const impl` can be called into question. However it
 may pull its own weight especially during migration.
+
+- This will lead to increased compile times, but due to semantic compression
+(less code for more intent), compile times can also increase less than it would
+with bifurcation of the trait system. Const trait bounds are cheap to check.
 
 # Rationale and alternatives
 [alternatives]: #alternatives
@@ -482,6 +546,9 @@ ergonomics and developer experience.
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
+- We must be reasonably confident of the soundness of this proposal.
+Some edge cases may still be resolvable prior to stabilization.
+
 - We should decide on the interaction of const trait bounds with existential
 types, both dynamic (trait objects) and static (`impl Trait`). Should the user
 be able to say for example `Box<const Foo>` and `impl const Foo` (perhaps
@@ -489,12 +556,12 @@ instead with the syntax: `impl (const Foo)`)?
 
 - Therefore: Are "const trait objects" sound?
 
-- We must be reasonably confident of the soundness of this proposal.
-Some edge cases may still be resolvable prior to stabilization.
-
 - Should we consider the syntax `const trait Foo { .. }`? The current thinking
 is that it would not carry its weight. It is much more common to define `impl`s
 than `trait`s!
+
+- Does `T: const Trait` specialize `T: Trait`? We can always initially answer
+no to this and then change during stabilization as power is strictly gained.
 
 # Acknowledgements
 [acknowledgements]: #acknowledgements
