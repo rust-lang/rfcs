@@ -636,7 +636,7 @@ Proposal: do nothing now. After the type is made stable, consider adding a
 
 ### Deterministic seeding
 
-#### Current state
+This is an unresolved topic: [issue #18](https://github.com/dhardy/rand/issues/18).
 
 `rand` currently provides the [`SeedableRng`] trait:
 
@@ -647,23 +647,7 @@ pub trait SeedableRng<Seed>: Rng {
 }
 ```
 
-Is the `reseed` function redundant? Probably; there is little if any efficiency
-bonus to re-using an old state; there may be some advantage to crypto-generators
-mixing their old state with a fresh seed instead of replacing the old state,
-but it is not clear that this is what the method should be doing (this is an
-importarnt distinction since the primary use of `SeedableRng` is to reproduce a
-stream of "random" numbers from a given seed).
-
-#### `Seed` as an associated type
-
-The above parameterised trait has a significant draw-back: generic code cannot
-get the seed type or its size, thus generic code can't use
-`SeedableRng::from_seed` for any type `R: SeedableRng`. Since a single seed
-type should be sufficient, we can fix that by using an associated type, and
-asserting that the type used must be `Sized` (i.e. not a slice).
-
-With these considerations in mind, we propose the adjusting `SeedableRng` to
-the following:
+We propose replacing this with:
 
 ```rust
 pub trait SeedableRng: Rng {
@@ -673,6 +657,51 @@ pub trait SeedableRng: Rng {
     // possibly more functions (see below)
 }
 ```
+
+#### `Seed` as an associated type
+
+The current parameterised trait has a significant draw-back: generic code cannot
+get the seed type or its size, thus generic code can't use
+`SeedableRng::from_seed` for a parameterised type `R: SeedableRng`.
+Since a single seed type should be sufficient for generic usage, we can fix
+that by using an associated type, and asserting that the type used must be
+`Sized` (i.e. not a slice).
+
+Note that certain generators may wish to provide other constructors allowing the
+seed to be specified in various ways; e.g. `ChaChaRng` could have multiple
+constructors similar to [Peter Reid's ChaCha library](https://github.com/PeterReid/chacha/blob/master/src/lib.rs#L93).
+These constructors, however, would be specific to the generator and would likely
+require specific names, thus it seems pointless trying to support them in
+`SeedableRng`.
+
+#### Removing `reseed`
+
+The `reseed` and `from_seed` functions do exactly the same thing except that
+`reseed` requires an existing implementation. (In fact, they are required to
+yield the same result: a given PRNG seeded with a given seed should always
+produce the same output.) `from_seed` is significantly more useful, so we
+propose removing `reseed`.
+
+##### Fresh entropy
+
+On a separate topic, a function to "mix fresh entropy into an existing PRNG"
+could be added somewhere (potentially to `SeedableRng`), but it should *not* be
+named `SeedableRng::reseed` to avoid confusion. There has been some discussion
+around such a function, but little attempt to add one, in part because similar
+functionality can be achieved without it:
+
+```rust
+// using generator my_rng: T: SeedableRng
+let fresh = fresh_entropy();
+let existing: T::Seed = my_rng.gen();
+let seed = fresh ^ existing;    // or however you do XOR for this type
+*my_rng = T::from_seed(seed);
+```
+
+TODO
+
+With these considerations in mind, we propose the adjusting `SeedableRng` to
+the following:
 
 #### From `u64`
 
