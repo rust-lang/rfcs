@@ -10,12 +10,19 @@ Allows for:
 
 1. `const fn` in `trait`s.
 
-2. over-constraining trait `fn`s as `const fn` in `impl`s.
+2. over-constraining trait `fn`s as `const fn` in `impl`s. This means that
+you may write `const fn foo(x: usize) -> usize {..}` in the impl even tho the
+trait only required `fn foo(x: usize) -> usize {..}`.
 
-3. syntactic sugar `const impl` for `impl`s where all `fn`s are const.
+3. syntactic sugar `const impl` for `impl`s which is desugared by prefixing
+all `fn`s with `const`.
 
 4. `const` bounds as in `T: const Trait` satisfied by `T`s with only
-`const fn`s in their `impl Trait for T {..}`.
+`const fn`s in their `impl Trait for T {..}`. This means that for any
+concrete `MyType`, you may only substitute it for `T: const Trait` iff
+`impl MyType for Trait { .. }` exists and the only `fn` items inside
+are `const fn`s. Writing `const impl MyType for Trait { .. }`
+satisfies this.
 
 # Motivation
 [motivation]: #motivation
