@@ -22,7 +22,7 @@ Allows for:
 
 This RFC adds a non-trivial amount of expressive power to the language.
 
-Let us go throw the motivation for each bit in order.
+Let us go through the motivation for each bit in order.
 
 ## 1. `const fn` in traits
 
@@ -567,6 +567,6 @@ no to this and then change during stabilization as power is strictly gained.
 [acknowledgements]: #acknowledgements
 
 This RFC was significantly improved by exhaustive and deep discussions with
-fellow rustaceans Ixrec, Alexander "durka" Burka, rkruppe, and Eduard-Mihai
+fellow rustaceans Ixrec, Alex "durka" Burka, rkruppe, and Eduard-Mihai
 "eddyb" Burtescu. I would like thank you for being excellent and considerate
 people.
