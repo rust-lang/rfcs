@@ -230,6 +230,14 @@ and `impl const TraitA + const TraitB`, both for static existential and universa
 quantification (return and argument positiion). However, the RFC does not, in
 its current form, mandate the addition of syntax like `Box<const Trait>`.
 
+The syntax `Box<const Foo>` might seem a bit strange - what would it mean were
+it allowed, semantically? It means that if you have a `bar: T` where `T: Foo`,
+you can only do `Box::new(bar)` iff `T: const Foo` as well. This means that you
+can ensure that a reduced subset of Rust is used when using the dereferenced
+`&(const Foo)`, namely `const fn`s. The value of `Box::new(foo)` is not `const` itself tho.
+
+What does `Box<const Foo>` mean? It means that 
+
 If you try to use a type `MyType` that does not fulfill the `const`ness
 requirement of `T: const MyTrait`, then the compiler will greet you with
 an error message and refuse to compile your program.
@@ -550,6 +558,38 @@ We could of course solve this by requiring the bound to specify exactly what
 since there may be more than one `fn`. It is therefore a recipe for bad
 ergonomics and developer experience.
 
+As an alternative to const trait bounds, type inference could be used to infer
+if a function can be used to executed in constant time or not. This however is
+less explicit and incurs the cost of increased complexity of type inference
+which may negatively impact Rusts already long compile times. In this context
+it should also be noted that the following would not be possible with type
+inference:
+
+```rust
+fn foo<T: Default + Iterator>(bar: T) {
+    // Use the const Default bound:
+    // Type inference can not help us here as there is no way to ensure that
+    // T::default() is const.
+    const BAZ: T = T::default();
+
+    // Use the iterator bound:
+    BAZ.foreach(|elt| { dbg!(elt); });
+}
+```
+
+but is possible with this RFC as in:
+
+```rust
+fn foo<T: const Default + Iterator>(bar: T) {
+    // Use the const Default bound:
+    // We can ensure that T::default() is const.
+    const BAZ: T = T::default();
+
+    // Use the iterator bound:
+    BAZ.foreach(|elt| { dbg!(elt); });
+}
+```
+
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
@@ -569,6 +609,14 @@ than `trait`s!
 
 - Does `T: const Trait` specialize `T: Trait`? We can always initially answer
 no to this and then change during stabilization as power is strictly gained.
+
+- Should we use the syntax `arg: const impl Trait` and `-> const impl Trait`
+instead of `arg: impl const Trait` and `-> impl const Trait`? This reads better
+with `const impl` sugar syntax, but removes the ability to say things such as
+`-> impl TraitA + const TraitB`. We could also allow both syntaxes, one for
+increased readability in the majority of cases (no mixing of `const` and not),
+and the other to have expressive power retained. A possibility for regaining
+expressivity is `-> const impl TraitA + impl TraitB`.
 
 # Acknowledgements
 [acknowledgements]: #acknowledgements
