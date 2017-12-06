@@ -12,7 +12,7 @@ Allows for:
 
 2. over-constraining trait `fn`s as `const fn` in `impl`s.
 
-3. syntactic sugar `const impl` for `impl`s where all fn:s are const.
+3. syntactic sugar `const impl` for `impl`s where all `fn`s are const.
 
 4. `const` bounds as in `T: const Trait` satisfied by `T`s with only
 `const fn`s in their `impl Trait for T {..}`.
@@ -103,13 +103,13 @@ what they entail.
 Simply put, the following is now allowed:
 
 ```rust
-trait Ada {
-    const fn foo<type_params..>(inputs..) -> return_type;
+trait Foo {
+    const fn bar(n: usize) -> usize;
 }
 ```
 
 In other words, `trait`s may now require of their `impl`s that a certain `fn`
-be a `const fn`. Naturally, `foo` will now be type-checked as a `const fn`.
+be a `const fn`. Naturally, `bar` will now be type-checked as a `const fn`.
 
 This is of course not specific to this trait or one method. Any trait,
 including those with type parameters can now have `const fn`s in them,
@@ -150,50 +150,356 @@ Naturally, `default` for `Foo` will now be type-checked as a `const fn`.
 
 ## 3. syntactic sugar `const impl`
 
+In any inherent `impl` (not an impl of a trait), or an `impl` of a trait,
+you may now write:
 
+```rust
+const impl MyType {
+    fn foo() -> usize;
+
+    fn bar(x: usize, y: usize) -> usize;
+
+    // ..
+}
+
+const impl MyTrait for MyType {
+    fn baz() -> usize;
+
+    fn quux(x: usize, y: usize) -> usize;
+
+    // ..
+}
+```
+
+and have the compiler desugar this for you into:
+
+```rust
+impl MyType {
+    const fn foo() -> usize;
+
+    const fn bar(x: usize, y: usize) -> usize;
+
+    // ..
+}
+
+impl MyTrait for MyType {
+    const fn baz() -> usize;
+
+    const fn quux(x: usize, y: usize) -> usize;
+
+    // ..
+}
+```
+
+For the latter case of `const impl MyTrait for MyType`, this always means that
+`MyType` may be used to substitute for `T` in a bound like `T: const MyTrait`.
+
+The compiler will of course now check that the `fn`s are const, and refuse to
+compile your program if you lied to the compiler.
+
+When it comes to migrating existing code to this new model, it is recommended
+that you simply start by adding `const` right before your `impl` and see if it
+still compiles and then continue this process until all `impl`s that can be
+`const impl` are. For those that can't, you can still add `const fn` to some
+`fn`s in the `impl`. The standard library will certainely follow this process
+in trying to make the standard library as (re)useable as possible.
 
 ## 4. `const` trait bounds, `T: const Trait`
 
+Speaking of const trait bounds, what are they? They are simply a bound-modifier
+on a bound `T: Trait` denoted as `T: const Trait` with some changed semantics.
 
+What are the semantics? That any type you substitute for `T` must in addition
+to impl the trait in question, also do so without any normal `fn`s. Any `fn`s
+occuring in the `impl` must be marked as `const fn`. These `impl`s are exactly
+those `impl`s that are currently, or would type check as `const impl`.
 
+A `const Trait` bound gives you the power to use all `fn`s in the trait in a
+`const` context such as in const generics, `const` bindings and in `const fn`s
+in general.
 
+Currently, this RFC also proposes that you be allowed to write `impl const Trait`
+and `impl const TraitA + const TraitB`, both for static existential and universal
+quantification (return and argument positiion). However, the RFC does not, in
+its current form, mandate the addition of syntax like `Box<const Trait>`.
 
+If you try to use a type `MyType` that does not fulfill the `const`ness
+requirement of `T: const MyTrait`, then the compiler will greet you with
+an error message and refuse to compile your program.
 
-Explain the proposal as if it was already included in the language and you were teaching it to another Rust programmer. That generally means:
+Let us now see some, albeit somewhat contrived, examples of `const Trait` bounds.
 
-- Explaining the feature largely in terms of examples.
-- Explaining how Rust programmers should *think* about the feature, and how it should impact the way they use Rust. It should explain the impact as concretely as possible.
-- If applicable, provide sample error messages, deprecation warnings, or migration guidance.
-- If applicable, describe the differences between teaching this to existing Rust programmers and new Rust programmers.
+### Static-dispatch existential quantification
 
-For implementation-oriented RFCs (e.g. for compiler internals), this section should focus on how compiler contributors should think about the change, and give examples of its concrete impact. For policy RFCs, this section should provide an example-driven introduction to the policy, and explain its impact in concrete terms.
+```rust
+fn foo() -> impl const Default + const From<()> {
+    struct X;
+    const impl From<()> for X { fn from(_: ()) -> Self { X } }
+    const impl Default for X  { fn default() -> Self { X } }
+    X
+}
+```
+
+or with alternative and optional syntax:
+
+```rust
+fn foo() -> impl (const Default) + (const From<()>) {
+    struct X;
+    const impl From<()> for X { fn from(_: ()) -> Self { X } }
+    const impl Default for X  { fn default() -> Self { X } }
+    X
+}
+```
+
+### Static-dispatch universal quantification
+
+```rust
+const fn foo(universal: impl const Into<usize>) -> usize {
+    universal.into()
+}
+```
+
+### In a free `fn`
+
+```rust
+fn foo<T: const Default + const Add>(x: T) -> T {
+    T::default() + x
+}
+```
+
+### In bounds on type variables of an `impl` and `trait`
+
+```rust
+trait Foo<X: const From<Self>>: Sized {
+    const fn bar(x: X) -> Self {
+        x.into()
+    }
+}
+
+impl<F: const FnOnce(Self) -> Self> Twice<F> {
+    const fn twice(self, fun: F) -> Self {
+        fun(fun(self))
+    }
+}
+```
+
+We could enumerate a lot more examples - but instead, what you should really
+understand is that anywhere you may write `T: SomeTrait`, you may also write:
+`T: const SomeTrait`.
+
+# How do we teach this?
+
+It should be noted that the concept of a const trait bound is an advanced one.
+As such, it will and should not be one of the early topics that an aspiring
+rustacean will study. These topics should be taught in conjunction with
+and gradually after teaching about free `const fn`s and their inherent siblings.
+However, it should be noted that a user that only knows of `fn` and has never
+heard of `const fn` may still happily and obliviously use a `const impl` or
+overconstrained `const fn`s in impls just as they can with free `const fn`s
+today.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-This is the technical portion of the RFC. Explain the design in sufficient detail that:
+This RFC entails:
 
-- Its interaction with other features is clear.
-- It is reasonably clear how the feature would be implemented.
-- Corner cases are dissected by example.
+1. `const fn` in `trait`s.
 
-The section should return to the examples given in the previous section, and explain more fully how the detailed proposal makes those examples work.
+2. over-constraining trait `fn`s as `const fn` in `impl`s.
+
+3. syntactic sugar `const impl` for `impl`s where all `fn`s are const.
+
+4. `const` bounds as in `T: const Trait` satisfied by `T`s with only
+`const fn`s in their `impl Trait for T {..}`.
+
+Let us unpack each of this one by one and go through their mechanics and
+cooperation.
+
+## 1. `const fn`s in `trait`s
+
+The syntactic rules of `trait` (now) allow `fn`s to be optionally prefixed
+with `const`.
+
+Semantically, a `const fn` inside a `trait MyTrait` requires that any `impl`
+for some type of the trait include that `fn`, and that it must be `const fn`.
+Such trait-mandated `const fn`s are obviously type-checked as `const fn` also.
+Unlike free `const fn`s, those in traits may refer to `self`, `Self`,
+associated types, and constants, syntactically. Type checking (now) takes this
+into account.
+
+A simple example of `const fn`s in a trait is:
+
+```rust
+pub trait Foo {
+    const fn bar(x: usize, y: usize) -> Self;
+
+    const fn baz(self) -> usize;
+}
+```
+
+## 2. over-constraining trait `fn`s as `const fn` in `impl`s
+
+This entails that any trait `impl` may constrain an `fn` in the trait as
+`const fn`. This means that the `impl` is voluntarily opting in to a
+being more restrictions on the `fn`s than the trait required. Other than
+knowing that certain things which `const fn`s forbid are now not used for
+that `fn`, there are other benefits to opting in. The `impl` may opt-in
+for as many trait `fn`s as it likes - zero, one, .. or even all.
+Those over-constrained `fn`s are now type-checked as `const fn`s.
+
+## 3. syntactic sugar `const impl`
+
+Rust (now) allows the user to prefix `impl` with `const` as in this example:
+
+```rust
+const impl Foo {
+    fn bar() -> usize;
+
+    fn baz(x: usize, y: usize) -> usize;
+
+    // ..
+}
+
+const impl Wibble for Wobble {
+    fn wubble() -> usize;
+
+    fn quux(x: usize, y: usize) -> usize;
+
+    // ..
+}
+```
+
+The compiler will desugar the above `impl`s to:
+
+```rust
+impl Foo {
+    const fn bar() -> usize;
+
+    const fn baz(x: usize, y: usize) -> usize;
+
+    // ..
+}
+
+impl Wibble for Wobble {
+    const fn wubble() -> usize;
+
+    const fn quux(x: usize, y: usize) -> usize;
+
+    // ..
+}
+```
+
+## 4. `const` trait bounds, `T: const Trait`
+
+Introduced syntax: in addition to `$ident: $ident` allowed in `where` clauses
+and where type variables are introduced as in for example `impl< $here >` you
+may (now) write `$ident: const $ident`. This is called a const trait bound.
+An example of such a bound is `F: const FnOnce(X) -> Y` as well as
+`D: const Default`.
+
+Semantically, having such a bound means that when a type `MyType` replaces a
+type variable with that bound, it may only do so iff there exists an `impl` of
+the trait for the type that is also a constant `impl`.
+
+What is a constant impl? For an `impl` to be considered constant, the only `fn`s
+it may have are `const fn`s. This coincides with the `const impl` syntax,
+in other words: `const impl` syntax introduces a constant impl. The user may
+however manually prefix `const` before every method and have a valid constant
+impl still.
+
+Since a `T: const Trait` bound entails that any `<T as Trait>::method` be a
+`const fn`. This further entails that `method` may be used within a `const fn`,
+and other `const` contexts such as const-generics, defining the value of
+an associated consttant, etc.
+
+### Type checking
+
+We give a high level description of an algorithm for type checking this idea.
+
+During registration and collection of `impl`s, a check is done whether all `fn`s 
+are prefixed with `const`. This is a purely syntactic check. A flag `is_const`
+is then stored on/associated-with the `impl`. Checking that bodies of the
+methods actually follow the rules of `const fn` can now be done separately.
+
+During type checking of a `const fn`, iff a bound `T: const Trait` exists,
+then the type checking allows the use of `T::trait_method()` inside. This also
+applies to bounds on `impl` which allows associated constants to use such
+functions in their definition site.
+
+During unification/substitution of type variables for specific/concrete types,
+a lookup is first done to see if the impl exists. So far so normal. If a const
+trait bound exists, then the `is_const` (which is by default false) flag is
+checked for `true`. If it is `true`, then the type is substituted. Otherwise,
+a typeck error is raised.
 
 # Drawbacks
 [drawbacks]: #drawbacks
 
-Why should we *not* do this?
+- This is quite a large addition to the language both semantically and
+syntactically. Some users may wish for a smaller language with fewer features.
+
+- The syntax `T: const Trait` may be confused with `const T: usize`.
+
+- The usefulness of `const impl` can be called into question. However it
+may pull its own weight especially during migration.
 
 # Rationale and alternatives
 [alternatives]: #alternatives
 
-- Why is this design the best in the space of possible designs?
-- What other designs have been considered and what is the rationale for not choosing them?
-- What is the impact of not doing this?
+The impact of not using the ideas at the core of the RFC is loss of
+expressive power.
+
+With regards to const trait bounds, we trait system could simply be bifurcated.
+Have one trait for the const version, and one for the normal. This does however
+not scale. It is much better to have a modifier on bounds than many more traits.
+The RFC argues therefore that this design is better compared to introducing
+traits such as:
+
+```rust
+pub trait ConstDefault: Default { const DEFAULT: Self; }
+```
+
+If part 1. of this RFC is not merged, only `fn`s of the form `() -> RegularType`
+may even be used, so full bifurcation would not even be possible then.
+
+The natural companions to const trait bounds are constant impls, without them,
+that part of the proposal wouldn't be nearly as expressive.
+
+We can ask why const trait bounds impose an all-or-nothing proposition and why
+the user is not just obliged to satisfy constness of those particular `fn`s that
+the user of the bound uses. This is due to the fragility of such a system.
+The const trait bound is morally right to at any time use more `fn`s from the
+repertoire of `fn`s at their disposal. But if all `fn`s were not required to
+be `const` and the call site provided a type which only satisfied constness for
+one `fn`, then the type-checker will all of a sudden refuse to give its go-ahead
+and as a result, the program refuses to compile and you have a backwards compatibility breakage.
+
+We could of course solve this by requiring the bound to specify exactly what
+`fn`s are required to be `const`. In practice, this would be tedious to write
+since there may be more than one `fn`. It is therefore a recipe for bad
+ergonomics and developer experience.
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
-- What parts of the design do you expect to resolve through the RFC process before this gets merged?
-- What parts of the design do you expect to resolve through the implementation of this feature before stabilization?
-- What related issues do you consider out of scope for this RFC that could be addressed in the future independently of the solution that comes out of this RFC?
+- We should decide on the interaction of const trait bounds with existential
+types, both dynamic (trait objects) and static (`impl Trait`). Should the user
+be able to say for example `Box<const Foo>` and `impl const Foo` (perhaps
+instead with the syntax: `impl (const Foo)`)?
+
+- Therefore: Are "const trait objects" sound?
+
+- We must be reasonably confident of the soundness of this proposal.
+Some edge cases may still be resolvable prior to stabilization.
+
+- Should we consider the syntax `const trait Foo { .. }`? The current thinking
+is that it would not carry its weight. It is much more common to define `impl`s
+than `trait`s!
+
+# Acknowledgements
+[acknowledgements]: #acknowledgements
+
+This RFC was significantly improved by exhaustive and deep discussions with
+fellow rustaceans Ixrec, Alexander "durka" Burka, rkruppe, and Eduard-Mihai
+"eddyb" Burtescu. I would like thank you for being excellent and considerate
+people.
