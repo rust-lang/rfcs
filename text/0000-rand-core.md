@@ -147,7 +147,7 @@ A summary of the proposed changes:
 
 Details and justification follow.
 
-## Core traits
+## `Rng` and `CryptoRng` traits
 
 Introduce the following new traits:
 
@@ -541,7 +541,7 @@ Disadvantages:
     were used in `RawRng`, `next_u32` would also be needed in `Rng` (so users
     don't have to do the awkward unwrap)
 
-## Default implementations of functions
+### Default implementations of functions
 
 Most of the functions shown above are prototypes only with no default
 implementation, not because we should do this (although it is a reasonable
@@ -584,7 +584,7 @@ several annoying trivial functions (casting or wrapping some provided
 implementation), but there should not end up being a huge number of users
 needing to implement `Rng` (relative to users of `Rng`).
 
-## Native 16-bit and 128-bit support?
+### Native 16-bit and 128-bit support?
 
 Should we add `next_u16` and `next_u128` functions besides
 `next_u32` and `next_u64`?
@@ -632,13 +632,94 @@ Proposal: do nothing now. After the type is made stable, consider adding a
 `next_u128` function to `Rng` with a default implementation in terms of
 `next_u64`, but *only* if there is actual usage for the function.
 
-## Extension traits
+## Constructing and seeding RNGs
+
+Unlikely most data types, PRNGs do not have an "empty" or "initial" state. For
+most uses, RNGs should generate distinct numbers each time, hence PRNGs require
+*seeding*. There are two distinct types of seeding:
+
+*   Using a fixed seed to yield the same output sequence deterministically
+*   Using "fresh entropy" to output an unpredictable and unique number sequence
+
+We use two distinct traits to provide this functionality:
+
+*   [`SeedFromRng`] should be implemented by every PRNG to seed from another RNG
+    (usually an external RNG providing fresh entropy)
+*   [`SeedableRng`] allows seeding using a fixed seed, and should only be
+    implemented by stable PRNGs
+
+### Seeding with fresh entropy
+
+We add the following trait, and recommend that PRNGs implement this but do not
+implement [`Rand`]:
+
+```rust
+pub trait SeedFromRng: Sized {
+    fn from_rng<R: CryptoRng>(rng: R) -> Result<Self, Error>;
+}
+```
+
+This allows seeding with fresh entropy from an external RNG like [`OsRng`] as
+well as from master RNG. For convenient seeding with fresh entropy, we also
+provide [`NewSeeded`] (see later).
+
+`from_rng` returns a `Result` simply to allow forwarding errors from
+`try_fill_bytes`.
+
+#### Why require a `CryptoRng` parent?
+
+Seeding some non-crypto PRNGs from a parent PRNG of the same type can
+[accidentally make one a clone of the other](https://play.rust-lang.org/?gist=6c12ea478440e452b135a6354024a909&version=stable).
+This accidental cloning is impossible for even the weakest crypto RNGs (because
+there should be no trivial way to predict future output from past output).
+Additionally, restricting the parent RNG to a `CryptoRng` ensures the derived
+seed will be of high quality and provides a strong guarantee that all generated
+child PRNGs are independent (if they weren't, this would provide a way to
+predict something about future output of the `CryptoRng` from past output, which
+is not supposed to be possible).
+
+Unfortunately there is a disadvantage: most of the time seeding a non-crypto
+PRNG from another non-crypto PRNG causes no significant issues, so this
+prevents users from using a very small, fast parent PRNG (without hacky wrapper
+types). On the other hand if a user *is* generating many PRNGs from a master
+PRNG, the performance and memory requirements of the master PRNG is unlikely of
+concern (especially since there are quite fast CSPRNGs anyway).
+
+There is another disadvantage: `thread_rng` is commonly used to seed other
+PRNGs. `thread_rng` currently uses ISAAC, which awkwardly is
+unpredictable-but-not-provably-secure. To avoid giving users a tricky problem
+to solve we should mark `thread_rng` as a `CryptoRng`, however, despite the
+[outstanding prize on offer](http://burtleburtle.net/bob/rand/isaacafa.html)
+(since 1998) for an attack against ISAAC, it seems inappropriate to implement
+`CryptoRng` for it. This puts us in a slightly tricky situation. One solution
+would be to add another trait like `NonTrivialRng` as a half-way mark to
+`CryptoRng`, but this is messy. Another would be to
+[replace ISAAC with a better reviewed generator](https://github.com/dhardy/rand/issues/53).
+If we do not resolve this, we should allow `from_rng` to use any parent
+implementing `Rng` (TODO).
+
+#### Why not `Rand`?
+
+Given that [`Rand`] is already implemented by existing generators, why change
+things? First, crate separation: `Rand` is part of the `rand` crate and to be
+effective must have a whole bunch of implementations for built-in and `std`
+types within the same crate; we wish to allow RNG implementations using only
+the much smaller `rand-core` crate. Second, documentation: having a trait
+expressely for seeding-from-RNGs allows us to document how it should be
+implemented and potential pit-falls for users. Third, PRNGs are a little bit
+special and it's useful to be clear about when new instances are created;
+`SomeRng::from_rng(parent_rng)` is clearer than `parent_rng.gen()`. Fourth,
+this allows the requirement to use a `CryptoRng` parent as explained above.
+
+There is a significant drawback to this: breaking code for existing users. But
+this is only an issue where users explicitly create a new PRNG themselves
+rather than use `thread_rng()` or `weak_rng()`, and is easy to fix.
 
 ### Deterministic seeding
 
-This is an unresolved topic: [issue #18](https://github.com/dhardy/rand/issues/18).
+Discussion topic: [issue #18](https://github.com/dhardy/rand/issues/18).
 
-`rand` currently provides the [`SeedableRng`] trait:
+`rand` currently provides this [`SeedableRng`] trait:
 
 ```rust
 pub trait SeedableRng<Seed>: Rng {
@@ -651,12 +732,23 @@ We propose replacing this with:
 
 ```rust
 pub trait SeedableRng: Rng {
-    type Seed;
-    fn from_seed(&mut self, Self::Seed);
+    type Seed: From<SomeHash>;
     
-    // possibly more functions (see below)
+    fn from_seed(seed: Self::Seed) -> Self;
+    
+    fn from_hashable<T: Hashable>(x: T) -> Self {
+        let seed = SomeHash::hash_fixed(x).into();
+        Self::from_seed(seed)
+    }
 }
 ```
+
+Here:
+
+*   `SomeHash` is an as-yet undecided hash function (must be fixed)
+*   `From<SomeHash>` finalizes the hash state and converts to output of one of
+    the following types: `[u8; 8]`, `[u8; 16]`, `[u8; 32]`. This constrains
+    which seed types can be used.
 
 #### `Seed` as an associated type
 
@@ -667,12 +759,52 @@ Since a single seed type should be sufficient for generic usage, we can fix
 that by using an associated type, and asserting that the type used must be
 `Sized` (i.e. not a slice).
 
+We require the seed to be a byte-slice (e.g. `[u8; 8]` not `u64`) because this
+avoids endianness issues, helping avoid portability problems.
+
 Note that certain generators may wish to provide other constructors allowing the
 seed to be specified in various ways; e.g. `ChaChaRng` could have multiple
 constructors similar to [Peter Reid's ChaCha library](https://github.com/PeterReid/chacha/blob/master/src/lib.rs#L93).
 These constructors, however, would be specific to the generator and would likely
 require specific names, thus it seems pointless trying to support them in
 `SeedableRng`.
+
+#### Seeding from a `Hashable`
+
+To properly seed a PRNG for cryptographical uses, one should use `from_seed`
+with a strong seed or `from_rng`. For uses where a crypto-strength seed is not
+required, we provide `from_hashable` as a convenient way to seed a PRNG with a
+seed with good bit-distribution. This function achieves two things at once:
+
+*   Allowing seeding from many different types of input, e.g. strings and simple
+    numbers
+*   Converting input of arbitrary length and possibly highly biased
+    bit-distribution to a seed of the required length with good bit-distribution
+
+In theory good PRNGs should produce high-quality random numbers with any seed,
+but this is not always the case. Some PRNGs (e.g. MT19937) initially produce
+low-quality output when using a seed which is mostly zeros, and some PRNGs (e.g.
+Xorshift and Xoroshiro) explicitly fail when the seed is zero. By using a hash
+function to produce a seed with good bit-distribution and good avalanche (small
+changes to input cause large changes to output) we reduce the chance of users
+providing weak input (e.g. a key phrase from a user) getting statistically poor
+output, and we also allow the whole input to have an effect on the output.
+
+The hash function `SomeHash` will be fixed in the code, since it is intended to
+be used where reproducible seeds are required. We also make it public and the
+body of `from_hashable` very simple to allow users to generate compatible seeds
+in their own code, if desired.
+
+Note that this function is not intended for cryptographic uses, e.g. converting
+a password to a secure sequence of random numbers. Specific hash functions
+like Argon2 exist for passwords; besides being cryptographically secure
+(meaning recovering input from output or finding clashes is computationally
+infeasible), these are designed to be slow and/or memory intensive to make
+brute-force attacks hard, and potentially also to make sideband attacks looking
+at memory access patterns ineffective. The hash function for `from_hashable` is
+not required to have any of these properties.
+
+Hash functions currently under consideration: MetroHash, SeaHash, HighwayHash.
 
 #### Removing `reseed`
 
@@ -682,64 +814,22 @@ yield the same result: a given PRNG seeded with a given seed should always
 produce the same output.) `from_seed` is significantly more useful, so we
 propose removing `reseed`.
 
-##### Fresh entropy
-
-On a separate topic, a function to "mix fresh entropy into an existing PRNG"
+On a related topic, a function to "mix fresh entropy into an existing PRNG"
 could be added somewhere (potentially to `SeedableRng`), but it should *not* be
 named `SeedableRng::reseed` to avoid confusion. There has been some discussion
 around such a function, but little attempt to add one, in part because similar
-functionality can be achieved without it:
-
-```rust
-// using generator my_rng: T: SeedableRng
-let fresh = fresh_entropy();
-let existing: T::Seed = my_rng.gen();
-let seed = fresh ^ existing;    // or however you do XOR for this type
-*my_rng = T::from_seed(seed);
-```
-
-TODO
-
-With these considerations in mind, we propose the adjusting `SeedableRng` to
-the following:
-
-#### From `u64`
-
-Having a standard way of seeding any RNG from a `u64` could be useful; this does
-not include enough bits for cryptography, but is convenient for many uses where
-reproducibility is important (sims and games), and as
-[pitdicker argues](https://github.com/rust-lang/rfcs/pull/2152#issuecomment-330489156)
-has enough bits that accidental collision of random seeds is very unlikely.
-
-Thus we propose adding the following function to `SeedableRng`, but only if
-`Seed` is made an associated type (if not, this should be in a separate
-unparameterised trait):
-
-```rust
-    fn seed_from_u64(seed: u64) -> Self;
-```
+functionality can be achieved without it (e.g. generate two seeds, one using the
+current PRNG and one using an external RNG, then XOR the two and seed from the
+result).
 
 #### Streams
 
-One thing this trait does miss is support for [multiple streams]. Although this
-could be supported by implementing for a `Seed` type like `([u32; 4], u32)`,
-this is untidy and inconsistent. I suggest changing the functions to the
-following (but am not certain this is a good plan):
-
-```rust
-pub trait SeedableRng<Seed>: Rng {
-    fn reseed(&mut self, Seed, stream: u64);
-    fn from_seed(seed: Seed, stream: u64) -> Self;
-    fn num_streams() -> u64;
-}
-```
-
-For consistency between generators, streams should probably be selected using
-`stream % num_streams()`. The `num_streams()` function may not be needed so
-long as RNGs document how many unique streams are available.
-
-Alternatively, we could ignore streams for normal seeding, but expect all
-generators support a fixed type like `(u64, u64)`.
+One thing this trait does miss is support for explicitly selecting from
+[multiple streams]. Explicit selection of stream may not be very important
+however, as the primary use for multiple streams would appear to be reducing
+the probability of two randomly seeded generators having any overlap in their
+output sequences (assuming long sequences of output are used), and this can be
+achieved by using part of the seed to select the PRNG stream.
 
 #### Implementation guidelines
 
@@ -749,46 +839,13 @@ algorithm will be adjusted in the future). This implies that `StdRng` should not
 implement `SeedableRng` because the underlying generator may be changed; also,
 output is platform-dependent (currently it may be `IsaacRng` or `Isaac64Rng`).
 
-#### Alternatives
-
-We could use `u32` instead of `u64` for the stream selector and standard seed
-type. Probably either is fine.
-
-Existing `Seed` types used by implementations are `[u32; 4]`, `&[u32]` and
-`&[u64]`. The intention of using slices is to allow partial seeding; it is
-perfectly valid for these PRNGs to have some (or even all) of their state seeded
-to 0. The disadvantages of this are that seed types are inconsistent between
-generators and are not `Sized`, so cannot be generated by [`Rand`] or similar
-without also specifying a size. We could instead suggest implementation only
-for `Sized` types, or for a `Sized` type *and* a byte-slice (`&[u8]`).
-
-We could move the `Seed` type from a trait parameter to an associated type:
-
-```rust
-pub trait SeedableRng: Rng {
-    type Seed;
-    ..
-}
-```
-
-Personally I would rather not do this: it prevents implementation of
-`SeedableRng` for multiple types.
-
-Instead of using a generic `Seed` type, we could have multiple versions of
-`SeedableRng` each with their own fixed seed type, e.g. one for `u64` or
-`(u64, u64)` for simple specification (optionally with stream support), and
-another for `&[u8]` allowing seeding from arbitrary byte slices (possibly with
-a function `fn seed_len() -> u32` to specify the ideal seed length in bytes).
-We could do this in addition to a generic version of `SeedableRng` taking the
-full seed as a `Sized` type, or even without this.
-
-### Creation of securely-seeded RNGs
+### Support function: seeding with fresh entropy
 
 Often, PRNGs are seeded from "somewhat random" sources such as the system
-clock. Rust's `rand` tries to make the best option easy by making it possible
-to construct random number generators from the system generator, e.g. the
-[`ChaChaRng`] type supports the [`Rand`] trait. This makes it possible to
-construct a securely seeded `ChaChaRng` with:
+clock. We try to make the best option easy by giving all PRNGs a `new()`
+function which seeds with strong, fresh entropy.
+
+Note that roughly the same functionality is already available in `rand`:
 
 ```rust
 use rand::{Rng, OsRng, ChaChaRng};
@@ -797,64 +854,40 @@ use rand::{Rng, OsRng, ChaChaRng};
 let mut rng: ChaChaRng = OsRng::new().unwrap().gen();
 ```
 
-This RFC seeks to introduce an alternative:
+We wish to make this slightly easier:
 
 ```rust
-// items may be moved to other crates, but for now at least are accessible here:
 use rand::{ChaChaRng, NewSeeded};
 
 // new() returns a Result
 let mut rng = ChaChaRng::new().unwrap();
 ```
 
-Here, `NewSeeded` is a trait providing the `new` function. It is automatically
-implemented for any type implementing `SeedFromRng`:
+Here, `NewSeeded` is a trait providing just the `new` function. It is
+automatically implemented for any type implementing `SeedFromRng`:
 
 ```rust
-/// Support mechanism for creating securely seeded objects 
-/// using the OS generator.
-/// Intended for use by RNGs, but not restricted to these.
-/// 
-/// This is implemented automatically for any PRNG implementing `SeedFromRng`,
-/// and for normal types shouldn't be implemented directly. For mock generators
-/// it may be useful to implement this instead of `SeedFromRng`.
+/// Seeding mechanism for PRNGs, providing a `new` function.
+/// This is the recommended way to create (pseudo) random number generators,
+/// unless a deterministic seed is desired (in which case the `SeedableRng`
+/// trait should be used directly).
 #[cfg(feature="std")]
-pub trait NewSeeded: Sized {
-    /// Creates a new instance, automatically seeded via `OsRng`.
+pub trait NewSeeded: SeedFromRng {
     fn new() -> Result<Self>;
 }
 
 #[cfg(feature="std")]
 impl<R: SeedFromRng> NewSeeded for R {
     fn new() -> Result<Self> {
-        let mut r = OsRng::new()?;
-        Self::from_rng(&mut r)
+        ...
     }
 }
 ```
 
-The above code should be included in `rand`, not `rand-core`. Later, if `OsRng`
-gets moved to its own crate, this code could be moved there (for discussion in
-a new RFC). The `SeedFromRng` type, on the other hand, needs to be in
-`rand-core`:
-
-```rust
-/// Support mechanism for creating random number generators seeded by other
-/// generators. All PRNGs should support this to enable `NewSeeded` support,
-/// which should be the preferred way of creating randomly-seeded generators.
-pub trait SeedFromRng: Sized {
-    /// Creates a new instance, seeded from another `Rng`.
-    fn from_rng<R: Rng+?Sized>(rng: &mut R) -> Result<Self>;
-}
-```
-
-It is possible for types to implement `NewSeeded` directly if they do not
-implement `SeedFromRng`. This may be of use to mock RNGs but is probably not
-widely useful.
-
-(Note: both `NewSeeded` and `SeedFromRng` could be restricted to types
-implementing `Rng`; the current traits do not do this, allowing usage by things
-which are not RNGs. This is probably fine.)
+`NewSeeded` is essentially just a function, provided as a trait to allow
+`MyType::new()` syntax. It cannot be overridden by users. Internally it uses a
+strong entropy source (`OsRng` or, as a fallback, the new `JitterRng`) and
+constructs the PRNG via `from_rng`.
 
 #### Rationale for `SeedFromRng` and `NewSeeded`
 
@@ -882,39 +915,6 @@ reasons:
     [`Distribution`] could offer similar functionality, but these traits all
     deal with converting RNG output to other types, which (in my opinion)
     should be an extra layer built on top of (and independent from) `rand-core`
-
-#### Alternatives
-
-We may wish to tweak `SeedFromRng::from_rng` to only accept source RNGs of
-type `CryptoRng` (or if we have it, `NonTrivialRng` or similar). Why? Seeding
-some non-crypto RNGs this way can [accidentally make one a clone of the other](https://play.rust-lang.org/?gist=6c12ea478440e452b135a6354024a909&version=stable).
-This accidental cloning is impossible for even the weakest crypto RNGs (because
-there should be no trivial way to predict future output from past output).
-(The reason this is an "alternative" and not the default is because the question
-of what exactly `CryptoRng` should mean needs an answer before we try to use
-it.)
-
-We could require implementation of `SeedableRng<&mut Rng>` or
-`impl<R: Rng> SeedableRng<R> for MyRng` instead. Note that the former does not
-allow static-dispatch and the latter appears to conflict with any other
-implementation of `SeedableRng<T>` even for fixed `T` not implementing `Rng`
-(this may be a bug).
-
-We could try to directly implement `NewSeeded` for any PRNG supporting
-`SeedableRng` where the `Seed` type can be generated by [`Rand`] or some
-distribution. This can only be implemented automatically (via a generic impl
-rule) if the `Seed` type is an associated type and is `Sized`;
-this implies some of the current impls must be changed (e.g. `ChaChaRng`
-impls `SeedableRng<&[u32]>`, which does not have a fixed size `Seed`) and
-also that no PRNG can support `SeedableRng` for multiple seed types.
-
-We might also wish to rename `NewSeeded` and/or its `new` function to emphasise
-that this seeds the RNG from the OS. (It is possible some users may create an
-alternative for their own uses, e.g. seeding from a single master generator for
-reproducibility or seeding from some other source for embedded
-applications without an OS source.) Never-the-less, `NewSeeded` should be the
-default way to create any new RNG, so it and `new` should have simple short
-names.
 
 ## Error handling
 [error-handling]: #error-handling
