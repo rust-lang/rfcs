@@ -549,12 +549,12 @@ ergonomics and developer experience.
 - We must be reasonably confident of the soundness of this proposal.
 Some edge cases may still be resolvable prior to stabilization.
 
-- We should decide on the interaction of const trait bounds with existential
-types, both dynamic (trait objects) and static (`impl Trait`). Should the user
-be able to say for example `Box<const Foo>` and `impl const Foo` (perhaps
-instead with the syntax: `impl (const Foo)`)?
-
-- Therefore: Are "const trait objects" sound?
+- We should decide on the interaction of const trait bounds with trait objects.
+Should the user be able to say for example `Box<const Foo>`? While very little
+expressive power is gained through this (you get to restrict what `&(const Foo)` 
+may do by only allowing calls to `const fn`s), `&'static (const Foo)` may be
+more useful - and then, for the sake of not special casing, `Box<const Foo>`
+should be allowed.
 
 - Should we consider the syntax `const trait Foo { .. }`? The current thinking
 is that it would not carry its weight. It is much more common to define `impl`s
