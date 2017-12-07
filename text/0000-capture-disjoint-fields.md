@@ -101,11 +101,11 @@ impl FirstDuplicated {
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-There exists an nonoptimal but trivial desugar/workaround that covers all cases
-via the following expansion:
+There exists an nonoptimal desugar/workaround that covers all cases via the
+following expansion:
 
 ```
-capture := [|'&'|'&mut '] ident ['.' ident]*
+capture := [|'&'|'&mut '] ident ['.' moveable_ident]*
 
 '|' args '|' [$e($c:capture):expression]* =>
 '{'
@@ -198,13 +198,37 @@ move || drop_foo.a;
   `Drop`.
 
 ```rust
-move || foo.drop_hello.a;
+let _hello = &foo.hello;
+move || foo.drop_world.a;
 ```
 
-- Borrowck passes because `foo` and no part of `drop_hello` are borrowed
-  elsewhere.
-- The closure moves and captures all of `foo.drop_hello` but not `foo.world`
-  because `drop_hello` implements `Drop` but `foo` does not.
+- Borrowck passes because `foo.hello` and `foo.drop_world` are disjoint and no
+  part of `drop_world` is borrowed elsewhere.
+- The closure moves and captures all of `foo.drop_world` but not `foo.hello`
+  because `drop_world` implements `Drop` but `foo` does not.
+
+## Example errors
+
+```rust
+let _foo_again = &mut foo;
+|| &mut foo.a;
+```
+
+- Borrowck fails because `_foo_again` and `foo.a` intersect.
+
+```rust
+let _a = foo.a;
+|| foo.a;
+```
+
+- Borrowck fails because `foo.a` has already been moved.
+
+```rust
+let _a = drop_foo.a;
+move || drop_foo.b;
+```
+
+- Borrowck fails because `drop_foo` can not be destructured.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -228,6 +252,9 @@ difference between inlining and heap allocation.
 
 - Depending on implementation, captured pointers may no longer be exclusive,
   careful with LLVM hints?
+- How can safe MIR be generated when capturing non-exclusive pointers
+  (dereferenced disjointly)?
+  - Use refinement typing?
 - Do non lexical lifetimes have any bearing on this particular inconvenience?
 - Are detailed error messages required for complex cases (e.g.
-  `foo.drop_hello.a` being captured while `foo.drop_hello.b` is borrowed)?
+  `foo.drop_world.a` being captured while `foo.drop_world.b` is borrowed)?
