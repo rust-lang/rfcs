@@ -121,21 +121,21 @@ as a another parameter with a fixed type. For example `trait Shl<RHS, Result>` w
 `RHS = usize` in  all implementations. Specifically:
 
 ```rust
-impl Shl<usize, int> for int
+impl Shl<usize, isize> for isize
 impl Shl<usize, i8> for i8
 impl Shl<usize, usize> for usize
 impl Shl<usize, u8> for u8
 ...
 ```
 
-`newtype Inch = int` would implement `Shl<usize, Inch>` but `newtype Inch = usize`
+`newtype Inch = isize` would implement `Shl<usize, Inch>` but `newtype Inch = usize`
 would implement `Shl<Inch, Inch>`, which is not what we want.
 
 A solution would be to allow `Self` in trait implementations. This would require
 us to change `Shl` to:
 
 ```rust
-impl Shl<usize, Self> for int
+impl Shl<usize, Self> for isize
 impl Shl<usize, Self> for i8
 impl Shl<usize, Self> for usize
 impl Shl<usize, Self> for u8
@@ -218,16 +218,16 @@ specify which traits to derive.
 * `as` could be used to convert from a newtype to the underlying value:
 
     ```rust
-    struct Inch(int);
+    struct Inch(isize);
 
     let v: Inch = Inch(10);
-    println!("inches: {}", v as int);
+    println!("inches: {}", v as isize);
     ```
 
     But we still need to explicitly cast when using generic functions:
 
     ```rust
-    let dist = Inch(calc_distance(start_inch as int, end_inch as int));
+    let dist = Inch(calc_distance(start_inch as isize, end_inch as isize));
     ```
 
     It also loses type safety.
