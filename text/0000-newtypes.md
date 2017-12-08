@@ -1,3 +1,4 @@
+- Feature Name: semantic_newtypes
 - Start Date: 2014-07-26
 - RFC PR #: (leave this empty)
 - Rust Issue #: (leave this empty)
@@ -43,7 +44,7 @@ let not_allowed = calc_distance(start_inch, end_cm);
 ```
 
 This is verbose, but at least the types don't mix.
-We could explicitly define traits for the types, but that's duplication
+We could explicitly define traits for the types, but that's a lot of duplication
 if we want the same capabilities as the underlying type. Additionally, if
 someone defines a custom trait in a downstream crate for an upstream type, we
 any users of our newtype would not be able to use the newtype where the
@@ -61,7 +62,29 @@ let cm: Cm = 2;
 let oops = inch + cm; // not safe!
 ```
 
-# Detailed design
+# Guide-level explanation
+
+Imagine you have many `Vec`s in your code that are all indexeable by some
+different kind of id. As a small example, you have a `Vec<User>` and a `Vec<Pet>`.
+If you get a `usize` for a userid, you can accidentally use it to index the
+`Vec<Pet>`. Since these ids have nothing in common, it might be desirable to
+make sure that you have a custom id type that cannot be confused with any other
+id type:
+
+```rust
+type UserIndex is new usize;
+// assume TVec is essentially `Vec` with a generic arg for the index type
+type UserVec is new TVec<UserIndex, User>;
+type PetIndex is new usize;
+type PetVec is new TVec<PetIndex, Pet>;
+
+fn foo(&mut self, u: UserIndex, p: PetIndex) {
+    self.users[p].pets.add(u); // ERROR users array can only be indexed by UserIndex
+    self.users[u].pets.add(p); // correct
+}
+```
+
+# Reference-level explanation
 
 Steal the `is new` syntax from Ada's newtypes by extending type aliases
 declarations with the `type` keyword.
@@ -185,13 +208,20 @@ the trait and inherent implementations of the base type are reused.
 
 It adds a new contextual keyword pair to the language and increases the language complexity.
 
-Automatically deriving all traits may not make sense in some cases.
-For example deriving multiplication for `Inch` doesn't make much sense, as it would
-result in `Inch * Inch -> Inch` but semantically `Inch * Inch -> Inch^2`.
+This requires nontrivial implementation work in the compiler and will touch
+essentially the entire compilation pipeline.
 
-This is a deficiency in the design and may be addressed by allowing overwriting
-trait implementations on newtypes. Such a change would be strictly backwards
-compatible in the language, even if not for libraries.
+Automatically deriving all traits may not make sense in some cases. For example
+deriving multiplication for `Inch` doesn't make much sense, as it would result
+in `Inch * Inch -> Inch` but semantically `Inch * Inch -> Inch^2`. This is a
+deficiency in the design and may be addressed by allowing overwriting trait
+implementations on newtypes. Such a change would be strictly backwards
+compatible in the language, even if creating overwriting trait impls won't be
+backwards compatible for libraries.
+
+Types like `Vec<T>` can't have their index type overwritten by a newtype. With
+the increased availability of newtypes this could be resolved by a new generic
+argument to `Vec`, which defaults to `usize` and requires an `Into<usize>` impl.
 
 # Alternatives
 
@@ -222,9 +252,12 @@ compatible in the language, even if not for libraries.
 
 * Keep it the same
 
-    It works, but life could be simpler. The staggering amount of workarounds and
+    It works, but life could be simpler. The amount of workarounds, macros and
     complaints about it seem to suggest that something needs to be done. Even
     the compiler itself uses generated newtypes extensively for special `Vec`s that
     have a newtype index type instead of `usize`.
 
 # Unresolved questions
+
+* Conversion from basetype to newtype and vice versa not via `From`?
+    * might cause accidental usage of basetype where newtype was expected (e.g. in heavily generic code)
