@@ -4,7 +4,7 @@
 
 # Summary
 
-Introduce a `newtype` construction allowing newtypes to use the
+Introduce a newtype construction allowing newtypes to use the
 capabilities of the underlying type while keeping type safety.
 
 # Motivation
@@ -44,7 +44,10 @@ let not_allowed = calc_distance(start_inch, end_cm);
 
 This is verbose, but at least the types don't mix.
 We could explicitly define traits for the types, but that's duplication
-if want the same capabilities as the underlying type.
+if we want the same capabilities as the underlying type. Additionally, if
+someone defines a custom trait in a downstream crate for an upstream type, we
+any users of our newtype would not be able to use the newtype where the
+downstream trait is used as a bound.
 
 Another option is to use the `type` keyword, but then we loose type safety:
 
@@ -60,15 +63,15 @@ let oops = inch + cm; // not safe!
 
 # Detailed design
 
-Introduce a new keyword: `newtype`. It introduces a new type, inheriting the
-trait implementations from the underlying type, but keeping the types separate.
+Steal the `is new` syntax from Ada's newtypes by extending type aliases
+declarations with the `type` keyword.
 
 ```rust
-newtype Inch = usize;
-newtype Cm = usize;
+type Inch is new usize;
+type Cm is new usize;
 
 // We want to do generic manipulations
-fn calc_distance<T: Sub<T, T>>(start: T, end: T) -> T {
+fn calc_distance<T: Sub>(start: T, end: T) -> T {
     end - start
 }
 
@@ -83,27 +86,27 @@ let cm_dist = calc_distance(start_cm, end_cm);
 
 println!("dist: {} and {}", inch_dist, cm_dist);
 
-// Disallowed compile time
+// Disallowed at compile time
 let not_allowed = calc_distance(start_inch, end_cm);
 ```
 
-It would also allow generics, like `type`:
+It would also allow generics:
 
 ```rust
 struct A<N, M> { n: N, m: M }
-newtype B<T> = A<usize, T>;
+type B<T> is new A<usize, T>;
 
 let b = B { n: 2u, m: "this is a T" };
 ```
 
-It would not be possible to use the `newtype` in place of the parent type,
+It would not be possible to use the newtype in place of the parent type,
 we would need to resort to traits.
 
 ```rust
 fn bad(x: usize) { ... }
 fn good<T: Sub>(x: T) { ... }
 
-newtype Foo = usize;
+type Foo is new usize;
 let a: Foo = 2;
 bad(a); // Not allowed
 good(a); // Ok, Foo implements Sub
@@ -113,132 +116,115 @@ good(a); // Ok, Foo implements Sub
 
 In the derived trait implementations the basetype will be replaced by the newtype.
 
-So for example as `usize` implements `Add<usize, usize>`, `newtype Inch = usize`
-would implement `Add<Inch, Inch>`.
-
-This would present a problem when we have a specialization with the same parameter
-as a another parameter with a fixed type. For example `trait Shl<RHS, Result>` where
-`RHS = usize` in  all implementations. Specifically:
-
-```rust
-impl Shl<usize, isize> for isize
-impl Shl<usize, i8> for i8
-impl Shl<usize, usize> for usize
-impl Shl<usize, u8> for u8
-...
-```
-
-`newtype Inch = isize` would implement `Shl<usize, Inch>` but `newtype Inch = usize`
-would implement `Shl<Inch, Inch>`, which is not what we want.
-
-A solution would be to allow `Self` in trait implementations. This would require
-us to change `Shl` to:
-
-```rust
-impl Shl<usize, Self> for isize
-impl Shl<usize, Self> for i8
-impl Shl<usize, Self> for usize
-impl Shl<usize, Self> for u8
-...
-```
-
-Then `newtype Inch = usize` would implement `Shl<usize, Inch>`.
-
-`Self` in trait implementations might require a new RFC.
+So for example as `usize` implements `Add<usize>`, `type Inch is new usize`
+would implement `Add<Inch>`.
 
 ## Scoping
 
-`newtype` would follow the natural scoping rules:
+Newtypes would follow the natural scoping rules:
 
 ```rust
-newtype Inch = usize; // Not accessible from outside the module
-pub newtype Cm = usize; // Accessible
+type Inch is new usize; // Not accessible from outside the module
+pub type Cm is new usize; // Accessible
 
 use module::Inch; // Import into scope
 pub use module::Inch; // Re-export
 ```
 
-## Casting
+### Reexporting private types
 
-Newtypes can explicitly be casted to their base types, and vice versa.
-Implicit conversions should not be allowed.
+Newtypes are allowed to be newtypes over private types:
 
 ```rust
-newtype Inch = usize;
+mod foo {
+    struct Foo;
+    pub type Bar is new Foo;
+}
+let x: foo::Bar = ...; // OK
+let x: foo::Foo = ...; // Not OK
+```
+
+## Casting
+
+Newtypes can explicitly be converted to their base types, and vice versa.
+Implicit conversions are not allowed.
+This is achieved via the `Into` trait, since newtypes automatically implement
+`From<BaseType>` and `From<NewType> for BaseType`. In order to not expose new
+`as` casts, the automatically generated implementation simply contains a
+`transmute`.
+
+```rust
+type Inch is new usize;
 
 fn frobnicate(x: usize) -> usize { x * 2 + 14 - 3 * x * x }
 
 let x: Inch = 2;
-println!("{}", frobnicate(x as usize));
+println!("{}", frobnicate(x.into()));
 
 let a: usize = 2;
 let i: Inch = a; // Compile error, implicit conversion not allowed
-let i: Inch = a as Inch; // Ok
+let i = Inch::from(a); // Ok
+let i: Inch = a.into(); // Ok
+let b = usize::from(i); // Ok
 ```
 
 ## Grammar
 
-The grammar rules will be the same as for `type`.
+The grammar rules will be the same as for `type`, but there are two new
+contextual keywords `is` and `new`. The reason for using `is new` instead of
+another sigil is that `type X = Y;` would be very hard to distinguish from any
+alternative like `type X <- Y;` or just `type X is Y;`.
+
+## Implementation
+
+The compiler would treat newtypes as a thin wrapper around the original type.
+This means that just declaring a newtype does *not* generate any code, because
+the trait and inherent implementations of the base type are reused.
 
 # Drawbacks
 
-It adds a new keyword to the language and increases the language complexity.
+It adds a new contextual keyword pair to the language and increases the language complexity.
 
 Automatically deriving all traits may not make sense in some cases.
 For example deriving multiplication for `Inch` doesn't make much sense, as it would
 result in `Inch * Inch -> Inch` but semantically `Inch * Inch -> Inch^2`.
 
-This is a deficiency in the design and a better approach may be to explicitly
-specify which traits to derive.
+This is a deficiency in the design and may be addressed by allowing overwriting
+trait implementations on newtypes. Such a change would be strictly backwards
+compatible in the language, even if not for libraries.
 
 # Alternatives
 
 * Explicitly derive selected traits
 
-    Similar to GHC's [`GeneralizedNewtypeDeriving`][newtype-deriving]. E.g.:
+    The [`newtype_derive`](https://crates.io/crates/newtype_derive) crate allows
+    deriving common traits that just forward to the inner value.
 
     ```rust
-    #[deriving(Sub)]
-    struct Inch(usize);
+    #[macro_use] extern crate custom_derive;
+    #[macro_use] extern crate newtype_derive;
 
-    #[deriving(Sub)]
-    struct Cm(usize);
+    custom_derive! {
+        #[derive(NewtypeFrom, NewtypeAdd, NewtypeMul(i32))]
+        pub struct Happy(i32);
+    }
     ```
 
-    This would avoid the problems with automatically deriving all traits,
+    This would avoid the problems with automatically deriving common traits,
     while some would not make sense.
 
     We could save a keyword with this approach and we might consider a generalization
     over all tuple structs.
 
+    This approach requires not only two crates, a macro invocation and a list
+    of derives, it also doubles the amount of code generated compared to the
+    newtype approach.
+
 * Keep it the same
 
-    It works, but life could be simpler.
-
-* `as` could be used to convert from a newtype to the underlying value:
-
-    ```rust
-    struct Inch(isize);
-
-    let v: Inch = Inch(10);
-    println!("inches: {}", v as isize);
-    ```
-
-    But we still need to explicitly cast when using generic functions:
-
-    ```rust
-    let dist = Inch(calc_distance(start_inch as isize, end_inch as isize));
-    ```
-
-    It also loses type safety.
-
-* Implement similar behaviour with a macro instead, similar to `bitflags!`
-
-    This would not allow us to derive all trait implementations automatically however.
-    It would work for only primitive types.
+    It works, but life could be simpler. The staggering amount of workarounds and
+    complaints about it seem to suggest that something needs to be done. Even
+    the compiler itself uses generated newtypes extensively for special `Vec`s that
+    have a newtype index type instead of `usize`.
 
 # Unresolved questions
-
-Not sure how to actually implement it.
-
-[newtype-deriving]: https://www.haskell.org/ghc/docs/7.8.1/html/users_guide/deriving.html#newtype-deriving
