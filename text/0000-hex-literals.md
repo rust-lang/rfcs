@@ -1,5 +1,5 @@
-- Feature Name: (fill me in with a unique ident, my_awesome_feature)
-- Start Date: (fill me in with today's date, YYYY-MM-DD)
+- Feature Name: hex-literals
+- Start Date: 2017-12-12
 - RFC PR: (leave this empty)
 - Rust Issue: (leave this empty)
 
@@ -92,6 +92,9 @@ niche use-cases.
 # Rationale and Alternatives
 [alternatives]: #alternatives
 
+The proposed solution is arguably the simplest to use and read. Although
+the following alternatives can be proposed:
+
 - Built-in macro, e.g. `hex!("00 ff ee")`
 - `const fn` (?)
-- Do nothing.
+- Do nothing and rely on existing tools.
