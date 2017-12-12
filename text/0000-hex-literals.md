@@ -1,4 +1,4 @@
-- Feature Name: hex-literals
+﻿- Feature Name: hex-literals
 - Start Date: 2017-12-12
 - RFC PR: (leave this empty)
 - Rust Issue: (leave this empty)
@@ -15,9 +15,9 @@ transformed by compiler at compile time to `&'static [u8; N]`, in this case to
 
 Hexadecimal representation is a very common for binary data. Currently Rust has
 two ways to provide byte array constants:
-- `b"foo"` notation, which is convinient if binary data is an ASCII string,
+- `b"foo"` notation, which is convenient if binary data is an ASCII string,
 but becomes harder to use for general byte string with a lot of `\x` escaping.
-- Explitict arrays: `[0x00, 0x01, ..]`. It takes three times more
+- Explicit arrays: `[0x00, 0x01, ..]`. It takes three times more
 space compared to a pure hex notation and thus harder to read and copy-paste
 from external sources. Additionally its harder to group bytes, e.g. by groups
 of 4 or 8.
