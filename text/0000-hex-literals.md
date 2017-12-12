@@ -98,6 +98,6 @@ the following alternatives can be proposed:
 - Instead of `h` use a base a modifier on the `b` prefix, e.g. `bx` for hex
 binaries, `bo` for octal ones, `bb` for binary, or `bN` where N is the base
 (between 2 and 36 included?)
-- Built-in macro, e.g. `hex!("00 ff ee")`
+- Built-in or procedural macro, e.g. `hex!("00 ff ee")`
 - `const fn` (?)
 - Do nothing and rely on existing tools.
