@@ -16,6 +16,8 @@ Adding a machine-readable output for Rust's built-in tests will make external to
 Having this feature is not intended to replace the proposed custom test runners, but to enrich
 the default set of features offered by rust out-of-the-box.
 
+The proposed format is not intended to be the end-all be-all generic output format for all test-runner in the Rust ecosystem.
+
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
@@ -33,13 +35,11 @@ Each JSON object starts with the "type" property, which is one of the following:
  - `test`: A change in a test's state, along with its name. Can be one of the following:
  	- `started`: Printed when a tests starts running.
  	- `ok`
- 	- `failed`
+ 	- `failed`: Printed along with the test's stdout, if non empty.
  	- `ignored`
  	- `allowed_failure`
  	- `timeout`
  - `bench`: Benchmark results, specifying the median time and the standard deviation
- - `test_output`: The stdout of a failed test, if available.
- - `metrics`: Kept for internal backward compatability, but otherwise unknown.
 
 The events are printed as-they-come, each in its own line, for ease of parsing.
 
@@ -62,13 +62,8 @@ Test Events:
 { "type": "test", "event": "ok", "name": "will_succeed" }
 
 { "type": "test", "event": "started", "name": "will_fail" }
-{ "type": "test", "event": "failed", "name": "will_fail" }
+{ "type": "test", "event": "failed", "name": "will_fail", "output": "thread 'will_fail' panicked at 'assertion failed: false', f.rs:12:1\nnote: Run with `RUST_BACKTRACE=1` for a backtrace.\n" }
 
-```
-
-Test Output:
-```json
-{ "type": "test_output", "name": "will_fail", "output": "thread 'will_fail' panicked at 'assertion failed: false', f.rs:12:1\nnote: Run with `RUST_BACKTRACE=1` for a backtrace.\n" }
 ```
 
 Benchmarks:
@@ -96,6 +91,8 @@ trait OutputFormatter {
 }
 ```
 
+This trait is but an implementation detail, and is not meant to be exposed outside of libtest.
+
 Using this trait and the CLI option `--format`, libtest can be easily extended in the future to support other output formats.
 
 # Drawbacks
@@ -115,5 +112,12 @@ Using this trait and the CLI option `--format`, libtest can be easily extended i
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
-- Some parts of libtest are undocumented and unused (metrics, failure with error messages), 
-	and it's not clear whether they should be presented in the JSON API.
+- If serde is used to serialize the output, should we expose the structs used for serialization as an API of libtest?
+
+# Prior art
+[prior-art]: #prior-art
+ - https://github.com/rust-lang/rfcs/pull/1284
+ - http://jsonlines.org
+ - https://firefox-source-docs.mozilla.org/mozbase/mozlog.html#data-format
+ - https://github.com/dart-lang/test/blob/master/doc/json_reporter.md
+ - https://testanything.org/tap-version-13-specification.html & https://github.com/rubyworks/tapout/wiki/TAP-Y-J-Specification
