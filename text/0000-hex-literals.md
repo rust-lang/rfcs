@@ -51,9 +51,14 @@ inside `h"..."` accepts the following characters:
 - Hexadecimal characters: `0-9, a-f, A-F`
 - Formatting characters: unicode whitespace class characters, tab, carriage feed and return.
 
-Formatting characters will be ignored by compiler. Hex literal must contain even
-number of hexadecimal characters, otherwise it will result in a compilation
-error. Usage of any other characters will result in a compilation error.
+Formatting characters will be ignored by compiler. The following conditions
+must be true for hex strings:
+
+- Must contain even number of hexadecimal characters
+- Must not contain only hexadecimal and formatting characters
+- Formatting characters must not split octets, i.e. `h"a bc d"` is forbidden
+
+Not complying with thise conditions will result in a compilation error.
 
 Hexadecimal string will be converted to a byte array by compiler at compile time.
 
