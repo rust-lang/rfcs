@@ -28,14 +28,29 @@ examples smaller and easier to read. For example:
 
 ```Rust
 let udp_data = h"
-1111 2222
-0c00 ffff
-6461 7461
+    1111 2222
+    0c00 ffff
+    6461 7461
 ";
 let packet = parse_udp(udp_data);
 assert_eq!(packet.source_port, 0x1111);
 assert_eq!(packet.dest_port, 0x2222);
 assert_eq!(packet.data, b"data")
+```
+
+Comparison with existing syntax:
+```Rust
+let udp_data = b"\
+    \x11\x11\x22\x22\
+    \x0c\x00\xff\xff\
+    \x64\x61\x74\x61\
+";
+
+let udp_data = [
+    0x11, 0x11,  0x22, 0x22,
+    0x0c, 0x00,  0xff, 0xff,
+    0x64, 0x61,  0x74, 0x61,
+];
 ```
 
 Also it will allow to copy-paste hexidicimal data directly into Rust code without
@@ -106,3 +121,9 @@ binaries, `bo` for octal ones, `bb` for binary, or `bN` where N is the base
 - Built-in or procedural macro, e.g. `hex!("00 ff ee")`
 - `const fn` (?)
 - Do nothing and rely on existing tools.
+
+The most notable one is procedural macro based solution. It will allow
+to introduce similiar functionality without introducing the new syntax, but
+it will be less usefull, especially in the case of residing in the external
+crate. Thus considering small size and isolated nature of this feature,
+in my opinion, the `h"..."` syntax will be the most optimal solution.
