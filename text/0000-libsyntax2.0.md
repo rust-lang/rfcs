@@ -332,7 +332,7 @@ which adds type-safe wrappers for structs and fields:
 // generic infrastructure
 
 pub trait AstNode<'f>: Copy + 'f {
-    fn new(node: Node<'f>) -> Option<Self>;
+    fn cast(node: Node<'f>) -> Option<Self>;
     fn node(&self) -> Node<'f>;
 }
 
@@ -341,7 +341,7 @@ pub fn child_of_kind<'f>(node: Node<'f>, kind: NodeKind) -> Option<Node<'f>> {
 }
 
 pub fn ast_children<'f, A: AstNode<'f>>(node: Node<'f>) -> Box<Iterator<Item=A> + 'f> {
-    Box::new(node.children().filter_map(A::new))
+    Box::new(node.children().filter_map(A::cast))
 }
 
 // AST elements, specific to Rust
@@ -365,7 +365,7 @@ pub trait NameOwner<'f>: AstNode<'f> {
 
 
 impl<'f> AstNode<'f> for StructDef<'f> {
-    fn new(node: Node<'f>) -> Option<Self> {
+    fn cast(node: Node<'f>) -> Option<Self> {
         if node.kind() == STRUCT_DEF { Some(StructDef(node)) } else { None }
     }
     fn node(&self) -> Node<'f> { self.0 }
@@ -381,7 +381,7 @@ impl<'f> StructDef<'f> {
 
 
 impl<'f> AstNode<'f> for FieldDef<'f> {
-    fn new(node: Node<'f>) -> Option<Self> {
+    fn cast(node: Node<'f>) -> Option<Self> {
         if node.kind() == FIELD_DEF { Some(FieldDef(node)) } else { None }
     }
     fn node(&self) -> Node<'f> { self.0 }
@@ -397,7 +397,7 @@ impl<'f> NameOwner<'f> for FieldDef<'f> {}
 
 
 impl<'f> AstNode<'f> for TypeRef<'f> {
-    fn new(node: Node<'f>) -> Option<Self> {
+    fn cast(node: Node<'f>) -> Option<Self> {
         if node.kind() == TYPE_REF { Some(TypeRef(node)) } else { None }
     }
     fn node(&self) -> Node<'f> { self.0 }
