@@ -13,35 +13,37 @@
 # Summary
 
 Improve Cargo's integration into the host operating system by using
-platform-specific paths for config files, temporary files and caches, so it
-interacts well with other tools on that platform.
+platform-specific paths for config files, cache files and executables,
+so it interacts well with other tools on that platform.
 
 # Motivation
 
 Currently, Cargo puts all its files in a directory named `.cargo` below the
 home directory of the user. Using this proposal, it would reuse existing
 standard directories of the host platform. This allows other tools oblivious to
-Cargo to function in the best way. Using standard directories is the best way
-to go unless there are concrete reasons for not doing so, otherwise Cargo just
-adds complexity to all systems that try to interoperate with it. Benefits
-include:
+Cargo to function in the best way.
 
-* Using a standard directory for binary outputs can allow the user to execute
-  Cargo-installed binaries without modifying their `PATH` variable. E.g. on
-  Fedora this is apparantly already the case, in Debian there's a ticket to
-  include it.
+Benefits include:
+
+* Using a `.cargo` directory is violating the recommendations/rules on most
+  operating systems. _(Linux, Windows, macOS. Especially painful on Windows,
+  where dotfiles are not hidden.)_
 * Putting caches in designated cache directories allows backup tools to ignore
-  them.
-* Using a `.cargo` directory on Windows is not idiomatic at all, no programs
-  for Windows would use such a directory.
-* Platform specific clean-up tools such as the Disk Cleanup Wizard work with
-  Cargo (it wouldn't be very useful to try to modify the Wizard instead of
-  Cargo to make this work).
+  them. _(Linux, Windows, macOS. Example: Time Machine ignores the cache
+  directory on macOS.)_
+* It makes it easier for users to manage, share and version-control their
+  configuraton files, as configuration files from different applications end up
+  in the same place, instead of being intermingled with cache files. _(Linux
+  and macOS.)_
+* Cargo contributes to the slow cleanup of the `$HOME` directory by stopping to
+  add its application-private clutter to it. _(Linux.)_
+* Using a standard directory for binary outputs can allow the user to execute
+  Cargo-installed binaries without modifying their `PATH` variable. _(Linux)_
 
 Solving this problem will likely also solve the same problem in Cargo-related
 tools such as `rustup` as their strategy is "do what Cargo does".
 
-There seems to prior art for this in pip, the Python package manager.
+This seems to be implemented in pip, the Python package manager, already.
 
 # Detailed design
 
@@ -67,7 +69,8 @@ be checked if the new ones don't exist. In detail, this means:
 1. If any of the new variables `CARGO_BIN_DIR`, `CARGO_CACHE_DIR`,
    `CARGO_CONFIG_DIR` are set and nonempty, use the new directory structure.
 2. Else, if there is an override for the legacy Cargo directory, using
-   `CARGO_HOME`, use that for all files.
+   `CARGO_HOME`, the directories for cache, configuration and executables are
+   placed inside this directory.
 3. Otherwise, if the Cargo-specfic platform-specific directories exist, use
    them. What constitutes a Cargo-specific directory is laid out below, for
    each platform.
@@ -160,6 +163,7 @@ CARGO_CONFIG_DIR=/home/user/.config/cargo
 
 * One could only change the Windows paths, as the Windows integration is
   currently the worst.
+
 
 # Unresolved questions
 
