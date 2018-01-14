@@ -42,13 +42,12 @@ of all zeroes. Just like `mem::zeroed`, this function must be used with caution.
 This implementation of this function is very straightforward:
 
 ```rust
-use std::mem;
-use std::intrinsics;
+use std::{mem, ptr};
 
 pub unsafe fn zero<T: ?Sized>(val: &mut T) {
     let len = mem::size_of_val(val);
     let ptr = val as *mut T as *mut u8;
-    intrinsics::write_bytes(ptr, 0, len);
+    ptr::write_bytes(ptr, 0, len);
 }
 ```
 
