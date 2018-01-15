@@ -18,6 +18,10 @@ Currently there is no simple way to zero out unsized data. `mem::zeroed`, by its
 nature of returning a value, requires the generic type to be `Sized`. This would
 allow for (re-)initializing data whose size is unknown at compile-time.
 
+This RFC provides [a possible implementation](#reference-level-explanation) of
+this feature. While it is a small function, it prevents requiring users from
+writing unwieldy boilerplate code (turns out people don't like double casts).
+
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
