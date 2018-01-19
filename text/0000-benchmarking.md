@@ -70,15 +70,15 @@ test my_benchmark ... bench:           4 ns/iter (+/- 0)
 test result: ok. 0 passed; 0 failed; 0 ignored; 1 measured; 0 filtered out
 ```
 
-However, via `test::black_box`, we can blind the optimizer to the input values,
+However, via `mem::black_box`, we can blind the optimizer to the input values,
 so that it does not attempt to use them to optimize the code:
 
 ```rust
 #[bench]
-fn my_benchmark(bench: &mut Bencher) {
-    let x = test::black_box(4);
-    let y = test::black_box(30);
-    bench.iter(|| pow(x, y));
+fn my_benchmark(bench: Bencher) -> BenchResult {
+    let x = mem::black_box(4);
+    let y = mem::black_box(30);
+    bench.iter(|| pow(x, y))
 }
 ```
 
@@ -99,8 +99,8 @@ use `black_box()` on them as well:
 ```rust
 #[bench]
 fn my_benchmark(bench: &mut Bencher) {
-    let x = test::black_box(4);
-    let y = test::black_box(30);
+    let x = mem::black_box(4);
+    let y = mem::black_box(30);
     bench.iter(|| {
         black_box(pow(y, x));
         pow(x, y)
@@ -155,5 +155,4 @@ This has problems with the types not being Copy, and it feels a bit less flexibl
 - Should stuff be in `std::test` or a partially-stabilized `libtest`?
 - Should we stabilize any other `Bencher` methods (like `run_once`)?
 - Stable machine-readable output for this would be nice, but can be done in a separate RFC.
-- `test::black_box` can instead be `mem::black_box`
 
