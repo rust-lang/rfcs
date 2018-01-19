@@ -6,9 +6,9 @@
 # Summary
 [summary]: #summary
 
-Adds a macro `dbg!(expr1 [, expr2, .., exprN])` for quick and dirty `Debug`:ing
+Adds a macro `dbg!([expr1 , expr2, .., exprN])` for quick and dirty `Debug`ing
 of expressions to the terminal. The macro evaluates expressions, prints it to
-`STDERR`, and finally yields a flat tuple of `(expr1 [, expr2, .. exprN])`.
+`STDERR`, and finally yields a flat tuple of `([expr1, expr2, .. exprN])`.
 On release builds, the macro is the identity function and has no side effects.
 The macro is added to the prelude of the standard library.
 
@@ -45,11 +45,11 @@ let c = fun(a) + fun(b);
 let y = self.first().second();
 ```
 
-Now you want to inspect what `fun(a)` and `fun(b)` is, but not go through the
+Now, you want to inspect what `fun(a)` and `fun(b)` is, but not go through the
 hassle of 1) saving `fun(a)` and `fun(b)` to a variable, 2) printing out the
 variable, 3) then finally use it in the expression as `let c = fa + fb;`.
-The same applies to inspecting the temporary state of `self.first()`. Instead of
-this hassle, you can simply do:
+The same applies to inspecting the temporary state of `self.first()`.
+Instead of this hassle, you can simply do:
 
 ```rust
 let c = dbg!(fun(a)) + dbg!(fun(b));
@@ -210,22 +210,24 @@ example, the following is printed to `STDERR`:
 }
 ```
 
+The ways of using the macro in illustrated in later (not the first) examples
+will mostly benefit existing Rust programmers.
+
+### Move semantics
+
 It is important to note here that since the type `Point` is not `Copy`, it has
 move semantics. Since `dbg!(p)` would involve moving `p`, using `dbg!(p, p);`
 would involve moving the value twice, which Rust will not allow. Therefore,
 a borrow to `p` is used in `dbg!("first point" => &p, "second point" => &p);`.
 
-The ways of using the macro used in later (not the first) examples will mostly
-benefit existing Rust programmers.
-
 ### Compact mode:
 
 Those developers who feel the source location header is overly verbose may
 choose to opt-out by setting the environment variable `RUST_DBG_COMPACT` to
-`"0"`. This is a one-time setup cost the developer has to make for all current
+`"1"`. This is a one-time setup cost the developer has to make for all current
 and future Rust projects.
 
-The effect of flipping this switch off is to print out the following instead
+The effect of flipping this switch on is to print out the following instead
 for the two last examples in [on-debug-builds]:
 
 ```
@@ -277,6 +279,31 @@ fail-fast on any panic in order to avoid cascading panics and unsafety.
 The same examples above will print nothing to `STDERR` and will instead simply
 evaluate the expressions.
 
+## Calling `dbg!()` without any expressions
+
+If you invoke the macro without providing any expressions as arguments, the
+macro will treat this as if you passed the unit value `()` from which it
+follow that the type will be the unit type.
+
+Doing this can be useful if you want to ensure that a path is taken in
+some conditional flow. An example:
+
+```rust
+fn main() {
+    // assume we have: `some_important_conditional: bool` defined elsewhere.
+    if some_important_conditional {
+        dbg!();
+    }
+}
+```
+
+which may produce the following if `some_important_conditional` holds:
+
+```
+[DEBUGGING, src\lib.rs:4]
+=> () = ()
+```
+
 ## Types which are not `Debug`
 
 **This feature will be available once [`specialization`] has been stabilized
@@ -312,7 +339,7 @@ the following is printed to `STDERR`:
 => &a = [<unknown> of type &main::X is !Debug]
 ```
 
-This tells you the typeof `&a`, and that it is not `Debug`.
+This tells you the type of `&a`, and that it is not `Debug`.
 
 ## An example from the real world
 
@@ -398,7 +425,8 @@ or prints, with `RUST_DBG_COMPACT = 1`:
 [src/main.rs:9] factorial(4) = 24
 ```
 
-But you like labels, so you use them instead:
+But you prefer labels, since you think they are more informative,
+and use them instead:
 
 ```rust
 fn factorial(n: u32) -> u32 {
@@ -519,8 +547,8 @@ or prints, with `RUST_DBG_COMPACT = 1`:
 **NOTE:** The exact output format is not meant to be stabilized even when/if the
 macro is stabilized.
 
-The macro is called `dbg` and accepts either a non-empty comma-separated or
-comma-terminated list of `expr`, or a non-empty list of `label => expr` which
+The macro is called `dbg` and accepts either a comma-separated or
+comma-terminated list of `expr`, or a list of `label => expr` which
 is also separated or terminated with commas.
 
 The terminated versions are defined as:
@@ -533,6 +561,8 @@ The separated versions accept the following:
 1. `($($val: expr),+)`
 2. `($($lab: expr => $val: expr),+)`
 
+Finally, the macro can be called as `dbg!()`.
+
 The macro only prints something if `cfg!(debug_assertions)` holds, meaning that
 if the program is built as a release build, nothing will be printed, and the
 result of using the macro on an expressions or expressions is simply the
@@ -542,9 +572,11 @@ be inlined away such that the overhead is zero.
 
 ## The type of `dbg!(expressions)`
 
-"Applying" `dbg` on a non-empty list of expressions
-`expr1 [, expr2 [, .., exprN])` gives back an expression of the following type
+"Applying" `dbg` on a list of expressions
+`[expr1, expr2 [, .., exprN]` gives back an expression of the following type
 and value:
+
++ List of size 0, `dbg!()`: The type is the unit type `()`.
 
 + List of size 1, `dbg!(expr)`: The type is the type of `expr` and the value is
 the value of `expr`.
@@ -571,6 +603,10 @@ If `p` does not hold, this instead prints:
 ```rust
 write!(&mut err, "[{}:{}] ", file!(), line!())
 ```
+
+3. + For `()`
+
+Defined as `dbg!(())`.
 
 3. + For `($($val: expr),+)`
 
@@ -676,6 +712,10 @@ macro_rules! dbg_core {
 
 #[macro_export]
 macro_rules! dbg {
+    // Handle `dbg!()` <-- literal
+    () => {
+        dbg!( () );
+    };
     // Handle trailing comma:
     ($($val: expr),+,) => {
         dbg!( $($val),+ )
@@ -703,6 +743,10 @@ is given by:
 ```rust
 #[macro_export]
 macro_rules! dbg {
+    // Handle `dbg!()` <-- literal
+    () => {
+        dbg!( () );
+    };
     // Handle trailing comma:
     ($($val: expr),+,) => {
         dbg!( $($val),+ )
@@ -884,6 +928,10 @@ On release builds, this macro reduces to:
 ```rust
 #[macro_export]
 macro_rules! dbg {
+    // Handle `dbg!()` <-- literal
+    () => {
+        dbg!( () );
+    };
     // Handle trailing comma:
     ($($val: expr),+,) => {
         dbg!( $($val),+ )
@@ -914,6 +962,7 @@ is nothing more than the identity on the tuple passed:
 ```rust
 #[macro_export]
 macro_rules! dbg {
+    () => { dbg!( () ); };
     ($($val: expr),+,) => { dbg!( $($val),+ ) };
     ($($lab: expr => $val: expr),+,) => { dbg!( $($lab => $val),+ ) };
     ($(              $val: expr),+) => {{ ( $($val),* ) }};
@@ -1104,9 +1153,10 @@ With [`specialization`], you can instead use the `Debug` trait implicitly.
 
 + Some information is better than none.
 
-Even if `typeof(expr)` is `!Debug`, valuable information can be displayed to the
-user. By using `std::intrinsics::type_name` for non-`Debug` types, the user can
-at least know what the type of the expression is, which is not nothing.
+Even if the type of `expr` does not satisfy the `Debug` bound, valuable
+information can be displayed to the user. By using `std::intrinsics::type_name`
+for non-`Debug` types, the user can at least know what the type of the
+expression is, which is not nothing.
 
 ### 8. Should a trailing newline be added after each `dbg!(exprs...)`?
 
@@ -1149,7 +1199,7 @@ However, it is more unlikely that a user will see the information they are
 looking for in a small window without scrolling. Here, searchability is aided by
 grouping which is visually pleasing to process.
 
-This was resolved by having the env var `RUST_DBG_COMPACT = 0` format the above
+This was resolved by having the env var `RUST_DBG_COMPACT = 1` format the above
 example as:
 
 ```
@@ -1158,7 +1208,7 @@ example as:
 [src/main.rs:87] a = 1, b = 2, a + b = 3
 ```
 
-### 9. Should literals used in `dbg!(lit);` print out `lit = lit` or `lit`?
+### 9. Should literals used in `dbg!(lit);` print out `lit` instead of `lit = lit`?
 
 **No**. The left hand side of the equality adds no new information wherefore it
 might be a redundant annoyance. On the other hand, it may give a sense of
