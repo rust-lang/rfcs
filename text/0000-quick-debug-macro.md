@@ -68,6 +68,19 @@ While the `log` crate offers a lot of utility, it first has to be used with
 `extern crate log;`. A logger then has to be set up before expressions can be
 logged. It is therefore not suitable for introducing newcommers to the language.
 
+## Not useful as a crate
+
+This RFC is for quick and dirty debugging and has to be in the standard library
+to be useful. Why? Because while the utility provided by the `dbg!` macro is
+necessary, it is unlikely that a developer, and that includes the author of
+the RFC, would take a dependency on a crate that just provides the macro. The
+hassle of constantly re-adding such a crate temporarily would also be greater
+than just using `println!("{:#?}", expr);` in a majority of cases. But using
+`println!` is still a paper cut. Furthermore, `dbg!` is unlikely to ever be a
+crate that you can `extern crate` for in the Rust playground, so the macro
+can't be used to quickly help users on `#rust` and other venues, which is one
+of the goals of the macro.
+
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
