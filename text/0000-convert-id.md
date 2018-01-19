@@ -1,4 +1,4 @@
-- Feature Name: convert_id
+- Feature Name: convert_identity
 - Start Date: 2018-01-19
 - RFC PR: (leave this empty)
 - Rust Issue: (leave this empty)
@@ -6,8 +6,9 @@
 # Summary
 [summary]: #summary
 
-Adds an identity function `pub fn id<T>(x: T) -> T { x }` as `core::convert::id`.
-The function is also re-exported to `std::convert::id` as well as the prelude of
+Adds an identity function `pub fn identity<T>(x: T) -> T { x }` as
+`core::convert::identity`. The function is also re-exported to
+`std::convert::identity` as well as the prelude of
 both libcore and libstd.
 
 # Motivation
@@ -18,7 +19,7 @@ both libcore and libstd.
 While it might seem strange to have a function that just returns back the input,
 there are some cases where the function is useful.
 
-### Using `id` to do nothing among a collection of mappers
+### Using `identity` to do nothing among a collection of mappers
 
 When you have collections such as maps or arrays of mapping functions like
 below and you watch to dispatch to those you sometimes need the identity
@@ -33,22 +34,22 @@ fn do_interesting_stuff(x: u32) -> u32 { .. }
 let mut map = HashMap::new();
 map.insert("foo", do_interesting_stuff);
 map.insert("bar", other_stuff);
-map.insert("baz", id);
+map.insert("baz", identity);
 ```
 
-### Using `id` as a no-op function in a conditional
+### Using `identity` as a no-op function in a conditional
 
 This reasoning also applies to simpler yes/no dispatch as below:
 
 ```rust
-let mapper = if condition { some_manipulation } else { id };
+let mapper = if condition { some_manipulation } else { identity };
 
 // do more interesting stuff inbetween..
 
 do_stuff(42);
 ```
 
-### Using `id` to concatenate an iterator of iterators
+### Using `identity` to concatenate an iterator of iterators
 
 We use the identity function to perform a monadic join on iterators, in the
 example below. In other words we are concatenating an iterator of iterators
@@ -57,17 +58,17 @@ into a single iterator,
 ```rust
 let vec_vec = vec![vec![1, 3, 4], vec![5, 6]];
 let iter_iter = vec_vec.into_iter().map(Vec::into_iter);
-let concatenated = iter_iter.flat_map(id).collect::<Vec<_>>();
+let concatenated = iter_iter.flat_map(identity).collect::<Vec<_>>();
 assert_eq!(vec![1, 3, 4, 5, 6], concatenated);
 ```
 
-### Using `id` to keep the `Some` variants of an iterator of `Option<T>`
+### Using `identity` to keep the `Some` variants of an iterator of `Option<T>`
 
-We can keep all the maybe variants by simply `iter.filter_map(id)`.
+We can keep all the maybe variants by simply `iter.filter_map(identity)`.
 
 ```rust
 let iter = vec![Some(1), None, Some(3)].into_iter();
-let filtered = iter.filter_map(id).collect::<Vec<_>>();
+let filtered = iter.filter_map(identity).collect::<Vec<_>>();
 assert_eq!(vec![1, 3], filtered);
 ```
 
@@ -75,7 +76,7 @@ assert_eq!(vec![1, 3], filtered);
 
 If you instead use a closure as in `|x| x` when you need an
 identity conversion, it is less clear that this was intentional.
-With `id`, this intent becomes clearer.
+With `identity`, this intent becomes clearer.
 
 ## The `drop` function as a precedent
 
@@ -120,13 +121,13 @@ Let's compare the effort required, assuming that each letter
 typed has a uniform cost wrt. effort.
 
 ```rust
-use std::convert::id; iter.filter_map(id)
+use std::convert::identity; iter.filter_map(identity)
 
-fn id<T>(x: T) -> T { x } iter.filter_map(id)
+fn identity<T>(x: T) -> T { x } iter.filter_map(identity)
 
-iter.filter_map(::std::convert::id)
+iter.filter_map(::std::convert::identity)
 
-iter.filter_map(id)
+iter.filter_map(identity)
 ```
 
 Comparing the length of these lines, we see that there's not much difference in
@@ -142,15 +143,16 @@ especially relevant in the case of `drop` which is also a trivial function.
 [guide-level-explanation]: #guide-level-explanation
 
 An identity function is a mapping of one type onto itself such that the output
-is the same as the input. In other words, a function `id : T -> T` for some
-type `T` defined as `id(x) = x`. This RFC adds such a function for all types
-in Rust into libcore at the module `core::convert` and defines it as:
+is the same as the input. In other words, a function `identity : T -> T` for
+some type `T` defined as `identity(x) = x`. This RFC adds such a function for
+all `Sized` types in Rust into libcore at the module `core::convert` and
+defines it as:
 
 ```rust
-pub fn id<T>(x: T) -> T { x }
+pub fn identity<T>(x: T) -> T { x }
 ```
 
-This function is also re-exported to `std::convert::id` as well as
+This function is also re-exported to `std::convert::identity` as well as
 the prelude of both libcore and libstd.
 
 It is important to note that the input `x` passed to the function is
@@ -159,9 +161,9 @@ moved since Rust uses move semantics by default.
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-An identity function defined as `pub fn id<T>(x: T) -> T { x }` exists in
-`core::convert::id`. The function is also re-exported to `std::convert::id`
-as well as the prelude of both libcore and libstd.
+An identity function defined as `pub fn identity<T>(x: T) -> T { x }` exists as
+`core::convert::identity`. The function is also re-exported as
+`std::convert::identity` as well as the prelude of both libcore and libstd.
 
 Note that the identity function is not always equivalent to a closure
 such as `|x| x` since the closure may coerce `x` into a different type
@@ -173,7 +175,7 @@ while the identity function never changes the type.
 It is already possible to do this in user code by:
 
 + using an identity closure: `|x| x`.
-+ writing the identity function as defined in the RFC yourself.
++ writing the `identity` function as defined in the RFC yourself.
 
 These are contrasted with the [motivation] for including the function
 in the standard library.
@@ -192,9 +194,9 @@ explained in the [motivation] section. It is an alternative to not do that.
 If the function is not in the prelude, the utility is so low that it may
 be a better idea to not add the function at all.
 
-Naming the function `identity` instead of `id` is a possibility.
-However, to make the `id` function more appetizing than using a `|x| x`, it is
-preferrable for the identity function to have a shorter but still clear name.
+Naming the function `id` instead of `identity` is a possibility.
+This name is however ambiguous with *"identifier"* and less clear
+wherefore `identifier` was opted for.
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
