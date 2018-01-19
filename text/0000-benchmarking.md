@@ -60,7 +60,7 @@ fn pow(x: u32, y: u32) -> u32 {
 
 #[bench]
 fn my_benchmark(bench: Bencher) -> BenchResult {
-    bench.iter(|| pow(4, 30));
+    bench.iter(|| pow(4, 30))
 }
 ```
 
@@ -107,7 +107,16 @@ fn my_benchmark(bench: Bencher) -> BenchResult {
     bench.iter(|| {
         black_box(pow(y, x));
         pow(x, y)
-    });
+    })
+}
+```
+
+In case you want the benchmark to run for a predetermined number of times, use `iter_n`:
+
+```rust
+#[bench]
+fn my_benchmark(bench: Bencher) -> BenchResult {
+    bench.iter_n(1000, || do_some_stuff());
 }
 ```
 
