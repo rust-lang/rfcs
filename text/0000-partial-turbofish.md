@@ -11,7 +11,7 @@ Assume a function (free, inherent, trait, ...)
 `$($tparam: ident),*`. If while calling `turbo::< $($tconcrete: ty),* >(...)` a
 suffix of the applied types can be replaced with a list of `_`s of equal length,
 then the suffix may be omitted entirely. A shorter suffix may be chosen at will.
-This also applies to turbofish:ing types (structs, enums, ..), i.e:
+This also applies to *turbofish*ing types (structs, enums, ..), i.e:
 `Type::< $($tconcrete: ty),* >::fun(..)`.
 
 In concrete terms, this entails that if `turbo::<u32, _>()` and
@@ -70,40 +70,63 @@ fn main() {
 By letting the user omit any suffix of `_`s, the ergonomics of working with
 generic types can be improved.
 
+## API evolution
+
+[RFC 1196]: https://github.com/Centril/rfcs/blob/rfc/partial-turbofish/text/0000-partial-turbofish.md
+[1196-motivation]: https://github.com/huonw/rfcs/blob/prefix-ty-param/text/0000-prefix-type-params.md#motivation
+
+This RFC is a continuation of [RFC 1196] which talks in its
+[motivation][1196-motivation] about how this feature may enable adding new,
+inferrable (due to eq-constraining), type parameters to functions without
+breaking code. This RFC doubles down on this argument as a good motivation.
+
+## Improving a real world scenario for `Arbitrary` in `proptest`
+
+Let us assume the following trait from the crate `proptest` which has been
+simplified a bit here:
+
+```rust
+pub trait Arbitrary: Sized {
+    type Parameters: Default;
+
+    fn arbitrary() -> Self::Strategy {
+        Self::arbitrary_with(Default::default())
+    }
+
+    fn arbitrary_with(args: Self::Parameters) -> Self::Strategy;
+
+    type Strategy: Strategy<Value = Self::ValueTree>;
+    type ValueTree: ValueTree<Value = Self>;
+}
+
+pub fn any_with<A: Arbitrary>(args: A::Parameters) -> A::Strategy {
+    A::arbitrary_with(args)
+}
+
+pub fn arbitrary_with<A, S, P>(args: P) -> S
+where
+    P: Default,
+    S: Strategy,
+    S::Value: ValueTree<Value = A>,
+    A: Arbitrary<Strategy = S, ValueTree = S::Value, Parameters = P>,
+{
+    A::arbitrary_with(args)
+}
+```
+
+Semantically, the two free functions `any_with` and `arbitrary_with` do the
+same thing. However, the function `arbitrary_with` has other properties
+with respect to type inference than `any_with`. In many cases, it works fine
+to do `arbitrary_with(..)`, but with `any_with` you often have to specify a
+concrete the type variable `A`. But if you need or want to (for extra clarity)
+to specify the first type for `arbitrary_with`, you now have to fill in the
+blanks using `_` as in: `arbitrary_with::<usize, _, _>(..)`. If we instead
+were allowed to elide those `_`s, we could instead just have one function
+that could be used in both for better type inference as well as more ergonomic
+turbofishing.
+
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
-
-## From a Haskell perspective
-
-In Haskell, a function:
-```haskell
-fun :: a -> Int -> c
-fun a i c = expr
-```
-
-is equivalent to:
-
-```haskell
-fun :: forall a c. a -> Int -> c
-fun a i c = expr
-```
-
-which, in terms of [System F](https://en.wikipedia.org/wiki/System_F) is
-the judgement that:
-```
-|- (Λ a. Λ b. λ x1^a. λ x2^Int. λ x3^c. expr) : ∀ a. ∀ c. a -> Int -> c
-```
-
-Here, `Λ a.` is a lambda function taking a type, and not a term. In Haskell, the
-feature `TypeApplications` lets developers partially apply types to such lambdas
-as in: `fun @Int :: Int -> Int -> c`. Rust also allows this via the turbofish
-mechanism: `::<T1, T2, ...>`. Unlike Haskell, Rust does however not allow the
-user to only apply some types as a prefix, but requires the user to supply all
-types. `TypeApplications` in Rust is therefore an all-or-nothing proposition:
-"Either you give me all the concrete types, or I will try to infer them all for
-you".
-
-## From a Rust perspective
 
 Currently, the line `let vec = Turbo::<Vec<u32>>::new(1, 1);` in [motivation]
 results in the following errors:
@@ -158,18 +181,20 @@ fn main() {
 }
 ```
 
-This concept is named "partial turbofish" since it is partially applying
+This concept is named *partial turbofish* since it is partially applying
 type arguments to type parameters and letting the compiler infer the rest.
+When `, _` is present in a turbofish, it is instead referred to as *turbosword*.
 
 It is still an error to apply too many type arguments in a turbofish
-as in: `fn foo() {} foo::<i32>()`, or to
-partially apply types when the compiler can not infer the omitted types. When
-the latter happens, rustc will emit error indicating that there are more type
-parameters not applied that could not be inferred. A sample error message is:
-`type annotations needed` in addition to:
+as in: `fn foo() {} foo::<i32>()`, or to partially apply types when the
+compiler can not infer the omitted types. When the latter happens, rustc will
+emit error indicating that there are more type parameters not applied that
+could not be inferred. A sample error message is: `type annotations needed`
+in addition to:
+
 ```
-Can not infer concrete type(s) of omitted type parameter(s) X, Y, ..
-in call to fn turbo with parameters: <Concrete1, X, Y, ...>.
+Can not infer concrete type(s) of omitted type parameter(s) `X, Y, ..`
+in call to `fn turbo` with parameters: `<Concrete1, X, Y, ...>`.
 ```
 
 Some developers may end up trying to use this feature and be surprised when it
@@ -179,15 +204,14 @@ explain this feature when it explains the turbofish syntax.
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-This RFC allows the user to only supply only supply the smallest prefix of
+This RFC allows the user to only supply the smallest prefix of
 concrete types that rustc requires to infer the type of the other parameters in
 the suffix. The suffix may therefore be omitted. The prefix may be overspecified
 and the omitted suffix may be shorter than the longest possible.
 
-Formally:
-Assume a function (free, inherent, trait, ...)
-`fn turbo< $($tparam: ident),* )>(..) -> R` or a type (struct/enum/..) `Turbo`
-involving generic types `$($tparam: ident),*`. If while calling
+Formally: Assume a function (free, inherent, trait, ...)
+`fn turbo< $($tparam: ident),* )>(..) -> R` or a generic type (struct/enum/..)
+`Turbo` with type parameters `$($tparam: ident),*`. If while calling
 `turbo::< $($tconcrete: ty),* >(..)` or equivalently
 `Turbo::< $($tconcrete: ty),* >::fun(..)`, for a list of concrete types
 `$($tconcrete: ty),*`, a suffix of `$($tconcrete: ty),*` is `$( _ ),*` and
@@ -198,20 +222,20 @@ the type checking passes, then that suffix may be omitted.
 
 Currently, `typeck` may at an eariler stage (prior to full unification) check
 if the number of parameters at the turbofish-site (where `::<T1, T2, ..>`
-happens) and at the definition site match. With this RFC, it may no longer do so.
-It can at most check if more arguments were specified at the turbofish-site
-compared to the definition site, if that happens, the (currently used) error:
+happens) and at the definition site match. With this RFC, the compiler will
+instead check if more arguments were specified at the turbofish-site compared to the definition site, and if so, the the following
+error (where `X < Y`) is raised:
+
 ```
 error[E0087]: too many type parameters provided:
 expected at most X type parameters, found Y type parameter
 ```
-where `X < Y` is raised.
 
 This feature does not require the introduction of type lambdas for terms,
 instead, it can be achieved by having the type checker relax the above specified
-rule. If fewer arguments are specified at the turbofish-site, then, the compiler
-inserts `len(args@turbofish-site) - len(params@definition-site)` amount of `, _`s.
-From this point onwards, type checking continues as normal.
+rule. If fewer arguments are specified at the turbofish-site, the compiler
+mechanically fills in `len(args@turbofish-site) - len(params@definition-site)`
+amount of `, _`s. From this point onwards, type checking continues as normal.
 
 If typeck can infer the concrete types of all the `_` type arguments, the typeck
 stage passes (assuming that the specified types already unify with the
@@ -219,13 +243,24 @@ requirements of the definition site). If type can't infer concrete types of the
 `_`s inserted by the compiler, the smallest suffix of those `_`s rustc can't
 infer is used in the error message specified in [guide-level-explanation].
 
+With respect to default type parameter fallback, the mechanics of a partial
+turbofish does not directly interact with the fallback. The compiler fills in
+the remaining `, _`s. If there are fallbacks defined which can be used given
+the constraints placed by the call site, then the relevant subset of `_`s will
+be substituted for the specified default types. This inference happens after
+inserting any necessary `, _`s.
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
-+ It *might* slow down type checking by not letting the compiler verify that
-the amount of type arguments applied at the call site are as many as those as
-the type parameters at the definition site. Currently, such a check can be done
-prior to full type checking.
++ The user will no longer be met with a hard error when new type parameters
+are introduced. While this is mostly seen as an advantage, but some users may
+want to get such errors.
+
++ It *might* slow down type checking to a small degree by having the compiler
+insert any additional `, _`s. The compiler still has to check the length of
+type arguments passed at the call site against the number of type parameters at
+the definition site in any case.
 
 # Rationale and alternatives
 [alternatives]: #alternatives
@@ -233,10 +268,47 @@ prior to full type checking.
 The alternative is to not do this. This means that a papercut in deailing with
 generics remains.
 
+Another alternative is to use the syntax `turbo::<u32, ..>()` to get rid of
+any extra `, _`s. This syntax may however be more useful for variadics. Also,
+the `, ..` makes the call longer for the most common case which is when you have
+one argument to add as in: `turbo::<u32, _>()`. Additionally, using `..` to
+acknowledge that inference is going on is inconsistent with the language in
+general. There is no requirement to acknowledge type inference elsewhere.
+Instead, the fact that type inference is going on should itself be inferred.
+
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
 + How should the error messages when too many arguments are omitted look like?
 
-+ Is the "algorithm" specified in [typeck] sufficiently detailed?
-If not, it must become sufficiently detailed prior to merging.
+# In relation to other languages
+
+## From a Haskell perspective
+
+In Haskell, a function:
+```haskell
+fun :: a -> Int -> c
+fun a i c = expr
+```
+
+is equivalent to:
+
+```haskell
+fun :: forall a c. a -> Int -> c
+fun a i c = expr
+```
+
+which, in terms of [System F](https://en.wikipedia.org/wiki/System_F) is
+the judgement that:
+```
+|- (Λ a. Λ b. λ x1^a. λ x2^Int. λ x3^c. expr) : ∀ a. ∀ c. a -> Int -> c
+```
+
+Here, `Λ a.` is a lambda function taking a type, and not a term. In Haskell, the
+feature `TypeApplications` lets developers partially apply types to such lambdas
+as in: `fun @Int :: Int -> Int -> c`. Rust also allows this via the turbofish
+mechanism: `::<T1, T2, ...>`. Unlike Haskell, Rust does however not allow the
+user to only apply some types as a prefix, but requires the user to supply all
+types. `TypeApplications` in Rust is therefore an all-or-nothing proposition:
+"Either you give me all the concrete types, or I will try to infer them all for
+you".
