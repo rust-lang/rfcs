@@ -26,13 +26,14 @@ it in a custom location.
 A benchmarking function looks like this:
 
 ```rust
-use std::test::Bencher;
+use std::test::{Bencher, BenchResult};
 
 #[bench]
-fn my_benchmark(bench: &mut Bencher) {
+fn my_benchmark(bench: Bencher) -> BenchResult {
     let x = do_some_setup();
-    bench.iter(|| x.compute_thing());
+    let result = bench.iter(|| x.compute_thing());
     x.teardown();
+    result
 }
 ```
 
@@ -58,7 +59,7 @@ fn pow(x: u32, y: u32) -> u32 {
 }
 
 #[bench]
-fn my_benchmark(bench: &mut Bencher) {
+fn my_benchmark(bench: Bencher) -> BenchResult {
     bench.iter(|| pow(4, 30));
 }
 ```
@@ -74,6 +75,9 @@ However, via `mem::black_box`, we can blind the optimizer to the input values,
 so that it does not attempt to use them to optimize the code:
 
 ```rust
+use std::mem;
+use std::test::{Bencher, BenchResult};
+
 #[bench]
 fn my_benchmark(bench: Bencher) -> BenchResult {
     let x = mem::black_box(4);
@@ -97,8 +101,7 @@ In case you are generating unused values that do not get returned from the callb
 use `black_box()` on them as well:
 
 ```rust
-#[bench]
-fn my_benchmark(bench: &mut Bencher) {
+fn my_benchmark(bench: Bencher) -> BenchResult {
     let x = mem::black_box(4);
     let y = mem::black_box(30);
     bench.iter(|| {
@@ -113,9 +116,6 @@ fn my_benchmark(bench: &mut Bencher) {
 
 The bencher reports the median value and deviation (difference between min and max).
 Samples are [winsorized], so extreme outliers get clamped.
-
-Avoid calling `iter` multiple times in a benchmark; each call wipes out the previously
-collected data.
 
 `cargo bench` essentially takes the same flags as `cargo test`, except it has a `--bench foo`
 flag to select a single benchmark target.
