@@ -50,8 +50,9 @@ do_stuff(42);
 
 ### Using `id` to concatenate an iterator of iterators
 
-Given the law `join = (>>= id)`, we use the identity function to perform
-a monadic join on iterators in this example.
+We use the identity function to perform a monadic join on iterators, in the
+example below. In other words we are concatenating an iterator of iterators
+into a single iterator,
 
 ```rust
 let vec_vec = vec![vec![1, 3, 4], vec![5, 6]];
@@ -81,7 +82,7 @@ With `id`, this intent becomes clearer.
 The `drop` function in `core::mem` is defined as `pub fn drop<T>(_x: T) { }`.
 The same effect can be achieved by writing `{ _x; }`. This presents us
 with a precendent that such trivial functions are considered useful and
-includable inside the standard library even tho they can be written easily
+includable inside the standard library even though they can be written easily
 inside a user's crate.
 
 ## Avoiding repetition in user crates
