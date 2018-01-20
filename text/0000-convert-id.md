@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-Adds an identity function `pub fn identity<T>(x: T) -> T { x }` as
+Adds an identity function `pub const fn identity<T>(x: T) -> T { x }` as
 `core::convert::identity`. The function is also re-exported to
 `std::convert::identity` as well as the prelude of
 both libcore and libstd.
@@ -148,7 +148,7 @@ all `Sized` types in Rust into libcore at the module `core::convert` and
 defines it as:
 
 ```rust
-pub fn identity<T>(x: T) -> T { x }
+pub const fn identity<T>(x: T) -> T { x }
 ```
 
 This function is also re-exported to `std::convert::identity` as well as
@@ -160,8 +160,8 @@ moved since Rust uses move semantics by default.
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-An identity function defined as `pub fn identity<T>(x: T) -> T { x }` exists as
-`core::convert::identity`. The function is also re-exported as
+An identity function defined as `pub const fn identity<T>(x: T) -> T { x }`
+exists as `core::convert::identity`. The function is also re-exported as
 `std::convert::identity` as well as the prelude of both libcore and libstd.
 
 Note that the identity function is not always equivalent to a closure
