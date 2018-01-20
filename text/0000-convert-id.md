@@ -51,9 +51,8 @@ do_stuff(42);
 
 ### Using `identity` to concatenate an iterator of iterators
 
-We use the identity function to perform a monadic join on iterators, in the
-example below. In other words we are concatenating an iterator of iterators
-into a single iterator,
+We can use the identity function to concatenate an iterator of iterators
+into a single iterator.
 
 ```rust
 let vec_vec = vec![vec![1, 3, 4], vec![5, 6]];
