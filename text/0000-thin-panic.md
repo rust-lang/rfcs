@@ -34,7 +34,7 @@ pub extern fn panic_thin(msg: &'static str,
 
 ## Getting static strings from existing format strings
 
-It is not reasonable to have multiple panic messages for every panic usa, thus it is important that there is backwards compatibility with old panics.
+It is not reasonable to have multiple panic messages for every panic use, thus it is important that there is backwards compatibility with old panics.
 
 I propose that we should create a static string from the existing `fmt::Arguments` at compile time, simply concatenating any constants and filling in any dynamic argument with a placeholder (like the repr of the formatting expression eg: `"{:04x}"`).
 
