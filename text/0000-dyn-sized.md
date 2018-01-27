@@ -154,15 +154,24 @@ implemented ([E0322]).
 * slices `[T]`
 * string slice `str`
 * trait objects `dyn Trait`
-* structs, tuples, enums and unions where all fields are `DynSized`
+* structs, tuples and enums where all fields are `DynSized`
+* unions where at most one field is regular-sized*, and the rest are `Sized`
 
 `DynSized` will *not* be implemented for the following types:
 
 * foreign types
-* structs, tuples, enums and unions where at least one field is not `DynSized`
+* structs, tuples and enums where at least one field is not `DynSized`
+* unions where at least one field is not regular-sized*
 
 `DynSized` is *not* a default bound. When `T: ?Sized`, we do not assume `T: DynSized`. Traits will
 not have an implicit `DynSized` super-bound.
+
+Note: “regular sized” is a subset of `DynSized` where the `size_of_val` is known via the type and
+pointer metadata alone. All built-in `DynSized` types are regular sized, but when we support custom
+DST there can be irregular sized types which are still `DynSized` e.g. a thin `CStr`. This RFC does
+not attempt to specify the actual semantics of an unsized union beyond what is proposed in
+[PR #47650]. We do not specify whether `union U([u8], [u16])` is `DynSized` or not. The decision
+should be postponed until we actually want to support such unions.
 
 ## `#[assume_dyn_sized]` attribute
 
@@ -234,7 +243,7 @@ The type `T` passes the check when:
 
 1. It can be proved to implement `DynSized`, or
 2. It originates from a generic parameter annotated `#[assume_dyn_sized]`, or
-3. It is a struct/tuple/union/enum where all fields satisfy one of these 3 conditions.
+3. It is a struct/tuple/enum where all fields satisfy one of these 3 conditions.
 
 This lint **must never** be emitted in stable/beta channels in this milestone.
 
@@ -876,6 +885,7 @@ put a foreign type in them.
 [RFC #2052]: http://rust-lang.github.io/rfcs/2052-epochs.html
 [PR #44295]: https://github.com/rust-lang/rust/pull/44295
 [PR #46108]: https://github.com/rust-lang/rust/pull/46108
+[PR #47650]: https://github.com/rust-lang/rust/pull/47650
 [issue #21974]: https://github.com/rust-lang/rust/issues/21974
 [RFC issue #2255]: https://github.com/rust-lang/rfcs/pull/2255
 [performance problems]: https://github.com/rust-lang/rfcs/pull/1858#issuecomment-337524343
