@@ -223,7 +223,7 @@ example, the following is printed to `STDERR`:
 }
 ```
 
-The ways of using the macro in illustrated in later (not the first) examples
+The ways of using the macro as illustrated in later (not the first) examples
 will mostly benefit existing Rust programmers.
 
 ### Move semantics
