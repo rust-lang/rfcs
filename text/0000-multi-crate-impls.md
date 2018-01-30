@@ -77,7 +77,7 @@ attributes. To still allow this functionality through virtual manifests, a new
 `root` field can be added to the `[workspace]` section of `Cargo.toml` to
 indicate which crate is the root crate. Additionally, the field
 `workspace.coupled` will be added to enable/disable this behaviour, defaulting
-to `false`.
+to `true`.
 
 Workspaces will also be transitive; if X is in the workspace of Y, and Y is in
 the workspace of Z, then X is in the workspace of Z. For example, because
