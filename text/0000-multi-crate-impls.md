@@ -100,9 +100,9 @@ A compile error will result if the following criteria are met:
 
 1. A crate has a `workspace_root` attribute.
 2. Either:
-    a. The `workspace_root` crate is not linked to this crate.
-    b. The `workspace_root` crate does not have a `workspace_members` attribute.
-    c. The `workspace_root` crate does not include this crate in its members.
+    1. The `workspace_root` crate is not linked to this crate.
+    2. The `workspace_root` crate does not have a `workspace_members` attribute.
+    3. The `workspace_root` crate does not include this crate in its members.
 
 While the versions of the crates won't be required for `rustc`, `cargo` will
 specifically keep track of the versions of the crates in a workspace and publish
