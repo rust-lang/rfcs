@@ -135,8 +135,13 @@ Potentially, a permanently unstable `#![rustc_std_crate]` attribute could be
 used to provide the same functionality specifically within the standard library
 if the feature is not desired for the larger ecosystem.
 
+The `pub(crate) => pub(workspace)` change may not be ideal, and potentially
+adding a specific `pub(workspace)` visibility may be more ideal.
+
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
-Should this functionality be enabled by default? Is it necessary beyond the
-standard library?
+* Should this functionality be enabled by default?
+* Is this functionality necessary beyond the standard library?
+* Should `pub(crate)` become `pub(workspace)` or should a separate syntax be
+  chosen?
