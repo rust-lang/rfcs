@@ -1,5 +1,5 @@
 - Feature Name: coupled_workspaces
-- Start Date: (fill me in with today's date, YYYY-MM-DD)
+- Start Date: 2018-01-29
 - RFC PR: (leave this empty)
 - Rust Issue: (leave this empty)
 
@@ -16,8 +16,9 @@ extended so that it can be used by the entire crate ecosystem.
 
 Many projects have grown large enough to split their contents across multiple
 crates, so that users of these crates can decide which parts they want to use
-and which ones they don't. Notable examples on crates.io include the `num` and
-`unic` crates, but the standard library is also split into several crates.
+and which ones they don't. Notable examples on crates.io include the `num`,
+`serde`, and `unic` crates, but the standard library is also split into several
+crates.
 
 Unfortunately, this brings up a problem: inherent methods must be contained
 within the crate that defines a type. This causes a lot of friction when
@@ -43,7 +44,7 @@ implemented and documented. However, a few particularly notable changes arise:
 3. Workspaces which use virtual manifests must opt into this feature by
    specifying `workspace.root` in `Cargo.toml`.
 4. Workspaces can opt out of this with `workspace.coupled = false` in
-   `Cargo.toml` and opt in with `workspace.coupled = true`.
+   `Cargo.toml` and opt in with `workspace.coupled = true` (the default).
 5. Coupled workspaces must be published to crates.io all at once.
 
 For example, take the previously mentioned example of `core`, `alloc`,
@@ -77,7 +78,7 @@ attributes. To still allow this functionality through virtual manifests, a new
 `root` field can be added to the `[workspace]` section of `Cargo.toml` to
 indicate which crate is the root crate. Additionally, the field
 `workspace.coupled` will be added to enable/disable this behaviour, defaulting
-to `true`.
+to `false`.
 
 Workspaces will also be transitive; if X is in the workspace of Y, and Y is in
 the workspace of Z, then X is in the workspace of Z. For example, because
