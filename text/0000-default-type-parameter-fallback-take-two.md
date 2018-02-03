@@ -24,7 +24,7 @@ There are many motivations for this feature, the major ones are:
 - Allow customization in ways that most users do not care about (abstraction without cost).
 - Allow generalizing impls without breaking inference.
 
- These were the goals of accepted [RFC 213](https://github.com/rust-lang/rfcs/blob/master/text/0213-defaulted-type-params.md). This RFC intends to bring revisit this discussion, with an extended motivation and a better specified API evolution story, so that we may get the feature back on track. 
+ These were the goals of accepted [RFC 213](https://github.com/rust-lang/rfcs/blob/master/text/0213-defaulted-type-params.md). This RFC revisits that discussion with an extended motivation and a better specified API evolution story, so that we may get the feature back on track. 
 
 The key concrete proposals are:
 
@@ -284,7 +284,7 @@ The lints will guide you to add `_` where possible, the underscore represents an
 
 Defaults may be set for type parameters in in traits, impls, struct and enum definitions and also methods and fns. They may not be set in `type` aliases. They also may not be set in methods and associated fns of trait impls, such defaults can only be set in the trait declaration. As per RFC 213, parameters with defaults must be trailing and may not be forward declared.
 
-The behaviour of omited parameters in partially supplied parameter lists is as per RFC 213, they are inferred as if filled in with `_`. This is relevant to this [postponed RFC](https://github.com/rust-lang/rfcs/pull/1196) that suggests extending that behaviour to non-defaulted parameters.
+The behaviour of partially supplied parameter lists is as per RFC 213, omited parameters that have a default are inferred as if filled in with `_`. This is relevant to this [postponed RFC](https://github.com/rust-lang/rfcs/pull/1196) that suggests extending that behaviour to non-defaulted parameters.
 
 ## Defaults as fallbacks for inference
 
