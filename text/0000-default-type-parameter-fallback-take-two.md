@@ -30,7 +30,6 @@ The key concrete proposals are:
 
 - The concerns about conflicts among defaults in inference fallback are addressed by documenting what is and isn't a breaking change for inference.
 - A syntax for eliding the default that is both convenient and guides to a choice of default that is unlikely to cause inference conflicts.
-- Stabilize writing defaults in fns and impls first and later stabilize inference fallback, so that existing stable libraries have a period to adapt without being concerned of creating conflicts among defaults.
 
 # Motivation
 
@@ -449,15 +448,6 @@ fn func<U = _>(foo: Foo<U>) {}
 fn func<U>(foo: Foo<Vec<U>>) {}
 ```
 
-## Rollout plan
-
-The order in which things would hit stable is:
-
-1. Allow writing a default in impls, methods and fns, but they don't yet have any effect.
-2. Defaults in impls and fns inform inference and may be elided in parameter lists.
-
-Between steps 1 and 2 is an adaptation period, during which libraries may freely set defaults for impls, methods and fns without any chance of breaking inference. After step 3 (the full rollout), setting a non-elided default to an existing type parameter may possibly break inference.
-
 # Drawbacks
 
 - It's another feature, and not a simple one. Though part the feature and syntax is already stable, the interaction of inference adds a lot in terms of complexity.
@@ -465,6 +455,8 @@ Between steps 1 and 2 is an adaptation period, during which libraries may freely
 - The API evolution story is complicated. We try to help with lints to guide the upgrade of APIs, but library authors may find the whole thing too complicated to be used.
 
 # Rationale and alternatives
+
+- We could stabilize writing defaults in fns and impls first (without any effect) and later stabilize inference fallback, so that existing stable libraries have a period to adapt without being concerned of creating conflicts among defaults.
 
 ## Default elision
 
