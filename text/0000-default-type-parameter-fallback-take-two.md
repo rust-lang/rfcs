@@ -284,7 +284,7 @@ The lints will guide you to add `_` where possible, the underscore represents an
 
 Defaults may be set for type parameters in in traits, impls, struct and enum definitions and also methods and fns. They may not be set in `type` aliases. They also may not be set in methods and associated fns of trait impls, such defaults can only be set in the trait declaration. As per RFC 213, parameters with defaults must be trailing and may not be forward declared.
 
-The behaviour of omited parameters in partially supplied parameter lists is as per RFC 213, they are inferred as if filled in with `_`. This is relevant to this [postoned RFC](https://github.com/rust-lang/rfcs/pull/1196) that suggests extending that behaviour to non-defaulted parameters.
+The behaviour of omited parameters in partially supplied parameter lists is as per RFC 213, they are inferred as if filled in with `_`. This is relevant to this [postponed RFC](https://github.com/rust-lang/rfcs/pull/1196) that suggests extending that behaviour to non-defaulted parameters.
 
 ## Defaults as fallbacks for inference
 
@@ -296,7 +296,7 @@ The possibility of conflicts among defaults is the origin of the concerns that a
 
 ```rust
 fn foo<T=String>(x: Option<T>);
-fn bar<U>(y: Option<T>); // What if we had `fn bar<U=usize>`?
+fn bar<U>(y: Option<U>); // What if we had `fn bar<U=usize>`?
 
 fn main() {
   let none: Option<_> = None;
