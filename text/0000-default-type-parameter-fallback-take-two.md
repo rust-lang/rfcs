@@ -370,8 +370,8 @@ It can be difficult to reason about whether a type parameter can use an elided d
 
 ```rust
  fn foo<T, A>(t: T) -> Arc<T, A> {}
-//		  ^^
-//	warning: Parameter that may have elided default has no default.
+//         ^
+//  warning: Parameter that may have elided default has no default.
 //  help: Try setting an elided default `A = _` to use `alloc::Heap` as the default.
 //  note: Lint `default_not_elided` on by default.
 ```
@@ -444,7 +444,7 @@ struct Foo<T = Vec<i32>>(T);
 // `_` is `Vec<i32>`.
 fn func<U = _>(foo: Foo<U>) {}
 // Default elision is not allowed since `Vec<U>` has no for `U`.
-// `Vec<U>` happening to match `Vec<i32>` doesn't matter..
+// `Vec<U>` happening to match `Vec<i32>` doesn't matter.
 fn func<U>(foo: Foo<Vec<U>>) {}
 ```
 
