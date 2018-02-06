@@ -319,6 +319,40 @@ Built-in macros already look more and more like proc macros (or at the very leas
 
 Since proc macros and `macro` definitions are relative-path-addressable, the proc macro call context needs to keep track of what the path was at the call site. I'm not sure if this information is available at expansion time, but are there any issues getting it?
 
+## For the future: same-crate proc macros
+
+When proc macros are allowed to be defined in the same crate as other items, we should be able to transfer any solution to the problem of internal dependencies over to the expansion API. For example, imagine the following (single) crate:
+
+```rust
+fn helper(ts: TokenStream) -> TokenStream { ... }
+
+#[proc_macro]
+fn foo(ts: TokenStream) -> TokenStream {
+    let helped_ts = helper(ts);
+    ...
+}
+
+fn main() {
+    foo!(bar);
+}
+```
+
+To get same-crate proc macros working, we need to figure out how (or if) to allow `foo!` to use `helper`. Once we do, we've probably also solved a similar issue with respect to this expansion API:
+
+```rust
+#[macro_use]
+extern crate cool_library;
+
+#[proc_macro]
+fn foo(ts: TokenStream) -> TokenStream { ... }
+
+fn main() {
+    cool_library::cool_macro!(foo!(bar));
+}
+```
+
+Here, we need to solve a similar problem: if `cool_macro!` expands `foo!`, it needs to have access to an executable version of `foo!` despite it being defined in the current crate, similar to how `foo!` needs access to an executable version of `helper` in the previous example.
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
@@ -327,8 +361,6 @@ This proposal:
 * Increases the API surface of `proc_macro` and any crate trying to emulate it. In fact, since it requires actually evaluating macro calls it isn't clear how a third-party crate like `proc_macro2` could even try to emulate it.
 
 * Greatly increases the potential for hairy interactions between macro calls. This opens up more of the implementation to be buggy (that is, by restricting how macros can be expanded, we might keep implementation complexity in check).
-
-* Relies on proc macros being in a separate crate, as discussed in the reference level explanation [above](#reference-level-explanation). This makes it harder to implement any future plans of letting proc macros be defined and used in the same crate.
 
 * Relies on proc macro authors doing macro expansion. This might partition the macro ecosystem into expansion-ignoring (where input macro calls are essentially forbidden for any part of the input that needs to be inspected) and expansion-handling (where they work fine _as long as_ the proc macro author has used the expansion API correctly).
 
