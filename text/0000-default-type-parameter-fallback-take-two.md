@@ -566,7 +566,9 @@ fn foo<T=char>(t: T) { ... }
 fn main() { foo::<_>(22) }
 ```
 
-There is a concern with forward compatiblity of this approach presented about expanding the types a literal may be inferred to. Therefore it seems best to take option 1 or 4, as they future extensible to option 3. Any option other than 2 requires a phase-in period. Options 1 and 3 may change the behaviour of existing code, while option 4 may make existing code error. The consensus reached in the thread was for option 4, to be future-extensible but avoiding changing behaviour of existing code, is that still the consensus? 
+Option 3 gives the best results, but it may change the behaviour of existing code so it might have to be phased-in through the errors given by option 4. The consensus reached in the thread was for using option 4 to open the possibility of transitioning to 3, is that still a consensus? Taking option 3 at a point in the future will make code that works fine today possibly overflow. Even if this is done through epochs, it's still a considerable risk.
+
+The decision seems to come down between complete backwards compatibility with option 2, complete forwards compatibility with option 4 or try to get the best behaviour now with option 3. If we want option 4 now is the best time, however without a plan to migrate to option 3 it would be difficult to justify that change. Perhaps if we see zero chance of behaviour change from option 3 in a crater run we can go straight to that.
 
 ### Terminology and syntax
 
@@ -606,5 +608,4 @@ fn main() {
 }
 ```
 
-We need to figure the design and implemetation of defaults in specialization chains. Probably we want to allow only one default for a parameter in a specialization chain.
-
+We need to figure the design and implementation of defaults in specialization chains. Probably we want to allow only one default for a parameter in a specialization chain.
