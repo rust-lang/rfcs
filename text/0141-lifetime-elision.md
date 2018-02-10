@@ -109,12 +109,16 @@ Lifetime positions can appear as either "input" or "output":
   SomeTrait<'b, 'c> for Foo<'a, 'c>` has `'a` in input position, `'b`
   in output position, and `'c` in both input and output positions.
 
+We _deduplicate_ lifetime positions; when considering the total number of lifetime
+positions two separate lifetime positions using the same named lifetime are considered
+to be the same _deduplicated_ input lifetime position.
+
 ### The rules
 
 * Each elided lifetime in input position becomes a distinct lifetime
   parameter. This is the current behavior for `fn` definitions.
 
-* If there is exactly one input lifetime position (elided or not), that lifetime
+* If there is exactly one deduplicated input lifetime position (elided or not), that lifetime
   is assigned to _all_ elided output lifetimes.
 
 * If there are multiple input lifetime positions, but one of them is `&self` or
@@ -189,6 +193,17 @@ impl Bar for &str {
   fn bound(&'a self) -> &'a int { ... } fn fresh(&self) -> &int { ... }    // ILLEGAL: unbound 'a
 }
 
+// The lifetime 'a is deduplicated
+fn cmp<'a>(a: &'a str, b: &'a str) -> &str;             // elided
+fn cmp<'a>(a: &'a str, b: &'a str) -> &'a str;          // expanded
+
+// The lifetime 'a is deduplicated
+fn foo<'a>(a: B<'a, 'a>) -> B;                          // elided
+fn foo<'a>(a: B<'a, 'a>) -> B<'a, 'a>;                  // expanded
+
+// After deduplication there are two input lifetimes,
+// `'a` and the elided lifetime on `c`
+fn cmp<'a>(a: &'a str, b: &'a str, c: &str) -> &str;    // ILLEGAL
 ```
 
 ## Error messages
