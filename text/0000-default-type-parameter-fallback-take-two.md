@@ -537,12 +537,16 @@ The following unresolved questions should be resolved prior to stabilization, bu
 
 ### Interaction with numerical fallback
 
-There are multiple alternatives of what to do about the interaction of user fallback with numerical (and diverging) fallback. This was discussed at lenght in [this internals thread](https://internals.rust-lang.org/t/interaction-of-user-defined-and-integral-fallbacks-with-inference/2496). The options are:
+There are multiple alternatives of what to do about the interaction of user fallback with numerical (and diverging) fallback. This was discussed at lenght in [this internals thread](https://internals.rust-lang.org/t/interaction-of-user-defined-and-integral-fallbacks-with-inference/2496). The options were:
 
 1. User fallback takes precedence over numerical fallback, always.
 2. Numerical fallback takes precedence, always.
 3. DWIM: User fallback takes preference, but if it fails we try numerical fallback.
 4. Error on any ambiguity.
+
+And now a fifth option proposed by this RFC:
+
+5. Error on conflicting numericals, whenever DWIM would prefer a user fallback we instead error. 
 
 The two following examples show the consequences of each alternative, example 1:
 
@@ -552,6 +556,7 @@ fn foo<T=u64>(t: T) { ... }
 // 2. `_` is `i32`
 // 3. `_` is `u64`
 // 4. Error.
+// 5. Error.
 fn main() { foo::<_>(22) }
 ```
 
@@ -561,14 +566,13 @@ Example 2:
 fn foo<T=char>(t: T) { ... }
 // 1. Error.
 // 2. `_` is `i32`
-// 3. `_` is `u64`
+// 3. `_` is `i32`
 // 4. Error.
+// 5. `_` is `i32`.
 fn main() { foo::<_>(22) }
 ```
 
-Option 3 gives the best results, but it may change the behaviour of existing code so it might have to be phased-in through the errors given by option 4. The consensus reached in the thread was for using option 4 to open the possibility of transitioning to 3, is that still a consensus? Taking option 3 at a point in the future will make code that works fine today possibly overflow. Even if this is done through epochs, it's still a considerable risk.
-
-The decision seems to come down between complete backwards compatibility with option 2, complete forwards compatibility with option 4 or try to get the best behaviour now with option 3. If we want option 4 now is the best time, however without a plan to migrate to option 3 it would be difficult to justify that change. Perhaps if we see zero chance of behaviour change from option 3 in a crater run we can go straight to that.
+Option 3 gives the best results, but it may change the behaviour of existing code so it might have to be phased-in through the errors given by option 4 or 5. The consensus reached in the thread was for using option 4 to open the possibility of transitioning to 3, is that still a consensus? However option 4 seems overly restrictive, we could instead do option 5 for a smoother transition.
 
 ### Terminology and syntax
 
