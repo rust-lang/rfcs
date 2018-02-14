@@ -176,7 +176,7 @@ This would currently result in inference failures when trying to do `assert_ne!(
 
 # Guide-level explanation
 
-When writing Rust code, you may find that you'd like to make a functionality more generic. But that does not always play well with inference, leading to an error like "type annotations needed" or "the type of this value must be known in this context". Say you have the following function that prints the path to a file, if it was provided:
+When writing Rust code, you may find that you'd like to make a functionality more generic. But that does not always play well with inference, leading to an error like "type annotations needed". Say you have the following function that prints the path to a file, if it was provided:
 
 ```rust
 use std::path::Path;
@@ -229,7 +229,7 @@ Which tells inference to use `String` as backup choice if dosen't have enough in
 
 A big use case for type parameter defaults is to help evolve a library while maintaing backwards compatibility. However there are cases where defaults may break inference.
 
-The bad news is that adding a default to an existing type parameter or changing a default may break inference for your users because that may create conflicts among defaults. The good news is that you can add a new type parameter along with a default in the declaration of a type or trait without breaking inference, and the compiler will guide you on how to update your fns, methods and impls through lints and a simple syntax called _default elision_. 
+The bad news is that adding a default to an existing type parameter or changing a default may break inference for your users because that may create conflicts among defaults. The good news is that you can add a new type parameter along with a default in the declaration of a type or trait without breaking inference, and the compiler will guide you on how to update your fns, methods and impls through lints and a simple syntax called _default elision_.
 
 For an example, let's say an UI library has the following type for text:
 
@@ -287,7 +287,17 @@ The behaviour of partially supplied parameter lists is as per RFC 213, omited pa
 
 ## Defaults as fallbacks for inference
 
-A key part of this proposal is that inference is now aware of defaults. When we would otherwise error due to an uninferred type we instead try using the default. This is called inference fallback which is our final attempt at inference.
+A key part of this proposal is that inference is now aware of defaults. When we would otherwise error due to an uninferred type we instead try using the default. This is called inference fallback which is our final attempt at inference. The algorithm for doing this is essentialy the one detailed in RFC 213, with a few considerations:
+
+- The interaction with literal fallback may change, see "Unresolved Questions".
+
+- The algorithm did not specify what happens in eager type resolution such as the `structurally_resolve_type` method, notably used to resolve method receivers. To prevent being a hazard to a future where no longer need to eagerly resolve types, we specify that eager type resolution will not do fallback.
+
+- The algorithm ran obligation selection and fallback in a loop to allow solving edge cases where fallbacks generates new obligations and those obligations generate new fallbacks. This is complex and difficult to reason about, since none of the motivations require this behaviour we propose leaving it as future extension, eliminating the loop and running fallback only once.
+
+### Error messages
+
+Instead of having specific error messages detailing which defaults are in conflict as RFC 213 proposes, we will instead emit generic "type annotations needed" error messages if fallback fails. Specifying which defaults are conflicting can be complicated because the number of possible conflicts is quadratic in the number of defaults being applied and because it requires doing some sort of ad-hoc type equality which is a fishy thing to try considering that dependent defaults would require full inference to detect conflicts. Most users won't be able to act on this information anyways since conflicts are likely to come from separate crates. Thefore we detect and rollback failed fallbacks so that the error emitted is the same as if there were no fallback at all. This can be revisted later as we gain experience with the feature and learn what information would be most helpful.
 
 ### Conflicts among defaults
 
@@ -546,7 +556,7 @@ There are multiple alternatives of what to do about the interaction of user fall
 
 And now a fifth option proposed by this RFC:
 
-5. Error on conflicting numericals, whenever DWIM would prefer a user fallback we instead error. 
+5. Error on conflicting numericals, whenever DWIM would prefer a user fallback we instead error.
 
 The two following examples show the consequences of each alternative, example 1:
 
@@ -577,10 +587,6 @@ Option 3 gives the best results, but it may change the behaviour of existing cod
 ### Terminology and syntax
 
 Is there a better name for default elision? Default propagation? Default inheritance? Is there a better syntax than `A=_`?
-
-### Hazard to improvements to type checking
-
-Applying fallback seems natural when it's run at the very end of type checking, where you would get the error "type annotation needed". However type checking sometimes needs eagerly resolve a type, infamously in method calls, leading to the error "type must be known in this context". Applying fallback there maybe a hazard to a future where no longer need to eagerly resolve types.
 
 ### Interaction with specialization
 
