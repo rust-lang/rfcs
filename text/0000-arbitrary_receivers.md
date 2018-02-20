@@ -22,7 +22,12 @@ support any kind of pointer, such as an `Rc<Self>` or an `Arc<Self>`. Since
 late 2017, it has been available on nightly under the `arbitrary_self_types`
 feature.
 
-
+This feature is increasingly relevant because of the role of special pointer
+types to constraint self-referential types, such as generators containing
+internal references. Because different kinds of "smart pointers" can constrain
+the semantics in non trivial ways, traits can rely on certain assumptions about
+the receiver of their method, whereas just implementing the trait *for* a smart
+pointer doesn't allow that kind of reliance.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
