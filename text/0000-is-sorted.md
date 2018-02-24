@@ -17,9 +17,9 @@ is sorted. The most important use cases are probably **unit tests** and
 **pre-/post-condition checks**.
 
 The lack of an `is_sorted()` function in Rust's standard library has led to
-[countless crates implementing their own](https://github.com/search?l=Rust&q=%22fn+is_sorted%22&type=Code&utf8=%E2%9C%93).
+[countless programmers implementing their own](https://github.com/search?l=Rust&q=%22fn+is_sorted%22&type=Code&utf8=%E2%9C%93).
 While it is possible to write a one-liner using iterators (e.g.
-`(0..arr.len() - 1).all(|i| arr[i] < arr[i - 1])`), it is still unnecessary
+`(0..arr.len() - 1).all(|i| arr[i] < arr[i + 1])`), it is still unnecessary
 overhead while writing *and* reading the code.
 
 In [the corresponding issue on the main repository](https://github.com/rust-lang/rust/issues/44370)
@@ -48,7 +48,7 @@ Possible documentation of the three new methods of `Iterator`:
 > ```rust
 > fn is_sorted(self) -> bool
 > where
->     Self::Item: Ord;
+>     Self::Item: Ord,
 > ```
 > Checks if the elements of this iterator are sorted.
 >
@@ -69,7 +69,7 @@ Possible documentation of the three new methods of `Iterator`:
 > ```rust
 > fn is_sorted_by<F>(self, compare: F) -> bool
 > where
->     F: FnMut(&Self::Item, &Self::Item) -> Ordering;
+>     F: FnMut(&Self::Item, &Self::Item) -> Ordering,
 > ```
 > Checks if the elements of this iterator are sorted using the given
 > comparator function.
@@ -85,7 +85,7 @@ Possible documentation of the three new methods of `Iterator`:
 > fn is_sorted_by_key<F, K>(self, f: F) -> bool
 > where
 >     F: FnMut(&Self::Item) -> K,
->     K: Ord;
+>     K: Ord,
 > ```
 > Checks if the elements of this iterator are sorted using the given
 > key extraction function.
@@ -107,7 +107,7 @@ The methods for `[T]` will have similar documentations.
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-This RFC proposes to add the following six methods:
+This RFC proposes to add the following three methods to `[T]` (slices) and `Iterator`:
 
 ```rust
 impl<T> [T] {
@@ -156,7 +156,7 @@ condition `a <= b` holds. For slices/iterators with zero or one element, `true`
 is returned.
 
 A note about implementation: it's sufficient to only do real work in
-`Iterator::is_sorted_by`. All other methods can be simply implemented by
+`Iterator::is_sorted_by`. All other methods can simply be implemented by
 (directly or indirectly) using `Iterator::is_sorted_by`. A sample
 implementation can be found [here](https://play.rust-lang.org/?gist=8ad7ece1c99e68ee2f5c3ec2de7767b2&version=stable).
 
@@ -183,7 +183,7 @@ again, this is not a disaster.
 However, being able to call those three methods on slices (and everything that
 can be dereferences to a slice) directly, is a lot more ergonomic (especially
 given the popularity of slice-like data structures, like `Vec<T>`).
-Additionally, the `sort` method and friends is defined for slices, thus one
+Additionally, the `sort` method and friends are defined for slices, thus one
 might expect the `is_sorted()` methode there, too.
 
 
@@ -191,7 +191,7 @@ might expect the `is_sorted()` methode there, too.
 Adding these methods to every data structure in the standard libary is a lot of
 duplicate code. Optimally, we would have a trait that represents sequential
 data structures and would only add `is_sorted` and friends to said trait. We
-don't have such a trait right now; `Iterator` is the next best thing. Slices
+don't have such a trait right now; so `Iterator` is the next best thing. Slices
 deserve a special treatment due to the reasons mentioned above (popularity and
 `sort()`).
 
@@ -214,8 +214,8 @@ sequential data structures. So to check if a `LinkedList`, `VecDeque` or
 another sequential data structure is sorted, one would simply call
 `collection.iter().is_sorted()`. It's likely that this is the main usage for
 `Iterator`'s `is_sorted` methods. Additionally, code like
-`if v.is_sorted() { v.sort(); }` is not very useful:  `sort()` runs in O(n) for
-already sorted arrays.
+`if v.is_sorted() { v.sort(); }` is not very useful:  `sort()` already runs in
+O(n) for already sorted arrays.
 
 Suggestions like `is_sorted_until` are not really useful either: one can easily
 get a subslice or a part of an iterator (via `.take()`) and call `is_sorted()`
@@ -231,8 +231,8 @@ on that part.
 mentions that `Iterator::is_sorted_by_key` is not really necessary, given that
 you can simply call `map()` beforehand. This is true, but it migh still be
 favourable to include said function for consistency and ease of use. The
-standard library already hosts a number of sorting-related functions which all
-come in three flavours: *raw*, `_by` and `_by_key`. By now, programmers would
+standard library already hosts a number of sorting-related functions all of
+which come in three flavours: *raw*, `_by` and `_by_key`. By now, programmers would
 probably expect there to be an `is_sorted_by_key` as well.
 
 ### Add `std::cmp::is_sorted` instead
