@@ -31,7 +31,7 @@ Having `is_sorted()` and friends in the standard library would:
 - improve readbility of the code by clearly showing the author's intent,
 - and encourage to write more unit tests and/or pre-/post-condition checks.
 
-Another proof of the usefulness of such a function is the inclusion in the
+Another proof of this functions' usefulness is the inclusion in the
 standard library of many other languages:
 C++'s [`std::is_sorted`](http://en.cppreference.com/w/cpp/algorithm/is_sorted),
 Go's [`sort.IsSorted`](https://golang.org/pkg/sort/#IsSorted),
@@ -102,7 +102,7 @@ Possible documentation of the three new methods of `Iterator`:
 > assert!(![-2i32, -1, 0, 3].iter().is_sorted_by_key(|n| n.abs()));
 > ```
 
-The methods for `[T]` will have similar documentations.
+The methods for `[T]` will have analogous documentations.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -123,7 +123,7 @@ impl<T> [T] {
 
     fn is_sorted_by_key<F, K>(&self, f: F) -> bool
     where
-        F: FnMut(&Self::Item) -> K,
+        F: FnMut(&T) -> K,
         K: Ord,
     { ... }
 }
@@ -170,29 +170,29 @@ It increases the size of the standard library by a tiny bit.
 [alternatives]: #alternatives
 
 ### Only add the three methods to `Iterator`, but not to `[T]`
-Not being able to call `is_sorted()` on a slice directly is not terrible: from
-a slice, one can easily obtain an iterator via `iter()`. So instead of
+Without `is_sorted()` defined for slices directly, one can still fairly easily
+test if a slice is sorted by obtaining an iterator via `iter()`. So instead of
 `v.is_sorted()`, one would need to write `v.iter().is_sorted()`.
 
 This always works for `is_sorted()` because of the `Ord` blanket impl which
 implements `Ord` for all references to an `Ord` type. For `is_sorted_by` and
 `is_sorted_by_key` it would introduce an additional reference to the closures'
-arguments (i.e. `v.iter().is_sorted_by_key(|x| ...))` where `x` is `&&T`). But
-again, this is not a disaster.
+arguments (i.e. `v.iter().is_sorted_by_key(|x| ...))` where `x` is `&&T`).
 
-However, being able to call those three methods on slices (and everything that
-can be dereferences to a slice) directly, is a lot more ergonomic (especially
-given the popularity of slice-like data structures, like `Vec<T>`).
-Additionally, the `sort` method and friends are defined for slices, thus one
-might expect the `is_sorted()` methode there, too.
+While these two inconveniences are not deal-breakers, being able to call those
+three methods on slices (and all `Deref<Target=[T]>` types) directly, could be
+favourable for many programmers (especially given the popularity of slice-like
+data structures, like `Vec<T>`). Additionally, the `sort` method and friends
+are defined for slices, thus one might expect the `is_sorted()` method there,
+too.
 
 
 ### Add the three methods to additional data structures (like `LinkedList`) as well
 Adding these methods to every data structure in the standard libary is a lot of
 duplicate code. Optimally, we would have a trait that represents sequential
 data structures and would only add `is_sorted` and friends to said trait. We
-don't have such a trait right now; so `Iterator` is the next best thing. Slices
-deserve a special treatment due to the reasons mentioned above (popularity and
+don't have such a trait as of now; so `Iterator` is the next best thing. Slices
+deserve special treatment due to the reasons mentioned above (popularity and
 `sort()`).
 
 
@@ -200,7 +200,7 @@ deserve a special treatment due to the reasons mentioned above (popularity and
 [In the issue on the main repository](https://github.com/rust-lang/rust/issues/44370),
 concerns about completely consuming the iterator were raised. Some alternatives,
 such as [`while_sorted`](https://github.com/rust-lang/rust/issues/44370#issuecomment-327873139),
-were suggested. However, consuming the iterator is not really uncommon nor a
+were suggested. However, consuming the iterator is neither uncommon nor a
 problem. Methods like `count()`, `max()` and many more consume the iterator,
 too. [One comment](https://github.com/rust-lang/rust/issues/44370#issuecomment-344516366) mentions:
 
@@ -227,15 +227,18 @@ on that part.
 
 
 ### Is `Iterator::is_sorted_by_key` useless?
+
 [One comment in the corresponding issue](https://github.com/rust-lang/rust/issues/44370#issuecomment-327740685)
 mentions that `Iterator::is_sorted_by_key` is not really necessary, given that
-you can simply call `map()` beforehand. This is true, but it migh still be
+you can simply call `map()` beforehand. This is true, but it might still be
 favourable to include said function for consistency and ease of use. The
 standard library already hosts a number of sorting-related functions all of
 which come in three flavours: *raw*, `_by` and `_by_key`. By now, programmers would
 probably expect there to be an `is_sorted_by_key` as well.
 
+
 ### Add `std::cmp::is_sorted` instead
+
 As suggested [here](https://github.com/rust-lang/rust/issues/44370#issuecomment-345495831),
 one could also add this free function (plus the `_by` and `_by_key` versions)
 to `std::cmp`:
@@ -247,7 +250,23 @@ where
     C::Item: Ord,
 ```
 
-This can be seen as an better design as it avoids the question about which data
+This can be seen as a better design as it avoids the question about which data
 structure should get `is_sorted` methods. However, it might have the
 disadvantage of being less discoverable and also less convenient (long path or
 import).
+
+
+### About the closure of `Iterator::is_sorted_by_key`
+
+The method `Iterator::is_sorted_by_key` as proposed above takes a closure
+`F: FnMut(&Self::Item) -> K`. Since the iterator is consumed and – in theory –
+one only needs to extract the key once per element, the closure could take
+`Self::Item` by value instead of by reference. It is not immediately clear,
+whether this would have any real advantages.
+
+It has the disadvantage of being a bit special: `is_sorted_by`'s closure *has
+to* receive its arguments by reference, as do the closures of `[T]::is_sorted_by`
+and `[T]::is_sorted_by_key`. Additionally, when taking `Self::Item` by value,
+one can no longer implement `Iterator::is_sorted_by_key` with
+`Iterator::is_sorted_by` but would have to write a new implementation, taking
+care to call the key extraction method only once for each element.
