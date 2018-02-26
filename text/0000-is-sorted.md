@@ -23,7 +23,7 @@ While it is possible to write a one-liner using iterators (e.g.
 overhead while writing *and* reading the code.
 
 In [the corresponding issue on the main repository](https://github.com/rust-lang/rust/issues/44370)
-(from which I will reference a few comments) everyone seems to agree on the
+(from which a few comments are referenced) everyone seems to agree on the
 basic premise: we want such a function.
 
 Having `is_sorted()` and friends in the standard library would:
