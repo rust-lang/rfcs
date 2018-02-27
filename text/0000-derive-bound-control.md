@@ -781,11 +781,13 @@ We could standardize this concept in the form of an attribute
 ```
 
 The syntax `TyVar: Bound` is however not allowed in attributes currently.
-Changing this would require a language change. Another option is to quote the
-bound as `"TyVar: Bound"` as done by `serde`. This requires no larger changes,
-but is brittle, strange, and would require of syntax highlighters to understand
-`#[derive_bound]` specially. Therefore, a more permissible attribute syntax
-might be a good thing and can have positive effects elsewhere.
+Changing this would require a change to the attribute grammar to permit:
+`ident ":" bound`.
+
+Another option is to quote the bound as `"TyVar: Bound"` as done by `serde`.
+This requires no larger changes, but is brittle, strange, and would require of
+syntax highlighters to understand `#[derive_bound]` specially. Therefore, a more
+permissible attribute syntax allowing subsets of bounds, expressions and types might be a good thing and can have positive effects elsewhere.
 
 [A real world example]: https://github.com/ppedrot/kravanenn/blob/61f089e2091d1f0c4eb57b2617532e7bee63508d/src/ocaml/values.rs#L10
 
