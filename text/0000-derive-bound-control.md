@@ -31,7 +31,7 @@ Unfortunately, there are many cases where deriving fails to produce the code
 indented by manual implementations. Either the `impl`s produced are too
 restrictive by imposing bounds that shouldn't be there, which is solved by
 `#[no_bound(..)]`, or not enough bounds are imposed. When the latter is the
-case, deriving may fail entirely. This is solved by `#[bound(..)]`.
+case, deriving may fail entirely. This is solved by `#[field_bound(..)]`.
 
 The crate `serde` provides the attribute `#[serde(bound = "T: MyTrait")]`.
 This can be used solve the same issues as in this RFC. This RFC proposes a
@@ -523,9 +523,9 @@ impl<S: PartialEq, T: PartialEq> Clone for Foo<S, T> { /* .. */ }
 impl<S: PartialOrd, T: PartialEq> Clone for Foo<S, T> { /* .. */ }
 ```
 
-## Warnings
+## Errors
 
-A warning should be issued if:
+An error should be issued if:
 
 1. `#[no_bound]` is specified on a type definition without type parameters.
 
@@ -537,14 +537,21 @@ A warning should be issued if:
 
 4. `#[field_bound]` is specified on a type without fields.
 
-5. `#[field_bound]` is specified on a field which is less visible than the type
-   which contains the field.
+5. `#[field_bound]` is specified on a field with a type which is less visible
+   than the type which contains the field. If `#[field_bound]` is applied on
+   the type, then this rule applied for all fields of the type.
 
 6. `#[field_bound(Trait)]` is specified on a field of a type definition which
    does not derive `Trait`.
 
-7. `#[field_bound]` is specified on a field of a type definition which do not
+7. `#[field_bound]` is specified on a field of a type definition which does not
    derive any trait.
+
+8. `#[field_bound(Trait)]` is specified on a type definition and `Trait` is
+   registered for deriving by a custom macro which specifies
+   `#[proc_macro_derive(Trait, attributes(<attr_list>))]` where `<attr_list>`
+   does not mention `field_bound`. If `#[field_bound]` is specified instead,
+   then this applies to all traits derived. This also applies to `#[no_bound]`.
 
 ## Deriving of standard library traits
 
