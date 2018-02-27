@@ -9,13 +9,14 @@
 This RFC gives users a way to control trait bounds on derived
 implementations by allowing them to omit default bounds on type
 parameters or add bounds for field types. This is achieved with
-the two attributes `#[no_bound(Trait)]` and `#[field_bound(Trait)]`.
+the two attributes `#[derive_no_bound(Trait)]` and
+`#[derive_field_bound(Trait)]`.
 
-The semantics of `#[no_bound(Trait)]` for a type parameter `P` are:
+The semantics of `#[derive_no_bound(Trait)]` for a type parameter `P` are:
 > The type parameter `P` does not need to satisfy `Trait` for any field
 > referencing it to be `Trait`
 
-The semantics of `#[field_bound(Trait)]` on a field are that the type
+The semantics of `#[derive_field_bound(Trait)]` on a field are that the type
 of the field is added to the `where`-clause of the referenced `Trait`
 as: `FieldType: Trait`.
 
@@ -27,11 +28,12 @@ pain by significantly reducing boilerplate in many cases. Deriving also allows
 readers of code to easily see when a bunch of simple delegating `impl`s are
 defined instead of reading such boilerplate as manual `impl`s.
 
-Unfortunately, there are many cases where deriving fails to produce the code
-indented by manual implementations. Either the `impl`s produced are too
-restrictive by imposing bounds that shouldn't be there, which is solved by
-`#[no_bound(..)]`, or not enough bounds are imposed. When the latter is the
-case, deriving may fail entirely. This is solved by `#[field_bound(..)]`.
+Unfortunately, there are many cases where deriving fails to produce
+the code intended by manual implementations. Either the `impl`s produced
+are too restrictive by imposing bounds that shouldn't be there, which is
+solved by `#[derive_no_bound(..)]`, or not enough bounds are imposed.
+When the latter is the case, deriving may fail entirely. This is solved
+by `#[derive_field_bound(..)]`.
 
 The crate `serde` provides the attribute `#[serde(bound = "T: MyTrait")]`.
 This can be used solve the same issues as in this RFC. This RFC proposes a
@@ -43,21 +45,21 @@ in all of the ecosystem.
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-## Removing bounds in derive with `#[no_bound]`
+## Removing bounds in derive with `#[derive_no_bound]`
 
 Let's consider a simple new-type around an `Arc<T>`:
 
 ```rust
 #[derive(Clone)]
-struct MyArc<#[no_bound] T>(Arc<T>);
+struct MyArc<#[derive_no_bound] T>(Arc<T>);
 ```
 
-or, to apply `#[no_bound]` to all type parameters, which is in this case
+or, to apply `#[derive_no_bound]` to all type parameters, which is in this case
 equivalent:
 
 ```rust
 #[derive(Clone)]
-#[no_bound]
+#[derive_no_bound]
 struct MyArc<T>(Arc<T>);
 ```
 
@@ -68,31 +70,32 @@ The resulting `impl` will be of the form:
 impl<T> Clone for MyArc<T> { /* .. */ }
 ```
 
-We see that `#[no_bound]` on `T` is an instruction to the derive macro for
-`Clone` that it should not add `T: Clone`. This applies to any trait being
+We see that `#[derive_no_bound]` on `T` is an instruction to the derive macro
+for `Clone` that it should not add `T: Clone`. This applies to any trait being
 derived and not just `Clone`. This works since `Arc<T>: Clone` holds regardless
 of whether `T: Clone` or not.
 
-But what if you want to differentiate between the deriving behavior of various
-traits? Let's derive another trait, `PartialEq`, but still use `#[no_bound(..)]`:
+But what if you want to differentiate between the deriving behavior
+of various traits? Let's derive another trait, `PartialEq`, but still
+use `#[derive_no_bound(..)]`:
 
 ```rust
 #[derive(Clone, PartialEq)]
-struct MyArc<#[no_bound(Clone)] T>(Arc<T>);
+struct MyArc<#[derive_no_bound(Clone)] T>(Arc<T>);
 ```
 
 We can equivalently write:
 
 ```rust
 #[derive(Clone, PartialEq)]
-#[no_bound(Clone)]
+#[derive_no_bound(Clone)]
 struct MyArc<T>(Arc<T>);
 ```
 
 Here, a meaningful `PartialEq` for `MyArc<T>` requires that `T: PartialEq`.
 Therefore, we don't want that bound to be removed from the `impl` of `PartialEq`
-for `MyArc<T>`. Instead, we use `#[no_bound(Clone)]` and the resulting `impl`s
-will be:
+for `MyArc<T>`. Instead, we use `#[derive_no_bound(Clone)]` and the resulting
+`impl`s will be:
 
 ```rust
 // As before:
@@ -110,7 +113,7 @@ a wrapper around a trait object of [`Strategy`] in the crate [proptest]:
 
 ```rust
 #[derive(Clone, Debug)]
-pub struct ArcStrategy<#[no_bound(Clone)] T> {
+pub struct ArcStrategy<#[derive_no_bound(Clone)] T> {
     source: Arc<Strategy<Value = Box<ValueTree<Value = T>>>>
 }
 
@@ -135,7 +138,7 @@ use std::marker::PhantomData;
 /// A proof term that `S` and `T` are the same type (type identity).
 /// This type is only every inhabited when `S` is nominally equivalent to `T`.
 #[derive(Copy, Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
-#[no_bound]
+#[derive_no_bound]
 pub struct Id<S: ?Sized, T: ?Sized>(PhantomData<(*mut S, *mut T)>);
 
 // ..
@@ -163,7 +166,7 @@ a type where this is the case:
 
 ```rust
 #[derive(Clone)]
-struct Foo<#[no_bound] S, T> {
+struct Foo<#[derive_no_bound] S, T> {
     bar: Arc<S>,
     baz: T,
 }
@@ -179,7 +182,9 @@ With an even more complex scenario we have:
 
 ```rust
 #[derive(Clone, PartialEq)]
-struct Foo<#[no_bound(Clone)] S, T, #[no_bound(Clone, PartialEq)] U> {
+struct Foo<#[derive_no_bound(Clone)] S,
+           T,
+           #[derive_no_bound(Clone, PartialEq)] U> {
     bar: Arc<S>,
     baz: T,
     quux: PhantomData<U>
@@ -193,7 +198,7 @@ impl<S, T: Clone, U> Clone for Foo { /* .. */ }
 impl<S: PartialEq, T: PartialEq, U> Clone for Foo { /* .. */ }
 ```
 
-### `#[no_bound]` is not `#[ignore]`
+### `#[derive_no_bound]` is not `#[derive_ignore]`
 
 Consider the case of `Filter<I, P>` as in:
 
@@ -212,18 +217,18 @@ impl<I: Debug, P> Debug for Filter<I, P>
 ```
 
 Notice in particular that `P` lacks the bound `Debug`.
-To derive `Debug` instead, you might want to reach for `#[no_bound]`
+To derive `Debug` instead, you might want to reach for `#[derive_no_bound]`
 on `P` in this case as in:
 
 ```rust
 #[derive(Clone, Debug)]
-pub struct Filter<I, #[no_bound] P> {
+pub struct Filter<I, #[derive_no_bound] P> {
     iter: I,
     predicate: P,
 }
 ```
 
-This however, does not work! Why? Because `#[no_bound]` on `P` means that:
+This however, does not work! Why? Because `#[derive_no_bound]` on `P` means that:
 > The parameter `P` does not __need__ to satisfy `Trait` for any field
 > referencing it to be `Trait`
 
@@ -256,17 +261,17 @@ impl<I: Debug, P> Debug for Filter<I, P> {
 }
 ```
 
-## Adding bounds on field types with `#[field_bound]`
+## Adding bounds on field types with `#[derive_field_bound]`
 
 To gain more exact control of the bounds put on `impl`s generated by
-deriving macros you can also use the `#[field_bound(..)]` attribute.
+deriving macros you can also use the `#[derive_field_bound(..)]` attribute.
 
 A simple example is:
 
 ```rust
 #[derive(Clone, PartialEq, PartialOrd)]
 struct Foo<S, T> {
-    #[field_bound]
+    #[derive_field_bound]
     bar: Bar<S>,
     baz: Baz<T>
 }
@@ -290,9 +295,9 @@ We can also apply this to a specific trait `impl`:
 ```rust
 #[derive(Clone, PartialEq, PartialOrd)]
 struct Foo<S, T> {
-    #[field_bound(Clone)]
+    #[derive_field_bound(Clone)]
     bar: Bar<S>,
-    #[field_bound(Clone)]
+    #[derive_field_bound(Clone)]
     baz: Baz<T>
 }
 ```
@@ -312,7 +317,7 @@ We can simplify the definition above to:
 
 ```rust
 #[derive(Clone, PartialEq, PartialOrd)]
-#[field_bound(Clone)]
+#[derive_field_bound(Clone)]
 struct Foo<S, T> {
     bar: Bar<S>,
     baz: Baz<T>
@@ -323,7 +328,7 @@ or if we want to do this for all derived traits:
 
 ```rust
 #[derive(Clone, PartialEq, PartialOrd)]
-#[field_bound]
+#[derive_field_bound]
 struct Foo<S, T> {
     bar: Bar<S>,
     baz: Baz<T>
@@ -358,20 +363,20 @@ should also facilitate handling of the proposed attributes.
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-The attributes `#[no_bound(..)]` and `#[field_bound(..)]` for controlling
-how bounds are used by derive macros for standard library traits and should
-be used for those outside in custom derive macros.
+The attributes `#[derive_no_bound(..)]` and `#[derive_field_bound(..)]` for
+controlling how bounds are used by derive macros for standard library traits
+and should be used for those outside in custom derive macros.
 
-## `#[no_bound(..)]`
+## `#[derive_no_bound(..)]`
 
 ### Grammar
 
-The attribute `#[no_bound(..)]` can be placed on type definitions directly
-(`struct`, `enum`, `union`) or on formal type parameters. The attribute has
-the following grammar:
+The attribute `#[derive_no_bound(..)]` can be placed on type definitions
+directly (`struct`, `enum`, `union`) or on formal type parameters. The attribute
+has the following grammar:
 
 ```enbf
-no_bound_attr : "#" "[" "no_bound" no_bound_traits? "]" ;
+no_bound_attr : "#" "[" "derive_no_bound" no_bound_traits? "]" ;
 no_bound_traits : "(" trait_list ","? ")" ;
 trait_list : ident | ident "," trait_list ;
 ```
@@ -379,18 +384,18 @@ trait_list : ident | ident "," trait_list ;
 ### Semantics - on a formal type parameter
 
 Formally: Assuming a formal type parameter `P`, and the attribute
-`#[no_bound(Trait)]` on `P` for a given specific trait `Trait`, specifying
-the attribute `#[derive(Trait)]` shall **NOT** add a bound `P: Trait` to
-either the `where`-clause or directly where `P` is brought into scope
+`#[derive_no_bound(Trait)]` on `P` for a given specific trait `Trait`,
+specifying the attribute `#[derive(Trait)]` shall **NOT** add a bound `P: Trait`
+to either the `where`-clause or directly where `P` is brought into scope
 (`impl<P: Bound..>`) in the `impl<.., P, ..> Trait<..> for Type<.., P, ..>`
 generated by a derive macro for `Trait`. This does not necessarily mean that
 the field which in some way references `P` does not need to implement the
 `Trait` in question.
 
-When `#[no_bound(..)]` contains a comma separated list of traits,
+When `#[derive_no_bound(..)]` contains a comma separated list of traits,
 these semantics will apply to each trait referenced but not other traits.
 
-When `#[no_bound]` is used (with no traits referenced), these rules will
+When `#[derive_no_bound]` is used (with no traits referenced), these rules will
 apply to all derived traits.
 
 #### An example
@@ -399,7 +404,7 @@ Given the following type definition:
 
 ```rust
 #[derive(Clone)]
-struct Foo<#[no_bound] S, T> {
+struct Foo<#[derive_no_bound] S, T> {
     bar: Arc<S>,
     baz: T,
 }
@@ -414,8 +419,8 @@ Clone for Foo { /* .. */ }
 
 ### Semantics - on a type
 
-When `#[no_bound(..)]` is applied directly on a type, this is equivalent to
-specifying the identical attribute on each formal type parameter of the type.
+When `#[derive_no_bound(..)]` is applied directly on a type, this is equivalent
+to specifying the identical attribute on each formal type parameter of the type.
 
 #### An example
 
@@ -425,7 +430,7 @@ Consider a `Refl` encoding in Rust:
 use std::marker::PhantomData;
 
 #[derive(Copy, Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
-#[no_bound]
+#[derive_no_bound]
 pub struct Id<S: ?Sized, T: ?Sized>(PhantomData<(*mut S, *mut T)>);
 ```
 
@@ -442,32 +447,34 @@ impl<S: ?Sized, T: ?Sized> PartialOrd for Id<S, T> { /* .. */ }
 impl<S: ?Sized, T: ?Sized> Ord        for Id<S, T> { /* .. */ }
 ```
 
-## `#[field_bound(..)]`
+## `#[derive_field_bound(..)]`
 
 ### Grammar
 
-The attribute `#[field_bound(..)]` can be placed on type definitions directly
-(`struct`, `enum`, `union`) or on their fields. Note in particular that they may
-not be specified on variants of `enum`s. The attribute has the following grammar:
+The attribute `#[derive_field_bound(..)]` can be placed on type definitions
+directly (`struct`, `enum`, `union`) or on their fields. Note in particular
+that they may not be specified on variants of `enum`s. The attribute has the
+following grammar:
 
 ```enbf
-field_bound_attr : "#" "[" "field_bound" field_bound_traits? "]" ;
+field_bound_attr : "#" "[" "derive_field_bound" field_bound_traits? "]" ;
 field_bound_traits : "(" trait_list ","? ")" ;
 trait_list : ident | ident "," trait_list ;
 ```
 
 ### Semantics - on a field
 
-Formally: Assuming a field `F`, either named or unnamed, of type `FieldType`,
-and the attribute `#[field_bound(Trait)]` on `F` for a specific trait `Trait`,
-specifying the attribute `#[derive(Trait)]` shall add a bound `FieldType: Trait`
-in the `where`-clause in the `impl<..> Trait<..> for Type<..>` generated by a
-derive macro for `Trait`.
+Formally: Assuming a field `F`, either named or unnamed, of
+type `FieldType`, and the attribute `#[derive_field_bound(Trait)]`
+on `F` for a specific trait`Trait`, specifying the attribute
+`#[derive(Trait)]` shall add a bound `FieldType: Trait` in the
+`where`-clause in the `impl<..> Trait<..> for Type<..>` generated
+by a derive macro for `Trait`.
 
-When `#[field_bound(..)]` contains a comma separated list of traits,
+When `#[derive_field_bound(..)]` contains a comma separated list of traits,
 these semantics will apply to each trait referenced but not other traits.
 
-When `#[field_bound]` is used (with no traits referenced), these rules
+When `#[derive_field_bound]` is used (with no traits referenced), these rules
 will apply to all derived traits.
 
 #### An example
@@ -477,7 +484,7 @@ Given the following type definition:
 ```rust
 #[derive(Clone, PartialEq, PartialOrd)]
 struct Foo<S, T> {
-    #[field_bound(Clone)]
+    #[derive_field_bound(Clone)]
     bar: Bar<S>,
     baz: Baz<T>
 }
@@ -496,8 +503,8 @@ impl<S: PartialOrd, T: PartialEq> Clone for Foo<S, T> { /* .. */ }
 
 ### Semantics - on a type
 
-When `#[field_bound(..)]` is applied directly on a type, this is equivalent
-to specifying the identical attribute on each field of the type.
+When `#[derive_field_bound(..)]` is applied directly on a type, this is
+equivalent to specifying the identical attribute on each field of the type.
 
 #### An example
 
@@ -505,7 +512,7 @@ Given the following type definition:
 
 ```rust
 #[derive(Clone, PartialEq, PartialOrd)]
-#[field_bound(Clone)]
+#[derive_field_bound(Clone)]
 struct Foo<S, T> {
     bar: Bar<S>,
     baz: Baz<T>
@@ -527,31 +534,32 @@ impl<S: PartialOrd, T: PartialEq> Clone for Foo<S, T> { /* .. */ }
 
 An error should be issued if:
 
-1. `#[no_bound]` is specified on a type definition without type parameters.
+1. `#[derive_no_bound]` is specified on a type definition without type parameters.
 
-2. `#[no_bound(Trait)]` is specified on a type definition which does not derive
-   `Trait`.
+2. `#[derive_no_bound(Trait)]` is specified on a type definition which does
+   not derive `Trait`.
 
-3. `#[no_bound]` is specified on a type definition which does not derive any
-   trait.
+3. `#[derive_no_bound]` is specified on a type definition which does not derive
+   any trait.
 
-4. `#[field_bound]` is specified on a type without fields.
+4. `#[derive_field_bound]` is specified on a type without fields.
 
-5. `#[field_bound]` is specified on a field with a type which is less visible
-   than the type which contains the field. If `#[field_bound]` is applied on
-   the type, then this rule applied for all fields of the type.
+5. `#[derive_field_bound]` is specified on a field with a type which is less
+   visible than the type which contains the field. If `#[derive_field_bound]`
+   is applied on the type, then this rule applied for all fields of the type.
 
-6. `#[field_bound(Trait)]` is specified on a field of a type definition which
-   does not derive `Trait`.
+6. `#[derive_field_bound(Trait)]` is specified on a field of a type definition
+   which does not derive `Trait`.
 
-7. `#[field_bound]` is specified on a field of a type definition which does not
-   derive any trait.
+7. `#[derive_field_bound]` is specified on a field of a type definition which
+   does not derive any trait.
 
-8. `#[field_bound(Trait)]` is specified on a type definition and `Trait` is
-   registered for deriving by a custom macro which specifies
+8. `#[derive_field_bound(Trait)]` is specified on a type definition and `Trait`
+   is registered for deriving by a custom macro which specifies
    `#[proc_macro_derive(Trait, attributes(<attr_list>))]` where `<attr_list>`
-   does not mention `field_bound`. If `#[field_bound]` is specified instead,
-   then this applies to all traits derived. This also applies to `#[no_bound]`.
+   does not mention `derive_field_bound`. If `#[derive_field_bound]` is
+   specified instead, then this applies to all traits derived.
+   This also applies to `#[derive_no_bound]`.
 
 ## Deriving of standard library traits
 
@@ -586,8 +594,15 @@ As with any RFC, an alternative is to say that the status quo is good enough,
 but for the reasons mentioned in the [motivation], steps should be taken to
 make the derive system of Rust more flexible.
 
+One alternative design of this RFC would be to only permit the form
+`#[derive_bound(<List of traits>, T: <Bound>)]` and then call it
+a day since the form is strictly more general. However, this form is
+also less automating for a lot of cases.
+
 # Prior art
 [prior-art]: #prior-art
+
+## Haskell
 
 [RFC 534]: https://github.com/rust-lang/rfcs/blob/master/text/0534-deriving2derive.md
 
@@ -596,42 +611,59 @@ the change in [RFC 534] where `#[deriving(..)]` became `#[derive(..)]`.
 
 As Haskell does not have a feature similar to Rust's attributes, it is not
 possible to configure deriving mechanisms in Haskell. Therefore, there is no
-prior art. The features proposed here would be unique to Rust.
+prior art there. The features proposed here would be unique to Rust.
+
+## The [`derivative`] crate
+
+[`derivative`]: https://mcarton.github.io/rust-derivative/
+
+There is some prior art among crates in Rust. The crate [`derivative`] provides
+the ability to customize the deriving mechanisms of derivable standard library
+traits. We will now discuss the customizations in that crate compared to this
+RFC.
+
+The attribute form `#[derivative(Default(bound=""))]` is supported by the
+`#[derive_no_bound]` attribute while the more general form is supported by
+the form `#[bound(<List of traits>, T: <Bound>)]`, which is discussed as a
+possible extension of this RFC in the [Unresolved questions][unresolved].
+This more general form is also supported by the `serde` crate.
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
-## 1. Should `#[no_bound]` be permitted on fields?
+## 1. Should `#[derive_no_bound]` be permitted on fields?
 
 Let's reconsider this example:
 
 ```rust
 #[derive(Clone, PartialEq)]
-struct Foo<#[no_bound(Clone)] S, T, #[no_bound(Clone, PartialEq)] U> {
+struct Foo<#[derive_no_bound(Clone)] S,
+           T,
+           #[derive_no_bound(Clone, PartialEq)] U> {
     bar: Arc<S>,
     baz: T,
     quux: PhantomData<U>
 }
 ```
 
-We could also permit `#[no_bound(..)]` on fields as well and reformulate
-the above snippet as:
+We could also permit `#[derive_no_bound(..)]` on fields as well and
+reformulate the above snippet as:
 
 ```rust
 #[derive(Clone, PartialEq)]
 struct Foo<S, T, U> {
-    #[no_bound(Clone)]
+    #[derive_no_bound(Clone)]
     bar: Arc<S>,
     baz: T,
-    #[no_bound(Clone, PartialEq)]
+    #[derive_no_bound(Clone, PartialEq)]
     quux: PhantomData<U>
 }
 ```
 
 This is arguably more readable, but hinges on the semantics that bounds are
-added by performing name resolution on each field's type and searching for
-type parameters in those for usage. This behavior, while not very complex to
-encode using visitors the `syn` crate, is not used by derivable traits in the
+added by performing name resolution on each field's type and searching for type
+parameters in those for usage. This behavior, while not very complex to encode
+using visitors from the `syn` crate, is not used by derivable traits in the
 standard library. Therefore, the experience would not be uniform across traits.
 
 Such behavior will also handle type macros poorly. Given the type position
@@ -649,15 +681,19 @@ case using the field based approach becomes more robust.
 
 [RFC 2320]: https://github.com/rust-lang/rfcs/pull/2320
 
-## 2. Should `#[field_bound]` and `#[no_bound]` be combinable?
+There's also the question of whether interpretations of `#[derive_no_bound]`
+on fields is legible and intuitive, which misunderstandings so far during
+development of this RFC has shown is not unlikely.
+
+## 2. Should `#[derive_field_bound]` and `#[derive_no_bound]` be combinable?
 
 Consider the following snippet:
 
 ```rust
 #[derive(Clone, PartialEq, PartialOrd)]
 struct Foo<T> {
-    #[field_bound]
-    #[no_bound(Clone)]
+    #[derive_field_bound]
+    #[derive_no_bound(Clone)]
     field: Bar<T>
 }
 ```
@@ -673,26 +709,27 @@ impl<T: PartialOrd> PartialOrd for Foo<T> where Bar<T>: PartialOrd {..}
 This is currently not proposed as it is deemed unnecessary, but the mechanism
 should be considered.
 
-## 3. Should `#[field_bound]` be named just `#[bound]`?
+## 3. Should `#[derive_field_bound]` be named just `#[derive_bound]`?
 
 The latter is shorter, but less legible, wherefore we've opted to use
-`#[field_bound]` at the moment.
+`#[derive_field_bound]` at the moment.
 
-## 4. Should the attributes be prefixed with `derive_`?
+## 4. Should the attributes not be prefixed with `derive_`?
 
-While this makes the attributes more legible on types and reduces the
-chance of conflict, prefixing the attributes with `derive_` can become
-overly verbose, wherefore the RFC currently does not propose prefixing.
-Such prefixing can become especially verbose when applied on type parameters.
+Prefixing with `derive_` is more legible and reduces the chance of conflict.
+But it is also more verbose, especially when applied on type parameters.
+The current thinking is that readability takes precedence over reducing
+possible verbosity. In any case, prefixing with `derive_` is far less verbose
+than manually implementing the trait.
 
-## 5. Permit `field: Vec<#[field_bound] Arc<T>>`?
+## 5. Permit `field: Vec<#[derive_field_bound] Arc<T>>`?
 
-If so, `#[bound]` is a more correct name. However, the current thinking
+If so, `#[derive_bound]` is a more correct name. However, the current thinking
 is that this requires parsing changes while also looking weird. This may
 be a step too far - in such cases, manual `impl`s are probably better.
 For these reasons, the RFC does not propose this mechanism currently.
 
-## 6. Permit `#[bound(<List of traits>, T: <Bound>)]`?
+## 6. Permit `#[derive_bound(<List of traits>, T: <Bound>)]`?
 
 [serde_bound_desc]: https://serde.rs/container-attrs.html#serdebound--t-mytrait
 
@@ -705,50 +742,50 @@ is [described][serde_bound_desc] as follows:
 > This replaces any trait bounds inferred by Serde.
 
 We could standardize this concept in the form of an attribute
-`#[bound(..)]` put on types with a syntax permitting:
+`#[derive_bound(..)]` put on types with a syntax permitting:
 
 + Replace bounds on impl of `Clone` and `PartialEq` with `T: Sync`
 
 ```rust
-#[bound(Clone, PartialEq, T: Sync)]
+#[derive_bound(Clone, PartialEq, T: Sync)]
 ```
 
 + Replace bounds on impl of `Clone` with `T: Sync + 'static`
 
 ```rust
-#[bound(Clone, T: Sync + 'static)]
+#[derive_bound(Clone, T: Sync + 'static)]
 ```
 
 + Replace bounds on all derived traits with `T: Copy`
 
 ```rust
-#[bound(T: Copy)]
+#[derive_bound(T: Copy)]
 ```
 
 + No bounds on impl of `Clone` and `PartialEq`
 
 ```rust
-#[bound(Clone, PartialEq)]
+#[derive_bound(Clone, PartialEq)]
 ```
 
 + No bounds on impl of `Clone`
 
 ```rust
-#[bound(Clone)]
+#[derive_bound(Clone)]
 ```
 
 + No bounds on all derived traits:
 
 ```rust
-#[bound]
+#[derive_bound]
 ```
 
 The syntax `TyVar: Bound` is however not allowed in attributes currently.
 Changing this would require a language change. Another option is to quote the
 bound as `"TyVar: Bound"` as done by `serde`. This requires no larger changes,
 but is brittle, strange, and would require of syntax highlighters to understand
-`#[bound]` specially. Therefore, a more permissible attribute syntax might be a
-good thing and can have positive effects elsewhere.
+`#[derive_bound]` specially. Therefore, a more permissible attribute syntax
+might be a good thing and can have positive effects elsewhere.
 
 [A real world example]: https://github.com/ppedrot/kravanenn/blob/61f089e2091d1f0c4eb57b2617532e7bee63508d/src/ocaml/values.rs#L10
 
@@ -757,7 +794,7 @@ good thing and can have positive effects elsewhere.
 #[derive(Debug, Clone, DeserializeState, Hash, PartialEq, Eq)]
 #[serde(deserialize_state = "Seed<'de>")]
 #[serde(bound(deserialize =
-    "T: serde::de::DeserializeState<'de, Seed<'de>> + Send + Sync + 'static"))]
+    "T: DeserializeState<'de, Seed<'de>> + Send + Sync + 'static"))]
 pub enum List<T> {
     Nil,
      Cons(#[serde(deserialize_state)] ORef<(T, List<T>)>),
@@ -769,10 +806,24 @@ with `#[bound]`, this is rewritten as:
 ```rust
 #[derive(Debug, Clone, DeserializeState, Hash, PartialEq, Eq)]
 #[serde(deserialize_state = "Seed<'de>")]
-#[bound(Deserialize,
-    T: serde::de::DeserializeState<'de, Seed<'de>> + Send + Sync + 'static)]
+#[derive_bound(Deserialize,
+    T: DeserializeState<'de, Seed<'de>> + Send + Sync + 'static)]
 pub enum List<T> {
     Nil,
      Cons(#[serde(deserialize_state)] ORef<(T, List<T>)>),
 }
 ```
+
+## 7. Permit `#[derive_no_bound()]` and `#[derive_field_bound()]`?
+
+If we consider the exact syntax `#[derive_no_bound()]`, there are
+two interpretations that come to mind:
+
+1. Equivalent to `#[derive_no_bound]`.
+2. Equivalent to *"ignore the bound in an empty set of traits"*.
+
+The 2nd interpretation is useful for macros, while the 1st may make more
+sense for a reader, which would just write `#[derive_no_bound]`. Since
+the 2nd interpretation is more useful, it is probably more appropriate.
+To avoid the confusion for users who write this manually, a warning could
+be issued which macros may supress.
