@@ -254,7 +254,7 @@ inserting any necessary `, _`s.
 [drawbacks]: #drawbacks
 
 + The user will no longer be met with a hard error when new type parameters
-are introduced. While this is mostly seen as an advantage, but some users may
+are introduced. While this is mostly seen as an advantage, some users may
 want to get such errors.
 
 + It *might* slow down type checking to a small degree by having the compiler
@@ -268,6 +268,8 @@ the definition site in any case.
 The alternative is to not do this. This means that a papercut in deailing with
 generics remains.
 
+## Acknolowedging extra inferred parameters with `..`
+
 Another alternative is to use the syntax `turbo::<u32, ..>()` to get rid of
 any extra `, _`s. This syntax may however be more useful for variadics. Also,
 the `, ..` makes the call longer for the most common case which is when you have
@@ -276,16 +278,36 @@ acknowledge that inference is going on is inconsistent with the language in
 general. There is no requirement to acknowledge type inference elsewhere.
 Instead, the fact that type inference is going on should itself be inferred.
 
-# Unresolved questions
-[unresolved]: #unresolved-questions
+## Opting into partial turbofish at definition site
 
-+ How should the error messages when too many arguments are omitted look like?
+In a possible amendment to this RFC, we could require that the definition site
+of a function or a data constructor explicitly opt into allowing turbofish with
+the proposed syntax:
 
-# In relation to other languages
+```rust
+fn foo<T, U = _, V = _>(..) { .. }
+```
+
+While this gives a greater degree of control to authors, it also comes with
+downsides:
+
+1. Assuming that partial turbofish is the desirable default behavior, authors
+   of generic functions are penalized by having to opt in with `= _` on every
+   generic parameter.
+
+2. More choices comes with an increased mental cost of deciding whether to
+   use `= _` or not, which may not be worth the additional control afforded.
+
+3. Opting in leaves users of generic functions and data constructors with doubt
+   as to whether this or that function has opted in, wherefore they must check
+   the documentation. This uncertainty can contribute to disturbing writing flow.
+
+# Prior art
 
 ## From a Haskell perspective
 
 In Haskell, a function:
+
 ```haskell
 fun :: a -> Int -> c
 fun a i c = expr
@@ -304,11 +326,16 @@ the judgement that:
 |- (Λ a. Λ b. λ x1^a. λ x2^Int. λ x3^c. expr) : ∀ a. ∀ c. a -> Int -> c
 ```
 
-Here, `Λ a.` is a lambda function taking a type, and not a term. In Haskell, the
-feature `TypeApplications` lets developers partially apply types to such lambdas
-as in: `fun @Int :: Int -> Int -> c`. Rust also allows this via the turbofish
-mechanism: `::<T1, T2, ...>`. Unlike Haskell, Rust does however not allow the
-user to only apply some types as a prefix, but requires the user to supply all
-types. `TypeApplications` in Rust is therefore an all-or-nothing proposition:
-"Either you give me all the concrete types, or I will try to infer them all for
-you".
+Here, `Λ a.` is a lambda function taking a type, and not a term. In Haskell,
+the language pragma `TypeApplications` enabled with lets developers partially
+apply  types to such lambdas with the syntax: `fun @Int :: Int -> Int -> c`.
+Rust also allows type application via the turbofish mechanism: `::<T1, T2, ...>`.
+Unlike Haskell, Rust does however not allow the user to only apply some types
+as a prefix, but requires the user to supply all types. Type application in
+Rust is therefore an all-or-nothing proposition: "Either you give me all the
+concrete types, or I will try to infer them all for you".
+
+# Unresolved questions
+[unresolved]: #unresolved-questions
+
++ How should the error messages when too many arguments are omitted look like?
