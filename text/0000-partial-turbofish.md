@@ -11,7 +11,7 @@ Assume a function (free, inherent, trait, ...)
 `$($tparam: ident),*`. If while calling `turbo::< $($tconcrete: ty),* >(...)` a
 suffix of the applied types can be replaced with a list of `_`s of equal length,
 then the suffix may be omitted entirely. A shorter suffix may be chosen at will.
-This also applies to *turbofish*ing types (structs, enums, ..), i.e:
+This also applies to turbofishing types (structs, enums, ..), i.e:
 `Type::< $($tconcrete: ty),* >::fun(..)`.
 
 In concrete terms, this entails that if `turbo::<u32, _>()` and
