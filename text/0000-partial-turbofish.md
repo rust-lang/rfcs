@@ -304,8 +304,6 @@ downsides:
 
 # Prior art
 
-## From a Haskell perspective
-
 In Haskell, a function:
 
 ```haskell
