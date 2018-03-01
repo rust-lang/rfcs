@@ -1,6 +1,6 @@
 - Feature Name: `repr_transparent`
 - Start Date: 2016-09-26
-- RFC PR: https://github.com/rust-lang/rfcs/pull/1758
+- RFC PR: [rust-lang/rfcs#1758](https://github.com/rust-lang/rfcs/pull/1758)
 - Rust Issue:https://github.com/rust-lang/rust/issues/43036
 
 # Summary
@@ -117,16 +117,14 @@ have the same representation as their underlying types.
 
 [RFC 1649]: https://github.com/rust-lang/rfcs/pull/1649
 
-This new representation cannot be used with any other representation attribute
-but alignment, to be able to specify a transparent wrapper with additional
-alignment constraints:
+This new representation cannot be used with any other representation attribute:
 
 ```rust
 #[repr(transparent, align = "128")]
-struct OverAligned(f64); // Behaves as a bare f64 with 128 bits alignment.
+struct BogusAlign(f64); // Error, must be aligned like the underlying type.
 
 #[repr(C, transparent)]
-struct BogusRepr(f64); // Nonsensical, repr cannot be C and transparent.
+struct BogusRepr(f64); // Error, repr cannot be C and transparent.
 ```
 
 As a matter of optimisation, eligible `#[repr(Rust)]` structs behave as if
