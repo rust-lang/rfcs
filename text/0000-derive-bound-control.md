@@ -496,9 +496,9 @@ The generated `impl`s are:
 impl<S: Clone, T: Clone> Clone for Foo<S, T>
 where Bar<S>: Clone { /* .. */ } // <-- Note the where clause!
 
-impl<S: PartialEq, T: PartialEq> Clone for Foo<S, T> { /* .. */ }
+impl<S: PartialEq, T: PartialEq> PartialEq for Foo<S, T> { /* .. */ }
 
-impl<S: PartialOrd, T: PartialEq> Clone for Foo<S, T> { /* .. */ }
+impl<S: PartialOrd, T: PartialEq> PartialOrd for Foo<S, T> { /* .. */ }
 ```
 
 ### Semantics - on a type
@@ -525,9 +525,9 @@ The generated `impl`s are:
 impl<S: Clone, T: Clone> Clone for Foo<S, T>
 where Bar<S>: Clone, Baz<T>: Clone { /* .. */ } // <-- Note!
 
-impl<S: PartialEq, T: PartialEq> Clone for Foo<S, T> { /* .. */ }
+impl<S: PartialEq, T: PartialEq> PartialEq for Foo<S, T> { /* .. */ }
 
-impl<S: PartialOrd, T: PartialEq> Clone for Foo<S, T> { /* .. */ }
+impl<S: PartialOrd, T: PartialEq> PartialOrd for Foo<S, T> { /* .. */ }
 ```
 
 ## Errors
