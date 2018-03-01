@@ -48,13 +48,17 @@ Possible documentation of the three new methods of `Iterator`:
 > ```rust
 > fn is_sorted(self) -> bool
 > where
->     Self::Item: Ord,
+>     Self::Item: PartialOrd,
 > ```
 > Checks if the elements of this iterator are sorted.
 >
 > That is, for each element `a` and its following element `b`, `a <= b`
 > must hold. If the iterator yields exactly zero or one element, `true`
 > is returned.
+>
+> Note that if `Self::Item` is only `PartialOrd`, but not `Ord`, the above
+> definition implies that this function returns `false` if any two
+> consecutive items are not comparable.
 >
 > ## Example
 >
@@ -63,20 +67,21 @@ Possible documentation of the three new methods of `Iterator`:
 > assert!(![1, 3, 2, 4).iter().is_sorted());
 > assert!([0].iter().is_sorted());
 > assert!(std::iter::empty::<i32>().is_sorted());
+> assert!(![0.0, 1.0, std::f32::NAN].iter().is_sorted());
 > ```
 > ---
 >
 > ```rust
 > fn is_sorted_by<F>(self, compare: F) -> bool
 > where
->     F: FnMut(&Self::Item, &Self::Item) -> Ordering,
+>     F: FnMut(&Self::Item, &Self::Item) -> Option<Ordering>,
 > ```
 > Checks if the elements of this iterator are sorted using the given
 > comparator function.
 >
-> Instead of using `Ord::cmp`, this function uses the given `compare`
-> function to determine the ordering of two elements. Apart from that,
-> it's equivalent to `is_sorted`; see its documentation for more
+> Instead of using `PartialOrd::partial_cmp`, this function uses the given
+> `compare` function to determine the ordering of two elements. Apart from
+> that, it's equivalent to `is_sorted`; see its documentation for more
 > information.
 >
 > ---
@@ -85,7 +90,7 @@ Possible documentation of the three new methods of `Iterator`:
 > fn is_sorted_by_key<F, K>(self, f: F) -> bool
 > where
 >     F: FnMut(&Self::Item) -> K,
->     K: Ord,
+>     K: PartialOrd,
 > ```
 > Checks if the elements of this iterator are sorted using the given
 > key extraction function.
@@ -113,36 +118,36 @@ This RFC proposes to add the following three methods to `[T]` (slices) and `Iter
 impl<T> [T] {
     fn is_sorted(&self) -> bool
     where
-        T: Ord,
+        T: PartialOrd,
     { ... }
 
     fn is_sorted_by<F>(&self, compare: F) -> bool
     where
-        F: FnMut(&T, &T) -> Ordering,
+        F: FnMut(&T, &T) -> Option<Ordering>,
     { ... }
 
     fn is_sorted_by_key<F, K>(&self, f: F) -> bool
     where
         F: FnMut(&T) -> K,
-        K: Ord,
+        K: PartialOrd,
     { ... }
 }
 
 trait Iterator {
     fn is_sorted(self) -> bool
     where
-        Self::Item: Ord,
+        Self::Item: PartialOrd,
     { ... }
 
     fn is_sorted_by<F>(mut self, compare: F) -> bool
     where
-        F: FnMut(&Self::Item, &Self::Item) -> Ordering,
+        F: FnMut(&Self::Item, &Self::Item) -> Option<Ordering>,
     { ... }
 
     fn is_sorted_by_key<F, K>(self, mut f: F) -> bool
     where
         F: FnMut(&Self::Item) -> K,
-        K: Ord,
+        K: PartialOrd,
     { ... }
 }
 ```
@@ -150,15 +155,17 @@ trait Iterator {
 In addition to the changes shown above, the three methods should also be added
 to `core::slice::SliceExt` as they don't require heap allocations.
 
-To repeat the exact semantics from the prior section: the methods return `true`
-if and only if for each element `a` and its following element `b`, the
-condition `a <= b` holds. For slices/iterators with zero or one element, `true`
-is returned.
+To repeat the exact semantics from the prior section: the methods return
+`true` if and only if for each element `a` and its following element `b`, the
+condition `a <= b` holds. For slices/iterators with zero or one element,
+`true` is returned. For elements which implement `PartialOrd`, but not `Ord`,
+the function returns `false` if any two consecutive elements are not
+comparable (this is an implication of the `a <= b` condition from above).
 
 A note about implementation: it's sufficient to only do real work in
 `Iterator::is_sorted_by`. All other methods can simply be implemented by
 (directly or indirectly) using `Iterator::is_sorted_by`. A sample
-implementation can be found [here](https://play.rust-lang.org/?gist=8ad7ece1c99e68ee2f5c3ec2de7767b2&version=stable).
+implementation can be found [here](https://play.rust-lang.org/?gist=431ff42fe8ba5980fcf9250c8bc4492b&version=stable).
 
 
 # Drawbacks
@@ -270,3 +277,26 @@ and `[T]::is_sorted_by_key`. Additionally, when taking `Self::Item` by value,
 one can no longer implement `Iterator::is_sorted_by_key` with
 `Iterator::is_sorted_by` but would have to write a new implementation, taking
 care to call the key extraction method only once for each element.
+
+
+### Require `Ord` instead of only `PartialOrd`
+
+As proposed in this RFC, `is_sorted` only requires its elements to be
+`PartialOrd`. If two non-comparable elements are encountered, `false` is
+returned. This is probably the only useful way to define the function for
+partially orderable elements.
+
+While it's convenient to call `is_sorted()` on slices containing only
+partially orderable elements (like floats), we might want to use the stronger
+`Ord` bound:
+
+- Firstly, for most programmers it's probably not *immediately* clear how the
+  function is defined for partially ordered elements (the documentation should
+  be sufficient as explanation, though).
+- Secondly, being able to call `is_sorted` on something will probably make
+  most programmers think, that calling `sort` on the same thing is possible,
+  too. Having different bounds for `is_sorted` and `sort` thus might lead to
+  confusion.
+- Lastly, the `is_sorted_by` function currently uses a closure which returns
+  `Option<Ordering>`. This differs from the closure for `sort_by` and looks a
+  bit more complicated than necessary for most cases.
