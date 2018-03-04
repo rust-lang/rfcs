@@ -626,6 +626,13 @@ why this is a reasonable conjecture:
    This means that owned `T`s are reachable from the type which contained the
    `PhantomData<T>`.
 
+## Alternative: Add `PhantomData<T>` to the prelude
+
+By adding `PhantomData<T>` to the prelude, we can at least get rid of the step
+that you have to import `PhantomData`. However, this does not solve the problem
+of having to add a marker type or to pass around an expression `PhantomData` in
+literals.
+
 ## Alternative: Allow filling unspecified fields with `Default`
 
 Simply put, this would mean that a struct literal such as `Foo { .. }` would
