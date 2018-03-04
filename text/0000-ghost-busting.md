@@ -74,7 +74,10 @@ by being able to skip steps 1 and 3 and instead write:
 
 ```rust
 struct MyVec<T> {
+    // We must include `phantom T` so that the drop checker understands
+    // that we logically own a `T`.
     phantom T,
+    // If we omit `phantom T` then the drop checker thinks `T` is non-owned.
     data: *const T,
     len: usize,
     cap: usize,
