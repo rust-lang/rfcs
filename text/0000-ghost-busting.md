@@ -526,7 +526,7 @@ Since `phantom` fields have no representation in memory, there is also no
 While `phantom` fields are not nameable, they permit visibility modifiers on
 them. The default visibility of a `phantom` field is private as with other
 fields. Therefore, having a type definition with no fields but private `phantom`
-fields will cause other modules to not being able to construct the type.
+fields will cause other modules not to be able to construct the type.
 
 As `phantom` fields contribute logically to type definitions, attributes are
 permitted on them including doc comments in the form of `/// Documentation..`.
