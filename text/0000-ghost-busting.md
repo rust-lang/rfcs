@@ -351,19 +351,6 @@ the a value of type `Id<A, B>` where `A != B` could be constructed with `Id {}`
 and now we've introduced unsoundness into the type system. Always-private
 visibility would also be undesirable since it would be too restrictive.
 
-[screeps_api]: https://dabo.guru/rust/screeps-api/src/screeps_api/endpoints/recent_pvp.rs.html
-
-Respecting privacy also allows us to encode the [following idiom][screeps_api]:
-
-```rust
-pub struct Thing {
-    pub foo: usize,
-    pub bar: String,
-    /// Permits adding fields in the future since () is private.
-    phantom (),
-}
-```
-
 ### Attributes
 
 The keen reader will also have noticed here that attributes are permitted on
