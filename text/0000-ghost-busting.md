@@ -644,6 +644,10 @@ with `PhantomData` more ergonomic since expressions involving those do not
 have to write out `field: PhantomData`. However, this does not solve the issue
 of pain when dealing with type definitions.
 
+[RFC 1806]: https://github.com/rust-lang/rfcs/pull/1806
+
+A slightly modified version of this was proposed in the now postponed [RFC 1806].
+
 # Prior art
 [prior-art]: #prior-art
 
