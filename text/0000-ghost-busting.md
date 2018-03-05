@@ -648,6 +648,27 @@ of pain when dealing with type definitions.
 
 A slightly modified version of this was proposed in the now postponed [RFC 1806].
 
+## Alternative: `#[phantom]` attributes on fields
+
+This alternative would allow a user to define `Id<A, B>` as:
+
+```rust
+struct Id<A, B> {
+    #[phantom]
+    _marker: (fn(A) -> A, fn(B) -> B),
+}
+```
+
+This has the benefit that privacy is controlled via normal fields and does
+not introduce any new surface syntax. However, this idea has a few problems:
+
+1. You have to invent a name `_marker` for what should be unnameable.
+2. It is not at all obvious that you can't access a value of type `T` with
+   `self._marker`. A reasonable reader can easily assume this. If we permit
+   such an attribute - what would the type of `_marker` be? If it is
+   `PhantomData<T>`, then the mental model of types is instead complicated
+   and a library type becomes even more magical.
+
 # Prior art
 [prior-art]: #prior-art
 
