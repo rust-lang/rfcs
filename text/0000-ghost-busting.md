@@ -499,7 +499,7 @@ and as such, they can't be referred to with field access syntax `<expr>.<field>`
 as well as in struct literal expressions for structs with named fields as in:
 `Type { field: <expr> }` or for tuple structs `Type(<expr>)`. As a consequence, 
 you can coerce the following type `Foo` into a function pointer of type
-`fn(u8) -> Foo<u8, SomeType>`:
+`fn(X) -> Foo<X, Y>`:
 
 ```rust
 struct Foo<X, Y>(X, phantom Y);
