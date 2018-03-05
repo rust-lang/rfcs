@@ -15,6 +15,8 @@
 
 2. Introduces `phantom T` pseudo-fields which improves the ergonomics of
    changing [variance] and [drop checking] behavior when it is needed.
+   A `phantom T` field also has the same behavior with respect to auto traits
+   as [`PhantomData<T>`] does.
 
 3. [`PhantomData<T>`] is redefined as `struct PhantomData<T: ?Sized>;`
    and deprecated.
@@ -362,6 +364,49 @@ for `#[doc="Some documentation..."]`.
 
 [just sugar]: https://doc.rust-lang.org/book/first-edition/documentation.html#doc-attributes
 
+### Auto traits
+
+[implementing `Void`]: https://github.com/rust-lang/rust/blob/621e61bff92554d784aab13a507afcc0acdde53b/src/libcore/fmt/mod.rs#L265-L275
+
+The type [`PhantomData<T>`] has a special behavior with respect to auto traits
+such as `Sync` and `Send`, namely, that `PhantomData<T>` implements an auto
+trait if `T` does. This behavior is used in [implementing `Void`] as seen below.
+For `phantom T` to be functionally equivalent to `PhantomData<T>`, `phantom T`
+has to have the same behavior. That is, an enclosing type definition containing 
+`phantom T` only implements auto traits if `T` does for some type `T`.
+
+A type which erases all auto traits (obits):
+
+```rust
+struct Void {
+    _priv: (),
+    /// Erases all oibits, because `Void` erases the type of the object that
+    /// will be used to produce formatted output. Since we do not know what
+    /// oibits the real types have (and they can have any or none), we need to
+    /// take the most conservative approach and forbid all oibits.
+    ///
+    /// It was added after #45197 showed that one could share a `!Sync`
+    /// object across threads by passing it into `format_args!`.
+    _oibit_remover: PhantomData<*mut Fn()>,
+}
+```
+
+is rewritten as follows with this RFC:
+
+```rust
+struct Void {
+    _priv: (),
+    /// Erases all oibits, because `Void` erases the type of the object that
+    /// will be used to produce formatted output. Since we do not know what
+    /// oibits the real types have (and they can have any or none), we need to
+    /// take the most conservative approach and forbid all oibits.
+    ///
+    /// It was added after #45197 showed that one could share a `!Sync`
+    /// object across threads by passing it into `format_args!`.
+    phantom *mut Fn(),
+}
+```
+
 ## Unused lifetimes
 
 Note that `E0392` will still be issued for unused lifetimes since given
@@ -486,11 +531,16 @@ case of an `enum`.
 #### No representation in memory - only in logic
 
 These `phantom` fields do not contribute to the memory layout or representation
-of a type but only to the variance of type parameters and how the drop checker
-sees type parameters in terms of ownership. For each phantom field of form
-`phantom T` where `T` is some type, `T` is seen as logically owned by the drop
-checker and `T` will contribute to the variance of any, by `T` referenced,
-formal type parameter `P` or lifetime `'lt`.
+of a type but only to the variance of type parameters, how the drop checker
+sees type parameters in terms of ownership, and what auto traits are implemented.
+For each phantom field of form `phantom T` where `T` is some type, `T` is seen
+as logically owned by the drop checker and `T` will contribute to the variance
+of any, by `T` referenced, formal type parameter `P` or lifetime `'lt`.
+
+##### Auto traits
+
+An enclosing type definition containing  `phantom T` only implements auto traits
+if `T` does for some type `T`.
 
 #### Unnameable
 
