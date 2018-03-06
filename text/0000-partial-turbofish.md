@@ -125,6 +125,24 @@ were allowed to elide those `_`s, we could instead just have one function
 that could be used in both for better type inference as well as more ergonomic
 turbofishing.
 
+## One important type parameter
+
+The function `arbitrary_with` was a case of having only one important parameter.
+Having one important type parameter and other not so important ones, is a common
+reason for having to write `::<Type, _, ..>`. Another example is:
+
+```rust
+fn request<TDocument, TIndex, TId>(index: TIndex, id: TId)
+    -> RequestBuilder<TDocument> 
+    where TIndex: Into<Index>, 
+          TId: Into<Id> 
+{
+    ...
+}
+
+let req = request::<MyDocument>("some_index", "some_type");
+```
+
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
