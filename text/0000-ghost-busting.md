@@ -770,7 +770,7 @@ to the grammar of Rust.
 
 However, when reading:
 ```rust
-struct Foo<X, phantom(*mut Y) Y>(X)
+struct Foo<X, #[phantom(*mut Y)] Y>(X)
 ```
 
 and then considering that `Foo` (the value constructor) has type
