@@ -744,7 +744,7 @@ not introduce any new surface syntax. However, this idea has a few problems:
 This alternative would allow a user to define `Id<A, B>` as:
 
 ```rust
-struct Id<#[phantom(fn(A) -> A)] A, #[phantom(fn(A) -> A)] B> {
+struct Id<#[phantom(fn(A) -> A)] A, #[phantom(fn(B) -> B)] B> {
     priv: (),
 }
 ```
@@ -781,11 +781,11 @@ and then considering that `Foo` (the value constructor) has type
 This alternative would allow a user to define `Id<A, B>` as:
 
 ```rust
-struct Id<  phantom(fn(A) -> A)  A,   phantom(fn(A) -> A)  B> {
+struct Id<  phantom(fn(A) -> A)  A,   phantom(fn(B) -> B)  B> {
 
 // instead of:
 
-struct Id<#[phantom(fn(A) -> A)] A, #[phantom(fn(A) -> A)] B> {
+struct Id<#[phantom(fn(A) -> A)] A, #[phantom(fn(B) -> B)] B> {
 
     priv: (),
 }
