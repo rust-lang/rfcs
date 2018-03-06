@@ -698,6 +698,26 @@ of pain when dealing with type definitions.
 
 A slightly modified version of this was proposed in the now postponed [RFC 1806].
 
+A further problem this presents is that given an API:
+
+```rust
+mod global_lock {
+    pub fn take() -> Locked { ... }
+
+    pub struct Locked { private: () }
+
+    impl Drop for Locked { ... }
+
+    pub fn do_stuff(_: Locked) { ... }
+}
+```
+
+the type `Locked` is a token for a proof of work even if it is only a
+zero-sized-type (ZST). Being able to produce a `Locked` out of thin air
+can break invariants. Solving this will mean that only some ZSTs must be
+able to be elided and not others; this added complexity is better solved
+by dedicated UX for phantoms.
+
 ## Alternative: `#[phantom]` attributes on fields
 
 This alternative would allow a user to define `Id<A, B>` as:
@@ -718,6 +738,70 @@ not introduce any new surface syntax. However, this idea has a few problems:
    such an attribute - what would the type of `_marker` be? If it is
    `PhantomData<T>`, then the mental model of types is instead complicated
    and a library type becomes even more magical.
+
+## Alternative: `#[phantom(T)]` attributes on type parameters
+
+This alternative would allow a user to define `Id<A, B>` as:
+
+```rust
+struct Id<#[phantom(fn(A) -> A)] A, #[phantom(fn(A) -> A)] B> {
+    priv: (),
+}
+```
+
+and `Iter<'a, T: 'a>` as:
+
+```rust
+pub struct Iter<'a, #[phantom(&'a T)] T: 'a> {
+    ptr: *const T,
+    end: *const T,
+}
+```
+
+This could add a bit of consistency with `#[may_dangle]` but causes a lot of
+rightward drift as seen in particular in the case of `Id<A, B>`, which also
+required us to introduce a `priv: ()` field to ensure that the creation of an
+`Id<A, B>` is under the control of the module. When comparing using attributes
+with `phantom` fields, the latter seems more readable and ergonomic.
+
+There's also the issue that the grammar of attributes would have to be changed
+to accept arbitrary types inside them. Comparatively, this is a larger change
+to the grammar of Rust.
+
+However, when reading:
+```rust
+struct Foo<X, phantom(*mut Y) Y>(X)
+```
+
+and then considering that `Foo` (the value constructor) has type
+`fn(X) -> Foo<X, Y>`, this is more readily grokkable.
+
+## Alternative: `phantom(T)` on type parameters
+
+This alternative would allow a user to define `Id<A, B>` as:
+
+```rust
+struct Id<  phantom(fn(A) -> A)  A,   phantom(fn(A) -> A)  B> {
+
+// instead of:
+
+struct Id<#[phantom(fn(A) -> A)] A, #[phantom(fn(A) -> A)] B> {
+
+    priv: (),
+}
+```
+
+As seen here, the only difference is that `#[` and `]` has been removed.
+Thus, the arguments which apply to `#[phantom(T)]` also apply to `phantom(T)`.
+
+## Lint unused type parameters `T` suggesting a rename to `_T`?
+
+This is not so much an alternative as it is an orthogonal choice:
+Should we add a lint that an unused type parameter `T` is better named `_T`?
+
+This will likely not achieve the goal of making authors think more on variance, instead, the expected outcome is that users will often think to themselves:
+
+> OK; not I have to do what the compiler tells me to and I don't know why...
 
 # Prior art
 [prior-art]: #prior-art
