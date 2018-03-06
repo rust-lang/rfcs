@@ -806,6 +806,8 @@ This will likely not achieve the goal of making authors think more on variance, 
 # Prior art
 [prior-art]: #prior-art
 
+## Functional languages: Haskell and Idris
+
 To some extent, languages such as Haskell and Idris provide prior art in the
 sense that you never need to use all type parameters in a `data` definition.
 The following constant combinator type is permitted by GHC and does not use
@@ -822,6 +824,8 @@ data K a b = K a
 ```
 
 However, neither Haskell or Idris have subtyping.
+
+## A language with subtyping of a different kind: Java
 
 Let's now instead consider a different language, Java, which does have subtyping
 but of a different kind than Rust's flavor of limited subtyping:
@@ -864,6 +868,8 @@ class K<A> {}
 We see that generic parameters are invariant by default and that you change the
 variance at use site of types rather than on definition site which you can't in
 Rust. We also see that Java permtis "unused" type parameters.
+
+## A language where variance is specified on parameters: C#
 
 For C#, invariance is the default in generic interfaces, which you may
 change at the interface definition site with by annotating type parameters
