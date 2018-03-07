@@ -906,28 +906,6 @@ variance_clause_keyword (T, fn(U));
 where `variance_clause_keyword` may be substituted for `owns` or some other
 suitable word.
 
-This particular syntax would introduce ambiguities since:
-
-```rust
-struct Discriminant<T> variance_clause_keyword fn() -> T (u64);
-```
-
-can be read as:
-
-```rust
-struct Discriminant<T> variance_clause_keyword (fn() -> T (u64));
-```
-
-or:
-
-```rust
-struct Discriminant<T> variance_clause_keyword (fn() -> T (u64));
-```
-
-However, in this case, the ambiguity is arguably OK since the parser can
-always pick the second interpretation and let the user explicitly write
-the third one if they want that particular meaning.
-
 ### Benefits of the syntax
 [phantom_clause_benefits]: #benefits-of-the-syntax
 
