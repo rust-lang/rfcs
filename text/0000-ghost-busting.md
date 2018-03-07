@@ -615,6 +615,11 @@ The drawback here is mainly that of increased compiler complexity. A quick
 search showed possible refactorings with respect to not having to provide
 `PhantomData` as an expression can offset this drawback.
 
+### Unit and Tuple structs
+
+There are some drawbacks with respect to unit and tuple structs which are
+discussed [in the alternatives section][phantom_clause_benefits].
+
 # Rationale and alternatives
 [alternatives]: #alternatives
 
@@ -635,6 +640,21 @@ there's no problem in need of solving.
 
 We could decide to have `phantom` fields but no unused type parameters and give
 up on the majority of the gains in ergonomics in this RFC.
+
+## Alternative: Unused type parameters must be prefixed with `phantom`
+
+With this alternative, users would have to explicitly say that a type parameter
+is `phantom` to get rid of the error as shown in the example below. If a user
+fails to annotate type parameters with `phantom`, the same, but slightly
+reworded "unused parameter" error would be emitted.
+
+```rust
+struct Label<phantom T>;
+```
+
+While this alternative increases legibility somewhat, it also increases noise
+compared to this RFC once the user has internalized what an unused parameter
+means.
 
 ## Alternative: No `phantom` fields
 
@@ -720,7 +740,7 @@ by dedicated UX for phantoms.
 
 ## Alternative: `#[phantom]` attributes on fields
 
-This alternative would allow a user to define `Id<A, B>` as:
+This alternative to `phantom T` would allow a user to define `Id<A, B>` as:
 
 ```rust
 struct Id<A, B> {
@@ -741,7 +761,7 @@ not introduce any new surface syntax. However, this idea has a few problems:
 
 ## Alternative: `#[phantom(T)]` attributes on type parameters
 
-This alternative would allow a user to define `Id<A, B>` as:
+This alternative to `phantom T` would allow a user to define `Id<A, B>` as:
 
 ```rust
 struct Id<#[phantom(fn(A) -> A)] A, #[phantom(fn(B) -> B)] B> {
@@ -778,7 +798,7 @@ and then considering that `Foo` (the value constructor) has type
 
 ## Alternative: `phantom(T)` on type parameters
 
-This alternative would allow a user to define `Id<A, B>` as:
+This alternative to `phantom T` would allow a user to define `Id<A, B>` as:
 
 ```rust
 struct Id<  phantom(fn(A) -> A)  A,   phantom(fn(B) -> B)  B> {
@@ -793,6 +813,199 @@ struct Id<#[phantom(fn(A) -> A)] A, #[phantom(fn(B) -> B)] B> {
 
 As seen here, the only difference is that `#[` and `]` has been removed.
 Thus, the arguments which apply to `#[phantom(T)]` also apply to `phantom(T)`.
+
+## Alternative: the syntax `_ : T` for phantoms
+
+This alternative to `phantom T` would allow a user to define `Id<A, B>` as:
+
+```rust
+struct Id<A, B> {
+    _: fn(A) -> A,
+    _: fn(B) -> B,
+}
+```
+
+This syntax is terser than the proposed syntax `phantom T` and needs even fewer
+changes to the grammar. The syntax also allows the user to control privacy of
+the fake fields with the normal `pub(..)` visibility modifiers.
+
+### Drawbacks
+
+The drawbacks however, are:
+
+1. To a reader who is unfamiliar with this particular syntax, it is less clear
+that these are fake fields compared to `phantom T`.
+
+2. The syntax does not work for tuple structs because the `ident : type` form
+   is only used for named structs thus far. Introducing `_: type` specially for
+   tuple structs would be strange.
+
+3. This syntax can be confusing together with [RFC 2102] for "Unnamed fields of
+struct and union type" which allows a user to write:
+
+```rust
+#[repr(C)]
+struct S {
+    a: u32,
+    _: union {  // Note the use of _: 
+        a: u32,
+        b: f32,
+    },
+}
+```
+
+[RFC 2102]: https://github.com/rust-lang/rfcs/pull/2102
+
+## Alternative: Phantom clauses
+
+This alternative probably constitutes the most serious contender to replace
+the idea of `phantom` fields as proposed by this RFC.
+
+### Description of the alternative
+
+With this alternative to `phantom T`, users would encode the `Id<A, B>` type as:
+
+```rust
+struct Id<A, B>
+owns fn(A) -> A, fn(B) -> B {
+    priv: ()
+}
+```
+
+Some more examples are:
+
+```rust
+pub struct S<'a, T>
+phantom &'a mut T {
+    // ...
+}
+```
+
+Further examples are:
+
+```rust
+// Braced struct
+struct S<T, U>
+where T: Clone
+variance_clause_keyword (T, fn(U)) {
+    field1: u8,
+    field2: u8,
+}
+
+// Tuple struct
+struct S<T, U>(u8, u8)
+where T: Clone
+variance_clause_keyword (T, fn(U));
+
+// Unit struct
+struct S<T, U>
+where T: Clone
+variance_clause_keyword (T, fn(U));
+```
+
+where `variance_clause_keyword` may be substituted for `owns` or some other
+suitable word.
+
+This particular syntax would introduce ambiguities since:
+
+```rust
+struct Discriminant<T> variance_clause_keyword fn() -> T (u64);
+```
+
+can be read as:
+
+```rust
+struct Discriminant<T> variance_clause_keyword (fn() -> T (u64));
+```
+
+or:
+
+```rust
+struct Discriminant<T> variance_clause_keyword (fn() -> T (u64));
+```
+
+However, in this case, the ambiguity is arguably OK since the parser can
+always pick the second interpretation and let the user explicitly write
+the third one if they want that particular meaning.
+
+### Benefits of the syntax
+[phantom_clause_benefits]: #benefits-of-the-syntax
+
+Variance, auto-trait, and drop checking behavior of type parameters are really
+part of a type definition's interface as opposed to possibly private details.
+Therefore, there are benefits to legibility gained by including this information
+somewhere in the "signature" of type definition.
+
+Another benefit is that the syntax works well with unit and tuple structs,
+which the syntax in this RFC works less well with. To see why, consider:
+
+```rust
+struct S<T>(*mut T, phantom T);
+struct S<T>(phantom T, *mut T);
+```
+
+In this example, these are equivalent definitions in all respects, which may
+not be obvious to a reader since fields in tuple structs are positional.
+
+With respect to unit structs, the braced form:
+
+```rust
+struct S<T> {
+    phantom fn(T)
+}
+```
+
+takes away the constructor `S`, which makes us unable to write `let s = S;`.
+
+Of all drawbacks to the `phantom` fields idea, the relation to tuple structs
+is the most serious one.
+
+### Drawbacks
+
+This alternative is not without its drawbacks, some of which are:
+
+1. A `phantom` clause would not be the complete specification with respect to
+   the variance, auto traits, and drop checking behavior since there likely
+   are private fields inside the body of the type definition within `{` and `}`.
+   Therefore, there is some logic to containing any phantoms inside the body.
+
+2. Exposing phantom clauses to users may be inappropriate noise that many users
+   are not ready and willing to think about. This can be solved by keeping this
+   method of annotation in the source code, but not including it in the
+   documentation of a type.
+
+## Alternative: Explicit variance annotations
+
+With this alternative to `phantom T`, users would encode the `Id<A, B>` type as:
+
+```rust
+struct Id<#[invariant] A, #[invariant] B> {
+    priv: ()
+}
+```
+
+As seen here, an attribute is used to annotate the desired variance of the type
+parameters `A` and `B`. This is readable in this particular case, but there are
+some problems with this approach:
+
+1. If these attributes show up in documentation, then they be noise that a
+   user does not want to or is not ready to think about because variance is
+   not relevant to them. Since variance is an advanced topic, a user may also
+   not understand what it means.
+
+2. *Variance by example*, which is what we have today, can be more easy to
+   understand to users who are not very versed in the theory of subtyping.
+   Since variance by example it is what we have today, changing to a different
+   scheme would be a larger change.
+
+3. Phantoms are not just about variance; They are also about drop checking
+   behavior and auto traits. For example, `fn(A) -> A` is invariant in `A`,
+   which `*mut A` is too. However, in this case `*mut A` is `!Sync` and `!Send`
+   while `fn(A) -> A` is both. In addition, `*const A` is covariant in `A`
+   but does not own an `A` while `A` does. Therefore, you will need a lot of
+   attributes to gain equivalence with variance by example.
+
+These drawbacks are reason enough not to pursue explicit variance, etc.
 
 ## Lint unused type parameters `T` suggesting a rename to `_T`?
 
