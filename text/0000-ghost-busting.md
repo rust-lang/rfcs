@@ -167,6 +167,25 @@ impl<A, B> Ord        for Id<A, B> { /* .. */ }
 impl<A, B> Hash       for Id<A, B> { /* .. */ }
 ```
 
+[RFC 2353]: https://github.com/rust-lang/rfcs/pull/2353
+
+### In relation to [RFC 2353]
+
+Another way to improve upon this situation is with [RFC 2353].
+This would allow a user to instead write:
+
+```rust
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive_no_bound]
+struct Id<A, B> {
+    _marker: PhantomData<(fn(A) -> A, fn(B) -> B)> 
+}
+```
+
+While this definition is slightly more verbose, using `#[derive_no_bound]`
+is arguably also more legible and clear in intent. Therefore, accepting
+that RFC lessens the importance of this particular motivation.
+
 ## Suggested in part by [RFC 738]
 
 [future possibilities]: https://github.com/rust-lang/rfcs/blob/master/text/0738-variance.md#future-possibilities
