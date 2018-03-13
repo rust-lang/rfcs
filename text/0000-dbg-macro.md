@@ -59,7 +59,9 @@ foo(3)
 ```
 
 This requires the type of the expression to implement the `std::fmt::Debug` trait.
-The value is returned by the macro unchanged.
+The macro moves the value (takes ownership of it, unless its type implements `Copy`)
+and returns it unchanged.
+The exact output printed by this macro should not be relied upon and is subject to future changes.
 
 
 # Reference-level explanation
@@ -76,6 +78,7 @@ macro_rules! dbg {
     ($expr:expr) => {
         match $expr {
             expr => {
+                // The exact formatting here is not stable and may change in the future.
                 eprintln!("[{}:{}] {} = {:#?}", file!(), line!(), stringify!($expr), &expr);
                 expr
             }
