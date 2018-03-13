@@ -68,7 +68,7 @@ fn func<P: AsRef<Path>>(p: Option<P>) {
 
 If we call `func(None)` then the type of `P` cannot be inferred. This is frustrating as in this case neither the caller nor the callee care about the type of `P`, any type would do. Default parameters allow the callee to choose a suitable default, making optional generic arguments ergonomically viable.
 
-We may guess this is the most often occurring use case for default arguments. [It](https://github.com/PistonDevelopers/conrod/pull/626) [comes](https://github.com/gtk-rs/gir/issues/143) [up](https://github.com/jwilm/json-request/issues/1) [a lot](https://github.com/rust-lang/rust/issues/24857). We need type parameters defaults for optional arguments to be a well supported pattern, and even more so of we wish to dream of having optional arguments as a first-class language feature.
+We may guess this is the most often occurring use case for default arguments. [It comes](https://github.com/gtk-rs/gir/issues/143) [up](https://github.com/jwilm/json-request/issues/1) [a lot](https://github.com/rust-lang/rust/issues/24857). We need type parameters defaults for optional arguments to be a well supported pattern, and even more so of we wish to dream of having optional arguments as a first-class language feature.
 
 ## Backwards-compatibily extending existing types
 
@@ -168,7 +168,7 @@ This would currently result in inference failures when trying to do `assert_ne!(
 
 ## Other motivations
 
-- Helping type inference with too many candidate types. The famous case here is `Iterator::collect`. It is a common cause of turbofishes and type annotations because so many types implement `FromIterator`. But most of those types are niche and in the common case people just want a `Vec`. It would be nice if we could default `collect` to return a `Vec<Iterator::Item>`. Unfortunately we can't because `Iterator` is defined in `core` and `Vec` is defined in `std`. Perhaps there are similar use cases in the ecosystem.
+- Helping type inference with too many candidate types. The famous case here is `Iterator::collect`. It is a common cause of turbofishes and type annotations because so many types implement `FromIterator`. But most of those types are niche and in the common case people just want a `Vec`. It would be nice if we could default `collect` to return a `Vec<Iterator::Item>`. Unfortunately we can't because `Iterator` is defined in `core` and `Vec` is defined in `std`, but maybe after the portability reform we can hack around this and perhaps there are similar use cases in the ecosystem.
 
 - Making an already generic parameter more generic, for example the case of [generalizing `slice::contains` over `PartialEq`](https://github.com/rust-lang/rust/pull/46934).
 
@@ -289,7 +289,7 @@ The behaviour of partially supplied parameter lists is as per RFC 213, omited pa
 
 A key part of this proposal is that inference is now aware of defaults. When we would otherwise error due to an uninferred type we instead try using the default. This is called inference fallback which is our final attempt at inference. The algorithm for doing this is essentialy the one detailed in RFC 213, with a few considerations:
 
-- The interaction with literal fallback may change, see "Unresolved Questions".
+- The interaction with numeric literals is different, see "Interaction with numerical fallback".
 
 - The algorithm did not specify what happens in eager type resolution such as the `structurally_resolve_type` method, notably used to resolve method receivers. To prevent being a hazard to a future where no longer need to eagerly resolve types, we specify that eager type resolution will not do fallback.
 
@@ -331,6 +331,53 @@ The following things may cause inference breakage:
 - Changing a default may break inference mostly beause the new defaults might not fullfill bounds that the previous one did and it might cause conflicts among defaults.
 - Adding a default to an existing type parameter may break inference because it might cause conflicts among defaults, though that should be rare in practice. If an elided default is used the risk should be even smaller.
 - Removing a default may of course break inference.
+
+### Interaction with numerical fallback
+
+There are multiple alternatives of what to do about the interaction of user fallback with numerical (and diverging) fallback. This was discussed at lenght in [this internals thread](https://internals.rust-lang.org/t/interaction-of-user-defined-and-integral-fallbacks-with-inference/2496). The possible target scenarios are:
+
+1. Numerical fallback takes precedence, always.
+2. User fallback takes precedence over numerical fallback, always.
+3. DWIM: User fallback takes preference, but if it fails we try numerical fallback.
+
+This RFC proposes that we go with option 3 (DWIM). The two following examples show the consequences of each alternative, example 1:
+
+```rust
+fn foo<T=u64>(t: T) { ... }
+// 1. `_` is `i32`
+// 2. `_` is `u64`
+// 3. `_` is `u64`
+fn main() { foo::<_>(22) }
+```
+
+Example 2:
+
+```rust
+fn foo<T=char>(t: T) { ... }
+// 1. `_` is `i32`
+// 2. Error.
+// 3. `_` is `i32`
+fn main() { foo::<_>(22) }
+```
+
+Option 3 gives the best results, but it would change the behaviour of (possibly) existing code such as:
+
+```rust
+struct Foo<T = u64>(T);
+// `_` was i32, now it's u64.
+let x = Foo::<_>(0);
+```
+
+So if crater catches cases like this we will have to phase-in by keeping option 1 and introducing the new behaviour with lints.
+
+One concern raised about DWIM is whether it would be a future-compatibility hazard for the possibility of expanding to which types literals can be inferred. To illustrate:
+
+```rust
+fn foo<T=BigInt>(t: T) { ... }
+fn main() { foo::<_>(22) }
+```
+
+Currently DWIM would consider `_` to be `i32`, but in a future where literals may somehow be inferred to `BigInt`, what happens? We avoid that hazard by specifying that DWIM will prefer the user default only if it is one of the primitive numerics that work today. If/when we get this future feature, then we may decide whether to transition DWIM to also prefer non-primitive user defaults such as `BigInt` or not.
 
 ## Default elision
 
@@ -466,6 +513,8 @@ fn func<U>(foo: Foo<Vec<U>>) {}
 
 # Rationale and alternatives
 
+- Is there a better name for default elision? Default propagation? Default inheritance? Is there a better syntax than `A=_`?
+
 - We could stabilize writing defaults in fns and impls first (without any effect) and later stabilize inference fallback, so that existing stable libraries have a period to adapt without being concerned of creating conflicts among defaults.
 
 ## Default elision
@@ -543,51 +592,6 @@ Soon we would be talking about things like syntax to promise a parameter has no 
 
 # Unresolved questions
 
-The following unresolved questions should be resolved prior to stabilization, but hopefully shouldn't block the acceptance of the proposal:
-
-### Interaction with numerical fallback
-
-There are multiple alternatives of what to do about the interaction of user fallback with numerical (and diverging) fallback. This was discussed at lenght in [this internals thread](https://internals.rust-lang.org/t/interaction-of-user-defined-and-integral-fallbacks-with-inference/2496). The options were:
-
-1. User fallback takes precedence over numerical fallback, always.
-2. Numerical fallback takes precedence, always.
-3. DWIM: User fallback takes preference, but if it fails we try numerical fallback.
-4. Error on any ambiguity.
-
-And now a fifth option proposed by this RFC:
-
-5. Error on conflicting numericals, whenever DWIM would prefer a user fallback we instead error.
-
-The two following examples show the consequences of each alternative, example 1:
-
-```rust
-fn foo<T=u64>(t: T) { ... }
-// 1. `_` is `u64`
-// 2. `_` is `i32`
-// 3. `_` is `u64`
-// 4. Error.
-// 5. Error.
-fn main() { foo::<_>(22) }
-```
-
-Example 2:
-
-```rust
-fn foo<T=char>(t: T) { ... }
-// 1. Error.
-// 2. `_` is `i32`
-// 3. `_` is `i32`
-// 4. Error.
-// 5. `_` is `i32`.
-fn main() { foo::<_>(22) }
-```
-
-Option 3 gives the best results, but it may change the behaviour of existing code so it might have to be phased-in through the errors given by option 4 or 5. The consensus reached in the thread was for using option 4 to open the possibility of transitioning to 3, is that still a consensus? However option 4 seems overly restrictive, we could instead do option 5 for a smoother transition.
-
-### Terminology and syntax
-
-Is there a better name for default elision? Default propagation? Default inheritance? Is there a better syntax than `A=_`?
-
 ### Interaction with specialization
 
 Consider the example that shows the behaviour of the current implemetation:
@@ -618,4 +622,4 @@ fn main() {
 }
 ```
 
-We need to figure the design and implementation of defaults in specialization chains. Probably we want to allow only one default for a parameter in a specialization chain.
+We need to figure the design and implementation of defaults in specialization chains. Probably we want to allow only one default for a parameter in a specialization chain. This needs to be resolved prior to stabilization, but hopefully shouldn't block the acceptance of the proposal.
