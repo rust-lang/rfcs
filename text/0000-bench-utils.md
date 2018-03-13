@@ -45,9 +45,9 @@ fn foo(x: i32) -> i32{
 let a = foo(2);
 ```
 
-Here, the compiler can simplify the expression `2 + x` into `2 + 2` and then
-`4`, but it is not allowed to discard `4`. Instead, it must store `4` into a
-register even though it is not used by anything afterwards.
+In the call to `foo(2)` the compiler is allowed to simplify the expression `2 + x` 
+down to `4`, but `4` must be stored into memory even though it is not read by
+anything aftewards.
 
 ## `mem::clobber`
 
