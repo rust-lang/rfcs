@@ -167,3 +167,12 @@ this RFC.
 The solution to object safety and resolving the vtable has not been
 implemented yet (whereas the non-object safe version is already available on
 nightly).
+
+## Raw pointers
+
+There is one kind of pointer which is not covered by this RFC: the raw pointer
+types. This is because they do not implement `Deref`. We would prefer to handle
+raw pointer receivers, using a special built in feature, rather than a library
+based solution. Working out the rules around raw pointer receivers (especially
+as they may relate to object safety) is outside the scope of this RFC, so
+they're not included here.
