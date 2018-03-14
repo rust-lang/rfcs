@@ -6,12 +6,9 @@
 # Summary
 [summary]: #summary
 
-Allow any type that implements `Deref` targeting `Self` to be the receiver of a
-method.
-
-This feature has existed, in an incomplete form since before version 1.0.
-Because of its long history, this RFC is not to propose the feature, but to
-document its behavior & stabilize it.
+Allow types that implement `Deref` targeting `Self` to be the receiver of a
+method. If the receiver type also implements the correct `CoerceUnsized` bound,
+that method is object safe.
 
 # Motivation
 [motivation]: #motivation
@@ -49,14 +46,28 @@ trait Foo {
 }
 ```
 
+## Recursive arbitrary receivers
+
+Like the rule for deref coercions, the rule for receivers is recursive. If type
+`T` implements `Deref` targeting type `U`, and type `U` implements `Deref`
+targeting `Self`, `T` is a valid receiver (and so on outward).
+
+For example, this self type is valid:
+
+```rust
+impl MyType {
+     fn by_ref_to_rc(self: &Rc<Self>) { ... }
+}
+```
+
 ## Object safety
 
-Assuming a trait is otherwise object-safe, methods are object-safe is the
-receiver implements `Deref`, and `Deref::Target` is `?Sized`. That is, if the
-`Deref` impl requires that the target be a `Sized` type, this method is not
-object safe.
-
-If the receiver type must be `Sized`, then this receiver is not object safe.
+In order for these receivers to be object safe, some additional traits need to
+be implemented. Given a reference type `Ptr<dyn Trait>`, the compiler must be
+able to prove that `T: Unsize<dyn Trait>` implies `Ptr<T>:
+CoerceUnsized<Ptr<dyn Trait>>`. If the compiler can prove this, methods with
+these receivers are object safe (how they object safe conversion is implemented
+is discussed later in the detailed design).
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -64,8 +75,15 @@ If the receiver type must be `Sized`, then this receiver is not object safe.
 ## Handling trait objects
 
 To support object-safety, we must have a way of obtaining a vtable from the
-reference type. To implement this, we will call `Deref::deref` on the receiver
-type to obtain an `&Trait` object, and use the vtable pointer from that object.
+reference type, and then passing the correct receiver type to the function in 
+the vtable.
+
+### Step 1: Obtaining the vtable
+
+First, we call `Deref::deref` on the receiver type to obtain an `&Trait`
+object. This will return an `&dyn Trait`. Since an `&dyn Trait` is defined as 2
+words, one a pointer to the object data and the other a pointer to the vtable,
+we can obtain the vtable by dereferencing the second pointer of this object.
 
 For example, consider this type:
 
@@ -91,9 +109,36 @@ Here, we start with an `&Foo<Trait>`, which is represented as a wide pointer.
 When we call `Deref::deref`, we receive a wide pointer, with the data pointer
 pointing to `self.inner`, and the vtable pointing to that same vtable.
 
-Rather than trying to figure out how to obtain the vtable by inspecting the
-structure during compilation, we can rely on this Deref implementation to find
-the vtable for us.
+### Step 2: Obtaining the correct receiver type
+
+Having obtained the vtable, we now need to obtain a value of the correct type
+to pass to the function. For example, given a trait like this:
+
+```rust
+trait Foo {
+    fn bar(self: Rc<Self>);
+}
+```
+
+The function in the vtable expects a value of `Rc<Self>`, where `Self` is the
+concrete type that was cast into the vtable. So if we have an `Rc<Foo>`, we
+need to temporarily cast that *back* into an `Rc<i32>` or whatever the concrete
+type is.
+
+This is why the `CoerceUnsized` bound is necessary for object-safe receiver
+types. Using the type ID stored in the vtable, we can downcast the `Self` type
+to the correct concrete type to pass to the function pointer for the method
+we're calling, effectively reversing the unsizing coercion.
+
+## Stabilization plans
+
+As soon as possible, we intend to stabilize *using* a method receiver defined
+this way, so long as it is object safe. That stabilization will immediately
+extend support to `Rc<T>` and `Arc<T>`.
+
+However, we also feel that `CoerceUnsized` is not ready to stabilize without
+further consideration of the trade offs. For that reason, defining your own
+arbitrary method receivers may not be stabilized as quickly.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -120,4 +165,5 @@ this RFC.
 [unresolved]: #unresolved-questions
 
 The solution to object safety and resolving the vtable has not been
-implemented yet.
+implemented yet (whereas the non-object safe version is already available on
+nightly).
