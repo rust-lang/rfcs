@@ -70,6 +70,8 @@ If we call `func(None)` then the type of `P` cannot be inferred. This is frustra
 
 We may guess this is the most often occurring use case for default arguments. [It comes](https://github.com/gtk-rs/gir/issues/143) [up](https://github.com/jwilm/json-request/issues/1) [a lot](https://github.com/rust-lang/rust/issues/24857). We need type parameters defaults for optional arguments to be a well supported pattern, and even more so of we wish to dream of having optional arguments as a first-class language feature.
 
+Note that this example is a fourtunate case, see "Addendum: Getting generic `Option` arguments to work" at the bottom for an analysis of less fourtunate, and yet common, cases.
+
 ## Backwards-compatibily extending existing types
 
 It's perfectly backwards-compatible for a type to grow new private fields with time. However if that field is generic over a new type parameter, trouble arises. The big use case in std is extending collections to be parametric over a custom allocator. Again something that must be backwards compatible and that most users don't care about. The existing feature was successful in making `HashMap` parametric over the hasher, so it has merits but it could be improved. To understand this let's try a simplified attempt at making `Arc` parametric over an allocator ([a real attempt](https://github.com/rust-lang/rust/pull/45272)).
@@ -397,30 +399,31 @@ fn use_my_arc<T>(arc: Arc<T>) {}
 We want to upgrade them backwards compatibly. The first thing we might attempt is:
 
 ```rust
-fn make_my_arc<T, A>(t: T) -> Arc<T, A> {}
-fn use_my_arc<T, A>(arc: Arc<T, A>) {}
+// We need `Default` to be able to construct the allocator.
+fn make_my_arc<T, A: Alloc + Default>(t: T) -> Arc<T, A> {}
+fn use_my_arc<T, A: Alloc>(arc: Arc<T, A>) {}
 ```
 
 But that would break `use_my_arc(make_my_arc(0))` . Maybe what we mean is:
 
 ```rust
-fn make_my_arc<T, A = alloc::Heap>(t: T) -> Arc<T, A> {}
-fn use_my_arc<T, A = alloc::Heap>(arc: Arc<T, A>) {}
+fn make_my_arc<T, A: Alloc + Default = alloc::Heap>(t: T) -> Arc<T, A> {}
+fn use_my_arc<T, A: Alloc = alloc::Heap>(arc: Arc<T, A>) {}
 ```
 
 Which is not pretty. Do we really have a choice for the default here? If we tried:
 
 ```rust
-fn make_my_arc<T, A = MyAllocator>(t: T) -> Arc<T, A> {}
-fn use_my_arc<T, A = MyAllocator>(arc: Arc<T, A>) {}
+fn make_my_arc<T, A: Alloc + Default = MyAllocator>(t: T) -> Arc<T, A> {}
+fn use_my_arc<T, A: Alloc = MyAllocator>(arc: Arc<T, A>) {}
 ```
 
-Then `use_my_arc(make_my_arc(0))` works but now we broke `use_my_arc(Arc::from_raw(ptr))`. So the only reasonable choice is to use the default in the type definition. Therefore we use an elided default in this situation, using the the default in the type definition as the default for `A`. 
+Then `use_my_arc(make_my_arc(0))` works but now we broke, for example,  `use_my_arc(Arc::from_raw(ptr))`. So the only reasonable choice is to use the default in the type definition. Therefore we use an elided default in this situation, using the the default in the type definition as the default for `A`. 
 
 ```rust
 // The default of `A` in these declarations is `alloc::Heap`
-fn make_my_arc<T, A = _>(t: T) -> Arc<T, A> {}
-fn use_my_arc<T, A = _>(arc: Arc<T, A>) {}
+fn make_my_arc<T, A: Alloc + Default = _>(t: T) -> Arc<T, A> {}
+fn use_my_arc<T, A: Alloc = _>(arc: Arc<T, A>) {}
 ```
 
 It can be difficult to reason about whether a type parameter can use an elided default. To help usability we lint when a parameter that may have an elided default does not have a default. In rare cases this lint may be a false positive. But this doesn't seem bad as `#[allow(default_not_elided)]` will serve as an indication that a default is purposefully not set.
@@ -623,3 +626,60 @@ fn main() {
 ```
 
 We need to figure the design and implementation of defaults in specialization chains. Probably we want to allow only one default for a parameter in a specialization chain. This needs to be resolved prior to stabilization, but hopefully shouldn't block the acceptance of the proposal.
+
+## Addendum: Getting generic `Option` arguments to work
+
+Improving generic `Option` arguments is perhaps the big motivation of this RFC. However the example given in the motivation section glossed over some other common difficulties. The example was similar to:
+
+```rust
+// A default is necessary otherwise `func(None)` cannot infer a type for `P`.
+fn func<P: AsRef<Path> = str>(p: Option<&P>) {
+    match p {
+        None => { /* do something */ }
+        Some(path) => { /* do something else */ }
+    }
+}
+```
+
+And it would work fine. But in many cases we wish to somehow give a default value in case of `None`, which we might naively attempt as:
+
+```rust
+fn func<P: AsRef<Path> = str>(p: Option<&P>) {
+    // This does not (and should not) type check,
+    // because "p == None" does not imply "P = str".
+    let p_or_default = p.unwrap_or(&"/default/path");
+}
+```
+
+What now? There are multiple ways to make this work. A simple way is to use a trait object instead, if possible. Either in the argument type itself or in the body of the function, examples:
+
+```rust
+// This works today (modulo dyn Trait syntax).
+fn func(p: Option<&dyn AsRef<Path>>) {
+    let p_or_default = p.unwrap_or(&"/default/path");
+}
+// Some cases may want to convert to a trait object inside the body.
+fn func<P: AsRef<Path> = str>(p: Option<&P>) {
+    let p_or_default: &dyn AsRef<Path> =
+        if let Some(p) = p { p } else { &"/default/path" };
+}
+```
+
+Trait objects have limitations, so they might not work for all cases. A flexible but more convoluted way is to use an auxiliary function, like this:
+
+```rust
+fn func<P: AsRef<Path> = str>(p: Option<&P>) {
+    if let Some(p) = p {
+       inner_func(p)
+    } else { 
+       inner_func(&"/default/path")
+    };
+    
+    fn inner_func<P: AsRef<Path>>(p: &P) {
+    	/* actually do something with p */
+    }
+}
+```
+
+We need type parameter defaults to help these things work, but are these patterns reasonable? Or are they just too complex?
+
