@@ -143,9 +143,73 @@ library as a replacement.
 Add the aforementioned `MaybeUninit` type to the standard library:
 
 ```rust
+#[repr(transparent)]
 union MaybeUninit<T> {
     uninit: (),
     value: T,
+}
+```
+
+The type should have at least the following interface
+
+```rust
+impl<T> MaybeUninit<T> {
+    /// Create a new `MaybeUninit` in an uninitialized state.
+    pub fn uninitialized() -> MaybeUninit<T> {
+        MaybeUninit {
+            uninit: (),
+        }
+    }
+
+    /// Set the value of the `MaybeUninit`. The overwrites any previous value without dropping it.
+    pub fn set(&mut self, val: T) -> &mut T {
+        unsafe {
+            self.value = val;
+            &mut self.value
+        }
+    }
+
+    /// Take the value of the `MaybeUninit`, putting it into an uninitialized state.
+    ///
+    /// # Unsafety
+    ///
+    /// It is up to the caller to guarantee that the the `MaybeUninit` really is in an initialized
+    /// state, otherwise undefined behaviour will result.
+    pub unsafe fn get(&self) -> T {
+        std::ptr::read(&self.value)
+    }
+
+    /// Get a reference to the contained value.
+    ///
+    /// # Unsafety
+    ///
+    /// It is up to the caller to guarantee that the the `MaybeUninit` really is in an initialized
+    /// state, otherwise undefined behaviour will result.
+    pub unsafe fn get_ref(&self) -> &T {
+        &self.value
+    }
+
+    /// Get a mutable reference to the contained value.
+    ///
+    /// # Unsafety
+    ///
+    /// It is up to the caller to guarantee that the the `MaybeUninit` really is in an initialized
+    /// state, otherwise undefined behaviour will result.
+    pub unsafe fn get_mut(&mut self) -> &mut T {
+        &mut self.value
+    }
+
+    /// Get a pointer to the contained value. This pointer will only be valid if the `MaybeUninit`
+    /// is in an initialized state.
+    pub fn as_ptr(&self) -> *const T {
+        unsafe { &self.value as *const T }
+    }
+
+    /// Get a mutable pointer to the contained value. This pointer will only be valid if the
+    /// `MaybeUninit` is in an initialized state.
+    pub fn as_mut_ptr(&mut self) -> *mut T {
+        unsafe { &mut self.value as *mut T }
+    }
 }
 ```
 
