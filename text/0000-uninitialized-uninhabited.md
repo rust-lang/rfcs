@@ -202,13 +202,13 @@ impl<T> MaybeUninit<T> {
     /// Get a pointer to the contained value. This pointer will only be valid if the `MaybeUninit`
     /// is in an initialized state.
     pub fn as_ptr(&self) -> *const T {
-        unsafe { &self.value as *const T }
+        self as *const MaybeUninit<T> as *const T
     }
 
     /// Get a mutable pointer to the contained value. This pointer will only be valid if the
     /// `MaybeUninit` is in an initialized state.
     pub fn as_mut_ptr(&mut self) -> *mut T {
-        unsafe { &mut self.value as *mut T }
+        self as *mut MaybeUninit<T> as *mut T
     }
 }
 ```
