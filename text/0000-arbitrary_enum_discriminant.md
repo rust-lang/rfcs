@@ -231,9 +231,12 @@ This introduces one more knob to the representation of enumerations.
 
 Reusing the current syntax and semantics for explicit discriminants of
 field-less enumerations means that the changes to the grammar and semantics of
-the language are minimal. The alternative is to put the specified discriminants
-in variant attributes, but this would be at odds with the syntax for field-less
-enumerations.
+the language are minimal. There are a few possible alternatives nonetheless.
+
+## Discriminant values in attributes
+
+We could specify the discriminant values in variant attributes, but this would
+be at odds with the syntax for field-less enumerations.
 
 ```rust
 enum ParisianSandwichIngredient {
@@ -245,6 +248,30 @@ enum ParisianSandwichIngredient {
     Butter(ButterKind),
 }
 ```
+
+## Use discriminants of a separate field-less enumeration
+
+We could tell rustc to tie the discriminants of the enumeration to the
+variants of a separate field-less enumeration.
+
+```rust
+#[discriminant(IngredientKind)]
+enum ParisianSandwichIngredient {
+    Bread(BreadKind),
+    Ham(HamKind),
+    Butter(ButterKind),
+}
+
+enum IngredientKind {
+    Bread,
+    Ham,
+    Butter,
+}
+```
+
+This isn't applicable if such a separate field-less enumeration doesn't exist,
+and this can easily be done as a procedural macro using the feature described
+in this RFC. It also looks way more like spooky action at a distance.
 
 # Prior art
 [prior-art]: #prior-art
