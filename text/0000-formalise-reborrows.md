@@ -136,11 +136,11 @@ example from the table above. We formalise this:
 
 When a parameter `x` is passed into a function `f` (e.g. `f(x)`),
 
--   if `x` supports `Copy` [and `x` is later reused], then a copy of `x` will
-    be passed into `f`
--   if `x` supports `Reborrow` [and `x` is later reused], then a reborrow of `x`
-    will be passed into `f`
+-   if `x` supports `Copy`, then a copy of `x` will be passed into `f`
+-   if `x` supports `Reborrow`, then a reborrow of `x` will be passed into `f`
 -   otherwise, `x` will be moved into `f` [or usage is an error]
+
+We also allow the optimiser to replace a reborrow with a move.
 
 ### Explicit reborrow
 
