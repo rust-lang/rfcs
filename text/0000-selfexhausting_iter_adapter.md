@@ -89,6 +89,13 @@ The iterator created by `iter.exhausting()` behaves in the same fashion as `iter
 
 * Add `exhausting` to the `FusedIterator` trait to side-step the issue of non-fused iterators altogether.
 
+# Prior art
+[prior-art]: #prior-art
+
+The drain APIs are as far as I'm aware the only place where iterators show deferred self-exhaustion. I did not find any proposals of this kind before.
+Eager iterator consumers were proposed multiple times before. So far, `for_each()` has been added and a closure-less, by-ref version of it has been proposed as well, but not added. The latter goes under the name of `exhaust()` or `drain()`: [1](https://github.com/rust-lang/rust/pull/45168), [2](https://github.com/rust-lang/rust/issues/44546), [3](https://github.com/rust-lang/rust/pull/48945).
+
+`exhausting()` iterates by reference like `exhaust()`, but it can't be written through currently existing adapters.
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
