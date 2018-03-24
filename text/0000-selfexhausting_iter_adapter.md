@@ -11,7 +11,7 @@ Add an adapter `.exhausting()` to `Iterator` which causes the iterator to be dri
 # Motivation
 [motivation]: #motivation
 
-This RFC is part of two RFCs for splitting up the functionality of `drain()` into orthogonal APIs. It's related to [the RFC for non-selfexhausting drains](https://hackmd.io/s/rksDventG#), but not dependent on it.
+This RFC is part of two RFCs for splitting up the functionality of `drain()` into orthogonal APIs. It's related to [the RFC for non-selfexhausting drains](https://github.com/Emerentius/rfcs/blob/non-selfexhausting_drain/text/0000-non-selfexhausting_drain.md), but not dependent on it.
 The current `drain` APIs run the following code on drop before repairing the collection's state:
 
 ```rust
