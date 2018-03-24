@@ -25,7 +25,7 @@ More generally speaking, it's uncharacteristic for an iterator to behave in this
 `drain` is stable and so cannot be changed, but we should have a conforming iterator.
 The behaviour of a clearing drain can be gained by the combination of two more generalized and orthogonal APIs:
 * The non-selfexhausting drain proposed in this RFC
-* An iterator adapter for self-exhaustion as proposed [here](https://hackmd.io/s/B1qGDl3Fz#).
+* An iterator adapter for self-exhaustion as proposed [here](https://github.com/Emerentius/rfcs/blob/selfexhausting_iter_adapter/text/0000-selfexhausting_iter_adapter.md).
 
 Although with less leakage on panics, as the repair code will still be called if a panic occurs during self-exhaustion.
 
@@ -67,7 +67,7 @@ The difference between `drain_filter_nonexhausting` and `drain_filter` is the sa
 
 * Make `drain_filter` nonexhaustive and don't add any `_nonexhausting` variants at all. This minimizes API surface, but the discrepancy between `drain` and `drain_filter` will be surprising.
 
-* The proposed name is chosen for its symmetry to the `.exhausting()` adapter proposed [here](https://hackmd.io/s/B1qGDl3Fz#)
+* The proposed name is chosen for its symmetry to the `.exhausting()` adapter proposed [here](https://github.com/Emerentius/rfcs/blob/selfexhausting_iter_adapter/text/0000-selfexhausting_iter_adapter.md)
   It could also be called `*_lazy` or `*_lazy_drop`. The `lazy` part may be confusing because the iterator is already lazy apart from `Drop`. Bikeshedding welcome afterwards.
 
 # Unresolved questions
