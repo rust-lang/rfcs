@@ -70,5 +70,13 @@ The difference between `drain_filter_nonexhausting` and `drain_filter` is the sa
 * The proposed name is chosen for its symmetry to the `.exhausting()` adapter proposed [here](https://github.com/Emerentius/rfcs/blob/selfexhausting_iter_adapter/text/0000-selfexhausting_iter_adapter.md)
   It could also be called `*_lazy` or `*_lazy_drop`. The `lazy` part may be confusing because the iterator is already lazy apart from `Drop`. Bikeshedding welcome afterwards.
 
+# Prior art
+[prior-art]: #prior-art
+
+The drain API was first proposed in not much detail in the [Collections Reform Part 2](https://github.com/rust-lang/rfcs/pull/509).
+In the [RFC 574](https://github.com/rust-lang/rfcs/pull/574) the details were worked out and the current semantics proposed. [RFC 570] proposed the same functionality a bit earlier for `String` under the name `remove_range` without the iterator part. It wasn't accepted in favor of RFC 574. [RFC 1257](https://github.com/rust-lang/rfcs/pull/1257) expanded `drain()` to more collections.
+
+The decision to make these APIs a `remove_range()` first, iterator second, wasn't questioned in any of the mentioned RFCs nor in their tracking issues. When `drain_filter()` was introduced it followed `drain()`'s example and was implemented as `retain_mut()` first, iterator second. If there is a discussion of this design choice somewhere in the issue trackers, I didn't find it.
+
 # Unresolved questions
 [unresolved]: #unresolved-questions
