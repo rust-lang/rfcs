@@ -70,7 +70,7 @@ let val = iter.some()   // all of this
 # Implementation
 
 The `exhausting()` method should take the iterator by value.
-During iteration, `Exhausting` is a trivial wrapper that acts like `&mut Self`, meaning it implements all the Iterator traits that the contained iter implements and will always do external iteration. On drop, it runs `for _ in self {}`.
+During iteration, `Exhausting` is a trivial wrapper that acts like `&mut Self`, meaning it implements all the Iterator traits that the contained iter implements. On drop, it runs `for _ in self {}`.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
