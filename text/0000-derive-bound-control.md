@@ -585,10 +585,10 @@ To use `const` as the pattern in a match arm, it has to be of a type that is
 fn main() {
     use std::marker::PhantomData;
 
-    pub const PD: PhantomData<u8> = PhantomData;
+    pub const BOO: PhantomData<u8> = PhantomData;
 
     match PhantomData {
-        PD => {}
+        BOO => {}
     }
 }
 ```
@@ -599,8 +599,8 @@ fn main() {
 error: to use a constant of type `std::marker::PhantomData` in a pattern, `std::marker::PhantomData` must be annotated with `#[derive(PartialEq, Eq)]`
  --> src/main.rs:7:9
   |
-7 |         PD => {}
-  |         ^^
+7 |         BOO => {}
+  |         ^^^
 ```
 
 With respect to `#[structural_match]` this RFC does two things:
@@ -619,10 +619,10 @@ With respect to `#[structural_match]` this RFC does two things:
 struct PhantomData<T: ?Sized>;
 ```
 
-With the new definition in (2), the error above will not be emitted and the
-program will be accepted.
+With this new definition of `PhantomData<T>`, the error above will not be
+emitted and the example program will be accepted.
 
-This change is does not move us from structural matching. A `PhantomData<T>`
+This change does not move us from structural matching. A `PhantomData<T>`
 can be compared with another `PhantomData<T>` by doing a `memcmp` logically.
 This is so since a zero sized type does not exist in memory and so our logical
 `memcmp` would always return `true`. Thus, two `PhantomData::<T>`s are
