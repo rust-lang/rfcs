@@ -570,6 +570,71 @@ Deriving any standard library trait will obey the semantics here specified.
 All custom derive macros as **encouraged** to follow the semantics here
 specified so that a consistent experience is maintained in the ecosystem.
 
+## Structural equality
+
+[RFC 1445]: https://github.com/rust-lang/rfcs/pull/1445
+
+[RFC 1445] and Rust currently adds the attribute `#[structural_match]` when
+a type definition has `#[derive(PartialEq, Eq)]` on it and all the fields of
+the type are also `#[structural_match]`.
+
+To use `const` as the pattern in a match arm, it has to be of a type that is
+`#[structural_match]`. If it is not, as in the example below:
+
+```rust
+fn main() {
+    use std::marker::PhantomData;
+
+    pub const BOO: PhantomData<u8> = PhantomData;
+
+    match PhantomData {
+        BOO => {}
+    }
+}
+```
+
+... an error will be emitted saying that:
+
+```rust
+error: to use a constant of type `std::marker::PhantomData` in a pattern, `std::marker::PhantomData` must be annotated with `#[derive(PartialEq, Eq)]`
+ --> src/main.rs:7:9
+  |
+7 |         BOO => {}
+  |         ^^^
+```
+
+With respect to `#[structural_match]` this RFC does two things:
+
+["structural match check"]: https://github.com/rust-lang/rust/blob/58e1234cddd996378cb9df6bed537b9c08a6df73/src/libsyntax/ext/derive.rs#L73-L76
+
+1. The ["structural match check"] will ignore `#[derive_no_bound]` and
+   `#[derive_field_bound]`.
+
+2. `PhantomData<T>` will be defined as:
+
+```rust
+#[derive(PartialEq, Eq, ...)]
+#[derive_no_bound]
+#[lang_item = "phantom_data"]
+struct PhantomData<T: ?Sized>;
+```
+
+With this new definition of `PhantomData<T>`, the error above will not be
+emitted and the example program will be accepted.
+
+This change does not move us from structural matching. A `PhantomData<T>`
+can be compared with another `PhantomData<T>` by doing a `memcmp` logically.
+This is so since a zero sized type does not exist in memory and so our logical
+`memcmp` would always return `true`. Thus, two `PhantomData::<T>`s are
+structurally equal, and therefore `#[structural_match]` safely applies.
+Note however that `T != U => ! [PhantomData<T>: PartialEq<PhantomData<U>]`.
+
+All type definitions with type parameters must use those parameters.
+In the end, all valid uses of `#[derive_no_bound(PartialEq, Eq)]` must at
+some depth involve either ignoring a field in `PartialEq`, in which case
+`#[structural_match]` does not apply, or must involve a `PhantomData<T>`
+for which `#[structural_match]` did apply safely.
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
