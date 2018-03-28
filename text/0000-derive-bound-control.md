@@ -531,6 +531,7 @@ impl<S: PartialOrd, T: PartialEq> PartialOrd for Foo<S, T> { /* .. */ }
 ```
 
 ## Errors
+[errors]: #errors
 
 An error should be issued if:
 
@@ -894,3 +895,10 @@ sense for a reader, which would just write `#[derive_no_bound]`. Since
 the 2nd interpretation is more useful, it is probably more appropriate.
 To avoid the confusion for users who write this manually, a warning could
 be issued which macros may supress.
+
+## 8. Should the errors raised be warnings instead?
+
+Some, or most of the errors in the [errors] section of the
+[reference-level explanation] could be warnings instead of errors to facilitate
+for macro authors. This decision can be deferred to stabilization instead, or
+even for post stabilization as errors of this kind can be lowered to warnings.
