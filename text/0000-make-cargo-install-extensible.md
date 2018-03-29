@@ -7,7 +7,7 @@
 
 ## Summary
 
-The goal of this RFC is to introduce the ability for an end user to be able to extend the `cargo install` command arbitrarily to include instructions that should be executed occur after `cargo install <project>`. 
+This RFC gives end users the ability to extend the `cargo install` command arbitrarily to include instructions that should be executed occur after `cargo install <project>`. 
 
 ### A note about `cargo` as a distribution tool
 
@@ -72,8 +72,6 @@ Additionally, it gives developers the ability to package customized installation
 
 ## Reference-level explanation
 
-This is the technical portion of the RFC. Explain the design in sufficient detail that:
-
 ### Interaction with other features
 
 This feature is quite similar to the existing extension functionality of `build.rs`, and `cargo` can be implemented using the same mechanism.
@@ -81,7 +79,7 @@ This feature is quite similar to the existing extension functionality of `build.
 ### Corner Cases
 
 - Installing an application should not run the `install.rs` files of any of it’s dependencies, only of the application itself. 
-- When re-installing a binary package this might run a different `install.rs` than the one that was initially run. This might lead to inconsistent/ undefined behavior.
+- When re-installing a binary package this might run a different `install.rs` than the one that was initially run. This might lead to inconsistent/surprising behavior.
 
 More corner cases would appear if `cargo install` was ever extended beyond binary applications. The handling of those corner cases is left as an exercise to the writers of a proposal to extend `cargo install` to libraries or other types of files/applications.
 
@@ -101,7 +99,6 @@ More corner cases would appear if `cargo install` was ever extended beyond binar
 - Making `cargo install` more capable could encourage people to use it as a primary distribution mechanism for a broader class of applications, rather than just for simple command-line tools. On the other hand, this same mechanism can also serve as the basis for distribution packaging, which typically wants to install into a temporary directory and package the result.
 - It makes the emergence of conventions significantly more difficult as the option to reuse, share, or automate this task has significantly affordance than integrating it into the familiar `cargo` step.
 - Currently, `cargo install` tracks what files it installs, and supports `cargo uninstall`; this extension mechanism does not hook into that. Potentially, `install.rs` could emit a list of installed files and let `cargo install` install them, producing a log of those files for later uninstallation. However, we do not intend for `cargo install` to become a full-featured package management mechanism; rather, we expect `cargo install` to work analogously to `make install`. While the occasional package provides a `make uninstall`, few developers expect such a mechanism.
-- Currently, `cargo install` tracks what files it installs, and supports `cargo uninstall`; this extension mechanism does not hook into that. Potentially, `install.rs` could emit a list of installed files and let cargo install install them, producing a log of those files for later uninstallation. However, we do not intend for `cargo install` to become a full-featured package management mechanism; rather, we expect `cargo install` to work analogously to `make install`. While the occasional package provides a `make uninstall`, few developers expect such a mechanism.
 
 ## Prior art
 
