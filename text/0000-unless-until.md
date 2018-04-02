@@ -410,7 +410,13 @@ scope of this RFC.
     `until`.
 
     The negative words may lead casual readers to form improper assumptions
-    about control flow, inducing confusion or stutter when reading in more depth
+    about control flow, inducing confusion or stutter when reading in more
+    depth.
+
+    If this RFC is accepted, the compiler MAY choose to add a lint warning that
+    is raised whenever an `unless !` or `unless { a } else { b }` construct is
+    encountered, and suggest changing them to an `if` or `if { b } else { a }`,
+    respectively.
 
 - Patterns *cannot* have interior bindings.
 
