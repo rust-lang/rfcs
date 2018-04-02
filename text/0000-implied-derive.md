@@ -213,7 +213,7 @@ impl Clone for Foo {
 
 and thus resulting in the error:
 
-```
+```rust
 error[E0119]: conflicting implementations of trait `std::clone::Clone` for type `Foo`:
  --> src/main.rs:2:20
   |
@@ -351,14 +351,27 @@ In particular, there are currently three possible notations:
 - `#[derive(only(Eq))]`
 
 This notation has the problem that if we ever allowed the notation `F(A) -> B`
-for any trait `F` of the form `trait F<A> { type Output; }`,
+for any trait `F` of the form:
+
+```rust
+trait F<A> {
+    type Output;
+}
+```
+
 as shorthand for `F<A, Output = B>` as is the case with the `Fn` trait,
 and `F(A)` as shorthand for `F<A, Output = ()>`, then `only(Eq)` could be
 interpreted as `only<Eq, Output = ()>`. Having such a trait of the form
-`trait only<trait T> { type Output; }` seems however quite unlikely.
-Furthermore, the trait name and the derive macro name need not coincide,
-even if it is a strong recommendation. Therefore, this problem might not
-be a problem in practice.
+
+```rust
+trait only<trait T> {
+    type Output;
+}
+```
+
+seems however quite unlikely. Furthermore, the trait name and the derive macro
+name need not coincide, even if it is a strong recommendation.
+Therefore, this problem might not be a problem in practice.
 
 - `#[derive(only Eq)]`
 
@@ -389,7 +402,7 @@ macros for standard library traits as well as to custom-derive macros,
 a futher development of the custom derive API could be to allow authors
 to specify an implied list of traits like so:
 
-```
+```rust
 #[proc_macro_derive(Subtrait, implies(SupertraitA, SupertraitB))]
 pub fn derive_subtrait(input: TokenStream) -> TokenStream { ... }
 ```
