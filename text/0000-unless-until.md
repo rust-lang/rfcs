@@ -160,7 +160,7 @@ until COND {
 }
 ```
 
-evalueates the conditional `COND`, executing the loop if the test failed and
+evaluates the conditional `COND`, executing the loop if the test failed and
 moving forward if the test succeeded. It is exactly equivalent to
 
 ```rust
