@@ -509,13 +509,13 @@ scope of this RFC.
     [RFC #2175][rfc_2175] adds `|` to `if let` and `while let` constructs (which
     desugar to match anyway, just as `unless let` and `until let` would). That
     RFC is logically equivalent to this RFC, courtesy of set arithmetic — for
-    any closed set $$F = { A, B, C }$$, the expression $$\lnot A$$ is equivalent
-    to $$B \lor C$$. As such, the implementation of #2175 may well be grounds
-    for rejecting this RFC. The author belives that the prevalence of
-    pre-existing sugar, including additional keywords, in the Rust language
-    indicates a preference for semantically clear keywords and structures in
-    addition to, if not in favor over, the equivalent structures with less
-    semantic or syntactic clarity.
+    any closed set `F = { A, B, C }`, the expression `! A` is equivalent to
+    `B | C`. As such, the implementation of #2175 may well be grounds for
+    rejecting this RFC. The author belives that the prevalence of pre-existing
+    sugar, including additional keywords, in the Rust language indicates a
+    preference for semantically clear keywords and structures in addition to, if
+    not in favor over, the equivalent structures with less semantic or syntactic
+    clarity.
 
     The `until` and `unless` keywords can, with one exception, be implemented as
     a desugaring pass similar to the mechanism that desugars `for` loops into
