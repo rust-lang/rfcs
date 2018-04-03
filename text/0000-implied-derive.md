@@ -233,7 +233,7 @@ error[E0119]: conflicting implementations of trait `std::clone::Clone` for type 
 3. It is expected that the breakage will be relatively small because situations
    where `Copy` is derived but `Clone` is implemented is rare.
    Furthermore, it `Ord` it could be downright risky to derive `Ord` but
-   manually implement `PartialEq`.
+   manually implement `PartialOrd`.
 
 ## Readability
 
