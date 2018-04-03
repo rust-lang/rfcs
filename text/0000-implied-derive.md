@@ -80,7 +80,7 @@ more encouraged as you have to explicitly derive fewer traits.
   reach from `x` in one or more steps.
 
 - **super trait** - For a trait `Copy`, defined as `trait Copy : Clone {}`,
-  the trait `Clone` is a super trait of `Clone`. We also say that if `T: Copy`,
+  the trait `Clone` is a super trait of `Copy`. We also say that if `T: Copy`,
   for some type `T`, then `T: Clone`, or in other words:
   `Copy` implies `Clone` (denoted `Copy => Clone`).
 
