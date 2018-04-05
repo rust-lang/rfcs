@@ -109,4 +109,4 @@ This should not be done because it might expose macros to misuse. It also could 
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
-What parts of the design are still TBD?
+
