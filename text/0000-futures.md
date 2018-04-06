@@ -15,7 +15,10 @@ provide a complete complement of APIs).
 The proposed APIs are based on the futures crate, but with two major changes:
 
 - The use of [pinned types] to enable borrowing within futures.
-- Removing the associated `Error` type (and adjusting combinators accordingly).
+- Removing the associated `Error` type (and adjusting combinators accordingly),
+  in favor of just using `Item = Result<T, E>` instead. The RFC includes an
+  extension trait to provide conveniences for `Result`-producing futures as
+  well.
 
 [pinned types]: https://github.com/rust-lang/rfcs/pull/2349
 [companion RFC]: https://github.com/rust-lang/rfcs/pull/2394
