@@ -85,9 +85,17 @@ environment variables to be controlled at a fine-grain level:
   need to be present in the actual process environment, or if it is, its value
   is overridden.
 
+These are processed in the order:
+1. `--env-clear`
+2. `--env-allow NAME`
+3. `--env-set NAME=VAL`
+
+where options processed later override earlier ones.
+
 By default, the environment is completely open, leaving the existing behaviour
-unchanged. Once one of the options above is specified, accesses to environment
-variable becomes controlled accordingly.
+unchanged. Once any of the options above is specified, accesses to environment
+variable becomes controlled accordingly. Note that `--env-clear` is only necessary
+if you want a completely empty environment.
 
 ## Include Paths
 
@@ -122,6 +130,22 @@ explicitly specify which individual files may be included.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
+
+Conceptually, the sandbox state is held as `Option<Filter>` (where filter is
+either an environment or path prefix filter). If it has a `None` value, then it
+is all-open, which is equivalent to the current state.
+
+Once any filter rule is put in place, it becomes `Some(Filter)`, and the filter
+rules are applied to the access as appropriate.
+
+For environment variables, the variable name must exactly match one of the
+existing rules, which either gives a specific value to return or indicates
+that it should get the value from the process environment variables.
+
+For paths, if a path access has a prefix which matches any in the allowed
+prefixes rule, then the access is allowed.
+
+## Implementation
 
 This feature is implemented in a separate `env-sandbox` crate, which manages the
 state for both environment variables and path prefixes. It is used in two
@@ -229,8 +253,7 @@ integrating `rustc` into an existing build environment, but I think it's a
 general enough problem and implementation that it's worth putting in rustc. But
 I'm open to making changes if they make the feature more generally useful.
 
-I think the RFC is complete enough to land as-is (perhaps barring some naming
-changes).
+I think the use of canonicalized paths may need some more thought.
 
 ## Environment
 
@@ -246,6 +269,10 @@ changes).
 - Should invocations of `env!()` which access blocked variables explicitly
   indicate its because of a command-line option, rather than because its
   actually doesn't exist?
+- Does there need to be a way to undo `--env-clear`, to re-allow access to
+  the environment?
+- Does there need to be a mode where `--env-allow` defines/overrides variables
+  but does not block access to the rest of the environment?
 
 ## File Prefixes
 
@@ -257,3 +284,6 @@ changes).
   accessing it via other paths would be too brittle and confusing, and that
   doing everything on a canonical basis is more understandable. But there are
   still issues of how to handle a symlink in the middle of a path.
+
+  Hm, canonicalized paths won't work as expected if the source files themselves
+  are symlinks to elsewhere.
