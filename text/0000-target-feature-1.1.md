@@ -1,0 +1,174 @@
+- Feature Name: `#[target_feature]` 1.1
+- Start Date: 2018-04-06
+- RFC PR: (leave this empty)
+- Rust Issue: (leave this empty)
+
+# Summary
+[summary]: #summary
+
+This RFC attempts to resolve some of the unresolved questions in [RFC 2045
+(`target_feature`)]. In particular, it allows: 
+
+* specifying `#[target_feature]` functions without making them `unsafe fn`
+* calling `#[target_feature]` functions in some contexts without `unsafe { }` blocks
+
+It achieves this by proposing three incremental steps that we can sequentially
+make to improve the ergonomics and the safety of target-specific functionality
+without adding run-time overhead.
+
+[RFC 2045 (`target_feature`)]: https://github.com/rust-lang/rfcs/pull/2045
+
+# Motivation
+[motivation]: #motivation
+
+> This is a brief recap of [RFC 2045 (`target_feature`)].
+
+The `#[target_feature]` attribute allows Rust to generate machine code for a
+function under the assumption that the hardware where the function will be
+executed on supports some specific "features".
+
+If the hardware does not support the features, the machine code was generated
+under assumptions that do not hold, and the behavior of executing the function
+is undefined.
+
+[RFC 2045 (`target_feature`)] guarantees safety by requiring all
+`#[target_feature]` functions to be `unsafe fn`, thus preventing them from being
+called from safe code. That is, users have to open an `unsafe { }` block to call
+these functions, and they have to manually ensure that their pre-conditions
+hold - for example, that they will only be executed on the appropriate hardware
+by doing run-time feature detection, or using conditional compilation.
+
+And that's it. That's all [RFC 2045 (`target_feature`)] had to say about this.
+Back then, there were many other problems that needed to be solved for all of
+this to be minially useful, and [RFC 2045 (`target_feature`)] dealt with those.
+
+However, the consensus back then was that this is far from ideal for many
+reasons:
+
+* when calling `#[target_feature]` functions from other `#[target_feature]`
+  functions with the same features, the calls are currently still `unsafe` but
+  they are actually safe to call. 
+* making all `#[target_feature]` functions `unsafe fn`s and requiring `unsafe
+  {}` to call them everywhere hides other potential sources of `unsafe` within
+  these functions. Users get used to upholding `#[target_feature]`-related 
+  pre-conditions, and other types of pre-conditions get glossed by.
+
+This RFC proposes concrete solutions for these two problems.
+
+# Guide-level explanation
+[guide-level-explanation]: #guide-level-explanation
+
+
+Currently, we require that `#[target_feature]` functions be declared as `unsafe
+fn`. This RFC relaxes this restriction:
+
+* safe `#[target_feature]` functions can be called _without_ an `unsafe {}`
+block _only_ from functions with the exact same set of `#[target_feature]`s.
+Calling them from other contexts (other functions, static variable initializers,
+etc.) requires opening an `unsafe {}` even though they are not marked as
+`unsafe`:
+
+```rust
+// Example 1:
+#[target_feature = "sse2"] unsafe fn foo() { }  // RFC2045
+#[target_feature = "sse2"] fn bar() { }  // NEW
+
+// This function does not have the "sse2" target feature:
+fn meow() {
+    foo(); // ERROR (unsafe block required)
+    unsafe { foo() }; // OK
+    bar(); // ERROR (meow is not sse2)
+    unsafe { bar() }; // OK
+}
+
+#[target_feature = "sse2"]
+fn bark() {
+    foo(); // ERROR (foo is unsafe: unsafe block required)
+    unsafe { foo() }; // OK
+    bar(); // OK (bark is sse2 and bar is safe)
+    unsafe { bar() }; // OK (as well - warning: unnecessary unsafe block)
+}
+
+#[target_feature = "avx"]  // avx != sse2
+fn moo() {
+    foo(); // ERROR (unsafe block required)
+    unsafe { foo() }; // OK
+    bar(); // ERROR (bark is not sse2)
+    unsafe { bar() }; // OK 
+}
+```
+
+> Note: while it is safe to call an SSE2 function from an AVX one, this would
+> require specifying how features relate to each other in hierarchies. This
+> would unnecessary complicate this RFC and can be done later once we agree on
+> the fundamentals.
+
+
+The `#[target_feature]` attribute continues to not be allowed on safe trait
+method implementations:
+
+```rust
+// Example 2:
+trait Foo { fn foo(); }
+struct Fooish();
+impl Foo for Fooish { 
+    #[target_feature = "sse2"] fn foo() { }  
+    // ^ ERROR: #[target_feature] on trait method impl requires 
+    // unsafe fn but Foo::foo is safe
+    // (this is already an error per RFC2045)
+}
+
+trait Bar { unsafe fn bar(); }
+struct Barish();
+impl Bar for Barish { 
+    #[target_feature = "sse2"] unsafe fn bar() { }  // OK (RFC2045)
+}
+```
+
+* safe `#[target_feature]` functions are not assignable to safe `fn` pointers.
+
+
+```
+// Example 3
+#[target_feature] fn meow() {}
+
+static x: fn () -> () = meow;
+// ^ ERROR: meow can only be assigned to unsafe fn pointers due to 
+// #[target_feature] but function pointer x with type fn()->() is safe.
+static y: unsafe fn () -> () = meow as unsafe fn()->(); // OK
+```
+
+# Reference-level explanation
+[reference-level-explanation]: #reference-level-explanation
+
+This RFC proposes to changes to the language with respect to [RFC 2045 (`target_feature`)]:
+
+* safe `#[target_feature]` functions can be called _without_ an `unsafe {}`
+block _only_ from functions with the exact same set of `#[target_feature]`s.
+Calling them from other contexts (other functions, static variable initializers,
+etc.) requires opening an `unsafe {}` even though they are not marked as
+`unsafe`
+
+* safe `#[target_feature]` functions are not assignable to safe `fn` pointers.
+
+# Drawbacks
+[drawbacks]: #drawbacks
+
+TBD.
+
+# Rationale and alternatives
+[alternatives]: #alternatives
+
+TBD.
+
+# Prior art
+[prior-art]: #prior-art
+
+[RFC2212 target feature unsafe](https://github.com/rust-lang/rfcs/pull/2212)
+attempted to solve this problem. This RFC builds on the discussion that was
+produced by that RFC and by many discussions in the `stdsimd` repo.
+
+# Unresolved questions
+[unresolved]: #unresolved-questions
+
+TBD.
