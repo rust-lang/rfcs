@@ -240,7 +240,7 @@ impl SpawnError {
     }
 
     /// Check whether this error is the `shutdown` error.
-    pub fn is_shutdown() -> bool {
+    pub fn is_shutdown(&self) -> bool {
         true
     }
 }
