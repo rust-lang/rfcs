@@ -52,12 +52,15 @@ reasons:
   {}` to call them everywhere hides other potential sources of `unsafe` within
   these functions. Users get used to upholding `#[target_feature]`-related 
   pre-conditions, and other types of pre-conditions get glossed by.
+* `#[target_feature]` functions are not inlined across mismatching contexts,
+  which can have disastrous performance implications. Currently calling
+  `#[target_feature]` function from all contexts looks identical which makes it
+  easy for users to make these mistakes (which get reported often).
 
-This RFC proposes concrete solutions for these two problems.
+The solution proposed in this RFC solves these problems.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
-
 
 Currently, we require that `#[target_feature]` functions be declared as `unsafe
 fn`. This RFC relaxes this restriction:
@@ -103,6 +106,18 @@ fn moo() {
 > would unnecessary complicate this RFC and can be done later once we agree on
 > the fundamentals.
 
+This already solves all three issues mentioned in the motivation:
+
+* when calling `#[target_feature]` functions from other `#[target_feature]`
+  functions with the same features, we don't need `unsafe` code anymore.
+* since `#[target_feature]` functions do not need to be `unsafe` anymore,
+  `#[target_feature]` functions that are marked with `unsafe` become more
+  visible, making it harder for users to oversee that there are other
+  pre-conditions that must be uphold.
+* `#[target_feature]` function calls across mismatching contexts require
+  `unsafe`, making them more visible. This makes it easier to identify
+  calls-sites across which they cannot be inlined while making call-sites across
+  which they can be inlined more ergonomic to write.
 
 The `#[target_feature]` attribute continues to not be allowed on safe trait
 method implementations:
