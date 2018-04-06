@@ -66,10 +66,10 @@ Currently, we require that `#[target_feature]` functions be declared as `unsafe
 fn`. This RFC relaxes this restriction:
 
 * safe `#[target_feature]` functions can be called _without_ an `unsafe {}`
-block _only_ from functions with the exact same set of `#[target_feature]`s.
-Calling them from other contexts (other functions, static variable initializers,
-etc.) requires opening an `unsafe {}` even though they are not marked as
-`unsafe`:
+block _only_ from functions that have at least the exact same set of
+`#[target_feature]`s. Calling them from other contexts (other functions, static
+variable initializers, etc.) requires opening an `unsafe {}` even though they
+are not marked as `unsafe`:
 
 ```rust
 // Example 1:
@@ -106,7 +106,11 @@ fn moo() {
 > would unnecessary complicate this RFC and can be done later once we agree on
 > the fundamentals.
 
-This already solves all three issues mentioned in the motivation:
+First, this is still sound. The caller has a super-set of `#[target_features]`
+of the callee. That is, the `#[target_feature]`-related pre-conditions of the
+callee are uphold by the caller, therefore calling the callee is safe.
+
+This change already solves all three issues mentioned in the motivation:
 
 * when calling `#[target_feature]` functions from other `#[target_feature]`
   functions with the same features, we don't need `unsafe` code anymore.
