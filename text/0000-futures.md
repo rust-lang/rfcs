@@ -226,9 +226,7 @@ pub trait BoxExecutor {
 pub struct Task { .. }
 
 // this impl is in `std` only:
-impl From<Box<dyn Future<Item = ()> + Send>> for Task {
-    pub fn from_box(task: ) -> Task;
-}
+impl From<Box<dyn Future<Item = ()> + Send>> for Task { .. }
 
 /// Provides the reason that an executor was unable to spawn.
 pub struct SpawnError { .. }
@@ -317,7 +315,7 @@ impl<'a> Context<'a> {
         where E: BoxExecutor;
 
     /// Get the `Waker` associated with the current task.
-    pub fn waker(&self) -> &Waker
+    pub fn waker(&self) -> &Waker;
 
     /// Spawn a future onto the default executor.
     ///
