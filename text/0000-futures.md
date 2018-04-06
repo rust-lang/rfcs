@@ -235,14 +235,12 @@ pub struct SpawnError { .. }
 
 impl SpawnError {
     /// Spawning is failing because the executor has been shut down.
-    pub fn shutdown() -> SpawnError {
-        SpawnError { _a: () }
-    }
+    pub fn shutdown() -> SpawnError;
 
     /// Check whether this error is the `shutdown` error.
-    pub fn is_shutdown(&self) -> bool {
-        true
-    }
+    pub fn is_shutdown(&self) -> bool;
+
+    // additional error variants added over time...
 }
 ```
 
