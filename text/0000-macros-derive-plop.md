@@ -45,31 +45,31 @@ I have seen somethings like the above wanted in the language but with this RFC s
 
 The design of this RFC is meant to work well with either the current `macro_rules!` system or the new Macros2.0 system. But would most likely work the best and look the most like rust if only applied to Macros2.0.
 
-Proposing two new compiler traits, these being `PlopAhead` and `PlopBehind` where they mean the same sort of thing but on which side of the macro such connection is permitted.
+Proposing two new compiler attributes, these being `plopahead` and `plopbehind` where they mean the same sort of thing but on which side of the macro such connection is permitted.
 
-To add them to a macro it would just `#derive(...)` them.
+To add them to a macro it would just `#[...]` them.
 
 Example:
 
 ```rust
-#derive(PlopAhead, PlopBehind)
+#[plopahead, plopbehind]
 macro foo {
     ...
 }
 ```
 
-To simplify the description the rest of the design witll be talked about in terms of `Plop` which is generic over either of the actual traits except for the following concerns:
-* `PlopAhead` only allows attachment when the macro is ahead of other syntax. Or in other words only attaching to the syntax that follows the macro.
-* `PlopBehind` only allows attachment when the macro is behind of other syntax. Or in other words only attaching to the syntax that preceeds the macro.
+To simplify the description the rest of the design witll be talked about in terms of `plop` which is generic over either of the actual traits except for the following concerns:
+* `plopahead` only allows attachment when the macro is ahead of other syntax. Or in other words only attaching to the syntax that follows the macro.
+* `plopbehind` only allows attachment when the macro is behind of other syntax. Or in other words only attaching to the syntax that preceeds the macro.
 * When used in combination with one another attachment is allowed on both sides of the macro.
 
 Even with these traits the requirement that macros must produce fully correct syntax is still present. Macros cannot create dangling blocks or other such things. It does not permit the use of Plop-ing while expanding the macro.
 
-So what does Ploping allow, it allows for the syntax around a macro to not necessarily be fully legal if the macro was not present. The easiest example would be an `else` statement following a macro. Generally (ie, currently), this is not allowed since an else block is meaningless without a corresponding `if` block. However, if a macro derives `PlopAhead` and after expanding ends with an `if` block then a following `else` would be able to become the `else` for that produced `if`.
+So what does Ploping allow, it allows for the syntax around a macro to not necessarily be fully legal if the macro was not present. The easiest example would be an `else` statement following a macro. Generally (ie, currently), this is not allowed since an else block is meaningless without a corresponding `if` block. However, if a macro has the attribute `plopahead` and after expanding ends with an `if` block then a following `else` would be able to become the `else` for that produced `if`.
 
 The reason for having two is so that macro creators can more finely control how a macro is used, and so that they don't have to worry about the case which they don't explicitly opt-into. 
 
-For `PlopBehind` such a macro would be able to attach to even a previous keyword. The main example of this would be starting the production with an `if` statement and this would be allowed to then attach to a daginling `else` to form an `else if`.
+For `plopbehind` such a macro would be able to attach to even a previous keyword. The main example of this would be starting the production with an `if` statement and this would be allowed to then attach to a daginling `else` to form an `else if`.
 
 This would only be allowed to connect to `if`, `else if`, or `else` statments as they are currently the only blocks that this sort of connection would make sense.
 
