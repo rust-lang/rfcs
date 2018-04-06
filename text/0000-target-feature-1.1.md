@@ -112,9 +112,9 @@ callee are uphold by the caller, therefore calling the callee is safe.
 
 This change already solves all three issues mentioned in the motivation:
 
-* when calling `#[target_feature]` functions from other `#[target_feature]`
+* When calling `#[target_feature]` functions from other `#[target_feature]`
   functions with the same features, we don't need `unsafe` code anymore.
-* since `#[target_feature]` functions do not need to be `unsafe` anymore,
+* Since `#[target_feature]` functions do not need to be `unsafe` anymore,
   `#[target_feature]` functions that are marked with `unsafe` become more
   visible, making it harder for users to oversee that there are other
   pre-conditions that must be uphold.
