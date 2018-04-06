@@ -143,7 +143,7 @@ impl Bar for Barish {
 * safe `#[target_feature]` functions are not assignable to safe `fn` pointers.
 
 
-```
+```rust
 // Example 3
 #[target_feature] fn meow() {}
 
