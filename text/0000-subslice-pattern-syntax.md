@@ -48,7 +48,8 @@ can take it as a default.
 There was no visible demand for implementing half-bounded ranges in patterns so far, but if they
 are implemented in the future they will be able to be used in slice patterns as well, but they
 will require explicit grouping with recently implemented
-[parentheses in patterns](https://github.com/rust-lang/rust/pull/48500).  
+[parentheses in patterns](https://github.com/rust-lang/rust/pull/48500) (`[a, (..end)]`) or an
+explicitly written start boundary (`[a, 0 .. end]`).  
 We can also make *some* disambiguation effort and, for example, interpret `..LITERAL` as a
 range because `LITERAL` can never match a subslice. Time will show if such an effort is necessary
 or not.
@@ -56,6 +57,11 @@ or not.
 If/when half-bounded ranges are supported in patterns, for better future compatibility we'll need
 to reserve `..PAT` as "rest of the list" in tuples and tuple structs as well, and avoid interpreting
 it as a range pattern in those positions.
+
+Note that ambiguity with unbounded ranges as they are used in expressions (`..`) already exists in
+variant `Variant(..)` and tuple `(a, b, ..)` patterns, but it's very unlikely that the `..` syntax
+will ever be used in patterns in the range meaning because it duplicates functionality of the
+wildcard pattern `_`.
 
 #### `..PAT` vs `PAT..`
 
@@ -139,8 +145,9 @@ The `PAT..` alternative was discussed in the motivational part of the RFC.
 More complex syntaxes derived from `..` are possible, they use additional tokens to avoid the
 ambiguity with ranges, for example
 [`..PAT..`](https://github.com/rust-lang/rust/issues/23121#issuecomment-301485132), or
-`.. @ PAT` or `PAT @ ..` (original comments seem to be lost by GitHub), or other similar
-alternatives.  
+[`.. @ PAT`](https://github.com/rust-lang/rust/issues/23121#issuecomment-280920062) or
+[`PAT @ ..`](https://github.com/rust-lang/rust/issues/23121#issuecomment-280906823), or other
+similar alternatives.  
 We reject these syntaxes because they only bring benefits in incredibly contrived cases using a
 feature that doesn't even exist yet, but normally they only add symbolic noise.
 
@@ -150,7 +157,8 @@ More radical syntax changes not keeping consistency with `..`, for example
 # Prior art
 [prior-art]: #prior-art
 
-Some other languages like Scala or F# has list/array patterns, but their
+Some other languages like Haskell (`first_elem : rest_of_the_list`),
+Scala, or F# (`first_elem :: rest_of_the_list`) has list/array patterns, but their
 syntactic choices are quite different from Rust's general style.
 
 "Rest of the list" in patterns was previously discussed in
