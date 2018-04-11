@@ -173,12 +173,19 @@ are not marked as `unsafe`
 # Drawbacks
 [drawbacks]: #drawbacks
 
-TBD.
+This RFC extends the typing rules for `#[target_feature]`, which might
+unnecessarily complicate future language features like an effect system.
 
 # Rationale and alternatives
 [alternatives]: #alternatives
 
-TBD.
+The alternative here is to make `#[target_feature]` an effect/restriction. Since
+`#[target_feature]` is already on its path to stabilization and its required to
+make SIMD in Rust minimally useful, not stabilizing `#[target_feature]` at this
+point is not an option unless we are willing to delay SIMD until an effect
+system is stabilized. Until then, `#[target_feature]` and this RFC solve real
+problems and provide another use-case that such an effect system will need to
+enable to be useful for Rust programmers.
 
 # Prior art
 [prior-art]: #prior-art
@@ -212,3 +219,21 @@ fn baz() {
   bar(); // OK 
 }
 ```
+
+## Effect system
+
+It is unclear how `#[target_feature]` would interact with an effect system for
+Rust like the one being tracked
+[here](https://github.com/Centril/rfc-effects/issues) and discussed in
+[RFC2237](https://github.com/rust-lang/rfcs/pull/2237).
+
+In particular, it is unclear how the typing rules being proposed here would be
+covered by such an effect system, and whether such system would support
+attributes in effect/restriction position. 
+
+Such an effect-system might need to introduce first-class target-features into
+the language (beyond just a simple attribute) which could lead to the
+deprecation of the `#[target_feature]` attribute.
+
+It is also unclear how any of this interacts with effect-polymorphism at this
+point.
