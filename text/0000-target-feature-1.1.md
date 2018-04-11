@@ -163,10 +163,10 @@ static y: unsafe fn () -> () = meow as unsafe fn()->(); // OK
 This RFC proposes to changes to the language with respect to [RFC 2045 (`target_feature`)]:
 
 * safe `#[target_feature]` functions can be called _without_ an `unsafe {}`
-block _only_ from functions with the exact same set of `#[target_feature]`s.
-Calling them from other contexts (other functions, static variable initializers,
-etc.) requires opening an `unsafe {}` even though they are not marked as
-`unsafe`
+block _only_ from functions that have at least the exact same set of
+`#[target_feature]`s. Calling them from other contexts (other functions, static
+variable initializers, etc.) requires opening an `unsafe {}` even though they
+are not marked as `unsafe`
 
 * safe `#[target_feature]` functions are not assignable to safe `fn` pointers.
 
@@ -190,4 +190,25 @@ produced by that RFC and by many discussions in the `stdsimd` repo.
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
-TBD.
+## Negative features
+
+[RFC 2045 (`target_feature`)] introduced the `#[target_feature(enable = "x")]`
+syntax to allow introducing negative features in future RFCs in the form of
+`#[target_feature(disable = "y")]`. Since these have not been introduced yet we
+can only speculate about how they would interact with the extensions proposed in
+this RFC but we probably can make the following work in some form:
+
+```rust
+// #[target_feature(enable = "sse")]
+fn foo() {}
+
+#[target_feature(disable = "sse")] 
+fn bar() {
+    foo(); // ERROR: (bar is not sse)
+    unsafe { foo() }; // OK
+}
+
+fn baz() {
+  bar(); // OK 
+}
+```
