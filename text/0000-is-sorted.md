@@ -40,6 +40,16 @@ and others. (Curiously, many (mostly) more high-level programming language –
 like Ruby, Javascript, Java, Haskell and Python – seem to lack such a function.)
 
 
+## Fast Implementation via SIMD
+
+Lastly, it is possible to implement `is_sorted` for many common types with SIMD
+instructions which improves speed significantly. It is unlikely that many
+programmers will take the time to write SIMD code themselves, thus everyone
+would benefit if this rather difficult implementation work is done in the
+standard library.
+
+
+
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
@@ -162,10 +172,8 @@ condition `a <= b` holds. For slices/iterators with zero or one element,
 the function returns `false` if any two consecutive elements are not
 comparable (this is an implication of the `a <= b` condition from above).
 
-A note about implementation: it's sufficient to only do real work in
-`Iterator::is_sorted_by`. All other methods can simply be implemented by
-(directly or indirectly) using `Iterator::is_sorted_by`. A sample
-implementation can be found [here](https://play.rust-lang.org/?gist=431ff42fe8ba5980fcf9250c8bc4492b&version=stable).
+A sample implementation can be found
+[here](https://play.rust-lang.org/?gist=431ff42fe8ba5980fcf9250c8bc4492b&version=stable).
 
 
 # Drawbacks
