@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-Syntax sugar for efficient code reuse via the composition pattern. Wrapper functions are generated for a struct, delegating most or all of a trait’s impl block to a member field that already implements the trait.
+Syntax sugar for efficient code reuse via the composition pattern. Wrapper functions are generated for a struct, delegating most or all of a trait’s `impl` block to a member field that already implements the trait.
 
 
 # Motivation
@@ -140,7 +140,7 @@ impl TR for S {
 
 This also has the exact same meaning as the first example. While `to field_name;` is not required to be on a new line, this is the `rustfmt` default when delegating individual trait items, as it makes it easy to visually identify the field being delegated to.
 
-If you want to delegate some methods to one field and some to another, simply write multiple `delegate` statements:
+If you want to delegate some methods to one field and some to another, simply write multiple `delegate` items:
 
 ```rust
 impl TR for S {
@@ -186,13 +186,13 @@ counter.0 -= 1;
 # Reference-level explanation
 [reference]: #reference
 
-A delegation statement can only appear inside a trait impl block. Delegation inside inherent impls is left as a future extension.
+A delegation item can only appear inside a trait impl block. Delegation inside inherent impls is left as a future extension.
 
 Delegation must be to a field on `Self`. Other kinds of implementer expressions are left as future extensions. This also means delegation can only be done on structs for now.
 
-There may be more than one delegation statement. For readability, `rustfmt` moves delegation statements to the top of an impl block.
+There may be more than one delegation item. 
 
-A delegation statement always consists of:
+A delegation item always consists of:
 
 -   the keyword `delegate`
 -   either a `*`, or a comma-separated list of items being delegated
@@ -202,7 +202,7 @@ A delegation statement always consists of:
 
 An “item being delegated” is always two tokens. The first token must be either `fn`, `type` or `const`. The second is any valid identifier for a trait item.
 
-The semantics of a delegation statement should be the same as if the programmer had written each delegated item implementation manually. For instance, if the trait `TR` has a default implementation for method `foo()`, and the type `F` does not provide its own implementation, then delegating `TR` to `F` means using `TR`’s implementation of `foo()`. If `F` does provide its own implementation, then delegating `TR` to `F` means using `F`’s implementation of `foo()`. The only additional power granted by this feature is that `delegate *` can automatically change what items get implemented if the underlying trait `TR` and type `F` get changed accordingly. There can be at most one `delegate *` per `impl` block.
+The semantics of a delegation item should be the same as if the programmer had written each delegated item implementation manually. For instance, if the trait `TR` has a default implementation for method `foo()`, and the type `F` does not provide its own implementation, then delegating `TR` to `F` means using `TR`’s implementation of `foo()`. If `F` does provide its own implementation, then delegating `TR` to `F` means using `F`’s implementation of `foo()`. The only additional power granted by this feature is that `delegate *` can automatically change what items get implemented if the underlying trait `TR` and type `F` get changed accordingly. There can be at most one `delegate *` per `impl` block.
 
 To generate the wrapper function:
 
@@ -222,6 +222,8 @@ To generate the wrapper function:
         self.f.check_name(&name, ignore_capitals, &mut state)
     }    
     ```
+
+It is a compile-time error to `delegate` a trait to a struct field that doesn't implement the trait.
 
 
 # Possible Future Extensions
@@ -246,7 +248,7 @@ impl Write for Wrapper { delegate * to get_write(); }
 ## Inherent Impls
 [inherent_impls]: #inherent_impls
 
-While we imagine delegating traits will often be best practice, it's also valuable to do so with inherent `impl`s as well. This makes the language more consistent and preempts the questions: "Why can't I do this directly on my type? Why do I have to define a trait?"
+While we imagine delegating traits will often be best practice, it's also valuable to do so with inherent `impl`s. This makes the language more consistent and preempts the questions: "Why can't I do this directly on my type? Why do I have to define a trait?"
 
 ```rust
 struct AppendOnlyVec<T> (Vec<T>);
@@ -282,7 +284,7 @@ While this is listed as a possible future extension as we do not want to block a
 ## Delegate Block
 [delegate_block]: #delegate_block
 
-In a delegation statement, the `to` contextual keyword and field (delegation target) are replaced with a delegate block. The block maps Self parameters to implementer expressions and return values to output types.
+In a delegation item, the `to` contextual keyword and field (delegation target) are replaced with a delegate block. The block maps Self parameters to implementer expressions and return values to output types.
 
 e.g. Delegating to an inner type using getter methods instead of fields:
 
@@ -552,7 +554,7 @@ impl TR for S {
 }
 ```
 
-### Including `self` in delegate statements
+### Including `self` in delegate items
 
 ```rust
 impl TR for S {
@@ -569,7 +571,7 @@ This makes it more obvious the target is a struct field and is certainly more cl
 This would be a good choice if we want to allow custom implementer expressions without a delegate block, when there is no variance due to the type of `self`. However, we could probably enclose the expression within `{ expr }` as is done with const generics to disambiguate, so this is a weak objection.
 
 
-`self.` is unnecessary and could lead newcomers to believe they can write arbitrary Rust code there. However, this risk also applies to allowing getter methods in the basic delegation statement.
+`self.` is unnecessary and could lead newcomers to believe they can write arbitrary Rust code there. However, this risk also applies to allowing getter methods in the basic delegation syntax.
 
 This unresolved question is relevant to the decision:
 -   Are there any cases of [Custom Self Types](https://github.com/rust-lang/rfcs/pull/2362) where `self` needs to be manually dereferenced, e.g.
@@ -594,6 +596,10 @@ delegate TR::{fn foo, fn bar}
 delegate TR::* to S::getter();
 delegate fn push to AppendOnlyVec::0;
 delegate S::* to trait TR;
+
+// The common case is delegating entire trait(s):
+delegate TR to S::f;
+delegate TR1, TR2 to S::f;
 ```
 
 This is shorter and easier to read than the equivalent:
@@ -608,9 +614,13 @@ impl TR for S {
 impl TR for S { delegate * to getter(); }
 impl<T> AppendOnlyVec<T> { delegate fn push to 0; }
 impl S { delegate * to trait TR; }
+
+// The common case is delegating entire trait(s):
+impl TR for S { delegate * to f; }
+impl TR1 + TR2 for S { delegate * to f; }
 ```
 
-However, in the case of delegating most of a trait's methods, an `impl` block is still required and now the "overridden" method can be seperated from the delegate statement, which could be confusing and easier to miss what is happening.
+However, in the case of delegating most of a trait's methods, an `impl` block is still required and now the "overridden" method can be seperated from the delegate item, which could be confusing and easier to miss what is happening.
 
 We could offer both syntaxes as a good 4 step ratchet:
 
@@ -637,8 +647,17 @@ delegate TR::{foo, bar, const MAX, type Item}
 delegate push to AppendOnlyVec::0;
 ```
 
+This would make `fn`s ambiguous with traits if we decide to allow shorter forms for the common case of delegating entire trait(s):
+
+```rust
+delegate TR to S::f;
+delegate TR1, TR2 to S::f;
+```
+
 
 ### Different syntax for delegating most trait items
+
+When refactoring from "delegate all" (`delegate * to f;`) to "delegate most" trait items, `*` is replaced with `_`.
 
 ```rust
 impl TR for S {
@@ -652,7 +671,7 @@ impl TR for S {
 
 This overcomes the drawback: the `delegate *` syntax may be too implicit.
 
-It also overcomes the objection to omitting the `impl` block: the "overridden" method can be seperated from the delegate statement, which could be confusing and easier to miss what is happening.
+It also overcomes the objection to omitting the `impl` block: the "overridden" method can be seperated from the delegate item, which could be confusing and easier to miss what is happening.
 
 The increase in cognitive load is minimal, since `_` is widely used to mean "inferred by the compiler."
 
@@ -662,7 +681,7 @@ The increase in cognitive load is minimal, since `_` is widely used to mean "inf
 Many of these syntaxes were never “rejected” in the original RFC’s comment thread and are likely still on the table. This list merely describes the authors' rationale for preferring `delegate ... to field_name;` over all of these alternatives.
 
 -   `impl TR for S use self.F { ... }` was criticized in the first RFC’s comment thread for looking too much like inheritance.
--   `impl TR for S { use self.F; ... }` was criticized in the first RFC’s comment thread for ruling out the possibility of use statements inside impl blocks.
+-   `impl TR for S { use self.F; ... }` was criticized in the first RFC’s comment thread for ruling out the possibility of `use` declarations inside impl blocks.
 -   `impl TR for S => self.F;` and `impl TR for S => self.F { ... }` This is good for delegating an entire trait impl, but when used for partial delegation where the remaining implementations are inside the curly braces, this starts looking like inheritance again, appears to put implementation details in the signature where they don’t belong, and I believe would be relatively easy to overlook compared to most of the other syntaxes.
 -   `fn method = self.field.method;` This syntax was suggested for delegating a single item. It’s not clear how to extend it to delegating multiple items, “most” items or all items in an impl.
 -   Various attribute syntaxes like `#[delegate(foo=S)]`. Most of these made it hard to tell what was the item being delegated and what was the field being delegated to. This also seems like it would lead to “stringly typed” attribute syntax like `#[delegate(foo="self.f.foo()")]` if we tried to make it cover most of the possible future extensions. Also, attributes for an impl block would normally go outside the impl block, but since delegation is purely an implementation detail it again seems strange to put it outside the block. Finally, an attribute would be appropriate if this feature could be implemented as a proc macro someday, but delegation cannot because it requires “looking outside” the impl block to see all the items in the trait being implemented.
@@ -697,4 +716,8 @@ We expect to resolve through the RFC process before this gets merged:
 We expect to resolve through the implementation of this feature before stabilization:
 
 -   How does delegation interact with specialization? There will be a [default impl](https://github.com/rust-lang/rfcs/blob/master/text/1210-impl-specialization.md#default-impls) block in the future. Should we allow `delegate` to be used in a `default impl` block?
-    - The authors do not have a specific reason to disallow this and are listing the question as it was raised during discussion and they do not know enough about specialization to answer it.
+    - The authors do not have a specific reason to disallow this. The question was raised during discussion and we don't know enough about specialization to answer it.
+
+Out of scope for this RFC:
+
+-   For readability, `rustfmt` could move delegation items to the top of an impl block. This is left to a future [style-fmt RFC](https://github.com/rust-lang-nursery/fmt-rfcs).
