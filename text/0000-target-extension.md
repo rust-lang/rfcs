@@ -157,20 +157,6 @@ extern {
 ```
 
 
-Additionally, in order to simplify conditional compilation when changes are
-accross several versions, new predicates would be added too in order to do
-version comparaison.
-
-```rust
-extern {
-    // encrypt() function doesn't exist anymore starting with freebsd12
-
-    #[cfg(all(target_os="freebsd", version_lt(target_os_version, "12")))]
-    pub fn encrypt(block *mut ::c_char, flag ::c_int) -> ::c_int;
-}
-```
-
-
 Another complete (and simple) example: in OpenBSD 6.2, the structure
 `siginfo_t` changed:
 
@@ -182,9 +168,9 @@ pub struct siginfo_t {
 
     // A type correction occured in 6.2.
     // Before it was a `char *` and now it is a `void *`.
-    #[cfg(version_lt(target_os_version, "6.2"))]
+    #[cfg(not(any(target_os_version = "6.2", target_os_version = "6.3"))]
     pub si_addr: *mut ::c_char,
-    #[cfg(version_ge(target_os_version, "6.2"))]
+    #[cfg(any(target_os_version = "6.2", target_os_version = "6.3"))]
     pub si_addr: *mut ::c_void,
 
     #[cfg(target_pointer_width = "32")]
@@ -200,49 +186,6 @@ code](https://github.com/rust-lang/libc/blob/6ddc76a27e0678c04ec7337591f8a0e36c0
 only one version is possible, and switching from one to the other version would
 be a breaking change in `libc` (and we would lose OpenBSD 6.1 supported
 version).
-
-
-## Syntax level
-
-The addition of new predicates in attribute is a syntax extension.
-
-It permits to easily make a piece of code available to a range version. It is a
-facility to manipulate the new attributes defined at language level.
-
-Predicates would be:
-
-- `version_eq()` : equal
-- `version_lt()` : less-than
-- `version_le()` : less-or-equal
-- `version_gt()` : greater-than
-- `version_ge()` : greater-or-equal
-
-The choice of an explicit name is to unhidden that the comparaison is done on
-strings with a specific format (`major.minor.micro`).
-
-Having a predicate instead of an operator (`version_lt()` vs `<`) avoid a too
-intrusive syntax's modification too.
-
-```rust
-#[cfg(version_lt("2", "10"))]
-println!("numeric comparaison: 2 < 10");
-
-#[cfg(version_lt("3", "2.0")]
-println!("able to deal with any number of '.': 3 < 2.0 (false)");
-#[cfg(version_lt("2.0", "2.0")]
-println!("able to deal with any number of '.': 2.0 < 2.0 (false)");
-#[cfg(version_lt("10.0", "10.0.1")]
-println!("able to deal with any number of '.':10.0 < 10.0.1");
-
-#[cfg(version_eq("2", "2.0")]
-println!("LLVM assumes \"2\" to be equivalent to \"2.0.0\");
-
-#[cfg(version_le("3", "4", "5")]
-println!("allow more than 2 arguments in the predicate: 3 <= 4 <= 5");
-```
-
-See `libsyntax/attr.rs`.
-
 
 
 ## Backend level
@@ -350,11 +293,10 @@ From downstream perspective, it permits to use Rust to target several OS
 versions whereas the versions are incompatibles.
 
 From Rust developer perspective, it adds a new attributes for conditional
-compilation, and extent the syntax with new predicates in convenient way.
+compilation.
 
 Regarding documentation, additions have to be done on _Rust Reference_ in order
-to mention new attributes in conditional compilation attribute section, with
-related new predicates.
+to mention new attributes in conditional compilation attribute section.
 
 Visible changes should also occur on main rust-lang.org site on pages about
 rustc distribution: rustup will be able to distribute binaries for more
@@ -364,8 +306,12 @@ platforms (per OS version), or about platform support.
 # Drawbacks
 [drawbacks]: #drawbacks
 
-At syntax level, it adds additional complexity for defining new predicates
-for manipulating version numbers.
+Do not providing a simple way to target a range of versions (for example, "from
+version 12 to current version") could imply a long enumeration of version, that
+could only grow with time.  But two things has to be noted: first it could help
+to limit the number of supported and tested versions ; secondly, the fact this
+particular RFC doesn't require such construct do not forbid to propose a new
+RFC later, once the necessity of such mecanism would be more evident (or not).
 
 At backend level, the number of targets will grow a lot. It means that not all
 targets will be testable (too much required ressources and it would require a
@@ -390,11 +336,6 @@ the resulting binaries will work on all targets.
 The more simple approch is to use `target_os` with the OS version inside
 (`freebsd12`).  But it would require to duplicate all `libc` code (for only
 small differences) at each release. Having a separated attribute is more simple.
-
-Having only parts of the current RFC is also possible: new predicates at syntax
-level are only a way simplify code expression. It would requires to explicitly
-list all affected OS/env version on changes. It is doable if the list of
-supported/OS/env versions is controlled in some way.
 
 But without some way to express breaking changes existence at OS level, Rust is
 unable to targeting simultaneous several OS version. Regarding
