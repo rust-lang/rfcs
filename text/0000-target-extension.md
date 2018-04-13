@@ -341,7 +341,7 @@ But without some way to express breaking changes existence at OS level, Rust is
 unable to targeting simultaneous several OS version. Regarding
 [issue #42681](https://github.com/rust-lang/rust/issues/42681) for FreeBSD 12,
 it means Rust should either deprecating older FreeBSD versions support (whereas
-FreeBSD itself still support them) or not supporting FreeBSD 12.
+FreeBSD itself still support them) or only partially supporting FreeBSD 12.
 
 ## Runtime detection
 
