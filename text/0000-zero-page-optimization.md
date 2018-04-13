@@ -16,25 +16,27 @@ Modern operating systems normally [traps null pointer access](https://en.wikiped
 This means valid pointers will never take values inside the zero page, and we
 can exploit this for ~12 bits of storage for secondary variants.
 
-Inside Rust std, we rely on the assumption that zero page exists:
+[Inside Rust std](https://github.com/rust-lang/rust/blob/ca26ef321c44358404ef788d315c4557eb015fb2/src/liballoc/heap.rs#L238),
+we use a "dangling" pointer for ZST allocations; this involves a somewhat
+verbose logic.
 
-https://github.com/rust-lang/rust/blob/ca26ef321c44358404ef788d315c4557eb015fb2/src/liballoc/heap.rs#L238
+Outside std, we also see `futures-util`
+[uses 1](https://github.com/rust-lang-nursery/futures-rs/blob/856fde847d4062f5d2af5d85d6640028297a10f1/futures-util/src/lock.rs#L157-L169)
+as a special pointer value.
 
 However, this is not something that is documented in the nomicon, neither it's
 always true. For instance, microcontrollers without MMU doesn't implement such
-guards at all, and `0` is a valid address where the entrypoint lies. See
+guards at all, and `0` and `1` is a valid address where the entrypoint lies. See
 [Cortex-M4](https://developer.arm.com/docs/ddi0439/latest/programmers-model/system-address-map)'s
 design as one of such example.
 
-To make things worse, such usage is also seen outside std, on crates that compile
-on stable Rust:
-
-https://github.com/rust-lang-nursery/futures-rs/blob/856fde847d4062f5d2af5d85d6640028297a10f1/futures-util/src/lock.rs#L157-L169
-
 Such crates should not assume anything regarding Rust ABI internals, but in the
 case of this `BiLock`, we rely on compressing it into a usize so we can perform
-atomic operations without a mutex. Of course, this code has risk to break if
-used on microcontrollers.
+atomic operations without a mutex. In practice, the entrypoint at `0` is
+unlikely to be filled with Rust code but platform-specific bootstrap assembly.
+Also, other factors like alignment also get involved so in practice we can't
+collide the address. However, this RFC proposes a more logical and typed way
+to code such things.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
