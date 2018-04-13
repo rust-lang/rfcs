@@ -130,3 +130,7 @@ is Rust specific too.
 
 - Can we suggest a better alternative than `transmute`? `transmute` is too
 error prone despite we're trying to make the code more "safe".
+- We can also store data in the lower bits of pointer, utilizing the alignemnt
+requirement. Also, amd64 pointers are 48-bit technically, so we may also exploit
+the space. These optimizations are less portable, and should be filed in another
+RFC.
