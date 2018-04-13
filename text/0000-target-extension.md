@@ -300,7 +300,9 @@ to mention new attributes in conditional compilation attribute section.
 
 Visible changes should also occur on main rust-lang.org site on pages about
 rustc distribution: rustup will be able to distribute binaries for more
-platforms (per OS version), or about platform support.
+platforms (per OS version), or about platform support. If only one version is
+distributed (what it is expected), the binary will be runnable only on one
+particular OS version (but will be able to produce binary for another version).
 
 
 # Drawbacks
