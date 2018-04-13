@@ -8,6 +8,8 @@
 
 Extend Rust target specification to follow more closely LLVM triple specification.
 
+The underlined purpose is to allow Rust compiler to target more easily BSD OS version.
+
 # Motivation
 [motivation]: #motivation
 
@@ -50,7 +52,7 @@ representative of something that already occurred in the past.
   See [commit message](http://cvsweb.openbsd.org/cgi-bin/cvsweb/src/sys/sys/_types.h?rev=1.6&content-type=text/x-cvsweb-markup)
   and [diff on types](http://cvsweb.openbsd.org/cgi-bin/cvsweb/src/sys/sys/_types.h.diff?r1=1.5&r2=1.6).
 
-- **OpenBSD 6.2** (upcoming) changes `si_addr` type (`char *` to `void *`) in
+- **OpenBSD 6.2** changes `si_addr` type (`char *` to `void *`) in
   `siginfo_t` structure.
   See [commit message](http://cvsweb.openbsd.org/cgi-bin/cvsweb/src/sys/sys/siginfo.h?rev=1.12&content-type=text/x-cvsweb-markup)
   and [diff on sys/siginfo.h](http://cvsweb.openbsd.org/cgi-bin/cvsweb/src/sys/sys/siginfo.h.diff?r1=1.11&r2=1.12).
@@ -64,17 +66,17 @@ representative of something that already occurred in the past.
   See [commit R300997](https://svnweb.freebsd.org/base?view=revision&revision=300997)
   and [diff on signal.h](https://svnweb.freebsd.org/base/head/include/signal.h?r1=300997&r2=300996&pathrev=300997).
 
-- **FreeBSD 12** (upcoming) removes `setkey()`, `encrypt()`, `des_setkey()` and
+- **FreeBSD 12** removes `setkey()`, `encrypt()`, `des_setkey()` and
   `des_cipher()` functions.
   See [commit R306651](https://svnweb.freebsd.org/base?view=revision&revision=306651)
   and [diff of unistd.h](https://svnweb.freebsd.org/base/head/include/unistd.h?r1=306651&r2=306650&pathrev=306651).
 
-- **FreeBSD 12** (upcoming) adds a new member `fb_memattr` in the middle of the
+- **FreeBSD 12** adds a new member `fb_memattr` in the middle of the
   structure `fb_info` (public under `sys/fbio.h`).
   See [commit R306555](https://svnweb.freebsd.org/base?view=revision&revision=306555)
   and [diff of sys/fbio.h](https://svnweb.freebsd.org/base/head/sys/sys/fbio.h?r1=306555&r2=306554&pathrev=306555).
 
-- **FreeBSD 12** wants to switch `ino_t` from 32 bits to 64 bits.
+- **FreeBSD 12** switchs `ino_t` from 32 bits to 64 bits.
   See [commit R318736](https://svnweb.freebsd.org/base?view=revision&revision=318736),
   [diff on types](https://svnweb.freebsd.org/base/head/sys/sys/_types.h?r1=307756&r2=318736),
   the [Status Update and Call for Testing](https://lists.freebsd.org/pipermail/freebsd-fs/2017-April/024684.html),
@@ -126,12 +128,10 @@ This way, a crate like `libc` could export raw bindings of platform
 specifically for the targeted version.
 
 
-It also has been mentioned in
-[pre-rfc discussion](https://internals.rust-lang.org/t/pre-rfc-target-extension-dealing-with-breaking-changes-at-os-level/5289/11),
-that it could be benefical to some others OS (like Windows) to have versioned
-targets too: for the end-user "knowing what version he is targeting means he can
-decide what symbols he can link to normally, and what symbols he has to
-dynamically load, and what fallbacks he has to implement."
+It should be noted that if this motivation section presents globally the
+underlined problem of breaking changes in OS, which could be present in a large
+broad of OS, the RFC will focus on a fewer set of OS. The RFC will target only
+BSD systems where breaking changes are part of the process OS developpment.
 
 
 # Detailed design
