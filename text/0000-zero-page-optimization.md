@@ -74,13 +74,16 @@ To take advantage of zero page optimization, use `transmute` from and to usize.
 This will cause compilation to fail if such optimization is not permitted on
 the target.
 
+An crate attribute `zero_page_size` will be exposed for configuring the exact
+size of the zero page. This is mainly targeted at microcontroller runtimes.
+
 An `zero_page_size` `#[cfg]` attribute will also be exposed, to code a fallback
 instead of failing in cases like above.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-We will add a target-specific constant to determine the availability and size
+We will add a target-specific default to determine the availability and size
 of the zero page. The zero page range starts from 0, and must be at least one
 byte so that old code relying on null pointer optimization will not break.
 
