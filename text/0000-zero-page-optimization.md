@@ -45,7 +45,11 @@ This change should be transparent for most users; the following description is
 targeted at people dealing with FFI or unsafe.
 
 The recently stabilized `NonNull` type will have more strict requirements:
-the pointer must be not in the null page, and it must be valid to dereference.
+the pointer must be not in the null page. `NonNull::dangling` will be
+deprecated in favor of this optimization.
+
+During the migration, we should migrate the impact with a crater run. If changing
+the behavior directly is unacceptable, then we'll have to create a new type instead.
 
 `&T`, `&mut T`, `NonNull<T>` will have the same ranging semantics:
 they will not take any value inside the zero page. We will optimize the layout
