@@ -278,6 +278,118 @@ See `librustc/session/config.rs`.
 
 
 
+## Migration path
+
+FreeBSD will be taken as example for the migration path. But it would apply for
+others BSD OS.
+
+Currently, `rustc` has 3 known targets regarding FreeBSD:
+
+- `aarch64-unknown-freebsd`
+- `i686-unknown-freebsd`
+- `x86_64-unknown-freebsd`
+
+Assuming we want to support FreeBSD 10 and FreeBSD 11 (current supported
+production releases), and FreeBSD 12 (upcoming release), the following steps
+will need consideration.
+
+
+### Extending Target definition
+
+- add `target_os_version` and `target_env_version` in `Target` definition. The
+  default value for all existing targets (including FreeBSD) will be `""`
+  (empty string).
+
+- make `rustc` to export new `target_os_version` and `target_env_version` attributes.
+
+- make `cargo` to export new `TARGET_OS_VERSION` and `TARGET_ENV_VERSION`
+  environment variables.
+
+At this point:
+
+- it should be no impact. the underline mecanism is implemented but nothing use
+  it.
+
+### Add new targets specifically for FreeBSD 10, 11 and 12
+
+- add new targets, by duplicating the target code (using a function for simplicity):
+  - FreeBSD 10
+    - `aarch64-unknown-freebsd10`
+    - `i686-unknown-freebsd10`
+    - `x86_64-unknown-freebsd10`
+
+  - FreeBSD 11
+    - `aarch64-unknown-freebsd11`
+    - `i686-unknown-freebsd11`
+    - `x86_64-unknown-freebsd11`
+
+  - FreeBSD 12
+    - `aarch64-unknown-freebsd12`
+    - `i686-unknown-freebsd12`
+    - `x86_64-unknown-freebsd12`
+
+- in these new targets, only `llvm_target` and `target_os_version` will be changed
+
+At this point:
+
+- the `freebsd` target is still build and distributed. `freebsd10`, `freebsd11`
+  and `freebsd12` are available for use using usual `--target` argument of
+  `rustc`. there is still no changes in the Rust ecosystem.
+- the number of targets will grow: for FreeBSD: from 3 to 12 targets.
+- no changes in `libc`. the four targets are as functional as before and all
+  uses the same libc code (at this point, there is no specific code using
+  `target_os_version`).
+- the generated code for versioned `freebsdXX` could be different as the LLVM
+  backend is now aware of the targeted version.
+- downstream projects could technically start using versioned targets (the code
+  is still the same), but it would not be recommanded for now or only for testing.
+
+### Specific changes for FreeBSD 12 could start to occurs
+
+- changes libc to produce different code if `target_os_version="12"`,
+  specifically regarding struct changes that occured in FreeBSD 12.
+
+At this point:
+
+- when explicitly targeting `freebsd12`, the produced code will have different
+  structure and functions. The produced binary targets FreeBSD 12, and will not
+  work on FreeBSD 11 (due to the use of breaking changes that occured in FreeBSD
+  12).
+
+### Smoothly remove unversioned Target for FreeBSD
+
+- replace the Target `freebsd` (unversioned) by an alias on `freebsd11`. It
+  ensures that all FreeBSD targets will have `target_os_version` sets to a
+  specific version.
+- alternatively, more complex code could be used for the alias:
+  - on a FreeBSD host: `freebsd` will point to the host version
+  - on any other host: `freebsd` will point to predefined default version
+
+At this point:
+
+- *some code could break*. for example, library path will be
+  `i686-unknown-freebsd11` instead of `i686-unknown-freebsd`.
+- it is a transition period: downstream projects should start using versioned
+  Target. For example, Rust infrastructure should stop building `freebsd` but
+  `freebsd11`, and rustup should distribute this specific version (`freebsd11`
+  has been taken only as example).
+- as transition period, it should be long enought.
+
+### Completely remove unversioned Target for FreeBSD
+
+- remove the alias `freebsd`
+- only keeping `freebsd10`, `freebsd11` and `freebsd12` targets
+
+At this point:
+
+- *some code could break*. Any downstream projects still using unversioned
+  target will break.
+- this step isn't strictly necessary. an unversioned target `freebsd` could
+  have sens too. But care will be need when the alias will move (from
+  `freebsd11` to `freebsd12` for example). Removing it let downstream projects to
+  deal themself with such transition.
+
+
 # How We Teach This
 [how-we-teach-this]: #how-we-teach-this
 
