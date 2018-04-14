@@ -312,7 +312,7 @@ At this point:
 
 ### Add new targets specifically for FreeBSD 10, 11 and 12
 
-- add new targets, by duplicating the target code (using a function for simplicity):
+- add new targets, by duplicating the target code (using a function):
   - FreeBSD 10
     - `aarch64-unknown-freebsd10`
     - `i686-unknown-freebsd10`
@@ -332,7 +332,7 @@ At this point:
 
 At this point:
 
-- the `freebsd` target is still build and distributed. `freebsd10`, `freebsd11`
+- the `freebsd` target is still built and distributed. `freebsd10`, `freebsd11`
   and `freebsd12` are available for use using usual `--target` argument of
   `rustc`. there is still no changes in the Rust ecosystem.
 - the number of targets will grow: for FreeBSD: from 3 to 12 targets.
@@ -341,8 +341,13 @@ At this point:
   `target_os_version`).
 - the generated code for versioned `freebsdXX` could be different as the LLVM
   backend is now aware of the targeted version.
-- downstream projects could technically start using versioned targets (the code
-  is still the same), but it would not be recommanded for now or only for testing.
+- downstream projects could start using versioned targets (the code is still
+  the same), but it would not be recommanded for production, but only for
+  testing.
+- tests should be done to ensure the compatibility of the ecosystem with
+  versioned targets as it could break some assumption: for example, library
+  path will be `i686-unknown-freebsd11` instead of `i686-unknown-freebsd` in
+  `freebsd11` target.
 
 ### Specific changes for FreeBSD 12 could start to occurs
 
@@ -355,6 +360,8 @@ At this point:
   structure and functions. The produced binary targets FreeBSD 12, and will not
   work on FreeBSD 11 (due to the use of breaking changes that occured in FreeBSD
   12).
+- the rest of the Rust ecosystem (still using `freebsd` as default build
+  target) is unaffected by these changes.
 
 ### Smoothly remove unversioned Target for FreeBSD
 
@@ -362,18 +369,18 @@ At this point:
   ensures that all FreeBSD targets will have `target_os_version` sets to a
   specific version.
 - alternatively, more complex code could be used for the alias:
-  - on a FreeBSD host: `freebsd` will point to the host version
-  - on any other host: `freebsd` will point to predefined default version
+  - on a FreeBSD host: `freebsd` will point to the host version.
+  - on any other host: `freebsd` will point to predefined default version.
 
 At this point:
 
-- *some code could break*. for example, library path will be
-  `i686-unknown-freebsd11` instead of `i686-unknown-freebsd`.
+- *some code could break*. it will only concern untested code from the previous
+  steps.
 - it is a transition period: downstream projects should start using versioned
-  Target. For example, Rust infrastructure should stop building `freebsd` but
-  `freebsd11`, and rustup should distribute this specific version (`freebsd11`
-  has been taken only as example).
-- as transition period, it should be long enought.
+  Target. For example, Rust infrastructure should stop building `freebsd` in
+  favor of `freebsd11`, and rustup should distribute this specific version too
+  (`freebsd11` has been taken only as example).
+- as transition period, it should be long enough.
 
 ### Completely remove unversioned Target for FreeBSD
 
@@ -383,7 +390,7 @@ At this point:
 At this point:
 
 - *some code could break*. Any downstream projects still using unversioned
-  target will break.
+  target will break (as the target has been removed).
 - this step isn't strictly necessary. an unversioned target `freebsd` could
   have sens too. But care will be need when the alias will move (from
   `freebsd11` to `freebsd12` for example). Removing it let downstream projects to
