@@ -377,9 +377,9 @@ At this point:
 - *some code could break*. it will only concern untested code from the previous
   steps.
 - it is a transition period: downstream projects should start using versioned
-  Target. For example, Rust infrastructure should stop building `freebsd` in
-  favor of `freebsd11`, and rustup should distribute this specific version too
-  (`freebsd11` has been taken only as example).
+  Target for production code. For example, Rust infrastructure should stop
+  building `freebsd` in favor of `freebsd11`, and rustup should distribute this
+  specific version too (`freebsd11` has been taken only as example).
 - as transition period, it should be long enough.
 
 ### Completely remove unversioned Target for FreeBSD
