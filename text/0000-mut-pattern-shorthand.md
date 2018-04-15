@@ -1,15 +1,19 @@
 - Feature Name: `mut_pattern_shorthand`
-- Start Date: 2018-04-13
+- Start Date: 2018-04-15
 - RFC PR: 
 - Rust Issue: 
 
 # Summary
 [summary]: #summary
 
-Simply put, this RFC allows you to write `let mut (x, y) = (1, 2);` instead of
-`let (mut x, mut y) = (1, 2);`.
-This also applies to `if let`, `while let`, `for`, `match` and `fn` arguments.
-In other words, `mut PAT` becomes a pattern.
+Simply put, this RFC allows you to write `let mut (x, y) = (1, 2);`
+instead of `let (mut x, mut y) = (1, 2);`.
+
+You can also rewrite `let [mut x, mut y, mut y] = arr;` as
+`let mut [x, y, z] = arr;`.
+
+These patterns are also legal in `if let`, `while let`, `for`, `match`
+and `fn` arguments.
 
 # Motivation
 [motivation]: #motivation
@@ -33,9 +37,9 @@ term memory.
 ## Making life better for macro authors
 
 Another effect of reduced repetition is that it now becomes easy to create
-a macro that introduces mutable bindings everywhere by simply adding a single
-`mut`. This way, you can take a `pat` fragment and prefix it with `mut` to make
-the entire pattern introduce mutable bindings.
+a macro that introduces mutable bindings everywhere (for tuples and arrays)
+by simply adding a single `mut`. This way, you can take a `pat` fragment and
+prefix it with `mut` to make the entire pattern introduce mutable bindings.
 
 ## `mut`ability is currently overly penalized
 
@@ -132,17 +136,10 @@ Before:
 let (mut x, mut y) = (1, 2);
 let ((mut x, mut y), z) = ((1, 2), 3); // <- NOTE: z is immutable!
 let ((mut x, mut y), mut z) = ((1, 2), 3); // <- NOTE: everything is mutable.
-let Ok(mut x) | Err(mut x) = Ok(1); // <- NOTE: > 1 variant (but irrefutable).
 
 struct Person<'a> { age: usize, hobby: &'a str, pocket: [&'a str; 3] }
 
-// NOTE: Some mutability:
-let Person { age, mut hobby, pocket: [mut x, mut y, mut z] }
-  = Person { age: 1, hobby: "designing Rust"
-           , pocket: ["key", "phone", "headphones"] };
-
-// NOTE: Full mutability:
-let Person { mut age, mut hobby, pocket: [mut x, mut y, mut z] }
+let Person { age, hobby, pocket: [mut x, mut y, mut z] }
   = Person { age: 1, hobby: "designing Rust"
            , pocket: ["key", "phone", "headphones"] };
 ```
@@ -153,17 +150,10 @@ After:
 let mut (x, y) = (1, 2);
 let (mut (x, y), z) = ((1, 2), 3);
 let mut ((x, y), z) = ((1, 2), 3);
-let mut Ok(x) | Err(x) = Ok(1); // <- NOTE: or-patterns bind more tightly!
 
 struct Person<'a> { age: usize, hobby: &'a str, pocket: [&'a str; 3] }
 
-// NOTE: Some mutability:
-let Person { age, mut hobby, pocket: mut [x, y, z] } 
-  = Person { age: 1, hobby: "designing Rust"
-           , pocket: ["key", "phone", "headphones"] };
-
-// NOTE: Full mutability:
-let mut Person { age, hobby, pocket: [x, y, z] }
+let Person { age, hobby, pocket: mut [x, y, z] } 
   = Person { age: 1, hobby: "designing Rust"
            , pocket: ["key", "phone", "headphones"] };
 ```
@@ -173,27 +163,13 @@ let mut Person { age, hobby, pocket: [x, y, z] }
 Before:
 
 ```rust
-if let Some(mut x) = None { ... }
-
 if let Ok((mut x, mut y)) = Ok((1, 2)) { ... }
-
-enum E<T> { A(T), B(T), C(T) }
-
-if let E::A(mut x) | E::B(mut x) = E::A(1) { ... }
 ```
 
 After:
 
 ```rust
-if let mut Some(x) = None { ... }
-
 if let Ok(mut (x, y)) = Ok((1, 2)) { ... }
-// Or equivalently:
-if let mut Ok((x, y)) = Ok((1, 2)) { ... }
-
-enum E<T> { A(T), B(T), C(T) }
-
-if let mut E::A(x) | E::B(x) = E::A(1) { ... }
 ```
 
 ## `while let`
@@ -213,8 +189,6 @@ After:
 let mut arr = vec![(1, 2), (2, 3), (3, 4)];
 let mut iter = arr.drain(..);
 
-while let mut Some((x, y)) = iter.next() { ... }
-// Or equivalently:
 while let Some(mut (x, y)) = iter.next() { ... }
 ```
 
@@ -242,13 +216,6 @@ Before:
 match (1, 2) {
     (mut x, mut y) => {}
 }
-
-enum E<T> { A(T), B(T), C(T) }
-
-match E::A(1) {
-    E::A(mut x) | E::B(mut x) => { x = 3; },
-    E::C(mut x) => { x = 2; }
-}
 ```
 
 After:
@@ -256,13 +223,6 @@ After:
 ```rust
 match (1, 2) {
     mut (x, y) => {}
-}
-
-enum E<T> { A(T), B(T), C(T) }
-
-match E::A(1) {
-    mut E::A(x) | E::B(x) => { x = 3; },
-    mut E::C(x) => { x = 2; }
 }
 ```
 
@@ -304,37 +264,15 @@ the following productions:
 
 ```rust
 pat
-: // other productions
+: // other existing productions
 | MUT '(' pat_tup ')'
 | MUT '[' pat_vec ']'
-| MUT path_expr '{' pat_struct '}'
-| MUT path_expr '(' pat_tup ')'
 ```
 
 Alternatively, the change can be seen as adding `MUT?` to the referenced
 productions above.
 
-Meanwhile, [`pats_or`](https://github.com/rust-lang/rust/blob/master/src/grammar/parser-lalr.y#L983-L986) is redefined as:
-
-```rust
-pats_or
-: MUT pats_or_old
-| pats_or_old
-;
-
-pats_or_old
-: pat
-| pats_or_old '|' pat
-;
-```
-
-This also applies to `let` bindings, `if let`, and `while let` and not
-just `match` arms.
-
-Note that `mut PAT | .. | PAT` is interpreted as `mut (PAT | .. | PAT)` and
-**not** `mut PAT | (.. | PAT)`.
-
-Also note that `let mut mut mut x = 4;` is not a legal production.
+Note that `let mut mut mut x = 4;` is not a legal production.
 A `mut` may not be immediately followed by another `mut`.
 
 ## Semantics
@@ -441,11 +379,150 @@ particularly simpler.
 Similarly, we could also only allow this for `let` bindings and not `if let`,
 `while let`, `for`, `match` and `fn` arguments. However, more uniformity does
 perhaps counter-intuitively help teachability and makes the hit to the
-complexity budget smaller smaller.
+complexity budget smaller.
 
-## Rationale for precedence in `mut PAT | .. | PAT`
+## Rationale for conservatism
 
-The RFC as currently specified interprets `mut PAT | .. | PAT` as
+> When adding syntactic sugar, it’s usually best to try to fix things that
+> people try, but cannot do.
+>
+> Thinking ahead is good, but adding features just in case is not.
+
+*\- @varkor*
+
+We could opt to include the future work now.
+However, this RFC argues that we should not.
+
+The reasoning behind this is that while there are real world examples of tuples
+that would be made more ergonomic and readable, the RFC author could not find
+corresponding examples for structs and enum variants.
+
+Furthermore, the pattern `mut (x, y, ..)` is unambiguous more local
+than `mut Foo { bar, baz }`. While `mut (x, y, ..)` has been attempted by others
+and the author of this RFC before, the author is not aware of similar attempts
+for `Foo`.
+
+One could perhaps make the case that `mut Foo(x, y)` is different,
+but even so, we can always add that syntactic sugar later when there is a need
+for it. A problem with `mut Foo(x, y)` is that a newcomer might ask:
+*"How can `Foo` be mutable?"*. Indeed, this pattern would allow `mut Some(x)`
+instead of `Some(mut x)` which is less readable and local.
+
+### On the other hand - Macros
+
+One of the benefits listed in the [motivation] is that it the changes would
+make it easier for macro authors to introduce mutable bindings everywhere
+in a pattern. However, since this only applies to tuples, it also becomes
+less useful for macros. Therefore, one argument in favor of a more radical
+approach is to support macros better.
+
+# Prior art
+[prior-art]: #prior-art
+
+The combination of pattern matching and mutability is not particularly common.
+As such, the RFC's author is not aware of any prior art.
+
+# Unresolved questions
+[unresolved]: #unresolved-questions
+
+None as of yet.
+
+# Future work
+[future work]: #future-work
+
+In this section, we consider some possible future work that could be done
+but shouldn't necessarily be done.
+
+## Structs and fields
+
+It would be possible to extend the shorthand syntaxes proposed in this RFC with:
+
+```rust
+pat
+: // other productions
+| MUT path_expr '{' pat_struct '}'
+| MUT path_expr '(' pat_tup ')'
+```
+
+This would allow you to transform the following:
+
+```rust
+struct Person<'a> { age: usize, hobby: &'a str, pocket: [&'a str; 3] }
+
+// NOTE: Full mutability:
+let Person { mut age, mut hobby, pocket: [mut x, mut y, mut z] }
+  = Person { age: 1, hobby: "designing Rust"
+           , pocket: ["key", "phone", "headphones"] };
+
+struct Point(usize, usize);
+
+let Foo(mut x, mut y) = Foo(1, 2);
+```
+
+into:
+
+```rust
+struct Person<'a> { age: usize, hobby: &'a str, pocket: [&'a str; 3] }
+
+// NOTE: Full mutability:
+let mut Person { age, hobby, pocket: [x, y, z] }
+  = Person { age: 1, hobby: "designing Rust"
+           , pocket: ["key", "phone", "headphones"] };
+
+let mut Foo(x, y) = Foo(1, 2);
+```
+
+## Or-patterns
+
+Another extension could be to allow `mut PAT | .. | PAT`. This could be done by
+redefining [`pats_or`](https://github.com/rust-lang/rust/blob/master/src/grammar/parser-lalr.y#L983-L986)
+as:
+
+```rust
+pats_or
+: MUT pats_or_old
+| pats_or_old
+;
+
+pats_or_old
+: pat
+| pats_or_old '|' pat
+;
+```
+
+This also applies to `let` bindings, `if let`, and `while let` and not
+just `match` arms.
+
+Note that `mut PAT | .. | PAT` is interpreted as `mut (PAT | .. | PAT)` and
+**not** `mut PAT | (.. | PAT)`.
+
+From a user's perspective, this would allow you to replace:
+
+```rust
+enum E<T> { A(T), B(T), C(T) }
+
+match E::A(1) {
+    E::A(mut x) | E::B(mut x) => { x = 3; },
+    E::C(mut x) => { x = 2; }
+}
+```
+
+with:
+
+```rust
+enum E<T> { A(T), B(T), C(T) }
+
+match E::A(1) {
+    mut E::A(x) | E::B(x) => { x = 3; },
+    mut E::C(x) => { x = 2; }
+}
+```
+
+However, this would also interfere with `mut x @ Foo(_) | mut x @ Bar(_)`.
+
+### Rationale for precedence in `mut PAT | .. | PAT`
+
+With this extension, you would interpret `mut PAT | .. | PAT` as
 `mut (PAT | .. | PAT)` instead of `mut PAT | (.. | PAT)`.
 
 We argue that this is correct because if it would be interpreted in the second
@@ -472,16 +549,21 @@ error[E0409]: variable `x` is bound in inconsistent ways within the same match a
   |              first binding
 ```
 
-# Prior art
-[prior-art]: #prior-art
+## Reversed polarity with `immut`
 
-The combination of pattern matching and mutability is not particularly common.
-As such, the RFC's author is not aware of any prior art.
+For patterns such as `(mut a, mut b, c)`, one can't simply use
+`mut (a, b, c)` because `c` is not mutable. Of course it is possible to
+silence the warning that ensues, but that is of course not recommended.
+One way to solve this would be to permit patterns such as `mut (a, b, immut c)`.
+This would however be a much larger change and does not fit with Rust's overall
+strategy that mutability should be opt in and immutability the default.
 
-# Unresolved questions
-[unresolved]: #unresolved-questions
+The degree to which selective mutability such as this occurs where there is
+many `mut` patterns and just one immutable pattern is also questionable.
+The usefulness does not seem to pull its weight. Therefore, we should accept
+that syntactic sugar has its limitations and only improve the bits that are
+cheap to improve and where the fix is intuitive and prevalent.
+In other words: The cure is worse than the disease (if one sees it as such).
 
-Except for the following unresolved questions, there are no other.
-
-1. Should the proposal take a more conservative route?
-2. Is the precedence of `mut` with or-patterns (`PAT | PAT`) the right design?
+To sum up, while this is possible future work, this RFC argues that is not
+a good idea to do this.
