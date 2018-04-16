@@ -98,8 +98,8 @@ would be creating a nop sled at the entrypoint.
 This optimization only applies to pointer-like values (which can be dereferenced),
 and `std::num::NonZero` keeps its current behavior.
 
-The pointer internals will be also adopted to use this scheme: `Unique<T>` should
-be refactored to use an enum internally.
+We should refactor the allocator related code to prefer enumerations over
+`NonNull::dangling`.
 
 # Drawbacks
 [drawbacks]: #drawbacks
