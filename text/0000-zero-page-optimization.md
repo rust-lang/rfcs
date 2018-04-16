@@ -44,17 +44,19 @@ to code such things.
 This change should be transparent for most users; the following description is
 targeted at people dealing with FFI or unsafe.
 
-The recently stabilized `NonNull` type will have more strict requirements:
-the pointer must be not in the null page. `NonNull::dangling` will be
-deprecated in favor of this optimization.
+A new type, `Shared<T>` is (re-)introduced: `Shared<T>` wraps a `*mut T` and
+must store a pointer to valid memory allocated for the correct type. This
+allows the compiler to assume that the pointer is not inside the zero page,
+plus it allows further optimization to be implemented like using the lower bits
+of the pointer by exploiting the alignment requirement.
 
-During the migration, we should migrate the impact with a crater run. If changing
-the behavior directly is unacceptable, then we'll have to create a new type instead.
+`&T`, `&mut T`, `Shared<T>` will have the same ranging semantics, as described
+above. Plus, the following optimizations will also be done:
 
-`&T`, `&mut T`, `NonNull<T>` will have the same ranging semantics:
-they will not take any value inside the zero page. We will optimize the layout
-of an enumeration in a way similar to before, except that we will allow
-discriminants of up to the zero page size (typically 4095).
+- These types will be ZST if `T` is ZST. An arbitrary constant is returned as
+the inner raw pointer. `0` is a good candidate here because we don't actually
+store it, we don't have to worry about it conflicting with the optimization.
+- These types will be inhabitable if `T` is inhabitable.
 
 Also, attempts to compress discriminants will be performed: which means, an
 `Option<Option<&T>>` will be flattened internally, so its layout will be similar
@@ -73,6 +75,14 @@ representation match when a reference is taken.
 
 The exact behavior of this optimization should be documented upon implementation,
 for unsafe coding usage.
+
+The discriminant compression is primarily intended for pointers, but for saving
+memory, it should also apply to the following cases:
+
+- For enums that only contains one variant which can contain value.
+- For structs that hold such enum as the first element. Here, the first element
+is considered after reordering. This allows `Option<Vec<T>>` to remain at the
+size of 3 pointers, for example.
 
 To take advantage of zero page optimization, use `transmute` from and to usize.
 This will cause compilation to fail if such optimization is not permitted on
@@ -95,11 +105,11 @@ For the defined range, the compiler must ensure that no pointer of which value
 is inside the range could be created safely. On microcontrollers, a dumb solution
 would be creating a nop sled at the entrypoint.
 
-This optimization only applies to pointer-like values (which can be dereferenced),
-and `std::num::NonZero` keeps its current behavior.
-
-We should refactor the allocator related code to prefer enumerations over
-`NonNull::dangling`.
+We should refactor the allocation related code to prefer enumerations over
+`NonNull::dangling`. Taking `RawVec` code as an example, we would use
+`Option<Shared<T>>` to store the internal pointer. For ZST, we initialize
+with an arbitrary value (as we don't store it); for zero-length vector, we make
+use of the `None` variant to indicate that we didn't allocate.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -130,7 +140,4 @@ is Rust specific too.
 
 - Can we suggest a better alternative than `transmute`? `transmute` is too
 error prone despite we're trying to make the code more "safe".
-- We can also store data in the lower bits of pointer, utilizing the alignemnt
-requirement. Also, amd64 pointers are 48-bit technically, so we may also exploit
-the space. These optimizations are less portable, and should be filed in another
-RFC.
+- `Shared<T>` wasn't a good name; we may want a better name for the new type.
