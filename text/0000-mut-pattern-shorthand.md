@@ -564,7 +564,7 @@ error[E0409]: variable `x` is bound in inconsistent ways within the same match a
   |              first binding
 ```
 
-## Reversed polarity with `immut`
+## Reversed polarity with `immut` (and why we should *not* do it)
 
 For patterns such as `(mut a, mut b, c)`, one can't simply use
 `mut (a, b, c)` because `c` is not mutable. Of course it is possible to
@@ -580,5 +580,5 @@ that syntactic sugar has its limitations and only improve the bits that are
 cheap to improve and where the fix is intuitive and prevalent.
 In other words: The cure is worse than the disease (if one sees it as such).
 
-To sum up, while this is possible future work, this RFC argues that is not
-a good idea to do this.
+To sum up, while this is possible future work, this RFC argues that is **not
+a good idea to introduce `immut`**.
