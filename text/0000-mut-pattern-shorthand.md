@@ -158,6 +158,11 @@ let Person { age, hobby, pocket: mut [x, y, z] }
            , pocket: ["key", "phone", "headphones"] };
 ```
 
+It is important to remember that even with the changes proposed by this RFC,
+`let mut` is not a unit, rather, the unit is `let $pat = ..;` or more concretely
+the unit is `let mut (x, y) = (1, 2);`. In these examples `mut (x, y)` is a
+pattern, and not a modifier on `let` bindings.
+
 ## `if let`
 
 Before:
