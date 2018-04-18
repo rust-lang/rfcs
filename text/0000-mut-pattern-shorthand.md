@@ -286,8 +286,23 @@ of desugarings.
 
 The following snippet `let mut (mut x, mut y) = ...;`, while grammatically valid,
 also has redundant `mut`s either outside the tuple or inside the tuple.
-When such a redundancy happens, the compiler should unconditionally warn the
-user. Furthermore, when `let mut (x, y)` results in partial unused `mut`ability
+When such a redundancy happens, the compiler should warn the user.
+One such possible warning could be:
+```rust
+warning: variable is already mutable
+ --> src/main.rs:2:9
+  |
+2 |     let mut (mut x, y) = (4, 5;
+  |              ----^
+  |              |
+  |              help: remove this `mut`
+  |
+  = note: #[warn(unused_mut)] on by default
+```
+As usual, this warning can then be silenced with `#[allow(unused_mut)]` 
+modulo the specific lint name used.
+
+Furthermore, when `let mut (x, y)` results in partial unused `mut`ability
 then the compiler should also warn.
 
 # Drawbacks
