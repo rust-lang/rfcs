@@ -63,13 +63,13 @@ Therefore, the cost in terms of complexity budget and mental model is not very h
 However, it does allow users to formulate things more succinctly as in these
 modified examples from Itertools suggesting that this does occur often enough:
 
-1. [`diff_with`](https://github.com/bluss/rust-itertools/blob/master/src/diff.rs#L46-L48)
+1. [`diff_with`](https://github.com/bluss/rust-itertools/blob/8be531516fa53551f48747657e0be1c1aeb964bb/src/diff.rs#L46-L48)
 
 ```rust
 let mut (i, j, idx) = (i.into_iter(), j.into_iter(), 0);
 ```
 
-2. [`FormatWith`](https://github.com/bluss/rust-itertools/blob/master/src/format.rs#L54-L57)
+2. [`FormatWith`](https://github.com/bluss/rust-itertools/blob/8be531516fa53551f48747657e0be1c1aeb964bb/src/format.rs#L54-L57)
 
 ```rust
 let mut (iter, format) = match self.inner.borrow_mut().take() {
@@ -78,7 +78,7 @@ let mut (iter, format) = match self.inner.borrow_mut().take() {
 };
 ```
 
-3. [`minmax_impl`](https://github.com/bluss/rust-itertools/blob/master/src/minmax.rs#L54-L66)
+3. [`minmax_impl`](https://github.com/bluss/rust-itertools/blob/8be531516fa53551f48747657e0be1c1aeb964bb/src/minmax.rs#L54-L66)
 
 ```rust
 let mut (min, max, min_key, max_key) = match it.next() {
@@ -86,13 +86,13 @@ let mut (min, max, min_key, max_key) = match it.next() {
 };
 ```
 
-4. [`add_scalar`](https://github.com/bluss/rust-itertools/blob/master/src/size_hint.rs#L25), `sub_scalar`, `mul_scalar`
+4. [`add_scalar`](https://github.com/bluss/rust-itertools/blob/8be531516fa53551f48747657e0be1c1aeb964bb/src/size_hint.rs#L25), `sub_scalar`, `mul_scalar`
 
 ```rust
 let mut (low, hi) = sh;
 ```
 
-5. [benchmarks](https://github.com/bluss/rust-itertools/blob/master/benches/bench1.rs)
+5. [benchmarks](https://github.com/bluss/rust-itertools/blob/8be531516fa53551f48747657e0be1c1aeb964bb/benches/bench1.rs#L275)
 
 ```rust
 let mut (p0, p1, p2, p3, p4, p5, p6, p7) = (0., 0., 0., 0., 0., 0., 0., 0.);
