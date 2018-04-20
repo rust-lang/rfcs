@@ -16,7 +16,7 @@ The proposed APIs are based on the futures crate, but with two major changes:
 
 - The use of [pinned types] to enable borrowing within futures.
 - Removing the associated `Error` type (and adjusting combinators accordingly),
-  in favor of just using `Item = Result<T, E>` instead. The RFC includes an
+  in favor of just using `Output = Result<T, E>` instead. The RFC includes an
   extension trait to provide conveniences for `Result`-producing futures as
   well.
 
@@ -78,7 +78,7 @@ is equivalent to:
 
 ```rust
 fn read_frame<'sock>(socket: &'sock TcpStream)
-    -> impl Future<Item = Result<Frame, io::Error>> + 'sock;
+    -> impl Future<Output = Result<Frame, io::Error>> + 'sock;
 ```
 
 Other async functions can *await* this asynchronous value; see the [companion
@@ -226,7 +226,7 @@ pub trait BoxExecutor {
 pub struct Task { .. }
 
 // this impl is in `std` only:
-impl From<Box<dyn Future<Item = ()> + Send>> for Task { .. }
+impl From<Box<dyn Future<Output = ()> + Send>> for Task { .. }
 
 /// Provides the reason that an executor was unable to spawn.
 pub struct SpawnError { .. }
@@ -249,7 +249,7 @@ we would deprecate `BoxExecutor` and have:
 
 ```rust
 trait Executor {
-    fn spawn(&mut self, task: Future<Item = ()> + Send) -> Result<(), SpawnError>;
+    fn spawn(&mut self, task: Future<Output = ()> + Send) -> Result<(), SpawnError>;
     fn status(&self) -> Result<(), SpawnError> { .. }
 }
 
@@ -323,7 +323,7 @@ impl<'a> Context<'a> {
     ///
     /// This method will panic if the default executor is unable to spawn.
     /// To handle executor errors, use the `executor` method instead.
-    pub fn spawn(&mut self, f: impl Future<Item = ()> + 'static + Send);
+    pub fn spawn(&mut self, f: impl Future<Output = ()> + 'static + Send);
 
     /// Get the default executor associated with this task.
     ///
@@ -347,7 +347,7 @@ method, `poll`, and a large number of provided methods (called "adapters" or
 ```rust
 pub trait Future {
     /// The type of value produced on completion.
-    type Item;
+    type Output;
 
     /// Attempt to resolve the future to a final value, registering
     /// the current task for wakeup if the value is not yet available.
@@ -422,20 +422,20 @@ futures. Using `impl Trait` notation, we can define them as follows:
 ```rust
 trait Future {
     // Transform the result of the future
-    fn map<T>(self, f: impl FnOnce(Self::Item) -> T) -> impl Future<Item = T>
+    fn map<T>(self, f: impl FnOnce(Self::Item) -> T) -> impl Future<Output = T>
         { .. }
 
     // Chain a future onto this one
-    fn then<F>(self, f: impl FnOnce(Self::Item) -> F) -> impl Future<Item = F::Item>
+    fn then<F>(self, f: impl FnOnce(Self::Item) -> F) -> impl Future<Output = F::Item>
         where F: Future
         { .. }
 
     // Chain a closure for side effects
-    fn inspect(self, f: impl FnOnce(&Self::Item)) -> impl Future<Item = Self::Item>
+    fn inspect(self, f: impl FnOnce(&Self::Item)) -> impl Future<Output = Self::Item>
         { .. }
 
     // Translate unwinding within this future into a `Result`
-    fn catch_unwind(self) -> impl Future<Item = Result<Self::Item, Box<Any + Send>>>
+    fn catch_unwind(self) -> impl Future<Output = Result<Self::Item, Box<Any + Send>>>
         where Self: UnwindSafe
         { .. }
 }
@@ -452,43 +452,43 @@ Futures are often enough used with `Result` values that we provide a distinct
 subtrait for that case, equipped with some additional adapters:
 
 ```rust
-trait FutureRes<T, E>: Future<Item = Result<T, E>> {
+trait FutureResult<T, E>: Future<Output = Result<T, E>> {
     // Transform the successful result of the future
-    fn map_ok<U>(self, f: impl FnOnce(T) -> U) -> impl FutureRes<U, E>
+    fn map_ok<U>(self, f: impl FnOnce(T) -> U) -> impl FutureResult<U, E>
         { .. }
 
     // Transform the error result of the future
-    fn map_err<F>(self, f: impl FnOnce(E) -> F) -> impl FutureRes<T, F>
+    fn map_err<F>(self, f: impl FnOnce(E) -> F) -> impl FutureResult<T, F>
         { .. }
 
     // Chain a future onto this one on success
-    fn and_then<F, U>(self, f: impl FnOnce(T) -> F) -> impl FutureRes<U, E>
-        where F: FutureRes<U, E>
+    fn and_then<F, U>(self, f: impl FnOnce(T) -> F) -> impl FutureResult<U, E>
+        where F: FutureResult<U, E>
         { .. }
 
     // Chain a future onto this one on failure
-    fn or_else<F, G>(self, f: impl FnOnce(E) -> F) -> impl FutureRes<T, G>
-        where F: FutureRes<T, G>
+    fn or_else<F, G>(self, f: impl FnOnce(E) -> F) -> impl FutureResult<T, G>
+        where F: FutureResult<T, G>
         { .. }
 
     // Pass the error type through an arbitrary conversion
-    fn err_into<F>(self) -> impl FutureRes<T, F>
+    fn err_into<F>(self) -> impl FutureResult<T, F>
         where E: Into<F>
         { .. }
 
     // Handle the error provided by this future
-    fn recover<F>(self, f: impl FnOnce(E) -> F) -> impl Future<Item = T>
-        where F: Future<Item = T>
+    fn recover<F>(self, f: impl FnOnce(E) -> F) -> impl Future<Output = T>
+        where F: Future<Output = T>
         { .. }
 }
 
 // Automatically applied to all `Result`-returning futures
-impl<T, E, F> FutureRes<T, E> for F where F: Future<Item = Result<T, E>> {}
+impl<T, E, F> FutureResult<T, E> for F where F: Future<Output = Result<T, E>> {}
 ```
 
 ## Prelude
 
-The `Future` and `FutureRes` traits are added to the prelude.
+The `Future` and `FutureResult` traits are added to the prelude.
 
 ## Stabilization plan
 
