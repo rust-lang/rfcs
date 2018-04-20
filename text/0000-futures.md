@@ -486,10 +486,6 @@ trait FutureResult<T, E>: Future<Output = Result<T, E>> {
 impl<T, E, F> FutureResult<T, E> for F where F: Future<Output = Result<T, E>> {}
 ```
 
-## Prelude
-
-The `Future` and `FutureResult` traits are added to the prelude.
-
 ## Stabilization plan
 
 The holy grail would be to stabilize async/await for Rust 2018 (roughly by mid-September).
