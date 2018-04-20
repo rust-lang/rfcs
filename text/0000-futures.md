@@ -192,7 +192,7 @@ wake the task up; we'll see the full `core::task::Context` structure below.
 ### Executors
 
 An executor is responsible for polling tasks to completion. We represent this
-with the `core::task::BoxExecutor` trait (more on the name below):
+with the `core::task::Executor` trait:
 
 ```rust
 /// A task executor.
@@ -202,14 +202,14 @@ with the `core::task::BoxExecutor` trait (more on the name below):
 /// notifications occur. Executors, such as thread pools, allow tasks to be
 /// spawned and are responsible for putting tasks onto ready queues when
 /// they are woken up, and polling them when they are ready.
-pub trait BoxExecutor {
+pub trait Executor {
     /// Spawn the given task, polling it until completion.
     ///
     /// # Errors
     ///
     /// The executor may be unable to spawn tasks, either because it has
     /// been shut down or is resource-constrained.
-    fn spawn(&mut self, task: Task) -> Result<(), SpawnError>;
+    fn spawn_obj(&mut self, task: TaskObj) -> Result<(), SpawnObjError>;
 
     /// Determine whether the executor is able to spawn new tasks.
     ///
@@ -218,47 +218,58 @@ pub trait BoxExecutor {
     /// An `Ok` return means the executor is *likely* (but not guaranteed)
     /// to accept a subsequent spawn attempt. Likewise, an `Err` return
     /// means that `spawn` is likely, but not guaranteed, to yield an error.
-    fn status(&self) -> Result<(), SpawnError> {
+    fn status(&self) -> Result<(), SpawnErrorKind> {
         Ok(())
     }
 }
 
-pub struct Task { .. }
+pub struct TaskObj { .. }
 
-// this impl is in `std` only:
-impl From<Box<dyn Future<Output = ()> + Send>> for Task { .. }
+impl TaskObj {
+    /// Create a new `TaskObj` by boxing the given future.
+    pub fn new<F: Future<Output = ()> + Send + 'static>(f: F) -> TaskObj;
+}
 
 /// Provides the reason that an executor was unable to spawn.
-pub struct SpawnError { .. }
+pub struct SpawnErrorKind { .. }
 
-impl SpawnError {
+impl SpawnErrorKind {
     /// Spawning is failing because the executor has been shut down.
-    pub fn shutdown() -> SpawnError;
+    pub fn shutdown() -> SpawnErrorKind;
 
     /// Check whether this error is the `shutdown` error.
     pub fn is_shutdown(&self) -> bool;
 
     // additional error variants added over time...
 }
+
+/// The result of a failed spawn
+pub struct SpawnObjError {
+    /// The kind of error
+    pub kind: SpawnErrorKind,
+
+    /// The task for which spawning was attempted
+    pub task: TaskObj,
+}
 ```
 
-We need the executor trait to be usable as a trait object, which is why `Task`
+We need the executor trait to be usable as a trait object, which is why `TaskObj`
 is constructed here from a boxed future. (In the no_std section, we'll see
 another constructor). In the long run, though, once we can take `dyn` by value,
-we would deprecate `BoxExecutor` and have:
+we would deprecate `spawn_obj` and add a default `spawn` method:
 
 ```rust
 trait Executor {
-    fn spawn(&mut self, task: Future<Output = ()> + Send) -> Result<(), SpawnError>;
-    fn status(&self) -> Result<(), SpawnError> { .. }
-}
-
-impl<E: BoxExecutor> Executor for E {
-    /* implement by boxing */
+    fn spawn(&mut self, task: Future<Output = ()> + Send) -> Result<(), SpawnErrorKind> {
+        self.spawn_obj(TaskObj::new(task))
+    }
+    // ...
 }
 ```
 
-This is why the RFC proposes the name `BoxExecutor` for the trait.
+At that point we would also deprecate `TaskObj`, which is the reason for using
+the `Obj` suffix -- we want to keep the name `Task` available for potential
+usage down the line.
 
 In addition to the above, the `core::task` module will include the following API
 for helping detect bugs:
@@ -310,9 +321,7 @@ together, and is passed by mutable reference to all polling functions:
 pub struct Context<'a> { .. }
 
 impl<'a> Context<'a> {
-    /// Note: this signature is future-proofed for `E: Executor` later.
-    pub fn new<E>(waker: &'a Waker, executor: &'a mut E) -> Context<'a>
-        where E: BoxExecutor;
+    pub fn new(waker: &'a Waker, executor: &'a mut Executor) -> Context<'a>
 
     /// Get the `Waker` associated with the current task.
     pub fn waker(&self) -> &Waker;
@@ -452,7 +461,14 @@ Futures are often enough used with `Result` values that we provide a distinct
 subtrait for that case, equipped with some additional adapters:
 
 ```rust
-trait FutureResult<T, E>: Future<Output = Result<T, E>> {
+// A future that returns a `Result`
+trait FutureResult: Future<Output = Result<Self::Item, Self::Error>> {
+    // Successful return values
+    type Item;
+
+    // Failure return values
+    type Error;
+
     // Transform the successful result of the future
     fn map_ok<U>(self, f: impl FnOnce(T) -> U) -> impl FutureResult<U, E>
         { .. }
@@ -483,8 +499,20 @@ trait FutureResult<T, E>: Future<Output = Result<T, E>> {
 }
 
 // Automatically applied to all `Result`-returning futures
-impl<T, E, F> FutureResult<T, E> for F where F: Future<Output = Result<T, E>> {}
+impl<T, E, F> FutureResult for F where F: Future<Output = Result<T, E>> {
+    type Item = T;
+    type Error = E;
+}
 ```
+
+By making `Item` and `Error` associated types, it's possible to *bound* by
+`FutureResult` and project out those components, which can be a significant
+ergonomic win when working heavily with `Result`-based futures.
+
+Thus (modulo finding a shorter name), the `FutureResult` subtrait should provide
+ergomomics equivalent to the old `Future` trait that included errors directly,
+while providing greater clarity around the error-free case (and providing a clear
+distinction between combinators that depend on error behavior and those that don't).
 
 ## Stabilization plan
 
@@ -535,13 +563,13 @@ The APIs proposed above are almost entirely compatible with `core`, except for a
 couple of constructors that require `std` objects:
 
 - Constructing a `Waker` from an `Arc<dyn Wake>`
-- Constructing a `Task` from a `Box<dyn Future>`
+- Constructing a `TaskObj` from a future
 
 These both have a similar shape: we have a concrete but opaque type (`Waker`,
-`Task`) that represents a trait object, but does *not* force a particular
+`TaskObj`) that represents a trait object, but does *not* force a particular
 *representation* for the trait object. In `std` environments, you can largely
 gloss over this point and just use `Arc` or `Box` respectively. But internally,
-the `Waker` and `Task` types are more abstract.
+the `Waker` and `TaskObj` types are more abstract.
 
 We'll look at the `Waker` case in detail. The idea is to provide an `UnsafeWake`
 trait which represents "an arbitrary `Wake`-like trait object":
@@ -804,4 +832,4 @@ model.
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
-None at present
+- Final name for `FutureResult`.
