@@ -560,38 +560,31 @@ distinction between combinators that depend on error behavior and those that don
 
 The holy grail would be to stabilize async/await for Rust 2018 (roughly by mid-September).
 
-As of this writing, the futures crate is just about to release its 0.2 version;
-some details are available [here](http://aturon.github.io/2018/02/27/futures-0-2-RC/).
+The path to stabilization is a bit tricky, since we want to get significant
+community experience, but the existing ecosystem works on stable Rust on
+already-published versions of the futures crate.
 
-The APIs proposed here roughly correspond to the `futures-core` part of the
-crate, plus some adapters that are currently within `futures-util`. However,
-there are two substantial changes in this RFC:
+The proposed path to stabilization is thus to work as long as possible through
+the crates.io ecosystem, stabilizing in `std` only at the point that we are also
+ready to stabilize `async`/`await`. Thus, the main progression will be a series
+of `futures` crate releases leading up to 0.3:
 
-- The use of [pinned types] to enable borrowing within futures.
-  - It's currently not possible to use this API due to rustc limitations; these
-    are expected to be addressed very soon.
+- futures 0.3-alpha: APIs matching this RFC, but only **usable on nightly Rust**
+- futures 0.3-beta: APIs matching this RFC, **usable on stable Rust**, but with
+  `async`/`await` only available on nightly Rust.
+- futures 0.3: `futures-core` APIs forward to those in `std`, which are
+  stabilized. Ideally, this also coincides with the Rust 2018 release.
 
-- Removing the associated `Error` type (and adjusting combinators accordingly).
-  - This change has been long desired, but didn't make it for the 0.2 release.
+There are a few things preventing us from going directly to beta status, most
+notably that `Pin` and friends are still unstable. The important point, though,
+is that **these narrow underlying mechanisms can be stabilized well before
+futures are**.
 
-Concurrent with this RFC, the futures team plans to do the following:
+For this process to work well, it's vital that we vet 0.3 with enough of the
+ecosystem. A likely strategy is to provide either feature-gated or `beta`
+versions of various core libraries to gain further experience.
 
-- Create a 0.3 branch that fully matches this RFC.
-
-- Publish the 0.3 version, initially as nightly-only, as soon as the limitations
-  around pinning are lifted.
-
-- Publish a 0.3.x version that works on the stable channel, as soon as pinning
-  is stable.
-
-The idea is for futures 0.3 to be a "release candidate" for inclusion in `std`,
-and to gain as much feedback as possible as early as possible. In particular,
-the fact that the external crate will be usable on stable before this RFC is
-stabilized allows us to gather a wider array of feedback.
-
-Once the proposed APIs are available in `std`, a 0.3.x version can be published
-that simply re-exports them. In other words, the 0.3 release will be
-forward-compatible with the `std` version.
+The RFC thread contains some [additional details](https://github.com/rust-lang/rfcs/pull/2395#issuecomment-382187688) around stabilization depending on the trajectory of other features.
 
 A lot of functionality beyond this RFC, e.g. streams, will remain available only
 in the futures crate. This RFC proposes only a minimal core needed to support
