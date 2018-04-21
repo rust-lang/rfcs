@@ -60,6 +60,48 @@ in this space, and there is a strong desire for the core parts of the library to
 reach the same level of stability as `std` itself. Bringing futures into libcore
 is a final step in standardization.
 
+## Changes from futures 0.2
+
+### Pinning
+
+The motivation to use the `Pin` is simple: it makes it possible for futures to
+hold *internal borrows* across yield points, which allows for far more idiomatic
+futures-based APIs. For example, an async `read` method currently has to take
+*ownership* of both the I/O object and the buffer to read into, and then yield
+ownership on success or failure:
+
+```rust
+fn read<T: AsMut<[u8]>>(self, buf: T) ->
+    impl Future<Item = (Self, T, usize), Error = (Self, T, io::Error)>
+```
+
+This design is needed to ensure that the resulting future is `'static`, which is
+in turn needed because borrowing across yield points isn't possible. It's very
+unwieldy.
+
+Once we lift this restriction, however, we can write a signature that is
+literally the `async` version of the usual `read`:
+
+```rust
+async fn read(&mut self, buf: &mut [u8]) -> io::Result<usize>;
+```
+
+In short, pinning allows us to make asynchronous programming feel like idiomatic
+Rust.
+
+### Removing the `Error` type
+
+In some contexts it's common to encounter futures that cannot fail. While this
+can be encoded using the `!` type, that's unwieldy, especially when considering
+`async fn`. Moreover, it's often a bit unclear how combinators interact with
+error behavior.
+
+This RFC proposes to make the core `Future` trait *not* build in errors, making
+it possible to express infallible asynchronous code. At the same time, though,
+it incorporates what amounts to an alias, `FutureResult`, for `Result`-producing
+futures that can be used as a bound and for associated type projection, thus
+keeping good ergonomics in the fallible case (modulo finalizing on a shorter name).
+
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
