@@ -51,14 +51,7 @@ plus it allows further optimization to be implemented like using the lower bits
 of the pointer by exploiting the alignment requirement.
 
 `&T`, `&mut T`, `Shared<T>` will have the same ranging semantics, as described
-above. Plus, the following optimizations will also be done:
-
-- These types will be ZST if `T` is ZST. An arbitrary constant is returned as
-the inner raw pointer. `0` is a good candidate here because we don't actually
-store it, we don't have to worry about it conflicting with the optimization.
-- These types will be inhabitable if `T` is inhabitable.
-
-Also, attempts to compress discriminants will be performed: which means, an
+above. Also, attempts to compress discriminants will be performed: which means, an
 `Option<Option<&T>>` will be flattened internally, so its layout will be similar
 to:
 
@@ -107,9 +100,7 @@ would be creating a nop sled at the entrypoint.
 
 We should refactor the allocation related code to prefer enumerations over
 `NonNull::dangling`. Taking `RawVec` code as an example, we would use
-`Option<Shared<T>>` to store the internal pointer. For ZST, we initialize
-with an arbitrary value (as we don't store it); for zero-length vector, we make
-use of the `None` variant to indicate that we didn't allocate.
+`Option<Shared<T>>` to store the internal pointer. 
 
 # Drawbacks
 [drawbacks]: #drawbacks
