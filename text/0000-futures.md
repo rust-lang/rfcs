@@ -592,6 +592,44 @@ async/await, allowing for further iteration in the rest of the stack. The
 intent, however, is for most of what's in the futures crate to eventually make
 its way into `std`.
 
+## Working with `Pin`
+
+The details of `Pin` have been discussed extensively elsewhere, but it's worth
+reiterating a few key points here.
+
+First, `Pin` should be understood analogously to `&` or `&mut`: it is a way of
+stating both a set of permissions you have, and some knowledge about what the
+code around you might be doing. In particular, `Pin<'a, T>` means you have
+unique access to `T` for lifetime `'a`, and you're guaranteed that the `T`
+within will never be moved again.
+
+If you're writing futures by hand and do not internally borrow -- the case for
+all existing futures code -- you can *generally* work with `Pin` as if it were
+`&mut`. In particular, for a concrete "leaf" future (which does not take other
+futures as arguments), `Pin` can be safely turned into `&mut`, and the `Unpin`
+auto trait does this automatically through `DerefMut`.
+
+On the other hand, code that takes unknown futures must take some care with
+movement. There are essentially two options:
+
+- **Ensure that the unknown future is moveable**. You can either box it (or
+  otherwise put it in its own allocation, e.g. a linked list as with
+  `FuturesUnordered`) or have your client ensure `Unpin` holds.
+
+- **Work with pinned futures directly**. At present this requires some unsafe
+  code, but early experience converting the futures combinators suggests that
+  there are extremely regular patterns of usage that can be codified into safe
+  abstractions.
+
+Thus, in general there's always a trivial and safe way to convert existing code
+to deal with pinning. At worst, this trivial migration involves some additional
+allocation, which can be tuned later.
+
+It's worth noting, too, that **these tradeoffs are not specific to the `Pin`
+approach, but will affect *any* means of offering borrowing across yield points**.
+
+@Nemo157 helpfully [sketched](https://github.com/rust-lang/rfcs/pull/2395#discussion_r179926331) this story in a couple of example.
+
 ## Details for `no_std` compatibility
 
 The APIs proposed above are almost entirely compatible with `core`, except for a
