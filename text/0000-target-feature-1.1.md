@@ -101,10 +101,11 @@ fn moo() {
 }
 ```
 
-> Note: while it is safe to call an SSE2 function from an AVX one, this would
-> require specifying how features relate to each other in hierarchies. This
-> would unnecessary complicate this RFC and can be done later once we agree on
-> the fundamentals.
+> Note: while it is safe to call an SSE2 function from _some_ AVX functions,
+> this would require specifying how features relate to each other in
+> hierarchies. It is unclear whether those hierarchies actually exist, but
+> adding them to this RFC wouldunnecessary complicate it and can be done
+> later or in parallel to this one, once we agree on the fundamentals.
 
 First, this is still sound. The caller has a super-set of `#[target_features]`
 of the callee. That is, the `#[target_feature]`-related pre-conditions of the
