@@ -179,13 +179,14 @@ unnecessarily complicate future language features like an effect system.
 # Rationale and alternatives
 [alternatives]: #alternatives
 
-The alternative here is to make `#[target_feature]` an effect/restriction. Since
-`#[target_feature]` is already on its path to stabilization and its required to
-make SIMD in Rust minimally useful, not stabilizing `#[target_feature]` at this
-point is not an option unless we are willing to delay SIMD until an effect
-system is stabilized. Until then, `#[target_feature]` and this RFC solve real
-problems and provide another use-case that such an effect system will need to
-enable to be useful for Rust programmers.
+Since `#[target_feature]` are effects or restrictions (depending on whether we
+`enable` or `disable` them), the alternative would be to integrate them with an
+effect system. Since `#[target_feature]` is already on its path to stabilization
+and its required to make SIMD in Rust minimally useful, not stabilizing
+`#[target_feature]` at this point is not an option unless we are willing to
+delay SIMD until an effect system is stabilized. Until then, `#[target_feature]`
+and this RFC solve real problems and provide another use-case that such an
+effect system will need to enable to be useful for Rust programmers.
 
 # Prior art
 [prior-art]: #prior-art
