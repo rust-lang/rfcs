@@ -20,10 +20,6 @@ As the author writes, the "num-bigint" crate merely uses `u32` as its word type 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-`pub fn carrying_mul(self, other: Self) -> (Self, Self)`
-
-Returns the low and high words of the product of `self` and `other`.
-
 One can, for example, define 
 Explain the proposal as if it was already included in the language and you were teaching it to another Rust programmer. That generally means:
 
