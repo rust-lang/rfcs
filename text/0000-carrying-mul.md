@@ -49,7 +49,8 @@ None known
 # Rationale and alternatives
 [alternatives]: #alternatives
 
-The alternative is to not define this method, which means to do a double-wide multiplication, the user must use inline asm (unstable) or do an awkward dance of shifts and multiplications.
+- We could not define this method, which means to do a double-wide multiplication, the user must use inline asm (unstable) or do an awkward dance of shifts and multiplications.
+- We could define a `mul_high` method which merely returns the high word.
 
 # Prior art
 [prior-art]: #prior-art
