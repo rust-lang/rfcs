@@ -20,16 +20,19 @@ As the author writes, the "num-bigint" crate merely uses `u32` as its word type 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-One can, for example, define 
-Explain the proposal as if it was already included in the language and you were teaching it to another Rust programmer. That generally means:
+In general, the product of an m-bit and an n-bit number has (m+n) bits. If one wishes to define arbitrary-precision arithmetic, one (usually) chooses a word size, and defines the multiple-precision operations in terms of primitive operations on this type. The `carrying_mul` function allows one to do so conveniently, for example:
 
-- Introducing new named concepts.
-- Explaining the feature largely in terms of examples.
-- Explaining how Rust programmers should *think* about the feature, and how it should impact the way they use Rust. It should explain the impact as concretely as possible.
-- If applicable, provide sample error messages, deprecation warnings, or migration guidance.
-- If applicable, describe the differences between teaching this to existing Rust programmers and new Rust programmers.
+```rust
+pub struct u2size { msw: usize, lsw: usize }
 
-For implementation-oriented RFCs (e.g. for compiler internals), this section should focus on how compiler contributors should think about the change, and give examples of its concrete impact. For policy RFCs, this section should provide an example-driven introduction to the policy, and explain its impact in concrete terms.
+impl Mul for u2size {
+    fn mul(self, other: Self) -> Self {
+        let (lsw, c) = self.lsw.carrying_mul(other.lsw);
+        u2size { lsw, msw: c + self.msw * other.lsw
+                             + self.lsw * other.msw }
+    }
+}
+```
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
