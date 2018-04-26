@@ -49,6 +49,15 @@ However, the current situation also forces the user to repeat `mut` on every
 binding. That however does not make mutation more obvious.
 Rather, as a result of repetition, the `mut` modifier may be ignored due to noise.
 
+### Instead of `var`
+
+Allowing "mutable default bindings" in the form of `var x = ..;` has been
+suggested from [time](https://github.com/rust-lang/rfcs/issues/2304) to
+[time](https://internals.rust-lang.org/t/var-as-alias-for-let-mut/7346).
+This proposal presents a significantly smaller change that fuses better
+with the language that we already have while also making mutability easier
+to deal with.
+
 ## The meaning is intuitive
 
 To the question one might ask:
@@ -287,6 +296,27 @@ desugared form where any binding inside `PAT` introduced is a `mut` binding.
 Consult the [guide level explanation][guide-level-explanation] for some examples
 of desugarings.
 
+### Notes on `mut (ref x, ref mut y)`
+
+Since `(ref x, ref mut y)` is a legal pattern, then so is `mut (ref x, ref mut y)`.
+The semantics of `mut (ref x, ref mut y)` can be understood as this desugaring:
+
+```rust
+mut (ref x, ref mut y)
+
+<=>
+
+(mut ref x, mut ref mut y)
+
+<=>
+
+(ref x, ref mut y)
+let mut x = x;
+let mut y = y;
+```
+
+Note that `mut ref x` is not a legal pattern in the surface syntax right now.
+
 ## Warnings
 
 The following snippet `let mut (mut x, mut y) = ...;`, while grammatically valid,
@@ -452,6 +482,24 @@ None as of yet.
 
 In this section, we consider some possible future work that could be done
 but shouldn't necessarily be done.
+
+## `ref` and `ref mut`
+
+The "recursive" rule in this RFC could also optionally be applied to
+`ref` and `ref mut` such that you could write:
+
+```rust
+match expr {
+    Foo(ref (x, y)) => ..
+}
+
+match expr {
+    Foo(ref mut (x, y)) => ..
+}
+```
+
+However, default match bindings make this need less pressing, but it could
+be done as a more lightweight explicit alternate to default match bindings.
 
 ## Structs and fields
 
