@@ -16,9 +16,9 @@ on edition 2018 onwards. This also means that `throw` is reserved as a keyword.
 
 ## Highlighting the *"unhappy path"*
 
-[RFC 2343]: https://github.com/rust-lang/rfcs/blob/master/text/0243-trait-based-exception-handling.md#-operator
+[RFC 243]: https://github.com/rust-lang/rfcs/blob/master/text/0243-trait-based-exception-handling.md#-operator
 
-[RFC 2343] writes regarding the `?` operator that:
+[RFC 243] writes regarding the `?` operator that:
 
 > The `?` operator itself is suggestive, syntactically lightweight enough
 > to not be bothersome, and lets the reader determine at a glance where an
@@ -41,7 +41,7 @@ if condition {
 [indeed suggests]: https://github.com/rust-lang/rfcs/blob/master/text/0243-trait-based-exception-handling.md#throw-and-throws
 
 the unhappy path is not particularly differentiated from the happy path in
-terms of syntax. By introducing `throw`, as RFC 2343 [indeed suggests],
+terms of syntax. By introducing `throw`, as RFC 243 [indeed suggests],
 we can improve readability with distinct syntax:
 
 ```rust
