@@ -6,17 +6,27 @@
 # Summary
 [summary]: #summary
 
-Introduce `throw expr` expressions which is a diverging computation typed at `!`
-and either `return`s from the `fn` or `break`s to the closest `try { .. }`.
-The expression form `throw` is supported on edition 2018 onwards.
-This also means that `throw` is reserved as a keyword.
+Introduce diverging `throw expr` expressions, typed at `!`,
+which either `break` to the closest `try { .. }` if there is one, or if not,
+`return` from the `fn` or closure. The expression form `throw expr` is supported
+on edition 2018 onwards. This also means that `throw` is reserved as a keyword.
 
 # Motivation
 [motivation]: #motivation
 
 ## Highlighting the *"unhappy path"*
 
-Currently, when you write logic such as:
+[RFC 2343]: https://github.com/rust-lang/rfcs/blob/master/text/0243-trait-based-exception-handling.md#-operator
+
+[RFC 2343] writes regarding the `?` operator that:
+
+> The `?` operator itself is suggestive, syntactically lightweight enough
+> to not be bothersome, and lets the reader determine at a glance where an
+> exception may or may not be thrown.
+
+This RFC takes the moral of that story to heart and agrees that you should be
+able to *"determine at a glance where an exception may or may not be thrown"*.
+However, currently, when you write logic such as:
 
 ```rust
 if condition {
@@ -28,9 +38,11 @@ if condition {
 // other stuff...
 ```
 
+[indeed suggests]: https://github.com/rust-lang/rfcs/blob/master/text/0243-trait-based-exception-handling.md#throw-and-throws
+
 the unhappy path is not particularly differentiated from the happy path in
-terms of syntax. By introducing `throw`, we can improve readability with
-distinct syntax:
+terms of syntax. By introducing `throw`, as RFC 2343 [indeed suggests],
+we can improve readability with distinct syntax:
 
 ```rust
 if condition {
@@ -43,8 +55,9 @@ if condition {
 ```
 
 In this case, it is also syntactically terser and conveys semantic intent better.
+
 As a hypothetical extension, this can be further improved upon the future
-with `Ok`-wrapping `try fn`s, then you can write:
+with `Ok`-wrapping `try fn`s. With those you could then write:
 
 ```rust
 if condition {
@@ -81,10 +94,11 @@ if condition {
 ```
 
 ## Uniform support for early unhappy returns to functions and `try { .. }`
+[uniform-bail-macro]: #uniform-support-for-early-unhappy-returns-to-functions-and-try
 
 [`bail!`]: https://docs.rs/failure/0.1.1/src/failure/macros.rs.html#25-36
 
-Consider the macros `bail!` in the `failure` crate. It is defined as:
+Consider the macro [`bail!`] in the [`failure`] crate. It is defined as:
 
 ```rust
 macro_rules! bail {
@@ -117,6 +131,12 @@ With this new definition, we've gained two abilities:
 2. `bail!` can short circuit to the nearest `try { .. }` as well as to the
    nearest `fn` (if no enclosing `try { .. }` exists).
 
+## The existence of `bail!` shows there's a need
+
+As discussed in the previous section and in [the prior art][prior-art-failure],
+the [`failure`] and [`error-chain`] each define a `bail!` macro which has the
+same role as `throw` would. This shows that there's a need for `throw`.
+
 ## Increasing familiarity
 
 As discussed in the [prior-art], a super majority of all programming languages
@@ -144,6 +164,15 @@ We have also started erasing the dichotomy between the correctness benefits
 of *errors as values* and the ergonomics benefits of implicit exceptions by
 introducing `expr?` and `try { .. }`. By introducing `throw expr` we can
 further erase parts of this dichotomy.
+
+## The time to reserve is now
+
+At the time of writing, a new Rust edition 2018 is being prepared.
+The opportunity to reserve new keywords is now. 
+The next opportunity will be years from now.
+Therefore, postponing the reservation of `throw` as a keyword,
+because the proposal is not exactly the final design we end up with,
+would be a mistake, assuming we wish to introduce `throw` at some point.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -569,10 +598,73 @@ where `SpecialType` is some unit type, which could be `()`.
 For this mechanism to work well for `Result<T, E>`, specialization is needed.
 This design can further be augmented with `X: From<SpecialType>, Throw<X>`.
 
+## `yield throw expr` as a special construct?
+[yield_throw]: #yield-throw-expr-as-a-special-construct
+
+Let's first consider the expression `return (return)`.
+Since `return` is a diverging computation, the second `return` will never be reached.
+Therefore, `return (return)` is semantically equivalent to just `return`.
+A Rust compiler understands this and correctly warns us with:
+
+```rust
+warning: unreachable expression
+```
+
+Let's now consider `yield` and `throw`. There are two ways to nest them:
+
+### `throw yield x` or `throw (yield x)`
+
+If we consider this to be `return Err(yield x)`, then we have
+that:
+```rust
+let y: () = yield x;
+let r: Result<?T, ()> = Err(y);
+return r
+```
+
+We see that `throw yield x` has reasonable and productive semantics,
+even if its not readable, where you return `()` the error.
+
+### `yield throw x` or `yield (throw x)`
+
+If we simply see this as `yield (return Err(x))` then we get back the
+`unreachable` warning from before. In this case, `yield throw x` is not useful
+beyond `throw x` as the `yield` is unreachable. Therefore, we could repurpose
+`yield throw x` as a special construct (and a separate AST node..).
+
+### A special construct
+
+The question naturally becomes:
+Should we repurpose `yield throw x`, and if so, what would `yield throw x` mean?
+
+One possible meaning is to desugar `yield throw x` simply as:
+`yield Try::from_error(x)`. This could be useful if you were yielding
+a sequence of results and wanted to yield the error case.
+
+However, there may be code generation hazards for macros to differentiate
+`yield throw x` and `yield (throw x)`. To some the behaviour may also be confusing.
+Perhaps, reusing `throw` for yielding errors should be considered to stretch
+the keyword `throw` too far since it does not leverage the intuition about `throw`
+from other programming languages.
+
+This RFC does not propose `yield throw x` to be introduced as a special
+construct since the proposal is intentionally conservative to begin with.
+However, it is worth considering at some later point.
+
+## Doing nothing
+
+As usual, we have the choice of doing nothing.
+Some motivation for why we might want to do nothing is discussed in the section
+on [drawbacks]. In particular, this proposal edges us ever closer to *exceptional
+terminology* and erasing the syntactic component of *errors as values*.
+
 # Prior art
 [prior-art]: #prior-art
 
 ## This mechanism exists in many languages
+
+[PYPL]: http://pypl.github.io/PYPL.html
+[TIOBE]: https://www.tiobe.com/tiobe-index/
 
 All of the languages listed below have either a built in expression or statement
 form for the equivalent of `throw` expressions, or they have library functions
@@ -580,11 +672,9 @@ which are widely used in the community.
 
 Note that this is not necessarily a complete list! It is only a best effort to
 compile the prior art. The categorization of functional, c++-family languages
-is also fuzzy. In some cases, such as Haskell, more than one word is used.
-When this is the case, it is noted.
-
-[PYPL]: http://pypl.github.io/PYPL.html
-[TIOBE]: https://www.tiobe.com/tiobe-index/
+is also fuzzy. In some cases, such as in Haskell, more than one word is used.
+When this is the case, it is noted and the duplication is discounted from
+the total [TIOBE] and [PYPL] shares.
 
 ### Summary of data
 [summary-of-data]: #summary-of-data
@@ -688,6 +778,25 @@ When this is the case, it is noted.
 + [Koka](https://www.rise4fun.com/koka/tutorialcontent/guide#h21)
 + [Lua](http://www.lua.org/manual/5.3/manual.html#pdf-error)
 
+## Crates: [`failure`] and [`error-chain`]
+[prior-art-failure]: #crates:-failure-and-error-chain
+
+[`failure`]: https://docs.rs/failure/0.1.1/failure/
+[`error-chain`]: https://docs.rs/error-chain/0.11.0/error_chain/
+
+The [`failure`] crate has a macro [`bail!`] that plays the same role as `throw` would.
+In essence, `bail!(x)` boils down to:
+
+```rust
+return Err(format_err!(x))
+```
+
+The [`error-chain`] crate also has a `bail!(expr)` macro which amounts to:
+
+```rust
+return Err(expr.into());
+```
+
 ## *Paper: Exceptional Syntax*
 [exceptional_syntax]: #paper:-exceptional-syntax
 
@@ -738,7 +847,7 @@ DOI = <http://dx.doi.org/10.1017/S0956796801004099>
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
-The [choice of keyword] should be during the RFC period.
+The [choice of keyword] should be finalized during the RFC period.
 
 Post RFC period and during stabilization,
 we have the following unresolved question:
@@ -749,3 +858,18 @@ we have the following unresolved question:
 - Allow `throw;`?
   See the section on [the possible semantics of `throw;`][bare_throw] for
   a discussion on possibilities.
+
+- Should `From` conversions be involved?
+
+- Should `throw` only be permitted inside `try { .. }`?
+  Doing this would have two main drawbacks:
+  1. `throw` can't be used in normal functions and thus the usefulness of
+     `throw` diminishes significantly.
+  2. `throw` can't act as double-duty primitive for the `bail!` macro
+     as discussed in the [motivation][uniform-bail-macro].
+
+- What is the relationship between `throw` and `yield`?
+  See the [rationale][yield_throw] for a discussion.
+
+Answering many of these question will likely require another RFC to finalize
+the design once we have more experience.
