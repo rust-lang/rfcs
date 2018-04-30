@@ -94,7 +94,7 @@ if condition {
 ```
 
 ## Uniform support for early unhappy returns to functions and `try { .. }`
-[uniform-bail-macro]: #uniform-support-for-early-unhappy-returns-to-functions-and-try
+[uniform-bail-macro]: #uniform-support-for-early-unhappy-returns-to-functions-and-try---
 
 [`bail!`]: https://docs.rs/failure/0.1.1/src/failure/macros.rs.html#25-36
 
@@ -779,7 +779,7 @@ the total [TIOBE] and [PYPL] shares.
 + [Lua](http://www.lua.org/manual/5.3/manual.html#pdf-error)
 
 ## Crates: [`failure`] and [`error-chain`]
-[prior-art-failure]: #crates:-failure-and-error-chain
+[prior-art-failure]: #crates-failure-and-error-chain
 
 [`failure`]: https://docs.rs/failure/0.1.1/failure/
 [`error-chain`]: https://docs.rs/error-chain/0.11.0/error_chain/
