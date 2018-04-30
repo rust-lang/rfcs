@@ -241,7 +241,7 @@ expression.
 
 This property should hold:
 
-1. `∀ err, expr. try { throw err; expr } ≡ try { throw err }`
+1. `try { throw err; expr } ≡ try { throw err }`
 
 Assuming `err` and the `?` operator performs no side effects, these should:
 
