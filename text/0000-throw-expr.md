@@ -332,6 +332,23 @@ As always, when a new real keyword is introduced, there is some degree of breaka
 This is a drawback of this proposal. A mitigating factor is that the degree is
 believed to be small.
 
+## *"But what about the success case?"*
+
+If we introduce `throw expr`, then an obvious question becomes:
+\- *"How do you do an early return with Ok-wrapping?"*
+Not being able to perform an early return for the success case could
+be considered a drawback. Although that could also be considered letting
+the perfect be the enemy of the good.
+
+A strategy for introducing early-return on success with Ok-wrapping **could**
+be to introduce `try fn` and / or to let `return` perform an early return
+to the nearest `try { .. }` block and Ok-wrap.
+In the latter case, the user loses the ability to `return` to the function.
+This could be solved with `break 'fn expr`.
+One problem with modifying what `return` means in `try { .. }` could be that
+people are so used to `return` always returning from the current function
+that it could become quite confusing.
+
 # Rationale and alternatives
 [alternatives]: #rationale-and-alternatives
 
