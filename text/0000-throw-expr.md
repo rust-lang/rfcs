@@ -392,6 +392,10 @@ It could be considered a benefit of `fail` that it is close to the `failure`
 crate's `bail!` macro. However; the RFC author considers this to mainly be
 a drawback because it is easy to mistake one for the other.
 Meanwhile `error` and `fail` are too tied to failure and error handling.
+However, `fail` fits nicely with `try { .. }` as you might *"try but fail"*
+at doing something in English.
+The expression form `fail expr` should also be as immediately understandable
+as `throw expr` would be.
 
 Since the words `die`, `error`, and `fail` are much less commonly used than
 the keywords `throw` and `raise` we move on to consider the latter two.
@@ -399,6 +403,10 @@ the keywords `throw` and `raise` we move on to consider the latter two.
 The main benefit of `throw` is that while it is familiar in languages with
 exception handling, it is less indicative of exceptions. It makes sense to say
 *"throw a ball"* and it works with the "re-throw" framing of the `?` operator.
+One problem with `throw` however could be that if you can *throw* something then
+there might be an expectation that you can *catch* something, and so it may
+obligate us to introduce the `try { .. } catch { .. }` form which we may not
+want to do.
 
 In the RFC authors view, `raise` + a noun is used less often.
 However, one benefit of `raise` is that while you can `throw` something
@@ -409,13 +417,16 @@ then `raise` moves "up".
 Considering crates named as the keyword we find that there isn't a crate named
 `raise`, there is a crate named [`throw`](https://crates.io/crates/throw).
 This crate would not be directly usable on the new edition,
-but it has zero reverse dependencies. Therefore the extent of the breakage
-is deemed quite low.
+but it has zero reverse dependencies.
+With respect to `fail`, it does exist as a crate, which has reverse dependencies.
+However, all of those transitive dependencies are written by the same author.
+
 Searching for `raise` with sourcegraph indicates a very
-small number of uses as an identifier, but searching for `throw` gives a timeout
-indicating that there are no uses.
-Meanwhile, `fail` exists as a crate, which has reverse dependencies,
-and has more hits than `raise` on sourcegraph.
+small number of uses as an identifier.
+For `fail`, we find slightly more hits than `raise` on sourcegraph.
+Meanwhile, sourcegraph identifies 3 cases with `throw` where breakage would
+occur which is fewer than for `raise` and `fail`.
+To sum up, none of the considered keywords would result in much breakage.
 
 Since both `raise` and `throw` are equally long (5 characters), the extent of
 breakage is very low, and it is hard to make decisive arguments in either way,
