@@ -899,5 +899,10 @@ we have the following unresolved question:
 - What is the relationship between `throw` and `yield`?
   See the [rationale][yield_throw] for a discussion.
 
-Answering many of these question will likely require another RFC to finalize
-the design once we have more experience.
+- Should `throw 'label expr` be supported?
+  This would be akin to `break 'label expr` but use `Error`-wrapping.
+  It is unclear how often the need for this would arise,
+  but the consistency with `break` could be one benefit.
+
+Answering many of these question, and more, will likely require another RFC
+to finalize the design once we have more experience.
