@@ -6,10 +6,20 @@
 # Summary
 [summary]: #summary
 
-Introduce diverging `throw expr` expressions, typed at `!`,
+Introduce diverging `throw expr` (or `fail expr` expressions), typed at `!`,
 which either `break` to the closest `try { .. }` if there is one, or if not,
-`return` from the `fn` or closure. The expression form `throw expr` is supported
-on edition 2018 onwards. This also means that `throw` is reserved as a keyword.
+`return` from the `fn` or closure.
+
+The expression form `throw expr` or `fail expr` is supported
+on edition 2018 onwards.
+This also means that `throw` and `fail` are reserved as keywords.
+
+Only one of `throw expr` and `fail expr` will be supported.
+However, at this time, which one that is is left unresolved.
+
+In the interest of brevity, `throw` is used uniformly instead of `fail` in
+this RFC. Anything that holds for `throw` also holds for `fail` except when
+discussing which keyword to chose and the familiarity of either.
 
 # Motivation
 [motivation]: #motivation
@@ -170,18 +180,19 @@ further erase parts of this dichotomy.
 At the time of writing, a new Rust edition 2018 is being prepared.
 The opportunity to reserve new keywords is now. 
 The next opportunity will be years from now.
-Therefore, postponing the reservation of `throw` as a keyword,
+Therefore, postponing the reservation of `throw` and `fail` as a keyword,
 because the proposal is not exactly the final design we end up with,
-would be a mistake, assuming we wish to introduce `throw` at some point.
+would be a mistake, assuming we wish to introduce `throw` or ``fail` at some point.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-This RFC introduces `throw` expressions. If before this RFC you wrote:
+This RFC introduces `throw` (or alternatively `fail`) expressions.
+If before this RFC you wrote:
 
 ```rust
 if condition {
-    return Err(error)
+    return Err(error) // or Err(error)?
 }
 ```
 
@@ -234,11 +245,12 @@ to the enclosing function `foo`. See the section on [exceptional syntax][excepti
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-## Reserving a keyword
+## Reserving keywords
 
-**A keyword `throw` is reserved in edition 2018.**
-This implies that users must use the raw identifier `r#throw` when they want
-to refer to `throw` in an edition-2015 crate from an edition-2018 crate.
+**The keywords `throw` and `fail` are reserved in edition 2018.**
+This implies that users must use the raw identifier `r#throw` or `r#fail`
+when they want to refer to `throw` or `fail` in an edition-2015 crate
+from an edition-2018 crate.
 
 ## Grammar
 
@@ -262,9 +274,9 @@ An expression of the form `throw expr`, where [`expr`] is a meta-variable for
 some expression, is a diverging expression typed at `!`.
 
 The semantics of `throw expr` is defined as:
-`break 'to Try::from_error(expr)` where `'to` is the closest `try { .. }`
-or the enclosing `fn` or closure if the `throw expr` is not within a `try { .. }`
-expression.
+`break 'to Try::from_error(From::from(expr))` where `'to` is the
+closest `try { .. }` or the enclosing `fn` or closure if the `throw expr`
+is not within a `try { .. }` expression.
 
 ## General properties
 
@@ -414,8 +426,9 @@ at doing something in English.
 The expression form `fail expr` should also be as immediately understandable
 as `throw expr` would be.
 
-Since the words `die`, `error`, and `fail` are much less commonly used than
-the keywords `throw` and `raise` we move on to consider the latter two.
+Since the words `die`, `error` are much less commonly used than
+the keywords `throw`, `raise` we move on to consider the latter three.
+We also consider `fail`.
 
 The main benefit of `throw` is that while it is familiar in languages with
 exception handling, it is less indicative of exceptions. It makes sense to say
@@ -451,8 +464,11 @@ we turn to popularity.
 In the [summary][summary-of-data] of the prior art in other languages,
 `throw` is more than twice as popular in languages with such a concept than
 `raise`. `throw` also exists in approximately twice as many languages.
-Therefore, if we go with popularity alone, we should chose `throw`,
-and so we do that.
+
+Therefore, if we go with popularity alone, we should chose `throw`, and so we
+do that. However, `fail` also fits well with `try` as previously explained.
+Thus, the RFC opts to reserve `throw` **and** `fail` and leaves the decision
+on which one to chose unresolved for now.
 
 ## A built-in macro
 
@@ -880,6 +896,8 @@ The [choice of keyword] should be finalized during the RFC period.
 Post RFC period and during stabilization,
 we have the following unresolved question:
 
+- Use `throw` or `fail` as the keyword?
+
 - How will the trait(s) look that backs up the `throw` operator?
   See the section on [desugaring] for a discussion on possibilities.
 
@@ -903,6 +921,3 @@ we have the following unresolved question:
   This would be akin to `break 'label expr` but use `Error`-wrapping.
   It is unclear how often the need for this would arise,
   but the consistency with `break` could be one benefit.
-
-Answering many of these question, and more, will likely require another RFC
-to finalize the design once we have more experience.
