@@ -559,7 +559,7 @@ Unspecified `fn`s are stubbed out with `unimplemented!()` to allow rapid prototy
 # Rationale and alternatives
 [alternatives]: #alternatives
 
-The biggest non-syntax alternative is only supporting delegation of all items: methods, associated types and `const`s. While this has been removed in the interest of being conservative, the authors would prefer to support all “trait items” because the whole point is to “make trivial wrapper impls trivial,” even if you’re implementing a trait like `Iterator` which has an associated type as well as several methods.
+The biggest non-syntax alternative is supporting delegation of all items: methods, associated types and `const`s. While this has been removed in the interest of being conservative, the authors would prefer to support all “trait items” because the whole point is to “make trivial wrapper impls trivial,” even if you’re implementing a trait like `Iterator` which has an associated type as well as several methods.
 
 ### Alternative syntax
 
