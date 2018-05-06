@@ -11,7 +11,7 @@ Add an API for procedural macros to expand macro calls in token streams. This wi
 # Motivation
 [motivation]: #motivation
 
-There are a few places where proc macros may encounter unexpanded macros in their input even after [rust/pull/41029](https://github.com/rust-lang/rust/pull/41029) is merged:
+There are a few places where proc macros may encounter unexpanded macros in their input:
 
 * In attribute and procedural macros:
 
@@ -96,16 +96,9 @@ fn string_length(tokens: TokenStream) -> TokenStream {
 
 If you call `string_length!` with something obviously wrong, like `string_length!(struct X)`, you'll get a parser error when `unwrap` gets called, which is expected. But what do you think happens if you call `string_length!(stringify!(struct X))`?
 
-It's reasonable to expect that `stringify!(struct X)` gets expanded and turned into a string literal `"struct X"`, before being passed to `string_length`. However, in order to give the most control to proc macro authors, Rust doesn't touch any of the ingoing tokens passed to a proc macro (**Note:** this doesn't strictly hold true for [proc _attribute_ macros](#macro-calls-in-attribute-macros)).
+It's reasonable to expect that `stringify!(struct X)` gets expanded and turned into a string literal `"struct X"`, before being passed to `string_length`. However, in order to give the most control to proc macro authors, Rust doesn't touch any of the ingoing tokens passed to a proc macro.
 
 Thankfully, there's an easy solution: the proc macro API offered by the compiler has methods for constructing and expanding macro calls. The `syn` crate uses these methods to provide an alternative to `parse`, called `parse_expand`. As the name suggests, `parse_expand` parses the input token stream while expanding and parsing any encountered macro calls. Indeed, replacing `parse` with `parse_expand` in our definition of `string_length` means it will handle input like `stringify!(struct X)` exactly as expected.
-
-As a utility, `parse_expand` uses sane expansion options for the most common case of macro calls in token stream inputs. It assumes:
-
-* The called macro, as well as any identifiers in its arguments, is in scope at the macro call site.
-* The called macro should behave as though it were expanded in the source location.
-
-To understand what these assumptions mean, or how to expand a macro differently, check out the section on how [macro hygiene works](#spans-and-scopes) as well as the detailed [API overview](#api-overview).
 
 ## Macro Calls in Attribute Macros
 
@@ -136,177 +129,30 @@ struct Y {...}
 
 Of course, even if your attribute macro _does_ use a fancy token syntax, you can still use `parse_expand` to handle any macro calls you encounter.
 
-**Note:** Because the built-in attribute 'macro' `#[cfg]` is expanded and evaluated before body tokens are sent to an attribute macro, the compiler will also expand any other macros before then too for consistency. For instance, here `my_attr_macro!` will see `field: u32` instead of a call to `type_macro!`:
-
-```rust
-macro_rules! type_macro {
-    () => { u32 };
-}
-
-#[my_attr_macro(...)]
-struct X {
-    field: type_macro!(),
-}
-```
-
-## Spans and Scopes
-[guide-sshm]: guide-sshm
-
-**Note:** This isn't part of the proposed changes, but is useful for setting up the language for understanding proc macro expansion.
-
-If you're not familiar with how spans are used in token streams to track both line/column data and name resolution scopes, here is a refresher. Consider the following proc macro:
-
-```rust
-#[macro_use]
-extern crate quote;
-
-#[proc_macro]
-fn my_hygienic_macro(tokens: TokenStream) -> TokenStream {
-    quote! {            
-        let mut x = 0;  // [Def]
-        #tokens         // [Call]
-        x += 1;         // [Def]
-    }
-}
-```
-
-Each token in a `TokenStream` has a span, and that span tracks where the token is treated as being created - you'll see why we keep on saying "treated as being created" rather than just "created" [later](#unhygienic-scopes)!
-
-In the above code sample:
-
-* The tokens in lines marked `[Def]` have spans with scopes that indicate they should be treated as though they were defined here in the definition of `my_hygienic_macro`.
-* The tokens in lines marked with `[Call]` keep their original spans and scopes, which in this case indicate they should be treated as though they were defined at the macro call site, wherever that is.
-
-Now let's see what happens when we use `my_hygienic_macro`:
-
-```rust
-fn main() {
-    my_hygienic_macro! {
-        let mut x = 1;
-        x += 2;
-    };
-    println!(x);
-}
-```
-
-After the call to `my_hygienic_macro!` in `main` is expanded, `main` looks something like this:
-
-```rust
-fn main() {
-    let mut x = 0; // 1. [Def]
-    let mut x = 1; // 2. [Call]
-    x += 2;        // 3. [Call]
-    x += 1;        // 4. [Def]
-    println!(x);   // 5. [Call]
-}
-```
-
-As you can see, the macro expansion has interleaved tokens provided by the caller (marked with `[Call]`) and tokens provided by the macro definition (marked with `[Def]`). 
-
-Scopes are used to _resolve_ names. For example, in lines 3 and 5 the variable `x` is in the `[Call]` scope, and so will resolve to the variable declared in line 2. Similarly, in line 4 the variable `x` is in the `[Def]` scope, and so will resolve to the variable declared in line 1. Since the names in different _scopes_ resolve to different _variables_, this means mutating a variable in one scope doesn't mutate the variables in another, or shadow them, or interfere with name resolution. This is how Rust achieves macro hygiene!
-
-This doesn't just stop at variable names. The above principles apply to mods, structs, trait definition, trait method calls, macros - anything with a name which needs to be looked up.
-
-### Unhygienic Scopes
-
-Importantly, macro hygiene is _optional_: since we can manipulate the spans on tokens, we can change how a variable is resolved. For example:
-
-```rust
-extern crate proc_macro;
-#[macro_use]
-extern crate quote;
-
-use proc_macro::Span;
-
-#[proc_macro]
-fn my_unhygienic_macro(tokens: TokenStream) -> TokenStream {
-    let hygienic = quote_spanned! { Span::def_site(),
-        let mut x = 0; // [Def]
-    };
-    let unhygienic = quote_spanned! { Span::call_site(),
-        x += 1;        // [Call]
-    };
-    quote! {
-        #hygienic      // [Def]
-        #tokens        // [Call]
-        #unhygienic    // [Call]
-    }
-}
-```
-
-If we call `my_unhygienic_macro` instead of `my_hygienic_macro` in `main` as before, the result is:
-
-```rust
-fn main() {
-    let mut x = 0; // 1. [Def]
-    let mut x = 1; // 2. [Call], from main
-    x += 2;        // 3. [Call], from main
-    x += 1;        // 4. [Call], from my_unhygienic_macro
-    println!(x);   // 5. [Call]
-}
-```
-
-By changing the scope of the span of the tokens on line 4 (using `quote_spanned` instead of `quote`), that instance of `x` will resolve to the one defined on line 2 instead of line 1. In fact, the variable actually declared by our macro on line 1 is never used.
-
-This trick has a few uses, such as 'exporting' a name to the caller of the macro. If hygiene was not optional, any new functions or modules you created in a macro would only be resolvable in the same macro.
-
-There are also some interesting [examples](https://github.com/dtolnay/syn/blob/030787c71b4cfb2764bccbbd2bf0e8d8497d46ef/examples/heapsize2/heapsize_derive/src/lib.rs#L65) of how this gets used to resolve method calls on traits declared in `[Def]`, but called with variables from `[Call]`.
-
 ## API Overview
 
-The full API provided by `proc_macro` and used by `syn` is more flexible than suggested by the use of `parse_expand` and `parse_meta_expand` above. To begin, `proc_macro` defines a struct, `MacroCall`, with the following interface:
+The full API provided by `proc_macro` defines a struct, `ExpansionBuilder`, with the following interface:
 
 ```rust
-struct MacroCall {...};
+#[non_exhaustive]
+enum ExpansionError {}
 
-impl MacroCall {
-    fn new_proc(path: TokenStream, args: TokenStream) -> Self;
+struct ExpansionBuilder {...};
+
+impl ExpansionBuilder {
+    pub fn new_proc(path: TokenStream, args: TokenStream) -> Self;
     
-    fn new_attr(path: TokenStream, args: TokenStream, body: TokenStream) -> Self;
+    pub fn new_attr(path: TokenStream, args: TokenStream, body: TokenStream) -> Self;
     
-    fn call_from(self, from: Span) -> Self;
-    
-    fn expand(self) -> Result<TokenStream, Diagnostic>;
+    pub fn expand(self) -> Result<TokenStream, ExpansionError>;
 }
 ```
 
-The functions `new_proc` and `new_attr` create a procedural macro call and an attribute macro call, respectively. Both expect `path` to parse as a [path](https://docs.rs/syn/0.12/syn/struct.Path.html) like `println` or `::std::println`. The scope of the spans of `path` are used to resolve the macro definition. This is unlikely to work unless all the tokens have the same scope.
+The functions `new_proc` and `new_attr` create a procedural macro call and an attribute macro call, respectively. Both expect `path` to parse as a [path](https://docs.rs/syn/0.12/syn/struct.Path.html) like `println` or `::std::println`. The compiler looks up `path` in the caller's scope (in the future, the scope of the spans of `path` will be used to resolve the macro definition, as part of expanding hygiene support).
 
 The `args` tokens are passed as the main input to proc macros, and as the attribute input to attribute macros (the `things` in `#[my_attr_macro(things)]`). The `body` tokens are passed as the body input to attribute macros (the `struct Foo {...}` in `#[attr] struct Foo {...}`). Remember that the body of an attribute macro usually has any macro calls inside it expanded _before_ being passed to the attribute macro itself.
 
-The method `call_from` is a builder-pattern method to set what the calling scope is for the macro.
-
-The method `expand` consumes the macro call, resolves the definition, applies it to the provided input in the configured expansion setting, and returns the resulting token tree or a failure diagnostic. For resolution:
-
-* If the scope of `path` is anywhere other than that of `Span::def_site()`, then the macro definition is resolved in that scope.
-* If the scope of `path` is that of `Span::def_site()`, then the macro definition is resolved in the crate defining the current macro (as opposed to being resolved using the imports in the token stream _produced by_ the current macro). This allows proc macros to expand macros from crates that aren't available to or provided by the caller.
-
-### Calling Scopes
-
-The method `call_from` sets the calling scope for the macro. What does this mean?
-
-Say we are defining a macro `my_proc!` and want to use another macro `helper!` as part of `my_proc!`. If `helper!` is hygienic, then all of its new variables and modules and whatever will live in its own `[Def]` scope independent the `[Def]` scope of `my_proc!`.
-
-If `helper!` is _unhygienic_ then any unhygienic declarations will live in the `[Call]` scope of `helper!` - but which scope is that? Assume that `helper!` expands to something like this:
-
-```rust
-struct S; // [Def]
-struct T; // [Call]
-
-// [Call]
-//   v
-impl T {
-    // These implementation functions can refer to S because
-    // they're in the same scope
-    ... // [Def]
-}
-```
-
-* If the `[Call]` scope of `helper!` is the `[Def]` scope of `my_proc!`, then `helper!` will 'export' or 'expose' the declaration of `T` to `my_proc!`, which lets `my_proc!` refer to `T`. This lets us delegate part of the implementation of `my_proc!` to other proc and decl macros (perhaps from other crates).
-
-* If instead the `[Call]` scope of `helper!` is the `[Call]` scope of `my_proc!`, then `helper!` will export the declarations to the caller of `my_proc!` instead of `my_proc!`. If we don't need access to `T` and just want to export it straight to the caller of `my_proc!` (or if `helper!` is actually just part of the caller's input to `my_proc!`, like `my_proc!(helper!(...))`) then this is what we want.
-
-Since both of these are legitimate use cases, `MacroCall` provides `call_from` to set what the `[Call]` scope of the macro call will be.
+The method `expand` consumes the macro call, resolves the definition, applies it to the provided input in the configured expansion setting, and returns the resulting token tree or a failure diagnostic.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -319,7 +165,7 @@ Built-in macros already look more and more like proc macros (or at the very leas
 
 Since proc macros and `macro` definitions are relative-path-addressable, the proc macro call context needs to keep track of what the path was at the call site. I'm not sure if this information is available at expansion time, but are there any issues getting it?
 
-## For the future: same-crate proc macros
+## Future Work: same-crate proc macros
 
 When proc macros are allowed to be defined in the same crate as other items, we should be able to transfer any solution to the problem of internal dependencies over to the expansion API. For example, imagine the following (single) crate:
 
@@ -353,6 +199,40 @@ fn main() {
 
 Here, we need to solve a similar problem: if `cool_macro!` expands `foo!`, it needs to have access to an executable version of `foo!` despite it being defined in the current crate, similar to how `foo!` needs access to an executable version of `helper` in the previous example.
 
+## Future Work: Hygiene
+
+This iteration of the macro expansion API makes a few concessions to reduce its scope. We completely ignore hygiene for result generation or macro definition lookup. If a proc macro author wants to adjust the scope that a macro's expanded tokens live in, they'll have to do it manually. If an author wants to adjust the scope that a macro definition is resolved in, they're completely out of luck. In short, if `bar!` is part of the input of proc macro `foo!`, then when `foo!` expands `bar!` it will be treated as if it were called in the same context as `foo!` itself.
+
+By keeping macro expansion behind a builder-style API, we hopefully keep open the possibility of adding any future scoping or hygiene related configuration. For instance, a previous version of this RFC discussed an `ExpansionBuilder::call_from(self, Span)` method for adjusting the scope that a macro was expanded in.
+
+## Future Work: Macros Making Macros, Expansion Order
+
+For now, we only guarantee that proc macros can expand macros defined at the top level syntactically (i.e. macros that aren't defined in the expansion of another macro). That is, we don't try to handle things like this:
+
+```rust
+macro a() {...}
+ 
+macro b() {
+    macro c() {...}
+}
+b!();
+ 
+// `foo!` is a proc macro
+foo! {
+    macro bar(...);
+    
+    // `a!` and `b!` are available since they're defined at the top level.
+    // `c!` isn't available since it's only defined in the expansion of another macro.
+    // `bar!` isn't available since it's defined in this macro.
+}
+```
+
+Handling `foo!` calling `c!` would require the `#[proc_macro]` signature to somehow allow a proc macro to "delay" its expansion until the definition of another macro was found (that is, the implementation of `foo!` needs to somehow notify the compiler to retry its expansion if the compiler finds a definitiion of `c!` as a result of another macro expansion). 
+
+Handling `bar!` being expanded in `foo!` would require the ability to register definitions of macros with the compiler.
+
+Both of these issues can be addressed, but would involve a substantial increase in the surface area of the proc macro API that isn't necessary for handling simple but common and useful cases.
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
@@ -377,16 +257,7 @@ This proposal:
 
     The caller of `foo!` probably imagines that `baz!` will be expanded within `b`, and so prepends the call with `super`. However, if `foo!` naively calls `parse_expand` with this input then `super::baz!` will fail to resolve because macro paths are resolved relative to the location of the call. Handling this would require `parse_expand` to track the path offset of its expansion, which is doable but adds complexity.
 
-* Can't handle macros that are defined in the input, such as:
-
-    ```rust
-    foo! {
-        macro bar!(...);
-        bar!(hello, world!);
-    }
-    ```
-
-    Handling this would require adding more machinery to `proc_macro`, something along the lines of `add_definition(scope, path, tokens)`. Is this necessary for a minimum viable proposal? 
+* Can't handle macros that are defined in the input, as discussed above.
 
 # Rationale and alternatives
 [alternatives]: #alternatives
@@ -400,11 +271,7 @@ We could encourage the creation of a 'macros for macro authors' crate with imple
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
-The details of the `MacroCall` API need more thought and discussion:
-
-* Do we need a separate configurable `Context` argument that specifies how scopes are resolved, combined with a `resolve_in(self, ctx: Context)` method?
-
-* Is `call_from` necessary? Are there any known uses, or could it be emulated by patching the spans of the called macro result? Would this be better served with a more flexible API around getting and setting span parents?
+* Some of the future work discussed above would be more flexible with explicit access to something representing the compilation context, to more finely control what definitions are present or how they get looked up. How do we keep the API forward-compatible?
 
 * This API allows for a first-pass solution to the problems listed in [Motivation](#motivation). Does it interfere with any known uses of proc macros? Does it prevent any existing techniques from working or cut off potential future ones?
 
