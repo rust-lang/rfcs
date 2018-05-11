@@ -47,6 +47,8 @@ Since this feature is already implemented, no implementation guidance is necessa
 
 To document what is already implemented: any assignment operation that would result in an integral type being assigned a literal value that is outside of that integral type's range will be rejected by the compiler. This encompasses straightforward assignment: `let x: u8 = 256;`; as well as transitive assignment: `let x = 256; let y: u8 = x;`; as well as function calls: `fn foo(x: u8){} foo(256)`. This does not encompass arithmetic operations that would result in arithmetic overflow; `let x: u8 = 255 + 1;` is outside the scope of this analysis. Likewise, this analysis does not attempt to limit the actions of the `as` operator; `let x: i8 = 0xFFu8 as i8;` remains legal.
 
+Similarly, any assignment operation that would result in a floating-point type being assigned a literal value that rounds to positive or negative infinity will be rejected by the compiler.
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
