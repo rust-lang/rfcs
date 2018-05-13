@@ -1,4 +1,4 @@
-- Feature Name: escape_block
+- Feature Name: escape_blocks
 - Start Date: 2018-05-13
 - RFC PR:
 - Rust Issue:
