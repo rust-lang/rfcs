@@ -1,4 +1,4 @@
-- Feature Name: escape_label
+- Feature Name: escape_block
 - Start Date: 2018-05-12
 - RFC PR:
 - Rust Issue:
@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-Add a built-in label or construct that allows limiting the `?` propagation
+Add an `escape {}` block that allows limiting the `?` propagation
 scope, and pause error handling adjustments in favor of in-ecosystem
 experimentation.
 
@@ -27,9 +27,9 @@ discussions with language team members, include:
 * `?` also raising towards some catching scope.
 * Auto-converting final expression results in `Ok` or `Some`.
 
-This RFC proposes to add a built-in `'escape` label to the langauge
-that restricts `?` propagation space, allowing the above to be
-implemented by macros.
+This RFC proposes to add a built-in `escape` blockto the langauge
+that restricts `?` propagation space and implicitly carries an
+`'escape` label, allowing the above to be implemented by macros.
 
 This allows us to pause the current push for error handling adjustments
 and experiment with and innovate error handling extensions as macros
@@ -71,7 +71,7 @@ instead of individual features. It also gives a chance for features to
 develop as general functionality instead of being specific to error
 handling.
 
-The outlined strategy follows the basic formula:
+The outlined strategy follows the basic feature development formula:
 
 * Introduce facilities to allow the ecosystem to provide the control
   flow.
@@ -94,16 +94,17 @@ This will tell us:
   a hindrance?
 * Are there solutions to the question of default-to-ok/default-to-error.
 
-The `'escape` label is a good building block for the additional syntax
+The `escape` block is a good building block for the additional syntax
 because it doesn't have open questions about semantics.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-The `'escape` block label, together with the
-[break-with-value][break-with-value] RFC allows early exiting from a
-block instead of a function via `?`. The `?` operator will then propagate
-either to the nearest `'escape` marked block or the function boundary.
+An `escape {}` block limits the propagation of values via `?` to
+it instead of the surrounding function scope. It also adds an implicit
+`'escape` label to allow targeting the block with
+[break-with-value][break-with-value]. When there is no surrounding
+`escape` block, the `'escape` label targets the surrounding function.
 
 There is no auto-conversion.
 
@@ -112,7 +113,7 @@ There is no auto-conversion.
 ### Limiting Error Propagation
 
 ```rust
-let result: Result<_, MyError> = 'escape: {
+let result: Result<_, MyError> = escape {
     let item_a = calc_a()?;
     let item_b = calc_b()?;
     Ok(combine(item_a, item_b)?)
@@ -122,7 +123,7 @@ let result: Result<_, MyError> = 'escape: {
 ### Optional operations in sequences
 
 ```rust
-let final: Option<_> = 'escape: {
+let final: Option<_> = escape {
     let mut sum = 0;
     for item in items {
         sum += item.get_value()?;
@@ -134,7 +135,7 @@ let final: Option<_> = 'escape: {
 ### Searching for an item
 
 ```rust
-let item = 'escape: {
+let item = escape {
     for item in items {
         let data = verify(item)?;
         if matches(data) {
@@ -157,7 +158,7 @@ in the `catch_*` format given it is a big list of possible macros.
 ```rust
 macro_rules! catch {
     ($($body:tt)*) => {
-        'escape: { ::std::ops::Try::from_ok({ $($body)* }) }
+        escape { ::std::ops::Try::from_ok({ $($body)* }) }
     }
 }
 
@@ -255,11 +256,12 @@ catch_failure! { ... }
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-The only required adjustments are:
+The required adjustments are:
 
-* Introduce a new built-in `'escape` block label.
-* Change `?` to propagate to an `'escape` block instead of the
-  surrounding `fn` if one is in scope.
+* Disallow manually specifying `'escape` labels.
+* Make function scopes imply `'escape`.
+* Add `escape {}` blocks to explicitly specify `'escape` scopes.
+* Make `?`target the closest `'escape`.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -267,21 +269,13 @@ The only required adjustments are:
 * This could possibly halt or redirect exception like error handling
   syntax.
 * It requires a keyword reservation.
-* The resulting macros cannot be `try! { ... }` macros as that would
+* The resulting macros cannot be called `try! { ... }` as that would
   directly conflict with the current `try!` macro semantics.
-* The syntax would require opt-in via a dependency until things have
-  settled enough for it to be in core.
+* The exception-like syntax would require opt-in via a dependency until
+  things have settled enough for it to be in core.
 
 # Rationale and alternatives
 [alternatives]: #alternatives
-
-## Alternative Label
-
-Since the `try` keyword is already being stabilized, we could use
-`'try` as a label instead of `'escape`.
-
-The advantage is that `try` will already be reserved, the disadvantage
-is that `try` is semantically closer to error handling than `'escape`.
 
 ## Use `try {}` blocks instead
 
@@ -295,31 +289,9 @@ them. This has a couple of disadvantages:
 
 * Due to the above, `try` blocks would need to be unstable while the
   control flow semantics and syntax settles. This would also require
-  nightly for all experimentation, while the label based solution can
+  nightly for all experimentation, while the `escape` based solution can
   independently be stabilized allowing experimentation and development
   in the stable Rust ecosystem.
-
-## Use special block syntax
-
-If introducing a new label is undesirable, something like an `escape {}`
-block can be introduced with the same semantics and providing an implicit
-built-in label that can be jumped to. This would be like a `try` block,
-except it wouldn't have auto-conversion of the final result by design.
-
-This is similar to the `try {}` blocks solution above, except it
-side-steps the chicken-and-egg and nightly-lock-in problems by separating
-the general functionality from the error handling specific one.
-
-An alternative block name might, amusingly, be `catch`. It would provide
-symmetry if auto-converting `try` blocks were to be introduced:
-
-* `catch` would only be about catching things propagated by `?`.
-* `try` is an error handling variant of `catch` providing auto-Ok
-  conversion.
-
-A solution like this would allow ease of use for exception like error
-handling syntax, while also not making alternative uses (not defaulting
-to `Ok`, uses other than error handling) second class.
 
 ## Do Nothing
 
@@ -348,21 +320,20 @@ stabilisation, even in relation to error handling:
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
-## Block or Label?
-
-Should the feature be backed by a built-in label `'escape: { ... }` or
-by a block `escape { ... }`.
-
 ## As usual, the name
 
 Should this be named `escape`?
 
-Alternatives are:
+An alternative might be, amusingly, `catch`. This would provide a nice
+symmetry:
 
-* `'try` if the label variant is used.
-* `'catch` to signify a general `?`-catching facility.
-* Something completely different.
+* `catch` would only be about catching things propagated by `?`
+  without additional semantics.
+* `try` is an error handling variant of `catch` providing auto-Ok
+  wrapping.
 
+The previous `try`/`catch` discussions can probably provide for
+additional good ideas for names.
 
 
 [break-with-value]: rust-lang/rfcs#2046
