@@ -27,9 +27,10 @@ discussions with language team members, include:
 * `?` also raising towards some catching scope.
 * Auto-converting final expression results in `Ok` or `Some`.
 
-This RFC proposes to add a built-in `escape` blockto the langauge
-that restricts `?` propagation space and implicitly carries an
-`'escape` label, allowing the above to be implemented by macros.
+This RFC proposes to add an `escape` block to the language. This would
+restrict the `?` propagation space and provide an explicit `'escape`
+label that points to the function scope if no `escape` blocks exist in
+the outer scope.
 
 This allows us to pause the current push for error handling adjustments
 and experiment with and innovate error handling extensions as macros
@@ -42,7 +43,8 @@ notably, the expected keywords can still be reserved as is planned.
 
 The feature will also provide scoped early-exiting for all other kinds
 of macro based control flow, or to composably build early-exiting
-functionality for uses such as generating parsing code.
+functionality for uses such as generating parsing code. This is currently
+hard to achieve without also breaking other forms of control flow.
 
 The open questions in the error problem space that can be iterated by
 this strategy include:
@@ -94,14 +96,15 @@ This will tell us:
   a hindrance?
 * Are there solutions to the question of default-to-ok/default-to-error.
 
-The `escape` block is a good building block for the additional syntax
-because it doesn't have open questions about semantics.
+The `escape` block with the additional label is a good building block for
+the additional syntax because it doesn't have open questions about
+semantics.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-An `escape {}` block limits the propagation of values via `?` to
-it instead of the surrounding function scope. It also adds an implicit
+An `escape {}` block limits the propagation of values via `?` to the block
+instead of the surrounding function scope. It also adds an implicit
 `'escape` label to allow targeting the block with
 [break-with-value][break-with-value]. When there is no surrounding
 `escape` block, the `'escape` label targets the surrounding function.
@@ -123,7 +126,7 @@ let result: Result<_, MyError> = escape {
 ### Optional operations in sequences
 
 ```rust
-let final: Option<_> = escape {
+let maybe: Option<_> = escape {
     let mut sum = 0;
     for item in items {
         sum += item.get_value()?;
@@ -188,7 +191,7 @@ fn open(path: &Path) -> Result<File, Error> {
 ### Finalising a block with a success value
 
 ```rust
-macro_rules! final {
+macro_rules! produce {
     ($value:expr) => {
         break 'escape ::std::ops::Try::from_ok($value)
     }
@@ -196,7 +199,7 @@ macro_rules! final {
 
 let value: Option<_> = catch! {
     if let Some(cached) = cache.get(&id) {
-        final!(cached);
+        produce!(cached);
     }
     let new = calc();
     cache.insert(id, new);
@@ -330,17 +333,16 @@ symmetry:
 * `catch` would only be about catching things propagated by `?`
   without additional semantics.
 * `try` is an error handling variant of `catch` providing auto-Ok
-  wrapping.
+  wrapping. It would semantically be "try this and `catch` errors".
 
 The previous `try`/`catch` discussions can probably provide for
 additional good ideas for names.
 
-
-[break-with-value]: rust-lang/rfcs#2046
-[reserve-try]: rust-lang/rfcs#2388
-[reserve-try-tracking]: rust-lang/rust#50412
-[auto-wrapping]: rust-lang/rust#41414
-[throw-expressions]: rust-lang/rfcs#2426
+[break-with-value]: https://github.com/rust-lang/rfcs/pull/2046
+[reserve-try]: https://github.com/rust-lang/rfcs/pull/2388
+[reserve-try-tracking]: https://github.com/rust-lang/rust/issues/50412
+[auto-wrapping]: https://github.com/rust-lang/rust/issues/41414
+[throw-expressions]: https://github.com/rust-lang/rfcs/pull/2426
 [trait-based]: https://github.com/rust-lang/rfcs/blob/master/text/0243-trait-based-exception-handling.md
 [trait-based-break]: https://github.com/rust-lang/rfcs/blob/master/text/0243-trait-based-exception-handling.md#early-exit-from-any-block
 
