@@ -123,12 +123,13 @@ No change is made to overload resolution of method calls. This means that calls
 which are invalid today due to preferring `T` over `&T` may now be legal,
 selecting to move out of the smart pointer rather than giving an error.
 
-There is an ambiguity in a method call expression when the `Target` type of the
-receiver is a reference, and that reference type has a method taking `self`. In
-this case, autodereference could either dereference via `deref_move` or via
-`deref` or `defer_mut`. In this case, it will prefer the latter (for `deref`, it
-is a special case of the `Copy` rule above, but for `deref_mut` it is not) to
-avoid unnecessarily moving out of the receiver.
+There is an ambiguity in a method call expression when `Target = &mut T` and
+`&mut T` has a method taking `self` by move. In this case, the compiler could
+either call `deref_mut` to get a `&mut &mut T`, then derefence to get the `&mut
+T` to pass into the method, or it could call `deref_move` to get a `&mut T`
+directly. The former is chosen because it avoids moving the pointer. The same
+ambiguity arises with `&T`, but is already accounted for by the `Copy` rule
+since shared references are `Copy`.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -139,7 +140,7 @@ Or at least, it would if `Box` wasn't already complicating it in the same way.
 
 ## Copy behaviour is unintuitive in generic cases
 
-If a type has nontrivial/side-effectful `defer_move`, it may be slightly
+If a type has nontrivial/side-effectful `deref_move`, it may be slightly
 confusing why it is not used for `Copy` types in non-generic code, but is used
 in generic code.
 
@@ -202,7 +203,7 @@ bound on `!Copy`.
 
 The status quo is disfavoured because it requires special-casing `Box` in the
 compiler, privileging it over other smart pointers. While there's no obvious
-call in the stdlib for `DerefMut` other than `Box` (see below), it prevents
+call in the stdlib for `DerefMove` other than `Box` (see below), it prevents
 other library authors from writing similar code.
 
 ## `IndexMove` trait
@@ -296,7 +297,9 @@ It's not clear to me which, if any, of the smart pointers above should implement
 moving out of the pointer could cause issues. I think that it's reasonable to
 start with only `Box` for now:
 
-* `Cow` does not implement `DerefMut`, so it is ineligible.
+* `Cow` does not implement `DerefMut`, so it is ineligible. In any case, because
+  `into_owned()` is potentially expensive, it probably should not be a
+  `DerefMove` implementation.
 * `PeekMut`'s `pop` has side effects on the containing collection, and so it
   seems best to require it to be moved explicitly.
 * Moving out of a `ManualDrop` causes the newly-moved value to regain normal
