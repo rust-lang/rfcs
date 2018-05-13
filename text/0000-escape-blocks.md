@@ -28,7 +28,7 @@ discussions with language team members, include:
 * Auto-converting final expression results in `Ok` or `Some`.
 
 This RFC proposes to add an `escape` block to the language. This would
-restrict the `?` propagation space and provide an explicit `'escape`
+restrict the `?` propagation space and provide an `'escape`
 label that points to the function scope if no `escape` blocks exist in
 the outer scope.
 
