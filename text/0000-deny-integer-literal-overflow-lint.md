@@ -60,3 +60,5 @@ No drawbacks that anyone can think of. Even the risk of breakage is remote, sinc
 The impact of not doing this will be that it is slightly harder to learn and use Rust, and users will be grumpy when they make obvious bugs that the compiler could have prevented but perplexingly chose not to.
 
 An alternative to this proposal would be to deny the ability to write overflowing integer literals while still allowing one to write overlarge floating-point literals. This would involve splitting the `overflowing_literals` lint into two separate lints, one for ints and one for floats, and denying only the former.
+
+Another alternative would be to turn these warnings into hard errors rather than merely denying them; the difference being that in this case nobody would be able to re-enable this behavior. I actually think this would be the proper course of action, however I'm just not sure if this is strictly allowed by the rules of what editions are allowed to do.
