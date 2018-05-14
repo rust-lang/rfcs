@@ -7,7 +7,7 @@
 [summary]: #summary
 
 This RFC proposes that closure capturing should be minimal rather than maximal.
-Specifically, existing rules regarding borrowing and moving disjoint fields
+Conceptually, existing rules regarding borrowing and moving disjoint fields
 should be applied to capturing. If implemented, the following code examples
 would become valid:
 
@@ -54,7 +54,7 @@ pub fn update(&mut self) {
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-The borrow checker understands structs sufficiently to know that it's possible
+Rust understands structs sufficiently to know that it's possible
 to borrow disjoint fields of a struct simultaneously. Structs can also be
 destructed and moved piece-by-piece. This functionality should be available
 anywhere, including from within closures:
@@ -100,6 +100,56 @@ impl FirstDuplicated {
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
+
+This RFC does not propose any changes to borrowck. Instead, the MIR generation
+for closures should be altered to produce the minimal capture. Additionally, a
+hidden `repr` for closures might be added, which could reduce closure size
+through awareness of the new capture rules *(see unresolved)*.
+
+A capture is a list of expressions, which we will call "capture items". These
+expressions are parts of the closure body that will be pre-evaluated when the
+closure is created.
+
+If the closure is `move`:
+
+- For each binding used in the closure, add a capture item which moves the
+value of that binding.
+
+Otherwise:
+
+
+- For each binding used in the closure, add a capture item which borrows the
+value of that binding. The mutability of this borrow must be inferred from the
+closure body.
+
+Next, the capture list is iterativly narrowed. When an item is narrowed, it is
+removed from this list, but at least one new item is generated. Remember that
+each capture item is some pre-evaluatable part of the closure body. Narrowing
+stops when all items can not be narrowed further.
+
+Any field of a captured struct is considered "used" if the body of the closure
+requires its value.
+
+Any item that evaluates to borrowed struct can be narrowed so long as narrowing
+does not produce any expression that additionally calls a function or
+overloaded deref. When a borrowed struct is narrowed, new items are generated
+which similarly borrow each used field.
+
+Any item that evaluates to an owned struct can be narrowed so long as the
+struct does not implement `Drop`. Additionally, we might forbid narrowing if
+the struct contains unused fields that implement `Drop`. This will prevent the
+drop order of those fields from changing, but feels strange and non-orthogonal
+*(see unresolved)*. Encountering this case at all could trigger a warning, so
+that this extra rule could exist but be removed over an epoc *(see
+unresolved)*. When an owned struct is narrowed, new items are generated which
+move each used field.
+
+It has also been proposed that any item `x`, which evaluates to `Box` can be
+narrowed to `Deref::deref(x)`.  *(see unresolved)*. Potentially this could be
+generalized over some concept of a "pure" deref, as marked by some new
+annotation or trait *(see unresolved)*.
+
+
 
 There exists an nonoptimal desugar/workaround that covers all cases via the
 following expansion:
