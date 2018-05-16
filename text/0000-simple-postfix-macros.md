@@ -146,9 +146,9 @@ it appears at the *end* of, which has the potential to create significantly
 more confusion when reading the code.
 
 The approach proposed in this RFC does not preclude specifying a richer system
-in the future; such a future system could use a designator other than `self`,
-or could easily extend this syntax to add further qualifiers on `self` (for
-instance, `$self:self:another_designator` or `$self:self(argument)`).
+in the future; such a future system could use a new designator other than
+`self`, or could easily extend this syntax to add further qualifiers on `self`
+(for instance, `$self:self:another_designator` or `$self:self(argument)`).
 
 We could define a built-in postfix macro version of `await!`, without providing
 a means for developers to define their own postfix macros. This would address
@@ -166,6 +166,14 @@ elevating them to a terse symbolic operator.
 We could do nothing at all, and leave `await!` in its current macro form, or
 potentially change it into a language keyword in the future. In this case, the
 problem of integrating `await` with method chains will remain.
+
+In the syntax to define a postfix macro, we could use just `$self` rather than
+`$self:self`. `$self` is not currently valid syntax, so we could use it for
+this purpose without affecting any existing valid macro. This would make such
+declarations look closer to a method declaration, which uses `self` without a
+type. However, macros do currently allow `self` as the name of a macro argument
+when used with a designator, such as `$self:expr`; this could lead to potential
+confusion, and would preclude some approaches for future extension.
 
 # Prior art
 [prior-art]: #prior-art
