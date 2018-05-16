@@ -114,7 +114,9 @@ expression they're invoked on. This includes whether the expression has type
 expression will have that same type.
 
 Since `$self` represents an internal temporary location created by the
-compiler, calling `stringify!` on `$self` will just return `"$self"`.
+compiler, calling `stringify!` on `$self` will just return `"$self"`. If passed
+to another macro, `$self` will only match a macro argument using a designator
+of `:expr`, `:tt`, or `:self`.
 
 Using the `self` designator on any macro argument other than the first will
 produce a compile-time error.
