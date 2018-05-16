@@ -178,6 +178,13 @@ would require selecting and assigning an appropriate symbol. This RFC allows
 fitting constructs that affect control flow into method chains without
 elevating them to a terse symbolic operator.
 
+Rather than writing `expr.macroname!()`, we could write `expr.!macroname()` or
+similar, placing the `!` closer to the `.` of the method call. This would place
+greater attention on the invocation, but would break the similarity with
+existing macro naming that people have grown accustomed to spotting when
+reading code. This also seems more likely to get confused with the prefix unary
+`!` operator.
+
 We could do nothing at all, and leave `await!` in its current macro form, or
 potentially change it into a language keyword in the future. In this case, the
 problem of integrating `await` and similar constructs with method chains will
