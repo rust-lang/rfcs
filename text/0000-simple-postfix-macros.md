@@ -144,8 +144,12 @@ further qualifiers on `self` (for instance, `$self:self:another_designator` or
 `$self:self(argument)`).
 
 We could define a built-in postfix macro version of `await!`, without providing
-a means for developers to define their own postfix macros. This would
-also prevent developers from.
+a means for developers to define their own postfix macros. This would address
+the specific issue with `await!`, but would not help developers create
+solutions for similar future issues. This would perpetuate the problem of
+requiring changes to the language and compiler to solve such problems, rather
+than allowing developers to experiment with solutions in the broader Rust
+ecosystem.
 
 We could define a new postfix operator for `await!`, analogous to `?`. This
 would require selecting and assigning an appropriate symbol. This RFC allows
