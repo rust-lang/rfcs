@@ -147,6 +147,20 @@ No equivalent means exists to define a postfix proc macro; this RFC
 intentionally leaves specification of such means to future RFCs, for future
 development and experimentation.
 
+Macros have historically not interacted with the type system, while method
+calls (`expr.method()`) do type-based dispatch based on the type or trait of
+the expression. In introducing postfix macros that look similar to method
+calls, this proposal does not attempt to introduce type-based dispatch of
+macros at the same time; an invocation `expr.m!()` does not in any way depend
+on the type of `expr` (though the expansion of the macro may have expectations
+about that type that the compiler will still enforce). A future RFC may
+introduce type-based dispatch for postfix macros; however, any such future RFC
+seems likely to still provide a means of writing postfix macros that apply to
+any type. This RFC provides a means to implement that subset of postfix macros
+that apply to any type, enabling a wide range of language experimentation
+(particularly in readability and usability) that has previously required
+changes to the language itself.
+
 # Rationale and alternatives
 [alternatives]: #alternatives
 
