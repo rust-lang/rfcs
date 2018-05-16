@@ -102,7 +102,7 @@ macro_rules! await {
     ($e:expr) => ({
         // ... Current body of await! ...
     })
-    ($self:$self) => (
+    ($self:self) => (
         await!($self)
     )
 }
