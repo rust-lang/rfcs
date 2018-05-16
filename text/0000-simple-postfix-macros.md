@@ -113,7 +113,8 @@ expression they're invoked on. This includes whether the expression has type
 `T`, `&T`, or `&mut T`. The internal binding the compiler creates for that
 expression will have that same type.
 
-Calling `stringify!` on `$self` will return `"$self"`.
+Since `$self` represents an internal temporary location created by the
+compiler, calling `stringify!` on `$self` will just return `"$self"`.
 
 Using the `self` designator on any macro argument other than the first will
 produce a compile-time error.
