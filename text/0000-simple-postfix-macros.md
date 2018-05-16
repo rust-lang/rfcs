@@ -138,11 +138,17 @@ development and experimentation.
 Rather than this minimal approach, we could define a full postfix macro system
 that allows processing the preceding expression without evaluation. This would
 require specifying how much of the preceding expression to process unevaluated,
-including chains of such macros. The approach proposed in this RFC does not
-preclude specifying a richer system in the future; such a future system could
-use a designator other than `self`, or could easily extend this syntax to add
-further qualifiers on `self` (for instance, `$self:self:another_designator` or
-`$self:self(argument)`).
+including chains of such macros. Furthermore, unlike existing macros, which
+wrap *around* the expression whose evaluation they modify, if a postfix macro
+could arbitrarily control the evaluation of the method chain it postfixed, such
+a macro could change the interpretation of an arbitrarily long expression that
+it appears at the *end* of, which has the potential to create significantly
+more confusion when reading the code.
+
+The approach proposed in this RFC does not preclude specifying a richer system
+in the future; such a future system could use a designator other than `self`,
+or could easily extend this syntax to add further qualifiers on `self` (for
+instance, `$self:self:another_designator` or `$self:self(argument)`).
 
 We could define a built-in postfix macro version of `await!`, without providing
 a means for developers to define their own postfix macros. This would address
