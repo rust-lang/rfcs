@@ -128,6 +128,9 @@ list (`($self:self)`, with the closing parenthesis as the next token after
 other tokens. Any subsequent tokens after the `,` will match what appears
 between the delimiters after the macro name in its invocation.
 
+A macro may attach the designator `self` to a parameter not named `$self`, such
+as `$x:self`. Using `$self:self` is a convention, not a requirement.
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
