@@ -180,7 +180,8 @@ elevating them to a terse symbolic operator.
 
 We could do nothing at all, and leave `await!` in its current macro form, or
 potentially change it into a language keyword in the future. In this case, the
-problem of integrating `await` with method chains will remain.
+problem of integrating `await` and similar constructs with method chains will
+remain.
 
 In the syntax to define a postfix macro, we could use just `$self` rather than
 `$self:self`. `$self` is not currently valid syntax, so we could use it for
