@@ -122,6 +122,12 @@ produce a compile-time error.
 Wrapping any form of repetition around the `self` argument will produce a
 compile-time error.
 
+If the `$self:self` argument does not appear by itself in the macro argument
+list (`($self:self)`, with the closing parenthesis as the next token after
+`$self:self`), then it must have a `,` immediately following it, prior to any
+other tokens. Any subsequent tokens after the `,` will match what appears
+between the delimiters after the macro name in its invocation.
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
