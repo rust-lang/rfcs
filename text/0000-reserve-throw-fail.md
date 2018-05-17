@@ -7,6 +7,8 @@
 [summary]: #summary
 
 The keywords `throw` and `fail` are reserved in edition 2018 and beyond.
+The keywords will still be permitted as attribute names and as macros,
+i.e: `#[fail]` and `throw!(..)` is permissible.
 
 # Motivation
 [motivation]: #motivation
@@ -39,6 +41,10 @@ to refer to `fail`, used in a crate from 2015, from an edition 2018 crate.
 
 The words `fail` and `throw` are reserved as keywords in edition 2018 and
 added to the [list of keywords].
+
+To ensure that the `failure` crate's `#[fail]` crate is not broken nor
+macros called `throw!(..)`, those uses of `fail` and `throw` as macros
+and as attribute names will still work on edition 2018.
 
 # Drawbacks
 [drawbacks]: #drawbacks
