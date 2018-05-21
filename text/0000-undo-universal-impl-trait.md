@@ -231,7 +231,9 @@ strengthen it:
     because they will maintain and contribute to codebases they haven’t read nor written code for
     before.
   - Turbofishing is impossible with `impl Trait`, forcing you to use type ascription in other
-    places.
+    places. However, this is mitigated by the fact the arguments can be inferred most of the time.
+    There are still some cases in which you cannot (when you pass a higher-kinded type, e.g.
+    `None` – you’ll have to use a `let` binding or something similar).
   - The initial RFC and especially the [dialectical ratchet] seem to state that people do the same
     thing in Java in C#. They don’t. In those languages, the functions using such similar syntax
     are completely monomorphic (dynamic dispatch). The equivalent in Rust would be the trait object
