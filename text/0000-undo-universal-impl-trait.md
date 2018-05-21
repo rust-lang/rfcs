@@ -110,7 +110,7 @@ This argument seems sound but again is wrong. Consider:
 fn foo<T>(a: T, b: T, c: impl Debug) where T: Add<Output = T> + Copy
 ```
 
-This function has three type variables to substitute to be completely monomorphized. However, it’s
+This function has two type variables to substitute to be completely monomorphized. However, it’s
 very hard to see it at first because one of the variables is hidden. Worse, the ergonomics argument
 doesn’t stand here because you can see you **have** to read the type variables in order to get what
 you can do with the variables.
