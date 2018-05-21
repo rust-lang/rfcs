@@ -232,6 +232,10 @@ strengthen it:
     before.
   - Turbofishing is impossible with `impl Trait`, forcing you to use type ascription in other
     places.
+  - The initial RFC and especially the [dialectical ratchet] seem to state that people do the same
+    thing in Java in C#. They don’t. In those languages, the functions using such similar syntax
+    are completely monomorphic (dynamic dispatch). The equivalent in Rust would be the trait object
+    or `dyn Trait` syntax.
   - [This is a proposition]: in the future, we could do some A/B testing to determine
     which change to Rust makes it easier to learn prior to stabilization. Also, when features are
     introduced that are controversial or unorthogonal (e.g. this or the matching auto ref), the
