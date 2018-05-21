@@ -113,6 +113,10 @@ expression they're invoked on. This includes whether the expression has type
 `T`, `&T`, or `&mut T`. The internal binding the compiler creates for that
 expression will have that same type.
 
+Macros defined using this mechanism follow exactly the same namespace and
+scoping rules as any other macro. If a macro accepting a `$self:self` argument
+is in scope, Rust code may call it on any object.
+
 Since `$self` represents an internal temporary location created by the
 compiler, calling `stringify!` on `$self` will just return `"$self"`. If passed
 to another macro, `$self` will only match a macro argument using a designator
