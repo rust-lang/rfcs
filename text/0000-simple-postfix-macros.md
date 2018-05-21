@@ -29,7 +29,9 @@ attempting to combine properties of macros (such as unevaluated arguments) with
 properties of methods (such as type-based or trait-based dispatch). This RFC
 proposes a minimal change to the macro system that allows defining a simple
 style of postfix macro, designed specifically for `await!` and for future cases
-like `try!` and `await!`, without blocking potential future extensions.
+like `try!` and `await!`, without blocking potential future extensions. In
+particular, this RFC does not in any way preclude a future implementation of
+postfix macros with full type-based or trait-based dispatch.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
