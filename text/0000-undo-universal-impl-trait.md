@@ -127,11 +127,11 @@ Now consider:
 fn add_self(x: impl Add<Output = impl Copy> + Copy)
 ```
 
-You can see the duplication here and the overwhelming confusion that both the `impl Trait` will
-resolve to the same type, even though they don’t have the same contract, which is impossible to
-guess from the interface while it could. This is legal because we only talk about two contracts here
-and the function will pick a type at the union (it must be `Add + Copy` and `Copy`) but you also
-have that weird `Output` contract as well.
+You can see the duplication here and the fact that both the `impl Trait` will resolve to the same
+type, even though they don’t have the same contract, which is impossible to guess from the interface
+while it could. This is legal because we only talk about two contracts here and the function will
+pick a type at the union (it must be `Add + Copy` and `Copy`) but you also have that weird `Output`
+contract as well.
 
 Even weirder:
 
