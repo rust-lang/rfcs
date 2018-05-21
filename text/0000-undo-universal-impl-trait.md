@@ -172,7 +172,71 @@ already advanced proficient Rustaceans. Among the issues:
 
 This RFC was written with respectful discussions in mind. If something can be done, it can also be
 undone and this RFC strongly thinks it would be better for the community to undo [RFC 1951] for all
-the reasons listed above.
+the reasons listed above. Also, here are a few other reasons people commented on the current RFC to
+strengthen it:
+
+  - The main argument was that `impl Trait` instead of generics would make our life easier, for both
+    newcomers and proficient users. The many threads created and confusion out there is a proof by
+    itself that reality is way more blurry than expected.
+  - `impl Trait` for argument position is non-orthogonal, which makes it harder to decide which
+    syntax to use since there are now two (even three) ways. It’s very likely that even with the
+    book, this question will come up over and over.
+  - It’s not that easier to learn than generics, because it looks very different from the generics /
+    template syntax programmers are already familiar with (C++, C#, Java, D, etc.).
+  - Universal and existential quantification shouldn’t be conflate. Being aware of the difference
+    is a plus for someone to learn Rust. `impl Trait` should only be used for the existentially
+    quantified variable and `<T: Trait> / where T: Trait` should be used for universally quantified
+    variables. The `impl Trait` should stay in the return location and `let`, `const` and `static`
+    bindings.
+  - Because Rust is still a hard language to learn, newcomers will still have to read the book
+    several times or maybe spend some time practicing, at least. The argument stating *“having
+    `impl Trait` for argument position allows postponing introducing generics until later in the
+    book”* doesn’t really make much sense then.
+  - For *most* newcomers, as they come from a mainstream / popular language, they are already used
+    to the angle bracket notation, which is misleading if you consider the `impl Trait` syntax
+    *plus* the angle bracket notation.
+  - People seem confused with the three syntaxes.
+  - What makes Rust hard to learn is not universal quantification. It’s more about the borrow
+    checker and linear / affine type system. The raw and bare concept of universal quantification is
+    actually pretty simple to wrap your fingers around.
+  - The argument of symmetry (having `impl Trait` in argument position mirroring the `impl Trait` in
+    return position) doesn’t seem to account for history: we’ve been using Rust without `impl Trait`
+    in argument position for years now and no one has ever felt the need to mirror existential
+    quantification with universal quantification in argument position.
+  - People can already write a lot of code without even needing polymorphic code / universal
+    quantification, especially newcomers. Education / teching about type variables and universal
+    quantification can be postponed to the end of the book if the authors are afraid it’s too hard
+    for newcomers.
+  - It seems like proficient developers have no reason to use `impl Trait` in argument position, so
+    why encourage newcomers to do so? What is the **real value** added by such a feature?
+  - About the [dialectical ratchet], it may apply to references / lifetimes but **not** to
+    `impl Trait` for argument position. The concepts of references and lifetimes complement each
+    other, they are used together, not only by newcomers. **These are orthogonal concepts**. Having
+    newcomers first learn `impl Trait` for arguments to express universally quantified generics
+    means that they still will have to unlearn or add a learning exception later when they get
+    introduced to type variables, which might confuse them because of two overlapping distinct
+    constructs to actually express the same thing – plus the former is strictly less powerful. It’s
+    a bit akin to `<T: Trait>` vs. `<T> where T: Trait`. You’re firstly introduced to the former
+    then understand the second one is more powerful (because you cannot express bounds on `Self`
+    with the former). So people actualy use `where` clauses instead of the former, and they’re
+    right. Why would you bother learning two ways to express the same thing when one of them is the
+    the other augmented with a bit more power – bounds on `Self`?
+  - The Rust language is already a very, very complex language with a lot of concepts people **will
+    have to learn**, should it be through the book or any other tutorials. Making Rust easy to
+    **use** and easy to **remember** is as important as making it easy to learn and making so is via
+    the documentation, tutorials and the book, not via the language design itself. We can improve
+    the documentation about generics without affecting the current design.
+  - Overlapping concepts harm the consistency and orthoganality of a language. Having several ways
+    to do something forces people to know all the ways – even if they always prefer using one –
+    because they will maintain and contribute to codebases they haven’t read nor written code for
+    before.
+  - [This is a proposition]: in the future, we could do some A/B testing to determine
+    which change to Rust makes it easier to learn prior to stabilization. Also, when features are
+    introduced that are controversial or unorthogonal (e.g. this or the matching auto ref), the
+    debate thread should be more visible and open for longer. A lot of people only noticed about
+    [RFC 1951] a few days / weeks ago, when the feature was already stabilized (or about to be)
+    because it was hiding in a GitHub thread. Maybe we should have official communication or maybe
+    a dedicated section in the [TWiR]?
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -193,6 +257,9 @@ people to type variables and trait / where clauses.
 The main drawback is that people are already starting to write Rust code with this new feature. It
 will then have an impact on the existing codebase. However, as shown in the current document, moving
 away from `impl Trait` in argument position is straight-forward and lossless.
+
+It also introduces a breaking change that would invalidate both internal and public code. This is a
+serious issue to take into account.
 
 # Rationale and alternatives
 [alternatives]: #alternatives
@@ -236,3 +303,5 @@ as it’s easy to read the same in Rust with `where` clauses.
 [RFC 1951]: https://github.com/phaazon/rfcs/blob/undo-universal-impl-trait/text/1951-expand-impl-trait.md
 [RFC 2071]: https://github.com/rust-lang/rfcs/blob/master/text/2071-impl-trait-type-alias.md
 [The Book]: https://doc.rust-lang.org/book/second-edition/index.html
+[dialectical ratchet]: https://github.com/rust-lang/rfcs/pull/2071#issuecomment-329026602
+[TWiR]: https://this-week-in-rust.org
