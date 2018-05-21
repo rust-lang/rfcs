@@ -233,6 +233,6 @@ as it’s easy to read the same in Rust with `where` clauses.
 [unresolved]: #unresolved-questions
 
 [RFC 1522]: https://github.com/rust-lang/rfcs/blob/master/text/1522-conservative-impl-trait.md
-[RFC 1951]: https://github.com/rust-lang/rfcs/blob/master/text/2071-impl-trait-type-alias.md
+[RFC 1951]: https://github.com/phaazon/rfcs/blob/undo-universal-impl-trait/text/1951-expand-impl-trait.md
 [RFC 2071]: https://github.com/rust-lang/rfcs/blob/master/text/2071-impl-trait-type-alias.md
 [The Book]: https://doc.rust-lang.org/book/second-edition/index.html
