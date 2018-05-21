@@ -230,6 +230,8 @@ strengthen it:
     to do something forces people to know all the ways – even if they always prefer using one –
     because they will maintain and contribute to codebases they haven’t read nor written code for
     before.
+  - Turbofishing is impossible with `impl Trait`, forcing you to use type ascription in other
+    places.
   - [This is a proposition]: in the future, we could do some A/B testing to determine
     which change to Rust makes it easier to learn prior to stabilization. Also, when features are
     introduced that are controversial or unorthogonal (e.g. this or the matching auto ref), the
