@@ -12,14 +12,13 @@ smallest set of mechanisms needed to support async/await with borrowing and
 interoperation with the futures crate. Those mechanisms are:
 
 - The task system of the futures crate, which will be moved into `libcore`
-- A new `Async` trait, which integrates the [`Pin` APIs][pin] with the task system to
+- A new `Future` trait, which integrates the [`PinMut` APIs][pin] with the task system to
   provide async values that can interoperate with futures.
 
 [pin]: https://github.com/rust-lang/rfcs/pull/2349
 [companion RFC]: https://github.com/rust-lang/rfcs/pull/2394
 
-The RFC also covers the intended ecosystem migration path, as well as the
-possibility of eventually deprecating `Future` in favor of `Async`.
+The RFC also covers the intended ecosystem migration path.
 
 # Motivation
 [motivation]: #motivation
@@ -45,8 +44,8 @@ fn function<'a>(argument: &'a str) -> _Anonymous<'a, usize> {
 ```
 
 Again like a closure the anonymous type is only usable through the trait it
-implements: `Async`. The goal of this RFC is to provide a concrete proposal for
-this `Async` trait, based on the work pioneered by the futures crate.
+implements: `Future`. The goal of this RFC is to provide a concrete proposal for
+this `Future` trait, based on the work pioneered by the futures crate.
 
 A secondary benefit of this RFC is that it enshrines the *task system* currently
 defined by the futures crate into `libcore`, thereby standardizing and
@@ -56,40 +55,38 @@ mechanism.
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-The `Async` trait represents an *asynchronous* and lazy computation that may
+The `Future` trait represents an *asynchronous* and lazy computation that may
 eventually produce a final value, but doesn't have to block the current thread
 to do so.
 
-Async values can be constructed through `async` blocks or `async` functions, e.g.,
+Futures can be constructed through `async` blocks or `async` functions, e.g.,
 
 ```rust
 async fn read_frame(socket: &TcpStream) -> Result<Frame, io::Error> { ... }
 ```
 
-This `async` function, when invoked, produces an async value that represents the
+This `async` function, when invoked, produces a future that represents the
 completion of reading a frame from the given socket. The function signature
 is equivalent to:
 
 ```rust
 fn read_frame<'sock>(socket: &'sock TcpStream)
-    -> impl Async<Output = Result<Frame, io::Error>> + 'sock;
+    -> impl Future<Output = Result<Frame, io::Error>> + 'sock;
 ```
 
-Other async functions can *await* this asynchronous value; see the [companion
+Other async functions can *await* this future; see the [companion
 RFC] for full details.
 
-In addition to `async fn` definitions, async values can be built using adapters on
-the `Async` trait, much like with `Iterator`s. The standard library includes a
-number of basic adapters (described in the reference below), while some
-particularly interesting variants are iterating in the crates.io ecosystem
-first.
+In addition to `async fn` definitions, futures can be built using adapters, much
+like with `Iterator`s. Initially these adapters will be provided entirely "out
+of tree", but eventually they will make their way into the standard library.
 
 Ultimately asynchronous computations are executed by *tasks*, which are
 lightweight threads. In particular, an *executor* is able to "spawn" a
-`()`-producing `Async` value as an independent task; these tasks are then
+`()`-producing `Future` as an independent task; these tasks are then
 cooperatively scheduled onto one or more operating system threads. The
 `Executor` trait defines this interface, and the `task` module provides a host
-of related definitions needed when manually implementing `Async` values or
+of related definitions needed when manually implementing `Future`s or
 executors.
 
 # Reference-level explanation
@@ -216,7 +213,7 @@ pub struct TaskObj { .. }
 
 impl TaskObj {
     /// Create a new `TaskObj` by boxing the given future.
-    pub fn new<A: Async<Output = ()> + Send + 'static>(f: A) -> TaskObj;
+    pub fn new<A: Future<Output = ()> + Send + 'static>(f: A) -> TaskObj;
 }
 
 /// Provides the reason that an executor was unable to spawn.
@@ -249,7 +246,7 @@ we would deprecate `spawn_obj` and add a default `spawn` method:
 
 ```rust
 trait Executor {
-    fn spawn(&mut self, task: Async<Output = ()> + Send) -> Result<(), SpawnErrorKind> {
+    fn spawn(&mut self, task: Future<Output = ()> + Send) -> Result<(), SpawnErrorKind> {
         self.spawn_obj(TaskObj::new(task))
     }
     // ...
@@ -323,7 +320,7 @@ impl<'a> Context<'a> {
     ///
     /// This method will panic if the default executor is unable to spawn.
     /// To handle executor errors, use the `executor` method instead.
-    pub fn spawn(&mut self, f: impl Async<Output = ()> + 'static + Send);
+    pub fn spawn(&mut self, f: impl Future<Output = ()> + 'static + Send);
 
     /// Get the default executor associated with this task.
     ///
@@ -337,15 +334,13 @@ impl<'a> Context<'a> {
 
 Note that the `spawn` method here will box until `Executor` is added.
 
-## `core::ops` module
+## `core::future` module
 
-With all of the above task infrastructure in place, defining `Async` is
-straightforward. Since it's a "lang item", i.e. a trait that the language itself
-treats specially when compiling `async` blocks, the trait goes into the
-`core::ops` module, much as with the `Fn` family of traits.
+With all of the above task infrastructure in place, defining `Future` is
+straightforward:
 
 ```rust
-pub trait Async {
+pub trait Future {
     /// The type of value produced on completion.
     type Output;
 
@@ -359,14 +354,14 @@ pub trait Async {
     /// - `Poll::Pending` if the value is not ready yet.
     /// - `Poll::Ready(val)` with the result `val` upon completion.
     ///
-    /// Once an async value has completed, clients should not `poll` it again.
+    /// Once a future has completed, clients should not `poll` it again.
     ///
-    /// When an async value is not ready yet, `poll` returns `Poll::Pending`.
-    /// The computation will *also* register the interest of the current task in the
-    /// value being produced. For example, if the async value represents the availability
+    /// When a future is not ready yet, `poll` returns `Poll::Pending`.
+    /// The future will *also* register the interest of the current task in the
+    /// value being produced. For example, if the future represents the availability
     /// of data on a socket, then the task is recorded so that when data arrives,
     /// it is woken up (via `cx.waker()`). Once a task has been woken up,
-    /// it should attempt to `poll` the computation again, which may or may not
+    /// it should attempt to `poll` the future again, which may or may not
     /// produce a final value at that time.
     ///
     /// Note that if `Pending` is returned it only means that the *current* task
@@ -375,7 +370,7 @@ pub trait Async {
     ///
     /// # Runtime characteristics
     ///
-    /// `Async` values are *inert*; they must be *actively* `poll`ed to make
+    /// `Future` values are *inert*; they must be *actively* `poll`ed to make
     /// progress, meaning that each time the current task is woken up, it should
     /// actively re-`poll` pending computations that it still has an interest in.
     /// Usually this is handled automatically by `async`/`await` notation or
@@ -398,16 +393,16 @@ pub trait Async {
     ///
     /// # Panics
     ///
-    /// Once an async value has completed (returned `Ready` from `poll`), subsequent
+    /// Once a future has completed (returned `Ready` from `poll`), subsequent
     /// calls to `poll` may panic, block forever, or otherwise cause bad behavior.
-    /// The `Async` trait itself provides no guarantees about the behavior of
+    /// The `Future` trait itself provides no guarantees about the behavior of
     /// `poll` after a future has completed.
-    fn poll(self: Pin<Self>, cx: &mut task::Context) -> Poll<Self::Output>;
+    fn poll(self: PinMut<Self>, cx: &mut task::Context) -> Poll<Self::Output>;
 }
 ```
 
 Most of the explanation here follows what we've already said about the task
-system. The one twist is the use of `Pin`, which makes it possible to keep data
+system. The one twist is the use of `PinMut`, which makes it possible to keep data
 borrowed across separate calls to `poll` (i.e., "borrowing over yield
 points"). The mechanics of pinning are explained
 in [the RFC that introduced it](https://github.com/rust-lang/rfcs/pull/2349),
@@ -423,90 +418,159 @@ explicitly just that. This incarnation, however, focuses squarely on the
 absolute minimal footprint needed to provide async/await support.
 
 It's thus out of scope for this RFC to say *precisely* what the futures 0.3 APIs
-will look like. However, in broad outlines:
+will look like, but there are a few key aspects worth calling out. (Note that
+over time, many of these APIs will be stabilized into `std`.)
 
-- The 0.3 release will continue to provide a `Future` trait that resembles the
-  one in 0.2. In particular, the trait will *not* use `Pin`, and hence will
-  continue to work with today's stable Rust. (You can think of `Future` roughly
-  as an alias for `Async + Unpin`).
+### Error handling
 
-- When a `nightly` flag is enabled, the crate will re-export the libcore version
-  of the task system rather than defining its own.
+It's very common to work with `Result`-producing futures, so the crate will
+provide the following alias:
 
-  - The nightly flag will include mechanisms for going between `Future` and `Async`
-  traits; any `Future` is trivially `Async`, and any `Async` value within a
-  `PinBox` can implement `Future`.
+```rust
+/// A convenience for futures that return `Result` values that includes
+/// a variety of adapters tailored to such futures.
+pub trait TryFuture {
+    /// The type of successful values yielded by this future
+    type Item;
 
-  - It will also provide combinators for `Async` values, including select and join,
-  so that these values can be composed without going through boxing/`Future`.
+    /// The type of failures yielded by this future
+    type Error;
 
-The upshot is:
+    /// Poll this `TryFuture` as if it were a `Future`.
+    ///
+    /// This method is a stopgap for a compiler limitation that prevents us from
+    /// directly inheriting from the `Future` trait; in the future it won't be
+    /// needed.
+    fn try_poll(self: PinMut<Self>, cx: &mut task::Context) -> Poll<Result<Self::Item, Self::Error>>;
+}
 
-- Futures 0.3 can be released very quickly and immedately work on stable Rust.
-- Migrating to 0.3 should be as easy as migrating to 0.2.
-- Code that works with futures 0.3 will be compatible with async/await when used
-  on nightly, allowing for experimentation while using the futures ecosystem.
-- The futures API remains "out of tree", allowing for further iteration even
-  as `Async` and async/await notation are stabilized.
+impl<F, T, E> TryFuture for F
+    where F: Future<Output = Result<T, E>>
+{
+    type Item = T;
+    type Error = E;
 
-The downside is that using `Async` values with code that expects a `Future` will
-require boxing for the time being.
+    fn try_poll(self: PinMut<Self>, cx: &mut task::Context) -> Poll<F::Output> {
+        self.poll(cx)
+    }
+}
+```
 
-In the long run, as we strengthen support and abstractions for working directly
-with `Pin` values, it may turn out that there's little reason to avoid working
-with `Async`/`Pin` directly, in which case we can deprecate `Future` and move
-the ecosystem toward `Async`. However, the strategy proposed here gives us time
-and leeway to investigate this question decoupled from shipping async/await
-itself.
+This alias makes it easy to require that a future return a `Result` (by bounding
+by `TryFuture`), and to obtain the success/error types (by using the `Item` and
+`Error` associated types).
 
-The question of whether to build in an `Error` type for `Future`, and other such
-details, will be tackled more directly in the futures repo.
+Similarly, `PollResult<T, E>` is a type alias for `Poll<Result<T, E>>`.
+
+### Combinators
+
+The crate will provide extension traits, `FutureExt` and `TryFutureExt`, with a
+full complement of combinators like those provided in futures 0.2.
+
+### Conveniences for unpinned futures
+
+The `FutureExt` trait will, in particular, provide a convenience for working
+with `Unpin` types without having to use the pin APIs:
+
+```rust
+trait FutureExt: Future {
+    fn poll_unpin(&mut self, cx: &mut task::Context) -> Poll<Self::Output>
+        where Self: Unpin { ... }
+
+    // ...
+}
+```
+
+## Writing manual futures
+
+Not all async code will be written using `async`/`await`, and it's important to
+retain a solid experience for manually implementing futures.
+
+Compared to the futures 0.2 experience, the main changes in this RFC are (1) the
+use of `PinMut` and (2) no longer baking in an error type. In both cases, it's
+straightforward, if a bit tedious to recover the previous programming model.
+
+Here's an example drawn from [tower-grpc]:
+
+[tower-grpc]: https://github.com/tower-rs/tower-grpc/blob/master/src/client/server_streaming.rs#L21-L32
+
+```rust
+// code written in futures 0.2 style
+
+impl<T, U, B> Future for ResponseFuture<T, U>
+where T: Message + Default,
+      U: Future<Item = Response<B>>,
+      B: Body<Data = Data>,
+{
+    type Item = ::Response<Streaming<T, B>>;
+    type Error = ::Error<U::Error>;
+
+    fn poll(&mut self, cx: &mut task::Context) -> Poll<Self::Item, Self::Error> {
+        self.inner.poll(cx)
+    }
+}
+```
+
+To port this code, we systematically employ a few steps:
+
+- Implementing `Unpin` for the manual future, which opts out of interior
+  borrowing.
+- Use `TryFuture` for all bounds over futures, and return `PollResult` in `poll`.
+- Call `poll_unpin` rather than `poll` when polling inner futures.
+
+All told, the ported code looks as follows:
+
+```rust
+// now ported to futures 0.3
+
+impl<T, U> Unpin for ResponseFuture<T, U> {}
+
+impl<T, U, B> Future for ResponseFuture<T, U>
+where T: Message + Default,
+      U: TryFuture<Item = Response<B>> + Unpin,
+      B: Body<Data = Data>,
+{
+    type Output = Result<::Response<Streaming<T, B>>, ::Error<U::Error>>;
+
+    fn poll(self: PinMut<Self>, cx: &mut task::Context) -> PollResult<Self::Item, Self::Error> {
+        self.inner.poll_unpin(cx)
+    }
+}
+```
+
+These changes are mechanical enough that it's likely possible to write a script
+to perform them with high accuracy.
+
+To be clear, however, there is a definite ergonomic hit here, which is discussed
+further in the drawbacks section.
 
 ## Stabilization plan
 
 The ultimate goal is to ship async/await as part of Rust 2018 (roughly by
 mid-September).
 
-This RFC is designed to migrate to a version of futures that can work with
-async/await. In particular, foundational crates in the ecosystem (like Tokio and
-Hyper) can continue working on *stable* Rust and the futures crate, while
-*clients* of those crates can opt in to nightly to start using async/await. If
-we can move quickly on these foundational crates, we should be able to have
-several additional months of testing with async/await while still shipping in
-the new edition.
+Much of the design has been vetted over quite a long period (futures 0.1), and
+the 0.2 changes have gotten substantial use in Google's Fuchsia OS. The task
+system in particular has existed in roughly the proposed shape for quite a long
+time in the futures crate, and has thus already been quite thoroughly vetted.
 
-The task system has existed in roughly the proposed shape for quite a long time
-in the futures crate, and has thus already been quite thoroughly vetted.
+Thus the major new elements are, once more, the removal of built-in errors and
+the use of `PinMut`.
 
-The `Async` design is newer, but is closely related to `Future` in the futures
-0.2 crate, which has seen very heavy usage in at least Google's Fuchsia OS. The
-main differences from 0.1 are the use of an explicit task context argument
-(rather than thread-local storage) and not baking in `Result`. But it's possible
-to provide a futures 0.1-style API on top, if for some reason that is deemed
-necessary. Thus, `Async` is also low-risk to stabilize.
+- For built-in errors, the situation is straightforward: we can provide
+  equivalent functionality at mild ergonomic cost (an extra import).
 
-Probably the biggest open question for stabilization is the `Pin`
-type. Stabilizing `Async` wholesale would require stabilizing `Pin`, but if for
-some reason we are not comfortable doing so for the 2018 edition, there's a very
-simple way to punt:
+- For `PinMut`, there's a clear way to "opt out" and recover the previous
+  semantics (again at some ergonomic cost), so the primary questions come down
+  to the `PinMut` API itself. The core types have already received significant
+  vetting within the RustBelt formal model. In addition to the opt-out, there's
+  ongoing work in making `PinMut` ergonomic and safe to use directly (rather
+  than only through `async` notation).
 
-```rust
-// Essentially `PinBox<dyn Async<Output = T>>`
-struct BoxAsync<T> { .. }
-
-impl<T> BoxAsync<T> {
-    fn new<A: Async<Output = T>>(a: A) -> BoxAsync<T>;
-    fn poll(&mut self, cx: &mut task::Context) -> Poll<T>;
-}
-```
-
-That is, we can provide an `&mut`-based polling API that's tied to boxing
-`Async` values, and provide a way to put them into boxes, without stabilizing
-`Pin` or even `Async` itself.
-
-In short, it should be quite plausible to stabilize async/await in time for the
-2018 edition given that the minimal such stabilization covers mechanisms and
-APIs that have either already been thoroughly vetted, or are minimal commitment.
+Tactically, the proposal is to produce a 0.3-beta release, which will be
+nightly-only, and to work through support in as large a chunk of the ecosystem
+as we can manage, by adding feature flags to crates to opt in to the new
+version.
 
 ## Details for `no_std` compatibility
 
@@ -612,28 +676,17 @@ It may be that eventually we do want to build in some task-local data scheme, bu
   inheritance, and so it seems best for this work to begin in the ecosystem
   first.
 
-# Drawbacks
-[drawbacks]: #drawbacks
+# Rationale, drawbacks, and alternatives
 
 This RFC is one of the most substantial additions to `std` proposed since
 1.0. It commits us to including a particular task and polling model in the
-standard library. The stakes are high.
-
-However, as argued in the stabilization section above, the meat of the proposal
-has at this point already been thoroughly vetted; the core ideas go back about
-two years at this point. It's possible to carve an extremely minimal path to
-stabilization that essentially sticks to these already-proven ideas. Likewise,
-async/await support (via generators) has already existing on the nightly channel
-for quite a long time.
+standard library, and ties us to `PinMut`.
 
 So far we've been able to push the task/polling model into virtually every niche
 Rust wishes to occupy, and the main downside has been, in essence, the lack of
 async/await syntax (and
 the
 [borrowing it supports](http://aturon.github.io/2018/04/24/async-borrowing/)).
-
-# Rationale and alternatives
-[alternatives]: #alternatives
 
 This RFC does not attempt to provide a complete introduction to the task model
 that originated with the futures crate. A fuller account of the design rationale
@@ -652,7 +705,98 @@ In our experience, the callback approach suffered from several drawbacks in Rust
 - Subjectively, the combinator code was quite hairy, while with the task-based model
   things fell into place quickly and easily.
 
-Some additional context and rationale is available in the [companion RFC].
+Some additional context and rationale for the overall async/await project is
+available in the [companion RFC].
+
+For the remainder of this section, we'll dive into specific API design questions
+where this RFC differs from futures 0.2.
+
+## Rationale, drawbacks and alternatives for removing built-in errors
+
+There are an assortment of reasons to drop the built-in error type in the main
+trait:
+
+- **Improved type checking and inference**. The error type is one of the biggest
+  pain points when working with futures combinators today, both in trying to get
+  different types to match up, and in inference failures that result when a
+  piece of code cannot produce an error. To be clear, many of these problems
+  will become less pronounced when `async` syntax is available.
+
+- **Async functions**. If we retain a built-in error type, it's much less clear
+  how `async fn` should work: should it always require the return type to be a
+  `Result`? If not, what happens when a non-`Result` type is returned?
+
+- **Combinator clarity**. Splitting up the combinators by whether they rely on
+  errors or not clarifies the semantics. This is *especially* true for streams,
+  where error handling is a common source of confusion.
+
+- **Orthogonality**. In general, producing and handling errors is separable from
+  the core polling mechanism, so all things being equal, it seems good to follow
+  Rust's general design principles and treat errors by *composing* with `Result`.
+
+All of that said, there are real downsides for error-heavy code, even with
+`TryFuture`:
+
+- An extra import is needed (obviated if code imports the futures prelude, which
+  we could perhaps more vocally encourage).
+
+- It can be confusing for code to *bound* by one trait but *implement* another.
+
+The error handling piece of this RFC is separable from the other pieces, so the
+main alternative would be to retain the built-in error type.
+
+## Rationale, drawbacks and alternatives to the core trait design (wrt `PinMut`)
+
+Putting aside error handling, which is orthogonal and discussed above, the
+primary other big item in this RFC is the move to `PinMut` for the core polling
+method, and how it relates to `Unpin`/manually-written futures. Over the course
+of RFC discussions, we've identified essentially three main approaches to this
+question:
+
+- **One core trait**. That's the approach taken in the main RFC text: there's
+  just a single core `Future` trait, which works on `PinMut<Self>`. Separately
+  there's a `poll_unpin` helper for working with `Unpin` futures in manual
+  implementations.
+
+- **Two core traits**. We can provide two traits, for example `MoveFuture` and
+  `Future`, where one operates on `&mut self` and the other on `PinMut<Self>`.
+  This makes it possible to continue writing code in the futures 0.2 style,
+  i.e. without importing `PinMut`/`Unpin` or otherwise talking about pins. A
+  critical requirement is the need for interoperation, so that a `MoveFuture`
+  can be used anywhere a `Future` is required. There are at least two ways to
+  achieve such interop:
+
+  - Via a blanket impl of `Future` for `T: MoveFuture`. This approach currently
+    blocks some *other* desired impls (around `Box` and `&mut` specifically),
+    but the problem doesn't appear to be fundamental.
+
+  - Via a subtrait relationship, so that `T: Future` is defined essentially as
+    an alias for `for<'a> PinMut<'a, T>: MoveFuture`. Unfortunately, such
+    "higher ranked" trait relationships don't currently work well in the trait
+    system, and this approach also makes things more convoluted when
+    implementing `Future` by hand, for relatively little gain.
+
+The drawback of the "one core trait" approach taken by this RFC is its ergonomic
+hit when writing moveable futures by hand: you now need to import `PinMut` and
+`Unpin`, invoke `poll_unpin`, and impl `Unpin` for your types. This is all
+pretty mechanical, but it's a pain. It's possible that improvements in `PinMut`
+ergonomics will obviate some of these issues, but there are a lot of open
+questions there still.
+
+On the other hand, a two-trait approach has downsides as well. If we *also*
+remove the error type, there's a combinatorial explosion, since we end up
+needing `Try` variants of each trait (and this extends to related traits, like
+`Stream`, as well). More broadly, with the one-trait approach, `Unpin` acts as a
+kind of "independent knob" that can be applied orthogonally from other concerns;
+with the two-trait approach, it's "mixed in". And both of the two-trait
+approaches run up against compiler limitations at the moment, though of course
+that shouldn't be taken as a deciding factor.
+
+**The primary reason this RFC opts for the one-trait approach is that it's the
+conservative, forward-compatible option**. It's possible to add `MoveFuture`,
+together with a blanket impl, at any point in the future. Thus, starting with
+just the single `Future` trait as proposed in this RFC keeps our options
+maximally open while we gain experience.
 
 ## Alternative no_std handling
 
@@ -769,6 +913,4 @@ model.
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
-- The futures 0.3 API, including how we wish to handle `Result` (and whether
-  e.g. it should provide an `AsyncResult` trait as well). This discussion will
-  take place separately from the RFC.
+None at the moment.
