@@ -1,74 +1,89 @@
-- Feature Name: (fill me in with a unique ident, my_awesome_feature)
-- Start Date: (fill me in with today's date, YYYY-MM-DD)
-- RFC PR: (leave this empty)
-- Rust Issue: (leave this empty)
-
+- Feature Name: N/A
+- Start Date: June 1, 2018
+- RFC PR:
+- Rust Issue:
 # Summary
 [summary]: #summary
 
-One paragraph explanation of the feature.
+Allow non-ASCII identifiers, with strict checks to prevent confusion.
 
 # Motivation
 [motivation]: #motivation
 
-Why are we doing this? What use cases does it support? What is the expected outcome?
+One of the main use cases is Rust developers for whom English is not their native language.  This will allow them to use their native languages in identifiers.  This is very helpful, since identifiers often have significant semantic meaning.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-Explain the proposal as if it was already included in the language and you were teaching it to another Rust programmer. That generally means:
+Rust supports a subset of Unicode in identifiers.  Therefore,
 
-- Introducing new named concepts.
-- Explaining the feature largely in terms of examples.
-- Explaining how Rust programmers should *think* about the feature, and how it should impact the way they use Rust. It should explain the impact as concretely as possible.
-- If applicable, provide sample error messages, deprecation warnings, or migration guidance.
-- If applicable, describe the differences between teaching this to existing Rust programmers and new Rust programmers.
+```rust
+use num::complex::Complex;
 
-For implementation-oriented RFCs (e.g. for compiler internals), this section should focus on how compiler contributors should think about the change, and give examples of its concrete impact. For policy RFCs, this section should provide an example-driven introduction to the policy, and explain its impact in concrete terms.
+/// The tolerance
+const ε: f64 = 0.000001;
+
+/// Riemann zeta function
+fn ζ(x: Complex) -> Complex {
+   ...
+}
+```
+
+There are restrictions on what can be put in identifiers, so the following is incorrect:
+
+```rust
+/// ERROR ☆ is not allowed in identifiers
+const ☆: f64 = 0;
+```
+
+Additionally, Rust includes checks to make sure that no two identifiers can be confused with each other.  Specifically:
+
+* It is a hard error if two identifiers can be confused with each other and are in scope at the same time.
+* It is a hard error if identifiers are not in NFC.
+* If two identifiers that can be confused with each other are present in the same source file, a warning is issued.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-This is the technical portion of the RFC. Explain the design in sufficient detail that:
+This RFC proposes that non-ASCII identifiers be stabilized, with the current set of allowed characters.  However, there are restrictions to avoid visual confusion:
 
-- Its interaction with other features is clear.
-- It is reasonably clear how the feature would be implemented.
-- Corner cases are dissected by example.
+* No two identifiers that are distinct but visually confusable may be in the same scope.
 
-The section should return to the examples given in the previous section, and explain more fully how the detailed proposal makes those examples work.
+    This ensures that replacing an identifier with any identifier that it may be confused with *always* results in an error, unless the identifier was unused (in which case it cannot effect semantics).  For the purpose of this rule, `let` bindings do NOT introduce a new scope, to minimize confusion.
+
+    I suspect that there is some mechanism to perform this check in less than O(N^2) time, though I am not aware of one.
+
+* No identifier may be distinct from its NFC version
+
+    This is to avoid confusion, and to ensure that editing a Rust source file does not cause problems.
+
+* If two identifiers that can be confused with each other are present in the same source file, a warning is issued.
+
+    This ensures that users do not get confusing error messages.  While I do not believe that it can be exploited to get past code review, it is still potentially confusing to users.
 
 # Drawbacks
 [drawbacks]: #drawbacks
 
-Why should we *not* do this?
+This will require the compiler to be capable of performing checks for visual confusability on Unicode data.
 
 # Rationale and alternatives
 [alternatives]: #alternatives
 
-- Why is this design the best in the space of possible designs?
-- What other designs have been considered and what is the rationale for not choosing them?
-- What is the impact of not doing this?
+1. We could remove the `non_ascii_idents` feature entirely, and restrict identifiers to ASCII.
+
+    This is the approach that Pony takes.  I do not like it because it weakens the Rust language’s internationalization support.
+
+2. We could stabilize the `non_ascii_idents` feature as-is.
+
+    This renders Rust vulnerable to homograph attacks, which could be used to sneak code past code review.
 
 # Prior art
 [prior-art]: #prior-art
 
-Discuss prior art, both the good and the bad, in relation to this proposal.
-A few examples of what this can include are:
-
-- For language, library, cargo, tools, and compiler proposals: Does this feature exist in other programming languages and what experience have their community had?
-- For community proposals: Is this done by some other community and what were their experiences with it?
-- For other teams: What lessons can we learn from what other communities have done here?
-- Papers: Are there any published papers or great posts that discuss this? If you have some relevant papers to refer to, this can serve as a more detailed theoretical background.
-
-This section is intended to encourage you as an author to think about the lessons from other languages, provide readers of your RFC with a fuller picture.
-If there is no prior art, that is fine - your ideas are interesting to us whether they are brand new or if it is an adaptation from other languages.
-
-Note that while precedent set by other languages is some motivation, it does not on its own motivate an RFC.
-Please also take into consideration that rust sometimes intentionally diverges from common language features.
+The motivation for the specific checks comes from a preprocessor for OCaml (whose name currently escapes me) that allows OCaml code to contain Unicode identifiers.
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
-- What parts of the design do you expect to resolve through the RFC process before this gets merged?
-- What parts of the design do you expect to resolve through the implementation of this feature before stabilization?
-- What related issues do you consider out of scope for this RFC that could be addressed in the future independently of the solution that comes out of this RFC?
+- How can the confusability check be implemented?  We should have a fast path when there are *no* non-ASCII identifiers, but we also must be fast (at worst, O(N log N)) when there *are* non-ASCII identifiers.
+- Should the warning for confusable identifiers in different scopes be made a hard error?  Should it be removed entirely?  Should it be a configurable lint?
