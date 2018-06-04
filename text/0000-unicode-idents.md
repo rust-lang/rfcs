@@ -28,7 +28,7 @@ Identifiers include variable names, function and trait names and module names. T
 
 Examples of valid identifiers are:
 
-* ACII letters and digits: `image_width`, `line2`, `Photo`, `el_tren`, `_unused`
+* ASCII letters and digits: `image_width`, `line2`, `Photo`, `el_tren`, `_unused`
 * words containing accented characters: `garçon`, `hühnervögel`
 * identifiers in other scripts: `Москва`, `東京`, ...
 
