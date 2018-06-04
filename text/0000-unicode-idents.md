@@ -28,8 +28,7 @@ Identifiers include variable names, function and trait names and module names. T
 
 Examples of valid identifiers are:
 
-* English language words: `color`, `image_width`, `line2`, `Photo`, `_unused`, ...
-* ASCII words in foreign languages: `die_eisenbahn`, `el_tren`, `artikel_1_grundgesetz`
+* ACII letters and digits: `image_width`, `line2`, `Photo`, `el_tren`, `_unused`
 * words containing accented characters: `garçon`, `hühnervögel`
 * identifiers in other scripts: `Москва`, `東京`, ...
 
@@ -53,9 +52,9 @@ Some Unicode character look confusingly similar to each other or even identical 
 
 All code written in the Rust Language Organization (*rustc*, tools, std, common crates) will continue to only use ASCII identifiers and the English language.
 
-For open source crates it is recommended to write them in English and use ASCII-only. An exception should be made if the application domain (e.g. math) benefits from Unicode and the target audience (e.g. for a crate interfacing with Russian passports) is comfortable with the used language and characters. Additionally crates should provide an ASCII-only API.
+For open source crates it is suggested to write them in English and use ASCII-only. An exception can be made if the application domain (e.g. math) benefits from Unicode and the target audience (e.g. for a crate interfacing with Russian passports) is comfortable with the used language and characters. Additionally crates should consider to provide an ASCII-only API.
 
-Private projects can use any script and language the developer(s) desire. It is still a good idea (as with any language feature) not to overuse it.
+Private projects can use any script and language the developer(s) desire. It is still a good idea (as with any language feature) not to overdo it.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -74,7 +73,7 @@ The lexer defines identifiers as:
 
 `XID_Start` and `XID_Continue` are used as defined in the aforementioned standard. The definition of identifiers is forward compatible with each successive release of Unicode as only appropriate new characters are added to the classes but none are removed.
 
-Two identifiers X, Y are considered to be equal if there [NFKC forms][TR15] are equal: NFKC(X) = NFKC(Y).
+Two identifiers X, Y are considered to be equal if their [NFKC forms][TR15] are equal: NFKC(X) = NFKC(Y).
 
 A `unicode_idents` lint is added to the compiler. This lint is `allow` by default. The lint checks if any identifier in the current context contains a codepoint with a value equal to or greater than 0x80 (outside ASCII range). Not only locally defined identifiers are checked but also those imported from other crates and modules into the current context. 
 
