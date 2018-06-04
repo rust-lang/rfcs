@@ -36,10 +36,10 @@ Examples of valid identifiers are:
 Examples of invalid identifiers are:
 
 * Keywords: `impl`, `fn`, `_` (underscore), ...
-* Identifiers starting with numbers or "non letters": `42_the_answer`, `third√of7`, `◆◆◆`, ...
+* Identifiers starting with numbers or containing "non letters": `42_the_answer`, `third√of7`, `◆◆◆`, ...
 * Emojis: 🙂, 🦀, 💩, ...
 
-Similar Unicode identifiers are normalized: `a1` and `a₁` refer to the same variable. This also applies to accented characters which can be represented in different ways.
+Similar Unicode identifiers are normalized: `a1` and `a₁` (a&lt;subscript 1&gt;) refer to the same variable. This also applies to accented characters which can be represented in different ways.
 
 To disallow any Unicode identifiers in a project (for example to ease collaboration or for security reasons) limiting the accepted identifiers to ASCII add this lint to the `lib.rs` or `main.rs` file of your project:
 
@@ -47,7 +47,15 @@ To disallow any Unicode identifiers in a project (for example to ease collaborat
 #![forbid(unicode_idents)]
 ```
 
-Some Unicode character look confusingly similiar to each other or even identical like the Latin **A** and the Cyrillic **А**. The compiler may warn you about easy to confuse names in the same scope. If needed (but not recommended) this warning can be silenced with a `#[allow(confusable_unicode_idents)]` annotation on the enclosing function or module.
+Some Unicode character look confusingly similar to each other or even identical like the Latin **A** and the Cyrillic **А**. The compiler may warn you about easy to confuse names in the same scope. If needed (but not recommended) this warning can be silenced with a `#[allow(confusable_unicode_idents)]` annotation on the enclosing function or module.
+
+## Usage notes
+
+All code written in the Rust Language Organization (*rustc*, tools, std, common crates) will continue to only use ASCII identifiers and the English language.
+
+For open source crates it is recommended to write them in English and use ASCII-only. An exception should be made if the application domain (e.g. math) benefits from Unicode and the target audience (e.g. for a crate interfacing with Russian passports) is comfortable with the used language and characters. Additionally crates should provide an ASCII-only API.
+
+Private projects can use any script and language the developer(s) desire. It is still a good idea (as with any language feature) not to overuse it.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -88,12 +96,13 @@ The confusable detection algorithm is based on [Unicode® Technical Standard #39
 * "ASCII is enough for anyone." As source code should be written in English and in English only (source: various people) no charactes outside the ASCII range are needed to express identifiers. Therefore support for Unicode identifiers introduces unnecceray complexity to the compiler.
 * "Foreign characters are hard to type." Usually computer keyboards provide access to the US-ASCII printable characters and the local language characters. Characters from other scripts are difficult to type, require entering numeric codes or are not available at all. These characters either need to be copy-pasted or entered with an alternative input method.
 * "Foreign characters are hard to read." If one is not familiar with the characters used it can be hard to tell them apart (e.g. φ and ψ) and one may not be able refer to the identifiers in an appropriate way (e.g. "loop" and "trident" instead of phi and psi)
+* "My favorite terminal/text editor/web browser" has incomplete Unicode support." Even in 2018 some characters are not widely supported in all places where source code is usually displayed.
 * Homoglyph attacks are possible. Without confusable detection identifiers can be distinct for the compiler but visually the same. Even with confusable detection there are still similar looking characters that may be confused by the casual reader.
 
 # Rationale and alternatives
 [alternatives]: #alternatives
 
-As stated in [Motivation](#motivation) allowing Unicode identifiers outside the ASCII range improves Rusts accessiability for developers not working in English. Especially in teaching and when the application domain vocabulary is not in English it can be beneficial to use names from the native language. To facilitate this it is necessary to allow a wide range of Unicode character in identifiers. The proposed implementation based on the Unicode TR31 is already used by other programming languages (e.g. Python 3) and is implemented behind the `non_ascii_idents` in *rustc* but lacks the NFKC normalization proposed.
+As stated in [Motivation](#motivation) allowing Unicode identifiers outside the ASCII range improves Rusts accessibility for developers not working in English. Especially in teaching and when the application domain vocabulary is not in English it can be beneficial to use names from the native language. To facilitate this it is necessary to allow a wide range of Unicode character in identifiers. The proposed implementation based on the Unicode TR31 is already used by other programming languages (e.g. Python 3) and is implemented behind the `non_ascii_idents` in *rustc* but lacks the NFKC normalization proposed.
 
 Possible variants:
 
@@ -101,6 +110,7 @@ Possible variants:
 2. Two identifiers are only equal if their codepoints are equal.
 3. Perform NFC mapping instead of NFKC mapping for identifiers.
 4. Only a number of common scripts could be supported.
+5. A [restriction level][TR39Restriction] is specified allowing only a subset of scripts and limit script-mixing within an identifier.
 
 An alternative design would use [Immutable Identifiers][TR31Alternative] as done in [C++]. In this case a list of Unicode codepoints is reserved for syntax (ASCII operators, braces, whitespace) and all other codepoints (including currently unassigned codepoints) are allowed in identifiers. The advantages are that the compiler does not need to know the Unicode character classes XID_Start and XID_Continue for each character and that the set of allowed identifiers never changes. It is disadvantageous that all not explicitly excluded characters at the time of creation can be used in identifiers. This allows developers to create identifiers that can't be recognized as such. It also impedes other uses of Unicode in Rust syntax like custom operators if they were not initially reserved.
 
@@ -125,6 +135,8 @@ The [CPP reference][C++] describes the allowed Unicode identifiers it is based o
 
 [Java] also supports Unicode identifiers. Character must belong to a number of Unicode character classes similar to XID_start and XID_continue used in Python. Unlike in Python no normalization is performed.
 
+The [Go language][Go] allows identifiers in the form **Letter (Letter | Number)\*** where **Letter** is a Unicode letter and **Number** is a Unicode decimal number. This is more restricted than the proposed design mainly as is does not allow combining characters needed to write some languages such as Hindi.
+
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
@@ -133,13 +145,18 @@ The [CPP reference][C++] describes the allowed Unicode identifiers it is based o
 * How do Unicode names interact with the file system?
 * Are crates with Unicode names allowed and can they be published to crates.io?
 * Are `unicode_idents` and `confusable_unicode_idents` good names?
+* Should [ZWNJ and ZWJ be allowed in identifiers][TR31Layout]?
+* Should *rustc* accept files in a different encoding than *UTF-8*?
 
 [PEP 3131]: https://www.python.org/dev/peps/pep-3131/
 [TR15]: https://www.unicode.org/reports/tr15/
 [TR31]: http://www.unicode.org/reports/tr31/
 [TR31Alternative]: http://unicode.org/reports/tr31/#Alternative_Identifier_Syntax
+[TR31Layout]: https://www.unicode.org/reports/tr31/#Layout_and_Format_Control_Characters
 [TR39Confusable]: https://www.unicode.org/reports/tr39/#Confusable_Detection
+[TR39Restriction]: https://www.unicode.org/reports/tr39/#Restriction_Level_Detection
 [C++]: https://en.cppreference.com/w/cpp/language/identifiers
 [Julia Unicode PR]: https://github.com/JuliaLang/julia/pull/19464
 [Java]: https://docs.oracle.com/javase/specs/jls/se10/html/jls-3.html#jls-3.8
 [JavaScript]: http://www.ecma-international.org/ecma-262/6.0/#sec-names-and-keywords
+[Go]: https://golang.org/ref/spec#Identifiers
