@@ -1,4 +1,4 @@
-- Feature Name: unicode_idents
+- Feature Name: non_ascii_idents
 - Start Date: 2018-06-03
 - RFC PR: (leave this empty)
 - Rust Issue: (leave this empty)
@@ -36,17 +36,17 @@ Examples of invalid identifiers are:
 
 * Keywords: `impl`, `fn`, `_` (underscore), ...
 * Identifiers starting with numbers or containing "non letters": `42_the_answer`, `third√of7`, `◆◆◆`, ...
-* Emojis: 🙂, 🦀, 💩, ...
+* Many Emojis: 🙂, 🦀, 💩, ...
 
 Similar Unicode identifiers are normalized: `a1` and `a₁` (a&lt;subscript 1&gt;) refer to the same variable. This also applies to accented characters which can be represented in different ways.
 
 To disallow any Unicode identifiers in a project (for example to ease collaboration or for security reasons) limiting the accepted identifiers to ASCII add this lint to the `lib.rs` or `main.rs` file of your project:
 
 ```rust
-#![forbid(unicode_idents)]
+#![forbid(non_ascii_idents)]
 ```
 
-Some Unicode character look confusingly similar to each other or even identical like the Latin **A** and the Cyrillic **А**. The compiler may warn you about easy to confuse names in the same scope. If needed (but not recommended) this warning can be silenced with a `#[allow(confusable_unicode_idents)]` annotation on the enclosing function or module.
+Some Unicode character look confusingly similar to each other or even identical like the Latin **A** and the Cyrillic **А**. The compiler may warn you about easy to confuse names in the same scope. If needed (but not recommended) this warning can be silenced with a `#[allow(confusable_non_ascii_idents)]` annotation on the enclosing function or module.
 
 ## Usage notes
 
@@ -59,7 +59,9 @@ Private projects can use any script and language the developer(s) desire. It is 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-Identifiers in Rust are based on the [Unicode® Standard Annex #31 Unicode Identifier and Pattern Syntax][TR31]. Rust compilers shall use at least Revision 27 of the standard.
+Identifiers in Rust are based on the [Unicode® Standard Annex #31 Unicode Identifier and Pattern Syntax][UAX31].
+
+Note: The supported Unicode version should be stated in the documentation.
 
 The lexer defines identifiers as:
 
@@ -75,7 +77,7 @@ The lexer defines identifiers as:
 
 Two identifiers X, Y are considered to be equal if their [NFKC forms][TR15] are equal: NFKC(X) = NFKC(Y).
 
-A `unicode_idents` lint is added to the compiler. This lint is `allow` by default. The lint checks if any identifier in the current context contains a codepoint with a value equal to or greater than 0x80 (outside ASCII range). Not only locally defined identifiers are checked but also those imported from other crates and modules into the current context. 
+A `non_ascii_idents` lint is added to the compiler. This lint is `allow` by default. The lint checks if any identifier in the current context contains a codepoint with a value equal to or greater than 0x80 (outside ASCII range). Not only locally defined identifiers are checked but also those imported from other crates and modules into the current context. 
 
 ## Confusable detection
 
@@ -83,11 +85,13 @@ Rust compilers should detect confusingly similar Unicode identifiers and warn th
 
 Note: This is *not* a mandatory for all Rust compilers as it requires considerable implementation effort and is not related to the core function of the compiler. It rather is a tool to detect accidental misspellings and intentional homograph attacks.
 
-A new `confusable_unicode_idents` lint is added to the compiler. The default setting is `warn`.
+A new `confusable_non_ascii_idents` lint is added to the compiler. The default setting is `warn`.
 
 Note: The confusable detection is set to `warn` instead of `deny` to enable forward compatibility. The list of confusable characters will be extended in the future and programs that were once valid would fail to compile.
 
-The confusable detection algorithm is based on [Unicode® Technical Standard #39 Unicode Security Mechanisms Section 4 Confusable Detection][TR39Confusable]. For every distinct identifier X in the current scope execute the function `skeleton(X)`. If there exist two distinct identifiers X and Yin the same crate where `skeleton(X) = skeleton(Y)` report it.
+The confusable detection algorithm is based on [Unicode® Technical Standard #39 Unicode Security Mechanisms Section 4 Confusable Detection][TR39Confusable]. For every distinct identifier X execute the function `skeleton(X)`. If there exist two distinct identifiers X and Y in the same crate where `skeleton(X) = skeleton(Y)` report it.
+
+Note: A fast way to implement this is to compute `skeleton` for each identifier once and place the result in a hashmap as a key. If one tries to insert a key that already exists check if the two identifiers differ from each other. If so report the two confusable identifiers. 
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -121,7 +125,7 @@ It has been suggested that Unicode identifiers should be opt-in instead of opt-o
 
 The current design was chosen because the algorithm and list of similar characters are already provided by the Unicode Consortium. A different algorithm and list of characters could be created. I am not aware of any other programming language implementing confusable detection. The confusable detection was primarily included because homoglyph attacks are a huge concern for some member of the community.
 
-Instead of offering confusable detection the lint `forbid(unicode_idents)` is sufficient to protect project written in English from homoglyph attacks. Projects using different languages are probably either written by students, by a small group or inside a regional company. These projects are not threatened as much as large open source projects by homoglyph attacks but still benefit from the easier debugging of typos.
+Instead of offering confusable detection the lint `forbid(non_ascii_idents)` is sufficient to protect project written in English from homoglyph attacks. Projects using different languages are probably either written by students, by a small group or inside a regional company. These projects are not threatened as much as large open source projects by homoglyph attacks but still benefit from the easier debugging of typos.
 
 # Prior art
 [prior-art]: #prior-art
@@ -143,13 +147,13 @@ The [Go language][Go] allows identifiers in the form **Letter (Letter | Number)\
 * Are Unicode characters allowed in `no_mangle` and `extern fn`s?
 * How do Unicode names interact with the file system?
 * Are crates with Unicode names allowed and can they be published to crates.io?
-* Are `unicode_idents` and `confusable_unicode_idents` good names?
+* Are `non_ascii_idents` and `confusable_non_ascii_idents` good names?
 * Should [ZWNJ and ZWJ be allowed in identifiers][TR31Layout]?
 * Should *rustc* accept files in a different encoding than *UTF-8*?
 
 [PEP 3131]: https://www.python.org/dev/peps/pep-3131/
+[UAX31]: http://www.unicode.org/reports/tr31/
 [TR15]: https://www.unicode.org/reports/tr15/
-[TR31]: http://www.unicode.org/reports/tr31/
 [TR31Alternative]: http://unicode.org/reports/tr31/#Alternative_Identifier_Syntax
 [TR31Layout]: https://www.unicode.org/reports/tr31/#Layout_and_Format_Control_Characters
 [TR39Confusable]: https://www.unicode.org/reports/tr39/#Confusable_Detection
