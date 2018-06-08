@@ -38,7 +38,7 @@ Examples of invalid identifiers are:
 * Identifiers starting with numbers or containing "non letters": `42_the_answer`, `third√of7`, `◆◆◆`, ...
 * Many Emojis: 🙂, 🦀, 💩, ...
 
-Similar Unicode identifiers are normalized: `a1` and `a₁` (a&lt;subscript 1&gt;) refer to the same variable. This also applies to accented characters which can be represented in different ways.
+[Composed characters] like those used in the word `ḱṷṓn` can be represented in different ways with Unicode. These different representations are all the same identifier in Rust.
 
 To disallow any Unicode identifiers in a project (for example to ease collaboration or for security reasons) limiting the accepted identifiers to ASCII add this lint to the `lib.rs` or `main.rs` file of your project:
 
@@ -75,7 +75,7 @@ The lexer defines identifiers as:
 
 `XID_Start` and `XID_Continue` are used as defined in the aforementioned standard. The definition of identifiers is forward compatible with each successive release of Unicode as only appropriate new characters are added to the classes but none are removed.
 
-Two identifiers X, Y are considered to be equal if their [NFKC forms][TR15] are equal: NFKC(X) = NFKC(Y).
+Parsers for Rust syntax normalize identifiers to [NFC][UAX15]. Every API accepting raw identifiers (such as `proc_macro::Ident::new` normalizes them to NFC and APIs returning them as strings (like `proc_macro::Ident::to_string`) return the normalized form. This means two identifiers are equal if their NFC forms are equal.
 
 A `non_ascii_idents` lint is added to the compiler. This lint is `allow` by default. The lint checks if any identifier in the current context contains a codepoint with a value equal to or greater than 0x80 (outside ASCII range). Not only locally defined identifiers are checked but also those imported from other crates and modules into the current context. 
 
@@ -105,13 +105,19 @@ Note: A fast way to implement this is to compute `skeleton` for each identifier 
 # Rationale and alternatives
 [alternatives]: #alternatives
 
-As stated in [Motivation](#motivation) allowing Unicode identifiers outside the ASCII range improves Rusts accessibility for developers not working in English. Especially in teaching and when the application domain vocabulary is not in English it can be beneficial to use names from the native language. To facilitate this it is necessary to allow a wide range of Unicode character in identifiers. The proposed implementation based on the Unicode TR31 is already used by other programming languages (e.g. Python 3) and is implemented behind the `non_ascii_idents` in *rustc* but lacks the NFKC normalization proposed.
+As stated in [Motivation](#motivation) allowing Unicode identifiers outside the ASCII range improves Rusts accessibility for developers not working in English. Especially in teaching and when the application domain vocabulary is not in English it can be beneficial to use names from the native language. To facilitate this it is necessary to allow a wide range of Unicode character in identifiers. The proposed implementation based on the Unicode TR31 is already used by other programming languages and is implemented behind the `non_ascii_idents` in *rustc* but lacks the NFC normalization proposed.
+
+NFC normalization was chosen over NFKC normalization for the following reasons:
+
+* [Mathematicians want to use symbols mapped to the same NFKC form](https://github.com/rust-lang/rfcs/pull/2457#issuecomment-394928432) like π and ϖ in the same context.
+* [Some words are mangled by NFKC](https://github.com/rust-lang/rfcs/pull/2457#issuecomment-394922103) in surprising ways.
+* Naive (search) tools can't find different variants of the same NFKC identifier. As most text is already in NFC form search tools work well.
 
 Possible variants:
 
-1. Require all identifiers to be in NFKC or NFC form.
+1. Require all identifiers to be already in NFC form.
 2. Two identifiers are only equal if their codepoints are equal.
-3. Perform NFC mapping instead of NFKC mapping for identifiers.
+3. Perform NFKC mapping instead of NFC mapping for identifiers.
 4. Only a number of common scripts could be supported.
 5. A [restriction level][TR39Restriction] is specified allowing only a subset of scripts and limit script-mixing within an identifier.
 
@@ -123,9 +129,9 @@ It has been suggested that Unicode identifiers should be opt-in instead of opt-o
 
 ## Confusable detection
 
-The current design was chosen because the algorithm and list of similar characters are already provided by the Unicode Consortium. A different algorithm and list of characters could be created. I am not aware of any other programming language implementing confusable detection. The confusable detection was primarily included because homoglyph attacks are a huge concern for some member of the community.
+The current design was chosen because the algorithm and list of similar characters are already provided by the Unicode Consortium. A different algorithm and list of characters could be created. I am not aware of any other programming language implementing confusable detection. The confusable detection was primarily included because homoglyph attacks are a huge concern for some members of the community.
 
-Instead of offering confusable detection the lint `forbid(non_ascii_idents)` is sufficient to protect project written in English from homoglyph attacks. Projects using different languages are probably either written by students, by a small group or inside a regional company. These projects are not threatened as much as large open source projects by homoglyph attacks but still benefit from the easier debugging of typos.
+Instead of offering confusable detection the lint `forbid(non_ascii_idents)` is sufficient to protect a project written in English from homoglyph attacks. Projects using different languages are probably either written by students, by a small group or inside a regional company. These projects are not threatened as much as large open source projects by homoglyph attacks but still benefit from the easier debugging of typos.
 
 # Prior art
 [prior-art]: #prior-art
@@ -149,11 +155,10 @@ The [Go language][Go] allows identifiers in the form **Letter (Letter | Number)\
 * Are crates with Unicode names allowed and can they be published to crates.io?
 * Are `non_ascii_idents` and `confusable_non_ascii_idents` good names?
 * Should [ZWNJ and ZWJ be allowed in identifiers][TR31Layout]?
-* Should *rustc* accept files in a different encoding than *UTF-8*?
 
 [PEP 3131]: https://www.python.org/dev/peps/pep-3131/
 [UAX31]: http://www.unicode.org/reports/tr31/
-[TR15]: https://www.unicode.org/reports/tr15/
+[UAX15]: https://www.unicode.org/reports/tr15/
 [TR31Alternative]: http://unicode.org/reports/tr31/#Alternative_Identifier_Syntax
 [TR31Layout]: https://www.unicode.org/reports/tr31/#Layout_and_Format_Control_Characters
 [TR39Confusable]: https://www.unicode.org/reports/tr39/#Confusable_Detection
@@ -163,3 +168,4 @@ The [Go language][Go] allows identifiers in the form **Letter (Letter | Number)\
 [Java]: https://docs.oracle.com/javase/specs/jls/se10/html/jls-3.html#jls-3.8
 [JavaScript]: http://www.ecma-international.org/ecma-262/6.0/#sec-names-and-keywords
 [Go]: https://golang.org/ref/spec#Identifiers
+[Composed characters]: https://en.wikipedia.org/wiki/Precomposed_character
