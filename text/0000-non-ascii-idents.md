@@ -11,7 +11,7 @@ Allow non-ASCII letters (such as accented characters, Cyrillic, Greek, Kanji, et
 # Motivation
 [motivation]: #motivation
 
-Rust is written by many people who are not fluent in the English language. Using identifiers in ones native language eases writing and reading code for these developers.
+Writing code using domain-specific terminology simplifies implementation and discussion as opposed to translating words from the project requirements. When the code is only intended for a limited audience such as with in-house projects or in teaching it can be beneficial to write code in the group's language as it boosts communication and helps people not fluent in English to participate and write Rust code themselves.
 
 The rationale from [PEP 3131] nicely explains it:
 
@@ -89,7 +89,7 @@ A new `confusable_non_ascii_idents` lint is added to the compiler. The default s
 
 Note: The confusable detection is set to `warn` instead of `deny` to enable forward compatibility. The list of confusable characters will be extended in the future and programs that were once valid would fail to compile.
 
-The confusable detection algorithm is based on [Unicode® Technical Standard #39 Unicode Security Mechanisms Section 4 Confusable Detection][TR39Confusable]. For every distinct identifier X execute the function `skeleton(X)`. If there exist two distinct identifiers X and Y in the same crate where `skeleton(X) = skeleton(Y)` report it.
+The confusable detection algorithm is based on [Unicode® Technical Standard #39 Unicode Security Mechanisms Section 4 Confusable Detection][TR39Confusable]. For every distinct identifier X execute the function `skeleton(X)`. If there exist two distinct identifiers X and Y in the same crate where `skeleton(X) = skeleton(Y)` report it. The compiler uses the same mechanism to check if an identifier is too similar to a keyword.
 
 Note: A fast way to implement this is to compute `skeleton` for each identifier once and place the result in a hashmap as a key. If one tries to insert a key that already exists check if the two identifiers differ from each other. If so report the two confusable identifiers. 
 
