@@ -136,7 +136,7 @@ Instead of offering confusable detection the lint `forbid(non_ascii_idents)` is 
 # Prior art
 [prior-art]: #prior-art
 
-"[Python PEP 3131][PEP 3131]: Supporting Non-ASCII Identifiers" is the Python equivalent to this proposal. The proposed identifier grammar **XID_Start&nbsp;XID_Continue<sup>\*</sup>** is identical to the one used in Python 3.
+"[Python PEP 3131][PEP 3131]: Supporting Non-ASCII Identifiers" is the Python equivalent to this proposal. The proposed identifier grammar **XID_Start&nbsp;XID_Continue<sup>\*</sup>** is identical to the one used in Python 3. While Python uses KC normalization this proposes to use normalization form C.
 
 [JavaScript] supports Unicode identifiers based on the same Default Identifier Syntax but does not apply normalization.
 
