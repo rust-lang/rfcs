@@ -1,2 +1,6 @@
 [output.html]
 no-section-label = true
+
+[output.html.search]
+# Don't generate the search index, which is currently 38MB.
+copy-js = false
