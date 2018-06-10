@@ -46,7 +46,7 @@ To disallow any Unicode identifiers in a project (for example to ease collaborat
 #![forbid(non_ascii_idents)]
 ```
 
-Some Unicode character look confusingly similar to each other or even identical like the Latin **A** and the Cyrillic **А**. The compiler may warn you about easy to confuse names in the same scope. If needed (but not recommended) this warning can be silenced with a `#[allow(confusable_non_ascii_idents)]` annotation on the enclosing function or module.
+Some Unicode character look confusingly similar to each other or even identical like the Latin **A** and the Cyrillic **А**. The compiler may warn you about names that are easy to confuse with keywords, names from the same crate and imported items. If needed (but not recommended) this warning can be silenced with a `#[allow(confusable_non_ascii_idents)]` annotation on the enclosing function or module.
 
 ## Usage notes
 
