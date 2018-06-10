@@ -46,7 +46,7 @@ To disallow any Unicode identifiers in a project (for example to ease collaborat
 #![forbid(non_ascii_idents)]
 ```
 
-Some Unicode character look confusingly similar to each other or even identical like the Latin **A** and the Cyrillic **А**. The compiler may warn you about names that are easy to confuse with keywords, names from the same crate and imported items. If needed (but not recommended) this warning can be silenced with a `#[allow(confusable_non_ascii_idents)]` annotation on the enclosing function or module.
+Some Unicode character look confusingly similar to each other or even identical like the Latin **A** and the Cyrillic **А**. The compiler may warn you about names that are easy to confuse with keywords, names from the same crate and imported items. If needed (but not recommended) this warning can be silenced with a `#[allow(confusable_idents)]` annotation on the enclosing function or module.
 
 ## Usage notes
 
@@ -85,7 +85,7 @@ Rust compilers should detect confusingly similar Unicode identifiers and warn th
 
 Note: This is *not* a mandatory for all Rust compilers as it requires considerable implementation effort and is not related to the core function of the compiler. It rather is a tool to detect accidental misspellings and intentional homograph attacks.
 
-A new `confusable_non_ascii_idents` lint is added to the compiler. The default setting is `warn`.
+A new `confusable_idents` lint is added to the compiler. The default setting is `warn`.
 
 Note: The confusable detection is set to `warn` instead of `deny` to enable forward compatibility. The list of confusable characters will be extended in the future and programs that were once valid would fail to compile.
 
@@ -153,7 +153,7 @@ The [Go language][Go] allows identifiers in the form **Letter (Letter | Number)\
 * Are Unicode characters allowed in `no_mangle` and `extern fn`s?
 * How do Unicode names interact with the file system?
 * Are crates with Unicode names allowed and can they be published to crates.io?
-* Are `non_ascii_idents` and `confusable_non_ascii_idents` good names?
+* Are `non_ascii_idents` and `confusable_idents` good names?
 * Should [ZWNJ and ZWJ be allowed in identifiers][TR31Layout]?
 
 [PEP 3131]: https://www.python.org/dev/peps/pep-3131/
