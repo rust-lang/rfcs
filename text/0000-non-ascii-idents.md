@@ -91,12 +91,23 @@ Note: The confusable detection is set to `warn` instead of `deny` to enable forw
 
 The confusable detection algorithm is based on [Unicode® Technical Standard #39 Unicode Security Mechanisms Section 4 Confusable Detection][TR39Confusable]. For every distinct identifier X execute the function `skeleton(X)`. If there exist two distinct identifiers X and Y in the same crate where `skeleton(X) = skeleton(Y)` report it. The compiler uses the same mechanism to check if an identifier is too similar to a keyword.
 
-Note: A fast way to implement this is to compute `skeleton` for each identifier once and place the result in a hashmap as a key. If one tries to insert a key that already exists check if the two identifiers differ from each other. If so report the two confusable identifiers. 
+Note: A fast way to implement this is to compute `skeleton` for each identifier once and place the result in a hashmap as a key. If one tries to insert a key that already exists check if the two identifiers differ from each other. If so report the two confusable identifiers.
+
+## Conformance Statement
+
+* UAX31-C1: The Rust language is conforms to the Unicode® Standard Annex #31 for Unicode Version 10.0.0.
+* UAX31-C2: It observes the following requirements:
+  * UAX31-R1. Default Identifiers: To determine whether a string is an identifier it uses UAX31-D1 with the following profile:
+    * Start := XID_Start, plus `_`
+    * Continue := XID_Continue
+    * Medial := empty
+  * UAX31-R1b. Stable Identifiers: Once a string qualifies as an identifier, it does so in all future versions.
+  * UAX31-R4. Equivalent Normalized Identifiers: All identifiers are normalized according to normalization form C before comparison.
 
 # Drawbacks
 [drawbacks]: #drawbacks
 
-* "ASCII is enough for anyone." As source code should be written in English and in English only (source: various people) no charactes outside the ASCII range are needed to express identifiers. Therefore support for Unicode identifiers introduces unnecceray complexity to the compiler.
+* "ASCII is enough for anyone." As source code should be written in English and in English only (source: various people) no characters outside the ASCII range are needed to express identifiers. Therefore support for Unicode identifiers introduces unnecessary complexity to the compiler.
 * "Foreign characters are hard to type." Usually computer keyboards provide access to the US-ASCII printable characters and the local language characters. Characters from other scripts are difficult to type, require entering numeric codes or are not available at all. These characters either need to be copy-pasted or entered with an alternative input method.
 * "Foreign characters are hard to read." If one is not familiar with the characters used it can be hard to tell them apart (e.g. φ and ψ) and one may not be able refer to the identifiers in an appropriate way (e.g. "loop" and "trident" instead of phi and psi)
 * "My favorite terminal/text editor/web browser" has incomplete Unicode support." Even in 2018 some characters are not widely supported in all places where source code is usually displayed.
