@@ -95,7 +95,7 @@ Note: A fast way to implement this is to compute `skeleton` for each identifier 
 
 ## Conformance Statement
 
-* UAX31-C1: The Rust language is conforms to the Unicode® Standard Annex #31 for Unicode Version 10.0.0.
+* UAX31-C1: The Rust language conforms to the Unicode® Standard Annex #31 for Unicode Version 10.0.0.
 * UAX31-C2: It observes the following requirements:
   * UAX31-R1. Default Identifiers: To determine whether a string is an identifier it uses UAX31-D1 with the following profile:
     * Start := XID_Start, plus `_`
