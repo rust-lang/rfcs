@@ -148,7 +148,7 @@ impl<'a> Index<'a, RangeFull> for String {
 ```
 
 The real advantage of such a change is to enable moving out values that are not references, but
-still borrows something. For instance, if we take the example from the [motivation] section,
+still borrow something. For instance, if we take the example from the [motivation] section,
 implementing the new `Index` trait would look like this:
 
 ```rust
