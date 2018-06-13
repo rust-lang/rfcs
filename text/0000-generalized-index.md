@@ -65,7 +65,7 @@ impl X {
   fn to_range(&self, end: usize) -> Foo {
     Foo {
       x: self,
-      start: 0.,
+      start: 0,
       end,
       k: 0.
     }
