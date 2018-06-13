@@ -215,5 +215,22 @@ newkeyword or language construct. Another lead to implement this feature would b
 operator, like the `[[]]` operator or even `[move idx]` construct. This would then require adding a
 new trait, like `IndexMove`, to make the whole design work.
 
+## How not to introduce a breaking change
+
+In order to mitigate the breaking change, we could add a new trait, such as `NewIndex`, make the
+`[]` operator uses this trait and provide the following `default` universal implementation:
+
+```rust
+impl<'a, T, Idx> NewIndex<Idx> for T where T: Index<Idx> {
+  type NewOutput = &'a T::Output;
+
+  default fn new_index(&'a self, idx: Idx) -> Self::NewOutput {
+    self.index(idx)
+  }
+}
+```
+
 # Unresolved questions
 [unresolved]: #unresolved-questions
+
+  - Should this RFC also concern `IndexMut`?
