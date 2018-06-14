@@ -112,7 +112,7 @@ A lot of the correctness lints are probably good candidates here.
 [reference-level-explanation]: #reference-level-explanation
 
 
-## correctness
+## correctness (Deny)
 * [naive_bytecount](https://rust-lang-nursery.github.io/rust-clippy/master/index.html#naive_bytecount) (use of naive `<slice>.filter(|&x| x == y).count()` to count byte values)
 * [map_entry](https://rust-lang-nursery.github.io/rust-clippy/master/index.html#map_entry) (use of `contains_key` followed by `insert` on a `HashMap` or `BTreeMap`)
 * [boxed_local](https://rust-lang-nursery.github.io/rust-clippy/master/index.html#boxed_local) (using `Box<T>` where unnecessary)
@@ -128,7 +128,7 @@ A lot of the correctness lints are probably good candidates here.
 * [box_vec](https://rust-lang-nursery.github.io/rust-clippy/master/index.html#box_vec) (usage of `Box<Vec<T>>`, vector elements are already on the heap)
 * [useless_vec](https://rust-lang-nursery.github.io/rust-clippy/master/index.html#useless_vec) (useless `vec!`)
 
-## style
+## style (Warn)
 * [naive_bytecount](https://rust-lang-nursery.github.io/rust-clippy/master/index.html#naive_bytecount) (use of naive `<slice>.filter(|&x| x == y).count()` to count byte values)
 * [map_entry](https://rust-lang-nursery.github.io/rust-clippy/master/index.html#map_entry) (use of `contains_key` followed by `insert` on a `HashMap` or `BTreeMap`)
 * [boxed_local](https://rust-lang-nursery.github.io/rust-clippy/master/index.html#boxed_local) (using `Box<T>` where unnecessary)
@@ -144,7 +144,7 @@ A lot of the correctness lints are probably good candidates here.
 * [box_vec](https://rust-lang-nursery.github.io/rust-clippy/master/index.html#box_vec) (usage of `Box<Vec<T>>`, vector elements are already on the heap)
 * [useless_vec](https://rust-lang-nursery.github.io/rust-clippy/master/index.html#useless_vec) (useless `vec!`)
 
-## complexity
+## complexity (Warn)
 * [naive_bytecount](https://rust-lang-nursery.github.io/rust-clippy/master/index.html#naive_bytecount) (use of naive `<slice>.filter(|&x| x == y).count()` to count byte values)
 * [map_entry](https://rust-lang-nursery.github.io/rust-clippy/master/index.html#map_entry) (use of `contains_key` followed by `insert` on a `HashMap` or `BTreeMap`)
 * [boxed_local](https://rust-lang-nursery.github.io/rust-clippy/master/index.html#boxed_local) (using `Box<T>` where unnecessary)
@@ -160,7 +160,7 @@ A lot of the correctness lints are probably good candidates here.
 * [box_vec](https://rust-lang-nursery.github.io/rust-clippy/master/index.html#box_vec) (usage of `Box<Vec<T>>`, vector elements are already on the heap)
 * [useless_vec](https://rust-lang-nursery.github.io/rust-clippy/master/index.html#useless_vec) (useless `vec!`)
 
-## perf
+## perf (Warn)
 * [naive_bytecount](https://rust-lang-nursery.github.io/rust-clippy/master/index.html#naive_bytecount) (use of naive `<slice>.filter(|&x| x == y).count()` to count byte values)
 * [map_entry](https://rust-lang-nursery.github.io/rust-clippy/master/index.html#map_entry) (use of `contains_key` followed by `insert` on a `HashMap` or `BTreeMap`)
 * [boxed_local](https://rust-lang-nursery.github.io/rust-clippy/master/index.html#boxed_local) (using `Box<T>` where unnecessary)
@@ -176,7 +176,7 @@ A lot of the correctness lints are probably good candidates here.
 * [box_vec](https://rust-lang-nursery.github.io/rust-clippy/master/index.html#box_vec) (usage of `Box<Vec<T>>`, vector elements are already on the heap)
 * [useless_vec](https://rust-lang-nursery.github.io/rust-clippy/master/index.html#useless_vec) (useless `vec!`)
 
-## pedantic
+## pedantic (Allow)
 * [naive_bytecount](https://rust-lang-nursery.github.io/rust-clippy/master/index.html#naive_bytecount) (use of naive `<slice>.filter(|&x| x == y).count()` to count byte values)
 * [map_entry](https://rust-lang-nursery.github.io/rust-clippy/master/index.html#map_entry) (use of `contains_key` followed by `insert` on a `HashMap` or `BTreeMap`)
 * [boxed_local](https://rust-lang-nursery.github.io/rust-clippy/master/index.html#boxed_local) (using `Box<T>` where unnecessary)
@@ -192,7 +192,7 @@ A lot of the correctness lints are probably good candidates here.
 * [box_vec](https://rust-lang-nursery.github.io/rust-clippy/master/index.html#box_vec) (usage of `Box<Vec<T>>`, vector elements are already on the heap)
 * [useless_vec](https://rust-lang-nursery.github.io/rust-clippy/master/index.html#useless_vec) (useless `vec!`)
 
-## nursery
+## nursery (Allow)
 * [naive_bytecount](https://rust-lang-nursery.github.io/rust-clippy/master/index.html#naive_bytecount) (use of naive `<slice>.filter(|&x| x == y).count()` to count byte values)
 * [map_entry](https://rust-lang-nursery.github.io/rust-clippy/master/index.html#map_entry) (use of `contains_key` followed by `insert` on a `HashMap` or `BTreeMap`)
 * [boxed_local](https://rust-lang-nursery.github.io/rust-clippy/master/index.html#boxed_local) (using `Box<T>` where unnecessary)
@@ -208,7 +208,7 @@ A lot of the correctness lints are probably good candidates here.
 * [box_vec](https://rust-lang-nursery.github.io/rust-clippy/master/index.html#box_vec) (usage of `Box<Vec<T>>`, vector elements are already on the heap)
 * [useless_vec](https://rust-lang-nursery.github.io/rust-clippy/master/index.html#useless_vec) (useless `vec!`)
 
-## restriction
+## restriction (Allow)
 * [naive_bytecount](https://rust-lang-nursery.github.io/rust-clippy/master/index.html#naive_bytecount) (use of naive `<slice>.filter(|&x| x == y).count()` to count byte values)
 * [map_entry](https://rust-lang-nursery.github.io/rust-clippy/master/index.html#map_entry) (use of `contains_key` followed by `insert` on a `HashMap` or `BTreeMap`)
 * [boxed_local](https://rust-lang-nursery.github.io/rust-clippy/master/index.html#boxed_local) (using `Box<T>` where unnecessary)
