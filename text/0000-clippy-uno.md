@@ -35,10 +35,12 @@ In general clippy is intended to be used with a liberal sprinkling of `#[allow()
 disagree with Clippy's choices. This is a weaker philosophy than that behind rustc's lints, where usually flipping
 one is an indication of a very specialized situation.
 
+## Lint attributes
 
-Currently to do this well you often have to `#[cfg_attr(clippy, allow(lintname))]` which is somewhat tedious. Ideally
-the compiler will support something like `#[allow(clippy::lintname)]` which won't warn about nonexistant lints
-at all if there is no lint engine named `clippy`. This probably needs to be figured out before Clippy 1.0.
+Currently to allow/deny clippy lints you have to `#[cfg_attr(clippy, allow(lintname))]` which is somewhat tedious.
+
+The compiler should support something like `#[allow(clippy::lintname)]` which won't attempt to warn about nonexistant lints
+at all when not running clippy.
 
 
 ## Stability guarantees
@@ -258,7 +260,4 @@ both reflect and affect the general style of the community.
 
 Through the process of this RFC we hope to determine if there are lints which need
 to be uplifted, recategorized, or removed.
-
-The question of how `#[allow(clippy::foo)]` might work can be solved in this RFC, but
-need not be. We have to make a decision on this before Clippy 1.0, however.
 
