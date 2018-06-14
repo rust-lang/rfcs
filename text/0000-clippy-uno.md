@@ -16,7 +16,7 @@ See also: [The Future of Clippy][future]
 Clippy, the linter for Rust, has been a nightly-only plugin to Rust for many years.
 In that time, it's grown big, but it's nightly-only nature makes it pretty hard to use.
 
-The eventual plan is to integrate it in Rustup á la Rustfmt/RLS so that you can simply fetch prebuilt binaries
+The eventual plan is to integrate it in Rustup à la Rustfmt/RLS so that you can simply fetch prebuilt binaries
 for your system and `cargo clippy` Just Works ™️. In preparation for this, we'd like to nail down various things
 about its lints and their categorization.
 
