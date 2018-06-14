@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-"Stabilize" Clippy 1.0, in preparation for it being shipped via rustup and eventually available via Rust Stable.
+Release Clippy 1.0, in preparation for it being shipped via rustup and eventually available via Rust Stable.
 
 # Motivation
 [motivation]: #motivation
@@ -20,7 +20,7 @@ The eventual plan is to integrate it in Rustup á la Rustfmt/RLS so that you can
 for your system and `cargo clippy` Just Works ™️. In preparation for this, we'd like to nail down various things
 about its lints and their categorization.
 
- [future]: https://manishearth.github.io/blog/2018/06/05/the-future-of-clippy-the-rust-linter/
+[future]: https://manishearth.github.io/blog/2018/06/05/the-future-of-clippy-the-rust-linter/
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -55,7 +55,7 @@ It also means that we won't make fundamentally large changes to lints. You can e
 mostly similarly over time, unless it is removed. The kinds of changes we will make are:
 
  - Adding entirely new lints
- - Fixing false positives (a lint may no longer lint in a buggy case)
+ - Fixing false positives (A lint may no longer lint in a buggy case)
  - Fixing false negatives (A case where the lint _should_ be linting but doesn’t is fixed)
  - Bugfixes (When the lint panics or does something otherwise totally broken)
 
@@ -77,7 +77,7 @@ of all of these lints as currently categorized.
 
 The categories we came up with are:
 
- 
+
  - Correctness (Deny): Probable bugs, e.g. calling `.clone()` on `&&T`,
    which clones the (`Copy`) reference and not the actual type
  - Style (Warn): Style issues; where the fix usually doesn't semantically change the code but instead changes naming/formatting.
