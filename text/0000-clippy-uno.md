@@ -27,20 +27,20 @@ about its lints and their categorization.
 
 ## Usage and lint philosophy
 
-We expect clippy to be used via `cargo clippy`.
+We expect Clippy to be used via `cargo clippy`.
 
 Clippy aims to follow the general Rust style. It may be somewhat opiniated in some situations.
 
-In general clippy is intended to be used with a liberal sprinkling of `#[allow()]` and `#[warn()]`; _it is okay_ to
+In general Clippy is intended to be used with a liberal sprinkling of `#[allow()]` and `#[warn()]`; _it is okay_ to
 disagree with Clippy's choices. This is a weaker philosophy than that behind rustc's lints, where usually flipping
 one is an indication of a very specialized situation.
 
 ## Lint attributes
 
-Currently to allow/deny clippy lints you have to `#[cfg_attr(clippy, allow(lintname))]` which is somewhat tedious.
+Currently to allow/deny Clippy lints you have to `#[cfg_attr(clippy, allow(lintname))]` which is somewhat tedious.
 
 The compiler should support something like `#[allow(clippy::lintname)]` which won't attempt to warn about nonexistant lints
-at all when not running clippy.
+at all when not running Clippy.
 
 
 ## Stability guarantees
@@ -108,7 +108,7 @@ discussion will bring up lints that the community feels _should_ be uplifted and
 
 Such an uplift may change the lint level; correctness lints are Deny
 by default in Clippy but would probably switch to Warn if uplifted since the compiler is more
-conservative here (Using clippy is in itself an opt-in to a "please annoy me more" mode).
+conservative here (Using Clippy is in itself an opt-in to a "please annoy me more" mode).
 
 
 We'd also like to establish a rough policy for future lints here:  Some correctness lints should probably belong in the compiler,
@@ -660,7 +660,7 @@ implement equality for a type involving floats).
 
 We don't particularly _need_ a 1.0, however it's good to have a milestone here, and a general idea of stability as we move forward in this process.
 
-It's also good to have some community involvement in the lint design/categorization process since clippy lints
+It's also good to have some community involvement in the lint design/categorization process since Clippy lints
 both reflect and affect the general style of the community.
 
 # Unresolved questions
