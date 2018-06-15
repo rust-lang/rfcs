@@ -102,6 +102,7 @@ Note: A fast way to implement this is to compute `skeleton` for each identifier 
     * Continue := XID_Continue
     * Medial := empty
   * UAX31-R1b. Stable Identifiers: Once a string qualifies as an identifier, it does so in all future versions.
+  * UAX31-R3. Pattern_White_Space and Pattern_Syntax Characters: Rust only uses characters from these categories for whitespace and syntax. Other characters may or may not be allowed in identifiers.
   * UAX31-R4. Equivalent Normalized Identifiers: All identifiers are normalized according to normalization form C before comparison.
 
 # Drawbacks
