@@ -10,7 +10,8 @@
 
 The semicolon (`;`) is now accepted as an item, permitting a user to write
 `struct Foo {};`, among other things. The `item` fragment specifier in a
-`macro_rules` matcher will match `;`.
+`macro_rules` matcher will match `;`.  To retain a uniform style, the tool
+`rustfmt` will remove any extraneous ;.
 
 # Motivation
 [motivation]: #motivation
@@ -108,13 +109,13 @@ To retain as uniform of a style possible in the Rust community,
 this RFC proposes that `rustfmt`, Rust's code formatting tool,
 should remove extraneous `;` since they are most likely left over
 while editing or as a frequently made mistake.
-No possibility of configuring this behavior of `rustfmt` is proposed at this time.
+No possibility of configuring this behaviour of `rustfmt` is proposed at this time.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 Simply put, the token `;` is now accepted as an item.
-This means that you are allowed to write all of the following:
+This means that you are allowed to write the following:
 
 ```rust
 struct Foo {
@@ -173,8 +174,11 @@ we can elect to do nothing.
 
 ## Improve error messages further
 
-An idea due to [@joshtripplet](https://github.com/joshtriplett) is to improve
-the error messages given by `rustc` instead of accepting redundant `;`s.
+[issue #51603]: https://github.com/rust-lang/rust/issues/51603
+[@joshtripplet]: https://github.com/joshtriplett
+
+An idea due to [@joshtripplet] is to improve the error messages
+given by `rustc` instead of accepting redundant `;`s.
 
 The current error message when writing `struct Foo {};` is:
 
@@ -189,7 +193,7 @@ error: expected item, found `;`
 This error message is already quite good, giving the user actionable
 information. However, the specific case could be improved by recognizing it
 specially and saying something like *"don't put a `;` after a `struct { ... }`"*
-(same for `union`s and `enum`s). This idea is being discussed in [issue #51603](https://github.com/rust-lang/rust/issues/51603).
+(same for `union`s and `enum`s). This idea is being discussed in [issue #51603].
 
 However, this does not solve the problem when refactoring,
 and neither does it enhance writing flow nor make the grammar more consistent.
