@@ -77,7 +77,23 @@ The lexer defines identifiers as:
 
 Parsers for Rust syntax normalize identifiers to [NFC][UAX15]. Every API accepting raw identifiers (such as `proc_macro::Ident::new` normalizes them to NFC and APIs returning them as strings (like `proc_macro::Ident::to_string`) return the normalized form. This means two identifiers are equal if their NFC forms are equal.
 
-A `non_ascii_idents` lint is added to the compiler. This lint is `allow` by default. The lint checks if any identifier in the current context contains a codepoint with a value equal to or greater than 0x80 (outside ASCII range). Not only locally defined identifiers are checked but also those imported from other crates and modules into the current context. 
+A `non_ascii_idents` lint is added to the compiler. This lint is `allow` by default. The lint checks if any identifier in the current context contains a codepoint with a value equal to or greater than 0x80 (outside ASCII range). Not only locally defined identifiers are checked but also those imported from other crates and modules into the current context.
+
+## Remaining ASCII-only names
+
+Only ASCII identifiers are allowed within an external block and in the signature of a function declared `#[no_mangle]`.
+Otherwise an error is reported.
+
+Note: These functions interface with other programming languages
+and these may allow different characters or may not apply normalization to identifiers.
+As this is a niche use-case it is excluded from this RFC.
+A future RFC may lift the restriction.
+
+This RFC keeps out-of-line modules without a `#[path]` attribute ASCII-only.
+The allowed character set for names on crates.io is not changed.
+
+Note: This is to avoid dealing with file systems on different systems *right now*.
+A future RFC may allow non-ASCII characters after the file system issues are resolved.
 
 ## Confusable detection
 
@@ -92,6 +108,23 @@ Note: The confusable detection is set to `warn` instead of `deny` to enable forw
 The confusable detection algorithm is based on [Unicode® Technical Standard #39 Unicode Security Mechanisms Section 4 Confusable Detection][TR39Confusable]. For every distinct identifier X execute the function `skeleton(X)`. If there exist two distinct identifiers X and Y in the same crate where `skeleton(X) = skeleton(Y)` report it. The compiler uses the same mechanism to check if an identifier is too similar to a keyword.
 
 Note: A fast way to implement this is to compute `skeleton` for each identifier once and place the result in a hashmap as a key. If one tries to insert a key that already exists check if the two identifiers differ from each other. If so report the two confusable identifiers.
+
+## Adjustments to the "bad style" lints
+
+Rust [RFC 0430] establishes naming conventions for Rust ASCII identifiers. The *rustc* compiler includes lints to promote these recommendations.
+
+The following names refer to Unicode character categories:
+
+* `Ll`: Letter, Lowercase
+* `Lu`: Letter, Uppercase
+
+These are the three different naming conventions and how their corresponding lints are specified to accommodate non-ASCII codepoints:
+
+* UpperCamelCase/`non_camel_case_types`: The first codepoint must not be in `Ll`. Underscores are not allowed except as a word separator between two codepoints from neither `Lu` or `Ll`.
+* snake_case/`non_snake_case`: Must not contain `Lu` codepoints.
+* SCREAMING_SNAKE_CASE/`non_upper_case_globals`: Must not contain `Ll` codepoints.
+
+Note: Scripts with upper- and lowercase variants ("bicameral scripts") behave similar to ASCII. Scripts without this distinction ("unicameral scripts") are also usable but all identifiers look the same regardless if they refer to a type, variable or constant. Underscores can be used to separate words in unicameral scripts even in UpperCamelCase contexts.
 
 ## Conformance Statement
 
@@ -162,10 +195,6 @@ The [Go language][Go] allows identifiers in the form **Letter (Letter | Number)\
 [unresolved]: #unresolved-questions
 
 * Which context is adequate for confusable detection: file, current scope, crate?
-* Are Unicode characters allowed in `no_mangle` and `extern fn`s?
-* How do Unicode names interact with the file system?
-* Are crates with Unicode names allowed and can they be published to crates.io?
-* Are `non_ascii_idents` and `confusable_idents` good names?
 * Should [ZWNJ and ZWJ be allowed in identifiers][TR31Layout]?
 
 [PEP 3131]: https://www.python.org/dev/peps/pep-3131/
@@ -181,3 +210,4 @@ The [Go language][Go] allows identifiers in the form **Letter (Letter | Number)\
 [JavaScript]: http://www.ecma-international.org/ecma-262/6.0/#sec-names-and-keywords
 [Go]: https://golang.org/ref/spec#Identifiers
 [Composed characters]: https://en.wikipedia.org/wiki/Precomposed_character
+[RFC 0430]: http://rust-lang.github.io/rfcs/0430-finalizing-naming-conventions.html
