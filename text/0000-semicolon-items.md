@@ -198,6 +198,16 @@ specially and saying something like *"don't put a `;` after a `struct { ... }`"*
 However, this does not solve the problem when refactoring,
 and neither does it enhance writing flow nor make the grammar more consistent.
 
+## Make `struct F {};` a non-fatal hard error
+
+Another alternative is for the parser to accept `;` as an item, but make it a
+hard error after parsing. All the errors of the following form will
+be emitted at once, and not one by one:
+> "error: expected item, found `;`"
+
+Thereby, the fewer edit-compile cycles will be required and thus the flow
+is disturbed less, but still to a degree.
+
 # Prior art
 [prior-art]: #prior-art
 
