@@ -96,7 +96,7 @@ fn read2_abbreviated(mut child: Child) -> io::Result<Output> {
 ```
 
 By permitting semicolons as items outside of `fn` bodies,
-a modicum of consistency in the Rust's grammar can be gained.
+a modicum of consistency in Rust's grammar can be gained.
 
 ## A frequent editing mistake
 
