@@ -8,12 +8,12 @@
 # Summary
 [summary]: #summary
 
-The semicolon (`;`) is now accepted as an item, permitting a user to write
-`struct Foo {};`, among other things. The `item` fragment specifier in a
-`macro_rules` matcher will match `;`. To retain a uniform style, the tool
-`rustfmt` will remove any extraneous `;`. Furthermore, the compiler will
-fire a warn-by-default lint when extraneous `;` are encountered, whether
-they be inside or outside an `fn` body.
+The semicolon (`;`) is now legal, but not recommended, where an item is
+expected, permitting a user to write `struct Foo {};`, among other things.
+The `item` fragment specifier in a `macro_rules` matcher will match `;`.
+To retain a recommended and uniform style, the tool `rustfmt` will remove any
+extraneous `;`. Furthermore, the compiler will fire a warn-by-default lint when
+extraneous `;` are encountered, whether they be inside or outside an `fn` body.
 
 # Motivation
 [motivation]: #motivation
@@ -316,7 +316,7 @@ of this RFC is to allow syntax like: `struct F {};` specifically. This is then
 parsed as a single item rather than `struct F {}` and `;` as two separate items.
 
 This is less consistent with the treatment of `;` inside `fn` bodies as well as
-in other languages. However, this aspect is not that important since most code
+in other languages. However, this aspect is not *that* important since most code
 will not have `;`s floating around in random places. Therefore, this alternative
 also accounts for most problems discussed in the motivation.
 
