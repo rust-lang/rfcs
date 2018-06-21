@@ -61,7 +61,7 @@ while editing or as a frequently made mistake.
 No possibility of configuring this behaviour of `rustfmt` is proposed at this time.
 
 A warn by default lint will also be added to the compiler to further
-discourage against extraneous `;`.
+discourage extraneous `;`.
 
 ## Leftover semicolons when refactoring
 
