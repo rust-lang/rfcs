@@ -18,6 +18,51 @@ extraneous `;` are encountered, whether they be inside or outside an `fn` body.
 # Motivation
 [motivation]: #motivation
 
+## Inform the user of multiple mistakes at once
+
+Consider the following program which according to current Rust compilers is
+illegal:
+
+```rust
+struct Foo {};
+struct Bar {};
+struct Baz {};
+
+fn main() {}
+```
+
+when type checking this with `cargo check`, you will first get the error:
+
+```rust
+1 | struct Foo {};
+  |              ^ help: consider removing this semicolon
+```
+
+which you quickly fix and `check` again, receiving:
+
+```rust
+2 | struct Bar {};
+  |              ^ help: consider removing this semicolon
+```
+
+and then finally, you must remove the semicolon after `Baz` for your program
+to actually compile. By allowing you to write `struct Foo {};` but at the same
+time firing a warn-by-default lint against it, you will get notified about all
+mistakes at once without having to go through the trouble of several steps.
+This also allows you to successfully `cargo test` your program.
+Solving these problems is then as easy as running `cargo fmt` once.
+
+### Retaining a uniform style
+
+To retain as uniform of a style possible in the Rust community,
+this RFC proposes that `rustfmt`, Rust's code formatting tool,
+should remove extraneous `;` since they are most likely left over
+while editing or as a frequently made mistake.
+No possibility of configuring this behaviour of `rustfmt` is proposed at this time.
+
+A warn by default lint will also be added to the compiler to further
+discourage against extraneous `;`.
+
 ## Leftover semicolons when refactoring
 
 Various common refactorings often leave behind extraneous semicolons, such as:
@@ -120,17 +165,6 @@ Since you can't omit the semicolon from the definition above,
 that becomes habit. For people who use many languages, or are transitioning to
 Rust, not being hindered by such trivialities can help in learning as well
 as improving productivity.
-
-## Retaining a uniform style
-
-To retain as uniform of a style possible in the Rust community,
-this RFC proposes that `rustfmt`, Rust's code formatting tool,
-should remove extraneous `;` since they are most likely left over
-while editing or as a frequently made mistake.
-No possibility of configuring this behaviour of `rustfmt` is proposed at this time.
-
-A warn by default lint will also be added to the compiler to further
-discourage against extraneous `;`.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
