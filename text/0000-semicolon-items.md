@@ -314,8 +314,11 @@ separator in macros which it is frequently used as.
 A different technical solution that nonetheless achieves the set out motivations
 of this RFC is to allow syntax like: `struct F {};` specifically. This is then
 parsed as a single item rather than `struct F {}` and `;` as two separate items.
+
 This is less consistent with the treatment of `;` inside `fn` bodies as well as
-in other languages. 
+in other languages. However, this aspect is not that important since most code
+will not have `;`s floating around in random places. Therefore, this alternative
+also accounts for most problems discussed in the motivation.
 
 In addition, the following macro:
 
