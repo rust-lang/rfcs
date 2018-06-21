@@ -8,9 +8,8 @@
 # Summary
 [summary]: #summary
 
-The semicolon (`;`) is now legal, but not recommended, where an item is
-expected, permitting a user to write `struct Foo {};`, among other things.
-The `item` fragment specifier in a `macro_rules` matcher will match `;`.
+The semicolon (`;`) is now legal, but not recommended, in areas where
+items are allowed, permitting a user to write `struct Foo {};`, among other things.
 To retain a recommended and uniform style, the tool `rustfmt` will remove any
 extraneous `;`. Furthermore, the compiler will fire a warn-by-default lint when
 extraneous `;` are encountered, whether they be inside or outside an `fn` body.
@@ -111,8 +110,8 @@ During that time, the user's train of thought can easily be lost.
 [compiletest_rs]: https://github.com/laumann/compiletest-rs/blob/master/src/runtest.rs#L2585-L2660
 
 Incidentally, these extraneous semicolons are currently permitted on items
-defined inside of `fn` bodies, as a consequence of the fact that `;` in
-isolation is a valid *statement* (though not an item).
+defined inside of `fn` bodies, since statement parsing consumes any extra
+semicolons.
 The following, slightly modified example is from [compiletest_rs].
 
 ```rust
@@ -169,8 +168,9 @@ as improving productivity.
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-Simply put, the token `;` is now accepted as an item.
-This means that you are allowed to write the following:
+Simply put, the token `;` is now accepted in contexts that an
+item or associated item is -- module bodies, function bodies,
+and impl/trait bodies.
 
 ```rust
 struct Foo {
@@ -181,20 +181,8 @@ struct Foo {
 You can also put a `;` after `enum`, `trait`, `impl`, `fn`, `union`,
 and `extern` items.
 
-A `macro_rules` matcher using the `item` fragment will now also accept
-`;` as an item. For example, given:
-
-```rust
-macro_rules foo! {
-    ($x: item) => { .. }
-}
-```
-
-you may write:
-
-```rust
-foo!(;)
-```
+This does not affect how the `item` fragment matcher in `macro_rules!` is
+parsed, similar to how `;`s do not match the `stmt` fragment matcher.
 
 It's important to note that while `;` is now accepted where `item`s are,
 this is not intended as the recommended style, but only to improve the
@@ -226,11 +214,10 @@ where `expr` is some expression and `label` is some label.
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-1. The token `;` is accepted as a valid item, both in the language syntax
-and by the `item` macro 'fragment specifier'. As an example, `struct Foo {};`
-is therefore in the language accepted by a Rust compiler.
+1. The token `;` is consumed and ignored between items in module, function, trait, and impl bodies. 
+   As an example, `struct Foo {};` is therefore in the language accepted by a Rust compiler.
 
-2. `rustfmt` will remove any extraneous `;` items.
+2. `rustfmt`will remove any extraneous `;` after items.
 
 3. The compiler will provide a warn-by-default lint named `redundant_semicolon`
    which will fire whenever a semicolon is extraneous (can be removed without
@@ -372,12 +359,13 @@ would no longer do so if `fn f() {};` is interpreted as one `item`,
 because `m!` is expecting a semicolon `;` after an `item`. That semicolon
 has now been gobbled, and so the invocation will result in an error.
 
-## Allow extraneous `;` wherever `item`s are allowed
+## Treat `;` as an item in its own right
 
-Another technical solution is to allow extraneous `;` wherever `item`s are
-allowed. This is different than making `;` an `item` since it affects how
-macros work in a slightly different way. Specifically, the token `;` is not
-matched by the `item` macro fragment specifier.
+
+This is similar to the current proposal, with the key difference that now
+`;` will match the `item` fragment specifier in macros. However, changing
+how macros work isn't necessary to achieve the effect this RFC desires, and this
+is inconsistent with how statements work.
 
 # Prior art
 [prior-art]: #prior-art
@@ -436,13 +424,8 @@ For example, the following is accepted by GHC:
 
 * Does this create parsing ambiguities anywhere?
 
-* Should `;` be an `item` or should some other mechanism be used to achieve
-  the same intended effect?
-
 * In which cases will the warn-by-default lint fire
   and in which cases will it not?
 
 * What should the lint in question be called?
 
-* If `;` is an `item`, what is the effect of a doc-comment or an attribute
-  on a `;`?
