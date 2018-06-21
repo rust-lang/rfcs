@@ -339,8 +339,8 @@ has now been gobbled, and so the invocation will result in an error.
 
 Another technical solution is to allow extraneous `;` wherever `item`s are
 allowed. This is different than making `;` an `item` since it affects how
-macros work in a slightly different way. The details of how it
-affects macros differently need to be fleshed out. (FIXME)
+macros work in a slightly different way. Specifically, the token `;` is not
+matched by the `item` macro fragment specifier.
 
 # Prior art
 [prior-art]: #prior-art
