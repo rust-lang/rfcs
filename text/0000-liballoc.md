@@ -95,9 +95,10 @@ use alloc::rc::Rc;
 Like `std` and `core`, this dependency does not need to be declared in `Cargo.toml`
 since `alloc` is part of the standard library and distributed with Rust.
 
-The `alloc` crate does not have a prelude (items that are implicitly in scope).
-So its items that are in the `std` prelude must be imported explicitly
-to be used in `no_std` crates:
+The prelude (set of items that are implicitly in scope) for `#![no_std]` crates
+does not assume the presence of the `alloc` crate, unlike the default prelude.
+So in such crates, items from `alloc` always need to be imported explicitly.
+For example:
 
 ```rust
 use alloc::vec::Vec;
