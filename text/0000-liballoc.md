@@ -193,5 +193,12 @@ It does provide a memory allocator through `malloc` and related functions, uncon
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
-Did I miss something in [PR #51569] that makes `alloc` not a subset of `std`?
-A double-check from someone else would be appreciated.
+* Did I miss something in [PR #51569] that makes `alloc` not a subset of `std`?
+  A double-check from someone else would be appreciated.
+
+* Should the crate be renamed before stabilization?
+  It doesn’t have exclusivity for memory-allocation-related APIs,
+  since the `core::alloc` module exists.
+  What really characterizes it is the assumption that a global allocator is available.
+  The name `global_alloc` was proposed.
+  (Although the crate doesn’t only contain the global allocator itself.)
