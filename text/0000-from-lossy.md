@@ -22,7 +22,9 @@ Currently many numeric conversions can only be done via the `as` keyword or thir
 This has several problems:
 
 - `as` can perform several different types of conversion (as noted) and is therefore error-prone
-- `as` can have [undefined behaviour](https://github.com/rust-lang/rust/issues/10184)
+- `as` conversions must be infallible, which allows no correct result for some
+  operations, for example when converting very large floats to integers (see
+  [this issue](https://github.com/rust-lang/rust/issues/10184))
 - since `as` is not a trait, it cannot be used as a bound in generic code (excepting via `num_traits::cast::AsPrimitive`)
 - these conversions are mostly primitive instructions and are very widely used, so requiring users to use another crate like `num` is unexpected
 
@@ -93,12 +95,11 @@ and to `f32` from all of:
 
 - `f64, u32, i32, u64, i64, u128, i128`
 
-(Note: other integer → float conversions are
-already handled by `From`. There is a question below about trait overlap.)
+(Note: other integer → float conversions are already handled by `From` since
+they are loss-less. There is a question below about trait overlap.)
 
-Where conversions are not exact, they should be equivalent to a conversion
-which first forces some number of low bits of the integer representation to
-zero, and then does an exact conversion to floating-point.
+These conversions should round to the nearest representable value, with ties to
+even (as is commonly used for floating-point operations).
 
 ### `TryFromLossy` trait
 
@@ -129,18 +130,14 @@ to all of:
 negative, infinite or an NaN. So even though the output type has large enough
 range, this conversion trait is still applicable.)
 
-The implementations should fail on NaN, Inf, negative values (for unsigned
-integer result types), and values whose integer approximation is not
-representable. The integer approximation should be the value rounded towards
-zero. E.g.:
+The implementations should fail on NaN, Inf, and values whose integer
+approximation is not representable. The integer approximation should be the
+value rounded towards zero. E.g.:
 
-- 1.6f32 → u32: 2
-- -0.2f32 → u32: error
-- -0.6f32 → i32: 0
+- 1.6f32 → u32: 1
+- -1f32 → u32: error
+- -0.2f32 → u32: 0
 - 100_000f32 → u16: error
-
-(Alternatively we could allow floats in the range (-1, 0] to convert to 0, also
-for unsigned integers.)
 
 # Related problems
 
