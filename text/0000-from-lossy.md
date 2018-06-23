@@ -10,7 +10,8 @@ Add `FromLossy`, `TryFromLossy` traits.
 
 Discuss the bigger picture of conversions and the `as` keyword.
 
-Specify that `From` implementations must not only be *safe*, but also *exact*.
+Specify that `From` implementations must not only be *safe*, but also *exact*
+(homomorphisms).
 
 # Motivation
 [motivation]: #motivation
@@ -65,10 +66,32 @@ Type conversions can be handled by the following traits:
 
 ### `From` trait
 
-Tweak the documentation to clarify this.
+Tweak the documentation to clarify that `From` implementations should be
+monomorphisms with regards to the `==` operation:
 
-Remove several implementations on SIMD types (currently including many fallible
-conversions like `f32x4` → `i8x4`; nightly only).
+```rust
+/// Simple and safe type conversions in to Self. It is the reciprocal of Into.
+/// 
+/// Implementations are expected to be injective homomorphisms with respect to
+/// the `PartialEq` implementations of source and target types, as well as the
+/// inverse of `PartialEq`: that is, with target type `T` and any `x, y` of
+/// source type `S`, then `x == y` if and only if `T::from(x) == T::from(y)`.
+..
+pub trait From {
+```
+
+Note that monomorphisms are not isomorphisms since it is not required that the
+functions have injective inverse (i.e. we may define `From<u8> for u16` and an
+inverse `g` such that `g(u16::from(x)) == x` for `x: u8`, but it does not hold
+that `u16::from(g(y)) == y` for `y: u16`).
+
+Note also that for the purposes of this requirement we consider the `PartialEq`
+implementation (if available) and not binary value; for example we do not
+require that `0f32` and `-0f32` map to different binary values.
+
+Nightly rust currently has several implementations of `From` on SIMD types
+which should be removed (e.g. `f32x4` → `i8x4` (fallible) and `u64x4` → `f32x4`
+(lossy i.e. not injective)).
 
 ### `FromLossy` trait
 
@@ -231,6 +254,12 @@ and that they could be larger than 64 bits.
 [Discussion thread on internals](https://internals.rust-lang.org/t/numeric-into-should-not-require-everyone-to-support-16-bit-and-128-bit-usize/3609/7).
 [Discussion about `usize` → `u64` on users forum](https://users.rust-lang.org/t/cant-convert-usize-to-u64/6243).
 
+Checked integer conversions using `TryFrom` [are being reintroduced](https://github.com/rust-lang/rust/issues/49415).
+
+It is possible that unchecked conversions could be added, perhaps using
+`TruncateFrom` (or some other trait allowing both truncation and
+zero-extension).
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
@@ -282,6 +311,19 @@ C++ tries to add some degree of explicitness with [`static_cast`](https://en.cpp
 
 I suspect it is better to leave this decision until another RFC solves
 conversions on those types.
+
+**Should the infallible traits be special cases of the fallible traits?**
+
+@newpavlov points out that `From<T>` is equivalent to `TryFrom<T, Error=!>`
+and similarly for `FromLossy` and `TryFromLossy`. Should the former traits
+therefore just be aliases of the latter?
+
+Since `From` is already stable we cannot tweak it in backward incompatible ways,
+so the first question should be whether this change can be made without
+breakage.
+
+Probably it will be better to revisit this later (but there are implications on
+the next question).
 
 **Should we allow overlapping conversion implementations?**
 
