@@ -212,7 +212,7 @@ L |     let x = Thing::function();
   = note: #[warn(hidden_fn)] on by default
 ```
 
-## Hidden, but not parallel
+## Hidden, but coherent
 
 It is crucial to note that `Property for Thing` acts, with respect to coherence,
 as if it were public. That means that crate B, which is a reverse dependency of
