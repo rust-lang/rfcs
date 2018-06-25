@@ -334,8 +334,8 @@ tomorrow you would write:
 
 ```rust
 fn elided(&self) -> &str
-fn two_args(arg1: &Foo, arg2: &Bar) -> &'arg2 Baz
-fn two_lifetimes(arg1: &Foo, arg2: &Bar) -> &'arg1 Quux<'arg2>
+fn two_args(arg1: &Foo, arg2: &'a Bar) -> &'a Baz
+fn two_lifetimes(arg1: &'a Foo, arg2: &'b Bar) -> &'a Quux<'b>
 
 impl MyStruct<'A> {
     fn foo(&self) -> &'A str
