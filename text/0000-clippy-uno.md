@@ -118,6 +118,56 @@ I don't think the compler will want _all_ correctness lints here, however if the
 where it being _not_ a bug is an exceedingly rare case (i.e. very low false positive frequency) it should probably belong in the
 compiler.
 
+## What lints belong in clippy?
+
+Essentially, we consider the categorization itself to be a definition of boundaries -- if it doesn't fit in the categories,
+it doesn't fit in clippy (or needs an RFC for, specifically).
+
+In itself this isn't complete, we explicitly have a "pedantic" group that's kinda ill defined.
+
+The rules for the main categories (style/complexity/correctness/perf -- things which are warn or deny by default) are:
+
+ - Main category lints need to be something the community has general agreement on. This does _not_ mean each lint
+   addition must go through an RFC-like process. Instead, this is to be judged by the maintainers during the review of the lint pull request
+   (taking into account objections raised if any). If the lint turns out to be controversial in the future we can flip it off or recategorize it.
+ - Generally, _if_ a lint is triggered, this should be _useful_ to _most_ Rust programmers seeing it _most_ of the time.
+  - It is okay for a lint to deal with niche code that usually won't even be triggered. Lints can target subsets of the community provided they don't randomly trigger for others.
+  - It is okay if the lint has some false positives (cases where it lints for things which are actually okay), as long as they don't dominate.
+  - It is also okay if the lint warns about things which people do not feel are worth fixing -- i.e. the programmer agrees that it is a problem
+    but does not wish to fix this. Using clippy is itself an opt-in to more finicky linting. However, this is sometimes an indicator of such a lint potentially belonging in the pedantic group.
+ - Clippy is meant to be used with a liberal sprinkling of `allow`. If there's a specific use case where a lint doesn't apply, and the solution
+   is to slap `allow` on it, that's okay. A minor level of false positives like this is to be tolerated. Similarly, style lints are allowed to be
+   about things a lot of people don't care about (i.e. they don't prefer the _opposite_ style, they just don't care). 
+ - Clippy lints _do_ deal with the visual presentation of your code, but only for things which `rustfmt` doesn't or can't handle. So, for example,
+   rustfmt will not ask you to replace `if {} else { if {} }` with `if {} else if {}`, but clippy might. There is some overlap in this area and we expect
+   to work with rustfmt on precisely figuring out what goes where. Such lints are usually `style` lints or `complexity` lints.
+ - Clippy lints are allowed to make some kind of semantic changes, but not all:
+   - The general rule is that clippy will not attempt to change what it perceives to be the intent of the code, but will rather change
+     the code to make it closer to the intent or make it achieve that intent better
+   - Clippy lints _do_ deal with potential typos and mistakes. For example, clippy will detect `for x in y.next()` which is
+     very likely a bug (you either mean `if let` or mean to unwrap). Such lints are usually `correctness` lints.
+   - Clippy lints also _do_ deal with misunderstandings of Rust, for example code doing `foo == NaN` is a misunderstanding
+     of how Rust floats work. These are also usually `correctness` lints.
+   - Clippy lints _do not_ comment on the business logic of your program. This comes from the "perceived intent" rule
+     above, changes to business logic are a change to perceived intent.
+   - Clippy lints _do_ ask you to make semantic changes that achieve the same _effect_ with
+     perhaps better performance.  Such lints are usually `perf` lints.
+
+
+For the other categories (these are allow by default):
+
+ - Lints which are "pedantic" should still roughly fall into one of the main categories, just that they are too annoying
+   (or possibly controversial) to be warn by default. So a lint must follow all the above rules if pedantic, but is allowed to be
+   "too finicky to fix", and may have looser consensus (i.e. some controversy).
+ - Similar rules for "nursery" except their reason for being allow by default is lack of maturity (i.e. the lint is buggy or still needs some thought)
+ - "restriction" lints follow all the rules for semantic changes, but do not bother with the rules
+   for the lint being useful to most rust programmers. A restriction lint must still be such that you have a
+   good reason to enable it &mdash; "I dislike such code" is insufficient &mdash but will likely be a lint most programmers
+   wish to keep off by default for most of their code. The goal of restriction lints is to provide tools with which you can supplement
+   the language checks in very specific cases where you need it, e.g. forbidding panics from a certain area of code.
+ - "cargo" lints follow the same rules as pedantic lints (we only have one of them right now, so we may be experimenting with this in the future)
+
+
  [cat]: #lint-categorization
 
 # Reference-level explanation
