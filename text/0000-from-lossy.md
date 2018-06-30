@@ -53,6 +53,10 @@ no alternative to `transmute` in some cases is beyond the scope of this RFC.
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
+We use informal definitions here using the word *lossy*, implying that some
+precision may be lost. *All conversions should preserve value at least
+approximately* (excepting `TruncateFrom` which has a different interpretation).
+
 Type conversions can be handled by the following traits:
 
 - `From` for infallible, exact conversions (e.g. widening, `u8` → `u16`)
@@ -66,28 +70,27 @@ Type conversions can be handled by the following traits:
 
 ### `From` trait
 
-Tweak the documentation to clarify that `From` implementations should be
-monomorphisms with regards to the `==` operation:
+Tweak the documentation to clarify that `From` implementations should not lose
+precision (i.e. should be injective):
 
 ```rust
-/// Simple and safe type conversions in to Self. It is the reciprocal of Into.
+/// Simple and safe type conversions to `Self`. It is the reciprocal of `Into`.
 /// 
-/// Implementations are expected to be injective homomorphisms with respect to
-/// the `PartialEq` implementations of source and target types, as well as the
-/// inverse of `PartialEq`: that is, with target type `T` and any `x, y` of
-/// source type `S`, then `x == y` if and only if `T::from(x) == T::from(y)`.
+/// Implementations should not lose precision. That is, given `from` mapping
+/// from type `S` to type `T` (`from: S ↦ T`), it should be possible to define
+/// an inverse mapping `g: T ↦ S` such that for all `x ∈ S`, `g(from(x))` is
+/// equivalent to `x`. This implies that `from` must be injective. Note that
+/// function `g` may be extended to a `TryFrom<T> for S` implementation,
+/// though this is not required.
+/// 
+/// Where `S: Eq`, we use `Eq` as our equivalence relation; otherwise, where
+/// `S: PartialEq`, we form an equivalence relation consistent with `PartialEq`
+/// over the subset of elements where `PartialEq` is reflexive (i.e. for `x`
+/// where `x.eq(x)`), and consider all other elements to be in an "other"
+/// subset `O` such that for `x, y ∈ O, x = y` and `x ∈ O, y ∉ O, x ≠ y`.
 ..
 pub trait From {
 ```
-
-Note that monomorphisms are not isomorphisms since it is not required that the
-functions have injective inverse (i.e. we may define `From<u8> for u16` and an
-inverse `g` such that `g(u16::from(x)) == x` for `x: u8`, but it does not hold
-that `u16::from(g(y)) == y` for `y: u16`).
-
-Note also that for the purposes of this requirement we consider the `PartialEq`
-implementation (if available) and not binary value; for example we do not
-require that `0f32` and `-0f32` map to different binary values.
 
 Nightly rust currently has several implementations of `From` on SIMD types
 which should be removed (e.g. `f32x4` → `i8x4` (fallible) and `u64x4` → `f32x4`
@@ -98,13 +101,28 @@ which should be removed (e.g. `f32x4` → `i8x4` (fallible) and `u64x4` → `f32
 Add `std::convert::FromLossy`:
 
 ```rust
-/// A trait for conversions which are potentially inexact.
+/// A trait for conversions which may lose precision.
 /// 
-/// It is required that conversions do not fail, and required that results are
-/// either approximately equivalent or are an appropriate special value.
-/// For example, it is reasonable for an implementation converting `f64` to
-/// `f32` to lose precision and to return positive or negative infinity for
+/// Like `From`, implementations should not fail.
+/// 
+/// Unlike `From`, implementations may lose precision, however, all results
+/// should be approximations to the input value or are an appropriate special
+/// value. For example, it is reasonable for an implementation converting `f64`
+/// to `f32` to lose precision and to return positive or negative infinity for
 /// out-of-range results, as well as to drop payloads from NaN values.
+/// 
+/// We do not specify the rounding mode used by implementations, but all results
+/// which are not special values should be numerically *close to* the input
+/// value. If `x` is the input value and `u` is the precision of the result type
+/// at `x`, then it should normally hold that `|x - from_lossy(x)| < u`. The
+/// precision `u` may be constant (as in integer types) or variable (as in
+/// floating point types) but should be signficantly smaller than the magnitude
+/// of x (`u << |x|`) and should be consistent with typical values for the
+/// result type.
+/// 
+/// If the mapping has no suitable approximate value for some inputs and no
+/// special value which may be used instead, then conversion should be
+/// implemented using the `TryFromLossy` trait instead.
 pub trait FromLossy {
     fn from_lossy(x: T) -> Self;
 }
@@ -118,22 +136,26 @@ and to `f32` from all of:
 
 - `f64, u32, i32, u64, i64, u128, i128`
 
-(Note: other integer → float conversions are already handled by `From` since
-they are loss-less. There is a question below about trait overlap.)
-
 These conversions should round to the nearest representable value, with ties to
 even (as is commonly used for floating-point operations).
+
+(Note: other integer → float conversions are already handled by `From` since
+they are loss-less. There is a question below about trait overlap.)
 
 ### `TryFromLossy` trait
 
 Add `std::convert::TryFromLossy`:
 
 ```rust
-/// A trait for conversions which may fail and may be inexact.
+/// A trait for conversions which may fail and may lose precision.
 /// 
-/// Implementations should fail when the output type has no suitable
-/// corresponding or general-purpose value, and return an approximately
-/// equivalent value when possible.
+/// Implementations should fail when the result type has no reasonable
+/// approximation of the input type and no appropriate special value (such as a
+/// representation of overflown or non-numeric values); otherwise, the
+/// conversion should succeed with an approximation of the input value.
+/// 
+/// For more precise definitions of "reasonable approximation" see the
+/// documentation on the `FromLossy` trait.
 pub trait TryFromLossy {
     type Error;
     fn try_from_lossy(x: T) -> Result<Self, Self::Error>;
