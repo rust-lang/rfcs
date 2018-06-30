@@ -1,6 +1,6 @@
 - Feature Name: from-lossy
 - Start Date: 2018-06-22
-- RFC PR: (leave this empty)
+- RFC PR: https://github.com/rust-lang/rfcs/pull/2484
 - Rust Issue: (leave this empty)
 
 # Summary
