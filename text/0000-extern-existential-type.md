@@ -6,13 +6,13 @@
 # Summary
 [summary]: #summary
 
-A version of #2071's `existential type` where the definition can live in a different crate than the declaration.
+A version of https://github.com/rust-lang/rfcs/pull/2071's `existential type` where the definition can live in a different crate than the declaration, rather than the same module.
 This is a crucial tool untangling for untangling dependencies within `std` and other libraries at the root of the ecosystem concerning global resources.
 
 # Motivation
 [motivation]: #motivation
 
-We have a number of situations where one create defines an interface, and a different crate implements that interface with a canonical singleton:
+We have a number of situations where one crate defines an interface, and a different crate implements that interface with a canonical singleton:
 
  - [`core::alloc::GlobalAlloc`](https://doc.rust-lang.org/nightly/core/alloc/trait.GlobalAlloc.html), chosen with [`#[global_allocator]`](https://doc.rust-lang.org/1.23.0/unstable-book/language-features/global-allocator.html)
  - `panic_fmt` chosen with [`#[panic_implementation]`](https://github.com/rust-lang/rfcs/blob/master/text/2070-panic-implementation.md)
@@ -21,15 +21,21 @@ We have a number of situations where one create defines an interface, and a diff
  - [`log::Log`](https://docs.rs/log/0.4.3/log/trait.Log.html) set with https://docs.rs/log/0.4.3/log/fn.set_logger.html
 
 Each of these is an instance of the same general pattern.
-But the solutions are all ad-hoc and distinct, adding burdening the user of Rust and rustc with needless extra information, and preventing more rapid prototyping.
-They also incur a run-time cost due to dynamism and indirection, which can lead to initializing bugs or bloat in space-constrained environments.
+But the solutions are all ad-hoc and distinct, burdening the user of Rust and rustc with extra work remembering/implementing, and preventing more rapid prototyping.
 
-`existential type` just covers the deferred definition of a type, and not the singleton value itself, but that is enough. For example, with global allocation:
+They also incur a run-time cost due to dynamism and indirection, which can lead to initialization bugs or bloat in space-constrained environments.
+In the annotation case, there's essentially an extra `extern { fn special_name(..); }` whose definition the annotation generates.
+This isn't easily inlined outside of LTO, and even then would prohibit rustc's own optimizations going into affect.
+The `set`-method based ones involve mutating a `static mut` or equivalent with a function or trait object, and thus can basically never be inlined away.
+So there's the overhead of the initialization, and then one or two memory dereferences to get the implementation function's actual address.
+The potential bugs are due to not `set`ing before the resource is needed, a manual task because there's static way to prevent accessing the resource while it isn't set.
+
+The `extern existential type` feature just covers the deferred definition of a type, and not the singleton itself, but that is actually enough. For example, with global allocation:
 
 ```rust
-// in `alloc`
+// In `alloc`
 
-pub extern existential type Heap: Copy + Alloc + Default;
+pub extern existential type Heap: Copy + Alloc + Default + Send + Sync;
 
 struct Box<T, A: Alloc = Heap>;
 
@@ -43,13 +49,10 @@ impl Box<T, A: Alloc + Default = Heap> {
 ```
 
 ```rust
-// in `jemalloc`
+// In `jemalloc`
 
+#[deriving(Default, Copy)]
 struct JemallocHeap;
-
-impl Default for JemallocHeap {
-    fn default() { JemallocHeap }
-}
 
 impl Alloc for JemallocHeap {
     fn alloc(stuff: Stuff) -> Thing {
@@ -57,19 +60,20 @@ impl Alloc for JemallocHeap {
     }
 }
 
-impl existential type alloc::Heap = JemallocHeap;
+extern existential type alloc::Heap = JemallocHeap;
 ```
 
 ```rust
-// in crate making an rust-implemented local allocator global
+// In a crate making an rust-implemented local allocator global.
+
+struct MyConcurrentLocalAlloc(..);
+
+impl Alloc for MyConcurrentLocalAlloc;
 
 static GLOBALIZED_LOCAL_ALLOC = MyConcurrentLocalAlloc(..):
 
-strict MyConcurrentLocalAllocHeap;
-
-impl Default for MyConcurrentLocalAllocHeap {
-    fn default() { MyConcurrentLocalAllocHeap }
-}
+#[deriving(Default, Copy)]
+struct MyConcurrentLocalAllocHeap;
 
 impl Alloc for MyConcurrentLocalAllocHeap {
     fn alloc(stuff: Stuff) -> Thing {
@@ -77,14 +81,14 @@ impl Alloc for MyConcurrentLocalAllocHeap {
     }
 }
 
-impl existential type alloc::Heap = JemallocHeap;
+extern existential type alloc::Heap = JemallocHeap;
 ```
 
-By defining traits for each bit of deferred functionary, we can likewise cover each of the other use-cases.
+By defining traits for each bit of deferred functionality (`Alloc`, `Log`), we can likewise cover each of the other use-cases.
 This frees the compiler and programmer to forget about the specific instances and just learn the general pattern.
 This is especially important for `log`, which isn't a sysroot crate and thus isn't known to the compiler at all at the moment.
 It would be very hard to justify special casing it with e.g. another attribute as the problem is solved today, when it needs none at the moment.
-As for the cost concerns with the existing techniques, No code is generated until the `impl existential type` is created, similar to with generic types, so there is no run-time cost whatsoever.
+As for the cost concerns with the existing techniques, No code is generated until the `extern existential type` is created, similar to with generic types, so there is no run-time cost whatsoever.
 
 Many of the mechanisms I listed above are on the verge of stabilization.
 I don't want to appear to by tying things up forever, so the design I've picked strives to be simple
@@ -115,11 +119,11 @@ struct Foo { int a; };
 
 // Ah now I do
 ```
-when the `impl existential type` is in scope, the `existential existential type` can becomes transparent and behaves as if the declaration and definition were put together into a normal type alias.
+when the `extern existential type` is in scope, the `existential existential type` can becomes transparent and behaves as if the declaration and definition were put together into a normal type alias.
 The definer can decide how gets to take advantage of it by making the definition public or not.
 ```rust
-pub impl existential type alloc::Foo = Bar; // the big reveal
-impl existential type alloc::Foo = Bar; // the tiny reveal
+pub extern existential type alloc::Foo = Bar; // the big reveal
+extern existential type alloc::Foo = Bar; // the tiny reveal
 ```
 There are no restrictions on the type of publicity compared to other items.
 
@@ -134,7 +138,7 @@ We cannot generate for code for generic items until they are instantiated.
 Likewise, imagine that everything that uses an `pub extern existential type` gets an extra parameter,
 and then when the `impl pub extern existential type` is defined, we go back and eliminate that parameter by substituting the actual definition.
 Only then can we generate code.
-This is why from the root crate of compilation (the binary, static library, or other such "final" component), the dependency closure must contain an `impl existential type` for every `pub extern existential type` that's actually used.
+This is why from the root crate of compilation (the binary, static library, or other such "final" component), the dependency closure must contain an `extern existential type` for every `pub extern existential type` that's actually used.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -146,7 +150,7 @@ As explained in the guide-level explanation,
 ```
 creates an existential type alias that behaves just like a `use`d `existential type <name>: <bounds>` defined in another modules so it's opaque, while
 ```rust
-(pub <scope>)? impl existential type <path> = <type>;
+(pub <scope>)? extern existential type <path> = <type>;
 ```
 reveals the definition of the existential type alias at `path` as if it was a regular type alias.
 
@@ -162,6 +166,7 @@ Both these situations make the feature useless and could be linted, but are well
 Niko Matsakis has expressed concerned about this being abused because singletons are bad.
 I agree singletons are bad, but the connection between existential types and singletons is not obvious at first sight (imagine if we did the same thing with `static`s directly), so I hope this will be sufficiently difficult to abuse.
 Even if we deem this very toxic, better all the use cases I listed above be white-listed and use same mechanism used for consistency, then use a bunch of separate solutions.
+Also, by forcing the use of a trait in the bounds of the `extern existential type`, we hopefully nudge the user in the direction of providing a non-singleton-based way of accomplishing the same task (e.g. local allocators in addition to the global allocator).
 
 Stabilization of many annotations and APIs I call out in the motivation section is imminent, and yes this would delay that a bit if we opted to do this and then rewrite those APIs to use it.
 
@@ -212,6 +217,6 @@ This would work for Rust, and in fact is wholly better in that modules can be ap
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
-- The exact syntax. "existential" is a temporary stand-in from #2071, which I just use here for consistency. I personally prefer "abstract" FWIW.
+- The exact syntax. "existential" is a temporary stand-in from https://github.com/rust-lang/rfcs/pull/2071, which I just use here for consistency. I personally prefer "abstract" FWIW.
 
 - Should Cargo have some knowledge of `extern abstract type` declarations and definitions from the get-go so it can catch invalid build plans early?
