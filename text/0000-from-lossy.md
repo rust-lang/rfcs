@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-Add `FromLossy`, `TryFromLossy` traits.
+Add `FromLossy`, `TryFromLossy` and `WrappingFrom` traits.
 
 Discuss the bigger picture of conversions and the `as` keyword.
 
@@ -55,7 +55,7 @@ no alternative to `transmute` in some cases is beyond the scope of this RFC.
 
 We use informal definitions here using the word *lossy*, implying that some
 precision may be lost. *All conversions should preserve value at least
-approximately* (excepting `TruncateFrom` which has a different interpretation).
+approximately* (excepting `WrappingFrom` which has a different interpretation).
 
 Type conversions can be handled by the following traits:
 
@@ -63,10 +63,12 @@ Type conversions can be handled by the following traits:
 - `TryFrom` for fallible, exact conversions (e.g. narrowing, `u16` → `u8`, and signed, `i16` → `u16`)
 - `FromLossy` for infallible, lossy conversions (mostly concerning floating-point types, e.g. `u32` → `f32`)
 - `TryFromLossy` for fallible, inexact conversions (e.g. `f32` → `u32`)
-- `TruncateFrom` for truncations (e.g. `u16` → `u8` which drops high bits)
+- `WrappingFrom` for truncations (e.g. `u16` → `u8`) and sign coercions (e.g. `u16 → i16`)
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
+
+## (Approximate) semantic value preserving conversions
 
 ### `From` trait
 
@@ -89,12 +91,60 @@ precision (i.e. should be injective):
 /// where `x.eq(x)`), and consider all other elements to be in an "other"
 /// subset `O` such that for `x, y ∈ O, x = y` and `x ∈ O, y ∉ O, x ≠ y`.
 ..
-pub trait From {
+pub trait From<S> {
+    fn from(S) -> Self;
+}
 ```
 
 Nightly rust currently has several implementations of `From` on SIMD types
 which should be removed (e.g. `f32x4` → `i8x4` (fallible) and `u64x4` → `f32x4`
 (lossy i.e. not injective)).
+
+### `TryFrom` trait
+
+This trait currently lacks documentation. It should have similar requirements
+to the `From` trait:
+
+```rust
+/// Potentially fallible type conversions to `Self`. It is the reciprocal of
+/// `TryInto`.
+/// 
+/// Currently `From` is a special case of `TryFrom`. Where conversions never
+/// fail, `From` should be used instead.
+/// 
+/// Successful conversions should not lose precision. That is, given `try_from`
+/// mapping from type `S` to type `T` (`try_from: S ↦ T`), it should be possible
+/// to define an inverse mapping `g: T ↦ S` such that for all `x ∈ S`, if
+/// `try_from(x)` does not fail, then `g(try_from(x))` is equivalent to `x`.
+/// This implies that `try_from` must be injective on the subset of the source
+/// type `S` where conversions succeed. Note that function `g` may be extended
+/// to a `TryFrom<T> for S` implementation, though this is not required.
+/// 
+/// Where `S: Eq`, we use `Eq` as our equivalence relation; otherwise, where
+/// `S: PartialEq`, we form an equivalence relation consistent with `PartialEq`
+/// over the subset of elements where `PartialEq` is reflexive (i.e. for `x`
+/// where `x.eq(x)`), and consider all other elements to be in an "other"
+/// subset `O` such that for `x, y ∈ O, x = y` and `x ∈ O, y ∉ O, x ≠ y`.
+..
+pub trait TryFrom<S> {
+    type Error;
+    fn try_from(value: S) -> Result<Self, Self::Error>;
+}
+```
+
+It would be nice to be able to make `TryFrom` an extension of `From`.
+Unfortunately this would be a potentially breaking change since more
+concrete implementations of both traits may exist for some types; we therefore
+propose to add a default implementation once
+[specialisation](https://github.com/rust-lang/rfcs/pull/1210) is ready:
+```rust
+impl<S, T> TryFrom<S> for T where From<S>: T {
+    default type Error = !;
+    default fn try_from(value: S) -> Result<Self, Self::Error> {
+        Ok(T::from(value))
+    }
+}
+```
 
 ### `FromLossy` trait
 
@@ -123,8 +173,8 @@ Add `std::convert::FromLossy`:
 /// If the mapping has no suitable approximate value for some inputs and no
 /// special value which may be used instead, then conversion should be
 /// implemented using the `TryFromLossy` trait instead.
-pub trait FromLossy {
-    fn from_lossy(x: T) -> Self;
+pub trait FromLossy<S> {
+    fn from_lossy(x: S) -> Self;
 }
 ```
 
@@ -149,16 +199,37 @@ Add `std::convert::TryFromLossy`:
 ```rust
 /// A trait for conversions which may fail and may lose precision.
 /// 
+/// Like `FromLossy`, implementations may lose precision. Like `TryFrom`,
+/// conversions may fail on some input values.
+/// 
 /// Implementations should fail when the result type has no reasonable
 /// approximation of the input type and no appropriate special value (such as a
 /// representation of overflown or non-numeric values); otherwise, the
 /// conversion should succeed with an approximation of the input value.
 /// 
-/// For more precise definitions of "reasonable approximation" see the
-/// documentation on the `FromLossy` trait.
-pub trait TryFromLossy {
+/// We do not specify the rounding mode used by implementations, but all results
+/// where `try_from_lossy` does not fail and where the result is not a special
+/// value should be numerically *close to* the input value. That is, if `x` is
+/// the input value and `u` is the precision of the result type at `x` and
+/// `Ok(r) = try_from_lossy(x)`, then it should normally hold that
+/// `|x - try_from_lossy(x).unwrap()| < u`. The precision `u` may be constant
+/// (as in integer types) or variable (as in floating point types) but should be
+/// signficantly smaller than the magnitude of x (`u << |x|`) and should be
+/// consistent with typical values for the result type.
+pub trait TryFromLossy<S> {
     type Error;
-    fn try_from_lossy(x: T) -> Result<Self, Self::Error>;
+    fn try_from_lossy(x: S) -> Result<Self, Self::Error>;
+}
+```
+
+As with `TryFrom`, we propose to add a default implementation once
+specialisation is available:
+```rust
+impl<S, T> TryFromLossy<S> for T where FromLossy<S>: T {
+    default type Error = !;
+    default fn try_from_lossy(value: S) -> Result<Self, Self::Error> {
+        Ok(T::from_lossy(value))
+    }
 }
 ```
 
@@ -184,87 +255,50 @@ value rounded towards zero. E.g.:
 - -0.2f32 → u32: 0
 - 100_000f32 → u16: error
 
+## Other conversions
+
+### `WrappingFrom` trait
+
+There are several types of integer conversion which do not preserve the
+semantic value:
+
+-   sign transmutation (i.e. reinterpretation as another integer type of the
+    same size but with different signed-ness), e.g. `128u8 → -128i8`
+-   unsigned truncation (simply dropping excess high bits), e.g. `260u16 → 4u8`
+-   signed truncation (dropping excess high bits and sign-transmuting the
+    remainder), e.g. `-260i16 → -4i8`
+
+Note that there is less incentive against usage of `as` in these cases since the
+conversions do not preserve "value", although alternatives still have some use
+(e.g. to clarify that a conversion is a truncation).
+
+We can add `std::convert::WrappingFrom`:
+
+```rust
+/// A trait for wrapping conversions; these may truncate (drop high bits) and
+/// sign-convert (re-interpret meaning of high bits).
+/// 
+/// Note that `TryFrom` and `WrappingFrom` may both be implemented for the same
+/// source and target types; in this case they should have equivalent result
+/// where `TryFrom` succeeds.
+pub trait WrappingFrom {
+    fn wrapping_from(x: T) -> Self;
+}
+```
+
+Add implementations for all integer conversions which are *not implemented* by
+`From`. These conversions should truncate or zero-extend to the size of the
+result type, then reinterpret (transmute) the bits to the result type.
+
+Potentially this could also re-implement all `From` conversions on integer
+types. This could be useful for generic code. Unfortunately since Rust has no
+`Integer` trait there is no simple way to re-implement `From` *only* where the
+source and target types are integer types.
+
 # Related problems
 
 These problems are discussed in the search for a complete solution; however it
 is not currently proposed to solve them within this RFC.
-
-## Integer transmutations
-
-There are several types of transmutation, discussed here separately, although
-they are all transmutations.
-
-Note that there is less insentive against usage of `as` in these cases since the
-conversions do not preserve "value", although alternatives still have some use
-(e.g. to clarify that a conversion is a truncation).
-
-### Sign transmutations
-
-The conversions done by `as` between signed and unsigned types of the same size
-are simply transmutations (reinterpretations of the underlying bits), e.g.
-`0x80u8 as i8 == -128`.
-
-As these are not simple mathematical operations we could simply not provide any
-alternative to `as`, and suggest usage of `mem::transmute` if necessary.
-
-Alternatively, we could add `transmute_sign` methods to all primitive integer
-types, e.g.:
-```rust
-impl i32 {
-    ...
-    fn transmute_sign(self) -> u32 { ... }
-}
-```
-
-### Unsigned truncation
-
-We could add `std::convert::TruncateFrom`:
-
-```rust
-/// A trait for conversions which are truncate values by dropping unused high
-/// bits.
-/// 
-/// Note that this is distinct from other types of conversion since high bits
-/// are explicitly ignored and results are thus not numerically equivalent to
-/// input values.
-pub trait TruncateFrom {
-    fn truncate_from(x: T) -> Self;
-}
-```
-
-Add implementations for each unsigned integer type to each smaller unsigned
-integer type. (See below regarding signed types.)
-
-Note that we *could* suggest users drop unwanted high bits (via masks or
-bit-shifting) *then* use `TryFrom`, but this is a very unergonomic approach to
-what is a simple and commonly used operation.
-
-### Signed truncation
-
-Bitwise operations on signed integers can have "unintuitive" results. For example,
-```rust
-fn main() {
-    let x = 3i32 << 14;
-    println!("{}", x);
-    println!("{}", x as i16);
-}
-```
-prints:
-```
-49152
--16384
-```
-since the 16th bit is later interpreted as a -2<sup>15</sup> in the Two's
-Complement representation, the numeric value on conversion to `i16` is quite
-different despite all the dropped bits being 0.
-
-Essentially, operations like `i32` → `i16` are *shorten-and-transmute*.
-
-Since these operations are not intuitive and not so widely useful, it may not
-be necessary to implement traits over them.
-
-Instead, we could suggest users implement signed truncations like this:
-`x.transmute_sign().truncate_into::<u16>().transmute_sign()`.
 
 ## Platform-dependent types
 
@@ -279,7 +313,7 @@ and that they could be larger than 64 bits.
 Checked integer conversions using `TryFrom` [are being reintroduced](https://github.com/rust-lang/rust/issues/49415).
 
 It is possible that unchecked conversions could be added, perhaps using
-`TruncateFrom` (or some other trait allowing both truncation and
+`WrappingFrom` (or some other trait allowing both truncation and
 zero-extension).
 
 # Drawbacks
