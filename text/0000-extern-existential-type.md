@@ -142,7 +142,7 @@ See the first alternative for how we can use Cargo to ameliorate this.
 As mentioned in the introduction, code gen can be reasoned about by comparing with generic and inlining).
 We cannot generate for code for generic items until they are instantiated.
 Likewise, imagine that everything that uses an `pub extern existential type` gets an extra parameter,
-and then when the `impl pub extern existential type` is defined, we go back and eliminate that parameter by substituting the actual definition.
+and then when the `pub extern existential type = ...` is defined, we go back and eliminate that parameter by substituting the actual definition.
 Only then can we generate code.
 This is why from the root crate of compilation (the binary, static library, or other such "final" component), the dependency closure must contain an `extern existential type` for every `pub extern existential type` that's actually used.
 
@@ -160,10 +160,10 @@ creates an existential type alias that behaves just like a `use`d `existential t
 ```
 reveals the definition of the existential type alias at `path` as if it was a regular type alias.
 
-There is a post-hoc coherence rule that every used `pub extern existential type` contains exactly one `impl exisitential type` definition within the entire build-plan of crates.
+There is a post-hoc coherence rule that every used `pub extern existential type` contains exactly one `extern exisitential type` definition within the entire build-plan of crates.
 "used" here can be roughly defined by tracing all identifiers through their bindings, but should make intuitive sense.
 
-There is nothing preventing private `extern existential type`, or a `impl extern type` in the same module as its `extern existential type`.
+There is nothing preventing private `extern existential type`, or a `extern extern existential type` in the same module as its `extern existential type`.
 Both these situations make the feature useless and could be linted, but are well defined from the rules above.
 
 # Drawbacks
