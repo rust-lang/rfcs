@@ -219,7 +219,7 @@ in Rust syntax, and then those modules can be applied like functions.
 mod bar = foo<...>;
 ```
 
-More appropriate is Haskell's new [backpack](https://plv.mpi-sws.org/backpack/) modules system, where the parameterization is not explicit in the code (`use`d modules may be resolved or just module signatures, in which case they act as parameters), and Cabal (the Cargo equivalent), auto-applies everything.
+More appropriate is Haskell's new [backpack](https://plv.mpi-sws.org/backpack/) module system, where the parameterization is not explicit in the code (`use`d modules may be resolved or just module signatures, in which case they act as parameters), and Cabal (the Cargo equivalent), auto-applies everything.
 This would work for Rust, and in fact is wholly better:
 
  - It is more expressive because modules can be applied multiple times like ML and unlike this.
