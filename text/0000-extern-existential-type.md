@@ -87,22 +87,23 @@ extern existential type alloc::Heap = JemallocHeap;
 By defining traits for each bit of deferred functionality (`Alloc`, `Log`), we can likewise cover each of the other use-cases.
 This frees the compiler and programmer to forget about the specific instances and just learn the general pattern.
 This is especially important for `log`, which isn't a sysroot crate and thus isn't known to the compiler at all at the moment.
-It would be very hard to justify special casing it with e.g. another attribute as the problem is solved today, when it needs none at the moment.
-As for the cost concerns with the existing techniques, No code is generated until the `extern existential type` is created, similar to with generic types, so there is no run-time cost whatsoever.
+It would be very hard to justify special casing `log` in rustc with e.g. another attribute as the problem is solved today, when it needs none at the moment.
+As for the cost concerns with the existing techniques, no code is generated until the `extern existential type` is created, similar to with generic types, so there is no run-time cost whatsoever.
 
-Many of the mechanisms I listed above are on the verge of stabilization.
-I don't want to appear to by tying things up forever, so the design I've picked strives to be simple
+Many of the mechanisms listed in this RFC above are on the verge of stabilization.
+This RFC doesn't want to appear to by tying things up forever, so the design strives to be simple while still being general enough.
+This ought to also be forwards compatible with the more comprehensive solutions as described in the alternatives section.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 It's best to understand this feature in terms of regular `existential type`.
 Type checking when *using* `pub extern existential type` works exactly the same way:
-The type is opaque except for it's bounds, and no traits can be implemented for it.
+The type is opaque except for its bounds, and no traits can be implemented for it.
 ```rust
 pub extern existential type Foo: Baz;
 existential type Bar: Baz;
-// both are used the same way if we
+// both are used the same way in other modules
 ```
 C and C++ programmers too will be familiar with the remote definition aspect of this from those language's "forward declarations" and their use in header files.
 
@@ -119,19 +120,23 @@ struct Foo { int a; };
 
 // Ah now I do
 ```
-when the `extern existential type` is in scope, the `existential existential type` can becomes transparent and behaves as if the declaration and definition were put together into a normal type alias.
-The definer can decide how gets to take advantage of it by making the definition public or not.
+when the `extern existential type` is in scope, the `existential existential type` becomes transparent and behaves as if the declaration and definition were put together into a normal type alias.
+The definer can decide how one downstream gets to take advantage of it by making the definition public or not.
 ```rust
 pub extern existential type alloc::Foo = Bar; // the big reveal
 extern existential type alloc::Foo = Bar; // the tiny reveal
 ```
-There are no restrictions on the type of publicity compared to other items.
+private allows the item to be used (as some definition is needed), but while no one downstream knows its true definition. like regular `existential type`.
+Public allows downstream to choose between staying agnostic for increased flexibility, or peaking the hind the veil for extra functionality.
+(e.g. maybe it wants to require the global allocator by jemalloc to use some special jemalloc-specific debug output.)
+There are no restrictions on the type of publicity on the definitions compared to other items.
 
 Only one crate in the build plan can define the `pub extern existential type`.
 Unlike the trait system, there are no orphan restrictions that ensure crates can always be composed:
 any crate is free to define the `pub extern existential type`, as long is it isn't used with another that also does, in which case the violation will only be caught when building a crate that depends on both (or if one of the crates depends on the other).
-This is not very nice, but exactly like "lang items" and the annotations that exist today,
-so it is nothing worse.
+This is not very nice, but exactly like "lang items" and the annotations that exist for this purpose today,
+so it is nothing worse than what's current about to be stabilized.
+There is no natural orphan rules for this feature (or alternatively, regular `existential type` can be seen as this with the orphan rule that it must be defined in the same module), so this is expected.
 
 As mentioned in the introduction, code gen can be reasoned about by comparing with generic and inlining).
 We cannot generate for code for generic items until they are instantiated.
