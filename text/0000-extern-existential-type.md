@@ -17,8 +17,8 @@ We have a number of situations where one crate defines an interface, and a diffe
  - [`core::alloc::GlobalAlloc`](https://doc.rust-lang.org/nightly/core/alloc/trait.GlobalAlloc.html), chosen with [`#[global_allocator]`](https://doc.rust-lang.org/1.23.0/unstable-book/language-features/global-allocator.html)
  - `panic_fmt` chosen with [`#[panic_implementation]`](https://github.com/rust-lang/rfcs/blob/master/text/2070-panic-implementation.md)
  - The OOM hook, modified with [`std::alloc::{set,take}_alloc_error_hook`](https://doc.rust-lang.org/nightly/std/alloc/fn.set_alloc_error_hook.html)
- - [`std::collections::hash_map::RandomState`](https://doc.rust-lang.org/std/collections/hash_map/struct.RandomState.html), if https://github.com/rust-lang/rust/pull/51846 is merged, the `hashmap_random_keys` lang item.
- - [`log::Log`](https://docs.rs/log/0.4.3/log/trait.Log.html) set with https://docs.rs/log/0.4.3/log/fn.set_logger.html
+ - [`std::collections::hash_map::RandomState`](https://doc.rust-lang.org/std/collections/hash_map/struct.RandomState.html), if https://github.com/rust-lang/rust/pull/51846 is merged, the `hashmap_random_keys` lang item
+ - [`log::Log`](https://docs.rs/log/0.4.3/log/trait.Log.html) set with [`log::set_logger`](https://docs.rs/log/0.4.3/log/fn.set_logger.html)
 
 Each of these is an instance of the same general pattern.
 But the solutions are all ad-hoc and distinct, burdening the user of Rust and rustc with extra work remembering/implementing, and preventing more rapid prototyping.
