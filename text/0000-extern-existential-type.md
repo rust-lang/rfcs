@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-A version of https://github.com/rust-lang/rfcs/pull/2071's `existential type` where the definition can live in a different crate than the declaration, rather than the same module.
+An extension of https://github.com/rust-lang/rfcs/pull/2071's `existential type` where the definition can live in a different crate than the declaration, rather than the same module.
 This is a crucial tool untangling for untangling dependencies within `std` and other libraries at the root of the ecosystem concerning global resources.
 
 # Motivation
