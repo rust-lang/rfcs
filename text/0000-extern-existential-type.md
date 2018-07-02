@@ -92,7 +92,7 @@ As for the cost concerns with the existing techniques, no code is generated unti
 
 Many of the mechanisms listed in this RFC above are on the verge of stabilization.
 This RFC doesn't want to appear to by tying things up forever, so the design strives to be simple while still being general enough.
-This ought to also be forwards compatible with the more comprehensive solutions as described in the alternatives section.
+This ought to also be forwards compatible with the more comprehensive solutions as described in the [alternatives](#alternatives) section.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -137,6 +137,7 @@ any crate is free to define the `pub extern existential type`, as long is it isn
 This is not very nice, but exactly like "lang items" and the annotations that exist for this purpose today,
 so it is nothing worse than what's current about to be stabilized.
 There is no natural orphan rules for this feature (or alternatively, regular `existential type` can be seen as this with the orphan rule that it must be defined in the same module), so this is expected.
+See the first alternative for how we can use Cargo to ameliorate this.
 
 As mentioned in the introduction, code gen can be reasoned about by comparing with generic and inlining).
 We cannot generate for code for generic items until they are instantiated.
@@ -168,18 +169,21 @@ Both these situations make the feature useless and could be linted, but are well
 # Drawbacks
 [drawbacks]: #drawbacks
 
-Niko Matsakis has expressed concerned about this being abused because singletons are bad.
-I agree singletons are bad, but the connection between existential types and singletons is not obvious at first sight (imagine if we did the same thing with `static`s directly), so I hope this will be sufficiently difficult to abuse.
-Even if we deem this very toxic, better all the use cases I listed above be white-listed and use same mechanism used for consistency, then use a bunch of separate solutions.
+Niko Matsakis has expressed concerns about this being abused because singletons are bad.
+Singletons are indeed bad, but the connection between existential types and singletons is not obvious at first sight (imagine if we had deferred definition mechanism with `static`s directly), which hopefully will make this be sufficiently difficult to abuse.
+Even if we deem this very toxic, better all the use cases I listed above be white-listed and use same mechanism used for consistency (and one that is cost-free at run time), than use a bunch of separate solutions.
 Also, by forcing the use of a trait in the bounds of the `extern existential type`, we hopefully nudge the user in the direction of providing a non-singleton-based way of accomplishing the same task (e.g. local allocators in addition to the global allocator).
 
-Stabilization of many annotations and APIs I call out in the motivation section is imminent, and yes this would delay that a bit if we opted to do this and then rewrite those APIs to use it.
+Stabilization of many annotations and APIs called out in the [motivation](#motivation) section is imminent, and yes this would delay that a bit if we opted to do this and then rewrite those APIs to use it.
 
-As per the "prior art" section, something like Haskell's backpack is wholly superior.
+As per the [prior art](#prior-art) section, something like Haskell's backpack is wholly superior.
 But as stabilization of the status quo is imminent, I wanted to pick something easier to implement and closer to existing rust features mentally/pedagogically.
 
 # Rationale and alternatives
 [alternatives]: #alternatives
+
+- We can additionally mandate that `Cargo.toml` include all `extern existential type` declarations and definitions, and Cargo reject any build plan where they don't match 1-1.
+  This ameliorates the crate composition issue in practice for the vast majority of users using Cargo (even just `Cargo.toml`s).
 
 - Of course, we can always do nothing and just keep the grab bag of ad-hoc solutions we have today, and leave log with just a imperative dynamic solution.
 
@@ -190,14 +194,14 @@ But as stabilization of the status quo is imminent, I wanted to pick something e
 
 - I mention just doing this would delay stabilization.
   But, we could also retrofit those annotations as desugaring into this feature so as not to delay it.
-  This keeps around the crust in the compiler forever, but at least we can deprecate the annotations in the next epoch.
+  This keeps around the crust in the compiler forever, but at least we can deprecate the annotations in the next edition.
   I don't think it's worth it to bend over backwards for something that is still unstable, and consider it unwise to so "whiplash" the ecosystem telling them to use one stable thing and then immediate another, but for those that really want to stabilize stuff, this is an option.
 
 - In many cases, the `extern existential type` would just be a ZST proxy used in a default argument.
   If we could add default arguments to existing type parameters, then the original items wouldn't need an abstract stand-in.
   @eddyb and others have thought very hard about this approach for many years, and it doesn't seem possible, however.
 
-See the prior art section below for context on the last two.
+See the [prior art](#prior-art) section below for context on the last two.
 
 - We couldn't do exactly ML's functors for this problem, because people both want to import `std` without passing in a global allocator, yet also be able to use `std` with different global allocators.
 
@@ -208,15 +212,22 @@ See the prior art section below for context on the last two.
 
 The basic idea come from the "functors" of the ML family of languages, where a module is given explicit parameters, like
 ```rust
-mod Foo<...> { ... }
+mod foo<...> { ... }
 ```
 in Rust syntax, and then those modules can be applied like functions.
 ```rust
-mod Bar = Foo<...>;
+mod bar = foo<...>;
 ```
 
 More appropriate is Haskell's new [backpack](https://plv.mpi-sws.org/backpack/) modules system, where the parameterization is not explicit in the code (`use`d modules may be resolved or just module signatures, in which case they act as parameters), and Cabal (the Cargo equivalent), auto-applies everything.
-This would work for Rust, and in fact is wholly better in that modules can be applied multiple times like ML, there is no syntactic overhead of manual applications, and Cabal, with it's knowledge of who needs what, can complain early if something would be defined twice / two different instantiations do not unify as a downstream crate needs.
+This would work for Rust, and in fact is wholly better:
+
+ - It is more expressive because modules can be applied multiple times like ML and unlike this.
+
+ - There is still no syntactic overhead of manual applications at use sites, like this and unlike ML.
+
+ - Cabal, with it's knowledge of who needs what, can still complain early if something would be defined twice / two different instantiations do not unify as a downstream crate needs, like the first alternative.
+
 [That latter issue problem is not possible here under the single-instantiation rule.]
 
 # Unresolved questions
