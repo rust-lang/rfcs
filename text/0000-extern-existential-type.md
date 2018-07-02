@@ -31,7 +31,6 @@ So there's the overhead of the initialization, and then one or two memory derefe
 The potential bugs are due to not `set`ing before the resource is needed, a manual task because there's static way to prevent accessing the resource while it isn't set.
 
 The `extern existential type` feature just covers the deferred definition of a type, and not the singleton itself, but that is actually enough. For example, with global allocation:
-
 ```rust
 // In `alloc`
 
@@ -44,12 +43,12 @@ impl Box<T, A: Alloc> {
 }
 
 impl Box<T, A: Alloc + Default = Heap> {
-    fn new() { Self::new_in(Default::default())    }
+    fn new() { Self::new_in(Default::default()) }
 }
 ```
-
 ```rust
-// In `jemalloc`
+// In `jemalloc`, which has one instance but may not be the global allacator
+// for Rust.
 
 #[deriving(Default, Copy)]
 struct JemallocHeap;
@@ -59,16 +58,29 @@ impl Alloc for JemallocHeap {
         ...
     }
 }
+```
+```rust
+// In `jemalloc-global`, which "promotes" jemalloc as the global allocator.
+
+use jemalloc::JemallocHeap;
 
 extern existential type alloc::Heap = JemallocHeap;
 ```
-
 ```rust
-// In a crate making an rust-implemented local allocator global.
+// In `my-concurrent-local-allocator`, which is `Send + Sync` but can have many
+// instances.
 
-struct MyConcurrentLocalAlloc(..);
+struct MyConcurrentLocalAlloc(...);
 
-impl Alloc for MyConcurrentLocalAlloc;
+impl Alloc for MyConcurrentLocalAlloc {
+    ...
+};
+```
+```rust
+// In `my-concurrent-local-allocator-global`, which "promotes" a static of
+// `MyConcurrentLocalAlloc` as the global allocator
+
+use my_concurrent_local_allocator::MyConcurrentLocalAlloc;
 
 static GLOBALIZED_LOCAL_ALLOC = MyConcurrentLocalAlloc(..):
 
@@ -83,6 +95,7 @@ impl Alloc for MyConcurrentLocalAllocHeap {
 
 extern existential type alloc::Heap = JemallocHeap;
 ```
+Note how these examples show how foreign and pure-Rust implementations of the global resource can both be used.
 
 By defining traits for each bit of deferred functionality (`Alloc`, `Log`), we can likewise cover each of the other use-cases.
 This frees the compiler and programmer to forget about the specific instances and just learn the general pattern.
