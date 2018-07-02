@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-An extension of https://github.com/rust-lang/rfcs/pull/2071's `existential type` where the definition can live in a different crate than the declaration, rather than the same module.
+An extension of [#2071](https://github.com/rust-lang/rfcs/pull/2071)'s `existential type` where the definition can live in a different crate than the declaration, rather than the same module.
 This is a crucial tool untangling for untangling dependencies within `std` and other libraries at the root of the ecosystem concerning global resources.
 
 # Motivation
@@ -17,7 +17,7 @@ We have a number of situations where one crate defines an interface, and a diffe
  - [`core::alloc::GlobalAlloc`](https://doc.rust-lang.org/nightly/core/alloc/trait.GlobalAlloc.html), chosen with [`#[global_allocator]`](https://doc.rust-lang.org/1.23.0/unstable-book/language-features/global-allocator.html)
  - `panic_fmt` chosen with [`#[panic_implementation]`](https://github.com/rust-lang/rfcs/blob/master/text/2070-panic-implementation.md)
  - The OOM hook, modified with [`std::alloc::{set,take}_alloc_error_hook`](https://doc.rust-lang.org/nightly/std/alloc/fn.set_alloc_error_hook.html)
- - `std::hash:RandomState`, if https://github.com/rust-lang/rust/pull/51846 is merged, the `hashmap_random_keys` lang item.
+ - [`std::collections::hash_map::RandomState`](https://doc.rust-lang.org/std/collections/hash_map/struct.RandomState.html), if https://github.com/rust-lang/rust/pull/51846 is merged, the `hashmap_random_keys` lang item.
  - [`log::Log`](https://docs.rs/log/0.4.3/log/trait.Log.html) set with https://docs.rs/log/0.4.3/log/fn.set_logger.html
 
 Each of these is an instance of the same general pattern.
@@ -233,6 +233,6 @@ This would work for Rust, and in fact is wholly better:
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
-- The exact syntax. "existential" is a temporary stand-in from https://github.com/rust-lang/rfcs/pull/2071, which I just use here for consistency. I personally prefer "abstract" FWIW.
+- The exact syntax. "existential" is a temporary stand-in from [#2071](https://github.com/rust-lang/rfcs/pull/2071), which I just use here for consistency. I personally prefer "abstract" FWIW.
 
 - Should Cargo have some knowledge of `extern abstract type` declarations and definitions from the get-go so it can catch invalid build plans early?
