@@ -134,10 +134,6 @@ There are no restrictions on the type of publicity on the definitions compared t
 Only one crate in the build plan can define the `pub extern existential type`.
 Unlike the trait system, there are no orphan restrictions that ensure crates can always be composed:
 any crate is free to define the `pub extern existential type`, as long is it isn't used with another that also does, in which case the violation will only be caught when building a crate that depends on both (or if one of the crates depends on the other).
-This is not very nice, but exactly like "lang items" and the annotations that exist for this purpose today,
-so it is nothing worse than what's current about to be stabilized.
-There is no natural orphan rules for this feature (or alternatively, regular `existential type` can be seen as this with the orphan rule that it must be defined in the same module), so this is expected.
-See the first alternative for how we can use Cargo to ameliorate this.
 
 As mentioned in the introduction, code gen can be reasoned about by comparing with generic and inlining).
 We cannot generate for code for generic items until they are instantiated.
@@ -168,6 +164,11 @@ Both these situations make the feature useless and could be linted, but are well
 
 # Drawbacks
 [drawbacks]: #drawbacks
+
+The fact that not all crates can compose with this, due to duplicate or missing definitions per declaration, is not very nice.
+However, this is exactly like "lang items" and the annotations that exist for this purpose today, so it is nothing worse than what's currently about to be stabilized.
+There is no natural orphan rules for this feature (or alternatively, regular `existential type` can be seen as this with the orphan rule that it must be defined in the same module), so this is expected.
+See the first alternative for how we can use Cargo to ameliorate this.
 
 Niko Matsakis has expressed concerns about this being abused because singletons are bad.
 Singletons are indeed bad, but the connection between existential types and singletons is not obvious at first sight (imagine if we had deferred definition mechanism with `static`s directly), which hopefully will make this be sufficiently difficult to abuse.
