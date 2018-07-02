@@ -31,15 +31,15 @@ Blockers for doing so on stable Rust are diminishing:
 
 * [The `#[global_allocator]` attribute][global_allocator] to specify an allocator
   and remove the need for an operating-system-provided one is stable since Rust 1.28.
-* [PR #51607] adds a fallback handling for OOM (allocation failure) conditions
-  for when `std` is not available,
-  removing the need for programs to define an unstable `oom` lang item themselves.
+* [Tracking issue #51540] discusses how to stabilize a way to specify
+  the handling of OOM (allocation failure) conditions when `std` is not available,
+  instead of the unstable `oom` lang item.
 
 With this, the only allocation-related blocker is being able to import `Vec` in the first place.
 This RFC proposes stabilizing the current unstable way to do it: `extern crate alloc;`
 
 [global_allocator]: https://doc.rust-lang.org/nightly/std/alloc/#the-global_allocator-attribute
-[PR #51607]: https://github.com/rust-lang/rust/pull/51607
+[Tracking issue #51540]: https://github.com/rust-lang/rust/issues/51540
 
 ## Use case 2: making stable libraries `no_std`
 
