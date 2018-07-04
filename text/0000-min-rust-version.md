@@ -148,11 +148,12 @@ max `version` value from them as a MSRV. If all `cfg`s are false, value in the
 # Drawbacks
 [drawbacks]: #drawbacks
 
-- Declaration of MSRV and describe checks does not guarantee that, only
-appropriate CI testing.
+- Declaration of MSRV, even with the checks, does not guarantee that crate
+will work correctly on the specified MSRV, only appropriate CI testing can do that.
 - More complex dependency versions resolution algorithm.
-- MSRV selected by `cargo publish` can be overly conservative.
-- MSRV checks will make compiler more complex.
+- MSRV selected by `cargo publish` with `rust = "stable"` can be too
+conservative.
+- Checking `#[stable(since=version)]` of used items will make compiler more complex.
 
 # Rationale and Alternatives
 [alternatives]: #alternatives
