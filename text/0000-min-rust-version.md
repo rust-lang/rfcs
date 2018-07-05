@@ -38,12 +38,11 @@ willl still have `rust="stable"`, but version sent to crates.io will have
 `rust="1.30"` if you've used Rust 1.30. This version will be used to determine if
 crate can be used with the crate user's toolchain and to select appropriate
 dependency versions. In case if you have `rust="stable"`, but execute
-`cargo publish` with Nigthly toolcahin you will get an error.
+`cargo publish` with Nightly toolcahin you will get an error.
 
 If you are sure that your crate supports older Rust versions (e.g. by using CI
 testing) you can change `rust` field accordingly. On `cargo publish` it will be
-checked that crate indeed can be built with the specified version. (though this
-check can be disabled with `--no-verify` option)
+checked that crate indeed can be built with the specified version.
 
 For example, lets imagine that your crate depends on crate `foo` with 10 published
 versions from `0.1.0` to `0.1.10`, in versions from `0.1.0` to `0.1.5` `rust`
@@ -54,17 +53,18 @@ later. But if you'll try to build your project with Rust 1.29 cargo will issue a
 error. Although this check can be disabled with `--no-rust-check` option.
 
 `rust` field should respect the following minimal requirements:
-- value should be equal to "stable", "nigthly" or to a version in semver format
+- value should be equal to "stable", "nightly" or to a version in semver format
 ("1.50" is a valid value and implies "1.50.0")
 - version should not be bigger than the current stable toolchain
 - version should not be smaller than 1.27 (version in which  `package.rust` field
 became a warning instead of an error)
 
 `rust` will be a required field. For crates uploaded before introduction of this
-feature 2015 edition crates will imply `rust="1.0"` and 2018 ediiton will imply
+feature 2015 edition crates will imply `rust="1.0"` and 2018 edition will imply
 `rust = "1.30"`.
 
-It will be an error to use `rust="1.27"` and `edition="2018"`, but `rust="1.40"` and `edition="2015"` is a valid combination.
+It will be an error to use `rust="1.27"` and `edition="2018"`, but `rust="1.40"`
+and `edition="2015"` is a valid combination.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -80,7 +80,25 @@ the first stage to the minimum and ideally ship it as part of Rust 2018.
 It will also allow crate authors who care about MSRV to start mark their crates
 early.
 
-## Second stage: versions resolution
+
+## Second stage: `cargo publish` check
+
+The next step is for `cargo publish` to require use of the toolchain specified
+in the `rust` field, for example crates with:
+- `rust="stable"` can be published only with a stable toolchain, though not
+necessarily with the latest one. Cargo will insert toolchain version before
+publishing the crate as was described in the "guide-level explanation".
+- `rust="nightly"` can be published only with a nightly toolchain. If finer
+grained "nightly: ..." (see "nightly versions" section) is selected, then one
+of the selected Nightly versions will have to be used.
+- `rust="1.30"` can be published only with (stable) Rust 1.30, even if it's
+not the latest stable Rust version.
+
+Using the usual build check `cargo publish` will verify that crate indeed can be
+built using specified MSRV. This check can be used with exisiting `--no-verify`
+option.
+
+## Third stage: versions resolution
 
 `rust` field becomes required and cargo will add it as a constraint to dependency
 versions resolution. If user uses e.g. Rust 1.40 and uses crate `foo = "0.2"`, but
@@ -99,26 +117,10 @@ restrictive about bumping their crate's MSRV. (though it can be a usefull
 convention for post-1.0 crates to bump minor version on MSRV change to allow
 publishing backports which fix serious issues using patch version)
 
-## Third stage: better crate checks
-
-Here we introduce two-level check for crates. First level will check if all used
-items were stabilised before or on given MSRV using `#[stable(since=version)]`
-attribute, issuing compile errors otherwise.
-
-Second level will try to build crate with the specified MSRV on `cargo publish`,
-i.e. words it will be required to install MSRV toolchain. (this check can be
-disabled using `--no-verify` option)
-
-While these two checks will not replace proper CI testing, they will help to
-reduce number of improper MSRV configuration to the minimum.
-
-Note that `rust` field must be equal to MSRV with default features for all
-supported targets.
-
 ## Extension: nightly versions
 
 For some bleeding-edge crates which experience frequent breaks on Nightly updates
-(e.g. `rocket`) it can be useful to specify exact Nigthly version(s) on which
+(e.g. `rocket`) it can be useful to specify exact Nightly version(s) on which
 crate can be built. One way to achieve this is by using the following syntax:
 - single version: rust = "nightly: 2018-01-01"
 - enumeration: "nightly: 2018-01-01, 2018-01-15"
@@ -153,7 +155,6 @@ will work correctly on the specified MSRV, only appropriate CI testing can do th
 - More complex dependency versions resolution algorithm.
 - MSRV selected by `cargo publish` with `rust = "stable"` can be too
 conservative.
-- Checking `#[stable(since=version)]` of used items will make compiler more complex.
 
 # Rationale and Alternatives
 [alternatives]: #alternatives
