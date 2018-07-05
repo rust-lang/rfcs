@@ -45,7 +45,7 @@ at all when not running Clippy.
 
 ## Stability guarantees
 
-Clippy will have the same idea of of lint stability as rustc; essentially we do not guarantee stability under #[deny(lintname)].
+Clippy will have the same idea of lint stability as rustc; essentially we do not guarantee stability under `#[deny(lintname)]`.
 This is not a problem since deny only affects the current crate (dependencies have their lints capped)
 so at most you’ll be forced to slap on an `#[allow()]` for your _own_ crate following a Rust upgrade.
 
@@ -101,7 +101,7 @@ so that people can opt in to the complexity lints without having to opt in to Cl
 ## Compiler uplift
 
 The compiler has historically had a "no new lints" policy, partly with the desire that lints would
-incubate outside of Clippy. This feels like a good time to look into uplifting these lints.
+incubate outside of the compiler (so usually in Clippy). This feels like a good time to look into uplifting these lints.
 
 This RFC does not _yet_ propose lints to be uplifted, but the intention is that the RFC
 discussion will bring up lints that the community feels _should_ be uplifted and we can list them here.
@@ -162,7 +162,7 @@ For the other categories (these are allow by default):
  - Similar rules for "nursery" except their reason for being allow by default is lack of maturity (i.e. the lint is buggy or still needs some thought)
  - "restriction" lints follow all the rules for semantic changes, but do not bother with the rules
    for the lint being useful to most rust programmers. A restriction lint must still be such that you have a
-   good reason to enable it &mdash; "I dislike such code" is insufficient &mdash but will likely be a lint most programmers
+   good reason to enable it &mdash; "I dislike such code" is insufficient &mdash; but will likely be a lint most programmers
    wish to keep off by default for most of their code. The goal of restriction lints is to provide tools with which you can supplement
    the language checks in very specific cases where you need it, e.g. forbidding panics from a certain area of code.
  - "cargo" lints follow the same rules as pedantic lints (we only have one of them right now, so we may be experimenting with this in the future)
