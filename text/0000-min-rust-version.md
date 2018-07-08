@@ -31,18 +31,27 @@ compiler versions.
 [guide-level-explanation]: #guide-level-explanation
 
 `cargo init` will automatically create `Cargo.toml` with `rust` field equal to
-`rust="stable"` or `rust="nightly"` depending on the currently used toolcahin.
+`rust="stable"` or `rust="nightly: *"` depending on the currently used toolcahin.
 On `cargo publish` cargo will take  currently used Rust compiler version and
 will insert it before uploading the crate. In other words localy your `Cargo.toml`
 willl still have `rust="stable"`, but version sent to crates.io will have
-`rust="1.30"` if you've used Rust 1.30. This version will be used to determine if
-crate can be used with the crate user's toolchain and to select appropriate
-dependency versions. In case if you have `rust="stable"`, but execute
-`cargo publish` with Nightly toolcahin you will get an error.
+`rust="1.30"` if you've used Rust 1.30. If "nightly: \*" is used, then `cargo`
+will not select current Nightly version, but will assume that cratecan be built
+with all Nightly versions.
+
+In case if you have `rust="stable"`, but execute `cargo publish` with Nightly
+toolcahin you will get an error. Same goes for `rust="nightly: *"` which can be
+published only using nightly toolchain.
 
 If you are sure that your crate supports older Rust versions (e.g. by using CI
-testing) you can change `rust` field accordingly. On `cargo publish` it will be
-checked that crate indeed can be built with the specified version.
+testing) you can specify this version explicitly, e.g. `rust="1.30"`.
+On `cargo publish` it will be checked that crate indeed can be built with the
+specified version, i.e. the respective toolchain will have to be installed on
+your computer.
+
+The value of `rust` field (explicit or autmatically selected by `cargo`) will
+be used to determine if crate can be used with the crate user's toolchain and
+to select appropriate dependency versions.
 
 For example, lets imagine that your crate depends on crate `foo` with 10 published
 versions from `0.1.0` to `0.1.10`, in versions from `0.1.0` to `0.1.5` `rust`
@@ -53,8 +62,9 @@ later. But if you'll try to build your project with Rust 1.29 cargo will issue a
 error. Although this check can be disabled with `--no-rust-check` option.
 
 `rust` field should respect the following minimal requirements:
-- value should be equal to "stable", "nightly" or to a version in semver format
-("1.50" is a valid value and implies "1.50.0")
+- value should be equal to "stable", "nightly: \*" or to a version in semver format.
+Note that "1.50" is a valid value and implies "1.50.0". (also see "nightly versions"
+extension)
 - version should not be bigger than the current stable toolchain
 - version should not be smaller than 1.27 (version in which  `package.rust` field
 became a warning instead of an error)
@@ -75,11 +85,10 @@ The describe functionality can be introduced in several stages:
 ## First stage: dumb field
 
 At first the `rust` field can be simply a declarative optional field without any
-functionality behind it. The reason for it is to reduce implementation cost of
-the first stage to the minimum and ideally ship it as part of Rust 2018.
-It will also allow crate authors who care about MSRV to start mark their crates
-early.
-
+functionality behind it with minimal checks. The reason for it is to reduce
+implementation cost of the first stage to the minimum and ideally ship it as part
+of Rust 2018. It will also allow crate authors who care about MSRV to start mark
+their crates early.
 
 ## Second stage: `cargo publish` check
 
@@ -88,7 +97,7 @@ in the `rust` field, for example crates with:
 - `rust="stable"` can be published only with a stable toolchain, though not
 necessarily with the latest one. Cargo will insert toolchain version before
 publishing the crate as was described in the "guide-level explanation".
-- `rust="nightly"` can be published only with a nightly toolchain. If finer
+- `rust="nightly: *"` can be published only with a nightly toolchain. If finer
 grained "nightly: ..." (see "nightly versions" section) is selected, then one
 of the selected Nightly versions will have to be used.
 - `rust="1.30"` can be published only with (stable) Rust 1.30, even if it's
@@ -100,8 +109,8 @@ option.
 
 ## Third stage: versions resolution
 
-`rust` field becomes required and cargo will add it as a constraint to dependency
-versions resolution. If user uses e.g. Rust 1.40 and uses crate `foo = "0.2"`, but
+`rust` field will be used as a constraint for dependency versions resolution.
+If user uses e.g. Rust 1.40 and uses crate `foo = "0.2"`, but
 all selected versions of `foo` specify MSRV e.g. equal 1.41 or bigger (or even
 nightly) `cargo` will issue an error.
 
@@ -122,10 +131,13 @@ publishing backports which fix serious issues using patch version)
 For some bleeding-edge crates which experience frequent breaks on Nightly updates
 (e.g. `rocket`) it can be useful to specify exact Nightly version(s) on which
 crate can be built. One way to achieve this is by using the following syntax:
-- single version: rust = "nightly: 2018-01-01"
+- auto-select: "nightly" This variant will behave in the same way as "stable", i.e.
+it will take a current nightly version and will use it in a "more or equal" constraint.
+- single version: "nightly: 2018-01-01" (tha main variant)
 - enumeration: "nightly: 2018-01-01, 2018-01-15"
-- (inclusive) range: "nightly: 2018-01-01..2018-01-15"
-- enumeration+range: "nightly: 2018-01-01, 2018-01-08..2018-01-15"
+- semver-like conditions: "nightly: >=2018-01-01", "nightly: >=2018-01-01, <=2018-01-15",
+"nightly: >=2018-01-01, <=2018-01-15, 2018-01-20". (the latter is interpreted as
+"(version >= 2018-01-01 && version <= 2018-01-20) || version == 2018-01-20")
 
 Such restrictions can be quite severe, but hopefully this functionality will be
 used only by handful of crates.
@@ -133,19 +145,24 @@ used only by handful of crates.
 ## Extension: cfg based MSRV
 
 Some crates can have different MSRVs depending on target architecture or enabled
-features. In such cases it can be usefull to extend `rust` field, e.g. in the
-following way:
+features. In such cases it can be usefull to describe how MSRV depends on them,
+e.g. in the following way:
 ```toml
+[package]
 rust = "1.30"
-rust-cases = [
-    { cfg = "x86_64-pc-windows-gnu", version = "1.35" },
-    { cfg = 'cfg(feature = "foo")', version = "1.33" },
-]
+
+[target.x86_64-pc-windows-gnu]
+rust = "1.35"
+
+[target.'cfg(feature = "foo")']
+rust = "1.33"
 ```
 
-Version resolution will filter all cases with `cfg` equal to true and will take
-max `version` value from them as a MSRV. If all `cfg`s are false, value in the
-`rust` field will be used.
+All `rust` values in the `target` sections should be equal or bigger to a `rust` value
+specified in the `package` section.
+
+If target condition is true, then `cargo ` will use `rust` value from this section.
+If several target section conditions are true, then maximum value will be used.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -178,3 +195,4 @@ Previous proposals:
 - Name bike-shedding: `rust` vs `rustc` vs `min-rust-version`
 - Additional checks?
 - Better description of versions resolution algorithm.
+- How nightly versions will work with "cfg based MSRV"?
