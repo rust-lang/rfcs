@@ -275,25 +275,41 @@ conversions do not preserve "value", although alternatives still have some use
 We can add `std::convert::WrappingFrom`:
 
 ```rust
-/// A trait for wrapping conversions; these may truncate (drop high bits) and
-/// sign-convert (re-interpret meaning of high bits).
+/// A trait for wrapping type conversions with behaviour equivalent to the `as`
+/// operator on integer types.
 /// 
-/// Note that `TryFrom` and `WrappingFrom` may both be implemented for the same
-/// source and target types; in this case they should have equivalent result
-/// where `TryFrom` succeeds.
+/// Implementations convert values between fixed size integer types by
+/// truncating, extending and re-interpreting the underlying bits:
+/// 
+/// -   if the target type is smaller than the source type, excess high bits are
+///     dropped
+/// -   if the target type is larger than the source type then, for unsigned
+///     source types, the value is zero-extended; for signed source types, the
+///     value is sign-extended
+/// -   once the value has the same size as the target type, it is reinterpreted
+/// 
+/// Equivalently, the conversion results can be defined numerically (where `n`
+/// is the initial value and `M` is the number of distinct values in the target
+/// type):
+/// 
+/// -   for unsigned target, `n % M`
+/// -   for signed target, `if n % M < M/2 { n % M } else { n % M - M }`
 pub trait WrappingFrom {
     fn wrapping_from(x: T) -> Self;
 }
 ```
 
-Add implementations for all integer conversions which are *not implemented* by
-`From`. These conversions should truncate or zero-extend to the size of the
-result type, then reinterpret (transmute) the bits to the result type.
+Add implementations `impl WrappingFrom<U> for V` for all pairs of integer types
+`U, V` (including where `U = V`, and including the platform-dependent types
+`usize` and `isize`).
 
-Potentially this could also re-implement all `From` conversions on integer
-types. This could be useful for generic code. Unfortunately since Rust has no
-`Integer` trait there is no simple way to re-implement `From` *only* where the
-source and target types are integer types.
+This has overlap with the `From` and `TryFrom` traits. To quote @scottmcm:
+
+> I believe it should have all pairs for the integer types, because a wrapping
+> conversion from u8 to u16 has perfectly-well defined semantics. (Though I'd
+> also like a clippy lint suggesting `from` instead where possible.) And I think
+> it could be useful for machine-generated code as mentioned in
+> [#2438 (comment)](https://github.com/rust-lang/rfcs/pull/2438#issuecomment-403255258).
 
 # Related problems
 
@@ -312,9 +328,10 @@ and that they could be larger than 64 bits.
 
 Checked integer conversions using `TryFrom` [are being reintroduced](https://github.com/rust-lang/rust/issues/49415).
 
-It is possible that unchecked conversions could be added, perhaps using
-`WrappingFrom` (or some other trait allowing both truncation and
-zero-extension).
+It remains to be decided whether `From` should support conversions such as
+`From<usize> for u32` on some platforms only, or not at all. For this reason,
+the platform-dependent types are currently also excluded from the `FromLossy`
+trait.
 
 # Drawbacks
 [drawbacks]: #drawbacks
