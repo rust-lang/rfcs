@@ -196,6 +196,8 @@ The [Go language][Go] allows identifiers in the form **Letter (Letter | Number)\
 
 * Which context is adequate for confusable detection: file, current scope, crate?
 * Should [ZWNJ and ZWJ be allowed in identifiers][TR31Layout]?
+* How are non-ASCII idents best supported in debuggers?
+* Which name mangling scheme is used by the compiler?
 
 [PEP 3131]: https://www.python.org/dev/peps/pep-3131/
 [UAX31]: http://www.unicode.org/reports/tr31/
