@@ -49,17 +49,24 @@ On `cargo publish` it will be checked that crate indeed can be built with the
 specified version, i.e. the respective toolchain will have to be installed on
 your computer.
 
+By default toolchain check is disabled for `cargo publish`, `cargo check` and
+`cargo test`, but it can be enabled with `--check-msrv-toolchain` option.
+To disable this check for `cargo publish` you can use `--no-verify`option.
+
 The value of `rust` field (explicit or autmatically selected by `cargo`) will
 be used to determine if crate can be used with the crate user's toolchain and
 to select appropriate dependency versions.
 
 For example, lets imagine that your crate depends on crate `foo` with 10 published
-versions from `0.1.0` to `0.1.10`, in versions from `0.1.0` to `0.1.5` `rust`
+versions from `0.1.0` to `0.1.9`, in versions from `0.1.0` to `0.1.5` `rust`
 field in the `Cargo.toml` sent to crates.io equals to "1.30" and for others to
-"1.40". Now if you'll build your project with Rust 1.33 `cargo` will select
-`foo v0.1.5`, and `foo v0.1.10` if you'll build your project with Rust 1.30 or
-later. But if you'll try to build your project with Rust 1.29 cargo will issue an
-error. Although this check can be disabled with `--no-rust-check` option.
+"1.40". Now if you'll build your project with e.g. Rust 1.33, `cargo` will select
+`foo v0.1.5`. `foo v0.1.9` will be selected only if you'll build your project with
+Rust 1.40 or higher. But if you'll try to build your project with Rust 1.29 cargo
+will issue an error.
+
+Note that described MSRV constraints and checks for dependency versions resolution
+can be disabled with `--no-msrv-check` option.
 
 `rust` field should respect the following minimal requirements:
 - value should be equal to "stable", "nightly: \*" or to a version in semver format.
@@ -187,7 +194,7 @@ Previous proposals:
 - [RFC 1707](https://github.com/rust-lang/rfcs/pull/1707)
 - [RFC 1709](https://github.com/rust-lang/rfcs/pull/1709)
 - [RFC 1953](https://github.com/rust-lang/rfcs/pull/1953)
-- [RFC 2182](https://github.com/rust-lang/rfcs/pull/2128) (arguably this one got off-track)
+- [RFC 2182](https://github.com/rust-lang/rfcs/pull/2182) (arguably this one got off-track)
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
