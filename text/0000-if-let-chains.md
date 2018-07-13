@@ -574,24 +574,75 @@ There exists an ambiguity in this new grammar in how to parse:
 if let PAT = EXPR && EXPR { .. }
 ```
 
-It can either be parsed as:
+It can either be parsed as (1):
 
 ```rust
 if let PAT = (EXPR && EXPR) { .. }
 ```
 
-or instead as:
+or instead as (2):
 
 ```rust
 if (let PAT = EXPR) && EXPR { .. }
 ```
 
 In the interest of succinctness, we do not encode a grammar here that
-resolves this ambiguity. Nonetheless, the second interpretation is *always*
-chosen. This means that the operator `&&` has the lowest precedence at the
-top level of `if STUFF { .. }`. If the user wants to disambiguate,
-they can write `(EXPR && EXPR)` or `{ EXPR && EXPR }` explicitly.
-The same applies to `while` expressions.
+resolves this ambiguity. Nonetheless, interpretation (2) is *always*
+chosen.
+
+[expression operator precedence]: https://github.com/rust-lang-nursery/reference/blob/master/src/expressions.md#expression-precedence
+
+As specified in the reference in the section on [expression operator precedence],
+the following operators all have a lower precedence than `&&`:
+
++ `||`
++ `..` and `..=`
++ `=`, `+=`, `-=`, `*=`, `/=`, `%=`, `&=`, `|=`, `^=`, `<<=`, `>>=`
++ `return`, `break`
+
+To be precise, the changes in this RFC entail that `||` has the lowest
+precedence at the top level of `if STUFF { .. }`. The operator `&&`
+has then the 2nd lowest precedence and binds more tightly than `||`.
+If the user wants to disambiguate, they can write `(EXPR && EXPR)` or
+`{ EXPR && EXPR }` explicitly. The same applies to `while` expressions.
+
+#### A few more examples
+
+Given:
+
+```rust
+if let Range { start: _, end: _ } = true..true && false { ... }
+
+if let PAT = break true && false { ... }
+
+if let PAT = F..|| false { ... }
+
+if let PAT = t..&&false { ... }
+```
+
+it is currently interpreted as:
+
+```rust
+if let Range { start: _, end: _ } = true..(true && false) { ... }
+
+if let PAT = break (true && false) { ... }
+
+if let PAT = F..(|| false) { ... }
+
+if let PAT = t..(&&false) { ... }
+```
+
+but will be interpreted as:
+
+```rust
+if (let Range { start: _, end: _ } = true..true) && false { ... }
+
+if (let PAT = break true && false) { ... }
+
+if (let PAT = F..) || false { ... }
+
+if (let PAT = t..) && false { ... }
+```
 
 ### Rollout Plan and Transitioning to Rust 2018
 
