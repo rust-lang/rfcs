@@ -6,8 +6,8 @@
 # Summary
 [summary]: #summary
 
-This RFC introduces the `#[optimize]` attribute, specifically its `#[optimize(size)]` variant for
-controlling optimisation level on a per-item basis.
+This RFC introduces the `#[optimize]` attribute for controlling optimisation level on a per-item
+basis.
 
 # Motivation
 [motivation]: #motivation
@@ -17,24 +17,26 @@ crate. With LTO and RLIB-only crates these options become applicable to a whole-
 reduces the ability to control optimisation even further.
 
 For applications such as embedded, it is critical, that they satisfy the size constraints. This
-means, that code must consciously pick one or the other optimisation level. However, since
-optimisation level is increasingly applied program-wide, options like `-Copt-level=3` or
-`-Copt-level=s` are less and less useful – it is no longer feasible (and never was feasible with
-cargo) to use the former one for code where performance matters and the latter everywhere else.
+means, that code must consciously pick one or the other optimisation level. Absence of a method to
+selectively optimise different parts of a program in different ways precludes users from utilising
+the hardware they have to the greatest degree.
 
-With a C toolchain this is fairly easy to achieve by compiling the relevant objects with different
-options. In Rust ecosystem, however, where this concept does not exist, an alternate solution is
-necessary.
+With a C toolchain selective optimisation is fairly easy to achieve by compiling the relevant
+codegen units (objects) with different options. In Rust ecosystem, where the concept of such units
+does not exist, an alternate solution is necessary.
 
-With `#[optimize(size)]` it is possible to annotate separate functions, so that they are optimized
-for size in a project otherwise optimized for speed (which is the default for `cargo --release`).
+With the `#[optimize]` attribute it is possible to annotate the optimisation level of separate
+items, so that they are optimized differently from the global optimisation option.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-Sometimes, optimisations are a tradeoff between execution time and the code size. Some
+## `#[optimize(size)]`
+
+Sometimes, optimisations are a trade-off between execution time and the code size. Some
 optimisations, such as loop unrolling increase code size many times on average (compared to
-original function size).
+original function size) for marginal performance benefits. In case such optimisation is not
+desirable…
 
 ```rust
 #[optimize(size)]
@@ -43,7 +45,7 @@ fn banana() {
 }
 ```
 
-Will instruct rustc to consider this tradeoff more carefully and avoid optimising in a way that
+…will instruct rustc to consider this trade-off more carefully and avoid optimising in a way that
 would result in larger code rather than a smaller one. It may also have effect on what instructions
 are selected to appear in the final binary.
 
@@ -55,26 +57,66 @@ Using this attribute is recommended when inspection of generated code reveals un
 function or functions, but use of `-O` is still preferable over `-C opt-level=s` or `-C
 opt-level=z`.
 
+## `#[optimize(speed)]`
+
+Conversely, when one of the global optimisation options for code size is used (`-Copt-level=s` or
+`-Copt-level=z`), profiling might reveal some functions that are unnecessarily “hot”. In that case,
+those functions may be annotated with the `#[optimize(speed)]` to make the compiler make its best
+effort to produce faster code.
+
+```rust
+#[optimize(speed)]
+fn banana() {
+    // code
+}
+```
+
+Much like with `#[optimize(size)]`, the `speed` counterpart is also a hint and will likely not
+yield the same results as using the global optimisation option for speed.
+
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-The `#[optimize(size)]` attribute applied to a function definition will instruct the optimisation
-engine to avoid applying optimisations that could result in a size increase and machine code
-generator to generate code that’s smaller rather than larger.
+The `#[optimize(size)]` attribute applied to an item will instruct the optimisation pipeline to
+avoid applying optimisations that could result in a size increase and machine code generator to
+generate code that’s smaller rather than faster.
 
-Note that the `#[optimize(size)]` attribute is just a hint and is not guaranteed to result in any
-different or smaller code.
+The `#[optimize(speed)]` attribute applied to an item will instruct the optimisation pipeline to
+apply optimisations that are likely to yield performance wins and machine code generator to
+generate code that’s faster rather than smaller.
 
-Since `#[optimize(size)]` instructs optimisations to behave in a certain way, this means that this
-attribute has no effect when no optimisations are run (such as is the case when `-Copt-level=0`).
-Interaction of this attribute with the `-Copt-level=s` and `-Copt-level=z` flags is not specified
-and is left up to implementation to decide.
+The `#[optimize]` attributes are just a hint to the compiler and are not guaranteed to result in
+any different code.
+
+If an `#[optimize]` attribute is applied to some grouping item (such as `mod` or a crate), it
+propagates transitively to all items defined within the grouping item.
+
+It is an error to specify multiple incompatible `#[optimize]` options to a single item at once.
+A more explicit `#[optimize]` attribute overrides a propagated attribute.
+
+`#[optimize(speed)]` is a no-op when a global optimisation for speed option is set (i.e. `-C
+opt-level=1-3`). Similarly `#[optimize(size)]` is a no-op when a global optimisation for size
+option is set (i.e. `-C opt-level=s/z`). `#[optimize]` attributes are no-op when no optimizations
+are done globally (i.e. `-C opt-level=0`). In all other cases the *exact* interaction of the
+`#[optimize]` attribute with the global optimization level is not specified and is left up to
+implementation to decide.
+
+# Implementation approach
+
+For the LLVM backend, these attributes may be implemented in a following manner:
+
+`#[optimize(size)]` – explicit function attributes exist at LLVM level. Items with
+`optimize(size)` would simply apply the LLVM attributes to the functions.
+
+`#[optimize(speed)]` in conjunction with `-C opt-level=s/z` – use a global optimisation level of
+`-C opt-level=2/3` and apply the equivalent LLVM function attribute (`optsize`, `minsize`) to all
+items which do not have an `#[optimize(speed)]` attribute.
 
 # Drawbacks
 [drawbacks]: #drawbacks
 
 * Not all of the alternative codegen backends may be able to express such a request, hence the
-“this is an optimisation hint” note on the `#[optimize(size)]` attribute.
+“this is a hint” note on the `#[optimize]` attribute.
     * As a fallback, this attribute may be implemented in terms of more specific optimisation hints
       (such as `inline(never)`, the future `unroll(never)` etc).
 
@@ -85,17 +127,17 @@ Proposed is a very semantic solution (describes the desired result, instead of b
 problem of needing to sometimes inhibit some of the trade-off optimisations such as loop unrolling.
 
 Alternative, of course, would be to add attributes controlling such optimisations, such as
-`#[unroll(no)]` on top of a a loop statement. There’s already precedent for this in the `#[inline]`
+`#[unroll(no)]` on top of a loop statement. There’s already precedent for this in the `#[inline]`
 annotations.
 
-The author would like to argue that we should eventually have *both*, the `#[optimize(size)]` for
-people who look at generated code and decide that it is too large, and the targetted attributes for
-people who know *why* the code is too large.
+The author would like to argue that we should eventually have *both*, the `#[optimize]` for
+people who look at generated code but are not willing to dig for exact reasons, and the targeted
+attributes for people who know *why* the code is not satisfactory.
 
-Furthermore, currently `optimize(size)` is able to do more than any possible combination of
-targetted attributes would be able to such as influencing the instruction selection or switch
-codegen strategy (jump table, if chain, etc.) This makes the attribute useful even in presence of
-all the targetted optimisation knobs we might have in the future.
+Furthermore, currently `optimize` is able to do more than any possible combination of targeted
+attributes would be able to such as influencing the instruction selection or switch codegen
+strategy (jump table, if chain, etc.) This makes the attribute useful even in presence of all the
+targeted optimisation knobs we might have in the future.
 
 # Prior art
 [prior-art]: #prior-art
@@ -103,14 +145,17 @@ all the targetted optimisation knobs we might have in the future.
 * LLVM: `optsize`, `optnone`, `minsize` function attributes (exposed in Clang in some way);
 * GCC: `__attribute__((optimize))` function attribute which allows setting the optimisation level
 and using certain(?) `-f` flags for each function;
-* IAR: Optimisations have a checkbox for “No size constraints”, which allows compiler to go out of
-its way to optimize without considering the size tradeoff. Can only be applied on a
-per-compilation-unit basis. Enabled by default, as is appropriate for a compiler targetting
+* IAR: Optimisations have a check box for “No size constraints”, which allows compiler to go out of
+its way to optimize without considering the size trade-off. Can only be applied on a
+per-compilation-unit basis. Enabled by default, as is appropriate for a compiler targeting
 embedded use-cases.
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
-* Should we support such an attribute at module-level? Crate-level?
-    * If yes, should we also implement `optimize(always)`? `optimize(level=x)`?
-        * Left for future discussion, but should make sure such extension is possible.
+* Should we also implement `optimize(always)`? `optimize(level=x)`?
+    * Left for future discussion, but should make sure such extension is possible.
+* Should there be any way to specify what global optimisation for speed level is used in
+  conjunction with the optimisation for speed option (e.g. `-Copt-level=s3` could be equivalent to
+  `-Copt-level=3` and `#[optimize(size)]` on the crate item);
+    * This may matter for users of `#[optimize(speed)]`.
