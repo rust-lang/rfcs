@@ -1528,8 +1528,8 @@ This style of leading separators is inconsistent with current formatting.
 
 ```rust
 if independent_condition,
-   let Alan(x)   = turing(),
-   let Alonzo(y) = church(x),
+   let Alan(x)   = turing() &&
+   let Alonzo(y) = church(x) &&
    y.has_really_cool_property() {
     computation_with(x, y)
 }
