@@ -586,7 +586,7 @@ or instead as:
 if (let PAT = EXPR) && EXPR { .. }
 ```
 
-In the interest of succinctness, we do not encode a grammar here that is
+In the interest of succinctness, we do not encode a grammar here that
 resolves this ambiguity. Nonetheless, the second interpretation is *always*
 chosen. This means that the operator `&&` has the lowest precedence at the
 top level of `if STUFF { .. }`. If the user wants to disambiguate,
