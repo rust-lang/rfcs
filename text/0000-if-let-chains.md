@@ -44,7 +44,7 @@ return None;
 
 The main aim of this RFC is to decide that this is a problem worth solving
 as well as discussing a few available options. **Most importantly, we want to
-make `let PAT = EXPR && ..` a possible option for Rust 2018.**
+make `if let PAT = EXPR && ..` a possible option for Rust 2018.**
 
 # Motivation
 [motivation]: #motivation
