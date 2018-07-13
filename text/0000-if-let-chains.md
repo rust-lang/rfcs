@@ -475,8 +475,8 @@ The loop in the above snippet is equivalent to:
 
 ```rust
 loop {
-    if let Some(r) = r_iter.next() {
-       let Some(index) = c_iter.next() {
+    if let Some(r) = r_iter.next() &&
+       let Some(index) = c_iter.next() &&
        let Some(input) = i_iter.next() {
         *r = index * 10 + input;
         continue;
