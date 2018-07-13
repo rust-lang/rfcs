@@ -1564,6 +1564,7 @@ There are of course more versions one can contemplate and the various
 combination of them, but in the interest of brevity, we keep to this list here.
 
 # Appendix B
+[Appendix B]: #appendix-b
 
 This appendix groups some survey answers together for the purposes of analysis.
 Please note that this appendix is by no means complete and is only offered on
