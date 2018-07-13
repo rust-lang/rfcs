@@ -773,7 +773,7 @@ the semantics are defined by the following desugaring:
 }
 ```
 
-## `while let`-chains
+## Semantics of `while let`-chains
 
 The semantics of `while let`-chains can be understood by an in-surface-language
 desugaring using only [RFC 2046], `loop` and `if let`.
