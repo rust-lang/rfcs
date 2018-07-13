@@ -12,11 +12,12 @@ After implementing this RFC, you'll be able to write, among other things:
 
 ```rust
 fn param_env<'a, 'tcx>(tcx: TyCtxt<'a, 'tcx, 'tcx>, def_id: DefId) -> ParamEnv<'tcx> {
-    if let Some(Def::Existential(_)) = tcx.describe_def(def_id) &&
-       let Some(node_id) = tcx.hir.as_local_node_id(def_id) &&
-       let hir::map::NodeItem(item) = tcx.hir.get(node_id) &&
-       let hir::ItemExistential(ref exist_ty) = item.node &&
-       let Some(parent) = exist_ty.impl_trait_fn {
+    if let Some(Def::Existential(_)) = tcx.describe_def(def_id)
+        && let Some(node_id) = tcx.hir.as_local_node_id(def_id)
+        && let hir::map::NodeItem(item) = tcx.hir.get(node_id)
+        && let hir::ItemExistential(ref exist_ty) = item.node
+        && let Some(parent) = exist_ty.impl_trait_fn
+    {
         return param_env(tcx, parent);
     }
 
@@ -28,8 +29,8 @@ and with side effects:
 
 ```rust
 while let Ok(user) = read_user(::std::io::stdin())
-   && user.name == "Alan Turing"
-   && let Ok(hobby) = read_hobby_of(&user)
+    && user.name == "Alan Turing"
+    && let Ok(hobby) = read_hobby_of(&user)
 {
     if hobby == "Hacking Enigma" {
         println!("Yep, It's you.");
@@ -232,11 +233,12 @@ with this RFC, this would be written, without any external dependencies, as:
 ```rust
 /// Returns the slice of format string parts in an `Arguments::new_v1` call.
 fn get_argument_fmtstr_parts(expr: &Expr) -> Option<(InternedString, usize)> {
-    if let ExprAddrOf(_, ref expr) = expr.node && // &["…", "…", …]
-       let ExprArray(ref exprs) = expr.node &&
-       let Some(expr) = exprs.last() &&
-       let ExprLit(ref lit) = expr.node &&
-       let LitKind::Str(ref lit, _) = lit.node {
+    if let ExprAddrOf(_, ref expr) = expr.node // &["…", "…", …]
+        && let ExprArray(ref exprs) = expr.node
+        && let Some(expr) = exprs.last()
+        && let ExprLit(ref lit) = expr.node
+        && let LitKind::Str(ref lit, _) = lit.node
+    {
         Some((lit.as_str(), exprs.len()))
     } else {
         None
@@ -294,8 +296,9 @@ which may mixed with conditionals in an `if` expression.
 An example of such a chain is:
 
 ```rust
-if let A(x) = foo() &&
-   let B(y) = bar() {
+if let A(x) = foo()
+    && let B(y) = bar()
+{
     computation_with(x, y)
 }
 ```
@@ -349,8 +352,9 @@ equivalent to the above example. With this RFC implemented, you can more
 ergonomically write the same expression as:
 
 ```rust
-if let A(x) = foo() &&
-   let B(y) = bar(x) {
+if let A(x) = foo()
+    && let B(y) = bar(x)
+{
     computation_with(x, y)
 }
 ```
@@ -360,8 +364,9 @@ The new expression form introduced by this RFC is also not limited to simple
 the example below.
 
 ```rust
-if let A(x) = foo() &&
-   let B(y) = bar() {
+if let A(x) = foo()
+   && let B(y) = bar()
+{
     computation_with(x, y)
 } else {
     alternative_computation()
@@ -390,10 +395,11 @@ limited to pattern matching. You can also mix in any number of conditionals
 in any place you like, as done in the example below:
 
 ```rust
-if independent_condition &&
-   let A(x) = foo() &&
-   let B(y) = bar() &&
-   y.has_really_cool_property() {
+if independent_condition
+   && let A(x) = foo()
+   && let B(y) = bar()
+   && y.has_really_cool_property()
+{
     computation_with(x, y)
 }
 ```
@@ -417,9 +423,10 @@ before it is referred to. As such, the following snippet would be ill-formed
 since we haven't implemented time-travel (yet):
 
 ```rust
-if y.has_really_cool_property() && // <-- y used before bound.
-   let B(y) = bar(x) && // <-- x used before bound.
-   let A(x) = foo() {
+if y.has_really_cool_property() // <-- y used before bound.
+   && let B(y) = bar(x) // <-- x used before bound.
+   && let A(x) = foo()
+{
     computation_with(x, y)
 }
 ```
@@ -462,9 +469,10 @@ let r_iter = results.iter_mut();
 let c_iter = 0..10;
 let i_iter = inputs.iter();
 
-while let Some(r) = r_iter.next() &&
-      let Some(index) = c_iter.next() &&
-      let Some(input) = i_iter.next() {
+while let Some(r) = r_iter.next()
+    && let Some(index) = c_iter.next()
+    && let Some(input) = i_iter.next()
+{
     *r = index * 10 + input;
 }
 
@@ -475,9 +483,10 @@ The loop in the above snippet is equivalent to:
 
 ```rust
 loop {
-    if let Some(r) = r_iter.next() &&
-       let Some(index) = c_iter.next() &&
-       let Some(input) = i_iter.next() {
+    if let Some(r) = r_iter.next()
+        && let Some(index) = c_iter.next()
+        && let Some(input) = i_iter.next()
+    {
         *r = index * 10 + input;
         continue;
     }
@@ -708,11 +717,12 @@ desugaring using only [RFC 2046] and `if let`.
 The following:
 
 ```rust
-if let PAT_1 = EXPR_1 &&
-   let PAT_2 = EXPR_2 &&
-   EXPR_3
-   ... &&
-   let PAT_N = EXPR_N {
+if let PAT_1 = EXPR_1
+    && let PAT_2 = EXPR_2
+    && EXPR_3
+    ...
+    && let PAT_N = EXPR_N
+{
     EXPR_IF
 } else {
     EXPR_ELSE
@@ -743,11 +753,13 @@ borrowing and scoping are just those that result directly from the desugar.
 The `else if` branches:
 
 ```rust
-if let PAT_1 = EXPR_1 &&
-   let PAT_2 = EXPR_2 {
+if let PAT_1 = EXPR_1
+    && let PAT_2 = EXPR_2
+{
     EXPR_IF
-} else if let PAT_3 = EXPR_3 &&
-       EXPR_4 {
+} else if let PAT_3 = EXPR_3
+    && EXPR_4
+{
     EXPR_ELSE_IF
 } else {
     EXPR_ELSE
@@ -778,8 +790,9 @@ Having an `else` branch is optional.
 The following example without an `else` branch:
 
 ```rust
-if let PAT_1 = EXPR_1 &&
-   let PAT_2 = EXPR_2 {
+if let PAT_1 = EXPR_1
+    && let PAT_2 = EXPR_2
+{
     EXPR_IF
 }
 ```
@@ -797,11 +810,13 @@ if let PAT_1 = EXPR_1 {
 If we have an `else if` branch but no `else` branch, such as in this example:
 
 ```rust
-if let PAT_1 = EXPR_1 &&
-   let PAT_2 = EXPR_2 {
+if let PAT_1 = EXPR_1
+    && let PAT_2 = EXPR_2
+{
     EXPR_IF
-} else if let PAT_3 = EXPR_3 &&
-       EXPR_4 {
+} else if let PAT_3 = EXPR_3
+    && EXPR_4
+{
     EXPR_ELSE_IF
 }
 ```
@@ -832,10 +847,11 @@ desugaring using only [RFC 2046], `loop` and `if let`.
 For example:
 
 ```rust
-while EXPR_1 &&
-      let PAT_2 = EXPR_2 &&
-      let PAT_3 = EXPR_3 &&
-      EXPR_4 {
+while EXPR_1
+    && let PAT_2 = EXPR_2
+    && let PAT_3 = EXPR_3
+    && EXPR_4
+{
     EXPR_WHILE
 }
 ```
@@ -844,10 +860,11 @@ is defined by desugaring into:
 
 ```rust
 loop {
-    if EXPR_1 &&
-       let PAT_2 = EXPR_2 &&
-       let PAT_3 = EXPR_3 &&
-       EXPR_4 {
+    if EXPR_1
+        && let PAT_2 = EXPR_2
+        && let PAT_3 = EXPR_3
+        && EXPR_4
+    {
         { EXPR_WHILE }
         continue;
     }
@@ -950,7 +967,8 @@ to tick as many boxers as possible.
 Should a user be able to write something like the following snippet?
 
 ```rust
-if let A(x) = e1 || let B(x) = e2 {
+if let A(x) = e1
+    || let B(x) = e2 {
     do_stuff_with(x)
 } else {
     do_other_stuff()
@@ -1047,9 +1065,10 @@ The breakdown of preferences were:
 1. Using `&&` and `let PAT = EXPR` - liked: 66.2%, disliked: 16.9%
 
    ```rust
-   if let PAT = EXPR &&
-      let PAT = EXPR &&
-      EXPR {
+   if let PAT = EXPR
+       && let PAT = EXPR
+       && EXPR
+   {
        ..
    }
    ```
@@ -1057,9 +1076,9 @@ The breakdown of preferences were:
 2. Using `&&` and `EXPR is PAT` - liked: 24.9%, disliked: 48.5%
 
    ```rust
-   if EXPR is PAT &&
-      EXPR is PAT &&
-      EXPR {
+   if EXPR is PAT
+       && EXPR is PAT
+       && EXPR {
        ..
    }
    ```
@@ -1274,11 +1293,12 @@ instead write the example in the [motivation] as:
 
 ```rust
 fn param_env<'a, 'tcx>(tcx: TyCtxt<'a, 'tcx, 'tcx>, def_id: DefId) -> ParamEnv<'tcx> {
-    if tcx.describe_def(def_id) match Some(Def::Existential(_)) &&
-       tcx.hir.as_local_node_id(def_id) match Some(node_id) &&
-       tcx.hir.get(node_id) match hir::map::NodeItem(item) &&
-       item.node match hir::ItemExistential(ref exist_ty) &&
-       exist_ty.impl_trait_fn match Some(parent) {
+    if tcx.describe_def(def_id) match Some(Def::Existential(_))
+        && tcx.hir.as_local_node_id(def_id) match Some(node_id)
+        && tcx.hir.get(node_id) match hir::map::NodeItem(item)
+        && item.node match hir::ItemExistential(ref exist_ty)
+        && exist_ty.impl_trait_fn match Some(parent)
+    {
         return param_env(tcx, parent);
     }
 
@@ -1351,7 +1371,9 @@ if let g = greetings, let s = salutations {
 which with the syntax proposed in this RFC would be equivalent to:
 
 ```rust
-if let Some(g) = greetings && let Some(s) = salutations {
+if let Some(g) = greetings
+    && let Some(s) = salutations
+{
     print(g)
     print(s)
 }
@@ -1444,7 +1466,8 @@ in the following example?
 if let &List(_, ref list) = meta
     && let mut iter = list.iter().filter_map(extract_word) // <-- Irrefutable
     && let Some(ident) = iter.next()
-    && let None = iter.next() {
+    && let None = iter.next()
+{
     *set = Some(syn::Ty::Path(None, ident.clone().into()));
 } else {
     error::param_malformed();
@@ -1481,8 +1504,9 @@ subsection, it would be written as follows without irrefutable let bindings:
 ```rust
 if let &List(_, ref list) = meta {
    let mut iter = list.iter().filter_map(extract_word);
-    if let Some(ident) = iter.next() &&
-       let None = iter.next() {
+    if let Some(ident) = iter.next()
+        && let None = iter.next()
+    {
         *set = Some(syn::Ty::Path(None, ident.clone().into()));
     } else {
         error::param_malformed();
@@ -1530,7 +1554,25 @@ a separate style RFC.
 Here are a few variants on indentation to consider for `rustfmt` while
 may or may not be mutually compatible:
 
-### 1. `&&` after bindings
+### 1. `&&` on a new line and indented + Open-brace after newline
+
+```rust
+if independent_condition
+    && let Alan(x) = turing()
+    && let Alonzo(y) = church(x)
+    && y.has_really_cool_property()
+{
+    computation_with(x, y)
+}
+```
+
+This style is maximally consistent with how conditions in `if` expressions are
+currently formatted.
+
+Moving the open brace down a line may help emphasize the split between
+a lengthy condition and the block body.
+
+### 2. `&&` after bindings
 
 ```rust
 if independent_condition &&
@@ -1543,24 +1585,6 @@ if independent_condition &&
 
 This style is consistent with how separators, such as `,`, are currently
 formatted in Rust.
-
-### 2. `&&` on a new line and indented + Open-brace after newline
-
-```rust
-if independent_condition
-    && let Alan(x) = turing()
-    && let Alonzo(y) = church(x)
-    && y.has_really_cool_property()
-{
-    computation_with(x, y)
-}
-```
-
-This style is consistent with how conditions in `if` expressions are currently
-formatted.
-
-Moving the open brace down a line may help emphasize the split between
-a lengthy condition and the block body.
 
 ### 3. `&&` at the start of lines
 
