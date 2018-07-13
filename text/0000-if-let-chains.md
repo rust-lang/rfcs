@@ -1884,6 +1884,9 @@ did not think this was clear.
 ## Appendix B.7
 [Appendix B.7]: #appendix-b7
 
+A number of survey participants noted that separating with `if` is noisy
+and looks as if braces are missing.
+
 1. > Using multiple `if`s feels very weird (it looks like there are some
    > missing braces and the indentation is wrong).
 
