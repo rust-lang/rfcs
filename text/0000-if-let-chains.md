@@ -845,8 +845,11 @@ of this RFC. Sergio Benitez has however done some review of the crates.io
 ecosystem and found zero cases of actual breakage. At any rate, writing
 `let PAT = EXPR && ..` as a user is a bad thing to do.
 
-Finally, some may argue that this is *"a lot of ad-hoc syntax to deprecate when
-the proper solution solving all the listed problems is implemented"*.
+[petrochenkov_cite_1]: https://github.com/rust-lang/rfcs/pull/2260#issuecomment-353780537
+
+Finally, some may argue, [as done by @petrochenkov][petrochenkov_cite_1],
+that this is *"a lot of ad-hoc syntax to deprecate when the proper solution
+solving all the listed problems is implemented"*.
 
 # Rationale and alternatives
 [alternatives]: #rationale-and-alternatives
