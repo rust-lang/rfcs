@@ -1527,7 +1527,7 @@ This style of leading separators is inconsistent with current formatting.
 ### 4. Aligning the equals sign together
 
 ```rust
-if independent_condition,
+if independent_condition &&
    let Alan(x)   = turing() &&
    let Alonzo(y) = church(x) &&
    y.has_really_cool_property() {
@@ -1559,6 +1559,22 @@ In this version we look at whether or not a newline should be
 inserted after an `else if` branch. The benefit of inserting a
 newline is that it aligns well with the `let` bindings in the
 `if` branch.
+
+### 6. No indent at all, just a list of conditions
+
+```rust
+if independent_condition &&
+let Alan(x)   = turing() &&
+let Alonzo(y) = church(x) &&
+y.has_really_cool_property() {
+    computation_with(x, y)
+}
+```
+
+In this version, we do not indent the `let`s and the boolean side-conditions.
+But we do place the `&&` on the end of lines. One benefit here is that the
+body of the `if` expression more clearly stands out. However, a drawback
+is that the `if` token stands less out.
 
 There are of course more versions one can contemplate and the various
 combination of them, but in the interest of brevity, we keep to this list here.
