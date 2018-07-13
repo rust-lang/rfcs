@@ -911,7 +911,7 @@ match, then the first one of those will bind a value to `x` and the expression
 evaluates to `do_stuff_with(x)`. If no patterns match, the expression instead
 evaluates to `do_other_stuff()`.
 
-This RFC does not propose such a facility, but does not for close such
+This RFC does not propose such a facility, but does not foreclose such
 a possibility, making the feature future proof and allowing discussion on such
 a facility in the future to continue. Alternatives should similarly try to
 retain this ability.
