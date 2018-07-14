@@ -44,6 +44,10 @@ users of our library (`proptest`) right now. The allure of getting the logic
 provided when defining `SeedableRng` could also have caused us to prematurely
 and mistakenly provide a guarantee we were not ready to provide.
 
+Another example use-case which [@nikomatsakis](https://github.com/nikomatsakis)
+has provided is wanting to have the convenience of `#[derive(Default)]`,
+but not wanting to commit to there being a default value.
+
 However, we have no way eat our cake and keep it. We can't segregate who
 has access to what implementations by visibility.
 
@@ -337,10 +341,11 @@ struct Foo {
 
 In the case of derivable standard library traits, the compiler will insert the
 visibility modifier before `impl` in the implementations generated.
-Custom derive macros are not obligated to respect this modifier.
-However, it is nonetheless recommended that such macros,
-which are available for public use, handle these modifiers,
-or emit an error notifying the user that modifiers are not supported.
+This *also* applies to custom derive macros. After a custom derive macro
+has generated the `TokenStream` for the `#[derive(crate CustomTrait)]` invocation,
+then the compiler will ensure that nothing generated in the `TokenStream`
+is more visible than `crate`. It will do so by clamping a `pub` visibility
+to `crate`. This applies generally for any visibilities.
 
 ## In relation to trait objects
 
@@ -413,6 +418,13 @@ However, it should mostly be sufficient to mention to beginners in sections abou
 trait implementations that they can hidden, with one or two simple examples.
 The still more advanced details in this RFC can be deferred to the reference.
 
+One particular aspect of this RFC is important to teach: The coherent nature
+of hidden implementations. This should be stressed, and in particular,
+it should be noted that these do *not* act as the modular implementations
+discussed in the [prior art][prior-art]. The naming of these implementations
+as *hidden*, as opposed to *private* is intentional. The word *private*
+should therefore be *avoided* in learning material.
+
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
@@ -460,6 +472,17 @@ each trait.
 if a visibility modifier is specified before the trait in `#[derive(..)]`,
 then it will also be specified on the generated `impl`.
 
++ The generated code by a custom derive macro `#[derive(vis? Trait)]`,
+  including any other macro invocations in that macro as well as
+  the transitive closure of macro invocations in those is here referred
+  to as "the expansion".
+
+  When the compiler executes a custom derive macro `#[derive(vis? Trait)]`,
+  if then a visibility modifier was specified on `vis? Trait`,
+  then the visibility of everything (which can have a visibility modifier)
+  in "the expansion" will be clamped to `vis` such that there is nothing
+  which is more visible than `vis` in "the expansion".
+
 ### On `#[structural_match]`
 
 + The `#[structural_match]` attribute will be changed to optionally permit
@@ -497,6 +520,29 @@ visible of `$vis_{a, b}`.
    of the trait is checked, the implementation will be considered to not exist.
    Such an implementation that doesn't exist solely due to visibility is
    classified as *hidden*.
+
+   Note that when type checking the super trait obligations placed on
+   an implementation of a trait such as `Copy`, the visibility modifier
+   on the `impl` will be considered the context where the existence of
+   the super trait implementation is checked. Thus, if a user writes:
+
+   ```rust
+   #[derive(crate Clone, pub Copy)]
+   struct Foo;
+   ```
+
+   or equivalently:
+
+   ```rust
+   struct Foo;
+
+   crate impl Clone for Foo { .. }
+
+   pub impl Copy for Foo {}
+   ```
+
+   then the implementation of `Copy` is rejected, because it is not considered
+   as visible as `pub`.
 
 5. If in 4. the implementation did not exist due to being hidden,
    error messages will take that into account when informing users
@@ -557,6 +603,14 @@ and uniformly specified, and will therefore not have a severe impact on
 learning and the complexity budget, it should be recognized that the additions
 to the language in the RFC are non-trivial. These should be judged in comparison
 to the benefits provided by the changes.
+
+There is also the *possibility* that visibility modifiers on implementations
+will be mistaken for modular instances as laid out in the [prior art][prior-art].
+However, such misconceptions should be eventually cleared up by the error
+messages which are generated when incoherent setups using hidden implementations
+are attempted. For those who understand the coherent nature of traits and
+their implementations in Rust, there will be no change, thus, there is no
+misconception to clear up.
 
 # Rationale and alternatives
 [alternatives]: #rationale-and-alternatives
@@ -620,12 +674,67 @@ As syntax goes, `#[derive($vis Trait)]` is chosen as a simple but intuitive
 syntax. One could consider applying visibility to a group of crates,
 but it does not seem worth it to make this much terser.
 
-When it comes to custom deriving, it might be possible in the general case to
-ensure or automate that the implementation provided is of the visibility
-specified. However, in that case, it has to be added or checked on every
-implementation one invocation of a custom derive macro emits.
-Some custom derive macros don't emit trait implementations in the first place.
-However, automating this may be a good mechanism to consider.
+When it comes to custom deriving, this RFC specifies that nothing generated
+by the custom derive macro (including by invocations of macros inside
+that macro, and transitively) will be more visible than the `vis` specified
+in `#[derive($vis Trait)]`. We argue that this is a good thing to do because
+it removes a large implementation burden on custom derive authors as well as
+allowing users a uniform experience in the ecosystem. By clamping the visibility,
+we may rule out some unhygenic things that users may want to do, but the ability
+to write the macro generated code always remains. We could potentially have
+some mechanism to opt-out of the hygiene at the macro definition site,
+but this should await users actually needing that feature and be left as
+future work.
+
+## Alternative: Newtypes
+
+The principal alternative to this RFC is to continue using the
+manual workaround mechanism of newtypes around our types and providing
+implementations only for the former. An example of this is:
+
+```rust
+pub struct MyOriginalType { ... }
+
+pub trait Property { ... }
+
+struct MyNewType(MyOriginalType);
+
+impl Property for MyNewType { ... }
+```
+
+[RFC 2393]: https://github.com/rust-lang/rfcs/pull/2393
+
+We then use `MyNewType` inside of our crate but don't expose the type, and thus
+the implementation, to anyone who shouldn't get access to the implementation
+of `Property` for `MyNewType`.
+
+This mechanism usually works, but incurs
+significant boilerplate. This is especially true if `Property` has any
+super-trait bounds or has a lot of required items in need of specification.
+It doesn't take a trait more complex than `Clone` or `Iterator` for there
+to be, comparatively speaking, a lot of overhead.
+
+One way of reducing the boilerplate is with `#[derive(..)]` on the newtype or
+with some sort of generalized newtype deriving or "delegation" (as proposed in
+[RFC 2393]). However, delegation does not extend well to all forms of traits.
+And even if delegation or deriving does work, there is still overhead.
+
+This syntactic overhead, whether large (as with manual implementations),
+or medium (as with delegation or deriving) exists both for the writer *and*
+the reader. In comparison, allowing the user to specify `crate impl ...`
+is both a more direct approach, which indicates the semantic intent clearly,
+while also being superior for reading, writing, and maintaining.
+
+Assuming that you already know about this newtype pattern,
+which you may very well not do as a beginner,
+the only comparative advantage of newtypes is that it does not
+require learning any new language features at all.
+However, as we've previously argued, permitting visibility modifiers
+on `impl` only takes existing concepts from other parts of the language
+and applies them to a new place. Thus, the increased learning burden
+should not be large. For anyone who already understands visibility
+modifiers on anything else in Rust, seeing them for the first time
+should also be relatively intuitive.
 
 # Prior art
 [prior-art]: #prior-art
