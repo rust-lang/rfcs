@@ -10,8 +10,8 @@
 
 Allow a visibility modifier on a `trait` implementation such that:
 
-+ it is public wrt. coherence and overlap,
-+ it is not usable in contexts it which it is *hidden* in.
++ it is public wrt. coherence and overlap
++ it is not usable in contexts where it is *hidden* (not visible)
 
 An example:
 
