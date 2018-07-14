@@ -73,7 +73,7 @@ we can now write:
 crate impl Property for Thing { .. }
 ```
 
-where `crate`, or previously `pub(crate)`, is the familiar visibility
+where `crate`, or `pub(crate)`, is the familiar visibility
 modifier for the current crate.
 
 ## The effect of hiding
@@ -252,7 +252,7 @@ Thus far, we've only used `crate impl ..` to hide implementations.
 While we think that will be the most likely usage, we also believe
 that more fine grained control is beneficial for larger projects
 with many people involved in the development of those projects.
-Therefore, this RFC proposes that visibility modifiers (such as
+Therefore, this RFC proposes that all visibility modifiers (such as
 `pub(super)`) be permitted on `impl` to hide implementations from
 different parts of the crate.
 
@@ -287,22 +287,27 @@ L |     pub impl Foo for Bar { .. }
   = note: #[warn(redundant_vis)] on by default
 ```
 
-## `priv` visibility
+## Private visibility, `pub(self)`
 
-To be able to make implementations module private, this RFC introduces a new
-visibility modifier called `priv` (which is currently a reserved keyword).
-This new visibility modifier is made the default for all contexts where
-visibility modifiers are permitted *but* in the context of implementations
-(where `pub` is the default). Directly writing:
+[RFC 1442]: https://github.com/nox/rust-rfcs/blob/master/text/1422-pub-restricted.md
+
+As we previously discussed, writing just `impl Foo for Bar { .. }`
+does not entail that `Foo for Bar` is only visible in the current module.
+So how do we achieve that effect? It just so happens that the visibility
+`pub(self)`, which makes something (only) visible in the current module,
+already exists in Rust (since 1.18, introduced by [RFC 1422]).
+
+The visibility modifier `pub(self)` is the default for all contexts but `impl`.
+As with writing `pub(self)`, if you directly write out the default visibility
+such as in:
 
 ```rust
 struct Foo {
-    priv x: Bar,
+    pub(self) x: Bar,
 }
 ```
 
-will be linted against with `redundant_vis` just like `pub impl ..`
-will be linted against.
+then the lint `redundant_vis` will be raised.
 
 ## `#[derive(crate Trait)]`
 
@@ -357,21 +362,9 @@ The still more advanced details in this RFC can be deferred to the reference.
 
 ## Grammar and parsing
 
-### Visibility modifier `priv`
+### Visibility modifier `pub(self)`
 
-+ The `PRIV` token will lex the terminal `"priv"`.
-
-+ To the production `visibility` we add:
-
-  ```
-  visibility : PRIV | .. ;
-  ```
-
-  where `..` is the old definition of `visibility`.
-
-+ The macro fragment specifier `vis` will accept `PRIV`.
-
-+ `priv` is considered the default visibility for all contexts but `impl`.
++ `pub(self)` is considered the default visibility for all contexts but `impl`.
 
 ### Visibility modifiers on `impl`
 
@@ -428,13 +421,13 @@ visible of `$vis_{a, b}`.
 
 ## Type checking
 
-1. The visibility modifier `priv` entails that an item is only visible in the
-   module in which the item is defined in.
+1. The visibility modifier `pub(self)` entails that an item is only visible in the
+   module in which the item is defined in. *(this is already the case in Rust)*
 
 2. The default visibility modifier for a context is first desugared to a form
    where it is explicitly specified. That is, `impl<..> Trait<..> for Type<..>`
    is desugared to `pub impl<..> Trait<..> for Type<..>` and
-   `struct X { field: Y }` is desugared to `struct X { priv field: Y }`.
+   `struct X { field: Y }` is desugared to `struct X { pub(self) field: Y }`.
 
 3. When type checking an implementation with respect to checking its coherence,
    all implementations are considered irrespective of their specified visibility.
@@ -453,8 +446,8 @@ visible of `$vis_{a, b}`.
    error messages will take that into account when informing users
    that no implementation exists.
 
-6. Move checking will consider the visibility of `Copy` for a type when checking
-   if `Copy` is implemented for that type or not.
+6. Move checking will consider the visibility of `Copy` for a type when
+   checking if `Copy` is implemented for that type or not.
 
 7. If:
    + A trait `$A`, with some `fn` item named `$candidate`, is in scope in a
@@ -532,48 +525,9 @@ Furthermore, we argue that introducing an artificial limit on the usefulness of
 this feature does not aid learning of Rust. In fact, we consider a less of
 uniformity to have a negative impact on learning the language.
 
-## Should a `priv` visibility modifier be introduced?
-
-We argue yes. If there is no way to specify private visibility textually,
-then the least private you can make an implementation is `pub(super)`.
-For larger modules, which do occur, module level privacy may also be useful
-for the same reasons as other visibility modifiers than `crate` can be useful.
-Other than that, being able to specify visibility for the `vis` macro fragment
-in a way that is uniform irrespective on what it is applied to is an added bonus.
-
-However, there are drawbacks to this approach. For one, unless we make it more
-interesting for other places, such as specifying `priv` on the items of a trait
-`impl`, `priv` will only be useful for tweaking the visibility of `impl`.
-Furthermore, if someone writes something like:
-
-```rust
-struct Foo {
-    baz: Wibble
-    priv bar: Wobble,
-}
-```
-
-they may mistakenly infer, if they are beginners, that `bar` is module private
-but `baz` is not (so it is public). To make this mistaken inference extremely
-unlikely, we lint in favour of removing `priv` and `pub` whenever they are the
-default for that context. This also provides a uniform style.
-
-### Which syntax?
-
-The reason for using the keyword `priv` specifically is that it is a reserved
-keyword, and that it is fitting for the proposed usage. We also argue that
-`pub` and `priv` match well together. However, there are other alternatives to
-consider:
-
-+ `pub(self)`
-
-  The meaning is less self-documenting and we have recently decided to move
-  away from `pub(crate)` in favour of just `crate`.
-
-+ `mod`
-
-  This one is interesting, but ultimately we consider `priv` to be more
-  intuitive.
+Other than that, being able use the `vis` macro fragment on `impl` is a boon
+for macro authors who can now provide a macro invoked as `mac!(pub(super))`
+which will then use `pub(super)` on everything you can specify visibility on.
 
 ## On permitting visibility in `#[derive(..)]`
 
@@ -629,6 +583,80 @@ that in our proposal, all implementations are considered when coherence checking
 an implementation. The effect of that is to prevent different crates and modules
 from defining implementations for a trait and a type when a hidden one exists.
 
+# Future work
+
+This section outlines some *possible* future work that we might want to consider
+but which this RFC does not propose.
+
+## `priv` visibility
+
+As we've previously noted, the `pub(self)` visibility already exists.
+That visibility modifier suffices to make trait implementations private.
+However; `pub(self)` is perhaps not the most ergonomic syntax if we wish
+to make it *easy* to make an implementation private.
+
+To do that, we *could* introduce the visibility modifier `priv`.
+As it happens, `priv` is a reserved keyword, but it is unused.
+
+As we've previously specified, `pub(self)` is the default visibility
+for all contexts except `impl`. If we were to introduce `priv`,
+it would merely be a syntactic alias for `pub(self)` and would act,
+in all respects, as `pub(self)` does.
+
+### Is `priv` better than `pub(self)`?
+
+As always: It depends!
+
++ On the one hand, `pub(self)` is more consistent with the `pub(path)` syntax.
+  Since `pub(self)` already exists, it could also be argued that introducing
+  another way to do the same thing is a bad choice due to the common saying that
+  *"there should only be one way to do it"*.
+
++ On the other hand, we have diverged slightly from both the consistency angle
+  and the above cited "principle" (since `pub(crate)` already exists) by
+  introducing `crate` as a visibility modifier to make things more easy and
+  ergonomic. It is therefore clear that Rust often does not adhere to that
+  principle. If we want to *encourage* users *more* to not overpromise on facts
+  about their type, then introducing `priv` helps. We also note that larger
+  modules *frequently* do occur, and as such, `priv impl Foo for Bar` may
+  not be too rare.
+
+* We also argue that `priv` is fitting for the proposed usage since it matches
+  well with `pub`. In our view, the keyword `priv` is also more self documenting
+  and intuitive than `pub(self)` is.
+
+### Other possible keywords
+
++ `mod`
+
+  This one is interesting, ergonomic, and short,
+  but ultimately we consider `priv` to be more intuitive.
+
+### A specification for `priv`
+
+Here we lay out a feel technical details for `priv` for future reference.
+
+#### Grammar and parsing
+
++ The `PRIV` token will lex the terminal `"priv"`.
+
++ To the production `visibility` we add:
+
+  ```
+  visibility : PRIV | .. ;
+  ```
+
+  where `..` is the old definition of `visibility`.
+
++ The macro fragment specifier `vis` will accept `PRIV`.
+
++ `priv` is considered the default visibility for all contexts but `impl`.
+
+#### Semantics
+
+1. The visibility modifier `priv` will be treated as `pub(self)` in all respects
+   except for error reporting, where `priv` is used instead.
+
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
@@ -643,9 +671,7 @@ The following questions are in the scope of the RFC and should be resolved
 2. Should `crate` (and `pub(crate)`) be the only visibility modifier permitted
    on `impl`?
 
-3. Should `priv` be introduced to hide implementations from other modules?
-
-4. Should you be able to specify a visibility modifier in `#[derive(..)]`?
+3. Should you be able to specify a visibility modifier in `#[derive(..)]`?
 
    1. Should `#[structural_match]` take visibility of `impl`s into account?
 
@@ -655,15 +681,12 @@ The following questions are in the scope of the RFC and should be resolved
 The following questions should be resolved at least before stabilization
 (but possibly sooner):
 
-5. What is an appropriate default lint level for `hidden_fn`?
+4. What is an appropriate default lint level for `hidden_fn`?
    1. Should `hidden_fn` be promoted to `deny`-by-default?
    2. should it be `allow`-by-default?
    3. Should it perhaps be a hard error instead?
 
-6. Should `pub impl ..` be linted against suggesting `impl ..` instead?
+5. Should `pub impl ..` be linted against, suggesting `impl ..` instead?
 
-7. Should `priv field: Type` and the `priv` visibility modifier in general
-   be linted against when it is the contextual default?
-
-If 2. is answered in the positive, questions 5-7 become moot.
-Similarly, if 3. is answered in the negative, 7. is moot.
+6. Should `pub(self) field: Type` and the `pub(self)` visibility modifier in
+   general be linted against when it is the contextual default?
