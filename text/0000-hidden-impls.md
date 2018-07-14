@@ -345,15 +345,59 @@ or emit an error notifying the user that modifiers are not supported.
 ## In relation to trait objects
 
 One place where crate B is allowed to use a hidden implementation of crate A
-is when it comes to trait objects. If A provides access to a trait object
-`Box<dyn Property>` (which implies that `Property` is object safe) by returning
-a value of that type, the compiler has no means in the general case to perform
-static analysis on that object to see where the implementation came from.
-This is fine. In this case, it is crate A that expressly gave access to an
-implementation of `Property` for `Thing`. Crate A is also under no obligation
-under the semver rules to provide an erased `Thing` value. As long as the value
-returned behaves observably in an equivalent manner, for some semantic
-definition of "equivalent", no breakage has occurred.
+is when it comes to trait objects. This is fine for a few reasons:
+
++ It is useful to pass around trait objects of `Property` inside crate A
+  internally even such objects arise from hidden implementations
+  so we don't want to ban making trait object of hidden implementations
+  outright.
+
++ It is also useful to pass trait objects from crate A to crate B
+  because crate A is under no obligation, under semver rules,
+  to pass an object of type `Thing` in a new minor / patch version.
+  As long as operations afforded by `Property` for the trait object,
+  that crate B gets, behaves observably in an equivalent manner,
+  for some semantic definition of "equivalent", no breakage has occurred.
+
++ If we consider passing hidden implementations to crate B to be "bad"
+  and passing public implementations to crate B to be "good",
+  then it is impossible to reject all bad programs (*soundness*)
+  but allow all good programs (*completeness*).
+  To see why, let's first assume that `Property` is object safe.
+  Let's also assume that the following definitions exist in crate A:
+
+  ```rust
+  struct Thing;
+  struct OtherThing;
+  
+  crate impl Property for Thing { ... }
+  pub impl Property for OtherThing { ... }
+
+  fn halting_problem() -> bool { ... }
+
+  pub fn make_with_property() -> Box<dyn Property> {
+      if halting_problem() {
+          Box::new(Thing)
+      } else {
+          Box::new(OtherThing)
+      }
+  }
+  ```
+
+  [undecidable]: https://en.wikipedia.org/wiki/Undecidable_problem
+
+  Since we know that [the halting problem is undecidable][undecidable],
+  and whether we return `Box::new(Thing)` or `Box::new(OtherThing)` is
+  dependent on the halting problem, then it is also undecidable whether
+  a hidden implementation is leaked or not via a trait object.
+  Thus, static analysis can't be used unless we accept that some good programs
+  be rejected by the compiler.
+
+  If we want to devise such an analysis, we could do so by starting at
+  the root of each `pub` function and transitively check whether it,
+  or any of its dependencies, will possibly construct a pointer to the
+  vtable of any hidden implementations. This could be done as a lint
+  of some form, but is currently left as possible future work.
 
 ## Recommendation: When you should use hidden implementations
 
