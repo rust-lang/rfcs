@@ -122,8 +122,8 @@ It should be noted that the sigil `#` has nothing to do with the syntax for [raw
 
 When the macro is invoked (expanded), each token tree is transcribed according to the following rules, depending on its hygiene tag.
 
-- *definition-site*: a normal mark is applied for the current expansion
-- *call-site*: a transparent mark is applied for the current expansion and the syntax context for every identifier in the token tree is changed to the syntax context of the call site.
+- *definition-site*: a normal mark is applied for the current expansion, which leaves the syntax context alone
+- *call-site*: a transparent mark is applied for the current expansion, which changes the syntax context for every identifier in the token tree to that of the call site.
 
 ## Reference: Example A
 [reference-example-a]: #reference-example-a
