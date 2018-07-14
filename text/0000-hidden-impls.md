@@ -438,9 +438,9 @@ inherent implementations.
   ```rust
   crate unsafe impl TrustedLen for Bar { .. }
   ```
-  
+
   but never:
-  
+
   ```rust
   unsafe crate impl TrustedLen for Bar { .. }
   ```
@@ -519,6 +519,23 @@ visible of `$vis_{a, b}`.
    + A warn-by-default lint `hidden_fn` will be emitted at the call site
      suggesting that the user use UFCS `<$T as $A>::$candidate(args..)`
      instead.
+
+8. When type checking a *negative implementation* of an `auto`-trait, i.e:
+
+   ```rust
+   pub(self) impl !Send for MyUnsafeType {}
+   ```
+
+   if the visibility of the negative implementation is less than that of the
+   `auto`-trait, then the implementation is rejected.
+   Conversely, if the visibility of the impl is ≥ that of the trait,
+   then that will not cause the implementation to be rejected.
+
+   The visibility specified on a negative implementation has no impact on
+   type checking if an implementation exists (4.). This is sound because
+   we've ruled out a situation where a negative implementation is less
+   visible than the trait it negatively implements. This is an intentionally
+   conservative restriction which may or may not be lifted in the future.
 
 ## Code generation
 
