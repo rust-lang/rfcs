@@ -646,7 +646,7 @@ but will be interpreted as:
 ```rust
 if (let Range { start: _, end: _ } = true..true) && false { ... }
 
-if (let PAT = break true && false) { ... }
+if (let PAT = break true) && false { ... }
 
 if (let PAT = F..) || false { ... }
 
