@@ -215,13 +215,25 @@ L |     let x = Thing::function();
 ## Hidden, but coherent
 
 It is crucial to note that `Property for Thing` acts, with respect to coherence,
-as if it were public. That means that crate B, which is a reverse dependency of
-A, may not write:
+as if it were public. Consider that a public trait `Property` is defined in
+crate A and that a blanket implementation exists in crate A:
+
+```rust
+// crate A:
+
+pub trait Property<T> { ... }
+
+crate impl<T> Property<T> for T { ... } // `From` provides a blanket impl like this.
+```
+
+That means that crate B, which is a reverse dependency of crate A, may not write:
 
 ```rust
 // crate B:
 
-impl Property for Thing { .. }
+struct Thing { ... } // or `union` / `enum`
+
+impl Property<Thing> for Thing { ... }
 ```
 
 This implementation is rejected, by the compiler, as overlapping with the one
@@ -229,14 +241,14 @@ specified in crate A. The following is one *possible* error message,
 which is a variant of `E0119`, tailored for this specific case:
 
 ```rust
-error[E0119]: conflicting implementations of trait `path::to::Property` for type `Thing`:
+error[E0119]: conflicting implementations of trait `crate_A::Property` for type `Thing`:
  --> src/main.rs:<line>:<column>
   |
-L | impl Property for Thing {
-  | ^^^^^^^^^^^^^^^^^^^^^^^
+L | impl Property<Thing> for Thing {
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   |
   = note: conflicting implementation in crate `A`:
-          - crate impl Property for Thing
+          - crate impl<T> crate_A::Property<T> for T { ... }
     note: the implementation exists, but is hidden.
 ```
 
