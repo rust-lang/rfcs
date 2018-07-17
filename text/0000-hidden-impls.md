@@ -583,6 +583,10 @@ visible of `$vis_{a, b}`.
    visible than the trait it negatively implements. This is an intentionally
    conservative restriction which may or may not be lifted in the future.
 
+9. Error [`E0449`](https://doc.rust-lang.org/error-index.html#E0449) will
+   no longer be emitted when a visibility modifier is applied on a `trait`
+   implementation.
+
 ## Code generation
 
 + Code generation will ignore visibility specified on any implementations.
