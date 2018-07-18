@@ -1455,8 +1455,22 @@ Unlike this RFC, the `Extract` class is much simpler.
     though unit testing does suggest this works.
 
     As mentioned in the RFC, there are faster algorithms for searching a `T: !Ord` slice.
-    It is not undecided if we should complicate the standard library to support this though.
+    It is not decided if we should complicate the standard library to support this though.
 
+* We could represent `SharedHaystack` using a more general concept of "cheaply cloneable":
+
+    ```rust
+    pub trait ShallowClone: Clone {}
+    impl<'a, T: ?Sized + 'a> ShallowClone for &'a T {}
+    impl<T: ?Sized> ShallowClone for Rc<T> {}
+    impl<T: ?Sized> ShallowClone for Arc<T> {}
+    ```
+
+    and all `H: SharedHaystack` bound can be replaced by `H: Haystack + ShallowClone`.
+    But this generalization brings more questions e.g. should `[u32; N]: ShallowClone`.
+    This should be better left to a new RFC, and since `SharedHaystack` is mainly used for
+    the core type `&A` only, we could keep `SharedHaystack` unstable longer
+    (a separate track from the main Pattern API) until this question is resolved.
 
 [RFC 528]: https://github.com/rust-lang/rfcs/pull/528
 [RFC 1309]: https://github.com/rust-lang/rfcs/pull/1309
