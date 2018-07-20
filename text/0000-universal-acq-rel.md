@@ -15,19 +15,19 @@ appropriate.
 [motivation]: #motivation
 
 In many cases, `Acquire`/`Release`/`AcqRel` is sufficient for synchronization.
-However, using this consistently is syntactically more complex than using
-`SeqCst` consistently: Depending on the operation
-(`load`/`store`/`compare_and_swap` or similar), one has to use one of
-`Acquire`/`Release`/`AcqRel`.  Using the wrong mode either leads to a run-time
-error (when using `AcqRel` with `load` or `store`), or to plainly incorrect
-run-time behavior (accidentally using `Acquire` instead of `AcqRel` with a
-`compare_and_swap` means the write part of the operation will *not* be a
-`Release` write).  Needless to say, both are not a great failure mode.
+However, there is currently no easy to to ensure that every atomic read is
+`Release`, and every atomic write is `Acquire`.  One has to carefully check
+every operation and use `AcqRel`, `Acquire`, or `Release`, depending on whether
+this is a RMW (read-modify-write), write, or read operation.  If one
+accidentally uses e.g. `Acquire` instead of `AcqRel` for `compare_and_swap` or
+`fetch_add`, that is a serious correctness problem: Now the read part of the
+operation is `Relaxed`!
 
 I think we could significantly improve the situation if one could just use
 `AcqRel` consistently for all operations, meaning "All loads are `Acquire`, all
-writes are `Release`".  That's easier to review and less error-prone than the
-current situation.
+writes are `Release`".  The one just has to check that `AcqRel` is used
+everywhere, and one can be sure that no access is accidentally `Relaxed`.
+That's easier to review and less error-prone than the current situation.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -83,7 +83,8 @@ that
 
 The alternative is to do nothing and stick to the status quo.  That means
 writing concurrent code using release-acquire synchronization requires a careful
-choice of the right ordering mode for every operation.
+choice of the right ordering mode for every operation, meaning it is just
+syntactically hard to consistently use release-acquire modes everywhere.
 
 
 # Prior art
