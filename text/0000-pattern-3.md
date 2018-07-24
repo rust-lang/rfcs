@@ -24,6 +24,7 @@ Generalize the pattern API to support `&str`, `&mut str`, `&[T]`, `&mut [T]`, `V
     - [Principles](#principles)
     - [Design rationales](#design-rationales)
     - [Miscellaneous decisions](#miscellaneous-decisions)
+    - [Alternatives](#alternatives)
 - [Prior art](#prior-art)
     - [Previous attempts](#previous-attempts)
     - [Haskell](#haskell)
@@ -245,21 +246,27 @@ to recover the indices in the middle (`5 == 3 + 2` and `7 == 3 + 4`).
 
 ### Searcher
 
-A searcher only provides a single method: `.search()`. It takes a span as input,
-and returns the first sub-range where the given pattern is found.
+A searcher has two required methods `.search()` and `.consume()`,
+and an optional method `.trim_start()`.
 
 ```rust
 pub unsafe trait Searcher<A: Hay + ?Sized> {
     fn search(&mut self, span: Span<&A>) -> Option<Range<A::Index>>;
+    fn consume(&mut self, span: Span<&A>) -> Option<A::Index>;
+    fn trim_start(&mut self, hay: &A) -> A::Index { ... }
 }
+
 pub unsafe trait ReverseSearcher<A: Hay + ?Sized>: Searcher<A> {
     fn rsearch(&mut self, span: Span<&A>) -> Option<Range<A::Index>>;
+    fn rconsume(&mut self, span: Span<&A>) -> Option<A::Index>;
+    fn trim_end(&mut self, hay: &A) -> A::Index { ... }
 }
+
 pub unsafe trait DoubleEndedSearcher<A: Hay + ?Sized>: ReverseSearcher<A> {}
 ```
 
-The `.search()` function is safe because there is no safe ways to construct a `Span<&A>`
-with invalid ranges. Implementations of `.search()` often start with:
+`.search()` and `.consume()` are safe because there is no safe ways to construct a `Span<&A>`
+with invalid ranges. Implementations of these methods often start with:
 
 ```rust
     fn search(&mut self, span: SharedSpan<&A>) -> Option<Range<A::Index>> {
@@ -270,24 +277,24 @@ with invalid ranges. Implementations of `.search()` often start with:
 
 The trait is unsafe to implement because it needs to guarantee the returned range is valid.
 
-### Consumer
-
-A consumer provides the `.consume()` method to implement `starts_with()` and `trim_start()`. It
-takes a span as input, and if the beginning matches the pattern, returns the end index of the match.
-
-The trait also provides a `.trim_start()` method in case a faster specialization exists.
+The `.search()` method will look for the first slice matching the searcher's pattern in the span,
+and returns the range where the slice is found (relative to the hay's start index).
+The `.consume()` method will is similar, but anchored to the start of the span.
 
 ```rust
-pub unsafe trait Consumer<A: Hay + ?Sized> {
-    fn consume(&mut self, span: Span<&A>) -> Option<A::Index>;
-    fn trim_start(&mut self, hay: &A) -> A::Index { ... }
-}
-pub unsafe trait ReverseConsumer<A: Hay + ?Sized>: Consumer<A> {
-    fn rconsume(&mut self, span: Span<&A>) -> Option<A::Index>;
-    fn trim_end(&mut self, hay: &A) -> A::Index { ... }
-}
-pub unsafe trait DoubleEndedConsumer<A: Hay + ?Sized>: ReverseConsumer<A> {}
+let span = unsafe { Span::from_parts("CDEFG", 3..8) };
+// we can find "CD" at the start of the span.
+assert_eq!("CD".into_searcher().search(span.clone()), Some(3..5));
+assert_eq!("CD".into_searcher().consume(span.clone()), Some(5));
+// we can only find "EF" in the middle of the span.
+assert_eq!("EF".into_searcher().search(span.clone()), Some(5..7));
+assert_eq!("EF".into_searcher().consume(span.clone()), None);
+// we cannot find "GH" in the span.
+assert_eq!("GH".into_searcher().search(span.clone()), None);
+assert_eq!("GH".into_searcher().consume(span.clone()), None);
 ```
+
+The trait also provides a `.trim_start()` method in case a faster specialization exists.
 
 ### Pattern
 
@@ -296,10 +303,36 @@ A pattern is simply a "factory" of a searcher and consumer.
 ```rust
 trait Pattern<H: Haystack>: Sized {
     type Searcher: Searcher<H::Target>;
-    type Consumer: Consumer<H::Target>;
 
     fn into_searcher(self) -> Self::Searcher;
-    fn into_consumer(self) -> Self::Consumer;
+    fn into_consumer(self) -> Self::Searcher { self.into_searcher() }
+}
+```
+
+Patterns are the types where users used to supply into the algorithms.
+Patterns are usually immutable (stateless), while searchers sometimes require pre-computation and
+mutable state when implementing some more sophisticated string searching algorithms.
+
+The relation between `Pattern` and `Searcher` is thus like `IntoIterator` and `Iterator`.
+
+There is a required method `.into_searcher()` as well as an optional method `.into_consumer()`.
+In some patterns (e.g. substring search), checking if a prefix match will require much less
+pre-computation than checking if any substring match. Therefore, if an algorithm can declare that
+it will only call `.consume()`, the searcher could use a more efficient structure.
+
+```rust
+impl<H: Haystack<Target = str>> Pattern<H> for &'p str {
+    type Searcher = SliceSearcher<'p, [u8]>;
+    #[inline]
+    fn into_searcher(self) -> Self::Searcher {
+        // create a searcher based on Two-Way algorithm.
+        SliceSearcher::new_searcher(self)
+    }
+    #[inline]
+    fn into_consumer(self) -> Self::Searcher {
+        // create a searcher based on naive search (which requires no pre-computation)
+        SliceSearcher::new_consumer(self)
+    }
 }
 ```
 
@@ -320,7 +353,7 @@ where
 pub fn ends_with<H, P>(haystack: H, pattern: P) -> bool
 where
     H: Haystack,
-    P: Pattern<H, Consumer: ReverseConsumer<H::Target>>;
+    P: Pattern<H, Searcher: ReverseSearcher<H::Target>>;
 ```
 
 **Trim**
@@ -334,12 +367,12 @@ where
 pub fn trim_end<H, P>(haystack: H, pattern: P) -> H
 where
     H: Haystack,
-    P: Pattern<H, Consumer: ReverseConsumer<H::Target>>;
+    P: Pattern<H, Searcher: ReverseSearcher<H::Target>>;
 
 pub fn trim<H, P>(haystack: H, pattern: P) -> H
 where
     H: Haystack,
-    P: Pattern<H, Consumer: DoubleEndedConsumer<H::Target>>;
+    P: Pattern<H, Searcher: DoubleEndedSearcher<H::Target>>;
 ```
 
 **Matches**
@@ -625,7 +658,7 @@ The main performance improvement comes from `trim()`. In v1.0, `trim()` depends 
 the `Searcher::next_reject()` method, which requires initializing a searcher and compute
 the critical constants for the Two-Way search algorithm. Search algorithms mostly concern about
 quickly skip through mismatches, but the purpose of `.next_reject()` is to find mismatches, so a
-searcher would be a job mismatch for `trim()`. This justifies the `Consumer` trait in v3.0.
+searcher would be a job mismatch for `trim()`. This justifies the `.into_consumer()` method in v3.0.
 
 <details><summary>Summary of benchmark</summary>
 
@@ -677,8 +710,72 @@ searcher would be a job mismatch for `trim()`. This justifies the `Consumer` tra
 
         [suffix table]: https://docs.rs/suffix/1.0.0/suffix/struct.SuffixTable.html#method.positions
 
-    2. Patterns are still moved when converting to a Searcher or Consumer.
-        Taking the entire ownership might prevent some use cases... ?
+    2. Patterns are still moved when converting to a Searcher.
+        Taking the entire ownership of the pattern might prevent some use cases... ?
+
+* Stabilization of this RFC is blocked by [RFC 1672] \(disjointness based on associated types)
+    which is postponed.
+
+    The default Pattern implementation currently uses an impl that covers all haystacks
+    (`impl<H: Haystack<Target = A>> Pattern<H> for Pat`) for some types, and several impls for
+    individual types for others (`impl<'h> Pattern<&'h A> for Pat`). Ideally *every* such impl
+    should use the blanket impl.
+    Unfortunately, due to lack of RFC 1672, there would be conflict between these impls:
+
+    ```rust
+    // 1.
+    impl<'p, H> Pattern<H> for &'p [char]
+    where
+        H: Haystack<Target = str>,
+    { ... }
+    impl<'p, H> Pattern<H> for &'p [T] // `T` can be `char`
+    where
+        H: Haystack<Target = [T]>,
+        T: PartialEq + 'p,
+    { ... }
+
+    // 2.
+    impl<H, F> Pattern<H> for F
+    where
+        H: Haystack<Target = str>,
+        F: FnMut(char) -> bool,
+    { ... }
+    impl<T, H, F> Pattern<H> for F
+    where
+        H: Haystack<Target = [T]>,
+        F: FnMut(&T) -> bool, // `F` can impl both `FnMut(char)->bool` and `FnMut(&T)->bool`.
+        T: PartialEq,
+    { ... }
+
+    // 3.
+    impl<'p, H> Pattern<H> for &'p str
+    where
+        H: Haystack<Target = str>,
+    { ... }
+    impl<'p, H> Pattern<H> for &'p str
+    where
+        H: Haystack<Target = OsStr>,
+    { ... }
+    ```
+
+    We currently provide concrete impls like `impl<'h, 'p> Pattern<&'h OsStr> for &'p str`
+    as workaround, but if we stabilize the `Pattern` trait before RFC 1672 is implemented,
+    a third-party crate can sneak in an impl:
+
+    ```rust
+    struct MyOsString { ... };
+    impl Deref for MyOsString {
+        type Target = OsStr;
+        ...
+    }
+    impl Haystack for MyOsString { ... }
+
+    impl<'p> Pattern<MyOsString> for &'p str { ... }
+    ```
+
+    and causes the standard library not able to further generalize (this is a breaking change).
+
+    RFC 1672 is currently blocked by `chalk` integration before it could be reopened.
 
 # Rationale and alternatives
 [alternatives]: #alternatives
@@ -983,6 +1080,26 @@ trait Consumer<A: Hay + ?Sized> {
 Both `starts_with()` and `trim()` can be efficiently implemented in terms of `.consume()`,
 though for some patterns a specialized `trim()` can be even faster, so we keep this default method.
 
+During the RFC, after we have actually tried the API on third party code, we found that having
+`Searcher` and `Consumer` as two distinct traits seldom have any advantages as most of the time they
+are the same type anyway. Therefore, we *merge* the consumer methods into the `Searcher` trait,
+while still keeping `Pattern::into_consumer()` so we could still choose the less expensive algorithm
+at runtime.
+
+```rust
+// v3.0-alpha.8
+trait Pattern<H: Haystack> {
+    type Searcher: Searcher<H::Target>;
+    fn into_searcher(self) -> Self::Searcher;
+    fn into_consumer(self) -> Self::Searcher { self.into_searcher() }
+}
+trait Searcher<A: Hay + ?Sized> {
+    fn search(&mut self, hay: Span<&A>) -> Option<Range<A::Index>>;
+    fn consume(&mut self, hay: Span<&A>) -> Option<A::Index>;
+    fn trim_start(&mut self, hay: &A) -> A::Index { /* default impl */ }
+}
+```
+
 ## Miscellaneous decisions
 
 ### `usize` as index instead of pointers
@@ -1059,12 +1176,13 @@ And thus the more general `Borrow` trait offers no advantage over `Deref`.
 
 ### Searcher makes Hay an input type instead of associated type
 
-The `Searcher` and `Consumer` traits make the hay as input type.
+The `Searcher` trait makes the hay as input type.
 This makes any algorithm relying on a `ReverseSearcher` need to spell out the hay as well.
 
 ```rust
 trait Searcher<A: Hay + ?Sized> {
     fn search(&mut self, span: Span<&A>) -> Option<Range<A::Index>>;
+    ...
 }
 
 fn rfind<H, P>(haystack: H, pattern: P) -> Option<H::Target::Index>
@@ -1080,6 +1198,7 @@ An alternative is to make Hay an associated type:
 trait Searcher {
     type Hay: Hay + ?Sized;
     fn search(&mut self, span: Span<&Self::Hay>) -> Option<Range<Self::Hay::Index>>;
+    ...
 }
 
 fn rfind<H, P>(haystack: H, pattern: P) -> Option<H::Target::Index>
@@ -1125,6 +1244,47 @@ With specialization, this dilemma can be easily fixed: we will fallback to an al
 which only requires `T: PartialEq` (e.g. [`galil-seiferas`] or even naive search),
 and use the faster Two-Way algorithm when `T: Ord`.
 
+### Not having default implementations for `Searcher::{search, consume}`
+
+In the `Searcher` trait, `.search()` and `.consume()` can be implemented in terms of each other:
+
+```rust
+trait Searcher<A: Hay + ?Sized> {
+    fn search(&mut self, span: Span<&A>) -> Option<Range<A::Index>> {
+        // we can implement `search` in terms of `consume`
+        let (hay, range) = span.into_parts();
+        loop {
+            unsafe {
+                if let Some(end) = self.consume(Span::from_span(hay, range.clone())) {
+                    return Some(range.start..end);
+                }
+                if range.start == range.end {
+                    return None;
+                }
+                range.start = hay.next_index(range.start);
+            }
+        }
+    }
+
+    fn consume(&mut self, span: Span<&A>) -> Option<A::Index> {
+        // we can implement `consume` in terms of `search`
+        let start = span.original_range().start;
+        let range = self.search(span)?;
+        if range.start == start {
+            Some(range.end)
+        } else {
+            None
+        }
+    }
+
+    ...
+}
+```
+
+These fallbacks should only be used when the pattern does not allow more efficient implementations,
+which is often not the case. To encourage pattern implementations to support both primitives,
+where they should have full control of the details, we keep them as required methods.
+
 ### Names of everything
 
 * **Haystack**. Inherited from the v1.0 method `Searcher::haystack()`. v2.0 called it
@@ -1141,19 +1301,12 @@ and use the faster Two-Way algorithm when `T: Ord`.
     `.next_match()` since it needs to take a span as input and thus no longer iterator-like.
     It is renamed to `.search()` as a shorter verb and also consistent with the trait name.
 
-* **Consumer::consume()**. The name is almost randomly chosen as there's no good name for
+* **Searcher::consume()**. The name is almost randomly chosen as there's no good name for
     this operation. This name is taken from the same function in the [`re2` library][re2-consume].
-
-    * `Consumer` is totally different from `Searcher`. Calling it `PrefixSearcher` or
-        `AnchoredSearcher` would imply a non-existing sub-classing relationship.
 
     * We would also like a name which is only a single word.
 
-    * We want the name *not* start with the letter **S**
-        so we could easily distinguish between this and `Searcher` when quick-scanning the code,
-        in particular when `ReverseXxxer` is involved.
-
-    * "Matcher" (using name from Python) is incompatible with the existing `.matches()` method.
+    * "match" (using name from Python) is incompatible with the existing `.matches()` method.
         Besides, the meaning of "match" is very ambiguous among other libraries.
 
     <details><summary>Names from other languages and libraries</summary>
@@ -1214,6 +1367,10 @@ and use the faster Two-Way algorithm when `T: Ord`.
     is adding an `r` prefix, so we do the same for the trait methods as well.
 
 * **Span**. The name is taken from the rustc compiler.
+
+## Alternatives
+
+* The names of everything except `Searcher`, `Pattern` and `Haystack` are not finalized.
 
 # Prior art
 
@@ -1474,6 +1631,7 @@ Unlike this RFC, the `Extract` class is much simpler.
 
 [RFC 528]: https://github.com/rust-lang/rfcs/pull/528
 [RFC 1309]: https://github.com/rust-lang/rfcs/pull/1309
+[RFC 1672]: https://github.com/rust-lang/rfcs/pull/1672
 [RFC 2089]: https://github.com/rust-lang/rfcs/pull/2089
 [RFC 2289]: https://github.com/rust-lang/rfcs/pull/2289
 [RFC 2295]: https://github.com/rust-lang/rfcs/pull/2295
