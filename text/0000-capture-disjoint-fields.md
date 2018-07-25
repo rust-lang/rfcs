@@ -101,19 +101,19 @@ impl FirstDuplicated {
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-This RFC does not propose any changes to borrowck. Instead, the MIR generation
-for closures should be altered to produce the minimal capture. Additionally, a
-hidden `repr` for closures might be added, which could reduce closure size
-through awareness of the new capture rules *(see unresolved)*.
+This RFC does not propose any changes to the borrow checker. Instead, the MIR
+generation for closures should be altered to produce the minimal capture.
+Additionally, a hidden `repr` for closures might be added, which could reduce
+closure size through awareness of the new capture rules *(see unresolved)*.
 
-In a sense, when a closure is lowered to MIR, a list of "capture expressions"
-is created, which we will call the "capture set". Each expression is some part
-of the closure body which, in order to capture parts of the enclosing scope,
-must be pre-evaluated when the closure is created. The output of the
-expressions, which we will call "capture data", is stored in the anonymous
-struct which implements the `Fn*` traits. If a binding is used within a
-closure, at least one capture expression which borrows or moves that binding's
-value must exist in the capture set.
+In a sense, when a closure is lowered to MIR, a list of "capture expressions" is
+created, which we will call the "capture set". Each expression is some part of
+the closure body which, in order to capture parts of the enclosing scope, must
+be pre-evaluated when the closure is created. The output of the expressions,
+which we will call "capture data", is stored in the anonymous struct which
+implements the `Fn*` traits. If a binding is used within a closure, at least one
+capture expression which borrows or moves that binding's value must exist in the
+capture set.
 
 Currently, lowering creates exactly one capture expression for each used
 binding, which borrows or moves the value in its entirety. This RFC proposes
@@ -140,10 +140,10 @@ Additionally capture expressions are not allowed to...
 Note that *all* functions are considered impure (including to overloaded deref
 impls). And, for the sake of capturing, all indexing is considered impure *(see
 unresolved)*. It is possible that overloaded `Deref::deref` implementations
-could be marked as pure by using a new, unsafe marker trait (such as
-`DerefPure`) or attribute (such as `#[deref_transparent]`). In the meantime,
-`<Box as Deref>::deref` could be a special case of a pure function *(see
-unresolved)*.
+could be marked as pure by using a new, marker trait (such as `DerefPure`) or
+attribute (such as `#[deref_transparent]`). However, such a solution should be
+proposed in a separate RFC. In the meantime, `<Box as Deref>::deref` could be a
+special case of a pure function *(see unresolved)*.
 
 Note that, because capture expressions are all subsets of the closure body,
 this RFC does not change *what* is executed. It does change the order/number of
@@ -176,7 +176,7 @@ let _a = &mut foo.a;
 - `&mut foo.b` (used in entirety)
 - `&mut foo.a` (used in entirety)
 
-Borrowck passes because `foo.a`, `foo.b`, and `foo.c` are disjoint.
+The borrow checker passes because `foo.a`, `foo.b`, and `foo.c` are disjoint.
 
 ```rust
 let _a = &mut foo.a;
@@ -185,7 +185,7 @@ move || foo.b;
 
 - `foo.b` (used in entirety)
 
-Borrowck passes because `foo.a` and `foo.b` are disjoint.
+The borrow checker passes because `foo.a` and `foo.b` are disjoint.
 
 ```rust
 let _hello = &foo.hello;
@@ -194,7 +194,7 @@ move || foo.drop_world.a;
 
 - `foo.drop_world` (owned & implements drop)
 
-Borrowck passes because `foo.hello` and `foo.drop_world` are disjoint.
+The borrow checker passes because `foo.hello` and `foo.drop_world` are disjoint.
 
 ```rust
 || println!("{}", foo.wrapper_thing.a);
@@ -222,7 +222,7 @@ let _foo_again = &mut foo;
 
 - `&mut foo.a`  (used in entirety)
 
-Borrowck fails because `_foo_again` and `foo.a` intersect.
+The borrow checker fails because `_foo_again` and `foo.a` intersect.
 
 ```rust
 let _a = foo.a;
@@ -231,7 +231,7 @@ let _a = foo.a;
 
 - `foo.a`  (used in entirety)
 
-Borrowck fails because `foo.a` has already been moved.
+The borrow checker fails because `foo.a` has already been moved.
 
 ```rust
 let _a = drop_foo.a;
@@ -240,15 +240,15 @@ move || drop_foo.b;
 
 - `drop_foo` (owned & implements drop)
 
-Borrowck fails because `drop_foo` can not be destructured + use of partially
-moved value.
+The borrow checker fails because `drop_foo` can not be destructured + use of
+partially moved value.
 
 # Drawbacks
 [drawbacks]: #drawbacks
 
-This RFC does ruin the intuition that *all* variables named within a closure
-are captured. I argue that that intuition is not common or necessary enough to
-justify the extra glue code.
+This RFC does ruin the intuition that all variables named within a closure are
+*completely* captured. I argue that that intuition is not common or necessary
+enough to justify the extra glue code.
 
 # Rationale and alternatives
 [alternatives]: #alternatives
@@ -277,8 +277,4 @@ places where the language could benefit?
 - Should `Box` be special?
 
 - Drop order can change as a result of this RFC, is this a real stability
-problem? It is hard to imagine this breaking anything in the rust ecosystem.
-
-- Would lifetime changes be more breaking after NLL is stabilized?
-
-- How to avoid breaking changes if needed.
+  problem? How should this be resolved?
