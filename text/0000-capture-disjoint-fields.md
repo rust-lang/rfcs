@@ -169,18 +169,20 @@ let foo = 10;
 - `&mut foo` (not a struct)
 
 ```rust
-let _a = &mut foo.a;
+let a = &mut foo.a;
 || (&mut foo.b, &mut foo.c);
+somefunc(a);
 ```
 
 - `&mut foo.b` (used in entirety)
-- `&mut foo.a` (used in entirety)
+- `&mut foo.c` (used in entirety)
 
 The borrow checker passes because `foo.a`, `foo.b`, and `foo.c` are disjoint.
 
 ```rust
-let _a = &mut foo.a;
+let a = &mut foo.a;
 move || foo.b;
+somefunc(a);
 ```
 
 - `foo.b` (used in entirety)
@@ -188,11 +190,12 @@ move || foo.b;
 The borrow checker passes because `foo.a` and `foo.b` are disjoint.
 
 ```rust
-let _hello = &foo.hello;
+let hello = &foo.hello;
 move || foo.drop_world.a;
+somefunc(hello);
 ```
 
-- `foo.drop_world` (owned & implements drop)
+- `foo.drop_world` (owned and implements drop)
 
 The borrow checker passes because `foo.hello` and `foo.drop_world` are disjoint.
 
@@ -216,13 +219,14 @@ let bar = (1, 2); // struct
 - `bar` (used in entirety)
 
 ```rust
-let _foo_again = &mut foo;
+let foo_again = &mut foo;
 || &mut foo.a;
+somefunc(foo_again);
 ```
 
 - `&mut foo.a`  (used in entirety)
 
-The borrow checker fails because `_foo_again` and `foo.a` intersect.
+The borrow checker fails because `foo_again` and `foo.a` intersect.
 
 ```rust
 let _a = foo.a;
@@ -234,14 +238,27 @@ let _a = foo.a;
 The borrow checker fails because `foo.a` has already been moved.
 
 ```rust
-let _a = drop_foo.a;
+let a = &drop_foo.a;
 move || drop_foo.b;
+somefunc(a);
 ```
 
-- `drop_foo` (owned & implements drop)
+- `drop_foo` (owned and implements drop)
 
-The borrow checker fails because `drop_foo` can not be destructured + use of
-partially moved value.
+The borrow checker fails because `drop_foo` can not be moved while borrowed.
+
+```rust
+|| &box_foo.a;
+```
+
+- `&<Box<_> as Deref>::deref(&box_foo).b` (pure function call)
+
+```rust
+move || &box_foo.a;
+```
+
+- `box_foo` (`move` forces full capure of `box_foo`, since it can not be
+  destructured)
 
 # Drawbacks
 [drawbacks]: #drawbacks
