@@ -20,6 +20,10 @@ and meter converts to feet, a conversion from centimeter to feet should be deriv
 If a type `A` implements `Into<B>` and `B` implements `Into<C>`,
 `Into<C>` is automatically implemented for type `A`.
 
+IF another type `D` implements `Into<C>` and `A` implements `Into<D>`,
+the derived implementation will be dropped, because there are two conflicting
+ways to get to `C` from `A`.
+
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
