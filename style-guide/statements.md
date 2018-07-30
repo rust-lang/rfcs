@@ -43,7 +43,7 @@ let Foo {
     Foo { f, g };
 
 let (abcd,
-     defg):
+    defg):
     Baz =
 { ... }
 ```
@@ -116,7 +116,9 @@ a_macro!(...);
 
 There should be no space between the expression and the semi-colon.
 
+```
 <expr>;
+```
 
 All expressions in statement position should be terminated with a semi-colon,
 unless they end with a block or are used as the value for a block.

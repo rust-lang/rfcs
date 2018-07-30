@@ -60,9 +60,8 @@ An empty block should be written as `{}`.
 
 A block may be written on a single line if:
 
-* it is either
-  - used in expression position (not statement position)
-  - is an unsafe block in statement position
+* it is either used in expression position (not statement position) or is an
+  unsafe block in statement position
 * contains a single-line expression and no statements
 * contains no comments
 
@@ -118,7 +117,7 @@ fn main() {
 ### Closures
 
 Don't put any extra spaces before the first `|` (unless the closure is prefixed
-by `move`), but put a space between the second `|` and the expression of the
+by `move`); put a space between the second `|` and the expression of the
 closure. Between the `|`s, you should use function definition syntax, however,
 elide types where possible.
 
@@ -185,7 +184,7 @@ let f = Foo {
 
 Use a single-line form where possible. There should not be spaces around the
 parentheses. Where a single-line form is not possible, each element of the tuple
-should be on it's own block-indented line and there should be a trailing comma.
+should be on its own block-indented line and there should be a trailing comma.
 
 ```rust
 (a, b, c)
@@ -416,11 +415,11 @@ let cstr = "Hi\0" as *const str as *const [u8] as *const std::os::raw::c_char;
 ### Chains of fields and method calls
 
 A chain is a sequence of field accesses and/or method calls. A chain may also
-include the try operator. E.g., `a.b.c().d` or `foo?.bar().baz?`.
+include the try operator ('?'). E.g., `a.b.c().d` or `foo?.bar().baz?`.
 
 Prefer formatting on one line if possible, and the chain is *small*. If
 formatting on multiple lines, each field access or method call in the chain
-should be on it's own line with the line-break before the `.` and after any `?`.
+should be on its own line with the line-break before the `.` and after any `?`.
 Each line should be block-indented. E.g.,
 
 ```rust
@@ -429,7 +428,7 @@ let foo = bar
     .qux();
 ```
 
-If the length of the last line of the first element plus it's indentation is
+If the length of the last line of the first element plus its indentation is
 less than or equal to the indentation of the second line (and there is space),
 then combine the first and second lines, e.g.,
 
@@ -467,7 +466,7 @@ a.b.c()?.d
 Note there is block indent due to the chain and the function call in the above
 example.
 
-Prefer formatting the whole chain in mulit-line style and each element on one
+Prefer formatting the whole chain in multi-line style and each element on one
 line, rather than putting some elements on multiple lines and some on a single
 line, e.g.,
 
@@ -490,8 +489,8 @@ This section covers `if`, `if let`, `loop`, `while`, `while let`, and `for`
 expressions.
 
 The keyword, any initial clauses, and the opening brace of the block should be
-on a single line. The usual rules for block formatting should be applied to the
-block.
+on a single line. The usual rules for [block formatting](#Blocks) should be
+applied to the block.
 
 If there is an `else` component, then the closing brace, `else`, any following
 clause, and the opening brace should all be on the same line. There should be a
@@ -614,6 +613,21 @@ match foo {
 }
 ```
 
+Prefer
+
+
+```rust
+match foo {
+    foo => bar,
+    a_very_long_pattern
+    | another_pattern
+    | yet_another_pattern
+    | a_forth_pattern => {
+        ...
+    }
+}
+```
+
 Avoid splitting the left-hand side (before the `=>`) of a match arm where
 possible. If the right-hand side of the match arm is kept on the same line,
 never use a block (unless the block is empty).
@@ -720,6 +734,19 @@ clause, then you must use the above form:
     | a_forth_pattern
         if expr =>
     {
+        ...
+    }
+```
+
+If the pattern is multi-line, and the last line is less wide than the indent, do
+not put the `if` clause on a newline. E.g.,
+
+```rust
+    Token::Dimension {
+         value,
+         ref unit,
+         ..
+    } if num_context.is_ok(context.parsing_mode, value) => {
         ...
     }
 ```
