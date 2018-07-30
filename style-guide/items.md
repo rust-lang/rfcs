@@ -8,7 +8,7 @@ must come before other items. We recommend that imports come before module
 declarations; if imports and modules are separated, then they should be ordered
 alphabetically. When sorting, `self` and `super` must come before any other
 names. Module declarations should not be moved if they are annotated with
-`#[macro_export]`, since that may be semantics changing.
+`#[macro_use]`, since that may be semantics changing.
 
 Tools should make the above ordering optional.
 
@@ -77,9 +77,9 @@ enum FooBar {
 }
 ```
 
-If a struct variant is *short* (TODO link to definition), it may be formatted on
+If a struct variant is [*small*](#small-items), it may be formatted on
 one line. In this case, do not use a trailing comma for the field list, but do
-put spaces around braces:
+put spaces around each brace:
 
 ```rust
 enum FooBar {
@@ -118,7 +118,8 @@ struct Foo {
 }
 ```
 
-Prefer using a unit struct to an empty struct (these only exist to simplify code
+Prefer using a unit struct (e.g., `struct Foo;`) to an empty struct (e.g.,
+`struct Foo();` or `struct Foo {}`, these only exist to simplify code
 generation), but if you must use an empty struct, keep it on one line with no
 space between the braces: `struct Foo;` or `struct Foo {}`.
 
@@ -214,7 +215,7 @@ impl Bar for Foo {
 
 Avoid line-breaking in the signature if possible. If a line break is required in
 a non-inherent impl, break immediately before `for`, block indent the concrete type
-and put the opening brace on it's own line:
+and put the opening brace on its own line:
 
 ```rust
 impl Bar
@@ -425,7 +426,7 @@ associated type has a bound, there should be a space after the colon but not
 before:
 
 ```rust
-    pub type Foo: Bar;
+pub type Foo: Bar;
 ```
 
 
@@ -521,7 +522,7 @@ example, `a::*` comes before `b::a` but `a::b` comes before `a::*`. E.g.,
 Tools must make the following normalisations:
 
 * `use a::self;` -> `use a;`
-* `use a::{};` ->
+* `use a::{};` -> (nothing)
 * `use a::{b};` -> `use a::b;`
 
 And must apply these recursively.
@@ -541,8 +542,8 @@ For example,
 ```rust
 use a::b::{
     x, y, z,
-    w::{...},
     u::{...},
+    w::{...},
 };
 ```
 

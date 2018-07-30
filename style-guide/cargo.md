@@ -70,7 +70,7 @@ example, `MIT/Apache-2.0`.)
 The homepage field, if present, must consist of a single URL, including the
 scheme (e.g. `https://example.org/`, not just `example.org`.)
 
-Within the description field, wrap text at 78 columns. Don't start the
+Within the description field, wrap text at 80 columns. Don't start the
 description field with the name of the crate (e.g. "cratename is a ..."); just
 describe the crate itself. If providing a multi-sentence description, the first
 sentence should go on a line by itself and summarize the crate, like the

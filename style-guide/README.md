@@ -13,7 +13,7 @@ communication overhead, and mental energy.
 
 Humans comprehend information through pattern matching. By ensuring that all
 Rust code has similar formatting, less mental effort is required to comprehend a
-new project, lowering the bar to entry for new developers.
+new project, lowering the barrier to entry for new developers.
 
 Thus, there are productivity benefits to using a formatting tool (such as
 rustfmt), and even larger benefits by using a community-consistent formatting,
@@ -24,9 +24,11 @@ typically by using a formatting tool's default settings.
 
 ### Indentation and line width
 
-Use spaces, not tabs. Each level of indentation must be four spaces. The maximum
-width for a line is 100 characters. A tool should be configurable for all three
-of these variables.
+* Use spaces, not tabs.
+* Each level of indentation must be four spaces (that is, all indentation
+  outside of string literals and comments must be a multiple of four).
+* The maximum width for a line is 100 characters.
+* A tool should be configurable for all three of these variables.
 
 
 ### Blank lines
@@ -37,7 +39,7 @@ two newlines). E.g,
 ```rust
 fn foo() {
     let x = ...;
-    
+
     let y = ...;
     let z = ...;
 }
@@ -60,10 +62,8 @@ defaults for both statements and items should be minimum: 1, maximum: 2.
 
 ### Comments
 
-The following guidelines are recommendations only, a mechanical formatter should
-not change comments except to move them within a file. To be clear this means
-changing the whitespace before a line comment or the whitespace before or after
-a block comment.
+The following guidelines for comments are recommendations only, a mechanical
+formatter might skip formatting of comments.
 
 Prefer line comments (`//`) to block comments (`/* ... */`).
 
@@ -76,7 +76,8 @@ have a newline after the opening sigil and before the closing sigil.
 Prefer to put a comment on its own line. Where a comment follows code, there
 should be a single space before it. Where a block comment is inline, there
 should be surrounding whitespace as if it were an identifier or keyword. There
-should be no trailing whitespace after a comment. Examples:
+should be no trailing whitespace after a comment or at the end of any line in a
+multi-line comment. Examples:
 
 ```rust
 // A comment on an item.
@@ -129,9 +130,9 @@ Doc comments should come before attributes.
 
 ### Attributes
 
-Put each attribute on its own line, indented to the indentation of its item.
-In the case of inner attributes (`#!`), indent it to the inner indentation (the
-indentation of the item + 1). Prefer outer attributes, where possible.
+Put each attribute on its own line, indented to the level of the item.
+In the case of inner attributes (`#!`), indent it to the level of the inside of
+the item. Prefer outer attributes, where possible.
 
 For attributes with argument lists, format like functions.
 
@@ -176,7 +177,7 @@ circumstances.
 Some suitable heuristics are the size of the item (in characters) or the
 complexity of an item (for example, that all components must be simple names,
 not more complex sub-expressions). For more discussion on suitable heuristics,
-see the discussion on [this issue](https://github.com/rust-lang-nursery/fmt-rfcs/issues/47).
+see [this issue](https://github.com/rust-lang-nursery/fmt-rfcs/issues/47).
 
 Tools should give the user an option to ignore such heuristics and always use
 the normal formatting.
@@ -185,3 +186,5 @@ the normal formatting.
 ## [Non-formatting conventions](advice.md)
 
 ## [Cargo.toml conventions](cargo.md)
+
+## [Principles used for deciding these guidelines](principles.md)

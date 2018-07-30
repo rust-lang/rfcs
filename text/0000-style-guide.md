@@ -30,7 +30,7 @@ Rustfmt has many options for customising formatting. The behaviour of those opti
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-See the [guide text](../guide/README.md).
+See the [guide text](../style-guide/README.md).
 
 The style guide lives in the RFC repo, since it can be considered an appendix to this RFC. We might want to duplicate the style guide elsewhere to make it more discoverable, but the version here will be the 'source of truth'. Amendments to the style guide should go through the RFC process.
 
