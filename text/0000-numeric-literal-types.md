@@ -38,7 +38,8 @@ probably entail picking a weakening and applying it to both explanations.
 
 This proposal has a few motivating use cases:
 - Untyped compile-time constants, as in Go or C (via `#define`).
-- Custom integer literals, in particular bignums.
+- Bignum constructors.
+- Custom integer literals, à la `operator""`.
 
 The former is valuable, because it allows us to hoist several occurences
 of the same literal in different typed contexts, without having to type
@@ -59,8 +60,9 @@ This can be emulated by a macro that expands to the given literal, but
 that is unergonomic, and calling `MY_MASK!()` does not make it clear
 that this is a compile-time constant (`ALL_CAPS` not withstanding).
 
-The latter was not originally the main reason this was proposed, but perhaps
-the stronger one. Custom literals need to take a number as input; while
+The latter two are essentially the same proposal: access to arbitrary-precission
+integers for constructing bignums (and other custom literals).
+Custom literals need to take a number as input; while
 C++, the only language with custom literals, simply takes its versions of
 `u64` and `f64` as arguments for literals, this is an unnecessary restriction
 in Rust, given that we recently stabalized the `u128` type. This problem
@@ -90,8 +92,8 @@ let z: u32 = 42; // ulit coerces to u32, since it's the required type
 ```
 
 Literal types are otherwise *mostly* like normal integers. They support
-arithmetic and comparisons (but don't implement any std::ops traits, since
-they're not Sized). Like any DST, they can be passed around behind references.
+arithmetic and comparisons (but don't implement any `std::ops` traits, since
+they're not `Sized`). Like any DST, they can be passed around behind references.
 You can even write
 ```rust
 const REALLY_BIG: &ulit = &1000000000000000000000;
@@ -114,7 +116,8 @@ If either type is used in a context that requires a `Sized` type
 (a function call, a let binding, a generic paramter, etc), they will
 coerce according to the current typing rules for literals: whatever
 is infered as correct, or `i32`/`f64` as a fallback. Note that `as` casts
-do what is expected.
+do what is expected. See [unresolved-questions] for alternative
+ways we could perform the coersions.
 
 For ergonomic reasons,
 static references to either type are dereferenced automatically in `Sized`
@@ -130,25 +133,19 @@ The representation of `ulit` and `flit` is unspecified, but this RFC suggests
 representations. Note that the compiler is *not* required to use these;
 they are merely a suggestion for what a good representation would be.
 ```rust
-struct ulit(
-    [u8]    // the bytes of the number, in the target
-            // endianess. this is so a cast to a sized
-            // type can be implemented as a memcpy
-);
+// represented as an array of bytes in the target endianness;
+// this endianness choice means a coersion is just a memcpy
+struct ulit([u8]);
 
-// represented in base-2 scientific notation, with the bytes
-// for the mantissa and exponent back-to-back.
-// this way, we avoid having to do float aritmetic
-// to perform a coersion at runtime.
+// represented as a ratio of target-endian, arbitrary-length
+// integers. this is chosen over an IEEE-like base-2 notation,
+// which would require rounding. unfortunately, this requires
+// an fdiv for coersion, though this is not a problem, since
+// it is unlikely that an flit will need to be coerced at runtime
 struct flit {
     middle: usize,
     bytes: [u8]
 }
-
-// alternatively, we could take the above representation to mean
-// a ratio of two unsigned integers. while this has the advantage that
-// we don't need to pick a precision cutoff, it means that runtime coersion
-// requires an expensive fdiv instruction.
 ```
 `ulit` and `flit` do not implement any `ops` arithmetic traits, since
 those require `Self: Sized`. They do, however, support all the usual arithmetic
@@ -166,8 +163,8 @@ impl ulit {
 }
 
 impl flit {
-    fn lit_mantissa(&self) -> &[u8];
-    fn lit_exponent(&self) -> &[u8];
+    fn lit_numer(&self) -> &[u8];
+    fn lit_denom(&self) -> &[u8];
 }
 ```
 The documentation should point out that the endianness of the returned slices
@@ -256,14 +253,14 @@ bigger numeric types, e.g. `u256`, which would require breaking whatever
 # Prior art
 [prior-art]: #prior-art
 
-Scala’s dotty compiler has explicit literal types: the type of 1 is 1.type, 
+Scala's dotty compiler has explicit literal types: the type of 1 is 1.type, 
 which is a subtype of Int (corresponding to the JVM int type). In addition, 
-String literals also have types: "foo".type, but this is beyond the scope of 
-this proposal. These types are mostly intended to be used in generics. I don’t
+String literals also have types (e.g. `"foo".type`), but that is beyond the scope of 
+this proposal. These types are mostly intended to be used in generics; I don’t
 know of any language that uses a single type for all int/float literals.
 
 As pointed at the start of this RFC, many languages have untyped constants, 
-but this is often  opt-out, if at all. I think my proposed opt-in mechanism 
+but this is often opt-out, if at all. We believe the proposed opt-in mechanism 
 for untyped constants is not the enormous footgun typeless-by-default is.
 
 See below for alternatives regarding coersion.
@@ -289,3 +286,33 @@ Finally, some other minor considerations:
   agree with the naming convention for other numeric types.
 - Should we consider a more granular approach, like Scala’s?
 - What should `&ulit` look like through FFI?
+
+# Future extensions
+[future-extensions]: #future-extensions
+
+A major future use of this proposal is allowing arbitrary precision
+in custom literals, like in the following strawman (imagine
+that we have `const fn` in traits for now):
+
+```rust
+// core::ops
+#[lang = "int_lit"]
+pub trait IntLit {
+    const fn int_lit(lit: &'static ulit) -> Self;
+}
+
+// ..
+struct BigInt {
+    negative: bool,
+    bytes: Vec<u8>
+}
+
+impl IntLit for BigInt {
+    const fn int_lit(lit: &'static ulit) -> BigInt {
+        BigInt { negative: false, bytes: lit.lit_bytes().to_vec() } 
+    }
+}
+
+// at last, our original example can be made to compile!
+const VEGETA_CANT_EVEN: BigInt = 9_000_000_000_000_000_000_000_000_000_000_000_000_001_BigInt; 
+```
