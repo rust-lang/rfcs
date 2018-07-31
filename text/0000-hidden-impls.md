@@ -860,7 +860,9 @@ Here we lay out a feel technical details for `priv` for future reference.
 [unresolved]: #unresolved-questions
 
 Exact wordings of error messages discussed in this RFC and their error codes,
-as well as lint names and their phrasings are out of the scope of this RFC. 
+as well as lint names and their phrasings are out of the scope of this RFC.
+Designs on crate-local inherent implementations of crate-external types are,
+while related, also out of scope for this RFC.
 
 The following questions are in the scope of the RFC and should be resolved
 *before* the RFC is merged:
