@@ -616,6 +616,19 @@ are attempted. For those who understand the coherent nature of traits and
 their implementations in Rust, there will be no change, thus, there is no
 misconception to clear up.
 
+Another possible drawback is the now contextual nature of visibility
+when it is implicit rather than specified in the source code.
+With this proposal, the default for implementations is `pub`,
+but for everywhere else it is `pub(self)`. What we could do is make `pub(self)`
+the implicit default on implementations as well, but this would break every
+crate in existence because all public implementations would become private.
+It is allowed to do this with an edition and so we could do it in 2021.
+However, just because we can make edition breaking changes does not mean that
+we should. For now, this RFC specifies a lint away from `pub impl..`.
+If it turns out to be a problem in practice that `impl..` is thought of as
+private, we can lint in the other direction favoring `pub impl..` over `impl..`.
+This step should however be taken when we have some practical experience.
+
 # Rationale and alternatives
 [alternatives]: #rationale-and-alternatives
 
