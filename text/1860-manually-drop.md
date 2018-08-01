@@ -93,14 +93,12 @@ impl<T> Deref for ManuallyDrop<T> {
 impl<T> DerefMut for ManuallyDrop<T> {
     // ...
 }
-
-// Other common impls such as `Debug for T: Debug`.
 ```
 
 The lang item will be treated specially by the compiler to not emit any drop
 glue for this type.
 
-Let us apply this union to a somewhat expanded example from the motivation:
+Let us apply `ManuallyDrop` to a somewhat expanded example from the motivation:
 
 ```rust
 struct FruitBox {
