@@ -101,28 +101,28 @@ let mut u: U;
 
 // We can write into uninitialized inner fields:
 u.f2.1 = S(42);
-let _ = &u.f2.1; // This field is initialized now.
+{ let _x = &u.f2.1; } // This field is initialized now.
 // But this does not change the initialization state of the union itself,
 // or any other (inner) field.
 
 // We can initialize by assigning an entire field:
 u.f1 = ManuallyDrop::new(Vec::new());
 // Now *all (nested) fields* of `u` are initialized, including the siblings of `f1`:
-let _ = &u.f2;
-let _ = &u.f2.0;
+{ let _x = &u.f2; }
+{ let _x = &u.f2.0; }
 
 // Equivalently, we can assign the entire union:
 u = U { f2: S(42) };
 // Now `u` is still initialized.
 
 // Copying does not change anything:
-let _ = u.f3;
+let _x = u.f3;
 // Now `u` is still initialized.
 
 // We can move out of an initialized union:
 let v = u.f1;
 // Now `f1` *and its siblings* are no longer initialized (they got "moved out of"):
-// `let _ = u.f2;` would hence get rejected, as would `&u.f1` and `foo(u)`.
+// `let _x = u.f2;` would hence get rejected, as would `&u.f1` and `foo(u)`.
 u.f1 = v;
 // Now `u` and all of its fields are initialized again ("moving back in").
 
@@ -158,7 +158,7 @@ u = U { f2: S(42) };
 
 // `let v = u.f1;` gets rejected: Cannot move out of union that implements `Drop`.
 let v_ref = &mut u.f1; // creating a reference is allowed
-let _ = u.f3; // copying out is allowed
+let _x = u.f3; // copying out is allowed
 ```
 
 When a union implementing `Drop` goes out of scope, its destructor gets called if and only if the union is currently considered initialized:
