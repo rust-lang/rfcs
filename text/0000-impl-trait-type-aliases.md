@@ -99,7 +99,7 @@ Using `Baz` in multiple locations constrains all occurrences of the inferred typ
 To justify aliasing argument-position `impl Trait`, we describe the type inference as a form of generalised type inference over polymorphic types, known commonly as [ML-style "let polymorphism"](https://en.wikipedia.org/wiki/Hindley%E2%80%93Milner_type_system#Let-Polymorphism). Simply put, this allows the following code:
 
 ```rust
-fn foo<A>(x: impl Bar) {
+fn foo<A>(x: A, y: impl Bar) {
     // ...
 }
 ```
@@ -109,7 +109,7 @@ to be replaced by:
 ```rust
 type Baz = impl Bar;
 
-fn foo<A>(x: Baz) {
+fn foo<A>(x: A, y: Baz) {
     // ...
 }
 ```
@@ -302,7 +302,7 @@ Using different syntax, and then trying to justify the differences between `impl
 The syntax `existential type` was intended to be a placeholder, so we need to pick a syntax eventually for this feature. Justification for why this is the best syntax, given the existing syntax in Rust, has been included throughout the RFC.
 
 The other alternatives commonly given are:
-- `type Foo: impl Bar;`, which suffers from complete and confusing inconsistency with associated types. Although on the surface, they can appear similar to existential types, by virtue of being a declaration that "some type exists [that will be provided]", they are more closely related to type parameters (which also declare that "some type exists that will be provided"), though type parameters with [Haskell-style functional dependencies](https://wiki.haskell.org/Functional_dependencies). This is sure to lead to confusions as users wonder why two features with identical syntax turn out to behave so differently.
+- `type Foo: Bar;`, which suffers from complete and confusing inconsistency with associated types. Although on the surface, they can appear similar to existential types, by virtue of being a declaration that "some type exists [that will be provided]", they are more closely related to type parameters (which also declare that "some type exists that will be provided"), though type parameters with [Haskell-style functional dependencies](https://wiki.haskell.org/Functional_dependencies). This is sure to lead to confusions as users wonder why two features with identical syntax turn out to behave so differently.
 - Some other, new syntax for declaring a new type that acts in the same way as `existential type`. Though a new syntax would not be inconsistent, it would not be minimal, given that we can achieve the functionality using existing syntax (`impl Trait`). What's more, if the syntax proposed here were *not* added alongside this new syntax, this would lead to inconsistencies with `impl Trait`.
 
 # Unresolved questions
