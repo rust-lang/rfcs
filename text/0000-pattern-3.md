@@ -131,7 +131,11 @@ A hay can *borrowed* from a haystack.
 pub trait Haystack: Deref<Target: Hay> + Sized {
     fn empty() -> Self;
     unsafe fn split_around(self, range: Range<Self::Target::Index>) -> [Self; 3];
-    unsafe fn slice_unchecked(self, range: Range<Self::Target::Index>) -> Self;
+
+    unsafe fn slice_unchecked(self, range: Range<Self::Target::Index>) -> Self {
+        let [_, middle, _] = self.split_around(range);
+        middle
+    }
 
     fn restore_range(
         &self,
@@ -269,7 +273,7 @@ pub unsafe trait DoubleEndedSearcher<A: Hay + ?Sized>: ReverseSearcher<A> {}
 with invalid ranges. Implementations of these methods often start with:
 
 ```rust
-    fn search(&mut self, span: SharedSpan<&A>) -> Option<Range<A::Index>> {
+    fn search(&mut self, span: Span<&A>) -> Option<Range<A::Index>> {
         let (hay, range) = span.into_parts();
         // search for pattern from `hay` restricted to `range`.
     }
@@ -285,13 +289,13 @@ The `.consume()` method will is similar, but anchored to the start of the span.
 let span = unsafe { Span::from_parts("CDEFG", 3..8) };
 // we can find "CD" at the start of the span.
 assert_eq!("CD".into_searcher().search(span.clone()), Some(3..5));
-assert_eq!("CD".into_searcher().consume(span.clone()), Some(5));
+assert_eq!("CD".into_consumer().consume(span.clone()), Some(5));
 // we can only find "EF" in the middle of the span.
 assert_eq!("EF".into_searcher().search(span.clone()), Some(5..7));
-assert_eq!("EF".into_searcher().consume(span.clone()), None);
+assert_eq!("EF".into_consumer().consume(span.clone()), None);
 // we cannot find "GH" in the span.
 assert_eq!("GH".into_searcher().search(span.clone()), None);
-assert_eq!("GH".into_searcher().consume(span.clone()), None);
+assert_eq!("GH".into_consumer().consume(span.clone()), None);
 ```
 
 The trait also provides a `.trim_start()` method in case a faster specialization exists.
@@ -1628,6 +1632,8 @@ Unlike this RFC, the `Extract` class is much simpler.
     This should be better left to a new RFC, and since `SharedHaystack` is mainly used for
     the core type `&A` only, we could keep `SharedHaystack` unstable longer
     (a separate track from the main Pattern API) until this question is resolved.
+
+* With a benefit of type checking, we may still want to split `Consumer` from `Searcher`.
 
 [RFC 528]: https://github.com/rust-lang/rfcs/pull/528
 [RFC 1309]: https://github.com/rust-lang/rfcs/pull/1309
