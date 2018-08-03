@@ -132,7 +132,7 @@ In any model that does not unify the meaning of `impl Trait` in various position
 ### Natural syntax
 Having explained `impl Trait` solely in terms of type inference (or less formal equivalent explanations), the syntax proposed here is the only natural syntax. Indeed, while discussing the syntax here, many express surprise that this syntax has ever been under question (often from people who think of `impl Trait` from an intuition about the feature's behaviour, rather than thinking about the existential type perspective).
 
-The argument that is occasionally put forward: that this syntax makes type aliases (or their uses) somehow contextual, is also addressed by the above interpretation. Indeed, every use of an individual `impl Trait` type alias refers to the same type.
+The argument that is occasionally put forward: that this syntax makes type aliases (or their uses) somehow contextual, is also addressed by the above interpretation. Indeed, every use of an individual `impl Trait` type alias refers to the same type. This argument is [detailed and addressed further in **Drawbacks**](#drawbacks).
 
 The following section provides a documentation-style introductory explanation for `impl Trait` that justifies the type alias syntax proposed here.
 
@@ -294,6 +294,9 @@ to:
 type Foo = impl Bar;
 ```
 
+In addition, when documenting `impl Trait`, explanations of the feature would avoid type theoretic terminology (specifically "existential types") and prefer type inference language (if any technical description is needed at all).
+
+## Restricting compound `impl Trait` trait aliases
 The type alias syntax is more flexible than `existential type`, but for now we restrict the form to that equivalent to `existential type`. That means that, if `impl Trait` appears on the right-hand side of a type alias declaration, it must be the only type. The following compound type aliases, therefore, are initially forbidden:
 
 ```rust
@@ -310,6 +313,42 @@ This RFC does not prohibit the possibility that this rule could be relaxed in th
 [drawbacks]: #drawbacks
 
 This feature has already been accepted under a placeholder syntax, so the only reason not to do this is if another syntax is chosen as a better choice, from an ergonomic and consistency perspective.
+
+There is one critique of the type alias syntax proposed here, which is frequently brought up in discussions, regarding referential transparency.
+
+Consider the following code:
+
+```rust
+fn foo() -> impl Trait { /* ... */ }
+fn bar() -> impl Trait { /* ... */ }
+```
+
+A user who has not come across `impl Trait` before might imagine that the return type of both functions is the same (as synactically, they are). However, because each occurrence of `impl Trait` defines a new type, the return types are potentially distinct.
+
+This is a problem inherent with `impl Trait` (and any other syntax that determines a type contextually) and thus `impl Trait` type aliases have the same caveat.
+
+A user unaware of the behaviour of `impl Trait` might try refactoring this example into the following:
+
+```rust
+type SharedImplTrait = impl Trait;
+
+fn foo() -> SharedImplTrait { /* ... */ }
+fn bar() -> SharedImplTrait { /* ... */ }
+```
+
+This evidently means something different to what the user intended, because here `SharedImplTrait` is inferred as a single type, shared with `foo` and `bar`.
+
+However, this problem is specifically with the behaviour of `impl Trait` and not with the type aliases, whose behaviour is not altered. Specifically note that, after this RFC, it is still true that for any type alias:
+
+```rust
+type Alias = /* ... */;
+```
+
+all uses of `Alias` refer to the same unique type. The potential confusion is rather with whether all uses of `impl Trait` refer to the same unique type (which is, of course, false).
+
+This RFC suggests that users confused about `impl Trait` in argument or return position will be similarly confused about `impl Trait` in type aliases, and vice versa.
+
+Since we will teach `impl Trait` cohesively (that is, argument-position, return-position and type alias `impl Trait` at the same time), it is unlikely that users who understand `impl Trait` will be confused about aliases. (What's more, examples in the reference will illustrate this clearly.)
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
