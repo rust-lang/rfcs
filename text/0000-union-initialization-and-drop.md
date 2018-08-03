@@ -112,7 +112,7 @@ u.f1 = ManuallyDrop::new(Vec::new());
 { let _x = &u.f2.0; }
 
 // Equivalently, we can assign the entire union:
-u = U { f2: S(42) };
+u = U { f2: (S(42), S(23) };
 // Now `u` is still initialized.
 
 // Copying does not change anything:
@@ -144,7 +144,7 @@ and it is not possible to move out of a field.  For example:
 
 struct S(i32); // not `Copy`, no drop glue
 
-union U { f1: ManuallyDrop<Vec<i32>>, f2: S, f3: u32 }
+union U { f1: ManuallyDrop<Vec<i32>>, f2: (S, S), f3: u32 }
 impl Drop for U {
     fn drop(&mut self) {
         println!("Goodbye!");
@@ -153,7 +153,7 @@ impl Drop for U {
 
 let mut u: U;
 // `u.f1 = ...;` gets rejected: Cannot initialize a union with `Drop` by assigning a field.
-u = U { f2: S(42) };
+u = U { f2: (S(42), S(1)) };
 // Now `u` is initialized.
 
 // `let v = u.f1;` gets rejected: Cannot move out of union that implements `Drop`.
@@ -166,7 +166,7 @@ When a union implementing `Drop` goes out of scope, its destructor gets called i
 
 ```rust
 {
-    let u = U { f2: S(42) };
+    let u = U { f2: (S(0), S(1)) };
     // drop gets called
 }
 {
