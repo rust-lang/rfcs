@@ -7,19 +7,20 @@
 [summary]: #summary
 
 Unions do not allow fields of types that require drop glue, but they may still
-`impl Drop` themselves.  We specify when one may "move" out of a union field and
-when the union's `drop` is called.  To avoid implicit calls of drop, we also
-restrict the use of `DerefMut` when unions are involved.
+`impl Drop` themselves.  We specify when one may move out of a union field and
+when the union's `drop` is called.  To avoid undesired implicit calls of drop,
+we also restrict the use of `DerefMut` when unions are involved.
 
 # Motivation
 [motivation]: #motivation
 
 Currently, it is unstable to have a non-`Copy` field in the union.  The main
 reason for this is that having fields which need drop glue raises some hard
-questions about whether to call that drop glue when assigning a union field.
-Not much progress has been made on stabilizing the unstable union features.
-This RFC proposes a route forwards that side-steps those hard questions: Do not
-allow fields with drop glue.
+questions about whether to call that drop glue when assigning a union field, and
+how to make programming with such unions less of a time bomb (triggered by
+accidentally dropping data one meant to just overwrite).  Not much progress has
+been made on stabilizing the unstable union features.  This RFC proposes a route
+forwards that side-steps the time bomb: Do not allow fields with drop glue.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -33,8 +34,8 @@ Examples:
 union Example1<T> {
     // `ManuallyDrop<T>` never has drop glue, even if `T` does.
     f1: ManuallyDrop<T>,
-    // `Cell<i32>` is a fully known type, and does not have drop glue.
-    f2: Cell<i32>,
+    // `RefCell<i32>` is a fully known type, and does not have drop glue.
+    f2: RefCell<i32>,
 }
 union Example2<T: Copy> {
     // `Copy` types never have drop glue.
@@ -48,8 +49,8 @@ union Example3<T: Trait3> {
 
 // Rejected
 union Example4<T> {
-    // `T` might have drop glue.
-    f1: T,
+    // `T` might have drop glue, and then `Cell<T>` would as well.
+    f1: RefCell<T>,
 }
 trait Trait5 { type Assoc; }
 union Example5<T: Trait5> {
@@ -66,9 +67,9 @@ but that is already something to be concerned with when working on unions.
 
 As a consequence, it is quite obvious that writing to a union field will never
 implicitly call `drop`.  Such a write is hence always a safe operation.  This
-removes a whole class of pit falls related to `drop` being called in tricky
+removes a whole class of pitfalls related to `drop` being called in tricky
 unsafe code when you might not expect that to happen.  (However, see below for
-some pit falls that remain.)
+some pitfalls that remain.)
 
 ## Union initialization and `Drop`
 
@@ -84,29 +85,30 @@ tracked just like they are for structs; however, when the union becomes
 (un)initialized at once.  For example:
 
 ```rust
-// This code creates bad references and transmute to `Vec` in incorrect ways.
+// This code creates bad references and transmutes to `Vec` in incorrect ways.
 // This is just to demonstrate what the compiler would accept in terms of
 // tracking initialization.
 
-struct S(i32, i32); // not `Copy`, no drop glue
-union U { f1: ManuallyDrop<Vec<i32>>, f2: S, f3: i32 }
+struct S(i32); // not `Copy`, no drop glue
+union U { f1: ManuallyDrop<Vec<i32>>, f2: (S, S), f3: i32 }
 
 let mut u: U;
 // Now `u` is not initialized: `&u`, `&u.f2` and `&u.f2.0` are all rejected.
 
 // We can write into uninitialized inner fields:
-u.f2.1 = 42;
+u.f2.1 = S(42);
 let _ = &u.f2.1; // This field is initialized now.
 // But this does not change the initialization state of the union itself,
 // or any other (inner) field.
 
 // We can initialize by assigning an entire field:
 u.f1 = ManuallyDrop::new(Vec::new());
-// Now *all fields* of `u` are initialized:
+// Now *all (nested) fields* of `u` are initialized:
 let _ = &u.f2;
+let _ = &u.f2.0;
 
 // Equivalently, we can assign the entire union:
-u = U { f2: S(42, 23) };
+u = U { f2: S(42) };
 // Now `u` is still initialized.
 
 // Copying does not change anything:
@@ -119,6 +121,12 @@ let v = u.f1;
 // `let _ = u.f2;` would hence get rejected, as would `&u.f1` and `foo(u)`.
 u.f1 = v;
 // Now `u` and all of its fields are initialized again ("moving back in").
+
+// When we move out of an inner field, the other union fields become uninitialized
+// even if they are `Copy`.
+let s = u.f2.1;
+// Now `u.f1` and `u.f3` are no longer initialized.  But `u.f2.0` is:
+let s = u.f2.0;
 ```
 
 If the union implements `Drop`, the same restrictions as for structs apply: It
@@ -126,7 +134,7 @@ is not possible to initialize a field before initializing the entire variable,
 and it is not possible to move out of a field.  For example:
 
 ```rust
-// This code creates bad references and transmute to `Vec` in incorrect ways.
+// This code creates bad references and transmutes to `Vec` in incorrect ways.
 // This is just to demonstrate what the compiler would accept in terms of
 // tracking initialization.
 
@@ -167,8 +175,8 @@ When a union implementing `Drop` goes out of scope, its destructor gets called i
 ## Potential pitfalls around `DerefMut`
 
 There is still a potential pitfall left around assigning to union fields: If the
-assignment implicitly happens through a `DerefMut`, it may still call drop glue.
-For example:
+assignment implicitly happens through a `DerefMut`, it may call drop glue.  For
+example:
 
 ```rust
 #![feature(untagged_unions)]
@@ -207,7 +215,7 @@ This is checked as follows:
   Copy` as a proxy for `T` not requiring drop glue.
 
 Note: Currently, union fields with drop glue are allowed on nightly with an
-unstable feature.  This RFC proposes to remove support entirely; code using
+unstable feature.  This RFC proposes to remove support for that entirely; code using
 nightly might have to be changed.
 
 ## Writing to union fields
@@ -215,18 +223,19 @@ nightly might have to be changed.
 Writing to union fields is currently unsafe when the field has drop glue.  This
 check is no longer needed, because union fields will never have drop glue.
 Moreover, writing to a nested field (e.g., `u.f1.x = 0;`) is currently unsafe as
-well, this should also become a safe operation *as long as the path consists
-only of field projections, not deref's*.  Note that this is sound only because
-`ManuallyDrop`'s only field is private (so, in fact, this is *not* sound inside
-the module that defines `ManuallyDrop`).
+well, this should also become a safe operation as long as the path (expanded,
+i.e., after auto-derefs are inserted) consists *only of field projections, not
+deref's*.  Note that this is sound only because `ManuallyDrop`'s only field is
+private (so, in fact, this is *not* sound inside the module that defines
+`ManuallyDrop`).
 
 ## Union initialization tracking
 
 A "fragment" is a place of the form `local_var.field.field.field`, without any
 implicit derefs.  A fragment can be either *initialized* or *uninitialized*.
 This state is approximated statically: The type system will only allow accesses
-to initialized fragments.  Drop elaboration needs to know the precise state of a
-fragment, for which purpose it adds run-time drop flags as needed.
+to definitely initialized fragments.  Drop elaboration needs to know the precise
+state of a fragment, for which purpose it adds run-time drop flags as needed.
 
 If a fragment has some uninitialized nested fragments then it is still
 uninitialized and accesses to this fragment as a whole are prevented. This
@@ -244,20 +253,23 @@ fragments becomes uninitialized.
 In other words, union fields behave a lot like struct fields except that if one
 field changes initialization state, the others follow suit.  In particular, if
 one union field becomes partially initialized (because one of its nested
-fragments got uninitialized), all its siblings become *entirely* uninitialized.
+fragments got uninitialized), all its siblings become *entirely* uninitialized,
+including their nested fragments.
 
 If a fragment is of a type which has an `impl Drop`, then its nested fragments
 cannot be separately (un)initialized.  Only the entire fragment can be
 initialized by assignment, and the entire fragment can be uninitialized by
 moving out.
 
-NOTE: To my knowledge, the following already mostly matches the current
+NOTE: To my knowledge, this already mostly matches the current
 implementation. The only exception is that "fragment becomes initialized when
 all its nested fragments become initialized" rule is not currently implemented
 for neither structs nor unions, so the compiler accepts less code than it
-should.
+should.  However, `impl Drop for Union` and non-`Copy` union fields are behind a
+feature gate, so the effects of this on unions cannot currently be observed on
+stable compilers.
 
-(This is based on a
+(This closely follows a
 [previously proposed RFC by @petrochenkov](https://github.com/petrochenkov/rfcs/blob/e5266bd105f592f7408b8592c5c3deaccba7f1ec/text/1444-union.md#initialization-state).)
 
 ## Potential pitfalls around `DerefMut`
@@ -282,12 +294,12 @@ The restriction placed on `DerefMut` is not fully backwards compatible: A type
 could implement `Copy + DerefMut` and actually rely on the deref coercion inside
 a union.  That seems very unlikely, but should be tested with a crater run.
 
-The initialization tracking rules are somewhat surprising, and one might want to
-prefer the compiler to just not track anything when it comes to unions.  After
-all, the compiler fundamentally cannot know what part of the union is properly
+The initialization tracking rules are somewhat surprising, and one might prefer
+the compiler to just not track anything when it comes to unions.  After all, the
+compiler fundamentally cannot know what part of the union is properly
 initialized.  Unfortunately, not having any initialization tracking is not an
-option when non-`Copy` fields are involved: We have to decide when moving out of
-a union field is allowed.
+option when non-`Copy` fields are involved: We have to decide if moving out of a
+union field is allowed.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -300,9 +312,9 @@ help to drive home the point that no automatic dropping is happening, ever.
 field but not when the union goes out of scope.  That seems to be the result of
 necessity, not of a coherent design.)
 
-An alternative approach to proceed with unions is
-[this previously proposed RFC by @petrochenkov](https://github.com/petrochenkov/rfcs/blob/e5266bd105f592f7408b8592c5c3deaccba7f1ec/text/1444-union.md#initialization-state).
-That RFC replaces RFC 1444 and goes into a lot more points than this much more
+An alternative approach to proceed with unions has been
+[previously proposed by @petrochenkov](https://github.com/petrochenkov/rfcs/blob/e5266bd105f592f7408b8592c5c3deaccba7f1ec/text/1444-union.md#initialization-state).
+That proposal replaces RFC 1444 and goes into a lot more points than this much more
 limited proposal.  In particular, it allows fields with drop glue.  However, it
 can be pretty hard for the programmer to predict when drop glue will be
 automatically invoked on assignment or not, because the initialization tracking
@@ -318,17 +330,26 @@ of scope, but in that case initialization is so restricted that I cannot think
 of any surprises.  Together with the `DerefMut` restriction, that should make it
 very unlikely to accidentally call `drop` when it was not intended.
 
-We could simplify thus further by not to allowing `impl drop for Union`.  It is
-still possible to add a wrapper struct around the union which has drop glue, so
-this does not restrict expressiveness.  However, this seems unnecessarily
-cumbersome.
+We could significantly simplify the initialization tracking by always applying
+the rules that are currently only applied to unions that `impl Drop`.  However,
+that does not actually help with the pitfall described above.  The more complex
+rules allow more code that many will reasonably expect to work, and do not seem
+to introduce any additional pitfalls.
+
+We could reduce the relevance of state tracking further by not to allowing `impl
+Drop for Union`.  It is still possible to add a wrapper struct around the union
+which has drop glue, so this does not restrict expressiveness.  However, this
+seems unnecessarily cumbersome, and it does not seem to help avoid any
+surprises.  State tracking around unions that `impl Drop` is pretty much as
+simple as it gets.
 
 # Prior art
 [prior-art]: #prior-art
 
 I do not know of any language combining initialization tracking and destructors
 with unions: C++ does not have destructors for unions, and it does not track
-whether fields of a data structures are initialized to (dis)allow references.
+whether fields of a data structures are initialized to (dis)allow references or
+moves.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
