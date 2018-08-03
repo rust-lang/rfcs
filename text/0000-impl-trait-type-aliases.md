@@ -263,6 +263,22 @@ struct Foo {
 ```
 In this example, the concrete type referred to by `Baz` is guaranteed to be the same wherever `Baz` occurs.
 
+Just like with any other type alias, we can use `impl Trait` to specify associated types for traits, as in the following example.
+
+```rust
+trait Trait {
+    type Assoc;
+}
+
+struct Foo {}
+
+impl Trait for Foo {
+    type Assoc = impl Debug;
+}
+```
+
+Here, anything that makes use of `Foo` knows that `Foo::Assoc` implements `Debug`, but has no knowledge of its concrete type.
+
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
