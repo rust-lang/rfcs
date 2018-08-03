@@ -294,6 +294,18 @@ to:
 type Foo = impl Bar;
 ```
 
+The type alias syntax is more flexible than `existential type`, but for now we restrict the form to that equivalent to `existential type`. That means that, if `impl Trait` appears on the right-hand side of a type alias declaration, it must be the only type. The following compound type aliases, therefore, are initially forbidden:
+
+```rust
+// error: compound type aliases containing `impl Bar` are disallowed
+//  hint: extract `impl Bar` from `A`
+type A = (impl Bar, impl Bar);
+type B = (u8, impl Bar);
+type C = Vec<impl Bar>;
+```
+
+This RFC does not prohibit the possibility that this rule could be relaxed in the future if it is found to be too restrictive.
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
