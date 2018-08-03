@@ -346,7 +346,7 @@ type Alias = /* ... */;
 
 all uses of `Alias` refer to the same unique type. The potential confusion is rather with whether all uses of `impl Trait` refer to the same unique type (which is, of course, false).
 
-This RFC suggests that users confused about `impl Trait` in argument or return position will be similarly confused about `impl Trait` in type aliases, and vice versa.
+It is likely that a misunderstanding of the nature of `impl Trait` in argument or return position will lead to similar confusion as to the role of `impl Trait` in type aliases, and vice versa. By clearly teaching the behaviour of `impl Trait`, we should be able to eliminate most of these conceptual difficulties.
 
 Since we will teach `impl Trait` cohesively (that is, argument-position, return-position and type alias `impl Trait` at the same time), it is unlikely that users who understand `impl Trait` will be confused about aliases. (What's more, examples in the reference will illustrate this clearly.)
 
