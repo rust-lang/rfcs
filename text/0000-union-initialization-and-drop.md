@@ -71,6 +71,9 @@ removes a whole class of pitfalls related to `drop` being called in tricky
 unsafe code when you might not expect that to happen.  (However, see below for
 some pitfalls that remain.)
 
+Reading from a union field and creating a reference remain unsafe: We cannot
+guarantee that the field contains valid data.
+
 ## Union initialization and `Drop`
 
 In two cases, the compiler cares about whether a (field of a) variable is
@@ -82,7 +85,8 @@ A union just does very simple initialization tracking: There is a single boolean
 state for the entire union and all of its fields.  Nested inner fields are
 tracked just like they are for structs; however, when the union becomes
 (un)initialized, then all nested inner fields of all union fields are
-(un)initialized at once.  For example:
+(un)initialized at once.  So, (un)initializing a union field also
+(un)initializes its siblings.  For example:
 
 ```rust
 // This code creates bad references and transmutes to `Vec` in incorrect ways.
@@ -103,7 +107,7 @@ let _ = &u.f2.1; // This field is initialized now.
 
 // We can initialize by assigning an entire field:
 u.f1 = ManuallyDrop::new(Vec::new());
-// Now *all (nested) fields* of `u` are initialized:
+// Now *all (nested) fields* of `u` are initialized, including the siblings of `f1`:
 let _ = &u.f2;
 let _ = &u.f2.0;
 
@@ -117,7 +121,7 @@ let _ = u.f3;
 
 // We can move out of an initialized union:
 let v = u.f1;
-// Now `u.f1` and `u.f2` are no longer initialized (they got "moved out of").
+// Now `f1` *and its siblings* are no longer initialized (they got "moved out of"):
 // `let _ = u.f2;` would hence get rejected, as would `&u.f1` and `foo(u)`.
 u.f1 = v;
 // Now `u` and all of its fields are initialized again ("moving back in").
