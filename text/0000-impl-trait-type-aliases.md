@@ -96,27 +96,7 @@ fn foo() -> Baz {
 
 Using `Baz` in multiple locations constrains all occurrences of the inferred type to be the same, just as with `existential type`.
 
-To justify aliasing argument-position `impl Trait`, we describe the type inference as a form of generalised type inference over polymorphic types, known commonly as [ML-style "let polymorphism"](https://en.wikipedia.org/wiki/Hindley%E2%80%93Milner_type_system#Let-Polymorphism). Simply put, this allows the following code:
-
-```rust
-fn foo<A>(x: A, y: impl Bar) {
-    // ...
-}
-```
-
-to be replaced by:
-
-```rust
-type Baz = impl Bar;
-
-fn foo<A>(x: A, y: Baz) {
-    // ...
-}
-```
-
-Note that `Baz` must here be polymorphic over the type `A`, but we don't want to explicitly declare `Baz` polymorphic in its definition (it's essentially irrelevant to the type itself). We can justify this in theory by describing the type inference used for `impl Trait` to be a restricted form of let polymorphism; in practice this functions identically to `existential type`, requiring no additional implementation, and is subtle enough that most users will likely not even notice it.
-
-Notice that, apart from this subtlety, we can describe the type alias syntax using features that are already present in Rust, rather than introducing any new constructs.
+Notice that we can describe the type alias syntax using features that are already present in Rust, rather than introducing any new constructs.
 
 ## Learnability Justification
 
@@ -221,18 +201,7 @@ trait Trait {}
 type Baz = impl Trait;
 ```
 
-`impl Trait` type aliases are useful for declaring types that are constrained by traits, but whose concrete type should be a hidden implementation detail. We can use it in place of argument-position or return-position `impl Trait` as in the previous examples.
-
-```rust
-trait Trait {}
-
-type Baz = impl Trait;
-
-// The same as `fn foo(arg: impl Baz)`
-fn foo(arg: Baz) {
-    // ...
-}
-```
+`impl Trait` type aliases are useful for declaring types that are constrained by traits, but whose concrete type should be a hidden implementation detail. We can use it in place of return-position `impl Trait` as in the previous examples.
 
 ```rust
 trait Trait {}
@@ -261,7 +230,26 @@ struct Foo {
     b: (Baz, Baz),
 }
 ```
+
 In this example, the concrete type referred to by `Baz` is guaranteed to be the same wherever `Baz` occurs.
+
+Note that using `Baz` as an argument type is *not* the same as argument-position `impl Trait`, as `Baz` refers to a unique type, whereas the concrete type for argument-position `impl Trait` is determined by the caller.
+
+```rust
+trait Trait {}
+
+type Baz = impl Trait;
+
+fn foo(x: Baz) {
+    // ...
+}
+
+// is *not* the same as:
+
+fn foo(x: impl Trait) {
+    // ...
+}
+```
 
 Just like with any other type alias, we can use `impl Trait` to specify associated types for traits, as in the following example.
 
@@ -349,6 +337,17 @@ all uses of `Alias` refer to the same unique type. The potential confusion is ra
 It is likely that a misunderstanding of the nature of `impl Trait` in argument or return position will lead to similar confusion as to the role of `impl Trait` in type aliases, and vice versa. By clearly teaching the behaviour of `impl Trait`, we should be able to eliminate most of these conceptual difficulties.
 
 Since we will teach `impl Trait` cohesively (that is, argument-position, return-position and type alias `impl Trait` at the same time), it is unlikely that users who understand `impl Trait` will be confused about aliases. (What's more, examples in the reference will illustrate this clearly.)
+
+## Argument-position `impl Trait`
+As described in the [Guide-level explanation](#guide-level-explanation), although we can freely replace an occurence of a return-position `impl Trait` with an `impl Trait` type alias, we cannot freely replace an occurrence of an argument-position `impl Trait`, as argument-position `impl Trait` may be polymorphic, determined by the caller, as with a generic parameter. However, `impl Trait` type aliases are strictly monomorphic. Unfortunately this is an inherent restriction due to the inconsistency of argument-position `impl Trait` with return-position `impl Trait` (regarding the quantifier scope). Argument-position `impl Trait` makes use of a form of ML-style let polymorphism that is not present in the type aliases.
+
+Due to this inconsistency, it is impossible to define an `impl Trait` syntax that satisfies the following constraints:
+- Argument-position `impl Trait` is consistent with return-position `impl Trait`
+- Argument-position `impl Trait` is consistent with trait alias `impl Trait`
+- Trait alias `impl Trait` is consistent with the existing notion of `existential type`
+- The syntax for return-position `impl Trait` is consistent with the syntax for the existing notion of `existential type`
+
+Of these drawbacks, making argument-position `impl Trait` consistent with the other positions for `impl Trait` seems the most acceptable and intuitive. Using a syntax other than `impl Trait` for thsi feature would remove the one consistency we want to preserve: that is, that return-position `impl Trait` is the same notation as `existential type`.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
