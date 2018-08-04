@@ -86,7 +86,7 @@ A `Hay` is the core type which the search algorithm will run on.
 It is implemented on the slice-like types like `str`, `OsStr` and `[T]`.
 
 ```rust
-pub trait Hay {
+pub unsafe trait Hay {
     type Index: Copy + Debug + Eq;
 
     fn empty<'a>() -> &'a Self;
@@ -100,6 +100,9 @@ pub trait Hay {
     unsafe fn slice_unchecked(&self, range: Range<Self::Index>) -> &Self;
 }
 ```
+
+The trait is unsafe to implement because it needs to guarantee all methods (esp. `.start_index()`
+and `.end_index()`) follow the documented requirements, which cannot be checked automatically.
 
 We allow a hay to customize the `Index` type. While `str`, `[T]` and `OsStr` all  use `usize` as
 the index, we do want the Pattern API to support other linear structures like `LinkedList<T>`,
@@ -128,7 +131,7 @@ Haystack is implemented on the reference or collection itself e.g. `&[T]`, `&mut
 A hay can *borrowed* from a haystack.
 
 ```rust
-pub trait Haystack: Deref<Target: Hay> + Sized {
+pub unsafe trait Haystack: Deref<Target: Hay> + Sized {
     fn empty() -> Self;
     unsafe fn split_around(self, range: Range<Self::Target::Index>) -> [Self; 3];
 
@@ -1008,7 +1011,7 @@ the hay, instead of haystack.
 
 ```rust
 // v3.0-alpha.5
-trait Haystack: Deref<Target: Hay> {
+unsafe trait Haystack: Deref<Target: Hay> {
     ...
 }
 trait Searcher<A: Hay + ?Sized> {
@@ -1126,7 +1129,7 @@ We share a searcher implementation by introducing the `Hay` trait, as the derefe
 `Haystack` trait, i.e. `&[T]`, `&mut [T]` and `Vec<T>` will all be delegated to `[T]`:
 
 ```rust
-trait Haystack: Deref<Target: Hay> + Sized {
+unsafe trait Haystack: Deref<Target: Hay> + Sized {
     ...
 }
 unsafe trait Searcher<A: Hay + ?Sized> {
@@ -1140,7 +1143,7 @@ would require custom dynamic-sized types (DSTs).
 An alternative formation is delegating to a shared haystack by generic associated types (GATs):
 
 ```rust
-trait Haystack: Sized {
+unsafe trait Haystack: Sized {
     type Shared<'a>: SharedHaystack;
     fn borrow(&self) -> Self::Shared<'_>;
     ...
@@ -1165,7 +1168,7 @@ The `Haystack` trait inherits `Deref` and requires its `Target` to implement `Ha
 is extending `Borrow` instead:
 
 ```rust
-trait Haystack: Borrow<Self::Hay> + Sized {
+unsafe trait Haystack: Borrow<Self::Hay> + Sized {
     type Hay: Hay + ?Sized;
     ...
 }
