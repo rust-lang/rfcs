@@ -75,7 +75,9 @@ type Foo = __Foo_alias;
 
 This is functionally identical to `existential type`, but remains consistent with `impl Trait` where the original generated type is technically still hidden (exposed through the type alias).
 
-### Aliasing argument-position and return-position `impl Trait`
+Note that, in order for the type inference to support argument-position `impl Trait`, which may be polymorphic (just like a generic parameter), the inference used here is actually a more expressive form of type inference similar to ML-style let polymorphism. Here, the inference of function types may result in additional generic parameters, specifically relating to the occurrences of argument-position `impl Trait`.
+
+### Aliasing `impl Trait` in function signatures
 Note that though the type alias above is not contextual, it can be used to alias any existing occurrence of `impl Trait` in return position, because the type it aliases is inferred.
 
 ```rust
@@ -93,6 +95,8 @@ fn foo() -> Baz {
     // return some type implementing `Bar`
 }
 ```
+
+However, if the function is parameterised, it may be necessary to add explicit parameters to the type alias (due to the return-type being within the scope of the function's generic paramters, unlike the type alias).
 
 Using `Baz` in multiple locations constrains all occurrences of the inferred type to be the same, just as with `existential type`.
 
@@ -339,15 +343,7 @@ It is likely that a misunderstanding of the nature of `impl Trait` in argument o
 Since we will teach `impl Trait` cohesively (that is, argument-position, return-position and type alias `impl Trait` at the same time), it is unlikely that users who understand `impl Trait` will be confused about aliases. (What's more, examples in the reference will illustrate this clearly.)
 
 ## Argument-position `impl Trait`
-As described in the [Guide-level explanation](#guide-level-explanation), although we can freely replace an occurence of a return-position `impl Trait` with an `impl Trait` type alias, we cannot freely replace an occurrence of an argument-position `impl Trait`, as argument-position `impl Trait` may be polymorphic, determined by the caller, as with a generic parameter. However, `impl Trait` type aliases are strictly monomorphic. Unfortunately this is an inherent restriction due to the inconsistency of argument-position `impl Trait` with return-position `impl Trait` (regarding the quantifier scope). Argument-position `impl Trait` makes use of a form of ML-style let polymorphism that is not present in the type aliases.
-
-Due to this inconsistency, it is impossible to define an `impl Trait` syntax that satisfies the following constraints:
-- Argument-position `impl Trait` is consistent with return-position `impl Trait`
-- Argument-position `impl Trait` is consistent with trait alias `impl Trait`
-- Trait alias `impl Trait` is consistent with the existing notion of `existential type`
-- The syntax for return-position `impl Trait` is consistent with the syntax for the existing notion of `existential type`
-
-Of these drawbacks, making argument-position `impl Trait` consistent with the other positions for `impl Trait` seems the most acceptable and intuitive. Using a syntax other than `impl Trait` for thsi feature would remove the one consistency we want to preserve: that is, that return-position `impl Trait` is the same notation as `existential type`.
+As described in the [Guide-level explanation](#guide-level-explanation), although we can freely replace an occurence of a return-position `impl Trait` with an `impl Trait` type alias, we cannot freely replace an occurrence of an argument-position `impl Trait`, as argument-position `impl Trait` may be polymorphic, determined by the caller, as with a generic parameter. However, `impl Trait` type aliases are strictly monomorphic. Unfortunately this is an inherent restriction due to the inconsistency of argument-position `impl Trait` with return-position `impl Trait` (regarding the quantifier scope).
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
