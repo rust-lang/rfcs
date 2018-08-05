@@ -56,9 +56,9 @@ The generated type `__foo_return` is not exposed: it is automatically contructed
 
 Note that, in order for the type inference to support argument-position `impl Trait`, which may be polymorphic (just like a generic parameter), the inference used here is actually a more expressive form of type inference similar to ML-style let polymorphism. Here, the inference of function types may result in additional generic parameters, specifically relating to the occurrences of argument-position `impl Trait`.
 
-RFC 2071 proposed a construct for declaring types acting like `impl Trait`, but whose actual type was not hidden (i.e. a method to expose the `__foo_return` above), in order to use such types in positions other than function arguments and return-types (for example, module-level).
+RFC 2071 proposed a new construct for declaring types acting like `impl Trait`, but whose actual type was not hidden (i.e. a method to expose the `__foo_return` above), in order to use such types in positions other than function arguments and return-types (for example, at the module level).
 
-If the semantics of `impl Trait` are justified from the perspective of existentially-quantified types, defining a new construct is a sensible solution as re-using `impl Trait` for this purpose introduces additional inconsistency with the existential quantifier scopes. (See [here](https://varkor.github.io/blog/2018/07/03/existential-types-in-rust.html) for more details on this point.)
+If the semantics of `impl Trait` are justified from the perspective of existentially-quantified types, this new construct is a sensible solution as re-using `impl Trait` for this purpose introduces additional inconsistency with the existential quantifier scopes. (See [here](https://varkor.github.io/blog/2018/07/03/existential-types-in-rust.html) for more details on this point.)
 
 However, if we justify the semantics of `impl Trait` solely using type inference (as in point 2 above, expounded below) then we can re-use `impl Trait` for the purpose of `existential type` consistently, leading to a more unified syntax and lower cognitive barrier to learning.
 
