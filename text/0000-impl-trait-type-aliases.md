@@ -271,6 +271,8 @@ impl Trait for Foo {
 
 Here, anything that makes use of `Foo` knows that `Foo::Assoc` implements `Debug`, but has no knowledge of its concrete type.
 
+[Eventually, we would also describe the use of `impl Trait` in `let`, `const` and `static` bindings, but as they are as-yet unimplemented and function the same as return-type `impl Trait`, they haven't been included here.]
+
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
