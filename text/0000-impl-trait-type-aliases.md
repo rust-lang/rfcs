@@ -342,9 +342,6 @@ It is likely that a misunderstanding of the nature of `impl Trait` in argument o
 
 Since we will teach `impl Trait` cohesively (that is, argument-position, return-position and type alias `impl Trait` at the same time), it is unlikely that users who understand `impl Trait` will be confused about aliases. (What's more, examples in the reference will illustrate this clearly.)
 
-## Argument-position `impl Trait`
-As described in the [Guide-level explanation](#guide-level-explanation), although we can freely replace an occurence of a return-position `impl Trait` with an `impl Trait` type alias, we cannot freely replace an occurrence of an argument-position `impl Trait`, as argument-position `impl Trait` may be polymorphic, determined by the caller as with a generic parameter. However, `impl Trait` type aliases are strictly monomorphic. Unfortunately this is an inherent restriction due to the inconsistency of argument-position `impl Trait` with return-position `impl Trait` (regarding the quantifier scope).
-
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 The justification for the type alias syntax proposed here comes down to two key motvations:
