@@ -25,13 +25,13 @@ be implemented with the same semantics as:
 existential type Foo: Bar;
 ```
 
-and the existing placeholder removed.
+and that existing placeholder removed.
 
 Furthermore, this RFC proposes a strategy by which the terminology surrounding `impl Trait` might be transitioned from existentially-type theoretic terminology to type inference terminology, reducing the cognitive complexity of the feature.
 
 ## Semantic Justification
 Currently, each occurrence `impl Trait` serves two complementary functional purposes.
-1. It defines an opaque type `T` (that is, a new type whose precise identification is hidden) satisfying (trait and lifetime) bounds.
+1. It defines an opaque type `T` (that is, a new type whose precise identification is hidden) satisfying (trait) bounds.
 2. It infers the precise type for `T` (that must satisfy the bounds for `T`), based on its occurrences.
 
 Thus, the following code:
@@ -56,7 +56,7 @@ The generated type `__foo_return` is not exposed: it is automatically contructed
 
 Note that, in order for the type inference to support argument-position `impl Trait`, which may be polymorphic (just like a generic parameter), the inference used here is actually a more expressive form of type inference similar to ML-style let polymorphism. Here, the inference of function types may result in additional generic parameters, specifically relating to the occurrences of argument-position `impl Trait`.
 
-RFC 2071 proposed a new construct for declaring types acting like `impl Trait`, but whose actual type was not hidden (i.e. a method to expose the `__foo_return` above), in order to use such types in positions other than function arguments and return-types (for example, at the module level).
+RFC 2071 proposed a new construct for declaring types acting like `impl Trait`, but whose actual type was not hidden (i.e. a method to expose the `__foo_return` above), to use such types in positions other than function arguments and return-types (for example, at the module level).
 
 If the semantics of `impl Trait` are justified from the perspective of existentially-quantified types, this new construct is a sensible solution as re-using `impl Trait` for this purpose introduces additional inconsistency with the existential quantifier scopes. (See [here](https://varkor.github.io/blog/2018/07/03/existential-types-in-rust.html) for more details on this point.)
 
@@ -111,7 +111,7 @@ As a relatively recently stabilised feature, there is not significant (official)
 
 [This is incorrect](https://varkor.github.io/blog/2018/07/03/existential-types-in-rust.html#confusion-2-return-position-impl-trait-vs-argument-position-impl-trait) (albeit subtly): in fact, the distinction between argument-position and return-position `impl Trait` is the scope of their existential quantifier. This (understandable) mistake is pervasive and it's not alone (the fact that those documenting the feature missed this is indicative of the issues surrounding this mental model). The problem stems from a poor understanding of what "existential types" are — which is entirely unsurprising: existential types are a technical type theoretic concept that are not widely encountered outside type theory (unlike universally-quantified types, for instance). In discussions about existential types in Rust, these sorts of confusions are endemic.
 
-In any model that does not unify the meaning of `impl Trait` in various positions, these technical explanations are likely to arise, as they provide the original motivation for treating `impl Trait` nonhomogeneously. From this perspective, it is extremely valuable from documentation and explanatory angles to unify the uses of `impl Trait` so that these types of questions never even arise. Then we would have the ability to transition entirely away from the topic of existentially-quantified types.
+In any model that does not unify the meaning of `impl Trait` in various positions, these technical explanations are likely to arise, as they provide the original motivation for treating `impl Trait` nonhomogeneously. From this perspective, it is valuable from documentation and explanatory angles to unify the uses of `impl Trait` so that these types of questions never even arise. Then we would have the ability to transition entirely away from the topic of existentially-quantified types.
 
 ### Natural syntax
 Having explained `impl Trait` solely in terms of type inference (or less formal equivalent explanations), the syntax proposed here is the only natural syntax. Indeed, while discussing the syntax here, many express surprise that this syntax has ever been under question (often from people who think of `impl Trait` from an intuition about the feature's behaviour, rather than thinking about the existential type perspective).
@@ -148,7 +148,7 @@ type Baz = impl Trait;
 ```
 
 ## How does `impl Trait` work?
-Whenever you write `impl Trait`, in any of the three places, you're saying that you have *some type* that implements `Trait`, but you don't want to expose any more information than that. The concrete type that implements `Trait` will be hidden, but you'll still be able to treat the type as if it implements `Type`: calling trait methods and so on.
+Whenever you write `impl Trait`, in any of the three places, you're saying that you have *some type* that implements `Trait`, but you don't want to expose any more information than that. The concrete type that implements `Trait` will be hidden, but you'll still be able to treat the type as if it implements `Trait`: calling trait methods and so on.
 
 The compiler will infer the concrete type, but other code won't be able to make use of that fact. This is straightforward to describe, but it manifests a little differently depending on the place it's used, so let's take a look at some examples.
 
@@ -218,7 +218,7 @@ fn bar() -> Baz {
 }
 ```
 
-However, if we use `Baz` in multiple locations, we constrain the concrete type referred to by `Baz` to be the same, so we get a type that we know will be the same everywhere and will satisfy specific bounds, whose concrete type is hidden. This can be very useful in libraries where you want to hide implementation details.
+However, if we use `Baz` in multiple locations, we constrain the concrete type referred to by `Baz` to be the same, so we get a type that we know will be the same everywhere and will satisfy specific bounds, whose concrete type is hidden. This can be useful in libraries where you want to hide implementation details.
 
 ```rust
 trait Trait {}
