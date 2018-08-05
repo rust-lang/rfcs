@@ -225,7 +225,15 @@ trait Trait {}
 
 type Baz = impl Trait;
 
-fn foo(x: Baz, y: Baz) {
+impl Trait for u8 {}
+
+fn foo() -> Baz {
+    let x: u8;
+    // ...
+    x
+}
+
+fn bar(x: Baz, y: Baz) {
     // ...
 }
 
