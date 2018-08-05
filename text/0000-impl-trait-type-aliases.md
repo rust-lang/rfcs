@@ -54,9 +54,11 @@ fn foo() -> __foo_return {
 
 The generated type `__foo_return` is not exposed: it is automatically contructed from any valid type (as in `(3)`).
 
+Note that, in order for the type inference to support argument-position `impl Trait`, which may be polymorphic (just like a generic parameter), the inference used here is actually a more expressive form of type inference similar to ML-style let polymorphism. Here, the inference of function types may result in additional generic parameters, specifically relating to the occurrences of argument-position `impl Trait`.
+
 RFC 2071 proposed a construct for declaring types acting like `impl Trait`, but whose actual type was not hidden (i.e. a method to expose the `__foo_return` above), in order to use such types in positions other than function arguments and return-types (for example, module-level).
 
-If the semantics of `impl Trait` are justified from the perspective of existentially-quantified types, this is a sensible solution as re-using `impl Trait` for this purpose introduces additional inconsistency with the existential quantifier scopes. (See [here](https://varkor.github.io/blog/2018/07/03/existential-types-in-rust.html) for more details on this point.)
+If the semantics of `impl Trait` are justified from the perspective of existentially-quantified types, defining a new construct is a sensible solution as re-using `impl Trait` for this purpose introduces additional inconsistency with the existential quantifier scopes. (See [here](https://varkor.github.io/blog/2018/07/03/existential-types-in-rust.html) for more details on this point.)
 
 However, if we justify the semantics of `impl Trait` solely using type inference (as in point 2 above, expounded below) then we can re-use `impl Trait` for the purpose of `existential type` consistently, leading to a more unified syntax and lower cognitive barrier to learning.
 
@@ -74,8 +76,6 @@ type Foo = __Foo_alias;
 ```
 
 This is functionally identical to `existential type`, but remains consistent with `impl Trait` where the original generated type is technically still hidden (exposed through the type alias).
-
-Note that, in order for the type inference to support argument-position `impl Trait`, which may be polymorphic (just like a generic parameter), the inference used here is actually a more expressive form of type inference similar to ML-style let polymorphism. Here, the inference of function types may result in additional generic parameters, specifically relating to the occurrences of argument-position `impl Trait`.
 
 ### Aliasing `impl Trait` in function signatures
 Note that though the type alias above is not contextual, it can be used to alias any existing occurrence of `impl Trait` in return position, because the type it aliases is inferred.
@@ -109,7 +109,7 @@ As a relatively recently stabilised feature, there is not significant (official)
 
 > `impl Trait` in argument position are universal (universally quantified types). Meanwhile, `impl Trait` in return position are existentials (existentially quantified types).
 
-[This is incorrect](https://varkor.github.io/blog/2018/07/03/existential-types-in-rust.html#confusion-2-return-position-impl-trait-vs-argument-position-impl-trait) (albeit subtly): in fact, the distinction between argument-position and return-position `impl Trait` is the scope of their existential quantifier. This (understandable) mistake is pervasive and it's not alone (the fact that those documenting the feature missed this is indicative of the issues). The problem stems from a poor understanding of what "existential types" are --- which is entirely unsurprising: existential types are a technical type theoretic concept that are not widely encountered outside type theory (unlike universally-quantified types, for instance). In discussions about existential types in Rust, these sorts of confusions are endemic.
+[This is incorrect](https://varkor.github.io/blog/2018/07/03/existential-types-in-rust.html#confusion-2-return-position-impl-trait-vs-argument-position-impl-trait) (albeit subtly): in fact, the distinction between argument-position and return-position `impl Trait` is the scope of their existential quantifier. This (understandable) mistake is pervasive and it's not alone (the fact that those documenting the feature missed this is indicative of the issues surrounding this mental model). The problem stems from a poor understanding of what "existential types" are — which is entirely unsurprising: existential types are a technical type theoretic concept that are not widely encountered outside type theory (unlike universally-quantified types, for instance). In discussions about existential types in Rust, these sorts of confusions are endemic.
 
 In any model that does not unify the meaning of `impl Trait` in various positions, these technical explanations are likely to arise, as they provide the original motivation for treating `impl Trait` nonhomogeneously. From this perspective, it is extremely valuable from documentation and explanatory angles to unify the uses of `impl Trait` so that these types of questions never even arise. Then we would have the ability to transition entirely away from the topic of existentially-quantified types.
 
@@ -343,7 +343,7 @@ It is likely that a misunderstanding of the nature of `impl Trait` in argument o
 Since we will teach `impl Trait` cohesively (that is, argument-position, return-position and type alias `impl Trait` at the same time), it is unlikely that users who understand `impl Trait` will be confused about aliases. (What's more, examples in the reference will illustrate this clearly.)
 
 ## Argument-position `impl Trait`
-As described in the [Guide-level explanation](#guide-level-explanation), although we can freely replace an occurence of a return-position `impl Trait` with an `impl Trait` type alias, we cannot freely replace an occurrence of an argument-position `impl Trait`, as argument-position `impl Trait` may be polymorphic, determined by the caller, as with a generic parameter. However, `impl Trait` type aliases are strictly monomorphic. Unfortunately this is an inherent restriction due to the inconsistency of argument-position `impl Trait` with return-position `impl Trait` (regarding the quantifier scope).
+As described in the [Guide-level explanation](#guide-level-explanation), although we can freely replace an occurence of a return-position `impl Trait` with an `impl Trait` type alias, we cannot freely replace an occurrence of an argument-position `impl Trait`, as argument-position `impl Trait` may be polymorphic, determined by the caller as with a generic parameter. However, `impl Trait` type aliases are strictly monomorphic. Unfortunately this is an inherent restriction due to the inconsistency of argument-position `impl Trait` with return-position `impl Trait` (regarding the quantifier scope).
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
