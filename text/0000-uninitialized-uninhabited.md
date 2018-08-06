@@ -189,7 +189,7 @@ impl<T> MaybeUninit<T> {
     /// It is your responsibility to make sure `T` gets dropped if it got initialized.
     pub fn zeroed() -> MaybeUninit<T> {
         let mut u = uninitialized();
-        ptr::write_bytes(&mut u as *mut _, 0u8, 1);
+        u.as_mut_ptr().write_bytes(0u8, 1);
         u
     }
 
