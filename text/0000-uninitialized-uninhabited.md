@@ -159,7 +159,6 @@ library as a replacement.
 Add the aforementioned `MaybeUninit` type to the standard library:
 
 ```rust
-#[repr(transparent)]
 union MaybeUninit<T> {
     uninit: (),
     value: ManuallyDrop<T>,
