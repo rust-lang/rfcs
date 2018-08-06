@@ -6,10 +6,12 @@
 # Summary
 [summary]: #summary
 
-Unions do not allow fields of types that require drop glue, but they may still
-`impl Drop` themselves.  We specify when one may move out of a union field and
-when the union's `drop` is called.  To avoid undesired implicit calls of drop,
-we also restrict the use of `DerefMut` when unions are involved.
+Unions do not allow fields of types that require drop glue (the code that is
+automatically run when a variables goes out of scope: recursively dropping the
+variable and all its fields), but they may still `impl Drop` themselves.  We
+specify when one may move out of a union field and when the union's `drop` is
+called.  To avoid undesired implicit calls of drop, we also restrict the use of
+`DerefMut` when unions are involved.
 
 # Motivation
 [motivation]: #motivation
