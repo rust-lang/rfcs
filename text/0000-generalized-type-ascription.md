@@ -948,6 +948,10 @@ async { $body } : impl Future<Output = $ty>
 The operational semantics and type checking rules for type ascription in
 expression contexts is *exactly* as specified in [RFC 803].
 
+Let `x` denote a term.
+
+Let `τ` and `σ` denote types.
+
 Let `Γ` denote the environment mapping names to values.
 
 Let `Δ` denote the typing environment.
