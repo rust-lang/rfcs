@@ -162,7 +162,7 @@ Add the aforementioned `MaybeUninit` type to the standard library:
 #[repr(transparent)]
 union MaybeUninit<T> {
     uninit: (),
-    value: T,
+    value: ManuallyDrop<T>,
 }
 ```
 
@@ -171,6 +171,9 @@ The type should have at least the following interface
 ```rust
 impl<T> MaybeUninit<T> {
     /// Create a new `MaybeUninit` in an uninitialized state.
+    ///
+    /// Note that dropping a `MaybeUninit` will never call `T`'s drop code.
+    /// It is your responsibility to make sure `T` gets dropped if it got initialized.
     pub fn uninitialized() -> MaybeUninit<T> {
         MaybeUninit {
             uninit: (),
@@ -178,7 +181,13 @@ impl<T> MaybeUninit<T> {
     }
 
     /// Create a new `MaybeUninit` in an uninitialized state, with the memory being
-    /// filled with `0` bytes.
+    /// filled with `0` bytes.  It depends on `T` whether that already makes for
+    /// proper initialization. For example, `MaybeUninit<usize>::zeroed()` is initialized,
+    /// but `MaybeUninit<&'static i32>::zeroed()` is not because references must not
+    /// be null.
+    ///
+    /// Note that dropping a `MaybeUninit` will never call `T`'s drop code.
+    /// It is your responsibility to make sure `T` gets dropped if it got initialized.
     pub fn zeroed() -> MaybeUninit<T> {
         let mut u = uninitialized();
         ptr::write_bytes(&mut u as *mut _, 0u8, 1);
@@ -186,21 +195,20 @@ impl<T> MaybeUninit<T> {
     }
 
     /// Set the value of the `MaybeUninit`. The overwrites any previous value without dropping it.
-    pub fn set(&mut self, val: T) -> &mut T {
+    pub fn set(&mut self, val: T) {
         unsafe {
-            self.value = val;
-            &mut self.value
+            self.value = ManuallyDrop::new(val);
         }
     }
 
-    /// Take the value of the `MaybeUninit`, putting it into an uninitialized state.
+    /// Extract the value from the `MaybeUninit` container.
     ///
     /// # Unsafety
     ///
     /// It is up to the caller to guarantee that the the `MaybeUninit` really is in an initialized
-    /// state, otherwise undefined behaviour will result.
-    pub unsafe fn get(&self) -> T {
-        std::ptr::read(&self.value)
+    /// state, otherwise this will immediately cause undefined behavior.
+    pub unsafe fn into_inner(self) -> T {
+        std::ptr::read(&*self.value)
     }
 
     /// Get a reference to the contained value.
@@ -208,9 +216,9 @@ impl<T> MaybeUninit<T> {
     /// # Unsafety
     ///
     /// It is up to the caller to guarantee that the the `MaybeUninit` really is in an initialized
-    /// state, otherwise undefined behaviour will result.
+    /// state, otherwise this will immediately cause undefined behavior.
     pub unsafe fn get_ref(&self) -> &T {
-        &self.value
+        &*self.value
     }
 
     /// Get a mutable reference to the contained value.
@@ -218,21 +226,21 @@ impl<T> MaybeUninit<T> {
     /// # Unsafety
     ///
     /// It is up to the caller to guarantee that the the `MaybeUninit` really is in an initialized
-    /// state, otherwise undefined behaviour will result.
+    /// state, otherwise this will immediately cause undefined behavior.
     pub unsafe fn get_mut(&mut self) -> &mut T {
-        &mut self.value
+        &mut *self.value
     }
 
-    /// Get a pointer to the contained value. This pointer will only be valid if the `MaybeUninit`
-    /// is in an initialized state.
+    /// Get a pointer to the contained value. Reading from this pointer will be undefined
+    /// behavior unless the `MaybeUninit` is initialized.
     pub fn as_ptr(&self) -> *const T {
-        self as *const MaybeUninit<T> as *const T
+        &*self.value *const T
     }
 
-    /// Get a mutable pointer to the contained value. This pointer will only be valid if the
-    /// `MaybeUninit` is in an initialized state.
+    /// Get a mutable pointer to the contained value. Reading from this pointer will be undefined
+    /// behavior unless the `MaybeUninit` is initialized.
     pub fn as_mut_ptr(&mut self) -> *mut T {
-        self as *mut MaybeUninit<T> as *mut T
+        &mut *self.value *mut T
     }
 }
 ```
