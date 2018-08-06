@@ -6,6 +6,7 @@
 # Summary
 [summary]: #summary
 
+This RFC supersedes and subsumes [RFC 803].
 We finalize a general notion of type ascription uniformly in patterns,
 expressions, `let` bindings, and `fn` definitions. You may now for example write:
 
