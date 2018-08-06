@@ -201,7 +201,9 @@ impl<T> MaybeUninit<T> {
         }
     }
 
-    /// Extract the value from the `MaybeUninit` container.
+    /// Extract the value from the `MaybeUninit` container.  This is a great way
+    /// to ensure that the data will get dropped, because the resulting `T` is
+    /// subject to the usual drop handling.
     ///
     /// # Unsafety
     ///
