@@ -100,7 +100,7 @@ Then you can happily witness you example code being run in console, just as what
 
 Additonally, you may include tests and benches into your example project. You can create `tests` or `benches` in `examples/abc/` folder, and run it by `cargo test --example abc` etc. Note that it's not suggested to create examples for examples.
 
-## When conflicting with `*.rs` ot `**/main.rs` files 
+## When conflicting with `*.rs` or `**/main.rs` files 
 
 Your `examples` folder may include more than one of `*.rs` files, `**/main.rs` files and/or project-based examples as folders, thus might have conflicting names when for example, you have at least two of `examples/abc.rs`, `examples/abc/main.rs` and project `examples/abc/`. 
 
@@ -168,5 +168,5 @@ None by now.
 [unresolved-questions]: #unresolved-questions
 
 - Is there any more graceful way to replace the `my_project = { path = "../.." }` in `Cargo.toml` file for all example projects?
-- Will it be useful if we provided an approach to test or bench all examples at one time?
+- Will it be useful if we provide an approach to test or bench *all examples* at one time in the future?
 - Should path-related macro `file!()` refer the path related to the root project path?
