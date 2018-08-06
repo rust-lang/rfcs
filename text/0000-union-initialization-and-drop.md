@@ -324,8 +324,8 @@ can be pretty hard for the programmer to predict when drop glue will be
 automatically invoked on assignment or not, because the initialization tracking
 (which this RFC adapts from @petrochenkov's proposal) can sometimes be a little
 surprising when looking at individual fields: Whether `u.f2 = ...;` drops
-depends on whether `u.f1` has been previously initialized.  @petrochenkov hence
-proposes a lint to warn people that unions with drop-glue fields are not always
+depends on whether `u.f1` has been previously initialized.  We hence
+have a lint to warn people that unions with drop-glue fields are not always
 very well-behaved.  This RFC, on the other hand, side-steps the entire question
 by not allowing fields with drop glue.  Initialization tracking thus has no
 effect on the code executed during an assignment of a union field.  For unions
