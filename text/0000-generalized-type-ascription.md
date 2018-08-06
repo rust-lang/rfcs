@@ -963,7 +963,7 @@ The type checker respects the following typing rule:
 Δ    ⊢ σ type
 Δ    ⊢ ImplicitlyCoercible(τ, σ)
 Δ, Γ ⊢ x : τ
---------------------------------
+-------------------------------- ExprTypeAscribe
 Δ, Γ ⊢ (x : σ) : σ
 ```
 
@@ -971,7 +971,7 @@ Since before, we have the typing rule that:
 
 ```
 Δ ⊢ τ type
---------------------------------
+-------------------------------- SelfCoercible
 Δ ⊢ ImplicitlyCoercible(τ, τ)
 ```
 
@@ -979,8 +979,9 @@ From these typing rules, it follows that:
 
 ```
 Δ    ⊢ τ type
-Δ, Γ ⊢ x : τ
 --------------------------------
+Δ    ⊢ ImplicitlyCoercible(τ, τ)     Δ, Γ ⊢ x : τ
+-------------------------------------------------- ExprSelfTypeAscribe
 Δ, Γ ⊢ (x : τ) : τ
 ```
 
