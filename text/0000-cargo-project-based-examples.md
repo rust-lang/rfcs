@@ -2,7 +2,6 @@
 - Start Date: 2018-08-01
 - RFC PR: (leave this empty)
 - Rust Issue: (leave this empty)
-
 # Summary
 [summary]: #summary
 
@@ -116,6 +115,12 @@ Caused by:
 
 After the third approach implemented as `examples/abc/` project, if there are still conflicts, the above message is given as well. And what you need to do to resolve this conflict is to rename the folders or the files to make the names unique.
 
+## Notes for path-related macros
+
+As project-based examples might affect path-related macros, there are two macros we should pay attention to: `module_path!()` and `file!()`. As project-based examples should be treated like a unique project, the outputs of these two macros should refer to the path of the example instead of root project path. For example, if we have a `abc` example project for root project `my_project` and the `main` function in `examples/abc/src/main.rs` contains `println!("{} {}", module_path!(), file!())`, it should print `abc src/main.rs` rather than `abc examples/abc/src/main.rs`.
+ 
+There are plenty of macros like `line!()` and `column!()` whose value after being parsed are related to the line number and column number. Fortunately, the parsing logic of these macros above are not effected if being written into project-based example codes. 
+
 ## Conclusion
 
 By including `cargo new --example` and enhancing `cargo run --example` etc., this RFC provides a more convenient way for you to write examples for your project.
@@ -131,6 +136,8 @@ When operating example project, we compile the whole example project as what we 
 Running, testing and benching project-based examples should be treated the same as what Rust already do for single-file examples. Same toolchain should be applied to them by default. 
 
 Operating example projects with `--example <NAME>` is just like a syntax sugar in programming, which help us save time when executing examples.  
+
+For path-related macros, refer to the paragraph 'Notes for path-related macros'.
 
 ## `cargo new --example <NAME>`
 
@@ -162,3 +169,4 @@ None by now.
 
 - Is there any more graceful way to replace the `my_project = { path = "../.." }` in `Cargo.toml` file for all example projects?
 - Will it be useful if we provided an approach to test or bench all examples at one time?
+- Should path-related macro `file!()` refer the path related to the root project path?
