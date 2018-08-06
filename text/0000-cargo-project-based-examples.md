@@ -15,9 +15,9 @@ Recently many projects, especially huge library projects, are used in a bunch of
 1. Might need more external crates than the project itself;
 2. Could be compiled into various cargo targets.
 
-For example, when developing a backend for code editors like Xray, we might need to implement its frontend in a diversity of forms like terminal for vim-like experience, Qt for graphic UI, or even wasm for online judge websites. These forms need to import different crates and are built to different targets. If we only use existing single file examples, we were not even able to import external crates without editing the `Cargo.toml` for the project itself, which might lead to compiling unnecessary libraries to build this project. 
+For example, when developing a backend for code editors like Xray, we might need to implement its frontend in a diversity of forms like terminal for vim-like experience, Qt for graphic UI, or even wasm for online judge websites. These forms need to import different crates and are built to different targets. If we only use existing file-based examples, we were not even able to import external crates without editing the `Cargo.toml` for the project itself, which might lead to compiling unnecessary libraries to build this project. 
 
-Likewise, other projects, especially developed for embedded platforms, also needs separate dependency for writing examples. When writing examples for them, developers now have to rely on the `dev-dependencies` and write dependencies together for all examples into the root `Cargo.toml`, like what projects like [f3] did, and we have to compile all of them even if trying to build only one example. If project-based examples could be formed for these projects, developers would be able to run the examples in a more graceful way as well as save compile time.
+Likewise, other projects, especially developed for embedded platforms, also needs separate dependency for writing examples. These could be two approaches to write examples for them. In the first approach developers have to rely on the `dev-dependencies` and write dependencies together for all examples into the root `Cargo.toml`, like what projects like [f3] did, and we have to compile all of them even if trying to build only one example. In the second approach developers should add all examples one by one into `[workspace]` members, which requires `cargo run -p` to run it and is somehow complex. If project-based examples could be formed for these projects, developers would be able to run the examples in a more graceful way as well as save compile time.
 
 [f3]: https://github.com/japaric/f3/blob/master/Cargo.toml
 
@@ -110,7 +110,7 @@ Yet cargo already have supported `*.rs` and `**/main.rs`. If there are conflicts
 error: failed to parse manifest at `<Project Root>/Cargo.toml`
 
 Caused by:
-  found duplicate example name a, but all example targets must have a unique name
+  found duplicate example name <NAME>, but all example targets must have a unique name
 ``` 
 
 After the third approach implemented as `examples/abc/` project, if there are still conflicts, the above message is given as well. And what you need to do to resolve this conflict is to rename the folders or the files to make the names unique.
@@ -141,11 +141,11 @@ For path-related macros, refer to the paragraph 'Notes for path-related macros'.
 
 ## `cargo new --example <NAME>`
 
-Another feature `cargo new --example <NAME>` requires creating a new argument. If argument `--example <NAME>` is found, we search for if this folder exists, if so we fire an error like `error: example NAME already exists`; and if not, a folder is created in `examples` and a cargo project for runnables where there is `main.rs` is built inside.
+Another feature `cargo new --example <NAME>` requires creating a new argument. If argument `--example <NAME>` is found, we search for if this folder exists, if so we fire an error like `error: example <NAME> already exists`; and if not, a folder is created in `examples` and a cargo project for runnables where there is `main.rs` is built inside.
 
 Note that `cargo new --example <NAME>` can only be executed inside a cargo project. Execution with no cargo project detected should be denied with an error message like `error: no cargo project found to create an example` or similiar messages.
 
-Additionally, what `cargo new --example <NAME>` differs from `cargo new` is only that the former command, as is mentioned above, generates a dependency on the root project using `../..` references. Despite this the procedure should be the same, including what we should write into the `.gitignore` file for it, so it should be possible to `cd` into it and run `cargo run` directly.
+Additionally, what `cargo new --example <NAME>` differs from `cargo new` is only that the former command, as is mentioned above, generates a dependency on the root project using `../..` references. Despite this, the procedure should be the same, including what we should write into the `.gitignore` file for it, so it should be possible to `cd` into it and run `cargo run` directly.
 
 # Drawbacks
 [drawbacks]: #drawbacks
