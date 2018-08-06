@@ -84,7 +84,7 @@ with more motivation:
    it is more ergonomic to type-ascribe with `try : R { .. }` instead
    of first introducing an artificial binding.
 
-4. With type ascription, you can annotate smaller and subsets of what you
+4. With type ascription, you can annotate smaller bits and subsets of what you
    previously needed to. This especially holds in pattern contexts.
    This will be made clear later on in this RFC.
 
