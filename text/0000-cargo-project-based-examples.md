@@ -36,7 +36,7 @@ Before we start, we should keep in mind that firstly this RFC enhances the searc
 
 This means, for example, you can create a example project `abc` using `cargo new --example abc`, and you may run it with `cargo run --example abc` as it now searches for all `examples/abc.rs` file, `examples/abc/main.rs` and `examples/abc/` project folder. 
 
-An example project could include its own tests and benches, but to make things more clear, it's not suggested to have nested example projects inside. Building a nested example project is possible, but as the only way to run, test or bench the nested example is by adding `[workspace]` members and run with `cargo run -p`,   it's not convenient by now to deal with the nested example project directly using cargo command from the root project.
+An example project could include its own tests and benches, but to make things more clear, it's not suggested to have nested example projects inside. Building a nested example project is possible, but as the only way to run, test or bench the nested example is by adding `[workspace]` members and run with `cargo run -p`, it's not convenient by now to deal with the nested example project directly using cargo command from the root project.
 
 ## When to use project-based examples
 
@@ -156,6 +156,11 @@ If we implement project-based examples into cargo, it might be backward incompat
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 There could be another way to implement project-based examples by introducing `cargo example` subcommand. However by doing this we must change our way to run examples now by `cargo run --example <NAME>` which is already widely accepted by rust community. 
+
+It may also be suggested that we could somehow *not* implement this project-based cargo examples, but suggest the developers to build an example by adding all of them as the workspace members, and use the `cargo run -p <NAME>` command to run, test or bench it as it indicates the path of the root project, like what we already have in projects like [diesel] and [quicli]. By this way we share the `target` folder with the root project to improve compile speed as well as type less `cd` commands. However as we should add all our examples one by one into workspace if we do this, once we forget to add one newly-created example and users who does not know `cargo run -p` somehow run it by `cd examples/<NAME>` and `cargo run`, a huge `target` folder in the folder of the example would be created before being noticed. 
+
+[diesel]: https://github.com/diesel-rs/diesel/blob/master/Cargo.toml#L1-L26
+[quicli]: https://github.com/killercup/quicli/blob/master/Cargo.toml#L38-L44
 
 On `.gitignore`, it could be a good idea to rewrite the `.gitignore` file in the root changing the `Cargo.lock` to `/Cargo.lock` to avoid it search for every cargo locks nestedly thus a `!Cargo.lock` is not needed in the example project path. However it would totally change the way how we write `.gitignore` for Rust, thus this alternative is remained for the Rust authors to judge.
 
