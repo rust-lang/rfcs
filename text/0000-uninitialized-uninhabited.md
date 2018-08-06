@@ -159,13 +159,14 @@ library as a replacement.
 Add the aforementioned `MaybeUninit` type to the standard library:
 
 ```rust
-union MaybeUninit<T> {
+pub union MaybeUninit<T> {
     uninit: (),
     value: ManuallyDrop<T>,
 }
 ```
 
 The type should have at least the following interface
+([Playground link](https://play.rust-lang.org/?gist=81f5ab9a7e7107c9583de21382ef4333&version=nightly&mode=debug&edition=2015)):
 
 ```rust
 impl<T> MaybeUninit<T> {
@@ -188,8 +189,8 @@ impl<T> MaybeUninit<T> {
     /// Note that dropping a `MaybeUninit` will never call `T`'s drop code.
     /// It is your responsibility to make sure `T` gets dropped if it got initialized.
     pub fn zeroed() -> MaybeUninit<T> {
-        let mut u = uninitialized();
-        u.as_mut_ptr().write_bytes(0u8, 1);
+        let mut u = MaybeUninit::<T>::uninitialized();
+        unsafe { u.as_mut_ptr().write_bytes(0u8, 1); }
         u
     }
 
@@ -233,13 +234,13 @@ impl<T> MaybeUninit<T> {
     /// Get a pointer to the contained value. Reading from this pointer will be undefined
     /// behavior unless the `MaybeUninit` is initialized.
     pub fn as_ptr(&self) -> *const T {
-        &*self.value *const T
+        unsafe { &*self.value as *const T }
     }
 
     /// Get a mutable pointer to the contained value. Reading from this pointer will be undefined
     /// behavior unless the `MaybeUninit` is initialized.
     pub fn as_mut_ptr(&mut self) -> *mut T {
-        &mut *self.value *mut T
+        unsafe { &mut *self.value as *mut T }
     }
 }
 ```
