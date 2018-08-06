@@ -1123,12 +1123,12 @@ Another possibility is to introduce structural tuple records and then use them
 to emulate named arguments in a light weight manner in that way:
 
 ```rust
-fn foo({alpha: u8, beta: bool, gamma: isize }) { .. }
+fn foo(stuff: {alpha: u8, beta: bool, gamma: isize }) { .. }
 
 foo({ alpha: 1, gamma: -42, beta: true })
 ```
 
-As you can see, the syntactic overhead is quite minor.
+As you can see, the syntactic overhead at the call site is quite minor.
 These structural records also have other benefits such as conveying semantic
 intent better than the positional style tuples.
 They are a middle-ground between tuples and introducing a named struct.
