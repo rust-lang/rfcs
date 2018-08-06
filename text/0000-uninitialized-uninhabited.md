@@ -6,15 +6,17 @@
 # Summary
 [summary]: #summary
 
-Deprecate `mem::uninitialized::<T>` and replace it with a `MaybeUninit<T>` type
-for safer and more principled handling of uninitialized data.
+Deprecate `mem::uninitialized::<T>` and `mem::zeroed::<T>` and replace them with
+a `MaybeUninit<T>` type for safer and more principled handling of uninitialized
+data.
 
 # Motivation
 [motivation]: #motivation
 
 The problems with `uninitialized` centre around its usage with uninhabited
-types. The concept of "uninitialized data" is extremely problematic when it
-comes into contact with types like `!` or `Void`.
+types, and its interaction with Rust's type layout invariants. The concept of
+"uninitialized data" is extremely problematic when it comes into contact with
+types like `!` or `Void`.
 
 For any given type, there may be valid and invalid bit-representations. For
 example, the type `u8` consists of a single byte and all possible bytes can be
@@ -53,6 +55,18 @@ fn mem::uninitialized::<!>() -> !
 Yet calling this function does not diverge! It just breaks everything then eats
 your laundry instead.
 
+This problem is most prominent with `!` but also applies to other types that
+have restrictions on the values they can carry.  For example,
+`Some(mem::uninitialized::<bool>()).is_none()` could actually return `true`
+because uninitialized memory could violate the invariant that a `bool` is always
+`[00000000]` or `[00000001]` -- and Rust relies on this invariant when doing
+enum layout. So, `mem::uninitialized::<bool>()` is instantaneous undefined
+behavior just like `mem::uninitialized::<!>()`. This also affects `mem::zeroed`
+when considering types where the all-`0` bit pattern is not valid, like
+references: `mem::zeroed::<&'static i32>()` is instantaneous undefined behavior.
+
+## Tracking uninitializedness in the type
+
 An alternative way of representing uninitialized data is through a union type:
 
 ```rust
@@ -63,14 +77,16 @@ union MaybeUninit<T> {
 ```
 
 Instead of creating an "uninitialized value", we can create a `MaybeUninit`
-initialized with `uninit = ()`. Then, once we know that the value in the union
+initialized with `uninit: ()`. Then, once we know that the value in the union
 is valid, we can extract it with `my_uninit.value`. This is a better way of
 handling uninitialized data because it doesn't involve lying to the type system
 and pretending that we have a value when we don't. It also better represents
 what's actually going on: we never *really* have a value of type `T` when we're
 using `uninitialized::<T>`, what we have is some memory that contains either a
 value (`value: T`) or nothing (`uninit: ()`), with it being the programmer's
-responsibility to keep track of which state we're in.
+responsibility to keep track of which state we're in. Notice that creating a
+`MaybeUninit<T>` is safe for any `T`! Only when accessing `my_uninit.value`,
+we have to be careful to ensure this has been properly initialized.
 
 To see how this can replace `uninitialized` and fix bugs in the process,
 consider the following code:
@@ -159,6 +175,14 @@ impl<T> MaybeUninit<T> {
         MaybeUninit {
             uninit: (),
         }
+    }
+
+    /// Create a new `MaybeUninit` in an uninitialized state, with the memory being
+    /// filled with `0` bytes.
+    pub fn zeroed() -> MaybeUninit<T> {
+        let mut u = uninitialized();
+        ptr::write_bytes(&mut u as *mut _, 0u8, 1);
+        u
     }
 
     /// Set the value of the `MaybeUninit`. The overwrites any previous value without dropping it.
