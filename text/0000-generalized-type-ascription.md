@@ -34,7 +34,7 @@ fn foo(Wrapping(alpha: usize)) {}
 ```
 
 Here, the underlined bits are patterns.
-Note however that this RFC does not introduce global type inference.
+Note however that this RFC does *not* introduce global type inference.
 
 Finally, we lint (warn-by-default) when a user writes
 `Foo { $field: $ident : $type }`
@@ -343,7 +343,7 @@ go through what this means for you as a user of Rust.
 
 [RFC 803] introduced type ascription in expression contexts stating
 that you may write `expr : Type` to ensure that `expr` is of a well-formed
-type `Type`. This includes subtyping and triggering [implicit coercions].
+type `Type`. This includes sub-typing and triggering [implicit coercions].
 However, unlike with the `as` operator, type ascription may not trigger
 explicit coercions. As an example, consider:
 
@@ -710,6 +710,33 @@ fn foo(Wrapping(value)) -> usize { ... }
 By using this mechanism, we gain a measure of elision and can make writing
 more ergonomic.
 
+[RFC 1685]: https://github.com/rust-lang/rfcs/blob/master/text/1685-deprecate-anonymous-parameters.md
+
+#### [RFC 1685] and deprecation schedule
+
+Since we want the ability to view function parameters uniformly as patterns
+and extend them to trait definitions:
+
+```rust
+trait MyTrait {
+    fn do_stuff(Wrapping(x: usize)) {
+        // Provided logic...
+    }
+}
+```
+
+we move up on the deprecation schedule of [RFC 1685] and propose that
+writing:
+
+```rust
+trait Foo {
+    fn bar(MyType) -> ... { ... }
+}
+```
+
+will cause the compiler to emit a warn-by-default lint in Rust 2015 and
+that it be a hard error in Rust 2018.
+
 ## Linting ascription of named `struct` literals and patterns
 
 Consider a struct:
@@ -846,7 +873,21 @@ self_param : ('&' lifetime?)? maybe_mut SELF maybe_ty_ascription ;
 va_tail : (pat ':')? DOTDOTDOT | %empty ; // Needed for RFC 2137.
 ```
 
-Please do note that in Rust 2018, the production `ty_or_pat` is defined as just:
+### [RFC 1685] and deprecation schedule
+
+The schedule of linting against writing:
+
+```rust
+trait Foo {
+    fn bar(Type) { ... }
+}
+```
+
+is currently to warn in Rust 2018 and then transition to a hard error the
+next edition. This RFC moves up the schedule and makes it a warning in
+Rust 2015 and a hard error in Rust 2018.
+
+Thus, in Rust 2018, the production `ty_or_pat` is defined as just:
 
 ```rust
 ty_or_pat : pat ;
@@ -1239,6 +1280,35 @@ and field projection, it also forces the user to wrap the type in parenthesis.
 
 Furthermore, the method-like nature of a macro is probably sub-optimal for
 ascription in pattern contexts.
+
+### [RFC 1685] and deprecation schedule
+
+[rust-lang/rust#48309]: https://github.com/rust-lang/rust/pull/48309
+[48309_noted]: https://github.com/rust-lang/rust/pull/48309#issuecomment-391288075
+
+It has been [noted][48309_noted] on [rust-lang/rust#48309] that:
+
+> @scottmcm I think if we had a concrete motivation to be stricter, we could be.
+
+The expedited schedule of making
+
+```rust
+trait Foo {
+    fn bar(Type) { ... }
+}
+```
+
+a warning in 2015 and a hard error in 2018 is motivated by wanting
+to emphasize the nature of function parameters as patterns uniformly.
+For the purposes of improving learnability, we believe it is prudent
+to avoid syntactic inconsistencies in the language.
+
+Furthermore, it was also noted on the same PR by @nikomatsakis that:
+
+> [..] we don't think there's much use of this in the wild,
+> and we have an automated fix.
+
+Thus, we believe it is reasonable to expedite the schedule.
 
 # Prior art
 [prior-art]: #prior-art
