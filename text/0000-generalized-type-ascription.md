@@ -211,6 +211,31 @@ match foo.parse() {
 
 This annotates the important information clearly and where it matters most.
 
+## Addressing concerns of match ergonomics
+
+[match_concerns]: https://internals.rust-lang.org/t/lived-experiences-strange-match-ergonomics/7817
+
+Some [concerns][match_concerns] have been noted about the match ergonomics
+feature of Rust. By using type ascription in pattern contexts,
+we can document and be more confident about what is and what is not a reference.
+For example, given:
+
+```rust
+match &expr {
+    None => logic,
+    Some(vec: &Vec<u8>) => logic,
+}
+```
+
+we can be sure that `vec` is a reference.
+If we instead write:
+
+```rust
+let Struct { field: x: i32 } = expr;
+```
+
+we can know for certain that `x` is not a borrow.
+
 ## Uniform Syntax and Unified Mental Model
 
 Given the changes in this RFC, note that when you write:
@@ -329,7 +354,7 @@ This example has two primary problems:
 1. It does not format well.
 2. The choice of `CarrierType` affects the dynamic semantics of the `try { .. }`
    block. Thus, the information that the `try { .. }` block is of type
-   `CarrierType` may come to late. Therefore, the user may have to backtrack
+   `CarrierType` may come too late. Therefore, the user may have to backtrack
    in reading. This in turn negatively affects the speed with which the code
    may be read.
 
