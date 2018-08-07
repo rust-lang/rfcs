@@ -898,8 +898,9 @@ pat
 ;
 ```
 
-The operator `:` binds more tightly than `ref`, `ref mut`, `&`, and `&mut`
-in pattern contexts. This is required because currently, the following compiles:
+The operator `:` binds more tightly than `ref` and `ref mut` but binds less
+tightly than `&` and `&mut` in pattern contexts. This is required because
+currently, the following compiles:
 
 ```rust
 #[derive(Copy, Clone)]
@@ -908,11 +909,13 @@ let a = X {};
 
 let ref b: X = a; // Note the type!
 let &c : &X = b; // And here!
+let d: X = c;
 ```
 
 This entails for example that a Rust compiler will interpret `ref x : T` as
-`ref (x : T)` instead of `(ref x) : T`. The same applies to `ref mut`, `&`,
-and `&mut`.
+`ref (x : T)` instead of `(ref x) : T`. The same applies to `ref mut`.
+However, `&x : T` and `&mut x : T` will be associated as `(&x) : T`
+and `(&mut x) : T`.
 
 The grammar of `let` bindings is changed from:
 
