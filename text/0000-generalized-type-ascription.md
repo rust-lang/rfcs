@@ -1287,7 +1287,84 @@ and field projection, it also forces the user to wrap the type in parenthesis.
 Furthermore, the method-like nature of a macro is probably sub-optimal for
 ascription in pattern contexts.
 
-### [RFC 1685] and deprecation schedule
+### Inverted order: `$type op $expr`
+
+One final idea for a syntax is to reverse the order of the type and the
+expression in the ascription and to use a different binary operator.
+
+For example:
+
+```rust
+let foo = Vec<_> of (0..10).collect(); // Using `of` as the operator.
+
+let foo = usize ~ 123; // Using `~` as the operator.
+```
+
+This impetus for the reversed order comes from the observation that
+
+```rust
+do_stuff_with(try {
+    if a_computation()? {
+        b_computation()?
+    } else {
+        c_computation()?
+    }
+} : CarrierType);
+```
+
+does not read well. This RFC addresses this by allowing `try : C { .. }`.
+The inverted order operator would handle this with `C of try { .. }` instead.
+
+However, there are some notable problems with inverting the operator:
+
++ You can not use `:` as the operator. If you did, it would be confusing with
+  the order in `let x: Type = ..;` and `fn foo(x: Type) ..`.
+
++ If a different token than `:` is used, the inverted order is still not
+  consistent with let bindings and function definitions.
+
++ More often than not, the inverted order will cause the parser to backtrack
+  because in most cases, there is not a type ascription, but the parser
+  will start out assuming that there is.
+
++ The syntax does not work well with method chaining and field projection.
+  If you consider rewriting the following chain:
+
+  ```rust
+  let _ = Box<_> of usize of "1234".parse().unwrap().into();
+  ```
+
+  There is no way for the parser to understand that it should be grouped as:
+
+  ```rust
+  let _ = Box<_> of (usize of "1234".parse().unwrap()).into();
+  ```
+
+  Furthermore, if we write a chain such as:
+
+  ```rust
+  let x = Rc<[_]> of (Vec<usize> of (Result<Vec<_>, _> of
+    (0..10).map(some_computation).collect())
+    .unwrap()
+    .map(other_computation))
+    .into();
+  ```
+
+  readability will likely suffer as the type annotation does not follow the
+  flow of the reader and the annotation is not after each call.
+  Even if this is formatted in the best possible way, it will not be as readable
+  as with:
+
+  ```rust
+  let x = (0..10)
+      .map(some_computation)
+      .collect() : Result<Vec<_>, _>
+      .unwrap()
+      .map(other_computation) : Vec<usize>
+      .into() : Rc<[_]>;
+  ```
+
+## [RFC 1685] and deprecation schedule
 
 [rust-lang/rust#48309]: https://github.com/rust-lang/rust/pull/48309
 [48309_noted]: https://github.com/rust-lang/rust/pull/48309#issuecomment-391288075
