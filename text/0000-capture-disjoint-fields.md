@@ -125,17 +125,18 @@ existing capture set (one maximal expression per binding) and then iterativly
 modifying and splitting the expressions by adding additional dereferences and
 path components.
 
-A capture expression is minimal if it produces...
+A capture expression is minimal if it produces a value that is used by the
+closure in its entirety (e.g. is a primitive, is passed outside the closure,
+etc.) or if making the expression more specific would require one the following.
 
-- a value that is not a struct or borrowed struct (e.g. primitive, enum, union).
-- a value that is used by the closure in its entirety (e.g. passed outside the closure).
-- any other case where the expression can not be made more specific (see below).
+- a call to an impure function
+- an illegal move (for example, out of a `Drop` type)
 
-Additionally capture expressions are not allowed to...
-
-- call impure functions.
-- make illegal moves (for example, out of a `Drop` type).
-- *(comments please, am I missing any cases?)*.
+When generating a capture expression, we must decide if the output should be
+owned or if it can be a reference. In a non-`move` closure, a capture expression
+will *only* produce owned data if ownership of that data is required by the body
+of the closure. In a `move` closure, will *always* produced owned data unless
+the captured binding does not have ownership.
 
 Note that *all* functions are considered impure (including to overloaded deref
 impls). And, for the sake of capturing, all indexing is considered impure *(see
@@ -145,7 +146,7 @@ attribute (such as `#[deref_transparent]`). However, such a solution should be
 proposed in a separate RFC. In the meantime, `<Box as Deref>::deref` could be a
 special case of a pure function *(see unresolved)*.
 
-Note that, because capture expressions are all subsets of the closure body,
+Also note that, because capture expressions are all subsets of the closure body,
 this RFC does not change *what* is executed. It does change the order/number of
 executions for some operations, but since these must be pure, order/repetition
 does not matter. Only changes to lifetimes might be breaking. Specifically, the
@@ -166,7 +167,7 @@ let foo = 10;
 || &mut foo;
 ```
 
-- `&mut foo` (not a struct)
+- `&mut foo` (primitive, ownership not required, used in entirety)
 
 ```rust
 let a = &mut foo.a;
@@ -174,8 +175,8 @@ let a = &mut foo.a;
 somefunc(a);
 ```
 
-- `&mut foo.b` (used in entirety)
-- `&mut foo.c` (used in entirety)
+- `&mut foo.b` (ownership not required, used in entirety)
+- `&mut foo.c` (ownership not required, used in entirety)
 
 The borrow checker passes because `foo.a`, `foo.b`, and `foo.c` are disjoint.
 
@@ -185,7 +186,7 @@ move || foo.b;
 somefunc(a);
 ```
 
-- `foo.b` (used in entirety)
+- `foo.b` (ownership available, used in entirety)
 
 The borrow checker passes because `foo.a` and `foo.b` are disjoint.
 
@@ -195,7 +196,8 @@ move || foo.drop_world.a;
 somefunc(hello);
 ```
 
-- `foo.drop_world` (owned and implements drop)
+- `foo.drop_world` (ownership available, can't be more specific without moving
+  out of `Drop`)
 
 The borrow checker passes because `foo.hello` and `foo.drop_world` are disjoint.
 
@@ -203,20 +205,22 @@ The borrow checker passes because `foo.hello` and `foo.drop_world` are disjoint.
 || println!("{}", foo.wrapper_thing.a);
 ```
 
-- `&foo.wrapper_thing` (overloaded `Deref` on `wrapper_thing` is impure)
+- `&foo.wrapper_thing` (ownership not required, can't be more specific because
+  overloaded `Deref` on `wrapper_thing` is impure)
 
 ```rust
 || foo.list[0];
 ```
 
-- `foo.list` (indexing is impure)
+- `foo.list` (ownership required, can't be more specific because indexing is
+  impure)
 
 ```rust
 let bar = (1, 2); // struct
 || myfunc(bar);
 ```
 
-- `bar` (used in entirety)
+- `bar` (ownership required, used in entirety)
 
 ```rust
 let foo_again = &mut foo;
@@ -224,7 +228,7 @@ let foo_again = &mut foo;
 somefunc(foo_again);
 ```
 
-- `&mut foo.a`  (used in entirety)
+- `&mut foo.a`  (ownership not required, used in entirety)
 
 The borrow checker fails because `foo_again` and `foo.a` intersect.
 
@@ -233,7 +237,7 @@ let _a = foo.a;
 || foo.a;
 ```
 
-- `foo.a`  (used in entirety)
+- `foo.a`  (ownership required, used in entirety)
 
 The borrow checker fails because `foo.a` has already been moved.
 
@@ -243,7 +247,8 @@ move || drop_foo.b;
 somefunc(a);
 ```
 
-- `drop_foo` (owned and implements drop)
+- `drop_foo` (ownership available, can't be more specific without moving out of
+  `Drop`)
 
 The borrow checker fails because `drop_foo` can not be moved while borrowed.
 
@@ -251,14 +256,24 @@ The borrow checker fails because `drop_foo` can not be moved while borrowed.
 || &box_foo.a;
 ```
 
-- `&<Box<_> as Deref>::deref(&box_foo).b` (pure function call)
+- `&<Box<_> as Deref>::deref(&box_foo).b` (ownership not required, `Box::deref` is pure)
 
 ```rust
 move || &box_foo.a;
 ```
 
-- `box_foo` (`move` forces full capure of `box_foo`, since it can not be
-  destructured)
+- `box_foo` (ownership available, can't be more specific without moving out of
+  `Drop`)
+
+```rust
+let foo = &mut a;
+let other = &mut foo.other;
+move || &mut foo.bar;
+somefunc(other);
+```
+
+- `&mut foo.bar` (ownership *not* available, borrow can be split)
+
 
 # Drawbacks
 [drawbacks]: #drawbacks
