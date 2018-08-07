@@ -1068,58 +1068,58 @@ The following example definitions are accepted:
 
 ```rust
 // `x` is fully determined by the ascription.
-// The type of `g0: fn(usize) -> ()`.
-fn g0(x: usize) {}
+// The type of `good_0: fn(usize) -> ()`.
+fn good_0(x: usize) {}
 
 struct Wrapping<T>(T);
 
 // Type-variable T is determined by `x: usize`.
-// The type of `g1: fn(Wrapping<usize>) -> ()`.
-fn g1(Wrapping(x: usize)) {}
+// The type of `good_1: fn(Wrapping<usize>) -> ()`.
+fn good_1(Wrapping(x: usize)) {}
 
 // Type-variable T is determined by `x: usize`.
-// The type of `g3: for<'a> fn(Wrapping<&'a usize>) -> ()`.
-fn g2(Wrapping(x: &usize)) {}
+// The type of `good_2: for<'a> fn(Wrapping<&'a usize>) -> ()`.
+fn good_2(Wrapping(x: &usize)) {}
 
 // Same here. Determined by `x: T`.
-// The type of `g2: for<T> fn(Wrapping<T>) -> ()`.
-fn g3<T>(Wrapping(x: T)) {}
+// The type of `good_3: for<T> fn(Wrapping<T>) -> ()`.
+fn good_3<T>(Wrapping(x: T)) {}
 
 // A type variable is induced by `impl Display`
 // and then `typeof(x)` is that variable.
-// The type of `g3: for<T: Display> fn(Wrapping<T>) -> ()`.
-fn g4(Wrapping(x: impl Display)) {}
+// The type of `good_4: for<T: Display> fn(Wrapping<T>) -> ()`.
+fn good_4(Wrapping(x: impl Display)) {}
 
 struct Foo(usize);
 
 // `Foo` has no type variables to constrain.
-// The type of `g5: fn(Foo) -> ()`.
-fn g5(Foo(x)) {}
+// The type of `good_5: fn(Foo) -> ()`.
+fn good_5(Foo(x)) {}
 
 trait Trait { type Assoc; }
 
 // `T` is fully constrained by `X::Assoc`
 // which in turn is determined by `X: Trait`.
-// The type of `g6: for<X: Trait> fn(Wrapping<X::Assoc>) -> ()`.
-fn g6<X: Trait>(Wrapping(x: X::Assoc))
+// The type of `good_6: for<X: Trait> fn(Wrapping<X::Assoc>) -> ()`.
+fn good_6<X: Trait>(Wrapping(x: X::Assoc))
 ```
 
 But the following definitions are rejected:
 
 ```rust
 // The type of `x` is fully ambiguous even if we look at the body.
-// The type of `b0: fn(?T) -> ()`.
-fn b0(x) {}
+// The type of `bad_0: fn(?T) -> ()`.
+fn bad_0(x) {}
 
 // The compiler has to look at the body to see that `x: u8`:
-// The type of `b1: fn(?T) -> ()`.
-fn b1(x) {
+// The type of `bad_1: fn(?T) -> ()`.
+fn bad_1(x) {
     let y: u8 = x;
 }
 
 // There is an unconstrained unification variable `?T` from `Wrapping<?T>`.
-// The type of `b2: fn(Wrapping<?T>) -> ()`
-fn b2(Wrapping(x)) {}
+// The type of `bad_2: fn(Wrapping<?T>) -> ()`
+fn bad_2(Wrapping(x)) {}
 
 struct X(u8);
 
@@ -1130,7 +1130,7 @@ impl From<u8> for X {
 }
 ```
 
-Considering the rejected example function `b1`, a Rust compiler,
+Considering the rejected example function `bad_1`, a Rust compiler,
 knowing that the `typeof(x) = u8` by looking at the body,
 will emit an error message with the type identity of `x` in it.
 An example error message is:
