@@ -19,13 +19,13 @@ For example, when developing a backend for code editors like Xray, we might need
 
 Likewise, other projects, especially developed for embedded platforms, also needs separate dependency for writing examples. By now developers have to rely on one of the following two approaches to do this. In the first approach developers have to use the `dev-dependencies` and write dependencies together for all examples into the root `Cargo.toml`, like what projects like [f3] did, and we have to compile all of them even if trying to build only one example. In the second approach developers might add all examples one by one into `[workspace]` as workspace members, which requires `cargo run -p` to run it and is somehow complex. If project-based examples could be formed for these projects, developers would be able to run the examples in a more graceful way as well as save compile time.
 
-[f3]: https://github.com/japaric/f3/blob/master/Cargo.toml
+[f3]: https://github.com/japaric/f3/blob/307525cb8d541adb7375d6134d18cd1cdf5c814b/Cargo.toml#L17-L23
 
 In addition, many library projects like [yew], [stdweb] and [wasm-bindgen], now already somehow made an attempt to place folders into `examples` folder to form an array of example 'projects'. 
 
-[yew]: https://github.com/DenisKolodin/yew/tree/master/examples
-[stdweb]: https://github.com/koute/stdweb/tree/master/examples
-[wasm-bindgen]: https://github.com/rustwasm/wasm-bindgen/tree/master/examples
+[yew]: https://github.com/DenisKolodin/yew/tree/dcd3834dd915647f4eae1ec78b6d803b70fad1da/examples
+[stdweb]: https://github.com/koute/stdweb/tree/7c2d096cd6d47d6e68b43ff1f83341885a6f6585/examples
+[wasm-bindgen]: https://github.com/rustwasm/wasm-bindgen/tree/b6a6dee7f102c2026a8f468dc2e1b4f75a17cf31/examples
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -159,8 +159,8 @@ There could be another way to implement project-based examples by introducing `c
 
 It may also be suggested that we could somehow *not* implement this project-based cargo examples, but suggest the developers to build an example by adding all of them as the workspace members, and use the `cargo run -p <NAME>` command to run, test or bench it as it indicates the path of the root project, like what we already have in projects like [diesel] and [quicli]. By this way we share the `target` folder with the root project to improve compile speed as well as type less `cd` commands, but we have to add all our examples one by one as subpackages into the workspace.
 
-[diesel]: https://github.com/diesel-rs/diesel/blob/master/Cargo.toml#L1-L26
-[quicli]: https://github.com/killercup/quicli/blob/master/Cargo.toml#L38-L44
+[diesel]: https://github.com/diesel-rs/diesel/blob/b8d8620b1e6e9f0c0830d16e8762e215930b8a5c/Cargo.toml#L1-L26
+[quicli]: https://github.com/killercup/quicli/blob/879dd74a2a0e3c47b2e76f41694920042317a0c9/Cargo.toml#L38-L44
 
 On `.gitignore`, it could be a good idea to rewrite the `.gitignore` file in the root changing the `Cargo.lock` to `/Cargo.lock` to avoid it search for every cargo locks nestedly thus a `!Cargo.lock` is not needed in the example project path. However it would totally change the way how we write `.gitignore` for Rust, thus this alternative is remained for the Rust authors to judge.
 
