@@ -1544,9 +1544,9 @@ let x = (0..10)
 
 However, if you write this on a single line, or simply consider `x : T.foo()`
 a user might parse this as `x : (T.foo())` instead.
-While Rust does not have any "type level methods", and wherefore this parse
-would not make any semantic sense, this incorrect parse is nevertheless possible
-and thus confusion may ensue.
+While at this stage Rust does not support "type-level methods"
+(meaning that this parse currently makes no sense),
+a user may nonetheless make this mistake.
 
 That said, it is still possible for the user to explicitly disambiguate with
 `(x : T).foo()` wherefore this may not become a problem in practice.
