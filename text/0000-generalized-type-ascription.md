@@ -1158,6 +1158,23 @@ error[E0282]: type annotations needed
 error: aborting due to previous error
 ```
 
+### Ascribing `impl Trait`
+
+[RFC 1951]: https://github.com/rust-lang/rfcs/blob/master/text/1951-expand-impl-trait.md
+[RFC 2071]: https://github.com/rust-lang/rfcs/blob/master/text/2071-impl-trait-existential-types.md#reference-impl-trait-in-let-const-and-static
+
+Ascribing an expression or a pattern to a type `impl Trait` for some `Trait`
+is permitted by the compiler. The semantics of doing so are as follows:
+
+1. When a pattern in the `fn` signature contains `impl Trait`,
+   it has the usual `universal_impl_trait` semantics as specified by
+   [RFC 1951]. This means that for each `impl Trait` in any pattern in
+   the `fn` signature, an "anonymous" type parameter is added.
+
+2. When a pattern or expression inside an `fn` body is ascribed with a type
+   of form `impl Trait`, the type checking rules are as specified by
+   [RFC 2071] with respect to `let` bindings.
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
