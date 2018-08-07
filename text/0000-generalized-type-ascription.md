@@ -753,6 +753,12 @@ more ergonomic.
 
 #### [RFC 1685] and deprecation schedule
 
+In current Rust, the type checker will accept a method, in a trait definition,
+which has a parameter that only specifies a type but not a pattern (example below).
+The accepted RFC 1685 proposed that we deprecate this ability such that you
+*must* provide a pattern / parameter name. However, the RFC left the deprecation
+strategy and the schedule unresolved.
+
 Since we want the ability to view function parameters uniformly as patterns
 and extend them to trait definitions:
 
@@ -774,7 +780,8 @@ trait Foo {
 ```
 
 will cause the compiler to emit a warn-by-default lint in Rust 2015 and
-that it be a hard error in Rust 2018.
+that it be a hard error in Rust 2018. This resolves the unresolved question
+in [RFC 1685].
 
 ## Linting ascription of named `struct` literals and patterns
 
