@@ -286,7 +286,13 @@ In RFC 2388, [some opined][niko_try_1] that it might be good idea to make it
 mandatory to specify the type of a `try { .. }` expression.
 The RFC did not end up proposing such a mandatory mechanism.
 However, @cramertj then noted a concern (which was eventually resolved) that:
-> As @clarcharr and @nikomatsakis [discussed above](https://github.com/rust-lang/rfcs/pull/2388#issuecomment-378750364), it's nearly always necessary to manually specify the error type for these blocks because of the `Into` conversion that `?` does. @nikomatsakis mentioned that we might even want a syntax which *requires* users to explicitly state the error type (or the full result type, for compatibility with `Option`, `Poll`, etc.). [...]
+> As @clarcharr and @nikomatsakis
+> [discussed above](https://github.com/rust-lang/rfcs/pull/2388#issuecomment-378750364),
+> it's nearly always necessary to manually specify the error type for these
+> blocks because of the `Into` conversion that `?` does.
+> @nikomatsakis mentioned that we might even want a syntax which *requires*
+> users to explicitly state the error type
+> (or the full result type, for compatibility with `Option`, `Poll`, etc.). [...]
 
 Since the language already has expression level type ascription, it is already
 possible to constrain the carrier type of a `try { .. }` with `try { .. } : C`
