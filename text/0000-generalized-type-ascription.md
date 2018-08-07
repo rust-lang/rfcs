@@ -642,6 +642,25 @@ fn main() {
 }
 ```
 
+It is possible to do this in a backwards compatible manner because the token `:`
+is not in the follow set of `pat` fragments. This means that when you write
+
+```rust
+macro_rules! test {
+    ($p:pat : u32) => {}
+}
+```
+
+The compiler will complain that:
+
+```rust
+error: `$p:pat` is followed by `:`, which is not allowed for `pat` fragments
+ --> src/main.rs:2:12
+  |
+2 |     ($p:pat : u32) => {}
+  |             ^
+```
+
 ### Let bindings
 
 Before this RFC when you wrote something like:
