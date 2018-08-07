@@ -179,6 +179,38 @@ Because the annotation is more local, we can employ more local reasoning.
 This is particularly useful if the `enum` contains many variants in which
 case the type ascription on `expr` may not be immediately visible.
 
+[str_parse]: https://doc.rust-lang.org/nightly/std/primitive.str.html#method.parse
+
+A realistic example of this scenario of this occurring is with the
+[`.parse()`][str_parse] method. For example, instead of writing:
+
+```rust
+match foo.parse::<i32>() {
+    Ok(x) => ...,
+    Err(e) => ...
+}
+```
+
+or writing:
+
+```rust
+match foo.parse() : Result<i32, _> {
+    Ok(x) => ...,
+    Err(e) => ...,
+}
+```
+
+we can write:
+
+```rust
+match foo.parse() {
+    Ok(x: i32) => ...,
+    Err(e) => ...,
+}
+```
+
+This annotates the important information clearly and where it matters most.
+
 ## Uniform Syntax and Unified Mental Model
 
 Given the changes in this RFC, note that when you write:
