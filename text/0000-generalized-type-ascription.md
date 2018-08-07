@@ -6,6 +6,8 @@
 # Summary
 [summary]: #summary
 
+[RFC 803]: https://github.com/rust-lang/rfcs/blob/master/text/0803-type-ascription.md
+
 This RFC supersedes and subsumes [RFC 803].
 We finalize a general notion of type ascription uniformly in patterns,
 expressions, `let` bindings, and `fn` definitions. You may now for example write:
@@ -116,8 +118,6 @@ with more motivation:
 [idris-mode]: https://github.com/idris-hackers/idris-mode
 
 ## Type ascription has already been accepted as an RFC
-
-[RFC 803]: https://github.com/rust-lang/rfcs/blob/master/text/0803-type-ascription.md
 
 We noted previously that [RFC 803] already accepted type ascription in
 expression contexts. Thus, we have already collectively deemed to some extent
