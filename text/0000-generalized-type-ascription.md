@@ -1526,6 +1526,55 @@ Furthermore, it was also noted on the same PR by @nikomatsakis that:
 
 Thus, we believe it is reasonable to expedite the schedule.
 
+## Precedence of the operator
+
+As explained prior, we change the precedence of `:` when in an expression
+context such that `x : T.foo()` is interpreted as `(x : T).foo()`.
+This precedence change allow users to write readable code when they
+have several method calls by using line-separation such as with:
+
+```rust
+let x = (0..10)
+    .map(some_computation)
+    .collect() : Foo
+    .unwrap()
+    .map(other_computation) : Bar
+    .into() : Baz;
+```
+
+However, if you write this on a single line, or simply consider `x : T.foo()`
+a user might parse this as `x : (T.foo())` instead.
+While Rust does not have any "type level methods", and wherefore this parse
+would not make any semantic sense, this incorrect parse is nevertheless possible
+and thus confusion may ensue.
+
+That said, it is still possible for the user to explicitly disambiguate with
+`(x : T).foo()` wherefore this may not become a problem in practice.
+The formatting tool `rustfmt` may also apply such stylings automatically.
+It is important that we gain experience during the stabilization period
+of this RFC and apply sensible formatting rules such that type ascription
+stays readable.
+
+Speaking of type level methods, it might,
+someday be the case that we would want to permit something such as:
+
+```rust
+impl type {
+    fn foo(self: type) -> type {
+        match self {
+            bool => usize,
+            _ => Vec<usize>,
+        }
+    }
+}
+```
+
+However, we believe this to be quite unlikely at this point.
+In particular, while it may make sense to have free type level functions,
+this method variant could only exist in the core library.
+All in all, the prospect of adding such type level methods should not
+keep us from making this precedence change.
+
 # Prior art
 [prior-art]: #prior-art
 
