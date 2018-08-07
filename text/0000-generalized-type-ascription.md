@@ -263,7 +263,7 @@ complicated and smaller.
 ## Future proofing for DRY in trait implementations
 
 Finally, by using the syntactic category of `pat` in the context of
-function parameters, we already have the grammatic means to elide types in
+function parameters, we already have the grammatical means to elide types in
 implementations of traits. All that is required now is to employ the rule that
 types can be omitted from parameters if and only if the types are fully determined.
 
@@ -271,6 +271,18 @@ However, to avoid doing too much in this RFC, we defer this to another
 RFC and simply say for now, that the compiler will always require the full
 signature in trait implementations. See the section on [possible future work]
 for more details.
+
+## Paving the way for better error messages
+
+By making the fundamental unit of a function parameter be a pattern,
+it becomes technically feasible to improve error messages such that
+when you write `fn foo(x, y) { ... }`, the body can be analysed by the compiler.
+It could then, at the compiler implementations option, give a user a help
+message which provides the types of `x` and `y`.
+
+We believe that this provides a sweet-spot between global type inference and
+the absence of it. This way, the compiler will reject the code, but a structured
+and easily applied fix is provided for you.
 
 ## Motivation for `async / try / ... : Type { .. }`
 
@@ -717,7 +729,7 @@ fn foo(alpha, beta) -> usize { .. }
 
 Nevertheless, as we want to avoid introducing global type inference to the
 language, the type checker will prevent this from compiling and will emit an
-error:
+error which *may* look like:
 
 ```rust
 error[E0282]: type annotations needed
@@ -739,7 +751,9 @@ error: aborting due to previous error
 ```
 
 This also gives the compiler an opportunity to tell you what the types are
-if it so happens that you need this help.
+if it so happens that you need this help. Providing the user with this
+type information is not mandatory and is instead up to the implementation
+of the compiler.
 
 However, in some cases, you can determine the type from the pattern alone.
 Therefore, when the type is fully determined you may omit the type ascription.
@@ -1161,9 +1175,12 @@ impl From<u8> for X {
 }
 ```
 
+#### Optional: improved error messages
+
 Considering the rejected example function `bad_1`, a Rust compiler,
-knowing that the `typeof(x) = u8` by looking at the body,
-will emit an error message with the type identity of `x` in it.
+knowing that the `typeof(x) = u8` by looking at the body
+(if such analysis is performed),
+can emit an error message with the type identity of `x` in it.
 An example error message is:
 
 ```rust
@@ -1181,6 +1198,8 @@ error[E0282]: type annotations needed
 
 error: aborting due to previous error
 ```
+
+Providing this type information is optional.
 
 ### Ascribing `impl Trait`
 
