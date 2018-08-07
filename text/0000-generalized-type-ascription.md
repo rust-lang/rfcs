@@ -522,6 +522,11 @@ Instead, we propose that whenever type ascription is followed by a
 field projection or a method call, the projections or the call should apply
 to the entire ascribed expression.
 
+Note in particular that when you write `&a:b.c`, because `&` binds more tightly
+than `:` but `.` binds more tightly than `&`, the expression associates as
+`&((a : b).c)`. However, when you write `&x.y:z`, it instead associates as
+`(&(x.y)) : z`.
+
 ### In `async`, `try`, ... blocks
 
 [RFC 2388]: https://github.com/rust-lang/rfcs/pull/2388
