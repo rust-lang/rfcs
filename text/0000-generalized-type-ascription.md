@@ -1570,6 +1570,28 @@ val x : string
 let x = "foo" <: string
 ```
 
+## Standard ML
+
+[sml97-defn]: http://sml-family.org/sml97-defn.pdf
+[intro_ml]: https://courses.cs.washington.edu/courses/cse341/04wi/lectures/02-ml-intro.html
+
+Standard ML as defined by [its specification][sml97-defn] has the following
+alternatives in its pattern and expression grammar:
+
+```
+exp : ... | exp ':' ty | ... ;
+
+pat : ... | pat ':' ty | ... ;
+```
+
+You may therefore for [example][intro_ml] write:
+
+```sml
+val x = 3 : int
+```
+
+Note that this is exactly the same grammar as we've proposed here.
+
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
