@@ -110,7 +110,7 @@ with more motivation:
    and let's us easily constrain the type of `elems` in a syntactically
    light-weight way in any case.
 
-6. Type ascription is helpful when doing *type* driven development (TDD)
+6. Type ascription is helpful when doing *type* driven development
    and opens up more possibilities to move in the direction of
    interactive development as is possible with [agda-mode] and [idris-mode].
 
