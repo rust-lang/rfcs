@@ -1666,7 +1666,29 @@ Note that this is exactly the same grammar as we've proposed here.
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
-There are none.
+1. Should we permit `async : Type { .. }` and should `Type` be the inner type?
+
+   There is an inconsistency in the desugaring of the various
+   `KEYWORD : Type { .. }` forms. While ascriptions on other block forms desugar
+   as `KEYWORD { .. } : Type`, the `async : Type { .. }` construct desugars
+   as `async { .. } : impl Future<Output = Type>`.
+
+   This could lead to surprises for some users. Thus, we might consider a
+   different symbol just for `async` such as `async -> Type { .. }`.
+   We could also consider not having this feature for the `async` block
+   form at all. These are all reasonable alternatives.
+
+   Another possibility is to change `async` and by extension also `async fn` to
+   use the external type approach. This is however considerably out of this
+   RFC's scope.
+
+   Speaking of `async fn` and internal types, while it is unfortunate that we
+   can't be fully consistent in the desugaring without moving to an external
+   type approach, this problem is really inherent to the nature of `async fn`
+   using the inner-type method itself. It is thus equally possible that
+   `async : Type { .. }` desugaring as `async { .. } : impl Future<Output = R>`
+   will align with what people expects this to mean because it is how
+   `async` works elsewhere.
 
 # Possible future work
 [possible future work]: #possible-future-work
