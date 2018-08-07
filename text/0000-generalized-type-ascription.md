@@ -1146,7 +1146,7 @@ An example error message is:
 error[E0282]: type annotations needed
  --> src/main.rs:?:?
   |
-1 |     fn b1(x) { .. }
+1 |     fn bad_1(x) { .. }
   |           ^
   |           |
   |           The following patterns do not have a fully determined type.
