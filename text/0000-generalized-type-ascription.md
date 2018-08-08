@@ -1783,6 +1783,33 @@ fn sorted<T: Ord>(mut self: Vec<T>) -> Vec<T> {
 in the future. However, this grammatical change is not proposed in this RFC
 at the moment.
 
+## Lifetimes in parameter patterns
+
+In the same vein, we could introduce lifetimes in the pattern grammar such that
+you can write `&'a $pat` and `&'mut $pat`. We would then restrict this usage
+to function parameters but not elsewhere.
+Doing this would allow users to express things such as:
+
+```rust
+/// typeof foo = for<'a> fn(&'a Wrapping<usize>) -> ()
+fn foo<'a>(&'a Wrapping(x: usize)) { .. }
+```
+
+as well as:
+
+```rust
+/// typeof foo = for<'a> fn(Wrapping<&'a mut Foo>) -> ()
+fn foo<'a>(Wrapping(&'a mut Foo(ref mut x))) { .. }
+```
+
+Also note that the previous section can be encoded in terms of the composition
+of this section as well as `self` being a pattern making the grammar further
+simplified.
+
+However, to limit the scope of this RFC this is not proposed at this point.
+We also do not propose it at this point because it is unknown how often this
+would occur.
+
 ## Elision in trait implementations
 
 One possibility that this RFC opens up grammatically is to let the
