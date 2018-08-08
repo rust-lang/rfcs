@@ -1294,14 +1294,14 @@ struct Product<A, B>(A, B);
 // 4) Thus, `good_10 : for<'a, 'b> fn(Product<&'a i32, &'b u32>) -> ()`.
 fn good_10(Product(x: &i32, y: &u32)) {}
 
-struct Wibble<'a>(&'a i32, &'a u32);
+struct Wibble<'a>(&'a i32, Bar<'a>);
 
 // 1) Looking at `Wibble($pat_1, $pat_2)`, the compiler infers that the
 //    parameter must be of type `Wibble<'?a>` and adds unification variable `'?a`.
 //    a) The compiler introduces an input lifetime parameter `'a`
 //       and substitutes `'?a` for `'a`.
 //    b) Infers that `$pat_1 : &'a i32`  must hold.
-//    c) Infers that `$pat_2 : &'a u32`  must hold.
+//    c) Infers that `$pat_2 : Bar<'a>`  must hold.
 //
 // 2) Looking at `$pat_1 = x: &i32`, the compiler:
 //    a) infers that `x : &'?b i32` and adds unification variable `'?b`.
@@ -1309,8 +1309,8 @@ struct Wibble<'a>(&'a i32, &'a u32);
 //    c) this entails that `'?b = 'a` and so `'?b` is substituted for `'a`.
 //
 // 3) Looking at `$pat_2 = x: Bar<'_>`, the compiler:
-//    a) infers that `x : &'?c i32` and adds unification variable `'?c`.
-//    b) checks that `x : &'a i32`.
+//    a) infers that `x : Bar<'?c>` and adds unification variable `'?c`.
+//    b) checks that `x : Bar<'a>`.
 //    c) this entails that `'?c = 'a` and so `'?c` is substituted for `'a`.
 //
 // 4) Thus, `good_11 : for<'a> fn(Wibble<'a>) -> ()`.
