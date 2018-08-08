@@ -1,4 +1,4 @@
-- Feature Name: convert_identity
+- Feature Name: `convert_identity`
 - Start Date: 2018-01-19
 - RFC PR: (leave this empty)
 - Rust Issue: (leave this empty)
@@ -6,10 +6,9 @@
 # Summary
 [summary]: #summary
 
-Adds an identity function `pub const fn identity<T>(x: T) -> T { x }` as
-`core::convert::identity`. The function is also re-exported to
-`std::convert::identity` as well as the prelude of
-both libcore and libstd.
+Adds an identity function `pub const fn identity<T>(x: T) -> T { x }`
+as `core::convert::identity`. The function is also re-exported to
+`std::convert::identity`.
 
 # Motivation
 [motivation]: #motivation
@@ -61,6 +60,10 @@ let concatenated = iter_iter.flat_map(identity).collect::<Vec<_>>();
 assert_eq!(vec![1, 3, 4, 5, 6], concatenated);
 ```
 
+While the standard library has recently added `Iterator::flatten`,
+which you should use instead, to achieve the same semantics, similar situations
+are likely in the wild and the `identity` function can be used in those cases.
+
 ### Using `identity` to keep the `Some` variants of an iterator of `Option<T>`
 
 We can keep all the maybe variants by simply `iter.filter_map(identity)`.
@@ -93,8 +96,8 @@ Here are a few examples of the identity function being defined and used:
 + https://docs.rs/tool/0.2.0/tool/fn.id.html
 + https://github.com/hephex/api/blob/ef67b209cd88d0af40af10b4a9f3e0e61a5924da/src/lib.rs
 
-There's a smattering of more examples. To reduce duplication, it
-should be provided in the standard library as a common place it is defined.
+There's a smattering of more examples. To reduce duplication,
+it should be provided in the standard library as a common place it is defined.
 
 ## Precedent from other languages
 
@@ -114,30 +117,6 @@ their standard libraries, among these are:
 + [Agda](http://www.cse.chalmers.se/~nad/repos/lib/src/Function.agda)
 + [Elm](http://package.elm-lang.org/packages/elm-lang/core/latest/Basics#identity)
 
-## The case for inclusion in the prelude
-
-Let's compare the effort required, assuming that each letter
-typed has a uniform cost wrt. effort.
-
-```rust
-use std::convert::identity; iter.filter_map(identity)
-
-fn identity<T>(x: T) -> T { x } iter.filter_map(identity)
-
-iter.filter_map(::std::convert::identity)
-
-iter.filter_map(identity)
-```
-
-Comparing the length of these lines, we see that there's not much difference in
-length when defining the function yourself or when importing or using an absolute
-path. But the prelude-using variant is considerably shorter. To encourage the
-use of the function, exporting to the prelude is therefore a good idea.
-
-In addition, there's an argument to be made from similarity to other things in
-`core::convert` as well as `drop` all of which are in the prelude. This is
-especially relevant in the case of `drop` which is also a trivial function.
-
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
@@ -151,8 +130,7 @@ defines it as:
 pub const fn identity<T>(x: T) -> T { x }
 ```
 
-This function is also re-exported to `std::convert::identity` as well as
-the prelude of both libcore and libstd.
+This function is also re-exported to `std::convert::identity`.
 
 It is important to note that the input `x` passed to the function is
 moved since Rust uses move semantics by default.
@@ -162,7 +140,7 @@ moved since Rust uses move semantics by default.
 
 An identity function defined as `pub const fn identity<T>(x: T) -> T { x }`
 exists as `core::convert::identity`. The function is also re-exported as
-`std::convert::identity` as well as the prelude of both libcore and libstd.
+`std::convert::identity`-
 
 Note that the identity function is not always equivalent to a closure
 such as `|x| x` since the closure may coerce `x` into a different type
@@ -188,11 +166,6 @@ phrase. Meanwhile, `mem` does not relate to `identity` other than that both
 deal with move semantics. Therefore, `convert` is the better choice. Including
 it in `mem` is still an alternative, but as explained, it isn't fitting.
 
-The rationale for including this in the prelude has been previously
-explained in the [motivation] section. It is an alternative to not do that.
-If the function is not in the prelude, the utility is so low that it may
-be a better idea to not add the function at all.
-
 Naming the function `id` instead of `identity` is a possibility.
 This name is however ambiguous with *"identifier"* and less clear
 wherefore `identifier` was opted for.
@@ -201,3 +174,38 @@ wherefore `identifier` was opted for.
 [unresolved]: #unresolved-questions
 
 There are no unresolved questions.
+
+# Possible future work
+
+A previous iteration of this RFC proposed that the `identity` function
+should be added to prelude of both libcore and libstd.
+However, the library team decided that for the time being, it was not sold on
+this inclusion. As we gain usage experience with using this function,
+it is possible to revisit this in the future if the team chances its mind.
+
+The section below details, for posterity,
+the argument for inclusion that was previously in the [motivation].
+
+## The case for inclusion in the prelude
+
+Let's compare the effort required, assuming that each letter
+typed has a uniform cost with respect to effort.
+
+```rust
+use std::convert::identity; iter.filter_map(identity)
+
+fn identity<T>(x: T) -> T { x } iter.filter_map(identity)
+
+iter.filter_map(::std::convert::identity)
+
+iter.filter_map(identity)
+```
+
+Comparing the length of these lines, we see that there's not much difference in
+length when defining the function yourself or when importing or using an absolute
+path. But the prelude-using variant is considerably shorter. To encourage the
+use of the function, exporting to the prelude is therefore a good idea.
+
+In addition, there's an argument to be made from similarity to other things in
+`core::convert` as well as `drop` all of which are in the prelude. This is
+especially relevant in the case of `drop` which is also a trivial function.
