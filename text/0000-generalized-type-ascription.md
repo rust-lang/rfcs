@@ -60,14 +60,9 @@ but thus far not stabilized, [RFC 803][RFC_803_motivation] which introduces
 type ascription in expression contexts as `expr : T`. We reinforce that RFC
 with more motivation:
 
-1. Introducing a temporary `let` binding of form `let ident: type = expr;`,
-   as a substitute for type-ascription, forces programmers to invent artificial
-   variable names. Naming is hard (particularly for those who are of the
-   [pointfree persuasion]). As [the saying goes][TwoHardThings]:
-   > “There are only two hard things in Computer Science: cache invalidation and naming things”.
-
-   By reducing the pressure on Rustaceans to name artificial units
-   we can let programmers focus on naming where it matters more (API boundaries).
+1. With type ascription, you can annotate smaller bits and subsets of what you
+   previously needed to. This especially holds in pattern contexts.
+   This will be made clear later on in this RFC.
 
 2. Type ascription helps retain writing flow.
    When you are writing a complex chain of methods,
@@ -81,15 +76,20 @@ with more motivation:
    Similarly, type ascription also follows the reading flow well and does so
    in a non-intrusive way.
 
-3. When you want to pass an expression such as `try { .. }` or
+3. Introducing a temporary `let` binding of form `let ident: type = expr;`,
+   as a substitute for type-ascription, forces programmers to invent artificial
+   variable names. Naming is hard (particularly for those who are of the
+   [pointfree persuasion]). As [the saying goes][TwoHardThings]:
+   > “There are only two hard things in Computer Science: cache invalidation and naming things”.
+
+   By reducing the pressure on Rustaceans to name artificial units
+   we can let programmers focus on naming where it matters more (API boundaries).
+
+4. When you want to pass an expression such as `try { .. }` or
    `async { .. }` to a function which expects a generic `R: Try` or `R: Future`,
    type inference can fail. In this case,
    it is more ergonomic to type-ascribe with `try : R { .. }` instead
    of first introducing an artificial binding.
-
-4. With type ascription, you can annotate smaller bits and subsets of what you
-   previously needed to. This especially holds in pattern contexts.
-   This will be made clear later on in this RFC.
 
 5. Turbofish is not always possible! Consider for example:
 
