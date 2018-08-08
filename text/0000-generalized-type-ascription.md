@@ -39,10 +39,9 @@ fn foo(Wrapping(alpha: usize)) {}
 Here, the underlined bits are patterns.
 Note however that this RFC does *not* introduce global type inference.
 
-Finally, we lint (warn-by-default) when a user writes
-`Foo { $field: $ident : $type }`
-and the compiler instead suggests:
-`Foo { $field: ($ident : $type) }`.
+Finally, when a user writes `Foo { $field: $pat : $type }`, and when
+`$pat` and `$type` are syntactically α-equivalent, the compiler emits a
+warn-by-default lint suggesting: `Foo { $field: ($pat : $type) }`.
 
 # Motivation
 [motivation]: #motivation
@@ -870,7 +869,11 @@ let x = Foo { bar: (x : Type) }
 let Foo { bar: (x: Type) } = ...;
 ```
 
-This lint only applies when `x` is an identifier and not otherwise.
+This lint only applies when after giving fresh names for all identifiers inside
+`x` and `Type`, their token streams match (α-equivalence).
+For example, this means that if you write `let Foo { bar: x : u32 }`
+or `let Foo { bar: &x : &X }` the compiler will emit a warning.
+However, if you write `let Foo { bar: x : Vec<u8> }` it will not.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -1010,14 +1013,17 @@ ty_or_pat : pat ;
 If and only if when the parser encounters, both in pattern and expression contexts:
 
 ```rust
-$path { $ident: $ident : $ty }
+$path { $ident: $pat : $ty }
 ```
 
-where `$path`, `$ident`, and `$ty` are the usual meta variables, the compiler
-will emit a warn-by-default lint urging the user to instead write:
+where `$path`, `$pat`, and `$ty` are the usual meta variables,
+and where `$pat` and `$ty` are α-equivalent token streams
+(checkable by generating fresh names for all identifiers and
+testing if they are the same, ignoring span information),
+the compiler will emit a warn-by-default lint urging the user to instead write:
 
 ```rust
-$path { $ident: ($ident : $ty) }
+$path { $ident: ($pat : $ty) }
 ```
 
 In pattern contexts, wrapping in parenthsis is made valid by
