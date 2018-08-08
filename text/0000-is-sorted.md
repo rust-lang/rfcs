@@ -19,7 +19,7 @@ is sorted. The most important use cases are probably **unit tests** and
 The lack of an `is_sorted()` function in Rust's standard library has led to
 [countless programmers implementing their own](https://github.com/search?l=Rust&q=%22fn+is_sorted%22&type=Code&utf8=%E2%9C%93).
 While it is possible to write a one-liner using iterators (e.g.
-`(0..arr.len() - 1).all(|i| arr[i] < arr[i + 1])`), it is still unnecessary
+`(0..arr.len() - 1).all(|i| arr[i] <= arr[i + 1])`), it is still unnecessary
 overhead while writing *and* reading the code.
 
 In [the corresponding issue on the main repository](https://github.com/rust-lang/rust/issues/44370)
