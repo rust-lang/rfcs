@@ -1137,50 +1137,184 @@ Otherwise, the semantics are those of the implicit coercion.
 A type of a formal parameter of a function is allowed to be elided and inferred
 if and only if the type of the formal parameter is fully determined
 (has no unification variables left) by looking solely at the signature of the
-function, including patterns, quantified type variables, and `where` clauses.
+function, including patterns, quantified variables, and `where` clauses.
 
 The type checker is not allowed to look at the function body and neither is it
 permitted to take into account the type information implied by a trait
 implementation being well-formed.
 
+With respect to lifetime elision, when generating input lifetime parameters,
+the most general setup of lifetimes is inferred such that:
+
++ a struct using the same lifetime on any number of fields get assigned
+  the same distinct lifetime.
+
++ patterns for each generic parameter of a struct allowed to be assigned
+  the set of distinct lifetimes each pattern itself generates.
+  This rule is applied inductively such that given:
+
+  ```rust
+  struct Product<A, B>(A, B);
+
+  impl SomeType {
+      fn foo(&self, Product(x: &u8, Product(y: &u16, z: &u32))) -> &str { .. }
+  }
+  ```
+
+  the type of `foo` is inferred to be:
+
+  ```rust
+  for<'self, 'a, 'b, 'c>
+      fn(
+          &'self SomeType,
+          Product<
+              &'a u8,
+              Product<
+                  &'b u16,
+                  &'c u32
+              >
+          >
+      ) -> &'self str
+  ```
+
+[current rules]: https://doc.rust-lang.org/stable/reference/lifetime-elision.html
+
+With respect to output lifetime elision, the [current rules] apply.
+
 The following example definitions are accepted:
 
 ```rust
 // `x` is fully determined by the ascription.
-// The type of `good_0: fn(usize) -> ()`.
+// There are no unification variables.
+// Thus, the type of `good_0 : fn(usize) -> ()`.
 fn good_0(x: usize) {}
-
-struct Wrapping<T>(T);
-
-// Type-variable T is determined by `x: usize`.
-// The type of `good_1: fn(Wrapping<usize>) -> ()`.
-fn good_1(Wrapping(x: usize)) {}
-
-// Type-variable T is determined by `x: usize`.
-// The type of `good_2: for<'a> fn(Wrapping<&'a usize>) -> ()`.
-fn good_2(Wrapping(x: &usize)) {}
-
-// Same here. Determined by `x: T`.
-// The type of `good_3: for<T> fn(Wrapping<T>) -> ()`.
-fn good_3<T>(Wrapping(x: T)) {}
-
-// A type variable is induced by `impl Display`
-// and then `typeof(x)` is that variable.
-// The type of `good_4: for<T: Display> fn(Wrapping<T>) -> ()`.
-fn good_4(Wrapping(x: impl Display)) {}
 
 struct Foo(usize);
 
 // `Foo` has no type variables to constrain.
-// The type of `good_5: fn(Foo) -> ()`.
-fn good_5(Foo(x)) {}
+// Thus, `good_1 : fn(Foo) -> ()`.
+fn good_1(Foo(x)) {}
+
+struct Wrapping<T>(T);
+
+// 1) Looking at `Wrapping(_)`, the compiler infers that the parameter must
+//    be of type `Wrapping<?T>` and introduces a unification variable `?T`.
+//
+// 2) Looking at `x: usize`, the compiler determines that `?T = usize`.
+//
+// 3) Thus, `good_2 : fn(Wrapping<usize>) -> ()`.
+fn good_2(Wrapping(x: usize)) {}
+
+// 1) As before.
+//
+// 2) Looking at `x: &usize`, the compiler determines that `?T = &'?a usize`.
+//
+// 3) Looking at `'?a`, the compiler:
+//    a) introduces an input lifetime parameter `'a`
+//    b) and substitutes `'?a` for it.
+//
+// 4) Thus, `good_3 : for<'a> fn(Wrapping<&'a usize>) -> ()`.
+fn good_3(Wrapping(x: &usize)) {}
+
+// 2) The compiler sees `x: T` and infers that `?T = T`.
+//
+// 3) Thus, `good_4 : for<T> fn(Wrapping<T>) -> ()`.
+fn good_4<T>(Wrapping(x: T)) {}
+
+// 2) The compiler sees `x: &'a T` and infers that `?T = &'?a T`.
+//
+// 3) Looking at `'&'?a T`, the compiler:
+//    a) introduces an input lifetime parameter `'a`
+//    b) and substitutes `'?a` for it.
+//    c) adds a bound `T: 'a`.
+//
+// 4) Thus, `good_5 : for<'a, T: 'a> fn(Wrapping<T>) -> ()`.
+fn good_5<T>(Wrapping(x: &T)) {}
+
+// 2) Looking at `x: impl Display`, the compiler:
+//    a) adds a type variable `U` and adds the bound `T: Display`.
+//    b) substitutes `?T` for `U`.
+//
+// 3) Thus, `good_6 : for<T: Display> fn(Wrapping<T>) -> ()`.
+fn good_6(Wrapping(x: impl Display)) {}
 
 trait Trait { type Assoc; }
 
-// `T` is fully constrained by `X::Assoc`
-// which in turn is determined by `X: Trait`.
-// The type of `good_6: for<X: Trait> fn(Wrapping<X::Assoc>) -> ()`.
-fn good_6<X: Trait>(Wrapping(x: X::Assoc))
+// 2) Looking at `x: <X as Trait>::Assoc` the compiler:
+//
+//    a) Verifies that `X: Trait` and that `Trait` has an associated type `Assoc`.
+//    b) Substitutes `?T` for `<X as Trait>::Assoc`.
+//
+// 3) Thus, `good_7 : for<X: Trait> fn(Wrapping<X::Assoc>) -> ()`.
+fn good_7<X: Trait>(Wrapping(x: <X as Trait>::Assoc)) {}
+
+struct Bar<'a>(&'a bool);
+
+// 2) The compiler sees `x: Bar<'_>` and infers that `?T = Bar<'?a>`.
+//
+// 3) Looking at `'Bar<'?a>`, the compiler:
+//    a) introduces an input lifetime parameter `'a`
+//    b) and substitutes `'?a` for it.
+//
+// 4) Thus, `good_8 : for<'a> fn(Wrapping<Bar<'a>>) -> ()`.
+fn good_8(Wrapping(x: Bar<'_>)) {}
+
+struct Quux<'a, 'b: 'a>(&'a Foo, Bar<'b>);
+
+// 1) Looking at `Quux(x, $pat)`, the compiler infers `Quux<'?a, '?b>`
+//    where `'?b: '?a`.
+//
+// 2) Looking at `'Quux<'?a, '?b>`, the compiler:
+//    a) introduces input lifetime parameters `'a` and `'b`.
+//    b) adds a bound `'b: 'a`.
+//    c) and substitutes `'?a` and `'?b` for `'a` and `'b`.
+//    d) infers that `$pat : Bar<'b>` must hold.
+//
+// 3) Looking at `$pat = Bar(y)`, the compiler checks that `Bar(y) : Bar<'b>`.
+//
+// 4) Thus, `good_9 : for<'a, 'b: 'a> fn(Quux<'a, 'b>) -> ()`.
+fn good_9(Quux(x, Bar(y))) {}
+
+struct Product<A, B>(A, B);
+
+// 1) Looking at `Product($pat_1, $pat_2)`, the compiler infers that the
+//    parameter must be of type `Product<?T, ?U>` and adds unification variables
+//    `?T` and `?U`.
+//
+// 2) Looking at `$pat_1 = x: &i32`, the compiler:
+//    a) infers that `?T = &'?a i32`.
+//    b) introduces an input lifetime parameter `'a`.
+//    c) substitutes `'?a` for `'a`.
+//
+// 3) Looking at `$pat_2 = y: &u32`, the compiler:
+//    a) infers that `?T = &'?b u32`.
+//    b) introduces an input lifetime parameter `'b`.
+//    c) substitutes `'?b` for `'b`.
+//
+// 4) Thus, `good_10 : for<'a, 'b> fn(Product<&'a i32, &'b u32>) -> ()`.
+fn good_10(Product(x: &i32, y: &u32)) {}
+
+struct Wibble<'a>(&'a i32, &'a u32);
+
+// 1) Looking at `Wibble($pat_1, $pat_2)`, the compiler infers that the
+//    parameter must be of type `Wibble<'?a>` and adds unification variable `'?a`.
+//    a) The compiler introduces an input lifetime parameter `'a`
+//       and substitutes `'?a` for `'a`.
+//    b) Infers that `$pat_1 : &'a i32`  must hold.
+//    c) Infers that `$pat_2 : &'a u32`  must hold.
+//
+// 2) Looking at `$pat_1 = x: &i32`, the compiler:
+//    a) infers that `x : &'?b i32` and adds unification variable `'?b`.
+//    b) checks that `x : &'a i32`.
+//    c) this entails that `'?b = 'a` and so `'?b` is substituted for `'a`.
+//
+// 3) Looking at `$pat_2 = x: Bar<'_>`, the compiler:
+//    a) infers that `x : &'?c i32` and adds unification variable `'?c`.
+//    b) checks that `x : &'a i32`.
+//    c) this entails that `'?c = 'a` and so `'?c` is substituted for `'a`.
+//
+// 4) Thus, `good_11 : for<'a> fn(Wibble<'a>) -> ()`.
+fn good_11(Wibble(x: &i32, y: Bar<'_>)) {}
 ```
 
 But the following definitions are rejected:
