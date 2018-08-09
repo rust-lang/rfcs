@@ -19,8 +19,8 @@ is sorted. The most important use cases are probably **unit tests** and
 The lack of an `is_sorted()` function in Rust's standard library has led to
 [countless programmers implementing their own](https://github.com/search?l=Rust&q=%22fn+is_sorted%22&type=Code&utf8=%E2%9C%93).
 While it is possible to write a one-liner using iterators (e.g.
-`(0..arr.len() - 1).all(|i| arr[i] <= arr[i + 1])`), it is still unnecessary
-overhead while writing *and* reading the code.
+`(0..arr.len() - 1).all(|i| arr[i] <= arr[i + 1])`¹), it is still unnecessary
+mental overhead while writing *and* reading the code.
 
 In [the corresponding issue on the main repository](https://github.com/rust-lang/rust/issues/44370)
 (from which a few comments are referenced) everyone seems to agree on the
@@ -39,6 +39,12 @@ D's [`std.algorithm.sorting.is_sorted`](https://dlang.org/library/std/algorithm/
 and others. (Curiously, many (mostly) more high-level programming language –
 like Ruby, Javascript, Java, Haskell and Python – seem to lack such a function.)
 
+¹ In the initial version of this RFC, this code snippet contained a bug
+(`<` instead of `<=`). This subtle mistake happens very often: in this RFC,
+[in the discussion thread about this RFC](https://github.com/rust-lang/rfcs/pull/2351#issuecomment-370126518),
+in [this StackOverflow answer](https://stackoverflow.com/posts/51272639/revisions)
+and in many more places. Thus, avoiding this common bug is another good
+reason to add `is_sorted()`.
 
 ## Fast Implementation via SIMD
 
