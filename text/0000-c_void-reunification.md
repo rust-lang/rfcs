@@ -171,10 +171,10 @@ So the `ffi` module seems more appropriate than `os` for C types, and it already
 Following this logic to this conclusion,
 perhaps the rest of `std::os::raw` should also move to `std::ffi` as well,
 and the former module be deprecated eventually.
-This move to a more logical location may or may not be worth the churn.
+This is left for a future RFC.
 
 This RFC does not propose any change such as moving to libcore for the C types other than `c_void`.
 
 Although some in previous discussions have expressed desire for using C-compatible types
 without linking to the C runtime libray (which the `libc` crate does) or depending on `std`.
-This use case is left for a future proposal or RFC.
+This use case is also left for a future proposal or RFC.
