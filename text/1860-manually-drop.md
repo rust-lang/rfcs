@@ -46,29 +46,30 @@ annotate the dependencies somehow.
 # Detailed design
 [design]: #detailed-design
 
-This RFC proposes adding following `union` to the `core::mem` (and by extension the `std::mem`)
+This RFC proposes adding the following `struct` as a new lang item to the `core::mem` (and by extension the `std::mem`)
 module. `mem` module is a most suitable place for such type, as the module already a place for
 functions very similar in purpose: `drop` and `forget`.
 
 ```rust
 /// Inhibits compiler from automatically calling `T`’s destructor.
+#[lang = "manually_drop"]
 #[unstable(feature = "manually_drop", reason = "recently added", issue = "0")]
-#[allow(unions_with_drop_fields)]
-pub union ManuallyDrop<T>{ value: T }
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct ManuallyDrop<T> {
+    value: T,
+}
 
 impl<T> ManuallyDrop<T> {
     /// Wraps a value to be manually dropped.
     #[unstable(feature = "manually_drop", reason = "recently added", issue = "0")]
     pub fn new(value: T) -> ManuallyDrop<T> {
-        ManuallyDrop { value: value }
+        ManuallyDrop { value }
     }
 
     /// Extracts the value from the ManuallyDrop container.
     #[unstable(feature = "manually_drop", reason = "recently added", issue = "0")]
-    pub fn into_inner(self) -> T {
-        unsafe {
-            self.value
-        }
+    pub fn into_inner(slot: ManuallyDrop<T>) -> T {
+        slot.value
     }
 
     /// Manually drops the contained value.
@@ -92,11 +93,12 @@ impl<T> Deref for ManuallyDrop<T> {
 impl<T> DerefMut for ManuallyDrop<T> {
     // ...
 }
-
-// Other common impls such as `Debug for T: Debug`.
 ```
 
-Let us apply this union to a somewhat expanded example from the motivation:
+The lang item will be treated specially by the compiler to not emit any drop
+glue for this type.
+
+Let us apply `ManuallyDrop` to a somewhat expanded example from the motivation:
 
 ```rust
 struct FruitBox {
