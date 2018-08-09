@@ -36,7 +36,7 @@ Before we start, we should keep in mind that firstly this RFC enhances the searc
 
 This means, for example, you can create a example project `abc` using `cargo new --example abc`, and you may run it with `cargo run --example abc` as it now searches for all `examples/abc.rs` file, `examples/abc/main.rs` and `examples/abc/` project folder. 
 
-An example project could include its own tests and benches, but to make things more clear, it's not suggested to have nested example projects inside. Building a nested example project is possible, but as the only way to run, test or bench the nested example is by adding `[workspace]` members and run with `cargo run -p`, it's not convenient by now to deal with the nested example project directly using cargo command from the root project.
+In addition, an example project may include its own tests and benches. By using `cargo test --examples` etc., tests or benches for example projects could be executed all at one time. But to make things clear, it is possible but not suggested to create examples for examples. 
 
 ## When to use project-based examples
 
@@ -129,7 +129,7 @@ By including `cargo new --example` and enhancing `cargo run --example` etc., thi
 [reference-level-explanation]: #reference-level-explanation
 
 ## Enhanced `--example` for run, test and bench
-To implement this feature, firstly we enlarges `--example` search scope. We've already got `examples/*.rs` and `examples/**/main.rs` searched by cargo every time it tries to run, test or bench an example. But to implement `examples/**/` project we should detect if this folder contains a valid cargo project. This could be done by detecting `Cargo.toml` the same way we detect when trying to run `cargo run` in an invalid folder for cargo projects.
+To implement this feature, firstly we enlarges `--example` search scope. We've already got `examples/*.rs` and `examples/**/main.rs` searched by cargo every time it tries to run, test or bench an example. But to implement `examples/**/` project we should detect if this folder contains a valid cargo project. This could be done by detecting `Cargo.toml` the same way we detect when trying to run `cargo run` in an invalid folder for cargo projects. As for `--examples` on `test` and `bench`, the search scope is also enlarged to test or bench all examples at one time, including all project-based example projects.
 
 When operating example project, we compile the whole example project as what we do on the root project. We could share the `target` folder with it then incremental compiling can be enabled to save time. The target of example projects are stored just like what we did for file-based examples.
 
@@ -173,5 +173,4 @@ None by now.
 [unresolved-questions]: #unresolved-questions
 
 - Is there any more graceful way to replace the `my_project = { path = "../.." }` in `Cargo.toml` file for all example projects?
-- Will it be useful if we provide an approach to test or bench *all examples* at one time in the future?
 - Should path-related macro `file!()` refer the path related to the root project path?
