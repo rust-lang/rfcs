@@ -1652,6 +1652,9 @@ both in expression and pattern contexts is that they don't mesh well with
 struct literal expressions and their corresponding patterns.
 For example, when you write `Foo { bar: baz : u8 }` in a pattern context,
 you *have* to introduce the binding `baz` to be able to type-ascribe `bar`.
+That is, you may not do field punning in expression or pattern contexts
+combined with ascription like so: `Foo { bar : Type }` because `Type`
+would be ambiguous with `Foo { bar: binding }`.
 
 In this context, the syntax is not as readable and ergonomic as we would like.
 However, it is our contention that the need to use the syntax will not be that
@@ -1702,6 +1705,9 @@ We argue that this does not read well as it has the wrong tense ("type" instead
 of "typed at"). As noted above it is also inconsistent and would unnecessarily
 introduce two ways to do the same thing.
 
+However, one benefit of this syntax would be to allow to have field punning
+with type ascription. An example: `MyStruct { field : type Foo }`.
+
 ### Arrow, `->` syntax
 
 [rust-lang/rust#50547]: https://github.com/rust-lang/rust/issues/50547
@@ -1744,6 +1750,29 @@ and field projection, it also forces the user to wrap the type in parenthesis.
 
 Furthermore, the method-like nature of a macro is probably sub-optimal for
 ascription in pattern contexts.
+
+### Troubles with field punning
+
+As we've previously noted in the [drawbacks], one disadvantage to the
+currently proposed type ascription operator syntax is that it clashes
+with field punning expressions and patterns. That is, if you say:
+`MyStruct { field: Type }`, this is ambiguous with `MyStruct { field: binding }`.
+
+Having said this, there are 3 chief ways to deal with this while retaining
+`:` as a syntax:
+
+1. Accept it and move on. This part of the language grammar will be somewhat
+   unergonomic, but consistency and avoiding ad-hoc syntax is more important.
+   This the proposed solution in this RFC.
+
+2. Accept `MyStruct { field: Type }` where `Type` couldn't be a pattern.
+   Examples of this include `MyStruct { field: Vec<Foo> }`.
+   However, this is an ad-hoc syntax that is likely brittle.
+
+3. Invent some ad-hoc disambiguation syntax. For example, we could entertain
+   the syntax `MyStruct { (field: Type) }` which never parses today.
+   While this could be made to work technically, it does not seem to carry
+   its weight since we expect `MyStruct { field: Type }` to be somewhat rare.
 
 ### Inverted order: `$type op $expr`
 
