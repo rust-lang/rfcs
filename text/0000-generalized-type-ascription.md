@@ -2043,7 +2043,7 @@ Thus, we conclude that match ergonomics should apply.
 One of the rules we've imposed is that each lifetime position mentioned
 in a type fragment of some pattern in a function parameter introduces
 a distinct lifetime. However, this means that type inference may sometimes
-introduce two many lifetimes for one type and therefore reject the definition.
+introduce too many lifetimes for one type and therefore reject the definition.
 This happened in the case of:
 
 ```rust
