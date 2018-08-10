@@ -1751,29 +1751,6 @@ and field projection, it also forces the user to wrap the type in parenthesis.
 Furthermore, the method-like nature of a macro is probably sub-optimal for
 ascription in pattern contexts.
 
-### Troubles with field punning
-
-As we've previously noted in the [drawbacks], one disadvantage to the
-currently proposed type ascription operator syntax is that it clashes
-with field punning expressions and patterns. That is, if you say:
-`MyStruct { field: Type }`, this is ambiguous with `MyStruct { field: binding }`.
-
-Having said this, there are 3 chief ways to deal with this while retaining
-`:` as a syntax:
-
-1. Accept it and move on. This part of the language grammar will be somewhat
-   unergonomic, but consistency and avoiding ad-hoc syntax is more important.
-   This the proposed solution in this RFC.
-
-2. Accept `MyStruct { field: Type }` where `Type` couldn't be a pattern.
-   Examples of this include `MyStruct { field: Vec<Foo> }`.
-   However, this is an ad-hoc syntax that is likely brittle.
-
-3. Invent some ad-hoc disambiguation syntax. For example, we could entertain
-   the syntax `MyStruct { (field: Type) }` which never parses today.
-   While this could be made to work technically, it does not seem to carry
-   its weight since we expect `MyStruct { field: Type }` to be somewhat rare.
-
 ### Inverted order: `$type op $expr`
 
 One final idea for a syntax is to reverse the order of the type and the
@@ -1850,6 +1827,29 @@ However, there are some notable problems with inverting the operator:
       .map(other_computation) : Vec<usize>
       .into() : Rc<[_]>;
   ```
+
+### Troubles with field punning
+
+As we've previously noted in the [drawbacks], one disadvantage to the
+currently proposed type ascription operator syntax is that it clashes
+with field punning expressions and patterns. That is, if you say:
+`MyStruct { field: Type }`, this is ambiguous with `MyStruct { field: binding }`.
+
+Having said this, there are 3 chief ways to deal with this while retaining
+`:` as a syntax:
+
+1. Accept it and move on. This part of the language grammar will be somewhat
+   unergonomic, but consistency and avoiding ad-hoc syntax is more important.
+   This the proposed solution in this RFC.
+
+2. Accept `MyStruct { field: Type }` where `Type` couldn't be a pattern.
+   Examples of this include `MyStruct { field: Vec<Foo> }`.
+   However, this is an ad-hoc syntax that is likely brittle.
+
+3. Invent some ad-hoc disambiguation syntax. For example, we could entertain
+   the syntax `MyStruct { (field: Type) }` which never parses today.
+   While this could be made to work technically, it does not seem to carry
+   its weight since we expect `MyStruct { field: Type }` to be somewhat rare.
 
 ## [RFC 1685] and deprecation schedule
 
