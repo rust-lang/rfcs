@@ -1139,182 +1139,350 @@ if and only if the type of the formal parameter is fully determined
 (has no unification variables left) by looking solely at the signature of the
 function, including patterns, quantified variables, and `where` clauses.
 
-The type checker is not allowed to look at the function body and neither is it
-permitted to take into account the type information implied by a trait
-implementation being well-formed.
+We impose the following rules:
 
-With respect to lifetime elision, when generating input lifetime parameters,
-the most general setup of lifetimes is inferred such that:
+1. The type checker is not allowed to look at the function body and neither is
+   it permitted to take into account the type information implied by a trait
+   implementation being well-formed.
 
-+ a struct using the same lifetime on any number of fields get assigned
-  the same distinct lifetime.
+2. With respect to lifetime and type parameters, none will be added due
+   to type inference. However, the compiler will generate distinct lifetimes
+   for each lifetime position in the type portion, if such exist, of a pattern.
+   This applies recursively in each parameter.
 
-+ patterns for each generic parameter of a struct allowed to be assigned
-  the set of distinct lifetimes each pattern itself generates.
-  This rule is applied inductively such that given:
+   Lifetime positions are:
+   1. Anywhere `'_` is found.
+   2. Anywhere `&[mut] $type` is found.
 
-  ```rust
-  struct Product<A, B>(A, B);
+   [RFC 2115]: https://github.com/rust-lang/rfcs/blob/master/text/2115-argument-lifetimes.md#the-wildcard-lifetime
 
-  impl SomeType {
-      fn foo(&self, Product(x: &u8, Product(y: &u16, z: &u32))) -> &str { .. }
-  }
-  ```
+   Finally, due to backwards compatibility with Rust 2015,
+   for a parameter which has a pattern that matches `$pat : $type`,
+   if the type definition corresponding to `$type` has lifetimes which are not
+   specified in `$type`, those are also added and a deprecation warning due
+   to [RFC 2115] is emitted.
 
-  the type of `foo` is inferred to be:
+3. If the pattern of a parameter has `&[mut] pat` patterns anywhere,
+   including recursively, then the full type of the top level pattern
+   must be specified. In specifying the full type, lifetimes may be elided.
 
-  ```rust
-  for<'self, 'a, 'b, 'c>
-      fn(
-          &'self SomeType,
-          Product<
-              &'a u8,
-              Product<
-                  &'b u16,
-                  &'c u32
-              >
-          >
-      ) -> &'self str
-  ```
+Given the following type definitions:
 
-[current rules]: https://doc.rust-lang.org/stable/reference/lifetime-elision.html
+```rust
+struct Foo(usize);
 
-With respect to output lifetime elision, the [current rules] apply.
+struct Wrapping<T>(T);
+
+struct Product<A, B>(A, B);
+
+trait Trait { type Assoc; }
+
+struct Bar<'a>(&'a bool);
+
+struct Wibble<'a>(&'a i32, Bar<'a>);
+
+struct Quux<'a, 'b: 'a>(&'a Foo, Bar<'b>);
+
+struct Beta<'a>(&'a Bar<'a>);
+```
 
 The following example definitions are accepted:
 
 ```rust
-// `x` is fully determined by the ascription.
-// There are no unification variables.
-// Thus, the type of `good_0 : fn(usize) -> ()`.
+// 1) No lifetime positions, so none are generated.
+// 2) Looking at `x: usize` we determine that `x : usize`.
+// -----------------------------------------------------------------------------
+// + `good_0 : fn(usize) -> ()`.
+// + `x : usize`.
 fn good_0(x: usize) {}
 
-struct Foo(usize);
+// 1) We find the in-band lifetime `'a` and add it as an input lifetime parameter.
+// 2) Looking at `x: usize` we determine that `x : &'a usize`.
+// -----------------------------------------------------------------------------
+// + `good_1 : for<'a> fn(&'a usize) -> ()`.
+// + `x : &'a usize`.
+fn good_1(x: &'a usize) {}
 
-// `Foo` has no type variables to constrain.
-// Thus, `good_1 : fn(Foo) -> ()`.
-fn good_1(Foo(x)) {}
+// Nothing to infer, everything is explicitly quantified and specified.
+// -----------------------------------------------------------------------------
+// + `good_2 : for<'a> fn(&'a usize) -> ()`.
+// + `x : &'a usize`
+fn good_2<'a>(x: &'a usize) {}
 
-struct Wrapping<T>(T);
+// 1) We find one lifetime position, we introduce and substitute `'a`
+//    for it and add it as an input lifetime parameter.
+// 2) The pattern is now `&x: &'a usize`. The full type is known.
+// 3) Since `&x: &'a usize`, then `x: usize`.
+// -----------------------------------------------------------------------------
+// + `good_3 : for<'a> fn(&'a usize) -> ()`.
+// + `x : usize`.
+fn good_3(&x: &usize) {}
 
-// 1) Looking at `Wrapping(_)`, the compiler infers that the parameter must
-//    be of type `Wrapping<?T>` and introduces a unification variable `?T`.
-//
-// 2) Looking at `x: usize`, the compiler determines that `?T = usize`.
-//
-// 3) Thus, `good_2 : fn(Wrapping<usize>) -> ()`.
-fn good_2(Wrapping(x: usize)) {}
+// 1) No lifetime positions.
+// 2) Looking at `ref x: usize`, the type of the parameter is `usize`.
+// -----------------------------------------------------------------------------
+// + `good_4 : for fn(usize) -> ()`.
+// + `x : &'<tmp> usize`.
+fn good_4(ref x: usize) {}
 
-// 1) As before.
-//
-// 2) Looking at `x: &usize`, the compiler determines that `?T = &'?a usize`.
-//
-// 3) Looking at `'?a`, the compiler:
-//    a) introduces an input lifetime parameter `'a`
-//    b) and substitutes `'?a` for it.
-//
-// 4) Thus, `good_3 : for<'a> fn(Wrapping<&'a usize>) -> ()`.
-fn good_3(Wrapping(x: &usize)) {}
+// 1) No lifetime positions.
+// 2) Looking at `Foo($pat)` we know that `parameter : Foo` and that `$pat: usize`.
+// 3) `$pat = x`, thus `x: usize`.
+// -----------------------------------------------------------------------------
+// + `good_5 : fn(Foo) -> ()`.
+// + `x : usize`.
+fn good_5(Foo(x)) {}
 
-// 2) The compiler sees `x: T` and infers that `?T = T`.
-//
-// 3) Thus, `good_4 : for<T> fn(Wrapping<T>) -> ()`.
-fn good_4<T>(Wrapping(x: T)) {}
+// 1) Looking at `x: Bar`, we apply the back-compat rule and find one lifetime
+//    parameter `'a` which we quantify.
+// 2) We emit a warning.
+// -----------------------------------------------------------------------------
+// + `good_6 : for<'a> fn(Bar<'a>) -> ()`.
+// + `x : usize`.
+fn good_6(x: Bar) {}
 
-// 2) The compiler sees `x: &'a T` and infers that `?T = &'?a T`.
-//
-// 3) Looking at `'&'?a T`, the compiler:
-//    a) introduces an input lifetime parameter `'a`
-//    b) and substitutes `'?a` for it.
-//    c) adds a bound `T: 'a`.
-//
-// 4) Thus, `good_5 : for<'a, T: 'a> fn(Wrapping<T>) -> ()`.
-fn good_5<T>(Wrapping(x: &T)) {}
+// 1) Looking at `Foo(x): &_` we find one input lifetime position and quantify
+//    it as `'a`. We substitute the pattern for `Foo(x): &'a _`.
+// 2) Seeing `Foo(x): &'a _`, we substitute `_` for a new
+//    unification variable `?T`. We now have `Foo(x): &'a ?T`.
+// 3) Seeing `Foo(x)` we know that `?T = Foo` and substitute to it.
+//    We know that `parameter : &'a Foo`.
+// 4) We know that `x : &'a usize` due to the match mode.
+// -----------------------------------------------------------------------------
+// + `good_7 : for<'a> fn(&'a Foo) -> ()`.
+// + `x : &'a usize`.
+fn good_7(Foo(x): &_) {}
 
-// 2) Looking at `x: impl Display`, the compiler:
-//    a) adds a type variable `U` and adds the bound `T: Display`.
-//    b) substitutes `?T` for `U`.
-//
-// 3) Thus, `good_6 : for<T: Display> fn(Wrapping<T>) -> ()`.
-fn good_6(Wrapping(x: impl Display)) {}
+// 1) We find one lifetime position, quantify it as `'a`.
+//    We now have `Foo(ref): &'a _`.
+// 2) Seeing that, we substitute `_` for unification variable `?T`.
+//    We now have `Foo(ref): &'a ?T`.
+// 3) Seeing `Foo(x)` we know that `?T = Foo`. Thus `parameter : &'a Foo`.
+// 4) Seeing `ref x`, we know that `x : &'a usize`.
+// -----------------------------------------------------------------------------
+// + `good_8 : for<'a> fn(&'a Foo) -> ()`.
+// + `x : &'a usize`.
+fn good_8(Foo(ref x): &_) {}
 
-trait Trait { type Assoc; }
+// 1) No lifetime positions.
+// 2) Looking at `Foo($pat)` we know that `parameter : Foo`
+//    and that `$pat: usize`.
+// 2) Looking at `$pat = ref x` we know that `ref x: usize`.
+//    We know therefore that `x: &'<tmp> usize`.
+// -----------------------------------------------------------------------------
+// + `good_9 : fn(Foo) -> ()`.
+// + `x : &'<tmp> usize`.
+fn good_9(Foo(ref x)) {}
 
-// 2) Looking at `x: <X as Trait>::Assoc` the compiler:
-//
-//    a) Verifies that `X: Trait` and that `Trait` has an associated type `Assoc`.
-//    b) Substitutes `?T` for `<X as Trait>::Assoc`.
-//
-// 3) Thus, `good_7 : for<X: Trait> fn(Wrapping<X::Assoc>) -> ()`.
-fn good_7<X: Trait>(Wrapping(x: <X as Trait>::Assoc)) {}
+// 1) No lifetime positions.
+// 2) Seeing an array with 3 elements, we know that `parameter : [?T; 3]`
+//    for some `?T` type.
+// 3) Seeing `a: u8`, we know that `?T = u8` and that `a: u8`.
+// 4) Seeing `b`, we know that because `parameter : [u8; 3]` that `b: u8`.
+// 5) Seeing `ref c`, we know that `c: &'<tmp> u8`.
+// -----------------------------------------------------------------------------
+// + `good_10 : fn([u8; 3]) -> ()`.
+// + `a : u8`.
+// + `b : u8`.
+// + `c : &'<tmp> u8`.
+fn good_10([a: u8, b, ref c]) {}
 
-struct Bar<'a>(&'a bool);
+// 1) No lifetime positions.
+// 2) Same as `good_10`.
+// 3) Seeing `a: impl Debug` we quantify a type parameter `T: Debug` and
+//    substitute `?T` for `T`.
+//    We mark the function as not turbo-fishable.
+// 4) Seeing `a` and because `parameter: [T; 3]` we know that `a: T`.
+//    Repeat for `b`.
+// -----------------------------------------------------------------------------
+// + `good_11 : for<T: Debug> fn([T; 3]) -> ()`.
+// + `a : T`.
+// + `b : T`.
+// + `c : T`.
+fn good_11([a: impl Debug, b, c]) {}
 
-// 2) The compiler sees `x: Bar<'_>` and infers that `?T = Bar<'?a>`.
-//
-// 3) Looking at `'Bar<'?a>`, the compiler:
-//    a) introduces an input lifetime parameter `'a`
-//    b) and substitutes `'?a` for it.
-//
-// 4) Thus, `good_8 : for<'a> fn(Wrapping<Bar<'a>>) -> ()`.
-fn good_8(Wrapping(x: Bar<'_>)) {}
+// 1) No lifetime positions.
+// 2) Seeing `Wrapping($pat)`, we know that `parameter : Wrapping<?T>`.
+// 3) Seeing `$pat = usize`, we know that:
+//    a) `x : usize`
+//    b) `?T = usize`.
+//    c) `parameter : Wrapping<usize>`.
+// -----------------------------------------------------------------------------
+// + `good_13 : fn(Wrapping<usize>) -> ()`.
+// + `x : usize`
+fn good_13(Wrapping(x: usize)) {}
 
-struct Quux<'a, 'b: 'a>(&'a Foo, Bar<'b>);
+// 1) No lifetime positions.
+// 2) Seeing `Wrapping($pat)`, we know that `parameter : Wrapping<?T>`.
+// 3) Seeing `$pat = x: T`, we know that:
+//    a) `x : T`.
+//    b) `parameter : Wrapping<T>`.
+// -----------------------------------------------------------------------------
+// + `good_14 : for<T> fn(Wrapping<T>) -> ()`.
+// + `x : T`.
+fn good_14<T>(Wrapping(x: T)) {}
 
-// 1) Looking at `Quux(x, $pat)`, the compiler infers `Quux<'?a, '?b>`
-//    where `'?b: '?a`.
-//
-// 2) Looking at `'Quux<'?a, '?b>`, the compiler:
-//    a) introduces input lifetime parameters `'a` and `'b`.
-//    b) adds a bound `'b: 'a`.
-//    c) and substitutes `'?a` and `'?b` for `'a` and `'b`.
-//    d) infers that `$pat : Bar<'b>` must hold.
-//
-// 3) Looking at `$pat = Bar(y)`, the compiler checks that `Bar(y) : Bar<'b>`.
-//
-// 4) Thus, `good_9 : for<'a, 'b: 'a> fn(Quux<'a, 'b>) -> ()`.
-fn good_9(Quux(x, Bar(y))) {}
+// 1) No lifetime positions.
+// 2) Seeing `Wrapping($pat)`, we know that `parameter : Wrapping<?T>`.
+// 3) Seeing `$pat = x: impl Display`, we quantify a type parameter `T: Display`
+//    We substitute => `$pat = x: T`.
+//    We mark the function as not turbo-fishable.
+// 4) Seeing `$pat = x: T`, we know that:
+//    a) `x : T`.
+//    b) `?T = T`.
+//    c) `parameter : Wrapping<T>`.
+// -----------------------------------------------------------------------------
+// + `good_15 : for<T: Display> fn(Wrapping<T>) -> ()`.
+// + `x : T`.
+fn good_15(Wrapping(x: impl Display)) {}
 
-struct Product<A, B>(A, B);
+// 1) No lifetime positions.
+// 2) Seeing `Wrapping($pat)`, we know that `parameter : Wrapping<?T>`.
+// 3) Looking at `$pat = x: <X as Trait>::Assoc`, we:
+//    a) Verify that `X: Trait` and that `Trait` has an associated type `Assoc`.
+//    b) Substitute `?T` for `<X as Trait>::Assoc`.
+// -----------------------------------------------------------------------------
+// + `good_16 : for<X: Trait> fn(Wrapping<X::Assoc>) -> ()`.
+// + `x : <X as Trait>::Assoc`.
+fn good_16<X: Trait>(Wrapping(x: <X as Trait>::Assoc)) {}
 
-// 1) Looking at `Product($pat_1, $pat_2)`, the compiler infers that the
-//    parameter must be of type `Product<?T, ?U>` and adds unification variables
-//    `?T` and `?U`.
-//
-// 2) Looking at `$pat_1 = x: &i32`, the compiler:
-//    a) infers that `?T = &'?a i32`.
-//    b) introduces an input lifetime parameter `'a`.
-//    c) substitutes `'?a` for `'a`.
-//
-// 3) Looking at `$pat_2 = y: &u32`, the compiler:
-//    a) infers that `?T = &'?b u32`.
-//    b) introduces an input lifetime parameter `'b`.
-//    c) substitutes `'?b` for `'b`.
-//
-// 4) Thus, `good_10 : for<'a, 'b> fn(Product<&'a i32, &'b u32>) -> ()`.
-fn good_10(Product(x: &i32, y: &u32)) {}
+// 1) We find `Bar<'_>`. We substitute `'_` for a new lifetime `'a`.
+// 2) Seeing `Wrapping($pat)`, we know that `parameter : Wrapping<?T>`.
+// 3) Seeing `$pat = x: Bar<'a>`, we know that:
+//    a) `x : Bar<'a>`.
+//    b) `?T = Bar<'a>`.
+//    c) `parameter : Wrapping<Bar<'a>>`.
+// -----------------------------------------------------------------------------
+// + `good_17 : for<'a> fn(Wrapping<Bar<'a>>) -> ()`.
+// + `x : Bar<'a>`.
+fn good_17(Wrapping(x: Bar<'_>)) {}
 
-struct Wibble<'a>(&'a i32, Bar<'a>);
+// 1) We find `&'_ i32`. We substitute `'_` for a new lifetime `'a`.
+// 2) We find `Bar<'_>`. We substitute `'_` for a new lifetime `'b`.
+// 3) Seeing `Product($pat_1, $pat_2)`, we know `parameter : Product<?T, ?U>`.
+// 4) Seeing `$pat_1 = x: &'a i32`, we know that:
+//    a) `x : &'a i32`.
+//    b) `?T = &'a i32`.
+// 5) Seeing `$pat_2 = y: Bar<'b>`, we know that:
+//    a) `y : Bar<'b>`.
+//    b) `?T = Bar<'b>`.
+// -----------------------------------------------------------------------------
+// + `good_18 : for<'a, 'b> fn(Product<&'a i32, Bar<'b>>) -> ()`.
+// + `x : &'a i32`.
+// + `y : Bar<'b>`.
+fn good_18(Product(x: &i32, y: Bar<'_>)) {}
 
-// 1) Looking at `Wibble($pat_1, $pat_2)`, the compiler infers that the
-//    parameter must be of type `Wibble<'?a>` and adds unification variable `'?a`.
-//    a) The compiler introduces an input lifetime parameter `'a`
-//       and substitutes `'?a` for `'a`.
-//    b) Infers that `$pat_1 : &'a i32`  must hold.
-//    c) Infers that `$pat_2 : Bar<'a>`  must hold.
-//
-// 2) Looking at `$pat_1 = x: &i32`, the compiler:
-//    a) infers that `x : &'?b i32` and adds unification variable `'?b`.
-//    b) checks that `x : &'a i32`.
-//    c) this entails that `'?b = 'a` and so `'?b` is substituted for `'a`.
-//
-// 3) Looking at `$pat_2 = x: Bar<'_>`, the compiler:
-//    a) infers that `x : Bar<'?c>` and adds unification variable `'?c`.
-//    b) checks that `x : Bar<'a>`.
-//    c) this entails that `'?c = 'a` and so `'?c` is substituted for `'a`.
-//
-// 4) Thus, `good_11 : for<'a> fn(Wibble<'a>) -> ()`.
-fn good_11(Wibble(x: &i32, y: Bar<'_>)) {}
+impl Foo {
+    // 1) Seeing &self, we assign all lifetimes in the output the lifetime `'self`.
+    // 2) We find 3 lifetime positions:
+    //    a) `&'_ u8`
+    //    b) `&'_ u16`
+    //    c) `&'_ u32`
+    //    We quantify a lifetime for each.
+    // 3) Seeing `Product($pat_1, $pat_2)` we know that:
+    //    a) `parameter : Product<?T, ?U>`.
+    // 4) Seeing `$pat_1 = x: &'a u8`, we know that:
+    //    a) `x : &'a u8`.
+    //    a) `?T = &'a u8`.
+    // 5) Seeing `$pat_2 = Product($pat_3, $pat_4)` we know that:
+    //    a) `?U = Product<?V, ?X>`
+    // 6) Repeat 4) for `$pat_3` and `$pat_4`.
+    // -------------------------------------------------------------------------
+    // + `good19 : for<'self, 'a, 'b, 'c>
+    //     fn(
+    //         &'self Foo,
+    //         Product<
+    //             &'a u8,
+    //             Product<
+    //                 &'b u16,
+    //                 &'c u32
+    //             >
+    //         >
+    //     ) -> &'self str`.
+    // + `x : &'a u8`.
+    // + `y : &'b u16`.
+    // + `z : &'c u32`.
+    fn good_19(&self, Product(x: &u8, Product(y: &u16, z: &u32))) -> &str { .. }
+}
+
+// 1) We quantify the in-band lifetime `'a`.
+// 2) Looking at `Wibble($pat_1, $pat_2)`, we know that:
+//    a) `parameter : Wibble<'?t>`.
+//    b) `$pat_1 : &'?t i32`.
+//    c) `$pat_2 : Bar<'?t>`.
+// 3) Looking at `$pat_1 : &'?t i32 = x: &'a i32`, we know that:
+//    b) `x : &'a i32`.
+//    c) `'?t = 'a`.
+// 4) Looking at `$pat_2 : Bar<'?t> = y: Bar<'a>`, we know that:
+//    b) `y : Bar<'a>`.
+//    c) `'?t = 'a`. This was already solved in  3).
+// -----------------------------------------------------------------------------
+// + `good_20 : for<'a> fn(Wibble<'a>) -> ()`.
+// + `x : &'a i32`.
+// + `y : Bar<'a>`.
+fn good_20(Wibble(x: &'a i32, y: Bar<'a>)) {}
+
+// 1) We quantify in-band lifetimes `'a` and `'b`.
+// 2) Seeing `Quux($pat_1, $pat_2)`, we know that:
+//    a) `parameter : Quux<'?t, '?u>` where `'?u: '?t`.
+//    b) `$pat_1 : &'?t Foo`.
+//    c) `$pat_2 : Bar<'?u>`.
+// 3) Seeing `$pat_1 : &'?t Foo = x: &'a Foo`, we know that:
+//    a) `x : &'a Foo`.
+//    b) `'?t = 'a`.
+// 4) Seeing `$pat_2 : &'?u Foo = Bar($pat_3)`, we know that:
+//    a) `$pat_3 : &'?u bool`
+// 5) Seeing `$pat_3 : &'?u bool = y: &'b bool`, we know that:
+//    a) `y : &'b bool`.
+//    a) `'?u = 'b`.
+// -----------------------------------------------------------------------------
+// + `good_21 : for<'a, 'b: 'a> fn(Quux<'a, 'b>) -> ()`.
+fn good_21(Quux(x: &'a Foo, Bar(y: &'b bool))) {}
+
+// 1) We find `&'_ usize`. We substitute `'_` for a new lifetime `'a`.
+// 2) Looking at `Wrapping($pat)`, we know that:
+//    a) `parameter : Wrapping<?T>`.
+//    b) `$pat : ?T`.
+// 3) Looking at `$pat : ?T = x: &'a usize`, we know that:
+//    a) `x : &'a usize`.
+//    b) `?T = &'a usize`.
+//    c) `parameter : Wrapping<&'a usize>`.
+// -----------------------------------------------------------------------------
+// + `good_22 : for<'a> fn(Wrapping<&'a usize>) -> ()`.
+// + `x : &'a usize'.
+fn good_22(Wrapping(x: &usize)) {}
+
+// 1) We find `&'_ usize`. We substitute `'_` for a new lifetime `'a`.
+// 2) We find `&'_ _`. We substitute `'_` for a new lifetime `'b`.
+// 3) Looking at `$pat_1 : &'b _`,
+//    we substitute `_` for a new unification variable `?T` where `?T: 'b`.
+//    We know that: `parameter = $pat_1 : &'b ?T`.
+//    We enter a reference match binding mode.
+// 4) Looking at `$pat_1 : &'b ?T = Wrapping($pat_2)`, we know that:
+//    a) `?T = Wrapping<?U>`.
+//    b) `$pat_2 : ?U`.
+//    c) `?U: 'b`.
+// 5) Looking at `$pat_2 : ?U = x : &'a usize`, we know that:
+//    a) `x : &'a usize`, `'b: 'a`, and `?U = usize` due to match mode.
+//    d) `parameter : &'b Wrapping<usize>`
+// 6) because `'a: 'b`, `'b: 'a`, we substitute `'b` for `'a` and remove `'b`.
+// -----------------------------------------------------------------------------
+// + `good_23 : for<'a> fn(&'a Wrapping<usize>) -> ()`.
+// + `x : &'a usize'.
+fn good_23(Wrapping(x: &usize): &_) {}
+
+// 1) We find `&'_ T`. We substitute `'_` for a new lifetime `'a`.
+//    We also conclude `T: 'a`.
+// 2) Looking at `Wrapping($pat_1)`, we know that:
+//    a) `parameter : Wrapping<?T>`.
+//    b) `$pat_1 : ?T`.
+// 3) Looking at `$pat_1 : ?T = x: &'a T`, we know that:
+//    a) `?T = &'a T`.
+//    b) `x : &'a T`.
+// -----------------------------------------------------------------------------
+// + `good_24 : for<'a, T: 'a> fn(Wrapping<&'a T>) -> ()`.
+// + `x : &'a T'.
+fn good_24<T>(Wrapping(x: &T)) {}
 ```
 
 But the following definitions are rejected:
@@ -1334,11 +1502,28 @@ fn bad_1(x) {
 // The type of `bad_2: fn(Wrapping<?T>) -> ()`
 fn bad_2(Wrapping(x)) {}
 
-struct X(u8);
+// No lifetime parameter added for `Quux<'?>` to unify with.
+fn bad_3(Quux(x, Bar(y))) {}
 
-impl From<u8> for X {
-    // The compiler is not allowed to look at `From<u8>` to
-    // understand that `x: u8`.
+// Inferred `x: &'a`, `y: &'b Bar<'b>` but `'a != 'b` which `Wibble<'?>` requires.
+fn bad_4(Wibble(x: &i32, y: Bar<'_>)) {}
+
+// Rejected because parameter has & but not fully spec type.
+fn bad_6(&(x: usize)) {}
+
+// Rejected because parameter has & but not fully spec type.
+fn bad_7(&[a: u8, ref b]) {}
+
+// Rejected because parameter has & but not fully spec type.
+fn bad_8(Beta(&Bar(&x))) {}
+
+// The two separate `impl Trait`s get each one type parameter
+// T and U leading to: [x: T, y: U] which is not well formed.
+fn bad_9([x: impl Trait, y: impl Trait]) {}
+
+impl From<usize> for Foo {
+    // The compiler is not allowed to look at `From<usize>` to
+    // understand that `x: usize`.
     fn from(x) -> Self { Self(x) }
 }
 ```
@@ -1715,6 +1900,271 @@ this method variant could only exist in the core library.
 All in all, the prospect of adding such type level methods should not
 keep us from making this precedence change.
 
+## Type inference algorithm for lifetimes
+
+With respect to type inference of function types, as specified in the reference
+above, there are are multiple choices and restrictions that can be imposed.
+In the reference we've specified a model based on not inferring and implicitly
+quantifying type parameters and lifetime parameters (unless a lifetime position
+is explicitly included). For type parameters we believe this is the right choice
+because we believe they are crucially important to include for the reader.
+However, for lifetimes, things are more subtle and there are designs possible.
+We will now try to outline these choices and why the current design and
+restrictions were chosen.
+
+### Does `Constructor(x : &usize)` inhibit match ergonomics?
+
+Given the definition of `good_23` from above:
+
+```rust
+fn good_23(Wrapping(x: &usize): &_) {}
+```
+
+we can ask what the type of `good_23` should be. In the current design we've
+judged it as (1):
+
+```rust
+good_23 : for<'a> fn(&'a Wrapping<usize>) -> ()
+```
+
+However, another plausible judgement (2) is:
+
+```rust
+good_23 : for<'a, 'b: 'a> fn(&'a Wrapping<&'b usize>) -> ()
+```
+
+We can also ask whether given (A):
+
+```rust
+match &alpha {
+    None => {},
+    Some(x: &usize) => {},
+}
+```
+
+the type of `alpha` is `&Option<usize>` or if it is `&Option<&usize>`.
+
+These are in essence the same problem.
+The question is: does type ascription inside a pattern disable default match
+bindings? We argue that they should not and that judgement (1) is right.
+We argue this for two reasons:
+
+#### 1. Consistency with typing `let`
+
+Consider if a user had today written the following valid snippet:
+
+```rust
+match &alpha {
+    None => {},
+    Some(x) => {
+        let x: &usize = x;
+    },
+}
+```
+
+[verify_match_erg]: https://play.rust-lang.org/?gist=f484300d1f0435deed234faa9d1da14b&version=stable&mode=debug&edition=2015
+
+If they did that, then match ergonomics would apply and `alpha` would be
+typed at `&Option<usize>`. You can [verify][verify_match_erg] this with
+the following snippet:
+
+```rust
+trait Foo { 
+    fn new() -> Self;
+}
+
+impl Foo for &'static Option<usize> {
+    fn new() -> Self { &Some(0) }
+}
+
+impl Foo for &'static Option<&'static usize> {
+    fn new() -> Self { &Some(&1) }
+}
+
+fn main() {
+    let x: &_ = Foo::new();
+    if let Some(x) = x {
+        let x: &usize = x;
+        // Prints 0.
+        println!("{}", x);
+    }
+}
+```
+
+However, if the user moved to snippet (A), then the example would instead print
+`0` to the terminal. We believe that the ability to transition in this way to
+and from the typed `let` binding is important for consistency and to make
+the langauge easy to understand.
+
+#### 2. Consistency with closures
+
+Consider the following program:
+
+```rust
+fn main() {
+    struct Foo<T>(T);
+    let fun = |Foo(x): &_| { let _ : &usize = x; };
+    fun(&Foo(&0usize));
+}
+```
+
+It is ill typed. When the compiler sees this it will error with:
+
+```rust
+error[E0308]: mismatched types
+ --> src/main.rs:4:12
+  |
+4 |     fun(&Foo(&0usize));
+  |              ^^^^^^^
+  |              |
+  |              expected usize, found &usize
+  |              help: consider removing the borrow: `0usize`
+  |
+```
+
+This means that the compiler judged `fun` as:
+
+```rust
+fun : for<'a> impl Fn(&'a Foo<usize>) -> ()
+```
+
+as opposed to:
+
+```rust
+fun : for<'a, 'b: 'a> impl Fn(&'a Foo<&'b usize>) -> ()
+```
+
+We argue that consistency of function definitions with closures
+is paramount for an understandable language.
+Thus, we conclude that match ergonomics should apply.
+
+### How much unification do we permit?
+
+One of the rules we've imposed is that each lifetime position mentioned
+in a type fragment of some pattern in a function parameter introduces
+a distinct lifetime. However, this means that type inference may sometimes
+introduce two many lifetimes for one type and therefore reject the definition.
+This happened in the case of:
+
+```rust
+struct Bar<'a>(&'a bool);
+struct Wibble<'a>(&'a i32, Bar<'a>);
+
+// Inferred `x: &'a`, `y: &'b Bar<'b>` but `'a != 'b` which `Wibble<'?>` requires.
+fn bad_4(Wibble(x: &i32, y: Bar<'_>)) {}
+```
+
+However, type inference could accept such a definition by not eagerly assigning
+lifetimes and instead adding them lazily as they are needed.
+For example, we could say that:
+
+> With respect to lifetime elision, when generating input lifetime parameters,
+> the most general setup of lifetimes is inferred such that:
+>
+> + a struct using the same lifetime on any number of fields get assigned
+>   the same distinct lifetime.
+>
+> + patterns for each generic parameter of a struct allowed to be assigned
+>   the set of distinct lifetimes each pattern itself generates.
+>   This rule is applied inductively.
+>
+> [current rules]: https://doc.rust-lang.org/stable/reference/lifetime-elision.html
+> With respect to output lifetime elision, the [current rules] apply.
+
+If we applied such a rule, we could accept the following two previously
+rejected definitions:
+
+```rust
+// 1) Looking at `Quux($pat_1, $pat_2)`, we know that:
+//    a) `parameter : Quux<'?t, '?u>`.
+//    b) `'?u: '?t`.
+//    c) `$pat_1 : &'?t Foo`.
+//    d) `$pat_2 : Bar<'?u>`.
+// 2) Looking at `$pat_1 : &'?t Foo = x`, we know that:
+//    a) `x : &'?t Foo`.
+// 3) Looking at `$pat_2 : Bar<'?u> = Bar($pat_3)`, we know that:
+//    a) `$pat_3 : &'?u bool`.
+// 4) Looking at `$pat_3 : &'?u bool = y`, we know that:
+//    a) `y : &'?u bool`.
+// 5) Having lifetime quantification variables `'?t` and `?'u`,
+//    we quantify and substitute `'a` and `'b` for these.
+// -----------------------------------------------------------------------------
+// + `bad_3_now_good : for<'a, 'b: 'a> fn(Quux<'a, 'b>) -> ()`.
+// + `x : &'a Foo`.
+// + `y : &'b bool`.
+fn bad_3_now_good(Quux(x, Bar(y))) {}
+
+// 1) Looking at `Wibble($pat_1, $pat_2)`, we know that:
+//    a) `parameter : Wibble<'?t>`.
+//    b) `$pat_1 : &?'t i32`.
+//    c) `$pat_2 : Bar<&?'t>`.
+// 2) Looking at `$pat_1 : &?'t i32 = x: &'_ i32`, we know that:
+//    a) `x : &'?v i32`.
+//    b) `x : &'?t i32`.
+//    c) `'?v = '?t`.
+// 3) Looking at `$pat_2 : Bar<&?'t> = y: Bar<'_>`, we know that:
+//    a) `y : Bar<'?x>`.
+//    b) `y : Bar<'?t>`.
+//    c) `'?x = '?t`.
+// 4) Having lifetime quantification variable `'?t`,
+//    we quantify and substitute `'a` for it.
+// -----------------------------------------------------------------------------
+// + `bad_4_now_good : for<'a> fn(Wibble<'a>) -> ()`.
+// + `x : &'a i32`.
+// + `y : Bar<'a>`.
+fn bad_4_now_good(Wibble(x: &i32, y: Bar<'_>)) {}
+```
+
+This lazy unification engine can also accept definitions
+`bad_6`, `bad_7`, and `bad_10`. For example (with a match ergonomics twist):
+
+```rust
+// 1) Looking at `$pat_1: &'_ _`, we know that:
+//    a) `parameter : &'?t ?T`
+//    b) `?T: '?t`.
+//    c) `$pat_1 : `?T`.
+// 2) Looking at `$pat_1 : ?T = Beta($pat_2)`, we know that:
+//    a) `?T = Beta<'?u>`.
+//    b) `'?u: '?t`.
+//    b) `$pat_2 : &'?t Bar<'?u>`.
+// 3) Looking at `$pat_2 : &'?t Bar<'?u> = & $pat_3`, we know that:
+//    a) `$pat_3 : Bar<'?u>`.
+// 4) Looking at `$pat_3 : Bar<'?u> = Bar($pat_4)`, we know that:
+//    a) `$pat_4 : &'?u bool`.
+// 5) Looking at `$pat_4 : &'?u bool = & $pat_5`, we know that:
+//    a) `$pat_5 : bool`.
+// 6) Looking at `$pat_5 : bool = x`, we know that:
+//    a) `x : bool`.
+// 7) Having lifetime quantification variables `'?t`, `'?u`
+//    we quantify and substitute `'a` and `'b` for them.
+// -----------------------------------------------------------------------------
+// + `bad_10_twist_now_good : for<'a, 'b: 'a> fn(&'a Beta<'b>) -> ()`.
+// + `x : bool`.
+fn bad_10_twist_now_good(Beta(&Bar(&x)): &_) {}
+```
+
+Why have we then not proposed this mechanism right now if it is so flexible?
+For two reasons:
+
+1. If you take a look at `bad_4_now_good` you see two lifetime positions.
+   You might infer from this that these are two distinct lifetimes,
+   but that inference would be mistaken as type of `bad_4_now_good`
+   is `for<'a> fn(Wibble<'a>) -> ()`.
+
+2. References are sometimes important to highlight.
+   In particular, this unification model would accept `bad_3_now_good`
+   which in no way from the patterns indicate that:
+
+   ```rust
+   x : &'a Foo
+   y : &'b bool
+   ```
+
+We might eventually relax these rules.
+However, we have concluded that, as a starting point, to keep things simple,
+we will not extend lifetime elision to patterns,
+or allow `bad_3`, `bad_4`, `bad_6`, `bad_7`, and `bad_10` to compile.
+
 # Prior art
 [prior-art]: #prior-art
 
@@ -1879,6 +2329,12 @@ Note that this is exactly the same grammar as we've proposed here.
    will align with what people expects this to mean because it is how
    `async` works elsewhere.
 
+2. Should type ascription in patterns inhibit match ergonomics?
+
+3. What exactly should be allowed wrt. type inference of function types?
+   Because this is rather subtle, it is considered OK to leave this for
+   and tweak it during stabilization.
+
 # Possible future work
 [possible future work]: #possible-future-work
 
@@ -1925,14 +2381,14 @@ to function parameters but not elsewhere.
 Doing this would allow users to express things such as:
 
 ```rust
-/// typeof foo = for<'a> fn(&'a Wrapping<usize>) -> ()
+/// `foo : for<'a> fn(&'a Wrapping<usize>) -> ()`.
 fn foo<'a>(&'a Wrapping(x: usize)) { .. }
 ```
 
 as well as:
 
 ```rust
-/// typeof foo = for<'a> fn(Wrapping<&'a mut Foo>) -> ()
+/// `foo : for<'a> fn(Wrapping<&'a mut Foo>) -> ()`.
 fn foo<'a>(Wrapping(&'a mut Foo(ref mut x))) { .. }
 ```
 
