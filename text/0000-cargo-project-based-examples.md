@@ -155,14 +155,35 @@ If we implement project-based examples into cargo, it might be backward incompat
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-There could be another way to implement project-based examples by introducing `cargo example` subcommand. However by doing this we must change our way to run examples now by `cargo run --example <NAME>` which is already widely accepted by rust community. 
+## By adding another subcommand 
 
-It may also be suggested that we could somehow *not* implement this project-based cargo examples, but suggest the developers to build an example by adding all of them as the workspace members, and use the `cargo run -p <NAME>` command to run, test or bench it as it indicates the path of the root project, like what we already have in projects like [diesel] and [quicli]. By this way we share the `target` folder with the root project to improve compile speed as well as type less `cd` commands, but we have to add all our examples one by one as subpackages into the workspace.
+There could be another way to implement project-based examples by introducing `cargo example` subcommand. 
+However by doing this we must change our way to run examples now by `cargo run --example <NAME>` which 
+is already widely accepted by rust community. 
+
+## Not implementing this feature
+
+It may also be suggested that we could somehow *not* implement this project-based cargo examples, 
+but suggest the developers to build an example by adding all of them as the workspace members, and use the 
+`cargo run -p <NAME>` command to run, test or bench it as it indicates the path of the root project, 
+like what we already have in projects like [diesel] and [quicli]. 
+By this way we share the `target` folder with the root project to improve compile speed as well as 
+type less `cd` commands, but we have to add all our examples one by one as subpackages into the workspace.
+
+It could also be possible if we auto-import every project-based subdirectories in `/examples` into 
+the workspace. By this way we don't have to manually import every example folder path into `[workspace]`,
+but there could be further detailed designs to do on customization and simplization. 
 
 [diesel]: https://github.com/diesel-rs/diesel/blob/b8d8620b1e6e9f0c0830d16e8762e215930b8a5c/Cargo.toml#L1-L26
 [quicli]: https://github.com/killercup/quicli/blob/879dd74a2a0e3c47b2e76f41694920042317a0c9/Cargo.toml#L38-L44
 
-On `.gitignore`, it could be a good idea to rewrite the `.gitignore` file in the root changing the `Cargo.lock` to `/Cargo.lock` to avoid it search for every cargo locks nestedly thus a `!Cargo.lock` is not needed in the example project path. However it would totally change the way how we write `.gitignore` for Rust, thus this alternative is remained for the Rust authors to judge.
+## Another way to write `.gitignore`
+
+On `.gitignore`, it could be a good idea to rewrite the `.gitignore` file in the root changing 
+the `Cargo.lock` to `/Cargo.lock` to avoid it search for every cargo locks nestedly 
+thus a `!Cargo.lock` is not needed in the example project path. 
+However it would totally change the way how we write `.gitignore` for Rust, thus this alternative 
+is remained for the Rust authors to judge.
 
 # Prior art
 [prior-art]: #prior-art
