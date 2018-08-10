@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-Permit users to `#[cfg(..)]` whether:
+Permit users to `#[cfg(..)]` on whether:
 
 + they are on a `nightly` compiler (`#[cfg(nightly)]`).
 + they are above a certain Rust version (`#[cfg(version("1.27"))]`).
