@@ -1,5 +1,5 @@
 - Feature Name: `generalized_type_ascription`
-- Start Date: 2018-08-06
+- Start Date: 2018-08-10
 - RFC PR: _
 - Rust Issue: _
 
@@ -96,7 +96,7 @@ with more motivation:
    fn display_all(elems: impl Iterator<Item: Display>) { ... }
    ```
 
-   As of today (2018-08-06), it is not possible to use turbofish at all
+   As of today (2018-08-10), it is not possible to use turbofish at all
    as you could have done had you instead written:
 
    ```rust
