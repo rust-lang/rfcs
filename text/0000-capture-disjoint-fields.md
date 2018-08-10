@@ -12,13 +12,15 @@ should be applied to capturing. If implemented, the following code examples
 would become valid:
 
 ```rust
-let _a = &mut foo.a;
+let a = &mut foo.a;
 || &mut foo.b; // Error! cannot borrow `foo`
+somefunc(a);
 ```
 
 ```rust
-let _a = &mut foo.a;
+let a = &mut foo.a;
 move || foo.b; // Error! cannot move `foo`
+somefunc(a);
 ```
 
 Note that some discussion of this has already taken place:
@@ -118,16 +120,18 @@ capture set.
 Currently, lowering creates exactly one capture expression for each used
 binding, which borrows or moves the value in its entirety. This RFC proposes
 that lowering should instead create the minimal capture, where each expression
-is as specific as possible.
+is as precise as possible.
 
-This minimal set of capture expressions *might* be created by starting with the
-existing capture set (one maximal expression per binding) and then iterativly
-modifying and splitting the expressions by adding additional dereferences and
-path components.
+This minimal set of capture expressions *might* be created through a sort of
+iterative refinement. We would start out capturing all of the local variables.
+Then, each path would be made more precise by adding additional dereferences and
+path components depending on which paths are used and how. References to structs
+would be made more precise by reborrowing fields and owned structs would be made
+more precise by moving fields.
 
 A capture expression is minimal if it produces a value that is used by the
 closure in its entirety (e.g. is a primitive, is passed outside the closure,
-etc.) or if making the expression more specific would require one the following.
+etc.) or if making the expression more precise would require one the following.
 
 - a call to an impure function
 - an illegal move (for example, out of a `Drop` type)
@@ -135,16 +139,16 @@ etc.) or if making the expression more specific would require one the following.
 When generating a capture expression, we must decide if the output should be
 owned or if it can be a reference. In a non-`move` closure, a capture expression
 will *only* produce owned data if ownership of that data is required by the body
-of the closure. In a `move` closure, will *always* produced owned data unless
-the captured binding does not have ownership.
+of the closure. A `move` closure will *always* produce owned data unless the
+captured binding does not have ownership.
 
 Note that *all* functions are considered impure (including to overloaded deref
-impls). And, for the sake of capturing, all indexing is considered impure *(see
-unresolved)*. It is possible that overloaded `Deref::deref` implementations
-could be marked as pure by using a new, marker trait (such as `DerefPure`) or
-attribute (such as `#[deref_transparent]`). However, such a solution should be
-proposed in a separate RFC. In the meantime, `<Box as Deref>::deref` could be a
-special case of a pure function *(see unresolved)*.
+implementations). And, for the sake of capturing, all indexing is considered
+impure. It is possible that overloaded `Deref::deref` implementations could be
+marked as pure by using a new, marker trait (such as `DerefPure`) or attribute
+(such as `#[deref_transparent]`). However, such a solution should be proposed in
+a separate RFC. In the meantime, `<Box as Deref>::deref` could be a special case
+of a pure function *(see unresolved)*.
 
 Also note that, because capture expressions are all subsets of the closure body,
 this RFC does not change *what* is executed. It does change the order/number of
@@ -196,7 +200,7 @@ move || foo.drop_world.a;
 somefunc(hello);
 ```
 
-- `foo.drop_world` (ownership available, can't be more specific without moving
+- `foo.drop_world` (ownership available, can't be more precise without moving
   out of `Drop`)
 
 The borrow checker passes because `foo.hello` and `foo.drop_world` are disjoint.
@@ -205,14 +209,14 @@ The borrow checker passes because `foo.hello` and `foo.drop_world` are disjoint.
 || println!("{}", foo.wrapper_thing.a);
 ```
 
-- `&foo.wrapper_thing` (ownership not required, can't be more specific because
+- `&foo.wrapper_thing` (ownership not required, can't be more precise because
   overloaded `Deref` on `wrapper_thing` is impure)
 
 ```rust
 || foo.list[0];
 ```
 
-- `foo.list` (ownership required, can't be more specific because indexing is
+- `foo.list` (ownership required, can't be more precise because indexing is
   impure)
 
 ```rust
@@ -247,10 +251,10 @@ move || drop_foo.b;
 somefunc(a);
 ```
 
-- `drop_foo` (ownership available, can't be more specific without moving out of
+- `drop_foo` (ownership available, can't be more precise without moving out of
   `Drop`)
 
-The borrow checker fails because `drop_foo` can not be moved while borrowed.
+The borrow checker fails because `drop_foo` cannot be moved while borrowed.
 
 ```rust
 || &box_foo.a;
@@ -262,7 +266,7 @@ The borrow checker fails because `drop_foo` can not be moved while borrowed.
 move || &box_foo.a;
 ```
 
-- `box_foo` (ownership available, can't be more specific without moving out of
+- `box_foo` (ownership available, can't be more precise without moving out of
   `Drop`)
 
 ```rust
@@ -296,15 +300,11 @@ difference when inlining.
 [unresolved]: #unresolved-questions
 
 - How to optimize pointers. Can borrows that all reference parts of the same
-object be stored as a single pointer? How should this optimization be
-implemented (e.g. a special `repr`, refinement typing)?
-
-- Any reason for non-overloaded index-by-constant to be pre-evaluated? It is
-technically pure. Could this be left as an implementation/optimization
-decision?
+  object be stored as a single pointer? How should this optimization be
+  implemented (e.g. a special `repr`, refinement typing)?
 
 - How to signal that a function is pure. Is this even needed/wanted? Any other
-places where the language could benefit?
+  places where the language could benefit?
 
 - Should `Box` be special?
 
