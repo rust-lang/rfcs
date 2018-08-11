@@ -263,6 +263,30 @@ parameters can lead to the item. To check whether an item exists for
 an implementation with a specific sequence of concrete types applied to
 a type constructor, it is possible to use the `::foo::bar::<T>::item` syntax.
 
+The `#[cfg(path_exists = $path)]` syntax is not currently supported by the
+meta grammar. To make it legal we extend the grammar from:
+
+```abnf
+named_value : "=" lit ;
+
+meta_or_lit : meta | lit ;
+meta_or_lit_list : meta_or_lit "," meta_or_lit_list ","? ;
+meta_list : "(" meta_or_lit_list ")" ;
+meta : path ( named_value | meta_list )? ;
+```
+
+into:
+
+```abnf
+lit_or_path : path | lit ;
+named_value : "=" lit_or_path ;
+
+meta_or_lit : meta | lit ;
+meta_or_lit_list : meta_or_lit "," meta_or_lit_list ","? ;
+meta_list : "(" meta_or_lit_list ")" ;
+meta : path ( named_value | meta_list )? ;
+```
+
 ## `cfg_attr` and `cfg!`
 
 Note that the above sections also apply to the attribute `#[cfg_attr(..)]`
