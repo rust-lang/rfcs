@@ -55,8 +55,9 @@ compiler or to check if you are above a certain compiler version,
 such facilities are not particularly ergonomic at the moment.
 In particular, they require the setting up of a `build.rs` file and
 declaring up-front which versions you are interested in knowing about.
-These tools are also unable to check if a certain path exists and instead
-force you to know which version they were introduced in.
+These tools are also unable to check, without performing canary builds
+of simple programs with `use ::std::some::path;`, if a certain path exists
+and instead force you to know which version they were introduced in.
 
 *We can do better.* In this RFC we aim to rectify this by giving library
 authors the tools they need in the language itself. With the features
