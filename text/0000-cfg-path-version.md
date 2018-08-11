@@ -224,19 +224,22 @@ To the `cfg` attribute , a `nightly` flag is added.
 If and only if a Rust compiler considers itself to be on a nightly channel
 it the `nightly` flag be considered active.
 
-## `#[cfg(version("<version_string>"))]`
+## `#[cfg(version("<semver>"))]`
 
 To the `cfg` attribute, a `version` flag is added.
 This flag requires that a string literal be specified in it inside parenthesis.
 The string literal must have the format:
 
 ```
-version_string ::= \d(.\d)?
+semver ::= \d(.\d)?(.\d)?
 ```
 
+[caret requirements]: https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#caret-requirements
+
 If and only if a Rust compiler considers itself to have a version which is
-greater or equal to the version in the `version_string` will the
-`#[cfg(version("<version_string>")]` flag be considered active.
+greater or equal to the version in the `semver` string will the
+`#[cfg(version("<string>")]` flag be considered active.
+Greater or equal is defined in terms of [caret requirements].
 
 ## `#[cfg(path_exists($path))]`
 
