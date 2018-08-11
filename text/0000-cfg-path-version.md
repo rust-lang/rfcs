@@ -392,6 +392,15 @@ However, as we've argued and demonstrated in the [guide-level-explanation],
 the ability to `#[cfg(nightly)]` really shines when used in conjunction with
 `#[cfg(path_exists ? $path)]`.
 
+### Alternative `#![if_possible_feature(<feature>)]`
+
+As an alternative to `#[cfg_attr(nightly, feature(<feature>))]`
+we could permit the user to write `#![if_possible_feature(<feature>)]`.
+The advantage of this is that it is quite direct with respect to intent.
+However, adding this in terms of `nightly` already has precedent in
+[version_check]. In addition, `nightly` also composes with other flags
+using `any`, `not`, and `all`.
+
 ## `version = ".."`
 
 When it comes to `version = ".."`, it is needed to support conditional compilation
