@@ -340,6 +340,14 @@ However, doing so even once means that you will need to release new versions
 of your crate. If you instead use `path_exists = ..` you won't need to use
 it even once unless the name of the path changes in-between.
 
+### Extended rationale for `= $path`
+
+To permit `path_exists = ::foo::bar` we had to extend the meta grammar.
+To justify this change, we observe that crates such as `serde_derive` permit
+users to write things like `#[serde(default = "some::function")]`.
+By changing the grammar we can allow users to instead write:
+`#[serde(default = some::function)]`.
+
 ### The bikeshed
 
 One might consider other names for the flag instead of `path_exist`.
