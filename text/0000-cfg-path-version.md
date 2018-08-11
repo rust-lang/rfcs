@@ -221,8 +221,8 @@ mechanism on.
 
 To the `cfg` attribute , a `nightly` flag is added.
 
-If and only if a Rust compiler considers itself to be on a nightly channel
-it the `nightly` flag be considered active.
+If and only if a Rust compiler permits a user to specify `#![feature(..)]`
+will the `nightly` flag be considered active.
 
 ## `#[cfg(version = "<semver>")]`
 
