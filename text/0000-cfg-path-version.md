@@ -10,7 +10,7 @@ Permit users to `#[cfg(..)]` on whether:
 
 + they are on a `nightly` compiler (`#[cfg(nightly)]`).
 + they have a certain minimum Rust version (`#[cfg(version = "1.27")]`).
-+ a certain external path exists `#[cfg(path_exists(::std::mem::ManuallyDrop))]`.
++ a certain external path exists `#[cfg(path_exists = ::std::mem::ManuallyDrop)]`.
 
 # Motivation
 [motivation]: #motivation
@@ -67,7 +67,7 @@ of *control* over what is supported and what is not.
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-## `#[cfg(nightly)]` and `#[cfg(path_exists($path)]`
+## `#[cfg(nightly)]` and `#[cfg(path_exists = $path)]`
 
 Consider for a moment that we would like to use the `Iterator::flatten`
 method of the standard library if it exists, but otherwise fall back to
@@ -76,12 +76,12 @@ method of the standard library if it exists, but otherwise fall back to
 ```rust
 #![cfg_attr(nightly, feature(iterator_flatten))]
 
-#[cfg(path_exists(::std::iter::Flatten))]
+#[cfg(path_exists = ::std::iter::Flatten)]
 fn make_iter(limit: u8) -> impl Iterator<Item = u8> {
     (0..limit).map(move |x| (x..limit)).flatten()
 }
 
-#[cfg(not(path_exists(::std::iter::Flatten)))]
+#[cfg(not(path_exists = ::std::iter::Flatten))]
 fn make_iter() {
     use itertools::Itertools;
     (0..limit).map(move |x| (x..limit)).flatten()
@@ -124,7 +124,7 @@ macro_rules! numeric_api {
     ($typ:ident) => {
         ...
 
-        #[cfg(path_exists(::core::ops::RangeInclusive))]
+        #[cfg(path_exists = ::core::ops::RangeInclusive)]
         impl Strategy for ::core::ops::RangeInclusive<$typ> {
             type Tree = BinarySearch;
             type Value = $typ;
@@ -165,7 +165,7 @@ language without having to release a new breaking change version.
 Dependents of `proptest` simply need to be on a compiler version where
 `::core::ops::RangeInclusive` is defined to take advantage of this.
 
-So far we have only used `path_exists(..)` to refer to paths in the standard 
+So far we have only used `path_exists = ..` to refer to paths in the standard 
 library. However, while it will be a less likely use case, you can use the flag
 to test if a path exists in some library in the ecosystem. This can for example
 be useful if you need to support lower minor versions of a library but also
@@ -195,7 +195,7 @@ Another example is opting into the system allocator on Rust 1.28 and beyond:
 
 ```rust
 #[cfg(version = "1.28")]
-// or: #[cfg(path_exists(::std::alloc::System))]
+// or: #[cfg(path_exists = ::std::alloc::System)]
 use std::alloc::System;
 
 #[cfg_attr(version = "1.28", global_allocator)]
@@ -241,7 +241,7 @@ greater or equal to the version in the `semver` string will the
 `#[cfg(version = "<string>")]` flag be considered active.
 Greater or equal is defined in terms of [caret requirements].
 
-## `#[cfg(path_exists($path))]`
+## `#[cfg(path_exists = $path)]`
 
 To the `cfg` attribute, a `path_exists` flag is added.
 This flag requires that a `path` fragment be specified in it inside parenthesis
@@ -253,7 +253,7 @@ conditionally compile against parts of their own crate because that crate
 has not been compiled when the `path_exists` flag is checked on an item.
 
 If and only if the path referred to by `$path` does exist and is public
-will the `#[cfg(path_exists($path)]` flag be considered active.
+will the `#[cfg(path_exists = $path)]` flag be considered active.
 In checking whether the path exists or not, the compiler will consider
 feature gated items to exist if the gate has been enabled.
 If a path refers to an item inside an inherent implementation,
@@ -266,7 +266,7 @@ a type constructor, it is possible to use the `::foo::bar::<T>::item` syntax.
 
 Note that the above sections also apply to the attribute `#[cfg_attr(..)]`
 as well as the special macro `cfg!(..)` in that `nightly`, `version = ".."`,
-and `path_exists(..)` are added to those as well.
+and `path_exists = ..` are added to those as well.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -282,7 +282,7 @@ that may not have certain paths defined.
 It sometimes happens that feature gates never make it to stable and
 that they instead get scrapped. This occurs infrequently.
 However, when this does happen, code that is conditionally compiled under
-`path_exists(::std::the::obsoleted::path)` will become garbage that just
+`path_exists = ::std::the::obsoleted::path` will become garbage that just
 sits around. Over time, this garbage can grow to a non-trivial amount.
 
 However, if we provide LTS channels in the style of [RFC 2483],
@@ -292,7 +292,7 @@ of definitions that won't be used when the LTS version changes.
 # Rationale and alternatives
 [alternatives]: #rationale-and-alternatives
 
-## `path_exists(..)`
+## `path_exists = ..`
 
 The primary rationale for the `path_exists` mechanism is that when you
 want to support some library feature, it is some path you are thinking of
@@ -303,14 +303,14 @@ or not via an indirection, we can just check if the path exists directly.
 This way, a user does not have to look up the minimum version number for
 the feature.
 
-You may think that `version = ".."` subsumes `path_exists(..)`.
+You may think that `version = ".."` subsumes `path_exists = ..`.
 However, we argue that it does not. This is the case because at the time of
 enabling the `nightly` feature that enables the path in the standard library,
 we do not yet know what minimum version it will be supported under.
 If we try to support it with `version = ".."`, it is possible that we may
 need to update the minimum version some small number of times.
 However, doing so even once means that you will need to release new versions
-of your crate. If you instead use `path_exists(..)` you won't need to use
+of your crate. If you instead use `path_exists = ..` you won't need to use
 it even once unless the name of the path changes in-between.
 
 ### The bikeshed
@@ -337,13 +337,13 @@ an `unstable` feature in `Cargo.toml`. An example of this is provided by the
 
 However, as we've argued and demonstrated in the [guide-level-explanation],
 the ability to `#[cfg(nightly)]` really shines when used in conjunction with
-`#[cfg(path_exists($path))]`.
+`#[cfg(path_exists ? $path)]`.
 
 ## `version = ".."`
 
 When it comes to `version = ".."`, it is needed to support conditional compilation
 of language features as opposed to library features as previously shown.
-Also, as we've seen, `version = ".."` does not subsume `path_exists(..)` but is
+Also, as we've seen, `version = ".."` does not subsume `path_exists = ..` but is
 rather a complementary mechanism.
 
 One problem specific to `version = ".."` is that it might get too `rustc` specific.
@@ -457,12 +457,12 @@ which we argue is simple and intuitive.
 
 ## Conditional compilation on feature gates
 
-An alternative to `version = ".."` and `path_exists(..)` is to allow users
+An alternative to `version = ".."` and `path_exists = ..` is to allow users
 to query where a certain feature gate is stable or not.
 However, it has been argued that allowing this would essentially stabilize
 the names of the gates which we've historically not done.
 
-We also argue that `path_exists(..)` is more intuitive because it is more
+We also argue that `path_exists = ..` is more intuitive because it is more
 natural to think of a feature in terms of how you would make use of it
 (via its path) rather than the sometimes somewhat arbitrarily named feature gate.
 
