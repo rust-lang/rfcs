@@ -231,7 +231,7 @@ This flag requires that a string literal be specified in it inside parenthesis.
 The string literal must have the format:
 
 ```
-semver ::= \d(.\d)?(.\d)?
+semver : \d(.\d)?(.\d)? ;
 ```
 
 [caret requirements]: https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#caret-requirements
