@@ -215,8 +215,9 @@ fn main() {
 
 Note that you won't be able to make use of `#[cfg(version = "..")]` for these 
 particular features since they were introduced before this RFC's features
-get stabilized. However, there will be features in the future to use this
-mechanism on.
+get stabilized. This means that you can't for example add `version = "1.28"`
+to your code and expect Rust 1.28 compilers to enable the code.
+However, there will be features in the future to use this mechanism on.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
