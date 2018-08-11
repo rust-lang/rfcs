@@ -65,6 +65,9 @@ proposed in the [summary] we aim to make retaining *compatibility* and
 supporting more compiler versions *pain-free* and to give authors a lot
 of *control* over what is supported and what is not.
 
+A minor use case this RFC supports is to work around compiler bugs by
+checking if we are on a particular version.
+
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
