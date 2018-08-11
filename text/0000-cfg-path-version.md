@@ -534,3 +534,8 @@ The ability to have optional cargo dependencies is out of scope for this RFC.
 
 1. What should the flags be named? This can be deferred to after the RFC if
    need be so that we may gain usage experience.
+
+2. Could we somehow have an allow-by-default lint that says
+   *"these paths don't exist"* which could be enabled on `cfg_attr(nightly)`?
+   This would be done to mitigate the accumulation of garbage code as
+   discussed in the [drawbacks].
