@@ -18,7 +18,7 @@ Permit users to `#[cfg(..)]` on whether:
 [stability_stagnation]: https://blog.rust-lang.org/2014/10/30/Stability.html
 [what_is_rust2018]: https://blog.rust-lang.org/2018/07/27/what-is-rust-2018.html
 
-A core tenant of Rust's story is
+A core tenet of Rust's story is
 [*"stability without stagnation"*][stability_stagnation].
 We have made great strides sticking to this story while continuously
 improving the language and the community. This is especially the case with
@@ -210,7 +210,7 @@ fn main() {
 ```
 
 Note that you won't be able to make use of `#[cfg(version(..))` for these 
-particular features since they were introduced before this RFC's featuers
+particular features since they were introduced before this RFC's features
 get stabilized. However, there will be features in the future to use this
 mechanism on.
 
