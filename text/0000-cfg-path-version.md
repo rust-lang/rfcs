@@ -340,6 +340,24 @@ However, doing so even once means that you will need to release new versions
 of your crate. If you instead use `path_exists = ..` you won't need to use
 it even once unless the name of the path changes in-between.
 
+### Preventing relative paths
+
+The reason why we have enforced that all paths must start with `::` inside
+`path_exists(..)` is that if we allow relative paths, and users write
+`path_exists(self::foo)`, then they can construct situations such as:
+
+```
+#[cfg(path_exists(self::bar)]
+fn foo() {}
+
+#[cfg(path_exists(self::foo)]
+fn bar() {}
+```
+
+One way around this is to collect all items before `cfg`-stripping,
+but this can cause problems with respect to stage separation.
+Therefore, we prevent this from occurring with a simple syntactic check.
+
 ### Extended rationale for `= $path`
 
 To permit `path_exists = ::foo::bar` we had to extend the meta grammar.
