@@ -538,3 +538,6 @@ The ability to have optional cargo dependencies is out of scope for this RFC.
    *"these paths don't exist"* which could be enabled on `cfg_attr(nightly)`?
    This would be done to mitigate the accumulation of garbage code as
    discussed in the [drawbacks].
+
+3. Is it technically feasible to implement `path_exists(..)`?
+   For example it could be hard if cfg-stripping runs before resolving things.
