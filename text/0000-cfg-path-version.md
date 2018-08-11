@@ -527,5 +527,7 @@ main = putStrLn version
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
+The ability to have optional cargo dependencies is out of scope for this RFC.
+
 1. What should the flags be named? This can be deferred to after the RFC if
    need be so that we may gain usage experience.
