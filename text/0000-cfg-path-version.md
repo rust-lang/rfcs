@@ -299,11 +299,9 @@ and `path_exists = ..` are added to those as well.
 # Drawbacks
 [drawbacks]: #drawbacks
 
-## It becomes harder to `crater`
-
-As we get more version based conditional compilation, it can get harder to
-use the `crater` tool because regressions are not tested on an old compiler
-that may not have certain paths defined.
+One argument is that hypothetically, if the standard library removed
+some unstable item, then we might "not notice" if everyone uses it through
+`cfg(path_exists = ..)`.
 
 ## Incremental garbage code and its collection
 
