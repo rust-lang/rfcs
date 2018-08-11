@@ -109,6 +109,26 @@ with more motivation:
    and let's us easily constrain the type of `elems` in a syntactically
    light-weight way in any case.
 
+   Another case of not being able to use turbofish is the `.into()` method.
+   Because the `Into` trait is defined as:
+
+   ```rust
+   pub trait Into<T> {
+       fn into(self) -> T;
+   }
+   ```
+
+   as opposed to (and it couldn't be because the semantics would be different):
+
+   ```rust
+   pub trait Into {
+       fn into<T>(self) -> T;
+   }
+   ```
+
+   there is no type parameter on `into` to turbofish. Thus, you may not write:
+   `thing.into::<Foo>()` but you can write `thing.into() : Foo`.
+
 6. Type ascription is helpful when doing *type* driven development
    and opens up more possibilities to move in the direction of
    interactive development as is possible with [agda-mode] and [idris-mode].
