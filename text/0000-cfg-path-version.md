@@ -252,8 +252,8 @@ This restriction exists to ensure that the user does not try to
 conditionally compile against parts of their own crate because that crate
 has not been compiled when the `path_exists` flag is checked on an item.
 
-If and only if the path referred to by `$path` does exist will the
-`#[cfg(path_exists($path)]` flag be considered active.
+If and only if the path referred to by `$path` does exist and is public
+will the `#[cfg(path_exists($path)]` flag be considered active.
 In checking whether the path exists or not, the compiler will consider
 feature gated items to exist if the gate has been enabled.
 If a path refers to an item inside an inherent implementation,
