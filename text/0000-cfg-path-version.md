@@ -379,7 +379,7 @@ However, in this case, `accessible($path)` seems the optimal notation.
 
 If we would like to extend the meta grammar, we could do so by changing:
 
-```abnf
+```
 named_value : "=" lit ;
 
 meta_or_lit : meta | lit ;
@@ -390,7 +390,7 @@ meta : path ( named_value | meta_list )? ;
 
 into:
 
-```abnf
+```
 lit_or_path : path | lit ;
 named_value : "=" lit_or_path ;
 
