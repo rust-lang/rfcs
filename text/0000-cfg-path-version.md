@@ -10,7 +10,7 @@ Permit users to `#[cfg(..)]` on whether:
 
 + they are on a `nightly` compiler (`#[cfg(nightly)]`).
 + they have a certain minimum Rust version (`#[cfg(version = "1.27")]`).
-+ a certain external path exists `#[cfg(accessible(::std::mem::ManuallyDrop))]`.
++ a certain external path exists (`#[cfg(accessible(::std::mem::ManuallyDrop))]`).
 
 # Motivation
 [motivation]: #motivation
