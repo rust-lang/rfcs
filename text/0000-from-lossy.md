@@ -183,14 +183,19 @@ pub trait FromLossy<S> {
 
 Add implementations to `f64` from all of:
 
-- `u64, i64, u128, i128`
+- `u64, i64, u128, i128, usize, isize`
 
 and to `f32` from all of:
 
-- `f64, u32, i32, u64, i64, u128, i128`
+- `f64, u32, i32, u64, i64, u128, i128, usize, isize`
 
 These conversions should round to the nearest representable value, with ties to
 even (as is commonly used for floating-point operations).
+
+Note that for the platform-dependent types `usize` and `isize`, some conversions
+will always be exact on some platforms (i.e. to `f64` on 32-bit platforms, and
+to both float types on 16-bit platforms). We consider this acceptable despite
+overlap with a potential `From` implementation in such cases.
 
 (Note: other integer → float conversions are already handled by `From` since
 they are loss-less. There is a question below about trait overlap.)
