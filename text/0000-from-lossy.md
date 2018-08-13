@@ -68,6 +68,9 @@ Type conversions can be handled by the following traits:
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
+This concerns traits in the `std::convert` module: the existing `From` and
+`TryFrom`, as well as some new traits.
+
 ## (Approximate) semantic value preserving conversions
 
 ### `From` trait
@@ -233,7 +236,7 @@ impl<S, T> TryFromLossy<S> for T where FromLossy<S>: T {
 }
 ```
 
-Add implementations from all of:
+Additionally, define implementations from all of:
 
 - `f32, f64`
 
@@ -254,6 +257,16 @@ value rounded towards zero. E.g.:
 - -1f32 → u32: error
 - -0.2f32 → u32: 0
 - 100_000f32 → u16: error
+
+These implementations should use the following error type, defined in
+`std::num` (as noted by @SimonSapin, this allows modification later):
+
+```rust
+struct TryFromFloatError{
+    _dummy: ()
+};
+```
+
 
 ## Other conversions
 
@@ -310,6 +323,13 @@ This has overlap with the `From` and `TryFrom` traits. To quote @scottmcm:
 > also like a clippy lint suggesting `from` instead where possible.) And I think
 > it could be useful for machine-generated code as mentioned in
 > [#2438 (comment)](https://github.com/rust-lang/rfcs/pull/2438#issuecomment-403255258).
+
+## Core lib
+
+`core` is the subset of `std` which is applicable to all supported platforms.
+Since it already includes all types mentioned here as well as `From` and
+`TryFrom`, the traits and implementations proposed by this RFC should in fact
+be placed in the `core` lib with aliases in `std`.
 
 # Related problems
 
