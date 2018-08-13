@@ -173,7 +173,7 @@ When a union implementing `Drop` goes out of scope, its destructor gets called i
 }
 {
     let u = U { f1: ManuallyDrop::new(Vec::new()) };
-    foo(u.f2);
+    foo(u);
     // drop does NOT get called
 }
 ```
