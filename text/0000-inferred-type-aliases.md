@@ -607,6 +607,13 @@ fn bar() -> Alias {
 This is by design so that `type Foo = _;` is consistent with
 how `existential type` works.
 
+However, there is a choice here.
+One alternative design, that is still not full global type inference,
+could be to allow all determinants in a module to contribute to
+the unification effort. They must however not contradict each other.
+The design in this RFC should be forward compatible with such an
+alternative as it would accept strictly more programs as well-formed.
+
 ## The rationale for `_` as a syntax
 
 Simply put, we use `_` as a syntax because it is already permitted in `let`
