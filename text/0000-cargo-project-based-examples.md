@@ -222,12 +222,6 @@ If we implement project-based examples into cargo, it might be backward incompat
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-## By adding another subcommand 
-
-There could be another way to implement project-based examples by introducing `cargo example` subcommand. 
-However by doing this we must change our way to run examples now by `cargo run --example <NAME>` which 
-is already widely accepted by rust community. 
-
 ## Not implementing this feature
 
 It may also be suggested that we could somehow *not* implement this project-based cargo examples, 
@@ -243,6 +237,18 @@ but there could be further detailed designs to do on customization and simplizat
 
 [diesel]: https://github.com/diesel-rs/diesel/blob/b8d8620b1e6e9f0c0830d16e8762e215930b8a5c/Cargo.toml#L1-L26
 [quicli]: https://github.com/killercup/quicli/blob/879dd74a2a0e3c47b2e76f41694920042317a0c9/Cargo.toml#L38-L44
+
+## By adding another subcommand 
+
+There could be another way to implement project-based examples by introducing `cargo example` subcommand. 
+However by doing this we must change our way to run examples now by `cargo run --example <NAME>` which 
+is already widely accepted by rust community. 
+
+## By enhancing `[[examples]]` in `Cargo.toml`
+
+It could be also possible to enhance the tag `[[examples]]` by adding a key named `cargo-toml-path` or others, 
+to make it possible to locate own `Cargo.toml` file for this example, rather than using `dev-dependencies` only.
+By this way we use unique `Cargo.toml` for different examples without changing the way to run them.
 
 ## Another way to write `.gitignore`
 
