@@ -579,6 +579,7 @@ or they will remain unsupported.
 In particular, do note that this RFC enables things that are simply *impossible*
 with today's Rust. In other words, what is suggested here is not mere syntactic
 sugar, but represents instead an increase in the capabilities of the language.
+To see examples of what is impossible, please refer back to the [motivation].
 
 ## On the globality of inference
 
