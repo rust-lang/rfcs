@@ -449,6 +449,28 @@ Another way to think of the feature proposed in this RFC is that it is the
 and [inferred] `type Alias = impl Trait` ([RFC 2515]) or equivalently
 `existential type Alias: Trait;` ([RFC 2071]).
 
+To make matters more concrete, `type Alias = impl Trait`,
+can be thought of as semantically equivalent to:
+
+```rust
+type AliasRepr: Bar = _;
+
+#[repr(transparent)]
+struct Alias {
+    representation: AliasRepr
+}
+
+impl Bar for Alias {
+    // delegate everything to self.representation
+}
+```
+
+In this case, the inference properties of [RFC 2071] are retained
+since `type Alias = impl Trait` has the same properties.
+This example does not take privacy into account,
+so it is not a literal desugaring, but it does illustrate
+how `existential type` behaves beyond that.
+
 ## Dos and Don’ts
 [do_dont]: #dos-and-don'ts
 
