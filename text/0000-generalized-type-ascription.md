@@ -136,6 +136,32 @@ with more motivation:
 [agda-mode]: http://agda.readthedocs.io/en/v2.5.2/tools/emacs-mode.html
 [idris-mode]: https://github.com/idris-hackers/idris-mode
 
+7. Type ascription helps with [RFC 2071] which notes that you sometimes
+   have to introduce a `let` binding to please the type checker. An example:
+
+   ```rust
+   existential type Foo: Debug;
+
+   fn add_to_foo_2(x: Foo) {
+       let x: i32 = x;
+       x + 1
+   }
+   ```
+   
+   However, this does not seem particularly ergonomic and introduces,
+   relatively speaking, a lot of boilerplate.
+   Instead, we can make this more ergonomic using ascription:
+
+   ```rust
+   fn add_to_foo_2(x: Foo) {
+       x : i32 + 1
+   }
+   ```
+
+8. As `$($pat:pat),*` is a legal pattern and the pattern grammar now accepts
+   `$pat: pat : $type: ty`, it becomes possible to write macros taht can
+   match function signatures with arbitrary patterns for arguments.
+
 ## Type ascription has already been accepted as an RFC
 
 We noted previously that [RFC 803] already accepted type ascription in
