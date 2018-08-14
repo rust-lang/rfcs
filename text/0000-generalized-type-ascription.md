@@ -1707,6 +1707,12 @@ However, it is our contention that the need to use the syntax will not be that
 common and that consistency is paramount. To mitigate the readability angle,
 this RFC proposes to lint towards usage of parenthesis when `baz` is an identifier.
 
+One possible way to avoid forcing the user to write `Foo { bar: (bar: u8) }`
+in a pattern context might be to allow the user to ascribe the field directly
+by writing `Foo { bar: : u8 }`. One could potentially write this as:
+`Foo { bar :: u8 }`. One drawback in this approach is that it may confuse
+readers with paths.
+
 # Rationale and alternatives
 [alternatives]: #rationale-and-alternatives
 
