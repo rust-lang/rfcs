@@ -38,7 +38,7 @@ to satisfy two needs:
 
 1. *Encapsulation* ("Abstraction").
 
-   An `existential type Alias: Bar` only afford the operations that the bound
+   An `existential type Alias: Bar` only affords the operations that the bound
    `Bar` affords (+ `auto` trait leakage). This gives the user the ability
    to hide the concrete underlying type thereby making it possible to not
    overpromise and to change the underlying type at a later point in time.
@@ -213,7 +213,7 @@ detail of the macro and not particularly relevant for anyone who wants
 to understand what the implementation does.
 
 To generate the definition of `type Strategy`,
-100s of lines of code are required inside the procedural macro
+100s of lines of code is required inside the procedural macro
 corresponding to `#[derive(Arbitrary)]`.
 This *greatly* complicates the development of the macro.
 
@@ -698,6 +698,105 @@ They also work well on a purely syntactic level;
 while [RFC 2515] lets `impl Trait` work in more places,
 this RFC lets `_` work in more places.
 Thus, the RFCs increase syntactic uniformity in much the same way.
+
+## Justification for a minimal `Bound`
+
+As noted in the [summary] and elsewhere, this RFC permits the user to
+optionally specify a *minimal* bound on type aliases and associated types
+in trait implementations.
+
+It has been argued that this would be a comparatively large extension of
+Rust's grammar for little practical benefit. However, in this section,
+we outline a few benefits this extension does give us.
+
+### Grammatical simplification
+
+It might seem that this feature complicates the grammar and thereby the parser.
+However, we observe that given associated type defaults (in nightly),
+as well as `where` clauses on associated `type`s inside `trait`s (RFC 1598),
+we can achieve a degree of grammatical unification.
+For example, before this RFC, we had:
+
+```
+eq_type : '=' ty_sum ;
+common : TYPE ident generic_params ;
+
+trait_type
+: maybe_outer_attrs
+  common maybe_ty_param_bounds maybe_where_clause eq_type? ';' ;
+
+impl_type
+: attrs_and_vis maybe_default
+  common eq_type ';'
+
+item_type
+: common maybe_where_clause eq_type ';' ;
+```
+
+With this RFC, we can simplify by moving `maybe_ty_param_bounds` into `common`:
+
+```
+eq_type : '=' ty_sum ;
+common : TYPE ident generic_params maybe_ty_param_bounds ;
+
+trait_type
+: maybe_outer_attrs
+  common maybe_where_clause eq_type? ';' ;
+
+impl_type
+: attrs_and_vis maybe_default
+  common eq_type ';'
+
+item_type
+: common maybe_where_clause eq_type ';' ;
+```
+
+What is left then is introducing `maybe_where_clause` to trait implementations
+which would give us:
+
+```
+eq_type : '=' ty_sum ;
+common : TYPE ident generic_params maybe_ty_param_bounds maybe_where_clause ;
+trait_type : maybe_outer_attrs common eq_type? ';' ;
+impl_type : attrs_and_vis maybe_default item_type ';'
+item_type : common eq_type ';' ;
+```
+
+This is the maximal unification possible.
+However, this final step is left as possible future work.
+
+The benefit of this increased grammatical unification, however small,
+is that the language becomes more uniform, which is useful to reduce
+surprises for users.
+
+### Useful to explain [RFC 2071]
+
+In the notes about [the proposal] we used the fact that this RFC proposes
+a minimum bound to explain how one can understand `type Foo = impl Bar;`
+in terms of `type AliasRepr: Bar = _;` as well as a new type wrapper.
+If we don't have this capability, then the explanation does also not work.
+However, this is a rather minor point.
+
+### Useful for documentation
+
+Even when you want to expose all the operations of some type,
+there often is a key trait that is used around the trait.
+We have already seen examples of this in the [motivation] with
+the case of `Iterator` and `Strategy`. Documenting this key trait
+can serve as a useful hint for users that the major role of the
+alias is so and so.
+
+### Useful as a guard against breakage
+
+As we've previously discussed in the section on [drawbacks],
+one problem with publicly exposing the underlying types of
+these type aliases or associated types is that breakage may
+become more likely.
+
+As a guard against this risk, we can use these bounds to denote
+the aforementioned key traits. This can help ensure that at least
+for some key parts of the API, breakage can be detected by the
+crate author as opposed to by the dependents of the crate.
 
 # Prior art
 [prior-art]: #prior-art
