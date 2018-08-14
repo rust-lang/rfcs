@@ -321,6 +321,45 @@ However, if we provide LTS channels in the style of [RFC 2483],
 then there are opportunities to perform some "garbage collection"
 of definitions that won't be used when the LTS version changes.
 
+## Combining `nightly` and `accessible(..)`
+
+Consider that a popular library writes:
+
+```rust
+#![cfg_attr(nightly, feature(some_feature))]
+#[cfg(accessible(::std::foo:SomeFeature))]
+use std::foo::SomeFeature;
+
+#[cfg(not(accessible(::std::foo:SomeFeature)))]
+struct SomeFeature { ... }
+```
+
+One potential hazard when writing this migrating construct is that
+once `SomeFeature` finally gets stabilized, it may have been shipped
+in a modified form. Such modification may include changing the names
+of `SomeFeature`'s methods, their type signatures, or what trait
+implementations exist for `SomeFeature`.
+
+This problem only occurs when you combine `nightly` and `accessible(..)`
+or indeed `nightly` and `version = ".."`. However, there is a risk of breaking
+code that worked on one stable release of Rust in one or more versions after.
+
+A few mitigating factors to consider are:
+
++ It is possible to check if the methods of `SomeFeature` are `accessible`
+  or not by using their paths. This reduces the risk somewhat.
+
++ If a crate author runs continuous integration (CI) builds that include
+  testing the crate on a nightly toolchain, breakage can be detected
+  well before any crates are broken and a patch release of the crate
+  can be made which either removes the nightly feature or adjusts the
+  usage of it. The remaining problem is that dependent crates may have
+  `Cargo.lock` files that have pinned the patch versions of the crate.
+
++ Users should take care not to use this mechanism unless they are fairly
+  confident that no consequential changes will be made to the library.
+  A risk still exists, but it is opt-in.
+
 # Rationale and alternatives
 [alternatives]: #rationale-and-alternatives
 
