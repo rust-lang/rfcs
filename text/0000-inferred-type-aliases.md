@@ -1,5 +1,5 @@
 - Feature Name: `inferred_type_aliases`
-- Start Date: 2018-08-13
+- Start Date: 2018-08-14
 - RFC PR: _
 - Rust Issue: _
 
@@ -43,7 +43,7 @@ to satisfy two needs:
    to hide the concrete underlying type thereby making it possible to not
    overpromise and to change the underlying type at a later point in time.
 
-2. Naming [voldemort types][voldemort type].
+2. Naming [unnameable types][unnameable type].
 
    Before [RFC 1522] it was impossible to name unnameable types such as
    closures. Thus users had to `Box` their `Iterator`s (or similar) and
@@ -56,9 +56,9 @@ This RFC does not aim to solve use case 1). In fact, the opposite is the case.
 The mechanism proposed here should not be used for encapsulation.
 What this RFC does aim to solve is:
 
-## Better naming of [voldemort types][voldemort type]
+## Better naming of [unnameable types][unnameable type]
 
-When you use `existential type` to name a voldemort type you will be either
+When you use `existential type` to name a unnameable type you will be either
 unable, due to generic parameters on the alias or type parameters on implemented
 traits, to name all the traits that are needed to fully capture what the unnamed
 type is capable of, or you may have to enumerate a non-trivial number of traits
@@ -76,7 +76,7 @@ fn make_iterator() -> IncIter {
 }
 ```
 
-The closure `|x: usize| x + 1` is a [voldemort type] and thus the entire
+The closure `|x: usize| x + 1` is a [unnameable type] and thus the entire
 underlying return type of `make_iterator` is also unnameable.
 The underlying type implements `Clone`, but the compiler will not permit
 us to observe this fact from `make_iterator` because the fact that it
@@ -338,13 +338,14 @@ Here *"anonymized"* and *"opaque"* mean the same thing.
 As we can see from the error message, even though we know that the nominal type
 of `_numbers` is `Range<u8>`, the compiler has prevented us from concluding this.
 
-### `voldemort type`
-[voldemort type]: #voldemort-type
+### `unnameable type`
+[unnameable type]: #unnameable-type
 
-A *"voldemort type"* in Rust refers to types which *can not be named*.
-They are also called *"unnameable types"*. The canonical example of such
-unnameable types are the types of closures. Each closure has a distinct type,
-which the compiler knows about, but you can't write their name in code.
+A *"unnameable type"* in Rust refers to types which *can not be named*.
+They are also sometimes called *"voldemort types"*. The canonical example of
+such unnameable types are the types of closures.
+Each closure has a distinct type, which the compiler knows about,
+but you can't write their name in code.
 
 An example:
 
@@ -465,7 +466,7 @@ and [inferred] `type Alias = impl Trait` ([RFC 2515]) or equivalently
   associated types.
 
 3. **Do**, assuming that you keep in mind 1), use `_` as a means to name the
-   type of an expression with a [voldemort type] somewhere inside it.
+   type of an expression with a [unnameable type] somewhere inside it.
 
 ## Teaching this
 
@@ -545,7 +546,7 @@ or will issue [`E0277`] otherwise.
 
 The primary drawback to this feature is that can be *misused* for abstraction
 (which it should *not* be used for) instead of using the feature for what it
-was meant for (naming [voldemort types][voldemort type] and eliding
+was meant for (naming [unnameable types][unnameable type] and eliding
 unimportant implementation details).
 
 To mitigate this possibly, the use cases of using `_` should be highlighted
