@@ -87,7 +87,7 @@ fn make_iter(limit: u8) -> impl Iterator<Item = u8> {
 }
 
 #[cfg(not(accessible(::std::iter::Flatten)))]
-fn make_iter() {
+fn make_iter(limit: u8) -> impl Iterator<Item = u8> {
     use itertools::Itertools;
     (0..limit).map(move |x| (x..limit)).flatten()
 }
