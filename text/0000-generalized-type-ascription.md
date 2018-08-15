@@ -159,7 +159,7 @@ with more motivation:
    ```
 
 8. As `$($pat:pat),*` is a legal pattern and the pattern grammar now accepts
-   `$pat: pat : $type: ty`, it becomes possible to write macros taht can
+   `$pat: pat : $type: ty`, it becomes possible to write macros that can
    match function signatures with arbitrary patterns for arguments.
 
 ## Type ascription has already been accepted as an RFC
@@ -2075,7 +2075,7 @@ fn main() {
 However, if the user moved to snippet (A), then the example would instead print
 `0` to the terminal. We believe that the ability to transition in this way to
 and from the typed `let` binding is important for consistency and to make
-the langauge easy to understand.
+the language easy to understand.
 
 #### 2. Consistency with closures
 
