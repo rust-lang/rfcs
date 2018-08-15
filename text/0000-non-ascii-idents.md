@@ -109,6 +109,22 @@ The confusable detection algorithm is based on [Unicode® Technical Standard #39
 
 Note: A fast way to implement this is to compute `skeleton` for each identifier once and place the result in a hashmap as a key. If one tries to insert a key that already exists check if the two identifiers differ from each other. If so report the two confusable identifiers.
 
+## Exotic codepoint detection
+
+A new `less_used_codepoints` lint is added to the compiler. The default setting is to `warn`.
+
+The lint is triggered by identifiers that contain a codepoint that is not part of the set of "Allowed" codepoints as described by [Unicode® Technical Standard #39 Unicode Security Mechanisms Section 3.1 General Security Profile for Identifiers][TR39Allowed].
+
+Note: New Unicode versions update the set of allowed codepoints. Additionally the compiler authors may decide to allow more codepoints or warn about those that have been found to cause confusion.
+
+## Mixed script detection
+
+A new `mixed_script_idents` lint is added to the compiler. The default setting is to `warn`.
+
+The lint is triggered by identifiers that do not qualify for the "Moderately Restrictive" identifier profile specified in [Unicode® Technical Standard #39 Unicode Security Mechanisms Section 5.2 Restriction-Level Detection][TR39RestrictionLevel].
+
+Note: The definition of "Moderately Restrictive" can be changed by future versions of the Unicode standard to reflect changes in the natural languages used or for other reasons.
+
 ## Adjustments to the "bad style" lints
 
 Rust [RFC 0430] establishes naming conventions for Rust ASCII identifiers. The *rustc* compiler includes lints to promote these recommendations.
@@ -198,6 +214,7 @@ The [Go language][Go] allows identifiers in the form **Letter (Letter | Number)\
 * Should [ZWNJ and ZWJ be allowed in identifiers][TR31Layout]?
 * How are non-ASCII idents best supported in debuggers?
 * Which name mangling scheme is used by the compiler?
+* Is there a better name for the `less_used_codepoints` lint?
 
 [PEP 3131]: https://www.python.org/dev/peps/pep-3131/
 [UAX31]: http://www.unicode.org/reports/tr31/
@@ -213,3 +230,5 @@ The [Go language][Go] allows identifiers in the form **Letter (Letter | Number)\
 [Go]: https://golang.org/ref/spec#Identifiers
 [Composed characters]: https://en.wikipedia.org/wiki/Precomposed_character
 [RFC 0430]: http://rust-lang.github.io/rfcs/0430-finalizing-naming-conventions.html
+[TR39Allowed]: https://www.unicode.org/reports/tr39/#General_Security_Profile
+[TR39RestrictionLevel]: https://www.unicode.org/reports/tr39/#Restriction_Level_Detection
