@@ -377,4 +377,4 @@ The other alternatives commonly given are:
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-None.
+- The restriction of type alias `impl Trait` to the forms that are currently possible with `existential trait` is potentially unnecessary. Although this was proposed to simplify the RFC by only changing syntax, it could be a better choice to allow `impl Trait` anywhere in a type alias (by desugaring each occurrence into a separate inferred type).
