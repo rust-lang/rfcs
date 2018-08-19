@@ -8,7 +8,6 @@
 
 Permit users to `#[cfg(..)]` on whether:
 
-+ they are on a `nightly` compiler (`#[cfg(nightly)]`).
 + they have a certain minimum Rust version (`#[cfg(version(1.27.0))]`).
 + a certain external path is accessible
   (`#[cfg(accessible(::std::mem::ManuallyDrop))]`).
@@ -51,9 +50,8 @@ channels as proposed by [RFC 2483].
 [version_check]: https://crates.io/crates/version_check
 
 The current support for such conditional compilation is lacking.
-While [it is possible][version_check] to check if you are on a nightly
-compiler or to check if you are above a certain compiler version,
-such facilities are not particularly ergonomic at the moment.
+While [it is possible][version_check] to check if you are above a certain
+compiler version, such facilities are not particularly ergonomic at the moment.
 In particular, they require the setting up of a `build.rs` file and
 declaring up-front which versions you are interested in knowing about.
 These tools are also unable to check, without performing canary builds
@@ -72,14 +70,14 @@ checking if we are on a particular version.
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-## `#[cfg(nightly)]` and `#[cfg(accessible($path))]`
+## `#[cfg(accessible($path))]`
 
 Consider for a moment that we would like to use the `Iterator::flatten`
 method of the standard library if it exists, but otherwise fall back to
 `Itertools::flatten`. We can do that with the following snippet:
 
 ```rust
-#![cfg_attr(nightly, feature(iterator_flatten))]
+#![cfg_attr(feature = "unstable", feature(iterator_flatten))]
 
 #[cfg(accessible(::std::iter::Flatten))]
 fn make_iter(limit: u8) -> impl Iterator<Item = u8> {
@@ -99,31 +97,33 @@ fn main() {
 
 What this snippet does is the following:
 
-1. If you happen to be on a nightly compiler, but not otherwise,
-   the feature `iterator_flatten` will be enabled.
+1. If the cargo feature `unstable` is enabled and assuming the compiler is
+   capable of feature gates, but not otherwise, the feature `iterator_flatten`
+   will be enabled.
 
 2. If the path `::std::iter::Flatten` exists, the compiler will compile
    the first version of `make_iter`. If the path does not exist,
    the compiler will instead compile the second version of `make_iter`.
 
-The result of 1. and 2. is that your crate can opt into using `Iterator::flatten`
-on nightly compilers but use `Itertools::flatten` on stable compilers meanwhile.
-Once the standard library has stabilized `iter::Flatten`, future stable compilers
-will start using the first version of the function. As a crate author, you 
-don't have to publish any new versions of your crate for the compiler to
-switch to the libstd version when it is available in the future.
+The result of 1. and 2. is that your crate can opt into using
+`Iterator::flatten` when `feature = "unstable"` is enabled,
+but use `Itertools::flatten` on stable compilers meanwhile.
+Once the standard library has stabilized `iter::Flatten`,
+future stable compilers will start using the first version of the function.
+As a crate author, you  don't have to publish any new versions of your crate for
+the compiler to switch to the libstd version when it is available in the future.
 
 [`proptest`]: https://github.com/altsysrq/proptest
 [adding support]: https://github.com/AltSysrq/proptest/blob/67945c89e09f8223ae945cc8da029181822ce27e/src/num.rs#L66-L76
 
-In this case we used the `nightly` and `accessible` flags to handle a problem
-that the addition of `Iterator::flatten` caused for us if we had used
-`Itertools::flatten`. We can also use these mechanisms for strictly additive
-cases as well. Consider for example the [`proptest`] crate [adding support]
-for `RangeInclusive`:
+In this case we used the `feature = "unstable"` and `accessible` flags
+to handle a problem that the addition of `Iterator::flatten` caused for us
+if we had used `Itertools::flatten`. We can also use these mechanisms for
+strictly additive cases as well. Consider for example the [`proptest`] crate
+[adding support] for `RangeInclusive`:
 
 ```rust
-#[cfg_attr(nightly, feature(inclusive_range))]
+#[cfg_attr(feature = "unstable", feature(inclusive_range))]
 
 macro_rules! numeric_api {
     ($typ:ident) => {
@@ -223,13 +223,6 @@ However, there will be features in the future to use this mechanism on.
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-## `#[cfg(nightly)]`
-
-To the `cfg` attribute , a `nightly` flag is added.
-
-If and only if a Rust compiler permits a user to specify `#![feature(..)]`
-will the `nightly` flag be considered active.
-
 ## `#[cfg(version(<semver>))]`
 
 To the `cfg` attribute, a `version` flag is added.
@@ -298,9 +291,9 @@ fn do_stuff() {
 
 ## `cfg_attr` and `cfg!`
 
-Note that the above sections also apply to the attribute `#[cfg_attr(..)]`
-as well as the special macro `cfg!(..)` in that `nightly`, `version(..)`,
-and `accessible(..)` are added to those as well.
+Note that the above sections also apply to the attribute `#[cfg_attr(..)]` as
+well as the special macro `cfg!(..)` in that `version(..)` and `accessible(..)`
+are added to those as well.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -321,45 +314,6 @@ However, if we provide LTS channels in the style of [RFC 2483],
 then there are opportunities to perform some "garbage collection"
 of definitions that won't be used when the LTS version changes.
 
-## Combining `nightly` and `accessible(..)`
-
-Consider that a popular library writes:
-
-```rust
-#![cfg_attr(nightly, feature(some_feature))]
-#[cfg(accessible(::std::foo:SomeFeature))]
-use std::foo::SomeFeature;
-
-#[cfg(not(accessible(::std::foo:SomeFeature)))]
-struct SomeFeature { ... }
-```
-
-One potential hazard when writing this migrating construct is that
-once `SomeFeature` finally gets stabilized, it may have been shipped
-in a modified form. Such modification may include changing the names
-of `SomeFeature`'s methods, their type signatures, or what trait
-implementations exist for `SomeFeature`.
-
-This problem only occurs when you combine `nightly` and `accessible(..)`
-or indeed `nightly` and `version(..)`. However, there is a risk of breaking
-code that worked on one stable release of Rust in one or more versions after.
-
-A few mitigating factors to consider are:
-
-+ It is possible to check if the methods of `SomeFeature` are `accessible`
-  or not by using their paths. This reduces the risk somewhat.
-
-+ If a crate author runs continuous integration (CI) builds that include
-  testing the crate on a nightly toolchain, breakage can be detected
-  well before any crates are broken and a patch release of the crate
-  can be made which either removes the nightly feature or adjusts the
-  usage of it. The remaining problem is that dependent crates may have
-  `Cargo.lock` files that have pinned the patch versions of the crate.
-
-+ Users should take care not to use this mechanism unless they are fairly
-  confident that no consequential changes will be made to the library.
-  A risk still exists, but it is opt-in.
-
 # Rationale and alternatives
 [alternatives]: #rationale-and-alternatives
 
@@ -376,7 +330,7 @@ the feature.
 
 You may think that `version(..)` subsumes `accessible(..)`.
 However, we argue that it does not. This is the case because at the time of
-enabling the `nightly` feature that enables the path in the standard library,
+enabling the `feature = "unstable"` feature that enables the path in libstd,
 we do not yet know what minimum version it will be supported under.
 If we try to support it with `version(..)`, it is possible that we may
 need to update the minimum version some small number of times.
@@ -467,28 +421,6 @@ because they may imply to the user that only things that you may `use $path;` ca
 go in there. Meanwhile, you may `#[cfg(accessible(::foo::MyTrait::my_method))`
 which is *not* possible as `use ::foo::MyTrait::my_method;`. This also applies
 to other associated items and inherent methods as well as `struct` fields.
-
-## `#[cfg(nightly)`
-
-[dbg]: https://crates.io/crates/dbg
-
-One reason for the inclusion of `#[cfg(nightly)]` is that it is useful on its
-own to conditionally compile based on nightly/not as opposed to providing
-an `unstable` feature in `Cargo.toml`. An example of this is provided by the
-[dbg] crate which currently uses [version_check] to provide this automation.
-
-However, as we've argued and demonstrated in the [guide-level-explanation],
-the ability to `#[cfg(nightly)]` really shines when used in conjunction with
-`#[cfg(accessible($path))]`.
-
-### Alternative `#![if_possible_feature(<feature>)]`
-
-As an alternative to `#[cfg_attr(nightly, feature(<feature>))]`
-we could permit the user to write `#![if_possible_feature(<feature>)]`.
-The advantage of this is that it is quite direct with respect to intent.
-However, adding this in terms of `nightly` already has precedent in
-[version_check]. In addition, `nightly` also composes with other flags
-using `any`, `not`, and `all`.
 
 ## `#[cfg(version(..))`
 
@@ -682,12 +614,7 @@ main = putStrLn version
 
 The ability to have optional cargo dependencies is out of scope for this RFC.
 
-1. Could we somehow have an allow-by-default lint that says
-   *"these paths don't exist"* which could be enabled on `cfg_attr(nightly)`?
-   This would be done to mitigate the accumulation of garbage code as
-   discussed in the [drawbacks].
-
-2. Is it technically feasible to implement `accessible(..)`?
+1. Is it technically feasible to implement `accessible(..)`?
    For example it could be hard if cfg-stripping runs before resolving things.
 
    @eddyb has indicated that:
@@ -699,4 +626,94 @@ The ability to have optional cargo dependencies is out of scope for this RFC.
    > check against feature-gates (assuming the set of `#![feature(...)]`s in
    > the local crate is known at `cfg`-stripping time).
 
-3. Should we allow referring to fields of type definitions in `accessible(..)`?
+2. Should we allow referring to fields of type definitions in `accessible(..)`?
+
+# Possible future work
+[possible future work]: #possible-future-work
+
+## `#[cfg(nightly)]`
+
+In a previous iteration of this RFC, a `#[cfg(nightly)]` flag was included.
+However, this flag has since been removed from the RFC.
+We may still add such a feature in the future if we wish.
+Therefore, we have outlined what `nightly` would have meant
+and some upsides and drawbacks to adding it.
+
+## Technical specification
+
+To the `cfg` attribute, a `nightly` flag is added.
+
+If and only if a Rust compiler permits a user to specify `#![feature(..)]`
+will the `nightly` flag be considered active.
+
+## Drawbacks: Combining `nightly` and `accessible(..)`
+
+Consider that a popular library writes:
+
+```rust
+#![cfg_attr(nightly, feature(some_feature))]
+#[cfg(accessible(::std::foo:SomeFeature))]
+use std::foo::SomeFeature;
+
+#[cfg(not(accessible(::std::foo:SomeFeature)))]
+struct SomeFeature { ... }
+```
+
+One potential hazard when writing this migrating construct is that
+once `SomeFeature` finally gets stabilized, it may have been shipped
+in a modified form. Such modification may include changing the names
+of `SomeFeature`'s methods, their type signatures, or what trait
+implementations exist for `SomeFeature`.
+
+This problem only occurs when you combine `nightly` and `accessible(..)`
+or indeed `nightly` and `version(..)`. However, there is a risk of breaking
+code that worked on one stable release of Rust in one or more versions after.
+
+A few mitigating factors to consider are:
+
++ It is possible to check if the methods of `SomeFeature` are `accessible`
+  or not by using their paths. This reduces the risk somewhat.
+
++ If a crate author runs continuous integration (CI) builds that include
+  testing the crate on a nightly toolchain, breakage can be detected
+  well before any crates are broken and a patch release of the crate
+  can be made which either removes the nightly feature or adjusts the
+  usage of it. The remaining problem is that dependent crates may have
+  `Cargo.lock` files that have pinned the patch versions of the crate.
+
++ Users should take care not to use this mechanism unless they are fairly
+  confident that no consequential changes will be made to the library.
+  A risk still exists, but it is opt-in.
+
+However, at the end, compared to `feature = "unstable"`,
+which reverse dependencies may opt out of, `nightly` can't be opted out of
+(unless we add a mechanism to Cargo to perform such an override,
+but this would be anti-modular).
+This is the fundamental reason that for the time being,
+we have not included `nightly` in the proposal.
+
+## Upsides
+
+[dbg]: https://crates.io/crates/dbg
+
+One reason for the inclusion of `#[cfg(nightly)]` is that it is useful on its
+own to conditionally compile based on nightly/not as opposed to providing
+an `unstable` feature in `Cargo.toml`. An example of this is provided by the
+[dbg] crate which currently uses [version_check] to provide this automation.
+
+## Alternative `#![if_possible_feature(<feature>)]`
+
+As an alternative to `#[cfg_attr(nightly, feature(<feature>))]`
+we could permit the user to write `#![if_possible_feature(<feature>)]`.
+The advantage of this is that it is quite direct with respect to intent.
+However, adding this in terms of `nightly` already has precedent in
+[version_check]. In addition, `nightly` also composes with other flags
+using `any`, `not`, and `all`.
+
+This alternative also suffers from the problems previously noted.
+
+## Naming of the attribute
+
+If this flag were to be proposed again, it would probably be proposed under
+a different name than `nightly`. Instead, a more apt name with respect to intent
+would be `unstable_features`.
