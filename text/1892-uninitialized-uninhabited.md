@@ -1,7 +1,7 @@
-- Feature Name: uninitialized-uninhabited
+- Feature Name: `uninitialized_uninhabited`
 - Start Date: 2017-02-09
-- RFC PR: (leave this empty)
-- Rust Issue: (leave this empty)
+- RFC PR: [rust-lang/rfcs#1892](https://github.com/rust-lang/rfcs/pull/1892)
+- Rust Issue: [rust-lang/rust#53491](https://github.com/rust-lang/rust/issues/53491)
 
 # Summary
 [summary]: #summary
