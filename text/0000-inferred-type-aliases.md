@@ -116,12 +116,12 @@ there is no need to guarantee backwards compatibility for those details.
 
 ## Inference in `#[derive(MyTrait)]` macros
 
-[proptest_drive]: https://github.com/AltSysrq/proptest/pull/79
+[proptest_derive]: https://github.com/AltSysrq/proptest/pull/79
 
 Consider that we have some sort of custom derive macro for a trait with an
 associated type. Also consider that the derive macro allows customization
 of the derived implementation via attributes on the type definition.
-As an example, we have `#[derive(Arbitrary)]` for [proptest_drive]:
+As an example, we have `#[derive(Arbitrary)]` for [proptest_derive]:
 
 ```rust
 #[derive(Debug, Arbitrary)]
