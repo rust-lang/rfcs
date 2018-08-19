@@ -1,7 +1,7 @@
 - Feature Name: `convert_identity`
 - Start Date: 2018-01-19
-- RFC PR: (leave this empty)
-- Rust Issue: (leave this empty)
+- RFC PR: [rust-lang/rfcs#2306](https://github.com/rust-lang/rfcs/pull/2306)
+- Rust Issue: [rust-lang/rust#53500](https://github.com/rust-lang/rust/issues/53500)
 
 # Summary
 [summary]: #summary
