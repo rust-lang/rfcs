@@ -445,6 +445,7 @@ One might consider other names for the flag instead of `accessible`.
 Some contenders are:
 
 + `path_accessible`
++ `usable`
 + `can_use`
 + `path_exists`
 + `have_path`
@@ -461,8 +462,8 @@ we argue that from the context of seeing `accessible(::std::foo::bar)`
 it is clear that it is paths we are talking about because the argument
 is a path and not something else.
 
-While `can_use` is also a strong contender, we reject this option because
-it may imply to the user that only things that you may `use $path;` can
+While `can_use` and `usable` are also strong contenders, we reject these options
+because they may imply to the user that only things that you may `use $path;` can
 go in there. Meanwhile, you may `#[cfg(accessible(::foo::MyTrait::my_method))`
 which is *not* possible as `use ::foo::MyTrait::my_method;`. This also applies
 to other associated items and inherent methods as well as `struct` fields.
