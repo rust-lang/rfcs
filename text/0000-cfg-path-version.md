@@ -9,7 +9,7 @@
 Permit users to `#[cfg(..)]` on whether:
 
 + they are on a `nightly` compiler (`#[cfg(nightly)]`).
-+ they have a certain minimum Rust version (`#[cfg(version = "1.27")]`).
++ they have a certain minimum Rust version (`#[cfg(version(1.27.0))]`).
 + a certain external path is accessible
   (`#[cfg(accessible(::std::mem::ManuallyDrop))]`).
 
@@ -176,7 +176,7 @@ to test if a path exists in some library in the ecosystem. This can for example
 be useful if you need to support lower minor versions of a library but also
 add support for features in a higher minor version.
 
-## `#[cfg(version = "1.27")]`
+## `#[cfg(version(1.27.0))]`
 
 Until now, we have only improved our support for library features but never
 any language features. By checking if we are on a certain minimum version of
@@ -184,7 +184,7 @@ Rust or any version above it, we can conditionally support such new features.
 For example:
 
 ```rust
-#[cfg_attr(version = "1.27", must_use)]
+#[cfg_attr(version(1.27), must_use)]
 fn double(x: i32) -> i32 {
     2 * x
 }
@@ -199,11 +199,11 @@ fn main() {
 Another example is opting into the system allocator on Rust 1.28 and beyond:
 
 ```rust
-#[cfg(version = "1.28")]
+#[cfg(version(1.28))]
 // or: #[cfg(accessible(::std::alloc::System))]
 use std::alloc::System;
 
-#[cfg_attr(version = "1.28", global_allocator)]
+#[cfg_attr(version(1.28), global_allocator)]
 static GLOBAL: System = System;
 
 fn main() {
@@ -214,9 +214,9 @@ fn main() {
 }
 ```
 
-Note that you won't be able to make use of `#[cfg(version = "..")]` for these 
+Note that you won't be able to make use of `#[cfg(version(..))]` for these 
 particular features since they were introduced before this RFC's features
-get stabilized. This means that you can't for example add `version = "1.28"`
+get stabilized. This means that you can't for example add `version(1.28)`
 to your code and expect Rust 1.28 compilers to enable the code.
 However, there will be features in the future to use this mechanism on.
 
@@ -230,7 +230,7 @@ To the `cfg` attribute , a `nightly` flag is added.
 If and only if a Rust compiler permits a user to specify `#![feature(..)]`
 will the `nightly` flag be considered active.
 
-## `#[cfg(version = "<semver>")]`
+## `#[cfg(version(<semver>))]`
 
 To the `cfg` attribute, a `version` flag is added.
 This flag requires that a string literal be specified in it inside parenthesis.
@@ -244,7 +244,7 @@ semver : \d(.\d)?(.\d)? ;
 
 If and only if a Rust compiler considers itself to have a version which is
 greater or equal to the version in the `semver` string will the
-`#[cfg(version = "<string>")]` flag be considered active.
+`#[cfg(version(<semver>)]` flag be considered active.
 Greater or equal is defined in terms of [caret requirements].
 
 ## `#[cfg(accessible($path))]`
@@ -299,7 +299,7 @@ fn do_stuff() {
 ## `cfg_attr` and `cfg!`
 
 Note that the above sections also apply to the attribute `#[cfg_attr(..)]`
-as well as the special macro `cfg!(..)` in that `nightly`, `version = ".."`,
+as well as the special macro `cfg!(..)` in that `nightly`, `version(..)`,
 and `accessible(..)` are added to those as well.
 
 # Drawbacks
@@ -341,7 +341,7 @@ of `SomeFeature`'s methods, their type signatures, or what trait
 implementations exist for `SomeFeature`.
 
 This problem only occurs when you combine `nightly` and `accessible(..)`
-or indeed `nightly` and `version = ".."`. However, there is a risk of breaking
+or indeed `nightly` and `version(..)`. However, there is a risk of breaking
 code that worked on one stable release of Rust in one or more versions after.
 
 A few mitigating factors to consider are:
@@ -374,11 +374,11 @@ or not via an indirection, we can just check if the path exists directly.
 This way, a user does not have to look up the minimum version number for
 the feature.
 
-You may think that `version = ".."` subsumes `accessible(..)`.
+You may think that `version(..)` subsumes `accessible(..)`.
 However, we argue that it does not. This is the case because at the time of
 enabling the `nightly` feature that enables the path in the standard library,
 we do not yet know what minimum version it will be supported under.
-If we try to support it with `version = ".."`, it is possible that we may
+If we try to support it with `version(..)`, it is possible that we may
 need to update the minimum version some small number of times.
 However, doing so even once means that you will need to release new versions
 of your crate. If you instead use `accessible(..)` you won't need to use
@@ -490,14 +490,14 @@ However, adding this in terms of `nightly` already has precedent in
 [version_check]. In addition, `nightly` also composes with other flags
 using `any`, `not`, and `all`.
 
-## `#[cfg(version = "..")`
+## `#[cfg(version(..))`
 
-When it comes to `version = ".."`, it is needed to support conditional compilation
+When it comes to `version(..)`, it is needed to support conditional compilation
 of language features as opposed to library features as previously shown.
-Also, as we've seen, `version = ".."` does not subsume `accessible(..)` but is
+Also, as we've seen, `version(..)` does not subsume `accessible(..)` but is
 rather a complementary mechanism.
 
-One problem specific to `version = ".."` is that it might get too `rustc` specific.
+One problem specific to `version(..)` is that it might get too `rustc` specific.
 It might be difficult for other Rust implementations than `rustc` to work with
 this version numbering as libraries will compile against `rustc`s release
 numbering. However, it is possible for other implementations to follow
@@ -508,22 +508,27 @@ with `GHC` and alternative Haskell compilers.
 
 ### The bikeshed - Argument syntax
 
-We have two options with respect to how the `version` flag may be specified:
+We have roughly two options with respect to how the `version` flag may be specified:
 
 1. `version = "<semver>"`
-2. `version("<semver>")`
+2. `version(<semver>)`
 
 The syntax in 2. is currently an error in `#[cfg(..)]` as you may witness with:
 
 ```rust
 // error[E0565]: unsupported literal
-#[cfg(abracadabra("1.27"))] fn bar() {}
+#[cfg(abracadabra(1.27))] fn bar() {}
+                  ^^^^
 ```
 
-We could allow this syntax. However, we have chosen the syntax in 1.
-This with consistency with flags such as `target_feature = "bmi"`.
-Another reason to go with `version = ".."` is that `version("..")`
-looks like a list.
+However, we have decided to go with the syntax in 2. because the `cfg` flags
+that use the `flag = ".."` syntax are all static as opposed to dynamic.
+In other words, the semantics of `cfg(x = "y")` is equivalent to
+*"`rustc --print=cfg` contains a `x="y"` line"*.
+Therefore, and since `version(..)` entails a dynamic check as opposed
+to simple string equality, we use the syntax `version(..)`.
+
+However, one reason to pick syntax 1. is that `version("..")` looks like a list.
 
 ### The bikeshed - Attribute name
 
@@ -537,11 +542,12 @@ We pick the current naming because we believe it is sufficiently clear
 while also short and sweet. However, `min_version` is a good alternative
 to consider because it telegraphs the `>=` nature of the flag.
 
-As for the `version_string` syntax, it could also be adjusted such that
-you could write `version = ">= 1.27"`. We could also support exact version
+As for the `<semver>` syntax, it could also be adjusted such that
+you could write `version(>= 1.27)`. We could also support exact version
 checking (`==`) as well as checking if the compiler is below a certain version
-(`<=`). However, as a first iteration, `version = "1.27"` is simple and covers
-most use cases.
+(`<=`). There are also the "tilde requirements" and "wildcard requirements"
+that Cargo features that we could add. However, as a first iteration,
+`version(1.27.0)` is simple and covers most use cases.
 
 ## [version_check] as an alternative
 
@@ -589,7 +595,7 @@ fn main() {
 }
 ```
 
-The [version_check] crate also supports testing for a minimum `version = ".."` with:
+The [version_check] crate also supports testing for a minimum `version(..)` with:
 
 ```rust
 extern crate version_check;
@@ -603,12 +609,12 @@ However, this is quite verbose in comparison and requires you to invent
 ad-hoc and crate-specific names for your `#[cfg(..)]` flags such as
 `MIN_COMPILER_1_13` that will not be the same for every crate.
 You will also need to repeat this per version you want to support.
-This causes the mechanism to scale poorly as compared to `version = "1.27"`
+This causes the mechanism to scale poorly as compared to `version(1.27)`
 which we argue is simple and intuitive.
 
 ## Conditional compilation on feature gates
 
-An alternative to `version = ".."` and `accessible(..)` is to allow users
+An alternative to `version(..)` and `accessible(..)` is to allow users
 to query where a certain feature gate is stable or not.
 However, it has been argued that allowing this would essentially stabilize
 the names of the gates which we've historically not done.
