@@ -446,10 +446,10 @@ Same as with type aliases, you may also enforce a trait bound:
 
 Another way to think of the feature proposed in this RFC is that it is the
 `_` inside `type Alias = _;` is the [transparent] version of the [opaque]
-and [inferred] `type Alias = impl Trait` ([RFC 2515]) or equivalently
+and [inferred] `type Alias = impl Trait;` ([RFC 2515]) or equivalently
 `existential type Alias: Trait;` ([RFC 2071]).
 
-To make matters more concrete, `type Alias = impl Trait`,
+To make matters more concrete, `type Alias = impl Trait;`,
 can be thought of as semantically equivalent to:
 
 ```rust
@@ -797,6 +797,30 @@ As a guard against this risk, we can use these bounds to denote
 the aforementioned key traits. This can help ensure that at least
 for some key parts of the API, breakage can be detected by the
 crate author as opposed to by the dependents of the crate.
+
+### Alternative syntax
+
+One possible alternative syntax instead of `type Foo: Bound = _` is to extend
+the type grammar to allow a sort of "trait ascription". We do this by introducing
+the following alternative to the `type` production:
+
+```
+type : type ":" bound ;
+```
+
+It then becomes possible to state things such as:
+
+```rust
+type Foo = _ : Debug;
+
+// Assuming we allow `_` in this context which this RFC does not.
+fn bar() -> _ : Debug {
+    ...
+}
+```
+
+While this alternative is a more composable construct, we instead propose
+`type Foo: Bound = <definition>;` because it is more readable.
 
 # Prior art
 [prior-art]: #prior-art
