@@ -1,7 +1,7 @@
-- Feature Name: is_sorted
+- Feature Name: `is_sorted`
 - Start Date: 2018-02-24
-- RFC PR: (leave this empty)
-- Rust Issue: (leave this empty)
+- RFC PR: [rust-lang/rfcs#2351](https://github.com/rust-lang/rfcs/pull/2351)
+- Rust Issue: [rust-lang/rust#53485](https://github.com/rust-lang/rust/issues/53485)
 
 # Summary
 [summary]: #summary
