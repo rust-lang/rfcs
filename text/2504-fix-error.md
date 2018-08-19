@@ -1,7 +1,7 @@
-- Feature Name: fix_error
+- Feature Name: `fix_error`
 - Start Date: 2018-07-18
-- RFC PR: (leave this empty)
-- Rust Issue: (leave this empty)
+- RFC PR: [rust-lang/rfcs#2504](https://github.com/rust-lang/rfcs/pull/2504)
+- Rust Issue: [rust-lang/rust#53487](https://github.com/rust-lang/rust/issues/53487)
 
 # Summary
 [summary]: #summary
