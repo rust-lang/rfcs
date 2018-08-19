@@ -628,6 +628,51 @@ The ability to have optional cargo dependencies is out of scope for this RFC.
 
 2. Should we allow referring to fields of type definitions in `accessible(..)`?
 
+3. In the [reference-level-explanation], we note that:
+   > If and only if a Rust compiler considers itself to have a version which is
+   > greater or equal to the version in the `semver` string will the
+   > `#[cfg(version(<semver>)]` flag be considered active.
+
+   However, it is currently not well specified what "considers itself" exactly
+   means. To be more precise, if querying a mid-cycle nightly compiler with
+   `rustc --version` results in `rustc 1.29.0-nightly (31f1bc7b4 2018-07-15)`,
+   but 1.29.0 has not been released on the stable channel,
+   will then `version(1.29.0)` be active for this nightly or will it not?
+
+   The reason this question matters is because on one 1.29.0-nightly compiler,
+   a feature may not have been stabilized. Some days later, but before 1.29.0
+   hits a beta or stable compiler, a feature does get stabilized.
+
+   To resolve this question, there are broadly 3 approaches:
+
+   1. Answer the question in the affirmative.
+      This entails that some breakage might sometimes occur when
+      using a nightly compiler.
+
+   2. Answer it in the negative by changing the date when the version constant
+      is bumped in the compiler. That is, a version would only be bumped when
+      releasing new stable or beta compilers and nightly compilers would always
+      be versioned as the latest stable/beta. This also means that given
+      `#[stable(feature = "foobar", since = "1.42.0")]` for some feature
+      `foobar`, the feature would not be available first when the feature
+      actually reaches stable/beta.
+
+   3. As 2. but separate versions reported by `rustc --version` and to
+      `version(..)`. This would for example mean that if the last
+      stable compiler is `1.42.0`, then that would be used by `version(..)`
+      while `rustc --version` would report `1.43.0-nightly`.
+      This approach could be technically achieved by for example
+      maintaining one version constant that tracks the last stable/beta
+      compiler as `x.y.z` and then `--version` would report
+      `x.(y + 1).0-nightly`.
+
+   Two arguments in favour of either 2. or 3. is that they would be more
+   principled as we have not really stabilized something until it reaches
+   stable or beta.
+
+   We consider this unresolved question to be a matter of implementation detail
+   which may be resolved during implementation.
+
 # Possible future work
 [possible future work]: #possible-future-work
 
