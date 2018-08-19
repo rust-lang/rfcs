@@ -521,14 +521,35 @@ The syntax in 2. is currently an error in `#[cfg(..)]` as you may witness with:
                   ^^^^
 ```
 
-However, we have decided to go with the syntax in 2. because the `cfg` flags
-that use the `flag = ".."` syntax are all static as opposed to dynamic.
-In other words, the semantics of `cfg(x = "y")` is equivalent to
-*"`rustc --print=cfg` contains a `x="y"` line"*.
-Therefore, and since `version(..)` entails a dynamic check as opposed
-to simple string equality, we use the syntax `version(..)`.
+[attr_grammar]: https://github.com/rust-lang/rust/blob/097c40cf6e1defc2fc49d521374254ee27f5f1fb/src/libsyntax/parse/attr.rs#L141-L149
 
-However, one reason to pick syntax 1. is that `version("..")` looks like a list.
+However, the attribute grammar is [technically][attr_grammar]:
+
+```rust
+attribute  : "#" "!"? "[" path attr_inner? "]" ;
+attr_inner : "[" token_stream "]"
+           | "(" token_stream ")"
+           | "{" token_stream "}"
+           | "=" token_tree
+           ;
+```
+
+Note in particular that `#[my_attribute(<token_stream>)]` is a legal production
+in the grammar wherefore we can support `#[cfg(version(1.27.0))]` if we so wish.
+
+[@eddyb]: https://github.com/eddyb
+
+Given that syntax 2. is possible, we have decided to use it because as [@eddyb]
+has noted, the `cfg` flags that use the `flag = ".."` syntax are all static as
+opposed to dynamic. In other words, the semantics of `cfg(x = "y")` is that of
+checking for a membership test within a fixed set determined ahead of time.
+This set is also available through `rustc --print=cfg`.
+
+What a user may infer from how other `cfg(flag = "..")` flags work is that
+`version = ".."` checks for an *exact* version. But as we've seen before,
+this interpretation is not the one in this RFC.
+
+However, one reason to pick syntax 1. is that `version(..)` looks like a list.
 
 ### The bikeshed - Attribute name
 
