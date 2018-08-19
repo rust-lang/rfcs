@@ -1,7 +1,7 @@
-- Feature Name: capture-disjoint-fields
+- Feature Name: `capture_disjoint_fields`
 - Start Date: 2017-11-28
-- RFC PR: (leave this empty)
-- Rust Issue: (leave this empty)
+- RFC PR: [rust-lang/rfcs#2229](https://github.com/rust-lang/rfcs/pull/2229)
+- Rust Issue: [rust-lang/rust#53488](https://github.com/rust-lang/rust/issues/53488)
 
 # Summary
 [summary]: #summary
