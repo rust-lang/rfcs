@@ -7,7 +7,8 @@
 [summary]: #summary
 
 Make disambiguating generic arguments in expressions with `::` optional, allowing generic arguments
-to be specified without `::`. This makes the following valid syntax:
+to be specified without `::`, making the "turbofish" notation no longer necessary.
+This makes the following valid syntax:
 
 ```rust
 struct Nooper<T>(T);
@@ -93,7 +94,7 @@ using comparison operators in the cases of ambiguous prefixes, relative to typic
 [guide-level-explanation]: #guide-level-explanation
 
 To explicitly pass generic arguments to a type, value or method, you may write the lifetime, type
-and const arguments in angle brackets (`<` and `>`) directly after the expression.
+and const arguments in angle brackets (`<` and `>`) directly after the expression. (Note that the "turbofish" notation is no longer necessary.)
 
 ```rust
 struct Nooper<T>(T);
@@ -126,12 +127,18 @@ because feature detection occurs after parsing. However, because it has been sho
 little-to-no performance regressions when modifying the parser and without taking advantage of `::`
 optionality, this should not be a problem.
 
+When `undisambiguated_expr_generics` is not enabled, the parser modifications will allow us to
+provide better diagnostics: specifically, we'll be able to correctly suggest (in a machine-
+applicable manner) using `::` whenever the user has actually typed undisambiguated generic
+arguments. The current diagnostic suggestions suggesting the use of `::` trigger whenever there are
+chained comparisons, which has false positives and does not provide a fix suggestion.
+
 An allow-by-default lint `disambiguated_expr_generics` will be added to suggest removing `::` when
 the feature is enabled. This is undesirable in most existing codebases, as the number of
 linted expressions is likely to be large, but could be useful for new codebases and in the future.
 
 Note that, apart from for those users who explicitly increase the level of the lint, no steps are
-taken to discourage the use of `::` at this stage.
+taken to discourage the use of `::` at this stage (including in tools, such as rustfmt).
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -143,6 +150,18 @@ be a problem. Although it is probable that a pathological example could be const
 result in poorer performance, such an example would not be representative of typical Rust code and
 therefore is not helpful to seriously consider. Backtracking is already used for some cases in the
 parser.
+
+The other potential drawback is that other parsers for Rust's syntax would also have to implement
+some form of backtracking (or similar) to handle this case. However, backtracking is straightforward
+to implement in many forms (such as recursive decent) of parser and it is likely this will not cause
+significant problems.
+
+Although it has been suggested that using backtracking would mean Rust's grammar was no longer
+LL(k), requiring potentially infinite lookahead, backtracking is already present for some (uncommon)
+cases in the Rust parser (notably one situation involving disambiguating between comparions and
+generic parameters). Although erring towards less backtracking is desirably, the performance
+results suggest that the practical benefits outweigh the theoretical drawbacks in this
+regard.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
