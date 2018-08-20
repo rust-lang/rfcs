@@ -175,7 +175,8 @@ complex solution to this particular problem. Backtracking seems to work well in 
 and provides an immediate solution to the problem.
 
 Alternatively we could continue to require `::`. This would ensure there would be no performance
-implications, but would leave the nonconformal and surprising syntax in place.
+implications, but would leave the nonconformal and surprising syntax in place. We could potentially use backtracking to provide the improved diagnostic suggestions to use `::`, while still preventing
+`::` from being omitted.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
