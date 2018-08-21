@@ -1,5 +1,5 @@
 - Feature Name: `undisambiguated_expr_generics`
-- Start Date: 2018-08-20
+- Start Date: 2018-08-21
 - RFC PR:
 - Rust Issue:
 
@@ -7,7 +7,7 @@
 [summary]: #summary
 
 Make disambiguating generic arguments in expressions with `::` optional, allowing generic arguments
-to be specified without `::`, making the "turbofish" notation no longer necessary.
+to be specified without `::` (making the "turbofish" notation no longer necessary).
 This makes the following valid syntax:
 
 ```rust
@@ -76,11 +76,11 @@ know whether we're parsing a comparison or a generic argument list, when we init
 we are not guaranteed to know which case we're parsing. To solve this problem, we need to
 first start parsing a generic argument list and then backtrack if this fails (or use a parser that
 can deal with ambiguous grammars). We generally prefer to avoid backtracking, as it can be slow.
-However, up until now the concern with using backtracking for `<` disambiguation was purely
+However, up until now, the concern with using backtracking for `<`-disambiguation was purely
 theoretical, without any empirical testing to validate it.
 
 [A recent experiment](https://github.com/rust-lang/rust/pull/53511) to allow generic arguments
-without `::` disambiguation [showed no performance regressions](https://github.com/rust-lang/rust/pull/53511#issuecomment-414172984)
+without `::`-disambiguation [showed no performance regressions](https://github.com/rust-lang/rust/pull/53511#issuecomment-414172984)
 using the backtracking technique. This indicates that in existing codebases, allowing `::` to be
 omitted is unlikely to lead to any performance regressions.
 
@@ -117,8 +117,8 @@ fn main() {
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-There's an initial implementation in https://github.com/rust-lang/rust/pull/53511, upon which the
-implementation can be based. The parser will now attempt to parse generic argument lists without
+An initial implementation is present in https://github.com/rust-lang/rust/pull/53511, upon which the
+implementation may be based. The parser will now attempt to parse generic argument lists without
 `::`, falling back on attempting to parse a comparison if that fails.
 
 The feature will initially be gated (e.g. `#![feature(undisambiguated_expr_generics)]`). However,
@@ -128,8 +128,8 @@ little-to-no performance regressions when modifying the parser and without takin
 optionality, this should not be a problem.
 
 When `undisambiguated_expr_generics` is not enabled, the parser modifications will allow us to
-provide better diagnostics: specifically, we'll be able to correctly suggest (in a machine-
-applicable manner) using `::` whenever the user has actually typed undisambiguated generic
+provide better diagnostics: specifically, we'll be able to correctly suggest (in a
+machine-applicable manner) using `::` whenever the user has actually typed undisambiguated generic
 arguments. The current diagnostic suggestions suggesting the use of `::` trigger whenever there are
 chained comparisons, which has false positives and does not provide a fix suggestion.
 
@@ -151,15 +151,15 @@ result in poorer performance, such an example would not be representative of typ
 therefore is not helpful to seriously consider. Backtracking is already used for some cases in the
 parser.
 
-The other potential drawback is that other parsers for Rust's syntax would also have to implement
-some form of backtracking (or similar) to handle this case. However, backtracking is straightforward
-to implement in many forms (such as recursive decent) of parser and it is likely this will not cause
-significant problems.
+The other potential drawback is that other parsers for Rust's syntax (for example in external tools)
+would also have to implement some form of backtracking (or similar) to handle this case. However,
+backtracking is straightforward to implement in many forms of parser (such as recursive decent) and
+it is likely this will not cause significant problems.
 
 Although it has been suggested that using backtracking would mean Rust's grammar was no longer
 LL(k), requiring potentially infinite lookahead, backtracking is already present for some (uncommon)
 cases in the Rust parser (notably one situation involving disambiguating between comparions and
-generic parameters). Although erring towards less backtracking is desirably, the performance
+generic parameters). Although erring towards less backtracking is desirable, the performance
 results suggest that the practical benefits outweigh the theoretical drawbacks in this
 regard.
 
