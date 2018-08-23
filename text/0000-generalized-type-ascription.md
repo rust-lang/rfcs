@@ -13,8 +13,8 @@ We finalize a general notion of type ascription uniformly in patterns,
 expressions, `let` bindings, and `fn` definitions. You may now for example write:
 
 ```rust
-let x = (0..10).collect() : Vec<_>;
-
+// requires #![feature(block_ascription)]:
+// These bits are proposed experimentally.
 do_stuff(try : Option<u8> { .. });
 
 do_stuff(async : u8 { .. });
@@ -22,6 +22,9 @@ do_stuff(async : u8 { .. });
 do_stuff(unsafe : u8 { .. });
 
 do_stuff(loop : u8 { .. });
+
+// requires #![feature(type_ascription)]:
+let x = (0..10).collect() : Vec<_>;
 
 let alpha: u8 = expr;
     ^^^^^^^^^
@@ -35,6 +38,7 @@ if let Some(beta: u8) = expr { .. }
 for x: i8 in 0..100 { .. }
     ^^^^^
 
+// requires #![feature(limited_fn_inference)]:
 fn foo(Wrapping(alpha: usize)) {}
        ^^^^^^^^^^^^^^^^^^^^^^
 ```
