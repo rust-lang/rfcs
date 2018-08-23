@@ -169,6 +169,33 @@ with more motivation:
    `$pat: pat : $type: ty`, it becomes possible to write macros that can
    match function signatures with arbitrary patterns for arguments.
 
+9. Type ascription formalizes an already informal mode of communication.
+   For example, Rustaceans already commonly use `x: u8` or `42 : usize`
+   to denote that the left hand side is of the type specified when talking
+   with each other. By introducing this into the language itself,
+   we align the language with how user's think.
+
+   [issue#53572]: https://github.com/rust-lang/rust/issues/53572
+
+   Additionally, `<pat> : <type>` is already erroneously used in error messages.
+   Such an episode where a user was misled by the compiler occurred in
+   [rust-lang/rust#53572][issue#53572] where the user wrote:
+
+   ```rust
+   for i in 0..1000 {
+       println!("{}", i.pow(2));
+   }
+   ```
+
+   which the compiler rejected, suggesting that the user should instead write:
+
+   ```rust
+   for i: i32 in 0..1000 {
+   ```
+
+   However, this is currently invalid in today's Rust.
+   But this RFC would make it valid, thus making the error message correct.
+
 ## Type ascription has already been accepted as an RFC
 
 We noted previously that [RFC 803] already accepted type ascription in
