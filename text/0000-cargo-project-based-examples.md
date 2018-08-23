@@ -219,6 +219,9 @@ for it, so it should be possible to `cd` into it and run `cargo run` directly.
 If we implement project-based examples into cargo, it might be backward incompatible if we want to use 
 `--example <NAME>` in other ways in the future.
 
+It might be inconvenient to find all dependencies for examples in one glance if they are moved to separate
+`Cargo.toml` files. (By now without this rfc we can look into `dev-dependencies`.)
+
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
@@ -257,6 +260,13 @@ the `Cargo.lock` to `/Cargo.lock` to avoid it search for every cargo locks neste
 thus a `!Cargo.lock` is not needed in the example project path. 
 However it would totally change the way how we write `.gitignore` for Rust, thus this alternative 
 is remained for the Rust authors to judge.
+
+## `crates.io` enhancements
+
+It could be suggested that all dependencies used by a crate itself as well as its examples can be displayed
+in the "Dependent crates" page. For convenience, we can add all dependencies for examples into this page as well
+and mark it "used by example NAME". If possible, we could also design a way to filter the dependent crates, 
+like a list or a set of checkboxes.
 
 # Prior art
 [prior-art]: #prior-art
