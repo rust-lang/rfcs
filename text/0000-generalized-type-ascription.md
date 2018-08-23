@@ -2472,9 +2472,7 @@ Note that this is exactly the same grammar as we've proposed here.
    will align with what people expects this to mean because it is how
    `async` works elsewhere.
 
-2. Should type ascription in patterns inhibit match ergonomics?
-
-3. What exactly should be allowed wrt. type inference of function types?
+2. What exactly should be allowed wrt. type inference of function types?
    Because this is rather subtle, it is considered OK to leave this for
    and tweak it during stabilization.
 
