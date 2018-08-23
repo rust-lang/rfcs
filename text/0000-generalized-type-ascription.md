@@ -645,6 +645,8 @@ than `:` but `.` binds more tightly than `&`, the expression associates as
 
 ### In `async`, `try`, ... blocks
 
+This part of the RFC is proposed *experimentally*.
+
 [RFC 2388]: https://github.com/rust-lang/rfcs/pull/2388
 [RFC 243]: https://github.com/rust-lang/rfcs/pull/243
 
@@ -1775,6 +1777,14 @@ by writing `Foo { bar: : u8 }`. One could potentially write this as:
 `Foo { bar :: u8 }`. One drawback in this approach is that it may confuse
 readers with paths.
 
+## Uncertainty around `keyword: Type { .. }`
+
+Uncertainty and opposition around this RFC has mainly been expressed around the
+syntax `keyword: Type { .. }`. Therefore, this is proposed only experimentally
+so that we may try it out on nightly and gain more experience with the syntax.
+
+See section on [rationale][alternatives] for a discussion on this syntax.
+
 # Rationale and alternatives
 [alternatives]: #rationale-and-alternatives
 
@@ -2308,6 +2318,137 @@ However, we have concluded that, as a starting point, to keep things simple,
 we will not extend lifetime elision to patterns,
 or allow `bad_3`, `bad_4`, `bad_6`, `bad_7`, and `bad_10` to compile.
 
+## Dicussion on `keyword: Type { .. }`
+
+### An inconsistency for `async: Type { .. }`
+
+There is an inconsistency in the desugaring of the various
+`KEYWORD : Type { .. }` forms. While ascriptions on other block forms desugar
+as `KEYWORD { .. } : Type`, the `async : Type { .. }` construct desugars
+as `async { .. } : impl Future<Output = Type>`.
+
+This could lead to surprises for some users. Thus, we might consider a
+different symbol just for `async` such as `async -> Type { .. }`.
+We could also consider not having this feature for the `async` block
+form at all. These are all reasonable alternatives.
+
+Another possibility is to change `async` and by extension also `async fn` to
+use the external type approach. This is however considerably out of this
+RFC's scope.
+
+Speaking of `async fn` and internal types, while it is unfortunate that we
+can't be fully consistent in the desugaring without moving to an external
+type approach, this problem is really inherent to the nature of `async fn`
+using the inner-type method itself. It is thus equally possible that
+`async : Type { .. }` desugaring as `async { .. } : impl Future<Output = R>`
+will align with what people expects this to mean because it is how
+`async` works elsewhere.
+
+### A different syntax
+
+[drxor_1]: https://github.com/rust-lang/rfcs/pull/2522#issuecomment-411973359
+
+During the course of this RFC, it has been [noted][drxor_1] that another
+approach to `keyword: Type { .. }` may be to have a different ascription syntax
+*just* for blocks while not changing the ascription syntax for anything else.
+
+This would mean that you would instead write:
+
+```rust
+async -> T { .. }
+try -> T { .. }
+unsafe -> T { .. }
+loop -> T { .. }
+```
+
+Some arguments for such an approach is that:
+
+1. it would be consistent with the syntax for functions and closures.
+   In this interpretation, we understand functions and closures in terms of
+   their `keyword -> T { .. }` forms.
+
+   For example, we may understand the internal-type nature of `async fn`
+   through the behaviour of `async -> T { .. }`.
+
+2. it could potentially allow you to ascribe a block by writing:
+
+   ```rust
+   do_stuff(-> T { ... });
+   ```
+
+3. The syntax would work well with `while` loops if they had an `else` clause:
+
+   ```rust
+   do_stuff(while x -> T { break y; } else { z })
+   ```
+
+   If the syntax `while x: T { .. } ..` was used instead, it would look,
+   and parse as `while (x: T) { .. } ..` instead. However, one could potentially
+   write `while: T (x) { .. } ..` instead.
+
+[drxor_2]: https://github.com/rust-lang/rfcs/pull/2522#issuecomment-412289815
+
+[drxor_3]: https://github.com/rust-lang/rfcs/pull/2522#issuecomment-412255151
+
+4. `-> T` in functions [is][drxor_2] a [syntax][drxor_3] for ascription.
+
+Meanwhile, some drawbacks of this approach are:
+
+[glaebhoerl_1]: https://github.com/rust-lang/rfcs/pull/2522#issuecomment-412267347
+
+1. `-> T` in functions is [not a syntax for ascription][glaebhoerl_1].
+
+2. It adds another ascription syntax.
+
+   While some argue that this is OK because they believe it is consistent with
+   the function return type syntax, some also argue that this is misleading
+   and that users may think that `try -> T { .. }` is some callable object.
+
+3. The closure forms and function forms of some constructs do not exist.
+   For example, there is no `try fn foo() -> T { .. }`, no `const { .. }`,
+   and no `loop fn...` (although the first two have been suggested).
+   At the same time, the semantics of `unsafe fn` and `unsafe { .. }` are
+   the diametrical opposite. While `unsafe fn` *introduces* unsafety,
+   `unsafe { .. }` asserts that the bits inside the block are in fact safe.
+   Therefore, associating `keyword -> T { .. }` with `keyword fn .. -> T { .. }`
+   may be misleading.
+
+[liigo_1]: https://github.com/rust-lang/rfcs/pull/2522#issuecomment-412430420
+
+4. It is [not possible to `return`][liigo_1] to a `try -> T { .. }` block.
+   Users may thus be confused as to where `?` and `return` may land in such
+   a block.
+
+### Additional drawbacks with the proposed syntax
+
+It has been noted that:
+
+1. `keyword: T { .. }` is different from all other uses of a single colon
+   because the ascribed expression is entangled with the ascription itself
+   instead of being before or after it.
+
+[scott_1]: https://github.com/rust-lang/rfcs/pull/2522#issuecomment-412417777
+
+2. `loop: T { .. }` and `unsafe: T { .. }` [may not have use cases][scott_1].
+   However, for the purposes of defensive programming `unsafe: T { .. }`
+   could be useful.
+
+### Some notes in favor of `keyword: T { .. }`
+
+1. It could be argued that `keyword: T { .. }` is keeping the language more
+   uniform than `keyword -> T { .. }` would by using one syntax for ascription.
+
+[mbf_1]: https://github.com/rust-lang/rfcs/pull/2522#issuecomment-412036010
+
+2. It has been [argued][mbf_1] that if `async fn() -> T` is allowed to
+   use the *"inner return type approach"*, then it would also be fine for
+   `async: T { .. }` to do so as well.
+
+In conclusion, there is a lack of clarity on whether `keyword: T { .. }`
+or `keyword -> T { .. }` is the right syntax and whether such an addition
+would carry its weight. As such, we only propose `keyword: T { .. }`
+experimentally.
+
 # Prior art
 [prior-art]: #prior-art
 
@@ -2448,29 +2589,7 @@ Note that this is exactly the same grammar as we've proposed here.
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
-1. Should we permit `async : Type { .. }` and should `Type` be the inner type?
-
-   There is an inconsistency in the desugaring of the various
-   `KEYWORD : Type { .. }` forms. While ascriptions on other block forms desugar
-   as `KEYWORD { .. } : Type`, the `async : Type { .. }` construct desugars
-   as `async { .. } : impl Future<Output = Type>`.
-
-   This could lead to surprises for some users. Thus, we might consider a
-   different symbol just for `async` such as `async -> Type { .. }`.
-   We could also consider not having this feature for the `async` block
-   form at all. These are all reasonable alternatives.
-
-   Another possibility is to change `async` and by extension also `async fn` to
-   use the external type approach. This is however considerably out of this
-   RFC's scope.
-
-   Speaking of `async fn` and internal types, while it is unfortunate that we
-   can't be fully consistent in the desugaring without moving to an external
-   type approach, this problem is really inherent to the nature of `async fn`
-   using the inner-type method itself. It is thus equally possible that
-   `async : Type { .. }` desugaring as `async { .. } : impl Future<Output = R>`
-   will align with what people expects this to mean because it is how
-   `async` works elsewhere.
+1. Should we permit `keyword: Type { .. }`?
 
 2. What exactly should be allowed wrt. type inference of function types?
    Because this is rather subtle, it is considered OK to leave this for
