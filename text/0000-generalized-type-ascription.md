@@ -2341,7 +2341,7 @@ can't be fully consistent in the desugaring without moving to an external
 type approach, this problem is really inherent to the nature of `async fn`
 using the inner-type method itself. It is thus equally possible that
 `async : Type { .. }` desugaring as `async { .. } : impl Future<Output = R>`
-will align with what people expects this to mean because it is how
+will align with what people expect this to mean because it is how
 `async` works elsewhere.
 
 ### A different syntax
