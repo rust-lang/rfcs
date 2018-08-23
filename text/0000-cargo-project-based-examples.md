@@ -266,7 +266,8 @@ is remained for the Rust authors to judge.
 It could be suggested that all dependencies used by a crate itself as well as its examples can be displayed
 in the "Dependent crates" page. For convenience, we can add all dependencies for examples into this page as well
 and mark it "used by example NAME". If possible, we could also design a way to filter the dependent crates, 
-like a list or a set of checkboxes.
+like using a filter list or a set of checkboxes, to make it easy to find all dependent crates for one particular
+example project.
 
 # Prior art
 [prior-art]: #prior-art
