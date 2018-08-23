@@ -32,6 +32,9 @@ let [x: u8, y, z] = stuff();
 if let Some(beta: u8) = expr { .. }
             ^^^^^^^^
 
+for x: i8 in 0..100 { .. }
+    ^^^^^
+
 fn foo(Wrapping(alpha: usize)) {}
        ^^^^^^^^^^^^^^^^^^^^^^
 ```
@@ -703,6 +706,34 @@ match do_stuff() {
 }
 
 if let Thing { field: binding: MyType } = make_thing() {
+    ...
+}
+```
+
+You may now also write:
+
+```rust
+for x: i8 in 0..100 {
+    ...
+}
+```
+
+instead of as before:
+
+```rust
+for x in 0_i8..100 {
+    ...
+}
+```
+
+or worse yet:
+
+```rust
+for x in 0..100 {
+    // This would be more realistic if the iterator
+    // couldn't use literal suffixes as with 0_i8..100.
+    let x: i8 = x;
+
     ...
 }
 ```
