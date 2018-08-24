@@ -922,7 +922,7 @@ pub macro mac() {
 
 fn main() {
     mac!();
-//  ^^^^^^^
+//  ^^^^^^^ Error? This depends on whether we have privacy hygiene or not.
 }
 ```
 
@@ -935,9 +935,12 @@ so the call would be accepted. However, if we do not have privacy hygiene,
 then `mac!()` would result in an error because `<Bar as Foo>::method`
 is hidden in crate B.
 
+[decl_mac_2]: https://github.com/rust-lang/rust/issues/39412
+
 Procedural macros and `macro_rules!` macros are unhygienic,
 so we would expect them to produce an error in this case.
-However, for declarative macros 2.0, there is a design choice to be made.
+However, for [declarative macros 2.0][decl_mac_2],
+there is a design choice to be made.
 Fortunately, this question remains open to us as declarative macros are unstable.
 As we move towards finalizing macros 2.0, we will need to consider this question.
 However, this RFC does not consider the question of whether or not we should
