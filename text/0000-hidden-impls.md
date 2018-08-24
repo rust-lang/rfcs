@@ -1,6 +1,4 @@
-# Draft RFC: Hidden implementations
-
-- Feature Name: `hidden_impl`
+- Feature Name: `hidden_impls`
 - Start Date: 2018-06-24
 - RFC PR:
 - Rust Issue:
@@ -888,6 +886,59 @@ The following questions should be resolved at least before stabilization
    3. Should it perhaps be a hard error instead?
 
 5. Should `pub impl ..` be linted against, suggesting `impl ..` instead?
+   Or perhaps the reverse situation instead?
 
 6. Should `pub(self) field: Type` and the `pub(self)` visibility modifier in
    general be linted against when it is the contextual default?
+
+# Future work
+[future work]: #future-work
+
+## Privacy hygiene
+
+Consider a situation with a declarative macro and method dispatch such as:
+
+```rust
+// Crate A:
+// -----------------------------------------------------------------------------
+
+pub trait Foo {
+    fn method(&self) -> u8;
+}
+
+pub struct Bar {}
+
+crate impl Foo for Bar {
+    fn mehtod(&self) -> u8 { 42u8 }
+}
+
+pub macro mac() {
+    println!("result: {}", Bar {}.method())
+    // Or instead: <Bar as Foo>::method(&Bar {})
+}
+
+// Crate B: (depends on crate A)
+// -----------------------------------------------------------------------------
+
+fn main() {
+    mac!();
+//  ^^^^^^^
+}
+```
+
+Would the call to `mac!()` inside `main` be accepted by the compiler?
+The answer to this question depends on whether we have *privacy hygiene* or not.
+If we do, then calling `mac!()` will use the definition site of `mac`'s
+privacy context to check whether the implementation is visible or not.
+In this case, `<Bar as Foo>::method` *is* visible in crate A and
+so the call would be accepted. However, if we do not have privacy hygiene,
+then `mac!()` would result in an error because `<Bar as Foo>::method`
+is hidden in crate B.
+
+Procedural macros and `macro_rules!` macros are unhygienic,
+so we would expect them to produce an error in this case.
+However, for declarative macros 2.0, there is a design choice to be made.
+Fortunately, this question remains open to us as declarative macros are unstable.
+As we move towards finalizing macros 2.0, we will need to consider this question.
+However, this RFC does not consider the question of whether or not we should
+have privacy hygiene but leaves it instead as future work.
