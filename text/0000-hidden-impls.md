@@ -46,7 +46,7 @@ and mistakenly provide a guarantee we were not ready to provide.
 [regex#457]: https://github.com/rust-lang/regex/issues/457
 
 A further example from `proptest` is when the author of this RFC
-[mistakenly][proptest#80] exposed `impl From<SizeRange> for SizeRange`
+[mistakenly][proptest#80] exposed `impl From<SizeRange> for Range<usize>`
 publicly while the API was only needed internally.
 Another occasion where a similar scenario occurred was when
 [regex@0.2][regex#457] accidentally had a public dependency
