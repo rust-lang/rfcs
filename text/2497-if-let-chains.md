@@ -1,7 +1,8 @@
 - Feature Name: `let_chains_2`
 - Start Date: 2018-07-13
-- RFC PR:
-- Rust Issue:
+- RFC PR: [rust-lang/rfcs#2497](https://github.com/rust-lang/rfcs/pull/2497)
+- Rust Issue: [rust-lang/rust#53667](https://github.com/rust-lang/rust/issues/53667)
+- Rust Issue: [rust-lang/rust#53668](https://github.com/rust-lang/rust/issues/53668)
 
 # Summary
 [summary]: #summary
