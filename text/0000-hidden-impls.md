@@ -1,5 +1,5 @@
 - Feature Name: `hidden_impls`
-- Start Date: 2018-06-24
+- Start Date: 2018-08-24
 - RFC PR:
 - Rust Issue:
 
