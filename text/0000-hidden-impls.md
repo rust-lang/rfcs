@@ -42,6 +42,16 @@ users of our library (`proptest`) right now. The allure of getting the logic
 provided when defining `SeedableRng` could also have caused us to prematurely
 and mistakenly provide a guarantee we were not ready to provide.
 
+[proptest#80]: https://github.com/AltSysrq/proptest/issues/80
+[regex#457]: https://github.com/rust-lang/regex/issues/457
+
+A further example from `proptest` is when the author of this RFC
+[mistakenly][proptest#80] exposed `impl From<SizeRange> for SizeRange`
+publicly while the API was only needed internally.
+Another occasion where a similar scenario occurred was when
+[regex@0.2][regex#457] accidentally had a public dependency
+on `regex_syntax` due to yet another a `From` implementation.
+
 Another example use-case which [@nikomatsakis](https://github.com/nikomatsakis)
 has provided is wanting to have the convenience of `#[derive(Default)]`,
 but not wanting to commit to there being a default value.
@@ -572,7 +582,7 @@ visible of `$vis_{a, b}`.
 
    if the visibility of the negative implementation is less than that of the
    `auto`-trait, then the implementation is rejected.
-   Conversely, if the visibility of the impl is ≥ that of the trait,
+   Conversely, if the visibility of the `impl` is `>=` that of the trait,
    then that will not cause the implementation to be rejected.
 
    The visibility specified on a negative implementation has no impact on
