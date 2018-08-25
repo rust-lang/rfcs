@@ -1,4 +1,4 @@
-- Feature Name: `generic_pattern`
+- Feature Name: `needle`
 - Start Date: 2018-07-06
 - RFC PR: (leave this empty)
 - Rust Issue: (leave this empty)
@@ -74,16 +74,19 @@ Key concepts:
     and after the match. `"ab123cedf" == "ab" ++ "123" ++ "cdef"`.
 * *Haystack* teaches the search algorithm how to perform splitting with proper ownership transfer.
 * *Searcher* is responsible for finding the range of the match.
-* Utilizing these together to safely construct many useful algorithms related to pattern matching.
+* Utilizing these together to safely construct many useful algorithms related to string matching.
 
 ## API
 
-All items below should be placed in the `core::pattern` module, re-exported as `std::pattern`.
+All items below should be placed in the `core::needle` module, re-exported as `std::needle`.
+
+We renamed "Pattern API" into "Needle API" to avoid confusion with the language's pattern matching
+i.e. the `match` expression.
 
 ### Hay
 
 A `Hay` is the core type which the search algorithm will run on.
-It is implemented on the slice-like types like `str`, `OsStr` and `[T]`.
+It is implemented on the unsized slice-like types like `str`, `OsStr` and `[T]`.
 
 ```rust
 pub unsafe trait Hay {
@@ -105,7 +108,7 @@ The trait is unsafe to implement because it needs to guarantee all methods (esp.
 and `.end_index()`) follow the documented requirements, which cannot be checked automatically.
 
 We allow a hay to customize the `Index` type. While `str`, `[T]` and `OsStr` all  use `usize` as
-the index, we do want the Pattern API to support other linear structures like `LinkedList<T>`,
+the index, we do want the Needle API to support other linear structures like `LinkedList<T>`,
 where a cursor/pointer would be more suitable for allowing sub-linear splitting.
 
 ```
@@ -124,7 +127,7 @@ start_index() = 0   next_index(2) = 6
 
 ### Haystack
 
-A `Haystack` is any linear structure which we can do pattern matching on,
+A `Haystack` is any linear structure which we can do string/array matching on,
 and can be sliced or split so they could be returned from the `matches()` and `split()` iterators.
 
 Haystack is implemented on the reference or collection itself e.g. `&[T]`, `&mut [T]` and `Vec<T>`.
@@ -254,7 +257,7 @@ to recover the indices in the middle (`5 == 3 + 2` and `7 == 3 + 4`).
 ### Searcher
 
 A searcher only provides a single method: `.search()`. It takes a span as input,
-and returns the first sub-range where the given pattern is found.
+and returns the first sub-range where the given needle is found.
 
 ```rust
 pub unsafe trait Searcher<A: Hay + ?Sized> {
@@ -274,7 +277,7 @@ with invalid ranges. Implementations of `.search()` often start with:
 ```rust
     fn search(&mut self, span: Span<&A>) -> Option<Range<A::Index>> {
         let (hay, range) = span.into_parts();
-        // search for pattern from `hay` restricted to `range`.
+        // search for needle from `hay` restricted to `range`.
     }
 ```
 
@@ -283,7 +286,7 @@ The trait is unsafe to implement because it needs to guarantee the returned rang
 ### Consumer
 
 A consumer provides the `.consume()` method to implement `starts_with()` and `trim_start()`. It
-takes a span as input, and if the beginning matches the pattern, returns the end index of the match.
+takes a span as input, and if the beginning matches the needle, returns the end index of the match.
 
 ```rust
 pub unsafe trait Consumer<A: Hay + ?Sized> {
@@ -298,7 +301,7 @@ pub unsafe trait DoubleEndedConsumer<A: Hay + ?Sized>: ReverseConsumer<A> {}
 ```
 
 Comparing searcher and consumer, the `.search()` method will look for the first slice
-matching the searcher's pattern in the span,
+matching the searcher's needle in the span,
 and returns the range where the slice is found (relative to the hay's start index).
 The `.consume()` method is similar, but anchored to the start of the span.
 
@@ -317,12 +320,12 @@ assert_eq!("GH".into_consumer().consume(span.clone()), None);
 
 The trait also provides a `.trim_start()` method in case a faster specialization exists.
 
-### Pattern
+### Needle
 
-A pattern is simply a "factory" of a searcher and consumer.
+A needle is simply a "factory" of a searcher and consumer.
 
 ```rust
-trait Pattern<H: Haystack>: Sized {
+trait Needle<H: Haystack>: Sized {
     type Searcher: Searcher<H::Target>;
     type Consumer: Consumer<H::Target>;
 
@@ -331,19 +334,19 @@ trait Pattern<H: Haystack>: Sized {
 }
 ```
 
-Patterns are the types where users used to supply into the algorithms.
-Patterns are usually immutable (stateless), while searchers sometimes require pre-computation and
+Needles are the types where users used to supply into the algorithms.
+Needles are usually immutable (stateless), while searchers sometimes require pre-computation and
 mutable state when implementing some more sophisticated string searching algorithms.
 
-The relation between `Pattern` and `Searcher` is thus like `IntoIterator` and `Iterator`.
+The relation between `Needle` and `Searcher`/`Consumer` is thus like `IntoIterator` and `Iterator`.
 
 There are two required methods `.into_searcher()` and `.into_consumer()`.
-In some patterns (e.g. substring search), checking if a prefix match will require much less
+In some needles (e.g. substring search), checking if a prefix match will require much less
 pre-computation than checking if any substring match.
 Therefore, a consumer could use a more efficient structure with this specialized purpose.
 
 ```rust
-impl<H: Haystack<Target = str>> Pattern<H> for &'p str {
+impl<H: Haystack<Target = str>> Needle<H> for &'p str {
     type Searcher = SliceSearcher<'p, [u8]>;
     type Consumer = NaiveSearcher<'p, [u8]>;
     #[inline]
@@ -362,7 +365,7 @@ impl<H: Haystack<Target = str>> Pattern<H> for &'p str {
 Note that, unlike `IntoIterator`, the standard library is unable to provide a blanket impl:
 
 ```rust
-impl<H, S> Pattern<H> for S
+impl<H, S> Needle<H> for S
 where
     H: Haystack,
     S: Searcher<H::Target> + Consumer<H::Target>,
@@ -374,10 +377,10 @@ where
 }
 ```
 
-This is because there is already an existing Pattern impl:
+This is because there is already an existing Needle impl:
 
 ```rust
-impl<'h, F> Pattern<&'h str> for F
+impl<'h, F> Needle<&'h str> for F
 where
     F: FnMut(char) -> bool,
 { ... }
@@ -388,41 +391,41 @@ causing impl conflict.
 
 ### Algorithms
 
-Standard algorithms are provided as *functions* in the `core::pattern::ext` module.
+Standard algorithms are provided as *functions* in the `core::needle::ext` module.
 
 <details><summary>List of algorithms</summary>
 
 **Starts with, ends with**
 
 ```rust
-pub fn starts_with<H, P>(haystack: H, pattern: P) -> bool
+pub fn starts_with<H, P>(haystack: H, needle: P) -> bool
 where
     H: Haystack,
-    P: Pattern<H>;
+    P: Needle<H>;
 
-pub fn ends_with<H, P>(haystack: H, pattern: P) -> bool
+pub fn ends_with<H, P>(haystack: H, needle: P) -> bool
 where
     H: Haystack,
-    P: Pattern<H, Consumer: ReverseConsumer<H::Target>>;
+    P: Needle<H, Consumer: ReverseConsumer<H::Target>>;
 ```
 
 **Trim**
 
 ```rust
-pub fn trim_start<H, P>(haystack: H, pattern: P) -> H
+pub fn trim_start<H, P>(haystack: H, needle: P) -> H
 where
     H: Haystack,
-    P: Pattern<H>;
+    P: Needle<H>;
 
-pub fn trim_end<H, P>(haystack: H, pattern: P) -> H
+pub fn trim_end<H, P>(haystack: H, needle: P) -> H
 where
     H: Haystack,
-    P: Pattern<H, Consumer: ReverseConsumer<H::Target>>;
+    P: Needle<H, Consumer: ReverseConsumer<H::Target>>;
 
-pub fn trim<H, P>(haystack: H, pattern: P) -> H
+pub fn trim<H, P>(haystack: H, needle: P) -> H
 where
     H: Haystack,
-    P: Pattern<H, Consumer: DoubleEndedConsumer<H::Target>>;
+    P: Needle<H, Consumer: DoubleEndedConsumer<H::Target>>;
 ```
 
 **Matches**
@@ -430,94 +433,94 @@ where
 (These function do return concrete iterators in the actual implementation.)
 
 ```rust
-pub fn matches<H, P>(haystack: H, pattern: P) -> impl Iterator<Item = H>
+pub fn matches<H, P>(haystack: H, needle: P) -> impl Iterator<Item = H>
 where
     H: Haystack,
-    P: Pattern<H>;
+    P: Needle<H>;
 
-pub fn rmatches<H, P>(haystack: H, pattern: P) -> impl Iterator<Item = H>
+pub fn rmatches<H, P>(haystack: H, needle: P) -> impl Iterator<Item = H>
 where
     H: Haystack,
-    P: Pattern<H, Searcher: ReverseSearcher<H::Target>>;
+    P: Needle<H, Searcher: ReverseSearcher<H::Target>>;
 
-pub fn contains<H, P>(haystack: H, pattern: P) -> bool
+pub fn contains<H, P>(haystack: H, needle: P) -> bool
 where
     H: Haystack,
-    P: Pattern<H>;
+    P: Needle<H>;
 
-pub fn match_indices<H, P>(haystack: H, pattern: P) -> impl Iterator<Item = (H::Target::Index, H)>
+pub fn match_indices<H, P>(haystack: H, needle: P) -> impl Iterator<Item = (H::Target::Index, H)>
 where
     H: Haystack,
-    P: Pattern<H>;
+    P: Needle<H>;
 
-pub fn rmatch_indices<H, P>(haystack: H, pattern: P) -> impl Iterator<Item = (H::Target::Index, H)>
+pub fn rmatch_indices<H, P>(haystack: H, needle: P) -> impl Iterator<Item = (H::Target::Index, H)>
 where
     H: Haystack,
-    P: Pattern<H, Searcher: ReverseSearcher<H::Target>>;
+    P: Needle<H, Searcher: ReverseSearcher<H::Target>>;
 
-pub fn find<H, P>(haystack: H, pattern: P) -> Option<H::Target::Index>
+pub fn find<H, P>(haystack: H, needle: P) -> Option<H::Target::Index>
 where
     H: Haystack,
-    P: Pattern<H>;
+    P: Needle<H>;
 
-pub fn rfind<H, P>(haystack: H, pattern: P) -> Option<H::Target::Index>
+pub fn rfind<H, P>(haystack: H, needle: P) -> Option<H::Target::Index>
 where
     H: Haystack,
-    P: Pattern<H, Searcher: ReverseSearcher<H::Target>>;
+    P: Needle<H, Searcher: ReverseSearcher<H::Target>>;
 
-pub fn match_ranges<H, P>(haystack: H, pattern: P) -> impl Iterator<Item = (Range<H::Target::Index>, H)>
+pub fn match_ranges<H, P>(haystack: H, needle: P) -> impl Iterator<Item = (Range<H::Target::Index>, H)>
 where
     H: Haystack,
-    P: Pattern<H>;
+    P: Needle<H>;
 
-pub fn rmatch_ranges<H, P>(haystack: H, pattern: P) -> impl Iterator<Item = (Range<H::Target::Index>, H)>
+pub fn rmatch_ranges<H, P>(haystack: H, needle: P) -> impl Iterator<Item = (Range<H::Target::Index>, H)>
 where
     H: Haystack,
-    P: Pattern<H, Searcher: ReverseSearcher<H::Target>>;
+    P: Needle<H, Searcher: ReverseSearcher<H::Target>>;
 
-pub fn find_range<H, P>(haystack: H, pattern: P) -> Option<Range<H::Target::Index>>
+pub fn find_range<H, P>(haystack: H, needle: P) -> Option<Range<H::Target::Index>>
 where
     H: Haystack,
-    P: Pattern<H>;
+    P: Needle<H>;
 
-pub fn rfind_range<H, P>(haystack: H, pattern: P) -> Option<Range<H::Target::Index>>
+pub fn rfind_range<H, P>(haystack: H, needle: P) -> Option<Range<H::Target::Index>>
 where
     H: Haystack,
-    P: Pattern<H, Searcher: ReverseSearcher<H::Target>>;
+    P: Needle<H, Searcher: ReverseSearcher<H::Target>>;
 ```
 
 **Split**
 
 ```rust
-pub fn split<H, P>(haystack: H, pattern: P) -> impl Iterator<Item = H>
+pub fn split<H, P>(haystack: H, needle: P) -> impl Iterator<Item = H>
 where
     H: Haystack,
-    P: Pattern<H>;
+    P: Needle<H>;
 
-pub fn rsplit<H, P>(haystack: H, pattern: P) -> impl Iterator<Item = H>
+pub fn rsplit<H, P>(haystack: H, needle: P) -> impl Iterator<Item = H>
 where
     H: Haystack,
-    P: Pattern<H, Searcher: ReverseSearcher<H::Target>>;
+    P: Needle<H, Searcher: ReverseSearcher<H::Target>>;
 
-pub fn split_terminator<H, P>(haystack: H, pattern: P) -> impl Iterator<Item = H>
+pub fn split_terminator<H, P>(haystack: H, needle: P) -> impl Iterator<Item = H>
 where
     H: Haystack,
-    P: Pattern<H>;
+    P: Needle<H>;
 
-pub fn rsplit_terminator<H, P>(haystack: H, pattern: P) -> impl Iterator<Item = H>
+pub fn rsplit_terminator<H, P>(haystack: H, needle: P) -> impl Iterator<Item = H>
 where
     H: Haystack,
-    P: Pattern<H, Searcher: ReverseSearcher<H::Target>>;
+    P: Needle<H, Searcher: ReverseSearcher<H::Target>>;
 
-pub fn splitn<H, P>(haystack: H, n: usize, pattern: P) -> impl Iterator<Item = H>
+pub fn splitn<H, P>(haystack: H, n: usize, needle: P) -> impl Iterator<Item = H>
 where
     H: Haystack,
-    P: Pattern<H>;
+    P: Needle<H>;
 
-pub fn rsplitn<H, P>(haystack: H, n: usize, pattern: P) -> impl Iterator<Item = H>
+pub fn rsplitn<H, P>(haystack: H, n: usize, needle: P) -> impl Iterator<Item = H>
 where
     H: Haystack,
-    P: Pattern<H, Searcher: ReverseSearcher<H::Target>>;
+    P: Needle<H, Searcher: ReverseSearcher<H::Target>>;
 ```
 
 **Replace**
@@ -526,14 +529,14 @@ where
 pub fn replace_with<H, P, F, W>(src: H, from: P, replacer: F, writer: W)
 where
     H: Haystack,
-    P: Pattern<H>,
+    P: Needle<H>,
     F: FnMut(H) -> H,
     W: FnMut(H);
 
 pub fn replacen_with<H, P, F, W>(src: H, from: P, replacer: F, n: usize, writer: W)
 where
     H: Haystack,
-    P: Pattern<H>,
+    P: Needle<H>,
     F: FnMut(H) -> H,
     W: FnMut(H);
 ```
@@ -544,12 +547,12 @@ Most algorithms are very simple to implement using trisection (`.split_around()`
 `split()` can be implemented as:
 
 ```rust
-gen fn split<H, P>(haystack: H, pattern: P) -> impl Iterator<Item = H>
+gen fn split<H, P>(haystack: H, needle: P) -> impl Iterator<Item = H>
 where
     H: Haystack,
-    P: Pattern<H>,
+    P: Needle<H>,
 {
-    let mut searcher = pattern.into_searcher();
+    let mut searcher = needle.into_searcher();
     let mut rest = Span::from(haystack);
     while let Some(range) = searcher.search(rest.borrow()) {
         let [left, _, right] = unsafe { rest.split_around(range) };
@@ -568,18 +571,18 @@ impl str {
 
     pub fn split_mut<'a>(
         &'a mut self,
-        pattern: impl Pattern<&'a mut str>,
+        needle: impl Needle<&'a mut str>,
     ) -> impl Iterator<Item = &'a mut str> {
-        core::pattern::split(self, pattern)
+        core::needle::split(self, needle)
     }
 
     pub fn replace<'a>(
         &'a self,
-        from: impl Pattern<&'a str>,
+        from: impl Needle<&'a str>,
         to: &str,
     ) -> String {
         let mut res = String::with_capacity(self.len());
-        core::pattern::replace_with(self, from, |_| to, |r| res.push_str(r));
+        core::needle::replace_with(self, from, |_| to, |r| res.push_str(r));
         res
     }
 
@@ -591,22 +594,22 @@ impl str {
 
 * Remove the entire `core::str::pattern` module from public, as this is unstable.
 
-* Add the `core::pattern` module with traits and structs shown above.
+* Add the `core::needle` module with traits and structs shown above.
 
 * Implement `Hay` to `str`, `[T]` and `OsStr`.
 
 * Implement `Haystack` to `∀H: Hay. &H`, `&mut str` and `&mut [T]`.
 
-* Implement `Pattern` as following:
+* Implement `Needle` as following:
 
-    * `Pattern<&{mut} str>` for `char`
-    * `Pattern<&{mut} str>` for `&[char]` and `FnMut(char)->bool`
-    * `Pattern<&{mut} str>` for `&str`, `&&str` and `&String`
-    * `Pattern<&{mut} [T]>` for `FnMut(&T)->bool`
-    * `Pattern<&{mut} [T]>` for `&[T]` where `T: PartialEq`
-    * `Pattern<&OsStr>` for `&OsStr` and `&str`
+    * `Needle<&{mut} str>` for `char`
+    * `Needle<&{mut} str>` for `&[char]` and `FnMut(char)->bool`
+    * `Needle<&{mut} str>` for `&str`, `&&str` and `&String`
+    * `Needle<&{mut} [T]>` for `FnMut(&T)->bool`
+    * `Needle<&{mut} [T]>` for `&[T]` where `T: PartialEq`
+    * `Needle<&OsStr>` for `&OsStr` and `&str`
 
-* Change the following methods of `str` to use the new Pattern API:
+* Change the following methods of `str` to use the Needle API:
 
     * `.contains()`, `.starts_with()`, `.ends_with()`
     * `.find()`, `.rfind()`
@@ -635,20 +638,20 @@ impl str {
     * `.match_indices_mut()`, `.rmatch_indices_mut()`
     * `.match_ranges_mut()`, `.rmatch_ranges_mut()`
 
-* Modify the following iterators in `core::str` to type alias of the corresponding Pattern API
+* Modify the following iterators in `core::str` to type alias of the corresponding Needle API
     iterators, and mark them as deprecated:
 
     ```rust
-    macro_rules! forward_to_pattern_api {
+    macro_rules! forward_to_needle_api {
         ($($name:ident)+) => {
             $(
                 #[rustc_deprecated]
-                pub type $name<'a, P> = pattern::ext::$name<&'a str, <P as Pattern<&'a str>>::Searcher>;
+                pub type $name<'a, P> = needle::ext::$name<&'a str, <P as Pattern<&'a str>>::Searcher>;
             )+
         }
     }
 
-    forward_to_pattern_api! {
+    forward_to_needle_api! {
         MatchIndices Matches Split SplitN SplitTerminator
         RMatchIndices RMatches RSplit RSplitN RSplitTerminator
     }
@@ -656,7 +659,7 @@ impl str {
 
     Rust allows the type alias to be stable while the underlying type be unstable.
 
-* Generalize these methods of `[T]` to use the new Pattern API:
+* Generalize these methods of `[T]` to use the new Needle API:
 
     * `.split()`, `.split_mut()`, `.rsplit()`, `.rsplit_mut()`
     * `.splitn()`, `.splitn_mut()`, `.rsplitn()`, `rsplitn_mut()`
@@ -665,7 +668,7 @@ impl str {
 * Add the following methods to `[T]`:
 
     * `.contains_match()`
-        (*note*: the existing `.contains()` method is incompatible with Pattern API)
+        (*note*: the existing `.contains()` method is incompatible with Needle API)
     * `.find()`, `.rfind()`, `.find_range()`, `.rfind_range()`
     * `.matches()`, `.matches_mut()`, `.rmatches()`, `.rmatches_mut()`
     * `.match_indices()`, `.match_indices_mut()`, `.rmatch_indices()`, `.rmatch_indices_mut()`
@@ -674,21 +677,21 @@ impl str {
     * `.replace()`, `.replacen()` (produce a `Vec<T>`)
 
 * Modify the following iterators in `core::slice` to type alias of the corresponding
-    Pattern API iterators, and mark them as deprecated:
+    Needle API iterators, and mark them as deprecated:
 
     ```rust
-    macro_rules! forward_to_pattern_api {
+    macro_rules! forward_to_needle_api {
         ($($name:ident $name_mut:ident)+) => {
             $(
                 #[rustc_deprecated]
-                pub type $name<'a, T, P> = pattern::ext::$name<&'a [T], ElemSearcher<P>>;
+                pub type $name<'a, T, P> = needle::ext::$name<&'a [T], ElemSearcher<P>>;
                 #[rustc_deprecated]
-                pub type $name_mut<'a, T, P> = pattern::ext::$name<&'a mut [T], ElemSearcher<P>>;
+                pub type $name_mut<'a, T, P> = needle::ext::$name<&'a mut [T], ElemSearcher<P>>;
             )+
         }
     }
 
-    forward_to_pattern_api! {
+    forward_to_needle_api! {
         Split SplitMut
         SplitN SplitNMut
         RSplit RSplitMut
@@ -696,13 +699,13 @@ impl str {
     }
     ```
 
-* Add all immutable Pattern API algorithms to `OsStr`. The `.replace()` and `.replacen()` methods
+* Add all immutable Needle API algorithms to `OsStr`. The `.replace()` and `.replacen()` methods
     should produce an `OsString`.
 
 ## Performance
 
-The benchmark of the `pattern_3` package shows that algorithms using the v3.0 API is close to or
-much faster than the corresponding methods in libstd using v1.0.
+The benchmark of the `pattern_3` package shows that algorithms using the Needle API ("v3.0 API")
+is close to or much faster than the corresponding methods in libstd using v1.0.
 
 The main performance improvement comes from `trim()`. In v1.0, `trim()` depends on
 the `Searcher::next_reject()` method, which requires initializing a searcher and compute
@@ -748,9 +751,9 @@ searcher would be a job mismatch for `trim()`. This justifies the `Consumer` tra
 [drawbacks]: #drawbacks
 
 * This RFC suggests generalizing some stabilized methods of `str` and `[T]` to adapt
-    the Pattern API. This might cause inference breakage.
+    the Needle API. This might cause inference breakage.
 
-* Some parts of the Haystack API (e.g. the `.restore_range()` method) may not be intuitive enough.
+* Some parts of the Haystack trait (e.g. the `.restore_range()` method) may not be intuitive enough.
 
 * This RFC does not address some problems raised in [issue 27721]:
 
@@ -760,37 +763,37 @@ searcher would be a job mismatch for `trim()`. This justifies the `Consumer` tra
 
         [suffix table]: https://docs.rs/suffix/1.0.0/suffix/struct.SuffixTable.html#method.positions
 
-    2. Patterns are still moved when converting to a Searcher or Consumer.
-        Taking the entire ownership of the pattern might prevent some use cases... ?
+    2. Needles are still moved when converting to a Searcher or Consumer.
+        Taking the entire ownership of the needle might prevent some use cases... ?
 
 * Stabilization of this RFC is blocked by [RFC 1672] \(disjointness based on associated types)
     which is postponed.
 
-    The default Pattern implementation currently uses an impl that covers all haystacks
-    (`impl<H: Haystack<Target = A>> Pattern<H> for Pat`) for some types, and several impls for
-    individual types for others (`impl<'h> Pattern<&'h A> for Pat`). Ideally *every* such impl
+    The default Needle implementation currently uses an impl that covers all haystacks
+    (`impl<H: Haystack<Target = A>> Needle<H> for N`) for some types, and several impls for
+    individual types for others (`impl<'h> Needle<&'h A> for N`). Ideally *every* such impl
     should use the blanket impl.
     Unfortunately, due to lack of RFC 1672, there would be conflict between these impls:
 
     ```rust
     // 1.
-    impl<'p, H> Pattern<H> for &'p [char]
+    impl<'p, H> Needle<H> for &'p [char]
     where
         H: Haystack<Target = str>,
     { ... }
-    impl<'p, H> Pattern<H> for &'p [T] // `T` can be `char`
+    impl<'p, H> Needle<H> for &'p [T] // `T` can be `char`
     where
         H: Haystack<Target = [T]>,
         T: PartialEq + 'p,
     { ... }
 
     // 2.
-    impl<H, F> Pattern<H> for F
+    impl<H, F> Needle<H> for F
     where
         H: Haystack<Target = str>,
         F: FnMut(char) -> bool,
     { ... }
-    impl<T, H, F> Pattern<H> for F
+    impl<T, H, F> Needle<H> for F
     where
         H: Haystack<Target = [T]>,
         F: FnMut(&T) -> bool, // `F` can impl both `FnMut(char)->bool` and `FnMut(&T)->bool`.
@@ -798,18 +801,18 @@ searcher would be a job mismatch for `trim()`. This justifies the `Consumer` tra
     { ... }
 
     // 3.
-    impl<'p, H> Pattern<H> for &'p str
+    impl<'p, H> Needle<H> for &'p str
     where
         H: Haystack<Target = str>,
     { ... }
-    impl<'p, H> Pattern<H> for &'p str
+    impl<'p, H> Needle<H> for &'p str
     where
         H: Haystack<Target = OsStr>,
     { ... }
     ```
 
-    We currently provide concrete impls like `impl<'h, 'p> Pattern<&'h OsStr> for &'p str`
-    as workaround, but if we stabilize the `Pattern` trait before RFC 1672 is implemented,
+    We currently provide concrete impls like `impl<'h, 'p> Needle<&'h OsStr> for &'p str`
+    as workaround, but if we stabilize the `Needle` trait before RFC 1672 is implemented,
     a third-party crate can sneak in an impl:
 
     ```rust
@@ -820,7 +823,7 @@ searcher would be a job mismatch for `trim()`. This justifies the `Consumer` tra
     }
     impl Haystack for MyOsString { ... }
 
-    impl<'p> Pattern<MyOsString> for &'p str { ... }
+    impl<'p> Needle<MyOsString> for &'p str { ... }
     ```
 
     and causes the standard library not able to further generalize (this is a breaking change).
@@ -836,7 +839,7 @@ These are some guiding principles v3.0 will adhere to.
 
 ### Generic algorithms
 
-1. The Pattern API should define an interface which can be used to easily implement
+1. The Needle API should define an interface which can be used to easily implement
     all algorithms the standard library currently provides:
 
     * `starts_with()`, `ends_with()`
@@ -858,9 +861,9 @@ These are some guiding principles v3.0 will adhere to.
 4. The API should be compatible with linked list and rope data structure as haystack,
     assuming we get either custom DST or GATs implemented.
 
-### Pattern/Searcher implementor
+### Needle/Searcher implementor
 
-5. The existing patterns for `&str` and `&mut str` should be supported:
+5. The existing needle for `&str` and `&mut str` should be supported:
 
     * `char`
     * `FnMut(char) -> bool`, `&[char]`
@@ -869,17 +872,17 @@ These are some guiding principles v3.0 will adhere to.
     Additionally, these re-implementations should not be slower than
     the existing ones in the standard library.
 
-6. These patterns for `&[T]`, `&mut [T]` and `Vec<T>` should be supported:
+6. These needles for `&[T]`, `&mut [T]` and `Vec<T>` should be supported:
 
     * `FnMut(&T) -> bool`
     * `&[T]` where `T: PartialEq`
 
-7. These patterns for `&OsStr` should be supported:
+7. These needles for `&OsStr` should be supported:
 
     * `&str`
     * `&OsStr`
 
-8. It should be possible to implement `Pattern` for `&Regex` within the `regex` package.
+8. It should be possible to implement `Needle` for `&Regex` within the `regex` package.
 
 9. One should not need to implement a `Searcher` three times to support `&[T]`, `&mut [T]` and
     `Vec<T>`. The searcher should rely on that these all can be borrowed as an `&[T]`.
@@ -901,11 +904,11 @@ uses the full power of `.next()`. The rest depend entirely on filtered versions 
 
 Implementing `.next()` is sometimes not trivial. In v1.2 this method is entirely abolished
 in favor of implementing `.next_match()` and `.next_reject()` directly.
-The `starts_with()` methods are supported instead via a specialized method in the Pattern trait.
+The `starts_with()` methods are supported instead via a specialized method in the Needle trait.
 
 However, we see that even `.next_reject()` is not something obvious. Given that `.next_reject()`
 is only used in `trim()`, in v3.0 we decide to remove this method as well,
-and instead make the Pattern implement `trim()` directly.
+and instead make the Needle implement `trim()` directly.
 
 ### Searching in a `&mut str`
 
@@ -937,7 +940,7 @@ generic algorithm must now *borrow* the haystack for the searcher to work with:
 
 ```rust
 // v3.0-alpha.1
-trait Pattern<H: Haystack> {
+trait Needle<H: Haystack> {
     type Searcher: Searcher<H>;
     fn into_searcher(self) -> Self::Searcher;
     //^ searcher no longer captures the haystack.
@@ -953,8 +956,8 @@ non-overlapping slices of the haystack it owns:
 
 ```rust
 // v3.0-alpha.1
-gen fn matches<H: Haystack, P: Pattern<H>>(mut haystack: H, pattern: P) -> impl Iterator<Item = H> {
-    let mut searcher = pattern.into_searcher();
+gen fn matches<H: Haystack, P: Needle<H>>(mut haystack: H, needle: P) -> impl Iterator<Item = H> {
+    let mut searcher = needle.into_searcher();
     while let Some(range) = searcher.search(&haystack) {
         // split the haystack into 3 parts.
         let [_, matched, rest] = haystack.split_around(range);
@@ -967,8 +970,8 @@ gen fn matches<H: Haystack, P: Pattern<H>>(mut haystack: H, pattern: P) -> impl 
 ### Matching a `&Regex`
 
 In the prototype above, we always feed the remaining haystack into `.search()`.
-This works fine for built-in pattern types like `char` and `&str`,
-but is totally broken for more advanced regular expression patterns.
+This works fine for built-in needle types like `char` and `&str`,
+but is totally broken for more advanced regular expression needles.
 
 The main issue is due to anchors and look-around.
 Anchors like `^` and `$` depend on the actual position where the slice appears.
@@ -997,8 +1000,8 @@ We fix this problem by treating the haystack and range as a single entity we cal
 trait Searcher<H: Haystack> {
     fn search(&mut self, span: (&H, Range<H::Index>)) -> Option<Range<H::Index>>;
 }
-gen fn matches<H: Haystack, P: Pattern<H>>(haystack: H, pattern: P) -> impl Iterator<Item = H> {
-    let mut searcher = pattern.into_searcher();
+gen fn matches<H: Haystack, P: Needle<H>>(haystack: H, needle: P) -> impl Iterator<Item = H> {
+    let mut searcher = needle.into_searcher();
     let mut span = (haystack, haystack.start_index()..haystack.end_index());
     while let Some(range) = searcher.search((&span.0, span.1.clone())) {
         // split the span into 3 parts.
@@ -1032,8 +1035,8 @@ impl<H: Haystack> Span<H> {
     ...
 }
 
-gen fn matches<H: Haystack, P: Pattern<H>>(haystack: H, pattern: P) -> impl Iterator<Item = H> {
-    let mut searcher = pattern.into_searcher();
+gen fn matches<H: Haystack, P: Needle<H>>(haystack: H, needle: P) -> impl Iterator<Item = H> {
+    let mut searcher = needle.into_searcher();
     let mut span = H::Span::from(haystack);
     while let Some(range) = searcher.search(span.borrow()) {
         let [_, matched, rest] = span.split_around(range);
@@ -1062,13 +1065,13 @@ trait Searcher<A: Hay + ?Sized> {
 }
 ```
 
-Unfortunately, a Pattern must be associated with the Haystack,
+Unfortunately, a Needle must be associated with the Haystack,
 because we must not allow "match `&mut str` with `&Regex`" to happen.
 Thus macros would still be needed, though not surrounding the entire module.
 
 ```rust
 // v3.0-alpha.5
-trait Pattern<H: Haystack> {
+trait Needle<H: Haystack> {
     type Searcher: Searcher<H::Target>;
     ...
 }
@@ -1076,7 +1079,7 @@ trait Pattern<H: Haystack> {
 
 ### Consumer
 
-In v2.0 and before, a pattern will need to specialize `starts_with()` and `ends_with()`.
+In v2.0 and before, a pattern (needle) will need to specialize `starts_with()` and `ends_with()`.
 
 ```rust
 // v2.0
@@ -1087,12 +1090,12 @@ trait Pattern<H: PatternHaystack> {
 }
 ```
 
-In v3.0, we have removed `.next_reject()` from Searcher, and thus Pattern needs to provide
-`.trim_start()` and `.trim_end()` as well, making the `Pattern` trait quite large.
+In v3.0, we have removed `.next_reject()` from Searcher, and thus Needle needs to provide
+`.trim_start()` and `.trim_end()` as well, making the `Needle` trait quite large.
 
-There are many disadvantages by putting these specialization methods directly inside `Pattern`:
+There are many disadvantages by putting these specialization methods directly inside `Needle`:
 
-1. [Issue 20021] means the `Pattern` impl for `&Regex` will still need to
+1. [Issue 20021] means the `Needle` impl for `&Regex` will still need to
     implement `.is_suffix_of()` and `.trim_end()` even if they are `unimplemented!()`
 2. These two methods do not use the searcher directly, but is bounded by
     `where Self::Searcher: ReverseSearcher<H>` which feels strange.
@@ -1104,7 +1107,7 @@ into a separate entity called a *consumer*.
 
 ```rust
 // v3.0-alpha.6
-trait Pattern<H: Haystack> {
+trait Needle<H: Haystack> {
     type Consumer: Consumer<H::Target>;
     fn into_consumer(self) -> Self::Consumer;
     ...
@@ -1128,7 +1131,7 @@ trait Consumer<A: Hay + ?Sized> {
 ```
 
 Both `starts_with()` and `trim()` can be efficiently implemented in terms of `.consume()`,
-though for some patterns a specialized `trim()` can be even faster, so we keep this default method.
+though for some needles a specialized `trim()` can be even faster, so we keep this default method.
 
 ## Miscellaneous decisions
 
@@ -1214,10 +1217,10 @@ trait Searcher<A: Hay + ?Sized> {
     fn search(&mut self, span: Span<&A>) -> Option<Range<A::Index>>;
 }
 
-fn rfind<H, P>(haystack: H, pattern: P) -> Option<H::Target::Index>
+fn rfind<H, P>(haystack: H, needle: P) -> Option<H::Target::Index>
 where
     H: Haystack,
-    P: Pattern<H>,
+    P: Needle<H>,
     P::Searcher: ReverseSearcher<H::Target>; // <---
 ```
 
@@ -1229,26 +1232,26 @@ trait Searcher {
     fn search(&mut self, span: Span<&Self::Hay>) -> Option<Range<Self::Hay::Index>>;
 }
 
-fn rfind<H, P>(haystack: H, pattern: P) -> Option<H::Target::Index>
+fn rfind<H, P>(haystack: H, needle: P) -> Option<H::Target::Index>
 where
     H: Haystack,
-    P: Pattern<H>,
+    P: Needle<H>,
     P::Searcher: ReverseSearcher;
 ```
 
 This would mean a searcher type can only search on one haystack. It turns out a searcher is shared
-quite frequently, e.g. the two-way search algorithm is shared among the pattern of `&[T]`, `&str`
+quite frequently, e.g. the two-way search algorithm is shared among the needles of `&[T]`, `&str`
 and `&OsStr`. Associated type would force creation of many wrapper types which is annoying.
 
 Therefore we stay with having the hay as the input type, the same choice taken in v2.0 and before.
 
 ### Specialization of `contains()`
 
-v3.0 removed the `Pattern::is_contained_in()` method. The `contains()` algorithm simply returned
+v3.0 removed the `Needle::is_contained_in()` method. The `contains()` algorithm simply returned
 `searcher.search(span).is_some()`. The micro-benchmarks shows no performance decrease,
 thus the method is removed to reduce the API surface.
 
-### Pattern for `&[T]` only requires `T: PartialEq`
+### Needle for `&[T]` only requires `T: PartialEq`
 
 Sub-slice searching nowadays uses the Two-Way search algorithm, which requires ordered alphabet
 i.e. `T: Ord`. However, there are already two stabilized APIs only assuming `T: PartialEq`:
@@ -1266,7 +1269,7 @@ impl<T> [T] {
 ```
 
 While we could allow only `starts_with`/`ends_with` to be bound on `PartialEq` and make the rest
-of the pattern searching algorithm require `T: Ord`, it feels very inconsistent to do so.
+of the array searching algorithm require `T: Ord`, it feels very inconsistent to do so.
 
 With specialization, this dilemma can be easily fixed: we will fallback to an algorithm
 which only requires `T: PartialEq` (e.g. [`galil-seiferas`] or even naive search),
@@ -1318,8 +1321,8 @@ where
 }
 ```
 
-These fallbacks should only be used when the pattern does not allow more efficient implementations,
-which is often not the case. To encourage pattern implementations to support both primitives,
+These fallbacks should only be used when the needle does not allow more efficient implementations,
+which is often not the case. To encourage needle implementations to support both primitives,
 where they should have full control of the details, we keep them as required methods.
 
 ### Names of everything
@@ -1332,7 +1335,8 @@ where they should have full control of the details, we keep them as required met
 * **Hay**. Chosen as a shorter but related name from "Haystack", similar to the relation in
     `String` → `str` and `PathBuf` → `Path`.
 
-* **Pattern**. Continuing the same name from v1.0.
+* **Needle**. Renamed from `Pattern` to clear confusion with the language's pattern matching.
+    Calling it "needle" to pair up with "haystack".
 
 * **Searcher::search()**. The name "Searcher" is the same as v1.0. The method is renamed from
     `.next_match()` since it needs to take a span as input and thus no longer iterator-like.
@@ -1414,7 +1418,7 @@ where they should have full control of the details, we keep them as required met
 
 ## Alternatives
 
-* The names of everything except `Searcher`, `Pattern` and `Haystack` are not finalized.
+* The names of everything except `Searcher` and `Haystack` are not finalized.
 
 # Prior art
 
@@ -1578,7 +1582,7 @@ trait PatternHaystack: Sized { // same as SearchPtrs in v1.5
 
 ## Haskell
 
-Haskell is perhaps one of the few languages where a generic pattern matching API is found,
+Haskell is perhaps one of the few languages where a generic string matching API is found,
 since it also has so many string types like Rust 😝, and there isn't an official regex
 implementation (unlike C++ which won't give insight how a `Searcher` interface should be designed).
 
@@ -1640,10 +1644,10 @@ Unlike this RFC, the `Extract` class is much simpler.
     would need to a redundant where clause:
 
     ```rust
-    fn starts_with<H, P>(haystack: H, pattern: P) -> bool
+    fn starts_with<H, P>(haystack: H, needle: P) -> bool
     where
         H: Haystack,
-        P: Pattern<H>,
+        P: Needle<H>,
         H::Target: Hay, // <-- this line
     { ... }
     ```
@@ -1651,7 +1655,7 @@ Unlike this RFC, the `Extract` class is much simpler.
     This RFC assumes that before stabilizing, either RFC should have been implemented.
 
 * For simplicity the prototype implementation fallbacks to the "naive search algorithm"
-    when `T: !Ord` by always factorizing the pattern `arr` into `arr[..1] ++ arr[1..]`.
+    when `T: !Ord` by always factorizing the needle `arr` into `arr[..1] ++ arr[1..]`.
     It is not proven that this is equivalent to the "naive search",
     though unit testing does suggest this works.
 
@@ -1671,7 +1675,7 @@ Unlike this RFC, the `Extract` class is much simpler.
     But this generalization brings more questions e.g. should `[u32; N]: ShallowClone`.
     This should be better left to a new RFC, and since `SharedHaystack` is mainly used for
     the core type `&A` only, we could keep `SharedHaystack` unstable longer
-    (a separate track from the main Pattern API) until this question is resolved.
+    (a separate track from the main Needle API) until this question is resolved.
 
 * With a benefit of simplified API,
     we may want to merge `Consumer` and `Searcher` into a single trait.
