@@ -328,41 +328,53 @@ units of specialization. This means that if one item in `default { .. }` is
 overridden in an implementation, then all all the items must be. An example (7):
 
 ```rust
+struct Country(&'static str);
+
+struct LangSec { papers: usize }
+struct CategoryTheory { papers: usize }
+
 trait ComputerScientist {
     default {
-        type Bar = u8;
-        const QUUX: Self::Bar = 42u8; // OK!
-        fn wibble(x: Self::Bar) -> u8 { x } // OK!
+        type Details = Country;
+        const THE_DETAILS: Self::Details = Country("Scotland"); // OK!
+        fn papers(details: Self::Details) -> u8 { 19 } // OK!
     }
 }
 
-struct Alan;
-struct Alonzo;
-struct Kurt;
-struct Per;
+// https://en.wikipedia.org/wiki/Emily_Riehl
+struct EmilyRiehl;
 
-impl ComputerScientist for Alan {
-    type Bar = Vec<u8>;
+// https://www.cis.upenn.edu/~sweirich/
+struct StephanieWeirich;
 
-    // ERROR! You must override QUUX and wibble.
+// http://www.cse.chalmers.se/~andrei/
+struct AndreiSabelfeld;
+
+// https://en.wikipedia.org/wiki/Conor_McBride
+struct ConorMcBride;
+
+impl ComputerScientist for EmilyRiehl {
+    type Details = CategoryTheory;
+
+    // ERROR! You must override THE_DETAILS and papers.
 }
 
-impl ComputerScientist for Alonzo {
-    const QUUX: u8 = 21;
-    fn wibble(x: Self::Bar) -> u8 { 4 }
+impl ComputerScientist for StephanieWeirich {
+    const THE_DETAILS: Country = Country("USA");
+    fn papers(details: Self::Details) -> u8 { 86 }
 
-    // ERROR! You must override Bar.
+    // ERROR! You must override Details.
 }
 
-impl ComputerScientist for Kurt {    
-    type Bar = (u8, u8);
-    const QUUX: Self::Bar = (0, 1);
-    fn wibble(x: Self::Bar) -> u8 { x.0 }
+impl ComputerScientist for AndreiSabelfeld {    
+    type Details = LangSec;
+    const THE_DETAILS: Self::Details = LangSec { papers: 90 };
+    fn papers(details: Self::Details) -> u8 { details.papers }
 
     // OK! We have overridden all items in the group.
 }
 
-impl ComputerScientist for Per {
+impl ComputerScientist for ConorMcBride {
     // OK! We have not overridden anything in the group.
 }
 ```
