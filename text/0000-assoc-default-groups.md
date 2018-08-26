@@ -287,6 +287,29 @@ The compiler will reject this because you are not allowed to assume,
 just like before, that `x: u8`. The reason why is much the same as
 we have previously discussed in the [background].
 
+Once place where this proposal does diverge from what is currently implemented
+is with respect to the following example (6):
+
+```rust
+#![feature(associated_type_defaults)]
+
+trait Foo {
+    type Bar = usize;
+
+    fn baz(x: Self::Bar) -> usize;
+}
+
+impl<T> Foo for Vec<T> {
+    fn baz(x: Self::Bar) -> usize { x }
+}
+```
+
+In the current implementation, (6) is rejected because the compiler will not
+let you assume that `x` is of type `usize`. But in this proposal, you would be
+allowed to assume this. To permit this is not a problem because `Foo for ()`
+is not further specializable since `baz` in the implementation has not been
+marked as `default`.
+
 With these changes,
 we consider the design of associated type defaults to be *finalized*.
 
@@ -300,7 +323,7 @@ what do I do then?"*. Don't worry; We've got you covered.
 To be able to assume that `Self::Bar` is truly `u8` in snippets (2) and (5),
 you may henceforth use `default { .. }` to group items into atomic units of
 specialization. This means that if one item in `default { .. }` is overridden
-in an implementation, then all all the items must be. An example (6):
+in an implementation, then all all the items must be. An example (7):
 
 ```rust
 trait ComputerScientist {
@@ -448,7 +471,7 @@ trait_item
 | maybe_outer_attrs item_macro
 ;
 
-trait_default : DEFAULT '{' (trait_item)* '}' ;
+trait_default : DEFAULT '{' trait_item* '}' ;
 ```
 
 Associated type defaults are already in the grammar.
@@ -469,33 +492,41 @@ trait Foo {
 }
 ```
 
-Any item in `$other_items`,
-which have any provided definitions (henceforth: *"default"*),
+Any item in `$other_items`, which have any provided definitions,
 may only assume that the type of `Self::Bar` is `Self::Bar`.
 They may *not* assume that the underlying type of `Self::Bar` is `$default_type`.
 This property is essential for the soundness of the type system.
+
 When an associated type default exists in a `trait` definition,
 it need not be specified in the implementations of that `trait`.
+If implementations of that `trait` do not make that associated type
+available for specialization, the `$default_type` may be assumed
+in other items specified in the implementation.
+If an implementation does make the associated type available for
+further specialization, then other definitions in the implementation
+may not assume the given underlying specified type of the associated type
+and may only assume that it is `Self::TheAsociatedType`.
 
 This applies generally to any item inside a `trait`.
-You may only assume the signature of an item, but not any default,
-in defaults of other items. This also includes `impl` items for that trait.
+You may only assume the signature of an item, but not any provided definition,
+in provided definitions of other items.
 For example, this means that you may not assume the value of an
-associated `const` item in other item with a default.
+associated `const` item in other items with provided definition
+in a `trait` definition.
 
 ### Specialization groups
 
 Implementations of a `trait` as well as `trait`s themselves may now
-contain *"specialization default groups"* (henceforth: *"group"*) as
+contain *"specialization default groups"* (henceforth: *"groups"*) as
 defined by the [grammar].
 
-Such a group is considered an *atomic unit of specialization* and
-each item in such a group may be specialized / overridden.
+Such a group is considered an *atomic unit of specialization*
+and each item in such a group may be specialized / overridden.
 This means that if *one* item is overridden in a group,
-*all* items must be overridden in a group.
+*all* items must be overridden in that group.
 
-Items inside a group may assume the defaults inside the group.
-Items outside of that group may not assume the defaults inside of it.
+Items inside a group may assume the definitions inside the group.
+Items outside of that group may not assume the definitions inside of it.
 
 #### Nesting
 
@@ -639,10 +670,13 @@ The grouping mechanism also composes well as seen in
 
 ## Haskell
 
+[associated type defaults]: https://www.microsoft.com/en-us/research/wp-content/uploads/2005/01/at-syns.pdf
+
 As Rust traits are a form of type classes,
 we naturally look for prior art from were they first were introduced.
-That language, being Haskell, permits a user to specify associated type defaults.
-For example, we may write:
+That language, being Haskell,
+permits a user to specify [associated type defaults].
+For example, we may write the following legal program:
 
 ```haskell
 {-# LANGUAGE TypeFamilies #-}
@@ -655,9 +689,16 @@ class Foo x where
   -- Provided method:
   baz :: x -> Bar x -> Int
   baz _ _ = 0
+
+data Quux = Quux
+
+instance Foo Quux where
+  baz _ y = y
 ```
 
-In this case, we are not assuming that `Bar x` unifies with `Int`.
+As in this proposal, we may assume that `y :: Int` in the above snippet.
+
+In this case, we are not assuming that `Bar x` unifies with `Int` in the `class`.
 Let's try to assume that now:
 
 ```haskell
@@ -697,6 +738,199 @@ To our knowledge, Haskell does not have any means such as `default { .. }`
 to change this behaviour. Presumably, this is the case because Haskell
 preserves parametricity and lacks specialization,
 wherefore `default { .. }` might not carry its weight.
+
+## Idris
+
+[idris_interface]: http://docs.idris-lang.org/en/latest/tutorial/interfaces.html
+
+Idris has a concept it calls [`interface`s][idris_interface].
+These resemble type classes in Haskell, and by extension traits in Rust.
+However, unlike Haskell and Rust, these `interface`s are incoherent and will
+permit multiple implementations of the same interface.
+
+Since Idris is language with full spectrum dependent types,
+it does not distinguish between terms and types, instead, types are terms.
+Therefore, there is really not a distinct concept called "associated type".
+However, an `interface` may require certain definitions to be provided
+and this includes types. For example, we may write:
+
+```idris
+interface Iterator self where
+    item : Type
+    next : self -> Maybe (self, item)
+
+implementation Iterator (List a) where
+    item = a
+    next [] = Nothing
+    next (x :: xs) = Just (xs, x)
+```
+
+Like in Haskell, in Idris, a function or value in an interface may be given a
+default definition. For example, the following is a valid program:
+
+```idris
+interface Foo x where
+    bar : Type
+    bar = Bool
+
+    baz : x -> bar
+
+implementation Foo Int where
+    baz x = x == 0
+```
+
+However, if we provide a default for `baz` in the `interface` which assumes
+the default value `Bool` of `bar`, as with the following example:
+
+```idris
+interface Foo x where
+    bar : Type
+    bar = Bool
+
+    baz : x -> bar
+    baz _ = True
+```
+
+then we run into an error:
+
+```
+Type checking .\foo.idr
+foo.idr:6:13-16:
+  |
+6 |     baz _ = True
+  |             ~~~~
+When checking right hand side of Main.default#baz with expected type
+        bar x _
+
+Type mismatch between
+        Bool (Type of True)
+and
+        bar x _ (Expected type)
+```
+
+The behaviour here is exactly as in Haskell and as proposed in this RFC.
+
+## C++
+
+In C++, it is possible to provide associated types and specialize them as well.
+This is shown in the following example:
+
+```cpp
+#include <iostream>
+#include <string>
+
+template<typename T> struct wrap {};
+
+template<typename T> struct foo { // Unspecialized.
+    typedef int bar;
+
+    bar make_a_bar() { return 0; };
+};
+
+template<typename T> struct foo<wrap<T>> { // Partial specialization.
+    typedef std::string bar;
+
+    bar make_a_bar() { return std::string("hello world"); };
+};
+
+int main() {
+    foo<void> a_foo;
+    std::cout << a_foo.make_a_bar() << std::endl;
+
+    foo<wrap<void>> b_foo;
+    std::cout << b_foo.make_a_bar() << std::endl;
+}
+```
+
+One thing to note here is that C++ allows us to assume in both the unspecialized
+variant of `foo` as well as the specialized version that `bar` is the underlying
+type we said it was in the `typedef`. This is unlike the default in this RFC
+but the same as when we use `default { .. }`.
+
+Do note however that C++ will allow us to remove `make_a_bar` from the
+specialized `foo<wrap<T>>` but will then error out with (gcc 4.6.2):
+
+```cc
+main.cpp: In function 'int main()':
+main.cpp:21:24: error: 'struct foo<wrap<void> >' has no member named 'make_a_bar'
+     std::cout << b_foo.make_a_bar() << std::endl;
+                        ^~~~~~~~~~
+```
+
+This shows that templates in C++ are fundamentally different from the type of
+parametric polymorphism (generics) that Rust employs.
+
+## Swift
+
+[swift_assoc]: https://docs.swift.org/swift-book/LanguageGuide/Generics.html
+
+One language which does have [associated types][swift_assoc] and defaults but
+which does not have provided definitions for methods is Swift.
+As an example, we may write:
+
+```swift
+protocol Foo {
+    associatedtype Bar = Int
+
+    func append() -> Bar
+}
+
+struct Quux: Foo {
+    func baz() -> Bar {
+        return 1
+    }
+}
+```
+
+However, we may not write:
+
+```swift
+protocol Foo {
+    associatedtype Bar = Int
+
+    func append() -> Bar { return 0 }
+}
+```
+
+This would result in:
+
+```
+main.swift:4:23: error: protocol methods may not have bodies
+    func baz() -> Bar { return 0 }
+```
+
+## Scala
+
+Another language which allows for these kinds of type projections and defaults
+for them is Scala. While Scala does not have type classes like Rust and Haskell
+does, it does have a concept of `trait` which can be likened to a sort of
+incoherent "type class" system. For example, we may write:
+
+```scala
+trait Foo {
+    type Bar = Int
+
+    def baz(x: Bar): Int = x
+}
+
+class Quux extends Foo {
+    override type Bar = Int
+    override def baz(x: Bar): Int = x
+}
+```
+
+There are a few interesting things to note here:
+
+1. We are allowed to specify a default type `Int` for `Bar`.
+
+2. A default definition for `baz` may be provided.
+
+3. This default definition may assume the default given for `Bar`.
+
+4. However, we *must* explicitly state that we are overriding `baz`.
+
+5. If we change the definition of of `override type Bar` to `Double`,
+   the Scala compiler will reject it.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
