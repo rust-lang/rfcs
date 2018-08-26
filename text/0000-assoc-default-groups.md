@@ -42,7 +42,7 @@ The following points were also noted in [RFC 192], but we expand upon them here:
 
    [proptest]: https://altsysrq.github.io/rustdoc/proptest/latest/proptest/arbitrary/trait.Arbitrary.html
 
-   For example, we may provide an API (due to [proptest]):
+   For example, we could change [proptest]'s API to be:
 
    ```rust
    trait Arbitrary: Sized + fmt::Debug {
@@ -287,7 +287,7 @@ The compiler will reject this because you are not allowed to assume,
 just like before, that `x: u8`. The reason why is much the same as
 we have previously discussed in the [background].
 
-Once place where this proposal does diverge from what is currently implemented
+One place where this proposal diverges from what is currently implemented
 is with respect to the following example (6):
 
 ```rust
@@ -306,7 +306,7 @@ impl<T> Foo for Vec<T> {
 
 In the current implementation, (6) is rejected because the compiler will not
 let you assume that `x` is of type `usize`. But in this proposal, you would be
-allowed to assume this. To permit this is not a problem because `Foo for ()`
+allowed to assume this. To permit this is not a problem because `Foo for Vec<T>`
 is not further specializable since `baz` in the implementation has not been
 marked as `default`.
 
@@ -316,14 +316,16 @@ we consider the design of associated type defaults to be *finalized*.
 ## `default` specialization groups
 [default_groups]: #default-specialization-groups
 
+Note: Everything in this section assumes actual support for [specialization].
+
 Now, you might be thinking: - *"Well, what if I __do__ need to assume that
 my defaulted associated type is what I said in a provided method,
 what do I do then?"*. Don't worry; We've got you covered.
 
 To be able to assume that `Self::Bar` is truly `u8` in snippets (2) and (5),
-you may henceforth use `default { .. }` to group items into atomic units of
-specialization. This means that if one item in `default { .. }` is overridden
-in an implementation, then all all the items must be. An example (7):
+you may henceforth use `default { .. }` to group associated items into atomic
+units of specialization. This means that if one item in `default { .. }` is
+overridden in an implementation, then all all the items must be. An example (7):
 
 ```rust
 trait ComputerScientist {
@@ -439,9 +441,6 @@ impl Fruit for Citrus<Orange<Blood>> {
     }
 }
 ```
-
-However, please note that for use of `default { .. }` inside implementations,
-you will still need actual support for [specialization].
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -589,10 +588,9 @@ The main drawbacks of this proposal are that:
    use by specialization and for `default impl`.
    Therefore, the syntax is only partially new.
 
-2. secondarily, if you have implementations where it is commonly needed
-   to write `default { .. }` because you need to assume the type of an
-   associated type default in a provided method, then the solution proposed
-   in this RFC is less ergonomic.
+2. if you have implementations where you commonly need to write `default { .. }`
+   because you need to assume the type of an associated type default in a
+   provided method, then the solution proposed in this RFC is less ergonomic.
 
    However, it is the contention of this RFC that such needs will be less common.
    This is discussed below.
@@ -742,11 +740,12 @@ wherefore `default { .. }` might not carry its weight.
 ## Idris
 
 [idris_interface]: http://docs.idris-lang.org/en/latest/tutorial/interfaces.html
+[coherence]: http://blog.ezyang.com/2014/07/type-classes-confluence-coherence-global-uniqueness/
 
 Idris has a concept it calls [`interface`s][idris_interface].
 These resemble type classes in Haskell, and by extension traits in Rust.
-However, unlike Haskell and Rust, these `interface`s are incoherent and will
-permit multiple implementations of the same interface.
+However, unlike Haskell and Rust, these `interface`s do not have the property
+of [coherence] and will permit multiple implementations of the same interface.
 
 Since Idris is language with full spectrum dependent types,
 it does not distinguish between terms and types, instead, types are terms.
@@ -822,13 +821,13 @@ This is shown in the following example:
 template<typename T> struct wrap {};
 
 template<typename T> struct foo { // Unspecialized.
-    typedef int bar;
+    using bar = int;
 
     bar make_a_bar() { return 0; };
 };
 
 template<typename T> struct foo<wrap<T>> { // Partial specialization.
-    typedef std::string bar;
+    using bar = std::string;
 
     bar make_a_bar() { return std::string("hello world"); };
 };
@@ -842,23 +841,10 @@ int main() {
 }
 ```
 
-One thing to note here is that C++ allows us to assume in both the unspecialized
-variant of `foo` as well as the specialized version that `bar` is the underlying
-type we said it was in the `typedef`. This is unlike the default in this RFC
-but the same as when we use `default { .. }`.
-
-Do note however that C++ will allow us to remove `make_a_bar` from the
-specialized `foo<wrap<T>>` but will then error out with (gcc 4.6.2):
-
-```cc
-main.cpp: In function 'int main()':
-main.cpp:21:24: error: 'struct foo<wrap<void> >' has no member named 'make_a_bar'
-     std::cout << b_foo.make_a_bar() << std::endl;
-                        ^~~~~~~~~~
-```
-
-This shows that templates in C++ are fundamentally different from the type of
-parametric polymorphism (generics) that Rust employs.
+You will note that C++ allows us to assume in both the base template class,
+as well as the specialization, that bar is equal to the underlying type.
+This is because one cannot specialize any part of a class without specializing
+the whole of it. It's equivalent to one atomic `default { .. }` block.
 
 ## Swift
 
