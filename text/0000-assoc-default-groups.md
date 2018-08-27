@@ -454,6 +454,64 @@ impl Fruit for Citrus<Orange<Blood>> {
 }
 ```
 
+### Case study
+[case study]: #case-study
+
+[RFC 2500]: https://github.com/rust-lang/rfcs/pull/2500
+
+One instance where specialization could be useful to provide a more ergonomic
+API is to improve upon [RFC 2500]. The RFC proposes the following API:
+
+```rust
+trait Needle<H: Haystack>: Sized {
+    type Searcher: Searcher<H::Target>;
+    fn into_searcher(self) -> Self::Searcher;
+
+    type Consumer: Consumer<H::Target>;
+    fn into_consumer(self) -> Self::Consumer;
+}
+```
+
+However, it turns out that usually, `Consumer` and `Searcher` are
+the same underlying type. Therefore, we would like to save the user
+from some unnecessary work by letting them elide parts of the required
+definitions in implementations.
+
+One might imagine that we'd write:
+
+```rust
+trait Needle<H: Haystack>: Sized {
+    type Searcher: Searcher<H::Target>;
+    fn into_searcher(self) -> Self::Searcher;
+
+    default {
+        type Consumer: Consumer<H::Target> = Self::Searcher;
+        fn into_consumer(self) -> Self::Consumer { self.into_searcher() }
+    }
+}
+```
+
+However, the associated type `Searcher` does not necessarily implement
+`Consumer<H::Target>`. Therefore, the above definition would not type check.
+
+However, we can encode the above construct by rewriting it slightly,
+using the concept of partial implementations from [RFC 1210]:
+
+```rust
+default impl<H: Haystack> Needle for T
+where Self::Searcher: Consumer<H::Target> {
+    default {
+        type Consumer = Self::Searcher;
+        fn into_consumer(self) -> Self::Consumer { self.into_searcher() }
+    }
+}
+```
+
+Now we have ensured that `Self::Searcher` is a `Consumer<H::Target>`
+and therefore, the above definition will type check.
+Having done this, the API has become more ergonomic because we can
+let users define instances of `Needle<H>` with half as much requirements.
+
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
@@ -524,6 +582,36 @@ in provided definitions of other items.
 For example, this means that you may not assume the value of an
 associated `const` item in other items with provided definition
 in a `trait` definition.
+
+#### Interaction with `existential type`
+
+[RFC 2071]: https://github.com/rust-lang/rfcs/blob/master/text/2071-impl-trait-existential-types.md#reference-existential-types
+
+[RFC 2071] defines a construct `existential type Foo: Bar;` which is permitted
+in associated types and results in an opaque type. This means that the nominal
+type identity is hidden from certain contexts and only `Bar` is extensionally
+known about the type wherefore only the operations of `Bar` is afforded.
+This construct is sometimes written as `type Foo = impl Bar;` in conversation
+instead.
+
+[RFC 1210]: https://github.com/rust-lang/rfcs/blob/master/text/1210-impl-specialization.md#default-impls
+
+With respect to this RFC, the semantics of `type Assoc = impl Bar;`
+inside a trait definition, where `Assoc` is the name of the associated type,
+is understood as what it means in terms of `default impl ..` as discussed
+in [RFC 1210]. What this entails means in concrete terms is that given:
+
+```rust
+trait Foo {
+    type Assoc = impl Bar;
+
+    ...
+}
+```
+
+the underlying type of `Assoc` stays the same for all implementations which
+do not change the default of `Assoc`. The same applies to specializations.
+With respect to type visibility, it is the same as that of `existential type`.
 
 ### Specialization groups
 
@@ -953,3 +1041,38 @@ There are a few interesting things to note here:
 
    This question may be left as future work for another RFC or resolved
    during this RFC as the RFC is forward-compatible with such a change.
+
+# Future work
+
+## `where` clauses on `default { .. }` groups
+
+From our [case study], we noticed that we had to depart from our `trait`
+definition into a separate `default impl..` to handle the conditionality
+of `Self::Searcher: Consumer<H::Target>`. However, one method to regain
+the locality provided by having `default { .. }` inside the `trait` definition
+is to realize that we could attach an optional `where` clause to the group.
+This would allow us to write:
+
+```rust
+trait Needle<H: Haystack>: Sized {
+    type Searcher: Searcher<H::Target>;
+    fn into_searcher(self) -> Self::Searcher;
+
+    default where
+        Self::Searcher: Consume<H::Target>
+    {
+        type Consumer: Consumer<H::Target> = Self::Searcher;
+        fn into_consumer(self) -> Self::Consumer { self.into_searcher() }
+    }
+}
+```
+
+The defaults in this snippet would then be equivalent to the `default impl..`
+snippet noted in the [case study].
+
+This `default where $bounds` construct should be able to
+subsume common cases where you only have a single `default impl..`
+but provide comparatively better local reasoning.
+
+However, we do not propose this at this stage because it is unclear how
+common `default impl..` will be in practice.
