@@ -79,6 +79,16 @@ The following points were also noted in [RFC 192], but we expand upon them here:
    }
    ```
 
+   with an implementation:
+
+   ```rust
+   impl Arbitrary for usize {
+       fn arbitrary() -> Self::Strategy { 0..100 }
+
+       type Strategy = Range<usize>;
+   }
+   ```
+
    By allowing defaults, we can transition to this more flexible API without
    breaking any consumers by simply saying:
 
@@ -103,6 +113,8 @@ The following points were also noted in [RFC 192], but we expand upon them here:
        type Strategy: Strategy<Value = Self>;
    }
    ```
+
+   The implementation `Arbitrary for usize` *remains valid* even after the change.
 
 ## For `default { .. }` groups
 
