@@ -180,7 +180,7 @@ the base and updated instances. The following conditions must be met:
 The struct update syntax is the following:
 
 ```rust
-$struct_name:ident {
+$struct_name:path {
     $($field_name:ident: $field_value:expr,)*
     ..$base_instance:expr
 }
