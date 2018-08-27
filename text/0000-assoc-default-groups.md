@@ -645,7 +645,7 @@ Items outside of that group may not assume the definitions inside of it.
 
 There applies no restriction on the nesting of groups.
 This means that you may nest them arbitrarily.
-When nesting does occur, the atomicity applies as if the nesting was flattened.
+When nesting does occur, the atomicity applies as if the nesting were flattened.
 However, with respect to what may be assumed, the rule above applies.
 For example, you may write:
 
