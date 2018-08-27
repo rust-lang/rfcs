@@ -625,7 +625,7 @@ trait Foo {
 
 the underlying type of `Assoc` stays the same for all implementations which
 do not change the default of `Assoc`. The same applies to specializations.
-With respect to type visibility, it is the same as that of `existential type`.
+With respect to type opacity, it is the same as that of `existential type`.
 
 ### Specialization groups
 
