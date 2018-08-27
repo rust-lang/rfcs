@@ -468,12 +468,44 @@ impl Fruit for Citrus<Orange<Blood>> {
 }
 ```
 
+So far our examples have always included an associated type.
+However, this is not a requirement.
+We can also group associated `const`s and `fn`s together or just `fn`s.
+An example:
+
+```rust
+trait Foo {
+    default {
+        const BAR: usize = 3;
+
+        fn baz() -> [u8; Self::BAR] {
+            [1, 2, 3]
+        }
+    }
+}
+
+trait Quux {
+    default {
+        fn wibble() {
+            ...
+        }
+
+        fn wobble() {
+            ...
+        }
+
+        // For whatever reason; The crate author has found it imperative
+        // that `wibble` and `wobble` always be defined together.
+    }
+}
+```
+
 ### Case study
 [case study]: #case-study
 
 [RFC 2500]: https://github.com/rust-lang/rfcs/pull/2500
 
-One instance where specialization could be useful to provide a more ergonomic
+One instance where default groups could be useful to provide a more ergonomic
 API is to improve upon [RFC 2500]. The RFC proposes the following API:
 
 ```rust
@@ -640,6 +672,9 @@ This means that if *one* item is overridden in a group,
 
 Items inside a group may assume the definitions inside the group.
 Items outside of that group may not assume the definitions inside of it.
+
+The parser will accept items inside `default { .. }` without a body.
+However, such an item will later be rejected during type checking.
 
 #### Nesting
 
