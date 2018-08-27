@@ -1056,6 +1056,18 @@ There are a few interesting things to note here:
    This question may be left as future work for another RFC or resolved
    during this RFC as the RFC is forward-compatible with such a change.
 
+2. Should groups be arbitrarily nestable?
+
+   On the one hand, permitting arbitrary nesting is simpler from a grammatical
+   point of view and makes the language simpler by having *fewer rules*.
+   It also allows the user more fine grained control.
+
+   On the other hand, it is not clear to what use such fine grained control
+   would be. Nested groups may also be less understandable and lead to confusion.
+
+   To resolve this issue, some usage experience may be required.
+   Thus, it might be a good idea to defer such a choice until after the RFC.
+
 # Future work
 
 ## `where` clauses on `default { .. }` groups
