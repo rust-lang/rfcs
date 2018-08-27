@@ -942,7 +942,7 @@ int main() {
 ```
 
 You will note that C++ allows us to assume in both the base template class,
-as well as the specialization, that bar is equal to the underlying type.
+as well as the specialization, that `bar` is equal to the underlying type.
 This is because one cannot specialize any part of a class without specializing
 the whole of it. It's equivalent to one atomic `default { .. }` block.
 
