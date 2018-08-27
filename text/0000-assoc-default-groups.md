@@ -877,7 +877,7 @@ main.hs:11:16: error:
 The thing to pay attention to here is:
 > Couldn't match expected type ‘`Int`’ with actual type ‘`Bar x`’
 
-We can clearly see that the type checker is now allowing us to assume
+We can clearly see that the type checker is *not* allowing us to assume
 that `Int` and `Bar x` are the same type.
 This is consistent with the approach this RFC proposes.
 
