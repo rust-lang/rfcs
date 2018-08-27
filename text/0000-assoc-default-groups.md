@@ -299,8 +299,10 @@ The compiler will reject this because you are not allowed to assume,
 just like before, that `x: u8`. The reason why is much the same as
 we have previously discussed in the [background].
 
+[current_impl_diverge]: https://play.rust-lang.org/?gist=30e01d77f7045359e30c7d3f3144e984&version=nightly&mode=debug&edition=2015
+
 One place where this proposal diverges from what is currently implemented
-is with respect to the following example (6):
+is with respect to the [following example][current_impl_diverge] (6):
 
 ```rust
 #![feature(associated_type_defaults)]
