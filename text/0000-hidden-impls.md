@@ -714,11 +714,89 @@ that macro, and transitively) will be more visible than the `vis` specified
 in `#[derive($vis Trait)]`. We argue that this is a good thing to do because
 it removes a large implementation burden on custom derive authors as well as
 allowing users a uniform experience in the ecosystem. By clamping the visibility,
-we may rule out some unhygenic things that users may want to do, but the ability
+we may rule out some unhygienic things that users may want to do, but the ability
 to write the macro generated code always remains. We could potentially have
 some mechanism to opt-out of the hygiene at the macro definition site,
 but this should await users actually needing that feature and be left as
 future work.
+
+## Behaviour with respect to specialization
+
+Consider the following example:
+
+```rust
+// crate A
+
+pub trait Property {
+    fn get(&self) -> u32;
+}
+
+pub impl<T> Property for T {
+    default fn get(&self) -> u32 { 42 }
+}
+
+pub struct Thing;
+
+crate impl Property for Thing {
+    fn get(&self) -> u32 { 4242 }
+}
+
+pub fn take_has_property(prop: impl Property) { .. }
+
+// crate B
+
+fn main() {
+    crate_A::take_has_property(Thing)
+}
+```
+
+What will happen when `take_has_property(Thing)` is called?
+Here are some possibilities:
+
+1. Because `crate impl Property for Thing` is hidden from crate B,
+   the type checker will resolve this implementation to
+   `pub impl<T> Property for T` instead.
+
+   This possibility would be unsound because we have allowed trait resolution
+   to result in different dynamic semantics (run-time behaviour) depending
+   on where an implementation was resolved. This behaviour is exactly what
+   coherence prevents. Because this option would be unsound,
+   alternative 1) must be ruled out.
+
+2. Because we want to preserve coherence, we allow `take_has_property(Thing)`
+   to resolve to `crate impl Property for Thing` instead, but we would not
+   permit calling `Thing.get()` or `<Thing as Property>::get(&Thing)` directly.
+
+   This would make the hidden implementation indirectly observable in crate B.
+   A possible justification for this approach would be that an implementation
+   is already provided, so the specialization is not expected to behave in
+   a way that is radically different. Furthermore, if the specialized but hidden
+   implementation were removed, a base implementation would be there wherefore
+   no compile time error would occur.
+
+   Under a situation where parametricity is culturally assumed by users,
+   this might work; However, given that we are likely to permit associated types
+   to be specialized and that we we expect that a non-trivial amount of users
+   will not preserve parametricity, we can not assume the culture to be universal.
+   Since we can't assume parametricity, this approach is likely to:
+   + lead to surprises that are hard to debug.
+   + be harder to understand for users.
+
+3. Require that any specialized implementation be at least as visible as its
+   base implementation which it is specializing.
+   Employing this rule would cause the snippet above to be ill typed at the
+   definition of `crate impl Property for Thing`.
+   The advantage of such a rule is that:
+   + it is more conservative, allowing us to relax it in the future in a way
+     that is forward compatible with 2).
+   + it is likely simpler to understand because the error message gives us an
+     opportunity to explain the situation to users.
+   + there will be no possibility of surprises.
+
+Because 1) is unsound and 2) could be surprising, we have chosen 3) as the
+conservative and simpler solution to this dilemma.
+
+With respect to implementations of `Drop`; we employ a similar reasoning.
 
 ## Alternative: Newtypes
 
