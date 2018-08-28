@@ -412,6 +412,10 @@ is when it comes to trait objects. This is fine for a few reasons:
   vtable of any hidden implementations. This could be done as a lint
   of some form, but is currently left as possible future work.
 
+Finally, because `impl Trait` in return position is in many ways used for the
+same purposes but without the overhead of dynamic dispatch, we allow the same
+behaviour for a function such as `pub fn make_with_property() -> impl Property`.
+
 ## Recommendation: When you should use hidden implementations
 
 Simply put, it is recommended that your implementation be hidden if you are
