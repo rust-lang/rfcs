@@ -912,7 +912,7 @@ privacy on items to another item. In contrast, `#[hide(..)]` is not a familiar
 syntax and as such it uses up too much of the complexity budget.
 Furthermore, it is not clear that forcing the user to always give a reasoning
 for why something is hidden is good. Our aim is to make it easy to not
-overpromise things and having to give a reason runs counter to that aim.
+overpromise things and having to give a reason runs counter to that goal.
 
 # Prior art
 [prior-art]: #prior-art
