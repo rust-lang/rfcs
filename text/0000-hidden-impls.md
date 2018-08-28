@@ -595,6 +595,15 @@ visible of `$vis_{a, b}`.
    no longer be emitted when a visibility modifier is applied on a `trait`
    implementation.
 
+10. When type checking an implementation `$I`, with visibility `$vis_I`,
+    of a trait with `#[lang = "drop"]`,
+    for a given type `$A` with visibility `$vis_A`,
+    if `$vis_I < $vis_A` then the implementation `$I` shall be rejected.
+
+11. When type checking a specialized implementation `$S` of a base implementation
+    `$B` where the visibility of `$S` is `$vis_S` and that of `$B` is `$vis_B`,
+    if `$vis_S < $vis_B` then `$S` shall be rejected.
+
 ## Code generation
 
 + Code generation will ignore visibility specified on any implementations.
@@ -782,7 +791,7 @@ In a paper [Optional Type Classes for Haskell][optional_pdf] due to
 Ribero et. al [(DOI: 10.1007/978-3-319-45279-1_9)][optional_doi]
 modularization of instances is considered. This is however radically different
 than what is proposed in this RFC, which does *not* propose modularization of
-implementations. Fundamentally, that paper seems permit different instances
+implementations. Fundamentally, that paper seems to permit different instances
 of the same type class to coexist as long as the instance to use for a given
 expression is uniquely determinable. As previously discussed, such a mechanism
 would not be sound in Rust. The main difference between these approaches is
