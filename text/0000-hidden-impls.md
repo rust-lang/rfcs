@@ -824,16 +824,30 @@ We then use `MyNewType` inside of our crate but don't expose the type, and thus
 the implementation, to anyone who shouldn't get access to the implementation
 of `Property` for `MyNewType`.
 
-This mechanism usually works, but incurs
-significant boilerplate. This is especially true if `Property` has any
-super-trait bounds or has a lot of required items in need of specification.
-It doesn't take a trait more complex than `Clone` or `Iterator` for there
-to be, comparatively speaking, a lot of overhead.
+This mechanism usually works, but incurs significant boilerplate due to:
+1. the need to define the newtype,
+2. to delegate or derive needed traits,
+3. to wrap and unwrap values of the base type in the newtype where needed. 
+
+This is especially true if `Property` has any super-trait bounds or has a lot of
+required items in need of specification. It doesn't take a trait more complex than
+`Clone` or `Iterator` for there to be a lot of overhead comparatively speaking.
 
 One way of reducing the boilerplate is with `#[derive(..)]` on the newtype or
 with some sort of generalized newtype deriving or "delegation" (as proposed in
 [RFC 2393]). However, delegation does not extend well to all forms of traits.
-And even if delegation or deriving does work, there is still overhead.
+For example, in [RFC 2393], the following restrictions apply at the time of writing:
++ no associated types (so no `Iterator`)
++ no associated `const`s.
++ functions without a receiver (`(&mut?)? self`)
++ functions where any argument type or the return type is `Self` (no `PartialEq`).
+
+And even if delegation or deriving does work, there is still overhead because
+only the burden to define delegations (2) is reduced.
+
+Finally, delegation or deriving does sometimes not work at all because you do
+not wish to give ownership away of your wrapped value but wrapping a reference
+to it does not work because the trait requires `Self: 'static`.
 
 This syntactic overhead, whether large (as with manual implementations),
 or medium (as with delegation or deriving) exists both for the writer *and*
@@ -851,6 +865,54 @@ and applies them to a new place. Thus, the increased learning burden
 should not be large. For anyone who already understands visibility
 modifiers on anything else in Rust, seeing them for the first time
 should also be relatively intuitive.
+
+## Alternative `#[hide(..)]`
+
+An alternative due to @burdges is that implementations may be hidden using
+a sort of linting scheme. For example:
+
+```rust
+#[hide(crate, deny,
+    "X is not small, but we audit our internal Copy usage,
+     and fix benchmark regressions.")]
+impl Copy for X {}
+
+#[hide(crate, allow,
+    "We use a slow conversion in X: Hash so you should use a
+    precursor to X or batch convert to X::Affine instead.")]
+impl Hash for X { ... }
+```
+
+This would expose said implementations, but raise a warning for the user that
+depends on the implementations.
+
+This linting mechanism has the advantage that the person trying to use the
+"hidden" implementation receives a warning explaining why it is hidden.
+However; such a mechanism can also be provided for visibility modifiers in
+general by allowing you to specify some custom on-error handler:
+
+```rust
+#[on_visibility_error("Sorry we are not exposing this because...")]
+```
+
+This mechanism is orthogonal to `crate impl` because it could be used at
+any place where a visibility modifier is permitted today. An example would
+be placing `#[on_visibility_error(..)]` on a `struct` definition.
+
+With respect to using `#[hide(..)]`, it also cannot be used as a means to
+retain invariants because the attribute is only advisory and not enforced by
+the type system. This entails that `unsafe { .. }` may not rely on `#[hide(..)]`
+to ensure that what was intended to be hidden stays hidden.
+Meanwhile `crate impl` is a true mechanism for encapsulation because it is
+enforced by the type checker.
+
+Finally, we argue that `crate impl..` is the more consistent choice with Rust
+as is because it is merely reusing the mechanism we already have for controlling
+privacy on items to another item. In contrast, `#[hide(..)]` is not a familiar
+syntax and as such it uses up too much of the complexity budget.
+Furthermore, it is not clear that forcing the user to always give a reasoning
+for why something is hidden is good. Our aim is to make it easy to not
+overpromise things and having to give a reason runs counter to that aim.
 
 # Prior art
 [prior-art]: #prior-art
