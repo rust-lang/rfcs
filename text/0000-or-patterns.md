@@ -530,7 +530,7 @@ meaning than what we currently have, thus causing a breaking change.
 
 The only real choice that we do have to make is whether the new addition to the
 pattern grammar should be `pat : .. | pat "|" pat ;` or if it instead should be
-`pat : .. | "|"? pat "|" pat ;`. We have chosen the latter for 4 reasons:
+`pat : .. | "|"? pat "|" pat ;`. We have chosen the former for 4 reasons:
 
 1. If we chose the former we can later change to the latter but not vice versa.
    This is thus the conservative choice.
