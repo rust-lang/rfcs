@@ -265,20 +265,20 @@ would help, there are some where it would. Let's go through a few of them.
 
    ```rust
    match (op, &mmp.clone()) {
-       (&Lt, &M(0) | &MM(0, 0) | &MMP(0, 0, 0)) => debcargo_bail!(
+       (&Lt, &(M(0) | MM(0, 0) | MMP(0, 0, 0))) => debcargo_bail!(
            "Unrepresentable dependency version predicate: {} {:?}",
            dep.name(),
            p
        ),
-       (&Tilde, &M(_) | &MM(_, _)) => {
+       (&Tilde, &(M(_) | MM(_, _))) => {
            vr.constrain_lt(mmp.inclast());
            vr.constrain_ge(mmp);
        }
-       (&Compatible, &MMP(0, minor, _) | &MM(0, minor)) => {
+       (&Compatible, &(MMP(0, minor, _) | MM(0, minor))) => {
            vr.constrain_lt(MM(0, minor + 1));
            vr.constrain_ge(mmp);
        }
-       (&Compatible, &MMP(major, _, _) | &MM(major, _) | &M(major)) => {
+       (&Compatible, &(MMP(major, _, _) | MM(major, _) | M(major))) => {
            vr.constrain_lt(M(major + 1));
            vr.constrain_ge(mmp);
        }
