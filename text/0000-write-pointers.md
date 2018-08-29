@@ -1,4 +1,4 @@
-- Feature Name: parital_initialization_and_write_pointers
+- Feature Name: parital_initialization_and_write_references
 
 - Start Date: 2018-08-29
 
@@ -22,8 +22,8 @@ The builder pattern was created as a way to try and solve the issue of not havin
 
 [guide-level-explanation]: #guide-level-explanation
 
-`&out T` is a write-only pointer to `T`, where `T: Copy`. The bound is necessary as it is not safe to overwrite `Drop` types without invoking the destructor. Does not run destructors on write. See [unresolved questions](#unresolved-questions) for a more in depth explanation. \
-`&uninit T` is a write-once pointer to `T`, after the first write, it is allowed to read the values (behaves exactly like `&mut T`). Does not run destructors on the first write. \
+`&out T` is a write-only reference to `T`, where `T: Copy`. The bound is necessary as it is not safe to overwrite `Drop` types without invoking the destructor. Does not run destructors on write. See [unresolved questions](#unresolved-questions) for a more in depth explanation. \
+`&uninit T` is a write-once reference to `T`, after the first write, it is allowed to read the values (behaves exactly like `&mut T`). Does not run destructors on the first write. \
 
 For all examples, I will use these two structs
 
@@ -185,20 +185,18 @@ Using `&out T`, we can directly initialize a value and guarantee to write only b
 That would add give a memory location to write to directly instead of relying on move-elimination optimizations.
 
 ```Rust
-use super::os::OsFrameBuffer;
-
-#[derive(Copy)]
+#[derive(Clone, Copy)]
 struct Rgb(pub u8, pub u8, pub u8);
 /// This abstraction that exposes a Frame Buffer allocated by the OS, and is unsafe to read from
-struct FrameBuffer( OsFrameBuffer );
+struct FrameBuffer( ... );
 
 impl FrameBuffer {
-    fn new(&uninit self) {
-        self.0.init() // initialize frame buffer
-    }
+    /// initializes the FrameBuffer in place
+    fn new(&uninit self) { ... }
 
+    /// gets a write only refernce to pixel at position (row, col)
     fn write_to_pixel(&mut self, row: usize, col: usize) -> &out Rgb {
-         self.0.get_out(row, col)
+         ...
     }
 }
 ```
@@ -207,10 +205,12 @@ This could be used like this
 let buffer;
 FrameBuffer::new(&uninit buffer);
 
-*buffer.write(0, 0) = Rgb(50, 50, 255);
-*buffer.write(10, 20) = Rgb(0, 250, 25);
+*buffer.write_to_pixel(0, 0) = Rgb(50, 50, 255);
+*buffer.write_to_pixel(10, 20) = Rgb(0, 250, 25);
 /// ...
 ```
+
+**Note:** `Rgb` is `Copy`, if it wasn't we could not gaurentee that we can safely overwrite it
 
 ## Constructors and Direct Initialization
 
@@ -234,7 +234,7 @@ and we can do direct initialization
 ```Rust
 impl<T> Vec<T> {
     pub fn emplace_back(&mut self) -> &uninit T {
-        ... // magic to allocate space and create pointer
+        ... // magic to allocate space and create reference
     }
 }
 ```
@@ -264,7 +264,7 @@ impl WriteOnly {
     - After being written to `&uninit T` are promoted to a `&mut T`
 - Writing does not drop old value.
     - Otherwise, it would not handle writing to uninitialized memory 
-    - More importantly, dropping requires at least one read, which is not possible with a write-only pointer
+    - More importantly, dropping requires at least one read, which is not possible with a write-only reference
 - You cannot reference partially initialized memory
 ```Rust
 let x: Bar;
@@ -295,7 +295,7 @@ init(&uninit x); // this function will overwrite, but not drop to the old value 
 `&out T` should follow some rules in so that is is easy to reason about `&out T` locally and maintain soundness
 - `&out T` follows the same rules as `&mut T` for the borrow checker
 - Writing does not drop old value.
-    - Dropping requires at least one read, which is not possible with a write-only pointer
+    - Dropping requires at least one read, which is not possible with a write-only reference
 - You can take a `&out T` on any `T: Copy`
     - because destructors are never run on write, `T: Copy` is necessary to guarantee no custom destructors. This bound can be changed once negative trait bounds land, then we can have `T: !Drop`. Changing from `T: Copy` to `T: !Drop` will be backwards compatible, so we can move forward with just a `T: Copy` bound for now.
 
@@ -415,6 +415,10 @@ Incorporating [@gbutler](https://internals.rust-lang.org/u/gbutler)'s proposal o
 edit 3:
 
 Used [@gbutler](https://internals.rust-lang.org/u/gbutler)'s example of FrameBuffer that interfaces hardware for `&out T`
+
+edit 4:
+
+Fixed example for `&out T`.
 
 ---
 I would like to thank all the people who helped refine this proposal to its current state: [@rkruppe](https://internals.rust-lang.org/u/rkruppe), [@earthengine](https://internals.rust-lang.org/u/earthengine),  [@gbutler](https://internals.rust-lang.org/u/gbutler),
