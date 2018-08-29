@@ -46,7 +46,7 @@ For example ([`rust.godbolt.org`](https://godbolt.org/g/YP2GCJ)):
 
 ```rust
 fn foo(x: i32) -> i32{ 
-  hint::black_box(2 + x);
+  unsafe { hint::black_box(2 + x) };
   3
 }
 let a = foo(2);
@@ -106,9 +106,11 @@ We can use `hint::black_box` to create a more realistic synthetic benchmark
 ```rust
 fn push_cap(v: &mut Vec<i32>) {
     for i in 0..4 {
-      black_box(v.as_ptr());
-      v.push(black_box(i));
-      black_box(v.as_ptr());
+        unsafe {
+            black_box(v.as_ptr());
+            v.push(black_box(i));
+            black_box(v.as_ptr());
+        }
     }
 }
 ```
