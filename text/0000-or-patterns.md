@@ -208,7 +208,7 @@ would help, there are some where it would. Let's go through a few of them.
                    r: Option<i32>) -> ParseResult<Option<i32>> {
        match (y, q, r) {
            (y, None, None) => Ok(y),
-           (Some(y), q, r @ (Some(0...99) None)) => { ... },
+           (Some(y), q, r @ (Some(0...99) | None)) => { ... },
            ...
        }
    }
