@@ -79,8 +79,8 @@ non-programmers alike and included speakers of:
 Thus, we conjecture that it's more common for humans to not distribute and to
 instead use something akin to *conjunctive normal form* ([CNF]) when communicating.
 A likely consequence of this is that a common way to understand snippet (1)
-formulated in [DNF] is to first mentally reconstruct it into CNF and then
-understand the implications of the pattern.
+formulated in *disjunctive normal form* ([DNF]) is to first mentally reconstruct
+it into CNF and then understand the implications of the pattern.
 
 By allowing users to encode their logic in the way they think instead of going
 through more indirect routes, we can improve the understandability of code.
