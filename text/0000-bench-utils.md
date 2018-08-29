@@ -1,4 +1,4 @@
-- Feature Name: black_box-and-clobber
+- Feature Name: black_box
 - Start Date: 2018-03-12
 - RFC PR: (leave this empty)
 - Rust Issue: (leave this empty)
@@ -6,40 +6,47 @@
 # Summary
 [summary]: #summary
 
-This RFC adds two functions to `core::mem`: `black_box` and `clobber`, which are
-mainly useful for writing benchmarks.
+This RFC adds one function, `core::hint::black_box`, which is a hint to the
+optimizer to disable certain compiler optimizations. 
 
 # Motivation
 [motivation]: #motivation
 
-The `black_box` and `clobber` functions are useful for writing synthetic
-benchmarks where, due to the constrained nature of the benchmark, the compiler
-is able to perform optimizations that wouldn't otherwise trigger in practice.
+A tool for preventing compiler optimizations is widely useful. One application
+is writing synthetic benchmarks, where, due to the constrained nature of the
+benchmark, the compiler is able to perform optimizations that wouldn't otherwise
+trigger in practice. Another application is writing constant time code, where it
+is undesirable for the compiler to optimize certain operations depending on the
+context in which they are executed.
 
-The implementation of these functions is backend-specific and requires inline
-assembly. Such that if the standard library does not provide them, the users are
-required to use brittle workarounds on nightly.
+The implementation of this function is backend-specific and currently requires
+inline assembly. No viable alternative is available in stable Rust.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 
-## `mem::black_box`
+## `hint::black_box`
 
 The function:
 
 ```rust
-pub fn black_box<T>(x: T) -> T;
+/// An _unknown_ function that returns `x`.
+pub unsafe fn black_box<T>(x: T) -> T;
 ```
 
-prevents the value `x` from being optimized away and flushes pending reads/writes
-to memory. It does not prevent optimizations on the expression generating the
-value `x` nor on the return value of the function. For
-example ([`rust.godbolt.org`](https://godbolt.org/g/YP2GCJ)):
+is an _unknown_ function, that is, a function that the compiler cannot make any
+assumptions about. It can potentially use `x` in any possible valid way that
+`unsafe` Rust code is allowed to, and requires the compiler to be maximally
+pessimistic in terms of optimizations. The compiler is still allowed to optimize
+the expression generating `x`. This function returns `x` and is a no-op in the
+virtual machine.
+
+For example ([`rust.godbolt.org`](https://godbolt.org/g/YP2GCJ)):
 
 ```rust
 fn foo(x: i32) -> i32{ 
-  mem::black_box(2 + x);
+  hint::black_box(2 + x);
   3
 }
 let a = foo(2);
@@ -47,60 +54,83 @@ let a = foo(2);
 
 In the call to `foo(2)` the compiler is allowed to simplify the expression `2 + x` 
 down to `4`, but `4` must be stored into memory even though it is not read by
-anything aftewards.
+anything afterwards because `black_box` could try to read it.
 
-## `mem::clobber`
+### Benchmarking `Vec::push`
 
-The function
-
-```rust
-pub fn clobber() -> ();
-```
- 	 
-flushes all pending writes to memory. Memory managed by block scope objects must
-be "escaped" with `black_box` . 
-
-Using `mem::{black_box, clobber}` we can benchmark `Vec::push` as follows:
+The `hint::black_box` is useful for producing synthetic benchmarks that more
+accurately represent the behavior of a real application. In the following
+snippet, the function `bench` executes `Vec::push` 4 times in a loop:
 
 ```rust
-fn bench_vec_push_back(bench: Bencher) -> BenchResult {
-    let n = /* large enough number */;
-    let mut v = Vec::with_capacity(n);
-    bench.iter(|| {
-        // Escape the vector pointer:
-        mem::black_box(v.as_ptr());
-        v.push(42_u8);
-        // Flush the write of 42 back to memory:
-        mem::clobber();
-    })
+fn push_cap(v: &mut Vec<i32>) {
+    for i in 0..4 {
+      v.push(i);
+    }
+}
+
+pub fn bench_push() -> Duration { 
+    let mut v = Vec::with_capacity(4);
+    let now = Instant::now();
+    push_cap(&mut v);
+    now.elapsed()
 }
 ```
 
-To measure the cost of `Vec::push`, we pre-allocate the `Vec` to avoid
-re-allocating memory during the iteration. Since we are allocating a vector,
-writing values to it, and dropping it, LLVM is actually able of optimize code
-like this away ([`rust.godbolt.org`](https://godbolt.org/g/QMs77J)). 
+Here, we allocate the `Vec`, push into it without growing its capacity, and drop
+it, without ever using it for anything. If we look at the assembly
+(https://rust.godbolt.org/z/wDckJF):
 
-To make this a suitable benchmark, we use `mem::clobber()` to force LLVM to
-write `42` back to memory. Note, however, that if we try this LLVM still manages
-to optimize our benchmark away ([`rust.godbolt.org`](https://godbolt.org/g/r9K2Bk))!
 
-The problem is that the memory of our vector is managed by an object in block
-scope. That is, since we haven't shared this memory with anything, no other code
-in our program can have a pointer to it, so LLVM does not need to schedule any
-writes to this memory, and there are no pending memory writes to flush! 
+```asm
+example::bench_push:
+  sub rsp, 24
+  call std::time::Instant::now@PLT
+  mov qword ptr [rsp + 8], rax
+  mov qword ptr [rsp + 16], rdx
+  lea rdi, [rsp + 8]
+  call std::time::Instant::elapsed@PLT
+  add rsp, 24
+  ret
+```
 
-What we must do is tell LLVM that something might also have a pointer to this
-memory, and this is what we use `mem::black_box` for in this case
-([`rust.godbolt.or`](https://godbolt.org/g/3wBxay)).
+it is pretty amazing: LLVM has actually managed to completely optimize the `Vec`
+allocation and call to `push_cap` away! In our real application, we would
+probably use the vector for something, preventing all of these optimizations
+from triggering, but in this synthetic benchmark LLVM optimizations are
+producing a benchmark that won't tell us anything about the cost of `Vec::push`.
+
+We can use `hint::black_box` to create a more realistic synthetic benchmark
+(https://rust.godbolt.org/z/CeXmxN):
+
+```rust
+fn push_cap(v: &mut Vec<i32>) {
+    for i in 0..4 {
+      black_box(v.as_ptr());
+      v.push(black_box(i));
+      black_box(v.as_ptr());
+    }
+}
+```
+
+that prevents LLVM from assuming anything about the vector across the calls to
+`Vec::push`.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-* `mem::black_box(x)`: flushes all pending writes/read to memory and prevents
-  `x` from being optimized away while still allowing optimizations on the
-  expression that generates `x`.
-* `mem::clobber`: flushes all pending writes to memory.
+The 
+
+```
+mod core::hint {
+    /// An _unknown_ unsafe function that returns `x`.
+    pub unsafe fn black_box<T>(x: T) -> T;
+}
+```
+
+is an _unknown_ `unsafe` function that can perform any valid operation on `x`
+that `unsafe` Rust is allowed to perform. This function returns `x` and is a
+no-op in the virtual machine.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -110,6 +140,23 @@ TBD.
 # Rationale and alternatives
 [alternatives]: #alternatives
 
+Further rationale influencing this design is available in
+https://github.com/nikomatsakis/rust-memory-model/issues/45
+
+## `clobber`
+
+A previous version of this RFC also provided a `clobber` function:
+
+```rust
+/// Flushes all pending writes to memory. 
+pub fn clobber() -> ();
+```
+
+In https://github.com/nikomatsakis/rust-memory-model/issues/45 it was realized
+that such a function cannot work properly within Rust's memory model.
+
+## `value_fence` / `evaluate_and_drop`
+
 An alternative design was proposed during the discussion on
 [rust-lang/rfcs/issues/1484](https://github.com/rust-lang/rfcs/issues/1484), in
 which the following two functions are provided instead:
@@ -118,14 +165,14 @@ which the following two functions are provided instead:
 #[inline(always)]
 pub fn value_fence<T>(x: T) -> T {
     let y = unsafe { (&x as *const T).read_volatile() };
-    std::mem::forget(x);
+    std::hint::forget(x);
     y
 }
 
 #[inline(always)]
 pub fn evaluate_and_drop<T>(x: T) {
     unsafe {
-        let mut y = std::mem::uninitialized();
+        let mut y = std::hint::uninitialized();
         std::ptr::write_volatile(&mut y as *mut T, x);
         drop(y); // not necessary but for clarity
     }
@@ -143,12 +190,13 @@ This approach is not pursued in this RFC because these two functions:
 # Prior art
 [prior-art]: #prior-art
 
-These two exact functions are provided in the [`Google
+Similar functionality is provided in the [`Google
 Benchmark`](https://github.com/google/benchmark) C++ library: are called
 [`DoNotOptimize`](https://github.com/google/benchmark/blob/61497236ddc0d797a47ef612831fb6ab34dc5c9d/include/benchmark/benchmark.h#L306)
 (`black_box`) and
 [`ClobberMemory`](https://github.com/google/benchmark/blob/61497236ddc0d797a47ef612831fb6ab34dc5c9d/include/benchmark/benchmark.h#L317).
-The `black_box` function with slightly different semantics is provided by the `test` crate:
+The `black_box` function with slightly different semantics is provided by the
+`test` crate:
 [`test::black_box`](https://github.com/rust-lang/rust/blob/master/src/libtest/lib.rs#L1551).
 
 # Unresolved questions
