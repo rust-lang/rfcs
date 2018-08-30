@@ -242,7 +242,7 @@ would help, there are some where it would. Let's go through a few of them.
 
 7. Some other use cases are:
 
-   From git2-rs:
+   In code using git2-rs:
 
    ```rust
    match obj.kind() {
