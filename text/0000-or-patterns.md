@@ -96,7 +96,7 @@ in a negative increase in complexity.
 [RFC 2175]: https://github.com/rust-lang/rfcs/pull/2175
 
 In concrete terms, where before we only allowed a pattern of the form
-`'|'? pat | pat` at the top level of `match` and [similar constructs][RFC 2175],
+`pat | pat` at the top level of `match` and [similar constructs][RFC 2175],
 which special cased the language, we now allow `pat | pat` anywhere a pattern
 may occur whereby we simplify the ruleset of the language.
 In fact, there are already users that try this expecting it to work but
