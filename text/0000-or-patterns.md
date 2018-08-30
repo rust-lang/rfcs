@@ -410,7 +410,7 @@ pat : pat '|' pat
 
 Here `|` has the lowest precedence.
 In particular, the operator `@` binds more tightly than `|` does.
-Thus, `i @ p | q` associates as `i @ (p | q)` as opposed to `(i @ p) | q`.
+Thus, `i @ p | q` associates as `(i @ p) | q` as opposed to `i @ (p | q)`.
 
 We then introduce a production:
 
