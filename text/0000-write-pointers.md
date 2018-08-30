@@ -306,6 +306,11 @@ init(&uninit x); // this function will overwrite, but not drop to the old value 
 `&out T` - (none) // for similar reasons to why `&T` does not coerce \
 `&uninit T` - `&out T` if `T: Copy` and `&T` or `&mut T` once initialized.
 
+## Casting Rules
+
+`*const T` - // no change \
+`*mut T` - `&mut T`, `&out T`, `&uninit T`
+
 ## `self`
 
 We will add `&uninit self` and `&out self` as sugar for `self: &uninit Self` and `self: &out Self` respectively. This is for consistency with `&self`, and `&mut self`
@@ -419,6 +424,10 @@ Used [@gbutler](https://internals.rust-lang.org/u/gbutler)'s example of FrameBuf
 edit 4:
 
 Fixed example for `&out T`.
+
+edit 5:
+
+Added casting rules from `&out T` and `&uninit T` to raw pointers.
 
 ---
 I would like to thank all the people who helped refine this proposal to its current state: [@rkruppe](https://internals.rust-lang.org/u/rkruppe), [@earthengine](https://internals.rust-lang.org/u/earthengine),  [@gbutler](https://internals.rust-lang.org/u/gbutler),
