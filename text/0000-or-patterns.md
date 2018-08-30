@@ -456,7 +456,8 @@ the compiler will now accept pattern alternations of form `p | q` where
 
    + the type inferred for `p` does not unify with the type inferred for `q`, or
    + the same set of bindings are not introduced in `p` and `q`, or
-   + the type of any two bindings with the same name in `p` and `q` do not unify.
+   + the type of any two bindings with the same name in `p` and `q` do not unify
+     with respect to types or binding modes.
 
 2. When type checking an expression `match e_s { a_1 => e_1, ... a_n => e_n }`,
    for each match arm `a_i` which contains a pattern of form `p_i | q_i`,
