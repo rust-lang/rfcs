@@ -128,7 +128,7 @@ would help, there are some where it would. Let's go through a few of them.
    }
    ```
 
-[GHC proposal]: https://github.com/osa1/ghc-proposals/blob/or_patterns/proposals/0000-or-patterns.rst#real-world-examples
+[GHC proposal]: https://github.com/osa1/ghc-proposals/blob/77ee8e615aa28fbf2d0ef2be876a852c4e63c53b/proposals/0000-or-patterns.rst#real-world-examples
 
 2. Other examples are listed in the equivalent [GHC proposal].
 
@@ -166,7 +166,7 @@ would help, there are some where it would. Let's go through a few of them.
 
 6. Some further examples found with sourcegraph include:
 
-   From [cc-rs](https://sourcegraph.com/github.com/alexcrichton/cc-rs/-/blob/src/lib.rs#L1307:18):
+   From [cc-rs](https://github.com/alexcrichton/cc-rs/blob/74ce606aa227a30a97d7c1990c1e8d322e01c6d8/src/lib.rs#L1307-L1319):
 
    ```rust
     match (self.cpp_set_stdlib.as_ref(), cmd.family) {
@@ -180,7 +180,7 @@ would help, there are some where it would. Let's go through a few of them.
     }
    ```
 
-   From [capnproto](https://sourcegraph.com/github.com/capnproto/capnproto-rust/-/blob/capnp/src/private/layout.rs#L1979-2002):
+   From [capnproto](https://github.com/capnproto/capnproto-rust/blob/35027494bb6e741aa478597358bac8ac92108a30/capnp/src/private/layout.rs#L1979-L2002):
 
    ```rust
    // Check whether the size is compatible.
@@ -192,7 +192,7 @@ would help, there are some where it would. Let's go through a few of them.
    }
    ```
 
-   From [chrono](https://sourcegraph.com/github.com/chronotope/chrono/-/blob/src/format/parsed.rs#L271-308):
+   From [chrono](https://github.com/chronotope/chrono/blob/94b43fa2e8bd43e7f42bb5b67afd1c3415b27683/src/format/parsed.rs#L271-L308):
 
    ```rust
    fn resolve_year(y: Option<i32>, q: Option<i32>,
@@ -205,7 +205,7 @@ would help, there are some where it would. Let's go through a few of them.
    }
    ```
 
-   From maidsafe's [routing](https://sourcegraph.com/github.com/maidsafe/routing/-/blob/src/states/node.rs#L2138-2180):
+   From maidsafe's [routing](https://github.com/maidsafe/routing/blob/0081a48d59e4fe3fb86b20da1fceb8f757855112/src/states/node.rs#L2138-L2180):
 
    ```rust
    match self.peer_mgr.connection_info_received(...) {
@@ -215,7 +215,7 @@ would help, there are some where it would. Let's go through a few of them.
    }
    ```
 
-   Also from [routing](https://sourcegraph.com/github.com/maidsafe/routing/-/blob/src/states/node.rs#L2215-2245):
+   Also from [routing](https://github.com/maidsafe/routing/blob/0081a48d59e4fe3fb86b20da1fceb8f757855112/src/states/node.rs#L2215-L2245):
 
    ```rust
         match self.peer_mgr.connection_info_received(...) {
@@ -226,7 +226,7 @@ would help, there are some where it would. Let's go through a few of them.
 
    ```
 
-   From [termion](https://sourcegraph.com/github.com/ticki/termion/-/blob/src/input.rs#L143-153):
+   From [termion](https://github.com/redox-os/termion/blob/d2945cd36c452824aeabd5d7c13980d9567eb8a2/src/input.rs#L143-L153):
 
    ```rust
    for c in self.bytes() {
@@ -252,7 +252,7 @@ would help, there are some where it would. Let's go through a few of them.
    }
    ```
 
-   From [debcargo](https://salsa.debian.org/rust-team/debcargo/blob/master/src/debian/dependency.rs#L234):
+   From [debcargo](https://salsa.debian.org/rust-team/debcargo/blob/4355097810264644cb08ddaa8f7464d5887275f1/src/debian/dependency.rs#L234-291):
 
    ```rust
    match (op, &mmp.clone()) {
