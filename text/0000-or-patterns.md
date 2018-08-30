@@ -490,7 +490,40 @@ it is always valid to first desugar a pattern `c(p | q)`
 in CNF to its equivalent form in DNF, i.e. `c(p) | c(q)`.
 
 However, implementing `c(p | q)` in terms of a pure desugaring to `c(p) | c(q)`
-may not be optimal as the desugaring can result in exponential blow-up of patterns.
+may not be optimal as the desugaring can result in multiplicative blow-up of patterns.
+An example of such blow up can be seen with:
+
+```rust
+match expr {
+    (0 | 1, 0 | 1, 0 | 1, 0 | 1) => { ... },
+}
+```
+
+If we expanded this naively to DNF we would get:
+
+```rust
+match expr {
+    | (0, 0, 0, 0)
+    | (0, 0, 0, 1)
+    | (0, 0, 1, 0)
+    | (0, 0, 1, 1)
+    | (0, 1, 0, 0)
+    | (0, 1, 0, 1)
+    | (0, 1, 1, 0)
+    | (0, 1, 1, 1)
+    | (1, 0, 0, 0)
+    | (1, 0, 0, 1)
+    | (1, 0, 1, 0)
+    | (1, 0, 1, 1)
+    | (1, 1, 0, 0)
+    | (1, 1, 0, 1)
+    | (1, 1, 1, 0)
+    | (1, 1, 1, 1)
+    => { ... },
+}
+```
+
+
 Instead, it is more likely that a one-step case analysis will be more efficient.
 
 Which implementation technique to use is left open to each Rust compiler.
