@@ -301,10 +301,15 @@ init(&uninit x); // this function will overwrite, but not drop to the old value 
 
 ## Coercion Rules
 
-`&T` - (none) // no change \
-`&mut T` - `&T`, `&out T` if, `T: Copy` \
-`&out T` - (none) // for similar reasons to why `&T` does not coerce \
-`&uninit T` - `&out T` if `T: Copy` and `&T` or `&mut T` once initialized.
+ - `&T` // no change
+    - `*const T`
+ - `&mut T`
+    - `*mut T`
+    - `&T`
+    - `&out T` if, `T: Copy`
+ - `&out T`
+    - `*mut T` // for similar reasons to why `&T` only coerces to `*const T`
+ - `&uninit T` - `*mut T`, `&out T` if `T: Copy` and `&T` or `&mut T` once initialized.
 
 ## Casting Rules
 
@@ -402,8 +407,12 @@ Out pointers in C++, (not exactly the same, but similar idea)
 [unresolved-questions]: #unresolved-questions
 
  - What is the correct bounds for `T` in `&out T`? conservatively, `T: Copy` works and is sound. But as [@TechnoMancer](https://internals.rust-lang.org/u/TechnoMancer) pointed out, `T: !Drop` is not the correct bound. For example, `Wrapper(Vec<String>)`, clearly cannot be overwritten safely, because `Vec<String>`, must drop do deallocate the `Vec`, but `Wrapper` itself does not implement drop. Therefore either a new trait is needed (but unwanted), or we must keep the `Copy` bound.
-
-
+ - Should we introduce a `*out T` raw pointer, that does not drop its value upon write, for all `T: Copy`.
+     - `&out T` coerces to `*out T`
+     - no reading from `*out T`
+ - Should we introduce a trait `OverwriteSafe`, which is auto-implemented (like `Send` and `Sync`) where all types `T` are `OverwriteSafe` unless, and use this as the bound for `&out T`
+    - `T: Drop`
+    - one of `T`'s fields is not `OverwriteSafe`
 ---
 
 edit:
