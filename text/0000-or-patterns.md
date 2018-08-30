@@ -490,7 +490,7 @@ error[E0408]: variable `i` is not bound in all patterns
   |         |
   |         variable not in all patterns
   |
-  | hint: if you wanted `i` to cover both cases, try adding parenthesis around:
+  | hint: if you wanted `i` to cover both cases, try adding parentheses around:
   |
   |         i @ 0 | 1
   |             ^^^^^
