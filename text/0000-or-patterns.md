@@ -8,7 +8,6 @@
 
 Allow `|` to be arbitrarily nested within a pattern such
 that `Some(A(0) | B(1 | 2))` becomes a valid pattern.
-The operator `|` has low precedence such that `i @ p | q` means `(i @ p) | q`.
 
 # Motivation
 [motivation]: #motivation
@@ -383,8 +382,10 @@ fn main() {
 }
 ```
 
-Note that the operator `|` has a low precedence. This means that you
-have to write `foo @ (1 | 2 | 3)` instead of writing `foo @ 1 | 2 | 3`.
+Note that the operator `|` has a low precedence. This means that if you
+want the same outcome as `foo @ 1 | foo @ 2 | foo @ 3`, you have to write
+`foo @ (1 | 2 | 3)` instead of writing `foo @ 1 | 2 | 3`.
+This is discussed in the [rationale][alternatives].
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -551,6 +552,15 @@ as `i @ (p | q)` because it is already legal to write `i @ p | j @ q`
 at the top level of a pattern. Therefore, if we say that `|` binds more tightly,
 then `i @ p | j @ q` will associate as `i @ (p | j @ q)` which as a different
 meaning than what we currently have, thus causing a breaking change.
+
+And even if we could associate `i @ p | q` as `i @ (p | q)` there is a good
+reason why we should not. Simply put, we should understand `@` as a
+pattern / set intersection operator and the operator `|` as the union operator.
+This is analogous to multiplication and addition as well as conjunction and
+disjunction in logic. In these fields, it is customary for multiplication and
+conjunction to bind more tightly. That is, we interpret `a * b + c` as
+`(a * b) + c` and not `a * (b + c)`. Similarly, we interpret `p ∧ q ∨ r`
+as `(p ∧ q) ∨ r` and not `p ∧ (q ∨ r)`.
 
 The only real choice that we do have to make is whether the new addition to the
 pattern grammar should be `pat : .. | pat "|" pat ;` or if it instead should be
