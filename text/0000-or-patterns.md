@@ -449,6 +449,55 @@ In other words, in all of the contexts where a pattern is currently accepted,
 the compiler will now accept pattern alternations of form `p | q` where
 `p` and `q` are arbitrary patterns.
 
+### Error messages
+
+As previously noted, the precedence of the operator `|` is lower than that of
+the operator `@`. This results in `i @ p | q` being interpreted as `(i @ p) | q`.
+In turn, this would result in an error because `i` is not defined in all
+alternations. An example:
+
+```rust
+fn main() {
+    match 1 {
+        i @ 0 | 1 => {},
+    }
+}
+```
+
+This would result in:
+
+```rust
+error[E0408]: variable `i` is not bound in all patterns
+ --> src/main.rs:3:17
+  |
+3 |         i @ 0 | 1 => {},
+  |         -       ^ pattern doesn't bind `i`
+  |         |
+  |         variable not in all patterns
+```
+
+However, it is quite likely that a user who wrote `i @ p | q` wanted the
+semantics of `i @ (p | q)` because it would be the only thing that would
+be a well formed pattern. To guide the user on the way, we recommend special
+casing the error message for such circumstances with for example:
+
+```rust
+error[E0408]: variable `i` is not bound in all patterns
+ --> src/main.rs:3:17
+  |
+3 |         i @ 0 | 1 => {},
+  |         -       ^ pattern doesn't bind `i`
+  |         |
+  |         variable not in all patterns
+  |
+  | hint: if you wanted `i` to cover both cases, try adding parenthesis around:
+  |
+  |         i @ 0 | 1
+  |             ^^^^^
+```
+
+The particular design of such an error message is left open to implementations.
+
 ## Static semantics
 
 1. Given a pattern `p | q` at some depth for some arbitrary patterns `p` and `q`,
@@ -524,7 +573,6 @@ match expr {
     => { ... },
 }
 ```
-
 
 Instead, it is more likely that a one-step case analysis will be more efficient.
 
