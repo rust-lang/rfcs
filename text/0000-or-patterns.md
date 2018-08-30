@@ -513,9 +513,9 @@ operator syntax for alternations in nested patterns would be `|`.
 Therefore, there are not many design choices to make with respect to *how*
 this change should be done rather than *if*.
 
-With respect to the precedence of `|`, we already cannot interpret `i @ p | q`
-as `i @ (p | q)` because it is already legal to write `i @ p | j @ q`.
-Therefore, if we say that `|` binds more tightly,
+With respect to the precedence of `|`, we cannot interpret `i @ p | q`
+as `i @ (p | q)` because it is already legal to write `i @ p | j @ q`
+at the top level of a pattern. Therefore, if we say that `|` binds more tightly,
 then `i @ p | j @ q` will associate as `i @ (p | j @ q)` which as a different
 meaning than what we currently have, thus causing a breaking change.
 
