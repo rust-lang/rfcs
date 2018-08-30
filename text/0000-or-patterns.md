@@ -63,18 +63,9 @@ Or would you instead ask:
 
 When researching for this RFC; many people were asked and all of them preferred
 the first alternative. This user testing was done on both programmers and
-non-programmers alike and included speakers of:
-+ Indo-European:
-    + English
-    + German (2)
-    + Swedish (3)
-    + French (2)
-    + Portuguese (1)
-    + Spanish (2)
-    + Farsi (3)
-+ Finnish (1)
-+ Esperanto (1)
-+ Japanese (1)
+non-programmers alike and included speakers of: English, German (2) Swedish (3),
+French (2), Portuguese (1), Spanish (2), Farsi (3), Finnish (1), Esperanto (1),
+and Japanese (1).
 
 Thus, we conjecture that it's more common for humans to not distribute and to
 instead use something akin to *conjunctive normal form* ([CNF]) when communicating.
