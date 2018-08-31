@@ -766,6 +766,35 @@ The ability to have optional cargo dependencies is out of scope for this RFC.
 # Possible future work
 [possible future work]: #possible-future-work
 
+## `#[cfg(rust_feature(..))]`
+
+[GAT]: https://github.com/rust-lang/rust/issues/44265
+
+One possible extension we might want to do in the future is to allow users to
+check whether a certain `rustc` feature gate is enabled or not.
+For example, we might write `#[cfg(rustc_feature(generic_associated_types))]`
+to check whether the [GAT] feature is supported in the compiler or not.
+
+The main benefit of such an approach is that it is more direct than checking
+for a particular version. Also note that `clang` uses this approach as noted
+in the [prior art][prior-art].
+
+However, there are some drawbacks as well:
+
+1. The names of feature gates are not always aptly named and usually do not
+   follow a coherent naming system. As a frequent author of RFCs, the author
+   of this one knows that they do not have a principled approach to naming
+   RFCs. The feature name that is then used in the compiler is usually drawn
+   directly from the RFC, so we would either need to accept the random naming
+   of feature gates, or we would need to impose some system.
+
+2. Permitting dependence on the names of feature gates on stable would
+   require us to be more principled with feature gates.
+   For example, `rustc`, or any other Rust compiler, would be unable to
+   remove gates or drastically change their implementations without changing
+   their names. Being more principled could potentially add an undue burden
+   on the library and compiler teams.
+
 ## `#[cfg(nightly)]`
 
 In a previous iteration of this RFC, a `#[cfg(nightly)]` flag was included.
