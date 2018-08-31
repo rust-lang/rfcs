@@ -280,9 +280,9 @@ We can then refer to them like so:
 
 ```rust
 #[cfg(all(
-    accessible(foobar::Person::ssn),
-    accessible(foobar::Shape::Triangle::sides),
-    accessible(foobar::Shape::MaybeUninit::value)
+    accessible(::foobar::Person::ssn),
+    accessible(::foobar::Shape::Triangle::sides),
+    accessible(::foobar::Shape::MaybeUninit::value)
 ))]
 fn do_stuff() {
     ...
