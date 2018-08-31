@@ -821,7 +821,8 @@ while not failing if the attribute did not exist.
 
 Using `has_attr` in a `cfg` block may be useful for conditionally compiling
 code that only makes sense if a given attribute exists (e.g. `global_allocator`), 
-while using `has_attr` in a `cfg_attr` block may be useful for adding an attribute to an item if supported but still support compilers that don't
+while using `has_attr` in a `cfg_attr` block may be useful for adding an
+attribute to an item if supported but still support compilers that don't
 support that attribute.
 
 As previously discussed, currently, the names of feature gates do not tend to
