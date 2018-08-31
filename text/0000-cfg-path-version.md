@@ -464,8 +464,11 @@ Another strong contender is `has_path` or `have_path`.
 
 However, this variant is vague with respect to what "having" something means.
 In other words, it does not say whether it refers to being accessible and public,
-or whether it is usable, and so on. As we previously noted, having `path` in the
+or whether it is usable, and so on.
+
+As we previously noted, having `path` in the
 name is also somewhat redundant because it is clear that `::std::bar` is a path.
+
 Another small wrinkle is that it is unclear whether it should be `have` or `has`.
 That choice depends on what one things the subject is. For example, if one 
 considers a module to be an "it", then it should probably be `has`.
@@ -473,6 +476,9 @@ considers a module to be an "it", then it should probably be `has`.
 One upside to `has_path` is that it has precedent from the `clang` compiler.
 For example, a user may write: `#if __has_feature(cxx_rvalue_references)`
 or `__has_feature(c_generic_selections)`.
+
+Another benefit is that `has_` gives us the opportunity to introduce a family
+of `has_path`, `has_feature`, and `has_$thing` if we so wish.
 
 ## `#[cfg(version(..))`
 
@@ -660,6 +666,38 @@ version = "Below."
 main :: IO ()
 main = putStrLn version
 ```
+
+## Clang
+
+[clang_check]: https://clang.llvm.org/docs/LanguageExtensions.html#feature-checking-macros
+
+The `clang` compiler gives you a [suite of feature checking macros][clang_check] 
+with which you can for example check whether a certain feature, extension,
+or attribute is supported. An example of this is:
+
+```cpp
+#if __has_feature(cxx_rvalue_references)
+
+// This code will only be compiled with the -std=c++11 and -std=gnu++11
+// options, because rvalue references are only standardized in C++11.
+
+#endif
+```
+
+This would be analogous to checking for the existence of a feature gate in Rust.
+
+[clang_include]: https://clang.llvm.org/docs/LanguageExtensions.html#include-file-checking-macros
+
+Clang also supports checking whether an [include][clang_include] will succeed.
+For example, you may write:
+
+```cpp
+#if __has_include("myinclude.h") && __has_include(<stdint.h>)
+#include "myinclude.h"
+#endif
+```
+
+This is similar in spirit to `accessible($path)`.
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
