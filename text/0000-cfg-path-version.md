@@ -344,7 +344,7 @@ The reason why we have enforced that all paths must start with `::` inside
 `accessible(..)` is that if we allow relative paths, and users write
 `accessible(self::foo)`, then they can construct situations such as:
 
-```
+```rust
 #[cfg(accessible(self::bar)]
 fn foo() {}
 
@@ -355,6 +355,31 @@ fn bar() {}
 One way around this is to collect all items before `cfg`-stripping,
 but this can cause problems with respect to stage separation.
 Therefore, we prevent this from occurring with a simple syntactic check.
+
+One mechanism we could use to make relative paths work is to use a different
+resolution algorithm for `accessible(..)` than for `use`. We would first
+syntactically reject `self::$path`, `super::$path`, and `crate::$path`.
+The resolution algorithm would then need to deal with situations such as:
+
+```rust
+#[cfg(accessible(bar)]
+fn foo() {}
+
+#[cfg(accessible(foo)]
+fn bar() {}
+```
+
+by simply not considering local items and assuming that `bar` and `foo` are 
+crates. While that would make `accessible($path)` a bit more ergonomic by
+shaving off two characters, chances are, assuming the `uniform_paths` system,
+that it would lead to surprises for some users who think that `bar` and `foo`
+refer to the local crate. This is problematic because it is not immediately
+evident for the user which is which since a different crate is needed to observe
+the difference.
+
+Also do note that requiring absolute paths with leading `::` is fully
+forward-compatible with not requiring leading `::`. If we experience that
+this restriction is a problem in the future, we may remove the restriction.
 
 ### `#[cfg(accessible(..))` or `#[cfg(accessible = ..)`
 
