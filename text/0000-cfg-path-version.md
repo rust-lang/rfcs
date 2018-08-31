@@ -447,8 +447,13 @@ is a path and not something else.
 #### `reachable`
 
 The word `reachable` is also a synonym of `accessible` and is one character 
-shorter. However, it tends to have a different meaning in code wherefore we
-have chosen to go with `accessible` instead as the more intuitive option.
+shorter. However, it tends to have a different meaning in code. Examples include:
+
++ `std::hint::unreachable_unchecked`
++ `std::unreachable`
+
+All in all, we have chosen to go with `accessible` instead as the
+more intuitive option.
 
 #### `usable`
 
