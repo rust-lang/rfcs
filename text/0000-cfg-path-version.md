@@ -423,16 +423,19 @@ meta : path ( named_value | meta_list )? ;
 One might consider other names for the flag instead of `accessible`.
 Some contenders are:
 
++ `reachable`
 + `path_accessible`
 + `usable`
 + `can_use`
 + `path_exists`
-+ `have_path`
++ `have_path` (or `has_path`)
 + `have`
 + `have_item`
 + `path_reachable`
 + `item_reachable`
 + `item_exists`
+
+#### `accessible`
 
 Currently `accessible` is the choice because it clearly signals the intent
 while also being short enough to remain ergonomic to use.
@@ -441,11 +444,35 @@ we argue that from the context of seeing `accessible(::std::foo::bar)`
 it is clear that it is paths we are talking about because the argument
 is a path and not something else.
 
+#### `reachable`
+
+The word `reachable` is also a synonym of `accessible` and is one character 
+shorter. However, it tends to have a different meaning in code wherefore we
+have chosen to go with `accessible` instead as the more intuitive option.
+
+#### `usable`
+
 While `can_use` and `usable` are also strong contenders, we reject these options
 because they may imply to the user that only things that you may `use $path;` can
 go in there. Meanwhile, you may `#[cfg(accessible(::foo::MyTrait::my_method))`
 which is *not* possible as `use ::foo::MyTrait::my_method;`. This also applies
 to other associated items and inherent methods as well as `struct` fields.
+
+#### `has_path`
+
+Another strong contender is `has_path` or `have_path`.
+
+However, this variant is vague with respect to what "having" something means.
+In other words, it does not say whether it refers to being accessible and public,
+or whether it is usable, and so on. As we previously noted, having `path` in the
+name is also somewhat redundant because it is clear that `::std::bar` is a path.
+Another small wrinkle is that it is unclear whether it should be `have` or `has`.
+That choice depends on what one things the subject is. For example, if one 
+considers a module to be an "it", then it should probably be `has`.
+
+One upside to `has_path` is that it has precedent from the `clang` compiler.
+For example, a user may write: `#if __has_feature(cxx_rvalue_references)`
+or `__has_feature(c_generic_selections)`.
 
 ## `#[cfg(version(..))`
 
