@@ -1,7 +1,7 @@
-- Feature Name: c_void-reunification
+- Feature Name: `c_void_reunification`
 - Start Date: 2018-08-02
-- RFC PR: (leave this empty)
-- Rust Issue: (leave this empty)
+- RFC PR: [rust-lang/rfcs#2521](https://github.com/rust-lang/rfcs/pull/2521)
+- Rust Issue: [rust-lang/rust#53856](https://github.com/rust-lang/rust/issues/53856)
 
 # Summary
 [summary]: #summary
