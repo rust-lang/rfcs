@@ -778,8 +778,8 @@ The ability to have optional cargo dependencies is out of scope for this RFC.
 
 [GAT]: https://github.com/rust-lang/rust/issues/44265
 
-One possible extension we might want to do in the future is to allow users to
-check whether a certain `rustc` feature gate is enabled or not.
+One possible extension we might want to do in the future is to allow users
+to check whether a certain `rustc` feature gate is enabled or not.
 For example, we might write `#[cfg(rustc_feature(generic_associated_types))]`
 to check whether the [GAT] feature is supported in the compiler or not.
 
@@ -803,6 +803,35 @@ However, there are some drawbacks as well:
    their names. Being more principled could potentially add an undue burden
    on the library and compiler teams.
 
+## `#[cfg(has_attr($attribute))]`
+
+One possible extension would be to introduce a `has_attr(..)` feature.
+`has_attr` would check if the specified attribute would be usable on the
+item the `cfg` (or `cfg_attr`) directive is attached to. For instance:
+
+```rust
+#[cfg_attr(have_attr(must_use), must_use)]
+fn double(x: i32) -> i32 {
+    2 * x
+}
+```
+
+This would allow code to detect the availability of an attribute before using it,
+while not failing if the attribute did not exist.
+
+Using `has_attr` in a `cfg` block may be useful for conditionally compiling
+code that only makes sense if a given attribute exists (e.g. `global_allocator`), 
+while using `has_attr` in a `cfg_attr` block may be useful for adding an attribute to an item if supported but still support compilers that don't
+support that attribute.
+
+As previously discussed, currently, the names of feature gates do not tend to
+appear in code targeting stable versions of Rust. Allowing code to detect the
+availability of specified feature gates by name would require committing to stable names for these features, and would require that those names refer to
+a fixed set of functionality. This would require additional curation.
+However, as attribute names already have to be standardized,
+`has_attr(..)` would not suffer the same problems wherefore
+it may be the better solution.
+
 ## `#[cfg(nightly)]`
 
 In a previous iteration of this RFC, a `#[cfg(nightly)]` flag was included.
@@ -811,14 +840,14 @@ We may still add such a feature in the future if we wish.
 Therefore, we have outlined what `nightly` would have meant
 and some upsides and drawbacks to adding it.
 
-## Technical specification
+### Technical specification
 
 To the `cfg` attribute, a `nightly` flag is added.
 
 If and only if a Rust compiler permits a user to specify `#![feature(..)]`
 will the `nightly` flag be considered active.
 
-## Drawbacks: Combining `nightly` and `accessible(..)`
+### Drawbacks: Combining `nightly` and `accessible(..)`
 
 Consider that a popular library writes:
 
@@ -864,7 +893,7 @@ but this would be anti-modular).
 This is the fundamental reason that for the time being,
 we have not included `nightly` in the proposal.
 
-## Upsides
+### Upsides
 
 [dbg]: https://crates.io/crates/dbg
 
@@ -873,7 +902,7 @@ own to conditionally compile based on nightly/not as opposed to providing
 an `unstable` feature in `Cargo.toml`. An example of this is provided by the
 [dbg] crate which currently uses [version_check] to provide this automation.
 
-## Alternative `#![if_possible_feature(<feature>)]`
+### Alternative `#![if_possible_feature(<feature>)]`
 
 As an alternative to `#[cfg_attr(nightly, feature(<feature>))]`
 we could permit the user to write `#![if_possible_feature(<feature>)]`.
@@ -884,7 +913,7 @@ using `any`, `not`, and `all`.
 
 This alternative also suffers from the problems previously noted.
 
-## Naming of the attribute
+### Naming of the attribute
 
 If this flag were to be proposed again, it would probably be proposed under
 a different name than `nightly`. Instead, a more apt name with respect to intent
