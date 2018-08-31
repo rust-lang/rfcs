@@ -182,6 +182,11 @@ This categorization can be browsed [online].
 
 Please leave comments on thoughts about these lints -- if their categorization is correct, if they should exist at all, and if we should be uplifting them to the compiler.
 
+For ease of review, the lints below are as they were listed in the original RFC. The proposed changes are:
+
+ - `shadow_unrelated` be moved from `restriction` to `pedantic`
+ - Various lints be uplifted to the compiler (and potentially renamed). This is tracked in https://github.com/rust-lang/rust/issues/53224
+ - `explicit_iter_loop` and `explicit_into_iter_loop` be moved from `style` to `pedantic`
 
 
 # correctness (Deny)
