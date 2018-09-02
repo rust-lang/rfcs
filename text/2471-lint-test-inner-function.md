@@ -1,7 +1,7 @@
-- Feature Name: lint-test-inner-function
+- Feature Name: `lint_test_inner_function`
 - Start Date: 2018-06-10
-- RFC PR: (leave this empty)
-- Rust Issue: (leave this empty)
+- RFC PR: [rust-lang/rfcs#2471](https://github.com/rust-lang/rfcs/pull/2471)
+- Rust Issue: [rust-lang/rust#53911](https://github.com/rust-lang/rust/issues/53911)
 
 # Summary
 [summary]: #summary
