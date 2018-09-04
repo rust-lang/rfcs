@@ -240,10 +240,7 @@ implement equality for a type involving floats).
 subtracting elements in an Add impl.
 - [approx_constant](https://rust-lang-nursery.github.io/rust-clippy/master/index.html#approx_constant): Checks for floating point literals that approximate
 constants which are defined in
-[`std::f32::consts`](https://doc.rust-lang.org/stable/std/f32/consts/#constants)
-or
-[`std::f64::consts`](https://doc.rust-lang.org/stable/std/f64/consts/#constants),
-respectively, suggesting to use the predefined constant.
+[`std::f32::consts`](https://doc.rust-lang.org/stable/std/f32/consts/#constants) or [`std::f64::consts`](https://doc.rust-lang.org/stable/std/f64/consts/#constants), respectively, suggesting to use the predefined constant.
 - [while_immutable_condition](https://rust-lang-nursery.github.io/rust-clippy/master/index.html#while_immutable_condition): Checks whether variables used within while loop condition
 can be (and are) mutated in the body.
 - [never_loop](https://rust-lang-nursery.github.io/rust-clippy/master/index.html#never_loop): Checks for loops that will always `break`, `return` or
@@ -303,7 +300,8 @@ and no implementation of
 where the `Default` can be derived by `#[derive(Default)]`.
 - [zero_ptr](https://rust-lang-nursery.github.io/rust-clippy/master/index.html#zero_ptr): Catch casts from `0` to some pointer type
 - [wrong_self_convention](https://rust-lang-nursery.github.io/rust-clippy/master/index.html#wrong_self_convention): Checks for methods with certain name prefixes and which
-doesn't match how self is taken.- [iter_skip_next](https://rust-lang-nursery.github.io/rust-clippy/master/index.html#iter_skip_next): Checks for use of `.skip(x).next()` on iterators.
+doesn't match how self is taken.
+- [iter_skip_next](https://rust-lang-nursery.github.io/rust-clippy/master/index.html#iter_skip_next): Checks for use of `.skip(x).next()` on iterators.
 - [large_digit_groups](https://rust-lang-nursery.github.io/rust-clippy/master/index.html#large_digit_groups): Warns if the digits of an integral or floating-point
 constant are grouped into groups that
 are too large.
@@ -452,10 +450,10 @@ suggests the latter.
 definitions
 - [precedence](https://rust-lang-nursery.github.io/rust-clippy/master/index.html#precedence): Checks for operations where precedence may be unclear
 and suggests to add parentheses. Currently it catches the following:
-* mixed usage of arithmetic and bit shifting/combining operators without
-parentheses
-* a "negative" numeric literal (which is really a unary `-` followed by a
-numeric literal)
+  - mixed usage of arithmetic and bit shifting/combining operators without
+  parentheses
+  - a "negative" numeric literal (which is really a unary `-` followed by a
+  numeric literal)
   followed by a method call
 - [useless_transmute](https://rust-lang-nursery.github.io/rust-clippy/master/index.html#useless_transmute): Checks for transmutes to the original type of the object
 and transmutes that could be a cast.
