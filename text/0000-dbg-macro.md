@@ -280,7 +280,7 @@ Many languages have a construct that can be as terse as `print foo`.
 
 Some examples are:
 + [Haskell](http://hackage.haskell.org/package/base-4.10.1.0/docs/Prelude.html#v:print)
-+ [python](https://docs.python.org/2/library/pprint.html>)
++ [python](https://docs.python.org/2/library/pprint.html)
 + [PHP](http://php.net/manual/en/function.print-r.php)
 
 [`traceShowId`]: http://hackage.haskell.org/package/base-4.10.1.0/docs/Debug-Trace.html#v:traceShowId
