@@ -264,10 +264,6 @@ where should hypothetical uses of `dbg!` print to in the case of `rg some_word <
 Should they end up on the terminal or in the file `matching_lines`?
 Clearly the former is correct in this case.
 
-One could say that this design is a lousy choice by the programmer
-and that debug messages should be logged to a file,
-but this macro must cater to "lousy" programmers who just want to debug quickly.
-
 ## Outputting `lit = lit` for `dbg!(lit);` instead of `lit`
 
 The left hand side of the equality adds no new information wherefore it might be a redundant annoyance.
