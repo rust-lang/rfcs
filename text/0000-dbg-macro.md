@@ -109,9 +109,7 @@ The exact output printed by this macro should not be relied upon and is subject 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-In `src/libstd/lib.rs`, `dbg` is added to the `#[macro_reexport]` attribute on `extern crate core`.
-
-The macro below is added to `src/libcore/macros.rs`,
+The macro below is added to `src/libstd/macros.rs`,
 with a doc-comment based on the [Guide-level explanation][guide-level-explanation] of this RFC.
 
 ```rust
