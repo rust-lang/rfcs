@@ -50,7 +50,7 @@ relative path to your changelog file:
 [package]
 name = "foo"
 version = "0.1.0"
-changelog = "CHNAGELOG.md"
+changelog = "CHANGELOG.md"
 ```
 
 There is several requirements for changelogs, in case if one of them is not
