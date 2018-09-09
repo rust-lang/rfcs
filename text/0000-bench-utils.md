@@ -32,29 +32,30 @@ The function:
 
 ```rust
 /// An _unknown_ function that returns `x`.
-pub unsafe fn black_box<T>(x: T) -> T;
+pub fn black_box<T>(x: T) -> T;
 ```
 
 is an _unknown_ function, that is, a function that the compiler cannot make any
-assumptions about. It can potentially use `x` in any possible valid way that
-`unsafe` Rust code is allowed to, and requires the compiler to be maximally
-pessimistic in terms of optimizations. The compiler is still allowed to optimize
-the expression generating `x`. This function returns `x` and is a no-op in the
-virtual machine.
+assumptions about. It can use `x` in any possible valid way that Rust code is
+allowed to without introducing undefined behavior in the calling code. This
+requires the compiler to be maximally pessimistic in terms of optimizations, but
+the compiler is still allowed to optimize the expression generating `x`. This
+function returns `x` and is a no-op in the virtual machine.
 
 For example ([`rust.godbolt.org`](https://godbolt.org/g/YP2GCJ)):
 
 ```rust
 fn foo(x: i32) -> i32{ 
-  unsafe { hint::black_box(2 + x) };
+  hint::black_box(2 + x);
   3
 }
 let a = foo(2);
 ```
 
-In the call to `foo(2)` the compiler is allowed to simplify the expression `2 + x` 
-down to `4`, but `4` must be stored into memory even though it is not read by
-anything afterwards because `black_box` could try to read it.
+In the call to `foo(2)` the compiler is allowed to simplify the expression `2 +
+x` down to `4`, but `4` must be materialized, for example, by storing it into
+memory, a register, etc., even though `4` is not read by anything afterwards
+because `black_box` could try to read it.
 
 ### Benchmarking `Vec::push`
 
@@ -106,11 +107,9 @@ We can use `hint::black_box` to create a more realistic synthetic benchmark
 ```rust
 fn push_cap(v: &mut Vec<i32>) {
     for i in 0..4 {
-        unsafe {
-            black_box(v.as_ptr());
-            v.push(black_box(i));
-            black_box(v.as_ptr());
-        }
+        black_box(v.as_ptr());
+        v.push(black_box(i));
+        black_box(v.as_ptr());
     }
 }
 ```
@@ -126,13 +125,15 @@ The
 ```
 mod core::hint {
     /// An _unknown_ unsafe function that returns `x`.
-    pub unsafe fn black_box<T>(x: T) -> T;
+    pub fn black_box<T>(x: T) -> T;
 }
 ```
 
-is an _unknown_ `unsafe` function that can perform any valid operation on `x`
-that `unsafe` Rust is allowed to perform. This function returns `x` and is a
-no-op in the virtual machine.
+is an _unknown_ function that can perform any valid operation on `x` that Rust
+is allowed to perform without introducing undefined behavior in the calling
+code. You can rely on `black_box` being a `NOP` just returning `x`, but the
+compiler will optimize under the pessimistic assumption that `black_box` might
+do anything with the data it got.
 
 # Drawbacks
 [drawbacks]: #drawbacks
