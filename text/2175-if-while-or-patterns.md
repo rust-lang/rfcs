@@ -9,8 +9,9 @@
 [`if let`]: https://github.com/rust-lang/rfcs/pull/160
 [`while let`]: https://github.com/rust-lang/rfcs/pull/214
 
-Enables "or" patterns for [`if let`] and [`while let`] expressions as well as
-`let` statements. In other words, examples like the following are now possible:
+Enables "or" patterns for [`if let`] and [`while let`] expressions
+as well as `let` and `for` statements. In other words,
+examples like the following are now possible:
 
 ```rust
 enum E<T> {
@@ -28,9 +29,12 @@ while let A(x) | B(x) = source() {
 }
 
 enum ParameterKind<T, L = T> { Ty(T), Lifetime(L), }
+use ParameterKind::*;
 
 // Only possible when `L = T` such that `kind : ParameterKind<T, T>`.
 let Ty(x) | Lifetime(x) = kind;
+
+for Ty(x) | Lifetime(x) in ::std::iter::once(kind);
 ```
 
 # Motivation
@@ -136,9 +140,9 @@ loop {
 
 Another major motivation of the RFC is consistency with `match`.
 
-To keep `let` statements consistent with `if let`, and to enable the scenario
-exemplified by `ParameterKind` in the [motivation], these or-patterns are
-allowed at the top level of `let` statements.
+To keep `let` and `for` statements consistent with `if let`,
+and to enable the scenario exemplified by `ParameterKind` in the [motivation],
+these or-patterns are allowed at the top level of `let` and `for` statements.
 
 In addition to the `ParameterKind` example, we can also consider
 `slice.binary_search(&x)`. If we are only interested in the `index` at where
@@ -165,7 +169,7 @@ words: cover all cases, be exhaustive, this is not the case (currently) with
 This RFC does not change this.
 
 The RFC only extends the use of or-patterns at the top level from `match`es
-to `if let` and `while let` expressions as well as `let` statements.
+to `if let` and `while let` expressions as well as `let` and `for` statements.
 
 For examples, see [motivation].
 
@@ -189,7 +193,7 @@ if_let_expr : "if" "let" pat '=' expr '{' block '}'
 to:
 
 ```
-if_let_expr : "if" "let" pat [ '|' pat ] * '=' expr '{' block '}'
+if_let_expr : "if" "let" '|'? pat [ '|' pat ] * '=' expr '{' block '}'
                else_tail ? ;
 ```
 
@@ -204,7 +208,23 @@ while_let_expr : [ lifetime ':' ] ? "while" "let" pat '=' expr '{' block '}' ;
 to:
 
 ```
-while_let_expr : [ lifetime ':' ] ? "while" "let" pat [ '|' pat ] * '=' expr '{' block '}' ;
+while_let_expr : [ lifetime ':' ] ? "while" "let" '|'? pat [ '|' pat ] * '=' expr '{' block '}' ;
+```
+
+### `for`
+
+[for_grammar]: https://github.com/rust-lang/rust/blob/master/src/grammar/parser-lalr.y
+
+The `expr_for` grammar is changed [from][for_grammar]:
+
+```
+expr_for : maybe_label FOR pat IN expr_nostruct block ;
+```
+
+to:
+
+```
+expr_for : maybe_label FOR '|'? pat ('|' pat)* IN expr_nostruct block ;
 ```
 
 ### `let` statements
@@ -218,12 +238,12 @@ stmt ::= old_stmt_grammar
 
 let_stmt_many ::= "let" pat_two_plus "=" expr ";"
 
-pat_two_plus ::= pat [ '|' pat ] + ;
+pat_two_plus ::= '|'? pat [ '|' pat ] + ;
 ```
 
 ## Syntax lowering
 
-The changes proposed in this RFC with respect to `if let` and `while let`
+The changes proposed in this RFC with respect to `if let`, `while let`, and `for`
 can be implemented by transforming the `if/while let` constructs with a
 syntax-lowering pass into `match` and `loop` + `match` expressions.
 
@@ -239,7 +259,7 @@ duplicating any details already specified there.
 
 Source:
 ```rust
-if let PAT [| PAT]* = EXPR { BODY }
+if let |? PAT [| PAT]* = EXPR { BODY }
 ```
 Result:
 ```rust
@@ -251,7 +271,7 @@ match EXPR {
 
 Source:
 ```rust
-if let PAT [| PAT]* = EXPR { BODY_IF } else { BODY_ELSE }
+if let |? PAT [| PAT]* = EXPR { BODY_IF } else { BODY_ELSE }
 ```
 Result:
 ```rust
@@ -265,7 +285,7 @@ Source:
 ```rust
 if COND {
     BODY_IF
-} else if let PAT [| PAT]* = EXPR {
+} else if let |? PAT [| PAT]* = EXPR {
     BODY_ELSE_IF
 } else {
     BODY_ELSE
@@ -277,7 +297,7 @@ if COND {
     BODY_IF
 } else {
     match EXPR {
-        PAT [| PAT]* => { BODY_ELSE_IF }
+        |? PAT [| PAT]* => { BODY_ELSE_IF }
         _ => { BODY_ELSE }
     }
 }
@@ -285,7 +305,7 @@ if COND {
 
 Source
 ```rust
-if let PAT [| PAT]* = EXPR {
+if let |? PAT [| PAT]* = EXPR {
     BODY_IF
 } else if COND {
     BODY_ELSE_IF_1
@@ -296,7 +316,7 @@ if let PAT [| PAT]* = EXPR {
 Result:
 ```rust
 match EXPR {
-    PAT [| PAT]* => { BODY_IF }
+    |? PAT [| PAT]* => { BODY_IF }
     _ if COND => { BODY_ELSE_IF_1 }
     _ if OTHER_COND => { BODY_ELSE_IF_2 }
     _ => {}
@@ -311,7 +331,7 @@ The following example is an extension on the [`while let` RFC].
 
 Source
 ```rust
-['label:] while let PAT [| PAT]* = EXPR {
+['label:] while let |? PAT [| PAT]* = EXPR {
     BODY
 }
 ```
@@ -324,6 +344,34 @@ Result:
     }
 }
 ```
+
+### Examples, `for`
+
+Assuming that the semantics of `for` is defined by a desugaring from:
+
+```rust
+for PAT in EXPR_ITER {
+    BODY
+}
+```
+
+into:
+
+```rust
+match IntoIterator::into_iter(EXPR_ITER) {
+    mut iter => loop {
+        let next = match iter.next() {
+            Some(val) => val,
+            None => break,
+        };
+        let PAT = next;
+        { BODY };
+    },
+};
+```
+
+then the only thing that changes is that `PAT` may include `|` at the top level
+in the `for` loop and the desugaring as per the section on grammar.
 
 ## Desugaring `let` statements with `|` in the top-level pattern
 
@@ -371,7 +419,7 @@ It could be claimed that the `if/while let` RFCs already mandate this RFC,
 this RFC does answer that question and instead simply mandates it now.
 
 Another alternative is to only deal with `if/while let` expressions but not
-`let` statements.
+`let` and `for` statements.
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
