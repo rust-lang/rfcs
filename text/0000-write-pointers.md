@@ -309,7 +309,21 @@ init(&uninit x); // this function will overwrite, but not drop to the old value 
     - `&out T` if, `T: Copy`
  - `&out T`
     - `*mut T` // for similar reasons to why `&T` only coerces to `*const T`
- - `&uninit T` - `*mut T`, `&out T` if `T: Copy` and `&T` or `&mut T` once initialized.
+ - `&uninit T` - `*mut T`, `&out T` if `T: Copy` and `&T` or `&mut T` once initialized depending on if the variable is mutable or not.
+ ```Rust
+ struct Foo(i32, i32);
+ let foo: Foo;
+ foo.0 = 10;
+ foo.1 = 20;
+
+ // foo.0 = 10; // error foo is immutable
+
+ let mut foo_mut: Foo;
+ foo_mut.0 = 10;
+ foo_mut.1 = 20;
+
+ foo_mut.0 = 10; // fine, foo_mut is mutable
+ ```
 
 ## Casting Rules
 
