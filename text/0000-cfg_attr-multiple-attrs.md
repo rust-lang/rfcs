@@ -100,10 +100,16 @@ that the attribute takes 1+, and not just 1 attribute.
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-There are no other alternatives.
+We could require that multiple attributes must be within in a delimiter to make
+it so that it's always two arguments at the top level. E.g.,
+`#[cfg_attr(predicate, [attr, attr])]`. While this could increase clarity, it
+mostly seems like it would just add noise. In the multiline case, it already
+reads pretty clear with the predicate on the first line and each attribute
+indented.
 
-By not doing this, conditionally including attributes is slightly less
-ergonomic than it can be.
+The default alternative of not doing this is a possibility. It would just mean
+that conditionally including attributes is slightly less ergonomic than it
+could be.
 
 # Prior art
 [prior-art]: #prior-art
