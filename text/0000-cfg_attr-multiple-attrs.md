@@ -17,7 +17,7 @@ Simply put, ergonomics and intent. When you have multiple attributes you
 configure away behind the same predicate today, you need to duplicate the entire
 predicate. And then when you read code that does this, you have to check the
 entire predicates with each other to make sure they're the same. By allowing
-multiple attributes, it removes that duplication and shows explicitly that the
+multiple attributes it removes that duplication and shows explicitly that the
 author wanted those attributes configured behind the same predicate.
 
 # Guide-level explanation
@@ -28,14 +28,14 @@ attributes that will be in effect when the predicate is true.
 
 For an example of multiple attributes, say we want to have two attribute macros
 (`sparkles` and `crackles`), but only when `feature = "magic"` is enabled. We
-can write this as
+can write this as:
 
 ```rust,igore
 #[cfg_attr(feature = "magic", sparkles, crackles)]
 fn bewitched() {}
 ```
 
-When the feature flag is enable, it is equivalent to:
+When the feature flag is enabled, it is equivalent to:
 
 ```rust,ignore
 #[sparkles]
@@ -71,7 +71,7 @@ mod os;
 ```
 
 For an example of multiple attributes, say we want to have two attribute macros,
-but only when `feature = "magic"` is enabled. We can write this as
+but only when `feature = "magic"` is enabled. We can write this as:
 
 ```rust,igore
 #[cfg_attr(feature = "magic", sparkles, crackles)]
