@@ -279,6 +279,7 @@ init_u32(&uninit x.d); // fine, x.d is completely uninitialized.
 ```
 - Functions and closures that take a `&uninit T` argument must initialize it before returning
     - You cannot return an `&uninit T`
+    - because of this rule, `T` cannot resolve to `&uninit _` in any case, because it is impossible to parametrically initialize the `&uninit`
 - You can take a `&uninit T` on any `T` that represents uninitialized memory, for example: only the first is ok.
 ```Rust
 let x: Foo;
@@ -452,6 +453,11 @@ edit 5:
 
 Added casting rules from `&out T` and `&uninit T` to raw pointers.
 
+edit 6:
+
+added the constraint that no type parameter `T` can resolve to `&uninit _`, due to [@ExpHP](https://github.com/ExpHP)'s insights
+
 ---
 I would like to thank all the people who helped refine this proposal to its current state: [@rkruppe](https://internals.rust-lang.org/u/rkruppe), [@earthengine](https://internals.rust-lang.org/u/earthengine),  [@gbutler](https://internals.rust-lang.org/u/gbutler),
-and [@TechnoMancer](https://internals.rust-lang.org/u/TechnoMancer) thank you!
+and [@TechnoMancer](https://internals.rust-lang.org/u/TechnoMancer) in the Pre-RFC, and 
+[@cramertj](https://github.com/cramertj), [@ExpHP](https://github.com/ExpHP) in the RFC thank you!
