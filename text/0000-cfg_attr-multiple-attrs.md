@@ -78,7 +78,7 @@ but only when `feature = "magic"` is enabled. We can write this as:
 fn bewitched() {}
 ```
 
-When the feature flag is enable, it is equivalent to:
+When the feature flag is enabled, the attribute expands to:
 
 ```rust,ignore
 #[sparkles]
@@ -91,11 +91,39 @@ Note: The `cfg_attr` can expand to another `cfg_attr`. For example,
 is valid. This example would be equivalent to
 `#[cfg_attr(and(linux, feaure ="multithreaded"), some_other_attribute)]`.
 
+## Attribute Syntax Opportunity Cost
+
+This would be the first place attributes would be allowed in a comma-separated
+list. As such, it adds a restriction that attributes cannot have a non-delimited
+comma.
+
+Today, an attribute can look like:
+
+* `name`,
+* ``name(`TokenStream`)``
+* ``name = `TokenTree` ``
+
+where `TokenStream` is a sequence of tokens that only has the restriction that
+delimiters match and `TokenTree` is a single identifer, literal, punctuation
+mark, or a delimited `TokenStream`.
+
+With this RFC accepted, the following cannot ever be parsed as attributes:
+
+* `name, option`
+* `name = some, options`
+
+Arguably, we could allow `(name, option)`, but we shouldn't.
+
+This restriction is also useful if we want to put multiple attributes in a
+single `#[]` container, which has been suggested, but this RFC will not tackle.
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
 It's another thing that has to be learned. Though even there, it's just learning
 that the attribute takes 1+, and not just 1 attribute.
+
+It restricts the future allowable syntaxes for attributes.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -110,6 +138,13 @@ indented.
 The default alternative of not doing this is a possibility. It would just mean
 that conditionally including attributes is slightly less ergonomic than it
 could be.
+
+We could change attribute container syntax to allow multiple attributes and then
+state that `cfg_attr` takes the attribute container syntax without the `#[]`
+part. While this could be a good final state, it's a more ambitious change that
+has more drawbacks. There are legitimate reasons we'd want `cfg_attr` to take
+multiple attributes but not the attribute container. As such, I would like to
+go with the conservative change first.
 
 # Prior art
 [prior-art]: #prior-art
