@@ -35,7 +35,7 @@ can write this as:
 fn bewitched() {}
 ```
 
-When the feature flag is enabled, it is equivalent to:
+When the feature flag is enabled, it expands to:
 
 ```rust,ignore
 #[sparkles]
@@ -43,12 +43,15 @@ When the feature flag is enabled, it is equivalent to:
 fn bewitche() {}
 ```
 
+The list of attributes may be empty, but will warn if the actual source code
+contains an empty list.
+
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-This replaces what's in the Conditional Compilation Chapter for the `cfg_attr`
-attribute. It explains both current and new behavior, mainly because the
-current reference material needs improvement.
+The next section replaces what's in the Conditional Compilation Chapter for the
+`cfg_attr` attribute. It explains both current and new behavior, mainly because
+the current reference material needs improvement.
 
 ## `cfg_attr` Attribute
 
@@ -56,9 +59,16 @@ The `cfg_attr` attribute conditionally includes attributes based on a
 configuration predicate. 
 
 It is written as `cfg_attr` followed by `(`, a comma separated metaitem
-sequence, and then `)` The metaitem sequence contains two or more metaitems.
+sequence, and then `)` The metaitem sequence contains one or more metaitems.
 The first is a conditional predicate. The rest are metaitems that are also
-attributes.
+attributes. Trailing commas are permitted. The following list are all allowed:
+
+* `cfg_attr(predicate, attr)`
+* `cfg_attr(predicate, attr_1, attr_2)`
+* `cfg_attr(predicate, attr,)`
+* `cfg_attr(preciate, attr_1, attr_2,)`
+* `cfg_attr(predicate)`
+* `cfg_attr(predicate,)`
 
 When the configuration predicate is true, this attribute expands out to be an
 attribute for each attribute metaitem. For example, the following module will
@@ -90,6 +100,11 @@ Note: The `cfg_attr` can expand to another `cfg_attr`. For example,
 `#[cfg_attr(linux, cfg_attr(feature = "multithreaded", some_other_attribute))`
 is valid. This example would be equivalent to
 `#[cfg_attr(and(linux, feaure ="multithreaded"), some_other_attribute)]`.
+
+## Warning When Zero Attributes
+
+This RFC allows `#[cfg_attr(predicate)]`. This is so that macros can generate
+it. Having it in the source text emits a warning.
 
 ## Attribute Syntax Opportunity Cost
 
@@ -145,6 +160,10 @@ part. While this could be a good final state, it's a more ambitious change that
 has more drawbacks. There are legitimate reasons we'd want `cfg_attr` to take
 multiple attributes but not the attribute container. As such, I would like to
 go with the conservative change first.
+
+The original draft of this RFC only allowed one or more attributes and did not
+allow the trailing comma. Because it helps macros and fits the rest of the
+language, it now allows those.
 
 # Prior art
 [prior-art]: #prior-art
