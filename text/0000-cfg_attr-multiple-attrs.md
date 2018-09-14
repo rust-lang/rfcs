@@ -66,7 +66,7 @@ attributes. Trailing commas are permitted. The following list are all allowed:
 * `cfg_attr(predicate, attr)`
 * `cfg_attr(predicate, attr_1, attr_2)`
 * `cfg_attr(predicate, attr,)`
-* `cfg_attr(preciate, attr_1, attr_2,)`
+* `cfg_attr(predicate, attr_1, attr_2,)`
 * `cfg_attr(predicate)`
 * `cfg_attr(predicate,)`
 
