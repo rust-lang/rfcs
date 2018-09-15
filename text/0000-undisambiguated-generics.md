@@ -67,11 +67,9 @@ the previous example results in an error.
 a < b > ( c ); // error: chained comparison operators require parentheses
 ```
 
-This syntax is therefore no longer ambiguous and we can determine whether `<` is a comparison
-operator or the start of a generic argument list during parsing.
-
-There are, however, two cases in which the syntax is currently ambiguous (correspoding to the same
-ambiguity with `<` and `<<`).
+This chained comparison syntax is therefore no longer ambiguous. There are, however, two cases in
+which the syntax is currently ambiguous (arguably these are a single case, correspoding to the same
+ambiguity with `<` and `<<` respectively).
 
 ```rust
 // The following:
@@ -217,8 +215,8 @@ are not used as parameters in types).
 ## Interaction with future features
 Note that this proposal does not conflict with:
 - Intuitive chained comparisons: i.e. `a < b < c` as being shorthand for `a < b && b < c` (and
-similar).
-- Specifying const generic arguments in expressions without `::`.
+similar), should this syntax be proposed in the future.
+- Specifying const generic arguments in expressions without `::`, once they have been implemented.
 
 # Prior art
 [prior-art]: #prior-art
@@ -233,6 +231,6 @@ here.
 - Should we warn against the ambiguous case initially? This would be more conservative, but
 considering that this pattern has not been encountered in the wild, this is probably unnecessary.
 - Should `(a < b, c > d)` parse as a pair of comparisons? In the aforementioned Crater run, this
-syntax was also resolved as a generic expression followed by `d` (also causing no regressions), but
+syntax was resolved as a generic expression followed by `d` (also causing no regressions), but
 we could hypothetically parse this unambiguously as a pair (though this would probably require more
 complex backtracking).
