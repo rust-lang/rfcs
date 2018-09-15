@@ -226,8 +226,9 @@ similar).
 # Prior art
 [prior-art]: #prior-art
 
-Kotlin has a similar ambiguity with generic arguments in expressions and chooses to resolve this
-ambiguity in favour of generic arguments, using a similar technique to that proposed here.
+Kotlin and C# 7.0 both have similar ambiguities with generic arguments in expressions and choose to
+resolve this ambiguity in favour of generic arguments, using a similar technique to that proposed
+here.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
