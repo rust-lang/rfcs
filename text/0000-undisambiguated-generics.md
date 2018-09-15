@@ -95,9 +95,6 @@ determined that no crates regress if the ambiguity is resolved in favour of a ge
 rather than tuples of comparisons of this form. We propose that resolving this ambiguity in favour
 of generic expressions to eliminate `::` is worth this small alteration to the existing parse.
 
-In addition, the latter case is forbidden in the Rust 2018 edition and so is only an ambiguity in
-the Rust 2015 Edition.
-
 ## Performance
 Apart from parsing ambiguity, the main concern regarding allowing `::` to be omitted was the
 potential performance implications. Although by the time we reach the closing angle bracket `>` we
@@ -239,6 +236,3 @@ considering that this pattern has not been encountered in the wild, this is prob
 syntax was also resolved as a generic expression followed by `d` (also causing no regressions), but
 we could hypothetically parse this unambiguously as a pair (though this would probably require more
 complex backtracking).
-- Should we gate this feature on the Rust 2018 Edition to avoid the second syntactic ambiguity
-(namely `(a << B as C > ::D, E < F >> (g));`)? Note that this case too was not encountered in the
-Crater run.
