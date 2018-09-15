@@ -174,10 +174,10 @@ taken to discourage the use of `::` at this stage (including in tools, such as r
 [drawbacks]: #drawbacks
 
 The primary drawback is that resolving ambiguities in favour of generics means changing the
-interpretation of `(a<b, c>(d))` from a pair of tuples to a generic function call. However, in
-practice, this has been demonstrated
-([1](https://github.com/rust-lang/rust/pull/53578#issuecomment-421475443)) not to cause issues in
-practice (the syntax is unnatural for Rust and is actively warned against by the compiler).
+interpretation of `(a<b, c>(d))` from a pair of tuples to a generic function call. However this has
+been demonstrated ([1](https://github.com/rust-lang/rust/pull/53578#issuecomment-421475443)) not to
+cause issues in practice (the syntax is unnatural for Rust and is actively warned against by the
+compiler).
 
 Additionally, there is potential for performance regressions due to backtracking. However,
 empirical evidence ([1](https://github.com/rust-lang/rust/pull/53511#issuecomment-414172984) and
