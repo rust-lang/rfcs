@@ -197,6 +197,15 @@ implications, but would leave the nonconformal and surprising syntax in place. W
 use backtracking to provide the improved diagnostic suggestions to use `::`, while still preventing
 `::` from being omitted.
 
+## Future frequency of disambiguated generic expressions
+It is likely that should the
+[generalised type ascription](https://github.com/rust-lang/rfcs/pull/2522) RFC be accepted and
+implemented, the number of cases where generic type arguments have to be provided is reduced, making
+users less likely to encounter the `::` construction. However, the
+[const generics](https://github.com/rust-lang/rfcs/pull/2000) feature, currently in implementation,
+is conversely likely to increase the number of cases (specifically where const generic arguments
+are not used as parameters in types).
+
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
