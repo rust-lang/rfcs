@@ -217,6 +217,12 @@ users less likely to encounter the `::` construction. However, the
 is conversely likely to *increase* the number of cases (especially where const generic arguments
 are not used as parameters in types).
 
+## Interaction with future features
+Note that this proposal does not conflict with:
+- Intuitive chained comparisons: i.e. `a < b < c` as being shorthand for `a < b && b < c` (and
+similar).
+- Specifying const generic arguments in expressions without `::`.
+
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
