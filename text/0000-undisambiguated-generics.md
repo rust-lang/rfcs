@@ -215,3 +215,6 @@ considering that this pattern has not been encountered in the wild, this is prob
 syntax was also resolved as a generic expression followed by `d` (also causing no regressions), but
 we could hypothetically parse this unambiguously as a pair (though this would probably require more
 complex backtracking).
+- `[a << B as C > ::D, E < S >> (1)];` is likewise ambiguous in the Rust 2015 Edition. Should this
+feature be gated on Rust 2018 Edition and above? Note that this case too was not encountered in the
+Crater run.
