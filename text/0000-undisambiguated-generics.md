@@ -70,7 +70,8 @@ a < b > ( c ); // error: chained comparison operators require parentheses
 This syntax is therefore no longer ambiguous and we can determine whether `<` is a comparison
 operator or the start of a generic argument list during parsing.
 
-There is, however, one case in which the syntax is currently ambiguous.
+There are, however, two cases in which the syntax is currently ambiguous (correspoding to the same
+ambiguity with `<` and `<<`).
 
 ```rust
 // The following:
@@ -79,13 +80,23 @@ There is, however, one case in which the syntax is currently ambiguous.
 ( a<b, c>(d) );
 // Or a pair of comparisons...
 (a < b, c > (d));
+
+// The following:
+`(a << B as C > ::D, E < F >> (g));`
+// Could be a generic function call (with two arguments)...
+( a<<B as C>::D, E<F>>(g) );
+// Or a pair of bit-shifted comparisons...
+(a << B as C > ::D, E < F >> (g));
 ```
 
-Ultimately, this case does not seem occur naturally in Rust code. A
+Ultimately, these cases do not seem occur naturally in Rust code. A
 [Crater run on over 20,000 crates](https://github.com/rust-lang/rust/pull/53578#issuecomment-421475443)
 determined that no crates regress if the ambiguity is resolved in favour of a generic expression
 rather than tuples of comparisons of this form. We propose that resolving this ambiguity in favour
 of generic expressions to eliminate `::` is worth this small alteration to the existing parse.
+
+In addition, the latter case is forbidden in the Rust 2018 edition and so is only an ambiguity in
+the Rust 2015 Edition.
 
 ## Performance
 Apart from parsing ambiguity, the main concern regarding allowing `::` to be omitted was the
@@ -215,6 +226,6 @@ considering that this pattern has not been encountered in the wild, this is prob
 syntax was also resolved as a generic expression followed by `d` (also causing no regressions), but
 we could hypothetically parse this unambiguously as a pair (though this would probably require more
 complex backtracking).
-- `[a << B as C > ::D, E < S >> (1)];` is likewise ambiguous in the Rust 2015 Edition. Should this
-feature be gated on Rust 2018 Edition and above? Note that this case too was not encountered in the
+- Should we gate this feature on the Rust 2018 Edition to avoid the second syntactic ambiguity
+(namely `(a << B as C > ::D, E < F >> (g));`)? Note that this case too was not encountered in the
 Crater run.
