@@ -23,6 +23,7 @@ fn id<T>(t: T) -> T {
 
 fn main() {
     id<u32>(0u32); // ok
+    let _: fn(u8) -> u8 = id<u8>; // ok
     let n = Nooper<&str>(":)"); // ok
     n.noop<()>(()); // ok
 }
@@ -80,7 +81,7 @@ ambiguity with `<` and `<<` respectively).
 (a < b, c > (d));
 
 // The following:
-`(a << B as C > ::D, E < F >> (g));`
+(a << B as C > ::D, E < F >> (g));
 // Could be a generic function call (with two arguments)...
 ( a<<B as C>::D, E<F>>(g) );
 // Or a pair of bit-shifted comparisons...
@@ -99,7 +100,7 @@ potential performance implications. Although by the time we reach the closing an
 know whether we're parsing a comparison or a generic argument list, when we initially encounter `<`,
 we are not guaranteed to know which case we're parsing. To solve this problem, we need to
 first start parsing a generic argument list and then backtrack if this fails (or use a parser that
-can deal with ambiguous grammars). We generally prefer to avoid backtracking, as it can be slow.
+can deal with ambiguous grammars). We generally prefer to avoid [backtracking](https://en.wikipedia.org/wiki/Backtracking), as it can be slow.
 However, up until now, the concern with using backtracking for `<`-disambiguation was purely
 theoretical, without any empirical testing to validate it.
 
@@ -134,6 +135,7 @@ fn id<T>(t: T) -> T {
 
 fn main() {
     id<u32>(0u32);
+    let _: fn(u8) -> u8 = id<u8>;
     let n = Nooper<&str>(":)");
     n.noop<()>(());
 }
@@ -163,7 +165,8 @@ the feature is enabled. This is undesirable in most existing codebases, as the n
 linted expressions is likely to be large, but could be useful for new codebases and in the future.
 
 Note that, apart from for those users who explicitly increase the level of the lint, no steps are
-taken to discourage the use of `::` at this stage (including in tools, such as rustfmt).
+taken to discourage the use of `::` at this stage (including in tools, such as rustfmt). (In the
+future we could consider raising the level to warn-by-default.)
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -174,25 +177,26 @@ been demonstrated ([1](https://github.com/rust-lang/rust/pull/53578#issuecomment
 cause issues in practice (the syntax is unnatural for Rust and is actively warned against by the
 compiler).
 
-Additionally, there is potential for performance regressions due to backtracking. However,
-empirical evidence ([1](https://github.com/rust-lang/rust/pull/53511#issuecomment-414172984) and
+Additionally, there is potential for performance regressions due to backtracking (this change means
+that in theory parsing Rust requires unlimited lookahead, because ambiguous sequences of tokens
+could potentially be unlimited in length). However, empirical evidence
+([1](https://github.com/rust-lang/rust/pull/53511#issuecomment-414172984) and
 [2](https://github.com/rust-lang/rust/pull/53511#issuecomment-414360849)) suggests this should not
 be a problem. Although it is probable that a pathological example could be constructed that does
 result in poorer performance, such an example would not be representative of typical Rust code and
-therefore is not helpful to seriously consider. Backtracking is already used for some cases in the
-parser.
+therefore is not helpful to seriously consider.
 
 The other potential drawback is that other parsers for Rust's syntax (for example in external tools)
 would also have to implement some form of backtracking (or similar) to handle this case. However,
-backtracking is straightforward to implement in many forms of parser (such as recursive decent) and
-it is likely this will not cause significant problems.
+backtracking is straightforward to implement in many forms of parser (such as recursive decent or
+combinatory parsers) and it is likely this will not cause significant problems.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 If we want to allow `::` to be omitted, there are two solutions:
 - Backtracking, as suggested here.
-- Using a parser for nondeterministic grammars, such as GLL.
+- Using a parser for nondeterministic grammars, such as [GLL](http://dotat.at/tmp/gll.pdf).
 
 Although using a more sophisticated parser would come with its own advantages, it's an overly
 complex solution to this particular problem. Backtracking seems to work well in typical codebases
@@ -207,7 +211,9 @@ use backtracking to provide the improved diagnostic suggestions to use `::`, whi
 It is likely that, should the
 [generalised type ascription](https://github.com/rust-lang/rfcs/pull/2522) RFC be accepted and
 implemented, the number of cases where generic type arguments have to be provided is reduced, making
-users less likely to encounter the `::` construction. However, the
+users less likely to encounter the `::` construction. However, type ascription can still be more
+verbose than explicitly specifying type arguments when the respective type parameters appear in
+nested type constructors. On top of that, the
 [const generics](https://github.com/rust-lang/rfcs/pull/2000) feature, currently in implementation,
 is conversely likely to *increase* the number of cases (especially where const generic arguments
 are not used as parameters in types).
