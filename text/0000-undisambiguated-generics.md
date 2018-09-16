@@ -33,8 +33,9 @@ fn main() {
 [motivation]: #motivation
 
 The requirement to write `::` before generic arguments in expressions is an unexpected corner case
-in the language, violating the principle of least surprise. There were historical reasons for its
-necessity in the past, acting as a disambiguator for other uses of `<` and `>` in expressions.
+in the language, violating the [principle of least surprise](https://en.wikipedia.org/wiki/Principle_of_least_astonishment).
+There were historical reasons for its necessity in the past, acting as a disambiguator for other
+uses of `<` and `>` in expressions.
 However, now the ambiguity between generic arguments and comparison operators has been reduced to a
 single edge case that is very unlikely to appear in Rust code (and has been demonstrated to occur in
 [none of the existing crates](https://github.com/rust-lang/rust/pull/53578#issuecomment-421475443)
@@ -102,8 +103,8 @@ Ultimately, these cases do not seem occur naturally in Rust code. A
 [Crater run on over 20,000 crates](https://github.com/rust-lang/rust/pull/53578#issuecomment-421475443)
 determined that no crates regress if the ambiguity is resolved in favour of a generic expression
 rather than tuples of comparisons of this form. However, there are some occurrences of syntax
-similar to the second ambiguity ([1](https://sourcegraph.com/github.com/dropbox/rust-brotli/-/blob/src/enc/backward_references.rs#L1257:32),
-[2](https://sourcegraph.com/github.com/dropbox/rust-brotli/-/blob/src/enc/encode.rs#L1905:46)).
+similar to the second ambiguity ([1](https://github.com/dropbox/rust-brotli/blob/ce7b3618f9df942e9340bf3e767b2d3e3caea4b3/src/enc/backward_references.rs#L1257),
+[2](https://github.com/dropbox/rust-brotli/blob/ce7b3618f9df942e9340bf3e767b2d3e3caea4b3/src/enc/encode.rs#L2842)).
 These ambiguities may always be resolved by adding parentheses if ambiguities are resolved in favour
 of generic expresions. We propose that resolving this ambiguity in favour
 of generic expressions to eliminate `::` is worth this small alteration to the existing parse.
@@ -232,7 +233,18 @@ It is likely that, should the
 implemented, the number of cases where generic type arguments have to be provided is reduced, making
 users less likely to encounter the `::` construction. However, type ascription can still be more
 verbose than explicitly specifying type arguments when the respective type parameters appear in
-nested type constructors. On top of that, the
+nested type constructors. For example:
+
+```rust
+// Given the following...
+fn foo<T>() -> Vec<HashSet<T>> { /* ... */ }
+// With type ascription we have:
+let x = foo(): Vec<HashSet<u8>>;
+// Whereas using generic arguments we have:
+let x = foo<u8>();
+```
+
+On top of that, the
 [const generics](https://github.com/rust-lang/rfcs/pull/2000) feature, currently in implementation,
 is conversely likely to *increase* the number of cases (especially where const generic arguments
 are not used as parameters in types).
