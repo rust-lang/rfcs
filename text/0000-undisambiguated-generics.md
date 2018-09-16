@@ -69,29 +69,43 @@ a < b > ( c ); // error: chained comparison operators require parentheses
 ```
 
 This chained comparison syntax is therefore no longer ambiguous. There are, however, two cases in
-which the syntax is currently ambiguous (arguably these are a single case, correspoding to the same
-ambiguity with `<` and `<<` respectively).
+which the syntax is currently ambiguous.
 
+First:
 ```rust
 // The following:
-(a < b, c > (d));
+(a < b, c > (d))
 // Could be a generic function call...
-( a<b, c>(d) );
+( a<b, c>(d) )
 // Or a pair of comparisons...
-(a < b, c > (d));
+(a < b, c > (d))
 
-// The following:
-(a << B as C > ::D, E < F >> (g));
+// This is true with both `<` and `<<`:
+(a << B as C > ::D, E < F >> (g))
 // Could be a generic function call (with two arguments)...
-( a<<B as C>::D, E<F>>(g) );
+( a<<B as C>::D, E<F>>(g) )
 // Or a pair of bit-shifted comparisons...
-(a << B as C > ::D, E < F >> (g));
+(a << B as C > ::D, E < F >> (g))
+```
+
+Second:
+```rust
+// The following:
+a < b >> c
+// Could be a comparison of a generic expression...
+a<b> > c
+// Or a bit-shift followed by a comparison...
+a < b >> c
 ```
 
 Ultimately, these cases do not seem occur naturally in Rust code. A
 [Crater run on over 20,000 crates](https://github.com/rust-lang/rust/pull/53578#issuecomment-421475443)
 determined that no crates regress if the ambiguity is resolved in favour of a generic expression
-rather than tuples of comparisons of this form. We propose that resolving this ambiguity in favour
+rather than tuples of comparisons of this form. However, there are some occurrences of syntax
+similar to the second ambiguity ([1](https://sourcegraph.com/github.com/dropbox/rust-brotli/-/blob/src/enc/backward_references.rs#L1257:32),
+[2](https://sourcegraph.com/github.com/dropbox/rust-brotli/-/blob/src/enc/encode.rs#L1905:46)).
+These ambiguities may always be resolved by adding parentheses if ambiguities are resolved in favour
+of generic expresions. We propose that resolving this ambiguity in favour
 of generic expressions to eliminate `::` is worth this small alteration to the existing parse.
 
 ## Performance
@@ -148,6 +162,11 @@ An initial implementation is present in https://github.com/rust-lang/rust/pull/5
 implementation may be based. The parser will now attempt to parse generic argument lists without
 `::`, falling back on attempting to parse a comparison if that fails.
 
+The ambiguous case `a < b >> c` will be warn-by-default linted against (suggesting the form
+`a < (b >> c)`). Note that we can restrict this lint to the `>>` token, so the standard formatting
+of the generic expression `a<b> > c` will not be warned against. This syntax was not encountered in
+the Crater run, so this is a safe change to make.
+
 The feature will initially be gated (e.g. `#![feature(undisambiguated_generics)]`). However,
 note that the parser changes will be present regardless of whether the feature is enabled or not,
 because feature detection occurs after parsing. However, because it has been shown that there are
@@ -172,10 +191,10 @@ future we could consider raising the level to warn-by-default.)
 [drawbacks]: #drawbacks
 
 The primary drawback is that resolving ambiguities in favour of generics means changing the
-interpretation of `(a<b, c>(d))` from a pair of tuples to a generic function call. However this has
-been demonstrated ([1](https://github.com/rust-lang/rust/pull/53578#issuecomment-421475443)) not to
-cause issues in practice (the syntax is unnatural for Rust and is actively warned against by the
-compiler).
+interpretation of the two cases described above. However this has been demonstrated
+([1](https://github.com/rust-lang/rust/pull/53578#issuecomment-421475443)) not to
+cause issues in practice (in the former case particularly the syntax is unnatural and is actively
+warned against by the compiler).
 
 Additionally, there is potential for performance regressions due to backtracking (this change means
 that in theory parsing Rust requires unlimited lookahead, because ambiguous sequences of tokens
@@ -239,6 +258,4 @@ considering that this pattern has not been encountered in the wild, this is prob
 - Should `(a < b, c > d)` parse as a pair of comparisons? In the aforementioned Crater run, this
 syntax was resolved as a generic expression followed by `d` (also causing no regressions), but
 we could hypothetically parse this unambiguously as a pair (though this would probably require more
-complex backtracking). A similar example is `a < b >> c`, which currently parses as a bit-shift
-followed by a comparison, but which the reference implementation attempts to parse as a generic
-expression followed by a comparison.
+complex backtracking).
