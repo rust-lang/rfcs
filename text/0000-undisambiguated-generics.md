@@ -234,9 +234,11 @@ here.
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-- Should we warn against the ambiguous case initially? This would be more conservative, but
+- Should we warn against the ambiguous case to begin with? This would be more conservative, but
 considering that this pattern has not been encountered in the wild, this is probably unnecessary.
 - Should `(a < b, c > d)` parse as a pair of comparisons? In the aforementioned Crater run, this
 syntax was resolved as a generic expression followed by `d` (also causing no regressions), but
 we could hypothetically parse this unambiguously as a pair (though this would probably require more
-complex backtracking).
+complex backtracking). A similar example is `a < b >> c`, which currently parses as a bit-shift
+followed by a comparison, but which the reference implementation attempts to parse as a generic
+expression followed by a comparison.
