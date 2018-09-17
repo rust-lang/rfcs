@@ -55,9 +55,9 @@ let a = foo(2);
 ```
 
 In the call to `foo(2)` the compiler is allowed to simplify the expression `2 +
-x` down to `4`, but `4` must be materialized, for example, by storing it into
-memory, a register, etc. because `black_box` could try to read it even though
-`4` is not read by anything afterwards.
+x` down to `4`. However, `4` must be materialized, for example, by storing it
+into memory, a register, etc. because `black_box` could try to read it, even
+though `4` is not read by anything afterwards.
 
 ### Benchmarking `Vec::push`
 
@@ -103,9 +103,9 @@ probably use the vector for something, preventing all of these optimizations
 from triggering, but in this synthetic benchmark LLVM optimizations are
 producing a benchmark that won't tell us anything about the cost of `Vec::push`.
 
-We can use `hint::black_box` to create a more realistic synthetic benchmark
-since the compiler has to assume that `black_box` observes and mutates its
-argument it cannot optimize the whole benchmark away (https://rust.godbolt.org/z/CeXmxN):
+We can use hint::black_box to create a more realistic synthetic benchmark. The
+compiler has to assume that `black_box` observes and mutates its argument, hence
+it cannot optimize away the whole benchmark (https://rust.godbolt.org/z/CeXmxN):
 
 ```rust
 fn push_cap(v: &mut Vec<i32>) {
