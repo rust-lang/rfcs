@@ -1,7 +1,7 @@
 - Feature Name: `dbg_macro`
 - Start Date: 2018-03-13
-- RFC PR:
-- Rust Issue:
+- RFC PR: [rust-lang/rfcs#2361](https://github.com/rust-lang/rfcs/pull/2361)
+- Rust Issue: [rust-lang/rust#54306](https://github.com/rust-lang/rust/issues/54306)
 
 # Summary
 [summary]: #summary
