@@ -365,3 +365,10 @@ we maybe try harder, e.g. lint against using `*` below a union type when
 describing a place?  That would make people write `let v = &mut u.f; *v =
 Vec::new();`.  It is not clear that this helps in terms of pointing out that an
 automatic drop may be happening.
+
+We could allow moving out of a union field even if it implements `Drop`.  That
+would have the effect of making the union considered uninitialized, i.e., it
+would not be dropped implicitly when it goes out of scope.  However, it might be
+useful to not let people do this accidentally.  The same effect can always be
+achieved by having a dropless union wrapped in a newtype `struct` with the
+desired `Drop`.
