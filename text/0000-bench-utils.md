@@ -35,12 +35,14 @@ The function:
 pub fn black_box<T>(x: T) -> T;
 ```
 
-is an _unknown_ function, that is, a function that the compiler cannot make any
-assumptions about. It can use `x` in any possible valid way that Rust code is
-allowed to without introducing undefined behavior in the calling code. This
-requires the compiler to be maximally pessimistic in terms of optimizations, but
-the compiler is still allowed to optimize the expression generating `x`. This
-function returns `x` and is a no-op in the virtual machine.
+returns `x` and is an _unknown_ function, that is, a function that the compiler
+cannot make any assumptions about. It can use `x` in any possible valid way that
+Rust code is allowed to without introducing undefined behavior in the calling
+code. This requires the compiler to be maximally pessimistic in terms of
+optimizations, but the compiler is still allowed to optimize the expression
+generating `x`. While the compiler must assume that `black_box` performs any
+legal mutation of `x`, the programmer can rely on `black_box` not actually
+having any effect (other than inhibiting optimizations).
 
 For example ([`rust.godbolt.org`](https://godbolt.org/g/YP2GCJ)):
 
@@ -54,8 +56,8 @@ let a = foo(2);
 
 In the call to `foo(2)` the compiler is allowed to simplify the expression `2 +
 x` down to `4`, but `4` must be materialized, for example, by storing it into
-memory, a register, etc., even though `4` is not read by anything afterwards
-because `black_box` could try to read it.
+memory, a register, etc. because `black_box` could try to read it even though
+`4` is not read by anything afterwards.
 
 ### Benchmarking `Vec::push`
 
@@ -102,7 +104,8 @@ from triggering, but in this synthetic benchmark LLVM optimizations are
 producing a benchmark that won't tell us anything about the cost of `Vec::push`.
 
 We can use `hint::black_box` to create a more realistic synthetic benchmark
-(https://rust.godbolt.org/z/CeXmxN):
+since the compiler has to assume that `black_box` observes and mutates its
+argument it cannot optimize the whole benchmark away (https://rust.godbolt.org/z/CeXmxN):
 
 ```rust
 fn push_cap(v: &mut Vec<i32>) {
