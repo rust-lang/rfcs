@@ -1,5 +1,5 @@
 - Feature Name: `undisambiguated_generics`
-- Start Date: 2018-09-15
+- Start Date: 2018-09-17
 - RFC PR:
 - Rust Issue:
 
@@ -36,8 +36,8 @@ The requirement to write `::` before generic arguments in expressions is an unex
 in the language, violating the [principle of least surprise](https://en.wikipedia.org/wiki/Principle_of_least_astonishment).
 There were historical reasons for its necessity in the past, acting as a disambiguator for other
 uses of `<` and `>` in expressions.
-However, now the ambiguity between generic arguments and comparison operators has been reduced to a
-single edge case that is very unlikely to appear in Rust code (and has been demonstrated to occur in
+However, now the ambiguity between generic arguments and comparison operators has been reduced to
+two edge cases that are very unlikely to appear in Rust code (and have been demonstrated to occur in
 [none of the existing crates](https://github.com/rust-lang/rust/pull/53578#issuecomment-421475443)
 in the Rust ecosystem as of 2018-09-14). Making `::` optional in expressions takes a step towards
 eliminating an oddity in the Rust syntax, making it more uniform and less confusing (e.g.
@@ -265,7 +265,7 @@ here.
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-- Should we warn against the ambiguous case to begin with? This would be more conservative, but
+- Should we warn against the ambiguous pair case initially? This would be more conservative, but
 considering that this pattern has not been encountered in the wild, this is probably unnecessary.
 - Should `(a < b, c > d)` parse as a pair of comparisons? In the aforementioned Crater run, this
 syntax was resolved as a generic expression followed by `d` (also causing no regressions), but
