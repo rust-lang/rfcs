@@ -181,23 +181,21 @@ definition of blanket impl given above.
 
 Assumes the same definitions [as above](#definitions).
 
-Given `impl<P1...Pn> Trait<T1...Tn> for Target`, an impl is valid only if at
+Given `impl<P1..=Pn> Trait<T1..=Tn> for T0`, an impl is valid only if at
 least one of the following is true:
 
 - `Trait` is a local trait
-- `Target` is a local type
 - All of
-  - `Target` is not an uncovered type parameter (is not any of `P1...Pn`)
-  - At least one of the types `T1...Tn` must be a local type. Let `Ti` be the
+  - At least one of the types `T0..=Tn` must be a local type. Let `Ti` be the
     first such type.
-  - No type parameters `P1...Pn` may appear *anywhere* in `T1...Tn` before `Ti`.
+  - No uncovered type parameters `P1..=Pn` may appear in `T0..Ti` (excluding
+    `Ti`)
 
-Note that this is not just written as the removal of `T0` from the rules defined
-in [RFC #1023]. We have the special case rule that `Target` must not be an
-uncovered type parameter, because we want to continue to reject `impl<T>
-ForeignTrait<LocalType> for T`. This must continue to be rejected to avoid
-sibling crates being able to conflict, as this impl would conflict with `impl<T>
-ForeignTrait<T> for LocalTypeInCrateB`.
+The primary change from the rules defined in in [RFC #1023] is that we only
+restrict the appearance of *uncovered* type parameters. Once again, it is
+important to note that for the purposes of coherence, `#[fundamental]` types are
+special. `Box<T>` is not considered covered, and `Box<LocalType>` is considered
+local.
 
 Under this proposal, the orphan rules continue to work generally as they did
 before, with one notable exception; We will permit `impl<T>
@@ -228,14 +226,34 @@ conflicting impls, with or without this proposal.
 ## Effects on parent crates
 
 [RFC #1023] is amended to state that adding a new impl to an existing trait is
-considered a breaking change if, given `impl<P1...Pn> Trait<T1...Tn> for T0`,
-any type `T0...Tn` is an uncovered type parameter (is any of `P1...Pn`).
+considered a breaking change unless, given `impl<P1..=Pn> Trait<T1..=Tn> for
+T0`:
+
+- At least one of the types `T0..=Tn` must be a local type, added in this
+  revision. Let `Ti` be the first such type.
+- No uncovered type parameters `P1..=Pn` appear in `T0..Ti` (excluding `Ti`)
+
+The more general way to put this rule is: "Adding an impl to an existing trait
+is a breaking change if it could possibly conflict with a legal impl in a
+downstream crate".
 
 This clarification is true regardless of whether the changes in this proposal
 are accepted or not. Given that the compiler currently accepts `impl From<Foo> for
 Vec<Foo>`, adding the impl `impl<T> From<T> for Vec<T>` *must* be considered a
-major breaking change. Note that the problem is `From<T>`, not `Vec<T>`. Adding
-`impl<T> From<i32> for Vec<T>` is not a breaking change.
+major breaking change.
+
+To be specific, the following adding any of the following impls would be
+considered a breaking change:
+
+- `impl<T> OldTrait<T> for OldType`
+- `impl<T> OldTrait<AnyType> for T`
+- `impl<T> OldTrait<T> for ForeignType`
+
+However, the following impls would not be considered a breaking change:
+
+- `impl NewTrait<AnyType> for AnyType`
+- `impl<T> OldTrait<T> for NewType`
+- `impl<T> OldTrait<NewType, T> for OldType`
 
 # Drawbacks
 [drawbacks]: #drawbacks
