@@ -171,6 +171,66 @@ associated type include:
    + <https://github.com/rust-lang/rust/issues/31844#issuecomment-263175793>
    + <https://github.com/rust-lang/rust/issues/31844#issuecomment-279350986>
 
+[`std::remove_reference`]: http://www.cplusplus.com/reference/type_traits/remove_reference/
+
+4. Encoding a more powerful [`std::remove_reference`]
+
+   We can encode a more powerful version of C++'s `remove_reference` construct,
+   which allows you to get the base type of a reference type recursively.
+   Without default groups, we can get access to the base type like so:
+
+   ```rust
+   trait RemoveRef {
+       type WithoutRef;
+   }
+
+   impl<T> RemoveRef for T {
+       default type WithoutRef = T;
+   }
+
+   impl<'a, T: RemoveRef> RemoveRef for &'a T {
+       type WithoutRef = T::WithoutRef;
+   }
+   ```
+
+   However, we don't have any way to transitively dereference to
+   `&Self::WithoutRef`. With default groups we can gain that ability with:
+
+   ```rust
+   trait RemoveRef {
+       type WithoutRef;
+       fn single_ref(&self) -> &Self::WithoutRef;
+   }
+
+   impl<T> RemoveRef for T {
+       default {
+           type WithoutRef = T;
+
+           fn single_ref(&self) -> &Self::WithoutRef {
+               // We can assume that `T == Self::WithoutRef`.
+               self
+           }
+       }
+   }
+
+   impl<'a, T: RemoveRef> RemoveRef for &'a T {
+       type WithoutRef = T::WithoutRef;
+
+       fn single_ref(&self) -> &Self::WithoutRef {
+           // We can assume that `T::WithoutRef == Self::WithoutRef`.
+           T::single_ref(*self)
+       }
+   }
+   ```
+
+   We can then proceed to writing things such as:
+
+   ```rust
+   fn do_stuff(recv: impl RemoveRef<WithoutRef: MyTrait>) {
+       recv.single_ref().my_method();
+   }
+   ```
+
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
