@@ -58,6 +58,24 @@ initializers or with initializers that are not `ExprKind::Repeat` or
 At the lowering stage, the initializer is checked for the actual array length,
 and the `Ty` is constructed as if the size was given verbatim.
 
+## Error handling
+
+This change would introduce a new type of error, for statements that have no
+initializer or statics that introduce const functions (once they are stable).
+As outlined above, the latter would still need the correct type, though this is
+a small cost, as the type can likely be copied verbatim from the function.
+
+This RFC proposes showing an error message that restates the locality rule and
+suggests writing out the size (which can be inferred in the suggestion if
+possible). This might look like the following (mocked up here):
+
+```
+78: let x: [u32; _];
+                 ^ No initializer to take size from. Please write out the size.
+Suggestion: let x: [u32; 3];
+                         ~
+```
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
