@@ -616,7 +616,41 @@ where Self::Searcher: Consumer<H::Target> {
 Now we have ensured that `Self::Searcher` is a `Consumer<H::Target>`
 and therefore, the above definition will type check.
 Having done this, the API has become more ergonomic because we can
-let users define instances of `Needle<H>` with half as much requirements.
+let users define instances of `Needle<H>` with half as many requirements.
+
+### `default fn foo() { .. }` is syntactic sugar
+
+In the section of [changes] to associated type defaults,
+snippet (5) actually indirectly introduced default groups of a special form,
+namely "singleton groups". That is, when we wrote:
+
+```rust
+impl<T> Foo for Wibble<T> {
+    default type Bar = u8;
+
+    default fn quux(x: Self::Bar) -> u8 { x }
+}
+```
+
+this was actually sugar for:
+
+```rust
+impl<T> Foo for Wibble<T> {
+    default {
+        type Bar = u8;
+    }
+
+    default {
+        fn quux(x: Self::Bar) -> u8 { x }
+    }
+}
+```
+
+We can see that these are equivalent since in the [specialization] RFC,
+the semantics of `default fn` were that `fn` may be overridden in more
+specific implementations. With these singleton groups, you may assume
+the body of `Bar` in all other items in the same group; but it just
+happens to be the case that there are no other items in the group.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
