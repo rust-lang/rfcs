@@ -33,7 +33,7 @@ const CONST_CHARS: [u8; _] = b"This is really a byte array";
 static STATIC_MASKS: [u8; _] = [0, 1, 3, 7, 15, 31, 63, 127, 255];
 
 fn main() {
-    let local_strs: [&'static str] = ["Hello", "Rust"];
+    let local_strs: [&'static str; _] = ["Hello", "Rust"];
     ..
 }
 ```
@@ -85,7 +85,7 @@ possibly indicate an error, so it's better to use the more balanced `[u32; _]`.
 
 We could do nothing, and waste Rustacean's time by counting or parsing compiler
 errors (unless their accuracy of estimating array length is 100%. I'm sure mine
-isnt).
+isn't).
 
 # Prior art
 [prior-art]: #prior-art
