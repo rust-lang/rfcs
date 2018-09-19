@@ -39,8 +39,7 @@ returns `x` and is an _unknown_ function, that is, a function that the compiler
 cannot make any assumptions about. It can use `x` in any possible valid way that
 Rust code is allowed to without introducing undefined behavior in the calling
 code. This requires the compiler to be maximally pessimistic in terms of
-optimizations, but the compiler is still allowed to optimize the expression
-generating `x`. While the compiler must assume that `black_box` performs any
+optimizations. While the compiler must assume that `black_box` performs any
 legal mutation of `x`, the programmer can rely on `black_box` not actually
 having any effect (other than inhibiting optimizations).
 
@@ -55,9 +54,9 @@ let a = foo(2);
 ```
 
 In the call to `foo(2)` the compiler is allowed to simplify the expression `2 +
-x` down to `4`. However, `4` must be materialized, for example, by storing it
-into memory, a register, etc. because `black_box` could try to read it, even
-though `4` is not read by anything afterwards.
+x` down to `4`. However, even though `4` is not read by anything afterwards, it
+must be computed and materialized, for example, by storing it into memory, a
+register, etc. because `black_box` could try to read it.
 
 ### Benchmarking `Vec::push`
 
