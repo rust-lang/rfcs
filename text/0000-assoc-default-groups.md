@@ -391,7 +391,8 @@ we consider the design of associated type defaults to be *finalized*.
 ## `default` specialization groups
 [default_groups]: #default-specialization-groups
 
-Note: Everything in this section assumes actual support for [specialization].
+Note: Overlapping implementations, where one is more specific than the other,
+requires actual support for [specialization].
 
 Now, you might be thinking: - *"Well, what if I __do__ need to assume that
 my defaulted associated type is what I said in a provided method,
