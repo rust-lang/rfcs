@@ -17,6 +17,7 @@
    in traits and their implementations which may be used to introduce
    atomic units of specialization
    (if anything in the group is specialized, everything must be).
+   These groups may be nested and form a [tree of cliques].
 
 # Motivation
 [motivation]: #motivation
@@ -652,40 +653,243 @@ specific implementations. With these singleton groups, you may assume
 the body of `Bar` in all other items in the same group; but it just
 happens to be the case that there are no other items in the group.
 
+### Nesting and a tree of cliques
+[tree of cliques]: #nesting-and-a-tree-of-cliques
+
+In the [summary], we alluded to the notion of groups being nested.
+However, thus far we have seen no examples of such nesting.
+This RFC does permit you do that. For example, you may write:
+
+```rust
+trait Foo {
+    default {
+        type Bar = usize;
+
+        fn alpha() -> Self::Bar {
+            0 // OK! In the same group, so we may assume `Self::Bar == usize`.
+        }
+
+        // OK; we can rely on `Self::Bar == usize`.
+        default const BETA: Self::Bar = 3;
+
+        default fn gamma() -> [Self::Bar; 4] {
+            // OK; we can depend on the underlying type of `Self::Bar`.
+            [9usize, 8, 7, 6]
+        }
+
+        /// This is rejected:
+        default fn delta() -> [Self::Bar; Self::BETA] {
+            // ERROR! we may not rely on not on `Self::BETA`'s value because
+            // `Self::BETA` is a sibling of `Self::gamma` which is not in the
+            // same group and is not an ancestor either.
+            [9usize, 8, 7]
+        }
+
+        // But this is accepted:
+        default fn delta() -> [Self::Bar; 3] {
+            // OK; we can depend on `Self::Bar == usize`.
+            [9, 8, 7]
+        }
+
+        default {
+            // OK; we can still depend on `Self::Bar == usize`.
+            const EPSILON: Self::Bar = 2;
+
+            fn zeta() -> [Self::Bar; Self::Epsilon] {
+                // OK; We can assume the value of `Self::EPSILON` because it
+                // is a sibling in the same group. We may also assume that
+                // `Self::Bar == usize` because it is an ancestor.
+                [42usize, 24]
+            }
+        }
+    }
+}
+
+struct Eta;
+struct Theta;
+struct Iota;
+
+impl Foo for Eta {
+    // We can override `gamma` without overriding anything else because
+    // `gamma` is the sole member of its sub-group. Note in particular
+    // that we don't have to override `alpha`.
+    fn gamma() -> [Self::Bar; 4] {
+        [43, 42, 41, 40]
+    }
+}
+
+impl Bar for Theta {
+    // Since `EPSILON` and `zeta` are in the same group; we must override
+    // them together. However, we still don't have to override anything
+    // in ancestral groups.
+    const EPSILON: Self::Bar = 0;
+
+    fn zeta() -> [Self::Bar; Self::Epsilon] {
+        []
+    }
+}
+
+impl Bar for Iota {
+    // We have overridden `Bar` which is in the root group.
+    // Since all other items are decendants of the same group as `Bar` is in,
+    // they are allowed to depend on what `Bar` is.
+    type Bar = u8;
+
+    ... // Definitions for all the other items elided for brevity.
+}
+```
+
+[clique]: https://en.wikipedia.org/wiki/Clique_(graph_theory)
+
+In graph theory, a set of a vertices, in a graph, for which each distinct pair
+of vertices is connected by a unique edge is said to form a [clique].
+What the snippet above encodes is a tree of such cliques. In other words,
+we can visualize the snippet as:
+
+```
+                            ┏━━━━━━━━━━━━━━━━━┓
+                            ┃ + type Bar      ┃
+              ┏━━━━━━━━━━━━━┃ + fn alpha      ┃━━━━━━━━━━━━━━┓
+              ┃             ┗━━━━━━━━━━━━━━━━━┛              ┃
+              ┃               ┃             ┃                ┃
+              ┃               ┃             ┃                ┃
+              ▼               ▼             ▼                ▼
+┏━━━━━━━━━━━━━━━┓    ┏━━━━━━━━━━━━━┓    ┏━━━━━━━━━━━━━┓    ┏━━━━━━━━━━━━━━━━━┓
+┃ + const Beta  ┃    ┃ + fn gamma  ┃    ┃ + fn delta  ┃    ┃ + const EPSILON ┃
+┗━━━━━━━━━━━━━━━┛    ┗━━━━━━━━━━━━━┛    ┗━━━━━━━━━━━━━┛    ┃ + fn zeta       ┃
+                                                           ┗━━━━━━━━━━━━━━━━━┛
+```
+
+Please pay extra attention to the fact that items in the same group may
+depend on each other's definitions as well as definitions of items that
+are ancestors (up the tree). The inverse implication holds for what you
+must override: if you override one item in a group, you must override
+all items in that groups and all items in sub-groups (recursively).
+As before, these limitations exist to preserve the soundness of the type system.
+
+Nested groups are intended primarily expected to be used when there is one
+associated type, for which you want to define a default, coupled with a bunch
+of functions which need to rely on the definition of the associated type.
+This is a good mechanism for API evolution in the sense that you can introduce
+a new associated type, rely on it in provided methods, but still perform
+no breaking change.
+
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 ## Grammar
 [grammar]: #grammar
 
-The production `trait_item` is changed from:
+Productions in this section which are not defined here are taken from
+[parser-lalr.y](https://github.com/rust-lang/rust/blob/master/src/grammar/parser-lalr.y).
+
+Given:
 
 ```
-trait_item
+trait_item : maybe_outer_attrs trait_item_leaf ;
+
+trait_item_leaf
 : trait_const
 | trait_type
 | trait_method
-| maybe_outer_attrs item_macro
+| item_macro
+;
+
+trait_const
+: CONST ident maybe_ty_ascription maybe_const_default ';'
+;
+
+trait_type : TYPE ty_param ';' ;
+
+trait_method : method_prefix method_common ';' | method_prefix method_provided ;
+method_prefix : maybe_unsafe | CONST maybe_unsafe | maybe_unsafe EXTERN maybe_abi ;
+method_provided : method_common inner_attrs_and_block ;
+method_common
+: FN ident generic_params fn_decl_with_self_allow_anon_params maybe_where_clause
 ;
 ```
 
-to:
+The production `trait_item` is changed into:
 
 ```
-trait_item
-: trait_default
+trait_item : maybe_outer_attrs trait_item_def ;
+
+trait_item_def
+: trait_default_group
+| trait_default_singleton
 | trait_const
 | trait_type
 | trait_method
-| maybe_outer_attrs item_macro
+| item_macro
 ;
 
-trait_default : DEFAULT '{' trait_item* '}' ;
+trait_default_singleton : DEFAULT trait_item ;
+trait_default_group : DEFAULT '{' trait_item* '}' ;
+
+trait_type : TYPE ty_param ('=' ty_sum)? ';' ;
 ```
 
-Associated type defaults are already in the grammar.
+Given:
+
+```
+impl_item : attrs_and_vis impl_item_leaf ;
+impl_item_leaf
+: item_macro
+| maybe_default impl_method
+| maybe_default impl_const
+| maybe_default impl_type
+;
+
+impl_const : item_const ;
+impl_type : TYPE ident generic_params '=' ty_sum ';' ;
+impl_method : method_prefix method_common ;
+
+method_common
+: FN ident generic_params fn_decl_with_self maybe_where_clause inner_attrs_and_block
+;
+```
+
+The production `impl_item` is changed into:
+
+```
+impl_item : attrs_and_vis impl_item_def ;
+impl_item_def
+: impl_default_singleton
+| impl_default_group
+| item_macro
+| impl_method
+| impl_const
+| impl_type
+;
+
+impl_default_singleton : DEFAULT impl_item ;
+impl_default_group : DEFAULT '{' impl_item* '}' ;
+```
+
+Note that associated type defaults are already in the grammar due to [RFC 192]
+but we have specified them in the grammar here nonetheless.
+
+Note also that `default default fn ..` as well as `default default { .. }` are
+intentionally recognized by the grammar to make life easier for macro authors
+even though writing `default default ..` should never be written directly.
+
+## Desugaring
+
+After macro expansion, wherever the production `trait_default_singleton` occurs,
+it is treated in all respects as, except for error reporting -- which is left up
+to implementations of Rust, and is desugared to `DEFAULT '{' trait_item '}'`.
+The same applies to `impl_default_singleton`.
+In other words: `default fn f() {}` is desugared to `default { fn f() {} }`.
 
 ## Semantics and type checking
+
+### Semantic restrictions on the syntax
+
+According to the [grammar], the parser will accept items inside `default { .. }`
+without a body. However, such an item will later be rejected during type checking.
+The parser will also accept visibility modifiers on `default { .. }`
+(e.g. `pub default { .. }`). However, such a visibility modifier will also be
+rejected by the type checker.
 
 ### Associated type defaults
 
@@ -756,26 +960,33 @@ With respect to type opacity, it is the same as that of `existential type`.
 ### Specialization groups
 
 Implementations of a `trait` as well as `trait`s themselves may now
-contain *"specialization default groups"* (henceforth: *"groups"*) as
-defined by the [grammar].
+contain *"specialization default groups"* (henceforth: *"group(s)"*)
+as defined by the [grammar].
 
-Such a group is considered an *atomic unit of specialization*
-and each item in such a group may be specialized / overridden.
-This means that if *one* item is overridden in a group,
-*all* items must be overridden in that group.
+A group forms a [clique] and is considered an *atomic unit of specialization*
+wherein each item can be specialized / overridden.
 
-Items inside a group may assume the definitions inside the group.
-Items outside of that group may not assume the definitions inside of it.
+Groups may contain other groups - such groups are referred to as
+*"nested groups"* and may be nested arbitrarily deeply.
+Items which are not in any group are referred to as *`0`-deep*.
+A group which occurs at the top level of a `trait` or an `impl`
+definition is referred to as a *`1`-deep* group.
+A group which is contained in a *`1`-deep* group is *`2`-deep*.
+If a group is nested `k` times it is *`k`-deep*.
 
-The parser will accept items inside `default { .. }` without a body.
-However, such an item will later be rejected during type checking.
+A group and its sub-groups form a *tree of cliques*.
+Given a group `$g` with items `$x_1, .. $x_n`, an item `$x_j` in `$g`
+can assume the definitions of `$x_i, ∀ i ∈ { 1..n }` as well as any
+definitions of items in `$f` where `$f` is an ancestor of `$g` (up the tree).
+Conversely, items in `$g` may not assume the definitions of items in
+descendant groups `$h_i` of `$g` as well as items which are grouped at all
+or which are in groups which are not ancestors of `$g`.
 
-#### Nesting
+If an `impl` block overrides one item `$x_j` in `$g`,
+it also has to override all `$x_i` in `$g` where `i ≠ j` as well as
+all items in groups `$h_i` which are descendants of `$g` (down the tree).
+Otherwise, items do not need to be overridden.
 
-There applies no restriction on the nesting of groups.
-This means that you may nest them arbitrarily.
-When nesting does occur, the atomicity applies as if the nesting were flattened.
-However, with respect to what may be assumed, the rule above applies.
 For example, you may write:
 
 ```rust
@@ -803,21 +1014,32 @@ impl Foo for () {
 }
 ```
 
-#### Linting redundant `default`s
+## Linting redundant `default`s
 
 When in source code (but not as a consequence of macro expansion),
-the following occurs, a warn-by-default lint (`redundant_default`) will be emitted:
+any of the following occurs, a warn-by-default lint (`redundant_default`)
+will be emitted:
 
 ```rust
-default {
-    ...
-
-    default $item
+    default default $item
 //  ^^^^^^^ warning: Redundant `default`
 //          hint: remove `default`.
 
-    ...
-}
+    default default {
+//  ^^^^^^^ warning: Redundant `default`
+//          hint: remove `default`.
+        ...
+    }
+
+    default {
+        ...
+
+        default $item
+//      ^^^^^^^ warning: Redundant `default`
+//              hint: remove `default`.
+
+        ...
+    }
 ```
 
 # Drawbacks
@@ -835,7 +1057,8 @@ The main drawbacks of this proposal are that:
    because you need to assume the type of an associated type default in a
    provided method, then the solution proposed in this RFC is less ergonomic.
 
-   However, it is the contention of this RFC that such needs will be less common.
+   However, it is the contention of this RFC that such needs will be less common
+   and the nesting mechanism is sufficiently ergonomic for such cases.
    This is discussed below.
 
 # Rationale and alternatives
@@ -856,7 +1079,14 @@ track which methods rely on which associated types as well as constants.
 However, we have historically had a strong bias toward being explicit
 in signatures about such things, avoiding to infer them.
 With respect to semantic versioning, such an approach may also cause
-surprises for crate authors and their dependents alike.
+surprises for crate authors and their dependents alike because it may
+be difficult at glance to decide what the dependencies are.
+This in turn reduces the maintainability and readability of code.
+
+One may also consider mechanisms such as `default(Bar, BAZ) { .. }` to give
+more freedom as to which dependency graphs may be encoded.
+However, in practice, we believe that the *tree of cliques* approach proposed
+in this RFC should be more than enough for practical applications.
 
 ## Consistency with associated `const`s
 
@@ -905,6 +1135,22 @@ Finally, `default { .. }` works well and allows the user a good deal of control
 over what can and can't be assumed and what must be specialized together.
 The grouping mechanism also composes well as seen in
 [the section where it is discussed][default_groups].
+
+## Tree of cliques is familiar
+
+The *"can depend on"* rule is similar to the rule used to determine whether a
+non-`pub` item in a module tree is accessible or not.
+Familiarity is a good tool to limit complexity costs.
+
+## Non-special treatment for methods
+
+In this RFC we haven't given methods any special treatment.
+We could do so by allowing methods to assume the underlying type
+of an associated type and still be overridable without having to override
+the type. However, this might lead to *semantic breakage* in the sense that
+the details of an `fn` may be tied to the definition of an associated type.
+When those details change, it may also be prudent to change the associated type.
+Default groups give users a mechanism to enforce such decisions.
 
 # Prior art
 [prior-art]: #prior-art
@@ -1184,18 +1430,6 @@ There are a few interesting things to note here:
 
    This question may be left as future work for another RFC or resolved
    during this RFC as the RFC is forward-compatible with such a change.
-
-2. Should groups be arbitrarily nestable?
-
-   On the one hand, permitting arbitrary nesting is simpler from a grammatical
-   point of view and makes the language simpler by having *fewer rules*.
-   It also allows the user more fine grained control.
-
-   On the other hand, it is not clear to what use such fine grained control
-   would be. Nested groups may also be less understandable and lead to confusion.
-
-   To resolve this issue, some usage experience may be required.
-   Thus, it might be a good idea to defer such a choice until after the RFC.
 
 # Future work
 
