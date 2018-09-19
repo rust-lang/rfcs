@@ -969,10 +969,10 @@ wherein each item can be specialized / overridden.
 Groups may contain other groups - such groups are referred to as
 *"nested groups"* and may be nested arbitrarily deeply.
 Items which are not in any group are referred to as *`0`-deep*.
-A group which occurs at the top level of a `trait` or an `impl`
-definition is referred to as a *`1`-deep* group.
-A group which is contained in a *`1`-deep* group is *`2`-deep*.
-If a group is nested `k` times it is *`k`-deep*.
+An item directly defined in a group which occurs at the top level of a
+`trait` or an `impl` definition is referred to as being *`1`-deep*.
+An item in a group which is contained in a *`1`-deep* group is *`2`-deep*.
+If an item is nested in `k` groups it is *`k`-deep*.
 
 A group and its sub-groups form a *tree of cliques*.
 Given a group `$g` with items `$x_1, .. $x_n`, an item `$x_j` in `$g`
