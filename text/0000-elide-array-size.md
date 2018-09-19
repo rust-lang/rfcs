@@ -29,7 +29,7 @@ reduce the strain, Rust allows you to omit the `42` in those type ascriptions.
 For example, you might write:
 
 ```rust
-const CONST_CHARS: [u8; _] = b"This is really a byte array";
+const CONST_CHARS: [u8; _] = *b"This is really a byte array";
 static STATIC_MASKS: [u8; _] = [0, 1, 3, 7, 15, 31, 63, 127, 255];
 
 fn main() {
