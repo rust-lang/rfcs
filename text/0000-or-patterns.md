@@ -416,7 +416,7 @@ You can also use `p | q` in:
 4. `fn` arguments:
 
    ```rust
-   fn foo(Ok(x) | Err(x): Result<u8, u8>) {
+   fn foo((Ok(x) | Err(x)): Result<u8, u8>) {
        ...
    }
    ```
@@ -501,15 +501,15 @@ block_match_clause : match_arm (block | block_expr) ;
 match_arm : maybe_outer_attrs top_pat (IF expr_nostruct)? FAT_ARROW ;
 ```
 
-For the patterns of `fn` arguments we now have:
-
-```rust
-param : top_pat ':' ty_sum ;
-```
-
 In other words, in all of the contexts where a pattern is currently accepted,
 the compiler will now accept pattern alternations of form `p | q` where
 `p` and `q` are arbitrary patterns.
+
+For the patterns of `fn` arguments we now have:
+
+```rust
+param : pat<no_top_alt> ':' ty_sum ;
+```
 
 For closures we now have:
 
@@ -835,7 +835,17 @@ There is support for or-patterns in [various lisp libraries][lisp_libs].
 
 1. Should we allow `top_pat` or `pat<allow_top_alt>` in `inferrable_param` such
    that closures permit `|Ok(x) | Err(x)|` without first wrapping in parenthesis?
+
    We defer this decision to stabilization as it may depend on experimentation.
+   Or current inclination is to keep the RFC as-is because the ambiguity is not
+   just for the compiler; for humans, it is likely also ambiguous and thus
+   harder to read.
+
+   This also applies to functions, which although do not look as ambiguous
+   benefit from better consistency with closures. With respect to function
+   arguments there's also the issue that not disambiguating with parenthesis
+   makes it less clear whether the type ascription applies to the or-pattern
+   as a whole or just the last alternative.
 
 2. Should the `pat` macro fragment specifier match `top_pat` in different
    Rust editions or should it match `pat<no_top_alt>` as currently specified?
