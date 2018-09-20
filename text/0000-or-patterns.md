@@ -423,27 +423,47 @@ You can also use `p | q` in:
 
    Here too, the pattern must be irrefutable.
 
+5. closure arguments:
+
+   ```rust
+   let closure = |(Ok(x) | Err(x))| x + 1;
+   ```
+
+   Notice that in this case, we have to wrap the pattern in parenthesis.
+   This restriction is currently enforced to avoid backtracking but may possibly
+   be lifted in the future based on other developments in the grammar.
+
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 ## Grammar
 
-To the pattern grammar we introduce the following alternative:
+We parameterize the `pat` grammar by the choice whether to allow top level
+`pat | pat`. We then change the pattern grammar to:
 
 ```rust
-pat : pat '|' pat
-    | ...
-    ;
+pat<allow_top_alt>
+: pat<allow_top_alt> '|' pat<allow_top_alt>
+| ...
+;
+
+pat<no_top_alt>
+: "(" pat<allow_top_alt> ")"
+| ...
+;
 ```
 
 Here `|` has the lowest precedence.
 In particular, the operator `@` binds more tightly than `|` does.
 Thus, `i @ p | q` associates as `(i @ p) | q` as opposed to `i @ (p | q)`.
 
+Note: `pat<T>` does not entail that the grammar of Rust is context sensitive
+because we "monomorphize" the parameterization below.
+
 We then introduce a production:
 
 ```rust
-top_pat : '|'? pat ;
+top_pat : '|'? pat<allow_top_alt> ;
 ```
 
 We then change the grammar of `let` statements to (as compared to [RFC 2175]):
@@ -490,6 +510,15 @@ param : top_pat ':' ty_sum ;
 In other words, in all of the contexts where a pattern is currently accepted,
 the compiler will now accept pattern alternations of form `p | q` where
 `p` and `q` are arbitrary patterns.
+
+For closures we now have:
+
+```rust
+inferrable_param : pat<no_top_alt> maybe_ty_ascription ;
+```
+
+Finally, `pat` macro fragment specifiers will also match the `pat<no_top_alt>`
+production as opposed to `pat<allow_top_alt>`.
 
 ### Error messages
 
@@ -685,6 +714,10 @@ In this RFC, we allow `p | q` inside patterns of `fn` arguments.
 The rationale for this is simply consistency with `let` which also permit
 these and did so before this RFC at the top level with [RFC 2175].
 
+## Macros and closures
+
+See the section on [unresolved] questions for a brief discussion.
+
 # Prior art
 [prior-art]: #prior-art
 
@@ -800,4 +833,16 @@ There is support for or-patterns in [various lisp libraries][lisp_libs].
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
-There are none.
+1. Should we allow `top_pat` or `pat<allow_top_alt>` in `inferrable_param` such
+   that closures permit `|Ok(x) | Err(x)|` without first wrapping in parenthesis?
+   We defer this decision to stabilization as it may depend on experimentation.
+
+2. Should the `pat` macro fragment specifier match `top_pat` in different
+   Rust editions or should it match `pat<no_top_alt>` as currently specified?
+   We defer such decisions to stabilization because it depends on the outcome
+   of crater runs to see what the extent of the breakage would be.
+
+The benefit of avoiding `pat<no_top_alt>` in as many places as possible would
+both be grammatical consistency and fewer surprises for uses.
+The drawbacks would be possible ambiguity or backtracking for closures and
+breakage for macros.
