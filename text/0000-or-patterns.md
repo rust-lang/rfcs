@@ -837,11 +837,11 @@ There is support for or-patterns in [various lisp libraries][lisp_libs].
    that closures permit `|Ok(x) | Err(x)|` without first wrapping in parenthesis?
 
    We defer this decision to stabilization as it may depend on experimentation.
-   Or current inclination is to keep the RFC as-is because the ambiguity is not
+   Our current inclination is to keep the RFC as-is because the ambiguity is not
    just for the compiler; for humans, it is likely also ambiguous and thus
    harder to read.
 
-   This also applies to functions, which although do not look as ambiguous
+   This also applies to functions which, although do not look as ambiguous,
    benefit from better consistency with closures. With respect to function
    arguments there's also the issue that not disambiguating with parenthesis
    makes it less clear whether the type ascription applies to the or-pattern
