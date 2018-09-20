@@ -387,6 +387,42 @@ want the same outcome as `foo @ 1 | foo @ 2 | foo @ 3`, you have to write
 `foo @ (1 | 2 | 3)` instead of writing `foo @ 1 | 2 | 3`.
 This is discussed in the [rationale][alternatives].
 
+You can also use `p | q` in:
+
+1. `if let` expressions:
+
+   ```rust
+   if let Foo::Bar | Foo::Quux(1 | 2) = some_computation() {
+       ...
+   }
+   ```
+
+1. `while let` expressions:
+
+   ```rust
+   while let Ok(1 | 2) | Err(3) = different_computation() {
+       ...
+   }
+   ```
+
+3. `let` statements:
+
+   ```rust
+   let Ok(x) | Err(x) = another_computation();
+   ```
+
+   In this case, the pattern must be irrefutable as `Ok(x) | Err(x)` is.
+
+4. `fn` arguments:
+
+   ```rust
+   fn foo(Ok(x) | Err(x): Result<u8, u8>) {
+       ...
+   }
+   ```
+
+   Here too, the pattern must be irrefutable.
+
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
@@ -443,6 +479,12 @@ nonblock_match_clause : match_arm (nonblock_expr | block_expr_dot) ;
 block_match_clause : match_arm (block | block_expr) ;
 
 match_arm : maybe_outer_attrs top_pat (IF expr_nostruct)? FAT_ARROW ;
+```
+
+For the patterns of `fn` arguments we now have:
+
+```rust
+param : top_pat ':' ty_sum ;
 ```
 
 In other words, in all of the contexts where a pattern is currently accepted,
@@ -591,10 +633,14 @@ Which implementation technique to use is left open to each Rust compiler.
 As for why the change as proposed in this RFC should be done,
 it is discussed in the [motivation].
 
+## Syntax
+
 Since we already use `|` for alternation at the top level, the only consistent
 operator syntax for alternations in nested patterns would be `|`.
 Therefore, there are not many design choices to make with respect to *how*
 this change should be done rather than *if*.
+
+## Precedence
 
 With respect to the precedence of `|`, we cannot interpret `i @ p | q`
 as `i @ (p | q)` because it is already legal to write `i @ p | j @ q`
@@ -610,6 +656,8 @@ disjunction in logic. In these fields, it is customary for multiplication and
 conjunction to bind more tightly. That is, we interpret `a * b + c` as
 `(a * b) + c` and not `a * (b + c)`. Similarly, we interpret `p ∧ q ∨ r`
 as `(p ∧ q) ∨ r` and not `p ∧ (q ∨ r)`.
+
+## Leading `|`
 
 The only real choice that we do have to make is whether the new addition to the
 pattern grammar should be `pat : .. | pat "|" pat ;` or if it instead should be
@@ -630,6 +678,12 @@ pattern:
 
 1. Libraries or tools such as `syn` will have *slightly* easier time parsing
    the grammar of Rust.
+
+## `fn` arguments
+
+In this RFC, we allow `p | q` inside patterns of `fn` arguments.
+The rationale for this is simply consistency with `let` which also permit
+these and did so before this RFC at the top level with [RFC 2175].
 
 # Prior art
 [prior-art]: #prior-art
