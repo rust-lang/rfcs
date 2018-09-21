@@ -199,7 +199,7 @@ local.
 
 Under this proposal, the orphan rules continue to work generally as they did
 before, with one notable exception; We will permit `impl<T>
-ForeignTrait<LocalType> for ForeignType<T>`. This is completley valid under the
+ForeignTrait<LocalType> for ForeignType<T>`. This is completely valid under the
 forward compatibility rules set in [RFC #1023]. We can demonstrate that this is
 the case with the following:
 
