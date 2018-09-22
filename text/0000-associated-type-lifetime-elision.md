@@ -6,8 +6,8 @@
 # Summary
 [summary]: #summary
 
-This RFC extends lifetime elision to associated types, treating associated
-types as output positions.
+This RFC extends lifetime elision to associated types, treating them as
+output positions using the existing rules.
 
 This is particularly helpful for the usual `IntoIterator` pattern:
 
@@ -116,7 +116,8 @@ There's just the single input-position lifetime, which the associated types will
 automatically now use.
 
 (Note how this is exactly the same elision you currently get in
-`fn(&Option<T>)->(&T, Iter<'_, T>)` and `fn(&mut Option<T>)->(&mut T, IterMut<'_, T>)`.)
+`fn(&Option<T>) -> (&T, Iter<'_, T>)` and
+`fn(&mut Option<T>) -> (&mut T, IterMut<'_, T>)`.)
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -171,43 +172,47 @@ experience demonstrates that this would be valuable, it can compatibly be added
 later, as it only enables things that this RFC leaves as errors.)
 
 Like in function return position, it's important to know when an associated type
-is using lifetime elision, so elided lifetime parameters must be marked with
-`'_`, such as `type Output = Ref<'_, T>;`.  Omitting a lifetime parameter, such
-as `type Output = Ref<T>;`, is an error.
+is using lifetime elision, so elided lifetime parameters (other than with `&`
+or `&mut`) must be marked with `'_`, such as `type Output = Ref<'_, T>;`.
+Omitting a lifetime parameter, such as `type Output = Ref<T>;`, is an error.
+(These are the same rules as those checked by the `elided_lifetimes_in_paths`
+lint, which is part of the `rust_2018_idioms` group.)
+
+This functionality will be available in the 2015 and following editions.
 
 Examples:
 
 ```rust
-impl Substr<u32> for &str { type Output = &str; }               // elided
-fn substr(s: &str, until: u32) -> &str;                         // fn analog
-impl<'a> Substr<u32> for &'a str { type Output = &'a str; }     // expanded
+impl Substr<u32> for &str { type Output = &str; }                // elided
+fn substr(s: &str, until: u32) -> &str;                          // fn analog
+impl<'a> Substr<u32> for &'a str { type Output = &'a str; }      // expanded
 
-impl Finder<&str> for u32 { type Output = &str; }               // elided
-fn finder(x: u32, y: &str) -> &str;                             // fn analog
-impl<'a> Finder<&'a str> for u32 { type Output = &'a str; }     // elided
+impl Finder<&str> for u32 { type Output = &str; }                // elided
+fn finder(x: u32, y: &str) -> &str;                              // fn analog
+impl<'a> Finder<&'a str> for u32 { type Output = &'a str; }      // expanded
 
-impl GetStr for u32 { type Output = &str; }                     // ILLEGAL
-fn get_str(x: u32) -> &str;                                     // fn analog
+impl GetStr for u32 { type Output = &str; }                      // ILLEGAL
+fn get_str(x: u32) -> &str;                                      // fn analog
 // No input position
 
-impl Frob<&str> for &str { type Output = &str; }                // ILLEGAL
-fn frob(x: &str, y: &str) -> &str;                              // fn analog
+impl Frob<&str> for &str { type Output = &str; }                 // ILLEGAL
+fn frob(x: &str, y: &str) -> &str;                               // fn analog
 // `Self` isn't special
 
-impl GetMut for &mut Foo { type Output = &mut Bar; }            // elided
-fn get_mut(x: &mut Foo) -> &mut Bar;                            // fn analog
-impl<'a> GetMut for &'a mut Foo { type Output = &'a mut Bar; }  // expanded
+impl GetMut for &mut Foo { type Output = &mut Bar; }             // elided
+fn get_mut(x: &mut Foo) -> &mut Bar;                             // fn analog
+impl<'a> GetMut for &'a mut Foo { type Output = &'a mut Bar; }   // expanded
 
-impl New for &mut [u8] { type Output = BufWriter<'_>; }         // elided
-fn new(buf: &mut [u8]) -> BufWriter<'_>;                        // fn analog
-impl<'a> New for &'a mut [u8] { type Output = BufWriter<'a>; }  // expanded
+impl New for &mut [u8] { type Output = BufWriter<'_>; }          // elided
+fn new(buf: &mut [u8]) -> BufWriter<'_>;                         // fn analog
+impl<'a> New for &'a mut [u8] { type Output = BufWriter<'a>; }   // expanded
 
-impl New for &mut [u8] { type Output = BufWriter; }             // ILLEGAL
+impl New for &mut [u8] { type Output = BufWriter; }              // ILLEGAL
 // Hidden lifetime parameter
 
-impl Two for &str { type A = &str; type B = &str; }             // elided
-fn two(x: &str) -> (&str, &str);                                // fn analog
-impl<'a> Two for &'a str { type A = &'a str; type B = &'a str; }// expanded
+impl Two for &str { type A = &str; type B = &str; }              // elided
+fn two(x: &str) -> (&str, &str);                                 // fn analog
+impl<'a> Two for &'a str { type A = &'a str; type B = &'a str; } // expanded
 ```
 
 # Drawbacks
@@ -226,10 +231,13 @@ the following doesn't work, though one might think it should:
 ```rust
 impl Foo<&str> for u32 {
     fn bar(self) -> &str; // ERROR: missing lifetime specifier
-    // help: this function's return type contains a borrowed value with an
-    // elided lifetime, but the lifetime cannot be derived from the arguments.
+    // help: this function's return type contains a borrowed value,
+    // but there is no value for it to be borrowed from
 }
 ```
+
+(The error message there is the one given today.  It's possible a more specific
+error could be produced, but that could happen with or without this RFC.)
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -240,8 +248,8 @@ as [this one](https://github.com/rust-lang/rust/issues/44524#issuecomment-408456
 > TL;DR: We should extend lifetime elision rather than elide lifetime declaration.
 
 It's possible that a different scheme could be better here.  But the input/output
-position meanings and corresponding rules fit very well, so it'd have to be much
-better to overcome the cost of having another ruleset to learn.
+position meanings and corresponding rules fit well, so it'd have to be
+non-trivially better to overcome the cost of having another ruleset to learn.
 
 This proposal covers almost all of the associated types with lifetimes in libcore.
 There are lots of `IntoIterator` cases, like we've already seen, as well as a
@@ -261,7 +269,7 @@ impl Iterator for Lines<'_> {
 }
 ```
 
-There are a bunch of cases in str/pattern.rs that don't elide, however.  Some
+There are a bunch of cases in `str/pattern.rs` that don't elide, however.  Some
 involve multiple lifetimes, so may never elide:
 
 ```rust
