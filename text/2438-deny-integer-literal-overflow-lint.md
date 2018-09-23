@@ -1,7 +1,7 @@
-- Feature Name: deny_integer_literal_overflow_lint
+- Feature Name: `deny_integer_literal_overflow_lint`
 - Start Date: 2018-05-10
-- RFC PR: (leave this empty)
-- Rust Issue: (leave this empty)
+- RFC PR: [rust-lang/rfcs#2438](https://github.com/rust-lang/rfcs/pull/2438)
+- Rust Issue: [rust-lang/rust#54502](https://github.com/rust-lang/rust/issues/54502)
 
 # Summary
 [summary]: #summary
