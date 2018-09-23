@@ -1,7 +1,7 @@
-- Feature Name: N/A
+- Feature Name: `rustfmt_stability`
 - Start Date: 2018-05-10
-- RFC PR: 
-- Rust Issue: 
+- RFC PR: [rust-lang/rfcs#2437](https://github.com/rust-lang/rfcs/pull/2437)
+- Rust Issue: [rust-lang/rust#54504](https://github.com/rust-lang/rust/issues/54504)
 
 # Summary
 [summary]: #summary
