@@ -298,6 +298,26 @@ type Foo = impl Bar;
 
 In addition, when documenting `impl Trait`, explanations of the feature would avoid type theoretic terminology (specifically "existential types") and prefer type inference language (if any technical description is needed at all).
 
+`impl Trait` type aliases may contain generic parameters just like any other type alias. The type alias must contain the same type parameters as its concrete type, except those implicitly captured in the scope (see [RFC 2071](https://github.com/rust-lang/rfcs/blob/master/text/2071-impl-trait-existential-types.md) for details).
+
+```rust
+// `impl Trait` type aliases may contain type parameters...
+#[derive(Debug)]
+struct DebugWrapper<T: Debug>(T);
+
+type Foo<T> = impl Debug;
+
+fn get_foo<T: Debug>(x: T) -> Foo<T> { DebugWrapper(x) }
+
+// ...and lifetime parameters (and so on).
+#[derive(Debug)]
+struct UnitRefWrapper<'a>(&'a ());
+
+type Bar<'a> = impl Debug;
+
+fn get_bar<'a>(y: &'a ()) -> Bar<'a> { UnitRefWrapper(y) }
+```
+
 ## Restricting compound `impl Trait` trait aliases
 The type alias syntax is more flexible than `existential type`, but for now we restrict the form to that equivalent to `existential type`. That means that, if `impl Trait` appears on the right-hand side of a type alias declaration, it must be the only type. The following compound type aliases, therefore, are initially forbidden:
 
