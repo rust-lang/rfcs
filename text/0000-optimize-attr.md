@@ -6,36 +6,36 @@
 # Summary
 [summary]: #summary
 
-This RFC introduces the `#[optimize]` attribute for controlling optimisation level on a per-item
+This RFC introduces the `#[optimize]` attribute for controlling optimization level on a per-item
 basis.
 
 # Motivation
 [motivation]: #motivation
 
-Currently, rustc has only a small number of optimisation options that apply globally to the
+Currently, rustc has only a small number of optimization options that apply globally to the
 crate. With LTO and RLIB-only crates these options become applicable to a whole-program, which
-reduces the ability to control optimisation even further.
+reduces the ability to control optimization even further.
 
 For applications such as embedded, it is critical, that they satisfy the size constraints. This
-means, that code must consciously pick one or the other optimisation level. Absence of a method to
-selectively optimise different parts of a program in different ways precludes users from utilising
+means, that code must consciously pick one or the other optimization level. Absence of a method to
+selectively optimize different parts of a program in different ways precludes users from utilising
 the hardware they have to the greatest degree.
 
-With a C toolchain selective optimisation is fairly easy to achieve by compiling the relevant
+With a C toolchain selective optimization is fairly easy to achieve by compiling the relevant
 codegen units (objects) with different options. In Rust ecosystem, where the concept of such units
 does not exist, an alternate solution is necessary.
 
-With the `#[optimize]` attribute it is possible to annotate the optimisation level of separate
-items, so that they are optimized differently from the global optimisation option.
+With the `#[optimize]` attribute it is possible to annotate the optimization level of separate
+items, so that they are optimized differently from the global optimization option.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 ## `#[optimize(size)]`
 
-Sometimes, optimisations are a trade-off between execution time and the code size. Some
-optimisations, such as loop unrolling increase code size many times on average (compared to
-original function size) for marginal performance benefits. In case such optimisation is not
+Sometimes, optimizations are a trade-off between execution time and the code size. Some
+optimizations, such as loop unrolling increase code size many times on average (compared to
+original function size) for marginal performance benefits. In case such optimization is not
 desirable…
 
 ```rust
@@ -59,7 +59,7 @@ opt-level=z`.
 
 ## `#[optimize(speed)]`
 
-Conversely, when one of the global optimisation options for code size is used (`-Copt-level=s` or
+Conversely, when one of the global optimization options for code size is used (`-Copt-level=s` or
 `-Copt-level=z`), profiling might reveal some functions that are unnecessarily “hot”. In that case,
 those functions may be annotated with the `#[optimize(speed)]` to make the compiler make its best
 effort to produce faster code.
@@ -72,17 +72,17 @@ fn banana() {
 ```
 
 Much like with `#[optimize(size)]`, the `speed` counterpart is also a hint and will likely not
-yield the same results as using the global optimisation option for speed.
+yield the same results as using the global optimization option for speed.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-The `#[optimize(size)]` attribute applied to an item or expression will instruct the optimisation
-pipeline to avoid applying optimisations that could result in a size increase and machine code
+The `#[optimize(size)]` attribute applied to an item or expression will instruct the optimization
+pipeline to avoid applying optimizations that could result in a size increase and machine code
 generator to generate code that’s smaller rather than faster.
 
-The `#[optimize(speed)]` attribute applied to an item or expression will instruct the optimisation
-pipeline to apply optimisations that are likely to yield performance wins and machine code
+The `#[optimize(speed)]` attribute applied to an item or expression will instruct the optimization
+pipeline to apply optimizations that are likely to yield performance wins and machine code
 generator to generate code that’s faster rather than smaller.
 
 The `#[optimize]` attributes are just a hint to the compiler and are not guaranteed to result in
@@ -99,8 +99,8 @@ function will propagate to other functions or closures defined within the body o
 It is an error to specify multiple incompatible `#[optimize]` options to a single item or
 expression at once.  A more explicit `#[optimize]` attribute overrides a propagated attribute.
 
-`#[optimize(speed)]` is a no-op when a global optimisation for speed option is set (i.e. `-C
-opt-level=1-3`). Similarly `#[optimize(size)]` is a no-op when a global optimisation for size
+`#[optimize(speed)]` is a no-op when a global optimization for speed option is set (i.e. `-C
+opt-level=1-3`). Similarly `#[optimize(size)]` is a no-op when a global optimization for size
 option is set (i.e. `-C opt-level=s/z`). `#[optimize]` attributes are no-op when no optimizations
 are done globally (i.e. `-C opt-level=0`). In all other cases the *exact* interaction of the
 `#[optimize]` attribute with the global optimization level is not specified and is left up to
@@ -119,7 +119,7 @@ For the LLVM backend, these attributes may be implemented in a following manner:
 `#[optimize(size)]` – explicit function attributes exist at LLVM level. Items with
 `optimize(size)` would simply apply the LLVM attributes to the functions.
 
-`#[optimize(speed)]` in conjunction with `-C opt-level=s/z` – use a global optimisation level of
+`#[optimize(speed)]` in conjunction with `-C opt-level=s/z` – use a global optimization level of
 `-C opt-level=2/3` and apply the equivalent LLVM function attribute (`optsize`, `minsize`) to all
 items which do not have an `#[optimize(speed)]` attribute.
 
@@ -128,16 +128,16 @@ items which do not have an `#[optimize(speed)]` attribute.
 
 * Not all of the alternative codegen backends may be able to express such a request, hence the
 “this is a hint” note on the `#[optimize]` attribute.
-    * As a fallback, this attribute may be implemented in terms of more specific optimisation hints
+    * As a fallback, this attribute may be implemented in terms of more specific optimization hints
       (such as `inline(never)`, the future `unroll(never)` etc).
 
 # Rationale and alternatives
 [alternatives]: #alternatives
 
 Proposed is a very semantic solution (describes the desired result, instead of behaviour) to the
-problem of needing to sometimes inhibit some of the trade-off optimisations such as loop unrolling.
+problem of needing to sometimes inhibit some of the trade-off optimizations such as loop unrolling.
 
-Alternative, of course, would be to add attributes controlling such optimisations, such as
+Alternative, of course, would be to add attributes controlling such optimizations, such as
 `#[unroll(no)]` on top of a loop statement. There’s already precedent for this in the `#[inline]`
 annotations.
 
@@ -148,15 +148,15 @@ attributes for people who know *why* the code is not satisfactory.
 Furthermore, currently `optimize` is able to do more than any possible combination of targeted
 attributes would be able to such as influencing the instruction selection or switch codegen
 strategy (jump table, if chain, etc.) This makes the attribute useful even in presence of all the
-targeted optimisation knobs we might have in the future.
+targeted optimization knobs we might have in the future.
 
 # Prior art
 [prior-art]: #prior-art
 
 * LLVM: `optsize`, `optnone`, `minsize` function attributes (exposed in Clang in some way);
-* GCC: `__attribute__((optimize))` function attribute which allows setting the optimisation level
+* GCC: `__attribute__((optimize))` function attribute which allows setting the optimization level
 and using certain(?) `-f` flags for each function;
-* IAR: Optimisations have a check box for “No size constraints”, which allows compiler to go out of
+* IAR: Optimizations have a check box for “No size constraints”, which allows compiler to go out of
 its way to optimize without considering the size trade-off. Can only be applied on a
 per-compilation-unit basis. Enabled by default, as is appropriate for a compiler targeting
 embedded use-cases.
@@ -166,8 +166,8 @@ embedded use-cases.
 
 * Should we also implement `optimize(always)`? `optimize(level=x)`?
     * Left for future discussion, but should make sure such extension is possible.
-* Should there be any way to specify what global optimisation for speed level is used in
-  conjunction with the optimisation for speed option (e.g. `-Copt-level=s3` could be equivalent to
+* Should there be any way to specify what global optimization for speed level is used in
+  conjunction with the optimization for speed option (e.g. `-Copt-level=s3` could be equivalent to
   `-Copt-level=3` and `#[optimize(size)]` on the crate item);
     * This may matter for users of `#[optimize(speed)]`.
 * Are the propagation and `unused_attr` approaches right?
