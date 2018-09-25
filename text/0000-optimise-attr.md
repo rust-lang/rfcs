@@ -77,22 +77,27 @@ yield the same results as using the global optimisation option for speed.
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-The `#[optimize(size)]` attribute applied to an item will instruct the optimisation pipeline to
-avoid applying optimisations that could result in a size increase and machine code generator to
-generate code that’s smaller rather than faster.
+The `#[optimize(size)]` attribute applied to an item or expression will instruct the optimisation
+pipeline to avoid applying optimisations that could result in a size increase and machine code
+generator to generate code that’s smaller rather than faster.
 
-The `#[optimize(speed)]` attribute applied to an item will instruct the optimisation pipeline to
-apply optimisations that are likely to yield performance wins and machine code generator to
-generate code that’s faster rather than smaller.
+The `#[optimize(speed)]` attribute applied to an item or expression will instruct the optimisation
+pipeline to apply optimisations that are likely to yield performance wins and machine code
+generator to generate code that’s faster rather than smaller.
 
 The `#[optimize]` attributes are just a hint to the compiler and are not guaranteed to result in
 any different code.
 
 If an `#[optimize]` attribute is applied to some grouping item (such as `mod` or a crate), it
-propagates transitively to all items defined within the grouping item.
+propagates transitively to all items defined within the grouping item. Note, that a function is
+also a “grouping” item for the purposes of this RFC, and `#[optimize]` attribute applied to a
+function will propagate to other functions or closures defined within the body of the function.
 
-It is an error to specify multiple incompatible `#[optimize]` options to a single item at once.
-A more explicit `#[optimize]` attribute overrides a propagated attribute.
+`#[optimize]` attribute may also be applied to a closure expression using the currently unstable
+`stmt_expr_attributes` feature.
+
+It is an error to specify multiple incompatible `#[optimize]` options to a single item or
+expression at once.  A more explicit `#[optimize]` attribute overrides a propagated attribute.
 
 `#[optimize(speed)]` is a no-op when a global optimisation for speed option is set (i.e. `-C
 opt-level=1-3`). Similarly `#[optimize(size)]` is a no-op when a global optimisation for size
@@ -100,6 +105,12 @@ option is set (i.e. `-C opt-level=s/z`). `#[optimize]` attributes are no-op when
 are done globally (i.e. `-C opt-level=0`). In all other cases the *exact* interaction of the
 `#[optimize]` attribute with the global optimization level is not specified and is left up to
 implementation to decide.
+
+`#[optimize]` attribute applied to non function-like items (such as `struct`) or non function-like
+expressions (i.e. not closures) is considered “unused” as of this RFC and should fire the
+`unused_attribute` lint (unless the same attribute was used for a function-like item or expression,
+via e.g.  propagation). Some future RFC may assign some behaviour to this attribute with respect to
+such definitions.
 
 # Implementation approach
 
@@ -159,3 +170,4 @@ embedded use-cases.
   conjunction with the optimisation for speed option (e.g. `-Copt-level=s3` could be equivalent to
   `-Copt-level=3` and `#[optimize(size)]` on the crate item);
     * This may matter for users of `#[optimize(speed)]`.
+* Are the propagation and `unused_attr` approaches right?
