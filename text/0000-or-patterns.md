@@ -579,6 +579,11 @@ The particular design of such an error message is left open to implementations.
    + the type of any two bindings with the same name in `p` and `q` do not unify
      with respect to types or binding modes.
 
+   [type coercions]: https://doc.rust-lang.org/reference/type-coercions.html
+
+   Unification of types is in all instances aforementioned exact and
+   implicit [type coercions] do not apply.
+
 2. When type checking an expression `match e_s { a_1 => e_1, ... a_n => e_n }`,
    for each match arm `a_i` which contains a pattern of form `p_i | q_i`,
    the pattern `p_i | q_i` is considered ill formed if,
