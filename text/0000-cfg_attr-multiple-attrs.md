@@ -61,14 +61,17 @@ configuration predicate.
 It is written as `cfg_attr` followed by `(`, a comma separated metaitem
 sequence, and then `)` The metaitem sequence contains one or more metaitems.
 The first is a conditional predicate. The rest are metaitems that are also
-attributes. Trailing commas are permitted. The following list are all allowed:
+attributes. Trailing commas after attributes are permitted. The following list
+are all allowed:
 
 * `cfg_attr(predicate, attr)`
 * `cfg_attr(predicate, attr_1, attr_2)`
 * `cfg_attr(predicate, attr,)`
 * `cfg_attr(predicate, attr_1, attr_2,)`
-* `cfg_attr(predicate)`
 * `cfg_attr(predicate,)`
+
+> Note: `cfg_attr(predicate)` is not allowed. That comma is semantically
+> distinct from the commas following attributes, so we require it.
 
 When the configuration predicate is true, this attribute expands out to be an
 attribute for each attribute metaitem. For example, the following module will
