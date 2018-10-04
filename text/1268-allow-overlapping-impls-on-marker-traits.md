@@ -1,4 +1,4 @@
-- Feature Name: Allow overlapping impls for marker traits
+- Feature Name: `overlapping_marker_traits`
 - Start Date: 2015-09-02
 - RFC PR: [rust-lang/rfcs#1268](https://github.com/rust-lang/rfcs/pull/1268)
 - Rust Issue: [rust-lang/rust#29864](https://github.com/rust-lang/rust/issues/29864)
