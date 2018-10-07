@@ -433,6 +433,19 @@ You can also use `p | q` in:
    This restriction is currently enforced to avoid backtracking but may possibly
    be lifted in the future based on other developments in the grammar.
 
+6. macros by example:
+
+   ```rust
+   macro_rules! foo {
+       ($p:pat) => { ... }
+   }
+
+   foo!((Ok(x) | Err(x)));
+   ```
+
+   Here we must wrap the pattern in parenthesis since `$p:pat | $q:pat` is
+   already legal in patterns.
+
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
