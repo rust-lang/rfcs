@@ -1,7 +1,7 @@
 - Feature Name: `or_patterns`
 - Start Date: 2018-08-29
-- RFC PR: _
-- Rust Issue: _
+- RFC PR: [rust-lang/rfcs#2535](https://github.com/rust-lang/rfcs/pull/2535)
+- Rust Issue: [rust-lang/rust#54883](https://github.com/rust-lang/rust/issues/54883)
 
 # Summary
 [summary]: #summary
