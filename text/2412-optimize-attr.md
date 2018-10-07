@@ -1,7 +1,7 @@
-- Feature Name: optimize_attr
+- Feature Name: `optimize_attr`
 - Start Date: 2018-03-26
-- RFC PR: (leave this empty)
-- Rust Issue: (leave this empty)
+- RFC PR: [rust-lang/rfcs#2412](https://github.com/rust-lang/rfcs/pull/2412)
+- Rust Issue: [rust-lang/rust#54882](https://github.com/rust-lang/rust/issues/54882)
 
 # Summary
 [summary]: #summary
