@@ -1,7 +1,7 @@
-- Feature Name: cfg_attr_multi
+- Feature Name: `cfg_attr_multi`
 - Start Date: 2018-09-10
-- RFC PR: 
-- Rust Issue: 
+- RFC PR: [rust-lang/rfcs#2539](https://github.com/rust-lang/rfcs/pull/2539)
+- Rust Issue: [rust-lang/rust#54881](https://github.com/rust-lang/rust/issues/54881)
 
 # Summary
 [summary]: #summary
