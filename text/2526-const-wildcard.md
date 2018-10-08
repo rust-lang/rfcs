@@ -1,7 +1,7 @@
 - Feature Name: `const_wildcard`
 - Start Date: 2018-08-18
-- RFC PR: (leave this empty)
-- Rust Issue: (leave this empty)
+- RFC PR: [rust-lang/rfcs#2526](https://github.com/rust-lang/rfcs/pull/2526)
+- Rust Issue: [rust-lang/rust#54912](https://github.com/rust-lang/rust/issues/54912)
 
 # Summary
 [summary]: #summary
