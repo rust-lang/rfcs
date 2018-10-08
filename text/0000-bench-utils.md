@@ -126,21 +126,22 @@ The
 
 ```
 mod core::hint {
-    /// An _unknown_ unsafe function that returns `x`.
+    /// An _unknown_ function that returns `x`.
     pub fn black_box<T>(x: T) -> T;
 }
 ```
 
-is an _unknown_ function that can perform any valid operation on `x` that Rust
-is allowed to perform without introducing undefined behavior in the calling
-code. You can rely on `black_box` being a `NOP` just returning `x`, but the
-compiler will optimize under the pessimistic assumption that `black_box` might
-do anything with the data it got.
+hint is a `NOP` that returns `x`. It behaves like an _unknown_ function that can
+perform any valid operation on `x` that Rust is allowed to perform without
+introducing undefined behavior in the calling code.
+
+Note: in practice this means that the compiler will optimize under the
+pessimistic assumption that `black_box` might do anything with the data it got.
 
 # Drawbacks
 [drawbacks]: #drawbacks
 
-TBD.
+Slightly increases the surface complexity of `libcore`.
 
 # Rationale and alternatives
 [alternatives]: #alternatives
