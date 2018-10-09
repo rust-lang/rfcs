@@ -72,6 +72,8 @@ are allow-by-default. These may experience radical changes, however they will ne
 
 Pre-1.0 we may also flush out all of the deprecated lints.
 
+The configuration file for clippy, clippy.toml, is not stabilized in this RFC. Instead, we propose to require clippy.toml users set a `clippy_toml_is_unstable_and_may_go_away` option.
+
 ## Lint audit and categories
 
 A couple months ago we did a lint audit to recategorize all the Clippy lints. The [Reference-Level explanation below][cat] contains a list
