@@ -74,6 +74,8 @@ Pre-1.0 we may also flush out all of the deprecated lints.
 
 The configuration file for clippy, clippy.toml, is not stabilized in this RFC. Instead, we propose to require clippy.toml users set a `clippy_toml_is_unstable_and_may_go_away` option.
 
+The interface and existence of `cargo-clippy` is also not stabilized in this RFC. We will continue shipping it with rustup, but it may be replaced in the future with a combined `cargo lint` command.
+
 ## Lint audit and categories
 
 A couple months ago we did a lint audit to recategorize all the Clippy lints. The [Reference-Level explanation below][cat] contains a list
