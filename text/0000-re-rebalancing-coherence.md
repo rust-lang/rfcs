@@ -63,18 +63,18 @@ local or not has nothing to do with type parameters. Given `trait Foo<T, U>`,
 
 Local Type: A struct, enum, or union which was defined in the current crate.
 This is not affected by type parameters. `struct Foo` is considered local, but
-`Vec<Foo>` is not. `LocalType<ForeignType>` is local. Type aliases do not affect
-locality.
+`Vec<Foo>` is not. `LocalType<ForeignType>` is local. Type aliases and trait
+aliases do not affect locality.
 
 Covered Type: A type which appears as a parameter to another type. For example,
-`T` is uncovered, but `Vec<T>` is covered. This is only relevant for type
-parameters.
+`T` is uncovered, but the `T` in `Vec<T>` is covered. This is only relevant for
+type parameters.
 
 Blanket Impl: Any implementation where a type appears uncovered. `impl<T> Foo
 for T`, `impl<T> Bar<T> for T`, `impl<T> Bar<Vec<T>> for T`, and `impl<T> Bar<T>
 for Vec<T>` are considered blanket impls. However, `impl<T> Bar<Vec<T>> for
-Vec<T>` is not a blanket impl, as all types which appear in this impl are
-covered by `Vec`.
+Vec<T>` is not a blanket impl, as all instances of `T` which appear in this impl
+are covered by `Vec`.
 
 Fundamental Type: A type for which you cannot add a blanket impl backwards
 compatibly. This includes `&`, `&mut`, and `Box`. Any time a type `T` is
@@ -93,7 +93,8 @@ implementation to use.
 In languages without coherence, the compiler has to have some way to choose
 which implementation to use when multiple implementations could apply. Scala
 does this by having complex scope resolution rules for "implicit" parameters.
-Haskell does this by picking one at random.
+Haskell (when a discouraged flag is enabled) does this by picking an impl
+arbitrarily.
 
 Rust's solution is to enforce that there is only one impl to choose from at all.
 While the rules required to enforce this are quite complex, the result is easy
