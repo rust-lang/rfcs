@@ -56,7 +56,7 @@ fn foo(x: i32) -> i32{
 let a = foo(2);
 ```
 
-In this example, the compiler simplifies the expression `2 + x` down to `4`.
+In this example, the compiler may simplify the expression `2 + x` down to `4`.
 However, even though `4` is not read by anything afterwards, it must be computed
 and materialized, for example, by storing it into memory, a register, etc.
 because the current Rust implementation assumes that `black_box` could try to
