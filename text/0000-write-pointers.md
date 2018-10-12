@@ -259,9 +259,8 @@ impl WriteOnly {
 ## Rules of `&uninit T`
 
 `&uninit T` should follow some rules in so that is is easy to reason about `&uninit T` locally and maintain soundness
-- `&uninit T` follows the same rules as `&mut T` for the borrow checker
+- `&uninit T` should be an exclusive pointer, similar to how `&mut T` is an exclusive pointer
 - `&uninit T` can only be assigned to once
-    - After being written to `&uninit T` are promoted to a `&mut T`
 - Writing does not drop old value.
     - Otherwise, it would not handle writing to uninitialized memory 
     - More importantly, dropping requires at least one read, which is not possible with a write-only reference
@@ -278,7 +277,6 @@ x.e = 10.0;
 init_u32(&uninit x.d); // fine, x.d is completely uninitialized.
 ```
 - Functions and closures that take a `&uninit T` argument must initialize it before returning
-    - You cannot return an `&uninit T`
     - because of this rule, `T` cannot resolve to `&uninit _` in any case, because it is impossible to parametrically initialize the `&uninit`
 - You can take a `&uninit T` on any `T` that represents uninitialized memory, for example: only the first is ok.
 ```Rust
@@ -298,7 +296,7 @@ init(&uninit x); // this function will overwrite, but not drop to the old value 
 - Writing does not drop old value.
     - Dropping requires at least one read, which is not possible with a write-only reference
 - You can take a `&out T` on any `T: Copy`
-    - because destructors are never run on write, `T: Copy` is necessary to guarantee no custom destructors. This bound can be changed once negative trait bounds land, then we can have `T: !Drop`. Changing from `T: Copy` to `T: !Drop` will be backwards compatible, so we can move forward with just a `T: Copy` bound for now.
+    - because destructors are never run on write, `T: Copy` is necessary to guarantee no custom destructors.
 
 ## Coercion Rules
 
@@ -325,11 +323,6 @@ init(&uninit x); // this function will overwrite, but not drop to the old value 
 
  foo_mut.0 = 10; // fine, foo_mut is mutable
  ```
-
-## Casting Rules
-
-`*const T` - // no change \
-`*mut T` - `&mut T`, `&out T`, `&uninit T`
 
 ## `self`
 
@@ -416,12 +409,13 @@ But this would not be able to replace placement new as it can't handle `&uninit 
 
 Out pointers in C++, (not exactly the same, but similar idea)
 
-`&out T` in  C#
+`out T` in  C#
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
  - What is the correct bounds for `T` in `&out T`? conservatively, `T: Copy` works and is sound. But as [@TechnoMancer](https://internals.rust-lang.org/u/TechnoMancer) pointed out, `T: !Drop` is not the correct bound. For example, `Wrapper(Vec<String>)`, clearly cannot be overwritten safely, because `Vec<String>`, must drop do deallocate the `Vec`, but `Wrapper` itself does not implement drop. Therefore either a new trait is needed (but unwanted), or we must keep the `Copy` bound.
+     - On this note should we even have a bound on `T` for `&out T`, it does not break memory safety to remove the `Copy` bound, but may cause logic errors. So this error could be demoted to an error-by-default-lint instead.
  - Should we introduce a `*out T` raw pointer, that does not drop its value upon write, for all `T: Copy`.
      - `&out T` coerces to `*out T`
      - no reading from `*out T`
@@ -457,7 +451,15 @@ edit 6:
 
 added the constraint that no type parameter `T` can resolve to `&uninit _`, due to [@ExpHP](https://github.com/ExpHP)'s insights
 
+edit 7:
+
+Fixed problems listed by [@matthewjasper](https://github.com/matthewjasper) in the [review](https://github.com/rust-lang/rfcs/pull/2534/files/d7b9e1397f2b4851828c0937c4e4ad07ffe4d693)
+
+Removed comment about `!Drop` bound for `&out T`, because it is incorrect.
+
+Removed the Casting Rules Section, because it was wrong, instead to convert raw pointers to references, use a reborrow. for example if `x: *mut T`, then `unsafe { &out *x }` will turn it into an `&out T`.
+
 ---
 I would like to thank all the people who helped refine this proposal to its current state: [@rkruppe](https://internals.rust-lang.org/u/rkruppe), [@earthengine](https://internals.rust-lang.org/u/earthengine),  [@gbutler](https://internals.rust-lang.org/u/gbutler),
 and [@TechnoMancer](https://internals.rust-lang.org/u/TechnoMancer) in the Pre-RFC, and 
-[@cramertj](https://github.com/cramertj), [@ExpHP](https://github.com/ExpHP) in the RFC thank you!
+[@cramertj](https://github.com/cramertj), [@ExpHP](https://github.com/ExpHP), and [@matthewjasper](https://github.com/matthewjasper) in the RFC thank you!
