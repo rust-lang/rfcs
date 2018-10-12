@@ -422,6 +422,7 @@ Out pointers in C++, (not exactly the same, but similar idea)
  - Should we introduce a trait `OverwriteSafe`, which is auto-implemented (like `Send` and `Sync`) where all types `T` are `OverwriteSafe` unless, and use this as the bound for `&out T`
     - `T: Drop`
     - one of `T`'s fields is not `OverwriteSafe`
+ - We can use drop flags to check when a variable has been initialized, and use that information to allow conditional initialization. But should we do this?
 ---
 
 edit:
@@ -458,6 +459,8 @@ Fixed problems listed by [@matthewjasper](https://github.com/matthewjasper) in t
 Removed comment about `!Drop` bound for `&out T`, because it is incorrect.
 
 Removed the Casting Rules Section, because it was wrong, instead to convert raw pointers to references, use a reborrow. for example if `x: *mut T`, then `unsafe { &out *x }` will turn it into an `&out T`.
+
+Added an unresolved question, about use of drop flags to allow for conditional initialization.
 
 ---
 I would like to thank all the people who helped refine this proposal to its current state: [@rkruppe](https://internals.rust-lang.org/u/rkruppe), [@earthengine](https://internals.rust-lang.org/u/earthengine),  [@gbutler](https://internals.rust-lang.org/u/gbutler),
