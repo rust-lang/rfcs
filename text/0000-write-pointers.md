@@ -372,7 +372,7 @@ out_bar_panics(&out x); // when we take a &out, we are asserting that the old va
 
 ## `T: !Drop` for `&out T`
 
-Once negative trait bounds become stable, the bounds for `&out T` will change to `T: !Drop`. But this does not seem like the correct bound, see [here](#unresolved-questions) for why.
+If negative trait bounds become stable, the bounds for `&out T` will change to `T: !Drop`. But this does not seem like the correct bound, see [here](#unresolved-questions) for why.
 
 ## Allow Drop types to be partially initialized
 
