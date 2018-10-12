@@ -51,7 +51,7 @@ union Example3<T: Trait3> {
 
 // Rejected
 union Example4<T> {
-    // `T` might have drop glue, and then `Cell<T>` would as well.
+    // `T` might have drop glue, and then `RefCell<T>` would as well.
     f1: RefCell<T>,
 }
 trait Trait5 { type Assoc; }
