@@ -87,7 +87,7 @@ if condition {
 }
 ```
 ```Rust
-let x: Foo;
+let mut x: Foo;
 let condition = ...;
 
 while condition {
@@ -95,7 +95,7 @@ while condition {
 }
 ```
 ```Rust
-let x: Foo;
+let mut x: Foo;
 
 for ... {
     x.a = 12; // Error: Conditional partial initialization is not allowed
