@@ -353,9 +353,11 @@ simple as it gets.
 [prior-art]: #prior-art
 
 I do not know of any language combining initialization tracking and destructors
-with unions: C++ does not have destructors for unions, and it does not track
-whether fields of a data structures are initialized to (dis)allow references or
-moves.
+with unions: C++ [never runs destructors for fields of unions][cpp_union_drop],
+and it does not track whether fields of a data structures are initialized to
+(dis)allow references or moves.
+
+[cpp_union_drop]: https://en.cppreference.com/w/cpp/language/union
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
