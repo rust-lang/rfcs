@@ -29,7 +29,7 @@ two examples:
   type `i32`) and `&b` (of type `&LargeType`). You want to find the first
   element of your set that is larger than `(a, b)`. If `LargeType: Clone`, this
   can be done with `set.range(&(a, b.clone()))` but might be expensive.
-- your set is of type `BTreeSet<(i32, SomeWeirdType)` and you want to iterate
+- your set is of type `BTreeSet<(i32, SomeWeirdType)>` and you want to iterate
   over all pairs whose first coordinate is at least `5`. If you could construct
   a value `b` that is smaller than every other value of type `SomeWeirdType`,
   you could do this with `set.range(&(5, b))`. But constructing such a `b`
@@ -194,7 +194,7 @@ impl<T> BTreeSet<T> {
 impl<K, V> BTreeMap<K, V> {
     fn range_by<'a, F>(&self, f: F) -> Range<K, V>
     where
-        F: FnMut(&'a T) -> std::cmp::Ordering
+        F: FnMut(&'a K) -> std::cmp::Ordering
 
     fn range_by_mut<'a, F>(&mut self, f: F) -> RangeMut<K, V>
     where
