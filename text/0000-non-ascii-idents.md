@@ -142,6 +142,17 @@ These are the three different naming conventions and how their corresponding lin
 
 Note: Scripts with upper- and lowercase variants ("bicameral scripts") behave similar to ASCII. Scripts without this distinction ("unicameral scripts") are also usable but all identifiers look the same regardless if they refer to a type, variable or constant. Underscores can be used to separate words in unicameral scripts even in UpperCamelCase contexts.
 
+## Reusability
+
+The code used for implementing the various lints and checks will be released to crates.io. This includes:
+
+ - Testing validity of an identifier
+ - Testing for `less_used_codepoints` ([UTS #39 Section 3.1][TR39Allowed])
+ - Script identification and comparison for `mixed_script_detection`  ([UTS #39 Section 5.2][TR39RestrictionLevel])
+ - `skeleton(X)` algorithm for confusable detection ([UTS #39 Section 4][TR39Confusable])
+
+
+
 ## Conformance Statement
 
 * UAX31-C1: The Rust language conforms to the Unicode® Standard Annex #31 for Unicode Version 10.0.0.
