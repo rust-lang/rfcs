@@ -220,7 +220,7 @@ in the following example:
 fn foo(bar: bool);
 ```
 
-Note that this does not work in all situations (for example closures) and might invole even
+Note that this does not work in all situations (for example closures) and might involve even
 more complexity in user's code than simply allowing formal function parameter attributes.
 
 ## Impact
