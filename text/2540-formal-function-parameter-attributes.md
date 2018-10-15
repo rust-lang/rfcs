@@ -100,7 +100,7 @@ fn foo(#[unused] self, ..) { .. }
 fn foo(#[unused] &self, ..) { .. }
 fn foo(#[unused] &mut self, ..) { .. }
 
-// Closures & Lamdas
+// Closures
 |#[unused] x| { .. }
 ```
 
@@ -162,7 +162,7 @@ constructions like the following will become legal.
 - Function definitions
 - Method definitions
 - Trait function declarations and defnitions (with or without default impl)
-- Lambda & closure definitions
+- Closure definitions
 
 ### Example: A single attributed parameter for function decl or definition
 
@@ -196,7 +196,7 @@ fn foo(#[bar(Hello)] baz: bool);
 fn bar(#[qux(qiz = World)] baz: bool);
 ```
 
-### Example: Lambdas & closures
+### Example: Closures
 
 ```rust
 let mut v = [5, 4, 1, 3, 2];
