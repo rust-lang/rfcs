@@ -117,6 +117,8 @@ The lint is triggered by identifiers that contain a codepoint that is not part o
 
 Note: New Unicode versions update the set of allowed codepoints. Additionally the compiler authors may decide to allow more codepoints or warn about those that have been found to cause confusion.
 
+For reference, a list of all the code points allowed by this lint can be found [here][unicode-set-allowed], with the script group mentioned on the right.
+
 ## Mixed script detection
 
 A new `mixed_script_idents` lint is added to the compiler. The default setting is to `warn`.
@@ -124,6 +126,23 @@ A new `mixed_script_idents` lint is added to the compiler. The default setting i
 The lint is triggered by identifiers that do not qualify for the "Moderately Restrictive" identifier profile specified in [Unicode® Technical Standard #39 Unicode Security Mechanisms Section 5.2 Restriction-Level Detection][TR39RestrictionLevel].
 
 Note: The definition of "Moderately Restrictive" can be changed by future versions of the Unicode standard to reflect changes in the natural languages used or for other reasons.
+
+## Global mixed script detection with confusables
+
+As an additional measure, we try to detect cases where a codebase primarily using a certain script has identifiers from a different script confusable with that script.
+
+During `mixed_script_idents` computation, keep track of how often identifiers from various script groups crop up. If an identifier is from a less-common script group (say, <1% of identifiers), _and_ it is entirely confusable with the majority script in use (e.g. the string `"арр"` or `"роре"` in Cyrillic)
+
+This can trigger `confusable_idents`, `mixed_script_idents`, or a new lint.
+
+We identify sets of characters which are entirely confusable: For example, for Cyrillic-Latin, we have `а, е, о, р, с, у, х, ѕ, і, ј, ԛ, ԝ, ѐ, ё, ї, ӱ, ӧ, ӓ, ӕ, ӑ` amongst the lowercase letters (and more amongst the capitals). This list likely can be programmatically derived from the confusables data that Unicode already has. It may be worth filtering for exact confusables. For example, Cyrillic, Greek, and Latin have a lot of confusables that are almost indistinguishable in most fonts, whereas `ھ` and `ס` are noticeably different-looking from `o` even though they're marked as a confusables.
+
+The main confusable script pairs we have to worry about are Cyrillic/Latin/Greek, Armenian/Ethiopic, and a couple Armenian characters mapping to Greek/Latin. We can implement this lint conservatively at first by dealing with a blacklist of known confusables for these script pairs, and expand it if there is a need.
+
+There are many confusables _within_ scripts -- Arabic has a bunch of these as does Han (both with other Han characters and and with kana), but since these are within the same language group this is outside the scope of this RFC. Such confusables are equivalent to `l` vs `I` being confusable in some fonts.
+
+For reference, a list of all possible Rust identifier characters that do not trip `less_used_codepoints` but have confusables can be found [here][unicode-set-confusables], with their confusable skeleton and script group mentioned on the right. Note that in many cases the confusables are visually distinguishable, or are diacritic marks.
+
 
 ## Adjustments to the "bad style" lints
 
@@ -151,7 +170,7 @@ The code used for implementing the various lints and checks will be released to 
  - Script identification and comparison for `mixed_script_detection`  ([UTS #39 Section 5.2][TR39RestrictionLevel])
  - `skeleton(X)` algorithm for confusable detection ([UTS #39 Section 4][TR39Confusable])
 
-
+Confusables detection works well when there are other identifiers to compare against, but in some cases there's only one instance of an identifier in the code. For example we have crates that use proc macros to expose command line options or REST endpoints. Crates that do things like these can use such algorithms to ensure better error handling; for example if we accidentally end up having an `/арр` endpoint (in Cyrillic) because of a `#[annotation] fn арр()`, visiting `/app` (in Latin) may show a comprehensive error (or pass-through, based on requirements)
 
 ## Conformance Statement
 
@@ -164,6 +183,8 @@ The code used for implementing the various lints and checks will be released to 
   * UAX31-R1b. Stable Identifiers: Once a string qualifies as an identifier, it does so in all future versions.
   * UAX31-R3. Pattern_White_Space and Pattern_Syntax Characters: Rust only uses characters from these categories for whitespace and syntax. Other characters may or may not be allowed in identifiers.
   * UAX31-R4. Equivalent Normalized Identifiers: All identifiers are normalized according to normalization form C before comparison.
+
+
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -226,6 +247,7 @@ The [Go language][Go] allows identifiers in the form **Letter (Letter | Number)\
 * How are non-ASCII idents best supported in debuggers?
 * Which name mangling scheme is used by the compiler?
 * Is there a better name for the `less_used_codepoints` lint?
+* Which lint should the global mixed scripts confusables detection trigger?
 
 [PEP 3131]: https://www.python.org/dev/peps/pep-3131/
 [UAX31]: http://www.unicode.org/reports/tr31/
@@ -243,3 +265,5 @@ The [Go language][Go] allows identifiers in the form **Letter (Letter | Number)\
 [RFC 0430]: http://rust-lang.github.io/rfcs/0430-finalizing-naming-conventions.html
 [TR39Allowed]: https://www.unicode.org/reports/tr39/#General_Security_Profile
 [TR39RestrictionLevel]: https://www.unicode.org/reports/tr39/#Restriction_Level_Detection
+[unicode-set-confusables]: https://unicode.org/cldr/utility/list-unicodeset.jsp?a=%5B%5B%3AIdentifier_Status%CE%B2%3DAllowed%3A%5D%26%5B%3AXID_Continue%3DYes%3A%5D%26%5B%3AConfMA%CE%B2%3A%5D%5D&g=&i=ConfMA%CE%B2%2CScript_Extensions
+[unicode-set-allowed]: https://unicode.org/cldr/utility/list-unicodeset.jsp?a=%5B%5B%3AIdentifier_Status%CE%B2%3DAllowed%3A%5D%26%5B%3AXID_Continue%3DYes%3A%5D%5D&g=&i=Script_Extensions
