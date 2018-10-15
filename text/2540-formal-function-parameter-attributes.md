@@ -36,7 +36,11 @@ For raw pointers that are oftentimes used when operating with C code one could p
 You could for example mirror C's restrict keyword or even be more explicit by stating what pointer argument might overlap.
 
 ```rust
-fn foo(#[overlaps_with(in_b) in_a: *const u8, #[overlaps_with(in_a)] in_b: *const u8, #[restrict] out: *mut u8);
+fn foo(
+ #[overlaps_with(in_b)] in_a: *const u8,
+ #[overlaps_with(in_a)] in_b: *const u8,
+ #[restrict] out: *mut u8
+);
 ```
 
 Which might state that the pointers `in_a` and `in_b` might overlap but `out` is non overlapping.
@@ -52,7 +56,7 @@ Also procedural macros could greatly benefit from having their own defined custo
 Formal parameters of functions, methods, closures and functions in trait definitions may have attributes attached to them.
 This allows to provide additional information to a given formal parameter.
 
-To reify this we introduce the `#[unused]` attribute that states that the attributed parameter is unused in the associated implementation.
+For the next examples the hypothetical `#[unused]` attribute means that the attributed parameter is unused in the associated implementation.
 
 ## Examples
 
