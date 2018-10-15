@@ -85,8 +85,6 @@ Other attributes might be very useful as for formal parameters in a method decla
 
 ## Errors & Warnings
 
-There are two errornous situations when it comes to 
-
 ### Warning: Unused attribute
 
 When using an non-defined attribute that is not used by either the language or a custom defined procedural macro.
