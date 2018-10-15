@@ -16,7 +16,8 @@ Having attributes on formal function parameters allows for certain different use
 ## Example: Handling of unused parameter
 
 In today's Rust it is possible to prefix the name of an identifier to silence the compiler about it being unused.
-With attributes in formal function parameter position we could have an attribute like `#[unused]` that explicitely states this for a given parameter.
+With attributes in formal function parameter position we could hypothetically have an attribute like `#[unused]` that explicitely states this for a given parameter.
+Note that `#[unused]` is not part of this proposal but merely a simple usecase.
 
 ```rust
 fn foo(#[unused] bar: u32) -> bool;
@@ -28,7 +29,7 @@ Instead of
 fn foo(_bar: u32) -> bool
 ```
 
-This would better reflect the explicit nature of Rust compared to the underscore prefix as of today.
+Especially Rust beginners might find the meaning of the above code snippet to be clearer.
 
 ## Example: Low-level code
 
@@ -46,9 +47,36 @@ fn foo(
 Which might state that the pointers `in_a` and `in_b` might overlap but `out` is non overlapping.
 Please note that I am *not* proposing to actually add this to the language!
 
-## Example: Procedural Macros
+## Example: Usable with cfg_attr
 
-Also procedural macros could greatly benefit from having their own defined custom attributes on formal parameters.
+```rust
+fn foo(#[cfg_attr(foo, bar)] baz: u32);
+```
+
+Which states that `baz` is attributed with the attribute `bar` if `foo` evaluates to `true`.
+
+## Example: Documentation comments
+
+Since documentation comments are attributes in their underlying representation we could have doc comments
+for single parameters like shown below.
+
+```rust
+/// Description of foo.
+fn foo(
+ /// Description of foo's first parameter bar
+ bar: u32
+);
+```
+
+Of course this raises other questions:
+- How does rust-fmt handle these?
+- Are they allowed or should we postpone their allowance to another RFC?
+
+## Example: Procedural macros and custom attributes
+
+Also procedural macros and custom attributes could greatly benefit from having their own defined custom attributes on formal parameters.
+
+Examples will follow.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
