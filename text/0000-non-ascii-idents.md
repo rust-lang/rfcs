@@ -119,6 +119,12 @@ Note: New Unicode versions update the set of allowed codepoints. Additionally th
 
 For reference, a list of all the code points allowed by this lint can be found [here][unicode-set-allowed], with the script group mentioned on the right.
 
+There are some specific interesting code points that we feel necessary to call out here:
+
+ - `less_used_codepoints` will warn on U+200C ZERO WIDTH NON-JOINER and U+200D ZERO WIDTH JOINER, despite these being useful in the  Perso-Arabic and some Indic scripts. In Indic scripts these characters force different visual forms, which is not very necessary for programming. These have further semantic meaning in Arabic where they can be used to mark prefixes or mixed-script words, which will not crop up so often in programming (we're not able to use `-` in identifiers for marking pre/suffixes in Latin-script identifiers and it's fine). Persian seems to make the most use of these, with some compound words requiring use of these. For now this RFC does not attempt to deal with this and follows the recommendation of the specification, if there is a need for it in the future we can add this for Persian users.
+ - `less_used_codepoints` will not warn about U+02BB MODIFIER LETTER TURNED COMMA or U+02BC MODIFIER LETTER APOSTROPHE. These look somewhat like punctuation relevant to Rust's syntax, so they're a bit tricky. However, these code points are important in Ukranian, Hawaiian, and a bunch of other languages (U+02BB is considered a full-fledged letter in Hawaiian). For now this RFC follows the recommendation of the specification and allows these, however we can change this in the future. The hope is that syntax highlighting is enough to deal with confusions caused by such characters.
+
+
 ## Mixed script detection
 
 A new `mixed_script_idents` lint is added to the compiler. The default setting is to `warn`.
