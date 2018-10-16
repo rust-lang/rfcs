@@ -176,7 +176,7 @@ The code used for implementing the various lints and checks will be released to 
  - Script identification and comparison for `mixed_script_detection`  ([UTS #39 Section 5.2][TR39RestrictionLevel])
  - `skeleton(X)` algorithm for confusable detection ([UTS #39 Section 4][TR39Confusable])
 
-Confusables detection works well when there are other identifiers to compare against, but in some cases there's only one instance of an identifier in the code. For example we have crates that use proc macros to expose command line options or REST endpoints. Crates that do things like these can use such algorithms to ensure better error handling; for example if we accidentally end up having an `/арр` endpoint (in Cyrillic) because of a `#[annotation] fn арр()`, visiting `/app` (in Latin) may show a comprehensive error (or pass-through, based on requirements)
+Confusables detection works well when there are other identifiers to compare against, but in some cases there's only one instance of an identifier in the code, and it's compared with user-supplied strings. For example we have crates that use proc macros to expose command line options or REST endpoints. Crates that do things like these can use such algorithms to ensure better error handling; for example if we accidentally end up having an `/арр` endpoint (in Cyrillic) because of a `#[annotation] fn арр()`, visiting `/app` (in Latin) may show a comprehensive error (or pass-through, based on requirements)
 
 ## Conformance Statement
 
