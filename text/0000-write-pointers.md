@@ -230,11 +230,20 @@ let color: Rgb;
 color.init(20, 23, 255);
 ```
 
-and we can do direct initialization
+and we can do direct initialization (also called Placement New).
 ```Rust
 impl<T> Vec<T> {
-    pub fn emplace_back(&mut self) -> &uninit T {
-        ... // magic to allocate space and create reference
+    pub fn emplace_back(&mut self, init: impl FnOnce(&uninit T)) {
+        /// This code is taken from the Vec push implementation is the std lib
+        /// and adapted to use &uninit to show how it will be used for placement new
+        if self.len == self.buf.cap() {
+            self.reserve(1);
+        }
+        unsafe {
+            let end: &uninit T = &uninit *self.as_mut_ptr().add(self.len);
+            init(end); // this line has been changed for the purposes of placement new
+            self.len += 1;
+        }
     }
 }
 ```
@@ -461,6 +470,10 @@ Removed comment about `!Drop` bound for `&out T`, because it is incorrect.
 Removed the Casting Rules Section, because it was wrong, instead to convert raw pointers to references, use a reborrow. for example if `x: *mut T`, then `unsafe { &out *x }` will turn it into an `&out T`.
 
 Added an unresolved question, about use of drop flags to allow for conditional initialization.
+
+edit 8:
+
+Updated emplace_back implementation with one similar to `Vec::push` (and taken and adapted  from`Vec::push`).
 
 ---
 I would like to thank all the people who helped refine this proposal to its current state: [@rkruppe](https://internals.rust-lang.org/u/rkruppe), [@earthengine](https://internals.rust-lang.org/u/earthengine),  [@gbutler](https://internals.rust-lang.org/u/gbutler),
