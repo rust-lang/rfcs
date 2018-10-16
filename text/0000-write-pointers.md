@@ -208,6 +208,7 @@ FrameBuffer::new(&uninit buffer);
 *buffer.write_to_pixel(0, 0) = Rgb(50, 50, 255);
 *buffer.write_to_pixel(10, 20) = Rgb(0, 250, 25);
 /// ...
+// println!("{}", buffer.write_to_pixel(0, 0).0); // This would be a compile time error: cannot read from write-only borrowed content
 ```
 
 **Note:** `Rgb` is `Copy`, if it wasn't we could not gaurentee that we can safely overwrite it
@@ -474,6 +475,8 @@ Added an unresolved question, about use of drop flags to allow for conditional i
 edit 8:
 
 Updated emplace_back implementation with one similar to `Vec::push` (and taken and adapted  from`Vec::push`).
+
+Made one `&out` example better by adding where a compile time error would be if `&out` is used incorretly.
 
 ---
 I would like to thank all the people who helped refine this proposal to its current state: [@rkruppe](https://internals.rust-lang.org/u/rkruppe), [@earthengine](https://internals.rust-lang.org/u/earthengine),  [@gbutler](https://internals.rust-lang.org/u/gbutler),
