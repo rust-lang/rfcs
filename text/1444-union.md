@@ -10,6 +10,8 @@ Provide native support for C-compatible unions, defined via a new "contextual
 keyword" `union`, without breaking any existing code that uses `union` as an
 identifier.
 
+**Note:** This RFC has been partially superseded by `unions-and-drop`.
+
 # Motivation
 [motivation]: #motivation
 
