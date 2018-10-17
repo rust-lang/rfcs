@@ -1,7 +1,7 @@
-- Feature Name: union_initialization_and_drop
+- Feature Name: `union_initialization_and_drop`
 - Start Date: 2018-08-03
-- RFC PR: (leave this empty)
-- Rust Issue: (leave this empty)
+- RFC PR: [rust-lang/rfcs#2514](https://github.com/rust-lang/rfcs/pull/2514)
+- Rust Issue: [rust-lang/rust#55149](https://github.com/rust-lang/rust/issues/55149)
 
 # Summary
 [summary]: #summary
