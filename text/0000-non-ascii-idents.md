@@ -125,31 +125,6 @@ There are some specific interesting code points that we feel necessary to call o
  - `less_used_codepoints` will not warn about U+02BB MODIFIER LETTER TURNED COMMA or U+02BC MODIFIER LETTER APOSTROPHE. These look somewhat like punctuation relevant to Rust's syntax, so they're a bit tricky. However, these code points are important in Ukranian, Hawaiian, and a bunch of other languages (U+02BB is considered a full-fledged letter in Hawaiian). For now this RFC follows the recommendation of the specification and allows these, however we can change this in the future. The hope is that syntax highlighting is enough to deal with confusions caused by such characters.
 
 
-## Mixed script detection
-
-A new `mixed_script_idents` lint is added to the compiler. The default setting is to `warn`.
-
-The lint is triggered by identifiers that do not qualify for the "Moderately Restrictive" identifier profile specified in [Unicode® Technical Standard #39 Unicode Security Mechanisms Section 5.2 Restriction-Level Detection][TR39RestrictionLevel].
-
-Note: The definition of "Moderately Restrictive" can be changed by future versions of the Unicode standard to reflect changes in the natural languages used or for other reasons.
-
-## Global mixed script detection with confusables
-
-As an additional measure, we try to detect cases where a codebase primarily using a certain script has identifiers from a different script confusable with that script.
-
-During `mixed_script_idents` computation, keep track of how often identifiers from various script groups crop up. If an identifier is from a less-common script group (say, <1% of identifiers), _and_ it is entirely confusable with the majority script in use (e.g. the string `"арр"` or `"роре"` in Cyrillic)
-
-This can trigger `confusable_idents`, `mixed_script_idents`, or a new lint.
-
-We identify sets of characters which are entirely confusable: For example, for Cyrillic-Latin, we have `а, е, о, р, с, у, х, ѕ, і, ј, ԛ, ԝ, ѐ, ё, ї, ӱ, ӧ, ӓ, ӕ, ӑ` amongst the lowercase letters (and more amongst the capitals). This list likely can be programmatically derived from the confusables data that Unicode already has. It may be worth filtering for exact confusables. For example, Cyrillic, Greek, and Latin have a lot of confusables that are almost indistinguishable in most fonts, whereas `ھ` and `ס` are noticeably different-looking from `o` even though they're marked as a confusables.
-
-The main confusable script pairs we have to worry about are Cyrillic/Latin/Greek, Armenian/Ethiopic, and a couple Armenian characters mapping to Greek/Latin. We can implement this lint conservatively at first by dealing with a blacklist of known confusables for these script pairs, and expand it if there is a need.
-
-There are many confusables _within_ scripts -- Arabic has a bunch of these as does Han (both with other Han characters and and with kana), but since these are within the same language group this is outside the scope of this RFC. Such confusables are equivalent to `l` vs `I` being confusable in some fonts.
-
-For reference, a list of all possible Rust identifier characters that do not trip `less_used_codepoints` but have confusables can be found [here][unicode-set-confusables], with their confusable skeleton and script group mentioned on the right. Note that in many cases the confusables are visually distinguishable, or are diacritic marks.
-
-
 ## Adjustments to the "bad style" lints
 
 Rust [RFC 0430] establishes naming conventions for Rust ASCII identifiers. The *rustc* compiler includes lints to promote these recommendations.
@@ -231,6 +206,36 @@ It has been suggested that Unicode identifiers should be opt-in instead of opt-o
 The current design was chosen because the algorithm and list of similar characters are already provided by the Unicode Consortium. A different algorithm and list of characters could be created. I am not aware of any other programming language implementing confusable detection. The confusable detection was primarily included because homoglyph attacks are a huge concern for some members of the community.
 
 Instead of offering confusable detection the lint `forbid(non_ascii_idents)` is sufficient to protect a project written in English from homoglyph attacks. Projects using different languages are probably either written by students, by a small group or inside a regional company. These projects are not threatened as much as large open source projects by homoglyph attacks but still benefit from the easier debugging of typos.
+
+
+## Alternative mixed script lints
+
+These are previously-proposed lints attempting to prevent problems caused by mixing scripts, which were ultimately replaced by the current mixed script confusables lint.
+
+### Mixed script detection
+
+A new `mixed_script_idents` lint would be added to the compiler. The default setting is to `warn`.
+
+The lint is triggered by identifiers that do not qualify for the "Moderately Restrictive" identifier profile specified in [Unicode® Technical Standard #39 Unicode Security Mechanisms Section 5.2 Restriction-Level Detection][TR39RestrictionLevel].
+
+Note: The definition of "Moderately Restrictive" can be changed by future versions of the Unicode standard to reflect changes in the natural languages used or for other reasons.
+
+### Global mixed script detection with confusables
+
+As an additional measure, we would try to detect cases where a codebase primarily using a certain script has identifiers from a different script confusable with that script.
+
+During `mixed_script_idents` computation, keep track of how often identifiers from various script groups crop up. If an identifier is from a less-common script group (say, <1% of identifiers), _and_ it is entirely confusable with the majority script in use (e.g. the string `"арр"` or `"роре"` in Cyrillic)
+
+This can trigger `confusable_idents`, `mixed_script_idents`, or a new lint.
+
+We identify sets of characters which are entirely confusable: For example, for Cyrillic-Latin, we have `а, е, о, р, с, у, х, ѕ, і, ј, ԛ, ԝ, ѐ, ё, ї, ӱ, ӧ, ӓ, ӕ, ӑ` amongst the lowercase letters (and more amongst the capitals). This list likely can be programmatically derived from the confusables data that Unicode already has. It may be worth filtering for exact confusables. For example, Cyrillic, Greek, and Latin have a lot of confusables that are almost indistinguishable in most fonts, whereas `ھ` and `ס` are noticeably different-looking from `o` even though they're marked as a confusables.
+
+The main confusable script pairs we have to worry about are Cyrillic/Latin/Greek, Armenian/Ethiopic, and a couple Armenian characters mapping to Greek/Latin. We can implement this lint conservatively at first by dealing with a blacklist of known confusables for these script pairs, and expand it if there is a need.
+
+There are many confusables _within_ scripts -- Arabic has a bunch of these as does Han (both with other Han characters and and with kana), but since these are within the same language group this is outside the scope of this RFC. Such confusables are equivalent to `l` vs `I` being confusable in some fonts.
+
+For reference, a list of all possible Rust identifier characters that do not trip `less_used_codepoints` but have confusables can be found [here][unicode-set-confusables], with their confusable skeleton and script group mentioned on the right. Note that in many cases the confusables are visually distinguishable, or are diacritic marks.
+
 
 # Prior art
 [prior-art]: #prior-art
