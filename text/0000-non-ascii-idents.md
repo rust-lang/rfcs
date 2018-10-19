@@ -254,6 +254,10 @@ The [Go language][Go] allows identifiers in the form **Letter (Letter | Number)\
 * Which name mangling scheme is used by the compiler?
 * Is there a better name for the `less_used_codepoints` lint?
 * Which lint should the global mixed scripts confusables detection trigger?
+* How badly do non-ASCII idents exacerbate const pattern confusion
+  (rust-lang/rust#7526, rust-lang/rust#49680)?
+  Can we improve precision of linting here?
+
 
 [PEP 3131]: https://www.python.org/dev/peps/pep-3131/
 [UAX31]: http://www.unicode.org/reports/tr31/
