@@ -142,13 +142,28 @@ These are the three different naming conventions and how their corresponding lin
 
 Note: Scripts with upper- and lowercase variants ("bicameral scripts") behave similar to ASCII. Scripts without this distinction ("unicameral scripts") are also usable but all identifiers look the same regardless if they refer to a type, variable or constant. Underscores can be used to separate words in unicameral scripts even in UpperCamelCase contexts.
 
+## Mixed script confusables lint
+
+We keep track of the script groups in use in a document using the comparison heuristics in [Unicode® Technical Standard #39 Unicode Security Mechanisms Section 5.2 Restriction-Level Detection][TR39RestrictionLevel].
+
+We identify lists of code points which are `Allowed` by [UTS 39 section 3.1][TR39Allowed] (i.e., code points not already linted by `less_used_codepoints`) and are "exact" confusables between code points from other `Allowed` scripts. This is stuff like Cyrillic `о` (confusable with Latin `o`), but does not include things like Hebrew `ס` which is somewhat distinguishable from Latin `o`. This list of exact confusables can be modified in the future.
+
+We expect most of these to be between Cyrillic-Latin-Greek and some in Ethiopic-Armenian, but a proper review can be done before stabilization. There are also confusable modifiers between many script.
+
+In a code base, if the _only_ code points from a given script group (aside from `Latin`, `Common`, and `Inherited`) are such exact confusables, lint about it with `mixed_script_confusables` (lint name can be finalized later).
+
+As an implementation note, it may be worth dealing with confusable modifiers via a separate lint check -- if a modifier is from a different (non-`Common`/`Inherited`) script group from the thing preceding it. This has some behaviorial differences but should not increase the chance of false positives.
+
+The exception for `Latin` is made because the standard library is Latin-script. It could potentially be removed since a code base using the standard library (or any Latin-using library) is likely to be using enough of it that there will be non-confusable characters in use. (This is in unresolved questions)
+
+
 ## Reusability
 
 The code used for implementing the various lints and checks will be released to crates.io. This includes:
 
  - Testing validity of an identifier
  - Testing for `less_used_codepoints` ([UTS #39 Section 3.1][TR39Allowed])
- - Script identification and comparison for `mixed_script_detection`  ([UTS #39 Section 5.2][TR39RestrictionLevel])
+ - Script identification and comparison for `mixed_script_confusables`  ([UTS #39 Section 5.2][TR39RestrictionLevel])
  - `skeleton(X)` algorithm for confusable detection ([UTS #39 Section 4][TR39Confusable])
 
 Confusables detection works well when there are other identifiers to compare against, but in some cases there's only one instance of an identifier in the code, and it's compared with user-supplied strings. For example we have crates that use proc macros to expose command line options or REST endpoints. Crates that do things like these can use such algorithms to ensure better error handling; for example if we accidentally end up having an `/арр` endpoint (in Cyrillic) because of a `#[annotation] fn арр()`, visiting `/app` (in Latin) may show a comprehensive error (or pass-through, based on requirements)
@@ -262,6 +277,7 @@ The [Go language][Go] allows identifiers in the form **Letter (Letter | Number)\
 * How badly do non-ASCII idents exacerbate const pattern confusion
   (rust-lang/rust#7526, rust-lang/rust#49680)?
   Can we improve precision of linting here?
+* In `mixed_script_confusables`, do we actually need to make an exception for `Latin` identifiers?
 
 
 [PEP 3131]: https://www.python.org/dev/peps/pep-3131/
