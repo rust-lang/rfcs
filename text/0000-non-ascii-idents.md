@@ -278,6 +278,8 @@ The [Go language][Go] allows identifiers in the form **Letter (Letter | Number)\
   (rust-lang/rust#7526, rust-lang/rust#49680)?
   Can we improve precision of linting here?
 * In `mixed_script_confusables`, do we actually need to make an exception for `Latin` identifiers?
+* Terminal width is a tricky with unicode. Some characters are long, some have lengths dependent on the fonts installed (e.g. emoji sequences), and modifiers are a thing. The concept of monospace font doesn't generalize to other scripts as well. How does rustfmt deal with this when determining line width?
+* right-to-left scripts can lead to weird rendering in mixed contexts (depending on the software used), especially when mixed with operators. This is not something that should block stabilization, however we feel it is important to explicitly call out. Future RFCs (preferably put forth by RTL-using communities) may attempt to improve this situation (e.g. by allowing bidi control characters in specific contexts).
 
 
 [PEP 3131]: https://www.python.org/dev/peps/pep-3131/
