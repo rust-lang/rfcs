@@ -68,12 +68,12 @@ The lexer defines identifiers as:
 > **<sup>Lexer:<sup>**  
 > IDENTIFIER_OR_KEYWORD:  
 > &nbsp;&nbsp; XID_Start&nbsp;XID_Continue<sup>\*</sup>  
-> &nbsp;&nbsp; | `_` XID_Continue<sup>+</sup>  
+> &nbsp;&nbsp; | `_` XID_Continue<sup>*</sup>  
 >  
 > IDENTIFIER :  
 > IDENTIFIER_OR_KEYWORD <sub>*Except a [strict] or [reserved] keyword*</sub>
 
-`XID_Start` and `XID_Continue` are used as defined in the aforementioned standard. The definition of identifiers is forward compatible with each successive release of Unicode as only appropriate new characters are added to the classes but none are removed.
+`XID_Start` and `XID_Continue` are used as defined in the aforementioned standard. The definition of identifiers is forward compatible with each successive release of Unicode as only appropriate new characters are added to the classes but none are removed. We effectively are using UAX 31's default definition of valid identifier, with a tailoring that underscores are included with `XID_Start`. (Note that this allows bare underscores to be identifiers, that is currently also the case with `_` in identifier contexts being a reserved keyword)
 
 Parsers for Rust syntax normalize identifiers to [NFC][UAX15]. Every API accepting raw identifiers (such as `proc_macro::Ident::new` normalizes them to NFC and APIs returning them as strings (like `proc_macro::Ident::to_string`) return the normalized form. This means two identifiers are equal if their NFC forms are equal.
 
