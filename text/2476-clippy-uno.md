@@ -1,7 +1,7 @@
 - Feature Name: clippy_uno
 - Start Date: 2018-06-14
-- RFC PR: (leave this empty)
-- Rust Issue: (leave this empty)
+- RFC PR: #2476
+- Rust Issue: https://github.com/rust-lang-nursery/rust-clippy/issues/3343
 
 # Summary
 [summary]: #summary
