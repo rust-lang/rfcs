@@ -1,7 +1,7 @@
 - Feature Name: N/A
 - Start Date: 2018-05-04
-- RFC PR:
-- Rust Issue:
+- RFC PR: #2436
+- Rust Issue: N/A
 
 # Summary
 [summary]: #summary
