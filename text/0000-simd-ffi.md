@@ -97,30 +97,20 @@ but we haven't specified how we are actually compiling our Rust program above:
   register, and the behavior is undefined because of an ABI mismatch.
 
 <a name="layout_unspecified">1</a>: its layout is currently unspecified but that
-is not relevant for this issue since if 256-bit registers are not available they
-cannot be used anyways, which is what matters here.
+is not relevant for this issue - what matters is that 256-bit registers are not
+available and therefore they cannot be used.
 
-So, first of all, is this a big deal? 
-
-Currently, one cannot use SIMD types in C FFI in stable Rust, so technically,
-nothing is broken yet, and no, this is not a big deal: stable Rust is still
-safe! However, we would like to be able to call C FFI functions without
-introducing undefined behavior independently of which `-C target-features` are
-passed, so the example code shown above has to be rejected by the compiler.
-
-Second, you might be wondering: why is `__m256` available even if `AVX` is not
-available? That's a good question. We want to use `__m256` in some parts of
+You might be wondering: why is `__m256` available even if `AVX` is not
+available? The reason is that we want to use `__m256` in some parts of
 Rust's programs even if `AVX` is not globally enabled, and currently we don't
 have great infrastructure for conditionally allowing it in some parts of the
 program and not others.
 
 Ideally, one should only be able to use `__m256` and operations on it if `AVX`
-is available. Which leads to how can we fix this ? 
-
-The most trivial solution would be to just always require
-`#[target_feature(enable = X)]` in C FFI functions using SIMD types, where
-"unblocking" the use of each type requires one or two particular feature to be
-enabled, e.g., `avx` or `avx2` in the case of `__m256`.
+is available, and this is exactly what this RFC proposes for using vector types
+in C FFI: to always require `#[target_feature(enable = X)]` in C FFI functions
+using SIMD types, where "unblocking" the use of each type requires some
+particular feature to be enabled, e.g., `avx` or `avx2` in the case of `__m256`.
 
 That is, the compiler would reject the example above with an error: 
 
@@ -128,8 +118,8 @@ That is, the compiler would reject the example above with an error:
 error[E1337]: `__m256` on C FFI requires `#[target_feature(enable = "avx")]`
  --> src/main.rs:7:15
   |
-7 |     fn foo(x: __m25a6) -> __m256;
-  |               ^^^^^^^
+7 |     fn foo(x: __m256) -> __m256;
+  |               ^^^^^^
 ```
 
 And the following program would always have defined behavior
@@ -148,6 +138,9 @@ fn main() {
     }
 }
 ```
+
+independently of the `-C target-feature`s used globally to compile the whole
+binary.
 
 Note here that:
 
