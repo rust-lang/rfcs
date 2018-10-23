@@ -177,7 +177,7 @@ target features required to use them in `extern` functions.
 # Drawbacks
 [drawbacks]: #drawbacks
 
-TBD.
+None.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
