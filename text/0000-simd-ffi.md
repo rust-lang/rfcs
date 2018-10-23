@@ -190,7 +190,8 @@ TBD.
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 This is an adhoc solution to the problem. This RFC does not explore more general
-mechanisms of dealing with, or abstracting over, these kind of problems.
+mechanisms of dealing with, or abstracting over, `target_feature`s associated
+with the SIMD vector types for FFI purposes.
 
 ## Future architecture-specific vector types
 
