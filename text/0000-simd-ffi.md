@@ -140,18 +140,14 @@ fn main() {
 ```
 
 independently of the `-C target-feature`s used globally to compile the whole
-binary.
-
-Note here that:
+binary. Note that:
 
 * `extern "C" foo` is compiled with `AVX` enabled, so `foo` takes an `__m256`
   like the C ABI expects
 * the call to `foo` is guarded with an `is_x86_feature_detected`, that is, `foo`
   will only be called if `AVX` is available at run-time
-* if the Rust binary is compiled without `AVX`, Rust will insert shims in the
-  call to `foo` to pass it as a 256-bit register. Rust already does this, and
-  `#[target_feature]` is what allows it to do it. Without the
-  `#[target_feature]` annotation, Rust does not know that C expects this. 
+* if the Rust calling convention differs from the calling convention of the
+  `extern` function, Rust has to adapt these. 
 
 # Guide-level and reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
