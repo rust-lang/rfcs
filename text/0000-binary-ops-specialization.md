@@ -23,7 +23,10 @@ data type (usually indicated by implementing the same `Borrow<T>`), it makes
 sense to define binary operator trait impls that work between each pair of
 these types. However, with proliferation of special-purpose representations
 of widely used data types, such as byte arrays and strings, the number of
-possible such pairs undergoes a combinatorial explosion.
+possible such pairs undergoes a combinatorial explosion. Each of
+the crates defining such special-purpose types has to be in a dependency
+relationship with any other of these crates, otherwise there cannot be
+an operator impl to make them work together.
 
 Specialization of blanket trait implementations could be used to deal with this
 problem. These two impls of `PartialEq` could automatically enable equality
@@ -79,11 +82,18 @@ pub trait PartialEq2<Rhs: ?Sized = Self> {
 ## Default blanket implementation rule
 [default-blanket-implementation-rule]: #default-blanket-implementation-rule
 
-The rule for any crate defining a type that needs to work as an argument type
-in binary operators is to define default impls of the new-style operator
-traits described in this RFC, where this type is the `&self` or `self`
-operand type, and a generic type parameter bound by `Borrow` defines the
-other operand's type:
+Types that need to work as an operand type in binary operators broadly
+fall into two categories. One category is use case specific representations
+of an underlying data type that usually provides binary operators on itself.
+For example, `String` is the owned version of `str`, and `PathBuf` is that
+for `Path`. The underlying types themselves are counted in for the purposes
+of the following rule.
+These types usually implement `Borrow` to the basic type, and their Rust 1.0
+binary operator trait impls tend to cover any pairs with other types that
+satisfy the same `Borrow`. The rule for the crate defining such a type is to
+also define default impls of the new-style operator traits described in
+this RFC, where this type is the `&self` or `self` operand type, and a
+generic type parameter bound by `Borrow` defines the other operand's type:
 
 ```rust
 impl<Rhs> PartialEq2<Rhs> for String
@@ -97,11 +107,18 @@ where
 ```
 
 The type parameter of the `Borrow` bound is the basic data type that `Self`
-can also be borrowed as (which can always be just `Self`). The role of `Borrow`
-therefore extends to stratifying operand types of binary operators
+can also be borrowed as (which can be just `Self`). The role of `Borrow`
+therefore extends to restricting operand types of binary operators
 available for the implementing type.
-Notably, the standard library already maintains this stratification in the
-provided implementations of `Borrow` and Rust 1.0 operator traits.
+Notably, the standard library largely maintains this stratification in the
+provided implementations of `Borrow` and Rust 1.0 operator traits;
+`PathBuf`/`Path` is a [problematic][issue55319] exception.
+
+Other types do not have an underlying borrowable type to define their data
+domain, but they still need cross-type operator compatibility between some
+family of types. Examples from the standard library are `IpAddr`, `Ipv4Addr`,
+and `Ipv6Addr`. These types can have their operator trait impls defined
+in the old school non-generic way.
 
 ## Overload resolution
 [overload-resolution]: #overload-resolution
@@ -128,6 +145,10 @@ old school operator traits.
 
 The proposed system allows legacy Rust 1.0 operator trait implementations
 to coexist with the new blanket implementations in a backward-compatible way.
+Systematic application of the [default impl rule][default-blanket-implementation-rule]
+can provide any-to-any operand type compatibility for all types sharing a
+particular `Borrow` bound, without necessity for any two crates, each defining
+one of these types, to be in a direct dependency relationship.
 Specialized implementations of new style traits can be defined when practical,
 within the `Borrow` bound of the default implementation. Crates can also
 choose to provide default (or even fully specialized blanket) impls of
@@ -181,3 +202,4 @@ The circumstances that led to the design seem unique to Rust.
 Is it feasible to implement overload resolution in the compiler as proposed?
 
 [rfc1210]: ./1210-impl-specialization.md
+[issue55319]: https://github.com/rust-lang/rust/issues/55319
