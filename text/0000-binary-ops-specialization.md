@@ -172,6 +172,10 @@ implementation errors. This takes further the precedent set by the
 [specialization RFC][rfc1210] that multiple different implementations may be
 considered to fit one use.
 
+`Borrow<T>` may prove to be too inflexible a bound for some interoperable
+type families. It's a challenge, though, to come up with an example in
+existing designs that goes beyond a few closely knit types.
+
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
