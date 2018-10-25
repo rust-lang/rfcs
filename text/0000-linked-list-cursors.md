@@ -132,7 +132,7 @@ pub fn cursor_mut(&mut self) -> CursorMut<T>;
 These would provide the following interface:
 
 ``` rust
-impl<T> Cursor<T> {
+impl<'list, T> Cursor<'list, T> {
 	/// Move to the subsequent element of the list if it exists or the empty
 	/// element
 	pub fn move_next(&mut self);
@@ -140,14 +140,14 @@ impl<T> Cursor<T> {
 	pub fn move_prev(&mut self);
 	
 	/// Get the current element
-	pub fn current(&self) -> Option<&T>;
+	pub fn current(&self) -> Option<&'list T>;
 	/// Get the following element
-	pub fn peek(&self) -> Option<&T>;
+	pub fn peek(&self) -> Option<&'list T>;
 	/// Get the previous element
-	pub fn peek_before(&self) -> Option<&T>;
+	pub fn peek_before(&self) -> Option<&'list T>;
 }
 
-impl<T> CursorMut<T> {
+impl<'list T> CursorMut<'list, T> {
 	/// Move to the subsequent element of the list if it exists or the empty
 	/// element
 	pub fn move_next(&mut self);
@@ -162,7 +162,7 @@ impl<T> CursorMut<T> {
 	pub fn peek_before(&mut self) -> Option<&mut T>;
 
 	/// Get an immutable cursor at the current element
-	pub fn as_cursor(&self) -> Cursor<T>;
+	pub fn as_cursor<'cm>(&'cm self) -> Cursor<'cm, T>;
 
 	// Now the list editing operations
 
@@ -190,6 +190,30 @@ impl<T> CursorMut<T> {
 	pub fn split_before(self) -> LinkedList<T>;
 }
 ```
+One should closely consider the lifetimes in this interface. Both `Cursor` and
+`CursorMut` operate on data in their `LinkedList`. This is why, they both hold
+the annotation of `'list`.
+
+The lifetime elision for their constructors is correct as
+```
+pub fn cursor(&self) -> Cursor<T>
+```
+becomes
+```
+pub fn cursor<'list>(&'list self) -> Cursor<'list, T>
+```
+which is what we would expect. (the same goes for `CursorMut`).
+
+Since `Cursor` cannot mutate its list, `current`, `peek` and `peek_before` all
+live as long as `'list`. However, in `CursorMut` we must be careful to make
+these methods borrow. Otherwise, one could produce multiple mutable references
+to the same element.
+
+The only other lifetime annotation is with `as_cursor`. In this case, the
+returned `Cursor` must borrow its generating `CursorMut`. Otherwise, it would be
+possible to achieve a mutable and immutable reference to the same element at
+once.
+
 One question that arises from this interface is what happens if `move_next` is
 called when a cursor is on the last element of the list, or is empty (or
 `move_prev` and the beginning). A simple way to solve this is to make cursors
