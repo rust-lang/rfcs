@@ -1,47 +1,26 @@
-- Feature Name: `vtable`
-- Start Date: 2018-10-24
+- Feature Name: `ptr-meta`
+- Start Date: 2018-10-26
 - RFC PR:
 - Rust Issue:
 
 # Summary
 [summary]: #summary
 
-Add a `DynTrait` trait and a `VTable` type to provide
-access to the components of a fat pointer to a trait object `dyn SomeTrait`,
-and the ability to reconstruct such a pointer from its components.
+Add generic APIs that allow manipulating the metadata of fat pointers:
+
+* Naming the metadata’s type  (as an associated type)
+* Extracting metadata from a pointer
+* Reconstructing a pointer from a data pointer and metadata
+* Representing vtables, the metadata for trait objects, as a type with some limited API
+
+This RFC does *not* propose a mechanism for defining custom dynamically-sized types,
+but tries to stay compatible with future proposals that do.
 
 
 # Background
 [background]: #background
 
-## Dynamically-sized types (DSTs)
-
-Any Rust type `T` is either statically-sized or dynamically-sized.
-
-All values of a statically-sized types occupy the same size in memory.
-This size is known at compile-time.
-Raw pointers or references `*const T`, `*mut T`, `&T`, `&mut T` to such types
-are represented in memory as a single pointer.
-
-Different values of a same DST (dynamically-sized type) can have a different size
-which can be queried at runtime.
-Raw pointers and references to DSTs are “fat” pointers made of one data pointer to the value
-together with some metadata.
-In Rust 1.30, a DST is always one of:
-
-* A struct whose last field is a DST (and is the only DST field),
-  where the metadata is the same as for a reference to that field.
-* A slice type like `[U]`, where the metadata is the length in items,
-* The string slice type `str`, where the metadata is the length in bytes,
-* Or a trait object like `dyn SomeTrait`,
-  where the metadata is a pointer to a vtable (virtutal call table).
-  A vtable contains the size and required alignment of the concrete type,
-  a function pointer to the destructor if any,
-  and pointers for the implementations of the trait’s methods.
-
-## Fat pointer components
-
-Typical high-level code doesn’t need to worry about this,
+Typical high-level code doesn’t need to worry about fat pointers,
 a reference `&Foo` “just works” wether or not `Foo` is a DST.
 But unsafe code such as a custom collection library may want to access a fat pointer’s
 components separately.
@@ -54,9 +33,7 @@ This was replaced with more specific and less wildly unsafe
 `std::slice::from_raw_parts` and `std::slice::from_raw_parts_mut` functions,
 together with `as_ptr` and `len` methods that extract each fat pointer component separatly.
 
-The `str` type is taken care of by APIs to convert to and from `[u8]`.
-
-This leaves trait objects, where we still have an unstable `std::raw::TraitObjet` type
+For trait objects, where we still have an unstable `std::raw::TraitObjet` type
 that can only be used with `transmute`:
 
 ```rust
@@ -70,27 +47,6 @@ pub struct TraitObject {
 [`std::raw::Repr`]: https://doc.rust-lang.org/1.10.0/std/raw/trait.Repr.html
 [`std::raw::Slice`]: https://doc.rust-lang.org/1.10.0/std/raw/struct.Slice.html
 [`std::raw::TraitObjet`]: https://doc.rust-lang.org/1.30.0/std/raw/struct.TraitObject.html
-
-## Trait objects of multiple traits
-
-A trait object type can refer to multiple traits like `dyn A + B`, `dyn A + B + C`, etc.
-Currently all traits after the first must be [auto traits].
-Since auto traits cannot have methods, they don’t require additional data in the vtable.
-
-Lifting this restriction is desirable, and has been discussed in
-[RFC issue #2035][2035] and [Internals thread #6617][6617].
-Two related open questions with this is how to represent the vtable of such a trait object,
-and how to support upcasting:
-converting for example from `Box<dyn A + B + C>` to `Box<dyn C + A>`.
-
-One possibility is having “super-fat” pointers
-whose metadata is made of multiple pointers to separate vtables.
-However making the size of pointers grow linearly with the number of traits involved
-is a serious downside.
-
-[auto traits]: https://doc.rust-lang.org/1.30.0/reference/special-types-and-traits.html#auto-traits
-[2035]: https://github.com/rust-lang/rfcs/issues/2035
-[6617]: https://internals.rust-lang.org/t/wheres-the-catch-with-box-read-write/6617
 
 
 # Motivation
@@ -107,21 +63,26 @@ For example [this library][lib] stores multiple trait objects of varying size
 in contiguous memory together with their vtable pointers,
 and during iteration recreates fat pointers from separate data and vtable pointers.
 
+The new `Thin` trait alias also expanding to [extern types] some APIs
+that were unnecessarily restricted to `Sized` types
+because there was previously no way to express pointen-thinness in generic code.
+
 [lib]: https://play.rust-lang.org/?version=nightly&mode=debug&edition=2015&gist=bbeecccc025f5a7a0ad06086678e13f3
 
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
+
 For low-level manipulation of trait objects in unsafe code,
-the `DynTrait` trait allows accessing the components of a fat pointer:
+new APIs allow accessing the components of a fat pointer:
 
 ```rust
-use std::dyn_trait::{DynTrait, VTable};
+use std::ptr::{metadata, VTable};
 
 fn callback_into_raw_parts(f: Box<Fn()>) -> (*const (), &'static VTable) {
     let raw = Box::into_raw(f);
-    (DynTrait::data_ptr(raw), DynTrait::vtable(raw))
+    (raw as _, metadata(raw))
 }
 ```
 
@@ -129,21 +90,19 @@ fn callback_into_raw_parts(f: Box<Fn()>) -> (*const (), &'static VTable) {
 
 ```rust
 fn callback_from_raw_parts(data: *const (), vtable: &'static VTable) -> Box<Fn()> {
-    let raw: *const Fn() = DynTrait::from_raw_parts(new_data, vtable);
-    Box::from_raw(raw as *mut Fn())
+    Box::from_raw(<*mut Fn()>::from_raw_parts(new_data, vtable))
 }
 ```
 
 `VTable` also provides enough information to manage memory allocation:
 
 ```rust
-// Equivalent to just letting `Box<Fn()>` go out of scope to have its destructor run,
+// Equivalent to letting `Box<Fn()>` go out of scope to have its destructor run,
 // this only demonstrates some APIs.
 fn drop_callback(f: Box<Fn()>) {
     let raw = Box::into_raw(f);
-    let vtable = DynTrait::vtable(raw);
+    let vtable = metadata(raw);
     unsafe {
-        // `DynTrait::data` is equivalent to casting to a thin pointer with `as`
         vtable.drop_in_place(raw as *mut ());
         std::alloc::dealloc(raw as *mut u8, vtable.layout());
     }
@@ -153,40 +112,99 @@ fn drop_callback(f: Box<Fn()>) {
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-A new `core::dyn_trait` module is added and re-exported as `std::dyn_trait`.
-Its contains a `DynTrait` trait and `VTable` pointer whose definitions are given below.
+(Parts of this assumes that [trait aliases] are implemented.
+If they are not implemented by the time this RFC is,
+the `Thin` alias can be replaced by its definition.)
 
-`DynTrait` is automatically implement by the language / compiler
-(similar to `std::marker::Unsize`, with explicit impls causing a E0328 error)
-for all existing trait object types (DSTs)
-like `dyn SomeTrait`, `dyn SomeTrait + SomeAutoTrait`, etc.
+The APIs whose full definition is found below
+are added to `core::ptr` and re-exported in `std::ptr`:
 
-If in the future “super-fat” pointers (with multiple separate vtable pointers as DST metadata)
-are added to the language to refer to trait objects with multiple non-auto traits,
-`DynTrait` will **not** be implemented for such trait object types.
+* A `Pointee` trait,
+  implemented automatically for all types
+  (similar to how `Sized` and `Unsize` are implemented automatically).
+* A `Thin` [trait alias].
+  If this RFC is implemented before type aliases are,
+  uses of `Thin` should be replaced with its definition.
+* A `metadata` free function
+* A `from_raw_parts` constructor for each of `*const T` and `*mut T`
+
+The bounds on `null()` and `null_mut()` function in that same module
+as well as the `NonNull::dangling` constructor
+are changed from (implicit) `T: Sized` to `T: ?Sized + Thin`.
+This enables using those functions with [extern types].
+
+For the purpose of pointer casts being allowed by the `as` operator,
+a pointer to `T` is considered to be thin if `T: Thin` instead of `T: Sized`.
+This similarly includes extern types.
 
 `std::raw::TraitObject` and `std::raw` are deprecated and eventually removed.
 
+[trait alias]: https://github.com/rust-lang/rust/issues/41517
+[extern types]: https://github.com/rust-lang/rust/issues/43467
+
 ```rust
-/// A trait implemented by any type that is a trait object with a single vtable.
+/// This trait is automatically implement for every type.
 ///
-/// This allows generic code to constrain itself to trait-objects, and subsequently
-/// enables code to access the vtable directly and store trait-object values inline.
+/// Raw pointer types and referenece types in Rust can be thought of as made of two parts:
+/// a data pointer that contains the memory address of the value, and some metadata.
 ///
-/// For instance `dyn Display` implements `Trait`.
-#[lang = "dyn_trait"]
-pub trait DynTrait: ?Sized {
-    /// Extracts the data pointer from a trait object.
-    fn data_ptr(obj: *const Self) -> *const () { obj as _ }
+/// For statically-sized types that implement the `Sized` traits,
+/// pointers are said to be “thin”, metadata is zero-size, and metadata’s type is `()`.
+///
+/// Pointers to [dynamically-sized types][dst] are said to be “fat”
+/// and have non-zero-size metadata:
+///
+/// * For structs whose last field is a DST, metadata is the metadata for the last field
+/// * For the `str` type, metadata is the length in bytes as `usize`
+/// * For slice types like `[T]`, metadata is the length in items as `usize`
+/// * For trait objects like `dyn SomeTrait`, metadata is [`&'static VTable`][VTable]
+///
+/// In the future, the Rust language may gain new kinds of types
+/// that have different pointer metadata.
+///
+/// Pointer metadata can be extracted from a pointer or reference with the [`metadata`] function.
+/// The data pointer can be extracted by casting a (fat) pointer
+/// to a (thin) pointer to a `Sized` type the `as` operator,
+/// for example `(x: &dyn SomeTrait) as *const SomeTrait as *const ()`.
+///
+/// [dst]: https://doc.rust-lang.org/nomicon/exotic-sizes.html#dynamically-sized-types-dsts
+#[lang = "pointee"]
+pub trait Pointee {
+    /// The type for metadata in pointers and references to `Self`.
+    type Metadata;
+}
 
-    /// Extracts the vtable pointer from a trait object.
-    fn vtable(obj: *const Self) -> &'static VTable;
+/// Pointers to types implementing this trait alias are
+pub trait Thin = Pointee<Metadata=()>;
 
-    /// Creates a trait object from its data and vtable pointers.
-    ///
-    /// Undefined Behaviour will almost certainly result if the data pointed
-    /// to isn’t a valid instance of the type the vtable is associated with.
-    unsafe fn from_raw_parts(data: *const (), vtable: &'static VTable) -> *const Self;
+/// Extract the metadata component of a pointer.
+///
+/// Values of type `*mut T`, `&T`, or `&mut T` can be passed directly to this function
+/// as they implicitly coerce to `*const T`.
+/// For example:
+///
+/// ```
+/// assert_eq(std::ptr::metadata("foo"), 3_usize);
+/// ```
+///
+/// Note that the data component of a (fat) pointer can be extracted by casting
+/// to a (thin) pointer to any `Sized` type:
+///
+/// ```
+/// # trait SomeTrait {}
+/// # fn example(something: &SomeTrait) {
+/// let object: &SomeTrait = something;
+/// let data_ptr = object as *const SomeTrait as *const ();
+/// # }
+/// ```
+pub fn metadata<T: ?Sized>(ptr: *const T) -> <T as Pointee>::Metadata {…}
+
+impl<T: ?Sized> *const T {
+    pub fn from_raw_parts(data: *const (), meta: <T as Pointee>::Metadata) -> Self {…}
+}
+
+impl<T: ?Sized> *mut T {
+    pub fn from_raw_parts(data: *mut (), meta: <T as Pointee>::Metadata) -> Self {…}
 }
 
 /// The vtable for a trait object.
@@ -235,30 +253,6 @@ impl VTable {
 }
 ```
 
-# Drawbacks
-[drawbacks]: #drawbacks
-
-If super-fat pointers are ever added to the language, this API will not work with them
-and another, somewhat-redundant API will be needed.
-
-The RFC as proposed also prevents us from ever changing
-trait objects of a trait that has multiple super-traits
-to using super-fat pointers.
-
-```rust
-trait A {}
-trait B {}
-trait C {}
-trait Foo: A + B + C {}
-let pointer_size = std::mem::size_of::<*const ()>();
-// This holds as of Rust 1.30:
-assert_eq!(std::mem::size_of::<&dyn Foo>(), 2 * pointer_size);
-```
-
-The author opinion is that the size cost for pointers (which can be copied or moved around a lot)
-makes super-fat pointers prohibitive and that a different solution would be preferable,
-regardless of this RFC.
-
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -272,37 +266,55 @@ a dangling pointer such as `0x8000_0000_usize as *mut ()` needs to be created.
 It is not clear whether `std::mem::align_of(&*ptr)` with `ptr: *const dyn SomeTrait`
 is Undefined Behavior with a dangling data pointer.
 
-Support for [Custom DSTs] would include functionality equivalent to the `DynTrait` trait.
-But it has been postponed, apparently indefinitely.
-It is a much more general feature that involves significant design and implementation work.
+A [previous iteration][2579] of this RFC proposed a `DynTrait`
+that would only be implemented for trait objects like `dyn SomeTrait`.
+There would be no `Metadata` associated type, `&'static VTable` was hard-coded in the trait.
+In addition to being more general
+and (hopefully) more compatible with future custom DSTs proposals,
+this RFC resolves the question of what happens
+if trait objects with super-fat pointers with multiple vtable pointers are ever added.
+(Answer: they can use a different metadata type like `[&'static VTable; N]`.)
 
-An itermediate solution might be to generalize `DynTrait` to a trait implemented for *all* types,
-with an associated type for the metadata in pointers and references.
-(This metadata would be `()` for thin pointers.)
-This trait’s methods would be the same as in `DynTrait`,
-with `Self::Metadata` instead of `&'static VTable`.
-At first this trait would only be implemented automatically,
-so libraries would not be able to create new kinds of DSTs,
-but this design might be extensible in that direction later.
+`VTable` could be made generic with a type parameter for the trait object type that it describes.
+This would avoid forcing that the size, alignment, and destruction pointers
+be in the same location (offset) for every vtables.
+But keeping them in the same location is probaly desirable anyway to keep code size
 
-To allow for the possiblity of
-changing trait objects with multiple super-traits to use super-fat pointers later,
-we could make such trait objects not implement `DynTrait` at first.
-Specifically: among all the traits and recursive super-traits involved in a trait object,
-only implement `DynTrait` if each trait has at most one non-auto (or non-[marker]) super-trait.
+[2579]: https://github.com/rust-lang/rfcs/pull/2579
 
-[Custom DSTs]: https://internals.rust-lang.org/t/custom-dst-discussion/4842
-[marker]: https://github.com/rust-lang/rust/issues/29864
+
+# Prior art
+[prior-art]: #prior-art
+
+A previous [Custom Dynamically-Sized Types][cdst] RFC was postponed.
+[Internals thread #6663][6663] took the same ideas
+and was even more ambitious in being very general.
+Except for `VTable`’s methods, this RFC proposes a subset of what that thread did.
+
+[cdst]: https://github.com/rust-lang/rfcs/pull/1524
+[6663]: https://internals.rust-lang.org/t/pre-erfc-lets-fix-dsts/6663
 
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-* Is a new `dyn_trait` module inside `core` and `std` the appropriate location?
-  `trait` would be nice, but that’s a reserved keyword.
-  `traits` would work but there is not much precedent for pluralizing module names in this way.
-  (For example `std::slice`, `std::string`, …)
+* The name of `Pointee`. [Internals thread #6663][6663] used `Referent`.
 
-* Every item name is of course also subject to the usual bikeshed.
+* The location of `VTable`. Is another module more appropriate than `std::ptr`?
 
-* `*const ()` v.s. `*mut ()`?
+* Should `VTable` be an extern type?
+  Rather than a zero-size struct? Actual vtables vary in size,
+  but `VTable` presumably is never used exept behind `&'static`.
+
+* The name of `Thin`.
+  This name is short and sweet but `T: Thin` suggests that `T` itself is thin,
+  rather than pointers and references to `T`.
+
+* The location of `Thin`. Better in `std::marker`?
+
+* Should `Thin` be added as a supertrait of `Sized`?
+  Or could it ever make sense to have fat pointers to statically-sized types?
+
+* Are there other generic standard library APIs like `ptr::null()`
+  that have an (implicit) `T: Sized` bound that unneccesarily excludes extern types?
+
