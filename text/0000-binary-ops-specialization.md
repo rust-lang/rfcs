@@ -28,10 +28,10 @@ the crates defining such special-purpose types has to be in a dependency
 relationship with any other of these crates, otherwise there cannot be
 an operator impl to make them work together.
 
-Specialization of blanket trait implementations could be used to deal with this
-problem. These two impls of `PartialEq` could automatically enable equality
-comparison for `String` on the left hand side and any type on the
-right hand side that implements `Borrow<str>`:
+[Specialization][rfc1210] of blanket trait implementations could be used to
+deal with this problem. These two impls of `PartialEq` could automatically
+enable equality comparison for `String` on the left hand side and any type
+on the right hand side that implements `Borrow<str>`:
 
 ```rust
 impl PartialEq<str> for String {
