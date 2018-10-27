@@ -114,6 +114,29 @@ Notably, the standard library largely maintains this stratification in the
 provided implementations of `Borrow` and Rust 1.0 operator traits;
 `PathBuf`/`Path` is a [problematic][issue55319] exception.
 
+Operator traits that take ownership of the operands are trickier to implement
+for non-`Copy` types: these should not work between two borrowed types
+to avoid allocations hidden in operator notation, while consuming the
+owned operands in an operator expression may be non-ergonomic.
+A precedent is set in the `Add` implementation for `String` to only let
+the left-hand operand value to be moved into the expression; the right-hand
+side needs to be borrowed as a `str` reference.
+To extend the operator's applicability to any types that satisfy
+`Borrow<str>`, the crate `std` defines this default implementation of
+the new trait `Add2`:
+
+```rust
+impl<'a, T> Add2<&'a T> for String
+where T: Borrow<str>
+{
+    type Output = String;
+
+    default fn add2(self, other: &'a T) -> String {
+        self + other.borrow()
+    }
+}
+```
+
 Other types do not have an underlying borrowable type to define their data
 domain, but they still need cross-type operator compatibility between some
 family of types. Examples from the standard library are `IpAddr`, `Ipv4Addr`,
