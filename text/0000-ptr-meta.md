@@ -152,7 +152,7 @@ This similarly includes extern types.
 /// pointers are said to be “thin”, metadata is zero-sized, and metadata’s type is `()`.
 ///
 /// Pointers to [dynamically-sized types][dst] are said to be “fat”
-/// and have non-zero-size metadata:
+/// and have non-zero-sized metadata:
 ///
 /// * For structs whose last field is a DST, metadata is the metadata for the last field
 /// * For the `str` type, metadata is the length in bytes as `usize`
