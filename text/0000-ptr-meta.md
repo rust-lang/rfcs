@@ -149,7 +149,7 @@ This similarly includes extern types.
 /// a data pointer that contains the memory address of the value, and some metadata.
 ///
 /// For statically-sized types that implement the `Sized` traits,
-/// pointers are said to be “thin”, metadata is zero-size, and metadata’s type is `()`.
+/// pointers are said to be “thin”, metadata is zero-sized, and metadata’s type is `()`.
 ///
 /// Pointers to [dynamically-sized types][dst] are said to be “fat”
 /// and have non-zero-size metadata:
