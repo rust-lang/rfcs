@@ -56,7 +56,7 @@ We now have APIs in Stable Rust to let unsafe code freely and reliably manipulat
 accessing the separate components of a fat pointers and then re-assembling them.
 However `std::raw::TraitObject` is still unstable,
 but it’s probably not the style of API that we’ll want to stabilize
-as at encourages dangerous `transmute` calls.
+as it encourages dangerous `transmute` calls.
 This is a “hole” in available APIs to manipulate existing Rust types.
 
 For example [this library][lib] stores multiple trait objects of varying size
