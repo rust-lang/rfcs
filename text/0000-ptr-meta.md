@@ -65,7 +65,7 @@ and during iteration recreates fat pointers from separate data and vtable pointe
 
 The new `Thin` trait alias also expanding to [extern types] some APIs
 that were unnecessarily restricted to `Sized` types
-because there was previously no way to express pointen-thinness in generic code.
+because there was previously no way to express pointer-thinness in generic code.
 
 [lib]: https://play.rust-lang.org/?version=nightly&mode=debug&edition=2015&gist=bbeecccc025f5a7a0ad06086678e13f3
 
