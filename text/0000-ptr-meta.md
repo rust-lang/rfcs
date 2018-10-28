@@ -33,7 +33,7 @@ This was replaced with more specific and less wildly unsafe
 `std::slice::from_raw_parts` and `std::slice::from_raw_parts_mut` functions,
 together with `as_ptr` and `len` methods that extract each fat pointer component separatly.
 
-For trait objects, where we still have an unstable `std::raw::TraitObjet` type
+For trait objects, where we still have an unstable `std::raw::TraitObject` type
 that can only be used with `transmute`:
 
 ```rust
