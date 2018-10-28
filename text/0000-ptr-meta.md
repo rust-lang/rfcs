@@ -174,7 +174,13 @@ pub trait Pointee {
     type Metadata: Copy + Send + Sync + Ord + Hash + 'static;
 }
 
-/// Pointers to types implementing this trait alias are
+/// Pointers to types implementing this trait alias are “thin”:
+///
+/// ```rust
+/// fn always_true<T: std::prt::Thin>() -> bool {
+///     assert_eq(std::mem::size_of::<&T>(), std::mem::size_of::<usize>())
+/// }
+/// ```
 pub trait Thin = Pointee<Metadata=()>;
 
 /// Extract the metadata component of a pointer.
@@ -278,7 +284,7 @@ if trait objects with super-fat pointers with multiple vtable pointers are ever 
 `VTable` could be made generic with a type parameter for the trait object type that it describes.
 This would avoid forcing that the size, alignment, and destruction pointers
 be in the same location (offset) for every vtable.
-But keeping them in the same location is probaly desirable anyway to keep code size
+But keeping them in the same location is probaly desirable anyway to keep code size small.
 
 [2579]: https://github.com/rust-lang/rfcs/pull/2579
 
