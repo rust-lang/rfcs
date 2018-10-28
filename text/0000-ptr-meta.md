@@ -145,7 +145,7 @@ This similarly includes extern types.
 ```rust
 /// This trait is automatically implement for every type.
 ///
-/// Raw pointer types and referenece types in Rust can be thought of as made of two parts:
+/// Raw pointer types and reference types in Rust can be thought of as made of two parts:
 /// a data pointer that contains the memory address of the value, and some metadata.
 ///
 /// For statically-sized types that implement the `Sized` traits,
