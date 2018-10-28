@@ -112,10 +112,6 @@ fn drop_callback(f: Box<Fn()>) {
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-(Parts of this assumes that [trait aliases] are implemented.
-If they are not implemented by the time this RFC is,
-the `Thin` alias can be replaced by its definition.)
-
 The APIs whose full definition is found below
 are added to `core::ptr` and re-exported in `std::ptr`:
 
