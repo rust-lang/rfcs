@@ -1,7 +1,7 @@
 - Feature Name: `re_rebalancing_coherence`
 - Start Date: 2018-05-30
-- RFC PR: (leave this empty)
-- Rust Issue: (leave this empty)
+- RFC PR: [rust-lang/rfcs#2451](https://github.com/rust-lang/rfcs/pull/2451)
+- Rust Issue: [rust-lang/rust#55437](https://github.com/rust-lang/rust/issues/55437)
 
 # Summary
 [summary]: #summary
