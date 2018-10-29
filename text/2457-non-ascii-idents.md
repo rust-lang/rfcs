@@ -1,7 +1,7 @@
-- Feature Name: non_ascii_idents
+- Feature Name: `non_ascii_idents`
 - Start Date: 2018-06-03
-- RFC PR: (leave this empty)
-- Rust Issue: (leave this empty)
+- RFC PR: [rust-lang/rfcs#2457](https://github.com/rust-lang/rfcs/pull/2457)
+- Rust Issue: [rust-lang/rust#55467](https://github.com/rust-lang/rust/issues/55467)
 
 # Summary
 [summary]: #summary
