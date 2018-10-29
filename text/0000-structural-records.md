@@ -436,7 +436,7 @@ and the non-positional structural variant.
 
 ### Struct update syntax
 
-Nominal structs support what is referred to as the *"struct update syntax",
+Nominal structs support what is referred to as the *"struct update syntax"*,
 otherwise known as functional record update (FRU). For example, you can write:
 
 ```rust
