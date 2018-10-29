@@ -716,7 +716,7 @@ the component types must be and each field name may only occur once.
 We have the typing rule:
 
 ```rust
-∀ 0..n ∈ i. Γ ⊢ τ_i : σ_i
+∀ i ∈ 0..n. Γ ⊢ τ_i : σ_i
 ------------------------------------- TmSRecCtor
 Γ ⊢ { [f_i: τ_i]n } : { [f_i: σ_i]n }
 ```
