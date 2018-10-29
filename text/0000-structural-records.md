@@ -709,7 +709,8 @@ However, care must be taken to provide error messages that show the types
 as the user wrote them and not as how the type system seems them.
 
 Furthermore, for a structural record to be a well-formed type,
-the component types must be and each field name may only occur once.
+the component types must each be well-formed and each field
+name may only occur once.
 
 #### Term / Expression typing
 
