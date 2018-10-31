@@ -320,3 +320,6 @@ Except for `VTable`’s methods, this RFC proposes a subset of what that thread 
 * Are there other generic standard library APIs like `ptr::null()`
   that have an (implicit) `T: Sized` bound that unneccesarily excludes extern types?
 
+* Should `VTable::drop_in_place` be removed?
+  `vtable.drop_in_place(data_ptr)` is identical to
+  `<*mut _>::from_raw_parts(data_ptr, vtable).drop_in_place()`
