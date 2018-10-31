@@ -392,3 +392,7 @@ Except for `VTable`’s methods, this RFC proposes a subset of what that thread 
 * Should `VTable::drop_in_place` be removed?
   `vtable.drop_in_place(data_ptr)` is identical to
   `<*mut _>::from_raw_parts(data_ptr, vtable).drop_in_place()`
+
+* Should `<*mut _>::from_raw_parts` and friends be `unsafe fn`s?
+
+* API design: free functions v.s. methods/constructors on `*mut _` and `*const _`?
