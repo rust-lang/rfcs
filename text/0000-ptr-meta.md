@@ -127,6 +127,7 @@ are added to `core::ptr` and re-exported in `std::ptr`:
 The bounds on `null()` and `null_mut()` function in that same module
 as well as the `NonNull::dangling` constructor
 are changed from (implicit) `T: Sized` to `T: ?Sized + Thin`.
+Similarly for the `U` type parameter of the `NonNull::cast` method.
 This enables using those functions with [extern types].
 
 For the purpose of pointer casts being allowed by the `as` operator,
@@ -207,6 +208,14 @@ impl<T: ?Sized> *const T {
 
 impl<T: ?Sized> *mut T {
     pub fn from_raw_parts(data: *mut (), meta: <T as Pointee>::Metadata) -> Self {…}
+}
+
+impl<T: ?Sized> NonNull<T> {
+    pub fn from_raw_parts(data: NonNull<()>, meta: <T as Pointee>::Metadata) -> Self {
+        unsafe {
+            NonNull::new_unchecked(<*mut _>::from_raw_parts(data.as_ptr(), meta))
+        }
+    }
 }
 
 /// The vtable for a trait object.
