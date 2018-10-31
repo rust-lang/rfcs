@@ -74,40 +74,93 @@ because there was previously no way to express pointer-thinness in generic code.
 [guide-level-explanation]: #guide-level-explanation
 
 
-For low-level manipulation of trait objects in unsafe code,
-new APIs allow accessing the components of a fat pointer:
+Let’s build generic type similar to `Box<dyn Trait>`,
+but where the vtable pointer is stored in heap memory next to the value
+so that the pointer is thin.
+First, let’s get some boilerplate out of the way:
 
 ```rust
-use std::ptr::{metadata, VTable};
+use std::marker::{PhantomData, Unsize};
+use std::ptr::{self, VTable};
 
-fn callback_into_raw_parts(f: Box<Fn()>) -> (*const (), &'static VTable) {
-    let raw = Box::into_raw(f);
-    (raw as _, metadata(raw))
+trait DynTrait = Pointee<Metadata=&'static VTable>;
+
+pub struct ThinBox<Dyn: ?Sized + DynTrait> {
+    ptr: ptr::NonNull<WithVTable<()>>,
+    phantom: PhantomData<Dyn>,
+}
+
+#[repr(C)]
+struct WithVTable<T: ?Sized> {
+    vtable: &'static VTable,
+    value: T,
 }
 ```
 
-… and assembling it back again:
+Since [unsized rvalues] are not implemented yet,
+our constructor is going to “unsize” from a concrete type that implements our trait.
+The `Unsize` bound ensures we can cast from `&S` to a `&Dyn` trait object
+and construct the appopriate metadata.
+
+[unsized rvalues]: https://github.com/rust-lang/rust/issues/48055
+
+We let `Box` do the memory layout computation and allocation:
 
 ```rust
-fn callback_from_raw_parts(data: *const (), vtable: &'static VTable) -> Box<Fn()> {
-    Box::from_raw(<*mut Fn()>::from_raw_parts(new_data, vtable))
-}
-```
-
-`VTable` also provides enough information to manage memory allocation:
-
-```rust
-// Equivalent to letting `Box<Fn()>` go out of scope to have its destructor run,
-// this only demonstrates some APIs.
-fn drop_callback(f: Box<Fn()>) {
-    let raw = Box::into_raw(f);
-    let vtable = metadata(raw);
-    unsafe {
-        vtable.drop_in_place(raw as *mut ());
-        std::alloc::dealloc(raw as *mut u8, vtable.layout());
+impl<Dyn: ?Sized + DynTrait> ThinBox<Dyn> {
+    pub fn new_unsize<S>(value: S) -> Self where S: Unsize<Dyn> {
+        let vtable = ptr::metadata(&value as &Dyn);
+        let ptr = Box::into_raw_non_null(Box::new(WithVTable { vtable, value })).cast();
+        ThinBox { ptr, phantom: PhantomData }
     }
 }
 ```
+
+(Another possible constructor is `pub fn new_copy(value: &Dyn) where Dyn: Copy`,
+but it would involve slightly more code.)
+
+Accessing the value requires knowing its alignment:
+
+```rust
+impl<Dyn: ?Sized + DynTrait> ThinBox<Dyn> {
+    fn data_ptr(&self) -> *mut () {
+        unsafe {
+            let offset = std::mem::size_of::<&'static VTable>();
+            let value_align = self.ptr.as_ref().vtable.align();
+            let offset = align_up_to(offset, value_align);
+            (self.ptr.as_ptr() as *mut u8).add(offset) as *mut ()
+        }
+    }
+}
+
+/// <https://github.com/rust-lang/rust/blob/1.30.0/src/libcore/alloc.rs#L199-L219>
+fn align_up_to(offset: usize, align: usize) -> usize {
+    offset.wrapping_add(align).wrapping_sub(1) & !align.wrapping_sub(1)
+}
+
+// Similarly Deref
+impl<Dyn: ?Sized + DynTrait> DerefMut for ThinBox<Dyn> {
+    fn deref_mut(&mut self) -> &mut Dyn {
+        unsafe {
+            &mut *<*mut Dyn>::from_raw_parts(self.data_ptr(), *self.ptr.as_ref().vtable)
+        }
+    }
+}
+```
+
+Finally, in `Drop` we can take advantage of `Box` again,
+but this time
+
+```rust
+impl<Dyn: ?Sized + DynTrait> Drop for ThinBox<Dyn> {
+    fn drop(&mut self) {
+        unsafe {
+            Box::<Dyn>::from_raw(&mut **self);
+        }
+    }
+}
+```
+
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
