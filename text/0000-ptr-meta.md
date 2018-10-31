@@ -130,6 +130,13 @@ are changed from (implicit) `T: Sized` to `T: ?Sized + Thin`.
 Similarly for the `U` type parameter of the `NonNull::cast` method.
 This enables using those functions with [extern types].
 
+The `Pointee` trait is implemented for all types.
+This can be relied on in generic code,
+even if a type parameter `T` does not have an explicit `T: Pointee` bound.
+This is similar to how the `Any` trait can be used without an explicit `T: Any` bound,
+only `T: 'static`, because a blanket `impl<T: 'static> Any for T {…}` exists.
+(Except that `Pointee` is not restricted to `'static`.)
+
 For the purpose of pointer casts being allowed by the `as` operator,
 a pointer to `T` is considered to be thin if `T: Thin` instead of `T: Sized`.
 This similarly includes extern types.
