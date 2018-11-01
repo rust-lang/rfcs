@@ -1,6 +1,6 @@
 - Feature Name: `future_possibilities`
 - Start Date: 2018-10-11
-- RFC PR: _
+- RFC PR: [rust-lang/rfcs#2561](https://github.com/rust-lang/rfcs/pull/2561)
 - Rust Issue: N/A. The RFC is self-executing.
 
 # Summary
