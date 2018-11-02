@@ -924,6 +924,24 @@ const generics), and with tuple-variadic generics, it should be possible (for
 `serde`, if there is a will, to offer implementations of `Serialize` for all
 structural records.
 
+Note that while `impl serde::Serialize for T { ... }` may not be possible
+without extensions, the following would be:
+
+```rust
+#[derive(Serialize)]
+struct RectangleTidy {
+    dimensions: {
+        width: u64,
+        height: u64,
+    },
+    color: {
+        red: u8,
+        green: u8,
+        blue: u8,
+    },
+}
+```
+
 ## "Auto-implementing traits is a magical hack"
 
 Indeed, we would much prefer to use a less magical approach,
