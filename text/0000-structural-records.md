@@ -909,6 +909,21 @@ As with positional tuples, because a structural record is never crate local,
 this presents users with a problem when they need to implement a trait they
 don't own for a structural record comprising of crate-local types.
 
+For example, say that you have the crate-local types `Foo` and `Bar`.
+Both of these types implement `serde::Serialize`.
+Now you'd like to serialize `type T = { foo: Foo, bar: Bar };`.
+However, because neither `serde::Serialize` nor `T` is crate-local,
+you cannot `impl serde::Serialize for T { ... }`.
+
+This inability is both a good and a bad thing. The good part of it is that it
+might prevent overuse of structural records and provide some pressure towards
+nominal typing that might be good for robustness. The bad part is that these
+sort of one-off structures are a good reason to have structural records in the
+first place. With some combined quantification of field labels (possibly via
+const generics), and with tuple-variadic generics, it should be possible (for
+`serde`, if there is a will, to offer implementations of `Serialize` for all
+structural records.
+
 ## "Auto-implementing traits is a magical hack"
 
 Indeed, we would much prefer to use a less magical approach,
