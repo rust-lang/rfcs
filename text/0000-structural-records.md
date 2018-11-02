@@ -578,9 +578,9 @@ the auto trait, then the structural record does as well.
 For example, if `A` and `B` are `Send`, then so is `{ x: A, y: B }`.
 
 A structural record is `Sized` if all field types are.
-If the lexicographically last field of a structural record is `?Sized`,
+If the lexicographically last field of a structural record is `!Sized`,
 then so is the structural record. If any other field but the last is
-`?Sized`, then the type of the structural record is not well-formed.
+`!Sized`, then the type of the structural record is not well-formed.
 
 ### Implementations and orphans
 
