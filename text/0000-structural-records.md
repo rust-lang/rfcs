@@ -1079,7 +1079,11 @@ which emulate these kinds of records. Examples include:
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-None as of yet.
+1. Should we semantically reject `{ 0: expr, 1: expr }`?
+   While it does simplify the parsing to accept it in the grammar and
+   provides unification in the grammar, we might still want to reject
+   the code post parsing because the style might not be useful in code,
+   including in macros.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
