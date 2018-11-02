@@ -852,6 +852,60 @@ overlap or we cannot decide if there is.
 For structural records, a set of implementations for some standard library
 traits is provided automatically. This is detailed in the guide.
 
+For the traits for which implementations are provided automatically,
+such as `#[derive(Default)]`, if we consider a type such as:
+
+```rust
+#[derive(Default)]
+struct RectangleTidy {
+    dimensions: {
+        width: u64,
+        height: u64,
+    },
+    color: {
+        red: u8,
+        green: u8,
+        blue: u8,
+    },
+}
+```
+
+The generated code would be akin to:
+
+```rust
+impl Default for RectangleTidy {
+    fn default() -> Self {
+        RectangleTidy {
+            dimensions: Default::default(),
+            color: Default::default()
+        }
+    }
+}
+```
+
+as opposed to:
+
+```rust
+impl Default for RectangleTidy {
+    fn default() -> Self {
+        RectangleTidy {
+            dimensions: {
+               width: Default::default(),
+               height: Default::default(),
+            },
+            color: {
+                red: Default::default(),
+                green: Default::default(),
+                blue: Default::default(),
+            }
+        }
+    }
+}
+```
+
+This works, including when nested, because each layer of structural records will
+have implementations provided given that they satisfy the conditions aforementioned.
+
 ### Dynamic Semantics: Layout
 
 The layout of a structural record is the same of a positional tuple
