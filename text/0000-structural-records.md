@@ -957,6 +957,17 @@ useful such as with [RFC 2544]. Furthermore, since `{ $ident: $type }`
 is not likely to occur frequently in the wild even if type ascription
 is stabilized, performance is unlikely to suffer notably.
 
+Another instance where backtracking / lookahead may be required is when parsing:
+
+```rust
+fn f() where $constraint_1, { $ident:
+```
+
+In this case, there is no ambiguity, but `{ $ident: ...` could either be the
+start of a structural record type in the second constraint or belonging to the
+function body (type ascription on an identifier). The second case is likely
+pathological, and so it is unlikely to occur much in practice.
+
 ## Hard to implement crate-external traits
 
 As with positional tuples, because a structural record is never crate local,
