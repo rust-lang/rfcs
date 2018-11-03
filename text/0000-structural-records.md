@@ -1151,6 +1151,30 @@ which emulate these kinds of records. Examples include:
    the code post parsing because the style might not be useful in code,
    including in macros.
 
+   This question can be deferred to stabilization since it is relatively minor.
+
+2. Should `Ord` and `PartialOrd` be implemented for structural records?
+
+   We could avoid doing so and instead treat structural records as having a set
+   of unordered fields. Then, if anyone wants to use `Ord` or `PartialOrd`,
+   they can use a nominal `struct` or positional tuple instead where the
+   ordering is clearer.
+
+   With respect to `(Partial)Eq`, `Hash`, and `Debug`, there is not really a
+   problem because `Eq` does not rely on ordering, `Hash` only needs to uphold
+   `x == y => hash(x) == hash(y)`, and for `Debug`, lexicographical ordering
+   makes sense. Meanwhile, a user may rightfully be surprised if they write:
+
+   ```rust
+   let first = { foo: 1, bar: 2 };
+   let second = { foo: 2, bar: 1};
+   assert!(first < second);
+   ```
+
+   expecting `assert!(...)` to hold while in actuality it would fail.
+
+   As this question is major, it should be resolved prior to accepting this RFC.
+
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
