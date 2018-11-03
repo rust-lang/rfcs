@@ -1214,7 +1214,7 @@ over fields. The `HasField` trait could be defined as:
 trait HasField<const Field: &'static str> {
     type Field;
 
-    fn get(self) -> Self::Field<'a>;
+    fn get(self) -> Self::Field;
 
     fn get_ref<'a>(&'a self) -> &'a Self::Field;
 
