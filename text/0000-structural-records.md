@@ -1050,7 +1050,8 @@ writing out the type, an expression, or pattern, as long as all the fields are
 there and of the same type once the fields have been sorted lexicographically. 
 
 Point 2. and 3. still hold, but this is and has always been true of positional
-tuples so it is nothing new.
+tuples so it is nothing new. Note that both the type and the fields of a
+structural record are public, just as with tuples.
 
 Furthermore, while all types were akin to `#[repr(C)]` at the time,
 the structural records proposed in this RFC are `#[repr(Rust)]`.
