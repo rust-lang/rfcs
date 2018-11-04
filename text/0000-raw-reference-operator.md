@@ -133,6 +133,14 @@ surface syntax has been made yet -- and if one comes up later, this proposal is
 forwards-compatible with also having explicit syntax for taking a raw reference
 (and deprecating the safe-ref-then-cast way of writing this operation).
 
+We could be using the new operator in more cases, e.g. we could have some kind
+of analysis which determines during desugaring if a reference is *only* used as
+a raw pointer, and if yes, creates it as a raw pointer to begin with.  This
+would make more code use raw references, thus making more code defined.
+However, if someone *relies* on this behavior there is a danger of accidentally
+adding a non-raw-ptr use to a reference, which would then rather subtly make the
+program have UB.
+
 # Prior art
 [prior-art]: #prior-art
 
@@ -143,4 +151,5 @@ arise because of Rust having both of these features.
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-None I can think of.
+We could have different rules for when to take a raw reference (as opposed to a
+safe one).
