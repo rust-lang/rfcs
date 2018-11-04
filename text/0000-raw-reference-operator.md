@@ -9,7 +9,7 @@
 Introduce a new primitive operator on the MIR level: `&[mut|const] raw <place>`
 to create a raw pointer to the given place (this is not surface syntax, it is
 just how MIR might be printed).  Desugar the surface syntax `&[mut] <place> as
-*[mut|const] _` to use this operator, instead of two statements (first take
+*[mut|const] _` to use this operator, instead of two MIR statements (first take
 normal reference, then cast).
 
 # Motivation
@@ -34,7 +34,7 @@ intermediate shared reference is aligned and dereferencable.  In both cases,
 that is likely not what the author of the code intended.
 
 To fix this, we propose to introduce a new primitive operation on the MIR level
-that, in a single statement, creates a raw pointer to a given place.  No
+that, in a single MIR statement, creates a raw pointer to a given place.  No
 intermediate reference exists, so no invariants have to be adhered to.
 
 # Guide-level explanation
@@ -52,7 +52,23 @@ let x = unsafe { &packed.field }; // `x` is not aligned -> undefined behavior
 ```
 
 There is no situation in which the above code is correct, and hence it is a hard
-error to write this.
+error to write this.  This applies to most ways of creating a reference, i.e.,
+all of the following are UB if `X` is not properly aligned and dereferencable:
+
+```rust
+fn foo() -> &T {
+  &X
+}
+
+fn bar(x: &T) {}
+bar(&X); // this is UB at the call site, not in `bar`
+
+let &x = &X; // this is actually dereferencing the pointer, certainly UB
+let _ = &X; // throwing away the value immediately changes nothing
+&X; // different syntax for the same thing
+
+let x = &X as &T as *const T; // this is casting to raw "too late"
+```
 
 The only way to create a pointer to an unaligned or dangling location without
 triggering undefined behavior is to *immediately* cast it to a raw pointer:
@@ -153,3 +169,9 @@ arise because of Rust having both of these features.
 
 We could have different rules for when to take a raw reference (as opposed to a
 safe one).
+
+What do we specify inference to do for cases like
+```rust
+let x: *const T = {&*null};
+```
+Does this take a raw reference, or a safe reference?
