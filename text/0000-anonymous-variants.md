@@ -260,7 +260,7 @@ Because of coherence rules, not providing blanket implementations of user implem
 What's the method behind the mad syntax? 
 ------
 
-The syntax of anonymous variant types intentionally follows that of tuples. The name of the type is wrapped in parentheses, and consists of separated type names, just like in a tuple. The only syntactic difference is using separating and trailing vertical bars instead of separating and trailing commas. 
+The syntax of anonymous variant types intentionally follows that of tuples. The name of the type is wrapped in parentheses, and consists of separated type names, just like in a tuple. The only syntactic difference is using separating and trailing vertical bars instead of separating and trailing commas. Vertical bars are associated with alternation in a match context, and I decided it would be fine to maintain this intuition in a type context. 
 
 The use of numbers is similar; just like a tuple's fields are numbered in ascending order from zero, and each field has the type of that ordinal type within the tuple declaration, an anonymous variant type's variants are numbered in ascending order from zero, and each variant has the type of that ordinal type within the anonymous variant type declaration. The wrapping angle brackets and path spec are consistent with the use of an associated item's methods, like how one could refer to `(f32,)`'s clone method with `<(f32,)>::clone`. 
 
