@@ -204,7 +204,7 @@ fn debug_derive(typename: Group) -> TokenStream {
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-A semi-formal description of the syntax of anonymous variant types is shown below, where "..." represents the current rust grammar, immediately before implementation of this RFC. (Thanks to [Centril](https://github.com/Centril) for pointing out a simplification of the grammar, among other things) 
+A semi-formal description of the syntax of anonymous variant types is shown below, where "..." represents the current rust grammar, immediately before implementation of this RFC. 
 ```
 ; Type names
 ty_name ::= ... | anon_varty_name ; 
