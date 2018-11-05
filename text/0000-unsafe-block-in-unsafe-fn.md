@@ -82,38 +82,39 @@ to satisfy the conditions required to perform this unsafe operation.
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-First of all, we no longer warn that an `unsafe` block is unnecessary when it is
-nested immediately inside an `unsafe fn`.  So, the following compiles without
-any warning:
+1.  First of all, we no longer warn that an `unsafe` block is unnecessary when it is
+    nested immediately inside an `unsafe fn`.  So, the following compiles without
+    any warning:
 
-```rust
-unsafe fn get_unchecked<T>(x: &[T], i: usize) -> &T {
-  unsafe { x.get_unchecked(i) }
-}
-```
+    ```rust
+    unsafe fn get_unchecked<T>(x: &[T], i: usize) -> &T {
+      unsafe { x.get_unchecked(i) }
+    }
+    ```
 
-However, nested `unsafe` blocks are still redundant, so this warns:
+    However, nested `unsafe` blocks are still redundant, so this warns:
 
-```rust
-unsafe fn get_unchecked<T>(x: &[T], i: usize) -> &T {
-  unsafe { unsafe { x.get_unchecked(i) } }
-}
-```
+    ```rust
+    unsafe fn get_unchecked<T>(x: &[T], i: usize) -> &T {
+      unsafe { unsafe { x.get_unchecked(i) } }
+    }
+    ```
 
-In a next step, we have a lint that fires when an unsafe operation is performed
-inside an `unsafe fn` but outside an `unsafe` block.  So, this would trigger the
-lint:
+2.  In a next step, we have a lint that fires when an unsafe operation is performed
+    inside an `unsafe fn` but outside an `unsafe` block.  So, this would trigger the
+    lint:
 
-```rust
-unsafe fn get_unchecked<T>(x: &[T], i: usize) -> &T {
-  x.get_unchecked(i)
-}
-```
+    ```rust
+    unsafe fn get_unchecked<T>(x: &[T], i: usize) -> &T {
+      x.get_unchecked(i)
+    }
+    ```
 
-This gets us into a state where programmers are much less likely to accidentally
-perform undesired unsafe operations inside `unsafe fn`.
+    This gets us into a state where programmers are much less likely to accidentally
+    perform undesired unsafe operations inside `unsafe fn`.
 
-Even later, it might be desirable to turn this warning into an error.
+3.  Even later (in the 2021 edition), it might be desirable to turn this warning
+    into an error.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -130,6 +131,10 @@ functions less ergonomic to write.
 I explained the rationale in the motivation section.
 
 The alternative is to not do anything, and live with the current situation.
+
+We could introduce named proof obligations (proposed by @Centril) such that the
+compiler can be be told (to some extend) if the assumptions made by the `unsafe
+fn` are sufficient to discharge the requirements of the unsafe operations.
 
 # Prior art
 [prior-art]: #prior-art
