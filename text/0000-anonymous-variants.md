@@ -20,7 +20,7 @@ However, with these extras comes complexity. RFCs of this kind generally describ
 This RFC differs from other RFCs in the same vein by deemphasizing ergonomic features, instead focusing on a simple base instantiation of the general idea of anonymous sum types which can be implemented and processed with relative ease, and which library writers and future RFCs can build on top of with relative ease. The RFC itself may be long, but most of this extra length is not used for more detail, but to explain the decisions behind the RFC and how it may be executed and utilized. 
 
 Not to say that this feature won't be useful by itself. Even as described and without ecosystem extras, this feature can still be used reasonably nicely. Here it is used to combine the possible error types of a function with less boilerplate than a single-shot error enum, a commonly cited potential use of ad-hoc sum and algebraic union types: 
-```
+```rust
 use std::rc::Weak;
 use std::option::NoneError;
 use std::num::ParseIntError;
@@ -45,7 +45,7 @@ fn multiple_errors(val: Weak<str>) -> Result<i64, (NoneError|ParseIntError)> {
 Concise guide
 ------
 Anonymous variant types are anonymous sum types, which mean, like enums, their possible values are several different variants. They are declared like tuples, but with vertical bars instead of commas. The variants are referred to for construction and matching by the anonymous variant type name or a placeholder for one, followed by two colons, followed by a (zero-indexed) number for the variant. Like enums, variant order in an anonymous variant type matters, and variants are not automatically combined together or rearranged. 
-```
+```rust
 // Declare an anonymous variant type
 // Associated items need to be wrapped in angle brackets, hence all the angle
 // brackets around the type placeholders
@@ -63,7 +63,7 @@ Detailed user guide
 Anonymous variant types are used in Rust as an ad-hoc type for a value which can have multiple variants. Much like enums are a named type for values which can take on many variants, each associated with an identifier, anonymous variant types are a type for values which can take on many variants, each identified by their position in an anonymous variant type. These variants are called anonymous variants, as they are identified by their position on an anonymous variant type. 
 
 An anonymous variant type name consists of a parentheses-enclosed list of type names separated by vertical bars, and optionally followed by a trailing vertical bar. Anonymous variant type placeholders are named similarly, but using type placeholders as well as type names. Because of syntax restrictions and to make generic implementations over a practical subset of anonymous variant types feasible, there must be at least one variant, and each variant is associated with exactly one type. Use the never type `!` for a type with zero variants, the unit type `()` for the type of a variant that does not need its single field, and tuples for the type of a variant that wants to hold more than one field. These restrictions may be relaxed by future RFCs. 
-```
+```rust
 // An anonymous variant type with two variants, one of f32 type, the other of
 // i32 type. 
 (f32 | i32)
@@ -80,7 +80,7 @@ An anonymous variant type name consists of a parentheses-enclosed list of type n
 (i64 | () | i64 | (i64, f64))
 ```
 The usage of separating and trailing commas within a matching pair of parentheses indicates a tuple. The usage of separating and trailing vertical bars within a matching pair of parentheses indicates an anonymous variant type. Having neither indicates that the type is merely enclosed in parentheses, while mixing the two is syntactically invalid (though may be made valid and assigned a meaning in the future). 
-```
+```rust
 (f32) // f32
 (f32,) // tuple consisting only of an f32
 (f32|) // anonymous variant type whose only variant is of type f32
@@ -88,7 +88,7 @@ The usage of separating and trailing commas within a matching pair of parenthese
 (f32|,) // syntax error
 ```
 Much like an enum type's variants are associated with identifiers, an anonymous variant type's variants are associated with numbers in ascending order from zero. Variants of such a type are numbered in the order they were declared in the type, and each variant has a single field having the type declared in the variant. Variant construction and pattern matching on anonymous variant types acts just like it does on named enum types. The angle brackets are not new syntax, but signify that the type is used in an associated item path, in the same way that `(f32,)::clone((1.0_f32,))` is not well-formed and needs to be written `<(f32,)>::clone((1.0_f32,))`
-```
+```rust
 let foo = <(i64 | () | i64 | (i64, f64))>::0(4_i64);
 let bar = <(i64 | () | i64 | (i64, f64))>::3((-3_i64, 0.0_f64));
 assert!(if let <(i64 | () | i64 | (i64, f64))>::0(k) = foo { 
@@ -104,7 +104,7 @@ assert!(match bar {
 });
 ```
 As a safeguard against confusion and ambiguity, however, anonymous variants cannot be represented by numerals alone, and must be path-specced by the anonymous variant type they are a variant of, or by a placeholder that can be inferred to unambiguously correspond to exactly one such type. The concrete type of any anonymous variant type value used must be unambiguously inferrable, just like with enums. 
-```
+```rust
 // Will error as an invalid operation on a numeric type, for good reason
 let _ = 0(4_i64);
 
@@ -124,7 +124,7 @@ let _: (i64 | _) = <(_ | i32)>::0(4_i64);
 let _: (i64 | _) = <(_ | _)>::1(2_i32);
 ```
 The behavior of anonymous variant types mirrors that of similarly defined enums in every semantic respect. 
-```
+```rust
 // Their variants are fully formed functions. 
 let _: fn((i64, f64)) -> ((i64, f64) | &str) = <((i64, f64) | &str)>::0;
 let _: fn(&str) -> ((i64, f64) | &str) = ((i64, f64) | &str)::1;
@@ -163,7 +163,7 @@ The variants of the type can similarly be automatically determined. The list of 
 Parsing such a type is similarly easy. An anonymous variant type names consists of a parentheses-enclosed vertical bar separated list of types, optionally with a trailing vertical bar. At the level of a token stream, which will group any nested anonymous variant types into a single token tree, the stream can be divided into potential type names at the vertical bars, but not including the bars themselves, the last one removed if it consists of exactly zero tokens (to account for trailing vertical bars), and the remaining token stream excerpts either subsequently parsed to see if each one corresponds to a type, or just kept as is if semantic analysis is not desired. 
 
 Here is an example bringing all the above together, showing how one might automatically derive a trait for an anonymous variant type. Note that this is only a demonstration summarizing the above points, and it omits a number of checks and extras that a production-grade procedural macro would have, but it should work if a token group corresponding to a valid name of an anonymous variant type whose variants all implement Debug is passed into `debug_derive`. 
-```
+```rust
 fn debug_derive(typename: Group) -> TokenStream {
     // Copy the full type name to a string
     let fulltype = typename.clone();
@@ -233,7 +233,7 @@ The anonymous variant type syntax intentionally mirrors that of tuples, with ver
 The clause specifying that numerals are only recognized as anonymous variants if they are path-specced by a type name or placeholder is to prevent ambiguity between numeric literals and anonymous variants, which would otherwise be possible interpretations of numerals. Because numerals have a very strong association with numeric types, numerals by themselves should always remain numeric literals, rather than allowing the interpretation of numerals by themselves as anonymous variants. In any case, anonymous variant types are likely to be rarer than numbers, and prepending a number with `<_>::` or `<(_|_)>::` helps to clearly indicate that an anonymous variant is in usage. 
 
 This clause also prevent unintuitive type inferences involving anonymous variant types if a program, as written, accidentally performs a function call on a numeric literal or variable assigned with one. In the below snippet, if the `1` could be interpreted as an anonymous variant, then the compiler would infer that `y` is of some anonymous variant type with at least two variants, but without any type information to indicate the types of the anonymous variants. Thus, a compiler diagnostic message would indicate that the below snippet is well-formed but ambiguous, and would indicate that `y` should have its type's constituent variant types named out. If the user simply wanted to perform numeric work and intended for the `1` to be a number, this error message would be terribly unintuitive. With the requirement for the path spec, the compiler could point out that a numeric type does not implement any of the `Fn*` traits, and suggest either modifying the first statement to prepend the numeral with a path spec, or modify the second statement to do a more sensible operation on the number, possibly multiplication. 
-```
+```rust
 let y = 1;    // This should be of numeric type
 let z = y(3); // This should not be interperable as an anonymous variant call
 ```
