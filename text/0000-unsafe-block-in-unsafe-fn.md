@@ -114,8 +114,8 @@ to satisfy the conditions required to perform this unsafe operation.
     This gets us into a state where programmers are much less likely to
     accidentally perform undesired unsafe operations inside `unsafe fn`.
 
-4.  Even later (in the 2021 edition), it might be desirable to turn this warning
-    into an error.
+4.  Even later (in the 2021 edition?), it might be desirable to turn this
+    warning into an error.
 
 # Drawbacks
 [drawbacks]: #drawbacks
