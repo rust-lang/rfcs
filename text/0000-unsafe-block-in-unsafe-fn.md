@@ -120,6 +120,10 @@ Even later, it might be desirable to turn this warning into an error.
 
 This new warning will likely fire for the vast majority of `unsafe fn` out there.
 
+Many `unsafe fn` are actually rather short (no more than 3 lines) and will
+likely end up just being one large `unsafe` block.  This change would make such
+functions less ergonomic to write.
+
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
