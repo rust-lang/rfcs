@@ -125,7 +125,13 @@ The alternative is to not do anything, and live with the current situation.
 # Prior art
 [prior-art]: #prior-art
 
-None that I am aware of: Other languages do not have `unsafe` blocks.
+The only other language that I am aware of that has a notion of `unsafe` blocks
+and `unsafe` functions is C#.  It
+[looks like](https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/unsafe)
+there, unsafe operations can be freely used inside an `unsafe` function even
+without a further `unsafe` block.  However, based on @Ixrec's experience,
+`unsafe` plays hardly any role in the C# ecosystem and they do not have a
+culture of thinking about this in terms of proof obligations.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
