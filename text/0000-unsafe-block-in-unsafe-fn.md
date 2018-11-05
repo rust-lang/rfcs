@@ -43,14 +43,19 @@ proof *obligation*: The programmer has to ensure that this code is actually safe
 to execute in the current context, because the compiler just trusts the
 programmer to get this right.  In contrast, `unsafe fn` represents an
 *assumption*: As the author of this function, I make some assumptions that I
-expect my callees to uphold.  Making `unsafe fn` also implicitly play the role
-of an `unsafe` block conflates these two dual aspects of unsafety (one party
-making an assumption, another party having the obligation to prove that
-assumption).  There is no reason to believe that the assumption made by the
-`unsafe fn` is the same as the obligation incurred by unsafe operations inside
-this function, and hence the author of the `unsafe fn` should better carefully
-check that their assumptions are sufficient to justify the unsafe operations
-they are performing.  This is what an `unsafe` block would indicate.
+expect my callees to uphold.  (In terms of
+[introduction and elimination forms of natural deduction](https://en.wikipedia.org/wiki/Natural_deduction#Introduction_and_elimination),
+`unsafe` blocks are where you introduce, and `unsafe fn` is where you
+eliminate.)
+
+Making `unsafe fn` also implicitly play the role of an `unsafe` block conflates
+these two dual aspects of unsafety (one party making an assumption, another
+party having the obligation to prove that assumption).  There is no reason to
+believe that the assumption made by the `unsafe fn` is the same as the
+obligation incurred by unsafe operations inside this function, and hence the
+author of the `unsafe fn` should better carefully check that their assumptions
+are sufficient to justify the unsafe operations they are performing.  This is
+what an `unsafe` block would indicate.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
