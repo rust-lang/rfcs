@@ -100,9 +100,9 @@ to satisfy the conditions required to perform this unsafe operation.
     }
     ```
 
-2.  In a next step, we have a lint that fires when an unsafe operation is performed
-    inside an `unsafe fn` but outside an `unsafe` block.  So, this would trigger the
-    lint:
+2.  Optionally, we could add a clippy "correctness" lint to warn about unsafe
+    operations inside an `unsafe fn`, but outside an `unsafe` block.  So, this
+    would trigger the lint:
 
     ```rust
     unsafe fn get_unchecked<T>(x: &[T], i: usize) -> &T {
@@ -110,10 +110,11 @@ to satisfy the conditions required to perform this unsafe operation.
     }
     ```
 
-    This gets us into a state where programmers are much less likely to accidentally
-    perform undesired unsafe operations inside `unsafe fn`.
+3.  In a next step, we move this lint to rustc proper, make it warn-by-default.
+    This gets us into a state where programmers are much less likely to
+    accidentally perform undesired unsafe operations inside `unsafe fn`.
 
-3.  Even later (in the 2021 edition), it might be desirable to turn this warning
+4.  Even later (in the 2021 edition), it might be desirable to turn this warning
     into an error.
 
 # Drawbacks
