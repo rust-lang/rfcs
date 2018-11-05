@@ -71,31 +71,36 @@ let x = &X as &T as *const T; // this is casting to raw "too late"
 ```
 
 The only way to create a pointer to an unaligned or dangling location without
-triggering undefined behavior is to *immediately* cast it to a raw pointer:
+triggering undefined behavior is to *immediately* turn it into a raw pointer.
+All of the following are valid:
 
 ```rust
 let x = unsafe { &packed.field as *const _ };
+let y: *const _ = unsafe { &packed.field };
 ```
 
-These two operations (taking a reference, casting to a raw pointer) are actually
-considered a single operation happening in one step, and hence the invariants
-incurred by references do not come into play.
+The intention is to cover all cases where a reference, just created, is
+immediately explicitly used as a value of raw pointer type.
+
+These two operations (taking a reference, casting/coercing to a raw pointer) are
+actually considered a single operation happening in one step, and hence the
+invariants incurred by references do not come into play.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 When translating HIR to MIR, we recognize `&[mut] <place> as *[mut|const] _` as
-a special pattern and turn it into a single MIR `Rvalue` that takes the address
-and produces it as a raw pointer -- a "take raw reference" operation.  This
-might be a variant of the existing `Ref` operation (say, a boolean flag for
-whether this is raw), or a new `Rvalue` variant.  The borrow checker should do
-the usual checks on `<place>`, but can just ignore the result of this operation
-and the newly created "reference" can have any lifetime.  (Currently this will
-be some form of unbounded inference variable because the only use is a
-cast-to-raw, the new "raw reference" operation can have the same behavior.)
-When translating MIR to LLVM, nothing special has to happen as references and
-raw pointers have the same LLVM type anyway; the new operation behaves like
-`Ref`.
+well as coercions from `&[mut] <place>` to a raw pointer type as a special
+pattern and turn them into a single MIR `Rvalue` that takes the address and
+produces it as a raw pointer -- a "take raw reference" operation.  This might be
+a variant of the existing `Ref` operation (say, a boolean flag for whether this
+is raw), or a new `Rvalue` variant.  The borrow checker should do the usual
+checks on `<place>`, but can just ignore the result of this operation and the
+newly created "reference" can have any lifetime.  (Currently this will be some
+form of unbounded inference variable because the only use is a cast-to-raw, the
+new "raw reference" operation can have the same behavior.)  When translating MIR
+to LLVM, nothing special has to happen as references and raw pointers have the
+same LLVM type anyway; the new operation behaves like `Ref`.
 
 When interpreting MIR in the miri engine, the engine will recognize that the
 value produced by this `Rvalue` has raw pointer type, and hence must not satisfy
