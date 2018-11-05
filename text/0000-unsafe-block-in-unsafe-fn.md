@@ -154,3 +154,11 @@ culture of thinking about this in terms of proof obligations.
 Should this lint be in clippy first before in becomes warn-by-default in rustc,
 to avoid a huge flood of warnings showing up at once?  Should the lint ever
 become a hard error (on newer editions), or remain a warning indefinitely?
+
+Should we require `cargo fix` to be able to do *something* about this warning
+before making it warn-by-default?  `cargo fix` could, for example, wrap the body
+of every `unsafe fn` in one big `unsafe` block.  That would not improve the
+amount of care that is taken for unsafety in the fixed code, but it would
+provide a way to the incrementally improve the big functions, and new functions
+written later would have the appropriate amount of care applied to them from the
+start.
