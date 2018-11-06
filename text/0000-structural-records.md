@@ -1255,7 +1255,7 @@ let gamma = { ..alpha, ..beta };
 assert_eq!(gamma, { a: 1, d: 2, c: 3, d: 4 });
 ```
 
-## Coercions from smaller to larger records
+## Coercions from larger to smaller records
 
 The syntax above allowed us to grow structural records with more fields.
 We could also offer a way to shrink them by allowing coercions from larger
