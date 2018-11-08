@@ -233,7 +233,7 @@ fn main() {
 
 `try_reserve` and `try_reserve_exact` would be added to `HashMap`, `Vec`, `String`, and `VecDeque`. These would have the exact same APIs as their infallible counterparts, except that OOM would be exposed as an error case, rather than a call to `Alloc::oom()`. They would have the following signatures:
 
-```
+```rust
 /// Tries to reserve capacity for at least `additional` more elements to be inserted
 /// in the given `Vec<T>`. The collection may reserve more space to avoid
 /// frequent reallocations. After calling `reserve`, capacity will be
@@ -261,7 +261,7 @@ pub enum CollectionAllocErr {
 
 We propose only these methods because they represent a minimal building block that third parties can develop fallible allocation APIs on top of. For instance, here are some basic implementations:
 
-```
+```rust
 impl<T> FallibleVecExt<T> for Vec<T> {
     fn try_push(&mut self, val: T) -> Result<(), (T, Err)> {
         if let Err(err) = self.try_reserve(1) { return Err((val, err)) }
