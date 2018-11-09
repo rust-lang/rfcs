@@ -58,7 +58,7 @@ If we were to write out this hypothetical struct in Rust, we'd want something
 like:
 
 ```rust
-#[repr(bitfields)]
+#[repr(bitpacked)]
 struct MipsInstruction {
     opcode: u6,
     rs: u5,
@@ -74,7 +74,7 @@ Unfortunately, `u5` and `u6` aren't valid types in Rust, and C's way of doing
 better solution: `uint<N>`:
 
 ```rust
-#[repr(bitfields)]
+#[repr(bitpacked)]
 struct MipsInstruction {
     opcode: uint<6>,
     rs: uint<5>,
@@ -90,7 +90,7 @@ guarantee that a value does not have more bits than necessary. If a method to
 set `opcode` for example took a `u8`, it's not clear whether the method should
 simply ignore the upper two bits or if it should panic if they're non-zero.
 
-As stated before, `#[repr(bitfields)]` is *not* proposed by this RFC and is not
+As stated before, `#[repr(bitpacked)]` is *not* proposed by this RFC and is not
 necessarily the way this will work. However, `uint<N>` is what this RFC
 proposes.
 
@@ -197,6 +197,17 @@ For example, on 64-bit systems, `usize` is technically just a `u64`, but
 `uint<64>` refers to `u64`, not `usize`. It's unfortunate, but we've reduced our
 number of impls from twelve to four, which is still a very big deal!
 
+Note that there's one slight caveat here, which is that our `my_default` method
+might overflow. This seems silly, but there's one type, `int<1>` where you can't
+have the value 1, and because of this, the compiler will emit an
+`overflowing_literals` lint. In general, if you're casting a literal *to* a
+generic integer, you can't expect any value other than zero to work. In the
+future, we'll be able to annotate our `int<N>` impl with something like
+`where N > 1`, but until then, we'll have to deal with this weird overflow
+behaviour.
+
+## Other benefits
+
 One other side effect of having `uint<N>` and `int<N>` is that we can represent
 a lot more types than before. For example, `uint<7>` is just a seven-bit
 integer, which we might use to represent an ASCII character. Don't be fooled by
@@ -216,28 +227,28 @@ not today.
 
 ## Primitive behaviour
 
-The compiler will have two new built-in integer types: `uint<N>` and `int<N>`,
-where `const N: usize`. These will alias to existing `uN` and `iN` types if `N`
-is a power of two and no greater than 128. `usize` and `isize` remain separate
-types due to coherence issues, and `bool` remains separate from `uint<1>` as it
-does not have most of the functionality that integers have.
+The compiler will gain the built-in integer types `uint<N>` and `int<N>`, where
+`const N: usize`. These will alias to existing `uN` and `iN` types if `N` is a
+power of two and no greater than 128. `usize`, `isize`, and `bool` remain
+separate types because of coherence issues, i.e. they can have separate
+implementations and additional restrictions applied.
 
 `int<N>` and `uint<N>` will have the smallest power-of-two size and alignment.
 For example, this means that `uint<48>` will take up 8 bytes and have an
 alignment of 8, even though it only has 6 bytes of data.
 
-`int<N>` store values between -2<sup>N-1</sup> and 2<sup>N-1</sup>-1, and
-`uint<N>` stores values between 0 and 2<sup>N</sup>-1. One unexpected case of
-this is that `i1` represents zero or *negative* one, even though LLVM and other
-places use `i1` to refer to `u1`. This case is left as-is because generic code
-*should* expect sign extension to happen for all signed integers, and the
-`N = 1` case is no different. It's valid to cast `int<N>` or `uint<N>` to
-`int<M>` or `uint<M>` via `as`, and sign extension will occur as expected. This
-conversion is lossless when converting `int<N>` to `int<M>` or `uint<M>` or
-from `uint<N>` to `int<M>` or `uint<M + 1>`, where `M >= N`.
+`int<N>` stores values between -2<sup>N-1</sup> and 2<sup>N-1</sup>-1, and
+`uint<N>` stores values between 0 and 2<sup>N</sup>-1. It's valid to cast
+`int<N>` or `uint<N>` to `int<M>` or `uint<M>` via `as`, and sign extension will
+occur as expected. This conversion is lossless when converting `int<N>` to
+`int<M>` or `uint<M>`, or from `uint<N>` to `int<M>` or `uint<M + 1>`, where
+`M >= N`.
 
-In addition to the usual casts, `u1` and `i1` can also be cast *to* `bool` via
-`as`, whereas most integer types can only be cast from `bool`.
+In addition to the usual casts, `uint<1>` can also be cast *to* `bool` via `as`,
+whereas all other integer types can only be cast *from* `bool`. This does not
+apply to `int<1>`, as the value `true` is equivalent to 1, and `int<1>` does not
+include the value 1. `int<1>` will still allow casts *from* `bool`, which will
+overflow to -1 as expected.
 
 For the moment, a monomorphisation error will occur if `N > 128`, to minimise
 implementation burden. This error can be lifted in the future, and if any future
@@ -265,77 +276,165 @@ enabled, but ignored when they are not. In general, `uint<N>` will be
 zero-extended to the next power of two, and `int<N>` will be sign-extended to
 the next power of two.
 
-## Computations and storage
+## Standard library
 
-Because sign extension will always be applied, it's safe for the compiler to
-internally treat `uint<N>` as `uint<N.next_power_of_two()>` when doing all
-computations. As a concrete example, this means that adding two `uint<48>`
-values will work exactly like adding two `u64` values, generating exactly the
-same code on targets with 64-bit registers. For targets with 32-bit registers,
-it may generate slightly different code, although in practice it'll probably be
-a long time before these sorts of optimisations are applied.
+Right now, many methods on the integers are implemented using intrisics that
+only work on the existing integer types, which are natively supported by LLVM;
+this will not change. Instead, methods that require these intrinsics will be
+implemented using specialisation, i.e. adding separate `default impl` versions
+which will ultimately call the intrinsic-based versions.
 
-Additionally, the restriction that `N <= 128` may allow for future changes
-where `uint<N>` is not actually stored as `uint<N.next_power_of_two()>` for
-sufficiently large `N`. Right now, even storing `uint<65>` as `u128` makes the
-most sense, because it will be the most efficient representation on 64-bit CPUs
-for performing many operations. However, storing `uint<4097>` as `uint<8192>`,
-for example, may be total overkill.
+This way, instructions which work on the native sizes will be emitted for those
+sizes, and non-native sizes will "emulate" the method using the native version.
+For example, take the `count_zeroes` function:
 
-The main goal for these representations is to avoid bit-wrangling as much as
-possible. Although truncating the number of bits for integers is no longer free,
-e.g. `u64` to `uint<48>` requires an AND and `i64` to `int<48>` requires
-conditionally excecuting an AND or an OR, the goal is that in most cases, using
-non-power-of-two lengths should be more or less free.
+```rust
+default impl<const N: usize> uint<N> {
+    fn count_zeros(self) -> u32 {
+        const M: usize = N.next_power_of_two();
+        let zeros = (self as uint<M>).count_zeros();
+        zeros - (M - N)
+    }
+}
+// impl u8, etc.
+```
+
+Let's look at the specific case for `uint<7>`:
+
+```rust
+fn count_zeros(self) -> u32 {
+    const M: usize = 7.next_power_of_two();
+    let zeroes = (self as uint<M>).count_zeroes()
+    zeroes - (M - 7)
+}
+```
+
+Ultimately, this will optimize to:
+
+```rust
+fn count_zeroes(self) -> u32 {
+    (self as u8).count_zeroes() - 1
+}
+```
+
+This way, we can implement all of the expected integer functions without having
+to mess with the underlying intrinsics.
 
 ## Niche optimizations for enums
+
+### Niche?
+
+Right now, Rust optimises enums for types which have unrepresentable values. For
+example, `char` is basically a `u32` under the hood, but the values in the range
+`0xD800..0xE000` aren't allowed. The compiler can exploit this, allowing
+`Option<char>` to be the same size as a `char`; the space of invalid values
+(niche) can be used to store enum discriminants.
 
 As a hard rule, `uint<N>` will always have its upper `N.next_power_of_two() - N`
 bits set to zero, and similarly, `int<N>`'s upper bits will be sign-extended. To
 compute niche optimizations for enums, we'll have to take this into account.
 
+### `uint<N>`: the easy one
+
 Niche values for `uint<N>` are simply any nonzero patterns in the upper bits,
-similarly to `bool`. This means that for `uint<7>`, for example, we have `128`
-possible niche values.
+similarly to `bool`. For example, because `uint<7>` can be from 0 to 127, the
+values from 128 to 255 are free to use; this allows us to represent 127 unit
+variants in those extra values. Imagine a weirder version of `Option<uint<7>>`,
+where there are 127 different versions of `None`-- this would be the same size
+as a `uint<7>`.
 
-Niche values for `int<N>` are trickier. The niche with all bits set to one
-represents the valid value -1, and should be replaced with a niche where all
-the `int<N>` bits are set to one and the extra bits are set to zero. Other than
-that, in general, both `uint<N>` and `int<N>` will have
-`N.next_power_of_two() - N` bits of niche space.
+### `int<N>`: the hard one
 
-## Standard library
+Niche values for `int<N>` are trickier. Because of sign extension, the extra
+bits can be either zero or one. However, the sign is "extended," which we can
+exploit-- as long as at least one of the upper bits is different from the sign
+bit, we're okay. This gives us exactly the same number of values as we'd
+otherwise get from `uint<N>`, but we'll have to warp our brains a bit to
+understand them.
 
-Existing implementations for integer types should be annotated with
-`default impl` as necessary, and most operations should defer to the
-implementations for `N.next_power_of_two()`. For example, the `count_zeros`
-function in the generic impl would be:
+Below, I'll only draw the upper, "middle," and lower bits, so that we can
+convince ourselves that this applies to any number of bits. The middle bit will
+be the sign bit at bit `N-1`, and we'll also show the bits around it. Let's
+start counting, from zero:
 
-```rust
-impl<const N: usize> uint<N> {
-    fn count_zeros(self) -> u32 {
-        let M = N.next_power_of_two();
-        let zeros = (self as uint<M>).count_zeros();
-        zeros + (M - N)
-    }
-}
+```
+00...000...00 (0)
+00...000...01 (1)
+00...000...10 (2)
+...
+00...001...11 (2.pow(N) - 1)
 ```
 
-Because of the specialisations when `N` is a power of two, this would always
-result in the most efficient code possible. For example, the code for `uint<7>`
-would get optimised to the equivalent:
+Note that the next value sets our sign bit to one, but leaves the remaining
+values past the sign at zero. This starts the niche space, where the sign bit
+isn't the same as all the bits after it:
 
-```rust
-fn count_zeros(self) -> u32 {
-    (self as u8).count_zeros() - 1
-}
+```
+00...010...00 (2.pow(N) + 0)
+00...010...01 (2.pow(N) + 1)
+00...010...10 (2.pow(N) + 2)
+...
+00...011...11 (2.pow(N + 1) - 1)
 ```
 
-For the most part, the code which uses intrinsics will be specialised, and the
-code which doesn't will be replaced with a generic version. For example, `ctpop`
-is required for `count_zeros`, and thus it's specialized. However, `Default`
-does not require any specialisation, and can just be replaced with a single
-generic impl.
+Note that now, once we add one, our sign bit will flip back. However, even if we
+keep counting, it won't be extended all the way to the end. So, really, our
+niche extends quite far, until...
+
+```
+00...100...00 (+2.pow(N + 1))
+00...100...01 (+2.pow(N + 1) + 1)
+00...100...10 (+2.pow(N + 1) + 2)
+...
+11...101...11 (-2.pow(N) + 1)
+```
+
+Finally, at this point, adding one will flip our sign bit to be negative, and it
+will finally be extended all the way. After this, our ordinary values resume,
+starting at `-2.pow(N)` and ending at `-1`.
+
+As you can see, we have exactly the same number of values to use as niche, and
+they're all in one contiguous range.
+
+## Computations and storage
+
+### Overflow and underflow
+
+Because sign extension will always be applied, it's safe for the compiler to
+internally treat `uint<N>` as `uint<N.next_power_of_two()>` when doing
+computations. As a concrete example, this means that adding two `uint<48>`
+values will work exactly like adding two `u64` values, generating exactly the
+same code on targets with 64-bit registers. Right?
+
+Actually, it turns out that things will be slightly more complicated. In debug
+mode, the generated code will be very similar; overflow checks will still panic
+as usual. However, in release mode, as we saw in the above section, there will
+have to be additional code to make sure that overflows and underflows extend the
+sign correctly.
+
+This is actually a good case for adding a `add_unchecked` (and similar) methods
+which require code to ensure that overflow does not occur, skipping the extra
+code in release builds. Such methods would require their own RFC, but this
+actually does provide a decent reason why they'd be useful.
+
+Unfortunately, these generalisations aren't going to be free in all cases.
+
+### Storage sizes
+
+The restriction that `N <= 128` may allow for future changes where `uint<N>` is
+not actually stored as `uint<N.next_power_of_two()>` for sufficiently large `N`.
+Right now, even storing `uint<65>` as `u128` makes the most sense, because it
+will be the most efficient representation on 64-bit CPUs for performing many
+operations. However, storing `uint<4097>` as `uint<8192>`, for example, may be
+total overkill.
+
+The main goal for these representations is to avoid bit-wrangling as much as
+possible. Although truncating the number of bits for integers is no longer free,
+e.g. `u64` to `uint<48>` requires an AND and `i64` to `int<48>` requires
+conditionally excecuting an AND or an OR, the goal is that in most cases, using
+non-power-of-two lengths should not incur too much of a performance penalty.
+Additionally, the compiler should be able to optimise the sign extension to
+happen at the end of a series of operations, rather than after every operation.
 
 ## Documentation
 
@@ -393,6 +492,14 @@ although the ability to set/get fields is still possible.
 For example, here's a modified version of our previous example:
 
 ```rust
+}
+```
+
+For the most part, the code which uses intrinsics will be specialised, and the
+code which doesn't will be replaced with a generic version. For example, `ctpop`
+is required for `count_zeros`, and thus it's specialized. However, `Default`
+does not require any specialisation, and can just be replaced with a single
+generic impl.
 #[repr(C, bitpacked)]
 struct MipsInstruction {
     opcode: uint<6>,
@@ -440,6 +547,13 @@ on the compiler side than it's worth. For example, the existing 576 impls for
 # Rationale and alternatives
 [alternatives]: #alternatives
 
+## Use `u<N>` and `i<N>` instead of `uint<N>` and `int<N>`
+
+This would seem closer to the existing types, but has a potential conflict: `u`
+and `i`, two names which could easily show up in a program, may shadow builtin
+types. Considering how often the variable `i` is used for loops, this seems like
+a no-go.
+
 ## Bound-based generalisation
 
 Generalising integers over their number of bits is certainly a very logical way
@@ -450,14 +564,15 @@ of `uint<N>` and `int<N>` types, we could get away with just one type,
 percentage could be represented exactly as `int<0..=100>`. Whether an integer is
 signed simply depends on whether its lower bound is negative.
 
-The primary reason for leaving this out is… well, it's a lot harder to
-implement, and could be added in the future as an extension. Longer-term, we
-could for example guarantee that `int<0..=2.pow(N)-1>` is equivalent to
-`uint<N>`, and `int<-2.pow(N)..=2.pow(N)-1>` is equivalent to `int<N>`, ensuring
-that ultimately, we could replace literals with our bounded types.
+The primary reason for leaving this out is… well, it's a lot different from the
+existing integer types in the language. Additionally, such types could be added
+backwards-compatibly by guaranteeing that `int<0..=2.pow(N)-1>` is equivalent to
+`uint<N>`, and `int<-2.pow(N)..=2.pow(N)-1>` is equivalent to `int<N>`. As such,
+these types could be added as a future extension.
 
-Again, how these bounded types work would have to be fleshed out in a future
-RFC.
+Quite simply, there are more questions to answer by adding range-based types
+than size-based types, and the goal of this RFC is to be able to reap the
+benefits of generic integers before such designs are fleshed out.
 
 ## Integer traits
 
@@ -496,11 +611,17 @@ RFC.
 ## Offering as a library
 
 Once const generics and specialisation are implemented and stable, almost all of
-this could be offered as a crate which offers `uint<N>` and `int<N>` types. I
-won't elaborate much on this because I feel that there are many other
-optimisations that can be added if this were a compiler feature, and that the
-standard library is simpler with them, but this is definitely worth adding here
-as an option.
+this could be offered as a crate which offers `uint<N>` and `int<N>` types.
+There are a couple downsides to this:
+
+* These library types won't unify with the existing `uN` and `iN` types, meaning
+  that you'll still have to use macros to define impls for all integer types.
+* Until compiler support for enum optimisations is made available for external
+  crates, the unused values for these types won't be usable for enum variants.
+* If the standard library were to eventually support generic integer literals,
+  then these types would have to be built-in anyway.
+* The standard library won't be able to reap any of the benefits of these types,
+  listed in the rest of the RFC.
 
 ## Going without
 
