@@ -178,8 +178,30 @@ pub trait Wake: Send + Sync {
     ///
     /// Executors generally maintain a queue of "ready" tasks; `wake_local` should place
     /// the associated task onto this queue.
-
     unsafe fn wake_local(self: &Arc<Self>)
+}
+```
+
+To see how this might be used in practice, here's a simple example sketch:
+
+```rust
+struct ExecutorInner {
+    sync_ready_queue: SynchronousQueue,
+    optimized_queue: UnsafeCell<Vec<Task>>,
+}
+
+struct Task {
+    future: ...,
+    executor: Arc<ExecutorInner>,
+}
+
+impl Wake for Task {
+    fn wake(self: &Arc<Self>) {
+        self.executor.sync_ready_queue.push(self.clone());
+    }
+    unsafe fn wake_local(self: &Arc<Self>) {
+        (&mut *self.executor.optimized_queue.get()).push(self.clone())
+    }
 }
 ```
 
@@ -208,14 +230,15 @@ impl Waker {
 }
 
 /// A `LocalWaker` is a handle for waking up a task by notifying its executor that it is ready to be run.
-
+///
 /// This is similar to the `Waker` type, but cannot be sent across threads. Task executors can use this type to implement more optimized singlethreaded wakeup behavior.
-
 impl LocalWaker {
     /// Wake up the task associated with this `LocalWaker`.
     pub fn wake(&self);
 }
 
+/// You can upgrade to a sendable `Waker` at zero cost, but waking through a `Waker` is more expensive
+/// due to synchronization.
 impl From<LocalWaker> for Waker  { .. }
 ```
 
