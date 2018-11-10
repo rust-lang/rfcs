@@ -219,7 +219,7 @@ simply be coerced to the enum type), a type like `Vec<Sum::A>` is not a subtype 
 `Sum` upon either formation or use.)
 
 Note that we do not make any guarantees of the variant data representation at present, to allow us
-flexibility to explore the design space.
+flexibility to explore the design space in terms of trade-offs between memory and performance.
 
 # Drawbacks
 [drawbacks]: #drawbacks
