@@ -200,4 +200,9 @@ variant types.
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-- None.
+None.
+
+# Future possibilities
+[future-possibilities]: #future-possibilities
+
+It would be possible to remove some of the restrictions on enum variant types in the future, such as permitting `impl`s or supporting variant types that don't contain all (irrelevant) generic parameters. This RFC has been written intentionally conservatively in this regard.
