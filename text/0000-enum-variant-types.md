@@ -290,9 +290,11 @@ However, it is often useful to briefly consider these variant types alone, which
 RFC proposes.
 
 Although sum types are becoming increasingly common in programming languages, most do not choose to
-allow the variants to be treated as types in their own right (that is, the author has not found
-any that permit this design pattern). However, we propose that the patterns in Rust make variant
-types more appealing than they might be in other programming languages with variant types.
+allow the variants to be treated as types in their own right. There are some languages that have
+analogues however: Scala's [`Either` type](https://www.scala-lang.org/api/2.9.3/scala/Either.html)
+has `Left` and `Right` subclasses that may be treated as standalone types, for instance. Regardless
+of the scarcity of variant types however, we propose that the patterns in Rust make variant types
+more appealing than they might be in other programming languages with variant types.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
