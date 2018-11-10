@@ -11,15 +11,15 @@ Extend Rust's pattern matching exhaustiveness checks to cover the integer types:
 ```rust
 fn matcher_full(x: u8) {
   match x { // ok
-    0 .. 32 => { /* ... */ }
+    0 ..= 31 => { /* ... */ }
     32 => { /* ... */ }
     33 ..= 255 => { /* ... */ }
   }
 }
 
 fn matcher_incomplete(x: u8) {
-  match x { //~ ERROR: non-exhaustive patterns: `32u8...255u8` not covered
-    0 .. 32 => { /* ... */ }
+  match x { //~ ERROR: non-exhaustive patterns: `32u8..=255u8` not covered
+    0 ..= 31 => { /* ... */ }
   }
 }
 ```
@@ -41,20 +41,22 @@ Exhaustive pattern matching works for integer types, just like any other type. I
 ```rust
 fn matcher_full(x: u8) {
   match x { // ok
-    0 .. 32 => { /* ... */ }
+    0 ..= 31 => { /* ... */ }
     32 => { /* ... */ }
     33 ..= 255 => { /* ... */ }
   }
 }
 
 fn matcher_incomplete(x: u8) {
-  match x { //~ ERROR: non-exhaustive patterns: `32u8...255u8` not covered
-    0 .. 32 => { /* ... */ }
+  match x { //~ ERROR: non-exhaustive patterns: `32u8..=255u8` not covered
+    0 ..= 31 => { /* ... */ }
   }
 }
 ```
 
 More examples may be found in [the file of test cases](https://github.com/rust-lang/rust/pull/50912/files#diff-8809036e5fb5a9a0fcc283431046ef51).
+
+Note that guarded arms are ignored for the purpose of exhaustiveness checks, just like with any other type (i.e. arms with `if` conditions are always considered fallible and aren't considered to cover any possibilities).
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
