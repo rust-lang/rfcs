@@ -57,7 +57,7 @@ variants. However, the variant types act identically to the enum type in the maj
 
 Specifically, variant types act differently to enum types in the following case:
 - When pattern-matching on a variant type, only the constructor corresponding to the variant is
-considered possible. Therefore one may irrefutably pattern-match on a variant:
+considered possible. Therefore you may irrefutably pattern-match on a variant:
 
 ```rust
 enum Sum { A(u32), B, C }
@@ -67,7 +67,7 @@ fn print_A(a: Sum::A) {
     println!("a is {}", a);
 }
 ```
-- One can project the fields of a variant type, similarly to tuples or structs:
+- You may project the fields of a variant type, similarly to tuples or structs:
 
 ```rust
 fn print_A(a: Sum::A) {
