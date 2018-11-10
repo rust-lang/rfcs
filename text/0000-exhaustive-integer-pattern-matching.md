@@ -54,6 +54,8 @@ fn matcher_incomplete(x: u8) {
 }
 ```
 
+Specifically, for non-`char` integer types, the entire range of values from `{integer}::MIN` to `{integer}::MAX` are considered valid constructors. For `char`, the Unicode Scalar Value (USV) ranges (`\u{0000}..=\u{D7FF}` and `\u{E000}..=\u{10FFFF}`) are considered valid constructors.
+
 More examples may be found in [the file of test cases](https://github.com/rust-lang/rust/pull/50912/files#diff-8809036e5fb5a9a0fcc283431046ef51).
 
 Note that guarded arms are ignored for the purpose of exhaustiveness checks, just like with any other type (i.e. arms with `if` conditions are always considered fallible and aren't considered to cover any possibilities).
