@@ -64,9 +64,22 @@ enum Sum { A(u32), B, C }
 
 fn print_A(a: Sum::A) {
     let A(x) = a;
-    println!("a is {}", a);
+    println!("a is {}", x);
 }
 ```
+However, in order to be backwards-compatible with existing handling of variants as enums, matches on
+variant types will permit (and simply ignore) arms that correspond to other variants:
+
+```rust
+let a = Sum::A(20);
+
+match a {
+    A(x) => println!("a is {}", x),
+    B => println!("a is B"), // ok, but unreachable
+    C => println!("a is C"), // ok, but unreachable
+}
+```
+
 - You may project the fields of a variant type, similarly to tuples or structs:
 
 ```rust
