@@ -1,5 +1,5 @@
 - Feature Name: `enum_variant_types`
-- Start Date: 03-11-2018
+- Start Date: 10-11-2018
 - RFC PR:
 - Rust Issue:
 
