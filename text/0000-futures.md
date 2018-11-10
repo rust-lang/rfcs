@@ -443,7 +443,7 @@ All of that said, there are real downsides for error-heavy code, even with
 The error handling piece of this RFC is separable from the other pieces, so the
 main alternative would be to retain the built-in error type.
 
-## Rationale, drawbacks and alternatives to the core trait design (wrt `Pi`)
+## Rationale, drawbacks and alternatives to the core trait design (wrt `Pin`)
 
 Putting aside error handling, which is orthogonal and discussed above, the
 primary other big item in this RFC is the move to `Pin` for the core polling
