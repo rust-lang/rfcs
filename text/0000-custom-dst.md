@@ -48,6 +48,8 @@ unsafe trait DynamicallySized {
 with an automatic implementation for all `Sized` types:
 
 ```rust
+// note: this is _only_ for explanation
+// this should happen in the compiler
 unsafe impl<T> DynamicallySized for T {
     type Metadata = ();
 
@@ -71,7 +73,7 @@ unsafe impl DynamicallySized for CStr {
 }
 ```
 
-and automatically, your type will not implement `Sized`.
+and your type will be `!Sized`.
 
 The existing `DynamicallySized` types will continue to work;
 if one writes a `DynamicallySized` type `T`,
@@ -83,13 +85,15 @@ struct Foo {
     y: CStr,
 }
 
-// size_of_val(&foo) returns size_of::<usize>() + size_of_val(&foo.y)
-// same with align_of_val
+// size_of_val(&foo) returns size_of_header::<Foo>() + size_of_val(&foo.y)
+// same with align_of_val - simply `align_of_header::<Foo>()`
 ```
 
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
+
+By language trait, we mean that `DynamicallySized` is a lang item.
 
 In addition to the explanation given above,
 we will also introduce three functions into the standard library,
@@ -98,17 +102,17 @@ pointers to `DynamicallySized` types:
 
 ```rust
 mod core::raw {
-    pub fn from_raw_parts<T: DynamicallySized>(
+    pub fn from_raw_parts<T: ?Sized>(
         ptr: *const (),
         meta: <T as DynamicallySized>::Metadata,
     ) -> *const T;
 
-    pub fn from_raw_parts_mut<T: DynamicallySized>(
+    pub fn from_raw_parts_mut<T: ?Sized>(
         ptr: *mut (),
         meta: <T as DynamicallySized>::Metadata,
     ) -> *mut T;
 
-    pub fn metadata<T: DynamicallySized>(
+    pub fn metadata<T: ?Sized>(
         ptr: *const T,
     ) -> <T as DynamicallySized>::Metadata;
 }
@@ -119,10 +123,11 @@ to help people write types with Flexible Array Members:
 
 ```rust
 mod core::mem {
-    pub fn size_of_header<T: ?Sized>() -> usize;
-    pub fn align_of_header<T: ?Sized>() -> usize;
+    pub fn size_of_header<T: ?DynamicallySized>() -> usize;
+    pub fn align_of_header<T: ?DynamicallySized>() -> usize;
 }
 ```
+
 These functions return the size and alignment of the header of a type;
 or, the minimum possible size and alignment, in other words.
 For existing `Sized` types, they are equivalent to `size_of` and `align_of`,
@@ -152,8 +157,12 @@ Notes:
   - `extern type`s do not implement `DynamicallySized`, although in theory one
     could choose to implement the trait for them
     (that usecase is not supported by this RFC).
-  - `T: DynamicallySized` bounds imply a `T: ?Sized` bound.
-    - The opposite is not true - `T: ?Sized` implies `T: ?DynamicallySized`
+  - `DynamicallySized` is a new trait in the `Sized` hierarchy
+    - this means that, by default, `T` implies `T: Sized + DynamicallySized`,
+      unless one removes that bound explicitly with `T: ?DynamicallySized`
+  - `T: ?DynamicallySized` bounds imply a `T: ?Sized` bound,
+    since `T: Sized` implies `T: DynamicallySized`
+  - `T: ?Sized` bounds do not remove the `T: DynamicallySized` requirement.
 
 We will also change `CStr` to have the implementation from above.
 
@@ -179,7 +188,7 @@ without a new major version.
 `as` casts continue to allow
 
 ```rust
-fn cast_to_thin<T: DynamicallySized, U: Sized>(t: *const T) -> *const U {
+fn cast_to_thin<T: ?Sized, U: Sized>(t: *const T) -> *const U {
     t as *const U
 }
 ```
@@ -187,8 +196,9 @@ fn cast_to_thin<T: DynamicallySized, U: Sized>(t: *const T) -> *const U {
 so we do not introduce any new functions to access the pointer part
 of the thick pointer.
 
-The `DynamicallySized` trait may be implemented for a struct or union
--- The author is of the opinion that implementing it for `enum`s is
+The `DynamicallySized` trait may be implemented for any struct or union type
+which would be `Sized` by the rules of the language --
+The author is of the opinion that implementing it for `enum`s is
 unlikely to be useful. That may be a future extension,
 if people are interested
 (once `<T: ?Sized>` is allowed on `enum` declarations).
@@ -202,8 +212,6 @@ if people are interested
 - Lack of a `Sized` type dual to these unsized types --
   the lack of a `[u8; N]` to these types' `[u8]` is unfortunate.
 - Inability to define a custom DST safely
-- The `size_of_val` and `align_of_val` declarations are now incorrect;
-  they should take `T: DynamicallySized`, as opposed to `T: ?Sized`.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -212,9 +220,9 @@ This has been a necessary change for quite a few years.
 The only real alternatives are those which are simply different ways of writing
 this feature. We need custom DSTs.
 
-We also likely especially want to deprecate the current `?Sized` behavior of
-`size_of_val` and `align_of_val`, since people are planning on
-aborting/panicking at runtime when called on extern types. That's not great.
+This also fixes the existing issues with `size_of_val` and `align_of_val`
+on `extern type`s, since people are planning on aborting/panicking at runtime.
+That's not great.
 ([link](https://github.com/rust-lang/rfcs/pull/2310#issuecomment-384770802))
 
 # Prior art
@@ -244,19 +252,14 @@ aborting/panicking at runtime when called on extern types. That's not great.
 
 - Bikeshedding names.
 - Should `Metadata` really require all of those traits?
-- Should `T: ?Sized` still imply `T: DynamicallySized`?
-  - Introduce a new `T: ?DynamicallySized`.
-  - If we change this, then `std::mem::{size,align}_of_val` are no longer broken
-  - As well as all standard library types
-    - `Box<extern-type>` is currently allowed
-    - (despite being useless)
-    - I'm pretty close to convinced of this being the better solution
 - Should we allow implementing `DynamicallySized` for `extern type`s or `enum`s?
+  - Similarly, should we allow implementing `DynamicallySized`
+    for types which contain `extern type`s?
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-- By overloading `DerefAssign`, we could add a `BitReference` type
+unknown!
 
 # Examples
 [more examples]: #examples
