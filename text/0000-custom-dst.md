@@ -32,7 +32,13 @@ under `std::marker`:
 
 ```rust
 unsafe trait DynamicallySized {
-    type Metadata: 'static + Copy + Send + Sync + Unpin;
+    /*
+        note: these are all required due to trait implementations for
+          - Unpin - all pointer types
+          - Copy + Send + Sync - &T, &mut T
+          - Eq + Ord - *const T, *mut T
+    */
+    type Metadata: 'static + Copy + Send + Sync + Eq + Ord + Unpin;
 
     fn size_of_val(&self) -> usize;
     fn align_of_val(&self) -> usize;
@@ -366,7 +372,7 @@ struct TOKEN_GROUPS {
     Groups: [SID_AND_ATTRIBUTES; 0],
 }
 
-impl DynamicallySized for TOKEN_GROUPS {
+unsafe impl DynamicallySized for TOKEN_GROUPS {
     type Metadata = ();
 
     fn size_of_val(&self) -> usize {
@@ -388,5 +394,83 @@ extern "system" {
         PreviousState: Option<&mut TOKEN_GROUPS>,
         ReturnLength: &mut DWORD,
     ) -> BOOL;
+}
+```
+
+### 2D Views of Planes
+
+A reasonably tiny example of a 2D view of a plane.
+This is less important for common Rust,
+but should be helpful for graphics programming, for example.
+
+```rust
+// owned Plane<T>
+struct PlaneBuf<T> {
+    stride: usize,
+    buffer: Box<[T]>,
+}
+
+impl<T> Deref for PlaneBuf<T> {
+    type Target = Plane<T>;
+
+    fn deref(&self) -> &Plane<T> {
+        let ptr = &*self.buffer;
+        let meta = PlaneMetadata {
+            width: self.stride,
+            stride: self.stride,
+            height: buffer.len() / width,
+        };
+
+        unsafe {
+            &*std::raw::from_raw_parts::<Plane<T>>(ptr, meta)
+        }
+    }
+}
+
+// borrowed Plane<T>
+struct Plane<T> {
+    buffer: [T; 0],
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+struct PlaneMetadata {
+    width: usize,
+    stride: usize,
+    height: usize,
+}
+
+unsafe impl<T> DynamicallySized for Plane<T> {
+    type Metadata = PlaneMetadata;
+
+    fn size_of_val(&self) -> usize {
+        let meta = std::raw::metadata(self);
+        meta.stride * meta.height * std::mem::size_of::<T>()
+    }
+
+    fn align_of_val(&self) -> usize {
+        std::mem::align_of_header::<Self>()
+    }
+}
+
+impl<T> Plane<T> {
+    pub fn ptr(&self) -> *const T {
+        &self.buffer as *const [T; 0] as *const T
+    }
+    pub fn column(&self, col: usize) -> &[T] {
+        let meta = std::raw::metadata(self);
+        assert!(col < meta.height);
+        let ptr = self.ptr().offset((col * stride) as isize);
+        unsafe {
+            std::slice::from_raw_parts(ptr, self.width)
+        }
+    }
+}
+
+impl<T> Index<(usize, usize)> for Plane<T> {
+    type Output = T;
+
+    fn index(&self, (x, y): (usize, usize)) -> &T {
+        self.column(y)[x]
+    }
 }
 ```
