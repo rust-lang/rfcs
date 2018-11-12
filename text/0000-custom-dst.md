@@ -41,7 +41,7 @@ unsafe trait DynamicallySized {
     type Metadata: 'static + Copy + Send + Sync + Eq + Ord + Unpin;
 
     fn size_of_val(&self) -> usize;
-    fn align_of_val(&self) -> usize;
+    fn align_of_val(meta: Self::Metadata) -> usize;
 }
 ```
 
@@ -54,7 +54,7 @@ unsafe impl<T> DynamicallySized for T {
     type Metadata = ();
 
     fn size_of_val(&self) -> usize { size_of::<T>() }
-    fn align_of_val(&self) -> usize { align_of::<T>() }
+    fn align_of_val((): ()) -> usize { align_of::<T>() }
 }
 ```
 
@@ -68,8 +68,8 @@ struct CStr([c_char; 0]);
 unsafe impl DynamicallySized for CStr {
     type Metadata = ();
 
-    fn size_of_val(&self) -> usize { strlen(&self.0 as *const c_char) }
-    fn align_of_val(&self) -> usize { 1 }
+    fn size_of_val(&self) -> usize { strlen(&self.0 as *const c_char) + 1 }
+    fn align_of_val((): ()) -> usize { 1 }
 }
 ```
 
@@ -288,7 +288,7 @@ unsafe impl<T> DynamicallySized for InlineVec<T> {
     fn size_of_val(&self) -> usize {
         Self::full_size(self.capacity)
     }
-    fn align_of_val(&self) -> usize {
+    fn align_of_val((): ()) -> usize {
         std::mem::align_of_header::<Self>()
     }
 }
@@ -383,7 +383,7 @@ unsafe impl DynamicallySized for TOKEN_GROUPS {
         + self.GroupCount * std::mem::size_of::<SID_AND_ATTRIBUTES>()
     }
 
-    fn align_of_val(&self) -> usize {
+    fn align_of_val((): ()) -> usize {
         std::mem::align_of_header::<Self>()
     }
 }
@@ -450,7 +450,7 @@ unsafe impl<T> DynamicallySized for Plane<T> {
         meta.stride * meta.height * std::mem::size_of::<T>()
     }
 
-    fn align_of_val(&self) -> usize {
+    fn align_of_val(_: PlaneMetadata) -> usize {
         std::mem::align_of_header::<Self>()
     }
 }
