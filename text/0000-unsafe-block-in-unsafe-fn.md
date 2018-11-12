@@ -124,7 +124,13 @@ This new warning will likely fire for the vast majority of `unsafe fn` out there
 
 Many `unsafe fn` are actually rather short (no more than 3 lines) and will
 likely end up just being one large `unsafe` block.  This change would make such
-functions less ergonomic to write.
+functions less ergonomic to write, they would likely become
+
+```rust
+unsafe fn foo(...) -> ... { unsafe {
+  // Code goes here
+} }
+```
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -136,6 +142,14 @@ The alternative is to not do anything, and live with the current situation.
 We could introduce named proof obligations (proposed by @Centril) such that the
 compiler can be be told (to some extend) if the assumptions made by the `unsafe
 fn` are sufficient to discharge the requirements of the unsafe operations.
+
+We could restrict this requirement to use `unsafe` blocks in `unsafe fn` to
+those `unsafe fn` that contain at least one `unsafe` block, meaning short
+`unsafe fn` would keep compiling like they do now.
+
+We could have separate marker for `unsafe fn` with and without an implicitly
+unsafe body, e.g. `unsafe unsafe fn` has an unsafe body, or `unsafe fn foo(...)
+-> ... unsafe { }` has an unsafe body, or `unsafe_to_call fn` has a safe body.
 
 # Prior art
 [prior-art]: #prior-art
