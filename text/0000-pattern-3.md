@@ -157,7 +157,7 @@ pub unsafe trait Haystack: Deref<Target: Hay> + Sized {
 > [issue 20671]), or Associated Type Bounds ([RFC 2289]) has been accepted and implemented.
 >
 > For simplicity we are ignoring [issue 38078],
-> which forces us to write `<Self::Target as Hay>::Index` instead of `Self::Index`.
+> which forces us to write `<Self::Target as Hay>::Index` instead of `Self::Target::Index`.
 
 The `self.restore_range(original, parent)` method is implemented to solve:
 
