@@ -283,6 +283,16 @@ with invalid ranges. Implementations of `.search()` often start with:
 
 The trait is unsafe to implement because it needs to guarantee the returned range is valid.
 
+There is a "reverse" version of the trait, which supports searching from the end
+with the `.rsearch()` method besides from the start.
+
+Furthermore, there is a "double-ended" version, which is a marker trait saying that
+searching from both ends will give consistent results. The searcher of a substring needle is
+an example which implements `ReverseSearcher` but not `DoubleEndedSearcher`, e.g.
+
+* Forward searching the needle `xx` in the haystack `xxxxx` will yield `[xx][xx]x`
+* Backward searching the needle `xx` in the haystack `xxxxx` will yield `x[xx][xx]`
+
 ### Consumer
 
 A consumer provides the `.consume()` method to implement `starts_with()` and `trim_start()`. It
@@ -319,6 +329,8 @@ assert_eq!("GH".into_consumer().consume(span.clone()), None);
 ```
 
 The trait also provides a `.trim_start()` method in case a faster specialization exists.
+
+Similar to searchers, the consumers also have the "reverse" and "double-ended" variants.
 
 ### Needle
 
