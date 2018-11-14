@@ -234,7 +234,7 @@ pub trait Pointee {
 /// Pointers to types implementing this trait alias are “thin”:
 ///
 /// ```rust
-/// fn always_true<T: std::prt::Thin>() -> bool {
+/// fn always_true<T: std::ptr::Thin>() -> bool {
 ///     assert_eq(std::mem::size_of::<&T>(), std::mem::size_of::<usize>())
 /// }
 /// ```
