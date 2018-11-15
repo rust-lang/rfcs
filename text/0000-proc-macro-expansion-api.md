@@ -1,15 +1,13 @@
-- Feature Name: Macro Expansion API for Proc Macros
+- Feature Name: Macro Generations and Expansion Order
 - Start Date: 2018-01-26
 - RFC PR: (leave this empty)
 - Rust Issue: (leave this empty)
 
 # Summary
-[summary]: #summary
 
 Add an API for procedural macros to expand macro calls in token streams. This will allow proc macros to handle unexpanded macro calls that are passed as inputs, as well as allow proc macros to access the results of macro calls that they construct themselves.
 
 # Motivation
-[motivation]: #motivation
 
 There are a few places where proc macros may encounter unexpanded macros in their input:
 
@@ -74,11 +72,10 @@ As a side note, allowing macro calls in built-in attributes would solve a few ou
 An older motivation to allow macro calls in attributes was to get `#[doc(include_str!("path/to/doc.txt"))]` working, in order to provide an ergonomic way to keep documentation outside of Rust source files. This was eventually emulated by the accepted [RFC 1990](https://github.com/rust-lang/rfcs/pull/1990), indicating that macros in attributes could be used to solve problems at least important enough to go through the RFC process.
 
 # Guide-level explanation
-[guide-level-explanation]: #guide-level-explanation
 
-## Macro Calls in Procedural Macros
+## Macro Calls in Macro Input
 
-When implementing procedural macros you should account for the possibility that a user might provide a macro call in their input. For example, here's a silly proc macro that evaluates to the length of the string literal passed in.:
+When implementing a procedural or attribute macro you should account for the possibility that a user might provide a macro call in their input. As an example of where this might trip you up when writing a procedural macro, here's a silly one that evaluates to the length of the string literal passed in:
 
 ```rust
 extern crate syn;
@@ -96,151 +93,139 @@ fn string_length(tokens: TokenStream) -> TokenStream {
 
 If you call `string_length!` with something obviously wrong, like `string_length!(struct X)`, you'll get a parser error when `unwrap` gets called, which is expected. But what do you think happens if you call `string_length!(stringify!(struct X))`?
 
-It's reasonable to expect that `stringify!(struct X)` gets expanded and turned into a string literal `"struct X"`, before being passed to `string_length`. However, in order to give the most control to proc macro authors, Rust doesn't touch any of the ingoing tokens passed to a proc macro.
+It's reasonable to expect that `stringify!(struct X)` gets expanded and turned into a string literal `"struct X"`, before being passed to `string_length`. However, in order to give the most control to proc macro authors, Rust usually doesn't touch any of the ingoing tokens passed to a procedural macro.
 
-Thankfully, there's an easy solution: the proc macro API offered by the compiler has methods for constructing and expanding macro calls. The `syn` crate uses these methods to provide an alternative to `parse`, called `parse_expand`. As the name suggests, `parse_expand` parses the input token stream while expanding and parsing any encountered macro calls. Indeed, replacing `parse` with `parse_expand` in our definition of `string_length` means it will handle input like `stringify!(struct X)` exactly as expected.
+A similar issue happens with attribute macros, but in this case there are two places you have to watch out: the attribute arguments, as well as the body. Consider this:
 
-## Macro Calls in Attribute Macros
-
-Macro calls also show up in attribute macros. The situation is very similar to that of proc macros: `syn` offers `parse_meta_expand` in addition to `parse_meta`. This can be used to parse the attribute argument tokens, assuming your macro expects a normal meta-item and not some fancy custom token tree. For instance, the following behaves as expected:
 
 ```rust
-#[proc_macro_attribute]
-fn my_attr_macro(attr: TokenStream, body: TokenStream) -> TokenStream {
-    let meta: Syn::Meta = syn::parse_meta_expand(attr).unwrap();
-    ...
+#[my_attr_macro(value = concat!("Hello, ", "world!"))]
+mod whatever {
+    procedural_macro_that_defines_a_struct! {
+        ...
+    }
 }
 ```
 
+If `#[my_attr_macro]` is expecting to see a struct inside of `mod whatever`, it's going to run into trouble when it sees that macro instead. The same happens with `concat!` in the attribute arguments: Rust doesn't look at the input tokens, so it doesn't even know there's a macro to expand!
+
+Thankfully, there's a way to _tell_ Rust to treat some tokens as macros, and to expand them before trying to expand _your_ macro.
+
+## Macro Generations and Expansion Order
+
+Rust uses an iterative process to expand macros, as well as to control the relative timing of macro expansion. The idea is that we expand any macros we can see (the current 'generation' of macros), and then expand any macros that _those_ macros had in their output (the _next_ 'generation'). In more detail, the processing loop that Rust performs is roughly as follows:
+
+1. Set the current macro generation number to 1.
+2. Parse _everything_. This lets us get the `mod` structure of the crate so that we can resolve paths (and macro names!).
+3. Collect all the macro invocations we can see.
+    * This includes any macros that we parsed, as well as any macros that have been explicitly marked inside any bare token streams (that is, within `bang_macro!` and `#[attribute_macro]` arguments).
+    * If the macro doesn't have a generation number, assign it to the current generation.
+4. Identify which macros to expand, and expand them. A macro might indicate that it should be run _later_ by having a higher generation number than the current generation; we skip those until the generation number is high enough, and expand the rest.
+6. Increment the current generation number, then go back to step 2.
+
+By carefully controlling the order in which macros get expanded, we can work with this process to handle the issues we identified earlier.
+
+## Macro Generation API
+
+The `proc_macro` crate provides an API for annotating some tokens with metadata that tells the compiler if and when to expand them like a normal macro invocation. The API revolves around an `ExpansionBuilder`, a builder-pattern struct that lets you adjust the relevant token information:
+
 ```rust
-// Parses successfully: `my_attr_macro` behaves as though called with
-// ``my_attr_macro(value = "Hello, world!")]
-// struct X {...}
-//                      vvvvvvvvvvvvvvvvvvvvvvvvvvvv
-#[my_attr_macro(value = concat!("Hello, ", "world!"))]
-struct X {...}
-
-// Parses unsuccessfully: the normal Rust syntax for meta items expects
-// a literal, not an expression.
-//                      vvvvvvvvvvvvvvvvvvvvvvvvv
-#[my_attr_macro(value = println!("Hello, world!"))]
-struct Y {...}
-```
-
-Of course, even if your attribute macro _does_ use a fancy token syntax, you can still use `parse_expand` to handle any macro calls you encounter.
-
-## API Overview
-
-The full API provided by `proc_macro` defines a struct, `ExpansionBuilder`, with the following interface:
-
-```rust
-#[non_exhaustive]
-enum ExpansionError {}
-
 struct ExpansionBuilder {...};
 
 impl ExpansionBuilder {
-    pub fn new_proc(path: TokenStream, args: TokenStream) -> Self;
-    
-    pub fn new_attr(path: TokenStream, args: TokenStream, body: TokenStream) -> Self;
-    
-    pub fn expand(self) -> Result<TokenStream, ExpansionError>;
+    pub fn from_tokens(tokens: TokenStream) -> Result<Self, ParseError>;
+    pub fn generation(&self) -> Option<usize>;
+    pub fn set_generation(self, generation: usize) -> Self;
+    pub fn increment_generation(self, count: usize) -> Self;
+    pub fn into_tokens(self) -> TokenStream;
 }
 ```
 
-The functions `new_proc` and `new_attr` create a procedural macro call and an attribute macro call, respectively. Both expect `path` to parse as a [path](https://docs.rs/syn/0.12/syn/struct.Path.html) like `println` or `::std::println`. The compiler looks up `path` in the caller's scope (in the future, the scope of the spans of `path` will be used to resolve the macro definition, as part of expanding hygiene support).
+The constructor `from_tokens` takes in either a bang macro or attribute macro with arguments (`my_proc_macro!(some args)` or `#[my_attr_macro(some other args)]`).
 
-The `args` tokens are passed as the main input to proc macros, and as the attribute input to attribute macros (the `things` in `#[my_attr_macro(things)]`). The `body` tokens are passed as the body input to attribute macros (the `struct Foo {...}` in `#[attr] struct Foo {...}`). Remember that the body of an attribute macro usually has any macro calls inside it expanded _before_ being passed to the attribute macro itself.
+The method `generation` lets you inspect the existing generation number (if any) of the input. This might be useful to figure out when a macro you've encountered in your tokens will be expanded, in order to ensure that some other macro expands before or after it.
 
-The method `expand` consumes the macro call, resolves the definition, applies it to the provided input in the configured expansion setting, and returns the resulting token tree or a failure diagnostic.
+The builder methods `set_generation` and `increment_generation` annotate the tokens passed in to tell the compiler to expand them at the appropriate generation (if the macro doesn't have a generation, `increment_generation` sets it to 1).
+
+Finally, the method `into_tokens` consumes the `ExpansionBuilder` and provides the annotated tokens.
+
+## Using Generations to Handle Macro Calls
+
+Let's use our `string_length!` procedural macro to demonstrate how to use `ExpansionBuilder` to handle macros in our input. Say we get called like this:
+
+```rust
+// Generation 0 macro tokens.
+// vvvvvvvvvvvvvvv----------------------------v
+   string_length!(concat!("hello, ", "world!"));
+```
+
+The bits marked with `v` are tokens that the compiler will find, and decide are a generation 0 macro. Notice that this doesn't include the arguments! So, in the implementation of `string_length!`:
+
+```rust
+#[proc_macro]
+fn string_length(tokens: TokenStream) -> TokenStream {
+    // Handle being given a macro...
+    if let Ok(_: syn::Macro) = syn::parse(tokens) {
+        // First, mark the macro tokens so that the compiler
+        // will expand the macro at some point.
+        let input_tokens =
+                ExpansionBuilder::from_tokens(tokens)
+                    .unwrap()
+                    .increment_generation(0)
+                    .into_tokens();
+
+        // Here's the trick - in our expansion we _include ourselves_,
+        // but delay our expansion until after the inner macro is expanded!
+        let new_tokens = quote! {
+            string_length!(#tokens)
+        };
+        return ExpansionBuilder::from_tokens(TokenStream::from(new_tokens))
+                .unwrap()
+                .increment_generation(1)
+                .into_tokens();
+    }
+
+    // Otherwise, carry on!
+    let lit: syn::LitStr = syn::parse(tokens).unwrap();
+    let len = str_lit.value().len();
+    
+    quote!(#len)
+}
+```
+
+The resulting tokens look like this: 
+
+```rust
+// New generation 2 macro tokens.
+// vvvvvvvvvvvvvvv----------------------------v
+   string_length!(concat!("hello, ", "world!"));
+//                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+// New generation 1 macro tokens. 
+```
+
+Now, in the next macro expansion loop, the compiler will find those generation-1 macro tokens and expand them. After that, the tokens look like this:
+
+```rust
+// Still generation 2 macro tokens.
+// vvvvvvvvvvvvvvv---------------v
+   string_length!("hello, world!");
+```
+
+And now `string_length!` expands happily!
+
+Obviously the above code is fairly verbose, but thankfully there are some utility functions. TODO: what do we want to ensure is available as part of a library?
 
 # Reference-level explanation
-[reference-level-explanation]: #reference-level-explanation
 
-The proposed additions to the proc macro API in `proc_macro` are outlined above in the [API overview](#api-overview). Here we focus on technical challenges.
+The proposed additions to the proc macro API in `proc_macro` are outlined above in the [API overview](#macro-generation-api). Here we focus on technical challenges.
 
-When a source file is parsed any `macro_rules!` and `macro` definitions get added to a definition map long before the first macro is expanded. Procedural macros currently need to live in a separate crate, and it seems they will for a while. This means that _in principle_ any macro call that would resolve in the caller's scope should be available to resolve at the time the proc macro is expanded.
+Currently, the compiler does actually perform something similar to the loop described in th section on [expansion order](#macro-generations-and-expansion-order). We could 'just' augment the step that identifies potential macro calls to also inspect the otherwise unstructured token trees within macro arguments.
 
-Built-in macros already look more and more like proc macros (or at the very least could be massaged into acting like them), and so they can also be added to the definition map.
-
-Since proc macros and `macro` definitions are relative-path-addressable, the proc macro call context needs to keep track of what the path was at the call site. I'm not sure if this information is available at expansion time, but are there any issues getting it?
-
-## Future Work: same-crate proc macros
-
-When proc macros are allowed to be defined in the same crate as other items, we should be able to transfer any solution to the problem of internal dependencies over to the expansion API. For example, imagine the following (single) crate:
-
-```rust
-fn helper(ts: TokenStream) -> TokenStream { ... }
-
-#[proc_macro]
-fn foo(ts: TokenStream) -> TokenStream {
-    let helped_ts = helper(ts);
-    ...
-}
-
-fn main() {
-    foo!(bar);
-}
-```
-
-To get same-crate proc macros working, we need to figure out how (or if) to allow `foo!` to use `helper`. Once we do, we've probably also solved a similar issue with respect to this expansion API:
-
-```rust
-#[macro_use]
-extern crate cool_library;
-
-#[proc_macro]
-fn foo(ts: TokenStream) -> TokenStream { ... }
-
-fn main() {
-    cool_library::cool_macro!(foo!(bar));
-}
-```
-
-Here, we need to solve a similar problem: if `cool_macro!` expands `foo!`, it needs to have access to an executable version of `foo!` despite it being defined in the current crate, similar to how `foo!` needs access to an executable version of `helper` in the previous example.
-
-## Future Work: Hygiene
-
-This iteration of the macro expansion API makes a few concessions to reduce its scope. We completely ignore hygiene for result generation or macro definition lookup. If a proc macro author wants to adjust the scope that a macro's expanded tokens live in, they'll have to do it manually. If an author wants to adjust the scope that a macro definition is resolved in, they're completely out of luck. In short, if `bar!` is part of the input of proc macro `foo!`, then when `foo!` expands `bar!` it will be treated as if it were called in the same context as `foo!` itself.
-
-By keeping macro expansion behind a builder-style API, we hopefully keep open the possibility of adding any future scoping or hygiene related configuration. For instance, a previous version of this RFC discussed an `ExpansionBuilder::call_from(self, Span)` method for adjusting the scope that a macro was expanded in.
-
-## Future Work: Macros Making Macros, Expansion Order
-
-For now, we only guarantee that proc macros can expand macros defined at the top level syntactically (i.e. macros that aren't defined in the expansion of another macro). That is, we don't try to handle things like this:
-
-```rust
-macro a() {...}
- 
-macro b() {
-    macro c() {...}
-}
-b!();
- 
-// `foo!` is a proc macro
-foo! {
-    macro bar(...);
-    
-    // `a!` and `b!` are available since they're defined at the top level.
-    // `c!` isn't available since it's only defined in the expansion of another macro.
-    // `bar!` isn't available since it's defined in this macro.
-}
-```
-
-Handling `foo!` calling `c!` would require the `#[proc_macro]` signature to somehow allow a proc macro to "delay" its expansion until the definition of another macro was found (that is, the implementation of `foo!` needs to somehow notify the compiler to retry its expansion if the compiler finds a definitiion of `c!` as a result of another macro expansion). 
-
-Handling `bar!` being expanded in `foo!` would require the ability to register definitions of macros with the compiler.
-
-Both of these issues can be addressed, but would involve a substantial increase in the surface area of the proc macro API that isn't necessary for handling simple but common and useful cases.
+This proposal requires that some tokens contain extra semantic information similar to the existing `Span` API. Since that API (and its existence) is in a state of flux, details on what this 'I am a macro call that you need to expand!' idea may need to wait until those have settled.
 
 # Drawbacks
-[drawbacks]: #drawbacks
 
 This proposal:
-
-* Increases the API surface of `proc_macro` and any crate trying to emulate it. In fact, since it requires actually evaluating macro calls it isn't clear how a third-party crate like `proc_macro2` could even try to emulate it.
-
-* Greatly increases the potential for hairy interactions between macro calls. This opens up more of the implementation to be buggy (that is, by restricting how macros can be expanded, we might keep implementation complexity in check).
 
 * Relies on proc macro authors doing macro expansion. This might partition the macro ecosystem into expansion-ignoring (where input macro calls are essentially forbidden for any part of the input that needs to be inspected) and expansion-handling (where they work fine _as long as_ the proc macro author has used the expansion API correctly).
 
@@ -255,24 +240,22 @@ This proposal:
     }
     ```
 
-    The caller of `foo!` probably imagines that `baz!` will be expanded within `b`, and so prepends the call with `super`. However, if `foo!` naively calls `parse_expand` with this input then `super::baz!` will fail to resolve because macro paths are resolved relative to the location of the call. Handling this would require `parse_expand` to track the path offset of its expansion, which is doable but adds complexity.
+    The caller of `foo!` probably imagines that `baz!` will be expanded within `b`, and so prepends the call with `super`. However, if `foo!` naively lifts the call to `super::baz!`, then the path will fail to resolve because macro paths are resolved relative to the location of the call. Handling this would require the macro implementer to track the path offset of its expansion, which is doable but adds complexity.
 
-* Can't handle macros that are defined in the input, as discussed above.
+* Commits the compiler to a particular macro expansion order, as well as a way for users to position themselves within that order. What future plans does this interfere with?
 
 # Rationale and alternatives
-[alternatives]: #alternatives
 
-The primary rationale is to make proc macros work more smoothly with other features of Rust - mainly other macros.
+The primary rationale is to make procedural and attribute macros work more smoothly with other features of Rust - mainly other macros.
 
-Recalling the examples listed in [Motivation](#motivation) above, a few but not all situations of proc macros receiving unexpanded macro calls could be avoided by changing the general 'hands off' attitude towards proc macros and attribute macros, and more aggressively parse and expand their inputs. This effectively bans macro calls as part of the input grammar, which seems drastic, and wouldn't handle cases of indirection via token tree (`$x:tt`) parameters.
+Recalling the examples listed in the [motivation](#motivation) above, a few but not all situations of proc macros receiving unexpanded macro calls could be avoided by changing the general 'hands off' attitude towards proc macros and attribute macros, and more aggressively parse and expand their inputs. This effectively bans macro calls as part of the input grammar, which seems drastic, and wouldn't handle cases of indirection via token tree (`$x:tt`) parameters.
 
-We could encourage the creation of a 'macros for macro authors' crate with implementations of common macros - for instance, those in the standard library - and make it clear that macro support isn't guaranteed for arbitrary macro calls passed in to proc macros. This feels unsatisfying, since it fractures the macro ecosystem and leads to very indirect unexpected behaviour (for instance, if one proc macro uses a different macro expansion library than another, and they return different results). This also doesn't help address macro calls in built-in attributes.
+We could encourage the creation of a 'macros for macro authors' crate with implementations of common macros - for instance, those in the standard library - and make it clear that macro support isn't guaranteed for arbitrary macro calls passed in to proc macros. This feels unsatisfying, since it fractures the macro ecosystem and leads to very indirect unexpected behaviour (for instance, one proc macro may use a different macro expansion library than another, and they might return different results). This also doesn't help address macro calls in built-in attributes.
 
 # Unresolved questions
-[unresolved]: #unresolved-questions
 
-* Some of the future work discussed above would be more flexible with explicit access to something representing the compilation context, to more finely control what definitions are present or how they get looked up. How do we keep the API forward-compatible?
+* This API allows for a first-pass solution to the problems listed in the [motivation](#motivation). Does it interfere with any known uses of proc macros? Does it prevent any existing techniques from working or cut off potential future ones?
 
-* This API allows for a first-pass solution to the problems listed in [Motivation](#motivation). Does it interfere with any known uses of proc macros? Does it prevent any existing techniques from working or cut off potential future ones?
+* What sort of API do we need to be _possible_ (even as a third party library) for this idea to be ergonomic for macro authors?
 
-* Are there any reasonable cases where someone can call a macro, but the resolution of that macro's path isn't possible until after expansion?
+* How does this proposal affect expansion within the _body_ of an attribute macro call? Currently builtin macros like `#[cfg]` are special-cased to expand before things like `#[derive]`; can we unify this behaviour under the new system?
