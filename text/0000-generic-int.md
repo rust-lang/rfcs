@@ -492,14 +492,6 @@ although the ability to set/get fields is still possible.
 For example, here's a modified version of our previous example:
 
 ```rust
-}
-```
-
-For the most part, the code which uses intrinsics will be specialised, and the
-code which doesn't will be replaced with a generic version. For example, `ctpop`
-is required for `count_zeros`, and thus it's specialized. However, `Default`
-does not require any specialisation, and can just be replaced with a single
-generic impl.
 #[repr(C, bitpacked)]
 struct MipsInstruction {
     opcode: uint<6>,
