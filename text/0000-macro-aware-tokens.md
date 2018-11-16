@@ -121,7 +121,7 @@ Rust uses an iterative process to expand macros, as well as to control the relat
     * This includes any macros that we parsed, as well as any macros that have been explicitly marked inside any bare token streams (that is, within `bang_macro!` and `#[attribute_macro]` arguments).
     * If the macro doesn't have a generation number, assign it to the current generation.
 4. Identify which macros to expand, and expand them. A macro might indicate that it should be run _later_ by having a higher generation number than the current generation; we skip those until the generation number is high enough, and expand the rest.
-6. Increment the current generation number, then go back to step 2.
+5. Increment the current generation number, then go back to step 2.
 
 By carefully controlling the order in which macros get expanded, we can work with this process to handle the issues we identified earlier.
 
@@ -286,7 +286,7 @@ This definition of `my_attr_macro` will recursively call itself after marking an
 
 Looking at the example call to `#[my_attr_macro]` above, this is the order in which the macros will get marked and expanded:
 
-TODO: This example is verbose, but is also a _very_ clear demonstration of how the above solution somves the problem of complicated inner expansions. Is there a more concise example? Is there a better way to present it?
+TODO: This example is verbose, but is also a _very_ clear demonstration of how the above solution solves the problem of complicated inner expansions. Is there a more concise example? Is there a better way to present it?
 
 * First, the compiler sees `#[my_proc_macro(...)]` and marks it as generation 0.
 * Then, the compiler expands the generation 0 `#[my_proc_macro(...)]`:
@@ -358,8 +358,10 @@ We could encourage the creation of a 'macros for macro authors' crate with imple
     * The order that macros are encountered by the compiler (presumably top-down within files, unclear across files).
     * The order that macros are marked (when a macro expands into some tokes marked with generation `N`, they get put in a queue after all the existing generation `N` macros).
 
+* On the topic of tiebreaking, the current macro expansion loop delays the expansion of macros that the compiler can't resolve, because they might be resolvable once other macros have expanded. Can we just lift that algorithm wholesale here?
+
 * How does this proposal affect expansion within the _body_ of an attribute macro call? Currently builtin macros like `#[cfg]` are special-cased to expand before things like `#[derive]`; can we unify this behaviour under the new system?
 
 * How does this handle inner attributes?
 
-* How does this handle the explicit token arguments that are passed to declarative macros?
+* How does this handle structured arguments passed to declarative macros (like `$x:expr`)?
