@@ -138,6 +138,7 @@ impl ExpansionBuilder {
     pub fn set_generation(self, generation: isize) -> Self;
     pub fn adjust_generation(self, count: isize) -> Self;
     pub fn into_tokens(self) -> TokenStream;
+    pub fn into_generation_and_tokens(self) -> (isize, TokenStream);
 }
 ```
 
@@ -147,7 +148,7 @@ The method `generation` lets you inspect the existing generation number (if any)
 
 The builder methods `set_generation` and `adjust_generation` annotate the tokens passed in to tell the compiler to expand them at the appropriate generation (if the macro doesn't have a generation, `adjust_generation(count)` sets it to `count`).
 
-Finally, the method `into_tokens` consumes the `ExpansionBuilder` and provides the annotated tokens.
+Finally, the method `into_tokens` consumes the `ExpansionBuilder` and provides the annotated tokens, and `into_generation_and_tokens` also provides the resulting generation number.
 
 ## Using Generations to Handle Macro Calls
 
@@ -168,11 +169,11 @@ pub fn string_length(tokens: TokenStream) -> TokenStream {
     if let Ok(_: syn::Macro) = syn::parse(tokens) {
         // First, mark the macro tokens so that the compiler
         // will expand the macro at some point.
-        let input_tokens =
+        let (generation, input_tokens) =
                 ExpansionBuilder::from_tokens(tokens)
                     .unwrap()
                     .adjust_generation(0)
-                    .into_tokens();
+                    .into_generation_and_tokens();
 
         // Here's the trick - in our expansion we _include ourselves_,
         // but delay our expansion until after the inner macro is expanded!
@@ -181,7 +182,7 @@ pub fn string_length(tokens: TokenStream) -> TokenStream {
         };
         return ExpansionBuilder::from_tokens(TokenStream::from(new_tokens))
                 .unwrap()
-                .adjust_generation(1)
+                .adjust_generation(generation + 1)
                 .into_tokens();
     }
 
@@ -235,7 +236,9 @@ pub fn string_length(tokens: TokenStream) -> TokenStream {
 
 ```
 
-In more detail, `mark_macros(tokens, gen)` will look for any unmarked eligible macro tokens in `tokens` and mark them to be expanded in generation `gen`. If any macro tokens were encountered (including existing ones!), `mark_macros` returns the highest generation encountered as well as the tokens. This lets you use `mark_macros` as a catch-all test for any unexpanded macros in `tokens`.
+In more detail, `mark_macros(tokens, gen)` will look for any unmarked top-level macro tokens in `tokens` and mark them to be expanded in generation `gen` ('top-level' here means "not inside another macro call or under an attribute").
+
+If any macro tokens were encountered (including existing ones!), `mark_macros` returns the highest generation encountered as well as the tokens. This lets you use `mark_macros` as a catch-all test for any unexpanded macros in `tokens`.
 
 ### An Example: Attribute Macros
 
@@ -336,7 +339,7 @@ This proposal:
     }
     ```
 
-    The caller of `foo!` probably imagines that `baz!` will be expanded within `b`, and so prepends the call with `super`. However, if `foo!` naively lifts the call to `super::baz!`, then the path will fail to resolve because macro paths are resolved relative to the location of the call. Handling this would require the macro implementer to track the path offset of its expansion, which is doable but adds complexity.
+    The caller of `foo!` probably imagines that `baz!` will be expanded within `b`, and so prepends the call with `super`. However, if `foo!` naively marks the call to `super::baz!`, then the path will fail to resolve because macro paths are resolved relative to the location of the call. Handling this would require the macro implementer to track the path offset of its expansion, which is doable but adds complexity.
 
 * Commits the compiler to a particular macro expansion order, as well as a way for users to position themselves within that order. What future plans does this interfere with?
 
