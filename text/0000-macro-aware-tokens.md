@@ -356,6 +356,25 @@ We could encourage the creation of a 'macros for macro authors' crate with imple
 * This API allows for a first-pass solution to the problems listed in the [motivation](#motivation). Does it interfere with any known uses of proc macros? Does it prevent any existing techniques from working or cut off potential future ones?
 
 * What sort of API do we need to be _possible_ (even as a third party library) for this idea to be ergonomic for macro authors?
+    * An alternative/addition to `mark_macros` above:
+
+        ```rust
+        #[proc_macro]
+        pub fn test(ts: TokenStream) -> TokenStream {
+            if let Ok(marked) = syn::mark_map_macros(ts, |ts| {
+                quote! {
+                    test!(#ts)
+                }.into()
+            }) {
+                return marked;
+            }
+
+            // Continue.
+            ...
+        }
+        ```
+
+        Where `mark_map_macros(ts, f)` performs the same "mark every macro in `ts`" step that `mark_macros` does, then applies `f: TokenStream -> TokenStream`, then applies `mark_macros` to the result.
 
 * The attribute macro example above demonstrates that a macro can mark emitted tokens with previous or current macro generations. What should the 'tiebreaker' be? Some simple choices:
     * The order that macros are encountered by the compiler (presumably top-down within files, unclear across files).
