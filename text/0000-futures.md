@@ -207,6 +207,11 @@ dispatch mechanism, which consists of an raw object pointer and a virtual functi
 pointer table (vtable). This mechanism allows implementors of an **executor** to
 customize the behavior of `RawWaker`, `Waker` and `LocalWaker` objects.
 
+This mechanism is chosen in favor of trait objects since it allows for more
+flexible memory management schemes. `RawWaker` can be implemented purely in
+terms of global functions and state, on top of reference counted objects, or
+in other ways.
+
 The relation between those `Waker` types is outlined in the following definitions:
 
 ```rust
