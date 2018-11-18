@@ -300,8 +300,7 @@ impl Waker {
     ///
     /// This function is primarily used for optimization purposes.
     pub fn will_wake(&self, other: &Waker) -> bool {
-        self.waker.data == other.waker.data &&
-            self.waker.vtable == other.waker.vtable
+        self.waker == other.waker
     }
 
     /// Creates a new `Waker` from `RawWaker`.
@@ -388,8 +387,7 @@ impl LocalWaker {
     ///
     /// This function is primarily used for optimization purposes.
     pub fn will_wake(&self, other: &LocalWaker) -> bool {
-        self.waker.data == other.waker.data &&
-            self.waker.vtable == other.waker.vtable
+        self.waker == other.waker
     }
 
     /// Creates a new `LocalWaker` from `RawWaker`.
@@ -421,29 +419,53 @@ impl LocalWaker {
 An executor which implements `RawWaker` must therefore make sure that all these
 requirements are fulfilled.
 
-// TODO: Work on ArcWake
+Since many the ownership semantics that are required here can easily be met
+through a reference-counted `Waker` implementation, a convienence method for
+defining `Waker`s is provided, which does not require implementing a `RawWaker`
+and the associated vtable manually.
+
+This convience method is based around the `ArcWake` trait. An implementor of
+an executor can define a type which implements the `ArcWake` trait as defined
+below. The `ArcWake` type defines the associated method, which allows to retrieve
+a `LocalWaker` instance from an `Arc` of this type.
+The returned instance will guarantee that the `wake()` and `wake_local` methods
+of the type which implements `ArcWake` are called, whenever `wake()` is called
+on a `Waker` or `LocalWaker`.
 
 ```rust
 /// A way of waking up a specific task.
 ///
-/// Any task executor must provide a way of signaling that a task it owns
-/// is ready to be `poll`ed again. Executors do so by providing a wakeup handle
-/// type that implements this trait.
+/// By implementing this trait, types that are expected to be wrapped in an `Arc`
+/// can be converted into `LocalWaker` and `Waker` objects.
+/// Those Wakers can be used to signal executors that a task it owns
+/// is ready to be `poll`ed again.
 pub trait ArcWake: Send + Sync {
     /// Indicates that the associated task is ready to make progress and should
     /// be `poll`ed.
+    ///
+    /// This function can called from the thread on which the `ArcWake` was created,
+    /// as well as from any other thread.
     ///
     /// Executors generally maintain a queue of "ready" tasks; `wake` should place
     /// the associated task onto this queue.
     fn wake(self: &Arc<Self>);
 
     /// Indicates that the associated task is ready to make progress and should be polled.
-    /// This function is like wake, but can only be called from the thread on which this
-    /// `Wake` was created.
+    /// This function is like wake, but will only be called from the thread on which this
+    /// `ArcWake` was created.
     ///
     /// Executors generally maintain a queue of "ready" tasks; `wake_local` should place
     /// the associated task onto this queue.
-    fn wake_local(self: &Arc<Self>)
+    fn wake_local(self: &Arc<Self>);
+
+    /// Creates a `LocalWaker` from an Arc<T>, if T implements ArcWake.
+    ///
+    /// The returned `LocalWaker` will call `wake.wake_local()` when awoken.
+    ///
+    /// The returned `LocalWaker` can be converted into a `Waker` through
+    /// it's `into_waker()` method. If `wake()` is called on this `Waker`,
+    /// the `wake()` function that is defined inside this trait will get called.
+    fn into_local_waker(wake: Arc<Self>) -> LocalWaker where Self: Sized;
 }
 ```
 
@@ -464,17 +486,17 @@ impl ArcWake for Task {
     fn wake(self: &Arc<Self>) {
         self.executor.sync_ready_queue.push(self.clone());
     }
-    unsafe fn wake_local(self: &Arc<Self>) {
+
+    fn wake_local(self: &Arc<Self>) {
         (&mut *self.executor.optimized_queue.get()).push(self.clone())
     }
 }
 ```
 
 The use of `&Arc<Self>` rather than just `&self` makes it possible to work directly with
-the trait object for `Wake`, including cloning it. With `UnsafeWake` below, we'll see
-an API with greater flexibility for the cases where `Arc` is problematic.
+the trait object for `Wake`, including cloning it.
 
-It's possible to construct a `Waker` using `From<Arc<dyn Wake>>`.
+It's possible to construct a `Waker` using `From<Arc<dyn Wake>>`. // TODO: Is that really the case or only `impl Wake`?
 
 ## `core::future` module
 
