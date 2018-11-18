@@ -32,7 +32,7 @@ fn multiple_errors(val: Weak<str>) -> Result<i64, (NoneError|ParseIntError)> {
     let strref = Weak::upgrade(val).ok_or_else(|| (_|_)::0(NoneError))? 
     
     // If Err, a Result error holding an anonymous variant for ParseIntError
-    // is returned
+    // is returned early
     let num = i64::from_str_radix(strref, 10_u32).or_else((_|_)::1)?
     
     Result::Ok(num)
@@ -119,8 +119,8 @@ let _: (i64 | _) = (_ | i32)::0(4_i64);
 // Variant 1 is of type i32
 let _: (i64 | _) = (_ | _)::1(2_i32);
 ```
-The path-specced type syntax is only for specifying one of the variants. For associated items, enclose the type with angled brackets, then follow it with two colons and then the identifier for the item. This is not new syntax; rather, this is consistent with angled brackets already being required to name type-associated items. 
-```
+The path-specced variant numeral syntax is only for specifying the variants. For associated items, enclose the type with angled brackets, then follow it with two colons and then the identifier for the item. This is not new syntax; rather, this is consistent with angled brackets already being required to name type-associated items. 
+```rust
 let original = (f64 | f64)::1(0.0_f64);
 let copied = <(_ | _)>::clone(original);
 ```
@@ -207,7 +207,7 @@ fn debug_derive(typename: Group) -> TokenStream {
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-A semi-formal description of the syntax of anonymous variant types is shown below, where "..." represents the current rust grammar, immediately before implementation of this RFC. 
+A semi-formal description of the syntax of anonymous variant types is shown below, where `...` represents the current rust grammar, immediately before implementation of this RFC. 
 ```
 ; Type names
 ty_name ::= ... | anon_varty_name ; 
@@ -229,7 +229,7 @@ match_pattern ::= ... | anon_varty_match ;
 
 anon_varty_match : anon_varty_variant "(" match_pattern ")" 
 ```
-The anonymous variant type syntax intentionally mirrors that of tuples, with vertical bars in place of commas. The requirement for a vertical bar in the declaration of an anonymous variant type is to distinguish it from a simple parentheses-enclosed type, and the requirement that commas and vertical bars not to be intermixed as separators within a pair of parentheses is to leave open future extensions that may use intermixing of commas and vertical bars within a pair of parentheses in a type context. For now, a parentheses-enclosed token tree in a type context can be identified eagerly as an anonymous variant type by the vertical bar, and once such a type is identified, recognition does not need to fall back to anything other than a syntax error. The matching angle brackets required in naming the type is not new syntax, but rather keeps consistency with associated item paths, which already require the matching angle brackets. 
+The anonymous variant type syntax intentionally mirrors that of tuples, with vertical bars in place of commas. The requirement for a vertical bar in the declaration of an anonymous variant type is to distinguish it from a simple parentheses-enclosed type, and the requirement that commas and vertical bars not to be intermixed as separators within a pair of parentheses is to leave open future extensions that may use intermixing of commas and vertical bars within a pair of parentheses in a type context. For now, a parentheses-enclosed token tree in a type context can be identified eagerly as an anonymous variant type by the vertical bar, and once such a type is identified, recognition does not need to fall back to anything other than a syntax error, while outside of a type context, a parentheses-enclosed token tree followed by colons and a numeral distinctively identifies an anonymous variant type. 
 
 The clause specifying that numerals are only recognized as anonymous variants if they are path-specced by a type name or placeholder is to prevent ambiguity between numeric literals and anonymous variants, which would otherwise be possible interpretations of numerals. Because numerals have a very strong association with numeric types, numerals by themselves should always remain numeric literals, rather than allowing the interpretation of numerals by themselves as anonymous variants. In any case, anonymous variant types are likely to be rarer than numbers, and prepending a number with `(_|_)::` or a type alias helps to clearly indicate that an anonymous variant is in usage. 
 
@@ -238,7 +238,7 @@ This clause also prevent unintuitive type inferences involving anonymous variant
 let y = 1;    // This should be of numeric type
 let z = y(3); // This should not be interperable as an anonymous variant call
 ```
-Anonymous variant type names can only be recognized in a type context. Outside of a match context, the use of separating and trailing vertical bars within a pair of matching parentheses distinctively identified an anonymous variant type, and if followed by two colons and a numeral, even more so. Inside of a match context, vertical bars are used for alternation of matches, but such alternations will not be subsequently followed by two colons and a numeral, so ambiguity is avoided. Not only is this unambiguous, the distinctive token sequence means that only a small amount of lookahead or a single backtracking alternative is needed for the disambiguation while parsing, and are distinctive enough that it will stand out even through syntax errors. 
+In every context except pattern matches, the use of parentheses with vertical bars separating type names distinctly identifies an anonymous variant type. In the context of a pattern match statement, the use of an anonymous variant is indicated by two colons followed by a numeral, which is not a token sequence associated with any other kind of match pattern. Not only does this clearly avoid ambiguity in the language, the distinctive token sequence means that parsers need only implement a small amount of lookahead or a single additional backtracking alternative to unambiguously identify a parentheses-enclosed sequence of tokens as an anonymous variant type, and the tokens immediately following it as identifying an anonymous variant. 
 
 As mentioned above, the behavior of an anonymous variant type mirrors that of a similarly defined enum. This is to allow anonymous variant types to be built on top of existing machinery for enums, and share all the internal optimizations of Rust enums. The only implementation difference anticipated beyond parsing and type checking and inference is that if in the future, anonymous variant types are extended to allow different numbers of fields per variant, the functions for each anonymous variant may need the "rust-call" ABI as a workaround for a lack of variadics in Rust. 
 
@@ -312,7 +312,7 @@ The next alternative are algebraic union types, which are the primary rival to a
 
 Then there's the possibility of neatly tucking away these anonymous sum/union types behind an opaque type automatically generated by the compiler in certain contexts, possibly as an opt-in summed return type. I admit this encapsulates the complexity behind the type very nicely, and avoids the human comprehension legwork needed for other proposals. However, this would require some new design for the new type's API, and much compiler work to put together such a type as needed. And the type would be uninstantiable except at site it was generated for, and be narrow-purposed, in contrast to this proposal's type, which would have wide applicability. 
 
-Also mentioned were named, rather than numbered, variants. While they are more ergonomic than numbered variants, the Rust groundwork for name placeholders and generifying over name is lacking, so that would have to be developed. And for a minimal proposal such as this one, it's going to be the ecosystem that's going to help develop the type into something more pleasant, so an eye was kept on how amenable this proposal was to ecosystem extensions when it was developed. And named variants unfortunately wouldn't work particularly well with the ecosystem without extra groundwork. 
+Also mentioned were named, rather than numbered, variants. While they are more ergonomic than numbered variants, the Rust foundation for name placeholders and generifying over name is lacking, so that would have to be developed. And for a minimal proposal such as this one, it's going to be the ecosystem that's going to help develop the type into something more pleasant, so an eye was kept on how amenable this proposal was to ecosystem extensions when it was developed. And named variants unfortunately wouldn't work particularly well with the ecosystem without extra groundwork. 
 
 During the design of this RFC, the idea of being able to define a type whose variants are a subset of those an another type's came up. This is a neat idea, and nicely parallels similar ideas to be able to have restricted-field views of a struct. However, it _is_ a new idea that came up recently, and it will have to be worked out into a full proposal. Such a proposal is orthogonal in functionality to this one, even if it has similar goals, and would fit alongside it comfortably as well as an alternative to it. 
 
