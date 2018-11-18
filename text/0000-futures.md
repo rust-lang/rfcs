@@ -426,8 +426,8 @@ and the associated vtable manually.
 
 This convience method is based around the `ArcWake` trait. An implementor of
 an executor can define a type which implements the `ArcWake` trait as defined
-below. The `ArcWake` type defines the associated method, which allows to retrieve
-a `LocalWaker` instance from an `Arc` of this type.
+below. The `ArcWake` type defines the associated method `into_local_waker`,
+which allows to retrieve a `LocalWaker` instance from an `Arc` of this type.
 The returned instance will guarantee that the `wake()` and `wake_local` methods
 of the type which implements `ArcWake` are called, whenever `wake()` is called
 on a `Waker` or `LocalWaker`.
