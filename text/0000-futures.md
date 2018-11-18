@@ -249,8 +249,16 @@ pub struct RawWakerVTable {
     /// exchange the vtable for that purpose. E.g. it might replace the `wake`
     /// function with a varient that supports cross-thread wakeups.
     ///
+    /// The old `LocalWaker` which contained the data pointer should be consumed
+    /// while performing the operation. After the operation the `LocalWaker`
+    /// won't exist anymore, only the new `Waker`.
+    /// This means that if both instances would utilize the same reference-counted
+    /// data, changing the reference count would not be necessary.
+    ///
     /// If a conversion is not supported, the implementation should return
-    /// `INVALID_RAW_WAKER`.
+    /// `INVALID_RAW_WAKER`. In this case the implementation must still make
+    /// sure that the data pointer which is passed to the function is correctly
+    /// released, e.g. by calling the associated `drop_fn` on it.
     pub into_waker: unsafe fn(*const ()) -> RawWaker,
     /// This function will be called when `wake` is called on the `RawWaker`.
     pub wake: unsafe fn(*const ()),
@@ -355,9 +363,11 @@ impl LocalWaker {
     /// Converts the `LocalWaker` into `Waker`, which can be sent across
     /// thread boundaries.
     ///
+    /// This operation consumes the `LocalWaker`.
+    ///
     /// This function can panic if the associated executor does not support
     /// getting woken up from a different thread.
-    pub fn into_waker(&self) -> Waker {
+    pub fn into_waker(self) -> Waker {
         match self.try_into_waker() {
             Some(waker) => waker,
             None => panic!("Conversion from LocalWaker into Waker is not supported"),
@@ -367,11 +377,16 @@ impl LocalWaker {
     /// Tries to convert the `LocalWaker` into a `Waker`, which can be sent
     /// across thread boundaries.
     ///
+    /// This operation consumes the `LocalWaker`.
+    ///
     /// Returns None if the if the associated executor does not support
     /// getting woken up from a different thread.
-    pub fn try_into_waker(&self) -> Option<Waker> {
+    pub fn try_into_waker(self) -> Option<Waker> {
         unsafe {
             let raw_waker = (self.waker.vtable.into_waker)(self.waker.data);
+            // Avoid that the drop runs on self, which would e.g. decrease
+            // the refcount on it.
+            mem::forget(self);
             if raw_waker == INVALID_RAW_WAKER {
                 return None;
             }
