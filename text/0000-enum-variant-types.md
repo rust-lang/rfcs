@@ -67,7 +67,7 @@ fn print_A(a: Sum::A) {
     println!("a is {}", x);
 }
 ```
-However, in order to be backwards-compatible with existing handling of variants as enums, matches on
+However, to be backwards-compatible with existing handling of variants as enums, matches on
 variant types will permit (and simply ignore) arms that correspond to other variants:
 
 ```rust
@@ -79,6 +79,9 @@ match a {
     C => println!("a is C"), // ok, but unreachable
 }
 ```
+
+To avoid this behaviour, a new lint, `strict_variant_matching` will be added that will forbid
+matching on other variants.
 
 - You may project the fields of a variant type, similarly to tuples or structs:
 
@@ -144,6 +147,9 @@ if let a @ Sum::A(_) = s {
     println!("a is {}", a.0);
 }
 ```
+
+If multiple variants are bound with a single binding variable `x`, then the type of `x` will simply
+be the type of the enum, as before (i.e. binding on variants must be unambiguous).
 
 Variant types interact as expected with the proposed
 [generalised type ascription](https://github.com/rust-lang/rfcs/pull/2522) (i.e. the same as type
