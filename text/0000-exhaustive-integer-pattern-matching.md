@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-Extend Rust's pattern matching exhaustiveness checks to cover the integer types: `u8`, `u16`, `u32`, `u64`, `u128`, `usize`, `i8`, `i16`, `i32`, `i64`, `i128`, `isize` and `char`.
+Extend Rust's pattern matching exhaustiveness checks to cover the integer types: `u8`, `u16`, `u32`, `u64`, `u128`, `i8`, `i16`, `i32`, `i64`, `i128` and `char`.
 
 ```rust
 fn matcher_full(x: u8) {
@@ -36,7 +36,7 @@ This feature has already [been implemented](https://github.com/rust-lang/rust/pu
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-Exhaustive pattern matching works for integer types, just like any other type. In addition, missing ranges of integers will be reported as errors.
+Exhaustive pattern matching works for integer types other than `usize` and `isize`, just like any other type. In addition, missing ranges of integers will be reported as errors.
 
 ```rust
 fn matcher_full(x: u8) {
@@ -66,6 +66,8 @@ Note that guarded arms are ignored for the purpose of exhaustiveness checks, jus
 The implementation of this features uses interval arithmetic and an extension of the pattern matching exhaustiveness checks as described in [this paper](http://moscova.inria.fr/~maranget/papers/warn/index.html).
 
 This feature has already [been implemented](https://github.com/rust-lang/rust/pull/50912), so the code there may be used for further reference. The source contains detailed comments about the implementation.
+
+Exhaustiveness checking for `usize` and `isize` will be placed behind an unstable feature flag, `exhaustive_pointer_size_matching`.
 
 # Drawbacks
 [drawbacks]: #drawbacks
