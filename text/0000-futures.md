@@ -242,7 +242,7 @@ pub struct RawWakerVTable {
     /// The implementation of this function must retain all resources that are
     /// required for this additional instance of a `RawWaker` and associated
     /// task.
-    pub clone: unsafe fn(*const ()) -> *const (),
+    pub clone: unsafe fn(*const ()) -> RawWaker,
     /// This function will be called when a `LocalWaker` should be converted into
     /// a thread-safe `Waker`. The implementation of this function must return
     /// a new `RawWaker` which can fulfill the requirements of `Waker`. It can
