@@ -35,7 +35,9 @@ that is likely not what the author of the code intended.
 
 To fix this, we propose to introduce a new primitive operation on the MIR level
 that, in a single MIR statement, creates a raw pointer to a given place.  No
-intermediate reference exists, so no invariants have to be adhered to.
+intermediate reference exists, so no invariants have to be adhered to.  We also
+add a lint for cases that seem like the programmer wanted a raw reference, not a
+safe one, but did not use the right syntax.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -75,8 +77,10 @@ triggering undefined behavior is to *immediately* turn it into a raw pointer.
 All of the following are valid:
 
 ```rust
-let x = unsafe { &packed.field as *const _ };
-let y: *const _ = unsafe { &packed.field };
+let packed_cast = unsafe { &packed.field as *const _ };
+let packed_coercion: *const _ = unsafe { &packed.field };
+let null_cast: *const _ = unsafe { &*ptr::null() } as *const _;
+let null_coercion: *const _ = unsafe { &*ptr::null() };
 ```
 
 The intention is to cover all cases where a reference, just created, is
@@ -89,18 +93,19 @@ invariants incurred by references do not come into play.
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-When translating HIR to MIR, we recognize `&[mut] <place> as *[mut|const] _` as
-well as coercions from `&[mut] <place>` to a raw pointer type as a special
-pattern and turn them into a single MIR `Rvalue` that takes the address and
-produces it as a raw pointer -- a "take raw reference" operation.  This might be
-a variant of the existing `Ref` operation (say, a boolean flag for whether this
-is raw), or a new `Rvalue` variant.  The borrow checker should do the usual
-checks on `<place>`, but can just ignore the result of this operation and the
-newly created "reference" can have any lifetime.  (Currently this will be some
-form of unbounded inference variable because the only use is a cast-to-raw, the
-new "raw reference" operation can have the same behavior.)  When translating MIR
-to LLVM, nothing special has to happen as references and raw pointers have the
-same LLVM type anyway; the new operation behaves like `Ref`.
+When translating HIR to MIR, we recognize `&[mut] <place> as *[mut|const] ?T`
+(where `?T` can be any type, also a partial one like `_`) as well as coercions
+from `&[mut] <place>` to a raw pointer type as a special pattern and turn them
+into a single MIR `Rvalue` that takes the address and produces it as a raw
+pointer -- a "take raw reference" operation.  This might be a variant of the
+existing `Ref` operation (say, a boolean flag for whether this is raw), or a new
+`Rvalue` variant.  The borrow checker should do the usual checks on `<place>`,
+but can just ignore the result of this operation and the newly created
+"reference" can have any lifetime.  (Currently this will be some form of
+unbounded inference variable because the only use is a cast-to-raw, the new "raw
+reference" operation can have the same behavior.)  When translating MIR to LLVM,
+nothing special has to happen as references and raw pointers have the same LLVM
+type anyway; the new operation behaves like `Ref`.
 
 When interpreting MIR in the miri engine, the engine will recognize that the
 value produced by this `Rvalue` has raw pointer type, and hence must not satisfy
@@ -115,6 +120,14 @@ comes with no special promises.  "Unsafety checking" is thus not even a good
 term for this, maybe it should be a special pass dedicated to packed fields
 traversing MIR, or this can happen when lowering HIR to MIR.  This check has
 nothing to do with whether we are in an unsafe block or not.
+
+Moreover, to prevent programmers from accidentally creating a safe reference
+when they did not want to, we add a lint that identifies situations where the
+programmer likely wants a raw reference, and suggest an explicit cast in that
+case.  One possible heuristic here would be: If a safe reference (shared or
+mutable) is only ever used to create raw pointers, then likely it could be a raw
+pointer to begin with.  The details of this are best worked out in the
+implementation phase of this RFC.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -138,12 +151,12 @@ proposal to make them not equivalent.
 
 One alternative to introducing a new primitive operation might be to somehow
 exempt "references immediately cast to a raw pointer" from the invariant.
-However, it is unclear how that information is supposed to be encoded in the
-MIR, and how it is to be maintained by optimizations.  We believe that the
-semantics of a MIR program, including whether it has undefined behavior, should
-be deducible by executing it one step at a time.
+However, we believe that the semantics of a MIR program, including whether it
+has undefined behavior, should be deducible by executing it one step at a time.
+Given that, it is unclear how a semantics that "lazily" checks references should
+work, and how it could be compatible with the annotations we emit for LLVM.
 
-Instead of compiling `&[mut] <place> as *[mut|const] _` to a raw reference
+Instead of compiling `&[mut] <place> as *[mut|const] ?T` to a raw reference
 operation, we could introduce new surface syntax and keep the existing HIR->MIR
 lowering the way it is.  However, that would make lots of carefully written
 existing code dealing with packed structs have undefined behavior.  (There is
@@ -154,13 +167,13 @@ surface syntax has been made yet -- and if one comes up later, this proposal is
 forwards-compatible with also having explicit syntax for taking a raw reference
 (and deprecating the safe-ref-then-cast way of writing this operation).
 
-We could be using the new operator in more cases, e.g. we could have some kind
-of analysis which determines during desugaring if a reference is *only* used as
-a raw pointer, and if yes, creates it as a raw pointer to begin with.  This
-would make more code use raw references, thus making more code defined.
-However, if someone *relies* on this behavior there is a danger of accidentally
-adding a non-raw-ptr use to a reference, which would then rather subtly make the
-program have UB.
+We could be using the new operator in more cases, e.g. instead of having a smart
+lint that tells people to insert casts, we could use that same analysis to infer
+when to use a raw reference.  This would make more code use raw references, thus
+making more code defined.  However, if someone *relies* on this behavior there
+is a danger of accidentally adding a non-raw-ptr use to a reference, which would
+then rather subtly make the program have UB.  That's why we proposed this as a
+lint instead.
 
 # Prior art
 [prior-art]: #prior-art
@@ -174,9 +187,3 @@ arise because of Rust having both of these features.
 
 We could have different rules for when to take a raw reference (as opposed to a
 safe one).
-
-What do we specify inference to do for cases like
-```rust
-let x: *const T = {&*null};
-```
-Does this take a raw reference, or a safe reference?
