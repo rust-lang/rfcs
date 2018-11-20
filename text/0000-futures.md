@@ -106,14 +106,16 @@ like with `Iterator`s. Initially these adapters will be provided entirely "out
 of tree", but eventually they will make their way into the standard library.
 
 Ultimately asynchronous computations are executed in the form of *tasks*,
-which are comparable to lightweight threads. A task is a `()`-producing `Future`,
-which is owned by an *executor*, and polled to completion while the being pinned.
+which are comparable to lightweight threads. *executor*s provide the ability to
+create tasks from `()`-producing `Future`s. The executor will pin the `Future`
+and `poll` it until completion inside the task that it creates for it.
 
-*executor*s provide the ability to "spawn" such `Future`s.
-The implementation of an executor schedules the task it owns in a cooperative
-fashion. It is up to the implementation of an executor whether on or more
+The implementation of an executor schedules the tasks it owns in a cooperative
+fashion. It is up to the implementation of an executor whether one or more
 operation system threads are used for this, as well as how many tasks can be
-spawned on them in parallel.
+spawned on it in parallel. Some executor implementations may only be able to
+drive a single `Future` to completion, while others can provide the ability to
+dynamically accept new `Future`s that are driven to completion inside tasks.
 
 This RFC does not include any definition of an executor. It merely defines the
 interaction between executors, tasks and `Future`s, in the form of APIs
@@ -204,8 +206,9 @@ Possible ways of waking up a an executor include:
 In order to accomodate for this behavior, the `Waker` and `LocalWaker` types are
 defined through a `RawWaker` type, which is an struct that defines a dynamic
 dispatch mechanism, which consists of an raw object pointer and a virtual function
-pointer table (vtable). This mechanism allows implementors of an executor to
-customize the behavior of `RawWaker`, `Waker` and `LocalWaker` objects.
+pointer table (vtable). This mechanism allows implementers of an executor to
+customize the behavior of `Waker` and `LocalWaker` objects by providing an
+executor-specific `RawWaker`.
 
 This mechanism is chosen in favor of trait objects since it allows for more
 flexible memory management schemes. `RawWaker` can be implemented purely in
