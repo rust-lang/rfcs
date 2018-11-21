@@ -18,7 +18,8 @@ the universal use of the project, a wide variety of examples is needed.
 But differences are there between examples and the project itself because an example:
 
 1. Might need more external crates than the project itself;
-2. Could be compiled into various cargo targets.
+2. Could be compiled into various cargo targets;
+3. Have its own `build.rs` file.
 
 For example, when developing a backend for code editors like Xray, we might need to implement its frontend 
 in a diversity of forms like terminal for vim-like experience, Qt for graphic UI, or even wasm for online 
@@ -113,6 +114,9 @@ Note that a `.gitignore` file is added to `examples/abc/.gitignore` as gitignore
 A simple line `!Cargo.lock` will be written in it so that the gitignore rule for `Cargo.lock` is not to be 
 overridden by the `.gitignore` file in the root. As the `.gitignore` in subdirectories effects the directory it is 
 in, the `.gitignore` in root project is not to be effected. 
+
+You may create a custom `build.rs` file into the example project and add it into `Cargo.toml`. 
+The rust compiler will execute this build script before building your example project.
 
 As for `Cargo.toml`, for your convenience, cargo automatically generate a dependency on your root project like:
 
