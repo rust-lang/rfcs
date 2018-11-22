@@ -482,6 +482,63 @@ The syntax of mangled names is given in extended Backus-Naur form:
 <instantiating-crate> := <path-prefix>
 ```
 
+### Punycode Identifiers
+
+Punycode generates strings of the form `([[:ascii:]]+-)?[[:alnum:]]+`. This is problematic for two reasons:
+
+- Generated strings can contain a `-` character; which is not in the supported character set.
+- Generated strings can start with a digit; which makes them clash with the byte-count prefix of the `<identifier>` production.
+
+For these reasons, vanilla Punycode string are further encoded during mangling:
+
+- The `-` character is simply replaced by a `_` character.
+- The part of the Punycode string that encodes the non-ASCII characters is a base-36 number, using `[a-z0-9]` as its "digits". We want to get rid of the decimal digits in there, so we simply remap `0-9` to `A-J`.
+
+Here are some examples:
+
+| Original        | Punycode        | Punycode + Encoding |
+|-----------------|-----------------|---------------------|
+| føø             | f-5gaa          | f_Fgaa              |
+| α_ω             | _-ylb7e         | __ylbHe             |
+| 铁锈             | n84amf          | nIEamf              |
+| 🤦              | fq9h            | fqJh                |
+| ρυστ            | 2xaedc          | Cxaedc              |
+
+With this post-processing in place the Punycode strings can be treated like regular identifiers and need no further special handling.
+
+
+## Compression
+
+The compression algorithm is defined in terms of the AST: Starting at the root, recursively substitute each child node with its compressed version. A node is compressed by replacing it with a `<substitution>` node from the dictionary (which the dictionary will contain if an *equivalent* node has already been encountered) or, if the dictionary doesn't contain a matching substitution, recursively apply compression to all child nodes and then add the current node to the dictionary.
+
+Things to note:
+
+- Child nodes have to be compressed in the same order in which they lexically occur in the mangled name. Processing order matters because it defines which substitution indices are allocated for which node.
+
+- Nodes are "equivalent" if they result in the *same demangling*. Usually that means that equivalence can be tested by just comparing the sub-tree that the nodes are roots of. However, there are some *additional* equivalences that have to be considered when doing a dictionary lookup:
+
+  - A `<absolute-path>` node is equivalent to its `<path-prefix>` child node if its `<generic-arguments>` child node is empty.
+
+  - A `<path-root>` node of the from `M <type>` is equivalent to its `<type>` child node.
+
+  - A `<type>` node with a single `<absolute-path>` child is equivalent to this child node.
+
+All productions that have a `<substitution>` on their right-hand side are added to the substitution dictionary: `<absolute-path>`, `<path-prefix>`, and `<type>`. The only exception are `<type>` nodes that are a `<basic-type>`. Those are not added to the dictionary. Also, if there is a node `X` and there already is an equivalent node `Y` in the dictionary, `X` is not added either. For example, we don't add `<absolute-path>` nodes with empty `<generic-arguments>` to the dictionary because it always already contains the `<path-prefix>` child node equivalent to its parent `<absolute-path>`.
+
+
+TODO: add pseudo code implementation?
+
+## Decompression
+
+
+### Note on Efficient Demangling
+
+
+## Mapping Rust Items to Mangled Names
+
+
+
+
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -528,8 +585,23 @@ Itanium mangling).
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
+# Appendix A - Suggested Demangling
 
-# Appendix - Interesting Examples
+This RFC suggests that names are demangling to a form that matches Rust syntax as it is used in source code and compiler error messages:
+
+- Path components should be separated by `::`.
+
+- If the path root is a `<crate-id>` it should be printed as the crate name. If the context requires it for correctness, the crate disambiguator should be printed too, as in, for example, `std[a0b1c2d3]::collections::HashMap`. In this case `a0b1c2d3` would be the disambiguator. Usually, the disambiguator can be omitted for better readability.
+
+- If the path root is a trait impl, it should be printed as `<SelfType as Trait>`, like the compiler does in error messages.
+
+- The list of generic arguments should be demangled as `<T1, T2, T3>`.
+
+- Identifiers and trait impl path roots can have a numeric disambiguator (the `<disambiguator>` production). The syntactic version of the numeric disambiguator maps to a numeric index. If the disambiguator is not present, this index is 0. If it is of the form `s_` then the index is 1. If it is of the form `s<hex-digit>_` then the index is `<hex-digit> + 2`. The suggested demangling of a disambiguator is `'<index>`. However, for better readability, these disambiguators should usually be omitted in the demangling altogether. Disambiguators with index zero can always emitted.
+  The exception here are closures. Since these do not have a name, the disambiguator is the only thing identifying them. The suggested demangling for closures is thus `{closure}'<index>`.
+
+
+# Appendix B - Interesting Examples
 
 TODO
  - specializing impls
