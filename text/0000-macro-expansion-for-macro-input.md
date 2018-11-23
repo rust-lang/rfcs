@@ -1,4 +1,4 @@
-- Feature Name: Macro Generations and Expansion Order
+- Feature Name: Macro expansion for macro input
 - Start Date: 2018-01-26
 - RFC PR: (leave this empty)
 - Rust Issue: (leave this empty)
@@ -147,7 +147,7 @@ Notice that in the `quote!` output, the _argument_ to the new call to `string_le
 
 # Reference-level explanation
 
-Currently, the compiler does actually perform something similar to the loop described in th section on [expansion order](#macro-expansion-and-marking). We could 'just' augment the step that identifies potential macro calls to also inspect the otherwise unstructured token trees within macro arguments.
+Currently, the compiler does actually perform something similar to the loop described in the section on [expansion order](#macro-expansion-and-marking). We could 'just' augment the step that identifies potential macro calls to also inspect the otherwise unstructured token trees within macro arguments.
 
 This proposal requires that some tokens contain extra semantic information similar to the existing `Span` API. Since that API (and its existence) is in a state of flux, details on what this 'I am a macro call that you need to expand!' idea may need to wait until those have settled.
 
