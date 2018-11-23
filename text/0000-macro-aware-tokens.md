@@ -73,7 +73,7 @@ An older motivation to allow macro calls in attributes was to get `#[doc(include
 
 # Guide-level explanation
 
-## Macro Calls in Macro Input
+## Macro calls in macro input
 
 When implementing a procedural or attribute macro you should account for the possibility that a user might provide a macro call in their input. As an example of where this might trip you up when writing a procedural macro, here's a silly one that evaluates to the length of the string literal passed in:
 
@@ -109,218 +109,70 @@ mod whatever {
 
 If `#[my_attr_macro]` is expecting to see a struct inside of `mod whatever`, it's going to run into trouble when it sees that macro instead. The same happens with `concat!` in the attribute arguments: Rust doesn't look at the input tokens, so it doesn't even know there's a macro to expand!
 
-Thankfully, there's a way to _tell_ Rust to treat some tokens as macros, and to expand them before trying to expand _your_ macro.
+Thankfully, there's a way to _tell_ Rust to treat some tokens as macros, and to expand them before trying to expand _your_ macro. But first, we need to understand how Rust finds and expands macros.
 
-## Macro Generations and Expansion Order
+## Macro expansion and marking
 
-Rust uses an iterative process to expand macros, as well as to control the relative timing of macro expansion. The idea is that we expand any macros we can see (the current 'generation' of macros), and then expand any macros that _those_ macros had in their output (the _next_ 'generation'). In more detail, the processing loop that Rust performs is roughly as follows:
+Rust uses an iterative process to expand macros. The loop that Rust performs is roughly as follows:
 
-1. Set the current macro generation number to 1.
-2. Parse _everything_. This lets us get the `mod` structure of the crate so that we can resolve paths (and macro names!).
-3. Collect all the macro invocations we can see.
-    * This includes any macros that we parsed, as well as any macros that have been explicitly marked inside any bare token streams (that is, within `bang_macro!` and `#[attribute_macro]` arguments).
-    * If the macro doesn't have a generation number, assign it to the current generation.
-4. Identify which macros to expand, and expand them. A macro might indicate that it should be run _later_ by having a higher generation number than the current generation; we skip those until the generation number is high enough, and expand the rest.
-5. Increment the current generation number, then go back to step 2.
+1. Look for and expand any macros we can parse in expression, item, or attribute position.
+    - Skip any macros that have explicitly marked macros in their arguments.
+    - Are there any new macros we can parse and expand? Go back to step 1.
+2. Look for and expand any explicitly marked macros where there are raw tokens (like inside the arguments to a proc macro or attribute macro).
+    - Are there any new explicitly marked macros we can expand? Go back to step 2.
+    - Otherwise, go back to step 1.
 
-By carefully controlling the order in which macros get expanded, we can work with this process to handle the issues we identified earlier.
+Other than some details about handing macros we can't resolve yet (maybe because they're defined by another macro expansion), that's it!
 
-## Macro Generation API
+In order to explicitly mark a macro for the compiler to expand, we actually just mark the `!` or `#` token on the macro call. The compiler looks around the token for the other bits it needs.
 
-The `proc_macro` crate provides an API for annotating some tokens with metadata that tells the compiler if and when to expand them like a normal macro invocation. The API revolves around an `ExpansionBuilder`, a builder-pattern struct that lets you adjust the relevant token information:
+In most cases, when you're writing a proc or attribute macro you don't really need that level of precision when marking macros. Instead, you just want to expand every macro in your input before continuing!
 
-```rust
-struct ExpansionBuilder {...};
+The `syn` crate has a utility attribute `#[syn(expand_input)]` which converts a normal proc or attribute macro into one that does that expansion. For example, if we add `#[syn(expand_input)]` to our `string_length` proc macro above, we get something like:
 
-impl ExpansionBuilder {
-    pub fn from_tokens(tokens: TokenStream) -> Result<Self, ParseError>;
-    pub fn generation(&self) -> Option<isize>;
-    pub fn set_generation(self, generation: isize) -> Self;
-    pub fn adjust_generation(self, count: isize) -> Self;
-    pub fn into_tokens(self) -> TokenStream;
-    pub fn into_generation_and_tokens(self) -> (isize, TokenStream);
-}
-```
-
-The constructor `from_tokens` takes in either a bang macro or attribute macro with arguments (`my_proc_macro!(some args)` or `#[my_attr_macro(some other args)]`).
-
-The method `generation` lets you inspect the existing generation number (if any) of the input. This might be useful to figure out when a macro you've encountered in your tokens will be expanded, in order to ensure that some other macro expands before or after it.
-
-The builder methods `set_generation` and `adjust_generation` annotate the tokens passed in to tell the compiler to expand them at the appropriate generation (if the macro doesn't have a generation, `adjust_generation(count)` sets it to `count`).
-
-Finally, the method `into_tokens` consumes the `ExpansionBuilder` and provides the annotated tokens, and `into_generation_and_tokens` also provides the resulting generation number.
-
-## Using Generations to Handle Macro Calls
-
-Let's use our `string_length!` procedural macro to demonstrate how to use `ExpansionBuilder` to handle macros in our input. Say we get called like this:
-
-```rust
-// Generation 0 macro tokens.
-// vvvvvvvvvvvvvvv----------------------------v
-   string_length!(concat!("hello, ", "world!"));
-```
-
-The bits marked with `v` are tokens that the compiler will find, and decide are a generation 0 macro. Notice that this doesn't include the arguments! So, in the implementation of `string_length!`:
 
 ```rust
 #[proc_macro]
 pub fn string_length(tokens: TokenStream) -> TokenStream {
-    // Handle being given a macro...
-    if let Ok(_: syn::Macro) = syn::parse(tokens) {
-        // First, mark the macro tokens so that the compiler
-        // will expand the macro at some point.
-        let (generation, input_tokens) =
-                ExpansionBuilder::from_tokens(tokens)
-                    .unwrap()
-                    .adjust_generation(0)
-                    .into_generation_and_tokens();
-
-        // Here's the trick - in our expansion we _include ourselves_,
-        // but delay our expansion until after the inner macro is expanded!
-        let new_tokens = quote! {
-            string_length!(#tokens)
-        };
-        return ExpansionBuilder::from_tokens(TokenStream::from(new_tokens))
-                .unwrap()
-                .adjust_generation(generation + 1)
-                .into_tokens();
+    if let Some(marked_tokens) = syn::find_and_mark_all_macros(&tokens) {
+        return quote!(string_length!(#marked_tokens));
     }
-
-    // Otherwise, carry on!
-    let lit: syn::LitStr = syn::parse(tokens).unwrap();
-    let len = str_lit.value().len();
-    
-    quote!(#len)
-}
-```
-
-The resulting tokens look like this: 
-
-```rust
-// New generation 1 macro tokens.
-// vvvvvvvvvvvvvvv----------------------------v
-   string_length!(concat!("hello, ", "world!"));
-//                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-// New generation 0 macro tokens.
-```
-
-Now, in the next macro expansion loop, the compiler will find those generation-0 macro tokens and expand them. After that, the tokens look like this:
-
-```rust
-// Still generation 1 macro tokens.
-// vvvvvvvvvvvvvvv---------------v
-   string_length!("hello, world!");
-```
-
-And now `string_length!` expands happily!
-
-### Macro Generation Utilities
-
-Unforunately, the above is fairly verbose. Fortunately, `syn` provides a utility function `mark_macros` for finding and marking macros within the tokens of a well-formed item or expression:
-
-```rust
-#[proc_macro]
-pub fn string_length(tokens: TokenStream) -> TokenStream {
-    if let Ok((generation, tokens)) = syn::mark_macros(&tokens, 0) {
-        let tokens = quote! {
-           string_length!(#tokens)
-        }.into();
-
-        let (_, tokens) = syn::mark_macros(&tokens, generation + 1).unwrap();
-        return tokens.into();
-    }
-
-    // The rest remains the same.
+    // Otherwise, continue as before.
     ...
 }
 
 ```
 
-In more detail, `mark_macros(tokens, gen)` will look for any unmarked top-level macro tokens in `tokens` and mark them to be expanded in generation `gen` ('top-level' here means "not inside another macro call or under an attribute").
-
-If any macro tokens were encountered (including existing ones!), `mark_macros` returns the highest generation encountered as well as the tokens. This lets you use `mark_macros` as a catch-all test for any unexpanded macros in `tokens`.
-
-### An Example: Attribute Macros
-
-Let's look at another example: handling macros in attribute macros. Consider this:
-
-```rust
-#[my_attr_macro(concat!("hello, ", "world!"))]
-mod foo {
-    #[another_attr_macro(include_str!("some/path"))]
-    a_proc_macro! {
-        ...
-    }
-}
-```
-
-If `#[my_attr_macro]` doesn't want to deal with _any_ macros in its input, it can handle this quite easily:
-
-```rust
-#[proc_macro_attribute]
-pub fn my_attr_macro(args: TokenStream, body: TokenStream) -> TokenStream {
-    if let Ok((args_gen, args)) = syn::mark_macros(&args, 0) {
-        let tokens = quote! {
-            #[my_attr_macro(#args)]
-            #body
-        }.into();
-
-        let (_, tokens) = syn::mark_macros(&tokens, args_gen + 1).unwrap();
-        return tokens.into();
-    }
-
-    if let Ok((body_gen, body)) = syn::mark_macros(&body, 0) {
-        let tokens = quote! {
-            #[my_attr_macro(#args)]
-            #body
-        }.into();
-
-        let (_, tokens) = syn::mark_macros(&tokens, body_gen + 1).unwrap();
-        return tokens.into();
-    }
-
-    // Otherwise, carry on.
-    ...
-}
-
-```
-
-This definition of `my_attr_macro` will recursively call itself after marking any macros in its argument tokens to be expanded. Once those are all done, it repeats the process with the tokens in its body.
-
-Looking at the example call to `#[my_attr_macro]` above, this is the order in which the macros will get marked and expanded:
-
-TODO: This example is verbose, but is also a _very_ clear demonstration of how the above solution solves the problem of complicated inner expansions. Is there a more concise example? Is there a better way to present it?
-
-* First, the compiler sees `#[my_proc_macro(...)]` and marks it as generation 0.
-* Then, the compiler expands the generation 0 `#[my_proc_macro(...)]`:
-    * Since there are macros in the arguments, it expands into a generation 1 call to itself wrapping a newly-marked generation 0 `concat!(...)`.
-* The compiler sees the generation 0 `concat!(...)` and expands it.
-* The compiler sees the generation 1 `#[my_proc_macro(...)]` and expands it:
-    * Since there are no macros in the arguments, it marks the call to `#[another_attr_macro(...)]` as generation 0, and expands into a generation 1 call to itself wrapping the new macro-marked body.
-* The compiler sees the generation 0 `#[another_attr_macro(...)]` and expands it:
-    * If `another_attr_macro` is implemented similarly to `my_attr_macro`, it'll mark `include_str!(...)` as generation 0 and expand into a call to itself marked as generation 1.
-* The compiler sees the generation 0 `include_str!(...)` and expands it.
-* The compiler sees the generation 1 `#[my_attr_macro(...)]` and expands it:
-    * `my_attr_macro` sees that the body has a macro marked generation 1, so it expands into itself (again), but this time marked generation 2.
-* The compiler sees the generation 1 `#[another_attr_macro(...)]` and expands it:
-    * Since there are no macros in the arguments to `another_attr_macro`, it checks the body for macros. It marks the call to `a_proc_macro!` as generation 0 and expands into itself marked as generation 1.
-* The compiler sees the generation 0 `a_proc_macro!(...)` call and expands it.
-* The compiler sees the generation 1 `#[another_attr_macro(...)]` and expands it.
-* The compiler sees the generation 2 `#[my_attr_macro(...)]` and expands it.
-
-Since `mark_macros` is so flexible, it can be used to implement a variety of expansion policies. For instance, `my_attr_macro` could decide to mark the macros in its arguments and body at the same time, rather than handling one then the other.
+Notice that in the `quote!` output, the _argument_ to the new call to `string_length!` is marked by `syn::find_and_mark_all_macros`, but the _new call itself_ is unmarked. Recalling the macro expansion process we outlined earlier, that means the arguments will all get expanded before `string_length!` gets expanded again (hopefully without any macros in the arguments, but if there are then this whole process just repeats).
 
 # Reference-level explanation
 
-The proposed additions to the proc macro API in `proc_macro` are outlined above in the [API overview](#macro-generation-api). Here we focus on technical challenges.
-
-Currently, the compiler does actually perform something similar to the loop described in th section on [expansion order](#macro-generations-and-expansion-order). We could 'just' augment the step that identifies potential macro calls to also inspect the otherwise unstructured token trees within macro arguments.
+Currently, the compiler does actually perform something similar to the loop described in th section on [expansion order](#macro-expansion-and-marking). We could 'just' augment the step that identifies potential macro calls to also inspect the otherwise unstructured token trees within macro arguments.
 
 This proposal requires that some tokens contain extra semantic information similar to the existing `Span` API. Since that API (and its existence) is in a state of flux, details on what this 'I am a macro call that you need to expand!' idea may need to wait until those have settled.
 
-The token structure that `ExpansionBuilder` should expect is any structure that parses into a complete procedural macro call or into a complete attribute macro call (TODO: should this include the outer `#[...]`? Should this include the body?). This provides the path used to resolve the macro, as well as the delimited argument token trees.
+## Identifying and parsing marked tokens
 
-The token structure that `ExpansionBuilder` produces should have the exact same structure as the input (a path plus a delimited argument token tree, as well as any other sigils). The _path_ and the _delimiter_ node of the arguments should be marked, but the _content nodes_ of the arguments should be unchanged.
+The parser may encounter a token stream when parsing a bang (proc or decl) macro, or in the arguments to an attribute macro, or in the body of an attribute macro.
+
+When the parser encounters a marked `#` token, if it's part of a `#[...]` call and so the parser can forward-parse all of the macro path, token arguments, and body, and add the call to the current expansion queue. 
+
+- In a minimal implementation we want to keep expansion result interpolation as simple as possible - this means avoiding enqueuing an expansion that expands _inside of_ another enqueued expansion.
+- One solution is to recursively parse the input of marked macros until we find a marked macro with none in its input, adding only this innermost call to the expansion queue.
+
+    This increases the amount of re-parsing (since after every expansion we're repeatedly parsing macro bodies looking for innermost calls) at the cost of fewer re-expansions (since each marked macro will only ever see its input after all marked macros have been expanded).
+
+If a marked `#` token is part of an inner-attribute `#![...]` call, the situation is similar: the parser can forward-parse the macro path and token arguments, and with a little work can forward-parse the body.
+
+When the parser encounters a marked `!` token, it needs to forward-parse the token arguments, but also needs to _backtrack_ to parse the macro path. In a structured area of the grammar (such as in an attribute macro body or a structured decl macro) this would be fine, since we would already be parsing an expression or item and hence have the path ready. In an _unstructured_ area we would actually have to backtrack within the token stream and 'reverse parse' a path: is this an issue?
+
+## Delayed resolution of unresolved macros
+
+The existing expansion loop adds any currently unresolved macros to a _resolution_ queue. When re-parsing macro output, if any newly defined macros would allow those unresolved macros to be resolved, they get added to the current expansion queue. If there are unresolved macros but no macros to expand, the compiler reports the unresolvable definition.
+
+The new expansion order described [above](#macro-expansion-and-marking) is designed to expand all marked macros as much as possible before trying to expand unmarked ones. We know that marked macros are always in token position, so expansion-eligible unmarked macros are the only way to introduce new macro definitions.
+
+In the new order, we still accumulate unresolved macros (marked and unmarked), and we still remove them from the resolution queue to the relevant expansion queue whenever they get defined. The only difference is an extra error case, where a resolved unmarked macro has an unresolved marked macro in its input, and there are no unmarked macros to expand. In this case, the resolution queue still contains the unresolved marked macro, and so the compiler again reports the unresolvable definition.
 
 # Drawbacks
 
@@ -339,9 +191,9 @@ This proposal:
     }
     ```
 
-    The caller of `foo!` probably imagines that `baz!` will be expanded within `b`, and so prepends the call with `super`. However, if `foo!` naively marks the call to `super::baz!`, then the path will fail to resolve because macro paths are resolved relative to the location of the call. Handling this would require the macro implementer to track the path offset of its expansion, which is doable but adds complexity.
+    The caller of `foo!` probably imagines that `baz!` will be expanded within `mod b`, and so prepends the call with `super`. However, if `foo!` naively marks the call to `super::baz!`, then the path will fail to resolve because macro paths are resolved relative to the location of the call. Handling this would require the macro implementer to track the path offset of its expansion, which is doable but adds complexity.
 
-* Commits the compiler to a particular macro expansion order, as well as a way for users to position themselves within that order. What future plans does this interfere with?
+* Commits the compiler to a particular (but loose) macro expansion order, as well as a (limited) way for users to position themselves within that order. What future plans does this interfere with? What potentially unintuitive expansion-order effects might this expose?
 
 # Rationale and alternatives
 
@@ -355,35 +207,8 @@ We could encourage the creation of a 'macros for macro authors' crate with imple
 
 * This API allows for a first-pass solution to the problems listed in the [motivation](#motivation). Does it interfere with any known uses of proc macros? Does it prevent any existing techniques from working or cut off potential future ones?
 
-* What sort of API do we need to be _possible_ (even as a third party library) for this idea to be ergonomic for macro authors?
-    * An alternative/addition to `mark_macros` above:
-
-        ```rust
-        #[proc_macro]
-        pub fn test(ts: TokenStream) -> TokenStream {
-            if let Ok(marked) = syn::mark_map_macros(ts, |ts| {
-                quote! {
-                    test!(#ts)
-                }.into()
-            }) {
-                return marked;
-            }
-
-            // Continue.
-            ...
-        }
-        ```
-
-        Where `mark_map_macros(ts, f)` performs the same "mark every macro in `ts`" step that `mark_macros` does, then applies `f: TokenStream -> TokenStream`, then applies `mark_macros` to the result.
-
-* The attribute macro example above demonstrates that a macro can mark emitted tokens with previous or current macro generations. What should the 'tiebreaker' be? Some simple choices:
-    * The order that macros are encountered by the compiler (presumably top-down within files, unclear across files).
-    * The order that macros are marked (when a macro expands into some tokes marked with generation `N`, they get put in a queue after all the existing generation `N` macros).
-
-* On the topic of tiebreaking, the current macro expansion loop delays the expansion of macros that the compiler can't resolve, because they might be resolvable once other macros have expanded. Can we just lift that algorithm wholesale here?
-
 * How does this proposal affect expansion within the _body_ of an attribute macro call? Currently builtin macros like `#[cfg]` are special-cased to expand before things like `#[derive]`; can we unify this behaviour under the new system?
 
-* How does this handle inner attributes?
-
 * How does this handle structured arguments passed to declarative macros (like `$x:expr`)?
+
+* How to handle proc macro path parsing for marked `!` tokens.
