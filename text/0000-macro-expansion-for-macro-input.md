@@ -126,9 +126,9 @@ Other than some details about handing macros we can't resolve yet (maybe because
 
 In order to explicitly mark a macro for the compiler to expand, we actually just mark the `!` or `#` token on the macro call. The compiler looks around the token for the other bits it needs.
 
-In most cases, when you're writing a proc or attribute macro you don't really need that level of precision when marking macros. Instead, you just want to expand every macro in your input before continuing!
+In most cases, when you're writing a proc or attribute macro you don't really need that level of precision when marking macros. Instead, you just want to expand every macro in your input before continuing.
 
-The `syn` crate has a utility attribute `#[syn(expand_input)]` which converts a normal proc or attribute macro into one that does that expansion. For example, if we add `#[syn(expand_input)]` to our `string_length` proc macro above, we get something like:
+The `syn` crate has a utility attribute `#[syn::expand_input]` which converts a normal proc or attribute macro into one that does that expansion. For example, if we add `#[syn::expand_input]` to our `string_length` proc macro above, we get something like:
 
 
 ```rust
@@ -147,7 +147,7 @@ Notice that in the `quote!` output, the _argument_ to the new call to `string_le
 
 # Reference-level explanation
 
-Currently, the compiler does actually perform something similar to the loop described in the section on [expansion order](#macro-expansion-and-marking). We could 'just' augment the step that identifies potential macro calls to also inspect the otherwise unstructured token trees within macro arguments.
+Currently, the compiler does actually perform something similar to the loop described in the section on [expansion order](#macro-expansion-and-marking). We could augment the step that identifies potential macro calls to also inspect the otherwise unstructured token trees within macro arguments.
 
 This proposal requires that some tokens contain extra semantic information similar to the existing `Span` API. Since that API (and its existence) is in a state of flux, details on what this 'I am a macro call that you need to expand!' idea may need to wait until those have settled.
 
@@ -155,14 +155,14 @@ This proposal requires that some tokens contain extra semantic information simil
 
 The parser may encounter a token stream when parsing a bang (proc or decl) macro, or in the arguments to an attribute macro, or in the body of an attribute macro.
 
-When the parser encounters a marked `#` token, if it's part of a `#[...]` call and so the parser can forward-parse all of the macro path, token arguments, and body, and add the call to the current expansion queue. 
+When the parser encounters a marked `#` token, it's part of an attribute `#[...]` and so the parser can forward-parse all of the macro path, token arguments, and body, and add the call to the current expansion queue.
 
 - In a minimal implementation we want to keep expansion result interpolation as simple as possible - this means avoiding enqueuing an expansion that expands _inside of_ another enqueued expansion.
 - One solution is to recursively parse the input of marked macros until we find a marked macro with none in its input, adding only this innermost call to the expansion queue.
 
     This increases the amount of re-parsing (since after every expansion we're repeatedly parsing macro bodies looking for innermost calls) at the cost of fewer re-expansions (since each marked macro will only ever see its input after all marked macros have been expanded).
 
-If a marked `#` token is part of an inner-attribute `#![...]` call, the situation is similar: the parser can forward-parse the macro path and token arguments, and with a little work can forward-parse the body.
+If a marked `#` token is part of an inner-attribute `#![...]` then the situation is similar: the parser can forward-parse the macro path and token arguments, and with a little work can forward-parse the body.
 
 When the parser encounters a marked `!` token, it needs to forward-parse the token arguments, but also needs to _backtrack_ to parse the macro path. In a structured area of the grammar (such as in an attribute macro body or a structured decl macro) this would be fine, since we would already be parsing an expression or item and hence have the path ready. In an _unstructured_ area we would actually have to backtrack within the token stream and 'reverse parse' a path: is this an issue?
 
@@ -174,11 +174,15 @@ The new expansion order described [above](#macro-expansion-and-marking) is desig
 
 In the new order, we still accumulate unresolved macros (marked and unmarked), and we still remove them from the resolution queue to the relevant expansion queue whenever they get defined. The only difference is an extra error case, where a resolved unmarked macro has an unresolved marked macro in its input, and there are no unmarked macros to expand. In this case, the resolution queue still contains the unresolved marked macro, and so the compiler again reports the unresolvable definition.
 
+## Handling non-macro attributes
+
+There are plenty of attributes that are informative, rather than transformative (for instance, `#[repr(C)]` has no visible effect on the annotated struct, and never gets 'expanded away'). We don't want to force users of the macro-marking process to need a complete list of non-expanding or built-in attributes, so we ignore marked built-in attributes during expansion.
+
+Using the 'expand innermost marks first' process described [earlier](#identifying-and-parsing-marked-tokens), we can guarantee that when a macro is expanded, every marked macro in its input has already been fully expanded. Hence, if a macro encounters marked attributes, it can infer that the attributes don't expand and should be preserved.
+
 # Drawbacks
 
 This proposal:
-
-* Relies on proc macro authors doing macro expansion. This might partition the macro ecosystem into expansion-ignoring (where input macro calls are essentially forbidden for any part of the input that needs to be inspected) and expansion-handling (where they work fine _as long as_ the proc macro author has used the expansion API correctly).
 
 * Leads to frustrating corner-cases involving macro paths. For instance, consider the following:
 
@@ -192,8 +196,11 @@ This proposal:
     ```
 
     The caller of `foo!` probably imagines that `baz!` will be expanded within `mod b`, and so prepends the call with `super`. However, if `foo!` naively marks the call to `super::baz!`, then the path will fail to resolve because macro paths are resolved relative to the location of the call. Handling this would require the macro implementer to track the path offset of its expansion, which is doable but adds complexity.
+    * For nested attribute macros, this shouldn't be an issue: the compiler parses a full expression or item and hence has all the path information it needs for resolution.
 
 * Commits the compiler to a particular (but loose) macro expansion order, as well as a (limited) way for users to position themselves within that order. What future plans does this interfere with? What potentially unintuitive expansion-order effects might this expose?
+    * Parallel expansion has been brought up as a future improvement. The above specified expansion order blocks macro expansion on the expansion of any 'inner' marked macros, but doesn't specify any other orderings. Is this flexible enough?
+    * There are some benefits to committing specifically to the 'expand innermost marks first' process described [earlier](#identifying-and-parsing-marked-tokens). Is this too strong a commitment?
 
 # Rationale and alternatives
 
@@ -205,10 +212,12 @@ We could encourage the creation of a 'macros for macro authors' crate with imple
 
 # Unresolved questions
 
-* This API allows for a first-pass solution to the problems listed in the [motivation](#motivation). Does it interfere with any known uses of proc macros? Does it prevent any existing techniques from working or cut off potential future ones?
-
 * How does this proposal affect expansion within the _body_ of an attribute macro call? Currently builtin macros like `#[cfg]` are special-cased to expand before things like `#[derive]`; can we unify this behaviour under the new system?
 
-* How does this handle structured arguments passed to declarative macros (like `$x:expr`)?
-
 * How to handle proc macro path parsing for marked `!` tokens.
+
+* How to maintain forwards-compatibility with more semantic-aware tokens. For instance, in the future we might mark modules so that the compiler can do the path offset tracking discussed in the [drawbacks](#drawbacks).
+
+* Is there a better way to inform users about non-expanding attributes than the implicit guarantee described [above](#handling-non-macro-attributes)? In particular, this requires us to commit to the 'innermost mark first' expansion order.
+    * Should it be an _error_ for a macro to see an expandable marked macro in its input?
+    * What are the ways for a user to provide a non-expanding attribute (like `proc_macro_derive`)? Does this guarantee work with those?
