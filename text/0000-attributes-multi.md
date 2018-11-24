@@ -1,5 +1,5 @@
 - Feature Name: cfg_attr_multi
-- Start Date: 2018-11-12
+- Start Date: 2018-11-24
 - RFC PR: 
 - Rust Issue: 
 
@@ -12,12 +12,10 @@ delimited by commas.
 # Motivation
 [motivation]: #motivation
 
-Simply put, ergonomics and intent. When you have multiple attributes you
-configure away behind the same predicate today, you need to duplicate the entire
-predicate. And then when you read code that does this, you have to check the
-entire predicates with each other to make sure they're the same. By allowing
-multiple attributes it removes that duplication and shows explicitly that the
-author wanted those attributes configured behind the same predicate.
+It lets us express our intent more clearly when attributes added for the same
+reason are grouped together. It aligns with [RFC 2539] doing the same for the
+`cfg_attr` attribute. It matches C#'s attribute syntax that we borrowed in the
+first place.
 
 # Background Information
 [background-information]: #background-information
