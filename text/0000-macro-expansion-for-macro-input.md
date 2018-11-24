@@ -73,6 +73,14 @@ An older motivation to allow macro calls in attributes was to get `#[doc(include
 
 # Guide-level explanation
 
+## Recursion in procedural macros
+
+We're going to discuss a technique that doesn't get mentioned a lot when discussing procedural and attribute macros, which is _recursively calling macros_. If you've ever had a look at a fairly complicated declarative macro (otherwise known as "macros by example" that are defined with the `macro` keyword or `macro_rules!` special syntax), or had to implement one yourself, then you've probably encountered something like the recursion in [lazy-static](https://github.com/rust-lang-nursery/lazy-static.rs/blob/master/src/lib.rs). If you look at the implementation of the `lazy_static!` macro, you can see that it calls `__lazy_static_internal!`, which sometimes calls itself _and_ `lazy_static!`.
+
+But recursion isn't just for declarative macros! Rust's macros are designed to be as flexible as possible for macro authors, which means the macro API is always pretty abstract: you take some tokens in, you put some tokens out. Sometimes, the easiest implementation of a procedural macro isn't to do all the work at once, but to do some of it now and the rest in another call to the same macro, after letting the compiler look at your intermediate tokens.
+
+As an example, we're going to look at using recursive expansion to solve an issue you might encounter when you're writing a procedural macro: expanding macro calls in your input.
+
 ## Macro calls in macro input
 
 When implementing a procedural or attribute macro you should account for the possibility that a user might provide a macro call in their input. As an example of where this might trip you up when writing a procedural macro, here's a silly one that evaluates to the length of the string literal passed in:
@@ -96,7 +104,6 @@ If you call `string_length!` with something obviously wrong, like `string_length
 It's reasonable to expect that `stringify!(struct X)` gets expanded and turned into a string literal `"struct X"`, before being passed to `string_length`. However, in order to give the most control to proc macro authors, Rust usually doesn't touch any of the ingoing tokens passed to a procedural macro.
 
 A similar issue happens with attribute macros, but in this case there are two places you have to watch out: the attribute arguments, as well as the body. Consider this:
-
 
 ```rust
 #[my_attr_macro(value = concat!("Hello, ", "world!"))]
@@ -143,7 +150,7 @@ pub fn string_length(tokens: TokenStream) -> TokenStream {
 
 ```
 
-Notice that in the `quote!` output, the _argument_ to the new call to `string_length!` is marked by `syn::find_and_mark_all_macros`, but the _new call itself_ is unmarked. Recalling the macro expansion process we outlined earlier, that means the arguments will all get expanded before `string_length!` gets expanded again (hopefully without any macros in the arguments, but if there are then this whole process just repeats).
+Notice that in the `quote!` output, the _argument_ to the new call to `string_length!` is marked by `syn::find_and_mark_all_macros`, but the _new call itself_ is unmarked. Recalling the macro expansion process we outlined earlier, that means the arguments will all get expanded before `string_length!` gets expanded again.
 
 # Reference-level explanation
 
