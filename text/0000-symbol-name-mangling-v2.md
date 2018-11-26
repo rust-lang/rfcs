@@ -644,11 +644,15 @@ Why should we *not* do this?
 
 The alternatives considered are:
 
- - Keeping the current scheme. It does meet the minimum requirements after all. It also has pretty big downsides.
- - Keeping the current scheme but cleaning it up by making the non-hash part more consistent and more expressive. Keep the hash part as a safeguard against symbol conflicts and the rest as something just for demangling. The downside of this is that the hash would still not be predictable, and symbols would get rather long if they should contain more human-readable information about generic arguments.
- - Define a standardized pretty-printing format for things that end up as symbols, and then encode that via Punycode in order to meet the character set restrictions. This would be rather simple. Symbol names would remain somewhat human-readable (but not very, because all separators would be stripped out). But without some kind of additional compression, symbol names would become rather long.
- - Use the scheme from the previous bullet point but apply the compression scheme described above. We could do this but it wouldn't really be less complex than the Itanium inspired scheme proposed above.
- - Define a standardized pretty-printing format for things that end up as symbols, compress with zstd (specially trained for Rust symbols) and encode the result as base63. This is rather simple but loses all human-readability. It's unclear how well this would compress. It would pull the zstd specification into the mangling scheme specification, as well as the pre-training dictionary.
+ 1. Keeping the current scheme. It does meet the minimum requirements after all. However, the general consensus seems to be that it confusing and leads to situations where people are unpleasantly surprised when they come across (demangled) symbol names in backtraces or profilers.
+
+ 2. Keeping the current scheme but cleaning it up by making the non-hash part more consistent and more expressive. Keep the hash part as a safeguard against symbol conflicts and the rest as something just for demangling. The downside of this is that the hash would still not be predictable, and symbols would get rather long if they should contain more human-readable information about generic arguments.
+
+ 2. Define a standardized pretty-printing format for things that end up as symbols, and then encode that via Punycode in order to meet the character set restrictions. This would be rather simple. Symbol names would remain somewhat human-readable (but not very, because all separators would be stripped out). But without some kind of additional compression, symbol names would become rather long.
+
+ 3. Use the scheme from the previous bullet point but apply the compression scheme described above. We could do this but it wouldn't really be less complex than the Itanium inspired scheme proposed above.
+
+ 4. Define a standardized pretty-printing format for things that end up as symbols, compress with zstd (specially trained for Rust symbols) and encode the result as base63. This is rather simple but loses all human-readability. It's unclear how well this would compress. It would pull the zstd specification into the mangling scheme specification, as well as the pre-trained dictionary.
 
 The Itanium mangling (and by extension the scheme proposed here) could be considered somewhat arcane. But it is well-known from C++ and provides a good trade-off between readability, complexity, and length of generated symbols.
 
@@ -677,7 +681,7 @@ Itanium mangling).
 
 # Appendix A - Suggested Demangling
 
-This RFC suggests that names are demangling to a form that matches Rust syntax as it is used in source code and compiler error messages:
+This RFC suggests that names are demangling to a form that matches Rust syntax as it is used in source code, compiler error messages and `rustdoc`:
 
 - Path components should be separated by `::`.
 
@@ -687,14 +691,93 @@ This RFC suggests that names are demangling to a form that matches Rust syntax a
 
 - The list of generic arguments should be demangled as `<T1, T2, T3>`.
 
-- Identifiers and trait impl path roots can have a numeric disambiguator (the `<disambiguator>` production). The syntactic version of the numeric disambiguator maps to a numeric index. If the disambiguator is not present, this index is 0. If it is of the form `s_` then the index is 1. If it is of the form `s<hex-digit>_` then the index is `<hex-digit> + 2`. The suggested demangling of a disambiguator is `'<index>`. However, for better readability, these disambiguators should usually be omitted in the demangling altogether. Disambiguators with index zero can always emitted.
-  The exception here are closures. Since these do not have a name, the disambiguator is the only thing identifying them. The suggested demangling for closures is thus `{closure}'<index>`.
+- Identifiers and trait impl path roots can have a numeric disambiguator (the `<disambiguator>` production). The syntactic version of the numeric disambiguator maps to a numeric index. If the disambiguator is not present, this index is 0. If it is of the form `s_` then the index is 1. If it is of the form `s<base-62-digit>_` then the index is `<base-62-digit> + 2`. The suggested demangling of a disambiguator is `[<index>]`. However, for better readability, these disambiguators should usually be omitted in the demangling altogether. Disambiguators with index zero can always emitted.
 
+ The exception here are closures. Since these do not have a name, the disambiguator is the only thing identifying them. The suggested demangling for closures is thus `{closure}[<index>]`.
+
+- In a lossless demangling, identifiers from the value namespace should be marked with a `'` suffix in order to avoid conflicts with identifiers from the type namespace. In a user-facing demangling, where such conflicts are acceptable, the suffix can be omitted.
 
 # Appendix B - Interesting Examples
 
-TODO
- - specializing impls
- - impl Trait
- - closure environment as a type parameter
- - various examples of compression
+We assume that all examples are defined in a crate named `mycrate[xxx]`.
+
+
+### Free-standing Item
+
+```rust
+mod foo {
+  mod bar {
+    fn baz() {}
+  }
+}
+```
+- unmangled: `mycrate::foo::bar::baz`
+- mangled: `_RN3foo3bar3bazVE`
+
+
+### Item Defined In Inherent Method
+
+```rust
+struct Foo<T>(T);
+
+impl<T> Foo<T> {
+  pub fn bar<U>(_: U) {
+    static QUUX: u32 = 0;
+    // ...
+  }
+}
+```
+- unmangled: `mycrate::Foo::bar::QUUX`
+- mangled: `_RNNM11mycrate_xxx3FooE3barV4QUUXVE`
+
+
+### Item Defined In Trait Method
+
+```rust
+struct Foo<T>(T);
+
+impl<T> Clone for Foo<T> {
+  fn clone<U>(_: U) {
+    static QUUX: u32 = 0;
+    // ...
+  }
+}
+```
+- unmangled: `<mycrate::Foo as std::clone::Clone>::clone::QUUX`
+- mangled: `_RNXN11mycrate_xxx3FooEN7std_yyy5clone5CloneE5cloneV4QUUXVE`
+
+
+### Item Defined In Specializing Trait Impl
+```rust
+struct Foo<T>(T);
+
+impl<T> Clone for Foo<T> {
+  default fn clone<U>(_: U) {
+    static QUUX: u32 = 0;
+    // ...
+  }
+}
+```
+- unmangled: `<mycrate::Foo as std::clone::Clone>[1234]::clone::QUUX`
+- mangled: `_RNXN11mycrate_xxx3FooEN7std_yyy5clone5CloneEsjU_5cloneV4QUUXVE`
+
+
+### Item Defined In Initializer Of A Static
+```rust
+pub static QUUX: u32 = {
+  static FOO: u32 = 1;
+  FOO + FOO
+};
+```
+- unmangled: `mycrate::QUUX::FOO`
+- mangled: `_RN11mycrate_xxx4QUUXV3FOOVE`
+
+
+### Compressed Prefix Constructed From Prefix That Contains Substitution Itself
+- unmangled: `std[xxx]::foo<std[xxx]::bar,std[xxx]::bar::baz>`
+- mangled: `_RN7std_xxx3fooFINS_3barFENS1_3bazFEEE`
+
+
+### Progressive type compression
+- unmangled: `std[xxx]::foo<(std[xxx]::Bar,std[xxx]::Bar),(std[xxx]::Bar,std[xxx]::Bar)>`
+- mangled: `_RN7std_xxx3fooITNS_3BarES1_ES2_EE`
