@@ -162,6 +162,7 @@ _RN12std_a1b2c3d43mem8align_ofVIjEE12foo_a1b2c3d4 (for crate "foo/a1b2c3d4")
 _RN12std_a1b2c3d43mem8align_ofVIjEE12bar_11223344 (for crate "bar/11223344")
 ```
 
+
 ### Closures and Closure Environments
 
 The scheme needs to be able to generate symbol names for the function containing the code of a closure and it needs to be able to refer to the type of a closure if it occurs as a type argument. As closures don't have a name, we need to generate one. The scheme proposes to use the namespace and disambiguation mechanisms already introduced above for this purpose. Closures get their own "namespace" (i.e. they are neither in the type nor the value namespace), and each closure has an empty name with a disambiguation index (like for macro hygiene) identifying them within their parent. The full name of a closure is then constructed like for any other named item:
@@ -179,6 +180,7 @@ mod foo {
 ```
 
 In the above example we have two closures, the one assigned to `a` and the one assigned to `b`. The first one would get the local name `0C` and the second one the name `0Cs_`. The `0` signifies then length of their (empty) name. The `C` is the namespace tag, analogous to the `V` tag for the value namespace. The `s_` for the second closure is the disambiguation index (index `0` is, again, encoded by not appending a suffix). Their full names would then be `N15mycrate_4a3b56d3foo3barV0CE` and `N15mycrate_4a3b56d3foo3barV0Cs_E` respectively.
+
 
 ### Methods
 
@@ -264,6 +266,7 @@ impl<T: Default> Foo<T> for Bar<T> {
 ```
 
 Notice that both `MSG` statics have the path `<Bar as Foo>::foo::MSG` if you just leave off the type arguments. However, we also don't have any concrete types to substitute the arguments for. Therefore, we have to disambiguate the `impls`. Since trait specialization is an unstable feature of Rust and the details are in flux, this RFC does not try to provide a mangling based on the `where` clauses of the specialized `impls`. Instead it proposes a scheme that re-uses the introduced numeric disambiguator form already used for macro hygiene and closures. Thus, conflicting `impls` would be disambiguated via an implementation defined suffix, as in `<Bar as Foo>'1::foo::MSG` and `<Bar as Foo>'2::foo::MSG`. This encoding introduces minimal additional syntax and can be replaced with something more human-readable once the definition of trait specialization is final.
+
 
 ### Unicode Identifiers
 
@@ -378,9 +381,7 @@ The reference-level explanation consists of three parts:
 2. A specification of the compression scheme.
 3. A mapping of Rust entities to the mangling syntax.
 
-For implementing a demangler, only the first to sections are needed, that is, a
-demangler only needs to understand syntax and compression of names, but it does
-not have to care how the compiler generates mangled names.
+For implementing a demangler, only the first two sections are of interest, that is, a demangler only needs to understand syntax and compression of names, but it does not have to care about how the compiler generates mangled names.
 
 
 ## Syntax Of Mangled Names
@@ -471,11 +472,11 @@ Mangled names conform to the following grammar:
            "u"     // Unadjusted
         )
 
-<disambiguator> = "s" [<hex-digit>] "_"
+<disambiguator> = "s" [<base-62-digit>] "_"
 
 <generic-arguments> = "I" {<type>} "E"
 
-<substitution> = "S" [<hex-digit>] "_"
+<substitution> = "S" [<base-62-digit>] "_"
 
 // We use <path-prefix> here, so that we don't have to add a special rule for
 // compression. In practice, only <identifier> is expected.
