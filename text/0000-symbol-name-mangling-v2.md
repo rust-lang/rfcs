@@ -391,66 +391,66 @@ The syntax of mangled names is given in extended Backus-Naur form:
  - Terminals are within quotes (as in `"_R"`),
  - Optional parts are in brackets (as in `[<decimal>]`),
  - Repetition (zero or more times) is signified by curly braces (as in `{ <name-prefix> }`)
+ - Comments are marked with `//`.
 
+Mangled names conform to the following grammar:
 
 ```
 // The <decimal-number> specifies the encoding version.
-<symbol-name> := "_R" [<decimal-number>] <absolute-path> [<instantiating-crate>]
+<symbol-name> = "_R" [<decimal-number>] <absolute-path> [<instantiating-crate>]
 
-<absolute-path> := "N" <path-prefix> [<generic-arguments>] "E"
-                 | <substitution>
+<absolute-path> = "N" <path-prefix> [<generic-arguments>] "E"
+                | <substitution>
 
-<path-prefix> := <path-root>
-               | <path-prefix> <identifier>
-               | <substitution>
-
-<path-root> := <identifier>
-             | "M" <type>
-             | "X" <type> <absolute-path> [<disambiguator>]
+<path-prefix> = <identifier>
+              | "M" <type>
+              | "X" <type> <absolute-path> [<disambiguator>]
+              | <path-prefix> <identifier>
+              | <substitution>
 
 // The <decimal-number> is the length of the identifier in bytes.
 // <bytes> is must not start with a decimal digit.
 // If the "u" is present then <bytes> is Punycode-encoded.
-<identifier> := <decimal-number> <bytes> ["u"] ["V"|"C"] [<disambiguator>]
+<identifier> = <decimal-number> <bytes> ["u"] ["V"|"C"] [<disambiguator>]
 
-<type> := <basic-type>
-        | <absolute-path>                  // named type
-        | "A" [<decimal-number>] <type>    // [T; N]
-        | "T" {<type>} "E"                 // (T1, T2, T3, ...)
-        | "R" <type>                       // &T
-        | "Q" <type>                       // &mut T
-        | "P" <type>                       // *const T
-        | "O" <type>                       // *mut T
-        | "G" <identifier> "E"             // generic parameter name
-        | <function-type>
-        | <substitution>
+<type> = <basic-type>
+       | <absolute-path>                  // named type
+       | "A" [<decimal-number>] <type>    // [T; N]
+       | "T" {<type>} "E"                 // (T1, T2, T3, ...)
+       | "R" <type>                       // &T
+       | "Q" <type>                       // &mut T
+       | "P" <type>                       // *const T
+       | "O" <type>                       // *mut T
+       | "G" <identifier> "E"             // generic parameter name
+       | <function-type>
+       | <substitution>
 
-<basic-type> := "a"      // i8
-              | "b"      // bool
-              | "c"      // char
-              | "d"      // f64
-              | "e"      // str
-              | "f"      // f32
-              | "h"      // u8
-              | "i"      // isize
-              | "j"      // usize
-              | "l"      // i32
-              | "m"      // u32
-              | "n"      // i128
-              | "o"      // u128
-              | "s"      // i16
-              | "t"      // u16
-              | "u"      // ()
-              | "v"      // ...
-              | "x"      // i64
-              | "y"      // u64
-              | "z"      // !
+<basic-type> = "a"      // i8
+             | "b"      // bool
+             | "c"      // char
+             | "d"      // f64
+             | "e"      // str
+             | "f"      // f32
+             | "h"      // u8
+             | "i"      // isize
+             | "j"      // usize
+             | "l"      // i32
+             | "m"      // u32
+             | "n"      // i128
+             | "o"      // u128
+             | "s"      // i16
+             | "t"      // u16
+             | "u"      // ()
+             | "v"      // ...
+             | "x"      // i64
+             | "y"      // u64
+             | "z"      // !
 
 // If the "U" is present then the function is `unsafe`.
 // If the "J" is present then it is followed by the return type of the function.
 <function-type> := "F" ["U"] [<abi>] {<type>} ["J" <type>] "E"
 
-<abi> := "K" (
+<abi> = "K" (
            "d" |   // Cdecl
            "s" |   // Stdcall
            "f" |   // Fastcall
@@ -469,16 +469,16 @@ The syntax of mangled names is given in extended Backus-Naur form:
            "j" |   // RustInstrinsic
            "p" |   // PlatformInstrinsic
            "u"     // Unadjusted
-         )
+        )
 
-<disambiguator> := "s" [<hex-digit>] "_"
+<disambiguator> = "s" [<hex-digit>] "_"
 
-<generic-arguments> := "I" {<type>} "E"
+<generic-arguments> = "I" {<type>} "E"
 
-<substitution> := "S" [<hex-digit>] "_"
+<substitution> = "S" [<hex-digit>] "_"
 
-// We use <path-prefix> here, so that we don't have to add a special for
-// compression. In practice, only crate-id <path-root> is expected.
+// We use <path-prefix> here, so that we don't have to add a special rule for
+// compression. In practice, only <identifier> is expected.
 <instantiating-crate> := <path-prefix>
 ```
 
