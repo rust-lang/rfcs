@@ -464,6 +464,15 @@ to just applying to the type `MyType`; The reason for this is twofold:
    to work on it; Meanwhile, if `#[cfg(bar)] MyType: Ord` only applied to
    `MyType` we would get `: Ord` left, which is meaningless and ill-formed.
 
+3. It is consistent with the interpretation of:
+
+   ```rust
+   where
+       for<'a> A: B
+   ```
+
+   which associates as `where for<'a> (A: B)` instead of `where (for<'a> A): B`.
+
 # Prior art
 [prior-art]: #prior-art
 
