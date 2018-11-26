@@ -448,7 +448,7 @@ where
 ```
 
 Here, `#[foo]` applies to the whole constraint `MyType: 'a + Ord` as opposed
-to just applying to the type `MyType`; The reason for this is twofold:
+to just applying to the type `MyType`; The reason for this is threefold:
 
 1. Because otherwise there would be no way to say that we want the attribute
    to apply to the constraint since they cannot be wrapped in parenthesis.
