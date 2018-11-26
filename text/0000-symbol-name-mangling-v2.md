@@ -543,8 +543,8 @@ Given these definitions, compression is defined as follows.
  - Initialize the substitution dictionary to be empty.
  - Traverse and modify the AST as follows:
    - When encountering a substitutable node `N` there are two cases
-     1. If the substitution dictionary already contains an *equivalent* node, replace the current node `N` with a `<substitution>` that encodes the substitution index taken from the dictionary.
-     2. Else, continue traversing through the child nodes of the current node. After the child nodes have been traversed, and if the dictionary does not yet contain an *equivalent* node, then allocate the next unused substitution index and add it to the substitution dictionary with `N` as its key.
+     1. If the substitution dictionary already contains an *equivalent* node, replace the children of `N` with a `<substitution>` that encodes the substitution index taken from the dictionary.
+     2. Else, continue traversing through the child nodes of `N`. After the child nodes have been traversed and if the dictionary does not yet contain an *equivalent* node, then allocate the next unused substitution index and add it to the substitution dictionary with `N` as its key.
 
 The following gives an example of substitution index assignment and node replacements for `foo::Bar::quux<foo::Bar>` (with `quux` being an inherent method of `foo::Bar`). `#n` designates that the substitution index `n` was assigned to the given node and `:= #n` designates that it is replaced with a `<substitution>`:
 
@@ -573,26 +573,61 @@ Some interesting things to note in this example:
 
  - There are substitutable nodes that are not replaced, nor added to the dictionary. This falls out of the equivalence rule. The node marked with `#1` is equivalent to its three immediate ancestors, so no dictionary entries are generated for those.
 
- - The `<type>` node marked with `:= #1` is replaced by `#1`, which is not a `<type>` but a (equivalent) `<path-prefix>`. This is OK and prescribed by the algorithm. The definition of equivalence ensures that there is only one valid way to construct a `<type>` node from a `<path-prefix>` node.
-
-
-
-
-
-
-
+ - The `<type>` node marked with `:= #1` is replaced by `#1`, which is not a `<type>` but an (equivalent) `<path-prefix>`. This is OK and prescribed by the algorithm. The definition of equivalence ensures that there is only one valid way to construct a `<type>` node from a `<path-prefix>` node.
 
 
 ## Decompression
 
+Decompression works analogously to compression:
 
-### Note on Efficient Demangling
+ - Initialize the substitution dictionary to be empty.
+ - Traverse and modify the AST as follows:
+   - When encountering a substitutable node `N` there are two cases
+     1. If the node has a single `<substitution>` child, extract the substitution index from it and replace the node with the corresponding entry from the substitution dictionary.
+     2. Else, continue traversing the child nodes of the current node. After the child nodes have been traversed, and if the dictionary does not yet contain an *equivalent* node, then allocate the next unused substitution index and add it to the substitution dictionary with `N` as its key.
+
+This is what the example from above looks like for decompression:
+
+```
+                           <symbol-name>
+                                 |
+                          <absolute-path> #3
+                         /               \
+              <path-prefix> #2           <generic-arguments>
+               /         \                             |
+          <path-prefix>  <identifier "quux">         <type> := #1
+             /                                         |
+          <type>                                 <substitution #1>
+            |
+      <absolute-path>
+            |
+      <path-prefix> #1
+           /       \
+<path-prefix> #0   <identifier "Bar">
+      |
+<identifier "foo">
+```
+
+### A Note On Implementing Efficient Demangling
+
+The mangling syntax is constructed in a way that allows for implementing an efficient demangler:
+
+ - Mangled names contain information in the same order as unmangled names are expected to contain it. Therefore, a demangler can directly generate its output while parsing the mangled form. There is no need to explicitly instantiate the AST in memory.
+
+ - The same is true for decompression. The demangler can keep a simple array that maps substitution indices to ranges in the already generated output. When it encounters a `<substitution>` in need of expansion, it can just look up corresponding range and do a simple `memcpy`.
+
+Parsing, decompression, and demangling can thus be done in a single pass over the mangled name without the need to do dynamic allocation except for dictionary array.
 
 
-## Mapping Rust Items to Mangled Names
+## Mapping Rust Language Entities to Symbol Names
 
+This RFC suggests the following mapping of Rust entities to mangled names:
 
+- Free standing named functions and types shall be represented by an `<absolute-path>` production.
 
+- Absolute paths should be rooted at the inner-most entity that can act as a path root. Roots can be crate-ids, types (for entities with an inherent impl in their path), and trait impls (for entities with trait impls in their path).
+
+- The compiler is free to choose disambiguation indices for identifiers and trait impls that need disambiguation. The disambiguation index `0` is represented by omitting the `<disambiguator>` production (which should be the common case). Disambiguation indices do not need to be densely packed. In particular the compiler can use arbitrary hashes to disambiguate items (which is useful for supporting specializing trait impls).
 
 
 # Drawbacks
