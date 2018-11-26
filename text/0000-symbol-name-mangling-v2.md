@@ -509,24 +509,78 @@ With this post-processing in place the Punycode strings can be treated like regu
 
 ## Compression
 
-The compression algorithm is defined in terms of the AST: Starting at the root, recursively substitute each child node with its compressed version. A node is compressed by replacing it with a `<substitution>` node from the dictionary (which the dictionary will contain if an *equivalent* node has already been encountered) or, if the dictionary doesn't contain a matching substitution, recursively apply compression to all child nodes and then add the current node to the dictionary.
+From a high-level perspective symbol name compression works by replacing parts of the mangled name that have already been seen with a substitution marker identifying the already seen part. Which parts are eligible for substitution is defined via the AST of the name (as described in the previous section). Let's define some terms first:
 
-Things to note:
+- Two AST nodes are *equivalent* if they contain the same information. In general this means that two nodes are equivalent if the sub-trees they are the root of are equal. However, there is another condition that can make two nodes equivalent. If a node `N` has a single child node `C` and `N` does not itself add any new information, then `N` and `C` are equivalent too. The exhaustive list of these special cases is:
 
-- Child nodes have to be compressed in the same order in which they lexically occur in the mangled name. Processing order matters because it defines which substitution indices are allocated for which node.
+  - `<absolute-path>` nodes without a `<generic-parameters>` child. These are equivalent to their `<path-prefix>` child node.
 
-- Nodes are "equivalent" if they result in the *same demangling*. Usually that means that equivalence can be tested by just comparing the sub-tree that the nodes are roots of. However, there are some *additional* equivalences that have to be considered when doing a dictionary lookup:
+  - `<path-prefix>` nodes with a single `<type>` child. These are equivalent to their child node.
 
-  - A `<absolute-path>` node is equivalent to its `<path-prefix>` child node if its `<generic-arguments>` child node is empty.
+  - `<type>` nodes with a single `<absolute-path>` child. These too are equivalent to their child node.
 
-  - A `<path-root>` node of the from `M <type>` is equivalent to its `<type>` child node.
+  Equivalence is transitive, so given, for example, an AST of the form
 
-  - A `<type>` node with a single `<absolute-path>` child is equivalent to this child node.
+  ```
+      <type>
+        |
+        v
+  <absolute-path>
+        |
+        v
+   <path-prefix>
+  ```
 
-All productions that have a `<substitution>` on their right-hand side are added to the substitution dictionary: `<absolute-path>`, `<path-prefix>`, and `<type>`. The only exception are `<type>` nodes that are a `<basic-type>`. Those are not added to the dictionary. Also, if there is a node `X` and there already is an equivalent node `Y` in the dictionary, `X` is not added either. For example, we don't add `<absolute-path>` nodes with empty `<generic-arguments>` to the dictionary because it always already contains the `<path-prefix>` child node equivalent to its parent `<absolute-path>`.
+  then the `<type>` node is equivalent to the `<path-prefix>` node.
+
+ - A *substitutable* AST node is any node with a `<substitution>` on the right-hand side of the production. Thus the exhaustive list of substitutable node types is: `<absolute-path>`, `<path-prefix>`, and `<type>`. There is one exception to this rule: nodes that are *equivalent* to a `<basic-type>` node, are not *substitutable*.
+
+ - The "substitution dictionary" is a mapping from *substitutable* AST nodes to integer indices.
+
+Given these definitions, compression is defined as follows.
+
+ - Initialize the substitution dictionary to be empty.
+ - Traverse and modify the AST as follows:
+   - When encountering a substitutable node `N` there are two cases
+     1. If the substitution dictionary already contains an *equivalent* node, replace the current node `N` with a `<substitution>` that encodes the substitution index taken from the dictionary.
+     2. Else, continue traversing through the child nodes of the current node. After the child nodes have been traversed, and if the dictionary does not yet contain an *equivalent* node, then allocate the next unused substitution index and add it to the substitution dictionary with `N` as its key.
+
+The following gives an example of substitution index assignment and node replacements for `foo::Bar::quux<foo::Bar>` (with `quux` being an inherent method of `foo::Bar`). `#n` designates that the substitution index `n` was assigned to the given node and `:= #n` designates that it is replaced with a `<substitution>`:
 
 
-TODO: add pseudo code implementation?
+```
+                           <symbol-name>
+                                 |
+                          <absolute-path> #3
+                         /               \
+              <path-prefix> #2           <generic-arguments>
+               /         \                             |
+          <path-prefix>  <identifier "quux">         <type> := #1
+             /                                         |
+          <type>                                 <absolute-path>
+            |                                          |
+      <absolute-path>                             <path-prefix>
+            |                                      /         \
+      <path-prefix> #1                     <path-prefix>   <identifier "Bar">
+           /       \                             /
+<path-prefix> #0   <identifier "Bar">     <identifier "foo">
+      |
+<identifier "foo">
+```
+
+Some interesting things to note in this example:
+
+ - There are substitutable nodes that are not replaced, nor added to the dictionary. This falls out of the equivalence rule. The node marked with `#1` is equivalent to its three immediate ancestors, so no dictionary entries are generated for those.
+
+ - The `<type>` node marked with `:= #1` is replaced by `#1`, which is not a `<type>` but a (equivalent) `<path-prefix>`. This is OK and prescribed by the algorithm. The definition of equivalence ensures that there is only one valid way to construct a `<type>` node from a `<path-prefix>` node.
+
+
+
+
+
+
+
+
 
 ## Decompression
 
