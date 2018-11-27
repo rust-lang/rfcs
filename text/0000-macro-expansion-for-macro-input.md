@@ -191,18 +191,7 @@ Using the 'expand innermost marks first' process described [earlier](#identifyin
 
 This proposal:
 
-* Leads to frustrating corner-cases involving macro paths. For instance, consider the following:
-
-    ```rust
-    macro baz!(...);
-    foo! {
-        mod b {
-            super::baz!();
-        }
-    }
-    ```
-
-    The caller of `foo!` probably imagines that `baz!` will be expanded within `mod b`, and so prepends the call with `super`. However, if `foo!` naively marks the call to `super::baz!`, then the path will fail to resolve because macro paths are resolved relative to the location of the call. Handling this would require the macro implementer to track the path offset of its expansion, which is doable but adds complexity.
+* Leads to frustrating corner-cases involving macro paths (see [appendix A](#appendix-a-corner-cases)).
     * For nested attribute macros, this shouldn't be an issue: the compiler parses a full expression or item and hence has all the path information it needs for resolution.
 
 * Commits the compiler to a particular (but loose) macro expansion order, as well as a (limited) way for users to position themselves within that order. What future plans does this interfere with? What potentially unintuitive expansion-order effects might this expose?
@@ -228,3 +217,162 @@ We could encourage the creation of a 'macros for macro authors' crate with imple
 * Is there a better way to inform users about non-expanding attributes than the implicit guarantee described [above](#handling-non-macro-attributes)? In particular, this requires us to commit to the 'innermost mark first' expansion order.
     * Should it be an _error_ for a macro to see an expandable marked macro in its input?
     * What are the ways for a user to provide a non-expanding attribute (like `proc_macro_derive`)? Does this guarantee work with those?
+
+# Appendix A: Corner cases
+
+This is a collection of various weird interactions between macro expansion and other things.
+
+### Paths from inside a macro to outside
+```rust
+macro m() {}
+
+expands_input! {
+    mod a {
+        super::m!();
+    }
+}
+```
+
+### Paths within a macro
+```rust
+expands_input! {
+    mod a {
+        pub macro ma() {}
+        super::b::mb!();
+    };
+
+    some other non-item tokens;
+
+    mod b {
+        pub macro mb() {}
+        super::a::ma!();
+    };
+}
+```
+
+### Paths within nested macros
+```rust
+macro x() {}
+
+expands_input! {
+    mod a {
+        macro x() {}
+
+        expands_input! {
+            mod b {
+                super::x!();
+            }
+        }
+    }
+}
+```
+```rust
+macro x{}
+
+#[expands_body]
+mod a {
+    macro x() {}
+
+    #[expands_body]
+    mod b {
+        super::x!();
+    }
+}
+```
+
+### Paths that disappear during expansion
+```rust
+#[deletes_everything]
+macro m() {}
+
+m!();
+```
+
+### Mutually-dependent expansions
+```rust
+#[expands_body]
+mod a {
+    pub macro ma() {}
+    super::b::mb!();
+}
+
+#[expands_body]
+mod b {
+    pub macro mb() {}
+    super::a::ma!();
+}
+```
+
+```rust
+#[expands_args(m!())]
+macro m() {}
+```
+
+### Delayed definitions
+```rust
+macro make($name:ident) { macro $name() {} }
+
+expands_input! {
+    x!();
+}
+
+expands_input! {
+    make!(x);
+}
+```
+
+### Non-items at top level
+```rust
+mod a {
+    macro m() {}
+
+    expands_input_but_then_wraps_it_in_an_item! {
+        let x = m!();
+    }
+}
+```
+
+### Declarative macros calling eager macros
+```rust
+macro eager_stringify($e:expr) {
+    expands_first_arg_then_passes_to_second_arg! {
+        $e,
+        stringify!
+    }
+}
+
+eager_stringify!(concat!("a", "b"));
+```
+
+### Single-step expansion
+```rust
+expands_input_once! {
+    macro m() {}
+    m!();
+}
+```
+```rust
+macro delay($($tts:tt)*) { $($tts)* }
+
+expands_input_once! {
+    delay!(macro m() {});
+    m!();
+}
+```
+```rust
+macro delay($($tts:tt)*) { $($tts)* }
+
+delay!(macro m() {});
+
+expands_input_once! {
+    m!();
+}
+```
+```rust
+macro m() {}
+expands_input_once! {
+    expands_input_once! {
+        m!();
+    }
+}
+```
