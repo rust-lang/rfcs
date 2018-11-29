@@ -75,13 +75,12 @@ is documented in [rust-lang-nursery/error-chain#101].
 
 ## `#[cfg(accessible($path))]`
 
-Consider for a moment that we would like to use the `Iterator::flatten`
-method of the standard library if it exists, but otherwise fall back to
-`Itertools::flatten`. We can do that with the following snippet:
+Consider for a moment that we would like to use the `Iterator::flatten` method
+of the standard library if it exists (because it has become soon in a certain 
+Rust version), but otherwise fall back to `Itertools::flatten`.
+We can do that with the following snippet:
 
 ```rust
-#![cfg_attr(feature = "unstable", feature(iterator_flatten))]
-
 #[cfg(accessible(::std::iter::Flatten))]
 fn make_iter(limit: u8) -> impl Iterator<Item = u8> {
     (0..limit).map(move |x| (x..limit)).flatten()
@@ -100,33 +99,33 @@ fn main() {
 
 What this snippet does is the following:
 
-1. If the cargo feature `unstable` is enabled and assuming the compiler is
-   capable of feature gates, but not otherwise, the feature `iterator_flatten`
-   will be enabled.
-
-2. If the path `::std::iter::Flatten` exists, the compiler will compile
+1. If the path `::std::iter::Flatten` exists, the compiler will compile
    the first version of `make_iter`. If the path does not exist,
    the compiler will instead compile the second version of `make_iter`.
 
-The result of 1. and 2. is that your crate can opt into using
-`Iterator::flatten` when `feature = "unstable"` is enabled,
-but use `Itertools::flatten` on stable compilers meanwhile.
-Once the standard library has stabilized `iter::Flatten`,
-future stable compilers will start using the first version of the function.
-As a crate author, you  don't have to publish any new versions of your crate for
-the compiler to switch to the libstd version when it is available in the future.
+The result of 1. is that your crate will use `Iterator::flatten` on newer
+versions of Rust and `Itertools::flatten` on older compilers.
+The result of this is that as a crate author, you don't have to publish any
+new versions of your crate for the compiler to switch to the libstd version
+when people use a newer version of Rust.
 
 [`proptest`]: https://github.com/altsysrq/proptest
 [adding support]: https://github.com/AltSysrq/proptest/blob/67945c89e09f8223ae945cc8da029181822ce27e/src/num.rs#L66-L76
 
-In this case we used the `feature = "unstable"` and `accessible` flags
-to handle a problem that the addition of `Iterator::flatten` caused for us
-if we had used `Itertools::flatten`. We can also use these mechanisms for
-strictly additive cases as well. Consider for example the [`proptest`] crate
-[adding support] for `RangeInclusive`:
+Once the standard library has stabilized `iter::Flatten`,
+future stable compilers will start using the first version of the function.
+
+In this case we used the `accessible` flag to handle a problem that the addition
+of `Iterator::flatten` caused for us if we had used `Itertools::flatten`.
+We can also use these mechanisms for strictly additive cases as well.
+Consider for example the [`proptest`] crate [adding support] for `RangeInclusive`:
 
 ```rust
-#[cfg_attr(feature = "unstable", feature(inclusive_range))]
+// #[cfg_attr(feature = "unstable", feature(inclusive_range))]
+// ^-- If you include this line; then `cargo build --features unstable`
+//     would cause nightly compilers to activate the feature gate.
+//     Note that this has some inherent risks similar to those for
+//     `#[cfg(nightly)]` (as discussed later in this RFC).
 
 macro_rules! numeric_api {
     ($typ:ident) => {
