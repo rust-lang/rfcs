@@ -291,6 +291,10 @@ fn do_stuff() {
 }
 ```
 
+Finally, bang macros, derive macros, attributes of all sorts including
+built-in, user provided, as well as latent derive helper attributes,
+will be considered when determining if a path is accessible.
+
 ## `cfg_attr` and `cfg!`
 
 Note that the above sections also apply to the attribute `#[cfg_attr(..)]` as
