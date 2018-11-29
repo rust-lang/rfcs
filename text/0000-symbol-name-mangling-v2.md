@@ -473,11 +473,13 @@ Mangled names conform to the following grammar:
            "u"     // Unadjusted
         )
 
-<disambiguator> = "s" [<base-62-digit>] "_"
+// <base-62-number> uses 0-9-a-z-A-Z as digits, i.e. 'a' is decimal 10 and
+// 'Z' is decimal 61.
+<disambiguator> = "s" [<base-62-number>] "_"
 
 <generic-arguments> = "I" {<type>} "E"
 
-<substitution> = "S" [<base-62-digit>] "_"
+<substitution> = "S" [<base-62-number>] "_"
 
 // We use <path-prefix> here, so that we don't have to add a special rule for
 // compression. In practice, only <identifier> is expected.
