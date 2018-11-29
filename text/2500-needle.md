@@ -1,12 +1,12 @@
 - Feature Name: `needle`
 - Start Date: 2018-07-06
-- RFC PR: (leave this empty)
-- Rust Issue: (leave this empty)
+- RFC PR: [rust-lang/rfcs#2500](https://github.com/rust-lang/rfcs/pull/2500)
+- Rust Issue: [rust-lang/rust#56345](https://github.com/rust-lang/rust/issues/56345)
 
 # Summary
 [summary]: #summary
 
-Generalize the pattern API to support `&str`, `&mut str`, `&[T]`, `&mut [T]`, `Vec<T>` and `&OsStr`.
+Generalize the needle (née pattern) API to support `&str`, `&mut str`, `&[T]`, `&mut [T]`, `Vec<T>` and `&OsStr`.
 
 <!-- TOC depthTo:2 -->
 
