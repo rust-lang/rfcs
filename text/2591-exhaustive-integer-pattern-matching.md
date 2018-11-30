@@ -1,7 +1,7 @@
 - Feature Name: `exhaustive_integer_patterns`
-- Start Date: 10/11/2018
-- RFC PR:
-- Rust Issue: [#50907](https://github.com/rust-lang/rust/issues/50907)
+- Start Date: 2018-10-11
+- RFC PR: [rust-lang/rfcs#2591](https://github.com/rust-lang/rfcs/pull/2591)
+- Rust Issue: [rust-lang/rust#50907](https://github.com/rust-lang/rust/issues/50907)
 
 # Summary
 [summary]: #summary
