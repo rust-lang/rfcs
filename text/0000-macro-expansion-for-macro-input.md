@@ -79,7 +79,7 @@ We're going to discuss a technique that doesn't get mentioned a lot when discuss
 
 But recursion isn't just for declarative macros! Rust's macros are designed to be as flexible as possible for macro authors, which means the macro API is always pretty abstract: you take some tokens in, you put some tokens out. Sometimes, the easiest implementation of a procedural macro isn't to do all the work at once, but to do some of it now and the rest in another call to the same macro, after letting the compiler look at your intermediate tokens.
 
-As an example, we're going to look at using recursive expansion to solve an issue you might encounter when you're writing a procedural macro: expanding macro calls in your input.
+We're going to look at using recursive expansion to solve an issue you might encounter when you're writing a procedural macro: expanding macro calls in your input.
 
 ## Macro calls in macro input
 
@@ -116,87 +116,201 @@ mod whatever {
 
 If `#[my_attr_macro]` is expecting to see a struct inside of `mod whatever`, it's going to run into trouble when it sees that macro instead. The same happens with `concat!` in the attribute arguments: Rust doesn't look at the input tokens, so it doesn't even know there's a macro to expand!
 
-Thankfully, there's a way to _tell_ Rust to treat some tokens as macros, and to expand them before trying to expand _your_ macro. But first, we need to understand how Rust finds and expands macros.
+## Macro expansion and eager marking
 
-## Macro expansion and marking
+Similar to hygiene scopes and spans, a token also has an expansion scope. When a macro finishes expanding, if some of the produced tokens are marked for eager expansion, they get put in a new child expansion scope; any macros in the child scope will be expanded before any parent macros are.
 
-Rust uses an iterative process to expand macros. The loop that Rust performs is roughly as follows:
-
-1. Look for and expand any macros we can parse in expression, item, or attribute position.
-    - Skip any macros that have explicitly marked macros in their arguments.
-    - Are there any new macros we can parse and expand? Go back to step 1.
-2. Look for and expand any explicitly marked macros where there are raw tokens (like inside the arguments to a proc macro or attribute macro).
-    - Are there any new explicitly marked macros we can expand? Go back to step 2.
-    - Otherwise, go back to step 1.
-
-Other than some details about handing macros we can't resolve yet (maybe because they're defined by another macro expansion), that's it!
-
-In order to explicitly mark a macro for the compiler to expand, we actually just mark the `!` or `#` token on the macro call. The compiler looks around the token for the other bits it needs.
-
-In most cases, when you're writing a proc or attribute macro you don't really need that level of precision when marking macros. Instead, you just want to expand every macro in your input before continuing.
-
-The `syn` crate has a utility attribute `#[syn::expand_input]` which converts a normal proc or attribute macro into one that does that expansion. For example, if we add `#[syn::expand_input]` to our `string_length` proc macro above, we get something like:
-
+Here's how we would use this to fix `string_length`:
 
 ```rust
 #[proc_macro]
 pub fn string_length(tokens: TokenStream) -> TokenStream {
-    if let Some(marked_tokens) = syn::find_and_mark_all_macros(&tokens) {
-        return quote!(string_length!(#marked_tokens));
+    if let Ok(_) = syn::parse::<syn::Macro>(tokens) {
+       let eager_tokens = syn::mark_eager(tokens);
+       return quote!(string_length!(#eager_tokens));
     }
-    // Otherwise, continue as before.
-    ...
-}
 
+    // Carry on as before.
+    let lit: syn::LitStr = ...;
+}
 ```
 
-Notice that in the `quote!` output, the _argument_ to the new call to `string_length!` is marked by `syn::find_and_mark_all_macros`, but the _new call itself_ is unmarked. Recalling the macro expansion process we outlined earlier, that means the arguments will all get expanded before `string_length!` gets expanded again.
+Every token starts off in the 'top-level' expansion scope, which we'll call `S0`. After `string_length!(stringify!(struct X))` expands, the scopes look like this:
+
+```rust
+// Still in scope S0.
+// vvvvvvvvvvvvvvv--------------------vv
+   string_length!(stringify!(struct X));
+//                ^^^^^^^^^^^^^^^^^^^^
+// In a new child scope, S1.
+```
+
+Since the new recursive call to `string_length!` is wrapping a macro call in a child scope - the call to `stringify!` - the compiler will expand the child macro before expanding `string_length!` again. Success!
+
+## Expanding expressions in an item
+
+Importantly, the way that the compiler expands eager macro calls is by pretending that the surrounding macro call _doesn't exist_. This becomes relevant when we try and do the above trick for attribute macro arguments. Imagine we have:
+
+```rust
+#[my_attr_macro!(concat!("a", "b"))]
+struct X;
+```
+Since the attribute and the body are all part of the macro call to `my_attr_macro!`, if `my_attr_macro!` marks `concat!` for eager expansion then the compiler will ignore everything else and try and expand this:
+
+```rust
+concat!("a", "b")
+```
+
+And will complain (rightly!) that `concat!` doesn't produce a valid top-level item declaration here. Since we know our attribute is wrapping an item, we can change what we eagerly expand to something like:
+
+```rust
+fn tmp() { concat!("a", "b"); }
+```
+
+This means that when `my_attr_macro!` is  expanded again, it'll see `fn tmp() { "ab"; }` and know to extract the `"ab"` to figure out what the macro expanded as. Having to handle this sort of thing gets annoying rather quickly, so `syn` provides eager-expanding utility macros like `expand_as_item!` which do this wrapping-expanding-extracting work for you.
 
 # Reference-level explanation
 
-Currently, the compiler does actually perform something similar to the loop described in the section on [expansion order](#macro-expansion-and-marking). We could augment the step that identifies potential macro calls to also inspect the otherwise unstructured token trees within macro arguments.
+Currently, the compiler performs the following process when doing macro expansion:
+1. Collect calls and definitions.
+2. For each call, if it can be uniquely resolved to a definition, expand it.
+    * If no call can be expanded, report an error that the definitions can't be found.
+    * Otherwise, go to step 1.
 
-This proposal requires that some tokens contain extra semantic information similar to the existing `Span` API. Since that API (and its existence) is in a state of flux, details on what this 'I am a macro call that you need to expand!' idea may need to wait until those have settled.
+To adjust this process to allow opt-in eager expansion while handling issues like path resolution, it is sufficient to add a concept of an 'expansion scope', which does two things:
+* It prevents a macro from expanding if it depends on another macro having finished expanding.
+* It restricts access to potentially-temporary macro definitions.
 
-## Identifying and parsing marked tokens
+### Scope creation
 
-The parser may encounter a token stream when parsing a bang (proc or decl) macro, or in the arguments to an attribute macro, or in the body of an attribute macro.
+Every token starts off in a root expansion scope `S0`. When a macro expands in some scope `P`, if any of the output tokens are marked for eager expansion they are moved to a fresh scope `C`, which is a 'child' of `P`. See the `string_length` example above. 
 
-When the parser encounters a marked `#` token, it's part of an attribute `#[...]` and so the parser can forward-parse all of the macro path, token arguments, and body, and add the call to the current expansion queue.
+### Expansion eligibility
 
-- In a minimal implementation we want to keep expansion result interpolation as simple as possible - this means avoiding enqueuing an expansion that expands _inside of_ another enqueued expansion.
-- One solution is to recursively parse the input of marked macros until we find a marked macro with none in its input, adding only this innermost call to the expansion queue.
+We modify the compilers' call search to only include macro calls for which all of the following hold:
+* All of the tokens of the call are in some scope `S`. As a consequence none of the tokens are in a child scope, since a token is only ever in a single scope.
+* The tokens aren't surrounded by another macro call in `S`. This rules out 'inner' eager expansion, like here:
+    ```rust
+    // These tokens are all in scope `S`.
+    //
+    // `a!` is eligible, because it is entirely
+    // in scope `S`.
+    //
+    // `b!` isn't eligible, because it is surrounded
+    // by `a!`.
+    a! {
+        b! {}
+    }
+    ```
 
-    This increases the amount of re-parsing (since after every expansion we're repeatedly parsing macro bodies looking for innermost calls) at the cost of fewer re-expansions (since each marked macro will only ever see its input after all marked macros have been expanded).
+### Expansion and interpolation
 
-If a marked `#` token is part of an inner-attribute `#![...]` then the situation is similar: the parser can forward-parse the macro path and token arguments, and with a little work can forward-parse the body.
+When a macro in a child scope `C` is being expanded, any surrounding macro call syntax in the parent scope `P` is ignored. For an attribute macro, this includes the attribute syntax `#[name(...)]` or `#[name = ...]`, as well as any unmarked tokens in the body.
 
-When the parser encounters a marked `!` token, it needs to forward-parse the token arguments, but also needs to _backtrack_ to parse the macro path. In a structured area of the grammar (such as in an attribute macro body or a structured decl macro) this would be fine, since we would already be parsing an expression or item and hence have the path ready. In an _unstructured_ area we would actually have to backtrack within the token stream and 'reverse parse' a path: is this an issue?
+When a child scope `C` has no more expansions, the resulting tokens are interpolated to the parent scope `P`, tracking spans.
 
-## Delayed resolution of unresolved macros
+This means the following is weird, but works:
 
-The existing expansion loop adds any currently unresolved macros to a _resolution_ queue. When re-parsing macro output, if any newly defined macros would allow those unresolved macros to be resolved, they get added to the current expansion queue. If there are unresolved macros but no macros to expand, the compiler reports the unresolvable definition.
+```rust
+macro m() {
+    struct X;
+}
 
-The new expansion order described [above](#macro-expansion-and-marking) is designed to expand all marked macros as much as possible before trying to expand unmarked ones. We know that marked macros are always in token position, so expansion-eligible unmarked macros are the only way to introduce new macro definitions.
+expands_some_input! {      //   Marked for expansion.
+                           //   |
+    foo! {                 // --|-+- Not marked
+        mod a {            // <-+ |  for expansion.
+            custom marker: // --|-+
+            m!();          // <-+ |
+        }                  // <-+ |
+    }                      // ----+
+}
+```
 
-In the new order, we still accumulate unresolved macros (marked and unmarked), and we still remove them from the resolution queue to the relevant expansion queue whenever they get defined. The only difference is an extra error case, where a resolved unmarked macro has an unresolved marked macro in its input, and there are no unmarked macros to expand. In this case, the resolution queue still contains the unresolved marked macro, and so the compiler again reports the unresolvable definition.
+During expansion, the compiler sees the following:
 
-## Handling non-macro attributes
+```rust
+mod a {
+    m!();
+}
+```
 
-There are plenty of attributes that are informative, rather than transformative (for instance, `#[repr(C)]` has no visible effect on the annotated struct, and never gets 'expanded away'). We don't want to force users of the macro-marking process to need a complete list of non-expanding or built-in attributes, so we ignore marked built-in attributes during expansion.
+Which is successfully expanded. Since the compiler has tracked the span of the original call to `m!` within `expands_some_input`, once `m!` is expanded it can interpolate all the resulting macros back, and so after eager expansion the code looks like:
 
-Using the 'expand innermost marks first' process described [earlier](#identifying-and-parsing-marked-tokens), we can guarantee that when a macro is expanded, every marked macro in its input has already been fully expanded. Hence, if a macro encounters marked attributes, it can infer that the attributes don't expand and should be preserved.
+```rust
+expands_some_input! {
+    foo! {
+        mod a {
+            custom marker;
+            struct X;
+        }
+    }
+}
+```
+
+And `expands_some_input` is ready to be expanded again with its new arguments.
+
+### Scopes and name resolution
+
+When resolving macro definitions, we adjust which definitions can be used to resolve which macro calls. If a call is in scope `S`, then only definitions in `S` or a (potentially transitive) parent scope of `S` can be used to resolve the call. To see why this is necessary, consider:
+
+```rust
+b!();
+
+expands_then_discards! {
+    macro b() {}
+}
+```
+
+After expansion, the call to `b!` remains in scope `S0` (the root scope), whereas the definition of `b!` is in a fresh child scope `S1`. Since `expands_then_discards!` won't keep the definition in its final expansion (or might _change_ the definition), letting the call resolve to the definition could result in unexpected behaviour.
+
+The parent-scope resolution rule also allows more sophisticated 'temporary' resolution, like when a parent eager macro provides definitions for a child one:
+
+```rust
+eager_1! {
+    mod a {
+        pub macro m() {}
+    }
+
+    eager_2! {
+        mod b {
+            super::a::m!();
+        }
+    }
+}
+```
+
+The definition of `m!` will be in a child scope `S1` of the root scope `S2`. The call of `m!` will be in a child scope `S2` of `S1`. Although the definition of `m!` might not be maintained once `eager_1!` finishes expanding, it _will_ be maintained _during_ its expansion - more specifically, for the duration of the expansion of `eager_2!`.
+
+### Delayed resolution
+
+In the current macro expansion process, unresolved macro calls get added to a 'waiting' queue. When a new macro definition is encountered, if it resolves an unresolved macro call then the call is moved to the _actual_ queue, where it will eventually be expanded.
+
+We extend this concept to eager macros in the natural way, by keeping an unresolved waiting queue for each scope. A definition encountered in a scope `P` is eligible to resolve any calls in `P` or a (possibly transitive) child of `P`. Consider this:
+
+```rust
+eager_1! {
+    non_eager! {
+        macro m() {}
+    }
+    eager_2! {
+        m!();
+    }
+}
+```
+
+Once `eager_2!` expands, `non_eager!` will be eligible to be expanded in scope `S1` and `m!` will be eligible to be expanded in `S2`. Since `m!` is currently unresolvable, it gets put on the `S2` waiting queue and `non_eager!` will be expanded instead. This provides the definition of `m!` in `S1`, which resolves the call in `S2`, and the expansion continues.
+
+### Handling non-expanding attributes
+
+Built-in attributes and custom derive attributes usually don't have expansion defintions. A macro author should be guaranteed that once an eager macro expansion step has completed, any attributes present are non-expanding.
 
 # Drawbacks
 
 This proposal:
 
-* Leads to frustrating corner-cases involving macro paths (see [appendix A](#appendix-a-corner-cases)).
-    * For nested attribute macros, this shouldn't be an issue: the compiler parses a full expression or item and hence has all the path information it needs for resolution.
-
 * Commits the compiler to a particular (but loose) macro expansion order, as well as a (limited) way for users to position themselves within that order. What future plans does this interfere with? What potentially unintuitive expansion-order effects might this expose?
     * Parallel expansion has been brought up as a future improvement. The above specified expansion order blocks macro expansion on the expansion of any 'inner' marked macros, but doesn't specify any other orderings. Is this flexible enough?
-    * There are some benefits to committing specifically to the 'expand innermost marks first' process described [earlier](#identifying-and-parsing-marked-tokens). Is this too strong a commitment?
 
 # Rationale and alternatives
 
@@ -210,19 +324,17 @@ We could encourage the creation of a 'macros for macro authors' crate with imple
 
 * How does this proposal affect expansion within the _body_ of an attribute macro call? Currently builtin macros like `#[cfg]` are special-cased to expand before things like `#[derive]`; can we unify this behaviour under the new system?
 
-* How to handle proc macro path parsing for marked `!` tokens.
+* This proposal tries to be as orthogonal as possible to questions about macro _hygiene_, but does the addition of expansion scopes add any issues?
 
-* How to maintain forwards-compatibility with more semantic-aware tokens. For instance, in the future we might mark modules so that the compiler can do the path offset tracking discussed in the [drawbacks](#drawbacks).
-
-* Is there a better way to inform users about non-expanding attributes than the implicit guarantee described [above](#handling-non-macro-attributes)? In particular, this requires us to commit to the 'innermost mark first' expansion order.
-    * Should it be an _error_ for a macro to see an expandable marked macro in its input?
-    * What are the ways for a user to provide a non-expanding attribute (like `proc_macro_derive`)? Does this guarantee work with those?
+* This proposal requires that some tokens contain extra semantic information similar to the existing `Span` API. Since that API (and its existence) is in a state of flux, details on what this 'I am a macro call that you need to expand!' idea may need to wait until those have settled.
 
 # Appendix A: Corner cases
 
-This is a collection of various weird interactions between macro expansion and other things.
+Some fun examples, plus how this proposal would handle them.
 
 ### Paths from inside a macro to outside
+
+Compiles: the call to `m!` is in a child scope to the definition.
 ```rust
 macro m() {}
 
@@ -234,14 +346,14 @@ expands_input! {
 ```
 
 ### Paths within a macro
+
+Compiles: the definitions and calls are in the same scope and resolvable in that scope.
 ```rust
 expands_input! {
     mod a {
         pub macro ma() {}
         super::b::mb!();
     };
-
-    some other non-item tokens;
 
     mod b {
         pub macro mb() {}
@@ -250,18 +362,41 @@ expands_input! {
 }
 ```
 
-### Paths within nested macros
-```rust
-macro x() {}
+### Non-contiguous marked tokens
 
+These both compile: the marked tokens are a syntactically valid item when the unmarked tokens are filtered out.
+```rust
+expands_untagged_input! {
+    mod a {
+        super::b::m!();
+    }
+    dont expand: foo bar;
+    mod b {
+        pub macro m() {};
+    }
+}
+```
+```rust
+expands_untagged_input! {
+    mod a {
+        dont expand: m1!();
+        m2!();
+    }
+}
+```
+
+### Paths within nested macros
+
+Compiles: see [scopes and name resolution](#scopes-and-name-resolution) above.
+```rust
 expands_input! {
     mod a {
-        macro x() {}
+        pub macro x() {}
+    }
 
-        expands_input! {
-            mod b {
-                super::x!();
-            }
+    expands_input! {
+        mod b {
+            super::a::x!();
         }
     }
 }
@@ -281,6 +416,8 @@ mod a {
 ```
 
 ### Paths that disappear during expansion
+
+Does not compile: see [scopes and name resolution](#scopes-and-name-resolution) above. 
 ```rust
 #[deletes_everything]
 macro m() {}
@@ -289,6 +426,8 @@ m!();
 ```
 
 ### Mutually-dependent expansions
+
+Does not compile: each expansion will be in a distinct child scope of the root scope, so the mutually-dependent definitions won't resolve.
 ```rust
 #[expands_body]
 mod a {
@@ -303,14 +442,25 @@ mod b {
 }
 ```
 
+Does not compile: the definition will be ignored because it isn't marked by the attribute macro (and hence won't be included in the same scope as the call).
 ```rust
 #[expands_args(m!())]
 macro m() {}
 ```
 
-### Delayed definitions
+Compiles: the definition and call will be in the same scope. TODO: is this unexpected or undesirable?
 ```rust
-macro make($name:ident) { macro $name() {} }
+#[expands_args_and_body(m!())]
+macro m() {}
+```
+
+### Delayed definitions
+
+Compiles: see [delayed resolution](#delayed-resolution) above.
+```rust
+macro make($name:ident) {
+    macro $name() {}
+}
 
 expands_input! {
     x!();
@@ -322,57 +472,12 @@ expands_input! {
 ```
 
 ### Non-items at top level
+
+Does not compile: the intermediate expansion is syntactically invalid, even though it _will_ be wrapped in an item syntax.
 ```rust
 mod a {
-    macro m() {}
-
     expands_input_but_then_wraps_it_in_an_item! {
-        let x = m!();
-    }
-}
-```
-
-### Declarative macros calling eager macros
-```rust
-macro eager_stringify($e:expr) {
-    expands_first_arg_then_passes_to_second_arg! {
-        $e,
-        stringify!
-    }
-}
-
-eager_stringify!(concat!("a", "b"));
-```
-
-### Single-step expansion
-```rust
-expands_input_once! {
-    macro m() {}
-    m!();
-}
-```
-```rust
-macro delay($($tts:tt)*) { $($tts)* }
-
-expands_input_once! {
-    delay!(macro m() {});
-    m!();
-}
-```
-```rust
-macro delay($($tts:tt)*) { $($tts)* }
-
-delay!(macro m() {});
-
-expands_input_once! {
-    m!();
-}
-```
-```rust
-macro m() {}
-expands_input_once! {
-    expands_input_once! {
-        m!();
+        let x = "a";
     }
 }
 ```
