@@ -328,6 +328,9 @@ We could encourage the creation of a 'macros for macro authors' crate with imple
 
 * This proposal requires that some tokens contain extra semantic information similar to the existing `Span` API. Since that API (and its existence) is in a state of flux, details on what this 'I am a macro call that you need to expand!' idea may need to wait until those have settled.
 
+* It isn't clear how to make the 'non-item macro being expanded by a macro in item position' situation ergonomic. We need to specify how a hypothetical proc macro utility like `expand_as_item!` would actually work, in particular how it gets the resulting tokens back to the author.
+    * One possibility would be to allow macros to _anti-mark_ their output so that it gets lifted into the parent scope (and hence is ineligible for future expansion). Similar to other proposals to lift macro _hygiene_ scopes.
+
 # Appendix A: Corner cases
 
 Some fun examples, plus how this proposal would handle them.
