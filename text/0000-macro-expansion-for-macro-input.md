@@ -235,7 +235,7 @@ mod a {
 }
 ```
 
-Which is successfully expanded. Since the compiler has tracked the span of the original call to `m!` within `expands_some_input`, once `m!` is expanded it can interpolate all the resulting macros back, and so after eager expansion the code looks like:
+Which is successfully expanded. Since the compiler has tracked the span of the original call to `m!` within `expands_some_input`, once `m!` is expanded it can interpolate all the resulting tokens back, and so after eager expansion the code looks like:
 
 ```rust
 expands_some_input! {
@@ -280,7 +280,7 @@ eager_1! {
 }
 ```
 
-The definition of `m!` will be in a child scope `S1` of the root scope `S2`. The call of `m!` will be in a child scope `S2` of `S1`. Although the definition of `m!` might not be maintained once `eager_1!` finishes expanding, it _will_ be maintained _during_ its expansion - more specifically, for the duration of the expansion of `eager_2!`.
+The definition of `m!` will be in a child scope `S1` of the root scope `S0`. The call of `m!` will be in a child scope `S2` of `S1`. Although the definition of `m!` might not be maintained once `eager_1!` finishes expanding, it _will_ be maintained _during_ its expansion - specifically, at least for the duration of the expansion of `eager_2!`.
 
 ### Delayed resolution
 
@@ -299,11 +299,11 @@ eager_1! {
 }
 ```
 
-Once `eager_2!` expands, `non_eager!` will be eligible to be expanded in scope `S1` and `m!` will be eligible to be expanded in `S2`. Since `m!` is currently unresolvable, it gets put on the `S2` waiting queue and `non_eager!` will be expanded instead. This provides the definition of `m!` in `S1`, which resolves the call in `S2`, and the expansion continues.
+Once `eager_2!` expands, `non_eager!` will be eligible to be expanded in scope `S1` and `m!` will be eligible to be expanded in `S2` (with `S2` a child of `S1`, and `S1` a child of the root `S0`). Since `m!` is currently unresolvable, it gets put on the `S2` waiting queue and `non_eager!` will be expanded instead. This provides the definition of `m!` in `S1`, which resolves the call in `S2`, and the expansion continues.
 
 ### Handling non-expanding attributes
 
-Built-in attributes and custom derive attributes usually don't have expansion defintions. A macro author should be guaranteed that once an eager macro expansion step has completed, any attributes present are non-expanding.
+Built-in attributes and custom derive attributes usually don't have expansion definitions. A macro author should be guaranteed that once an eager macro expansion step has completed, any attributes present are non-expanding.
 
 # Drawbacks
 
@@ -329,7 +329,7 @@ We could encourage the creation of a 'macros for macro authors' crate with imple
 * This proposal requires that some tokens contain extra semantic information similar to the existing `Span` API. Since that API (and its existence) is in a state of flux, details on what this 'I am a macro call that you need to expand!' idea may need to wait until those have settled.
 
 * It isn't clear how to make the 'non-item macro being expanded by a macro in item position' situation ergonomic. We need to specify how a hypothetical proc macro utility like `expand_as_item!` would actually work, in particular how it gets the resulting tokens back to the author.
-    * One possibility would be to allow macros to _anti-mark_ their output so that it gets lifted into the parent scope (and hence is ineligible for future expansion). Similar to other proposals to lift macro _hygiene_ scopes.
+    * One possibility would be to allow macros to _anti-mark_ their output so that it gets lifted into the parent scope (and hence is ineligible for future expansion). This is similar to other proposals to lift macro _hygiene_ scopes.
 
 # Appendix A: Corner cases
 
