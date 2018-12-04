@@ -247,7 +247,7 @@ We identify sets of characters which are entirely confusable: For example, for C
 
 The main confusable script pairs we have to worry about are Cyrillic/Latin/Greek, Armenian/Ethiopic, and a couple Armenian characters mapping to Greek/Latin. We can implement this lint conservatively at first by dealing with a blacklist of known confusables for these script pairs, and expand it if there is a need.
 
-There are many confusables _within_ scripts -- Arabic has a bunch of these as does Han (both with other Han characters and and with kana), but since these are within the same language group this is outside the scope of this RFC. Such confusables are equivalent to `l` vs `I` being confusable in some fonts.
+There are many confusables _within_ scripts -- Arabic has a bunch of these as does Han (both with other Han characters and with kana), but since these are within the same language group this is outside the scope of this RFC. Such confusables are equivalent to `l` vs `I` being confusable in some fonts.
 
 For reference, a list of all possible Rust identifier characters that do not trip `less_used_codepoints` but have confusables can be found [here][unicode-set-confusables], with their confusable skeleton and script group mentioned on the right. Note that in many cases the confusables are visually distinguishable, or are diacritic marks.
 
