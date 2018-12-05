@@ -1,4 +1,4 @@
-- Feature Name: carrying_mul
+- Feature Name: widening_mul
 - Start Date: 2018-04-24
 - RFC PR: 
 - Rust Issue: 
@@ -20,14 +20,14 @@ As the author writes, the "num-bigint" crate merely uses `u32` as its word type 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-In general, the product of an m-bit and an n-bit number has (m+n) bits. If one wishes to define arbitrary-precision arithmetic, one (usually) chooses a word size, and defines the multiple-precision operations in terms of primitive operations on this type. The `carrying_mul` function allows one to do so conveniently, for example:
+In general, the product of an m-bit and an n-bit number has (m+n) bits. If one wishes to define arbitrary-precision arithmetic, one (usually) chooses a word size, and defines the multiple-precision operations in terms of primitive operations on this type. The `widening_mul` function allows one to do so conveniently, for example:
 
 ```rust
 pub struct u2size { msw: usize, lsw: usize }
 
 impl Mul for u2size {
     fn mul(self, other: Self) -> Self {
-        let (lsw, c) = self.lsw.carrying_mul(other.lsw);
+        let (lsw, c) = self.lsw.widening_mul(other.lsw);
         u2size { lsw, msw: c + self.msw * other.lsw
                              + self.lsw * other.msw }
     }
@@ -37,7 +37,7 @@ impl Mul for u2size {
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-`pub fn carrying_mul(self, other: Self) -> (Self, Self)`
+`pub fn widening_mul(self, other: Self) -> (Self, Self)`
 
 Returns the low and high words of the product of `self` and `other`.
 
