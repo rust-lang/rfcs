@@ -1,5 +1,5 @@
 - Feature Name: impl-trait-expressions
-- Start Date: (fill me in with today's date, YYYY-MM-DD)
+- Start Date: 2018-12-03
 - RFC PR: (leave this empty)
 - Rust Issue: (leave this empty)
 
