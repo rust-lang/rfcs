@@ -1,4 +1,4 @@
-- Feature Name: impl-trait-expressions
+- Feature Name: `impl_trait_expressions`
 - Start Date: 2018-12-03
 - RFC PR: (leave this empty)
 - Rust Issue: (leave this empty)
