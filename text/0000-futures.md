@@ -164,7 +164,7 @@ can be dropped.
 
 ### Waking up
 
-If a future can not be directly fulfilled during execution and returns `Pending`,
+If a future cannot be directly fulfilled during execution and returns `Pending`,
 it needs a way to later on inform the executor that it needs to get polled again
 to make progress.
 
@@ -184,7 +184,7 @@ that is associated to the `Waker` again.
 The difference between those types is that `Waker` implements the `Send` and `Sync`
 marker traits, while `LocalWaker` doesn't. This means a `Waker` can be sent to
 another thread and stored there in order to wake up the associated task later on,
-while a `LocalWaker` can't be sent. Depending on the capabilities of the underlying
+while a `LocalWaker` cannot be sent. Depending on the capabilities of the underlying
 executor a `LocalWaker` can be converted into a `Waker`. Most executors in the
 ecosystem will implement this functionality. The exception will be highly
 specialized executors, which e.g. want to avoid the cost of all synchronization.
@@ -203,7 +203,7 @@ Possible ways of waking up a an executor include:
   to get woken up by a syscall like `write` to a pipe.
 - If the executor's thread is parked, the wakeup call needs to unpark it.
 
-In order to accomodate for this behavior, the `Waker` and `LocalWaker` types are
+To accommodate this behavior, the `Waker` and `LocalWaker` types are
 defined through a `RawWaker` type, which is an struct that defines a dynamic
 dispatch mechanism, which consists of an raw object pointer and a virtual function
 pointer table (vtable). This mechanism allows implementers of an executor to
@@ -220,7 +220,7 @@ The relation between those `Waker` types is outlined in the following definition
 ```rust
 /// A `RawWaker` allows the implementor of a task executor to customize the
 /// behavior of `LocalWaker`s and `Waker`s.
-/// It consists of a data pointer a virtual function pointer table (vtable) that
+/// It consists of a data pointer and a virtual function pointer table (vtable) that
 /// customizes the behavior of the `RawWaker`.
 #[derive(PartialEq)]
 pub struct RawWaker {
@@ -230,7 +230,7 @@ pub struct RawWaker {
     /// The value of this field gets passed to all functions that are part of
     /// the vtable as first parameter.
     pub data: *const (),
-    /// Virtual function pointer table that customizes the behavior if this waker.
+    /// Virtual function pointer table that customizes the behavior of this waker.
     pub vtable: &'static RawWakerVTable,
 }
 
@@ -287,15 +287,15 @@ impl Waker {
     /// Wake up the task associated with this `Waker`.
     pub fn wake(&self) {
         // The actual wakeup call is delegated through a virtual function call
-        // to the implementation which is defined by the executor
+        // to the implementation which is defined by the executor.
         unsafe { (self.waker.vtable.wake)(self.waker.data) }
     }
 
-    /// Returns whether or not this Waker and other Waker awaken the same task.
+    /// Returns whether or not this `Waker` and other `Waker` have awaken the same task.
     ///
     /// This function works on a best-effort basis, and may return false even
-    /// when the Wakers would awaken the same task. However, if this function
-    /// returns true, it is guaranteed that the Wakers will awaken the same task.
+    /// when the `Waker`s would awaken the same task. However, if this function
+    /// returns `true`, it is guaranteed that the `Waker`s will awaken the same task.
     ///
     /// This function is primarily used for optimization purposes.
     pub fn will_wake(&self, other: &Waker) -> bool {
@@ -304,7 +304,7 @@ impl Waker {
 
     /// Creates a new `Waker` from `RawWaker`.
     ///
-    /// The method can not check whether `RawWaker` fulfills the required API
+    /// The method cannot check whether `RawWaker` fulfills the required API
     /// contract to make it usable for `Waker` and is therefore unsafe.
     pub unsafe fn new_unchecked(waker: RawWaker) -> Waker {
         Waker {
@@ -338,7 +338,7 @@ impl Drop for Waker {
 /// This handle encapsulates a `RawWaker` instance, which defines the
 /// executor-specific wakeup behavior.
 ///
-/// Implements `Clone`
+/// Implements `Clone`, but neither `Send` nor `Sync`
 pub struct LocalWaker {
     waker: RawWaker,
 }
@@ -399,7 +399,7 @@ impl LocalWaker {
 
     /// Creates a new `LocalWaker` from `RawWaker`.
     ///
-    /// The method can not check whether `RawWaker` fulfills the required API
+    /// The method cannot check whether `RawWaker` fulfills the required API
     /// contract to make it usable for `LocalWaker` and is therefore unsafe.
     pub unsafe fn new_unchecked(waker: RawWaker) -> LocalWaker {
         LocalWaker {
@@ -412,27 +412,27 @@ impl LocalWaker {
 ```
 
 `Waker`s must fulfill the following requirements:
-- They must be cloneable
+- They must be cloneable.
 - If all instances of a `Waker` have been dropped and their associated task had
   been driven to completion, all resources which had been allocated for the task
   must have been released.
 - It must be safe to call `wake()` on a `Waker` even if the associated task has
   already been driven to completion.
-- `Waker::wake()` must wake up an executor even if it is called from an arbitry
+- `Waker::wake()` must wake up an executor even if it is called from an arbitrary
   thread.
 
 An executor which implements `RawWaker` must therefore make sure that all these
 requirements are fulfilled.
 
-Since many the ownership semantics that are required here can easily be met
+Since many of the ownership semantics that are required here can easily be met
 through a reference-counted `Waker` implementation, a convienence method for
 defining `Waker`s is provided, which does not require implementing a `RawWaker`
 and the associated vtable manually.
 
 This convience method is based around the `ArcWake` trait. An implementor of
 an executor can define a type which implements the `ArcWake` trait as defined
-below. The `ArcWake` type defines the associated method `into_local_waker`,
-which allows to retrieve a `LocalWaker` instance from an `Arc` of this type.
+below. The `ArcWake` trait defines the associated method `into_local_waker`,
+which affords retrieving a `LocalWaker` instance from an `Arc` of this type.
 The returned instance will guarantee that the `wake()` and `wake_local` methods
 of the type which implements `ArcWake` are called, whenever `wake()` is called
 on a `Waker` or `LocalWaker`.
@@ -448,15 +448,15 @@ pub trait ArcWake: Send + Sync {
     /// Indicates that the associated task is ready to make progress and should
     /// be `poll`ed.
     ///
-    /// This function can called from the thread on which the `ArcWake` was created,
-    /// as well as from any other thread.
+    /// This function can be called from an arbitrary thread, including threads which
+    /// did not create the `ArcWake` based `Waker`.
     ///
     /// Executors generally maintain a queue of "ready" tasks; `wake` should place
     /// the associated task onto this queue.
     fn wake(self: &Arc<Self>);
 
     /// Indicates that the associated task is ready to make progress and should be polled.
-    /// This function is like wake, but will only be called from the thread on which this
+    /// This function is like `wake`, but will only be called from the thread on which this
     /// `ArcWake` was created.
     ///
     /// This function is marked unsafe because callers must guarantee that
@@ -565,8 +565,8 @@ pub trait Future {
     /// # [`LocalWaker`], [`Waker`] and thread-safety
     ///
     /// The `poll` function takes a [`LocalWaker`], an object which knows how to
-    /// awaken the current task. [`LocalWaker`] is not `Send` nor `Sync`, so in
-    /// order to make thread-safe futures the [`LocalWaker::into_waker`] and
+     /// awaken the current task. [`LocalWaker`] is not `Send` nor `Sync`, so
+    /// to make thread-safe futures the [`LocalWaker::into_waker`] and
     /// [`LocalWaker::try_into_waker`] methods should be used to convert
     /// the [`LocalWaker`] into a thread-safe version.
     /// [`LocalWaker::wake`] implementations have the ability to be more
