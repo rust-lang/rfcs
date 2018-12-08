@@ -242,9 +242,13 @@ pub struct RawWaker {
 pub struct RawWakerVTable {
     /// This function will be called when the `RawWaker` gets cloned, e.g. when
     /// the `Waker` or `LocalWaker` in which the `RawWaker` is stored gets cloned.
+    ///
     /// The implementation of this function must retain all resources that are
     /// required for this additional instance of a `RawWaker` and associated
-    /// task.
+    /// task. The implementation must return a valid `RawWaker` that behaves
+    /// equivalent to the `RawWaker` that got cloned. E.g. cloning a `RawWaker`
+    /// that implemented a thread-safe wakeup for use in `Waker` must return
+    /// a `RawWaker` that implements the same wakeup behavior.
     pub clone: unsafe fn(*const ()) -> RawWaker,
     /// This function will be called when a `LocalWaker` should be converted into
     /// a thread-safe `Waker`. The implementation of this function must return
@@ -266,6 +270,7 @@ pub struct RawWakerVTable {
     /// This function will be called when `wake` is called on the `RawWaker`.
     pub wake: unsafe fn(*const ()),
     /// This function gets called when a `RawWaker` gets dropped.
+    ///
     /// The implementation of this function must make sure to release any
     /// resources that are associated with this instance of a `RawWaker` and
     /// associated task.
@@ -421,8 +426,8 @@ impl LocalWaker {
 - `Waker::wake()` must wake up an executor even if it is called from an arbitrary
   thread.
 
-An executor which implements `RawWaker` must therefore make sure that all these
-requirements are fulfilled.
+An executor that instantiates a `RawWaker` must therefore make sure that all
+these requirements are fulfilled.
 
 Since many of the ownership semantics that are required here can easily be met
 through a reference-counted `Waker` implementation, a convienence method for
