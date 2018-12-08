@@ -453,7 +453,7 @@ pub trait ArcWake: Send + Sync {
     ///
     /// Executors generally maintain a queue of "ready" tasks; `wake` should place
     /// the associated task onto this queue.
-    fn wake(self: &Arc<Self>);
+    fn wake(arc_self: &Arc<Self>);
 
     /// Indicates that the associated task is ready to make progress and should be polled.
     /// This function is like `wake`, but will only be called from the thread on which this
@@ -464,7 +464,9 @@ pub trait ArcWake: Send + Sync {
     ///
     /// Executors generally maintain a queue of "ready" tasks; `wake_local` should place
     /// the associated task onto this queue.
-    unsafe fn wake_local(self: &Arc<Self>);
+    unsafe fn wake_local(arc_self: &Arc<Self>) {
+        Self::wake(arc_self);
+    }
 
     /// Creates a `LocalWaker` from an Arc<T>, if T implements ArcWake.
     ///
@@ -565,7 +567,7 @@ pub trait Future {
     /// # [`LocalWaker`], [`Waker`] and thread-safety
     ///
     /// The `poll` function takes a [`LocalWaker`], an object which knows how to
-     /// awaken the current task. [`LocalWaker`] is not `Send` nor `Sync`, so
+    /// awaken the current task. [`LocalWaker`] is not `Send` nor `Sync`, so
     /// to make thread-safe futures the [`LocalWaker::into_waker`] and
     /// [`LocalWaker::try_into_waker`] methods should be used to convert
     /// the [`LocalWaker`] into a thread-safe version.
