@@ -97,15 +97,20 @@ When translating HIR to MIR, we recognize `&[mut] <place> as *[mut|const] ?T`
 (where `?T` can be any type, also a partial one like `_`) as well as coercions
 from `&[mut] <place>` to a raw pointer type as a special pattern and turn them
 into a single MIR `Rvalue` that takes the address and produces it as a raw
-pointer -- a "take raw reference" operation.  This might be a variant of the
-existing `Ref` operation (say, a boolean flag for whether this is raw), or a new
-`Rvalue` variant.  The borrow checker should do the usual checks on `<place>`,
-but can just ignore the result of this operation and the newly created
-"reference" can have any lifetime.  (Currently this will be some form of
-unbounded inference variable because the only use is a cast-to-raw, the new "raw
-reference" operation can have the same behavior.)  When translating MIR to LLVM,
-nothing special has to happen as references and raw pointers have the same LLVM
-type anyway; the new operation behaves like `Ref`.
+pointer -- a "take raw reference" operation.  We also use this new `Rvalue` to
+translate `x as *[mut|const] ?T`; before this RFC such code gets translated to
+MIR as a reborrow followed by a cast.  Once this is done, `Misc` casts from
+reference to raw pointers can be removed from MIR, they are no longer needed.
+
+This new `Rvalue` might be a variant of the existing `Ref` operation (say, a
+boolean flag for whether this is raw), or a new `Rvalue` variant.  The borrow
+checker should do the usual checks on `<place>`, but can just ignore the result
+of this operation and the newly created "reference" can have any lifetime.
+(Before this RFC this will be some form of unbounded inference variable because
+the only use is a cast-to-raw, the new "raw reference" operation can have the
+same behavior.)  When translating MIR to LLVM, nothing special has to happen as
+references and raw pointers have the same LLVM type anyway; the new operation
+behaves like `Ref`.
 
 When interpreting MIR in the miri engine, the engine will recognize that the
 value produced by this `Rvalue` has raw pointer type, and hence must not satisfy
