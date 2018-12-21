@@ -267,7 +267,9 @@ Let `OuterAttr` denote the production for an attribute `#[...]`.
 
 ### Lifetimes
 
-We change the grammar (in the GLL notation) of lifetimes:
+[lykenware/gll]: https://github.com/lykenware/gll/
+
+We change the grammar (in the [lykenware/gll] notation) of lifetimes:
 
 ```rust
 Lifetime = LIFETIME; // where LIFETIME lexes a lifetime token.
