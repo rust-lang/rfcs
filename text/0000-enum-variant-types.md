@@ -335,4 +335,6 @@ conservatively in this regard.
 
 In addition, we could offer a way to space-optimise variant types (rather than minimising
 conversion costs). By not committing to a specific representation now, this allows us to make a
-decision as to how to support this use case in the future, possibly through attributes on the enum.
+decision as to how to support this use case in the future, possibly through attributes on the enum,
+such as the [`#[optimize(size)]` attribute](https://github.com/rust-lang/rfcs/pull/2412); or through
+anonymous enum types, which often come up in such discussions.
