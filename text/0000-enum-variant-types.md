@@ -332,3 +332,7 @@ It would be possible to remove some of the restrictions on enum variant types in
 permitting `impl`s, supporting variant types that don't contain all (irrelevant) generic parameters
 or permitting variant types to be subtypes of enum types. This RFC has been written intentionally
 conservatively in this regard.
+
+In addition, we could offer a way to space-optimise variant types (rather than minimising
+conversion costs). By not committing to a specific representation now, this allows us to make a
+decision as to how to support this use case in the future, possibly through attributes on the enum.
