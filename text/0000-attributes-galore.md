@@ -286,7 +286,7 @@ The macro fragment specifier `lifetime` will permit leading `attr:OuterAttr*`.
 We extend the type expression grammar with:
 
 ```rust
-Type |= Attributed:{ attr:OuterAttr* ty:Type };
+Type |= Attributed:{ attr:OuterAttr+ ty:Type };
 ```
 
 The macro fragment specifier `ty` will permit leading `attr:OuterAttr*`.
@@ -317,7 +317,7 @@ TypeTraitBound = unbound:"?"? binder:ForAllBinder? path:Path;
 We extend the constraint grammar with:
 
 ```rust
-WhereConstraint |= Attributed:{ attr:OuterAttr* constraint:WhereConstraint };
+WhereConstraint |= Attributed:{ attr:OuterAttr+ constraint:WhereConstraint };
 ```
 
 We change the grammar of `TypeTraitBound` to:
@@ -357,7 +357,7 @@ TypeBinding =
 we extend `TypeBinding` with:
 
 ```rust
-TypeBinding |= Attributed:{ attr:OuterAttr binding:TypeBinding };
+TypeBinding |= Attributed:{ attr:OuterAttr+ binding:TypeBinding };
 ```
 
 ### Method receivers and `self`
@@ -368,7 +368,7 @@ method receiver specified implicitly without the type is:
 
 ```rust
 ImplicitMethodReceiver =
-    (rattrs:OuterAttr* "&" lf:Lifetime? "mut"?)? sattrs:OuterAttr* "self";
+    {rattrs:OuterAttr* "&" lf:Lifetime? "mut"?}? sattrs:OuterAttr* "self";
 ```
 
 ## Static semantics
