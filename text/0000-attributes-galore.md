@@ -558,9 +558,17 @@ macro_rules! mac {
 }
 ```
 
+[note_nemo157]: https://github.com/rust-lang/rfcs/pull/2602#discussion_r236611620
+[iliekturtles/uom#62]: https://github.com/iliekturtles/uom/pull/62
+
 This could allow for code generation of macro arms themselves and
 to introduce more macro fragment specifiers, through desugaring semantics,
-without changing the language itself.
+without changing the language itself. As [noted by @Nemo157][note_nemo157], 
+there are use cases for `#[cfg(..)]` on macro arms. An example is
+[iliekturtles/uom#62] in which depending on the features active,
+different types types need to have macro arms added for them.
+Due to the current lack of attributes on macro arms,
+significant boilerplate is added to the macro instead.
 
 Other, more exotic, places where attributes could be allowed are for example:
 
