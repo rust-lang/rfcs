@@ -227,10 +227,27 @@ let x = Sum::A(5) as Sum; // x: Sum
 let Sum::A(y) = x; // error: refutable match
 ```
 
-In all cases, the most specific type (i.e. the variant type if possible) is chosen by the type
-inference. However, this is entirely backwards-compatible, because `Variant` acts as `Adt` except in
-cases that were previously invalid (i.e. pattern-matching, where the extra typing information was
-previously unknown).
+Inferring the type of an `enum` or variant is now slightly more involved. A new kind of inference
+variable, for variants, will be added (akin to numeric type inference). The type for an `enum` or
+variant will be chosen according to the following rules:
+- If the value is treated as a single variant (and possibly additionally as the `enum`), we choose
+the single variant type. For example:
+```rust
+let x = Sum::A(5); // x: Sum::A
+println!("x is {}", x.0);
+```
+- If the type is treated as multiple different variants, we choose the `enum` type.
+```rust
+let mut x = Sum::A(5); // x: Sum
+println!("x is {}", x.0); // error: no field `0` on type `Sum`
+x = Sum::B;
+println!("x is not numeric");
+```
+- In a case where the type variable is unknown, we default to the `enum`.
+
+This is backwards-compatible with existing code, as variants act as `enum`s except in cases that
+were previously invalid (i.e. pattern-matching, where the extra typing information was previously
+unknown).
 
 Note that because a variant type, e.g. `Sum::A`, is not a subtype of the enum type (rather, it can
 simply be coerced to the enum type), a type like `Vec<Sum::A>` is not a subtype of `Vec<Sum>`.
@@ -261,9 +278,8 @@ The advantages of this approach are:
 - It naturally allows variants to be treated as types, intuitively.
 - It doesn't require explicit type annotations to reap the benefits of variant types.
 - As variant types and enum types are represented identically, there are no coercion costs.
-- It doesn't require type fallback (as was an issue with a
-[similar previous proposal](https://github.com/rust-lang/rfcs/pull/1450)).
-- It doesn't require value-tracking or complex type system additions such as
+- It doesn't require value-tracking (save the degenerate kind performed by type inference)
+or complex type system additions such as
 [refinement types](https://en.wikipedia.org/wiki/Refinement_type).
 - Since complete (enum) type information is necessary for variant types, this should be forwards
 compatible with any extensions to enum types (e.g.
@@ -280,9 +296,11 @@ converting manually (though this is obviously not ideal), whereas simulating the
 with the alternative is much more difficult, if possible at all.)
 
 Variant types have [previously been proposed for Rust](https://github.com/rust-lang/rfcs/pull/1450).
-However, it used a more complex type inference procedure based on fallback and permitted fallible
-coercion to variant types. The method proposed here is implementationally simpler and more
-intuitive.
+However, it was closed due to uncertainty around the interaction with other forms of type inference
+(numeric type inference and default type parameters). Having looked into these, I think adding an
+extra kind of type inference for enum variants should not directly interact with these and it is
+sensible to open up this RFC without more substantial changes to the proposed implementation method.
+Furthermore, the method proposed here is implementationally simpler and more intuitive.
 
 # Prior art
 [prior-art]: #prior-art
