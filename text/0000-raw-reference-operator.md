@@ -192,3 +192,9 @@ arise because of Rust having both of these features.
 
 We could have different rules for when to take a raw reference (as opposed to a
 safe one).
+
+Does the operator creating a raw pointer allow creating pointers that are not
+dereferencable (with the size determined by `mem::size_of_val`)?  It might turn
+out to be useful to make dereferencability not part of the validity invariant,
+but part of the alias model, so this is a separate question from whether the
+pointer is aligned and non-NULL.
