@@ -197,4 +197,7 @@ Does the operator creating a raw pointer allow creating pointers that are not
 dereferencable (with the size determined by `mem::size_of_val`)?  It might turn
 out to be useful to make dereferencability not part of the validity invariant,
 but part of the alias model, so this is a separate question from whether the
-pointer is aligned and non-NULL.
+pointer is aligned and non-NULL.  Notice that we use `getelementptr inbounds`
+for field access, so we would require some amount of dereferencability anyway
+(or we could change codegen to not emit `inbounds` when creating a raw
+reference, but that might adversely affect performance).
