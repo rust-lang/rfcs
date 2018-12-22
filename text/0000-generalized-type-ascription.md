@@ -10,20 +10,9 @@
 
 This RFC supersedes and subsumes [RFC 803].
 We finalize a general notion of type ascription uniformly in patterns,
-expressions, `let` bindings, and `fn` definitions. You may now for example write:
+expressions, `let` bindings. You may now for example write:
 
 ```rust
-// requires #![feature(block_ascription)]:
-// These bits are proposed experimentally.
-do_stuff(try : Option<u8> { .. });
-
-do_stuff(async : u8 { .. });
-
-do_stuff(unsafe : u8 { .. });
-
-do_stuff(loop : u8 { .. });
-
-// requires #![feature(type_ascription)]:
 let x = (0..10).collect() : Vec<_>;
 
 let alpha: u8 = expr;
@@ -37,14 +26,9 @@ if let Some(beta: u8) = expr { .. }
 
 for x: i8 in 0..100 { .. }
     ^^^^^
-
-// requires #![feature(limited_fn_inference)]:
-fn foo(Wrapping(alpha: usize)) {}
-       ^^^^^^^^^^^^^^^^^^^^^^
 ```
 
 Here, the underlined bits are patterns.
-Note however that this RFC does *not* introduce global type inference.
 
 Finally, when a user writes `Foo { $field: $pat : $type }`, and when
 `$pat` and `$type` are syntactically α-equivalent, the compiler emits a
@@ -91,13 +75,13 @@ with more motivation:
    By reducing the pressure on Rustaceans to name artificial units
    we can let programmers focus on naming where it matters more (API boundaries).
 
-4. When you want to pass an expression such as `try { .. }` or
-   `async { .. }` to a function which expects a generic `R: Try` or `R: Future`,
-   type inference can fail. In this case,
-   it is more ergonomic to type-ascribe with `try : R { .. }` instead
-   of first introducing an artificial binding.
+   Another instance where temporary artificial bindings may be forced upon users
+   are generic functions where the expected parameter type does not sufficiently
+   constrain type inference causing it to fail. With expression type ascription
+   it becomes possible to write `fun(expr: TheType)`. This avoids the artificial
+   binding.
 
-5. Turbofish is not always possible! Consider for example:
+4. Turbofish is not always possible! Consider for example:
 
    ```rust
    fn display_all(elems: impl Iterator<Item: Display>) { ... }
@@ -136,14 +120,14 @@ with more motivation:
    there is no type parameter on `into` to turbofish. Thus, you may not write:
    `thing.into::<Foo>()` but you can write `thing.into() : Foo`.
 
-6. Type ascription is helpful when doing *type* driven development
+5. Type ascription is helpful when doing *type* driven development
    and opens up more possibilities to move in the direction of
    interactive development as is possible with [agda-mode] and [idris-mode].
 
 [agda-mode]: http://agda.readthedocs.io/en/v2.5.2/tools/emacs-mode.html
 [idris-mode]: https://github.com/idris-hackers/idris-mode
 
-7. Type ascription helps with [RFC 2071] which notes that you sometimes
+6. Type ascription helps with [RFC 2071] which notes that you sometimes
    have to introduce a `let` binding to please the type checker. An example:
 
    ```rust
@@ -154,7 +138,7 @@ with more motivation:
        x + 1
    }
    ```
-   
+
    However, this does not seem particularly ergonomic and introduces,
    relatively speaking, a lot of boilerplate.
    Instead, we can make this more ergonomic using ascription:
@@ -165,12 +149,12 @@ with more motivation:
    }
    ```
 
-8. As `$($pat:pat),*` is a legal pattern and the pattern grammar now accepts
+7. As `$($pat:pat),*` is a legal pattern and the pattern grammar now accepts
    `$pat: pat : $type: ty`, it becomes possible to write macros that can
    match function signatures with arbitrary patterns for arguments.
 
-9. Type ascription formalizes an already informal mode of communication.
-   For example, Rustaceans already commonly use `x: u8` or `42 : usize`
+8. Type ascription formalizes an already informal mode of communication.
+   For example, Rustaceans already commonly use `x: u8` or `42: usize`
    to denote that the left hand side is of the type specified when talking
    with each other. By introducing this into the language itself,
    we align the language with how user's think.
@@ -207,21 +191,9 @@ proposed here.
 
 ## More DRY code
 
-By introducing type ascription as a pattern, we can simplify function definitions
-to permit the following:
-
-```rust
-fn take_wrapping(Wrapping(count: usize)) -> R { .. }
-```
-
-instead of the following:
-
-```rust
-fn take_wrapping(Wrapping(count: usize): Wrapping<usize>) -> R { .. }
-```
-
-Compared to type ascription in expression contexts or using `let` bindings
-we can also get away with leaving more inferred when pattern matching.
+By introducing type ascription as a pattern, as compared to type ascription in
+expression contexts or using `let` bindings, we can also get away with leaving
+more inferred when pattern matching.
 For example, consider:
 
 ```rust
@@ -315,18 +287,9 @@ let Struct { field: x: i32 } = expr;
 
 we can know for certain that `x` is not a borrow.
 
-## Uniform Syntax and Unified Mental Model
+## A more unified syntax and mental model
 
 Given the changes in this RFC, note that when you write:
-
-```rust
-fn frobnicate(alpha: Beta) -> Gamma { .. }
-              ^^^^^^^^^^^
-              A pattern!
-```
-
-the underlined part is a pattern.
-The same applies to `let` bindings. When you wrote:
 
 ```rust
 let alpha: Beta = gamma;
@@ -334,7 +297,7 @@ let alpha: Beta = gamma;
     A pattern!
 ```
 
-before this RFC, it was the case that `alpha: Beta` in function definitions
+before this RFC, it was the case that `alpha: Beta` in `let` bindings
 were *a special construct*. With this RFC, it not and instead,
 it is simply a part of the pattern grammar. You could also say that we already
 had type ascription in "pattern context" prior to this RFC, and that the
@@ -353,9 +316,6 @@ expr : expr ':' ty_sum ;
 ```
 
 Notice in particular that the `':' ty_sum` is the same in both productions here.
-We also allow `async : T { .. }` and `try : T { .. }` which we argue is both
-as a useful shorthand and feels natural with type ascription in expression
-contexts.
 
 [parser-lalr.y]: https://github.com/rust-lang/rust/blob/9b5859aea199d5f34a4d4b5ae7112c5c41f3b242/src/grammar/parser-lalr.y#L722-L827
 
@@ -363,127 +323,6 @@ Another thing to note is that grammar changes described in the [summary]
 above replace most of the productions listed in the highlighted section and
 other parts of the slightly outdated [parser-lalr.y] file with something less
 complicated and smaller.
-
-## Future proofing for DRY in trait implementations
-
-Finally, by using the syntactic category of `pat` in the context of
-function parameters, we already have the grammatical means to elide types in
-implementations of traits. All that is required now is to employ the rule that
-types can be omitted from parameters if and only if the types are fully determined.
-
-However, to avoid doing too much in this RFC, we defer this to another
-RFC and simply say for now, that the compiler will always require the full
-signature in trait implementations. See the section on [possible future work]
-for more details.
-
-## Paving the way for better error messages
-
-By making the fundamental unit of a function parameter be a pattern,
-it becomes technically feasible to improve error messages such that
-when you write `fn foo(x, y) { ... }`, the body can be analysed by the compiler.
-It could then, at the compiler implementations option, give a user a help
-message which provides the types of `x` and `y`.
-
-We believe that this provides a sweet-spot between global type inference and
-the absence of it. This way, the compiler will reject the code, but a structured
-and easily applied fix is provided for you.
-
-## Motivation for `async / try / ... : Type { .. }`
-
-[RFC 2394]: https://github.com/rust-lang/rfcs/pull/2394
-[RFC 2388]: https://github.com/rust-lang/rfcs/pull/2388
-[RFC 243]: https://github.com/rust-lang/rfcs/pull/243
-[niko_try_1]: https://github.com/rust-lang/rfcs/pull/2388#issuecomment-378750364
-
-[RFC 2394] introduced `async { .. }` blocks and [RFC 2388] renamed the
-previously, by [RFC 243], introduced `catch { .. }` blocks to `try { .. }`.
-
-In RFC 2388, [some opined][niko_try_1] that it might be good idea to make it
-mandatory to specify the type of a `try { .. }` expression.
-The RFC did not end up proposing such a mandatory mechanism.
-However, @cramertj then noted a concern (which was eventually resolved) that:
-> As @clarcharr and @nikomatsakis
-> [discussed above](https://github.com/rust-lang/rfcs/pull/2388#issuecomment-378750364),
-> it's nearly always necessary to manually specify the error type for these
-> blocks because of the `Into` conversion that `?` does.
-> @nikomatsakis mentioned that we might even want a syntax which *requires*
-> users to explicitly state the error type
-> (or the full result type, for compatibility with `Option`, `Poll`, etc.). [...]
-
-Since the language already has expression level type ascription, it is already
-possible to constrain the carrier type of a `try { .. }` with `try { .. } : C`
-where `C` is the carrier type (such as `Result<T, E>`).
-However, consider a situation where this `try { .. }` expression is passed
-to some generic function. In that case, and especially if the `try { .. }`
-expression spans several lines, the type ascription at the end might not
-read very well:
-
-```rust
-do_stuff_with(try {
-    if a_computation()? {
-        b_computation()?
-    } else {
-        c_computation()?
-    }
-} : CarrierType);
-```
-
-This example has two primary problems:
-
-1. It does not format well.
-2. The choice of `CarrierType` affects the dynamic semantics of the `try { .. }`
-   block. Thus, the information that the `try { .. }` block is of type
-   `CarrierType` may come too late. Therefore, the user may have to backtrack
-   in reading. This in turn negatively affects the speed with which the code
-   may be read.
-
-By allowing the user to type-ascribe the carrier type up-front as in the
-following snippet, we improve on both points:
-
-```rust
-do_stuff_with(try: CarrierType {
-    if a_computation()? {
-        b_computation()?
-    } else {
-        c_computation()?
-    }
-});
-```
-
-[async_nemo157_1]: https://github.com/rust-lang/rust/issues/50547#issuecomment-408169261
-
-Similarly, for the `async { .. }` block due to [RFC 2394],
-it was [noted][async_nemo157_1] on the tracking issue that:
-
-> @cramertj
-> food for thought: i'm often writing `Ok::<(), MyErrorType>(())` at the end of
-> `async { ... }` blocks. perhaps there's something we can come up with to make constraining the error type easier?
->
-> @withoutboats
-> [...] possibly we want it to be consistent with [`try`]?
-
-We agree. In fact, the same 2 problems above occur for `async { .. }` as well.
-Thus, for the sake of consistency and uniform syntax as well as solving the
-same set of problems we propose that `async : R { .. }` be permitted.
-
-We also take the opportunity to note that there also exists other block forms
-in Rust which adhere to the `keyword block` grammar. These forms are:
-
-+ `unsafe { .. }`
-+ `loop { .. }`
-
-To further syntactic uniformity we thus extend these forms to optionally permit
-`: Type` so that you may write:
-
-+ `unsafe : R { .. }`
-+ `loop : R { .. }`
-
-In the future, it may be possible that we introduce new block forms such as
-
-+ `const { .. }`
-
-In that case, it will probably be a good idea to permit optional type ascription
-in the same way.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -540,7 +379,7 @@ you can resolve the errors by writing:
 fn main() {
     println!("{:?}", (0..10).map(|x| x % 3 == 0).collect() : Vec<_>);
 
-    let _ = ("1234".parse().unwrap() : usize).into() : Box<_>;
+    let _ = "1234".parse().unwrap(): usize.into(): Box<_>;
 }
 ```
 
@@ -642,75 +481,6 @@ Note in particular that when you write `&a:b.c`, because `&` binds more tightly
 than `:` but `.` binds more tightly than `&`, the expression associates as
 `&((a : b).c)`. However, when you write `&x.y:z`, it instead associates as
 `(&(x.y)) : z`.
-
-### In `async`, `try`, ... blocks
-
-This part of the RFC is proposed *experimentally*.
-
-[RFC 2388]: https://github.com/rust-lang/rfcs/pull/2388
-[RFC 243]: https://github.com/rust-lang/rfcs/pull/243
-
-[RFC 243] introduced `catch { .. }` blocks to Rust. Then [RFC 2388] came along
-and renamed these blocks to `try { .. }`. In this RFC, we propose that you should
-be allowed to optionally type-ascribe the block form in an ergonomic manner:
-
-```rust
-try : MyResult<T, E> {
-    // The logic...
-}
-```
-
-This snippet is equivalent in all respects to:
-
-```rust
-try {
-    // The logic...
-} : MyResult<T, E>
-```
-
-The same applies to the `unsafe` and `loop` constructs as well so we may write:
-
-```rust
-let x = loop : usize {
-    break 1;
-};
-
-let x = unsafe : usize {
-    // Some unsafe logic...
-};
-```
-
-and the snippet is equivalent to:
-
-```rust
-let x = loop {
-    break 1;
-} : usize;
-
-let x = unsafe {
-    // Some unsafe logic...
-} : usize;
-```
-
-[RFC 2394]: https://github.com/rust-lang/rfcs/pull/2394
-
-Finally, in [RFC 2394] `async { .. }` blocks were introduced to the language.
-You may type ascribe these blocks in the same way as above:
-
-```rust
-let future = async : io::Result<()> {
-    ...
-};
-```
-
-Do note however that in this case, you are annotating the inner type of the
-resulting future and not the future itself. Thus, this is equivalent to:
-
-```rust
-let future = async {
-    ...
-} : impl Future<Output = io::Result<()>>;
-```
 
 ## Type ascription in patterns
 
@@ -835,126 +605,6 @@ let [alpha: u8, beta, gamma] = [1, 2, 3];
 let (alpha: u8, beta: i16, gamma: bool) = (1, -2, true);
 ```
 
-### Function definitions
-
-Another change that comes with this RFC is that the fundamental unit of a
-function parameter also becomes a pattern. Thus when you write things like:
-
-```rust
-fn foo(alpha: usize, beta: bool) { ... }
-       ^^^^^^^^^^^^  ^^^^^^^^^^^
-       Pattern       Pattern
-```
-
-the underlined parts are the patterns while before this RFC, the patterns were:
-
-```rust
-fn foo(alpha: usize, beta: bool) { ... }
-       ^^^^^         ^^^^
-       Pattern       Pattern
-```
-
-Indeed, with the change to function definitions, it becomes
-*syntactically valid* to write:
-
-```rust
-fn foo(alpha, beta) -> usize { .. }
-```
-
-Nevertheless, as we want to avoid introducing global type inference to the
-language, the type checker will prevent this from compiling and will emit an
-error which *may* look like:
-
-```rust
-error[E0282]: type annotations needed
- --> src/main.rs:1:9
-  |
-1 |     fn foo(alpha, beta) -> usize { .. }
-  |            ^^^^^  ^^^^
-  |            |      |
-  |            |______|
-  |            |
-  |            The following patterns do not have a fully determined type.
-  |            help: Write type annotations on the following patterns:
-  |
-  |                alpha: usize
-  |                beta: bool
-  |
-
-error: aborting due to previous error
-```
-
-This also gives the compiler an opportunity to tell you what the types are
-if it so happens that you need this help. Providing the user with this
-type information is not mandatory and is instead up to the implementation
-of the compiler.
-
-However, in some cases, you can determine the type from the pattern alone.
-Therefore, when the type is fully determined you may omit the type ascription.
-Thus, the following definitions are legal:
-
-```rust
-fn foo<T>(Wrapping(value: T)) -> usize { ... }
-
-fn bar(Wrapping(value: usize)) -> usize { ... }
-
-struct Quux {
-    field: usize
-}
-
-// There are no generics here:
-fn baz(Quux { field }) -> usize { ... }
-
-struct Wobble(bool);
-
-// Also fully determined here:
-fn baz(Wobble(x)) -> usize { ... }
-```
-
-However, the following definition is not OK:
-
-```rust
-// Unconstrained type variable ?T of Wrapping<?T>:
-fn foo(Wrapping(value)) -> usize { ... }
-```
-
-By using this mechanism, we gain a measure of elision and can make writing
-more ergonomic.
-
-[RFC 1685]: https://github.com/rust-lang/rfcs/blob/master/text/1685-deprecate-anonymous-parameters.md
-
-#### [RFC 1685] and deprecation schedule
-
-In current Rust, the type checker will accept a method, in a trait definition,
-which has a parameter that only specifies a type but not a pattern (example below).
-The accepted RFC 1685 proposed that we deprecate this ability such that you
-*must* provide a pattern / parameter name. However, the RFC left the deprecation
-strategy and the schedule unresolved.
-
-Since we want the ability to view function parameters uniformly as patterns
-and extend them to trait definitions:
-
-```rust
-trait MyTrait {
-    fn do_stuff(Wrapping(x: usize)) {
-        // Provided logic...
-    }
-}
-```
-
-we move up on the deprecation schedule of [RFC 1685] and propose that
-writing:
-
-```rust
-trait Foo {
-    fn bar(MyType) -> ... { ... }
-}
-```
-
-will cause the compiler to emit a warn-by-default lint in Rust 2015 and
-that it be a hard error in Rust 2018. This resolves the unresolved question
-in [RFC 1685].
-
 ## Linting ascription of named `struct` literals and patterns
 
 Consider a struct:
@@ -990,18 +640,6 @@ However, if you write `let Foo { bar: x : Vec<u8> }` it will not.
 
 ## Grammar
 
-Assuming the following tokens and the terminal strings they lex:
-
-```rust
-LOOP : 'loop' ;
-UNSAFE : 'unsafe' ;
-TRY : 'try' ;
-ASYNC : 'async' ;
-LET : 'let' ;
-SELF : 'self' ;
-DOTDOTDOT : '...' ;
-```
-
 The following alternatives are modified in the expression grammar:
 
 ```rust
@@ -1010,10 +648,6 @@ ascribe: ':' ty_sum ;
 expr
 : ...
 | expr ascribe // This is specified in RFC 803 but it is included for completeness.
-| LOOP ascribe? block // This replaces the existing production for loop { .. }.
-| UNSAFE ascribe? block
-| TRY ascribe? block
-| ASYNC ascribe? block
 ;
 ```
 
@@ -1067,57 +701,6 @@ to:
 let : LET pat maybe_init_expr ';' ;`
 ```
 
-Finally, the grammar of function definitions is changed:
-
-```rust
-// As before this RFC:
-fn_decl : fn_params ret_ty ; 
-
-fn_decl_with_self : fn_params_with_self ret_ty ;
-
-// Changed in this RFC:
-fn_anon_params_with_self : '(' fn_anon_params_with_self_params? ')' ;
-
-fn_params : '(' params? ')' ;
-
-fn_params_with_self : '(' self_param ((',' params)* ','?)? ')' : fn_params ;
-
-fn_anon_params_with_self_params
-: self_param (',' ty_or_pat)* ','?
-| ty_or_pat (',' ty_or_pat)* (',' va_tail)?
-;
-
-params : pat (',' pat)* (',' va_tail)?;
-
-ty_or_pat
-: ty   // Warning in Rust 2015. Forbidden in Rust 2018!
-| pat  // Note! -- the order between `ty` and `pat` is important!
-;
-
-self_param : ('&' lifetime?)? maybe_mut SELF maybe_ty_ascription ;
-va_tail : (pat ':')? DOTDOTDOT | %empty ; // Needed for RFC 2137.
-```
-
-### [RFC 1685] and deprecation schedule
-
-The schedule of linting against writing:
-
-```rust
-trait Foo {
-    fn bar(Type) { ... }
-}
-```
-
-is currently to warn in Rust 2018 and then transition to a hard error the
-next edition. This RFC moves up the schedule and makes it a warning in
-Rust 2015 and a hard error in Rust 2018.
-
-Thus, in Rust 2018, the production `ty_or_pat` is defined as just:
-
-```rust
-ty_or_pat : pat ;
-```
-
 ### Lints
 
 If and only if when the parser encounters, both in pattern and expression contexts:
@@ -1136,37 +719,10 @@ the compiler will emit a warn-by-default lint urging the user to instead write:
 $path { $ident: ($pat : $ty) }
 ```
 
-In pattern contexts, wrapping in parenthsis is made valid by
+In pattern contexts, wrapping in parenthesis was made valid by
 [rust-lang/rust#48500](https://github.com/rust-lang/rust/pull/48500).
 
 The tool `rustfmt` will similarly prefer the latter formatting.
-
-## Desugaring
-
-A Rust compiler will desugar, where `$ty` is a meta variable for a type and
-where `$body` is some block body, the following:
-
-```rust
-loop : $ty { $body }
-
-unsafe : $ty { $body }
-
-try : $ty { $body }
-
-async : $ty { $body }
-```
-
-into:
-
-```rust
-loop { $body } : $ty
-
-unsafe { $body } : $ty
-
-try { $body } : $ty
-
-async { $body } : impl Future<Output = $ty>
-```
 
 ## Semantics and Type checking
 
@@ -1231,7 +787,7 @@ let b: &mut u8 = &mut a;
 let c: &u8 = b; // Implicit coercion of `&mut u8` to `&u8`.
 ```
 
-To stay compatible with this and avoid breaking changes, this behavior is preserved.
+To stay compatible with this and avoid breaking changes, this behaviour is preserved.
 
 When type checking an expression against a pattern where the pattern includes
 a type ascription of form `pat : type`, the compiler will ensure that the
@@ -1242,444 +798,15 @@ As for the operational semantics, if type of the expression fragment and
 the ascribed-to type are an exact match, then type ascription is a no-op.
 Otherwise, the semantics are those of the implicit coercion.
 
-#### Function definitions
-
-A type of a formal parameter of a function is allowed to be elided and inferred
-if and only if the type of the formal parameter is fully determined
-(has no unification variables left) by looking solely at the signature of the
-function, including patterns, quantified variables, and `where` clauses.
-
-We impose the following rules:
-
-1. The type checker is not allowed to look at the function body and neither is
-   it permitted to take into account the type information implied by a trait
-   implementation being well-formed.
-
-2. With respect to lifetime and type parameters, none will be added due
-   to type inference. However, the compiler will generate distinct lifetimes
-   for each lifetime position in the type portion, if such exist, of a pattern.
-   This applies recursively in each parameter.
-
-   Lifetime positions are:
-   1. Anywhere `'_` is found.
-   2. Anywhere `&[mut] $type` is found.
-
-   [RFC 2115]: https://github.com/rust-lang/rfcs/blob/master/text/2115-argument-lifetimes.md#the-wildcard-lifetime
-
-   Finally, due to backwards compatibility with Rust 2015,
-   for a parameter which has a pattern that matches `$pat : $type`,
-   if the type definition corresponding to `$type` has lifetimes which are not
-   specified in `$type`, those are also added and a deprecation warning due
-   to [RFC 2115] is emitted.
-
-3. If the pattern of a parameter has `&[mut] pat` patterns anywhere,
-   including recursively, then the full type of the top level pattern
-   must be specified. In specifying the full type, lifetimes may be elided.
-
-Given the following type definitions:
-
-```rust
-struct Foo(usize);
-
-struct Wrapping<T>(T);
-
-struct Product<A, B>(A, B);
-
-trait Trait { type Assoc; }
-
-struct Bar<'a>(&'a bool);
-
-struct Wibble<'a>(&'a i32, Bar<'a>);
-
-struct Quux<'a, 'b: 'a>(&'a Foo, Bar<'b>);
-
-struct Beta<'a>(&'a Bar<'a>);
-```
-
-The following example definitions are accepted:
-
-```rust
-// 1) No lifetime positions, so none are generated.
-// 2) Looking at `x: usize` we determine that `x : usize`.
-// -----------------------------------------------------------------------------
-// + `good_0 : fn(usize) -> ()`.
-// + `x : usize`.
-fn good_0(x: usize) {}
-
-// 1) We find the in-band lifetime `'a` and add it as an input lifetime parameter.
-// 2) Looking at `x: usize` we determine that `x : &'a usize`.
-// -----------------------------------------------------------------------------
-// + `good_1 : for<'a> fn(&'a usize) -> ()`.
-// + `x : &'a usize`.
-fn good_1(x: &'a usize) {}
-
-// Nothing to infer, everything is explicitly quantified and specified.
-// -----------------------------------------------------------------------------
-// + `good_2 : for<'a> fn(&'a usize) -> ()`.
-// + `x : &'a usize`
-fn good_2<'a>(x: &'a usize) {}
-
-// 1) We find one lifetime position, we introduce and substitute `'a`
-//    for it and add it as an input lifetime parameter.
-// 2) The pattern is now `&x: &'a usize`. The full type is known.
-// 3) Since `&x: &'a usize`, then `x: usize`.
-// -----------------------------------------------------------------------------
-// + `good_3 : for<'a> fn(&'a usize) -> ()`.
-// + `x : usize`.
-fn good_3(&x: &usize) {}
-
-// 1) No lifetime positions.
-// 2) Looking at `ref x: usize`, the type of the parameter is `usize`.
-// -----------------------------------------------------------------------------
-// + `good_4 : for fn(usize) -> ()`.
-// + `x : &'<tmp> usize`.
-fn good_4(ref x: usize) {}
-
-// 1) No lifetime positions.
-// 2) Looking at `Foo($pat)` we know that `parameter : Foo` and that `$pat: usize`.
-// 3) `$pat = x`, thus `x: usize`.
-// -----------------------------------------------------------------------------
-// + `good_5 : fn(Foo) -> ()`.
-// + `x : usize`.
-fn good_5(Foo(x)) {}
-
-// 1) Looking at `x: Bar`, we apply the back-compat rule and find one lifetime
-//    parameter `'a` which we quantify.
-// 2) We emit a warning.
-// -----------------------------------------------------------------------------
-// + `good_6 : for<'a> fn(Bar<'a>) -> ()`.
-// + `x : usize`.
-fn good_6(x: Bar) {}
-
-// 1) Looking at `Foo(x): &_` we find one input lifetime position and quantify
-//    it as `'a`. We substitute the pattern for `Foo(x): &'a _`.
-// 2) Seeing `Foo(x): &'a _`, we substitute `_` for a new
-//    unification variable `?T`. We now have `Foo(x): &'a ?T`.
-// 3) Seeing `Foo(x)` we know that `?T = Foo` and substitute to it.
-//    We know that `parameter : &'a Foo`.
-// 4) We know that `x : &'a usize` due to the match mode.
-// -----------------------------------------------------------------------------
-// + `good_7 : for<'a> fn(&'a Foo) -> ()`.
-// + `x : &'a usize`.
-fn good_7(Foo(x): &_) {}
-
-// 1) We find one lifetime position, quantify it as `'a`.
-//    We now have `Foo(ref): &'a _`.
-// 2) Seeing that, we substitute `_` for unification variable `?T`.
-//    We now have `Foo(ref): &'a ?T`.
-// 3) Seeing `Foo(x)` we know that `?T = Foo`. Thus `parameter : &'a Foo`.
-// 4) Seeing `ref x`, we know that `x : &'a usize`.
-// -----------------------------------------------------------------------------
-// + `good_8 : for<'a> fn(&'a Foo) -> ()`.
-// + `x : &'a usize`.
-fn good_8(Foo(ref x): &_) {}
-
-// 1) No lifetime positions.
-// 2) Looking at `Foo($pat)` we know that `parameter : Foo`
-//    and that `$pat: usize`.
-// 2) Looking at `$pat = ref x` we know that `ref x: usize`.
-//    We know therefore that `x: &'<tmp> usize`.
-// -----------------------------------------------------------------------------
-// + `good_9 : fn(Foo) -> ()`.
-// + `x : &'<tmp> usize`.
-fn good_9(Foo(ref x)) {}
-
-// 1) No lifetime positions.
-// 2) Seeing an array with 3 elements, we know that `parameter : [?T; 3]`
-//    for some `?T` type.
-// 3) Seeing `a: u8`, we know that `?T = u8` and that `a: u8`.
-// 4) Seeing `b`, we know that because `parameter : [u8; 3]` that `b: u8`.
-// 5) Seeing `ref c`, we know that `c: &'<tmp> u8`.
-// -----------------------------------------------------------------------------
-// + `good_10 : fn([u8; 3]) -> ()`.
-// + `a : u8`.
-// + `b : u8`.
-// + `c : &'<tmp> u8`.
-fn good_10([a: u8, b, ref c]) {}
-
-// 1) No lifetime positions.
-// 2) Same as `good_10`.
-// 3) Seeing `a: impl Debug` we quantify a type parameter `T: Debug` and
-//    substitute `?T` for `T`.
-//    We mark the function as not turbo-fishable.
-// 4) Seeing `a` and because `parameter: [T; 3]` we know that `a: T`.
-//    Repeat for `b`.
-// -----------------------------------------------------------------------------
-// + `good_11 : for<T: Debug> fn([T; 3]) -> ()`.
-// + `a : T`.
-// + `b : T`.
-// + `c : T`.
-fn good_11([a: impl Debug, b, c]) {}
-
-// 1) No lifetime positions.
-// 2) Seeing `Wrapping($pat)`, we know that `parameter : Wrapping<?T>`.
-// 3) Seeing `$pat = usize`, we know that:
-//    a) `x : usize`
-//    b) `?T = usize`.
-//    c) `parameter : Wrapping<usize>`.
-// -----------------------------------------------------------------------------
-// + `good_13 : fn(Wrapping<usize>) -> ()`.
-// + `x : usize`
-fn good_13(Wrapping(x: usize)) {}
-
-// 1) No lifetime positions.
-// 2) Seeing `Wrapping($pat)`, we know that `parameter : Wrapping<?T>`.
-// 3) Seeing `$pat = x: T`, we know that:
-//    a) `x : T`.
-//    b) `parameter : Wrapping<T>`.
-// -----------------------------------------------------------------------------
-// + `good_14 : for<T> fn(Wrapping<T>) -> ()`.
-// + `x : T`.
-fn good_14<T>(Wrapping(x: T)) {}
-
-// 1) No lifetime positions.
-// 2) Seeing `Wrapping($pat)`, we know that `parameter : Wrapping<?T>`.
-// 3) Seeing `$pat = x: impl Display`, we quantify a type parameter `T: Display`
-//    We substitute => `$pat = x: T`.
-//    We mark the function as not turbo-fishable.
-// 4) Seeing `$pat = x: T`, we know that:
-//    a) `x : T`.
-//    b) `?T = T`.
-//    c) `parameter : Wrapping<T>`.
-// -----------------------------------------------------------------------------
-// + `good_15 : for<T: Display> fn(Wrapping<T>) -> ()`.
-// + `x : T`.
-fn good_15(Wrapping(x: impl Display)) {}
-
-// 1) No lifetime positions.
-// 2) Seeing `Wrapping($pat)`, we know that `parameter : Wrapping<?T>`.
-// 3) Looking at `$pat = x: <X as Trait>::Assoc`, we:
-//    a) Verify that `X: Trait` and that `Trait` has an associated type `Assoc`.
-//    b) Substitute `?T` for `<X as Trait>::Assoc`.
-// -----------------------------------------------------------------------------
-// + `good_16 : for<X: Trait> fn(Wrapping<X::Assoc>) -> ()`.
-// + `x : <X as Trait>::Assoc`.
-fn good_16<X: Trait>(Wrapping(x: <X as Trait>::Assoc)) {}
-
-// 1) We find `Bar<'_>`. We substitute `'_` for a new lifetime `'a`.
-// 2) Seeing `Wrapping($pat)`, we know that `parameter : Wrapping<?T>`.
-// 3) Seeing `$pat = x: Bar<'a>`, we know that:
-//    a) `x : Bar<'a>`.
-//    b) `?T = Bar<'a>`.
-//    c) `parameter : Wrapping<Bar<'a>>`.
-// -----------------------------------------------------------------------------
-// + `good_17 : for<'a> fn(Wrapping<Bar<'a>>) -> ()`.
-// + `x : Bar<'a>`.
-fn good_17(Wrapping(x: Bar<'_>)) {}
-
-// 1) We find `&'_ i32`. We substitute `'_` for a new lifetime `'a`.
-// 2) We find `Bar<'_>`. We substitute `'_` for a new lifetime `'b`.
-// 3) Seeing `Product($pat_1, $pat_2)`, we know `parameter : Product<?T, ?U>`.
-// 4) Seeing `$pat_1 = x: &'a i32`, we know that:
-//    a) `x : &'a i32`.
-//    b) `?T = &'a i32`.
-// 5) Seeing `$pat_2 = y: Bar<'b>`, we know that:
-//    a) `y : Bar<'b>`.
-//    b) `?T = Bar<'b>`.
-// -----------------------------------------------------------------------------
-// + `good_18 : for<'a, 'b> fn(Product<&'a i32, Bar<'b>>) -> ()`.
-// + `x : &'a i32`.
-// + `y : Bar<'b>`.
-fn good_18(Product(x: &i32, y: Bar<'_>)) {}
-
-impl Foo {
-    // 1) Seeing &self, we assign all lifetimes in the output the lifetime `'self`.
-    // 2) We find 3 lifetime positions:
-    //    a) `&'_ u8`
-    //    b) `&'_ u16`
-    //    c) `&'_ u32`
-    //    We quantify a lifetime for each.
-    // 3) Seeing `Product($pat_1, $pat_2)` we know that:
-    //    a) `parameter : Product<?T, ?U>`.
-    // 4) Seeing `$pat_1 = x: &'a u8`, we know that:
-    //    a) `x : &'a u8`.
-    //    a) `?T = &'a u8`.
-    // 5) Seeing `$pat_2 = Product($pat_3, $pat_4)` we know that:
-    //    a) `?U = Product<?V, ?X>`
-    // 6) Repeat 4) for `$pat_3` and `$pat_4`.
-    // -------------------------------------------------------------------------
-    // + `good19 : for<'self, 'a, 'b, 'c>
-    //     fn(
-    //         &'self Foo,
-    //         Product<
-    //             &'a u8,
-    //             Product<
-    //                 &'b u16,
-    //                 &'c u32
-    //             >
-    //         >
-    //     ) -> &'self str`.
-    // + `x : &'a u8`.
-    // + `y : &'b u16`.
-    // + `z : &'c u32`.
-    fn good_19(&self, Product(x: &u8, Product(y: &u16, z: &u32))) -> &str { .. }
-}
-
-// 1) We quantify the in-band lifetime `'a`.
-// 2) Looking at `Wibble($pat_1, $pat_2)`, we know that:
-//    a) `parameter : Wibble<'?t>`.
-//    b) `$pat_1 : &'?t i32`.
-//    c) `$pat_2 : Bar<'?t>`.
-// 3) Looking at `$pat_1 : &'?t i32 = x: &'a i32`, we know that:
-//    b) `x : &'a i32`.
-//    c) `'?t = 'a`.
-// 4) Looking at `$pat_2 : Bar<'?t> = y: Bar<'a>`, we know that:
-//    b) `y : Bar<'a>`.
-//    c) `'?t = 'a`. This was already solved in  3).
-// -----------------------------------------------------------------------------
-// + `good_20 : for<'a> fn(Wibble<'a>) -> ()`.
-// + `x : &'a i32`.
-// + `y : Bar<'a>`.
-fn good_20(Wibble(x: &'a i32, y: Bar<'a>)) {}
-
-// 1) We quantify in-band lifetimes `'a` and `'b`.
-// 2) Seeing `Quux($pat_1, $pat_2)`, we know that:
-//    a) `parameter : Quux<'?t, '?u>` where `'?u: '?t`.
-//    b) `$pat_1 : &'?t Foo`.
-//    c) `$pat_2 : Bar<'?u>`.
-// 3) Seeing `$pat_1 : &'?t Foo = x: &'a Foo`, we know that:
-//    a) `x : &'a Foo`.
-//    b) `'?t = 'a`.
-// 4) Seeing `$pat_2 : &'?u Foo = Bar($pat_3)`, we know that:
-//    a) `$pat_3 : &'?u bool`
-// 5) Seeing `$pat_3 : &'?u bool = y: &'b bool`, we know that:
-//    a) `y : &'b bool`.
-//    a) `'?u = 'b`.
-// -----------------------------------------------------------------------------
-// + `good_21 : for<'a, 'b: 'a> fn(Quux<'a, 'b>) -> ()`.
-fn good_21(Quux(x: &'a Foo, Bar(y: &'b bool))) {}
-
-// 1) We find `&'_ usize`. We substitute `'_` for a new lifetime `'a`.
-// 2) Looking at `Wrapping($pat)`, we know that:
-//    a) `parameter : Wrapping<?T>`.
-//    b) `$pat : ?T`.
-// 3) Looking at `$pat : ?T = x: &'a usize`, we know that:
-//    a) `x : &'a usize`.
-//    b) `?T = &'a usize`.
-//    c) `parameter : Wrapping<&'a usize>`.
-// -----------------------------------------------------------------------------
-// + `good_22 : for<'a> fn(Wrapping<&'a usize>) -> ()`.
-// + `x : &'a usize'.
-fn good_22(Wrapping(x: &usize)) {}
-
-// 1) We find `&'_ usize`. We substitute `'_` for a new lifetime `'a`.
-// 2) We find `&'_ _`. We substitute `'_` for a new lifetime `'b`.
-// 3) Looking at `$pat_1 : &'b _`,
-//    we substitute `_` for a new unification variable `?T` where `?T: 'b`.
-//    We know that: `parameter = $pat_1 : &'b ?T`.
-//    We enter a reference match binding mode.
-// 4) Looking at `$pat_1 : &'b ?T = Wrapping($pat_2)`, we know that:
-//    a) `?T = Wrapping<?U>`.
-//    b) `$pat_2 : ?U`.
-//    c) `?U: 'b`.
-// 5) Looking at `$pat_2 : ?U = x : &'a usize`, we know that:
-//    a) `x : &'a usize`, `'b: 'a`, and `?U = usize` due to match mode.
-//    d) `parameter : &'b Wrapping<usize>`
-// 6) because `'a: 'b`, `'b: 'a`, we substitute `'b` for `'a` and remove `'b`.
-// -----------------------------------------------------------------------------
-// + `good_23 : for<'a> fn(&'a Wrapping<usize>) -> ()`.
-// + `x : &'a usize'.
-fn good_23(Wrapping(x: &usize): &_) {}
-
-// 1) We find `&'_ T`. We substitute `'_` for a new lifetime `'a`.
-//    We also conclude `T: 'a`.
-// 2) Looking at `Wrapping($pat_1)`, we know that:
-//    a) `parameter : Wrapping<?T>`.
-//    b) `$pat_1 : ?T`.
-// 3) Looking at `$pat_1 : ?T = x: &'a T`, we know that:
-//    a) `?T = &'a T`.
-//    b) `x : &'a T`.
-// -----------------------------------------------------------------------------
-// + `good_24 : for<'a, T: 'a> fn(Wrapping<&'a T>) -> ()`.
-// + `x : &'a T'.
-fn good_24<T>(Wrapping(x: &T)) {}
-```
-
-But the following definitions are rejected:
-
-```rust
-// The type of `x` is fully ambiguous even if we look at the body.
-// The type of `bad_0: fn(?T) -> ()`.
-fn bad_0(x) {}
-
-// The compiler has to look at the body to see that `x: u8`:
-// The type of `bad_1: fn(?T) -> ()`.
-fn bad_1(x) {
-    let y: u8 = x;
-}
-
-// There is an unconstrained unification variable `?T` from `Wrapping<?T>`.
-// The type of `bad_2: fn(Wrapping<?T>) -> ()`
-fn bad_2(Wrapping(x)) {}
-
-// No lifetime parameter added for `Quux<'?>` to unify with.
-fn bad_3(Quux(x, Bar(y))) {}
-
-// Inferred `x: &'a`, `y: &'b Bar<'b>` but `'a != 'b` which `Wibble<'?>` requires.
-fn bad_4(Wibble(x: &i32, y: Bar<'_>)) {}
-
-// Rejected because parameter has & but not fully spec type.
-fn bad_6(&(x: usize)) {}
-
-// Rejected because parameter has & but not fully spec type.
-fn bad_7(&[a: u8, ref b]) {}
-
-// Rejected because parameter has & but not fully spec type.
-fn bad_8(Beta(&Bar(&x))) {}
-
-// The two separate `impl Trait`s get each one type parameter
-// T and U leading to: [x: T, y: U] which is not well formed.
-fn bad_9([x: impl Trait, y: impl Trait]) {}
-
-impl From<usize> for Foo {
-    // The compiler is not allowed to look at `From<usize>` to
-    // understand that `x: usize`.
-    fn from(x) -> Self { Self(x) }
-}
-```
-
-#### Optional: improved error messages
-
-Considering the rejected example function `bad_1`, a Rust compiler,
-knowing that the `typeof(x) = u8` by looking at the body
-(if such analysis is performed),
-can emit an error message with the type identity of `x` in it.
-An example error message is:
-
-```rust
-error[E0282]: type annotations needed
- --> src/main.rs:?:?
-  |
-1 |     fn bad_1(x) { .. }
-  |           ^
-  |           |
-  |           The following patterns do not have a fully determined type.
-  |           help: Write type annotations on the following patterns:
-  |
-  |               x: u8
-  |
-
-error: aborting due to previous error
-```
-
-Providing this type information is optional.
-
 ### Ascribing `impl Trait`
 
 [RFC 1951]: https://github.com/rust-lang/rfcs/blob/master/text/1951-expand-impl-trait.md
 [RFC 2071]: https://github.com/rust-lang/rfcs/blob/master/text/2071-impl-trait-existential-types.md#reference-impl-trait-in-let-const-and-static
 
 Ascribing an expression or a pattern to a type `impl Trait` for some `Trait`
-is permitted by the compiler. The semantics of doing so are as follows:
-
-1. When a pattern in the `fn` signature contains `impl Trait`,
-   it has the usual `universal_impl_trait` semantics as specified by
-   [RFC 1951]. This means that for each `impl Trait` in any pattern in
-   the `fn` signature, an "anonymous" type parameter is added.
-
-2. When a pattern or expression inside an `fn` body is ascribed with a type
-   of form `impl Trait`, the type checking rules are as specified by
-   [RFC 2071] with respect to `let` bindings.
+is permitted by the compiler. When a pattern or expression inside an `fn` body
+is ascribed with a type of form `impl Trait`, the type checking rules are as
+specified by [RFC 2071] with respect to `let` bindings.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -1690,20 +817,6 @@ We believe that we've demonstrated that this RFC simplifies the language by
 applying rules uniformly, and thus has a negative complexity cost on balance.
 However, this view may not be shared by everybody. It is a legitimate position
 to take to view this as an increase in language complexity.
-
-## Readability of function definitions
-
-One of the benefits of static typing is that it acts as machine checked
-documentation. This is particularly useful on API boundaries such as function
-definitions. Indeed, even though a language like Haskell features
-global type inference, it is the cultural norm in the Haskell community
-that functions should have explicitly annotated signatures.
-
-This RFC does not introduce global type inference in any way, but it does allow
-you to elide the exact type of each function parameter. This could potentially
-lead to less obvious type signatures. However, the RFC has purposefully
-defines the rules for the elision in such a way that you should fairly easily
-be able to see what type a function parameter is of.
 
 ## Potential conflict with named arguments
 
@@ -1777,14 +890,6 @@ by writing `Foo { bar: : u8 }`. One could potentially write this as:
 `Foo { bar :: u8 }`. One drawback in this approach is that it may confuse
 readers with paths.
 
-## Uncertainty around `keyword: Type { .. }`
-
-Uncertainty and opposition around this RFC has mainly been expressed around the
-syntax `keyword: Type { .. }`. Therefore, this is proposed only experimentally
-so that we may try it out on nightly and gain more experience with the syntax.
-
-See section on [rationale][alternatives] for a discussion on this syntax.
-
 # Rationale and alternatives
 [alternatives]: #rationale-and-alternatives
 
@@ -1836,16 +941,7 @@ with type ascription. An example: `MyStruct { field : type Foo }`.
 
 [rust-lang/rust#50547]: https://github.com/rust-lang/rust/issues/50547
 
-Another idea is to use an arrow syntax `expr -> type`.
-This idea was floated on [rust-lang/rust#50547] as:
-
-```rust
-async -> io::Result<()> {
-    ...
-}
-```
-
-To apply this consistently, you'd then write:
+Another idea is to use an arrow syntax `expr -> type`. You'd then write:
 
 ```rust
 let foo = (0..10).collect() -> Vec<_>;
@@ -1975,35 +1071,6 @@ Having said this, there are 3 chief ways to deal with this while retaining
    While this could be made to work technically, it does not seem to carry
    its weight since we expect `MyStruct { field: Type }` to be somewhat rare.
 
-## [RFC 1685] and deprecation schedule
-
-[rust-lang/rust#48309]: https://github.com/rust-lang/rust/pull/48309
-[48309_noted]: https://github.com/rust-lang/rust/pull/48309#issuecomment-391288075
-
-It has been [noted][48309_noted] on [rust-lang/rust#48309] that:
-
-> @scottmcm I think if we had a concrete motivation to be stricter, we could be.
-
-The expedited schedule of making
-
-```rust
-trait Foo {
-    fn bar(Type) { ... }
-}
-```
-
-a warning in 2015 and a hard error in 2018 is motivated by wanting
-to emphasize the nature of function parameters as patterns uniformly.
-For the purposes of improving learnability, we believe it is prudent
-to avoid syntactic inconsistencies in the language.
-
-Furthermore, it was also noted on the same PR by @nikomatsakis that:
-
-> [..] we don't think there's much use of this in the wild,
-> and we have an automated fix.
-
-Thus, we believe it is reasonable to expedite the schedule.
-
 ## Precedence of the operator
 
 As explained prior, we change the precedence of `:` when in an expression
@@ -2052,402 +1119,6 @@ In particular, while it may make sense to have free type level functions,
 this method variant could only exist in the core library.
 All in all, the prospect of adding such type level methods should not
 keep us from making this precedence change.
-
-## Type inference algorithm for lifetimes
-
-With respect to type inference of function types, as specified in the reference
-above, there are are multiple choices and restrictions that can be imposed.
-In the reference we've specified a model based on not inferring and implicitly
-quantifying type parameters and lifetime parameters (unless a lifetime position
-is explicitly included). For type parameters we believe this is the right choice
-because we believe they are crucially important to include for the reader.
-However, for lifetimes, things are more subtle and there are designs possible.
-We will now try to outline these choices and why the current design and
-restrictions were chosen.
-
-### Does `Constructor(x : &usize)` inhibit match ergonomics?
-
-Given the definition of `good_23` from above:
-
-```rust
-fn good_23(Wrapping(x: &usize): &_) {}
-```
-
-we can ask what the type of `good_23` should be. In the current design we've
-judged it as (1):
-
-```rust
-good_23 : for<'a> fn(&'a Wrapping<usize>) -> ()
-```
-
-However, another plausible judgement (2) is:
-
-```rust
-good_23 : for<'a, 'b: 'a> fn(&'a Wrapping<&'b usize>) -> ()
-```
-
-We can also ask whether given (A):
-
-```rust
-match &alpha {
-    None => {},
-    Some(x: &usize) => {},
-}
-```
-
-the type of `alpha` is `&Option<usize>` or if it is `&Option<&usize>`.
-
-These are in essence the same problem.
-The question is: does type ascription inside a pattern disable default match
-bindings? We argue that they should not and that judgement (1) is right.
-We argue this for two reasons:
-
-#### 1. Consistency with typing `let`
-
-Consider if a user had today written the following valid snippet:
-
-```rust
-match &alpha {
-    None => {},
-    Some(x) => {
-        let x: &usize = x;
-    },
-}
-```
-
-[verify_match_erg]: https://play.rust-lang.org/?gist=f484300d1f0435deed234faa9d1da14b&version=stable&mode=debug&edition=2015
-
-If they did that, then match ergonomics would apply and `alpha` would be
-typed at `&Option<usize>`. You can [verify][verify_match_erg] this with
-the following snippet:
-
-```rust
-trait Foo { 
-    fn new() -> Self;
-}
-
-impl Foo for &'static Option<usize> {
-    fn new() -> Self { &Some(0) }
-}
-
-impl Foo for &'static Option<&'static usize> {
-    fn new() -> Self { &Some(&1) }
-}
-
-fn main() {
-    let x: &_ = Foo::new();
-    if let Some(x) = x {
-        let x: &usize = x;
-        // Prints 0.
-        println!("{}", x);
-    }
-}
-```
-
-However, if the user moved to snippet (A), then the example would instead print
-`0` to the terminal. We believe that the ability to transition in this way to
-and from the typed `let` binding is important for consistency and to make
-the language easy to understand.
-
-#### 2. Consistency with closures
-
-Consider the following program:
-
-```rust
-fn main() {
-    struct Foo<T>(T);
-    let fun = |Foo(x): &_| { let _ : &usize = x; };
-    fun(&Foo(&0usize));
-}
-```
-
-It is ill typed. When the compiler sees this it will error with:
-
-```rust
-error[E0308]: mismatched types
- --> src/main.rs:4:12
-  |
-4 |     fun(&Foo(&0usize));
-  |              ^^^^^^^
-  |              |
-  |              expected usize, found &usize
-  |              help: consider removing the borrow: `0usize`
-  |
-```
-
-This means that the compiler judged `fun` as:
-
-```rust
-fun : for<'a> impl Fn(&'a Foo<usize>) -> ()
-```
-
-as opposed to:
-
-```rust
-fun : for<'a, 'b: 'a> impl Fn(&'a Foo<&'b usize>) -> ()
-```
-
-We argue that consistency of function definitions with closures
-is paramount for an understandable language.
-Thus, we conclude that match ergonomics should apply.
-
-### How much unification do we permit?
-
-One of the rules we've imposed is that each lifetime position mentioned
-in a type fragment of some pattern in a function parameter introduces
-a distinct lifetime. However, this means that type inference may sometimes
-introduce too many lifetimes for one type and therefore reject the definition.
-This happened in the case of:
-
-```rust
-struct Bar<'a>(&'a bool);
-struct Wibble<'a>(&'a i32, Bar<'a>);
-
-// Inferred `x: &'a`, `y: &'b Bar<'b>` but `'a != 'b` which `Wibble<'?>` requires.
-fn bad_4(Wibble(x: &i32, y: Bar<'_>)) {}
-```
-
-However, type inference could accept such a definition by not eagerly assigning
-lifetimes and instead adding them lazily as they are needed.
-For example, we could say that:
-
-> With respect to lifetime elision, when generating input lifetime parameters,
-> the most general setup of lifetimes is inferred such that:
->
-> + a struct using the same lifetime on any number of fields get assigned
->   the same distinct lifetime.
->
-> + patterns for each generic parameter of a struct allowed to be assigned
->   the set of distinct lifetimes each pattern itself generates.
->   This rule is applied inductively.
->
-> [current rules]: https://doc.rust-lang.org/stable/reference/lifetime-elision.html
-> With respect to output lifetime elision, the [current rules] apply.
-
-If we applied such a rule, we could accept the following two previously
-rejected definitions:
-
-```rust
-// 1) Looking at `Quux($pat_1, $pat_2)`, we know that:
-//    a) `parameter : Quux<'?t, '?u>`.
-//    b) `'?u: '?t`.
-//    c) `$pat_1 : &'?t Foo`.
-//    d) `$pat_2 : Bar<'?u>`.
-// 2) Looking at `$pat_1 : &'?t Foo = x`, we know that:
-//    a) `x : &'?t Foo`.
-// 3) Looking at `$pat_2 : Bar<'?u> = Bar($pat_3)`, we know that:
-//    a) `$pat_3 : &'?u bool`.
-// 4) Looking at `$pat_3 : &'?u bool = y`, we know that:
-//    a) `y : &'?u bool`.
-// 5) Having lifetime quantification variables `'?t` and `?'u`,
-//    we quantify and substitute `'a` and `'b` for these.
-// -----------------------------------------------------------------------------
-// + `bad_3_now_good : for<'a, 'b: 'a> fn(Quux<'a, 'b>) -> ()`.
-// + `x : &'a Foo`.
-// + `y : &'b bool`.
-fn bad_3_now_good(Quux(x, Bar(y))) {}
-
-// 1) Looking at `Wibble($pat_1, $pat_2)`, we know that:
-//    a) `parameter : Wibble<'?t>`.
-//    b) `$pat_1 : &?'t i32`.
-//    c) `$pat_2 : Bar<&?'t>`.
-// 2) Looking at `$pat_1 : &?'t i32 = x: &'_ i32`, we know that:
-//    a) `x : &'?v i32`.
-//    b) `x : &'?t i32`.
-//    c) `'?v = '?t`.
-// 3) Looking at `$pat_2 : Bar<&?'t> = y: Bar<'_>`, we know that:
-//    a) `y : Bar<'?x>`.
-//    b) `y : Bar<'?t>`.
-//    c) `'?x = '?t`.
-// 4) Having lifetime quantification variable `'?t`,
-//    we quantify and substitute `'a` for it.
-// -----------------------------------------------------------------------------
-// + `bad_4_now_good : for<'a> fn(Wibble<'a>) -> ()`.
-// + `x : &'a i32`.
-// + `y : Bar<'a>`.
-fn bad_4_now_good(Wibble(x: &i32, y: Bar<'_>)) {}
-```
-
-This lazy unification engine can also accept definitions
-`bad_6`, `bad_7`, and `bad_10`. For example (with a match ergonomics twist):
-
-```rust
-// 1) Looking at `$pat_1: &'_ _`, we know that:
-//    a) `parameter : &'?t ?T`
-//    b) `?T: '?t`.
-//    c) `$pat_1 : `?T`.
-// 2) Looking at `$pat_1 : ?T = Beta($pat_2)`, we know that:
-//    a) `?T = Beta<'?u>`.
-//    b) `'?u: '?t`.
-//    b) `$pat_2 : &'?t Bar<'?u>`.
-// 3) Looking at `$pat_2 : &'?t Bar<'?u> = & $pat_3`, we know that:
-//    a) `$pat_3 : Bar<'?u>`.
-// 4) Looking at `$pat_3 : Bar<'?u> = Bar($pat_4)`, we know that:
-//    a) `$pat_4 : &'?u bool`.
-// 5) Looking at `$pat_4 : &'?u bool = & $pat_5`, we know that:
-//    a) `$pat_5 : bool`.
-// 6) Looking at `$pat_5 : bool = x`, we know that:
-//    a) `x : bool`.
-// 7) Having lifetime quantification variables `'?t`, `'?u`
-//    we quantify and substitute `'a` and `'b` for them.
-// -----------------------------------------------------------------------------
-// + `bad_10_twist_now_good : for<'a, 'b: 'a> fn(&'a Beta<'b>) -> ()`.
-// + `x : bool`.
-fn bad_10_twist_now_good(Beta(&Bar(&x)): &_) {}
-```
-
-Why have we then not proposed this mechanism right now if it is so flexible?
-For two reasons:
-
-1. If you take a look at `bad_4_now_good` you see two lifetime positions.
-   You might infer from this that these are two distinct lifetimes,
-   but that inference would be mistaken as type of `bad_4_now_good`
-   is `for<'a> fn(Wibble<'a>) -> ()`.
-
-2. References are sometimes important to highlight.
-   In particular, this unification model would accept `bad_3_now_good`
-   which in no way from the patterns indicate that:
-
-   ```rust
-   x : &'a Foo
-   y : &'b bool
-   ```
-
-We might eventually relax these rules.
-However, we have concluded that, as a starting point, to keep things simple,
-we will not extend lifetime elision to patterns,
-or allow `bad_3`, `bad_4`, `bad_6`, `bad_7`, and `bad_10` to compile.
-
-## Dicussion on `keyword: Type { .. }`
-
-### An inconsistency for `async: Type { .. }`
-
-There is an inconsistency in the desugaring of the various
-`KEYWORD : Type { .. }` forms. While ascriptions on other block forms desugar
-as `KEYWORD { .. } : Type`, the `async : Type { .. }` construct desugars
-as `async { .. } : impl Future<Output = Type>`.
-
-This could lead to surprises for some users. Thus, we might consider a
-different symbol just for `async` such as `async -> Type { .. }`.
-We could also consider not having this feature for the `async` block
-form at all. These are all reasonable alternatives.
-
-Another possibility is to change `async` and by extension also `async fn` to
-use the external type approach. This is however considerably out of this
-RFC's scope.
-
-Speaking of `async fn` and internal types, while it is unfortunate that we
-can't be fully consistent in the desugaring without moving to an external
-type approach, this problem is really inherent to the nature of `async fn`
-using the inner-type method itself. It is thus equally possible that
-`async : Type { .. }` desugaring as `async { .. } : impl Future<Output = R>`
-will align with what people expect this to mean because it is how
-`async` works elsewhere.
-
-### A different syntax
-
-[drxor_1]: https://github.com/rust-lang/rfcs/pull/2522#issuecomment-411973359
-
-During the course of this RFC, it has been [noted][drxor_1] that another
-approach to `keyword: Type { .. }` may be to have a different ascription syntax
-*just* for blocks while not changing the ascription syntax for anything else.
-
-This would mean that you would instead write:
-
-```rust
-async -> T { .. }
-try -> T { .. }
-unsafe -> T { .. }
-loop -> T { .. }
-```
-
-Some arguments for such an approach is that:
-
-1. it would be consistent with the syntax for functions and closures.
-   In this interpretation, we understand functions and closures in terms of
-   their `keyword -> T { .. }` forms.
-
-   For example, we may understand the internal-type nature of `async fn`
-   through the behaviour of `async -> T { .. }`.
-
-2. it could potentially allow you to ascribe a block by writing:
-
-   ```rust
-   do_stuff(-> T { ... });
-   ```
-
-3. The syntax would work well with `while` loops if they had an `else` clause:
-
-   ```rust
-   do_stuff(while x -> T { break y; } else { z })
-   ```
-
-   If the syntax `while x: T { .. } ..` was used instead, it would look,
-   and parse as `while (x: T) { .. } ..` instead. However, one could potentially
-   write `while: T (x) { .. } ..` instead.
-
-[drxor_2]: https://github.com/rust-lang/rfcs/pull/2522#issuecomment-412289815
-
-[drxor_3]: https://github.com/rust-lang/rfcs/pull/2522#issuecomment-412255151
-
-4. `-> T` in functions [is][drxor_2] a [syntax][drxor_3] for ascription.
-
-Meanwhile, some drawbacks of this approach are:
-
-[glaebhoerl_1]: https://github.com/rust-lang/rfcs/pull/2522#issuecomment-412267347
-
-1. `-> T` in functions is [not a syntax for ascription][glaebhoerl_1].
-
-2. It adds another ascription syntax.
-
-   While some argue that this is OK because they believe it is consistent with
-   the function return type syntax, some also argue that this is misleading
-   and that users may think that `try -> T { .. }` is some callable object.
-
-3. The closure forms and function forms of some constructs do not exist.
-   For example, there is no `try fn foo() -> T { .. }`, no `const { .. }`,
-   and no `loop fn...` (although the first two have been suggested).
-   At the same time, the semantics of `unsafe fn` and `unsafe { .. }` are
-   the diametrical opposite. While `unsafe fn` *introduces* unsafety,
-   `unsafe { .. }` asserts that the bits inside the block are in fact safe.
-   Therefore, associating `keyword -> T { .. }` with `keyword fn .. -> T { .. }`
-   may be misleading.
-
-[liigo_1]: https://github.com/rust-lang/rfcs/pull/2522#issuecomment-412430420
-
-4. It is [not possible to `return`][liigo_1] to a `try -> T { .. }` block.
-   Users may thus be confused as to where `?` and `return` may land in such
-   a block.
-
-### Additional drawbacks with the proposed syntax
-
-It has been noted that:
-
-1. `keyword: T { .. }` is different from all other uses of a single colon
-   because the ascribed expression is entangled with the ascription itself
-   instead of being before or after it.
-
-[scott_1]: https://github.com/rust-lang/rfcs/pull/2522#issuecomment-412417777
-
-2. `loop: T { .. }` and `unsafe: T { .. }` [may not have use cases][scott_1].
-   However, for the purposes of defensive programming `unsafe: T { .. }`
-   could be useful.
-
-### Some notes in favor of `keyword: T { .. }`
-
-1. It could be argued that `keyword: T { .. }` is keeping the language more
-   uniform than `keyword -> T { .. }` would by using one syntax for ascription.
-
-[mbf_1]: https://github.com/rust-lang/rfcs/pull/2522#issuecomment-412036010
-
-2. It has been [argued][mbf_1] that if `async fn() -> T` is allowed to
-   use the *"inner return type approach"*, then it would also be fine for
-   `async: T { .. }` to do so as well.
-
-In conclusion, there is a lack of clarity on whether `keyword: T { .. }`
-or `keyword -> T { .. }` is the right syntax and whether such an addition
-would carry its weight. As such, we only propose `keyword: T { .. }`
-experimentally.
 
 # Prior art
 [prior-art]: #prior-art
@@ -2589,84 +1260,16 @@ Note that this is exactly the same grammar as we've proposed here.
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
-1. Should we permit `keyword: Type { .. }`?
-
-2. What exactly should be allowed wrt. type inference of function types?
-   Because this is rather subtle, it is considered OK to leave this for
-   and tweak it during stabilization.
+None.
 
 # Possible future work
 [possible future work]: #possible-future-work
 
-## `self` as a pattern
+In previous versions of this RFCs some features were proposed including:
 
-To simplify the grammar further and to not make distinction between different
-variants of `fn` items, one step that we could take is to make `self` a pattern.
-We would then introduce the following into the pattern grammar:
+- Block ascription syntax; e.g. `async: Type { ... }` or `try: Type { ... }`.
+- Making the syntax of function parameters into `fn name(pat0, pat1, ..)`
+  rather than `fn name(pat0: type0, pat1: type1, ..)`.
 
-```rust
-pat
-: ...
-| ('&' lifetime?)? maybe_mut SELF
-;
-```
-
-Note however that while `self` is a legal pattern *grammatically*, this
-does not mean that we need to allow it anywhere but where it is allowed today
-(in methods of inherent and trait `impl`s). The type checker could forbid
-occurrences we don't allow today. This change would likely simplify the grammar
-and improve error messages. However, it would also likely complicate the type
-checker.
-
-One reason we might want to take this step besides syntactic simplicity is to
-enable extension functions ([see internals discussion]) such as:
-
-```rust
-fn sorted<T: Ord>(mut self: Vec<T>) -> Vec<T> {
-    self.sort();
-    self
-}
-```
-
-[see internals discussion]: https://internals.rust-lang.org/t/idea-simpler-method-syntax-private-helpers/7460
-
-in the future. However, this grammatical change is not proposed in this RFC
-at the moment.
-
-## Lifetimes in parameter patterns
-
-In the same vein, we could introduce lifetimes in the pattern grammar such that
-you can write `&'a $pat` and `&'mut $pat`. We would then restrict this usage
-to function parameters but not elsewhere.
-Doing this would allow users to express things such as:
-
-```rust
-/// `foo : for<'a> fn(&'a Wrapping<usize>) -> ()`.
-fn foo<'a>(&'a Wrapping(x: usize)) { .. }
-```
-
-as well as:
-
-```rust
-/// `foo : for<'a> fn(Wrapping<&'a mut Foo>) -> ()`.
-fn foo<'a>(Wrapping(&'a mut Foo(ref mut x))) { .. }
-```
-
-Also note that the previous section can be encoded in terms of the composition
-of this section as well as `self` being a pattern making the grammar further
-simplified.
-
-However, to limit the scope of this RFC this is not proposed at this point.
-We also do not propose it at this point because it is unknown how often this
-would occur.
-
-## Elision in trait implementations
-
-One possibility that this RFC opens up grammatically is to let the
-well-formedness constraints of implementing a particular trait to inform
-type inference such that you may elide type annotations, type parameters,
-and `where` clauses from trait methods in the trait implementation.
-
-However, this is a rather large, and possibly controversial,
-step in and of itself and therefore such a proposal is out of scope of this RFC.
-It is perfectly possible to separate these questions and therefore we do that.
+These have since been remove from this particular RFC and will be proposed
+separately instead.
