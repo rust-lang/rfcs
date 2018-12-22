@@ -323,7 +323,8 @@ more appealing than they might be in other programming languages with variant ty
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-None.
+- Is disallowing `impl`s on variant types too conservative or restrictive? Should we instead permit
+them (and potentially provide clippy lints to point out unidiomatic patterns).
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
