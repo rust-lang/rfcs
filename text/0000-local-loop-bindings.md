@@ -9,6 +9,19 @@
 To simplify complicated loop constructs and avoid mutable state,
 allow an extended syntax for `loop` to accept local variables that may change once per iteration.
 
+To get an idea of what this is about, here you already can see a simple example for factorial using the new syntax:
+
+```rust
+fn factorial(x: i32) -> i32 {
+    loop (result, count) = (1, x) {
+        if count == 1 {
+            break result;
+        } else {
+            continue (result * count, count - 1);
+        }
+    }
+}
+```
 
 # Motivation
 [motivation]: #motivation
