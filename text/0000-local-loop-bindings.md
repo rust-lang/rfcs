@@ -6,7 +6,8 @@
 # Summary
 [summary]: #summary
 
-This will allow an extended syntax for `loop` to accept local variables, which change for each iteration to simplify more complicated loop constructs and avoid mutable state.
+To simplify complicated loop constructs and avoid mutable state,
+allow an extended syntax for `loop` to accept local variables that may change once per iteration.
 
 
 # Motivation
