@@ -28,7 +28,7 @@ fn factorial(x: i32) -> i32 {
 
 The chief motivation is to enable using different values for each iteration without the need of mutable bindings defined outside of the loop.
 
-The variables will be defined after the loop keyword, so they will only be accessible in the scope of the loop, not afterwards. They will not be mutable by default, so it can be ensured, that the variables only change once per iteration.
+The bindings will be defined after the `loop` keyword, making them only accessible in the scope of the loop, not afterwards. As usual, they will not be mutable by default, which helps to ensure, that the variables change at most once per iteration.
 
 Especially since loops can return values, it's not necessary at all to mutate state inside a loop in some cases.
 
