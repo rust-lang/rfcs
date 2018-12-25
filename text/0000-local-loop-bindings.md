@@ -26,7 +26,6 @@ fn factorial(x: i32) -> i32 {
 # Motivation
 [motivation]: #motivation
 
-The new syntax is inspired by `loop` in the upcoming release of the [scopes programming language](scopes.rocks).
 The chief motivation is to enable using different values for each iteration without the need of mutable bindings defined outside of the loop.
 
 The variables will be defined after the loop keyword, so they will only be accessible in the scope of the loop, not afterwards. They will not be mutable by default, so it can be ensured, that the variables only change once per iteration.
@@ -189,7 +188,7 @@ Current syntax:
 
 This expansion should cover the common case.
 
-A `continue value` in the body would expand to `binding = value; continue;
+A `continue value` in the body would expand to `binding = value; continue;`
 
 Internally there may be more efficient ways to implement this.
 
@@ -213,9 +212,30 @@ This could be a more general version, which is not connected to loops, but can b
 # Prior art
 [prior-art]: #prior-art
 
+## Scopes
+
+The main inspiration was the `loop` construct in the upcoming release of the [scopes programming language](scopes.rocks) ([this commit](https://bitbucket.org/duangle/scopes/commits/6a44e062e6a4a7813146a850c8982c0f902eefba)).
+Documentation is still raw and things may change, but the current version of loop matches best with rust.
+
+The same example of factorial should look like this in the next scopes release:
+
+```scopes
+fn factorial (x)
+    loop (result count = 1 x)
+        if (count == 1)
+            break result
+        else
+            continue
+                result * count
+                count - 1
+```
+
+## Rust specific
+
 Without the feature of loops being able to return values, this feature is less useful.
 
 Labeled blocks, which are currently unstable, may also be useful for some alternative to this.
+
 
 
 # Unresolved questions
