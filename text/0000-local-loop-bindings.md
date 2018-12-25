@@ -14,7 +14,7 @@ allow an extended syntax for `loop` to accept local variables that may change on
 [motivation]: #motivation
 
 The new syntax is inspired by `loop` in the upcoming release of the [scopes programming language](scopes.rocks).
-This way it's possible use different values for each iteration without the need of mutable variables defined outside of the loop.
+The chief motivation is to enable using different values for each iteration without the need of mutable bindings defined outside of the loop.
 
 The variables will be defined after the loop keyword, so they will only be accessible in the scope of the loop, not afterwards. They will not be mutable by default, so it can be ensured, that the variables only change once per iteration.
 
