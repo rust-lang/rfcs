@@ -20,7 +20,7 @@ enum Enum {
 }
 ```
 
-Now enums implicitly generate structs like this:
+Now enums implicitly generate structs for each variant like this:
 
 ```rust
 mod Enum {
