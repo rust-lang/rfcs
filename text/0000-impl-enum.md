@@ -9,6 +9,33 @@
 This is a proposal for a new interpretation of enum types, so they can get stored as their variant types and matched at compile time.
 This simplyfies writing efficient generic code when using enums.
 
+In the following this enum will be considered:
+
+```rust
+enum Enum {
+    Variant1,
+    Variant2(...),
+    Variant3{...},
+    ...
+}
+```
+
+Now enums implicitly generate structs like this:
+
+```rust
+mod Enum {
+    pub struct Variant1;
+    pub struct Variant2(...);
+    pub struct Variant3{...};
+    ...
+}
+```
+
+That's not the main feature of this proposal, but necessary to get it work.
+
+Additinally, enums generate a type similar to traits for the enum, which are implemented by the structs, and also work in a similar way.
+The current enums are the counterpart to trait objects then.
+
 # Motivation
 [motivation]: #motivation
 
@@ -109,18 +136,7 @@ But this means, the helpful abstraction using enums is not a zero cost abstracti
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-Writing an enum in rust looks like this:
-
-```rust
-enum Enum {
-    Variant1,
-    Variant2(...),
-    Variant3{...},
-    ...
-}
-```
-
-Now enums implicitly generate structs like this:
+As told in the summary, an enum works like this:
 
 ```rust
 mod Enum {
@@ -131,6 +147,8 @@ mod Enum {
 }
 ```
 
+There are still a few differences. Since enum struct fields are public by default, the fields of these structs have to be public by default, too.
+
 These variant structs implement the enum, similar to how other types implement traits.
 
 Enum types can just be used like trait types now:
@@ -139,7 +157,7 @@ Enum types can just be used like trait types now:
 * It's also possible to use enums for generics additional to traits.
 * Even using `impl Enum` is possible.
 
-Using `impl Enum` as a return value will require all possible return values to be of the same enum variant of the specified enum.
+Like for `impl Trait`, using `impl Enum` as a return value will require all possible return values to be of the same enum variant of the specified enum.
 
 ## How matching works
 
