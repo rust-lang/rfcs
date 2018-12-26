@@ -46,6 +46,7 @@ loop binding = value {
 ```
 
 Just like when using `let` and unlike `if let`/`while let`, `binding` has to be be any irrefutable pattern, which means, that it will match for every value of the type.
+Opposed to `let`, `loop` will require a value to supplied immediately. Else it will be unbound when entering the first iteration of the loop, but bound when entering a further iteration.
 
 The return value of the loop body will implicitely be passed to the next iteration of the loop, so it needs to be the same type as the initial value.
 
@@ -147,6 +148,7 @@ Using `break` here allows copying code without having to modify it, when not usi
 
 Labels will also work. When using `continue` with a label, the arguments to continue must match the loop binding signature connected to the label, in case the label is connected with a loop.
 
+Now a few examples from exisitng crates will follow soon.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -243,3 +245,4 @@ There are no unresolved questions yet.
 
 If named blocks are stabilized, they could additionally allow local bindings, like a "named let".
 
+It's possible to add support for irrefutable patterns, too. This may just use the same syntax or a different syntax (maybe `if loop`)
