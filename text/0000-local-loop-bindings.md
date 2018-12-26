@@ -37,16 +37,15 @@ This is a more functional programming style, which may also allow more optimizat
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-The extended syntax for `loop` will just work like a `while let`. "while let" will be replaced by "loop". Unlike `while let`, the pattern is not allowed to be refutable, so enum variants are not allowed on the lefthand side of "=".
-The introduced bindings will be accessible in this loop.
-
-The new syntax will look like this:
+The extended syntax for `loop` looks like this:
 
 ```rust
 loop binding = value {
     /* body */
 }
 ```
+
+Just like when using `let` and unlike `if let`/`while let`, `binding` has to be be any irrefutable pattern, which means, that it will match for every value of the type.
 
 The return value of the loop body will implicitely be passed to the next iteration of the loop, so it needs to be the same type as the initial value.
 
