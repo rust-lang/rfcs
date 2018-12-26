@@ -126,7 +126,7 @@ fn run() {
 
 This new approach will not create enum types just to match them directly afterwards, when it's still known, and removes a little unnecessary overhead.
 
-But this comes with problems. When adding a new event type, it has to be added in many places instead of just once in the enum declaration and once in the match. The match even will care if you forget the branch. So this small performance benefit is most likely not worth it.
+But this comes with problems. When adding a new event type, it has to be added in many places instead of just once in the enum declaration and once in the `match` expression using the enum. Because it's an enum, the compiler will even warn, if you forget to add some branch, but not if you forget adding a new method, so this small performance benefit is most likely not worth it.
 
 But this means, the helpful abstraction using enums is not a zero cost abstraction in this scenario.
 
@@ -205,7 +205,7 @@ It may be useful to define a trait, specialized for multiple different enums. Th
 ```rust
 trait Trait {
     enum Enum;
-    fn test<T: Enum>(&self, arg: Enum);
+    fn test<T: Self::Enum>(&self, arg: T);
 }
 ```
 
@@ -267,7 +267,7 @@ It seems the explanation in the previous part is already detailed enough for mos
 
 ## Enums and traits
 
-Enums and Traits can both be used as trait arguments in the same way, but only one enum dependency is allowed. Else it may not be clear, how `match` works for this type.
+Enums and Traits can both be used as requirements for generic type arguments in the same way, but only one enum dependency is allowed. Else it may not be clear, how `match` works for this type.
 
 # Drawbacks
 [drawbacks]: #drawbacks
