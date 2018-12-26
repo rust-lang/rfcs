@@ -49,7 +49,7 @@ Just like when using `let` and unlike `if let`/`while let`, `binding` has to be 
 
 The return value of the loop body will implicitely be passed to the next iteration of the loop, so it needs to be the same type as the initial value.
 
-An example of a simple iteration, which iterates the loop ten times and prints the iteration number would look like this:
+An example of a simple loop, which iterates the loop ten times and prints the iteration number, would look like this:
 
 ```rust
 loop i = 1 {
@@ -111,18 +111,12 @@ loop (mut x, done) = (5, false) {
         break;
     }
     x += x - 3;
-
     println!("{}", x);
-
-    if x % 5 == 0 {
-        (x, true)
-    } else {
-        (x, false)
-    }
+    (x, x % 5 == 0)
 }
 ```
 
-This is, how you would define factorial using a loop now:
+This is how you would define factorial using a loop now:
 
 ```rust
 fn factorial(x: i32) -> i32 {
