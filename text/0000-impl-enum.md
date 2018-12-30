@@ -277,7 +277,19 @@ It's a big extension and may have little advantages.
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-I had different design ideas first, but they were all a bit messy.
+## Constant generics
+
+Just having constant generics could also help here. Enums would just be used as constant generic parameters. Anyway, this would not be as powerful.
+It will not allow to turn traits with generics parameters in the methods into trait objects.
+Also, not only the `match` will be resolved at compile time, the arguments for the events also have to be constant.
+
+Using const generics, the `Updatable` trait could look like this:
+
+ ```
+trait Updateable {
+    fn update<E: const Event>(&self) -> bool; 
+}
+```
 
 ## Const enum
 
@@ -324,9 +336,11 @@ let value: EnumName::Variant2 = EnumName::Variant1;
 # Prior art
 [prior-art]: #prior-art
 
-I didn't find any information about something like this in rust and also don't know about other languages having such a feature, since it's pretty specific to a current rust feature.
-Being able to define multiple method implementations in one function and using compile time evaluation to select a version is also present in [scopes](scopes.rocks) in a powerful way.
+It seems the RFCs #1450 and #2593 have similar goals. 
 
+#1450 is not compatible with this RFC, because it's not fully backwards compatible in the intended way.
+
+#2593 is basically, what this RFC is about, but without the generic features.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
