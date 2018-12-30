@@ -234,7 +234,7 @@ struct Object;
 impl Updateable for Object {
     // update implementation to match new version of Update
     enum Event = Event;
-    fn update<E: Event>(&self, event: E) -> bool {
+    fn update<E: Self::Event>(&self, event: E) -> bool {
         match event {
             Event::Idle => true,
             Event::Exit => false,
