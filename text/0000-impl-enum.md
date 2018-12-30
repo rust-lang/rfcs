@@ -198,9 +198,9 @@ trait Trait {
 }
 ```
 
-The vtable of this trait will contain a new entry for every variant of the enum type. In case of multiple enums as arguments, it will just generate even more entries. Using multiple dynamic enums for traits, that will be made into an object, should be avoided.
+The vtable of this trait will contain a new entry for every variant of the enum type. In case of multiple enums as arguments, it will just generate even more entries. Using multiple generic types for traits, that will be made into an object, should be avoided.
 
-It may be useful to define a trait, specialized for multiple different enums. This will look like this:
+It may be useful to define a trait, specialized for multiple different enums, to generate associated traits. This will look like this:
 
 ```rust
 trait Trait {
