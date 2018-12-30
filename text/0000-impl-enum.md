@@ -310,7 +310,15 @@ But it would also be possible to do this, which is the only way to create specia
 let value: EnumName::Variant1 = EnumName::Variant1;
 ```
 
-But here it's confusing, why this version is selected, so I decided against.
+But since using enum variants as constructors is just create dynamic enums, this would have to be cast back to an enum variant implicitly.
+
+So this syntax could be handled as a special case instead, but this would be confusing.
+
+It's also not clear, how this would work or why this would not work: 
+
+```rust
+let value: EnumName::Variant2 = EnumName::Variant1;
+```
 
 
 # Prior art
