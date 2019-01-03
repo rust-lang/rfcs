@@ -40,7 +40,7 @@ language more extensible for assorted purposes. Among those are:
    one could imagine a special structural record type using the syntax:
 
    ```rust
-   type Thing = #[repr(C)] { foo: 16, bar: u16 };
+   type Thing = #[repr(C)] { foo: u16, bar: u16 };
    ```
 
    This type is ordered according to the C ABI,
