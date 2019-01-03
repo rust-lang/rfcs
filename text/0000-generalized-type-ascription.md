@@ -1281,5 +1281,5 @@ In previous versions of this RFCs some features were proposed including:
 - Making the syntax of function parameters into `fn name(pat0, pat1, ..)`
   rather than `fn name(pat0: type0, pat1: type1, ..)`.
 
-These have since been remove from this particular RFC and will be proposed
+These have since been removed from this particular RFC and will be proposed
 separately instead.
