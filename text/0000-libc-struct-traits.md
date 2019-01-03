@@ -28,58 +28,65 @@ error prone.
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-The feature flag `derive_all` is added to the `libc` library that when enabled adds `Debug`, `Eq`, `Hash`, and `PartialEq` traits for all structs. It will default to off.
+Add an `extra_traits` feature to the `libc` library that enables `Debug`, `Eq`, `Hash`, and `PartialEq` implementations for all structs.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-The `Debug`, `Eq`, `Hash`, and `PartialEq` traits will be added as automatic derives within the `s!` macro in `src/macros.rs` if the `derive_all` feature
+The `Debug`, `Eq`/`PartialEq`, and `Hash` traits will be added as automatic derives within the `s!` macro in `src/macros.rs` if the corresponding feature
 flag is enabled. This won't work for some types because auto-derive doesn't work for arrays larger than 32 elements, so for these they'll be implemented manually. For `libc`
 as of `bbda50d20937e570df5ec857eea0e2a098e76b2d` on `x86_64-unknown-linux-gnu` these many structs will need manual implementations:
 
  * `Debug` - 17
- * `Eq` and `PartialEq` - 46
+ * `Eq`/`PartialEq` - 46
  * `Hash` - 17
 
 # Drawbacks
 [drawbacks]: #drawbacks
 
-The addition of this behind a feature flag does not have a significant effect on build times, but the burden of adding these implementations for new types that
-require manual implementations will be high, possibly hindering new contributors.
+While most structs will be able to derive these implementations automatically, some will not (for example arrays larger than 32 elements). This will make it harder to add
+some structs to `libc`.
+
+This extra trait will increase the testing requirements for `libc`.
 
 # Rationale and alternatives
 [alternatives]: #alternatives
 
 Adding these trait implementations behind a singular feature flag has the best compination of utility and ergonomics out of the possible alternatives listed below:
 
-## Always enabled
+## Always enabled with no feature flags
 
-This was regarded as unsuitable because it doubles to triples compilation time. Compilation times of `libc` was tested at commit `bbda50d20937e570df5ec857eea0e2a098e76b2d`
-with modifications to add derives for the traits discussed here. Some types failed to have these traits derived because of specific fields, so these were removed from the
-struct declaration. The table below shows the results:
+This was regarded as unsuitable because it increases compilation times by 100-200%. Compilation times of `libc` was tested at commit `bbda50d20937e570df5ec857eea0e2a098e76b2d`
+with modifications to add derives for the traits discussed here under the `extra_traits` feature (with no other features). Some types failed to have these traits
+derived because of specific fields, so these were removed from the struct declaration. The table below shows the compilation times:
 
-|                              Build arguments                                               | Time  |
-|--------------------------------------------------------------------------------------------|-------|
-| `cargo clean && cargo build --no-default-features`                                         | 0.84s |
-| `cargo clean && cargo build --no-default-features --features derive_all`                   | 2.17s |
-| `cargo clean && cargo build --no-default-features --release`                               | 0.64s |
-| `cargo clean && cargo build --no-default-features --release --features derive_all`         | 1.80s |
-| `cargo clean && cargo build --no-default-features --features use_std`                      | 1.14s |
-| `cargo clean && cargo build --no-default-features --features use_std,derive_all`           | 2.34s |
-| `cargo clean && cargo build --no-default-features --release --features use_std`            | 0.66s |
-| `cargo clean && cargo build --no-default-features --release --features use_std,derive_all` | 1.94s |
+|                              Build arguments                                                 | Time  |
+|----------------------------------------------------------------------------------------------|-------|
+| `cargo clean && cargo build --no-default-features`                                           | 0.84s |
+| `cargo clean && cargo build --no-default-features --features extra_traits`                   | 2.17s |
+| `cargo clean && cargo build --no-default-features --release`                                 | 0.64s |
+| `cargo clean && cargo build --no-default-features --release --features extra_traits`         | 1.80s |
+| `cargo clean && cargo build --no-default-features --features use_std`                        | 1.14s |
+| `cargo clean && cargo build --no-default-features --features use_std,extra_traits`           | 2.34s |
+| `cargo clean && cargo build --no-default-features --release --features use_std`              | 0.66s |
+| `cargo clean && cargo build --no-default-features --release --features use_std,extra_traits` | 1.94s |
 
-## Default-on feature flag
+## Default-on feature
 
 For crates that are more than one level above `libc` in the dependency chain it will be impossible for them to opt out. This could also happen with a default-off
 feature flag, but it's more likely the library authors will expose it as a flag as well.
 
-## Independent feature flags
+## Multiple feature flags
 
-It wasn't tested how much compilation times increased per-trait, but further mitigation of slow compilation times could done by exposing all traits mentioned here
-behind individual feature flags. By doing this it becomes harder for downstream crates to pass-through these feature flags, so it's likely not a worthwhile tradeoff.
+Instead of having a single `extra_traits` feature, have it and feature flags for each trait individually like:
+
+ * `trait_debug` - Enables `Debug` for all structs
+ * `trait_eg` - Enables `Eq` and `PartialEq` for all structs
+ * `trait_hash` - Enables `Hash` for all structs
+ * `extra_traits` - Enables all of the above through dependent features
+
+This change should reduce compilation times when not all traits are desired. The downsides are that it complicates CI. It can be added in a backwards-compatible
+manner later should compilation times or consumer demand changes.
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
-
-Is `derive_all` a suitable name for this feature flag?
