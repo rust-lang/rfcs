@@ -222,7 +222,17 @@ match expr {
 }
 ```
 
-In the last case, the typing annotation is both *most local* and also does not
+or analogously:
+
+```rust
+if let Some(vec: Vec<u8>) = expr {
+    logic
+} else {
+    logic
+}
+```
+
+In the last two cases, the typing annotation is both *most local* and also does not
 require you to annotate information that is both obvious to the reader
 (who is familiar with `Option<T>`) and to the compiler
 (that `expr : Option<?T>` for some `?T`).
