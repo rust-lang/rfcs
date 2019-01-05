@@ -106,7 +106,7 @@ is valid. This example would be equivalent to
 
 ## Warning When Zero Attributes
 
-This RFC allows `#[cfg_attr(predicate)]`. This is so that macros can generate
+This RFC allows `#[cfg_attr(predicate,)]`. This is so that macros can generate
 it. Having it in the source text emits an `unused_attributes` warning.
 
 ## Attribute Syntax Opportunity Cost
