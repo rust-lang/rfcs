@@ -161,7 +161,7 @@ as an lvalue (i.e., no new temporary), then there is potential for unsoundness:
 ```
 let mut foo: S = ...;
 {
-    let bar = &mut (foo: T);  // S <: T, no coercion required
+    let bar = &mut (foo: T);  // S <: T, coercion from S to T
     *bar = ... : T;
 }
 // Whoops, foo has type T, but the compiler thinks it has type S, where potentially T </: S
@@ -174,19 +174,22 @@ reference to a temporary copy of `x`.
 
 The proposed solution is that type ascription expressions inherit their
 'lvalue-ness' from their underlying expressions. I.e., `e: T` is an lvalue if
-`e` is an lvalue, and an rvalue otherwise. If the type ascription expression is
-in reference context, then we require the ascribed type to exactly match the
-type of the expression, i.e., neither subtyping nor coercion is allowed. These
-reference contexts are as follows (where `<expr>` is a type ascription
-expression):
+`e` is an lvalue, and an rvalue otherwise.
+In order to prevent the unsoundness problem, we use the
+[Rust reference's definition of a *coercion site*](https://doc.rust-lang.org/reference/type-coercions.html#coercion-sites) and extend it by the new rule:
+A type ascription expression `e : T` is a coercion site if and only if it
+occurs at a coercion site itself.
+This way, it's easy to see that:
 
-```
-&[mut] <expr>
-let ref [mut] x = <expr>
-match <expr> { .. ref [mut] x .. => { .. } .. }
-<expr>.foo() // due to autoref
-<expr> = ...;
-```
+* Coercions can only occur where they're already possible without type ascription, so no new unsoundness is introduced.
+* The increase of language complexity due to coercions is minimal.
+* Type ascription is idempotent since applying the same type ascription twice
+  doesn't only preserve the type but also whether the ascribed expression is
+  considered to occur at a coercion site.
+
+With that rule in place, the above example doesn't compile since using `foo` of
+type `S` in a context where a supertype of `S` is required is considered to be
+a coercion and `&mut e` is not a coercion site.
 
 # Drawbacks
 
