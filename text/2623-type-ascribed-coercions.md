@@ -15,6 +15,7 @@ which are contexts in which a coercion can occur.
 For consistency, we change the specification as of [RFC 803] such that a type
 ascribed expression that needs to be coerced can only occur at these coercion
 sites.
+
 # Motivation
 [motivation]: #motivation
 
@@ -131,6 +132,10 @@ that no new unsoundness is introduced.
 Having coercion consistent across language features also minimizes the increase
 of language complexity, which is good for both, the implementors and the users.
 For example, there's no need to define *reference contexts* anymore.
+
+Coercion in type ascribed expressions is
+[not yet implemented](https://play.rust-lang.org/?version=nightly&mode=debug&edition=2018&gist=825110d9744d502cf30544e3c86ed37c).
+This change should make its implementation easier.
 
 The only alternative that I currently see is to disallow coercions in all type
 ascribed expressions, such that the ascribed type always has to match the type
