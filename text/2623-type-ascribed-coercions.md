@@ -16,6 +16,10 @@ For consistency, we change the specification as of [RFC 803] such that a type
 ascribed expression that needs to be coerced can only occur at these coercion
 sites.
 
+Note:
+Type ascribed expressions that need only type inference undergo no changes, so
+they can still occur everywhere.
+
 # Motivation
 [motivation]: #motivation
 
@@ -81,6 +85,9 @@ can be subject to coercion) can be found on
 [the corresponding page of the nomicon](https://doc.rust-lang.org/nomicon/coercions.html).
 The same examples will still compile if the resulting type of the coercion is
 ascribed.
+
+Type ascribed expressions that need only type inference can still occur
+everywhere, like it was the case with [RFC 803].
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
