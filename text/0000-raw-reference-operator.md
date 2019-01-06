@@ -113,8 +113,8 @@ references and raw pointers have the same LLVM type anyway; the new operation
 behaves like `Ref`.
 
 When interpreting MIR in the miri engine, the engine will recognize that the
-value produced by this `Rvalue` has raw pointer type, and hence must not satisfy
-any special invariants.
+value produced by this `Rvalue` has raw pointer type, and hence needs not
+satisfy any special invariants.
 
 When doing unsafety checking, we make references to packed fields that do *not*
 use this new "raw reference" operation a *hard error even in unsafe blocks*
