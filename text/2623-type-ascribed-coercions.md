@@ -4,7 +4,7 @@
 - Rust Issue: _
 
 [RFC 803]: https://github.com/rust-lang/rfcs/blob/master/text/0803-type-ascription.md
-[RCF 2522]: https://github.com/rust-lang/rfcs/pull/2522
+[RFC 2522]: https://github.com/rust-lang/rfcs/pull/2522
 
 # Summary
 [summary]: #summary
@@ -33,7 +33,7 @@ which are contexts in which a coercion **can occur**.
 
 By applying the same rule to type ascribed expressions, we aim to reduce language complexity and increase consistency.
 
-This change shouldn't in any way conflict with [RCF 2522]
+This change shouldn't in any way conflict with [RFC 2522]
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -125,10 +125,32 @@ This change doesn't introduce any new semantics since *coercion sites* and
 # Drawbacks
 [drawbacks]: #drawbacks
 
-There's possibly code that would compile with [RFC 803] and that doesn't
+There's code that would compile with [RFC 803] and that doesn't
 compile with this change.
-Such code would however rely on a coercion in a context that wasn't supposed to
+For example, the following code doesn't compile if `e` isn't of type `T`, even
+if it's coercible to `T`:
+
+```rust
+let _ = e : T; // ERROR, not a coercion site
+```
+
+The reason is that `let _ = <expression>;` is not a coercion site, because it
+relies on type inference.
+
+Such code does however rely on a coercion in a context that wasn't supposed to
 introduce coercions.
+There's also no need to support this, since you can still type ascribe the
+identifier whose type is to be infered:
+
+```rust
+let _ : T = e;
+```
+
+This alternative is what the above mentioned compile error should suggest.
+It should work in all cases as soon as [RFC 2522] gets merged.
+
+This drawback **might actually be an advantage** in the sense that there should be
+one and only one obvious way to do something.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -155,3 +177,10 @@ ascribed expressions, such that the ascribed type always has to match the type
 of the expression exactly.
 This would however possibly be cumbersome and the consensus in [RFC 803] was
 that we want some coercions in type ascribed expressions.
+
+# Unresolved questions
+
+* In [drawbacks] we've seen an example that doesn't compile but has an
+  existing alternative.
+  Are there any examples that don't compile and don't have an obvious
+  alternative?
