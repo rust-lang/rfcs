@@ -153,10 +153,5 @@ This change should make its implementation easier.
 The only alternative that I currently see is to disallow coercions in all type
 ascribed expressions, such that the ascribed type always has to match the type
 of the expression exactly.
-This would however possibly be cumbersome and break the invariant that those
-two lines are interchangable:
-
-```rust
-let _ : T = e;
-let _     = e : T:
-```
+This would however possibly be cumbersome and the consensus in [RFC 803] was
+that we want some coercions in type ascribed expressions.
