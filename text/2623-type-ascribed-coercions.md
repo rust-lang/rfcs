@@ -76,6 +76,12 @@ There are several solutions to this problem:
   would be possible anyway.
   The above example wouldn't compile, because `&mut e` is not a coercion site.
 
+More examples of what's a coercion site (i. e. a context in which an expression
+can be subject to coercion) can be found on
+[the corresponding page of the nomicon](https://doc.rust-lang.org/nomicon/coercions.html).
+The same examples will still compile if the resulting type of the coercion is
+ascribed.
+
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
