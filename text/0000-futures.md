@@ -1,4 +1,4 @@
-- Feature Name: (fill me in with a unique ident, my_awesome_feature)
+- Feature Name: futures_api 
 - Start Date: 2018-11-09
 - RFC PR: (leave this empty)
 - Rust Issue: (leave this empty)
@@ -176,23 +176,10 @@ and which can be stored by the implementation of those `Futures`s. Whenever a
 waker in order to inform the executor that the task which owns the `Future`
 should get scheduled and executed again.
 
-The RFC defines two concrete `Waker` types, with which implementors of `Futures`
-and asynchronous functions will interact: `Waker` and `LocalWaker`. Both of
-these types define a `wake(&self)` function which is used to schedule the task
-that is associated to the `Waker` again.
-
-The difference between those types is that `Waker` implements the `Send` and `Sync`
-marker traits, while `LocalWaker` doesn't. This means a `Waker` can be sent to
-another thread and stored there in order to wake up the associated task later on,
-while a `LocalWaker` cannot be sent. Depending on the capabilities of the underlying
-executor a `LocalWaker` can be converted into a `Waker`. Most executors in the
-ecosystem will implement this functionality. The exception will be highly
-specialized executors, which e.g. want to avoid the cost of all synchronization.
-
-Calling the `wake()` method on a `Waker` will in general be more expensive than
-on a `LocalWaker` instance, due to additional synchronization.
-
-Executors will always pass a `LocalWaker` instance to the tasks they poll.
+The RFC defines a concrete `Waker` types with which implementors of `Futures`
+and asynchronous functions will interact. This type defines a `wake(&self)`
+function which is used to schedule the task that is associated to the `Waker`
+to be polled again.
 
 The mechanism through which tasks get scheduled again depends on the executor
 which is driving the task.
@@ -203,23 +190,25 @@ Possible ways of waking up a an executor include:
   to get woken up by a syscall like `write` to a pipe.
 - If the executor's thread is parked, the wakeup call needs to unpark it.
 
-To accommodate this behavior, the `Waker` and `LocalWaker` types are
-defined through a `RawWaker` type, which is an struct that defines a dynamic
-dispatch mechanism, which consists of an raw object pointer and a virtual function
-pointer table (vtable). This mechanism allows implementers of an executor to
-customize the behavior of `Waker` and `LocalWaker` objects by providing an
-executor-specific `RawWaker`.
+To allow executors to implement custom wakeup behavior, the `Waker` type
+internally contains a type called `RawWaker`, which consists of a  pointer
+to a custom wakeable object and a reference to a virtual function
+pointer table (vtable) which provides functions to `clone`, `wake`, and
+`drop` the underlying wakeable object.
 
 This mechanism is chosen in favor of trait objects since it allows for more
 flexible memory management schemes. `RawWaker` can be implemented purely in
 terms of global functions and state, on top of reference counted objects, or
-in other ways.
+in other ways. This strategy also makes it easier to provide different vtable
+functions that will perform different behaviors despite referencing the same
+underlying wakeable object type.
 
 The relation between those `Waker` types is outlined in the following definitions:
 
 ```rust
-/// A `RawWaker` allows the implementor of a task executor to customize the
-/// behavior of `LocalWaker`s and `Waker`s.
+/// A `RawWaker` allows the implementor of a task executor to create a `Waker`
+/// which provides customized wakeup behavior.
+///
 /// It consists of a data pointer and a virtual function pointer table (vtable) that
 /// customizes the behavior of the `RawWaker`.
 #[derive(PartialEq)]
@@ -234,41 +223,26 @@ pub struct RawWaker {
     pub vtable: &'static RawWakerVTable,
 }
 
-/// A virtual function pointer table (vtable) that allows to customize the
-/// behavior of a `RawWaker`.
-/// The pointers which get passed to all functions inside the vtable are the
-/// values of the `data` field.
+/// A virtual function pointer table (vtable) that specifies the behavior
+/// of a `RawWaker`.
+///
+/// The pointer passed to all functions inside the vtable is the `data` pointer
+/// from the enclosing `RawWaker` object.
 #[derive(PartialEq, Copy, Clone)]
 pub struct RawWakerVTable {
     /// This function will be called when the `RawWaker` gets cloned, e.g. when
-    /// the `Waker` or `LocalWaker` in which the `RawWaker` is stored gets cloned.
+    /// the `Waker` in which the `RawWaker` is stored gets cloned.
     ///
     /// The implementation of this function must retain all resources that are
     /// required for this additional instance of a `RawWaker` and associated
-    /// task. The implementation must return a valid `RawWaker` that behaves
-    /// equivalent to the `RawWaker` that got cloned. E.g. cloning a `RawWaker`
-    /// that implemented a thread-safe wakeup for use in `Waker` must return
-    /// a `RawWaker` that implements the same wakeup behavior.
+    /// task. Calling `wake` on the resulting `RawWaker` should result in a wakeup
+    /// of the same task that would have been awoken by the original `RawWaker`.
     pub clone: unsafe fn(*const ()) -> RawWaker,
-    /// This function will be called when a `LocalWaker` should be converted into
-    /// a thread-safe `Waker`. The implementation of this function must return
-    /// a new `RawWaker` which can fulfill the requirements of `Waker`. It can
-    /// exchange the vtable for that purpose. E.g. it might replace the `wake`
-    /// function with a varient that supports cross-thread wakeups.
-    ///
-    /// The old `LocalWaker` which contained the data pointer should be consumed
-    /// while performing the operation. After the operation the `LocalWaker`
-    /// won't exist anymore, only the new `Waker`.
-    /// This means that if both instances would utilize the same reference-counted
-    /// data, changing the reference count would not be necessary.
-    ///
-    /// If a conversion is not supported, the implementation should return
-    /// `None`. In this case the implementation must still make
-    /// sure that the data pointer which is passed to the function is correctly
-    /// released, e.g. by calling the associated `drop_fn` on it.
-    pub into_waker: unsafe fn(*const ()) -> Option<RawWaker>,
-    /// This function will be called when `wake` is called on the `RawWaker`.
+
+    /// This function will be called when `wake` is called on the `Waker`.
+    /// It must wake up the task associated with this `RawWaker`.
     pub wake: unsafe fn(*const ()),
+
     /// This function gets called when a `RawWaker` gets dropped.
     ///
     /// The implementation of this function must make sure to release any
@@ -334,86 +308,6 @@ impl Drop for Waker {
         unsafe { (self.waker.vtable.drop_fn)(self.waker.data) }
     }
 }
-
-/// A `LocalWaker` is a handle for waking up a task by notifying its executor that it is ready to be run.
-///
-/// This is similar to the `Waker` type, but cannot be sent across threads.
-/// Task executors can use this type to implement more optimized singlethreaded wakeup behavior.
-///
-/// This handle encapsulates a `RawWaker` instance, which defines the
-/// executor-specific wakeup behavior.
-///
-/// Implements `Clone`, but neither `Send` nor `Sync`
-pub struct LocalWaker {
-    waker: RawWaker,
-}
-
-impl LocalWaker {
-    /// Wake up the task associated with this `LocalWaker`.
-    pub fn wake(&self) {
-        // The actual wakeup call is delegated through a virtual function call
-        // to the implementation which is defined by the executor
-        unsafe { (self.waker.vtable.wake)(self.waker.data) }
-    }
-
-    /// Converts the `LocalWaker` into `Waker`, which can be sent across
-    /// thread boundaries.
-    ///
-    /// This operation consumes the `LocalWaker`.
-    ///
-    /// This function can panic if the associated executor does not support
-    /// getting woken up from a different thread.
-    pub fn into_waker(self) -> Waker {
-        match self.try_into_waker() {
-            Some(waker) => waker,
-            None => panic!("Conversion from LocalWaker into Waker is not supported"),
-        }
-    }
-
-    /// Tries to convert the `LocalWaker` into a `Waker`, which can be sent
-    /// across thread boundaries.
-    ///
-    /// This operation consumes the `LocalWaker`.
-    ///
-    /// Returns None if the if the associated executor does not support
-    /// getting woken up from a different thread.
-    pub fn try_into_waker(self) -> Option<Waker> {
-        unsafe {
-            let maybe_raw_waker = (self.waker.vtable.into_waker)(self.waker.data);
-            // Avoid that the drop runs on self, which would e.g. decrease
-            // the refcount on it. The object has been consumed or converted
-            // by the `into_waker` function.
-            mem::forget(self);
-            match maybe_raw_waker {
-                Some(rw) => Some(Waker::new_unchecked(rw)),
-                None => None,
-            }
-        }
-    }
-
-    /// Returns whether or not this LocalWaker and other LocalWaker awaken the same task.
-    ///
-    /// This function works on a best-effort basis, and may return false even
-    /// when the LocalWakers would awaken the same task. However, if this function
-    /// returns true, it is guaranteed that the LocalWakers will awaken the same task.
-    ///
-    /// This function is primarily used for optimization purposes.
-    pub fn will_wake(&self, other: &LocalWaker) -> bool {
-        self.waker == other.waker
-    }
-
-    /// Creates a new `LocalWaker` from `RawWaker`.
-    ///
-    /// The method cannot check whether `RawWaker` fulfills the required API
-    /// contract to make it usable for `LocalWaker` and is therefore unsafe.
-    pub unsafe fn new_unchecked(waker: RawWaker) -> LocalWaker {
-        LocalWaker {
-            waker: waker,
-        }
-    }
-}
-
-// The implementations of `Clone` and `Drop` follow what is shown in for `Waker`.
 ```
 
 `Waker`s must fulfill the following requirements:
@@ -428,90 +322,6 @@ impl LocalWaker {
 
 An executor that instantiates a `RawWaker` must therefore make sure that all
 these requirements are fulfilled.
-
-Since many of the ownership semantics that are required here can easily be met
-through a reference-counted `Waker` implementation, a convienence method for
-defining `Waker`s is provided, which does not require implementing a `RawWaker`
-and the associated vtable manually.
-
-This convience method is based around the `ArcWake` trait. An implementor of
-an executor can define a type which implements the `ArcWake` trait as defined
-below. The `ArcWake` trait defines the associated method `into_local_waker`,
-which affords retrieving a `LocalWaker` instance from an `Arc` of this type.
-The returned instance will guarantee that the `wake()` and `wake_local` methods
-of the type which implements `ArcWake` are called, whenever `wake()` is called
-on a `Waker` or `LocalWaker`.
-
-```rust
-/// A way of waking up a specific task.
-///
-/// By implementing this trait, types that are expected to be wrapped in an `Arc`
-/// can be converted into `LocalWaker` and `Waker` objects.
-/// Those Wakers can be used to signal executors that a task it owns
-/// is ready to be `poll`ed again.
-pub trait ArcWake: Send + Sync {
-    /// Indicates that the associated task is ready to make progress and should
-    /// be `poll`ed.
-    ///
-    /// This function can be called from an arbitrary thread, including threads which
-    /// did not create the `ArcWake` based `Waker`.
-    ///
-    /// Executors generally maintain a queue of "ready" tasks; `wake` should place
-    /// the associated task onto this queue.
-    fn wake(arc_self: &Arc<Self>);
-
-    /// Indicates that the associated task is ready to make progress and should be polled.
-    /// This function is like `wake`, but will only be called from the thread on which this
-    /// `ArcWake` was created.
-    ///
-    /// This function is marked unsafe because callers must guarantee that
-    /// they call it only on the task on which the `ArcWake` had been created.
-    ///
-    /// Executors generally maintain a queue of "ready" tasks; `wake_local` should place
-    /// the associated task onto this queue.
-    unsafe fn wake_local(arc_self: &Arc<Self>) {
-        Self::wake(arc_self);
-    }
-
-    /// Creates a `LocalWaker` from an Arc<T>, if T implements ArcWake.
-    ///
-    /// The returned `LocalWaker` will call `wake.wake_local()` when awoken.
-    ///
-    /// The returned `LocalWaker` can be converted into a `Waker` through
-    /// it's `into_waker()` method. If `wake()` is called on this `Waker`,
-    /// the `wake()` function that is defined inside this trait will get called.
-    fn into_local_waker(wake: Arc<Self>) -> LocalWaker where Self: Sized;
-}
-```
-
-To see how this might be used in practice, here's a simple example sketch:
-
-```rust
-struct ExecutorInner {
-    sync_ready_queue: SynchronousQueue,
-    optimized_queue: UnsafeCell<Vec<Task>>,
-}
-
-struct Task {
-    future: ...,
-    executor: Arc<ExecutorInner>,
-}
-
-impl ArcWake for Task {
-    fn wake(self: &Arc<Self>) {
-        self.executor.sync_ready_queue.push(self.clone());
-    }
-
-    fn wake_local(self: &Arc<Self>) {
-        (&mut *self.executor.optimized_queue.get()).push(self.clone())
-    }
-}
-```
-
-The use of `&Arc<Self>` rather than just `&self` makes it possible to work directly with
-the `Arc` that contains the object which implements `ArcWake`. This enables
-use-cases like cloning it.
-
 
 ## `core::future` module
 
@@ -537,16 +347,16 @@ pub trait Future {
     /// Once a future has finished, clients should not `poll` it again.
     ///
     /// When a future is not ready yet, `poll` returns `Poll::Pending` and
-    /// stores a clone of the [`LocalWaker`] to be woken once the future can
+    /// stores a clone of the [`Waker`] to be woken once the future can
     /// make progress. For example, a future waiting for a socket to become
-    /// readable would call `.clone()` on the [`LocalWaker`] and store it.
+    /// readable would call `.clone()` on the [`Waker`] and store it.
     /// When a signal arrives elsewhere indicating that the socket is readable,
-    /// `[LocalWaker::wake]` is called and the socket future's task is awoken.
+    /// `[Waker::wake]` is called and the socket future's task is awoken.
     /// Once a task has been woken up, it should attempt to `poll` the future
     /// again, which may or may not produce a final value.
     ///
     /// Note that on multiple calls to `poll`, only the most recent
-    /// [`LocalWaker`] passed to `poll` should be scheduled to receive a
+    /// [`Waker`] passed to `poll` should be scheduled to receive a
     /// wakeup.
     ///
     /// # Runtime characteristics
@@ -569,17 +379,6 @@ pub trait Future {
     /// thread pool (or something similar) to ensure that `poll` can return
     /// quickly.
     ///
-    /// # [`LocalWaker`], [`Waker`] and thread-safety
-    ///
-    /// The `poll` function takes a [`LocalWaker`], an object which knows how to
-    /// awaken the current task. [`LocalWaker`] is not `Send` nor `Sync`, so
-    /// to make thread-safe futures the [`LocalWaker::into_waker`] and
-    /// [`LocalWaker::try_into_waker`] methods should be used to convert
-    /// the [`LocalWaker`] into a thread-safe version.
-    /// [`LocalWaker::wake`] implementations have the ability to be more
-    /// efficient, however, so when thread safety is not necessary,
-    /// [`LocalWaker`] should be preferred.
-    ///
     /// # Panics
     ///
     /// Once a future has completed (returned `Ready` from `poll`),
@@ -589,11 +388,10 @@ pub trait Future {
     ///
     /// [`Poll::Pending`]: ../task/enum.Poll.html#variant.Pending
     /// [`Poll::Ready(val)`]: ../task/enum.Poll.html#variant.Ready
-    /// [`LocalWaker`]: ../task/struct.LocalWaker.html
-    /// [`LocalWaker::into_waker`]: ../task/struct.LocalWaker.html#method.into_waker
-    /// [`LocalWaker::wake`]: ../task/struct.LocalWaker.html#method.wake
     /// [`Waker`]: ../task/struct.Waker.html
-    fn poll(self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Self::Output>;
+    /// [`Waker::into_waker`]: ../task/struct.Waker.html#method.into_waker
+    /// [`Waker::wake`]: ../task/struct.Waker.html#method.wake
+    fn poll(self: Pin<&mut Self>, lw: &Waker) -> Poll<Self::Output>;
 }
 ```
 
@@ -621,7 +419,7 @@ important rationale is to provide an orthogonal, compositional semantics for `as
 that mirrors normal `fn`, rather than *also* baking in a particular style of
 error handling.
 
-- Passing a `LocalWaker` explicitly, rather than stashing it in thread-local storage.
+- Passing a `Waker` explicitly, rather than stashing it in thread-local storage.
 This has been a hotly debated issue since futures 0.1 was released, and this
 RFC does not seek to relitigate it, but to summarize, the major advantages are (1)
 when working with manual futures (as opposed to `async` blocks) it's much easier to
@@ -755,6 +553,48 @@ conservative, forward-compatible option, and has proven itself in practice**.
 It's possible to add `MoveFuture`, together with a blanket impl, at any point in the future.
 Thus, starting with just the single `Future` trait as proposed in this RFC keeps our options
 maximally open while we gain experience.
+
+## Rationale, drawbacks and alternatives to the wakeup design (`Waker`)
+
+Previous iterations of this proposal included a separate wakeup type,
+`LocalWaker`, which was `!Send + !Sync` and could be used to implement
+optimized executor behavior without requiring atomic reference counting
+or atomic wakeups. However, in practice, these same optimizations are
+available through the use of thread-local wakeup queues, carrying IDs
+rather than pointers to wakeup objects, and tracking an executor ID or
+thread ID to perform a runtime assertion that a `Waker` wasn't sent across
+threads. For a simple example, a single thread-locked executor with zero
+atomics can be implemented as follows:
+
+```rust
+struct Executor {
+    // map from task id (usize) to task
+    tasks: Slab<Task>,
+    // list of woken tasks to poll
+    work_queue: VecDeque<usize>,
+}
+
+thread_local! {
+  pub static EXECUTOR: RefCell<Option<Executor>> = ...;
+}
+
+static VTABLE: &RawWakerVTable = &RawWakerVTable {
+    clone: |data: *const ()| RawWaker { data, vtable: VTABLE, },
+    wake: |data: *const ()| EXECUTOR.borrow_mut().as_mut().expect(...).work_queue.push(data as usize),
+    drop: |_: *const ()| {},
+};
+```
+
+While this solution gives inferior error messages to the `LocalWaker` approach
+(since it can't panic until `wake` occurs on the wrong thread, rather than
+panicking when `LocalWaker` is transformed into a `Waker`), it dramatically
+simplifies the user-facing API by de-duplicating the `LocalWaker` and `Waker`
+types.
+
+In practice, it's also likely that the most common executors in the Rust
+ecosystem will continue to be multithreaded-compatible (as they are today),
+so optimizing for the ergonomics of this case is prioritized over better
+error messages in the more heavily specialized case.
 
 # Prior art
 [prior-art]: #prior-art
