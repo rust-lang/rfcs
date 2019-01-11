@@ -344,6 +344,10 @@ However, doing so even once means that you will need to release new versions
 of your crate. If you instead use `accessible(..)` you won't need to use
 it even once unless the name of the path changes in-between.
 
+Another use case `accessible(..)` supports that `version(..)` doesn't is checking
+support for atomic types, e.g. `accessible(::std::sync::atomic::AtomicU8)`.
+This subsumes the proposed `#[cfg(target_has_atomic = "..")]` construct.
+
 ### Preventing relative paths
 
 The reason why we have enforced that all paths must start with `::` inside
