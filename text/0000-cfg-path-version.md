@@ -42,10 +42,9 @@ reduce "dependency hell" by enhancing cargo for:
 
 [RFC 2483]: https://github.com/rust-lang/rfcs/pull/2483
 
-...not much focus has been given to how you can improve the situation can be
-improved by enhancing conditional compilation to extend how many versions back
-a crate supports. This becomes critically important if and when we gain LTS
-channels as proposed by [RFC 2483].
+...not much focus has been given to how conditional compilation can be improved
+to extend how many versions back a crate supports. This becomes critically
+important if and when we gain LTS channels as proposed by [RFC 2483].
 
 [version_check]: https://crates.io/crates/version_check
 
