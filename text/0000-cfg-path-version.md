@@ -227,11 +227,12 @@ However, there will be features in the future to use this mechanism on.
 ## `#[cfg(version(<semver>))]`
 
 To the `cfg` attribute, a `version` flag is added.
-This flag requires that a string literal be specified in it inside parenthesis.
-The string literal must have the format:
+This flag has the following grammar (where `\d` is any digit in `0` to `9`):
 
-```
-semver : \d(.\d)?(.\d)? ;
+```rust
+flag : "version" "(" semver ")" ;
+semver : digits ("." digits ("." digits)?)? ;
+digits : \d+ ;
 ```
 
 [caret requirements]: https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#caret-requirements
