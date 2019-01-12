@@ -1,4 +1,4 @@
-- Feature Name: parital_initialization_and_write_references
+- Feature Name: parital_initialization
 
 - Start Date: 2018-08-29
 
@@ -10,19 +10,18 @@
 
 [summary]: #summary
 
-This RFC aims to allow direct initialization for optimization, and partial struct and enum initialization, for ergonomics. It will do so through the usage of a two new reference type, `&out T` and `&uninit T` (the name is not important to me).
+This RFC aims to allow direct ergonomic initialization for optimization, and partial struct and enum initialization. It will do so through the usage of a one new reference type, `&uninit T` (the name is not important to me).
 
 # Motivation
 
 [motivation]: #motivation
 
-The builder pattern was created as a way to try and solve the issue of not having partial initialization, but it has problems with large structs, and that the `*Builder` struct must necessarily be larger than the target struct, null-ptr optimizations not-withstanding. Also, it is very expensive to move large structs, and relying on the optimizer to optimize out moves isn't very good, `&out T` could serve as a way to directly place things into the desired memory location and to maintain write-only memory. `&uninit T` will serve the purpose of partial initialization and direct initialization.
+The builder pattern was created as a way to try and solve the issue of not having partial initialization, but it has problems with large structs, and that the `*Builder` struct must necessarily be larger than the target struct, null-ptr optimizations not-withstanding. Also, it is very expensive to move large structs, and relying on the optimizer to optimize out moves isn't very robust, `&uninit T` could serve as a way to directly place things into the desired memory location and partially initialize that memory.
 
 # Guide-level explanation
 
 [guide-level-explanation]: #guide-level-explanation
 
-`&out T` is a write-only reference to `T`, where `T: Copy`. The bound is necessary as it is not safe to overwrite `Drop` types without invoking the destructor. Does not run destructors on write. See [unresolved questions](#unresolved-questions) for a more in depth explanation. \
 `&uninit T` is a write-once reference to `T`, after the first write, it is allowed to read the values (behaves exactly like `&mut T`). Does not run destructors on the first write. \
 
 For all examples, I will use these two structs
@@ -168,7 +167,7 @@ fn invalid_init_bar_v2(bar: &uninit Bar) {
 }
 ```
 
-If a closure captures a `&uninit T`, then it becomes a `FnOnce`, because of the write semantics, the destructors will not be run the first time.
+If a closure captures a `&uninit T`, then it becomes a `FnOnce`, because of the write semantics change after the first write.
 
 ```Rust
 let x: Foo;
@@ -178,39 +177,6 @@ let init = || x.a = 12; // init: FnOnce()  -> ()
 
 **Note on Panicky Functions:**
 If a function panics, then all fields initialized in that function will be dropped. No cross-function analysis will be done.
-
-## `&out T`
-
-Using `&out T`, we can directly initialize a value and guarantee to write only behavior. \
-That would add give a memory location to write to directly instead of relying on move-elimination optimizations.
-
-```Rust
-#[derive(Clone, Copy)]
-struct Rgb(pub u8, pub u8, pub u8);
-/// This abstraction that exposes a Frame Buffer allocated by the OS, and is unsafe to read from
-struct FrameBuffer( ... );
-
-impl FrameBuffer {
-    /// initializes the FrameBuffer in place
-    fn new(&uninit self) { ... }
-
-    /// gets a write only refernce to pixel at position (row, col)
-    fn write_to_pixel(&mut self, row: usize, col: usize) -> &out Rgb {
-         ...
-    }
-}
-```
-This could be used like this
-```Rust
-let buffer;
-FrameBuffer::new(&uninit buffer);
-
-*buffer.write_to_pixel(0, 0) = Rgb(50, 50, 255);
-*buffer.write_to_pixel(10, 20) = Rgb(0, 250, 25);
-/// ...
-```
-
-**Note:** `Rgb` is `Copy`, if it wasn't we could not gaurentee that we can safely overwrite it
 
 ## Constructors and Direct Initialization
 
@@ -239,22 +205,11 @@ impl<T> Vec<T> {
 }
 ```
 
-and maintain write-only buffers
-```Rust
-struct WriteOnly([u8; 1024]);
-
-impl WriteOnly {
-    pub fn write(&out self, byte: u8, location: usize) {
-        self.0[location] = byte; // currently not possible to index like this, but we could imagine a IndexOut, that will handle this case
-    }
-}
-```
-
 # Reference-level explanation
 
 [reference-level-explanation]: #reference-level-explanation
 
-**NOTE** This RFC does NOT aim to create new raw pointer types, so no `*out T` or `*uninit T`. There is no point in creating these.
+**NOTE** This RFC does NOT aim to create new raw pointer types, so no `*uninit T`. There is no point in creating these.
 
 ## Rules of `&uninit T`
 
@@ -289,15 +244,6 @@ init(a: &uninit Foo) { ... }
 init(&uninit x); // this function will overwrite, but not drop to the old value of x, so this is a compile-time error
 ```
 
-## Rules of `&out T`
-
-`&out T` should follow some rules in so that is is easy to reason about `&out T` locally and maintain soundness
-- `&out T` follows the same rules as `&mut T` for the borrow checker
-- Writing does not drop old value.
-    - Dropping requires at least one read, which is not possible with a write-only reference
-- You can take a `&out T` on any `T: Copy`
-    - because destructors are never run on write, `T: Copy` is necessary to guarantee no custom destructors.
-
 ## Coercion Rules
 
  - `&T` // no change
@@ -305,10 +251,8 @@ init(&uninit x); // this function will overwrite, but not drop to the old value 
  - `&mut T`
     - `*mut T`
     - `&T`
-    - `&out T` if, `T: Copy`
- - `&out T`
-    - `*mut T` // for similar reasons to why `&T` only coerces to `*const T`
- - `&uninit T` - `*mut T`, `&out T` if `T: Copy` and `&T` or `&mut T` once initialized depending on if the variable is mutable or not.
+ - `&uninit T` - `*mut T`, and `&T` or `&mut T` once initialized depending on if the variable binding is mutable or not.
+
  ```Rust
  struct Foo(i32, i32);
  let foo: Foo;
@@ -326,11 +270,11 @@ init(&uninit x); // this function will overwrite, but not drop to the old value 
 
 ## `self`
 
-We will add `&uninit self` and `&out self` as sugar for `self: &uninit Self` and `self: &out Self` respectively. This is for consistency with `&self`, and `&mut self`
+We will add `&uninit self` as sugar for `self: &uninit Self`. This is for consistency with `&self`, and `&mut self`
 
 ## Panicky functions in detail
 
-Because we can pass `&uninit T` and `&out T` to functions, we must consider what happens if a function panics. For example:
+Because we can pass `&uninit T` to functions, we must consider what happens if a function panics. For example:
 ```Rust
 fn init_foo_can_panic(foo: &uninit Foo) {
     foo.b = "Hello World".to_string();
@@ -345,18 +289,9 @@ fn init_foo_can_panic(foo: &uninit Foo) {
     foo.c = Bar { d = 10, e = 12.0 };
 }
 
-fn out_bar_panics(foo: &out Bar) {
-    // When we panic here we drop here we don't ever drop any value behind a &out because &out can never have a destructor, it doesn't matter
-    panic!("Oh no, something went wrong!");
-}
-
 let x: Foo;
 
 init_foo_can_panic(&uninit x);
-
-let x: Bar;
-
-out_bar_panics(&out x); // when we take a &out, we are asserting that the old value doesn't need to drop, and doesn't matter. This is fine because Bar is Copy and does not have a destructor.
 ```
 
 # Drawbacks
@@ -369,10 +304,6 @@ out_bar_panics(&out x); // when we take a &out, we are asserting that the old va
 # Rationale and alternatives
 
 [rationale-and-alternatives]: #rationale-and-alternatives
-
-## `T: !Drop` for `&out T`
-
-If negative trait bounds become stable, the bounds for `&out T` will change to `T: !Drop`. But this does not seem like the correct bound, see [here](#unresolved-questions) for why.
 
 ## Allow Drop types to be partially initialized
 
@@ -404,24 +335,18 @@ x = Bar { d: xd, e: xe };
 
 But this would not be able to replace placement new as it can't handle `&uninit T` through function boundaries. Also this would not solve the problem of direct-initialization.
 
+## `MaybeInit`
+
+`MaybeInit` is almost like `&uninit`, but it requires the use of unsafe to get a value out of it, and it does not work on a value in place, i.e. the value must be moved out of the `MaybeInit` after initialization.
+
 # Prior art
 [prior-art]: #prior-art
 
-Out pointers in C++, (not exactly the same, but similar idea)
-
-`out T` in  C#
+~~
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
- - What is the correct bounds for `T` in `&out T`? conservatively, `T: Copy` works and is sound. But as [@TechnoMancer](https://internals.rust-lang.org/u/TechnoMancer) pointed out, `T: !Drop` is not the correct bound. For example, `Wrapper(Vec<String>)`, clearly cannot be overwritten safely, because `Vec<String>`, must drop do deallocate the `Vec`, but `Wrapper` itself does not implement drop. Therefore either a new trait is needed (but unwanted), or we must keep the `Copy` bound.
-     - On this note should we even have a bound on `T` for `&out T`, it does not break memory safety to remove the `Copy` bound, but may cause logic errors. So this error could be demoted to an error-by-default-lint instead.
- - Should we introduce a `*out T` raw pointer, that does not drop its value upon write, for all `T: Copy`.
-     - `&out T` coerces to `*out T`
-     - no reading from `*out T`
- - Should we introduce a trait `OverwriteSafe`, which is auto-implemented (like `Send` and `Sync`) where all types `T` are `OverwriteSafe` unless, and use this as the bound for `&out T`
-    - `T: Drop`
-    - one of `T`'s fields is not `OverwriteSafe`
  - We can use drop flags to check when a variable has been initialized, and use that information to allow conditional initialization. But should we do this?
 ---
 
@@ -461,6 +386,10 @@ Removed comment about `!Drop` bound for `&out T`, because it is incorrect.
 Removed the Casting Rules Section, because it was wrong, instead to convert raw pointers to references, use a reborrow. for example if `x: *mut T`, then `unsafe { &out *x }` will turn it into an `&out T`.
 
 Added an unresolved question, about use of drop flags to allow for conditional initialization.
+
+edit 8:
+
+Removed all bits about `&out T` because `&out T` can be implemented as a library item see [my comment here](https://github.com/rust-lang/rfcs/pull/2534#issuecomment-453720019) for details about that.
 
 ---
 I would like to thank all the people who helped refine this proposal to its current state: [@rkruppe](https://internals.rust-lang.org/u/rkruppe), [@earthengine](https://internals.rust-lang.org/u/earthengine),  [@gbutler](https://internals.rust-lang.org/u/gbutler),
