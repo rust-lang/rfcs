@@ -146,7 +146,12 @@ Nursery and rust-lang crates can be deprecated only through an RFC. This is
 expected to be a rare occurrence.
 
 Deprecated crates move to rust-lang-deprecated and are subsequently minimally
-maintained. Alternatively, if someone volunteers to maintain the crate,
+maintained. For crates that are popular in the ecosystem (defined as at least
+50,000 crates.io downloads in the last 90 days), minimal maintenance includes
+merging and publishing reasonable bug fixes and platform support for platforms
+that are at least tier 3.
+
+Alternatively, if someone volunteers to maintain the crate,
 ownership can be transferred externally.
 
 ## Advertising
