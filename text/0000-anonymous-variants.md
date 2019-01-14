@@ -44,7 +44,7 @@ fn multiple_errors(val: Weak<str>) -> Result<i64, (NoneError|ParseIntError)> {
 
 Concise guide
 ------
-Anonymous variant types are anonymous sum types, which mean, like enums, their possible values are several different variants. They are declared like tuples, but with vertical bars instead of commas. The variants are referred to for construction and matching by the anonymous variant type name or a placeholder for one, followed by two colons, followed by a (zero-indexed) number for the variant. Like enums, variant order in an anonymous variant type matters, and variants are not automatically combined together or rearranged. 
+Anonymous variant types are anonymous sum types, which mean, like enums, their possible values are several different variants. They are declared like tuples, but with vertical bars instead of commas. The variants are referred to for construction and matching by the anonymous variant type name or a placeholder for one, followed by two colons, followed by a (zero-indexed) number for the variant. Variant order in an anonymous variant type matters, and variants are not automatically combined together or rearranged. 
 ```rust
 // Declare an anonymous variant type
 let x = (i32 | &str)::0(1_i32);
@@ -58,7 +58,7 @@ match x {
 
 Detailed user guide
 ------
-Anonymous variant types are used in Rust as an ad-hoc type for a value which can have multiple variants. Much like enums are a named type for values which can take on many variants, each associated with an identifier, anonymous variant types are a type for values which can take on many variants, each identified by their position in an anonymous variant type. These variants are called anonymous variants, as they are identified by their position on an anonymous variant type. 
+Anonymous variant types are used in Rust as an ad-hoc type for a value which can have multiple variants. Much like enums are a named type for values which can take on many variants, each associated with an identifier, anonymous variant types are a type for values which can take on many variants, each identified by their position in an anonymous variant type. These variants are called anonymous variants, as they are identified by their position in an anonymous variant type. 
 
 An anonymous variant type name consists of a parentheses-enclosed list of type names separated by vertical bars, and optionally followed by a trailing vertical bar. Anonymous variant type placeholders are named similarly, but using type placeholders as well as type names. Because of syntax restrictions and to make generic implementations over a practical subset of anonymous variant types feasible, there must be at least one variant, and each variant is associated with exactly one type. Use the never type `!` for a type with zero variants, the unit type `()` for the type of a variant that does not need its single field, and tuples for the type of a variant that wants to hold more than one field. These restrictions may be relaxed by future RFCs. 
 ```rust
@@ -285,7 +285,7 @@ It may seem to be intuitive for (T|T) to be equivalent to T or (T|), or to forbi
 
 Algebraic sum types are simple in comparison: (T|T) is separate from (T|) which in turn is separate from T, (U|V) is distinct from (V|U) (but can be converted with a simple shim function that also works for (T|T)), and the variants will stay distinct in generic code no matter which types are used for the variants. 
 
-So why named rather than numbered variants? Aren't numbered variants more brittle and harder to use?
+So why numbered rather than named variants? Aren't numbered variants more brittle and harder to use?
 ------
 
 This comes down to the purpose of the new types. 
