@@ -6,8 +6,17 @@
 # Summary
 [summary]: #summary
 
-Use an obvious syntax for subslice patterns - `..` and `..PAT`.  
-If syntactic ambiguities arise in the future, always disambiguate in favor of subslice patterns.
+Permit matching sub-slices and sub-arrays with the syntax `..`.
+Binding a variable to the expression matched by a subslice pattern can be done
+using the existing `<IDENT> @ <PAT>` syntax, for example:
+
+```rust
+// Binding a sub-array:
+let [x, y @ .., z] = [1, 2, 3, 4]; // `y: [i32, 2] = [2, 3]`
+
+// Binding a sub-slice:
+let [x, y @ .., z]: &[u8] = &[1, 2, 3, 4]; // `y: &[i32] = &[2, 3]`
+```
 
 # Motivation
 [motivation]: #motivation
@@ -25,7 +34,81 @@ This form is already used in the meaning "rest of the list" in struct patterns, 
 patterns and tuple patterns so it would be logical to use it for slice patterns as well.  
 And indeed, in unstable Rust `..` is used in this meaning since long before 1.0.
 
-### The full form: `..PAT` or `PAT..`
+# Guide-level explanation
+[guide-level-explanation]: #guide-level-explanation
+
+Sub-slices and sub-arrays can be matched using `..` and `<IDENT> @ ..` can be used to bind
+these sub-slices and sub-arrays to an identifier.
+
+```rust
+// Matching slices using `ref` patterns:
+let v = vec![1, 2, 3];
+match v[..] {
+    [1, ref subslice @ .., 4] => assert_eq!(subslice.len(), 1),
+    [5, ref subslice @ ..] => assert_eq!(subslice.len(), 2),
+    [ref subslice @ .., 6] => assert_eq!(subslice.len(), 2),
+    [x, .., y] => assert!(v.len() >= 2),
+    [..] => {} // Always matches
+}
+
+// Matching slices using default-binding-modes:
+let v = vec![1, 2, 3];
+match &v[..] {
+    [1, subslice @ .., 4] => assert_eq!(subslice.len(), 1),
+    [5, subslice @ ..] => assert_eq!(subslice.len(), 2),
+    [subslice @ .., 6] => assert_eq!(subslice.len(), 2),
+    [x, .., y] => assert!(v.len() >= 2),
+    [..] => {} // Always matches
+}
+
+// Matching arrays by-value:
+let v = [1, 2, 3];
+match v {
+  [1, subarray @ .., 3] => assert_eq!(subarray, [2]),
+  [5, subarray @ ..] => has_type::<[i32; 2]>(subarray),
+  [subarray @ .., 6] => has_type::<[i32, 2]>(subarray),
+  [x, .., y] => has_type::<[i32, 1]>(x),
+  [..] => {},
+}
+```
+
+# Reference-level explanation
+[reference-level-explanation]: #reference-level-explanation
+
+`..` can be used as a pattern for matching sub-slices and sub-arrays.
+It is treated as a "non-reference-pattern" for the purpose of determining default-binding-modes,
+and so shifts the binding mode to by-`ref` or by-`ref mut` when used to match a subsection of a
+reference or mutable reference to a slice or array.
+
+`@` can be used to bind the result of a `..` pattern to an identifier.
+
+ When used to match against a non-reference slice (`[u8]`), `x @ ..` would attempt to bind
+by-value, which would fail in the case that users haven't enabled `feature(unsized_locals)`
+(since otherwise it's not possible to bind `[u8]` to a variable directly).
+
+# Drawbacks
+[drawbacks]: #drawbacks
+
+None known.
+
+# Rationale and alternatives
+[alternatives]: #alternatives
+
+The `PAT..` alternative was discussed in the motivational part of the RFC.
+
+More complex syntaxes derived from `..` are possible, they use additional tokens to avoid the
+ambiguity with ranges, for example
+[`..PAT..`](https://github.com/rust-lang/rust/issues/23121#issuecomment-301485132), or
+[`.. @ PAT`](https://github.com/rust-lang/rust/issues/23121#issuecomment-280920062) or
+[`PAT @ ..`](https://github.com/rust-lang/rust/issues/23121#issuecomment-280906823), or other
+similar alternatives.  
+We reject these syntaxes because they only bring benefits in incredibly contrived cases using a
+feature that doesn't even exist yet, but normally they only add symbolic noise.
+
+More radical syntax changes not keeping consistency with `..`, for example
+[`[1, 2, 3, 4] ++ ref v`](https://github.com/rust-lang/rust/issues/23121#issuecomment-289220169).
+
+### `..PAT` or `PAT..`
 
 If `..` is used in the meaning "match the subslice (`>=0` elements) and ignore it", then it's
 reasonable to expect that syntax for "match the subslice to a pattern" should be some variation
@@ -38,9 +121,7 @@ The issue is that these syntaxes are ambiguous with half-bounded ranges `..END` 
 To be precise, such ranges are not currently supported in patterns, but they may be supported in
 the future.
 
-We argue that this issue is not important and we can choose this syntax for subslice patterns
-anyway.  
-First of all, syntactic ambiguity is not inherently bad, we see it every day in expressions like
+Syntactic ambiguity is not inherently bad. We see it every day in expressions like
 `a + b * c`. What is important is to disambiguate it reasonably by default and have a way to
 group operands in the alternative way when default disambiguation turns out to be incorrect.  
 In case of slice patterns the subslice interpretation seems overwhelmingly more likely, so we
@@ -70,7 +151,7 @@ In 2014 the syntax was changed to `PAT..` by [RFC 202](https://github.com/rust-l
 That RFC received almost no discussion before it got merged and its motivation is no longer
 relevant because arrays now use syntax `[T; N]` instead of `[T, ..N]` used in old Rust.
 
-Thus we are proposing to switch back to `..PAT`.
+This RFC originally proposed to switch back to `..PAT`.
 Some reasons to switch:
 - Symmetry with expressions.  
 One of the general ideas behind patterns is that destructuring with
@@ -92,67 +173,16 @@ range pattern, then it means that we consumed too much and need to reinterpret t
 somehow. It's probably possible to make this work, but it's some headache that we would like to
 avoid if possible.
 
-# Guide-level explanation
-[guide-level-explanation]: #guide-level-explanation
+This RFC no longer includes the addition of `..PAT` or `PAT..`, but merely `..` as it results in
+a smaller starting surface-area for the feature which can be expanded in the future if necessary.
+The currently-proposed change is an extremely minimal addition to patterns (`..` for slices) which
+already exists in other forms (e.g. tuples) and generalizes well to pattern-matching out sub-tuples,
+e.g. `let (a, b @ .., c) = (1, 2, 3, 4);`.
 
-Subslice (aka "rest of the slice") in a slice patterns can be matched to a pattern `PAT` using
-syntax `..PAT`.  
-`..` with the pattern omitted is a sugar for `.._` (wildcard pattern) so it means
-"ignore the rest of the slice".
-
-Example (without `feature(match_default_bindings)`):
-```rust
-let v = vec![1, 2, 3];
-match v[..] {
-    [1, ..ref subslice, 4] => assert_eq!(subslice.len(), 1),
-    [5, ..ref subslice] => assert_eq!(subslice.len(), 2),
-    [..ref subslice, 6] => assert_eq!(subslice.len(), 2),
-    [x, .., y] => assert!(v.len() >= 2),
-    [..] => {} // Always matches
-}
-```
-Example (with `feature(match_default_bindings)`):
-```rust
-let v = vec![1, 2, 3];
-match &v[..] {
-    [1, ..subslice, 4] => assert_eq!(subslice.len(), 1),
-    [5, ..subslice] => assert_eq!(subslice.len(), 2),
-    [..subslice, 6] => assert_eq!(subslice.len(), 2),
-    [x, .., y] => assert!(v.len() >= 2),
-    [..] => {} // Always matches
-}
-```
-
-# Reference-level explanation
-[reference-level-explanation]: #reference-level-explanation
-
-Subslice in a slice patterns can be matched to a pattern `PAT` using syntax `..PAT`.  
-`..` with the pattern omitted is a sugar for `.._`.
-
-If ambiguity with some other syntactic construction arises in the future, disambiguation will be
-performed in favor of the subslice pattern.
-
-# Drawbacks
-[drawbacks]: #drawbacks
-
-None known.
-
-# Rationale and alternatives
-[alternatives]: #alternatives
-
-The `PAT..` alternative was discussed in the motivational part of the RFC.
-
-More complex syntaxes derived from `..` are possible, they use additional tokens to avoid the
-ambiguity with ranges, for example
-[`..PAT..`](https://github.com/rust-lang/rust/issues/23121#issuecomment-301485132), or
-[`.. @ PAT`](https://github.com/rust-lang/rust/issues/23121#issuecomment-280920062) or
-[`PAT @ ..`](https://github.com/rust-lang/rust/issues/23121#issuecomment-280906823), or other
-similar alternatives.  
-We reject these syntaxes because they only bring benefits in incredibly contrived cases using a
-feature that doesn't even exist yet, but normally they only add symbolic noise.
-
-More radical syntax changes not keeping consistency with `..`, for example
-[`[1, 2, 3, 4] ++ ref v`](https://github.com/rust-lang/rust/issues/23121#issuecomment-289220169).
+Additionally, `@` is more consistent with the types of patterns that would be allowable for matching
+slices (only identifiers), whereas `PAT..`/`..PAT` suggest the ability to write e.g. `..(1, x)` or
+`..SomeStruct { x }` sub-patterns, which wouldn't be possible since the resulting bound variables
+don't form a slice (since they're spread out in memory).
 
 # Prior art
 [prior-art]: #prior-art
