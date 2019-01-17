@@ -1,7 +1,7 @@
-- Feature Name: (libc_struct_traits)
-- Start Date: (2017-12-05)
-- RFC PR: (leave this empty)
-- Rust Issue: (leave this empty)
+- Feature Name: `libc_struct_traits`
+- Start Date: 2017-12-05
+- RFC PR: [rust-lang/rfcs#2235](https://github.com/rust-lang/rfcs/pull/2235)
+- Rust Issue: [rust-lang/rust#57715](https://github.com/rust-lang/rust/issues/57715)
 
 # Summary
 [summary]: #summary
