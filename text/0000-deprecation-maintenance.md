@@ -70,7 +70,7 @@ In evaluating a PR for a deprecated crate meeting the popularity threshold, the 
 
 * Does this PR fix a bug in the crate? Alternatively, are these the minimal changes required to make the crate function properly on a new platform?
 
-* Does this PR keep the public API of the crate the same? (This is a bellwhether for changes that are not bug fixes).
+* Does this PR keep the public API of the crate the same? (This is a bellwether for changes that are not bug fixes).
 
 If the answer to these questions is yes, then the PR is a likely candidate for merging, and should also trigger a point release of the crate. Of course, the reviewer should also do a normal code review. The reviewer may reasonably use other information to come to a decision regarding whether the PR is a reasonable bug fix or adds platform support.
 
