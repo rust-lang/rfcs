@@ -1031,8 +1031,6 @@ For any items outside the group, you may assume their signatures,
 but not the default definitions given. An example:
 
 ```rust
-use std::marker::PhantomData;
-
 trait Fruit {
     type Details;
     fn foo();
@@ -1040,8 +1038,8 @@ trait Fruit {
     fn baz();
 }
 
-struct Citrus<S> { species: PhantomData<S> }
-struct Orange<V> { variety: PhantomData<V> }
+struct Citrus<S> { species: S }
+struct Orange<V> { variety: V }
 struct Blood;
 struct Common;
 
