@@ -1,4 +1,4 @@
-- Feature Name: formal_function_param_attrs
+- Feature Name: `param_attrs`
 - Start Date: 2018-10-14
 - RFC PR: 
 - Rust Issue: 
@@ -6,35 +6,142 @@
 # Summary
 [summary]: #summary
 
-This RFC proposes to allow attributes in formal function parameter position.
+Allow attributes in formal function parameter position.
+For example, consider a Jax-Rs-style HTTP API:
+
+```rust
+#[resource(path = "/foo/bar")]
+impl MyResource {
+    #[get("/person/:name")]
+    fn get_person(
+        &self,
+        #[path_param = "name"] name: String, // <-- formal function parameter.
+        #[query_param = "limit"] limit: Option<u32>, // <-- here too.
+    ) {
+        ...
+    }
+}
+```
 
 # Motivation
 [motivation]: #motivation
 
-Having attributes on formal function parameters allows for certain different use cases.
+Allowing attributes on formal function parameters enables external tools and
+compiler internals to take advantage of the additional information that the
+attributes provide.
 
-## Example: Handling of unused parameter
+Conditional compilation with `#[cfg(..)]` is also
+facilitated by allowing more ergonomic addition and removal of parameters.
 
-In today's Rust it is possible to prefix the name of an identifier to silence the compiler about it being unused.
-With attributes in formal function parameter position we could hypothetically have an attribute like `#[unused]` that explicitely states this for a given parameter.
-Note that `#[unused]` is not part of this proposal but merely a simple usecase.
+Moreover, procedural macro authors can use annotations on
+these parameters and thereby richer DSLs may be encoded by users.
+We already saw an example of such a DSL in the [summary].
+To further illustrate potential usages, let's go through a few examples.
+
+## Compiler internals: Improving `#[rustc_args_required_const]`
+
+[memory_grow]: https://doc.rust-lang.org/nightly/core/arch/wasm32/fn.memory_grow.html
+
+A number of platform intrinsics are currently provided by rust compilers.
+For example, we have [`core::arch::wasm32::memory_grow`][memory_grow] which,
+for soundness reasons, requires that when `memory_grow` is applied,
+`mem` must provided a `const` expression:
 
 ```rust
-fn foo(#[unused] bar: u32) -> bool;
+#[rustc_args_required_const(0)]
+pub fn memory_grow(mem: u32, delta: usize) -> usize { .. }
 ```
 
-Instead of
+This is specified in a positional manner, referring to `mem` by `0`.
+While this is serviceable, this RFC enables us encode the invariant more directly:
 
 ```rust
-fn foo(_bar: u32) -> bool
+pub fn memory_grow(
+    #[rustc_args_required_const] mem: u32,
+    delta: usize
+) -> usize {
+    ..
+}
 ```
 
-Especially Rust beginners might find the meaning of the above code snippet to be clearer.
+## Property based testing of polymorphic functions
 
-## Example: Low-level code
+[QuickCheck]: https://www.cs.tufts.edu/~nr/cs257/archive/john-hughes/quick.pdf
+[proptest]: https://github.com/altsysrq/proptest
+[quickcheck]: https://github.com/BurntSushi/quickcheck
 
-For raw pointers that are oftentimes used when operating with C code one could provide the compiler with additional information about the set of parameters.
-You could for example mirror C's restrict keyword or even be more explicit by stating what pointer argument might overlap.
+Property based testing a la [QuickCheck] allows users to state properties they
+expect their programs to adhere to. These properties are then tested by
+randomly generating input data and running the properties with those.
+The properties are can then be falsified by finding counter-examples.
+If no such example are found, the test passes and the property is "verified".
+In the Rust ecosystem, property based testing is primarily provided by the
+[proptest] and [quickcheck] crates where the former uses integrated shrinking
+whereas the latter uses type based shrinking.
+
+Consider a case where we want to test a "polymorphic" function on a number
+of concrete types.
+
+```rust
+#[proptest] // N.B. Using proptest doesn't look like this today.
+fn prop_my_property(#[types(T = u8, u16, u32)] elem: Vec<T>, ..) { .. }
+```
+
+Here, we've overloaded the test for the types `u8`, `u16`, and `u32`.
+The test will then act as if you had written:
+
+```rust
+#[proptest]
+fn prop_my_property_u8(elem: Vec<u8>, ..) { .. }
+
+#[proptest]
+fn prop_my_property_u16(elem: Vec<u16>, ..) { .. }
+
+#[proptest]
+fn prop_my_property_u32(elem: Vec<u32>, ..) { .. }
+```
+
+By allowing attributes on function parameters, the test can be specified
+more succinctly and without repetition as done in the first example.
+
+## FFI and interoperation with other languages
+
+[wasm_bindgen]: https://github.com/rustwasm/wasm-bindgen
+
+There's interest in using attributes on function parameters for
+[`#[wasm_bindgen]`][wasm_bindgen]. For example, to interoperate well
+with TypeScript's type system, you could write:
+
+```rust
+#[wasm_bindgen]
+impl RustLayoutEngine {
+    #[wasm_bindgen(constructor)]
+    pub fn new() -> Self { Default::default() }
+
+    #[wasm_bindgen(typescript(return_type = "MapNode[]"))]
+    pub fn layout(
+        &self, 
+        #[wasm_bindgen(typescript(type = "MapNode[]"))]
+        nodes: Vec<JsValue>, 
+        #[wasm_bindgen(typescript(type = "MapEdge[]"))]
+        edges: Vec<JsValue>
+    ) -> Vec<JsValue> {
+        ..
+    }
+}
+```
+
+Currently, in `#[wasm_bindgen]`, the arguments and return type of `layout`
+are all `any[]`. By using allowing the annotations above, tighter types can
+be used which can help in catching problems at compile time rather than
+having UI bugs later.
+
+## Greater control over optimizations in low-level code
+
+For raw pointers that are oftentimes used when operating with C code,
+additional information could be given to the compiler about the set of parameters.
+You could for example mirror C's restrict keyword or even be more explicit by
+stating which pointer arguments may overlap:
 
 ```rust
 fn foo(
@@ -44,182 +151,327 @@ fn foo(
 );
 ```
 
-Which might state that the pointers `in_a` and `in_b` might overlap but `out` is non overlapping.
-Please note that I am *not* proposing to actually add this to the language!
+This would tell the compiler or some static analysis tool that the pointers
+`in_a` and `in_b` might overlap but `out` is non overlapping. Note that neither 
+`overlaps_with` and `restrict` are part of this proposal; rather, they are
+examples of what this RFC facilities.
 
-## Example: Usable with cfg_attr
+## Handling of unused parameter
 
-```rust
-fn foo(#[cfg_attr(foo, bar)] baz: u32);
-```
-
-Which states that `baz` is attributed with the attribute `bar` if `foo` evaluates to `true`.
-
-## Example: Documentation comments
-
-Since documentation comments are attributes in their underlying representation we could have doc comments
-for single parameters like shown below.
+In today's Rust it is possible to prefix the name of an identifier to silence
+the compiler about it being unused. With attributes on formal parameters,
+we could hypothetically have an attribute like `#[unused]` that explicitly
+states this for a given parameter. Note that `#[unused]` is not part of this
+proposal but merely a simple use-case. In other words, we could write (1):
 
 ```rust
-/// Description of foo.
-fn foo(
- /// Description of foo's first parameter bar
- bar: u32
-);
+fn foo(#[unused] bar: u32) -> bool { .. }
 ```
 
-Of course this raises other questions:
-- How does rust-fmt handle these?
-- Are they allowed or should we postpone their allowance to another RFC?
+instead of (2):
 
-## Example: Procedural macros and custom attributes
+```rust
+fn foo(_bar: u32) -> bool { .. }
+```
 
-Also procedural macros and custom attributes could greatly benefit from having their own defined custom attributes on formal parameters.
-
-Examples will follow.
+Especially Rust beginners might find the meaning of (1) to be clearer than (2).
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-Formal parameters of functions, methods, closures and functions in trait definitions may have attributes attached to them.
-This allows to provide additional information to a given formal parameter.
+Formal parameters of `fn` definitions as well closures parameters may have
+attributes attached to them. Thereby, additional information may be provided.
 
-For the next examples the hypothetical `#[unused]` attribute means that the attributed parameter is unused in the associated implementation.
+For the purposes of illustration, let's assume we have the attributes
+`#[orange]` and `#[lemon]` available to us.
 
-## Examples
+## Basic examples
 
-The syntax for this is demonstrated by the code below:
-
-```rust
-// Function
-fn foo(#[unused] bar: u32) { .. }
-
-// Methods & trait & definitions:
-// - `self` can also be attributed
-fn foo(#[unused] self, ..) { .. }
-fn foo(#[unused] &self, ..) { .. }
-fn foo(#[unused] &mut self, ..) { .. }
-
-// Closures
-|#[unused] x| { .. }
-```
-
-### Trait declarations
+The syntax for attaching attributes to parameters is shown in the snippet below:
 
 ```rust
-fn foo(#[unused] self);
+// Free functions:
+fn foo(#[orange] bar: u32) { .. }
+
+impl Alpha { // In inherent implementations.
+    // - `self` can also be attributed:
+    fn bar(#[lemon] self, #[orange] x: u8) { .. }
+    fn baz(#[lemon] &self, #[orange] x: u8) { .. }
+    fn quux(#[lemon] &mut self, #[orange] x: u8) { .. }
+
+    ..
+}
+
+impl Beta for Alpha { // Also works in trait implementations.
+    fn bar(#[lemon] self, #[orange] x: u8) { .. }
+    fn baz(#[lemon] &self, #[orange] x: u8) { .. }
+    fn quux(#[lemon] &mut self, #[orange] x: u8) { .. }
+
+    ..
+}
+
+fn foo() {
+    // Closures:
+    let bar = |#[orange] x| { .. };
+    let baz = |#[lemon] x: u8, #[orange] y| { .. };
+}
 ```
 
-Note that while the `#[unused]` attribute is syntactically
-possible to put here it doesn't actually make sense semantically
-since method declarations have no implementation.
-Other attributes might be very useful as for formal parameters in a method declaration.
+## Trait definitions
 
-## Errors & Warnings
+An `fn` definition doesn't need to have a body to permit parameter attributes.
+Thus, in `trait` definitions, we may write:
 
-### Warning: Unused attribute
-
-When using an non-defined attribute that is not used by either the language or a custom defined procedural macro.
-
-```
-warning: unused attribute
- --> src/main.rs:2
-  |
-2 | #[foo] bar: u32
-  | ^^^^^^^^^
-  |
-  = note: #[warn(unused_attributes)] on by default
+```rust
+trait Beta {
+    fn bar(#[lemon] self, #[orange] x: u8);
+    fn baz(#[lemon] &self, #[orange] x: u8);
+    fn quux(#[lemon] &mut self, #[orange] x: u8);
+}
 ```
 
-### Error: Malformed attribute
+In Rust 2015, since anonymous parameters are allowed, you may also write:
 
-When using a known attribute that is not defined for formal parameters such as when attributing `fn main` with `#[allow]`.
-
-Example shows the usage of the known attribute `#[inline]` used on a formal parameter without being defined for it.
-
-```
-error[E0452]: malformed lint attribute
- --> src/main.rs:2
-  |
-2 | #[inline] bar: u32
-  | ^^^^^^^^
+```rust
+trait Beta {
+    fn bar(#[lemon] self, #[orange] u8); // <-- Note the absence of `x`!
+}
 ```
 
-The same applies for attributes with an incorrect format such as `#[inline(key = value)]` that is handled as its done in other contexts.
+## `fn` types
 
+You can also use attributes in function pointer types.
+For example, you may write:
+
+```rust
+type Foo = fn(#[orange] x: u8);
+type Bar = fn(#[orange] String, #[lemon] y: String);
+```
+
+## Built-in attributes
+
+Attributes attached to formal parameters do not have an inherent meaning in
+the type system or in the language. Instead, the meaning is what your
+procedural macros, the tools you use, or what the compiler interprets certain
+specific attributes as.
+
+As for the built-in attributes and their semantics, we will, for the time being,
+only permit the following attributes on parameters:
+
+- Lint check attributes, that is:
+  `#[allow(C)]`, `#[warn(C)]`, `#[deny(C)]`, `#[forbid(C)]`,
+  and tool lint attributes such as `#[allow(clippy::foobar)]`.
+
+- Conditional compilation attributes:
+
+    - `#[cfg_attr(...)]`, e.g.
+
+      ```rust
+      fn foo(#[cfg_attr(bar, orange)] x: u8) { .. }
+      ```
+
+      If `bar` is active, this is equivalent to:
+
+      ```rust
+      fn foo(#[orange] x: u8) { .. }
+      ```
+
+      And otherwise equivalent to:
+
+      ```rust
+      fn foo(x: u8) { .. }
+      ```
+
+    - `#[cfg(...)]`, e.g.
+
+      ```rust
+      fn foo(#[cfg(bar)] x: u8, y: u16) { .. }
+      ```
+
+      If `bar` is active, this is equivalent to:
+
+      ```rust
+      fn foo(x: u8, y: u16) { .. }
+      ```
+
+      And otherwise equivalent to:
+
+      ```rust
+      fn foo(y: u16) { .. }
+      ```
+
+All other built-in attributes will be rejected with a semantic check.
+For example, you may not write:
+
+```rust
+fn foo(#[inline] bar: u32) { .. }
+```
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-## Description
+## Grammar
 
-In accordance to the RFC for [attributes for generic params](https://github.com/frol/rust-rfcs/blob/master/text/1327-dropck-param-eyepatch.md)
-this feature is guarded by the `formal_function_param_attrs` feature guard.
+Let `OuterAttr` denote the production for an attribute `#[...]`.
 
-The grammar of the following language items has to be adjusted to allow that
-constructions like the following will become legal.
-
-- Function definitions
-- Method definitions
-- Trait function declarations and defnitions (with or without default impl)
-- Closure definitions
-
-### Example: A single attributed parameter for function decl or definition
+On the formal parameters of an `fn` item, including on method receivers,
+and irrespective of whether the `fn` has a body or not, `OuterAttr+` is allowed.
+For example, all the following are valid:
 
 ```rust
-fn foo(#[bar] baz: bool);
-fn bar(#[bar] qux: bool) { println!("hi"); }
+fn g1(#[attr1] #[attr2] pat: Type) { .. }
+
+fn g2(#[attr1] x: u8) { .. }
+
+fn g3(#[attr] self) { .. }
+
+fn g4(#[attr] &self) { .. }
+
+fn g5<'a>(#[attr] &mut self) { .. }
+
+fn g6<'a>(#[attr] &'a self) { .. }
+
+fn g7<'a>(#[attr] &'a mut self) { .. }
+
+fn g8(#[attr] self: Self) { .. }
 ```
 
-### Example: For methods or trait function definitions
+The attributes here apply to the parameter *as a whole*,
+e.g. in `g2`, `#[attr]` applies to `pat: Type` as opposed to `pat`.
+
+### Variadics
+
+Attributes may also be attached to `...` on variadic functions, e.g.
 
 ```rust
-fn into_foo(#[bar] self);
-fn foo(#[bar] &self);
-fn foo_mut(#[bar] &mut self);
+extern "C" {
+    fn foo(x: u8, #[attr] ...);
+}
 ```
 
-### Example: Multiple attributed parameters
+### Anonymous parameters in Rust 2015
+
+In Rust 2015 edition, as `fn`s may have anonymous parameters, e.g.
 
 ```rust
-// Twice the same attribute
-fn fst_foo(#[bar] baz: bool, #[bar] qiz: u32);
-
-// Different attributes
-fn snd_foo(#[bar] baz: bool, #[qux] qiz: u32);
+trait Foo { fn bar(u8); }
 ```
 
-### Example: Any structured attribute
+attributes are allowed on those, e.g.
 
 ```rust
-fn foo(#[bar(Hello)] baz: bool);
-fn bar(#[qux(qiz = World)] baz: bool);
+trait Foo { fn bar(#[attr] u8); }
 ```
 
-### Example: Closures
+### `fn` pointers
+
+[lykenware/gll]: https://github.com/lykenware/gll/
+
+Assuming roughly the following type grammar for function pointers
+(in the [lykenware/gll] notation):
 
 ```rust
-let mut v = [5, 4, 1, 3, 2];
-v.sort_by(|#[bar] a, #[baz] b| a.cmp(b));
+Type =
+  | ..
+  | FnPtr:{
+      binder:ForAllBinder? unsafety:"unsafe"? { "extern" abi:Abi }?
+      "fn" "(" inputs:FnSigInputs? ","? ")" { "->" ret_ty:Type }?
+    }
+  ;
+
+FnSigInputs =
+  | Regular:FnSigInput+ % ","
+  | Variadic:VaradicTail
+  | RegularAndVariadic:{ inputs:FnSigInput+ % "," "," "..." }
+  ;
+
+VaradicTail = "...";
+FnSigInput = { pat:Pat ":" }? ty:Type;
 ```
 
-## Errors
+we change `VaradicTail` to:
 
-Users can encounter two different errorneous situations.
+```rust
+VaradicTail = OuterAttr* "...";
+```
 
-### Unknown attribute used
+and change `FnSigInput` to:
 
-When a user is using an attribute that is not known at the point of its invokation
-a warning is generated similar to other usages of unknown attributes in the language.
+```rust
+FnSigInput = OuterAttr* { pat:Pat ":" }? ty:Type;
+```
 
-This may for example happen in the context of a procedural macros.
+Similar to parameters in `fn` items, the attributes here also apply to the
+pattern and the type if both are present, i.e. `pat: ty` as opposed to `pat`.
 
-### Malformed attribute
+### Closures
 
-When a user is using a known or language defined attribute at a non supported location
-an error is generated like in other usages of malformed attributes in the language.
-An example can be seen in the previous section.
+Given roughly the following expression grammar for closures:
 
+```rust
+Expr = attrs:OuterAttr* kind:ExprKind;
+ExprKind =
+  | ..
+  | Closure:{
+      by_val:"move"?
+      "|" args:ClosureArg* % "," ","? "|" { "->" ret_ty:Type }? body:Expr
+    }
+  ;
+
+ClosureArg = pat:Pat { ":" ty:Type }?;
+```
+
+we change `ClosureArg` into:
+
+```rust
+ClosureArg = OuterAttr* pat:Pat { ":" ty:Type }?;
+```
+
+As before, when the type is specified, `OuterAttr*` applies to `pat: Type`
+as opposed to just `pat`.
+
+## Static semantics
+
+Attributes on formal parameters of functions, closures and function pointers
+have no inherent meaning in the type system or elsewhere. Semantics, if there
+are any, are given by the attributes themselves on a case by case basis or by
+tools external to a Rust compiler.
+
+### Built-in attributes
+
+The built-in attributes that are permitted on the parameters are:
+
+1. lint check attributes including tool lint attributes.
+
+2. `cfg_attr(..)` unconditionally.
+
+3. `cfg(..)` unconditionally.
+
+   When a `cfg(..)` is active, the formal parameter will be included
+   whereas if it is inactive, the formal parameter will be excluded.
+
+All other built-in attributes are for the time being rejected with a *semantic*
+check resulting in a compilation error.
+
+### Macro attributes
+
+Finally, a registered `#[proc_macro_attribute]` may not be attached directly
+to a formal parameter. For example, if given:
+
+```rust
+#[proc_macro_attribute]
+pub fn attr(args: TokenStream, input: TokenStream) -> TokenStream { .. }
+```
+
+then it is not legal to write:
+
+```rust
+fn foo(#[attr] x: u8) { .. }
+```
+
+## Dynamic semantics
+
+No changes.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -233,40 +485,97 @@ Having attributes in many different places of the language complicates its gramm
 
 ## Why is this proposal considered the best in the space of available ideas?
 
-This proposal clearly goes the path of having attributes in more places of the language.
-It nicely plays together with the advance of procedural macros and macros 2.0 where users
-can define their own attributes for their special purposes.
+This proposal goes the path of having attributes in more places of the language.
+It nicely plays together with the advance of procedural macros and macros 2.0
+where users can define their own attributes for their special purposes.
 
 ## Alternatives
 
-An alternative to having attributes for formal parameters might be to just use the current
-set of available attributable items to store meta information about formal parameters like
-in the following example:
+An alternative to having attributes for formal parameters might be to just use
+the current set of available attributable items to store meta information about
+formal parameters like in the following example:
 
 ```rust
 #[ignore(param = bar)]
 fn foo(bar: bool);
 ```
 
-Note that this does not work in all situations (for example closures) and might involve even
-more complexity in user's code than simply allowing formal function parameter attributes.
+An example of this is `#[rustc_args_required_const]` as discussed
+in the [motivation].
+
+Note that this does not work in all situations (for example closures) and might
+involve even more complexity in user's code than simply allowing attributes on
+formal function parameters.
 
 ## Impact
 
-The impact will most certainly be that users might create custom attributes when
-designing procedural macros involving formal function parameters.
+The impact will be that users might create custom attributes when designing
+procedural macros involving formal function parameters.
 
 There should be no breakage of existing code.
+
+## Variadics and `fn` pointers
+
+In this proposal it is legal to write `#[attr] ...` as well as `fn(#[attr] u8)`.
+The primary justification for doing so is that conditional compilation with
+`#[cfg(..)]` is facilitated. Moreover, since the `fn` type grammar and
+that of `fn` items is somewhat shared, and since `...` is the tail of a
+list, allowing attributes there makes for a simpler grammar.
 
 # Prior art
 [prior-art]: #prior-art
 
-Some example languages that allows for attributes in formal function parameter positions are C# and C++.
+Some example languages that allow for attributes on formal function parameter
+positions are Java, C#, and C++.
 
-Also note that attributes in other parts of the Rust language could be considered prior art to this proposal.
+Also note that attributes in other parts of the Rust language could be
+considered prior art to this proposal.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-We might want to introduce new attributes for the language like the mentioned `#[unused]` attribute.
-However, this RFC proposes to decide upon this in another RFC.
+None as of yet.
+
+# Future possibilities
+
+## Attributes in more places
+
+[RFC 2602]: https://github.com/rust-lang/rfcs/pull/2602
+
+In the pursuit of allowing more flexible DSLs and more ergonomic conditional
+compilation, [RFC 2602] builds upon this RFC.
+
+## Documentation comments
+
+In this RFC, we have not allowed documentation comments on parameters.
+For example, you may not write:
+
+```rust
+fn foo(
+    /// Some description about `bar`.
+    bar: u32
+) {
+    ..
+}
+```
+
+Neither may you write the desugared form:
+
+```rust
+fn foo(
+    #[doc = "Some description about `bar`."]
+    bar: u32
+) {
+    ..
+}
+```
+
+In the future, we may want to consider supporting this form of documentation.
+This will require support in `rustdoc` to actually display the information.
+
+## `#[proc_macro_attribute]`
+
+In this RFC we stated that `fn foo(#[attr] x: u8) { .. }`,
+where `#[attr]` is a `#[proc_macro_attribute]` is not allowed.
+In the future, if use cases arise to justify a change,  we could lift this
+restriction such that transformations can be done directly on `x: u8`.
