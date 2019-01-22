@@ -17,6 +17,8 @@ A real advantage of this feature, however, is the fact that symbols will be *gua
 
 Sometimes a crate may know exactly which dll it wants to link against, but which import library it ends up linking against is unknown. In particular the d3dcompiler.lib provided by the Windows SDK can link to several different versions of the d3dcompiler dll depending on which version of the Windows SDK the user has installed. `kind="dll"` would allow `winapi` to link to a specific version of that dll and ensure the symbols are correct for that version.
 
+This would also allow `winapi` to not have to bundle import libraries for the `pc-windows-gnu` targets, saving on bandwidth and disk space for users.
+
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
@@ -84,3 +86,7 @@ No native languages are known of that allow link time linking to symbols from dl
 [future-possibilities]: #future-possibilities
 
 With the features described in this RFC, we would be one step closer towards a fully standalone pure Rust target for Windows that does not rely on any external libraries (aside from the obvious and unavoidable runtime dependence on system libraries), allowing for easy installation and incredibly easy cross compilation.
+
+If that were to happen, we'd no longer need to pretend the pc-windows-gnu toolchain is standalone, and we'd be able to stop bundling MinGW bits entirely in favor of the user's own MinGW installation, thereby resolving a bunch of issues.
+
+Also users would stop complaining about having to install several gigabytes of VC++ just to link their Rust binaries.
