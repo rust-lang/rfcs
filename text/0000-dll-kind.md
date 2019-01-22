@@ -51,7 +51,7 @@ Add a new attribute `#[link_ordinal]` taking a single numerical value, such as `
 Add a new value `dll` to the `kind` property of the `link` attribute. When this kind is specified, the `name` must explicitly include the extension. In addition, for all items in the associated extern block Rust will *keep* the symbol mangled, instead of having an unmangled symbol. Rust will emit an idata section that maps from the *mangled* symbol to a symbol in the specified dll. The symbol in the dll that the idata section maps to depends on which attributes are specified on the item in question:
 
 * If `#[link_ordinal]` is specified the idata section will map from the mangled symbol to the ordinal specified in the dll.
-* If `#[link_name] is specified the idata section will map from the mangled symbol to the name specified in the dll, without any calling convention decorations added. If calling convention decorations are desired they must be specified explicitly in the value of the `#[link_name]` attribute.
+* If `#[link_name]` is specified the idata section will map from the mangled symbol to the name specified in the dll, without any calling convention decorations added. If calling convention decorations are desired they must be specified explicitly in the value of the `#[link_name]` attribute.
 * If both `#[link_ordinal]` and `#[link_name]` are specified, an error will be emitted.
 * If neither `#[link_ordinal]` nor `#[link_name]` are specified, the idata section will map from the mangled symbol to its unmangled equivalent in the dll. The unmangled symbol will *not* have calling convention decorations.
 
