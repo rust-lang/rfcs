@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-Extend the `#[link]` attribute by adding a new kind `kind="dll"` for use on Windows which emits idata sections for the items in the attached `extern` block, so they may be linked against without linking against an import library. Also add a `#[ordinal]` attribute for specifying symbols that are actually ordinals.
+Extend the `#[link]` attribute by adding a new kind `kind="dll"` for use on Windows which emits idata sections for the items in the attached `extern` block, so they may be linked against without linking against an import library. Also add a `#[link_ordinal]` attribute for specifying symbols that are actually ordinals.
 
 # Motivation
 [motivation]: #motivation
@@ -31,14 +31,14 @@ extern "system" {
 }
 ```
 
-Some symbols are only exported by ordinal from the dll in which case `#[ordinal]` may be used:
+Some symbols are only exported by ordinal from the dll in which case `#[link_ordinal]` may be used:
 
 ```rust
 #[cfg(windows)]
 #[link(name = "ws2_32.dll", kind = "dll")]
 #[allow(non_snake_case)]
 extern "system" {
-    #[ordinal(116)]
+    #[link_ordinal(116)]
     fn WSACleanup() -> i32;
 }
 ```
@@ -46,11 +46,16 @@ extern "system" {
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-Add a new value `dll` to the `kind` property of the `link` attribute. When this kind is specified, Rust will *keep* the symbol mangled, instead of having an unmangled symbol. Rust will emit an idata section that maps from the *mangled* symbol to the unmangled symbol in the specified dll. The unmangled symbol will *not* have calling convention decorations. The `name` specified in the `#[link]` attribute when `kind = "dll"` is used *must* include the extension.
+Add a new attribute `#[link_ordinal]` taking a single numerical value, such as `#[link_ordinal(116)]`. It can only be specified on symbols in an extern block using `kind="dll"`.
 
-`#[ordinal]` is an attribute taking a single numerical value, such as `#[ordinal(116)]`. It can only be specified on symbols in an extern block using `kind = "dll"`. When specified, the idata section will map from the mangled symbol to the ordinal in the specified dll.
+Add a new value `dll` to the `kind` property of the `link` attribute. When this kind is specified, the `name` must explicitly include the extension. In addition, for all items in the associated extern block Rust will *keep* the symbol mangled, instead of having an unmangled symbol. Rust will emit an idata section that maps from the *mangled* symbol to a symbol in the specified dll. The symbol in the dll that the idata section maps to depends on which attributes are specified on the item in question:
 
-The attribute `#[link_name]` may be used on symbols in extern blocks using `kind="dll"`. When specified, the idata section will map from the mangled symbol to the symbol name specified in `#[link_name]` in the specified dll, without any calling convention decorations added. If calling convention decorations are desired they must be specified explicitly in the `#[link_name]` attribute.
+* If `#[link_ordinal]` is specified the idata section will map from the mangled symbol to the ordinal specified in the dll.
+* If `#[link_name] is specified the idata section will map from the mangled symbol to the name specified in the dll, without any calling convention decorations added. If calling convention decorations are desired they must be specified explicitly in the value of the `#[link_name]` attribute.
+* If both `#[link_ordinal]` and `#[link_name]` are specified, an error will be emitted.
+* If neither `#[link_ordinal]` nor `#[link_name]` are specified, the idata section will map from the mangled symbol to its unmangled equivalent in the dll. The unmangled symbol will *not* have calling convention decorations.
+
+The idata section that is produced is equivalent to the idata sections found in import libraries, and should result in identical code generation by the linker.
 
 # Drawbacks
 [drawbacks]: #drawbacks
