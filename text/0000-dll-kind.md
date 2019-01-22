@@ -22,7 +22,14 @@ This would also allow `winapi` to not have to bundle import libraries for the `p
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-When trying to link to a Windows dll, the `dylib` kind may sometimes be unsuitable, and `kind="dll"` can be used instead:
+When trying to link to a Windows dll, the `dylib` kind may sometimes be unsuitable, and `kind="dll"` can be used instead. A central requirement of `kind="dll"` is that the dll has a stable ABI. Here are some examples of valid reasons to use `kind="dll"`:
+
+* You've had it up to here with trying to create an import library for a dll that has stdcall functions.
+* You're in linking hell with multiple import libraries providing the same symbol but from different dlls.
+* You know exactly which dll you need a symbol from, but you don't know which version of the dll the import library is going to give you.
+* You maintain `winapi`.
+
+Here is an example of usage:
 
 ```rust
 #[cfg(windows)]
