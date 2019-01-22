@@ -9,8 +9,9 @@
 Introduce a new primitive operator on the MIR level: `&[mut|const] raw <place>`
 to create a raw pointer to the given place (this is not surface syntax, it is
 just how MIR might be printed).  Desugar the surface syntax `&[mut] <place> as
-*[mut|const] _` to use this operator, instead of two MIR statements (first take
-normal reference, then cast).
+*[mut|const] _` as well as coercions from references to raw pointers to use this
+operator, instead of two MIR statements (first take normal reference, then
+cast).
 
 # Motivation
 [motivation]: #motivation
@@ -73,8 +74,8 @@ let x = &X as &T as *const T; // this is casting to raw "too late"
 ```
 
 The only way to create a pointer to an unaligned or dangling location without
-triggering undefined behavior is to *immediately* turn it into a raw pointer.
-All of the following are valid:
+triggering undefined behavior is to *immediately* turn it into a raw pointer
+using an explicit cast or an implicit coercion.  All of the following are valid:
 
 ```rust
 let packed_cast = unsafe { &packed.field as *const _ };
@@ -112,7 +113,7 @@ same behavior.)  When translating MIR to LLVM, nothing special has to happen as
 references and raw pointers have the same LLVM type anyway; the new operation
 behaves like `Ref`.
 
-When interpreting MIR in the miri engine, the engine will recognize that the
+When interpreting MIR in the Miri engine, the engine will recognize that the
 value produced by this `Rvalue` has raw pointer type, and hence needs not
 satisfy any special invariants.
 
