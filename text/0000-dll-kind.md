@@ -94,6 +94,6 @@ No native languages are known of that allow link time linking to symbols from dl
 
 With the features described in this RFC, we would be one step closer towards a fully standalone pure Rust target for Windows that does not rely on any external libraries (aside from the obvious and unavoidable runtime dependence on system libraries), allowing for easy installation and incredibly easy cross compilation.
 
-If that were to happen, we'd no longer need to pretend the pc-windows-gnu toolchain is standalone, and we'd be able to stop bundling MinGW bits entirely in favor of the user's own MinGW installation, thereby resolving a bunch of issues.
+If that were to happen, we'd no longer need to pretend the pc-windows-gnu toolchain is standalone, and we'd be able to stop bundling MinGW bits entirely in favor of the user's own MinGW installation, thereby resolving a bunch of issues such as [rust-lang/rust#53454](https://github.com/rust-lang/rust/issues/53454).
 
 Also users would stop complaining about having to install several gigabytes of VC++ just to link their Rust binaries.
