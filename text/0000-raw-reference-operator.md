@@ -48,9 +48,15 @@ you always use raw pointers and not references: References come with guarantees
 that the compiler assumes are always upheld, and these guarantees include proper
 alignment and not being dangling.  Importantly, these guarantees must be
 maintained even when the reference is created and never used!  The following is
-UB (assuming `packed` is a variable of packed type):
+UB:
 
 ```rust
+#[repr(packed)]
+struct Packed {
+    pad: u8,
+    field: u16,
+}
+let packed = Packed { pad: 0, field: 0 };
 let x = unsafe { &packed.field }; // `x` is not aligned -> undefined behavior
 ```
 
