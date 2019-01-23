@@ -176,9 +176,9 @@ and which can be stored by the implementation of those `Futures`s. Whenever a
 waker in order to inform the executor that the task which owns the `Future`
 should get scheduled and executed again.
 
-The RFC defines a concrete `Waker` types with which implementors of `Futures`
+The RFC defines a concrete `Waker` type with which implementors of `Futures`
 and asynchronous functions will interact. This type defines a `wake(&self)`
-function which is used to schedule the task that is associated to the `Waker`
+method which is used to schedule the task that is associated to the `Waker`
 to be polled again.
 
 The mechanism through which tasks get scheduled again depends on the executor
@@ -191,7 +191,7 @@ Possible ways of waking up a an executor include:
 - If the executor's thread is parked, the wakeup call needs to unpark it.
 
 To allow executors to implement custom wakeup behavior, the `Waker` type
-internally contains a type called `RawWaker`, which consists of a  pointer
+contains a type called `RawWaker`, which consists of a  pointer
 to a custom wakeable object and a reference to a virtual function
 pointer table (vtable) which provides functions to `clone`, `wake`, and
 `drop` the underlying wakeable object.
@@ -295,10 +295,7 @@ impl Waker {
 impl Clone for Waker {
     fn clone(&self) -> Self {
         Waker {
-            waker: RawWaker {
-                data: unsafe { (self.waker.vtable.clone)(self.waker.data) },
-                vtable: self.waker.vtable,
-            }
+            waker: unsafe { (self.waker.vtable.clone)(self.waker.data) },
         }
     }
 }
