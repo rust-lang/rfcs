@@ -1,4 +1,4 @@
-- Feature Name: raw_reference_operator
+- Feature Name: raw_reference_mir_operator
 - Start Date: 2018-11-01
 - RFC PR: (leave this empty)
 - Rust Issue: (leave this empty)
