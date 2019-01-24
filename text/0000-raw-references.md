@@ -96,11 +96,47 @@ status set when at least one of these is true:
 * `t` is itself a raw reference.
 * `field_path` contains fields of a union or packed struct.
 
-Additionally, the raw status of a reference is conserved across move and copy.
+Additionally, the raw status of a reference is conserved across move. On a
+copy, the status is tenatively unactivated from the source but active at the
+target. *Any* further usage of the source will settle the source. This provides
+enough power to MIR to settle most reference that are used as references while
+upholding the raw status for the purpose of getting a raw reference to a
+subfield.
+
 When a reference is used in any expression except `Copy`, `Move` or as the
 pointer in a borrow expression from which another raw reference originates, then
 it it settled. This implies that the analysis is local, as any return settles
 the reference and no returned reference is raw.
+
+Assume `packed: *const T`, `(*packed).field` is unaligned. All examples are
+inside a single unsafe block each for the safe of brevity.
+
+```
+// Current usage.
+let x = &(*packed).field as *const _;
+```
+
+```
+// raw reference
+let p = &*packed;
+
+// raw reference
+let f = &p.field;
+
+// UB exploited!
+f.some_method();
+```
+
+```
+// raw reference
+let p = &*packed;
+
+// f raw reference, p is no longer.
+let f = p;
+
+// p is settled, result NOT a raw reference.
+&p.field as *const _;
+```
 
 On the MIR-level, we represent a reference with `raw` status as a pointer, and
 convert it to an actual reference only when it is settled. This requires a MIR
