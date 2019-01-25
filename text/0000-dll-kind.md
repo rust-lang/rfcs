@@ -81,7 +81,9 @@ No alternatives are currently known other than the status quo.
 # Prior art
 [prior-art]: #prior-art
 
-No native languages are known of that allow link time linking to symbols from dlls withot import libraries. Please note that this is distinct from runtime loading of dlls.
+Many non-native languages have the ability to import symbols from dlls, but this uses runtime loading by the language runtime and is not the same as what is being proposed here.
+
+Delphi is a native language that has the ability to import symbols from dlls without import libraries.
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
@@ -95,5 +97,7 @@ No native languages are known of that allow link time linking to symbols from dl
 With the features described in this RFC, we would be one step closer towards a fully standalone pure Rust target for Windows that does not rely on any external libraries (aside from the obvious and unavoidable runtime dependence on system libraries), allowing for easy installation and incredibly easy cross compilation.
 
 If that were to happen, we'd no longer need to pretend the pc-windows-gnu toolchain is standalone, and we'd be able to stop bundling MinGW bits entirely in favor of the user's own MinGW installation, thereby resolving a bunch of issues such as [rust-lang/rust#53454](https://github.com/rust-lang/rust/issues/53454).
+
+A future extension of this feature would be the ability to optionally lazily load such external functions, since Rust would naturally have all the information required to do so.
 
 Also users would stop complaining about having to install several gigabytes of VC++ just to link their Rust binaries.
