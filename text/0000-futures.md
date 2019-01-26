@@ -183,7 +183,7 @@ to be polled again.
 
 The mechanism through which tasks get scheduled again depends on the executor
 which is driving the task.
-Possible ways of waking up a an executor include:
+Possible ways of waking up an executor include:
 - If the executor is blocked on a condition variable, the condition variable
   needs to get notified.
 - If the executor is blocked on a system call like `select`, it might need
