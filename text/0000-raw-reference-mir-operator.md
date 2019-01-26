@@ -97,6 +97,10 @@ These two operations (taking a reference, casting/coercing to a raw pointer) are
 actually considered a single operation happening in one step, and hence the
 invariants incurred by references do not come into play.
 
+Notice that this only applies if no automatic call to `deref` or `deref_mut` got
+inserted: those are regular function calls taking a reference, so in that case a
+reference is created and it must satisfy the usual guarantees.
+
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
@@ -104,10 +108,12 @@ When translating HIR to MIR, we recognize `&[mut] <place> as *[mut|const] ?T`
 (where `?T` can be any type, also a partial one like `_`) as well as coercions
 from `&[mut] <place>` to a raw pointer type as a special pattern and turn them
 into a single MIR `Rvalue` that takes the address and produces it as a raw
-pointer -- a "take raw reference" operation.  We also use this new `Rvalue` to
-translate `x as *[mut|const] ?T`; before this RFC such code gets translated to
-MIR as a reborrow followed by a cast.  Once this is done, `Misc` casts from
-reference to raw pointers can be removed from MIR, they are no longer needed.
+pointer -- a "take raw reference" operation.  We do this *after* auto-deref,
+meaning this pattern does not apply when a call to `deref` or `deref_mut` got
+inserted.  We also use this new `Rvalue` to translate `x as *[mut|const] ?T`;
+before this RFC such code gets translated to MIR as a reborrow followed by a
+cast.  Once this is done, `Misc` casts from reference to raw pointers can be
+removed from MIR, they are no longer needed.
 
 This new `Rvalue` might be a variant of the existing `Ref` operation (say, a
 boolean flag for whether this is raw), or a new `Rvalue` variant.  The borrow
@@ -208,3 +214,9 @@ pointer is aligned and non-NULL.  Notice that we use `getelementptr inbounds`
 for field access, so we would require some amount of dereferencability anyway
 (or we could change codegen to not emit `inbounds` when creating a raw
 reference, but that might adversely affect performance).
+
+The interaction with auto-deref is a bit unfortunate.  Maybe we can have a lint
+to detect what seems to be unwanted cases of auto-deref -- namely, terms that
+look like `&[mut] <place> as *[mut|const] ?T` in the surface syntax but had a
+method call inserted, thus manifesting a reference (with the associated
+guarantees) where none might be expected.
