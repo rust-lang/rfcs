@@ -6,9 +6,9 @@
 # Summary
 [summary]: #summary
 
-Permit matching sub-slices and sub-arrays with the syntax `..`.
+Permit matching sub-slices and sub-arrays with the syntax `..`.  
 Binding a variable to the expression matched by a subslice pattern can be done
-using the existing `<IDENT> @ <PAT>` syntax, for example:
+using syntax `<IDENT> @ ..` similar to the existing `<IDENT> @ <PAT>` syntax, for example:
 
 ```rust
 // Binding a sub-array:
@@ -75,16 +75,19 @@ match v {
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-`..` can be used as a pattern for matching sub-slices and sub-arrays.
+`..` can be used as a pattern fragment for matching sub-slices and sub-arrays.
 It is treated as a "non-reference-pattern" for the purpose of determining default-binding-modes,
 and so shifts the binding mode to by-`ref` or by-`ref mut` when used to match a subsection of a
 reference or mutable reference to a slice or array.
 
-`@` can be used to bind the result of a `..` pattern to an identifier.
+`@` can be used to bind the result of `..` to an identifier.
 
  When used to match against a non-reference slice (`[u8]`), `x @ ..` would attempt to bind
 by-value, which would fail in the case that users haven't enabled `feature(unsized_locals)`
 (since otherwise it's not possible to bind `[u8]` to a variable directly).
+
+`..`/`IDENT @ ..` is not a full pattern syntax, but rather a part of slice, tuple and tuple
+struct pattern syntaxes. In particular, `..` is not accepted by the `pat` macro matcher.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -93,8 +96,6 @@ None known.
 
 # Rationale and alternatives
 [alternatives]: #alternatives
-
-The `PAT..` alternative was discussed in the motivational part of the RFC.
 
 More complex syntaxes derived from `..` are possible, they use additional tokens to avoid the
 ambiguity with ranges, for example
@@ -198,3 +199,9 @@ syntactic choices are quite different from Rust's general style.
 [unresolved]: #unresolved-questions
 
 None known.
+
+# Future possibilities
+[future-possibilities]: #future-possibilities
+
+Turn `..` into a full pattern syntactically accepted in any pattern position,
+(including `pat` matchers in macros), but rejected semantically outside of slice and tuple patterns.
