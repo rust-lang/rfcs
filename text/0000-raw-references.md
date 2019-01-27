@@ -114,30 +114,7 @@ Assume `packed: *const T`, `(*packed).field` is unaligned. All examples are
 assumed to be inside a single unsafe block each for the safe of brevity.
 
 ```
-// Current usage.
-let x = &(*packed).field as *const _;
-```
-
-```
-// raw reference
-let p = &*packed;
-
-// raw reference
-let f = &p.field;
-
-// UB exploited!
-f.some_method();
-```
-
-```
-// raw reference
-let p = &*packed;
-
-// f raw reference, p is no longer.
-let f = p;
-
-// p is settled, result NOT a raw reference.
-&p.field as *const _;
+// TODO: expand on example above
 ```
 
 When a reference value is initialized or assigned to from multiple sources, it
