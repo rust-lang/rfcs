@@ -25,23 +25,24 @@ retrieve a pointer to such.
 A [similarly motivated RFC](https://github.com/rust-lang/rfcs/pull/2582) exists
 that tries to approach this problem by adding a MIR operation that performs a
 direct pointer to pointer-to-field conversion in a few defined cases. This
-leaves open the question of a formalized approach to the problem and implements
-a mostly syntactical solution, rather than a type-level one. While exposing such
-properties through the type system would not be backwards compatible, it could
-still be possible to attach such properties internally. Through this system, we
-can also provide better warnings and give the necessary foundation to properly
-discuss extended guarantees.
+leaves open the question of a formalized approach to the problem.
+
+While exposing such properties through the type system would not be backwards
+compatible, it could still be possible to attach such properties internally.
+Through this system, we can also provide better warnings and give the necessary
+foundation to properly discuss extended guarantees.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 Each reference (`&` or `&mut`) will have an internal–that is, not observable by
 rust code–tracking state named `raw`. While a reference is `raw`, it will be
-represented as a pointer in syntax-to-MIR lowering. The act of unactivating the
-raw status of a reference will be called `settling` for the purpose of this
-document, how this can happen will be discussed below. When a reference with
-active `raw` status is converted to a pointer, this will be called a raw pointer
-cast and would be a no-op in MIR.
+represented as a pointer in syntax-to-MIR lowering and the value to which
+dereferences need not be valid. The act of unactivating the raw status of a
+reference will be called `settling` for the purpose of this document, how this
+can happen will be discussed below. When a reference with active `raw` status
+is converted to a pointer, this will be called a raw pointer cast and would be
+a no-op in MIR.
 
 ```
 // The result of this borrow is a raw reference.
@@ -88,28 +89,26 @@ cast inside.
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-The `raw` status of a reference can only originate from a borrow expression. The
-reference result of a borrow expression `& (*t).field_path` will have the `raw`
-status set when at least one of these is true:
+The `raw` status of a reference can only originate from a borrow expression.
+`raw` status can be active, or inactive. The reference result of a borrow
+expression `& (*t).field_path` will have the `raw` status set when at least one
+of these is true (where the borrow expression is after desugaring of deref
+magic):
 
 * `t` has pointer type.
 * `t` is itself a raw reference.
 * `field_path` contains fields of a union or packed struct.
 
-Additionally, the raw status of a reference is conserved across move. On a
-copy, the status is tenatively unactivated from the source but active at the
-target. *Any* further usage of the source will settle the source. This provides
-enough power to MIR to settle most reference that are used as references while
-upholding the raw status for the purpose of getting a raw reference to a
-subfield.
-
-When a reference is used in any expression except `Copy`, `Move` or as the
-pointer in a borrow expression from which another raw reference originates, then
-it it settled. This implies that the analysis is local, as any return settles
-the reference and no returned reference is raw.
+The raw status of a reference is conserved across copy and move.  When a
+reference is used in any expression except `Copy`, `Move` or as the pointer in
+a borrow expression from which another raw reference originates, then it it
+settled. This implies that the analysis is local, as any return settles the
+reference and no returned reference is raw.  This provides enough power to MIR
+to settle most reference that are used as references while upholding the raw
+status for the purpose of getting a raw reference to a subfield.
 
 Assume `packed: *const T`, `(*packed).field` is unaligned. All examples are
-inside a single unsafe block each for the safe of brevity.
+assumed to be inside a single unsafe block each for the safe of brevity.
 
 ```
 // Current usage.
@@ -138,18 +137,70 @@ let f = p;
 &p.field as *const _;
 ```
 
-On the MIR-level, we represent a reference with `raw` status as a pointer, and
-convert it to an actual reference only when it is settled. This requires a MIR
-operation that can borrow a place as a pointer directly. Such an operation has
-been proposed and is currently in merge period already.
+When a reference value is initialized or assigned to from multiple sources, it
+will have raw status when all sources have raw status. Otherwise, the
+references with raw status are settled before that initialization or
+assignment.
+
+On the MIR-level, reference with `raw` status are temporarily represented as a
+pointer, and convert it to an actual reference only when it is settled. This
+requires a MIR operation that can borrow a place as a pointer directly. Such an
+operation has been proposed and is currently in merge period already as pull
+request #2582. Raw references will only have their size invariants enforced,
+i.e. they are required to point to a large enough–and unique for mutable
+references–place in memory but its contents are not inspected.
+
+Using the `raw` status, it is possible to provide additional lints for unsafe
+code which creates references but could transform them into pointers
+immediately. When a raw reference is only used to perform a raw cast into a
+pointer, this cast should likely be performed immediately. Since the analysis
+here is local, any raw reference must have originated in the same function. A
+synthetic property can be computed which checks if a reference is only used in
+the creation of other raw references or raw pointer casts. Where this property
+is the upper bound of the following monotonic function on the lattice of all
+references:
+
+* `unused(A) < unused(B)` where `B = A` appears in the function.
+* `unused(A) < unused(B)` where `B = &(*A).fields`.
+
+Now, here is an example hoe this lint could be useful. The following function
+may accidentally exhibit undefined behaviour because it creates a reference to
+the struct pointed to. This may have been an accident after refactoring or
+simply an incorrect assumption by the programmer.
+
+```
+#[repr(packed)]
+struct Foo { _layout: u8, a: u16, b: u16, };
+fn not_very_defined(input: *mut A, which: bool) -> *mut usize {
+    let whole = unsafe { &*input };
+    if which {
+        &whole.a
+    } else {
+        &whole.b
+    }
+}
+```
+
+However, this does not necessarily stay undefined behaviour if the MIR level
+changes to create a raw reference get applied. None of the created references
+are ever settled as `whole` is only used to create the other two, and those get
+cast to pointers immediately. The assignment of a reference to a variable could
+however be avoided by putting the field access into the unsafe block as well.
+
+```
+<TODO>
+```
 
 # Drawbacks
 [drawbacks]: #drawbacks
 
 This proposal complicates reasoning about unsafe code. It is no longer clear
 from a single value expresion alone whether `& (*place)` will be enforced as
-reference type, or simply treated like a pointer, even though we need not make
-such guarantees to stable code yet.
+reference type, or simply treated like a pointer. 
+
+Even though we don't make such guarantees to stable code yet and only provide
+this as a temporary means to make user code defined at all, this could be
+misunderstood as a promise to programmers.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -173,6 +224,12 @@ achieves some of the definedness guarantees internally without making them
 stable. But it also enables lints that could help detect and eliminate mistakes
 that could become strictly undefined if the internal mechanisms were reverted
 again.
+
+Also, it should be noted that the invariants enforced on raw references differ
+from both references and simple pointers. Instead of reusing the pointer
+representation, we could also provide a new MIR-level type `&raw` or `&uninit`
+on which the size invariant is applied but not the invariants of the pointed to
+type.
 
 # Prior art
 [prior-art]: #prior-art
@@ -199,19 +256,26 @@ references to pointers before they are settled does not actually execute any
 code that must be specified as unsafe. Getting a pointer to a field from a
 pointer to the containing struct should not, for example. Another example would
 be a statement that gets the pointer to a field of a packed struct from a
-reference to that struct. Since this internally only translates to safe code,
-there is no intrinsic reason why it requires `unsafe`. However, the path+borrow
-expression of such code currently requires the use of `unsafe`.
+reference to that struct. Since this internally only translates to safe code
+and the size invariant of the packed struct is already guaranteed, there is no
+intrinsic reason why it requires `unsafe`. However, the path+borrow expression
+of such code currently requires the use of `unsafe`.
 
 ```
 let field = &(*foo).bar as *const _;
 let field = &packed.field as *mut _;
 ```
 
-The notion of `raw` references could be extended and brought into language level
-by making such code safe as long as it does not settle any raw references. This
-could improve ergonomics by removing unecessary `unsafe` code blocks, and
-further strengthen the justification requirements for the usage of `unsafe`.
-Such a concept could however require a stronger foundation than this proposal
-alone.
+The notion of `raw` references could be explicitely brought into language level.
+Either by making such code safe as long as it does not settle any raw
+references or by introducing `&raw` to both worlds. This could improve
+ergonomics by removing unecessary `unsafe` code blocks, and further strengthen
+the justification requirements for the usage of `unsafe`.  Such a concept could
+however require a stronger foundation than this proposal alone.
 
+Should Rust instead (or additionally) introduce an explicit surface level
+syntax for reborrowing pointers as other pointer (complementing the MIR
+operator for raw references), the extra information already computed by the
+`raw` status can be used to offer additional lints that suggest transitioning
+to this new syntax. The raw reference term helps not mistakenly apply such
+lints to unsafe blocks were the reference output was desired.
