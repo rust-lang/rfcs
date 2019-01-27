@@ -226,6 +226,10 @@ Even though we don't make such guarantees to stable code yet and only provide
 this as a temporary means to make user code defined at all, this could be
 misunderstood as a promise to programmers.
 
+The (lint) analysis may occur a non-trivial overhead especially for very large
+functions that mix unsafe code with safe code without adding many explicit type
+annotations.
+
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
