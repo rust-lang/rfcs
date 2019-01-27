@@ -188,7 +188,30 @@ cast to pointers immediately. The assignment of a reference to a variable could
 however be avoided by putting the field access into the unsafe block as well.
 
 ```
-<TODO>
+warning: local unsafe reference never used as reference
+  |
+3 | fn not_very_defined(input: *mut A, which: bool) -> *mut usize {
+4 |     let whole = unsafe { &*input };
+  |                          ^^^^^^^ 
+5 |     if which {
+
+note: derived reference coerced to pointer before use here
+5 |     if which {
+6 |         &whole.a
+  |         ^^^^^^^^
+7 |     } else {
+
+note: derived reference coerced to pointer before use here
+7 |     } else {
+8 |         &whole.b
+  |         ^^^^^^^^
+9 |     }
+
+note: the compiler can consider the reference to point to initialized memory
+note: consider casting original reference to pointer immediately
+note: to avoid this warning, explicitely cast to reference
+4 |     let whole = unsafe { &*input as &_ };
+
 ```
 
 # Drawbacks
