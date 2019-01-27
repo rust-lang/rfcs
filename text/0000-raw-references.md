@@ -6,10 +6,11 @@
 # Summary
 [summary]: #summary
 
-Formalizes an internal mechanism to track references on which the compiler
-should not enforce reference properties. This complements MIR level changes
-through which taking the address of a subobject pointed to by a pointer does not
-accidentally require or guarantee reference properties on those pointers.
+Formalizes an analysis during HIR->MIR lowering to track references on which
+the compiler should not enforce reference properties. This complements MIR
+level changes through which taking the address of a subobject pointed to by a
+pointer does not accidentally require or guarantee reference properties on
+those pointers.
 
 # Motivation
 [motivation]: #motivation
