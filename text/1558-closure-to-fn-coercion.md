@@ -1,7 +1,7 @@
 - Feature Name: closure_to_fn_coercion
 - Start Date: 2016-03-25
-- RFC PR: (leave this empty)
-- Rust Issue: (leave this empty)
+- RFC PR: [rust-lang/rfcs#1558](https://github.com/rust-lang/rfcs/pull/1558)
+- Rust Issue: [rust-lang/rust#39817](https://github.com/rust-lang/rust/issues/39817)
 
 # Summary
 [summary]: #summary
@@ -153,13 +153,13 @@ and by circumstance later need to capture a variable. The required change from `
 be a breaking change.
 
 We do expect crate authors to measure their API's flexibility in other areas, however, as when
-determining whether to take `&self` or `&mut self`. Taking a similar situation to the above: 
+determining whether to take `&self` or `&mut self`. Taking a similar situation to the above:
 
 ```rust
 fn func_specific<'a>(&'a self) -> impl Fn() -> u32 {
   move || return self.field
 }
-    
+
 fn func_general<'a>(&'a mut self) -> impl FnMut() -> u32 {
   move || { self.field += 1; return self.field; }
 }
