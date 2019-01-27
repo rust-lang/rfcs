@@ -58,9 +58,9 @@ code.  Thus, when a raw reference is cast to a pointer in safe code, this is an
 indicator for potentially incorrect usage of unsafe and a warning could be
 emitted.
 
-Since this solution works at type-level, we keep the composability properties
-that code relies on. In particular, we can decompose expressions into
-subexpressions:
+Since this solution works (invisbly) at type-level, we keep the composability
+properties that code relies on. In particular, we can decompose expressions
+into subexpressions:
 
 ```
 let x = unsafe {
@@ -72,9 +72,11 @@ let x = unsafe {
 ```
 
 This also propagates out of unsafe blocks, even though a raw reference from a
-pointer can only be created within an unsafe block. This proposal intends not to
-stabilize the guarantee of the following code not invoking undefined behaviour
-but focusses on nevertheless not exploiting it in MIR.
+pointer can only be created within an unsafe block. This proposal explicitely
+does not intends stabilize the guarantee of the following code not invoking
+undefined behaviour but nevertheless proposes to not exploit it in MIR until
+better tools are created in the surface language to differentiate the reference
+requirements.
 
 ```
 let x = unsafe { &packed.field };
@@ -149,7 +151,8 @@ requires a MIR operation that can borrow a place as a pointer directly. Such an
 operation has been proposed and is currently in merge period already as pull
 request #2582. Raw references will only have their size invariants enforced,
 i.e. they are required to point to a large enough–and unique for mutable
-references–place in memory but its contents are not inspected.
+references–place in memory. The alignment inviarant and the requirement for the
+invariants on the pointed-to value are not inspected for raw references.
 
 Using the `raw` status, it is possible to provide additional lints for unsafe
 code which creates references but could transform them into pointers
@@ -164,7 +167,7 @@ references:
 * `unused(A) < unused(B)` where `B = A` appears in the function.
 * `unused(A) < unused(B)` where `B = &(*A).fields`.
 
-Now, here is an example hoe this lint could be useful. The following function
+Now, here is an example how this lint could be useful. The following function
 may accidentally exhibit undefined behaviour because it creates a reference to
 the struct pointed to. This may have been an accident after refactoring or
 simply an incorrect assumption by the programmer.
@@ -173,10 +176,13 @@ simply an incorrect assumption by the programmer.
 #[repr(packed)]
 struct Foo { _layout: u8, a: u16, b: u16, };
 fn not_very_defined(input: *mut A, which: bool) -> *mut usize {
+    // reference properties unused in all other usage.
     let whole = unsafe { &*input };
     if which {
+        // Cast to pointer, raw unused.
         &whole.a
     } else {
+        // Cast to pointer, raw unused.
         &whole.b
     }
 }
