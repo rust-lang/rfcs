@@ -32,7 +32,7 @@ that goes through its importance in greater detail.
 As with closures, `async` syntax involves producing an anonymous type that implements
 a key trait: `Future`. Because `async`/`await` requires language-level support,
 the underlying trait must also be part of the standard library. Thus, the goal
-of this RFC is to stabilize this this `Future` trait and the types it depends on.
+of this RFC is to stabilize this `Future` trait and the types it depends on.
 This is the last step needed before we are in a position to stabilize `async`/`await`
 itself.
 
