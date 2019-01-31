@@ -824,7 +824,110 @@ There are a few interesting things to note here:
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-There are none.
+## 1. When do suitability of defaults need to be proven?
+
+Consider a trait `Foo<T>` defined as:
+
+```rust
+trait Foo<T> {
+    type Bar: Clone = Vec<T>;
+}
+```
+
+Let's also assume the following implementation of `Clone`:
+
+```rust
+impl<T: Clone> Clone for Vec<T> { ... }
+```
+
+To prove that `Vec<T>: Clone`, we must prove that `T: Clone`.
+However, `Foo<T>` does not say that `T: Clone` so is its definition valid?
+If the suitability of `Vec<T>` is checked where `Foo<T>` is defined (1),
+then we don't know that `T: Clone` and so the definition must be rejected.
+To make the compiler admit `Foo<T>`, we would have to write:
+
+```rust
+trait Foo<T: Clone> {
+    type Bar: Clone = Vec<T>;
+}
+```
+
+Now it is provable that `T: Clone` so `Vec<T>: Clone` which is what was required.
+
+If instead the suitability of defaults are checked in `impl`ementations (2),
+then proving `Vec<T>: Clone` would not be required in `Foo<T>`'s definition and
+so then `Foo<T>` would type-check. As a result, it would be admissible to write:
+
+```rust
+#[derive(Copy, Clone)]
+struct A;
+
+struct B;
+
+impl Foo<A> for B {}
+```
+
+since `Vec<A>: Clone` holds.
+
+With condition (2), strictly more programs are accepted than with (1).
+It may be that useful programs are rejected if we enforce (1) rather than (2).
+However, it would also be the more conservative choice, allowing us to move
+towards (2) when necessary. As it is currently unclear what solution is best,
+this question is left unresolved.
+
+## 1. Where are cycles checked?
+
+[playground]: https://play.rust-lang.org/?version=nightly&mode=debug&edition=2018&gist=e823eea5e7ecba5da78cff225e0adaf9
+
+Consider a program *([playground])*:
+
+```rust
+#![feature(associated_type_defaults)]
+
+trait A {
+    type B = Self::C; // B defaults to C,
+    type C = Self::B; // C defaults to B, and we have a cycle!
+}
+
+impl A for () {}
+
+fn _foo() {
+    let _x: <() as A>::B;
+}
+
+// Removing this function will make the example compile.
+fn main() {
+    let _x: <() as A>::B;
+}
+```
+
+Currently, this results in a crash. This will need to be fixed.
+At the very latest, `impl A for () {}` should have been an error.
+
+```rust
+trait A {
+    type B = Self::C;
+    type C = Self::B;
+}
+
+impl A for () {} // This OK but shouldn't be.
+```
+
+If cycles are checked for in `impl A for ()`, then it would be valid to write:
+
+```rust
+trait A {
+    type B = Self::C;
+    type C = Self::B;
+}
+
+impl A for () {
+    type B = u8; // The cycle is broken!
+}
+```
+
+Alternatively, cycles could be checked for in `A`'s definition.
+This is similar to the previous question in (1).
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
