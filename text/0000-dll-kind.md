@@ -1,5 +1,5 @@
 - Feature Name: dll_kind
-- Start Date: 2018-06-27
+- Start Date: 2019-01-22
 - RFC PR: (leave this empty)
 - Rust Issue: (leave this empty)
 
@@ -11,11 +11,13 @@ Extend the `#[link]` attribute by adding a new kind `kind="dll"` for use on Wind
 # Motivation
 [motivation]: #motivation
 
-Traditionally in order to link against a dll the program must actually link against an import library. For example to depend on some symbols from kernel32.dll the program links to kernel32.lib. However this requires that the correct import libraries be available to link against, and for third party libraries that are only distributed as a dll creating an import library can be quite difficult, especially given lib.exe is incapable of creating an import library that links to stdcall symbols.
+[dll]: https://en.wikipedia.org/wiki/Dynamic-link_library
 
-A real advantage of this feature, however, is the fact that symbols will be *guaranteed* to come from the specified dll. Currently linking is a very finnicky process where if multiple libraries provide the same symbol the linker will choose one of them to provide the symbol and the user has very little control over it. With `kind="dll"` the user is ensured that the symbol will come from the specified dll.
+Traditionally, to link against a [dll], the program must actually link against an import library. For example to depend on some symbols from `kernel32.dll` the program links to `kernel32.lib`. However, this requires that the correct import libraries be available to link against, and for third party libraries that are only distributed as a dll creating an import library can be quite difficult, especially given that `lib.exe` is incapable of creating an import library that links to `stdcall` symbols.
 
-Sometimes a crate may know exactly which dll it wants to link against, but which import library it ends up linking against is unknown. In particular the d3dcompiler.lib provided by the Windows SDK can link to several different versions of the d3dcompiler dll depending on which version of the Windows SDK the user has installed. `kind="dll"` would allow `winapi` to link to a specific version of that dll and ensure the symbols are correct for that version.
+A real advantage of this feature, however, is the fact that symbols will be *guaranteed* to come from the specified dll. Currently, linking is a very finnicky process where if multiple libraries provide the same symbol the linker will choose one of them to provide the symbol and the user has little control over it. With `kind="dll"` the user is ensured that the symbol will come from the specified dll.
+
+Sometimes, a crate may know exactly which dll it wants to link against, but which import library it ends up linking against is unknown. In particular the `d3dcompiler.lib` provided by the Windows SDK can link to several different versions of the d3dcompiler dll depending on which version of the Windows SDK the user has installed. `kind="dll"` would allow `winapi` to link to a specific version of that dll and ensure the symbols are correct for that version.
 
 This would also allow `winapi` to not have to bundle import libraries for the `pc-windows-gnu` targets, saving on bandwidth and disk space for users.
 
@@ -24,7 +26,7 @@ This would also allow `winapi` to not have to bundle import libraries for the `p
 
 When trying to link to a Windows dll, the `dylib` kind may sometimes be unsuitable, and `kind="dll"` can be used instead. A central requirement of `kind="dll"` is that the dll has a stable ABI. Here are some examples of valid reasons to use `kind="dll"`:
 
-* You've had it up to here with trying to create an import library for a dll that has stdcall functions.
+* You've had it up to here with trying to create an import library for a dll that has `stdcall` functions.
 * You're in linking hell with multiple import libraries providing the same symbol but from different dlls.
 * You know exactly which dll you need a symbol from, but you don't know which version of the dll the import library is going to give you.
 * You maintain `winapi`.
@@ -40,7 +42,7 @@ extern "system" {
 }
 ```
 
-Some symbols are only exported by ordinal from the dll in which case `#[link_ordinal]` may be used:
+Some symbols are only exported by ordinal from the dll in which case `#[link_ordinal(..)]` may be used:
 
 ```rust
 #[cfg(windows)]
@@ -55,9 +57,9 @@ extern "system" {
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-Add a new attribute `#[link_ordinal]` taking a single numerical value, such as `#[link_ordinal(116)]`. It can only be specified on symbols in an extern block using `kind="dll"`.
+Add a new attribute `#[link_ordinal]` taking a single unsuffixed integer value, such as `#[link_ordinal(116)]`. It can only be specified on symbols in an extern block using `kind="dll"`.
 
-Add a new value `dll` to the `kind` property of the `link` attribute. When this kind is specified, the `name` must explicitly include the extension. In addition, for all items in the associated extern block Rust will *keep* the symbol mangled, instead of having an unmangled symbol. Rust will emit an idata section that maps from the *mangled* symbol to a symbol in the specified dll. The symbol in the dll that the idata section maps to depends on which attributes are specified on the item in question:
+Add a new value `dll` to the `kind` property of the `link` attribute. When this kind is specified, the `name` must explicitly include the extension. In addition, for all items in the associated extern block, Rust will *keep* the symbol mangled, instead of having an unmangled symbol. Rust will emit an idata section that maps from the *mangled* symbol to a symbol in the specified dll. The symbol in the dll that the idata section maps to depends on which attributes are specified on the item in question:
 
 * If `#[link_ordinal]` is specified the idata section will map from the mangled symbol to the ordinal specified in the dll.
 * If `#[link_name]` is specified the idata section will map from the mangled symbol to the name specified in the dll, without any calling convention decorations added. If calling convention decorations are desired they must be specified explicitly in the value of the `#[link_name]` attribute.
@@ -94,7 +96,7 @@ Delphi is a native language that has the ability to import symbols from dlls wit
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-With the features described in this RFC, we would be one step closer towards a fully standalone pure Rust target for Windows that does not rely on any external libraries (aside from the obvious and unavoidable runtime dependence on system libraries), allowing for easy installation and incredibly easy cross compilation.
+With the features described in this RFC, we would be one step closer towards a fully standalone pure Rust target for Windows that does not rely on any external libraries (aside from the obvious and unavoidable runtime dependence on system libraries), allowing for easy installation and easy cross compilation.
 
 If that were to happen, we'd no longer need to pretend the pc-windows-gnu toolchain is standalone, and we'd be able to stop bundling MinGW bits entirely in favor of the user's own MinGW installation, thereby resolving a bunch of issues such as [rust-lang/rust#53454](https://github.com/rust-lang/rust/issues/53454).
 
