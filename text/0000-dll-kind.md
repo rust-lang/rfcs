@@ -67,7 +67,10 @@ Add a new value `dll` to the `kind` property of the `link` attribute. When this 
 * If neither `#[link_ordinal]` nor `#[link_name]` are specified, the idata section will map from the mangled symbol to its unmangled equivalent in the dll. The unmangled symbol will *not* have calling convention decorations.
 * If `#[no_mangle]` is specified an error will be emitted.
 
-The idata section that is produced is equivalent to the idata sections found in import libraries, and should result in identical code generation by the linker.
+[idata section]: https://docs.microsoft.com/en-us/windows/desktop/debug/pe-format#the-idata-section
+[import libraries]: https://docs.microsoft.com/en-us/windows/desktop/debug/pe-format#import-library-format
+
+The [idata section] that is produced is equivalent to the idata sections found in [import libraries], and should result in identical code generation by the linker.
 
 # Drawbacks
 [drawbacks]: #drawbacks
