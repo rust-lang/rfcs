@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-Extend the `#[link]` attribute by adding a new kind `kind="dll"` for use on Windows which emits idata sections for the items in the attached `extern` block, so they may be linked against without linking against an import library. Also add a `#[link_ordinal]` attribute for specifying symbols that are actually ordinals.
+Extend the `#[link]` attribute by adding a new kind `kind="raw-dylib"` for use on Windows which emits idata sections for the items in the attached `extern` block, so they may be linked against without linking against an import library. Also add a `#[link_ordinal]` attribute for specifying symbols that are actually ordinals.
 
 # Motivation
 [motivation]: #motivation
@@ -15,16 +15,16 @@ Extend the `#[link]` attribute by adding a new kind `kind="dll"` for use on Wind
 
 Traditionally, to link against a [dll], the program must actually link against an import library. For example to depend on some symbols from `kernel32.dll` the program links to `kernel32.lib`. However, this requires that the correct import libraries be available to link against, and for third party libraries that are only distributed as a dll creating an import library can be quite difficult, especially given that `lib.exe` is incapable of creating an import library that links to `stdcall` symbols.
 
-A real advantage of this feature, however, is the fact that symbols will be *guaranteed* to come from the specified dll. Currently, linking is a very finnicky process where if multiple libraries provide the same symbol the linker will choose one of them to provide the symbol and the user has little control over it. With `kind="dll"` the user is ensured that the symbol will come from the specified dll.
+A real advantage of this feature, however, is the fact that symbols will be *guaranteed* to come from the specified dll. Currently, linking is a very finnicky process where if multiple libraries provide the same symbol the linker will choose one of them to provide the symbol and the user has little control over it. With `kind="raw-dylib"` the user is ensured that the symbol will come from the specified dll.
 
-Sometimes, a crate may know exactly which dll it wants to link against, but which import library it ends up linking against is unknown. In particular the `d3dcompiler.lib` provided by the Windows SDK can link to several different versions of the d3dcompiler dll depending on which version of the Windows SDK the user has installed. `kind="dll"` would allow `winapi` to link to a specific version of that dll and ensure the symbols are correct for that version.
+Sometimes, a crate may know exactly which dll it wants to link against, but which import library it ends up linking against is unknown. In particular the `d3dcompiler.lib` provided by the Windows SDK can link to several different versions of the d3dcompiler dll depending on which version of the Windows SDK the user has installed. `kind="raw-dylib"` would allow `winapi` to link to a specific version of that dll and ensure the symbols are correct for that version.
 
 This would also allow `winapi` to not have to bundle import libraries for the `pc-windows-gnu` targets, saving on bandwidth and disk space for users.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-When trying to link to a Windows dll, the `dylib` kind may sometimes be unsuitable, and `kind="dll"` can be used instead. A central requirement of `kind="dll"` is that the dll has a stable ABI. Here are some examples of valid reasons to use `kind="dll"`:
+When trying to link to a Windows dll, the `dylib` kind may sometimes be unsuitable, and `kind="raw-dylib"` can be used instead. A central requirement of `kind="raw-dylib"` is that the dll has a stable ABI. Here are some examples of valid reasons to use `kind="raw-dylib"`:
 
 * You've had it up to here with trying to create an import library for a dll that has `stdcall` functions.
 * You're in linking hell with multiple import libraries providing the same symbol but from different dlls.
@@ -35,7 +35,7 @@ Here is an example of usage:
 
 ```rust
 #[cfg(windows)]
-#[link(name = "kernel32.dll", kind = "dll")]
+#[link(name = "kernel32.dll", kind = "raw-dylib")]
 #[allow(non_snake_case)]
 extern "system" {
     fn GetStdHandle(nStdHandle: u32) -> *mut u8;
@@ -46,7 +46,7 @@ Some symbols are only exported by ordinal from the dll in which case `#[link_ord
 
 ```rust
 #[cfg(windows)]
-#[link(name = "ws2_32.dll", kind = "dll")]
+#[link(name = "ws2_32.dll", kind = "raw-dylib")]
 #[allow(non_snake_case)]
 extern "system" {
     #[link_ordinal(116)]
@@ -57,9 +57,9 @@ extern "system" {
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-Add a new attribute `#[link_ordinal]` taking a single unsuffixed integer value, such as `#[link_ordinal(116)]`. It can only be specified on symbols in an extern block using `kind="dll"`.
+Add a new attribute `#[link_ordinal]` taking a single unsuffixed integer value, such as `#[link_ordinal(116)]`. It can only be specified on symbols in an extern block using `kind="raw-dylib"`.
 
-Add a new value `dll` to the `kind` property of the `link` attribute. When this kind is specified, the `name` must explicitly include the extension. In addition, for all items in the associated extern block, Rust will *keep* the symbol mangled, instead of having an unmangled symbol. Rust will emit an idata section that maps from the *mangled* symbol to a symbol in the specified dll. The symbol in the dll that the idata section maps to depends on which attributes are specified on the item in question:
+Add a new possible value `raw-dylib` to the `kind` property of the `link` attribute. When this kind is specified, the `name` must explicitly include the extension. In addition, for all items in the associated extern block, Rust will *keep* the symbol mangled, instead of having an unmangled symbol. Rust will emit an idata section that maps from the *mangled* symbol to a symbol in the specified dll. The symbol in the dll that the idata section maps to depends on which attributes are specified on the item in question:
 
 * If `#[link_ordinal]` is specified the idata section will map from the mangled symbol to the ordinal specified in the dll.
 * If `#[link_name]` is specified the idata section will map from the mangled symbol to the name specified in the dll, without any calling convention decorations added. If calling convention decorations are desired they must be specified explicitly in the value of the `#[link_name]` attribute.
