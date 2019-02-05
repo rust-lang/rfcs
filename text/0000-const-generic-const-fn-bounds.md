@@ -306,8 +306,10 @@ A summary of the result of the discussion can be found at the bottom of [this bl
 # Drawbacks
 [drawbacks]: #drawbacks
 
-It is not a fully general design that supports every possible use case,
-but it covers the most common cases. See also the alternatives.
+* It is not a fully general design that supports every possible use case,
+  but it covers the most common cases. See also the alternatives.
+* It becomes a breaking change to add a new method to a trait, even if that method has a default
+  impl. One needs to provide a `const` default impl to not make the change a breaking change.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
