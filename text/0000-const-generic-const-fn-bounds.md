@@ -27,7 +27,7 @@ You can call methods of generic parameters of a const function, because they are
 with that bound.
 
 ```rust
-const fn triple_add<T: Add>(a: T, b: T, c: T) -> T {
+const fn triple_add<T: Add<Output=T>>(a: T, b: T, c: T) -> T {
     a + b + c
 }
 ```
