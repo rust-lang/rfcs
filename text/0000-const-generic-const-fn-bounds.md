@@ -140,7 +140,7 @@ compiler will automatically generate `Drop::drop` calls to the fields:
 struct Foo;
 impl Drop for Foo { fn drop(&mut self) {} }
 struct Bar(Foo);
-impl const Drop for Foo { fn drop(&mut self) {} } // not allowed
+impl const Drop for Bar { fn drop(&mut self) {} } // not allowed
 ```
 
 ## Runtime uses don't have `const` restrictions
