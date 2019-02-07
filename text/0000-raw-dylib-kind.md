@@ -1,4 +1,4 @@
-- Feature Name: dll_kind
+- Feature Name: raw_dylib_kind
 - Start Date: 2019-01-22
 - RFC PR: (leave this empty)
 - Rust Issue: (leave this empty)
