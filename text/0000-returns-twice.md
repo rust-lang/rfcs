@@ -7,7 +7,7 @@
 [summary]: #summary
 
 This RFC adds a new function attribute, `#[ffi_returns_twice]`, which indicates
-that an `extern` function can return multiple times.
+that an foreign function can return multiple times.
 
 # Motivation
 [motivation]: #motivation
@@ -22,10 +22,10 @@ return only once. That is, when the execution arrives at the function call, the
 function is called, it returns a single value, and that's it. This assumption
 allows Rust to perform many optimizations.
 
-However, some `extern` functions like [`setjmp`] and [`vfork`] can return
+However, some foreign functions like [`setjmp`] and [`vfork`] can return
 multiple times.
 
-The `#[ffi_returns_twice]` attribute specifies that an `extern` function might
+The `#[ffi_returns_twice]` attribute specifies that a foreign function might
 returns multiple times, inhibiting optimizations that assume that this is never
 the case.
 
@@ -36,7 +36,7 @@ the case.
 # Guide-level and reference-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-The `#[ffi_returns_twice]` function attribute specifies that an `extern` function
+The `#[ffi_returns_twice]` function attribute specifies that a foreign function
 might return multiple times, disabling optimizations that are incorrect for such
 functions. Two examples of such functions are [`setjmp`] and [`vfork`].
 
@@ -89,7 +89,7 @@ multiple times possible?
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-This RFC attempts to make writing programs that interface with extern functions
+This RFC attempts to make writing programs that interface with foreign functions
 that return multiple times possible, but doing so is very challenging because it
 is trivial to introduce undefined behavior in those programs.
 
