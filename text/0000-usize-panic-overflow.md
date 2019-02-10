@@ -179,7 +179,7 @@ There are three major questions I see:
 
 The natural evolution would be towards overflow checking all arithmetic. It is
 my hope that one product of this effort will be identifying small places that
-optimizations and code generation can be improved to either further minimize the
-overhead of overflow checks, and thus help enable this future. Nevertheless, I
-do not believe that checking all arithmetic by default is a realistic short-term
+optimizations and code generation can be improved further minimize the overhead
+of overflow checks, and thus help enable this future. Nevertheless, I do not
+believe that checking all arithmetic by default is a realistic short-term
 possibility.
