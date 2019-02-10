@@ -110,7 +110,7 @@ To consider the extremes of these:
   extremely unpredictable and difficult for programmers to reason about either
   the performance or protection they were getting.
 
-Given these criteria, here's how this proposal fairs:
+Given these criteria, here's how this proposal fares:
 
 **Protection**: because most of the sinks for APIs which are dangerous when
 combined with overflows and unsafe operate on `usize`, this will cover the
@@ -151,10 +151,10 @@ Which someone may expect to be protected, but is not.
 
 This builds on RFC 560, which defined the current semantics for integer
 overflows. In many respects I see this as the minimal change to advance towards
-the world I see as the desired-but-yet-realistic consequence of that RFC -
+the world I see as the desired-but-not-yet-realistic consequence of that RFC -
 checking for overflow by default everywhere.
 
-I'm not aware of any other language which varies i's overflow behavior by type.
+I'm not aware of any other language which varies its overflow behavior by type.
 This suggests that the behavior may be surprising to many users.
 
 My assessment is that this is balanced by the fact that this would have
