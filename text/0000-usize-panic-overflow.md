@@ -163,14 +163,14 @@ prevented all the vulnerabilities that have been seen thus far.
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-There are two major questions I see:
+There are three major questions I see:
 
 - Is the performance really within the acceptable bounds? What are the
   acceptable bounds?
 - Do we need a method for obtaining the previous behavior of `panic` in `debug`
   builds, but no checks in `release` builds? None of the overflow methods
   currently provide this behavior, and so for people who explicitly want it,
-  under this proposal they'd need to write their own?
+  under this proposal they'd need to write their own.
 - Are additional options for controlling overflow behavior at the sub-crate
   level required?
 
