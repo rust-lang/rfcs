@@ -6,8 +6,8 @@
 # Summary
 [summary]: #summary
 
-In `release` builds, adopt the current `debug` behavior of panicking on overflow
-for arithmetic with `usize` (but not other sizes/types of integers).
+In `release` builds, adopt the current `debug_assertions` behavior of panicking
+on overflow for arithmetic with `usize` (but not other sizes/types of integers).
 
 # Motivation
 [motivation]: #motivation
@@ -35,19 +35,19 @@ in lengths, buffer sizes, etc., the kind of values where overflow can be
 dangerous, so it's no coincidence that historic integer-overflow vulnerabilities
 occured with `usize` values.
 
-Rust's current behavior of `panic` in `debug` builds and twos complement
-overflow in `release` builds does not provide protection against these
-vulnerabilities.
+Rust's current behavior of `panic` in `debug_assertions` builds and twos
+complement overflow in `release` builds does not provide protection against
+these vulnerabilities.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 When an integer overflow is encountered when performing an arithmetic operation
-(e.g. `+` or `*`), Rust has two possible different behaviors. In `debug` builds,
-this will always cause a `panic`. In `release` builds the operation will succeed
-and twos complement wrapping will occur - with one exception, if the operation
-is being performed on `usize` integers you'll get the same `panic` as in a
-`debug` build.
+(e.g. `+` or `*`), Rust has two possible different behaviors. In
+`debug_assertions` builds, this will always cause a `panic`. In `release` builds
+the operation will succeed and twos complement wrapping will occur - with one
+exception, if the operation is being performed on `usize` integers you'll get
+the same `panic` as in a `debug_assertions` build.
 
 For most use cases, simply using the default arithmetic operators works well,
 however if you need more control, such as to avoid the `panic` and return a
@@ -69,7 +69,7 @@ overflow can lead to memory corruption. See
 
 All current integer overflow semantics would remain the same, with one
 exception: `usize` in `release` builds would gain the `panic` behavior it
-currently has in `debug` builds.
+currently has in `debug_assertions` builds.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -167,10 +167,10 @@ There are three major questions I see:
 
 - Is the performance really within the acceptable bounds? What are the
   acceptable bounds?
-- Do we need a method for obtaining the previous behavior of `panic` in `debug`
-  builds, but no checks in `release` builds? None of the overflow methods
-  currently provide this behavior, and so for people who explicitly want it,
-  under this proposal they'd need to write their own.
+- Do we need a method for obtaining the previous behavior of `panic` in
+  `debug_assertions` builds, but no checks in `release` builds? None of the
+  overflow methods currently provide this behavior, and so for people who
+  explicitly want it, under this proposal they'd need to write their own.
 - Are additional options for controlling overflow behavior at the sub-crate
   level required?
 
