@@ -133,7 +133,8 @@ evaluation. This means
 is now allowed, because we can prove
 that everything from the creation of the value to the destruction is const evaluable.
 
-Note that all fields of types with a `const Drop` impl must have `const Drop` impls, too, as the
+Note that all fields of types with a `const Drop` impl must either have `const Drop` impls or no
+`Drop` impls, as the
 compiler will automatically generate `Drop::drop` calls to the fields:
 
 ```rust
