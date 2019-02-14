@@ -295,3 +295,9 @@ With the mechanisms specified above, it could be possible to remove the concept 
 By using stable feature flags for `std`, we could say that `std` as a crate with `default-features = false` would essentially be `no_core`, or with `features = ["core"]`, we would be the same as `no_std`.
 
 This abstraction may not map to the actual implementation of `libcore` or `libstd`, but instead be an abstraction layer for the end developer.
+
+## Stop shipping pre-compiled `core` and `std`
+
+With the ability to build these crates on demand, we may want to decide not to ship `target` bundles for any users.
+
+This would come at a cost of increased compile times, at least for the first build, if the artifacts are cached globally. However it would remove a mental snag of having to sometimes run `rustup target add`, and confusion from some users why parts of `std` and `core` have different optimization settings (particularly for debug builds) when debugging.
