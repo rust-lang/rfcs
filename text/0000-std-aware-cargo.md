@@ -277,6 +277,14 @@ e.g., should the build artifacts be placed in `target/`, only usable by this pro
 
 Right now these are built using the global lock file in `rust-lang/rust`. Should this always be true? How should Cargo handle this gracefully?
 
+## Should profile changes always prompt a rebuild of `core`/`std`?
+
+For example, if a user sets their debug build to use `opt-level = 'z'`, should this rebuild `core`/`std` to use that opt level? Or should an additional flag, such as `apply-to-sysroot` be required to opt-in to this behavior, unless otherwise needed?
+
+This could increase compile times for users that have set profile overrides, but have not previously needed a custom `core` or `std`.
+
+Another option in this area is to force the use of profile overrides, as specified by [RFC2822](https://github.com/rust-lang/rfcs/blob/master/text/2282-profile-dependencies.md).
+
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
