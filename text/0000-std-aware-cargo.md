@@ -11,7 +11,7 @@ Currently, the `core` and `std` components of Rust are handled in a different wa
 # Motivation
 [motivation]: #motivation
 
-In today's Rust environment, `core` and `std` are shipped as precompiled objects. This was done for a number of reasons, including faster compile times, and a more consistent experience for users of these dependencies. This design has served fairly well for the bulk of users, however there are a number of less common uses of Rust, that are not well served by this approach. Examples include:
+In today's Rust environment, `core` and `std` are shipped as precompiled objects. This was done for a number of reasons, including faster compile times, and a more consistent experience for users of these dependencies. This design has served the bulk of users fairly well. However there are a number of less common uses of Rust, that are not well served by this approach. Examples include:
 
 * Supporting new/arbitrary targets, such as those defined by a ".json" file
 * Making modifications to `core` or `std` through use of feature flags
