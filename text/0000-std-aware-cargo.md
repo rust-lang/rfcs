@@ -19,7 +19,7 @@ In today's Rust environment, `core` and `std` are shipped as precompiled objects
 
 Previously, these needs were somewhat addressed by the external tool [xargo], which managed the recompilation of these dependencies when necessary. However, this tool has become [deprecated], and even when supported, required a nightly version of the compiler for all operation.
 
-This approach has [gathered support] from various [rust team members], and this RFC aims to take inspiration from tools and workflows like [xargo], and integrate them into Cargo itself.
+This approach has [gathered support] from various [rust team members]. This RFC aims to take inspiration from tools and workflows like [xargo], integrating them into Cargo itself.
 
 [xargo]: https://github.com/japaric/xargo
 [deprecated]: https://github.com/japaric/xargo/issues/193
@@ -31,7 +31,7 @@ This approach has [gathered support] from various [rust team members], and this 
 
 This proposal aims to make `core` and `std` feel a little bit less like a special case compared to other dependencies to the end users of Cargo. This proposal aims to minimize the number of new concepts introduced to achieve this, by interacting, configuring, modifying, and patching `core` and `std` in a similar manner to other dependent crates.
 
-This RFC proposes the following concrete changes, which may or may not be implemented in this order, and may be done incrementally. The details and caveats around these stages are discussed in the Reference Level Explanation.
+This RFC proposes the following concrete changes, which may or may not be implemented in this order, and may be done incrementally. The details and caveats around these stages are discussed in the [Reference Level Explanation][reference-level-explanation].
 
 1. Allow developers of root crates to recompile `core` (and `compiler-builtins`) when their desired target does not match one available as a `rustup target add` target, without the usage of a nightly compiler. This version of `core` would be built from the same source files used to build the current version of `rustc`/`cargo`.
 2. Introduce the concept of "stable features" for `core`, which allow the end user to influence the behavior of their custom version of `core`, without the use of a nightly compiler.
@@ -121,7 +121,7 @@ While this may have code size or performance implications, this would allow for 
 
 #### `RUSTC_BOOTSTRAP`
 
-It is necessary to use unstable features to build `core`. In order to allow users of a stable compiler to build `core`, we would set the `RUSTC_BOOTSTRAP` environment variable **ONLY** for the compilation of `core`.
+It is necessary to use unstable features to build `core`. To allow users of a stable compiler to build `core`, we would set the `RUSTC_BOOTSTRAP` environment variable **ONLY** for the compilation of `core`.
 
 This should be considered sound, as stable users may not change the source used to build `core`, or the features used to build `core`.
 
