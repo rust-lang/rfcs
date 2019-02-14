@@ -14,7 +14,7 @@ Currently, the `core` and `std` components of Rust are handled in a different wa
 In today's Rust environment, `core` and `std` are shipped as precompiled objects. This was done for a number of reasons, including faster compile times, and a more consistent experience for users of these dependencies. This design has served the bulk of users fairly well. However there are a number of less common uses of Rust, that are not well served by this approach. Examples include:
 
 * Supporting new/arbitrary targets, such as those defined by a ".json" file
-* Making modifications to `core` or `std` through use of feature flags
+* Modifying `core` or `std` through use of feature flags
 * Users who would like to make different optimizations to `core` or `std`, such as `opt-level = 'z'`, with `panic = "abort"`
 
 Previously, these needs were somewhat addressed by the external tool [xargo], which managed the recompilation of these dependencies when necessary. However, this tool has become [deprecated], and even when supported, required a nightly version of the compiler for all operation.
