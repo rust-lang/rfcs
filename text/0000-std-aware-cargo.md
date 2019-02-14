@@ -11,7 +11,7 @@ Currently, the `core` and `std` components of Rust are handled in a different wa
 # Motivation
 [motivation]: #motivation
 
-In today's Rust environment, `core` and `std` are shipped as precompiled objects. This was done for a number of reasons, including faster compile times, and a more consistent experience for users of these dependencies. This design has served fairly well for the bulk of users, however there are a number of less common, but not esoteric uses, that are not well served by this approach. Examples include:
+In today's Rust environment, `core` and `std` are shipped as precompiled objects. This was done for a number of reasons, including faster compile times, and a more consistent experience for users of these dependencies. This design has served fairly well for the bulk of users, however there are a number of less common uses of Rust, that are not well served by this approach. Examples include:
 
 * Supporting new/arbitrary targets, such as those defined by a ".json" file
 * Making modifications to `core` or `std` through use of feature flags
@@ -29,7 +29,7 @@ This approach has [gathered support] from various [rust team members], and this 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-This proposal aims to make `core` and `std` feel a little bit less like a special case compared to other dependencies to the end users of Cargo. This will be achieved by using idioms used for interacting, configuring, modifying, and patching other crates in a similar method for `core` and `std`.
+This proposal aims to make `core` and `std` feel a little bit less like a special case compared to other dependencies to the end users of Cargo. This proposal aims to minimize the number of new concepts introduced to achieve this, by interacting, configuring, modifying, and patching `core` and `std` in a similar manner to other dependent crates.
 
 This RFC proposes the following concrete changes, which may or may not be implemented in this order, and may be done incrementally. The details and caveats around these stages are discussed in the Reference Level Explanation.
 
@@ -52,7 +52,9 @@ A reference-level explanation is made for each of the items enumerated above.
 
 ### Use Case
 
-For developers working with new targets not yet supported by the Rust project, this feature would allow the compilation of `core` for any target that can be specified as a valid target json format.
+For developers working with new targets not yet supported by the Rust project, this feature would allow the compilation of `core` for any target that can be specified as a valid [target json format].
+
+[target json format]: https://rust-lang.github.io/rfcs/0131-target-specification.html
 
 This functionality would be possible even with the use of a stable compiler.
 
@@ -80,7 +82,12 @@ Users would also be able to specify a json file, by providing a path to the json
 cargo build --target thumbv7em-freertos-eabihf.json
 ```
 
-By using a json target file, Cargo will rebuild `core` for use in the current project. When rebuilding `core`, Cargo will respect the profile settings used in the current project, including settings such as `opt-level`.
+In general, any of the following would prompt Cargo to recompile `core`, rather than use a pre-compiled version:
+
+* A custom target json is used
+* The root crate has modified the feature flags of `core`
+* The root crate has set certain profile settings, such as opt-level, etc.
+* The root crate has specified a `patch.sysroot` (this is defined in a later section)
 
 Users of a stable compiler would not be able to customize `core` outside of these profile settings.
 
@@ -93,6 +100,8 @@ features = [...]
 ```
 
 It is not necessary to explicitly mention the dependency of `core`, unless changes to features are necessary.
+
+Cargo would use the source of `core` located in the user's `SYSROOT` directory. This source code would be obtained in the same was as necessary today, through the use of `rustup component add rust-src`. If this component is missing, Cargo would exit with an error code, and would prompt the user to execute the command specified above.
 
 ### Technical Implications
 
@@ -218,14 +227,26 @@ The `patch.sysroot` term will be introduced for patch when referring to componen
 # Drawbacks
 [drawbacks]: #drawbacks
 
-Why should we *not* do this?
+This RFC introduces new concepts to the use of Rust and Cargo, and could be confusing for current users of Rust who have not had to consider changes to `core` or `std` previously. However, in the normal case, most users are unlikely to need these settings, while they allow users that DO need to make changes to control important steps of the build process.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-- Why is this design the best in the space of possible designs?
-- What other designs have been considered and what is the rationale for not choosing them?
-- What is the impact of not doing this?
+> Why is this design the best in the space of possible designs?
+
+This approach borrows from existing behaviors used by Cargo to allow configuration of `core` and `std`, as if they were a regular crate dependency.
+
+This approach also offers an approach that can be developed and applied incrementally, allowing for time to find coner cases not considered by this RFC
+
+> What other designs have been considered and what is the rationale for not choosing them?
+
+To the author of this RFC's knowledge, there are no other open designs, other than the use tools that wrap Cargo entirely, such as [xargo].
+
+[xargo]: https://github.com/japaric/xargo
+
+> What is the impact of not doing this?
+
+By not doing this, Rust will continue to be difficult to use for users and platforms "on the edge", such as new platform developers or embedded and WASM users.
 
 # Prior art
 [prior-art]: #prior-art
@@ -236,27 +257,33 @@ Why should we *not* do this?
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-- What parts of the design do you expect to resolve through the RFC process before this gets merged?
-- What parts of the design do you expect to resolve through the implementation of this feature before stabilization?
-- What related issues do you consider out of scope for this RFC that could be addressed in the future independently of the solution that comes out of this RFC?
+## How are dependencies for `core` and `std` specified?
+
+For example in a `no_core` or `no_std` crate, how would we tell Cargo **not** to build the `core` and/or `std` dependencies?
+
+## Should `std` be rebuilt if `core` is rebuilt?
+
+Is it necessary to rebuild `std` using the customized `core`, even if no changes to `std` are necessary?
+
+## Should Cargo obtain or verify the source code for `libcore` or `libstd`?
+
+Right now we depend on `rustup` to obtain the correct source code for these libraries, and we rely on the user not to tamper with the contents. Are these reasonable decisions?
+
+## Should the custom built `libcore` and `libstd` reside locally or globally?
+
+e.g., should the build artifacts be placed in `target/`, only usable by this project, or in `.cargo/`, to be possibly reused by multiple projects, if they happen to have the same settings?
+
+## How do we handle `libcore` and `libstd`'s `Cargo.lock` file?
+
+Right now these are built using the global lock file in `rust-lang/rust`. Should this always be true? How should Cargo handle this gracefully?
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-Think about what the natural extension and evolution of your proposal would
-be and how it would affect the language and project as a whole in a holistic
-way. Try to use this section as a tool to more fully consider all possible
-interactions with the project and language in your proposal.
-Also consider how the this all fits into the roadmap for the project
-and of the relevant sub-team.
+## Unified `core` and `std`
 
-This is also a good place to "dump ideas", if they are out of scope for the
-RFC you are writing but otherwise related.
+With the mechanisms specified above, it could be possible to remove the concept of `core` and `std` from the user, leaving only `core`.
 
-If you have tried and cannot think of any future possibilities,
-you may simply state that you cannot think of anything.
+By using stable feature flags for `std`, we could say that `std` as a crate with `default-features = false` would essentially be `no_core`, or with `features = ["core"]`, we would be the same as `no_std`.
 
-Note that having something written down in the future-possibilities section
-is not a reason to accept the current or a future RFC; such notes should be
-in the section on motivation or rationale in this or subsequent RFCs.
-The section merely provides additional information.
+This abstraction may not map to the actual implementation of `libcore` or `libstd`, but instead be an abstraction layer for the end developer.
