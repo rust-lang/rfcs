@@ -133,16 +133,55 @@ evaluation. This means
 is now allowed, because we can prove
 that everything from the creation of the value to the destruction is const evaluable.
 
-Note that all fields of types with a `const Drop` impl must either have `const Drop` impls or no
-`Drop` impls, as the
-compiler will automatically generate `Drop::drop` calls to the fields:
+Note that one can implement `const Drop` for structs with fields with just a regular `Drop` impl.
+This will not allow using such
 
 ```rust
 struct Foo;
 impl Drop for Foo { fn drop(&mut self) {} }
 struct Bar(Foo);
-impl const Drop for Bar { fn drop(&mut self) {} } // not allowed
+impl const Drop for Bar { fn drop(&mut self) {} }
+// cannot call with `T == Foo`, because of missing `const Drop` impl
+fn foo<T: const Drop>(t: T) {
+    // Let t run out of scope and get dropped.
+    // Would not be ok if `T` is `Bar`,
+    // because the drop glue would drop `Bar`'s `Foo` field after the `Bar::drop` had been called.
+    // This function is therefor not accept by the compiler
+}
 ```
+
+## const Drop in generic code
+
+`Drop` is special in Rust. You don't need to specify `T: Drop`, but `T::drop` will still be called
+if an object of type `T` goes out of scope. This means there's an implicit assumption, that given
+an arbitrary `T`, we might call `T::drop` if `T` has a drop impl. While we can specify
+`T: const Drop` to allow calling `T::drop` in a `const fn`, this means we can't pass e.g. `u32` for
+`T`, because `u32` has no `Drop` impl. Even types that definitely need dropping, but have no
+explicit `Drop` impl (like `struct Foo(String);`) cannot be passed if `T` requires a `Drop` bound.
+
+To summarize, there are currently three ways to interact with `Drop`:
+
+* don't mention `Drop` in the parameter bounds (or mention `?Drop`, amounting to the same thing)
+    * can pass any type that fulfills the other bounds, but may never go out of scope
+* mention `Drop` in the parameter bounds
+    * can only pass types with explicit `Drop` impls, still can't drop any values in the function
+* mention `const Drop` in the parameter bounds
+    * can only pass types with explicit `const Drop` impls (so no `u32`)
+
+The language gets a new marker trait `ConstDrop` which is automatically implemented for
+
+1. any `Copy` type
+2. any aggregate type with a `const Drop` impl consisting solely of elements of 1. 2.
+
+The body of a const function is allowed to generate drop glue for types that implement `ConstDrop`.
+
+While we could automatically implement `ConstDrop` for arbitrary types consisting only of other
+`ConstDrop` types, this would make adding a `!ConstDrop` field to a type a breaking change.
+
+To reduce the confusion between `ConstDrop` and `const Drop` for users,
+`impl const Drop for SomeType` automatically enforces `ConstDrop` for all fields of `SomeType`
+similar to how `impl<T: Foo> Drop for SomeType<T>` is illegal if `SomeType` wasn't also defined with
+the `Foo` bound on the `T`.
 
 ## Runtime uses don't have `const` restrictions
 
