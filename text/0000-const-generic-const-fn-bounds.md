@@ -133,14 +133,16 @@ evaluation. This means that
 is now allowed, because we can prove
 that everything from the creation of the value to the destruction is const evaluable.
 
-Note that one can implement `const Drop` for structs with fields with just a regular `Drop` impl.
-This will not allow using such
+Note that one cannot implement `const Drop` for structs with fields with just a regular `Drop` impl.
+While from a language perspective nothing speaks against that, this would be very surprising for
+users. Additionally it would make `const Drop` pretty useless. This is explained in more detail in
+the following subsection about generic code and `const Drop`.
 
 ```rust
 struct Foo;
 impl Drop for Foo { fn drop(&mut self) {} }
 struct Bar(Foo);
-impl const Drop for Bar { fn drop(&mut self) {} }
+impl const Drop for Bar { fn drop(&mut self) {} } // not ok
 // cannot call with `T == Foo`, because of missing `const Drop` impl
 fn foo<T: const Drop>(t: T) {
     // Let t run out of scope and get dropped.
@@ -150,7 +152,7 @@ fn foo<T: const Drop>(t: T) {
 }
 ```
 
-## const Drop in generic code
+### const Drop in generic code
 
 `Drop` is special in Rust. You don't need to specify `T: Drop`, but `T::drop` will still be called
 if an object of type `T` goes out of scope. This means there's an implicit assumption, that given
