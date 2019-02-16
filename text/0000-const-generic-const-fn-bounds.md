@@ -171,7 +171,8 @@ To summarize, there are currently three ways to interact with `Drop`:
 The language gets a new marker trait `ConstDrop` which is automatically implemented for:
 
 1. any `Copy` type
-2. any aggregate type with a `const Drop` impl consisting solely of elements of 1. and 2.
+2. any aggregate type with a `const Drop` impl consisting solely of elements of 1., 2. and 3.
+3. arrays and tuples consisting solely of elements of 1. 2. and 3.
 
 The body of a const function is allowed to generate drop glue for types that implement `ConstDrop`.
 
