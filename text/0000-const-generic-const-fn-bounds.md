@@ -146,7 +146,7 @@ fn foo<T: const Drop>(t: T) {
     // Let t run out of scope and get dropped.
     // Would not be ok if `T` is `Bar`,
     // because the drop glue would drop `Bar`'s `Foo` field after the `Bar::drop` had been called.
-    // This function is therefor not accept by the compiler
+    // This function is therefore not accept by the compiler.
 }
 ```
 
@@ -157,7 +157,7 @@ if an object of type `T` goes out of scope. This means there's an implicit assum
 an arbitrary `T`, we might call `T::drop` if `T` has a drop impl. While we can specify
 `T: const Drop` to allow calling `T::drop` in a `const fn`, this means we can't pass e.g. `u32` for
 `T`, because `u32` has no `Drop` impl. Even types that definitely need dropping, but have no
-explicit `Drop` impl (like `struct Foo(String);`) cannot be passed if `T` requires a `Drop` bound.
+explicit `Drop` impl (like `struct Foo(String);`), cannot be passed if `T` requires a `Drop` bound.
 
 To summarize, there are currently three ways to interact with `Drop`:
 
@@ -168,10 +168,10 @@ To summarize, there are currently three ways to interact with `Drop`:
 * mention `const Drop` in the parameter bounds
     * can only pass types with explicit `const Drop` impls (so no `u32`)
 
-The language gets a new marker trait `ConstDrop` which is automatically implemented for
+The language gets a new marker trait `ConstDrop` which is automatically implemented for:
 
 1. any `Copy` type
-2. any aggregate type with a `const Drop` impl consisting solely of elements of 1. 2.
+2. any aggregate type with a `const Drop` impl consisting solely of elements of 1. and 2.
 
 The body of a const function is allowed to generate drop glue for types that implement `ConstDrop`.
 
