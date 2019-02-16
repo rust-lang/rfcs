@@ -124,7 +124,7 @@ impl const Drop for SomeDropType {
 ```
 
 You are now allowed to actually let a value of `SomeDropType` get dropped within a constant
-evaluation. This means
+evaluation. This means that
 
 ```rust
 (SomeDropType(&Cell::new(42)), 42).1
