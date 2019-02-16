@@ -317,6 +317,12 @@ bounds, there's just no way of declaring them. Checking methods for constness is
 for inherent methods. The implementation will have to extend those checks to also run on methods
 of `impl const` items.
 
+## Precedence
+
+A bound with multiple traits only ever binds the `const` to the next trait, so `const Foo + Bar`
+only means that one has a `const Foo` impl and a regular `Bar` impl. If both bounds are supposed to
+be `const`, one needs to write `const Foo + const Bar`. More complex bounds might need parentheses.
+
 ## Implementation instructions
 
 1. Add an `maybe_const` field to the AST's `TraitRef`
