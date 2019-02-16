@@ -417,7 +417,7 @@ instead.
 With respect to this RFC, the semantics of `type Assoc = impl Bar;`
 inside a trait definition, where `Assoc` is the name of the associated type,
 is understood as what it means in terms of `default impl ..` as discussed
-in [RFC 1210]. What this entails means in concrete terms is that given:
+in [RFC 1210]. What this means in concrete terms is that given:
 
 ```rust
 trait Foo {
