@@ -1,7 +1,7 @@
-- Feature Name: linked_list_cursors
+- Feature Name: `linked_list_cursors`
 - Start Date: 2018-10-14
-- RFC PR: (leave this empty)
-- Rust Issue: (leave this empty)
+- RFC PR: [rust-lang/rfcs#2570](https://github.com/rust-lang/rfcs/pull/2570)
+- Rust Issue: [rust-lang/rust#58533](https://github.com/rust-lang/rust/issues/58533)
 
 # Summary
 [summary]: #summary
