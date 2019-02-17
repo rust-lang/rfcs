@@ -315,8 +315,8 @@ fn foo(#[inline] bar: u32) { .. }
 Let `OuterAttr` denote the production for an attribute `#[...]`.
 
 On the formal parameters of an `fn` item, including on method receivers,
-and irrespective of whether the `fn` has a body or not, `OuterAttr+` is allowed.
-For example, all the following are valid:
+and irrespective of whether the `fn` has a body or not, `OuterAttr+` is allowed
+but not required. For example, all the following are valid:
 
 ```rust
 fn g1(#[attr1] #[attr2] pat: Type) { .. }
@@ -334,10 +334,16 @@ fn g6<'a>(#[attr] &'a self) { .. }
 fn g7<'a>(#[attr] &'a mut self) { .. }
 
 fn g8(#[attr] self: Self) { .. }
+
+fn g9(#[attr] self: Rc<Self>) { .. }
 ```
 
 The attributes here apply to the parameter *as a whole*,
 e.g. in `g2`, `#[attr]` applies to `pat: Type` as opposed to `pat`.
+
+More generally, an `fn` item contains a list of formal parameters separated or
+terminated by `,` and delimited by `(` and `)`. Each parameter in that list may
+optionally be prefixed by `OuterAttr+`.
 
 ### Variadics
 
@@ -348,6 +354,8 @@ extern "C" {
     fn foo(x: u8, #[attr] ...);
 }
 ```
+
+That is, for the purposes of this RFC, `...` is considered as a parameter.
 
 ### Anonymous parameters in Rust 2015
 
