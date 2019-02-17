@@ -244,7 +244,10 @@ Greater or equal is defined in terms of [caret requirements].
 
 ## `#[cfg(accessible($path))]`
 
-To the `cfg` attribute, a `accessible` flag is added.
+To the `cfg` attribute, an `accessible` flag is added.
+
+### Syntactic form
+
 This flag requires that a `path` fragment be specified in it inside parenthesis
 but not inside a string literal. The `$path` must start with leading `::`
 and may not refer to any parts of the own crate (e.g. with `::crate::foo`,
@@ -253,16 +256,39 @@ This restriction exists to ensure that the user does not try to
 conditionally compile against parts of their own crate because that crate
 has not been compiled when the `accessible` flag is checked on an item.
 
+### Basic semantics
+
 If and only if the path referred to by `$path` does exist and is public
 will the `#[cfg(accessible($path))]` flag be considered active.
+
+### `#![feature(..)]` gating 
+
 In checking whether the path exists or not, the compiler will consider
 feature gated items to exist if the gate has been enabled.
+
+**NOTE:** In the section on `#[cfg(nightly)]` and in the
+[guide level explanation][guide-level-explanation] we note that there are
+some risks when combining `cfg(feature = "unstable")` and `accessible(..)` to
+add conditional support for an unstable feature that is expected to stabilize.
+With respect to such usage:
+
+1. User-facing documentation, regarding `accessible(..)` should highlight risky
+   scenarios, including with examples, with respect to possible breakage.
+
+2. Our stability policy is updated to state that breakage caused due to misuse
+   of `accessible(..)` is _allowed_ breakage. Consequently, rust teams will not
+   delay releases or un-stabilize features because they broke a crate using
+   `accessible(..)` to gate on those features.
+
+### Inherent implementations
 
 If a path refers to an item inside an inherent implementation,
 the path will be considered to exist if any configuration of generic
 parameters can lead to the item. To check whether an item exists for
 an implementation with a specific sequence of concrete types applied to
 a type constructor, it is possible to use the `::foo::bar::<T>::item` syntax.
+
+### Fields
 
 It is also possible to refer to fields of `struct`s, `enum`s, and `unions`.
 Assuming that we have the following definitions in the `foobar` crate:
@@ -290,6 +316,8 @@ fn do_stuff() {
     ...
 }
 ```
+
+### Macros
 
 Finally, bang macros, derive macros, attributes of all sorts including
 built-in, user provided, as well as latent derive helper attributes,
