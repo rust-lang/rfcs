@@ -144,7 +144,7 @@ impl Drop for Foo { fn drop(&mut self) {} }
 struct Bar(Foo);
 impl const Drop for Bar { fn drop(&mut self) {} } // not ok
 // cannot call with `T == Foo`, because of missing `const Drop` impl
-fn foo<T: const Drop>(t: T) {
+fn foo<T: Drop>(t: T) {
     // Let t run out of scope and get dropped.
     // Would not be ok if `T` is `Bar`,
     // because the drop glue would drop `Bar`'s `Foo` field after the `Bar::drop` had been called.
@@ -157,7 +157,7 @@ fn foo<T: const Drop>(t: T) {
 `Drop` is special in Rust. You don't need to specify `T: Drop`, but `T::drop` will still be called
 if an object of type `T` goes out of scope. This means there's an implicit assumption, that given
 an arbitrary `T`, we might call `T::drop` if `T` has a drop impl. While we can specify
-`T: const Drop` to allow calling `T::drop` in a `const fn`, this means we can't pass e.g. `u32` for
+`T: Drop` to allow calling `T::drop` in a `const fn`, this means we can't pass e.g. `u32` for
 `T`, because `u32` has no `Drop` impl. Even types that definitely need dropping, but have no
 explicit `Drop` impl (like `struct Foo(String);`), cannot be passed if `T` requires a `Drop` bound.
 
@@ -165,9 +165,10 @@ To summarize, there are currently three ways to interact with `Drop`:
 
 * don't mention `Drop` in the parameter bounds (or mention `?Drop`, amounting to the same thing)
     * can pass any type that fulfills the other bounds, but may never go out of scope
+* mention `?const Drop` in the parameter bounds
+    * can only pass types with explicit (const or not) `Drop` impls,
+      still can't drop any values inside the function
 * mention `Drop` in the parameter bounds
-    * can only pass types with explicit `Drop` impls, still can't drop any values in the function
-* mention `const Drop` in the parameter bounds
     * can only pass types with explicit `const Drop` impls (so no `u32`)
 
 The language gets a new marker trait `ConstDrop` which is automatically implemented for:
