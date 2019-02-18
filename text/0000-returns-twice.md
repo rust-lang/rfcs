@@ -83,8 +83,16 @@ Assembly, etc.) to do so.
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-Is this attribute sufficient to make write programs with functions that return
+* Is this attribute sufficient to make write programs with functions that return
 multiple times possible?
+
+* Should we give this attribute a different name, e.g.,
+  `#[might_return_multiple_times]` or similar? Currently, this attribute is
+  called `returns_twice` because that's how the C attribute is called. Using the
+  same name as C here makes life easier for them.
+
+* Should we namespace `ffi`-only attributes somehow (e.g. `#[ffi(returns_twice,
+  foo, bar)]` ? See: https://github.com/rust-lang/rfcs/issues/2637
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
