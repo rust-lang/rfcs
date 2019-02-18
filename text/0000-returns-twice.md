@@ -7,7 +7,7 @@
 [summary]: #summary
 
 This RFC adds a new function attribute, `#[ffi_returns_twice]`, which indicates
-that an foreign function can return multiple times.
+that a foreign function can return multiple times.
 
 # Motivation
 [motivation]: #motivation
