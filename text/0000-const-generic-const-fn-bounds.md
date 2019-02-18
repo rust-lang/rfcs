@@ -171,21 +171,21 @@ To summarize, there are currently three ways to interact with `Drop`:
 * mention `Drop` in the parameter bounds
     * can only pass types with explicit `const Drop` impls (so no `u32`)
 
-The language gets a new marker trait `ConstDrop` which is automatically implemented for:
+To resolve this, the language gets a new marker trait `ConstDrop` which is automatically implemented
+for:
 
-1. any `Copy` type
-2. any aggregate type with a `const Drop` impl consisting solely of elements of 1., 2., and 3.
-3. arrays and tuples consisting solely of elements of 1., 2., and 3.
+* any `Copy` type
+* arrays and tuples consisting solely of `ConstDrop` types
+
+`ConstDrop` is similar to `Copy`: you can only implement it for your type, if all fields are
+`ConstDrop`. While we could automatically implement `ConstDrop` for arbitrary types consisting only
+of other `ConstDrop` types, this would make adding a `!ConstDrop` field to a type a breaking change.
 
 The body of a const function is allowed to generate drop glue for types that implement `ConstDrop`.
 
-While we could automatically implement `ConstDrop` for arbitrary types consisting only of other
-`ConstDrop` types, this would make adding a `!ConstDrop` field to a type a breaking change.
-
 To reduce the confusion between `ConstDrop` and `const Drop` for users,
-`impl const Drop for SomeType` automatically enforces `ConstDrop` for all fields of `SomeType`
-similar to how `impl<T: Foo> Drop for SomeType<T>` is illegal if `SomeType` wasn't also defined with
-the `Foo` bound on the `T`.
+`impl const Drop for SomeType` requires a `ConstDrop` impl for `SomeType`, similar to how
+implementing `Copy` requires you to also implement `Clone`.
 
 ## Runtime uses don't have `const` restrictions
 
@@ -652,3 +652,25 @@ const fn foo<T>(foo: Foo<T>, bar: Foo<T>) -> T {
     foo.t + bar.t
 }
 ```
+
+## `ConstDrop` inference
+
+The design given in this RFC requires annotating a lot of generic parameters with `T: ConstDrop` to
+make the code forward compatible with e.g. allowing dropping values of type `T`. Since removing a
+trait bound other than `?Sized` is never a breaking change, we can remove the `ConstDrop` bound
+without that being a breaking change for users. Adding a `ConstDrop` bound later would be a breaking
+change though.
+
+As an alternative, we could automatically assume a `ConstDrop` bound for all `T` and require opt out
+via `?ConstDrop`. This would be a breaking change, because
+
+```rust
+const fn foo<T>(t: T) -> T { t }
+```
+
+is legal on stable Rust.
+
+## `ConstDrop` is not a great name
+
+Bikeshed this name before stabilization. We don't want to end up with `T: const ConstDrop` bounds
+in the future (see the "explicit `const` bounds" future extension to this RFC).
