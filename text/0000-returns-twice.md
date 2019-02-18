@@ -108,7 +108,8 @@ undefined behavior of the type "use-after-move".
 
 In the presence of types that implement `Drop`, usage of APIs that return
 multiple times requires extreme care to avoid deallocating memory without
-invoking constructors. We could also explore diagnosing these cases.
+invoking destructors - this is critical for using [`Pin`] safely. We could also
+explore diagnosing these cases.
 
 [`Drop`]: https://doc.rust-lang.org/std/ops/trait.Drop.html
 [`Pin`]: https://doc.rust-lang.org/std/pin/struct.Pin.html
