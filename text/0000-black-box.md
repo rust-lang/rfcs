@@ -44,10 +44,8 @@ implementations are encouraged to be maximally pessimistic in terms of
 optimizations.
 
 This property makes `black_box` useful for writing code in which certain
-optimizations are not desired. However, disabling optimizations is not
-guaranteed, which means that `black_box` is not a solution for programs that
-rely on certain optimizations being disabled for correctness, like, for example,
-constant time code.
+optimizations are not desired, but too unreliable when disabling these
+optimizations is required for correctness.
 
 ### Example 1 - basics 
 
