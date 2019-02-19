@@ -33,7 +33,7 @@ trying to model.
 The hint:
 
 ```rust
-pub const fn black_box<T>(x: T) -> T;
+pub fn black_box<T>(x: T) -> T;
 ```
 
 behaves like the [identity function][identity_fn]: it just returns `x` and has
@@ -136,7 +136,7 @@ The
 ```rust
 mod core::hint {
     /// Identity function that disables optimizations.
-    pub const fn black_box<T>(x: T) -> T;
+    pub fn black_box<T>(x: T) -> T;
 }
 ```
 
@@ -184,7 +184,7 @@ which the following two functions are provided instead:
 ```rust
 #[inline(always)]
 pub fn value_fence<T>(x: T) -> T {
-    let y = unsafe { (&x as *const T).read_volatile() };
+    let y = unsafe { (&x as *T).read_volatile() };
     std::hint::forget(x);
     y
 }
@@ -222,10 +222,16 @@ The `black_box` function with slightly different semantics is provided by the
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
+* `const fn`: it is unclear whether `black_box` should be a `const fn`. If it
+  were, that would hint that it cannot have any side-effects, or that it cannot
+  do anything that `fn`s cannot do.
+
 * Naming: it is unclear whether `black_box` is the right name for this primitive
   at this point. Some argumens in favor or against are that:
-     * pro: [black box] is a common term in computer programming, that conveys that
-       nothing can be assumed about it except for its inputs and outputs.
+     * pro: [black box] is a common term in computer programming, that conveys
+       that nothing can be assumed about it except for its inputs and outputs.
+       con: [black box] often hints that the function has no side-effects, but
+       this is not something that can be assumed about this API.
      * con: `_box` has nothing to do with `Box` or `box`-syntax, which might be confusing
  
   Alternative names suggested: `pessimize`, `unoptimize`, `unprocessed`, `unknown`,
