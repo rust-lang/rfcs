@@ -221,3 +221,5 @@ The `black_box` function with slightly different semantics is provided by the
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
+
+* Naming: it is unclear whether `black_box` is the right name for this primitive at this point.
