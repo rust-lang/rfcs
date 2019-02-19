@@ -222,4 +222,11 @@ The `black_box` function with slightly different semantics is provided by the
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
-* Naming: it is unclear whether `black_box` is the right name for this primitive at this point.
+* Naming: it is unclear whether `black_box` is the right name for this primitive
+  at this point. Some argumens in favor or against are that:
+     * pro: [black box] is a common term in computer programming, that conveys that
+       nothing can be assumed about it except for its inputs and outputs.
+     * con: `_box` has nothing to do with `Box` or `box`-syntax, which might be confusing
+ 
+  Alternative names suggested: `pessimize`, `unoptimize`, `unprocessed`, `unknown`,
+  `do_not_optimize` (Google Benchmark).
