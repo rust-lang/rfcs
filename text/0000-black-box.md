@@ -222,7 +222,7 @@ The `black_box` function with slightly different semantics is provided by the
 
 * `const fn`: it is unclear whether `black_box` should be a `const fn`. If it
   were, that would hint that it cannot have any side-effects, or that it cannot
-  do anything that `fn`s cannot do.
+  do anything that `const fn`s cannot do. 
 
 * Naming: it is unclear whether `black_box` is the right name for this primitive
   at this point. Some argumens in favor or against are that:
