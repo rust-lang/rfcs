@@ -6,19 +6,24 @@
 # Summary
 [summary]: #summary
 
-This RFC adds `core::hint::black_box`, a hint to disable certain compiler
-optimizations.
+This RFC adds `core::hint::black_box` (see [black box]), an identity function
+that hints the compiler to be maximally pessimistic in terms of the assumptions
+about what `black_box` could do.
+
+[black box]: https://en.wikipedia.org/wiki/Black_box
 
 # Motivation
 [motivation]: #motivation
 
-A hint to disable compiler optimizations is widely useful. One such application
-is writing synthetic benchmarks where, due to the constrained nature of the
-benchmark, the compiler is able to perform optimizations that wouldn't otherwise
-trigger in practice.
+Due to the constrained nature of synthetic benchmarks, the compiler is often
+able to perform optimizations that wouldn't otherwise trigger in practice, like
+completely removing a benchmark if it has no side-effects. 
 
-There are currently no viable stable Rust alternatives for `black_box`. The
-current nightly Rust implementations all rely on inline assembly.
+Currently, stable Rust users need to introduce expensive operations into their
+programs to prevent these optimizations. Examples thereof are volatile loads and
+stores, or calling unknown functions via C FFI. These operations incur overheads
+that often would not be present in the application the synthetic benchmark is
+trying to model.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -49,7 +54,7 @@ constant time code.
 Example 1 ([`rust.godbolt.org`](https://godbolt.org/g/YP2GCJ)):
 
 ```rust
-fn foo(x: i32) -> i32{ 
+fn foo(x: i32) -> i32 { 
   hint::black_box(2 + x);
   3
 }
@@ -143,7 +148,7 @@ Implementations are encouraged, _but not required_, to treat `black_box` as an
 _unknown_ function that can perform any valid operation on `x` that Rust is
 allowed to perform without introducing undefined behavior in the calling code.
 That is, to optimize `black_box` under the pessimistic assumption that it might
-do anything with the data it got.
+do anything with the data it got, even though it actually does nothing.
 
 [identity_fn]: https://doc.rust-lang.org/nightly/std/convert/fn.identity.html
 
@@ -221,4 +226,4 @@ The `black_box` function with slightly different semantics is provided by the
 implementation uses inline assembly. It is unclear at this point whether
 `black_box` should be a `const fn`, and if it should, how exactly would we go
 about it. We do not have to resolve this issue before stabilization since we can
-always make it a `const fn` later, but we should not forget about it either.
+always make it a `const fn` later, but we should not forget about it either
