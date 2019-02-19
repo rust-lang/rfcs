@@ -33,7 +33,7 @@ trying to model.
 The hint:
 
 ```rust
-pub fn black_box<T>(x: T) -> T;
+pub const fn black_box<T>(x: T) -> T;
 ```
 
 behaves like the [identity function][identity_fn]: it just returns `x` and has
@@ -136,7 +136,7 @@ The
 ```rust
 mod core::hint {
     /// Identity function that disables optimizations.
-    pub fn black_box<T>(x: T) -> T;
+    pub const fn black_box<T>(x: T) -> T;
 }
 ```
 
@@ -221,9 +221,3 @@ The `black_box` function with slightly different semantics is provided by the
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
-
-@Centril asked whether `black_box` should be a `const fn`. The current
-implementation uses inline assembly. It is unclear at this point whether
-`black_box` should be a `const fn`, and if it should, how exactly would we go
-about it. We do not have to resolve this issue before stabilization since we can
-always make it a `const fn` later, but we should not forget about it either
