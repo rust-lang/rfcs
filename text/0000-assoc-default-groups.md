@@ -636,8 +636,8 @@ This is consistent with the approach this RFC proposes.
 
 To our knowledge, Haskell does not have any means such as `default { .. }`
 to change this behaviour. Presumably, this is the case because Haskell
-preserves parametricity thus lacking specialization,
-wherefore `default { .. }`, as suggested in the [future possibilities],
+preserves parametricity thus lacking specialization, wherefore `default { .. }`,
+as suggested in the [future possibilities][future-possibilities],
 might not carry its weight.
 
 ## Idris
