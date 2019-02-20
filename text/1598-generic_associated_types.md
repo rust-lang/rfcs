@@ -37,7 +37,7 @@ rather than for as long as the borrow initiated by `next`.
 
 This trait cannot be expressed in Rust as it exists today, because it depends
 on a sort of higher-kinded polymorphism. This RFC would extend Rust to include
-that specific form of higher-kinded polymorphism, which is refered to here as
+that specific form of higher-kinded polymorphism, which is referred to here as
 associated type constructors. This feature has a number of applications, but
 the primary application is along the same lines as the `StreamingIterator`
 trait: defining traits which yield types which have a lifetime tied to the
@@ -191,7 +191,7 @@ impl<T> Baz for T where T: Foo {
 
 Lastly, lifetimes can be elided in associated type constructors in the same
 manner that they can be elided in other type constructors. Considering lifetime
-ellision, the full definition of `StreamingIterator` is:
+elision, the full definition of `StreamingIterator` is:
 
 ```rust
 trait StreamingIterator {
@@ -297,7 +297,7 @@ trait Foo {
 }
 ```
 
-Each invokation of `<T as Foo>::Assoc` will need to prove `T: Sized`, as
+Each invocation of `<T as Foo>::Assoc` will need to prove `T: Sized`, as
 opposed to the impl needing to prove the bound as in other cases.
 
 (@nikomatsakis believes that where clauses will be needed on associated type
@@ -329,7 +329,7 @@ The advantage of the proposed syntax is that it leverages syntax that already
 exists. Type constructors can already be aliased in Rust using the same syntax
 that this used, and while type aliases play no polymorphic role in type
 resolution, to users they seem very similar to associated types. A goal of this
-syntax is that many users will be able to use types which have assocaited type
+syntax is that many users will be able to use types which have associated type
 constructors without even being aware that this has something to do with a type
 system feature called higher-kindedness.
 
@@ -342,7 +342,7 @@ a very accessible framing of this concept; in particular the term "type
 constructor" is an obscure piece of jargon from type theory which most users
 cannot be expected to be familiar with.
 
-Upon accepting this RFC, we should begin (with haste) refering to this concept
+Upon accepting this RFC, we should begin (with haste) referring to this concept
 as simply "generic associated types." Today, associated types cannot be
 generic; after this RFC, this will be possible. Rather than teaching this as
 a separate feature, it will be taught as an advanced use case for associated
