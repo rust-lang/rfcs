@@ -203,6 +203,12 @@ arise because of Rust having both of these features.
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
+It seems desirable to have a dedicated syntax for this, and to eventually lint
+people to use that syntax), considering the special case introduced by this RFC
+to be a deprecated pattern. This requires some work on figuring out an
+unambiguous and meaningful syntax. A tentative proposal is `&raw const <expr>`
+to create a `*const _`, and `&raw mut <expr>` to create a `*mut _`.
+
 We could have different rules for when to take a raw reference (as opposed to a
 safe one).
 
