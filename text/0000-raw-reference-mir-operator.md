@@ -110,10 +110,14 @@ from `&[mut] <place>` to a raw pointer type as a special pattern and turn them
 into a single MIR `Rvalue` that takes the address and produces it as a raw
 pointer -- a "take raw reference" operation.  We do this *after* auto-deref,
 meaning this pattern does not apply when a call to `deref` or `deref_mut` got
-inserted.  We also use this new `Rvalue` to translate `x as *[mut|const] ?T`;
-before this RFC such code gets translated to MIR as a reborrow followed by a
-cast.  Once this is done, `Misc` casts from reference to raw pointers can be
-removed from MIR, they are no longer needed.
+inserted. Redundant parentheses are ignored, but block expressions are not:
+`{ &[mut] <place> }` materializes a reference that must be valid, no matter
+which coercions or casts follow outside the block.
+
+We also use this new `Rvalue` to translate `x as *[mut|const] ?T`; before this
+RFC such code gets translated to MIR as a reborrow followed by a cast.  Once
+this is done, `Misc` casts from reference to raw pointers can be removed from
+MIR, they are no longer needed.
 
 This new `Rvalue` might be a variant of the existing `Ref` operation (say, a
 boolean flag for whether this is raw), or a new `Rvalue` variant.  The borrow
@@ -145,7 +149,8 @@ programmer likely wants a raw reference, and suggest an explicit cast in that
 case.  One possible heuristic here would be: If a safe reference (shared or
 mutable) is only ever used to create raw pointers, then likely it could be a raw
 pointer to begin with.  The details of this are best worked out in the
-implementation phase of this RFC.
+implementation phase of this RFC.  The lint should, at the very least, fire for
+cases involving just a redundant block, such as `{ &mut <place> } as *mut ?T`.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -158,6 +163,11 @@ let x = x as *const _;
 // Variant 2
 let x = unsafe { &packed.field as *const _ };
 ```
+
+If `as` ever becomes an operation that can be overloaded, the behavior of
+`&packed.field as *const _` can *not* be obtained by dispatching to the
+overloaded `as` operator.  Calling that method would assert validity of the
+reference.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -203,11 +213,9 @@ arise because of Rust having both of these features.
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-It seems desirable to have a dedicated syntax for this, and to eventually lint
-people to use that syntax), considering the special case introduced by this RFC
-to be a deprecated pattern. This requires some work on figuring out an
-unambiguous and meaningful syntax. A tentative proposal is `&raw const <expr>`
-to create a `*const _`, and `&raw mut <expr>` to create a `*mut _`.
+Which level should the lint default to? Eventually it should likely be `deny`
+because it hints as code that might be UB and that can be fixed by a small
+change. For a transition period, `warn` seems more appropriate.
 
 We could have different rules for when to take a raw reference (as opposed to a
 safe one).
@@ -226,3 +234,20 @@ to detect what seems to be unwanted cases of auto-deref -- namely, terms that
 look like `&[mut] <place> as *[mut|const] ?T` in the surface syntax but had a
 method call inserted, thus manifesting a reference (with the associated
 guarantees) where none might be expected.
+
+# Future possibilities
+[future-possibilities]: #future-possibilities
+
+It seems desirable to have a dedicated syntax for this, and to eventually lint
+people to use that syntax), considering the special case introduced by this RFC
+to be a deprecated pattern. This requires some work on figuring out an
+unambiguous and meaningful syntax. A tentative proposal is `&raw const <expr>`
+to create a `*const _`, and `&raw mut <expr>` to create a `*mut _`.
+
+If Rust's type ascriptions end up performing coercions, those coercions should
+trigger the raw reference operator just like other coercions do.  So
+`&packed.field: *const _` would be `&raw const packed.field`.
+
+If Rust ever gets type ascriptions with coercions for binders, likewise these
+coercions would be subject to these rules in cases like
+`match &packed.field { x: *const _ => x }`.
