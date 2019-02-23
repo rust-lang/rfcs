@@ -28,7 +28,7 @@ As the new implementations return a smaller type, this could also allow for more
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-`std::ops::Rem` is implemented for all equally signed integers where maximum value size of the dividend is greater than the maximum value of the divisor, returning an integers with the type of the divisor. Using these new implementations should be preferred to casting before performing said operation. See motivation for an example.
+`std::ops::Rem` is implemented for all equally signed integers where maximum value of the dividend is greater than the maximum value of the divisor, returning an integer with the type of the divisor. Using these new implementations should be preferred to casting before performing said operation. See [motivation] for an example.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
