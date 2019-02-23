@@ -100,7 +100,7 @@ impl_rem_small!(i8, isize);
 
 - do nothing: this feature is not that important, so doing nothing is also possible
 
-- implement rem for all possible `X, Y` instead: this should not be needed, as the currently requested implementations cover most cases, and seem to be more prone to bugs. One might also add the currently missing implementations later on. 
+- implement rem for all possible `X, Y` instead: this should not be needed, as the currently requested implementations cover most relevant cases which might be dan. One might also add the currently missing implementations later on. 
 
 # Prior art
 [prior-art]: #prior-art
@@ -110,7 +110,7 @@ The `DIV` instruction of [x86-Assembly][1] uses a dividend twice the size of the
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-- Which functions should be implemented for `usize/isize`
+- For which types should `Rem<usize/isize>` be implemented for.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
