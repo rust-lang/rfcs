@@ -36,15 +36,13 @@ As the new implementations return a smaller type, this could also allow for more
 Add the following to `std/core::ops::Rem`.
 
 ```rust
-// example implementation
+// simple reference implementation
 macro_rules! impl_rem_small {
     ($X:ty, $Y:ty) => {
         impl Rem<$Y> for $X {
             type Output = $Y;
         
             fn rem(self, modulus: $Y) -> $Y {
-                use std::mem::size_of;
-                assert!(size_of::<$X> > size_of::<$Y>);
                 (self % modulus as $X) as $Y;
             }
         }
