@@ -25,8 +25,6 @@ In case `small` ends up getting changed to a number which is bigger than `std::u
 
 As the new implementations return a smaller type, this could also allow for more optimizations.
 
-
-
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
