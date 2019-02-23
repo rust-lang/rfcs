@@ -23,7 +23,7 @@ let old: u8 = (big_num % small as u128) as u8;
 ```
 In case `small` ends up getting changed to a number which is bigger than `std::u8::MAX` the new version causes a compile time error while the old one could lead to a bug, as `big_num % small` might not fit into a `u8` anymore.
 
-As the new implementations return a type which is more limiting, this could also allow for more optimizations.
+As the new implementations return a smaller type, this could also allow for more optimizations.
 
 
 
@@ -77,7 +77,7 @@ impl_rem_small!(i32, i16);
 impl_rem_small!(i32, i8);
 impl_rem_small!(i16, i8);
 
-// usize: I am still uncertain about this
+// usize: still uncertain about this
 impl_rem_small!(u128, usize);
 impl_rem_small!(u64, usize);
 impl_rem_small!(u32, usize);
@@ -85,7 +85,7 @@ impl_rem_small!(u16, usize);
 impl_rem_small!(u8, usize);
 
 
-// isize: I am still uncertain about this
+// isize: still uncertain about this
 impl_rem_small!(i128, isize);
 impl_rem_small!(i64, isize);
 impl_rem_small!(i32, isize);
