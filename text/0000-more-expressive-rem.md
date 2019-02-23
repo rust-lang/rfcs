@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-Add additional implementations of `std::ops::Rem` to `uX/iX` and `usize/isize` where `RHS` is `uY/iY` with `Y < X` and `type Output = uY/iY`. This is correct because `a % b < b` is always `true`. Doing this allows for code which is both safer and more expressive.
+Add additional implementations of `std::ops::Rem` to `uX/iX` and `usize/isize` where `RHS` is `uY/iY` with `Y < X` and `type Output = uY/iY`. Doing this allows for code which is both safer and more expressive.
 
 # Motivation
 [motivation]: #motivation
