@@ -80,7 +80,7 @@ See [the discussion on RFC #1758](https://github.com/rust-lang/rfcs/pull/1758) (
 [eddyb_1]: https://github.com/rust-lang/rfcs/pull/1758#issuecomment-254872520
 > **eddyb:** "I found another important usecase: for `ManuallyDrop<T>`, to be useful in arrays (i.e. small vector optimizations), it needs to have the same layout as `T` and AFAICT `#[repr(C)]` is not guaranteed to do the right thing"
 > **retep998:** "So we'd need to be able to specify `#[repr(transparent)]` on unions?"
-> **eddyb:** "That's the only way to be sure AFAICT, yes."
+> + **eddyb:** "That's the only way to be sure AFAICT, yes."
 
 [joshtriplett_1]: https://github.com/rust-lang/rfcs/pull/1758#issuecomment-274670231
 > + **[joshtriplett][joshtriplett_1]:** "In terms of interactions with other features, I think this needs to specify what happens if you apply it to a union with one field, a union with multiple fields, a struct (tuple or otherwise) with multiple fields, a single-variant enum with one field, an enum struct variant where the enum uses `repr(u32)` or similar. The answer to some of those might be "compile error", but some of them (e.g. the union case) may potentially make sense in some contexts."
