@@ -37,7 +37,22 @@ union CustomUnion {
 }
 ```
 
-If the `union` is generic over `T` and has a field of type `T`, it may also be `#[repr(transparent)]` (even if `T` is a zero-sized type):
+For consistency with transparent `struct`s, a `union` must have exactly one non-zero-sized field. If all fields are zero-sized, the `union` must not be `#[repr(transparent)]`:
+
+```rust
+// This (non-transparent) is already valid in stable Rust:
+pub union Good {
+    pub nothing: (),
+}
+
+// Error: transparent union needs exactly one non-zero-sized field, but has 0
+#[repr(transparent)]
+pub union Bad {
+    pub nothing: (),
+}
+```
+
+The one exception is if the `union` is generic over `T` and has a field of type `T`, it may be `#[repr(transparent)]` even if `T` is a zero-sized type:
 
 ```rust
 // This union has the same representation as `T`.
