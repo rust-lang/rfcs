@@ -73,7 +73,7 @@ Of course, the standard "do nothing" alternative exists. Rust doesn't strictly *
 
 See [the discussion on RFC #1758](https://github.com/rust-lang/rfcs/pull/1758) (which introduced `#[repr(transparent)]`) for some discussion on applying the attribute to a `union`. A summary of the discussion:
 
-> https://github.com/rust-lang/rfcs/pull/1758#discussion_r80436621
+[nagisa_1]: https://github.com/rust-lang/rfcs/pull/1758#discussion_r80436621
 > **nagisa:** "Why not univariant unions and enums?"
 > **nox:** "I tried to be conservative for now given I don't have a use case for univariant unions and enums in FFI context."
 
