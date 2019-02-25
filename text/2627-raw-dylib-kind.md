@@ -1,7 +1,7 @@
-- Feature Name: raw_dylib_kind
+- Feature Name: `raw_dylib_kind`
 - Start Date: 2019-01-22
-- RFC PR: (leave this empty)
-- Rust Issue: (leave this empty)
+- RFC PR: [rust-lang/rfcs#2627](https://github.com/rust-lang/rfcs/pull/2627)
+- Rust Issue: [rust-lang/rust#58713](https://github.com/rust-lang/rust/issues/58713)
 
 # Summary
 [summary]: #summary
