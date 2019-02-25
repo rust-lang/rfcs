@@ -77,7 +77,7 @@ See [the discussion on RFC #1758](https://github.com/rust-lang/rfcs/pull/1758) (
 > + **[nagisa][nagisa_1]:** "Why not univariant unions and enums?"
 > + **nox:** "I tried to be conservative for now given I don't have a use case for univariant unions and enums in FFI context."
 
-> https://github.com/rust-lang/rfcs/pull/1758#issuecomment-254872520
+[eddyb_1]: https://github.com/rust-lang/rfcs/pull/1758#issuecomment-254872520
 > **eddyb:** "I found another important usecase: for `ManuallyDrop<T>`, to be useful in arrays (i.e. small vector optimizations), it needs to have the same layout as `T` and AFAICT `#[repr(C)]` is not guaranteed to do the right thing"
 > **retep998:** "So we'd need to be able to specify `#[repr(transparent)]` on unions?"
 > **eddyb:** "That's the only way to be sure AFAICT, yes."
