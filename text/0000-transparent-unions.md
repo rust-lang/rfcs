@@ -85,7 +85,7 @@ See [the discussion on RFC #1758](https://github.com/rust-lang/rfcs/pull/1758) (
 > https://github.com/rust-lang/rfcs/pull/1758#issuecomment-274670231
 > + **[joshtriplett][joshtriplett_1]:** "In terms of interactions with other features, I think this needs to specify what happens if you apply it to a union with one field, a union with multiple fields, a struct (tuple or otherwise) with multiple fields, a single-variant enum with one field, an enum struct variant where the enum uses `repr(u32)` or similar. The answer to some of those might be "compile error", but some of them (e.g. the union case) may potentially make sense in some contexts."
 
-> https://github.com/rust-lang/rfcs/pull/1758#issuecomment-290757356
+[pnkfelix_1]: https://github.com/rust-lang/rfcs/pull/1758#issuecomment-290757356
 > **pnkfelix:** "However, I personally do not think we need to expand the scope of the feature. So I am okay with leaving it solely defined on `struct`, and leave `union`/`enum` to a follow-on RFC later. (Much the same with a hypothetical `newtype` feature.)"
 
 In summary, many of the questions regarding `#[repr(transparent)]` on a `union` were the same as applying it to a multi-field `struct`. These questions have since been answered, so there should be no problems with applying those same answers to `union`.
