@@ -64,7 +64,7 @@ The logic controlling whether a `union` of type `U` may be `#[repr(transparent)]
 # Rationale and alternatives
 [alternatives]: #alternatives
 
-It would be nice to make `MaybeUninit<T>` `#[repr(transparent)]`. This type is a `union`, and thus this RFC is required in order to allow making it transparent.
+It would be nice to make `MaybeUninit<T>` `#[repr(transparent)]`. This type is a `union`, and thus this RFC is required to allow making it transparent.
 
 Of course, the standard "do nothing" alternative exists. Rust doesn't strictly *require* this feature. But it would benefit from this, so the "do nothing" alternative is undesirable.
 
