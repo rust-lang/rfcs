@@ -40,7 +40,7 @@ union CustomUnion {
 For consistency with transparent `struct`s, a `union` must have exactly one non-zero-sized field. If all fields are zero-sized, the `union` must not be `#[repr(transparent)]`:
 
 ```rust
-// This (non-transparent) is already valid in stable Rust:
+// This (non-transparent) union is already valid in stable Rust:
 pub union Good {
     pub nothing: (),
 }
