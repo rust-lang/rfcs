@@ -1,7 +1,7 @@
-- Feature Name: `associated_type_defaults2`
+- Feature Name: `associated_type_defaults`
 - Start Date: 2018-08-27
-- RFC PR: _
-- Rust Issue: _
+- RFC PR: [rust-lang/rfcs#2532](https://github.com/rust-lang/rfcs/pull/2532)
+- Rust Issue: [rust-lang/rust#29661](https://github.com/rust-lang/rust/issues/29661)
 
 # Summary
 [summary]: #summary
