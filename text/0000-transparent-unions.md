@@ -100,4 +100,4 @@ None (yet).
 
 Univariant `enum`s are ommitted from this RFC in an effort to keep the scope small and avoid unnecessary bikeshedding. A future RFC could explore `#[repr(transparent)]` on a univariant `enum`.
 
-If a `union` has multiple non-ZST fields, a future RFC could propose a way to choose the representation of that enum ([example](https://internals.rust-lang.org/t/pre-rfc-transparent-unions/9441/6)).
+If a `union` has multiple non-ZST fields, a future RFC could propose a way to choose the representation of that `union` ([example](https://internals.rust-lang.org/t/pre-rfc-transparent-unions/9441/6)).
