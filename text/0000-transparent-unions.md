@@ -19,7 +19,7 @@ Making types like these `#[repr(transparent)]` would be useful in certain cases.
 - Protects against accidental violations of that intent (e.g., adding a new non-ZST field to a transparent union will result in a compiler error).
 - Makes a clear API guarantee that a `Wrapper<T>` can be transmuted to a `T`.
 
-Transparent `union`s are a nice complement to transparent `struct`s, and this RFC rounds out the `#[repr(transparent)]` feature.
+Transparent `union`s are a nice complement to transparent `struct`s, and this RFC is a step towards rounding out the `#[repr(transparent)]` feature.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -98,6 +98,6 @@ None (yet).
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-Univariant `enum`s are ommitted from this RFC in an effort to keep the scope small and avoid unnecessary bikeshedding. A future RFC could explore `#[repr(transparent)]` on a univariant `enum`.
+Univariant `enum`s are ommitted from this RFC in an effort to keep the scope small. A future RFC could explore `#[repr(transparent)]` on a univariant `enum`.
 
 If a `union` has multiple non-ZST fields, a future RFC could propose a way to choose the representation of that `union` ([example](https://internals.rust-lang.org/t/pre-rfc-transparent-unions/9441/6)).
