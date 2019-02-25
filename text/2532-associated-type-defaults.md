@@ -875,7 +875,7 @@ However, it would also be the more conservative choice, allowing us to move
 towards (2) when necessary. As it is currently unclear what solution is best,
 this question is left unresolved.
 
-## 1. Where are cycles checked?
+## 2. Where are cycles checked?
 
 [playground]: https://play.rust-lang.org/?version=nightly&mode=debug&edition=2018&gist=e823eea5e7ecba5da78cff225e0adaf9
 
