@@ -1,4 +1,4 @@
-- Feature Name: transparent_unions
+- Feature Name: transparent_enunions
 - Start Date: 2019-02-13
 - RFC PR:
 - Rust Issue:
@@ -6,53 +6,90 @@
 # Summary
 [summary]: #summary
 
-Allow `#[repr(transparent)]` on `union`s that have exactly one non-zero-sized field (just like `struct`s).
+Allow `#[repr(transparent)]` on `union`s an univariant `enum`s that have exactly one non-zero-sized field (just like `struct`s).
 
 # Motivation
 [motivation]: #motivation
 
-Some `union` types are thin newtype-style wrappers around another type, like `MaybeUninit<T>` (and [once upon a time](https://doc.rust-lang.org/1.26.1/src/core/mem.rs.html#950), `ManuallyDrop<T>`). This type is intended to be used in the same places as `T`, but without being `#[repr(transparent)]` the actual compatibility between it and `T` is left unspecified.
+Some `union` types are thin newtype-style wrappers around another type, like `MaybeUninit<T>` (and [once upon a time](https://doc.rust-lang.org/1.28.0/src/core/mem.rs.html#955), `ManuallyDrop<T>`). This type is intended to be used in the same places as `T`, but without being `#[repr(transparent)]` the actual compatibility between it and `T` is left unspecified.
 
-Making types like these `#[repr(transparent)]` would be useful in certain cases. For example, making a `union Wrapper<T>` transparent:
+Likewise, some `enum` types only have a single variant, and are similarly thin wrappers around another type.
+
+Making types like these `#[repr(transparent)]` would be useful in certain cases. For example, making the type `Wrapper<T>` (which is a `union` or univariant `enum` with a single field of type `T`) transparent:
 
 - Clearly expresses the intent of the developer.
-- Protects against accidental violations of that intent (e.g., adding a new non-ZST field to a transparent union will result in a compiler error).
-- Makes a clear API guarantee that a `Wrapper<T>` can be transmuted to a `T`.
+- Protects against accidental violations of that intent (e.g., adding a new variant or non-ZST field will result in a compiler error).
+- Makes a clear API guarantee that a `Wrapper<T>` can be transmuted to a `T` or substituted for a `T` in an FFI function's signature.
 
-Transparent `union`s are a nice complement to transparent `struct`s, and this RFC is a step towards rounding out the `#[repr(transparent)]` feature.
+Transparent `union`s and univariant `enum`s are a nice complement to transparent `struct`s, and this RFC rounds out the `#[repr(transparent)]` feature.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-A `union` may be `#[repr(transparent)]` in exactly the same conditions in which a struct may be `#[repr(transparent)]`. Some concrete illustrations follow.
+A `union` may be `#[repr(transparent)]` in exactly the same conditions in which a `struct` may be `#[repr(transparent)]`. An `enum` may be `#[repr(transparent)]` if it has exactly one variant, and that variant matches the same conditions which `struct` requires for transparency. Some concrete illustrations follow.
 
 A union may be `#[repr(transparent)]` if it has exactly one non-zero-sized field:
 
 ```rust
+// This union has the same representation as `f32`.
+#[repr(transparent)]
+union SingleFieldUnion {
+    field: f32,
+}
+
 // This union has the same representation as `usize`.
 #[repr(transparent)]
-union CustomUnion {
+union MultiFieldUnion {
     field: usize,
     nothing: (),
 }
+
+// This enum has the same representation as `f32`.
+#[repr(transparent)]
+enum SingleFieldEnum {
+    Variant(f32)
+}
+
+// This enum has the same representation as `usize`.
+#[repr(transparent)]
+enum MultiFieldEnum {
+    Variant { field: usize, nothing: () },
+}
 ```
 
-For consistency with transparent `struct`s, a `union` must have exactly one non-zero-sized field. If all fields are zero-sized, the `union` must not be `#[repr(transparent)]`:
+For consistency with transparent `struct`s, `union`s and `enum`s must have exactly one non-zero-sized field. If all fields are zero-sized, the `union` or `enum` must not be `#[repr(transparent)]`:
 
 ```rust
 // This (non-transparent) union is already valid in stable Rust:
-pub union Good {
+pub union GoodUnion {
     pub nothing: (),
+}
+
+// This (non-transparent) enum is already valid in stable Rust:
+pub enum GoodEnum {
+    Nothing,
 }
 
 // Error: transparent union needs exactly one non-zero-sized field, but has 0
 #[repr(transparent)]
-pub union Bad {
+pub union BadUnion {
     pub nothing: (),
+}
+
+// Error: transparent enum needs exactly one non-zero-sized field, but has 0
+#[repr(transparent)]
+pub enum BadEnum {
+    Nothing(()),
+}
+
+// Error: transparent enum needs exactly one non-zero-sized field, but has 0
+#[repr(transparent)]
+pub enum BadEmptyEnum {
+    Nothing,
 }
 ```
 
-The one exception is if the `union` is generic over `T` and has a field of type `T`, it may be `#[repr(transparent)]` even if `T` is a zero-sized type:
+The one exception is if the `union` or `enum` is generic over `T` and has a field of type `T`, it may be `#[repr(transparent)]` even if `T` is a zero-sized type:
 
 ```rust
 // This union has the same representation as `T`.
@@ -62,29 +99,103 @@ pub union GenericUnion<T: Copy> { // Unions with non-`Copy` fields are unstable.
     pub nothing: (),
 }
 
+// This enum has the same representation as `T`.
+#[repr(transparent)]
+pub enum GenericEnum<T> {
+    Variant(T, ()),
+}
+
 // This is okay even though `()` is a zero-sized type.
 pub const THIS_IS_OKAY: GenericUnion<()> = GenericUnion { field: () };
+pub const THIS_IS_OKAY_TOO: GenericEnum<()> = GenericEnum::Variant((), ());
+```
+
+Transparent `enum`s have the addtional restriction that they require exactly one variant:
+
+```rust
+// Error: transparent enum needs exactly one variant, but has 0
+#[repr(transparent)]
+pub enum TooFewVariants {
+}
+
+// Error: transparent enum needs exactly one variant, but has 2
+#[repr(transparent)]
+pub enum TooManyVariants {
+    First(usize),
+    Second(usize),
+}
 ```
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-The logic controlling whether a `union` of type `U` may be `#[repr(transparent)]` should match the logic controlling whether a `struct` of type `S` may be `#[repr(transparent)]` (assuming `U` and `S` have the same generic parameters and fields).
+The logic controlling whether a `union` of type `U` may be `#[repr(transparent)]` should match the logic controlling whether a `struct` of type `S` may be `#[repr(transparent)]` (assuming `U` and `S` have the same generic parameters and fields). An `enum` of type `E` may be `#[repr(transparent)]` if it has exactly one variant, and that variant follows all the rules and logic controlling whether a `struct` of type `S` may be `#[repr(transparent)]` (assuming `E` and `S` have the same generic parameters, and `E`'s variant and `S` have the same and fields).
+
+Like transarent `struct`s, a transparent `union` of type `U` and transparent `enum` of type `E` have the same layout, size, and ABI as their single non-ZST field. If they are generic over a type `T`, and all their fields are ZSTs except for exactly one field of type `T`, then they have the same layout and ABI as `T` (even if `T` is a ZST when monomorphized).
+
+Like transparent `struct`s, transparent `union`s and `enum`s are FFI-safe if and only if their underlying representation type is also FFI-safe.
 
 # Drawbacks
 [drawbacks]: #drawbacks
 
-- `#[repr(transparent)]` on a `union` is of limited use. There are cases where it is useful, but they're not common and some users might unnecessarily apply `#[repr(transparent)]` to a `union`.
+`#[repr(transparent)]` on a `union` or `enum` is of limited use. There are cases where it is useful, but they're not common and some users might unnecessarily apply `#[repr(transparent)]` to a type in a cargo-cult fashion.
 
 # Rationale and alternatives
 [alternatives]: #alternatives
 
-It would be nice to make `MaybeUninit<T>` `#[repr(transparent)]`. This type is a `union`, and thus this RFC is required to allow making it transparent.
+It would be nice to make `MaybeUninit<T>` `#[repr(transparent)]`. This type is a `union`, and thus this RFC is required to allow making it transparent. One example in which a transparent representation would be useful is for unused parameters in an FFI-function:
+
+```rust
+#[repr(C)]
+struct Context {
+    // Imagine there a few fields here, defined by an external C library.
+}
+
+extern "C" fn log_event(message: core::ptr::NonNull<libc::c_char>,
+                        context: core::mem::MaybeUninit<Context>) {
+    // Log the message here, but ignore the context since we don't need it.
+}
+
+fn main() {
+    extern "C" {
+        fn set_log_handler(handler: extern "C" fn(core::ptr::NonNull<libc::c_char>,
+                           Context));
+    }
+
+    // Set the log handler so the external C library can call log_event.
+    unsafe {
+        // Transmuting is safe since MaybeUninit<Context> and Context
+        // have the same ABI.
+        set_log_handler(core::mem::transmute(log_event as *const ()));
+    }
+
+    // We can call it too. And since we don't care about the context and
+    // we're using MaybeUninit, we don't have to pay any extra cost for
+    // initializing something that's unused.
+    log_event(core::ptr::NonNull::new(b"Hello, world!\x00".as_ptr() as *mut _).unwrap(),
+              core::mem::MaybeUninit::uninitialized());
+}
+```
+
+It is also useful for consuming pointers to uninitialized memory:
+
+```rust
+#[repr(C)]
+struct Cryptor {
+    // Imagine there a few fields here, defined by an external C library.
+}
+
+// This method may be called from C (or Rust!), and matches the C
+// function signature: bool(Cryptor *cryptor)
+pub extern "C" fn init_cryptor(cryptor: &mut core::mem::MaybeUninit<Cryptor>) -> bool {
+    // Initialize the cryptor and return whether we succeeded
+}
+```
 
 # Prior art
 [prior-art]: #prior-art
 
-See [the discussion on RFC #1758](https://github.com/rust-lang/rfcs/pull/1758) (which introduced `#[repr(transparent)]`) for some discussion on applying the attribute to a `union`. A summary of the discussion:
+See [the discussion on RFC #1758](https://github.com/rust-lang/rfcs/pull/1758) (which introduced `#[repr(transparent)]`) for some discussion on applying the attribute to a `union` or `enum`. A summary of the discussion:
 
 [nagisa_1]: https://github.com/rust-lang/rfcs/pull/1758#discussion_r80436621
 > + **[nagisa][nagisa_1]:** "Why not univariant unions and enums?"
@@ -101,7 +212,7 @@ See [the discussion on RFC #1758](https://github.com/rust-lang/rfcs/pull/1758) (
 [pnkfelix_1]: https://github.com/rust-lang/rfcs/pull/1758#issuecomment-290757356
 > + **[pnkfelix][pnkfelix_1]:** "However, I personally do not think we need to expand the scope of the feature. So I am okay with leaving it solely defined on `struct`, and leave `union`/`enum` to a follow-on RFC later. (Much the same with a hypothetical `newtype` feature.)"
 
-In summary, many of the questions regarding `#[repr(transparent)]` on a `union` were the same as applying it to a multi-field `struct`. These questions have since been answered, so there should be no problems with applying those same answers to `union`.
+In summary, many of the questions regarding `#[repr(transparent)]` on a `union` or `enum` were the same as applying it to a multi-field `struct`. These questions have since been answered, so there should be no problems with applying those same answers to `union` univariant `enum`.
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
@@ -110,7 +221,5 @@ None (yet).
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
-
-Univariant `enum`s are ommitted from this RFC in an effort to keep the scope small. A future RFC could explore `#[repr(transparent)]` on a univariant `enum`.
 
 If a `union` has multiple non-ZST fields, a future RFC could propose a way to choose the representation of that `union` ([example](https://internals.rust-lang.org/t/pre-rfc-transparent-unions/9441/6)).
