@@ -375,6 +375,9 @@ in the `for` loop and the desugaring as per the section on grammar.
 
 ## Desugaring `let` statements with `|` in the top-level pattern
 
+There continues to be an exhaustivity check in `let` statements,
+however this check will now be able to support multiple patterns.
+
 This is a possible desugaring that a Rust compiler may do.
 While such a compiler may elect to implement this differently,
 these semantics should be kept.
@@ -404,6 +407,48 @@ Result
 }
 ```
 
+For example, the following code:
+
+```rust
+{
+    foo();
+    bar();
+    let Ok(index) | Err(index) = slice.binary_search(&thing);
+    println!("{}", index);
+    do_something_to(index)
+}
+```
+
+can be desugared to
+
+```rust
+{
+    foo();
+    bar();
+    match slice.binary_search(&thing) {
+        Ok(index) | Err(index) => {
+            println!("{}", index);
+            do_something_to(index)
+        }
+    }
+}
+```
+
+It can also be desugared to:
+
+```rust
+{
+    foo();
+    bar();
+    let index = match slice.binary_search(&thing) {
+        Ok(index) | Err(index) => index,
+    }
+    println!("{}", index);
+    do_something_to(index)
+}
+```
+
+(Both are equivalent)
 # Drawbacks
 [drawbacks]: #drawbacks
 
