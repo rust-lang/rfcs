@@ -219,6 +219,9 @@ in child threads into the main parent thread.
 If the main `scope()` closure has panicked after spawning threads, we
 just resume unwinding after joining child threads.
 
+Crossbeam's logic for error handling can be found
+[here](https://github.com/crossbeam-rs/crossbeam/blob/79210d6ae34a3e84b23546d8abc5c4b81b206019/crossbeam-utils/src/thread.rs#L167-L193).
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
