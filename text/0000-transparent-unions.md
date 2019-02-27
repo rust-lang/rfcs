@@ -185,7 +185,7 @@ struct Cryptor {
     // Imagine there a few fields here, defined by an external C library.
 }
 
-// This method may be called from C (or Rust!), and matches the C
+// This function may be called from C (or Rust!), and matches the C
 // function signature: bool(Cryptor *cryptor)
 pub extern "C" fn init_cryptor(cryptor: &mut core::mem::MaybeUninit<Cryptor>) -> bool {
     // Initialize the cryptor and return whether we succeeded
