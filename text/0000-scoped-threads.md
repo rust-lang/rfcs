@@ -291,4 +291,5 @@ None.
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-None.
+In the future, we could also have a threadpool like Rayon that can spawn
+scoped tasks.
