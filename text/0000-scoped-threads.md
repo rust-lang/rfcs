@@ -41,6 +41,8 @@ Scoped threads in [Crossbeam](https://docs.rs/crossbeam/0.7.1/crossbeam/thread/i
 have matured through years of experience and today we have a design that feels solid
 enough to be promoted into the standard library.
 
+See the [rationale-and-alternatives](#rationale-and-alternatives) section for more.
+
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
@@ -144,63 +146,45 @@ thread::scope(|s| {
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-We add two new types to the `std::thread` module:
+We add a single new type to the `std::thread` module:
 
 ```rust
-struct Scope<'env> {}
-struct ScopedJoinHandle<'scope, T> {}
-```
-
-Lifetime `'env` represents the environment outside the scope, while
-`'scope` represents the scope itself. More precisely, everything
-outside the scope outlives `'env` and `'scope` outlives everything
-inside the scope. The lifetime relations are:
-
-```
-'variables_outside: 'env: 'scope: 'variables_inside
+struct Scope<'a> {}
 ```
 
 Next, we need the `scope()` and `spawn()` functions:
 
 ```rust
-fn scope<'env, F, T>(f: F) -> Result<T>
+fn scope<'a, F, T>(f: F) -> Result<T>
 where
-    F: FnOnce(&Scope<'env>) -> T;
+    F: FnOnce(&Scope<'a>) -> T;
 
-impl<'env> Scope<'env> {
-    fn spawn<'scope, F, T>(&'scope self, f: F) -> ScopedJoinHandle<'scope, T>
+impl<'a> Scope<'a> {
+    fn spawn<F, T>(&self, f: F) -> JoinHandle<T>
     where
-        F: FnOnce(&Scope<'env>) -> T + Send + 'env,
-        T: Send + 'env;
+        F: FnOnce(&Scope<'a>) -> T + Send + 'a,
+        T: Send + 'a;
 }
 ```
 
-That's the gist of scoped threads, really.
-
-Now we just need two more things to make the API complete. First, `ScopedJoinHandle`
-is equivalent to `JoinHandle` but tied to the `'scope` lifetime, so it will have
-the same methods. Second, the thread builder needs to be able to spawn threads
-inside a scope:
+There's just one more thing that will make the API complete: The thread builder
+needs to be able to spawn threads inside a scope.
 
 ```rust
-impl<'scope, T> ScopedJoinHandle<'scope, T> {
-    fn join(self) -> Result<T>;
-    fn thread(&self) -> &Thread;
-}
-
 impl Builder {
-    fn spawn_scoped<'scope, 'env, F, T>(
-        self,
-        &'scope Scope<'env>,
-        f: F,
-    ) -> io::Result<ScopedJoinHandle<'scope, T>>
+    fn spawn_scoped<'a, F, T>(self, scope: &Scope<'a>, f: F) -> io::Result<JoinHandle<T>>
     where
-        F: FnOnce(&Scope<'env>) -> T + Send + 'env,
-        T: Send + 'env;
-}
+        F: FnOnce(&Scope<'a>) -> T + Send + 'a,
+        T: Send + 'a;
 ```
 
-It's also worth pointing out what exactly happens at the scope end when all
+Note that this interface is a bit simpler than the one in Crossbeam
+because we can now merge `JoinHandle` and `ScopedJoinHandle` into a single type.
+Moreover, in Crossbeam, `ScopedJoinHandle` is generic over `'scope`, which is
+not really necessary for soundness so we can remove that lifetime to simplify
+things further.
+
+It's also worth discussing what exactly happens at the scope end when all
 unjoined threads get automatically joined. If all joins succeed, we take
 the result of the main closure passed to `scope()` and wrap it inside `Ok`.
 
@@ -231,21 +215,35 @@ The main drawback is that scoped threads make the standard library a little bit 
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 The alternative is to keep scoped threads in external crates. However, there are
-several advantages to having them in the standard library.
+several advantages to having them in the standard library:
 
-This is a very common and useful utility and is great for learning, testing, and exploratory
-programming. Every person learning Rust will at some point encounter interaction
-of borrowing and threads. There's a very important lesson to be taught that threads
-*can* in fact borrow local variables, but the standard library doesn't reflect this.
+* This is a very common and useful utility and is great for learning, testing, and exploratory
+  programming. Every person learning Rust will at some point encounter interaction
+  of borrowing and threads. There's a very important lesson to be taught that threads
+  *can* in fact borrow local variables, but the standard library doesn't reflect this.
 
-Some might argue we should discourage using threads altogether and point people to
-executors like Rayon and Tokio instead. But still,
-the fact that `thread::spawn()` requires `F: 'static` and there's no way around it
-feels like a missing piece in the standard library.
+* Some might argue we should discourage using threads altogether and point people to
+  executors like Rayon and Tokio instead. But still,
+  the fact that `thread::spawn()` requires `F: 'static` and there's no way around it
+  feels like a missing piece in the standard library.
 
-Finally, it's indisputable that users keep asking for scoped threads on IRC and forums
-all the time. Having them as a "blessed" pattern in `std::thread` would be beneficial
-to everyone.
+* Implementing scoped threads is very tricky to get right so it's good to have a
+  reliable solution provided by the standard library. Also, scoped threads in `libstd`
+  will be simpler because we don't need to introduce a special type for
+  [scoped join handles](https://docs.rs/crossbeam/0.7.1/crossbeam/thread/struct.ScopedJoinHandle.html)
+  or [builders](https://docs.rs/crossbeam/0.7.1/crossbeam/thread/struct.ScopedThreadBuilder.html).
+
+* There are many examples in the official documentation and books that could be
+  simplified by scoped threads.
+
+* Scoped threads are typically a better default than `thread::spawn()` because
+  they make sure spawned threads are joined and don't get accidentally "leaked".
+  This is sometimes a problem in unit tests, where "dangling" threads can accumulate
+  if unit tests spawn threads and forget to join them.
+
+* It's indisputable that users keep asking for scoped threads on IRC and forums
+  all the time. Having them as a "blessed" pattern in `std::thread` would be beneficial
+  to everyone.
 
 # Prior art
 [prior-art]: #prior-art
