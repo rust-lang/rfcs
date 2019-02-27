@@ -159,7 +159,7 @@ extern "C" fn log_event(message: core::ptr::NonNull<libc::c_char>,
 fn main() {
     extern "C" {
         fn set_log_handler(handler: extern "C" fn(core::ptr::NonNull<libc::c_char>,
-                           Context));
+                                                  Context));
     }
 
     // Set the log handler so the external C library can call log_event.
