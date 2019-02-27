@@ -252,6 +252,30 @@ Crossbeam has had
 [scoped threads](https://docs.rs/crossbeam/0.7.1/crossbeam/thread/index.html)
 since Rust 1.0.
 
+There are two designs Crossbeam's scoped threads went through. The old one is from
+the time `thread::scoped()` got removed and we wanted a sound alternative for the
+Rust 1.0 era. The new one is from the last year's big revamp:
+
+* Old: https://docs.rs/crossbeam/0.2.12/crossbeam/fn.scope.html
+* New: https://docs.rs/crossbeam/0.7.1/crossbeam/fn.scope.html
+
+There are several differences between old and new scoped threads:
+
+1. `scope()` now returns a `thread::Result<T>` rather than `T`. This is because
+   panics in the old design were just silently ignored, which is not good.
+   By returning a `Result`, the user can handle panics in whatever way they want.
+
+2. The closure passed to `Scope::spawn()` now takes a `&Scope<'env>` argument that
+   allows one to spawn nested threads, which was not possible with the old design.
+   Rayon similarly passes a reference to child tasks.
+
+3. We removed `Scope::defer()` because it is not really useful, had bugs, and had
+   non-obvious behavior.
+
+4. `ScopedJoinHandle` got parametrized over `'scope` in order to prevent it from
+   escaping the scope. However, it turns out this is not really necessary for
+   soundness and was just a conservative safeguard.
+
 Rayon also has [scopes](https://docs.rs/rayon/1.0.3/rayon/struct.Scope.html),
 but they work on a different abstraction level - Rayon spawns tasks rather than
 threads. Its API is almost the same as proposed in this RFC, the only
