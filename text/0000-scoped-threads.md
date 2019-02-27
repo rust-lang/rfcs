@@ -176,6 +176,7 @@ impl Builder {
     where
         F: FnOnce(&Scope<'a>) -> T + Send + 'a,
         T: Send + 'a;
+}
 ```
 
 Note that this interface is a bit simpler than the one in Crossbeam
