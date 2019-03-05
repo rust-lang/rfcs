@@ -316,8 +316,11 @@ It does provide a memory allocator through `malloc` and related functions, uncon
   The name `global_alloc` was proposed.
   (Although the crate doesn’t only contain the global allocator itself.)
 
-* Should the `alloc::prelude` module be moved to `alloc::prelude::v1`?
+* ~Should the `alloc::prelude` module be moved to `alloc::prelude::v1`?
   This would make the `alloc` module structure a subset of `std` without exception.
   However, since this prelude is not inserted automatically,
   it is less likely that we’ll ever have a second version of it.
-  In that sense it is closer to `std::io::prelude` than `std::prelude::v1`.
+  In that sense it is closer to `std::io::prelude` than `std::prelude::v1`.~
+  Done in [PR #58933].
+
+[PR #58933]: https://github.com/rust-lang/rust/pull/58933
