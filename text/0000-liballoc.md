@@ -323,4 +323,9 @@ It does provide a memory allocator through `malloc` and related functions, uncon
   In that sense it is closer to `std::io::prelude` than `std::prelude::v1`.~
   Done in [PR #58933].
 
+* In addition to being a subset of `std`, should the `alloc` crate (by itself)
+  be a super-set of `core`? That is, should it reexport everything that is defined in `core`?
+  See [PR #58175] which proposes reexporting `core::sync::atomic` in `alloc::sync`.
+
 [PR #58933]: https://github.com/rust-lang/rust/pull/58933
+[PR #58175]: https://github.com/rust-lang/rust/pull/58175
