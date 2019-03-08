@@ -387,8 +387,8 @@ instances of the identifier `foo` are in the same hygiene scope.
 ### Paths from inside a macro to outside
 
 #### Should compile:
-The definition of `m!` is stable (that is, it won't be changed
-by further expansions), so the invocation of `m!` is safe to expand.
+The definition of `m!` isn't going to change, so the invocation of `m!` is safe
+to expand.
 ```rust
 macro m() {}
 
@@ -402,8 +402,8 @@ my_eager_macro! {
 ### Paths within a macro
 
 #### Should compile:
-The definitions of `ma!` and `mb!` are stable (that is, they won't be changed
-by further expansions), so the invocations are safe to expand.
+The definitions of `ma!` and `mb!` aren't within a macro, so the definitions won't change,
+so it's safe to expand the invocations.
 ```rust
 my_eager_macro! {
     mod a {
@@ -458,9 +458,9 @@ macro x{}
 ### Paths that disappear during expansion
 
 #### Should not compile:
-Assuming `deletes_everything` always expands into an empty token stream, the
-invocation of `m!` relies on a definition that won't be stable after further
-expansion.
+This demonstrates that we shouldn't expand an invocation if the corresponding
+definition is 'in' an attribute macro. In this case, `#[deletes_everything]`
+expands into an empty token stream.
 ```rust
 #[deletes_everything]
 macro m() {}
@@ -471,7 +471,7 @@ m!();
 ### Mutually-dependent expansions
 
 #### Should not compile:
-Each expansion would depend on a definition that might not be stable after
+Each expansion would depend on a definition that might be changed by 
 further expansion, so the mutually-dependent definitions shouldn't resolve.
 ```rust
 #[expands_body]
@@ -488,16 +488,16 @@ mod b {
 ```
 
 #### Should not compile:
-The definition of `m!` isn't stable with respect to the invocation of `m!`,
-since `expands_args` might change the definition.
+The definition of `m!` isn't available if only expanding the arguments
+in `#[expands_args]`.
 ```rust
 #[expands_args(m!())]
 macro m() {}
 ```
 
-#### Should not compile:
-The definition of `m!` isn't stable with respect to the invocation of `m!`,
-since `expands_args_and_body` might change the definition.
+#### Not sure if this should compile:
+The definition of `m!` is available, but it also might be changed by
+`#[expands_args_and_body]`.
 ```rust
 #[expands_args_and_body(m!())]
 macro m() {}
@@ -509,8 +509,8 @@ macro m() {}
 * If the first invocation of `my_eager_macro!` is expanded first, it should
   notice that it can't resolve `x!` and have its expansion delayed.
 * When the second invocation of `my_eager_macro!` is expanded, it provides a
-  stable definition of `x!`. This should allow the first invocation to be
-  're-expanded'.
+  definition of `x!` that won't change after further expansion. This should
+  allow the first invocation to be 're-expanded'.
 ```rust
 macro make($name:ident) {
     macro $name() {}
