@@ -577,7 +577,7 @@ appends_world! {
 ```
 
 The expansion order is this:
-* `appends_hello!` expands, because the outermost invocations of `foo!` can't
+* `appends_world!` expands, because the outermost invocations of `foo!` can't
   be resolved. The result is:
     ```rust
     foo!();
@@ -587,7 +587,7 @@ The expansion order is this:
         macro foo() {};
     }
     ```
-* `appends_world!` expands, because the two outermost invocations of `foo!`
+* `appends_hello!` expands, because the two outermost invocations of `foo!`
   still can't be resolved. The result is:
     ```rust
     foo!();
@@ -622,7 +622,7 @@ expand! {
     #tokens = {
         macro foo() {};
         foo!(); // This will expand to an empty token stream.
-        concat!("a", b");
+        concat!("a", "b");
     };
     appends_hello!{ #tokens }
 }
@@ -675,6 +675,7 @@ The expansion order is this:
 * The compiler tries to expand the right-hand-side of the `#tokens = { ... }` line
   within `expand!`. The `foo!` invocations still can't be resolved, so the compiler
   expands `eager_appends_world!`. The result is:
+    <a id="ambiguous-expansion-choices"></a>
     ```rust
     foo!();                 // foo-outer
     expand! {               // expand-outer
@@ -751,9 +752,10 @@ use.
 And nothing gets printed because all the invocations of `foo!` disappeared earlier.
 
 ### Inside-out
-* Say we expand `foo-inner`. At this point, `expand-inner` is now eligible to
-  finish expansion and interpolate `#tokens` into `appends_hello!`. If it does
-  so, the result is
+* Starting from [before](#ambiguous-expansion-choices), say we expand
+  `foo-inner`. At this point, `expand-inner` is now eligible to finish
+  expansion and interpolate `#tokens` into `appends_hello!`. If it does so, the
+  result is
     ```rust
     foo!();                 // foo-outer
     expand! {               // expand-outer
