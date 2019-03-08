@@ -24,51 +24,42 @@ want to pursue in the language.
 There are a few places where proc macros may encounter unexpanded macros in
 their input:
 
-* In attribute and procedural macros:
+* In attribute macros:
 
     ```rust
     #[my_attr_macro(x = a_macro_call!(...))]
     //                  ^^^^^^^^^^^^^^^^^^
     // This call isn't expanded before being passed to `my_attr_macro`, and
-    // can't be since attr macros are passed raw token streams by design.
+    // can't be since attr macros are passed opaque token streams by design.
     struct X {...}
     ```
 
+* In procedural macros:
     ```rust
     my_proc_macro!(concat!("hello", "world"));
     //             ^^^^^^^^^^^^^^^^^^^^^^^^^
     // This call isn't expanded before being passed to `my_proc_macro`, and
-    // can't be since proc macros are passed raw token streams by design.
+    // can't be since proc macros are passed opaque token streams by design.
     ```
 
-* In proc macros called with metavariables or token streams:
-
+* In declarative macros:
     ```rust
-    macro_rules! m {
-        ($($x:tt)*) => {
-            my_proc_macro!($($x)*);
-        },
-    }
-
-    m!(concat!("a", "b", "c"));
-    // ^^^^^^^^^^^^^^^^^^^^^^
-    // This call isn't expanded before being passed to `my_proc_macro`, and
-    // can't be because `m!` is declared to take a token tree, not a parsed
-    // expression that we know how to expand.
+    env!(concat!("PA", "TH"));
+    //   ^^^^^^^^^^^^^^^^^^^
+    // Currently, `std::env!` is a compiler-builtin macro because it often
+    // needs to expand input like this, and 'normal' macros aren't able
+    // to do so.
     ```
 
-In these situations, proc macros need to either re-call the input macro call as
-part of their token output, or simply reject the input. If the proc macro needs
-to inspect the result of the macro call (for instance, to check or edit it, or
-to re-export a hygienic symbol defined in it), the author is currently unable
-to do so.
+In these situations, macros need to either re-emit the input macro invocation
+as part of their token output, or simply reject the input. If the proc macro
+needs to inspect the result of the macro call (for instance, to check or edit
+it, or to re-export a hygienic symbol defined in it), the author is currently
+unable to do so.
 
 Giving proc macro authors the ability to handle these situations will allow
 proc macros to 'just work' in more contexts, and without surprising users who
 expect macro calls to interact well with more parts of the language.
-Additionally, supporting the 'proc macro definition' use case above allows proc
-macro authors to use macros from other crates _as macros_, rather than as proc
-macro definition functions.
 
 As a side note, allowing macro calls in built-in attributes would solve a few
 outstanding issues (see
@@ -91,6 +82,14 @@ useless](https://github.com/rust-lang/rust/issues/29599). If macro authors have
 access to eager expansion, they could eagerly expand `concat_idents!` and
 interpolate the resulting token into their output.
 
+## Expanding third-party macros
+
+Currently, if a proc macro author defines a useful macro `useful!`, and another
+proc macro author wants to use `useful!` within their own proc macro
+`my_proc_macro!`, they can't: they can *emit an invocation* of `useful!`, but
+they can't *inspect the result* of that invocation. Eager expansion would
+allow this kind of macro-level code sharing.
+
 # Detailed design
 
 As an eRFC, this section doesn't focus on the details of the _implementation_
@@ -102,32 +101,34 @@ The rough plan is to implement minimally-featured prototype versions of each
 API in order to get feedback on their relative strengths and weaknesses,
 before focusing on polishing the best candidate for eventual stabilisation.
 
-## Macro callbacks
+## Mutually recursive macros
 
 One way to frame the issue is that there is no guaranteed way for one macro
 invocation `foo!` to run itself *after* another invocation `bar!`.  You could
-attempt to solve this by designing `bar!` to expand `foo!`, so that this
-invocation:
+attempt to solve this by designing `bar!` to expand `foo!` (notice that you'd
+need to control the definitions of both macros!).
+
+The goal is that this invocation:
 ```rust
 foo!(bar!())
 ```
 Expands into something like:
 ```rust
-bar!(some args for bar; foo!())
+bar!(<some args for bar>; foo!())
 ```
 And now `foo!` *expects* `bar!` to expand into something like:
 ```rust
-foo!(result_of_expanding_bar)
+foo!(<result of expanding bar>)
 ```
 
 This is the idea behind the third-party [`eager!`
 macro](https://docs.rs/eager/0.1.0/eager/macro.eager.html). Unfortunately this
-requires a lot of fragile coordination between `foo!` and `bar!`, which isn't
-possible if `bar!` were already defined in another library.
+requires a lot of coordination between `foo!` and `bar!`, which isn't possible
+if `bar!` were already defined in another library.
 
 We can directly provide this missing ability through a special compiler-builtin
 macro, `expand!`, which expands some arguments before interpolating the results
-into another. Some toy syntax:
+into another argument. Some toy syntax:
 
 ```rust
 expand! {
@@ -143,7 +144,7 @@ expand! {
 ```
 
 The intent here is that `expand!` accepts one or more declarations of the form
-`#$name = { $tokens_to_expand };`, followed by a 'target' token tree where
+`#<name> = { <tokens to expand> };`, followed by a 'target' token tree where
 the expansion results should be interpolated.
 
 The contents of the right-hand sides of the bindings (in this case `mod
@@ -157,10 +158,10 @@ crate](https://docs.rs/quote/0.6.11/quote/macro.quote.html), but there are
 alternatives (such as the unstable `quote!` macro in the [`proc_macro`
 crate](https://doc.rust-lang.org/proc_macro/macro.quote.html)).
 
-Let's step through an example. If `expands_input!` wants to use `expand!` to
+Let's step through an example. If `my_eager_macro!` wants to use `expand!` to
 eagerly expand it's input, then this invocation:
 ```rust
-expands_input! {
+my_eager_macro! {
     concat!("a", "b")
 }
 ```
@@ -168,45 +169,65 @@ Should expand into this:
 ```rust
 expand! {
     #new_input = { concat!("a", "b") };
-    expands_input! {
+    my_eager_macro! {
         #new_input
     }
 }
 ```
 Which in turn should expand into this:
 ```rust
-expands_input! {
+my_eager_macro! {
     "ab"
 }
 ```
 
+### Recursion is necessary
+We might be tempted to 'trim down' our `expand!` macro to just expanding it's
+input, and not bothering with the recursive expansion:
+
+```rust
+macro trimmed_expand( <tokens> ) {
+    expand! {
+        #expanded_tokens = { <tokens> };
+        #expanded_tokens
+    }
+}
+```
+
+However, this encounters the same problem that we were trying to solve in the
+first place: how does `my_eager_macro!` use the *result* of `trimmed_expand!`?
+
+Recursive expansion is seemingly necessary for any solution that doesn't
+inspect macro inputs. For proposals that include inspecting macro inputs, see
+the section on [alternatives](#rationale-and-alternatives).
+
 ### Use by procedural macros
 The previous example indicates how a declarative macro might use `expand!` to
-'eagerly' expand its inputs before itself. However, it turns out that the
+'eagerly' expand its inputs before itself. Conveniently, it turns out that the
 changes required to get a procedural macro to use `expand!` are quite small.
-For example, if we have an implementation `fn expands_input_impl(TokenStream)
+For example, if we have an implementation `fn my_eager_macro_impl(TokenStream)
 -> TokenStream`, then we can define an eager proc macro like so:
 
 ```rust
 #[proc_macro]
-fn expands_input(input: TokenStream) -> TokenStream {
+fn my_eager_macro(input: TokenStream) -> TokenStream {
     quote!(
         expand! {
             ##expanded_input = {#input};
-            expands_input_impl!(##expanded_input)
+            my_eager_macro_impl!(##expanded_input)
         }
     )
 }
 
 #[proc_macro]
-fn expands_input_impl(TokenStream) -> TokenStream { ... }
+fn my_eager_macro_impl(TokenStream) -> TokenStream { ... }
 ```
 
 Where the double-pound `##` tokens are to escape the interpolation symbol `#`
 within `quote!`.
 
 This transformation is simple enough that it could be implemented as an
-attribute macro.
+`#[eager]` attribute macro.
 
 ### Identifier macros
 At first glance, `expand!` directly solves the motivating case for
@@ -234,14 +255,14 @@ Procedural macros are exposed as Rust functions of type `fn(TokenStream) ->
 TokenStream`. The most natural way for a proc macro author to expand a macro
 encountered in the input `TokenStream` would be to have access to a similar
 function `please_expand(input: TokenStream) -> Result<TokenStream, SomeError>`,
-which used the global compiler context to resolve and expand any macros in
-`input`.
+which used the global compiler context to iteratively resolve and completely
+expand all macros in `input`.
 
-As an example, we could implement `expands_input!` like this:
+As an example, we could implement `my_eager_macro!` like this:
 
 ```rust
 #[proc_macro]
-fn expands_input(input: TokenStream) -> TokenStream {
+fn my_eager_macro(input: TokenStream) -> TokenStream {
     let tokens = match please_expand(input) {
         Ok(tokens) => tokens,
         Err(e) => {
@@ -293,6 +314,12 @@ behave unexpectedly for a user if they aren't handled, or are handled poorly.
 See the [appendix](#appendix-a-corner-cases) for a collection of 'unit tests'
 that exercise these ideas.
 
+### Interoperability
+A good implementation will behave 'as expected' when asked to eagerly expand
+*any* macro, whether it's a `macro_rules!` decl macro, or a 'macros 2.0' `macro
+foo!()` decl macro, or a compiler-builtin macro. Similarly, a good
+implementation will allow any kind of macro to perform such eager expansion.
+
 ### Expansion order
 Depending on the order that macros get expanded, a definition might not be in
 scope yet. An advanced implementation would delay expansion of an eager macro
@@ -309,11 +336,69 @@ outside](#paths-from-inside-a-macro-to-outside), and [paths within nested
 macros](#paths-within-nested-macros).
 
 ### Changing definitions
-Since a macro usually changes its contents, any macros defined within its
-arguments isn't safe to use as a macro definition. A correct implementation
-would be careful to ensure that only 'stable' definitions are resolved and
-expanded, where 'stable' means the definition won't change at any point where
-an invocation might be expanded. See the appendix on [mutually-dependent
+Because macros can define other macros, there can be references *outside* a
+macro invocation to a macro defined in that invocation, as well as *inside*.
+For example:
+
+```rust
+foo!();     // foo-outer
+my_eager_macro! {
+    macro foo() { ... };
+    foo!(); // foo-inner
+}
+```
+
+A naive implementation of eager expansion might 'pretend' that the source file
+literally looked like:
+
+```rust
+foo!();
+macro foo() { ... };
+foo!();
+```
+
+However, there's no guarantee that the tokens finally emitted by
+`my_eager_macro!` will contain the same definition of `foo!`, or even that it
+contains such a definition at all!
+
+This means a correct implementation of eager expansion has to be careful about
+which macros it 'speculatively expands'. It's fine to expand `foo-inner`  while
+eagerly expanding `my_eager_macro!`, but it's *not* fine to expand `foo-outer`
+until `my_eager_macro!` is fully expanded.
+
+We can label this concept 'stability':
+- From the point of view of the outer invocation of `foo!`, the definition of
+  `foo!` is *unstable*: `my_eager_macro!` might change or remove the
+  definition.
+- From the point of view of the inner invocation of `foo!` the definition *is*
+  stable: nothing is going to change the definition before the invocation is
+  expanded.
+
+The concept of a definition being 'stable' *relative to* an invocation is more
+useful when this situation is nested:
+
+```rust
+foo!();               // foo-outer
+my_eager_macro! {     // my_eager_macro-outer
+    foo!();           // foo-middle
+    my_eager_macro! { // my_eager_macro-inner
+        foo!();       // foo-inner
+        macro foo() { ... };
+    }
+}
+    
+```
+
+A correct implementation will ensure each call to `foo!` is expanded only once
+the corresponding definition is 'stable'. In detail:
+- `foo-inner` is always fine to expand: the definition of `foo!` can't be
+  changed before `foo!` might be expanded.
+- `foo-middle` can only be expanded once `my_eager_macro-inner` is fully
+  expanded.
+- `foo-outer` can only be expanded once `my_eager_macro-outer` is fully
+  expanded.
+
+See the appendix on [mutually-dependent
 expansions](#mutually-dependent-expansions), and [paths that disappear during
 expansion](#paths-that-disappear-during-expansion).
 
@@ -324,13 +409,13 @@ smoothly with other features of Rust - mainly other macros.
 
 ## Alternative: third-party expansion libraries
 We could encourage the creation of a 'macros for macro authors' crate with
-implementations of common macros - for instance, those in the standard library
-- and make it clear that macro support isn't guaranteed for arbitrary macro
-calls passed in to proc macros. This feels unsatisfying, since it fractures the
-macro ecosystem and leads to very indirect unexpected behaviour (for instance,
-one proc macro may use a different macro expansion library than another, and
-they might return different results). This also doesn't help address macro
-calls in built-in attributes.
+implementations of common macros (for instance, those in the standard library)
+and make it clear that macro support isn't guaranteed for arbitrary macro calls
+passed in to proc macros. This feels unsatisfying, since it fractures the macro
+ecosystem and leads to very indirect unexpected behaviour (for instance, one
+proc macro may use a different macro expansion library than another, and they
+might return different results). This also doesn't help address macro calls in
+built-in attributes.
 
 ## Alternative: global eager expansion
 Opt-out eager expansion is backwards-incompatible with current macro behaviour:
@@ -362,11 +447,12 @@ is that it bans certain token patterns from macro inputs.
 Additionally, special invocation syntax makes macro *output* sensitive to the
 invocation grammar: a macro might need to somehow 'escape' `$!` in it's output
 to prevent the compiler from trying to treat the surrounding tokens as an
-invocation.
+invocation. This adds an unexpected and unnecessary burden on macro authors.
 
 # Unresolved questions
 
 * How do these proposals interact with hygiene?
+* How should eager attribute expansion work?
 
 # Appendix A: Corner cases
 
@@ -375,12 +461,13 @@ implementation of all [desirable behaviour](#desirable-behaviour).
 
 ### Paths from inside a macro to outside
 
-Should compile: the definition of `m!` is stable (that is, it won't be changed
+#### Should compile:
+The definition of `m!` is stable (that is, it won't be changed
 by further expansions), so the invocation of `m!` is safe to expand.
 ```rust
 macro m() {}
 
-expands_input! {
+my_eager_macro! {
     mod a {
         super::m!();
     }
@@ -389,10 +476,11 @@ expands_input! {
 
 ### Paths within a macro
 
-Should compile: the definitions of `ma!` and `mb!` are stable (that is, they
-won't be changed by further expansions), so the invocations are safe to expand.
+#### Should compile:
+The definitions of `ma!` and `mb!` are stable (that is, they won't be changed
+by further expansions), so the invocations are safe to expand.
 ```rust
-expands_input! {
+my_eager_macro! {
     mod a {
         pub macro ma() {}
         super::b::mb!();
@@ -407,10 +495,10 @@ expands_input! {
 
 ### Paths within nested macros
 
-Should compile.
+#### Should compile:
 ```rust
-expands_input! {
-    expands_input! {
+my_eager_macro! {
+    my_eager_macro! {
         mod b {
             // This invocation...
             super::a::x!();
@@ -423,6 +511,8 @@ expands_input! {
     }
 }
 ```
+
+#### Should compile:
 ```rust
 #[expands_body]
 mod a {
@@ -442,9 +532,10 @@ macro x{}
 
 ### Paths that disappear during expansion
 
-Should not compile: assuming `deletes_everything` always expands into an empty
-token stream, the invocation of `m!` relies on a definition that won't be
-stable after further expansion.
+#### Should not compile:
+Assuming `deletes_everything` always expands into an empty token stream, the
+invocation of `m!` relies on a definition that won't be stable after further
+expansion.
 ```rust
 #[deletes_everything]
 macro m() {}
@@ -454,9 +545,9 @@ m!();
 
 ### Mutually-dependent expansions
 
-Should not compile: each expansion would depend on a definition that might not
-be stable after further expansion, so the mutually-dependent definitions
-shouldn't resolve.
+#### Should not compile:
+Each expansion would depend on a definition that might not be stable after
+further expansion, so the mutually-dependent definitions shouldn't resolve.
 ```rust
 #[expands_body]
 mod a {
@@ -471,16 +562,17 @@ mod b {
 }
 ```
 
-Should not compile: the definition of `m!` isn't stable with respect to the
-invocation of `m!`, since `expands_args` might change the definition.
+#### Should not compile:
+The definition of `m!` isn't stable with respect to the invocation of `m!`,
+since `expands_args` might change the definition.
 ```rust
 #[expands_args(m!())]
 macro m() {}
 ```
 
-Should not compile: the definition of `m!` isn't stable with respect to the
-invocation of `m!`, since `expands_args_and_body` might change the definition.
-TODO: is this the expected behaviour?
+#### Should not compile:
+The definition of `m!` isn't stable with respect to the invocation of `m!`,
+since `expands_args_and_body` might change the definition.
 ```rust
 #[expands_args_and_body(m!())]
 macro m() {}
@@ -488,48 +580,22 @@ macro m() {}
 
 ### Delayed definitions
 
-Should compile:
-    * If the first invocation of `expands_input!` is expanded first, it should
-      notice that it can't resolve `x!` and have its expansion delayed.
-    * When the second invocatoin of `expands_input!` is expanded, it provides a
-      stable definition of `x!`. This should allow the first invocation to be
-      're-expanded'.
+#### Should compile:
+* If the first invocation of `my_eager_macro!` is expanded first, it should
+  notice that it can't resolve `x!` and have its expansion delayed.
+* When the second invocation of `my_eager_macro!` is expanded, it provides a
+  stable definition of `x!`. This should allow the first invocation to be
+  're-expanded'.
 ```rust
 macro make($name:ident) {
     macro $name() {}
 }
 
-expands_input! {
+my_eager_macro! {
     x!();
 }
 
-expands_input! {
+my_eager_macro! {
     make!(x);
-}
-```
-
-### Non-contiguous expansion tokens
-
-Should compile: assuming `expands_untagged_input` removes the relevant
-semicolon-delineated token streams before trying to expand its input, the
-resulting tokens are valid items. TODO: should 'interpolating' the unexpanded
-tokens be the responsibility of the proc macro?
-```rust
-expands_untagged_input! {
-    mod a {
-        super::b::m!();
-    }
-    dont_expand: foo bar;
-    mod b {
-        pub macro m() {};
-    }
-}
-```
-```rust
-expands_untagged_input! {
-    mod a {
-        dont_expand: m1!();
-        m2!();
-    }
 }
 ```
