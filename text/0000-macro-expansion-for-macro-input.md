@@ -20,14 +20,13 @@ expansion. This will:
 There are a few places where proc macros may encounter unexpanded macros in
 their input:
 
-* In attribute macros:
-
+* In declarative macros:
     ```rust
-    #[my_attr_macro(x = a_macro_call!(...))]
-    //                  ^^^^^^^^^^^^^^^^^^
-    // This call isn't expanded before being passed to `my_attr_macro`, and
-    // can't be since attr macros are passed opaque token streams by design.
-    struct X {...}
+    env!(concat!("PA", "TH"));
+    //   ^^^^^^^^^^^^^^^^^^^
+    // Currently, `std::env!` is a compiler-builtin macro because it often
+    // needs to expand input like this, and 'normal' macros aren't able
+    // to do so.
     ```
 
 * In procedural macros:
@@ -38,13 +37,13 @@ their input:
     // can't be since proc macros are passed opaque token streams by design.
     ```
 
-* In declarative macros:
+* In attribute macros:
     ```rust
-    env!(concat!("PA", "TH"));
-    //   ^^^^^^^^^^^^^^^^^^^
-    // Currently, `std::env!` is a compiler-builtin macro because it often
-    // needs to expand input like this, and 'normal' macros aren't able
-    // to do so.
+    #[my_attr_macro(x = a_macro_call!(...))]
+    //                  ^^^^^^^^^^^^^^^^^^
+    // This call isn't expanded before being passed to `my_attr_macro`, and
+    // can't be since attr macros are passed opaque token streams by design.
+    struct X {...}
     ```
 
 In these situations, macros need to either re-emit the input macro invocation
@@ -322,73 +321,6 @@ have an effective policy for how to resolve such paths. See the appendix on
 outside](#paths-from-inside-a-macro-to-outside), and [paths within nested
 macros](#paths-within-nested-macros).
 
-### Changing definitions
-Because macros can define other macros, there can be references *outside* a
-macro invocation to a macro defined in that invocation, as well as *inside*.
-For example:
-
-```rust
-foo!();     // foo-outer
-my_eager_macro! {
-    macro foo() { ... };
-    foo!(); // foo-inner
-}
-```
-
-A naive implementation of eager expansion might 'pretend' that the source file
-literally looked like:
-
-```rust
-foo!();
-macro foo() { ... };
-foo!();
-```
-
-However, there's no guarantee that the tokens finally emitted by
-`my_eager_macro!` will contain the same definition of `foo!`, or even that it
-contains such a definition at all!
-
-This means a correct implementation of eager expansion has to be careful about
-which macros it 'speculatively expands'. It's fine to expand `foo-inner`  while
-eagerly expanding `my_eager_macro!`, but it's *not* fine to expand `foo-outer`
-until `my_eager_macro!` is fully expanded.
-
-We can label this concept 'stability':
-- From the point of view of the outer invocation of `foo!`, the definition of
-  `foo!` is *unstable*: `my_eager_macro!` might change or remove the
-  definition.
-- From the point of view of the inner invocation of `foo!` the definition *is*
-  stable: nothing is going to change the definition before the invocation is
-  expanded.
-
-The concept of a definition being 'stable' *relative to* an invocation is more
-useful when this situation is nested:
-
-```rust
-foo!();               // foo-outer
-my_eager_macro! {     // my_eager_macro-outer
-    foo!();           // foo-middle
-    my_eager_macro! { // my_eager_macro-inner
-        foo!();       // foo-inner
-        macro foo() { ... };
-    }
-}
-    
-```
-
-A correct implementation will ensure each call to `foo!` is expanded only once
-the corresponding definition is 'stable'. In detail:
-- `foo-inner` is always fine to expand: the definition of `foo!` can't be
-  changed before `foo!` might be expanded.
-- `foo-middle` can only be expanded once `my_eager_macro-inner` is fully
-  expanded.
-- `foo-outer` can only be expanded once `my_eager_macro-outer` is fully
-  expanded.
-
-See the appendix on [mutually-dependent
-expansions](#mutually-dependent-expansions), and [paths that disappear during
-expansion](#paths-that-disappear-during-expansion).
-
 # Rationale and alternatives
 
 The primary rationale is to make procedural and attribute macros work more
@@ -439,12 +371,18 @@ invocation. This adds an unexpected and unnecessary burden on macro authors.
 # Unresolved questions
 
 * How do these proposals interact with hygiene?
-* How should eager attribute expansion work?
+* Are there any corner-cases concerning attribute macros that aren't covered by
+  treating them as two-argument proc-macros?
+* What are the new expansion order rules? (See [Appendix
+  B](#appendix-b-macro-expansion-order-example) for an exploration of one
+  possible issue.)
 
 # Appendix A: Corner cases
 
 Some examples, plus how this proposal would handle them assuming full
-implementation of all [desirable behaviour](#desirable-behaviour).
+implementation of all [desirable behaviour](#desirable-behaviour). Assume in
+these examples that hygiene has been 'taken care of', in the sense that two
+instances of the identifier `foo` are in the same hygiene scope.
 
 ### Paths from inside a macro to outside
 
@@ -586,3 +524,315 @@ my_eager_macro! {
     make!(x);
 }
 ```
+
+# Appendix B: Macro expansion order example
+Here we discuss an important corner case involving the precise meaning of
+"resolving a macro invocation to a macro definition". We're going to explore
+the situation where an eager macro changes the definition of a macro, even
+while there are invocations of that macro which are apparently eligible for
+expansion.
+
+Warning: this section will contain long samples of intermediate macro expansion!
+
+In these examples, assume that hygiene has been 'taken care of', in the sense
+that two instances of the identifier `foo` are in the same hygiene scope (for
+instance, through careful manipulation in a proc macro, or by being a shared
+`$name:ident` fragment in a decl macro).
+
+### The current case
+Say we have two macros, `appends_hello!` and `appends_world!`, which are normal
+declarative macros that add `println!("hello");` and  `println!("world");`,
+respectively, to the end of any declarative macros that they parse in their
+input; they leave the rest of their input unchanged.  For example, this:
+
+```rust
+appends_hello! {
+    struct X();
+
+    macro foo() {
+        <whatever>
+    }
+}
+```
+Should expand into this:
+```rust
+struct X();
+
+macro foo() {
+    <whatever>
+    println!("hello");
+}
+```
+
+Now, what do we expect the following to print?
+```rust
+foo!();
+appends_world! {
+    foo!();
+    appends_hello! {
+        foo!();
+        macro foo() {};
+    }
+}
+```
+
+The expansion order is this:
+* `appends_hello!` expands, because the outermost invocations of `foo!` can't
+  be resolved. The result is:
+    ```rust
+    foo!();
+    foo!();
+    appends_hello! {
+        foo!();
+        macro foo() {};
+    }
+    ```
+* `appends_world!` expands, because the two outermost invocations of `foo!`
+  still can't be resolved. The result is:
+    ```rust
+    foo!();
+    foo!();
+    foo!();
+    macro foo() {
+        println!("hello");
+    }
+    ```
+And now it should be clear that we expect the output:
+```
+hello
+hello
+hello
+```
+
+### The eager case
+Now, consider eager variants of `appends_hello!` and `appends_world!` (call
+them `eager_appends_hello!` and `eager_appends_world!`) which eagerly expand
+their input using `expand!`, *then* append the `println!`s to any macro
+definitions they find, so that this:
+```rust
+eager_appends_hello! {
+    macro foo() {}
+    foo!();
+    concat!("a", "b");
+}
+```
+Expands into:
+```rust
+expand! {
+    #tokens = {
+        macro foo() {};
+        foo!(); // This will expand to an empty token stream.
+        concat!("a", b");
+    };
+    appends_hello!{ #tokens }
+}
+```
+Which expands into:
+```rust
+appends_hello! {
+    macro foo() {};
+    "ab";
+}
+```
+Which finally expands into:
+```rust
+macro foo() {
+    println!("hello");
+};
+"ab";
+```
+
+Now, what do we expect the following to print?
+```rust
+foo!();         // foo-outer
+eager_appends_world! {
+    foo!();     // foo-middle
+    eager_appends_hello! {
+        foo!(); // foo-inner
+        macro foo() {};
+    }
+}
+```
+
+The expansion order is this:
+* The compiler expands `eager_appends_world!`, since `foo!` can't be resolved.
+  The result is:
+    ```rust
+    foo!();             // foo-outer
+    expand! {           // expand-outer
+        #tokens = {
+            foo!();     // foo-middle
+            eager_appends_hello! {
+                foo!(); // foo-inner
+                macro foo() {};
+            }
+        };
+        appends_world! {
+            #tokens
+        }
+    }
+    ```
+* The compiler tries to expand the right-hand-side of the `#tokens = { ... }` line
+  within `expand!`. The `foo!` invocations still can't be resolved, so the compiler
+  expands `eager_appends_world!`. The result is:
+    ```rust
+    foo!();                 // foo-outer
+    expand! {               // expand-outer
+        #tokens = {
+            foo!();         // foo-middle
+            expand! {       // expand-inner
+                #tokens = {
+                    foo!(); // foo-inner
+                    macro foo() {};
+                };
+                appends_hello! {
+                    #tokens
+                }
+            }
+        };
+        appends_world! {
+            #tokens
+        }
+    }
+    ```
+
+At this point, we have several choices. We hand-waved
+[earlier](#mutually-recursive-macros) that the tokens within `expand!` should
+be expanded "exactly as though the compiler were parsing and expanding these
+tokens directly". Well, as far as the compiler can tell, there are three
+invocations of `foo!` (the ones labelled `foo-outer`, `foo-middle`, and
+`foo-inner`), and there's a perfectly good definition `macro foo()` for us to
+use.
+
+### Outside-in
+* Say we expand the invocations in this order: `foo-outer`, `foo-middle`,
+  `foo-inner`.  Using the 'current' definition of `foo!`, these all become
+  empty token streams and the result is:
+    ```rust
+    expand! {           // expand-outer
+        #tokens = {
+            expand! {   // expand-inner
+                #tokens = {
+                    macro foo() {};
+                };
+                appends_hello! {
+                    #tokens
+                }
+            }
+        };
+        appends_world! {
+            #tokens
+        }
+    }
+    ```
+* The only eligible macro to expand is `expand-inner`, which is ready to
+  interpolate `#tokens` (which contains no macro calls) into `append_hello!`.
+  The result is:
+    ```rust
+    expand! {           // expand-outer
+        #tokens = {
+            appends_hello! {
+                macro foo() {};
+            }
+        };
+        appends_world! {
+            #tokens
+        }
+    }
+    ```
+* The next expansions are `appends_hello!` within `expand-outer`, then
+  `expand-outer`, then `appends_world!`, and the result is:
+    ```rust
+    macro foo() {
+        println!("hello");
+        println!("world");
+    }
+    ```
+And nothing gets printed because all the invocations of `foo!` disappeared earlier.
+
+### Inside-out
+* Say we expand `foo-inner`. At this point, `expand-inner` is now eligible to
+  finish expansion and interpolate `#tokens` into `appends_hello!`. If it does
+  so, the result is
+    ```rust
+    foo!();                 // foo-outer
+    expand! {               // expand-outer
+        #tokens = {
+            foo!();         // foo-middle
+            appends_hello! {
+                macro foo() {};
+            }
+        };
+        appends_world! {
+            #tokens
+        }
+    }
+    ```
+* At this point, the definition of `foo!` is 'hidden' by `appends_hello!`, so neither
+  `foo-outer` nor `foo-middle` can be resolved. The next expansion is `appends_hello!`,
+  and the result is:
+    ```rust
+    foo!();                 // foo-outer
+    expand! {               // expand-outer
+        #tokens = {
+            foo!();         // foo-middle
+            macro foo() {
+                println!("hello");
+            };
+        };
+        appends_world! {
+            #tokens
+        }
+    }
+    ```
+* Here, we have a similar choice to make between expanding `foo-outer` and
+  `foo-middle`.  If we expand `foo-outer` with the 'current' definition of
+  `foo!`, it becomes `println!("hello");`. Instead, we'll continue 'inside-out'
+  and fully expand `foo-middle` next.  For simplicity, we'll write the result
+  of expanding `println!("hello");` as `<println!("hello");>`. The result is:
+    ```rust
+    foo!();                 // foo-outer
+    expand! {               // expand-outer
+        #tokens = {
+            <println!("hello")>;
+            macro foo() {
+                println!("hello");
+            };
+        };
+        appends_world! {
+            #tokens
+        }
+    }
+    ```
+* `expand-outer` is ready to complete, so we do that:
+    ```rust
+    foo!();                 // foo-outer
+    appends_word! {
+        <println!("hello")>;
+        macro foo() {
+            println!("hello");
+        };
+    }
+    ```
+* Then we expand `appends_word!`:
+    ```rust
+    foo!();                 // foo-outer
+    <println!("hello")>;
+    macro foo() {
+        println!("hello");
+        println!("world");
+    };
+    ```
+And we expect the output:
+```
+hello
+world
+hello
+```
+
+### The problem
+It's apparent that eager expansion means we have more decisions to make with
+respect to expansion order. Which of the above expansions seems reasonable?
+Which ones are surprising? Is there a simple principle that suggests one of
+these over the others?
+
