@@ -1,21 +1,17 @@
-- Feature Name: Macro expansion for macro input
+- Feature Name: opt-in macro expansion API
 - Start Date: 2018-01-26
 - RFC PR: (leave this empty)
 - Rust Issue: (leave this empty)
 
 # Summary
 
-This is an **experimental RFC** for adding a new feature to the language,
-opt-in eager macro expansion. This will:
-* Allow procedural and declarative macros to handle unexpanded macro calls that are passed as inputs,
-* Allow macros to access the results of macro calls that they construct themselves,
+This is an RFC for adding a new feature to the language, opt-in eager macro
+expansion. This will:
+* Allow procedural and declarative macros to handle unexpanded macro calls that
+  are passed as inputs,
+* Allow macros to access the results of macro calls that they construct
+  themselves,
 * Enable macros to be used where the grammar currently forbids it.
-
-Reiterating the original description of [what an eRFC
-is](https://github.com/rust-lang/rfcs/pull/2033#issuecomment-309057591), this
-eRFC intends to be a lightweight, bikeshed-free outline of what a strategy for
-eager expansion might look like, as well as to affirm that this is a feature we
-want to pursue in the language.
 
 # Motivation
 
@@ -91,15 +87,6 @@ they can't *inspect the result* of that invocation. Eager expansion would
 allow this kind of macro-level code sharing.
 
 # Detailed design
-
-As an eRFC, this section doesn't focus on the details of the _implementation_
-of eager expansion. Instead, it outlines the required and desirable outcomes of
-any eventual solution. Additionally, we recount the rough design of possible
-APIs that have already come up in discussion around this topic.
-
-The rough plan is to implement minimally-featured prototype versions of each
-API in order to get feedback on their relative strengths and weaknesses,
-before focusing on polishing the best candidate for eventual stabilisation.
 
 ## Mutually recursive macros
 
