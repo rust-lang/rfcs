@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-Allow `#[repr(transparent)]` on `union`s an univariant `enum`s that have exactly one non-zero-sized field (just like `struct`s).
+Allow `#[repr(transparent)]` on `union`s and univariant `enum`s that have exactly one non-zero-sized field (just like `struct`s).
 
 # Motivation
 [motivation]: #motivation
@@ -135,6 +135,8 @@ Like transarent `struct`s, a transparent `union` of type `U` and transparent `en
 
 Like transparent `struct`s, transparent `union`s and `enum`s are FFI-safe if and only if their underlying representation type is also FFI-safe.
 
+A `union` may not be eligible for the same nonnull-style optimizations that a `struct` or `union` (with the same fields) are eligible for. Adding `#[repr(transparent)]` to  `union` does not change this. To give a more concrete example, it is unspecified whether `size_of::<T>()` is equal to `size_of::<Option<T>>()`, where `T` is a `union` (regardless of whether it is transparent). The Rust compiler is free to perform this optimization if possible, but is not required to, and different compiler versions may differ in their application of these optimizations.  
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
@@ -217,7 +219,9 @@ In summary, many of the questions regarding `#[repr(transparent)]` on a `union` 
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
-None (yet).
+The role of `#[repr(transparent)]` in nonnull-style optimizations is not entirely clear. Specifically, it is unclear whether the user can rely on these optimizations to be performed when they make a type transparent. [Transparent `union`s somewhat complicate the matter](https://github.com/rust-lang/rfcs/pull/2645#issuecomment-470699497). General concensus seems to be that the compiler is free to decide where and when to perform nonnull-style optimizations on `union`s (regardless of whether or not the `union` is transaprent), and no guarantees are made to the user about when and if those optimizations will be applied. It is still an open question exactly what guarantees (if any) Rust makes about transparent `struct`s (and `enum`s) and nonnull-style optimizations.
+
+This RFC doesn't propose any changes to transparent `struct`s, and so does not strictly depend on this question being resolved. But since this RFC is attempting to round out the `#[repr(transparent)]` feature, it seems reasonable to dedicate some time to attempting to round out the guarantees about `#[repr(transparent)]` on `struct`s.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
