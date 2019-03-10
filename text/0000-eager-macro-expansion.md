@@ -1,4 +1,4 @@
-- Feature Name: opt-in macro expansion API
+- Feature Name: `eager_macro_expansion`
 - Start Date: 2018-01-26
 - RFC PR: (leave this empty)
 - Rust Issue: (leave this empty)
