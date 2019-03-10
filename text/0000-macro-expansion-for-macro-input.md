@@ -306,23 +306,6 @@ A good implementation will behave 'as expected' when asked to eagerly expand
 foo!()` decl macro, or a compiler-builtin macro. Similarly, a good
 implementation will allow any kind of macro to perform such eager expansion.
 
-### Expansion order
-Depending on the order that macros get expanded, a definition might not be in
-scope yet. An advanced implementation would delay expansion of an eager macro
-until all its macro dependencies are available. See appendix A on [delayed
-definitions](#delayed-definitions) and [paths within nested
-macros](#paths-within-nested-macros).
-
-This is more subtle than it might appear at first glance. An advanced
-implementation needs to account for the fact that macro definitions can be
-changed during expansion (see [appendix B](#appendix-b)). In fact, expansions
-can be mutually-dependent *between* nested eager macros (see [appendix
-C](#appendix-c)).
-
-A correct but simple implementation should be forwards-compatible with the
-behaviour described in the appendices (perhaps by producing an error whenever
-such a situation is detected).
-
 ### Path resolution
 In Rust 2018, macros can be invoked by a path expression. These paths can be
 complicated, involving `super` and `self`. An advanced implementation would
@@ -331,8 +314,31 @@ have an effective policy for how to resolve such paths. See appendix A on
 outside](#paths-from-inside-a-macro-to-outside), and [paths within nested
 macros](#paths-within-nested-macros).
 
-# Rationale and alternatives
+### Expansion order
+Depending on the order that macros get expanded, a definition might not be in
+scope yet. An advanced implementation would delay expansion of an eager macro
+until all its macro dependencies are available. See appendix A on [delayed
+definitions](#delayed-definitions) and [paths within nested
+macros](#paths-within-nested-macros).
 
+This is more subtle than it might appear at first glance. An advanced
+implementation needs to account for the fact that macro definitions ca vary
+during expansion (see [appendix B](#appendix-b)). In fact, expansions
+can be mutually-dependent *between* nested eager macros (see [appendix
+C](#appendix-c)).
+
+A guiding principle here is that, as much as possible, the result of eager
+expansion shouldn't depend on the *order* that macros are expanded. This makes
+expansion resilient to changes in the compiler's expansion process, and avoids
+unexpected and desirable behaviour like being source-order dependent.
+Additionally, the existing macro expansion process *mostly* has this property
+and we should aim to maintain it.
+
+A correct but simple implementation should be forwards-compatible with the
+behaviour described in the appendices (perhaps by producing an error whenever
+such a situation is detected).
+
+# Rationale and alternatives
 The primary rationale is to make procedural and attribute macros work more
 smoothly with other features of Rust - mainly other macros.
 
@@ -395,8 +401,8 @@ instances of the identifier `foo` are in the same hygiene scope.
 ### Paths from inside a macro to outside
 
 #### Should compile:
-The definition of `m!` isn't going to change, so the invocation of `m!` is safe
-to expand.
+The definition of `m!` isn't going to vary through any further expansions, so
+the invocation of `m!` is safe to expand.
 ```rust
 macro m() {}
 
@@ -410,8 +416,9 @@ my_eager_macro! {
 ### Paths within a macro
 
 #### Should compile:
-The definitions of `ma!` and `mb!` aren't within a macro, so the definitions won't change,
-so it's safe to expand the invocations.
+The definitions of `ma!` and `mb!` aren't within a macro, so the definitions
+won't vary through any further expansions, so it's safe to expand the
+invocations.
 ```rust
 my_eager_macro! {
     mod a {
@@ -479,8 +486,8 @@ m!();
 ### Mutually-dependent expansions
 
 #### Should not compile:
-Each expansion would depend on a definition that might be changed by 
-further expansion, so the mutually-dependent definitions shouldn't resolve.
+Each expansion would depend on a definition that might vary in further
+expansions, so the mutually-dependent definitions shouldn't resolve.
 ```rust
 #[expands_body]
 mod a {
@@ -504,8 +511,8 @@ macro m() {}
 ```
 
 #### Not sure if this should compile:
-The definition of `m!` is available, but it also might be changed by
-`#[expands_args_and_body]`.
+The definition of `m!` is available, but it also might be different after
+`#[expands_args_and_body]` expands.
 ```rust
 #[expands_args_and_body(m!())]
 macro m() {}
@@ -517,7 +524,7 @@ macro m() {}
 * If the first invocation of `my_eager_macro!` is expanded first, it should
   notice that it can't resolve `x!` and have its expansion delayed.
 * When the second invocation of `my_eager_macro!` is expanded, it provides a
-  definition of `x!` that won't change after further expansion. This should
+  definition of `x!` that won't vary after further expansion. This should
   allow the first invocation to be 're-expanded'.
 ```rust
 macro make($name:ident) {
@@ -534,13 +541,14 @@ my_eager_macro! {
 ```
 
 <a id="appendix-b"></a>
-# Appendix B: changing definitions during expansion
+# Appendix B: varying definitions during expansion
 Here we discuss an important corner case involving the precise meaning of
 "resolving a macro invocation to a macro definition". We're going to explore
-the situation where an eager macro changes the definition of a macro, even
-while there are invocations of that macro which are apparently eligible for
-expansion. The takeaway is that eager expansion is sensitive to expansion order
-*outside of* eager macros themselves.
+the situation where an eager macro 'changes' the definition of a macro (by
+adjusting and emitting an input definition), even while there are invocations
+of that macro which are apparently eligible for expansion. The takeaway is that
+eager expansion is sensitive to expansion order *outside of* eager macros
+themselves.
 
 Warning: this section will contain long samples of intermediate macro expansion!
 
@@ -615,6 +623,18 @@ hello
 hello
 hello
 ```
+
+Notice that because there can only be one definition of `foo!`, that definition
+is either inside the arguments of another macro (like `append_hello!`) and
+can't be resolved, or it's at the top level.
+
+In a literal sense, the definition of `foo!` *doesn't exist* until it's at the
+top level; before that point it's just some tokens in another macro that
+*happen to parse* as a definition.
+
+In a metaphorical sense, the 'intermediate definitions' of `foo!` don't exist
+because we *can't see their expansions*: they are 'unobservable' by any
+invocations of `foo!`. This isn't true in the eager case!
 
 ## The eager case
 <a id="eager-append-definition"></a>
@@ -930,13 +950,14 @@ there's no way for `expand-outer` to finish expansion without expanding
 
 ## A solution
 A few simple rules let us make progress in this example while recovering the
-desired 'inside-out' behaviour discussed [earlier](#inside-out). Assume that
-the compiler associates each `expand!` macro with a 'definition and invocation
-context' which, as the name suggests, tracks macro invocations and definitions
-that appear in that scope. Additionally, assume that these form a tree: if an
-eager macro expands another eager macro, as above, the 'inner' definition scope
-is a child of the outer definition scope (which is a child of some global
-'root' scope).
+desired 'inside-out' behaviour discussed [earlier](#inside-out).
+
+Assume that the compiler associates each `expand!` macro with an *expansion
+context* which tracks macro invocations and definitions that appear within the
+expanding tokens. Additionally, assume that these form a tree: if an eager
+macro expands another eager macro, as above, the 'inner' definition scope is a
+child of the outer definition scope (which is a child of some global 'root'
+scope).
 
 With these concepts in mind, at [this point](#appendix-c-after-eager-expansion)
 our contexts look like this:
@@ -1044,9 +1065,9 @@ is how we prevent `foo-inner` from being expanded 'early' (that is, before the
 definition of `macro foo` gets modified by `append_hello!`).
 
 However, `bar-inner` *is* eligible for expansion. The definition of `macro bar`
-can only change once `expand-outer` finishes expanding, but `expand-outer`
+can only be modified once `expand-outer` finishes expanding, but `expand-outer`
 can't continue expanding until `expand-inner` finishes expanding. Since the
-definition can't change for as long as `bar-inner` is around, it's 'safe' to
+definition can't vary for as long as `bar-inner` is around, it's 'safe' to
 expand `bar-inner` whenever we want.  Once we do so, the tokens look like this:
 ```rust
 expand! {               // expand-outer
@@ -1158,7 +1179,91 @@ eager_append_world! {
 }
 ```
 You should be able to convince yourself that the rules above will 'deadlock':
-neither of the eager macros will be able to expand to completion. This is a
-good outcome! The alternative would be to expand `foo!()` even though the
-definition of `macro foo` will change, or likewise for `bar!()`; the end result
-would depend on which eager macro expanded first!
+neither of the eager macros will be able to expand to completion, and that
+the compiler should error with something along the lines of:
+```
+Error: can't resolve invocation to `bar!` because the definition
+       is in an unexpandable macro
+|   eager_append_hello! {
+|       macro foo() {};
+|       bar!();
+|       ------ invocation of `bar!` occurs here.
+|   }
+|
+|   eager_append_world! {
+|   ^^^^^^^^^^^^^^^^^^^ this macro can't be expanded
+|                       because it needs to eagerly expand
+|                       `foo!`, which is defined in an
+|                       unexpandable macro.
+|       macro bar() {};
+|       -------------- definition of `bar` occurs here.
+|       foo!();
+|   }
+```
+And a similar error for `foo!`.
+
+This is a good outcome! The alternative would be to expand `foo!()` even though
+the definition of `macro foo` will be different after further expansion, or
+likewise for `bar!()`; the end result would depend on which eager macro
+expanded first!
+
+## Eager expansion as dependency tree
+The 'deadlock' example highlights another way of viewing this 'context tree'
+model of eager expansion. Normal macro expansion has one kind of dependency
+that constrains expansion order: an invocation depends on its definition. Eager
+expansion adds another kind of dependency: the result of one eager macro can
+depend on the result of another eager macro.
+
+Our rules are (we think) the weakest rules that force the compiler to resolve
+these dependencies in the 'right' order, while leaving the compiler with the
+most flexibility otherwise (for instance in the [previous
+example](#appendix-c-after-eager-expansion), it *shouldn't matter* whether the
+compiler expands `id-inner` or `id-outer` first. It should even be able to
+expand them concurrently!).
+
+## Expansion context details 
+In the above examples, we associated an expansion context with each invocation
+to `expand!`.  An alternative is to associate a context with *each* expansion
+binding *within* an invocation to expand, so that this invocation:
+```rust
+expand! {
+    #tokens_1 = {
+        foo!();
+    };
+    #tokens_2 = {
+        macro foo() {};
+    };
+    bar! { #tokens_1 };
+}
+```
+Has this context tree:
+```toml
+ROOT = {
+    Definitions = [],
+    Invocations = [],
+    Child-Contexts = {
+        expand = {
+            "#tokens_1" = {
+                Definitions = [],
+                Invocations = [
+                    "foo!()",
+                ],
+            },
+            "#tokens_2" = {
+                Definitions = [
+                    "macro foo()",
+                ],
+                Invocations = [],
+            },
+        }
+    }
+}
+```
+
+In this case, having the contexts be separate should lead to a similar deadlock
+as [above](#macro-race-conditions): The context for `#tokens_1` can't see the
+definition in `#context_2`, but `expand!` can't continue without expanding the
+invocation of `foo!`.
+
+Is this the expected behaviour? What use-cases does it prevent? What use-cases
+does it allow?
