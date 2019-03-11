@@ -386,9 +386,8 @@ pub trait Future {
     /// [`Poll::Pending`]: ../task/enum.Poll.html#variant.Pending
     /// [`Poll::Ready(val)`]: ../task/enum.Poll.html#variant.Ready
     /// [`Waker`]: ../task/struct.Waker.html
-    /// [`Waker::into_waker`]: ../task/struct.Waker.html#method.into_waker
     /// [`Waker::wake`]: ../task/struct.Waker.html#method.wake
-    fn poll(self: Pin<&mut Self>, lw: &Waker) -> Poll<Self::Output>;
+    fn poll(self: Pin<&mut Self>, waker: &Waker) -> Poll<Self::Output>;
 }
 ```
 
@@ -578,7 +577,7 @@ thread_local! {
 static VTABLE: &RawWakerVTable = &RawWakerVTable {
     clone: |data: *const ()| RawWaker { data, vtable: VTABLE, },
     wake: |data: *const ()| EXECUTOR.borrow_mut().as_mut().expect(...).work_queue.push(data as usize),
-    drop: |_: *const ()| {},
+    drop,
 };
 ```
 
