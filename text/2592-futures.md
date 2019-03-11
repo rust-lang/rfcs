@@ -1,7 +1,7 @@
-- Feature Name: futures_api 
+- Feature Name: `futures_api`
 - Start Date: 2018-11-09
-- RFC PR: (leave this empty)
-- Rust Issue: (leave this empty)
+- RFC PR: [rust-lang/rfcs#2592](https://github.com/rust-lang/rfcs/pull/2592)
+- Rust Issue: [rust-lang/rust#59113](https://github.com/rust-lang/rust/issues/59113)
 
 # Summary
 [summary]: #summary
