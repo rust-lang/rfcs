@@ -98,6 +98,16 @@ What follows is a template for tracking issues.
 
 ---------------------------------------------------------------------------
 
+This is the **summary issue** for the `YOUR_LINT_NAME_HERE`
+future-compatibility warning and other related errors. The goal of
+this page is describe why this change was made and how you can fix
+code that is affected by it. It also provides a place to ask questions
+or register a complaint if you feel the change should not be made. For
+more information on the policy around future-compatibility warnings,
+see our [breaking change policy guidelines][RFC 1589].
+
+[RFC 1589]: https://github.com/rust-lang/rfcs/blob/master/text/1589-rustc-bug-fix-procedure.md
+
 #### What is this lint about
 
 *Describe here what kinds of Rust code will cause the lint to trigger.*
@@ -105,14 +115,6 @@ What follows is a template for tracking issues.
 *Motivational text or historical information is also of use, but the
 most important thing is to explain what kind of code the lint is
 detecting.*
-
-*You may wish to include a link to this RFC as part of explaining the
-lint in some manner, for example:*
-
-For more information on the policy around future-compatibility
-warnings, see our [breaking change policy guidelines][RFC 1589].
-
-[RFC 1589]: https://github.com/rust-lang/rfcs/blob/master/text/1589-rustc-bug-fix-procedure.md
 
 #### How to fix this warning/error
 
