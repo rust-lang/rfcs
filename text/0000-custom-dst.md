@@ -27,19 +27,20 @@ Apart from FFI, it also has usecases for indexing and slicing 2-d arrays.
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-There's a new language trait in the standard library, similar to `Sized`,
+There are two new language traits in the standard library, similar to `Sized`,
 under `std::marker`:
 
 ```rust
-unsafe trait DynamicallySized {
-    /*
-        note: these are all required due to trait implementations for
-          - Unpin - all pointer types
-          - Copy + Send + Sync - &T, &mut T
-          - Eq + Ord - *const T, *mut T
-    */
+// All types satisfy the constraint <T: Pointee>
+trait Pointee {
+    // note: required for
+    //  - Unpin + Copy - all pointer types
+    //  - Send + Sync - &T, &mut T
+    //  - Eq + Ord - *const T, *mut T
     type Metadata: 'static + Copy + Send + Sync + Eq + Ord + Unpin;
+}
 
+unsafe trait Contiguous : Pointee {
     fn size_of_val(&self) -> usize;
     fn align_of_val(meta: Self::Metadata) -> usize;
 }
@@ -50,33 +51,35 @@ with an automatic implementation for all `Sized` types:
 ```rust
 // note: this is _only_ for explanation
 // this should happen in the compiler
-unsafe impl<T> DynamicallySized for T {
-    type Metadata = ();
+trait Sized : Pointee<Metadata = ()> {}
 
+unsafe impl<T> Contiguous for T {
     fn size_of_val(&self) -> usize { size_of::<T>() }
     fn align_of_val((): ()) -> usize { align_of::<T>() }
 }
 ```
 
 If you have a type which you would like to be unsized,
-you can implement this trait for your type!
+you can implement the `Pointee` trait for your type.
 
 ```rust
 #[repr(C)]
 struct CStr([c_char; 0]);
 
-unsafe impl DynamicallySized for CStr {
+impl Pointee for CStr {
     type Metadata = ();
+}
 
+unsafe impl Contiguous for CStr {
     fn size_of_val(&self) -> usize { strlen(&self.0 as *const c_char) + 1 }
     fn align_of_val((): ()) -> usize { 1 }
 }
 ```
 
-and your type will be `!Sized`.
+If one implements `Pointee` for their type, then that type is `!Sized`.
 
-The existing `DynamicallySized` types will continue to work;
-if one writes a `DynamicallySized` type `T`,
+Existing `!Sized` types will continue to work;
+if one writes a `Contiguous` type `T`,
 and then wraps `T` into a struct, they'll get the obvious semantics.
 
 ```rust
@@ -86,35 +89,36 @@ struct Foo {
 }
 
 // size_of_val(&foo) returns size_of_header::<Foo>() + size_of_val(&foo.y)
-// same with align_of_val - simply `align_of_header::<Foo>()`
+// same with align_of_val -
+//   `max(align_of_header::<Foo>(), align_of_val(&foo.y))`
 ```
 
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-By language trait, we mean that `DynamicallySized` is a lang item.
+By language trait, we mean that `Pointee` and `Contiguous` are language items.
 
 In addition to the explanation given above,
 we will also introduce three functions into the standard library,
 in `core::raw`, which allow you to create and destructure these
-pointers to `DynamicallySized` types:
+pointers to `!Sized` types:
 
 ```rust
 mod core::raw {
-    pub fn from_raw_parts<T: ?Sized>(
+    pub fn from_raw_parts<T: ?Contiguous>(
         ptr: *const (),
-        meta: <T as DynamicallySized>::Metadata,
+        meta: <T as Pointee>::Metadata,
     ) -> *const T;
 
-    pub fn from_raw_parts_mut<T: ?Sized>(
+    pub fn from_raw_parts_mut<T: ?Contiguous>(
         ptr: *mut (),
-        meta: <T as DynamicallySized>::Metadata,
+        meta: <T as Pointee>::Metadata,
     ) -> *mut T;
 
-    pub fn metadata<T: ?Sized>(
+    pub fn metadata<T: ?Contiguous>(
         ptr: *const T,
-    ) -> <T as DynamicallySized>::Metadata;
+    ) -> <T as Pointee>::Metadata;
 }
 ```
 
@@ -123,8 +127,8 @@ to help people write types with Flexible Array Members:
 
 ```rust
 mod core::mem {
-    pub fn size_of_header<T: ?DynamicallySized>() -> usize;
-    pub fn align_of_header<T: ?DynamicallySized>() -> usize;
+    pub fn size_of_header<T: ?Contiguous>() -> usize;
+    pub fn align_of_header<T: ?Contiguous>() -> usize;
 }
 ```
 
@@ -154,15 +158,16 @@ they return `0` and `1` respectively.
 
 Notes:
   - names of the above functions should be bikeshed
-  - `extern type`s do not implement `DynamicallySized`, although in theory one
-    could choose to implement the trait for them
-    (that usecase is not supported by this RFC).
-  - `DynamicallySized` is a new trait in the `Sized` hierarchy
-    - this means that, by default, `T` implies `T: Sized + DynamicallySized`,
-      unless one removes that bound explicitly with `T: ?DynamicallySized`
-  - `T: ?DynamicallySized` bounds imply a `T: ?Sized` bound,
-    since `T: Sized` implies `T: DynamicallySized`
-  - `T: ?Sized` bounds do not remove the `T: DynamicallySized` requirement.
+  - `extern type`s do not implement `Contiguous`, but do implement `Pointee`
+  - `Pointee` and `Contiguous` is a new trait in the `Sized` hierarchy
+    - this means that, by default, `T` implies `T: Sized`,
+      which implies `T: Contiguous` and `T: Pointee`.
+    - `T: ?Sized` implies `T: Contiguous`
+    - `T: ?Contiguous` implies `T: Pointee`
+    - There is no way to get a type parameter that is `!Pointee`;
+      all types are `Pointee`, without exception.
+  - `T: ?Contiguous` bounds imply a `T: ?Sized` bound,
+    since `T: Sized` implies `T: Contiguous`
 
 We will also change `CStr` to have the implementation from above.
 
@@ -196,14 +201,14 @@ fn cast_to_thin<T: ?Sized, U: Sized>(t: *const T) -> *const U {
 so we do not introduce any new functions to access the pointer part
 of the thick pointer.
 
-The `DynamicallySized` trait may be implemented for any struct or union type
+The `Contiguous` trait may be implemented for any struct or union type
 which would be `Sized` by the rules of the language --
 The author is of the opinion that implementing it for `enum`s is
 unlikely to be useful. That may be a future extension,
 if people are interested
 (once `<T: ?Sized>` is allowed on `enum` declarations).
 
-`DynamicallySized` will be placed into the prelude.
+`Contiguous` will be placed into the prelude.
 
 # Drawbacks
 [drawbacks]: #drawback
@@ -252,9 +257,6 @@ That's not great.
 
 - Bikeshedding names.
 - Should `Metadata` really require all of those traits?
-- Should we allow implementing `DynamicallySized` for `extern type`s or `enum`s?
-  - Similarly, should we allow implementing `DynamicallySized`
-    for types which contain `extern type`s?
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
@@ -282,9 +284,11 @@ struct InlineVec<T> {
     buffer: [T; 0], // for offset, alignment, and dropck
 }
 
-unsafe impl<T> DynamicallySized for InlineVec<T> {
+impl Pointee for InlineVec<T> {
     type Metadata = ();
+}
 
+unsafe impl<T> Contiguous for InlineVec<T> {
     fn size_of_val(&self) -> usize {
         Self::full_size(self.capacity)
     }
@@ -292,6 +296,7 @@ unsafe impl<T> DynamicallySized for InlineVec<T> {
         std::mem::align_of_header::<Self>()
     }
 }
+
 impl<T> Drop for InlineVec<T> {
     fn drop(&mut self) {
         std::mem::drop_in_place(self.as_mut_slice());
@@ -375,9 +380,11 @@ struct TOKEN_GROUPS {
     Groups: [SID_AND_ATTRIBUTES; 0],
 }
 
-unsafe impl DynamicallySized for TOKEN_GROUPS {
+impl Pointee for TOKEN_GROUPS {
     type Metadata = ();
+}
 
+unsafe impl Contiguous for TOKEN_GROUPS {
     fn size_of_val(&self) -> usize {
         std::mem::size_of_header::<Self>()
         + self.GroupCount * std::mem::size_of::<SID_AND_ATTRIBUTES>()
@@ -444,16 +451,10 @@ struct PlaneMetadata {
 
 unsafe impl<T> DynamicallySized for Plane<T> {
     type Metadata = PlaneMetadata;
-
-    fn size_of_val(&self) -> usize {
-        let meta = std::raw::metadata(self);
-        meta.stride * meta.height * std::mem::size_of::<T>()
-    }
-
-    fn align_of_val(_: PlaneMetadata) -> usize {
-        std::mem::align_of_header::<Self>()
-    }
 }
+
+// note that `Contiguous` is not implemented for `Plane<T>`,
+// since it's not contiguous in memory
 
 impl<T> Plane<T> {
     pub fn ptr(&self) -> *const T {
