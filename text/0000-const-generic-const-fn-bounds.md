@@ -22,20 +22,9 @@ generic parameter type), because they are fully unconstrained.
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-You can call methods of generic parameters of a const function, because they are implicitly assumed to be
-`const fn`. For example, the `Add` trait bound can be used to call `Add::add` or `+` on the arguments
-with that bound.
-
-```rust
-const fn triple_add<T: Add<Output=T>>(a: T, b: T, c: T) -> T {
-    a + b + c
-}
-```
-
-The obligation is passed to the caller of your `triple_add` function to supply a type whose `Add` impl is fully
-`const`. Since `Add` only has `add` as a method, in this case one only needs to ensure that the `add` method is
-`const`. Instead of adding a `const` modifier to all methods of a trait impl, the modifier is added to the entire
-`impl` block:
+You can mark trait implementations as having only `const fn` methods.
+Instead of adding a `const` modifier to all methods of a trait impl, the modifier is added to the trait
+of the `impl` block:
 
 ```rust
 struct MyInt(i8);
@@ -47,7 +36,26 @@ impl const Add for MyInt {
 ```
 
 You cannot implement both `const Add` and `Add` for any type, since the `const Add`
-impl is used as a regular impl outside of const contexts.
+impl is used as a regular impl outside of const contexts. Inside a const context, you can now call
+this method, even via its corresponding operator:
+
+```rust
+const FOO: MyInt = MyInt(42).add(MyInt(33));
+const BAR: MyInt = MyInt(42) + MyInt(33);
+```
+
+You can also call methods of generic parameters of a const function, because they are implicitly assumed to be
+`const fn`. For example, the `Add` trait bound can be used to call `Add::add` or `+` on the arguments
+with that bound.
+
+```rust
+const fn triple_add<T: Add<Output=T>>(a: T, b: T, c: T) -> T {
+    a + b + c
+}
+```
+
+The obligation is passed to the caller of your `triple_add` function to supply a type which has a
+`const Add` impl.
 
 The const requirement is inferred on all bounds of the impl and its methods,
 so in the following `H` is required to have a const impl of `Hasher`, so that
