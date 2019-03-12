@@ -378,11 +378,22 @@ mk_macro: foo: (hello, world!)
 ```
 
 Looking at the API that Racket exposes to offer [eager
-expansion](https://docs.racket-lang.org/reference/stxtrans.html#%28def._%28%28quote._~23~25kernel%29._local-expand%29%29),
-we see a lot of complexity regarding the management of various scopes and
-contexts. TODO: what can we learn from this? How do these concepts translate to
-Rust? What are the Racket equivalents of the example test cases in the
-appendices?
+expansion](https://docs.racket-lang.org/reference/stxtrans.html#%28def._%28%28quote._~23~25kernel%29._local-expand%29%29)
+(alongside similar functions on that page), we see the following:
+* Eager macros are essentially procedural macros that call one of the expansion
+  methods.
+* These expansion methods perform a 'best effort' expansion of their input
+  (they don't produce an error if a macro isn't in scope, they just don't
+  expand it).
+* It's not clear how this system handles definitions introduced by eager
+  expansion.  Some
+  [parts](https://docs.racket-lang.org/reference/stxtrans.html#%28def._%28%28quote._~23~25kernel%29._syntax-local-make-definition-context%29%29)
+  of the API suggest that manual syntax context manipulation is involved.
+
+Overall, it's not obvious that a straightforward translation of Racket's eager
+macros is desirable or achievable (although it could provide inspiration for a
+more fleshed-out procedural macro API). Future work should include identifying
+Racket equivalents of the examples in this RFC to confirm this.
 
 # Rationale and alternatives
 The primary rationale is to make procedural and attribute macros work more
