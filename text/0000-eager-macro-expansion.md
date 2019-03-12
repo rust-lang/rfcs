@@ -338,6 +338,52 @@ A correct but simple implementation should be forwards-compatible with the
 behaviour described in the appendices (perhaps by producing an error whenever
 such a situation is detected).
 
+# Prior art
+Rust's macro system is heavily influenced by the syntax metaprogramming systems
+of languages like Lisp, Scheme, and Racket (see discussion on the [Rust
+subreddit](https://old.reddit.com/r/rust/comments/azlqnj/prior_art_for_rusts_macros/)).
+
+In particular, Racket has very similar semantics in terms of hygiene, allowing
+'use before define', and allowing macros to define macros. As an example of all
+of these, the rough equivalent of this Rust code:
+```rust
+foo!(hello);
+foo!((hello, world!));
+mk_macro!(foo);
+
+macro mk_macro($name:ident) {
+    macro $name ($arg:tt) {
+        println!("mk_macro: {}: {}",
+            stringify!($name), stringify!($arg));
+    }
+}
+```
+Is this Racket code:
+```racket
+(let ()
+    (foo hello)
+    (foo (hello, world!))
+    (mk_macro foo))
+
+(define-syntax-rule
+    (mk_macro name)
+    (define-syntax-rule
+        (name arg)
+        (printf "mk_macro: ~a: ~a\n" 'name 'arg)))
+```
+And both of them print out (modulo some odd spacing from `stringify!`):
+```
+mk_macro: foo: hello
+mk_macro: foo: (hello, world!)
+```
+
+Looking at the API that Racket exposes to offer [eager
+expansion](https://docs.racket-lang.org/reference/stxtrans.html#%28def._%28%28quote._~23~25kernel%29._local-expand%29%29),
+we see a lot of complexity regarding the management of various scopes and
+contexts. TODO: what can we learn from this? How do these concepts translate to
+Rust? What are the Racket equivalents of the example test cases in the
+appendices?
+
 # Rationale and alternatives
 The primary rationale is to make procedural and attribute macros work more
 smoothly with other features of Rust - mainly other macros.
@@ -389,6 +435,7 @@ invocation. This adds an unexpected and unnecessary burden on macro authors.
 * How do these proposals interact with hygiene?
 * Are there any corner-cases concerning attribute macros that aren't covered by
   treating them as two-argument proc-macros?
+* What can we learn from other language's eager macro systems, e.g. Racket?
 
 <a id="appendix-a"></a>
 # Appendix A: Corner cases
