@@ -230,10 +230,10 @@ The structure of the standard library is therefore:
 
 [Tracking issue #27783] is the tracking issue for the `alloc` crate and, historically, some other crates.
 Although I could not find much discussion of that, I believe it has been kept unstable so far
-because of uncertainty of uncertainty of what is the eventual desired crate structure
-for the standard library, given infinite time and resources.
+because of uncertainty of what the eventual desired crate structure
+for the standard library is, given infinite time and resources.
 
-In particular, could we have a single crate with some mechanism for selectively disabling
+In particular, should we have a single crate with some mechanism for selectively disabling
 or enabling some of the crate’s components, depending on which runtime dependencies
 are available in targeted environments?
 In that world, the `no_std` attribute and standard library crates other than `std`
@@ -254,8 +254,8 @@ where `std` really is the only standard library crate that exists.
 It may still be [desirable] to regroup the standard library into one crate,
 and it is probably still possible.
 The `core` crate could be replaced with a set of `pub use` reexport
-to maintained compatibility with existing users.
-Whatever the eventual status is for `core` is,
+to maintain compatibility with existing users.
+Whatever the eventual status for `core` is,
 we can do the same for `alloc`.
 [PR #51569] mentioned above also hopes to make this easier.
 
