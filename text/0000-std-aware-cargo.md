@@ -6,20 +6,20 @@
 # Summary
 [summary]: #summary
 
-Currently, the `core` and `std` components of Rust are handled in a different way than Cargo handles other crate dependencies. This causes issues for non-mainstream targets, such as WASM, Embedded, and new not-yet-tier-1 targets. The following RFC proposes a roadmap to address these concerns in a consistent and incremental process.
+As of Rust 1.33.0, the `core` and `std` components of Rust are handled in a different way than Cargo handles other crate dependencies. This causes issues for non-mainstream targets, such as WASM, Embedded, and new not-yet-tier-1 targets. The following RFC proposes a roadmap to address these concerns in a consistent and incremental process.
 
 # Motivation
 [motivation]: #motivation
 
 In today's Rust environment, `core` and `std` are shipped as precompiled objects. This was done for a number of reasons, including faster compile times, and a more consistent experience for users of these dependencies. This design has served the bulk of users fairly well. However there are a number of less common uses of Rust, that are not well served by this approach. Examples include:
 
-* Supporting new/arbitrary targets, such as those defined by a ".json" file
+* Supporting new/arbitrary targets, such as those defined by a custom target (".json") file
 * Modifying `core` or `std` through use of feature flags
-* Users who would like to make different optimizations to `core` or `std`, such as `opt-level = 'z'`, with `panic = "abort"`
+* Users who would like to make different optimizations to `core` or `std`, such as `opt-level = 's'`, with `panic = "abort"`
 
 Previously, these needs were somewhat addressed by the external tool [xargo], which managed the recompilation of these dependencies when necessary. However, this tool has become [deprecated], and even when supported, required a nightly version of the compiler for all operation.
 
-This approach has [gathered support] from various [rust team members]. This RFC aims to take inspiration from tools and workflows like [xargo], integrating them into Cargo itself.
+This approach has [gathered support] from various [rust team members]. This RFC aims to take inspiration from tools and workflows used by tools like [xargo], integrating them into Cargo itself.
 
 [xargo]: https://github.com/japaric/xargo
 [deprecated]: https://github.com/japaric/xargo/issues/193
@@ -33,8 +33,10 @@ This proposal aims to make `core` and `std` feel a little bit less like a specia
 
 This RFC proposes the following concrete changes, which may or may not be implemented in this order, and may be done incrementally. The details and caveats around these stages are discussed in the [Reference Level Explanation][reference-level-explanation].
 
+In this document, we use the term "root crate" to refer to the Rust project being built directly by Cargo. This crate contains the Cargo.toml used to guide the modifications described below. This would typically be a crate containing a binary application, or a standalone item, such as an `rlib`.
+
 1. Allow developers of root crates to recompile `core` (and `compiler-builtins`) when their desired target does not match one available as a `rustup target add` target, without the usage of a nightly compiler. This version of `core` would be built from the same source files used to build the current version of `rustc`/`cargo`.
-2. Introduce the concept of "stable features" for `core`, which allow the end user to influence the behavior of their custom version of `core`, without the use of a nightly compiler.
+2. Allow the usage of Cargo features with the `core` library, additionally introducing the concept of "stable features" for `core`, which allow the end user to influence the behavior of their custom version of `core` without the use of a nightly compiler.
 3. Extend the new behaviors described in step 1 and 2 for `std` (and `alloc`).
 4. Allow the user to provide their own custom source versions of `core` and `std`, allowing for deep customizations when necessary. This will require a nightly version of the compiler.
 
@@ -52,9 +54,9 @@ A reference-level explanation is made for each of the items enumerated above.
 
 ### Use Case
 
-For developers working with new targets not yet supported by the Rust project, this feature would allow the compilation of `core` for any target that can be specified as a valid [target json format].
+For developers working with new targets not yet supported by the Rust project, this feature would allow the compilation of `core` for any target that can be specified as a valid [custom target specification].
 
-[target json format]: https://rust-lang.github.io/rfcs/0131-target-specification.html
+[custom target specification]: https://rust-lang.github.io/rfcs/0131-target-specification.html
 
 This functionality would be possible even with the use of a stable compiler.
 
@@ -68,7 +70,13 @@ The source code used to build `core` would be the same as the compiler used for 
 
 ### User Interaction
 
-When compiling for a non-standard target, users may specify their target using a json file, rather than a pre-defined target.
+When compiling for a non-standard target, users may specify their target using a target specification file, rather than a pre-defined target.
+
+> NOTE: The current target specification is described in JSON, and contains some
+> implementation details regarding the use of LLVM as the compiler backend. This
+> RFC does not prescribe any changes to the Target Specification format, and is
+> intended to work with whatever the current/stable method of specifying a
+> custom target is.
 
 For example, currently a user may cross-compile by specifying a target known by Rust:
 
@@ -76,7 +84,7 @@ For example, currently a user may cross-compile by specifying a target known by 
 cargo build --target thumbv7em-none-eabihf
 ```
 
-Users would also be able to specify a json file, by providing a path to the json file to be used.
+Users would also be able to specify a target specification file, by providing a path to the file to be used.
 
 ```sh
 cargo build --target thumbv7em-freertos-eabihf.json
@@ -84,7 +92,7 @@ cargo build --target thumbv7em-freertos-eabihf.json
 
 In general, any of the following would prompt Cargo to recompile `core`, rather than use a pre-compiled version:
 
-* A custom target json is used
+* A custom target specification is used
 * The root crate has modified the feature flags of `core`
 * The root crate has set certain profile settings, such as opt-level, etc.
 * The root crate has specified a `patch.sysroot` (this is defined in a later section)
@@ -105,13 +113,13 @@ Cargo would use the source of `core` located in the user's `SYSROOT` directory. 
 
 ### Technical Implications
 
-#### Stabilization of JSON target format
+#### Stabilization of a Target Specification Format
 
-As the custom target json files would become part of the stable interface of Cargo. The format used by this JSON file must become stabilized, and further changes must be made in a backwards compatible way to guarantee stability.
+As the custom target specifications (currently JSON) would become part of the stable interface of Cargo. The format used by this file must become stabilized, and further changes must be made in a backwards compatible way to guarantee stability.
 
 #### Building of `compiler-builtins`
 
-Currently, `compiler-builtins` contains components implemented in the C programming language. While these dependencies have been highly optimized, the use of them would require the builder of the root crate to also have a sane compilation environment for compilation in C.
+Currently, `compiler-builtins` contains components implemented in the C programming language. While these dependencies have been highly optimized, the use of them would require the builder of the root crate to also have a working compilation environment for compilation in C.
 
 This RFC proposes instead to use the [pure rust implementation] when compiling for a custom target, removing the need for a C compiler.
 
@@ -151,7 +159,7 @@ default-features = false
 features = [...]
 ```
 
-It is not necessary to explicitly mentioned the dependency of `core`, unless changes to features are necessary.
+It is not necessary to explicitly mentione the dependency of `core`, unless changes to features are necessary.
 
 ### Technical Implications
 
@@ -182,7 +190,7 @@ In general, the same restrictions for building `core` will apply to building `st
 
 ### User Interaction
 
-The building of `std` would respect the current build profile, including
+The building of `std` would respect the current build profile, including optimization settings.
 
 The syntax for these features would look as follows:
 
@@ -220,6 +228,10 @@ core = { path = 'my/local/core' }
 std  = { git = 'https://github.com/example/std' }
 ```
 
+> NOTE: The use of `sysroot` as a category may be changed to a less loaded
+> category name. This is likely an area for bikeshedding. `sysroot` will be
+> used for the remainder of the document for consistency.
+
 ### Technical Implications
 
 The `patch.sysroot` term will be introduced for patch when referring to components such as `std` and `core`.
@@ -251,13 +263,19 @@ By not doing this, Rust will continue to be difficult to use for users and platf
 # Prior art
 [prior-art]: #prior-art
 
-* https://github.com/rust-lang/rfcs/pull/1133
-* https://github.com/japaric/xargo
+* [RFC1133] - This RFC from 2015 proposed making cargo aware of std. I still need to review in more detail to find the parts and syntax that may solve some open questions.
+* [xargo] - This external tool was used to achieve a similar workflow as described above, limited to use with a nightly compiler
+* [Cargo Issue 5002] - This issue proposed a syntax for explicit dependency on std
+* [Cargo Issue 5003] - This issue discussed how to be backwards compatible with crates that don't explicitly mention std
+
+[RFC1133]: https://github.com/rust-lang/rfcs/pull/1133
+[Cargo Issue 5002]: https://github.com/rust-lang/cargo/issues/5002
+[Cargo Issue 5003]: https://github.com/rust-lang/cargo/issues/5003
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-## How are dependencies for `core` and `std` specified?
+## How are dependencies (or non-dependency) on `core` and `std` specified?
 
 For example in a `no_core` or `no_std` crate, how would we tell Cargo **not** to build the `core` and/or `std` dependencies?
 
@@ -285,12 +303,26 @@ This could increase compile times for users that have set profile overrides, but
 
 Another option in this area is to force the use of profile overrides, as specified by [RFC2822](https://github.com/rust-lang/rfcs/blob/master/text/2282-profile-dependencies.md).
 
+## Should providing a custom `core` or `std` require a nightly compiler?
+
+It is currently unknown whether it is possible to provide a custom version of `core` or `std` without unstable features, as there are some compiler intrinsics and "magic" that are necessary (the format macros and box keyword come to mind).
+
+I initially wrote the RFC in this manner, however I was later convinced this was not possible to do.
+
+I am of the opinion that if you could, then it should be allowed to use a stable compiler, but that might be too theoretical for this RFC.
+
+We could also move forward with the current restriction to nightly, and allow that to be lifted later by a follow-on RFC if this is possible and necessary.
+
+## Should we allow configurable `core` and `std`
+
+If we are to uphold stability guarantees for all configurations of `core` and `std`, this could require testing 2^(n+m) versions of Rust, where `n` is the number of `core` features, and `m` is the number of `std` features. This would have a negative impact on CI times.
+
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
 ## Unified `core` and `std`
 
-With the mechanisms specified above, it could be possible to remove the concept of `core` and `std` from the user, leaving only `core`.
+With the mechanisms specified above, it could be possible to remove the concept of `core` and `std` from the user, leaving only `std`.
 
 By using stable feature flags for `std`, we could say that `std` as a crate with `default-features = false` would essentially be `no_core`, or with `features = ["core"]`, we would be the same as `no_std`.
 
