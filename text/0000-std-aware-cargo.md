@@ -1,5 +1,5 @@
 - Feature Name: cargo_the_std_awakens
-- Start Date: 2018-02-09
+- Start Date: 2018-03-16
 - RFC PR: (leave this empty)
 - Rust Issue: (leave this empty)
 
