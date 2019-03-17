@@ -135,7 +135,7 @@ Like transarent `struct`s, a transparent `union` of type `U` and transparent `en
 
 Like transparent `struct`s, transparent `union`s and `enum`s are FFI-safe if and only if their underlying representation type is also FFI-safe.
 
-A `union` may not be eligible for the same nonnull-style optimizations that a `struct` or `union` (with the same fields) are eligible for. Adding `#[repr(transparent)]` to  `union` does not change this. To give a more concrete example, it is unspecified whether `size_of::<T>()` is equal to `size_of::<Option<T>>()`, where `T` is a `union` (regardless of whether it is transparent). The Rust compiler is free to perform this optimization if possible, but is not required to, and different compiler versions may differ in their application of these optimizations.  
+A `union` may not be eligible for the same nonnull-style optimizations that a `struct` or `enum` (with the same fields) are eligible for. Adding `#[repr(transparent)]` to  `union` does not change this. To give a more concrete example, it is unspecified whether `size_of::<T>()` is equal to `size_of::<Option<T>>()`, where `T` is a `union` (regardless of whether it is transparent). The Rust compiler is free to perform this optimization if possible, but is not required to, and different compiler versions may differ in their application of these optimizations.  
 
 # Drawbacks
 [drawbacks]: #drawbacks
