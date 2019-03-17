@@ -19,7 +19,7 @@ Making types like these `#[repr(transparent)]` would be useful in certain cases.
 
 - Clearly expresses the intent of the developer.
 - Protects against accidental violations of that intent (e.g., adding a new variant or non-ZST field will result in a compiler error).
-- Makes a clear API guarantee that a `Wrapper<T>` can be transmuted to a `T` or substituted for a `T` in an FFI function's signature.
+- Makes a clear API guarantee that a `Wrapper<T>` can be transmuted to a `T` or substituted for a `T` in an FFI function's signature (though users must be careful to not pass uninitialized values through FFI to code where uninitialized values are undefined behavior (like C and C++)).
 
 Transparent `union`s and univariant `enum`s are a nice complement to transparent `struct`s, and this RFC rounds out the `#[repr(transparent)]` feature.
 
