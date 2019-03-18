@@ -197,7 +197,7 @@ For instance, a project which desires to work this way would add this to their C
 
 ```toml
 [profile]
-oom = panic
+oom = "panic"
 ```
 
 And then in their application, do something like this:
