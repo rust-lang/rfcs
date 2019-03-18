@@ -19,12 +19,12 @@ In today's Rust environment, `core` and `std` are shipped as precompiled objects
 
 Previously, these needs were somewhat addressed by the external tool [xargo], which managed the recompilation of these dependencies when necessary. However, this tool has become [deprecated], and even when supported, required a nightly version of the compiler for all operation.
 
-This approach has [gathered support] from various [rust team members]. This RFC aims to take inspiration from tools and workflows used by tools like [xargo], integrating them into Cargo itself.
+This approach has [gathered support] from various [Rust team members]. This RFC aims to take inspiration from tools and workflows used by tools like [xargo], integrating them into Cargo itself.
 
 [xargo]: https://github.com/japaric/xargo
 [deprecated]: https://github.com/japaric/xargo/issues/193
 [gathered support]: https://github.com/japaric/xargo/issues/193#issuecomment-359180429
-[rust team members]: https://www.ncameron.org/blog/cargos-next-few-years/
+[Rust team members]: https://www.ncameron.org/blog/cargos-next-few-years/
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
