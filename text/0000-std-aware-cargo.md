@@ -121,7 +121,7 @@ As the custom target specifications (currently JSON) would become part of the st
 
 Currently, `compiler-builtins` contains components implemented in the C programming language. While these dependencies have been highly optimized, the use of them would require the builder of the root crate to also have a working compilation environment for compilation in C.
 
-This RFC proposes instead to use the [pure rust implementation] when compiling for a custom target, removing the need for a C compiler.
+This RFC proposes instead to use the [pure Rust implementation] when compiling for a custom target, removing the need for a C compiler.
 
 While this may have code size or performance implications, this would allow for maximum portability.
 
@@ -185,7 +185,7 @@ Once the design and implications of the changes have been made for `core`, it wi
 
 In general, the same restrictions for building `core` will apply to building `std`. These include:
 
-* Users of the stable compiler must use the source used to build the current rust compiler
+* Users of the stable compiler must use the source used to build the current Rust compiler
 * Only compile time features considered `stable` may be used outside of nightly. Initially the list of `stable` features would be empty, and stabilizing these features would require a PR/RFC to `libstd`.
 
 ### User Interaction
