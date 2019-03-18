@@ -109,7 +109,7 @@ features = [...]
 
 It is not necessary to explicitly mention the dependency of `core`, unless changes to features are necessary.
 
-Cargo would use the source of `core` located in the user's `SYSROOT` directory. This source code would be obtained in the same was as necessary today, through the use of `rustup component add rust-src`. If this component is missing, Cargo would exit with an error code, and would prompt the user to execute the command specified above.
+Cargo would use the source of `core` located in the user's `SYSROOT` directory. This source code would be obtained in the same way as necessary today, through the use of `rustup component add rust-src`. If this component is missing, Cargo would exit with an error code, and would prompt the user to execute the command specified above.
 
 ### Technical Implications
 
