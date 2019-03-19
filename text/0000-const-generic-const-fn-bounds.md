@@ -682,3 +682,8 @@ is legal on stable Rust.
 
 Bikeshed this name before stabilization. We don't want to end up with `T: const ConstDrop` bounds
 in the future (see the "explicit `const` bounds" future extension to this RFC).
+
+One suggestion is to have a lowercase trait `drop` that signifies the drop glue and not the `Drop`
+trait. This would allow `T: drop` and `T: ?const drop` bounds signalling what's going on.
+A `T: drop` bound on a non-const function would be useless as every type may get dropped
+in non-const generic functions.
