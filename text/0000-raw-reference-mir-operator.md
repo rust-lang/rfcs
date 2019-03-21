@@ -145,7 +145,7 @@ Calling that method would assert validity of the reference.
 Detecting "Variant 1" (from the "Drawbacks" section) would need a much less local analysis.
 Hence the proposal to make them not equivalent.
 
-A drawback of not adapting [SUGAR] is that we will have to wait longer (namely, until stabilization) until people can finally write UB-free versions of code that handles dangling or unaligned raw pointers.
+A drawback of not adapting [SUGAR] is that we will have to wait longer (namely, until stabilization of the new syntax) until people can finally write UB-free versions of code that handles dangling or unaligned raw pointers.
 
 One alternative to introducing a new primitive operation might be to somehow exempt "references immediately cast to a raw pointer" from the invariant.
 (Basically, a "dynamic" version of the static analysis performed by the lint.)
