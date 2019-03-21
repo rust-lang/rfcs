@@ -6,49 +6,43 @@
 # Summary
 [summary]: #summary
 
-Introduce a new primitive operator on the MIR level: `&[mut|const] raw <place>`
-to create a raw pointer to the given place (this is not surface syntax, it is
-just how MIR might be printed).  Desugar the surface syntax `&[mut] <place> as
-*[mut|const] _` as well as coercions from references to raw pointers to use this
-operator, instead of two MIR statements (first take normal reference, then
-cast).
+Introduce new variants of the `&` operator: `&raw mut <place>` to create a `*mut <T>`, and `&raw const <place>` to create a `*const <T>`.
+This creates a raw pointer directly, as opposed to the already existing `&mut <place> as *mut _`/`&<place> as *const _`, which create a temporary reference and then cast that to a raw pointer.
+As a consequence, the existing expressions `<term> as *mut <T>` and `<term> as *const <T>` where `<term>` has reference type are equivalent to `&raw mut *<term>` and `&raw const *<term>`, respectively.
+Moreover, add a lint to existing code that could use the new operator, and treat existing code that creates a reference and immediately casts or coerces it to a raw pointer as if it had been written with the new syntax.
+
+As an option (referred to as [SUGAR] below), we could treat `&mut <place> as *mut _`/`&<place> as *const _` as if they had been written with `&raw` to avoid creating temporary references when that was likely not the intention.
 
 # Motivation
 [motivation]: #motivation
 
-Currently, if one wants to create a raw pointer pointing to something, one has
-no choice but to create a reference and immediately cast it to a raw pointer.
-The problem with this is that there are some invariants that we want to attach
-to references, that have to *always hold*.  (This is not finally decided yet,
-but true in practice because of annotations we emit to LLVM.  It is also the
-next topic of discussion in the
-[Unsafe Code Guidelines](https://github.com/rust-rfcs/unsafe-code-guidelines/).)
-In particular, references must be aligned and dereferencable, even when they are
-created and never used.
+Currently, if one wants to create a raw pointer pointing to something, one has no choice but to create a reference and immediately cast it to a raw pointer.
+The problem with this is that there are some invariants that we want to attach to references, that have to *always hold*.
+The details of this are not finally decided yet, but true in practice because of annotations we emit to LLVM.
+It is also the next topic of discussion in the [Unsafe Code Guidelines](https://github.com/rust-rfcs/unsafe-code-guidelines/).
+In particular, references must be aligned and dereferencable, even when they are created and never used.
 
-One consequence of these rules is that it becomes essentially impossible to
-create a raw pointer pointing to an unaligned struct field: `&packed.field as
-*const _` creates an immediate unaligned reference, triggering undefined
-behavior because it is not aligned.  Similarly, `&(*raw).field as *const _` is
-not just computing an offset of the raw pointer `raw`, it also asserts that the
-intermediate shared reference is aligned and dereferencable.  In both cases,
-that is likely not what the author of the code intended.
+One consequence of these rules is that it becomes essentially impossible to create a raw pointer pointing to an unaligned struct field:
+`&packed.field as *const _` creates an intermediate unaligned reference, triggering undefined behavior because it is not aligned.
 
-To fix this, we propose to introduce a new primitive operation on the MIR level
-that, in a single MIR statement, creates a raw pointer to a given place.  No
-intermediate reference exists, so no invariants have to be adhered to.  We also
-add a lint for cases that seem like the programmer wanted a raw reference, not a
-safe one, but did not use the right syntax.
+If one wants to avoid creating a reference to uninitialized data (which might or might not become part of the invariant that must be always upheld), it is also currently not possible to create a raw pointer to a field of an uninitialized struct:
+again, `&mut uninit.field as *mut _` would create an intermediate reference to uninitialized data.
+
+Another issue people sometimes run into is computing the address/offset of a field without asserting that there is any memory allocated there.
+This actually has two problems; first of all creating a reference asserts that the memory it points to is allocated, and secondly the offset computation is performed using `getelementptr inbounds`, meaning that the result of the computation is `poison` if it is not in-bounds of the allocation it started in.
+This RFC just solves the first problem, but it also provides an avenue for the second (see "Future possibilities").
+
+To avoid making too many assumptions by creating a reference, this RFC proposes to introduce a new primitive operation that directly creates a raw pointer to a given place.
+No intermediate reference exists, so no invariants have to be adhered to: the pointer may be unaligned and/or dangling.
+We also add a lint for cases that seem like the programmer unnecessarily created an intermediate reference, suggesting they reduce the assumptions their code is making by creating a raw pointer instead.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-When working with unaligned or potentially dangling pointers, it is crucial that
-you always use raw pointers and not references: References come with guarantees
-that the compiler assumes are always upheld, and these guarantees include proper
-alignment and not being dangling.  Importantly, these guarantees must be
-maintained even when the reference is created and never used!  The following is
-UB:
+When working with unaligned or potentially dangling pointers, it is crucial that you always use raw pointers and not references:
+references come with guarantees that the compiler assumes are always upheld, and these guarantees include proper alignment and not being dangling.
+Importantly, these guarantees must be maintained even when the reference is created and never used!
+The following is UB:
 
 ```rust
 #[repr(packed)]
@@ -60,9 +54,8 @@ let packed = Packed { pad: 0, field: 0 };
 let x = unsafe { &packed.field }; // `x` is not aligned -> undefined behavior
 ```
 
-There is no situation in which the above code is correct, and hence it is a hard
-error to write this.  This applies to most ways of creating a reference, i.e.,
-all of the following are UB if `X` is not properly aligned and dereferencable:
+There is no situation in which the above code is correct, and hence it is a hard error to write this (after a transition period).
+This applies to most ways of creating a reference, i.e., all of the following are UB if `X` is not properly aligned and dereferencable:
 
 ```rust
 fn foo() -> &T {
@@ -76,86 +69,62 @@ let &x = &X; // this is actually dereferencing the pointer, certainly UB
 let _ = &X; // throwing away the value immediately changes nothing
 &X; // different syntax for the same thing
 
-let x = &X as &T as *const T; // this is casting to raw "too late"
+let x = &X as *const T; // this is casting to raw but "too late", an intermediate reference has been created (only if we do no adapt [SUGAR])
+let x = &X as &T as *const T; // this is casting to raw but "too late" even if we adapt [SUGAR]
 ```
 
-The only way to create a pointer to an unaligned or dangling location without
-triggering undefined behavior is to *immediately* turn it into a raw pointer
-using an explicit cast or an implicit coercion.  All of the following are valid:
+The only way to create a pointer to an unaligned or dangling location without triggering undefined behavior is to use `&raw`, which creates a raw pointer without an intermediate reference.
+The following is valid:
 
 ```rust
-let packed_cast = unsafe { &packed.field as *const _ };
+let packed_cast = &raw const packed.field;
+```
+
+As an optional extension ([SUGAR]) to keep existing code working and to provide a way for projects to adjust to these rules before the syntax bikeshed is finished, and to do so in a way that they do not have to drop support for old Rust versions, we could also treat all of the following as if they had been written using `&raw const` instead of `&`:
+
+```rust
+let packed_cast = unsafe { &raw const packed.field as *const _ };
 let packed_coercion: *const _ = unsafe { &packed.field };
 let null_cast: *const _ = unsafe { &*ptr::null() } as *const _;
 let null_coercion: *const _ = unsafe { &*ptr::null() };
 ```
 
-The intention is to cover all cases where a reference, just created, is
-immediately explicitly used as a value of raw pointer type.
+The intention is to cover all cases where a reference, just created, is immediately explicitly used as a value of raw pointer type.
 
-These two operations (taking a reference, casting/coercing to a raw pointer) are
-actually considered a single operation happening in one step, and hence the
-invariants incurred by references do not come into play.
+Notice that this only applies if no automatic call to `deref` or `deref_mut` got inserted:
+those are regular function calls taking a reference, so in that case a reference is created and it must satisfy the usual guarantees.
 
-Notice that this only applies if no automatic call to `deref` or `deref_mut` got
-inserted: those are regular function calls taking a reference, so in that case a
-reference is created and it must satisfy the usual guarantees.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-When translating HIR to MIR, we recognize `&[mut] <place> as *[mut|const] ?T`
-(where `?T` can be any type, also a partial one like `_`) as well as coercions
-from `&[mut] <place>` to a raw pointer type as a special pattern and turn them
-into a single MIR `Rvalue` that takes the address and produces it as a raw
-pointer -- a "take raw reference" operation.  We do this *after* auto-deref,
-meaning this pattern does not apply when a call to `deref` or `deref_mut` got
-inserted. Redundant parentheses are ignored, but block expressions are not:
-`{ &[mut] <place> }` materializes a reference that must be valid, no matter
-which coercions or casts follow outside the block.
+Rust contains two operators that perform place-to-rvalue conversion (matching `&` in C): one to create a reference (with some given mutability) and one to create a raw pointer (with some given mutability).
+In the MIR, this is reflected as either a distinct `Rvalue` or a flag on the existing `Ref` variant.
+The borrow checker should do the usual checks on the place used in `&raw`, but can just ignore the result of this operation and the newly created "reference" can have any lifetime.
+When translating MIR to LLVM, nothing special has to happen as references and raw pointers have the same LLVM type anyway; the new operation behaves like `Ref`.
+When interpreting MIR in the Miri engine, the engine will know not to enforce any invariants on the raw pointer created by `&raw`.
 
-We also use this new `Rvalue` to translate `x as *[mut|const] ?T`; before this
-RFC such code gets translated to MIR as a reborrow followed by a cast.  Once
-this is done, `Misc` casts from reference to raw pointers can be removed from
-MIR, they are no longer needed.
+For the [SUGAR] option, when translating HIR to MIR, we recognize `&[mut] <place> as *[mut|const] ?T` (where `?T` can be any type, also a partial one like `_`) as well as coercions from `&[mut] <place>` to a raw pointer type as a special pattern and treat them as if they would have been written `&raw [mut|const] <place>`.
+We do this *after* auto-deref, meaning this pattern does not apply when a call to `deref` or `deref_mut` got inserted.
+Redundant parentheses are ignored, but block expressions are not:
+`{ &[mut] <place> }` materializes a reference that must be valid, no matter which coercions or casts follow outside the block.
 
-This new `Rvalue` might be a variant of the existing `Ref` operation (say, a
-boolean flag for whether this is raw), or a new `Rvalue` variant.  The borrow
-checker should do the usual checks on `<place>`, but can just ignore the result
-of this operation and the newly created "reference" can have any lifetime.
-(Before this RFC this will be some form of unbounded inference variable because
-the only use is a cast-to-raw, the new "raw reference" operation can have the
-same behavior.)  When translating MIR to LLVM, nothing special has to happen as
-references and raw pointers have the same LLVM type anyway; the new operation
-behaves like `Ref`.
+When doing unsafety checking, we make references to packed fields that do *not* use this new "raw reference" operation a *hard error even in unsafe blocks* (after a transition period).
+There is no situation in which this code is okay; it creates a reference that violates basic invariants.
+Taking a raw reference to a packed field, on the other hand, is a safe operation as the raw pointer comes with no special promises.
+"Unsafety checking" is thus not even a good term for this, maybe it should be a special pass dedicated to packed fields traversing MIR, or this can happen when lowering HIR to MIR.
+This check has nothing to do with whether we are in an unsafe block or not.
 
-When interpreting MIR in the Miri engine, the engine will recognize that the
-value produced by this `Rvalue` has raw pointer type, and hence needs not
-satisfy any special invariants.
-
-When doing unsafety checking, we make references to packed fields that do *not*
-use this new "raw reference" operation a *hard error even in unsafe blocks*
-(after a transition period).  There is no situation in which this code is okay;
-it creates a reference that violates basic invariants.  Taking a raw reference
-to a packed field, on the other hand, is a safe operation as the raw pointer
-comes with no special promises.  "Unsafety checking" is thus not even a good
-term for this, maybe it should be a special pass dedicated to packed fields
-traversing MIR, or this can happen when lowering HIR to MIR.  This check has
-nothing to do with whether we are in an unsafe block or not.
-
-Moreover, to prevent programmers from accidentally creating a safe reference
-when they did not want to, we add a lint that identifies situations where the
-programmer likely wants a raw reference, and suggest an explicit cast in that
-case.  One possible heuristic here would be: If a safe reference (shared or
-mutable) is only ever used to create raw pointers, then likely it could be a raw
-pointer to begin with.  The details of this are best worked out in the
-implementation phase of this RFC.  The lint should, at the very least, fire for
-cases involving just a redundant block, such as `{ &mut <place> } as *mut ?T`.
+Moreover, to prevent programmers from accidentally creating a safe reference when they did not want to, we add a lint that identifies situations where the programmer likely wants a raw reference, and suggest an explicit cast in that case.
+One possible heuristic here would be: If a safe reference (shared or mutable) is only ever used to create raw pointers, then likely it could be a raw pointer to begin with.
+The details of this are best worked out in the implementation phase of this RFC.
+The lint should, at the very least, fire for the cases covered by [SUGAR] if we do *not* adopt that option, and it should fire when the factor that prevents this matching [SUGAR] is just a redundant block, such as `{ &mut <place> } as *mut ?T`.
 
 # Drawbacks
 [drawbacks]: #drawbacks
 
-It might be surprising that the following two pieces of code are not equivalent:
+If we adapt [SUGAR], it might be surprising that the following two pieces of code are not equivalent:
+
 ```rust
 // Variant 1
 let x = unsafe { &packed.field }; // Undefined behavior!
@@ -164,90 +133,72 @@ let x = x as *const _;
 let x = unsafe { &packed.field as *const _ };
 ```
 
-If `as` ever becomes an operation that can be overloaded, the behavior of
-`&packed.field as *const _` can *not* be obtained by dispatching to the
-overloaded `as` operator.  Calling that method would assert validity of the
-reference.
+Notice, however, that the lint should fire in variant 1.
+
+If `as` ever becomes an operation that can be overloaded, the behavior of `&packed.field as *const _` with [SUGAR] can *not* be obtained by dispatching to the overloaded `as` operator.
+Calling that method would assert validity of the reference.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-This is a compromise: I see no reasonable way to translate the first variant
-shown in the "Drawbacks" section to a raw reference operation, and the second
-variant is so common that we likely do not want to rule it out.  Hence the
-proposal to make them not equivalent.
+[SUGAR] is a compromise to keep the analysis that affects code generation simple.
+Detecting "Variant 1" (from the "Drawbacks" section) would need a much less local analysis.
+Hence the proposal to make them not equivalent.
 
-One alternative to introducing a new primitive operation might be to somehow
-exempt "references immediately cast to a raw pointer" from the invariant.
-However, we believe that the semantics of a MIR program, including whether it
-has undefined behavior, should be deducible by executing it one step at a time.
-Given that, it is unclear how a semantics that "lazily" checks references should
-work, and how it could be compatible with the annotations we emit for LLVM.
+A drawback of not adapting [SUGAR] is that we will have to wait longer (namely, until stabilization) until people can finally write UB-free versions of code that handles dangling or unaligned raw pointers.
 
-Instead of compiling `&[mut] <place> as *[mut|const] ?T` to a raw reference
-operation, we could introduce new surface syntax and keep the existing HIR->MIR
-lowering the way it is.  However, that would make lots of carefully written
-existing code dealing with packed structs have undefined behavior.  (There is
-likely also lots of code that forgets to cast to a raw pointer, but I see no way
-to make that legal -- and the proposal would make such uses a hard error in the
-long term, so we should catch many of these bugs.)  Also, no good proposal for a
-surface syntax has been made yet -- and if one comes up later, this proposal is
-forwards-compatible with also having explicit syntax for taking a raw reference
-(and deprecating the safe-ref-then-cast way of writing this operation).
-
-We could be using the new operator in more cases, e.g. instead of having a smart
-lint that tells people to insert casts, we could use that same analysis to infer
-when to use a raw reference.  This would make more code use raw references, thus
-making more code defined.  However, if someone *relies* on this behavior there
-is a danger of accidentally adding a non-raw-ptr use to a reference, which would
-then rather subtly make the program have UB.  That's why we proposed this as a
-lint instead.
+One alternative to introducing a new primitive operation might be to somehow exempt "references immediately cast to a raw pointer" from the invariant.
+(Basically, a "dynamic" version of the static analysis performed by the lint.)
+However, I believe that the semantics of a MIR program, including whether it as undefined behavior, should be deducible by executing it one step at a time.
+Given that, it is unclear how a semantics that "lazily" checks references should work, and how it could be compatible with the annotations we emit for LLVM.
 
 # Prior art
 [prior-art]: #prior-art
 
-I am not aware of another language with both comparatively strong invariants for
-its reference types, and raw pointers.  The need for taking a raw reference only
-arise because of Rust having both of these features.
+I am not aware of another language with both comparatively strong invariants for its reference types, and raw pointers.
+The need for taking a raw reference only arise because of Rust having both of these features.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-Which level should the lint default to? Eventually it should likely be `deny`
-because it hints as code that might be UB and that can be fixed by a small
-change. For a transition period, `warn` seems more appropriate.
+Which level should the lint default to?
+I do not know of precedence to make such a lint `deny`.
+But the lint should be worded clearly about the risk of undefined behavior that is involved here.
 
-We could have different rules for when to take a raw reference (as opposed to a
-safe one).
-
-Does the operator creating a raw pointer allow creating pointers that are not
-dereferencable (with the size determined by `mem::size_of_val`)?  It might turn
-out to be useful to make dereferencability not part of the validity invariant,
-but part of the alias model, so this is a separate question from whether the
-pointer is aligned and non-NULL.  Notice that we use `getelementptr inbounds`
-for field access, so we would require some amount of dereferencability anyway
-(or we could change codegen to not emit `inbounds` when creating a raw
-reference, but that might adversely affect performance).
-
-The interaction with auto-deref is a bit unfortunate.  Maybe we can have a lint
-to detect what seems to be unwanted cases of auto-deref -- namely, terms that
-look like `&[mut] <place> as *[mut|const] ?T` in the surface syntax but had a
-method call inserted, thus manifesting a reference (with the associated
-guarantees) where none might be expected.
+The interaction with auto-deref is a bit unfortunate.
+Maybe the lint should also cover cases that look like `&[mut] <place> as *[mut|const] ?T` in the surface syntax but had a method call inserted, thus manifesting a reference (with the associated guarantees).
+The lint as described would not fire because the reference actually gets used as such (being passed to `deref`).
+However, what would the lint suggest to do instead?
+There just is no way to write this code without creating a reference.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-It seems desirable to have a dedicated syntax for this, and to eventually lint
-people to use that syntax), considering the special case introduced by this RFC
-to be a deprecated pattern. This requires some work on figuring out an
-unambiguous and meaningful syntax. A tentative proposal is `&raw const <expr>`
-to create a `*const _`, and `&raw mut <expr>` to create a `*mut _`.
+With [SUGAR], if Rust's type ascriptions end up performing coercions, those coercions should trigger the raw reference operator just like other coercions do.
+So `&packed.field: *const _` would be `&raw const packed.field`.
+If Rust ever gets type ascriptions with coercions for binders, likewise these coercions would be subject to these rules in cases like `match &packed.field { x: *const _ => x }`.
 
-If Rust's type ascriptions end up performing coercions, those coercions should
-trigger the raw reference operator just like other coercions do.  So
-`&packed.field: *const _` would be `&raw const packed.field`.
+It has been suggested to [remove `static mut`][static-mut] because it is too easy to accidentally create references with lifetime `'static`.
+With `&raw` we could instead restrict `static mut` to only allow taking raw pointers (`&raw [mut|const] STATIC`) and entirely disallow creating references (`&[mut] STATIC`) even in safe code (in a future edition, likely; with lints in older editions).
 
-If Rust ever gets type ascriptions with coercions for binders, likewise these
-coercions would be subject to these rules in cases like
-`match &packed.field { x: *const _ => x }`.
+As mentioned above, expressions such as `&raw mut x.field` still trigger more UB than might be expected---as witnessed by a [couple of attempts found in the wild of people implementing `offsetof`][offset-of] with something like:
+
+```rust
+let x: *mut Struct = NonNull::dangling().as_ptr();
+let field: *mut Field = &mut x.field;
+```
+
+The lint as described in this RFC would nudge people to instead write
+
+```rust
+let x: *mut Struct = NonNull::dangling().as_ptr();
+let field: *mut Field = &raw mut x.field;
+```
+
+which is better, but still UB: we emit a `getelementptr inbounds` for the `.field` offset computation.
+It might be a good idea to just not do that -- we know that references are fine, but we could decide that when raw pointers are involved that might be dangling, we do not want to assert anything from just the fact that an offset is being computed.
+A plain `getelementptr` still provides some information to the alias analysis, and if we derive the `inbounds` entirely from the fact that the pointer is created from or turned into a reference, we would be able to not have any clause in the language semantics that calls out the offset computation as potentially triggering UB
+If people just hear "`&raw` means my pointer can be dangling" they might think the second version above is actually okay, forgetting that the field access itself has its own subtle rule; getting rid of that rule would remove one foot-gun for unsafe code authors to worry about.
+
+[static-mut]: https://github.com/rust-lang/rust/issues/53639
+[offset-of]: https://github.com/rust-lang/rfcs/pull/2582#issuecomment-467629986
