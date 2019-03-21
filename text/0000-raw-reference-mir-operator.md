@@ -24,6 +24,16 @@ In particular, references must be aligned and dereferencable, even when they are
 
 One consequence of these rules is that it becomes essentially impossible to create a raw pointer pointing to an unaligned struct field:
 `&packed.field as *const _` creates an intermediate unaligned reference, triggering undefined behavior because it is not aligned.
+Instead, code currently has to copy values around to aligned locations if pointers need to be passed, e.g., to FFI, as in:
+
+```rust
+#[derive(Default)] struct A(u8, i32);
+
+let mut a: A = Default::default();
+let mut local = a.1; // copy struct field to stack
+unsafe { ffi_mod(&mut local as *mut _) }; // pass pointer to local to FFI
+a.1 = local; // copy local to struct back
+```
 
 If one wants to avoid creating a reference to uninitialized data (which might or might not become part of the invariant that must be always upheld), it is also currently not possible to create a raw pointer to a field of an uninitialized struct:
 again, `&mut uninit.field as *mut _` would create an intermediate reference to uninitialized data.
