@@ -188,6 +188,9 @@ solution can help unwittingly triggering undefined behaviour on other types.
 No other algebraic language with the memory model of Rust is known to the
 author, thus comparisons in this way are sparse.
 
+The PR [#2582](https://github.com/rust-lang/rfcs/pull/2582) contains the
+necessary MIR operations to perform the address calculations themselves.
+
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
