@@ -83,7 +83,7 @@ struct Weird {
 /// * point to memory valid for the chosen lifetime `'a`
 /// * be properly aligned.
 unsafe fn get_if_init<'a>(w: *const Weird) -> Option<&'a Weird> {
-    let Weird { raw ptr a, ..} = w;
+    let Weird { raw const a, ..} = w;
     match core::ptr::read(a) {
     	0 | 1 => Some(std::mem::transmute(w)),
 	_ => None
@@ -156,7 +156,7 @@ union Mix {
 
 let mut m = Mix { f2: (3, true), };
 // f1.0 is not validly initialized, don't grab reference.
-let Mix { f1: (raw f1_0_ptr, _), } = &m;
+let Mix { f1: (raw const f1_0_ptr, _), } = &m;
 // Initialize f1.0 through valid f2.0
 m.f2.0 = 0;
 // Now we can grab the reference.
@@ -245,6 +245,9 @@ necessary MIR operations to perform the address calculations themselves.
 
 The exact syntax for pointer patterns, while `raw` as a contextual keyword has
 already some association with pointer to place it need not be the final answer.
+An alternative is, of course, a contextual keyword `ptr` for that pattern.
+However, `ptr` will be more ambiguous should a similar syntax be adopted
+outside of patterns.
 
 The restrictions on pointer binding mode that are only based on not implicitely
 reading memory (enum variants, constants, references, bindings) do not add real
