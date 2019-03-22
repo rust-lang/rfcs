@@ -61,7 +61,36 @@ implicitely performing an unintended, unsafe read through the pointer. Pointer
 binding mode will at first only permit ultimately binding with `raw` and `ref`
 and not actually reading the contained memory.
 
-The raw identifier pattern does not require `unsafe` on its own.
+The raw identifier pattern does not require `unsafe` on its own (as seen above,
+where we safely match a `&mut` but bind to `*mut`).
+
+This is not only useful for packed fields, but also to access the fields of
+*any* object that is only available via pointer because its state invariants
+may not yet be fulfilled. Instead of manually doing pointer math:
+
+```
+/// Repr Rust, so no layout guarantees, no pointer operations to get to `a`.
+struct Weird {
+    /// Always valid, no matter the memory content.
+    something_i_dont_care_about: u8,
+
+    /// Must only be one of `true` and `false` for a &Weird.
+    a: bool,
+}
+
+/// Unsafety invariants: `w` must 
+/// * point to some allocation of at least `std::mem::size_of::<Weird>`.
+/// * point to memory valid for the chosen lifetime `'a`
+/// * be properly aligned.
+unsafe fn get_if_init<'a>(w: *const Weird) -> Option<&'a Weird> {
+    let Weird { raw ptr a, ..} = w;
+    match core::ptr::read(a) {
+    	0 | 1 => Some(std::mem::transmute(w)),
+	_ => None
+    }
+}
+```
+
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -86,22 +115,23 @@ fn overwrite_packed_field(foo: &mut Foo ) {
     // Actually safe!
     let Foo { field: Enum::A(raw mut x), } = foo;
 
-    // Write itself not safe, as we write to a pointer.
+    // Write itself not safe, as we write to a pointer :/
     unsafe { ptr::write_unaligned(x, 0) };
 }
 ```
 
-The new pattern forms a new kind of field binding, and should be inserted into
-the grammar as an option for identifier and StructPatternField, next to 
-`id: pattern`, `tuple_index: pattern`, `ref? mut? identifier`. Pointer pattern
-uses the obvious `*pattern` and is only allowed in unsafe blocks.
+The new pattern `raw (const|mut) identifier` forms a new kind of field binding,
+and should be inserted into the grammar as an option for identifier and
+StructPatternField, next to `id: pattern`, `tuple_index: pattern`, `ref? mut?
+identifier`. Pointer pattern uses the obvious `*pattern` and is only allowed in
+unsafe blocks.
 
 Allowed [patterns](https://doc.rust-lang.org/reference/patterns.html) within
 pointer patterns (and thus in the sugar of pointer binding mode) are: wildcard
 patttern, path patterns that don't refer to enum variants or constants, struct
 patterns, tuple patterns, fixed size array patterns, where the last three are
 only not allowed to bind their fields with the new pointer pattern and with
-`..`, potentially also with `ref mut? identifier`, but not `mut?  identifier`.
+`..`, potentially also with `ref mut? identifier`, but not `mut? identifier`.
 Some further notes on (dis-)allowed patterns:
 
 * The restrictions don't apply to matching the pointer value itself, as that
@@ -113,6 +143,25 @@ Some further notes on (dis-)allowed patterns:
 * no pointer patterns within pointer patterns, must also actually read memory.
 * slice patterns would require size information not present in the pointer.
 * `ref mut? identifier` may be useful, but may be too tempting sometimes.
+
+Since pointer patterns are guaranteed to not rely on the pointed-to memory
+invariants, it can also be used to match union fields in interesting ways.
+Maybe this is interesting for custom enum-like-encapsulations?
+
+```
+union Mix {
+    f1: (bool, u8),
+    f2: (u8, bool),
+}
+
+let mut m = Mix { f2: (3, true), };
+// f1.0 is not validly initialized, don't grab reference.
+let Mix { f1: (raw f1_0_ptr, _), } = &m;
+// Initialize f1.0 through valid f2.0
+m.f2.0 = 0;
+// Now we can grab the reference.
+let f1_0 = unsafe { &*f1_0_ptr };
+```
 
 # Drawbacks
 [drawbacks]: #drawbacks
