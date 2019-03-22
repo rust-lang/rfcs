@@ -84,7 +84,7 @@ struct Weird {
 /// * be properly aligned.
 unsafe fn get_if_init<'a>(w: *const Weird) -> Option<&'a Weird> {
     let Weird { raw const a, ..} = w;
-    match core::ptr::read(a) {
+    match core::ptr::read(a as *const u8) {
     	0 | 1 => Some(std::mem::transmute(w)),
 	_ => None
     }
