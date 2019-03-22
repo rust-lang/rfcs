@@ -95,11 +95,39 @@ unsafe fn get_if_init<'a>(w: *const Weird) -> Option<&'a Weird> {
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
+The newly introduced patterns are:
+
+* `raw (const|mut) identifier`; allowed for field bindings and identifier bindings.
+  These are allowed in the grammar where `ref? mut?  identifier` is allowed
+  currently. For this purpose `raw` is a contextual keyword.
+* `* <subpattern>`; to match a pointer not by value but to additionally use
+  structural patterns to get pointers to the fields of its underlying type.
+  Their use requires an `unsafe`-block around the expression in which they
+  appear, be it match or irrefutable bindings. However, `<subpattern>` does not
+  allow arbitrary content, this is subject to discussion and future options.
+
+In pointer binding mode, the top-level pattern is wrapped in `*` if it is a
+non-reference and non-pointer pattern. This should be analogue to [reference
+binding mode](https://doc.rust-lang.org/reference/patterns.html#binding-modes)
+where the wrapping and existence of the pointer patterns serves as
+disambiguation in fringe cases.
+
+```
+match (0 as *mut usize) {
+    // What's currently possible, this is a reference pattern and does no pointer-wrapping.
+    x => (),
+    // This reference pattern gets a pointer to the pointer.
+    raw const y => (),
+    // This explicit pointer-pattern gets a const pointer to the pointed-to place.
+    *raw const z => (),
+}
+```
+
 The calculation of the value from a pointer pattern will not use an `inbounds`
 qualifier when passed to llvm.
 
-There is no restriction on matching enum variants and slices, such that this is
-possible:
+There is no restriction on raw-patterns appearing within matching of enum
+variants and slices, such that this is possible:
 
 ```
 #[repr(packed)]
@@ -120,12 +148,6 @@ fn overwrite_packed_field(foo: &mut Foo ) {
 }
 ```
 
-The new pattern `raw (const|mut) identifier` forms a new kind of field binding,
-and should be inserted into the grammar as an option for identifier and
-StructPatternField, next to `id: pattern`, `tuple_index: pattern`, `ref? mut?
-identifier`. Pointer pattern uses the obvious `*pattern` and is only allowed in
-unsafe blocks.
-
 Allowed [patterns](https://doc.rust-lang.org/reference/patterns.html) within
 pointer patterns (and thus in the sugar of pointer binding mode) are: wildcard
 patttern, path patterns that don't refer to enum variants or constants, struct
@@ -141,8 +163,10 @@ Some further notes on (dis-)allowed patterns:
   pointed-to place, and implicitely assert their type's invariants. Better to
   keep those operations separate.
 * no pointer patterns within pointer patterns, must also actually read memory.
-* slice patterns would require size information not present in the pointer.
-* `ref mut? identifier` may be useful, but may be too tempting sometimes.
+* `ref mut? identifier` may be useful, but may be too tempting sometimes. It
+  essentially performs a cast of pointer-to-reference and thus comes with the
+  same caveats: The programmer must ensure liveness and alignment. However,
+  cast with `transmute` or `as _` is much more explicit.
 
 Since pointer patterns are guaranteed to not rely on the pointed-to memory
 invariants, it can also be used to match union fields in interesting ways.
@@ -161,6 +185,29 @@ let Mix { f1: (raw const f1_0_ptr, _), } = &m;
 m.f2.0 = 0;
 // Now we can grab the reference.
 let f1_0 = unsafe { &*f1_0_ptr };
+```
+
+Match unsized values should also simply work, I don't see any complication over
+matching those by reference as the pointer already includes the necessary
+(length)-metadata. With regards to network protocols, this would become much,
+much cooler with unsized unions but you can't have your cake and eat it, yet.
+
+```
+#[repr(C)]
+struct net_pckt {
+    protocol_type: u8,
+    content: [u8],
+};
+
+unsafe {
+    // Works nicely even with changes to the packet structure.
+    let net_pckt { raw mut content, ..} = uninitialized_packet_ptr;
+    // Get a pointer two bytes into the content. The pointer has the necessary length-metadata.
+    match content {
+        [_, _, raw ptr] => /* Packet large enough */ (),
+	_ => return Err(Error::Truncated),
+    } 
+}
 ```
 
 # Drawbacks
