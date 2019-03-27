@@ -131,9 +131,12 @@ extern "C" fn foo(x: __m256) -> __m256;
 
 fn main() {
     unsafe { 
-        union U { v: __m256, a: [u64; 4] }
+        #[repr(C)] union U { v: __m256, a: [u64; 4] }
         if is_x86_feature_detected!("avx") {
-            foo(U { a: [0; 4] }.v);
+            // note: this operation is used here for readability
+            // but its behavior is currently unspecified (see note above).
+            let vec = U { a: [0; 4] }.v;
+            foo(vec);
         }
     }
 }
@@ -212,5 +215,5 @@ target features are enabled at compile-time.
 
 * Should it be possible to use, e.g., `__m128` on C FFI when the `avx` feature
   is enabled? Does that change the calling convention and make doing so unsafe ?
-  We could extern this RFC to also require that to use certain types certain
+  We could extend this RFC to also require that to use certain types certain
   features must be disabled.
