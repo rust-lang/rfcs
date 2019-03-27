@@ -186,8 +186,8 @@ The discriminant of a `Variant` (as observed by [`discriminant_value`](https://d
 of the variant (i.e. identical to the value observed if the variant is first coerced to the enum
 type).
 
-Constructors of variants, as well as pattern-matching on particular enum variants, are now
-inferred to have variant types, rather than enum types.
+Constructors of variants, as well as pattern-matching on particular enum variants, are still
+inferred to have enum types, rather than variant types, for backwards compatibility.
 
 ```rust
 enum Sum {
@@ -196,8 +196,11 @@ enum Sum {
     C,
 }
 
-let x = Sum::A(5); // x: Sum::A
+let x: Sum::A = Sum::A(5); // x: Sum::A
 let Sum::A(y) = x; // ok, y = 5
+
+let z = Sum::A(5); // x: Sum
+let Sum::A(y) = z; // error!
 
 fn sum_match(s: Sum) {
     match s {
@@ -227,23 +230,9 @@ let x = Sum::A(5) as Sum; // x: Sum
 let Sum::A(y) = x; // error: refutable match
 ```
 
-Inferring the type of an `enum` or variant is now slightly more involved. A new kind of inference
-variable, for variants, will be added (akin to numeric type inference). The type for an `enum` or
-variant will be chosen according to the following rules:
-- If the value is treated as a single variant (and possibly additionally as the `enum`), we choose
-the single variant type. For example:
-```rust
-let x = Sum::A(5); // x: Sum::A
-println!("x is {}", x.0);
-```
-- If the type is treated as multiple different variants, we choose the `enum` type.
-```rust
-let mut x = Sum::A(5); // x: Sum
-println!("x is {}", x.0); // error: no field `0` on type `Sum`
-x = Sum::B;
-println!("x is not numeric");
-```
-- In a case where the type variable is unknown, we default to the `enum`.
+Inference of the type of an `enum` or variant remains entirely conservative: without explicit type
+annotations, a value whose type is an `enum` or variant will always have the `enum` type inferred.
+That is to say: variant types are never inferred for values and much instead be explicitly declared.
 
 This is backwards-compatible with existing code, as variants act as `enum`s except in cases that
 were previously invalid (i.e. pattern-matching, where the extra typing information was previously
@@ -276,11 +265,11 @@ annotations).
 
 The advantages of this approach are:
 - It naturally allows variants to be treated as types, intuitively.
-- It doesn't require explicit type annotations to reap the benefits of variant types.
 - As variant types and enum types are represented identically, there are no coercion costs.
 - It doesn't require value-tracking (save the degenerate kind performed by type inference)
 or complex type system additions such as
 [refinement types](https://en.wikipedia.org/wiki/Refinement_type).
+- It makes no backwards incompatible type inference changes.
 - Since complete (enum) type information is necessary for variant types, this should be forwards
 compatible with any extensions to enum types (e.g.
 [GADTs](https://en.wikipedia.org/wiki/Generalized_algebraic_data_type)).
@@ -297,10 +286,10 @@ with the alternative is much more difficult, if possible at all.)
 
 Variant types have [previously been proposed for Rust](https://github.com/rust-lang/rfcs/pull/1450).
 However, it was closed due to uncertainty around the interaction with other forms of type inference
-(numeric type inference and default type parameters). Having looked into these, I think adding an
-extra kind of type inference for enum variants should not directly interact with these and it is
-sensible to open up this RFC without more substantial changes to the proposed implementation method.
-Furthermore, the method proposed here is implementationally simpler and more intuitive.
+(numeric type inference and default type parameters). The conservative type inference described here
+should not directly interact with these and it is sensible to open up this RFC without more
+substantial changes to the proposed implementation method. Furthermore, the method proposed here is
+implementationally simpler and more intuitive.
 
 # Prior art
 [prior-art]: #prior-art
