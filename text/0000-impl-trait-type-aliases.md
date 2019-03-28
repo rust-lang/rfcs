@@ -398,3 +398,18 @@ The other alternatives commonly given are:
 [unresolved-questions]: #unresolved-questions
 
 - The restriction of type alias `impl Trait` to the forms that are currently possible with `existential trait` is potentially unnecessary. Although this was proposed to simplify the RFC by only changing syntax, it could be a better choice to allow `impl Trait` anywhere in a type alias (by desugaring each occurrence into a separate inferred type).
+
+In this case, each occurrence of `impl Trait` would be desugared to a new existential type. For example,
+the following alias:
+
+```rust
+type Foo = Arc<impl Iterator<Item = impl Debug>>;
+```
+
+would be desugared to the equivalent of:
+
+```rust
+existential type _0: Debug;
+existential type _1: Iterator<Item = _0>;
+type Foo = Arc<_1>;
+```
