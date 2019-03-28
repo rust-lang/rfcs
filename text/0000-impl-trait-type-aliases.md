@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-Allow type aliases to use `impl Trait`, replacing the prototype `existential type` as a way to declare type aliases for opaque, uniquely inferred types.
+Allow type aliases and associated types to use `impl Trait`, replacing the prototype `existential type` as a way to declare type aliases and associated types for opaque, uniquely inferred types.
 
 # Motivation
 [motivation]: #motivation
@@ -25,7 +25,7 @@ be implemented with the same semantics as:
 existential type Foo: Bar;
 ```
 
-and that existing placeholder removed.
+both as the syntax for type aliases and also for associated types, and that existing placeholder be removed.
 
 Furthermore, this RFC proposes a strategy by which the terminology surrounding `impl Trait` might be transitioned from existentially-type theoretic terminology to type inference terminology, reducing the cognitive complexity of the feature.
 
