@@ -284,7 +284,7 @@ Here, anything that makes use of `Foo` knows that `Foo::Assoc` implements `Debug
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-Since RFC 2071 was accepted, the initial implementation of `existential type` [has already been completed](https://github.com/rust-lang/rust/pull/52024). This RFC would simply replace the syntax of `existential type`, from:
+Since RFC 2071 was accepted, the initial implementation of `existential type` [has already been completed](https://github.com/rust-lang/rust/pull/52024). This RFC would replace the syntax of `existential type`, from:
 
 ```rust
 existential type Foo: Bar;
@@ -296,7 +296,21 @@ to:
 type Foo = impl Bar;
 ```
 
-In addition, when documenting `impl Trait`, explanations of the feature would avoid type theoretic terminology (specifically "existential types") and prefer type inference language (if any technical description is needed at all).
+In addition, having multiple occurrences of `impl Trait` in a type alias or associated type is now permitted, where each occurrence is desugared into a separate inferred type. For example, the following alias:
+
+```rust
+type Foo = Arc<impl Iterator<Item = impl Debug>>;
+```
+
+would be desugared to the equivalent of:
+
+```rust
+existential type _0: Debug;
+existential type _1: Iterator<Item = _0>;
+type Foo = Arc<_1>;
+```
+
+Furthermore, when documenting `impl Trait`, explanations of the feature would avoid type theoretic terminology (specifically "existential types") and prefer type inference language (if any technical description is needed at all).
 
 `impl Trait` type aliases may contain generic parameters just like any other type alias. The type alias must contain the same type parameters as its concrete type, except those implicitly captured in the scope (see [RFC 2071](https://github.com/rust-lang/rfcs/blob/master/text/2071-impl-trait-existential-types.md) for details).
 
@@ -397,19 +411,4 @@ The other alternatives commonly given are:
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-- The restriction of type alias `impl Trait` to the forms that are currently possible with `existential trait` is potentially unnecessary. Although this was proposed to simplify the RFC by only changing syntax, it could be a better choice to allow `impl Trait` anywhere in a type alias (by desugaring each occurrence into a separate inferred type).
-
-In this case, each occurrence of `impl Trait` would be desugared to a new existential type. For example,
-the following alias:
-
-```rust
-type Foo = Arc<impl Iterator<Item = impl Debug>>;
-```
-
-would be desugared to the equivalent of:
-
-```rust
-existential type _0: Debug;
-existential type _1: Iterator<Item = _0>;
-type Foo = Arc<_1>;
-```
+None
