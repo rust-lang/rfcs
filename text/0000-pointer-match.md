@@ -100,17 +100,19 @@ The newly introduced patterns are:
 * `raw (const|mut) identifier`; allowed for field bindings and identifier bindings.
   These are allowed in the grammar where `ref? mut?  identifier` is allowed
   currently. For this purpose `raw` is a contextual keyword.
-* `* <subpattern>`; to match a pointer not by value but to additionally use
-  structural patterns to get pointers to the fields of its underlying type.
-  Their use requires an `unsafe`-block around the expression in which they
-  appear, be it match or irrefutable bindings. However, `<subpattern>` does not
-  allow arbitrary content, this is subject to discussion and future options.
+* `* (const|mut) <subpattern>`; to match a pointer not by value but to
+  additionally use structural patterns to get pointers to the fields of its
+  underlying type.  Their use requires an `unsafe`-block around the expression
+  in which they appear, be it match or irrefutable bindings. However,
+  `<subpattern>` does not allow arbitrary content, this is subject to
+  discussion and future options.
 
-In pointer binding mode, the top-level pattern is wrapped in `*` if it is a
-non-reference and non-pointer pattern. This should be analogue to [reference
-binding mode](https://doc.rust-lang.org/reference/patterns.html#binding-modes)
-where the wrapping and existence of the pointer patterns serves as
-disambiguation in fringe cases.
+In pointer binding mode, the top-level pattern is wrapped in `* (const|mut)` if
+it is a non-reference and non-pointer pattern. This should be analogue to
+[reference binding
+mode](https://doc.rust-lang.org/reference/patterns.html#binding-modes) where
+the wrapping and existence of the pointer patterns serves as disambiguation in
+fringe cases.
 
 ```
 match (0 as *mut usize) {
@@ -119,7 +121,7 @@ match (0 as *mut usize) {
     // This reference pattern gets a pointer to the pointer.
     raw const y => (),
     // This explicit pointer-pattern gets a const pointer to the pointed-to place.
-    *raw const z => (),
+    *mut raw const z => (),
 }
 ```
 
