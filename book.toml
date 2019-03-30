@@ -1,2 +1,5 @@
+[book]
+title = "The Rust RFC Book"
+
 [output.html]
 no-section-label = true
