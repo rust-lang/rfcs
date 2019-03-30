@@ -171,9 +171,9 @@ The need for taking a raw reference only arise because of Rust having both of th
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-Which level should the lint default to?
-I do not know of precedence to make such a lint `deny`.
-But the lint should be worded clearly about the risk of undefined behavior that is involved here.
+With [SUGAR], should the lint apply to cases that are covered by the special desugaring or not?
+Also, if not, should the lint become `deny` eventually (maybe only on some editions)?
+(Without [SUGAR], the lint clearly must apply to `&mut <place> as *mut _`/`&<place> as *const _`, and that pattern is common enough that the cost of `deny` is too high.)
 
 The interaction with auto-deref is a bit unfortunate.
 Maybe the lint should also cover cases that look like `&[mut] <place> as *[mut|const] ?T` in the surface syntax but had a method call inserted, thus manifesting a reference (with the associated guarantees).
