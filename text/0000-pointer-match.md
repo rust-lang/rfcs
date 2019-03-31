@@ -49,7 +49,7 @@ struct Foo {
 }
 
 fn ptr_b(foo: &mut Foo) -> *mut u32 {
-    let Foo { raw mut b, .. } = foo;
+    let raw mut b = foo.b;
     b
 }
 ```
@@ -83,6 +83,7 @@ struct Weird {
 /// * point to memory valid for the chosen lifetime `'a`
 /// * be properly aligned.
 unsafe fn get_if_init<'a>(w: *const Weird) -> Option<&'a Weird> {
+    // No need to deref `w`.
     let Weird { raw const a, ..} = w;
     match core::ptr::read(a as *const u8) {
     	0 | 1 => Some(std::mem::transmute(w)),
@@ -107,23 +108,35 @@ The newly introduced patterns are:
   `<subpattern>` does not allow arbitrary content, this is subject to
   discussion and future options.
 
-In pointer binding mode, the top-level pattern is wrapped in `* (const|mut)` if
-it is a non-reference and non-pointer pattern. This should be analogue to
+In pointer binding mode, non-top-level standard named bindings default to `raw
+_` bindings depending on the pointer type. This should be analogue to
 [reference binding
-mode](https://doc.rust-lang.org/reference/patterns.html#binding-modes) where
-the wrapping and existence of the pointer patterns serves as disambiguation in
-fringe cases.
+mode](https://doc.rust-lang.org/reference/patterns.html#binding-modes).
+Top-level bindings do not default to raw bindings and also need other
+consideration for backwards compabitility.
 
 ```
+const NULL: *mut usize = core::ptr::null();
 match (0 as *mut usize) {
-    // What's currently possible, this is a reference pattern and does no pointer-wrapping.
+    // What's currently possible, this is a binding pattern and does no pointer-wrapping.
     x => (),
-    // This reference pattern gets a pointer to the pointer.
+    // Also currently possible, top-level value pattern also does no pointer-wrapping.
+    NULL => (),
+    // This pointer binding pattern gets a pointer to the pointer.
     raw const y => (),
-    // This explicit pointer-pattern gets a const pointer to the pointed-to place.
+    // This explicit pointer-pattern gets a mut pointer to the pointed-to place. We are in
+    // mutable pointer binding mode and the binding is not top-level. This one is useless.
+    *mut z = (),
+    // This explicit pointer-pattern gets a const pointer to the pointed-to place, like cast.
     *mut raw const z => (),
 }
 ```
+
+In cases where the pattern is not a binding or a value pattern, pointer
+patterns may be elided and automatically wrap inner patterns by the compiler as
+required. This mechanism is currently used for references as well and there are
+no expected collisions as the wrapper is added according to the requirements of
+the matched type, which is either reference or pointer.
 
 The calculation of the value from a pointer pattern will not use an `inbounds`
 qualifier when passed to llvm.
@@ -170,6 +183,19 @@ Some further notes on (dis-)allowed patterns:
   same caveats: The programmer must ensure liveness and alignment. However,
   cast with `transmute` or `as _` is much more explicit.
 
+Pointer patterns and raw bindings are also irrefutable patterns and can thus be
+used in `let`-bindings and similar. This was used in the example in the
+guide-level explanation:
+
+```
+fn ptr_b(foo: &mut Foo) -> *mut u32 {
+    // rhs of this let-binding is a place expression to mutable field `b`.
+    // `raw mut` is irrefutable and gets a pointer to it without reference.
+    let raw mut b = foo.b;
+    b
+}
+```
+
 Since pointer patterns are guaranteed to not rely on the pointed-to memory
 invariants, it can also be used to match union fields in interesting ways.
 Maybe this is interesting for custom enum-like-encapsulations?
@@ -182,7 +208,7 @@ union Mix {
 
 let mut m = Mix { f2: (3, true), };
 // f1.0 is not validly initialized, don't grab reference.
-let Mix { f1: (raw const f1_0_ptr, _), } = &m;
+let raw const f1_0_ptr = m.f1.0;
 // Initialize f1.0 through valid f2.0
 m.f2.0 = 0;
 // Now we can grab the reference.
@@ -201,6 +227,7 @@ struct net_pckt {
     content: [u8],
 };
 
+let uninitialized_packet_ptr: *const net_pckt = unimplemented!();
 unsafe {
     // Works nicely even with changes to the packet structure.
     let net_pckt { raw mut content, ..} = uninitialized_packet_ptr;
