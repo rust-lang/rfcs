@@ -242,10 +242,10 @@ unsafe {
 # Drawbacks
 [drawbacks]: #drawbacks
 
-Match syntax is 'more heavy' than a place based syntax in some or many cases.
-On the other side of the coin, initializing a struct often involves grabbing
-pointers to all fields, where matching is much terser than each indivdual
-expression.
+Match syntax is 'more heavy' than a place based expression syntax in some or
+many cases.  On the other side of the coin, initializing a struct often
+involves grabbing pointers to all fields, where matching is much terser than
+each indivdual expression.
 
 The additional pointer binding mode for match expressions may be confusing due
 to the non-explicit pointer nature of its argument.
@@ -274,6 +274,14 @@ pattern/match syntax has several advantages over place syntax:
   statements, both to disallow user code and avoid accidental reference
   intermediates. The new statements thus resembles a very different other
   statement.
+  
+  Through a `raw` pattern, usable in irrefutable bindings, it is a choice of
+  the programmer to use auto-deref within the rhs place statement, just as
+  familar, but also to explicitely avoid it when used in the lhs-pattern. By
+  the introduced pointer pattern it is also never required to rely on
+  auto-deref within a pointer deref in an `unsafe` block, where one could
+  accidentally invoke a `Deref::deref` implementation on an unintended
+  reference to get a mentioned field (e.g. after a refactoring).
 * The initial dereferencing of the pointer necessary for a place expression
   (`struct.field` is implicitely `(*struct).field` for a reference argument
   `struct`) will not work with pointer arguments, which do no automatically
