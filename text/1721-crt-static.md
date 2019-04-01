@@ -7,7 +7,7 @@
 [summary]: #summary
 
 Enable the compiler to select whether a target dynamically or statically links
-to a platform's standard C runtime through the introduction of three orthogonal
+to a platform's standard C runtime ("CRT") through the introduction of three orthogonal
 and otherwise general purpose features, one of which will likely never become
 stable and can be considered an implementation detail of std. These features do
 not require the compiler or language to have intrinsic knowledge of the
