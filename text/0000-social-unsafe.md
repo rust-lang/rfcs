@@ -11,12 +11,13 @@ Allow experienced authors to use `unsafe` without getting in the way.
 # Motivation
 [motivation]: #motivation
 
-We are implementing this change to further the fun we have in Rust.
+Our society is based on trust systems. We generally only trust people to do dangerous things if they are trustworthy.
 
-As the individual programmer grows in experience the compiler allows more and dangerous features.
+Trust can be built up by a history of trustworthy acts. If a person does good things™, trust in them increases.
 
-Since new programmers are no longer allowed to use unsafe we expect the weather to become nicer and stop global warming.
-Therefore protecting everybody including our inner and future children from unsafety while letting them evolve to control it.
+Rust has pioneered the world of safe programming by separating safe from unsafe programming. But do we really want to allow untrustworthy people to yield the powers of `unsafe`?
+
+We propose that as the individual programmer grows in experience, the compiler allows them to use more and more dangerous features. This is implemented using a "Rust Credit Score" system where each programmer can improve their points over time and unlock more and more unsafe and dangerous features.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
