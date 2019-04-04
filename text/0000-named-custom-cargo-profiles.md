@@ -128,7 +128,7 @@ dir-name = "debug"
 
 * The (upcoming) `build` profile defaults to the following definition:
 ```
-[build]
+[profile.build]
 inherits = "dev"
 dir-name = "debug"
 debug = false
