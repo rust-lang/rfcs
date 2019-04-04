@@ -112,7 +112,7 @@ dir-name = "release"
 
 * The `test` profile defaults to the following definition, to preserve current behavior:
 ```
-[test]
+[profile.test]
 inherits = "dev"
 dir-name = "debug"
 ```
