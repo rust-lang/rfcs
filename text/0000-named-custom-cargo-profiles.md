@@ -105,7 +105,7 @@ when left unspecified, defaults to the name of the profile. For example:
   behavior:
 
 ```
-[bench]
+[profile.bench]
 inherits = "release"
 dir-name = "release"
 ```
