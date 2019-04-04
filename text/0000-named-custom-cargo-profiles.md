@@ -120,7 +120,7 @@ dir-name = "debug"
 * The `doc` profile defaults to the following definition, to preserve current
   behavior:
 ```
-[doc]
+[profile.doc]
 inherits = "dev"
 dir-name = "debug"
 ```
