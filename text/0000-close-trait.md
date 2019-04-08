@@ -17,15 +17,20 @@ of resources.  In Rust, we have the `Drop` trait to automatically cleanup these
 resources for us.  For various reasons, we have decided that `Drop` shall never
 fail.  Thus errors encountered in a `Drop` implementation should be ignored.
 Implementations of `Close` will allow us to explicitly handle errors that could
-occur in a `Drop` implementation.  Making this into a trait will allow us to
-generically implement this functionality for many types of resources.  This will
-also allow us to `close` wrapper types, such as `BufReader` or `BufWriter` when
-they wrap any type implementing `Close`.
+occur in a `Drop` implementation.
 
-Adding this method will allow users of the language to handle errors only
-revealed when the resource is dropped.  One example of this would be a race
-condition for shared resource access.  Another would be in the case of a
-resource that cannot be fully flushed before it is dropped.
+Adding the ability to manually `close` resources will allow users of the
+language to handle errors only revealed when the resource is dropped.  One
+example of this would be a race condition for shared resource access.  Another
+would be in the case of a resource that cannot be fully flushed before it is
+dropped.  It may not be possible to completely flush a resource without closing
+it.  It may also be possible that the process of closing a resource itself could
+cause an error.  In this case, there is currently no standard way to deal with
+all of these edge cases.
+
+Making `Close` into a trait will allow us to generically use this functionality
+for many types of resources.  This will also allow us to `close` wrapper types,
+such as `BufReader` or `BufWriter` when they wrap any type implementing `Close`.
 
 For specifically `File`s, we can call `sync_all` to force synchronization of the
 data to the filesystem.  But this function is no longer directly available when
