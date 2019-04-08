@@ -187,8 +187,10 @@ implementations are constructed in nearly the same way as for `File`s.
 ### As a method of `File`
 
 Although this would lead to less code, it would reduce the applicability of this
-functionality to more modules in the future.  This would also prevent us from
-implementing `Close` for `BufReader` and `BufWriter`.
+functionality to more modules in the future.  It is common to wrap resources in
+a buffered interface such as `BufReader` or `BufWriter`.  We could add a `close`
+method to these wrappers that delegates to `File::close`.  But this would
+prevent us from easily closing many other types, such as sockets and streams.
 
 We could even have a method in each of these structs that delegates to the
 trait's implementation, allowing for people to `close` resources without
