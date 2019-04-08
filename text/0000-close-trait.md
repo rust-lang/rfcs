@@ -185,6 +185,29 @@ We could implement `Close` for all `Drop` types by always succeeding.  Since
 this change can be done retroactively later without breaking backwards
 compatibility, I choose to leave it out of this RFC.
 
+### Named `TryDrop` instead
+
+We could name this trait `TryDrop` instead, and the method `try_drop`.  This
+seems well and good as `Close` allows us to generalize the idea of `Drop`
+similarly to `TryFrom` and `TryInto`.  I do not prefer this so long as `close`
+takes `self` by value because I do not think it is intuitive to have different
+input parameters for semantically similar functions.
+
+    fn close(self) -> Result<(), Error>;
+    fn drop(&mut self) -> ();
+
+### Taking `self` by `&mut`
+
+`Close` has the signature `fn close(self) -> Result<(), Error>` whereas `Drop`
+has `fn drop(&mut self) -> ()`.  These signatures aren't identical, but they
+could be made to be.  We could rework the method to be `fn try_drop(&mut self)
+-> Result<(), Error>` and have a similar wrapper function `std::mem::try_drop`
+that took it by value.  This seems very reasonable at first glance, but becomes
+much more difficult when considering how to implement `std::mem::try_drop`.
+This function would probably have to have some compiler magic to recursively
+`drop` each member after `try_drop` is called without calling the `drop`
+instance on the overall `struct`.
+
 # Prior art
 [prior-art]: #prior-art
 
