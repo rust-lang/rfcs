@@ -149,8 +149,11 @@ and drop the underlying resource normally.
 ```rust
 impl<R: Close<Error = io::Error> + Write> Close for BufWriter<R> {
     type Error = R::Error;
-    fn close(self) -> Result<(), Self::Error> {
-        self.into_inner()?.close()
+    fn close(mut self) -> Result<(), Self::Error> {
+        let result = self.flush_buf();
+        let inner = self.inner.take();
+        result?;
+        inner.unwrap().close()
     }
 }
 ```
