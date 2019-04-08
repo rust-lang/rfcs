@@ -194,9 +194,9 @@ prevent us from easily closing many other types, such as sockets and streams.
 
 We could even have a method in each of these structs that delegates to the
 trait's implementation, allowing for people to `close` resources without
-explicitly importing `std::io::Close`.
+explicitly importing `Close`.
 
-### Default implementation
+### Default implementation for `Close`
 
 We could implement `Close` for all `Drop` types by always succeeding.  Since
 this change can be done retroactively later without breaking backwards
