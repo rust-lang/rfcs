@@ -163,6 +163,13 @@ impl<R: Close<Error = io::Error> + Write> Close for BufWriter<R> {
 }
 ```
 
+## TCPStream and UDPSocket
+
+In a very similar way to a `File`, these two structs can implement `Close`.  The
+outer, facade layer implements it by delegating to the inner.  On each operating
+system we implement the `Close` trait for the wrapped version.  The os-specific
+implementations are constructed in nearly the same way as for `File`s.
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
