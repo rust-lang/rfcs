@@ -85,6 +85,8 @@ pub trait Close {
 }
 ```
 
+As it currently stands, there shall be no default implementation.
+
 ## File
 
 This trait will be implemented for `fs::File` with `Error` specified as
