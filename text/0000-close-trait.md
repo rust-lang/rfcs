@@ -100,7 +100,7 @@ impl Close for File {
 
     fn close(self) -> io::Result<()> {
         let result = self.inner.close();
-        std::mem::forget(self);
+        crate::mem::forget(self);
         result
     }
 }
