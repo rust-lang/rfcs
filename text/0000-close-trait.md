@@ -90,9 +90,10 @@ As it currently stands, there shall be no default implementation.
 ## File
 
 This trait will be implemented for `fs::File` with `Error` specified as
-`io::Error`.
-
-In `src/libstd/fs.rs`:
+`io::Error`.  Similarly to how other methods are implemented on the inner `File`
+implementations, `close` takes `self.inner` by reference (see below).  Thus we
+must `forget` the `File` to prevent a double free.  To do this we place this
+impl block in `src/libstd/fs.rs`:
 
 ```rust
 impl Close for File {
