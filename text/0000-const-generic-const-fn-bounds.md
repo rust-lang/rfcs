@@ -673,23 +673,6 @@ const fn foo<T>(foo: Foo<T>, bar: Foo<T>) -> T {
 }
 ```
 
-## `ConstDrop` inference
-
-The design given in this RFC requires annotating a lot of generic parameters with `T: ConstDrop` to
-make the code forward compatible with e.g. allowing dropping values of type `T`. Since removing a
-trait bound other than `?Sized` is never a breaking change, we can remove the `ConstDrop` bound
-without that being a breaking change for users. Adding a `ConstDrop` bound later would be a breaking
-change though.
-
-As an alternative, we could automatically assume a `ConstDrop` bound for all `T` and require opt out
-via `?ConstDrop`. This would be a breaking change, because
-
-```rust
-const fn foo<T>(t: T) -> T { t }
-```
-
-is legal on stable Rust.
-
 ## `ConstDrop` is not a great name
 
 Bikeshed this name before stabilization. We don't want to end up with `T: const ConstDrop` bounds
