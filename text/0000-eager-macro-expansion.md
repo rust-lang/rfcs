@@ -135,17 +135,33 @@ the expansion results should be interpolated.
 
 The contents of the right-hand sides of the bindings (in this case `mod
 foo { m!{} }}` and `concat!("a", "b")`) should be parsed and expanded exactly
-as though the compiler were parsing and expanding those tokens directly.
+as though the compiler were parsing and expanding those tokens directly. For
+the curious, there are examples with nested invocations of `expand!` [in the
+appendices](#appendix-b).
 
-Once the right-hand-sides of the bindings have been expanded, the results are
-interpolated into the final argument. For this toy syntax we're using the
-interpolation syntax from the [`quote`
+Once the right-hand-sides of the bindings have been expanded, the resulting
+tokens are interpolated into the final argument (preserving any token
+properties, such as hygiene). For this toy syntax we're using the interpolation
+syntax from the [`quote`
 crate](https://docs.rs/quote/0.6.11/quote/macro.quote.html), but there are
 alternatives (such as the unstable `quote!` macro in the [`proc_macro`
 crate](https://doc.rust-lang.org/proc_macro/macro.quote.html)).
 
-Let's step through an example. If `my_eager_macro!` wants to use `expand!` to
-eagerly expand its input, then this invocation:
+Let's step through an example. If we want `my_eager_macro!` to use `expand!` to
+eagerly expand its input and pass the result to another macro
+`my_normal_macro!`, we can define it like this:
+```rust
+macro my_eager_macro($($input:tt)*) {
+    expand! {
+        #new_input = {$($input)*};
+        my_normal_macro! {
+            #new_input
+        }
+    }
+}
+```
+
+then this invocation:
 ```rust
 my_eager_macro! {
     concat!("a", "b")
@@ -155,14 +171,14 @@ Should expand into this:
 ```rust
 expand! {
     #new_input = { concat!("a", "b") };
-    my_eager_macro! {
+    my_normal_macro! {
         #new_input
     }
 }
 ```
 Which in turn should expand into this:
 ```rust
-my_eager_macro! {
+my_normal_macro! {
     "ab"
 }
 ```
@@ -188,6 +204,13 @@ inspect macro inputs. For proposals that include inspecting macro inputs, see
 the section on [alternatives](#rationale-and-alternatives).
 
 ### Use by procedural macros
+
+Note that in the longer term, we want `expand!` to be implementable by a
+procedural macro, once the compiler internals are stable enough and the issues
+outlined [below](#proc-macro-library) are addressed. The purpose of this
+section is to show how to 'work around' a lack of a procedural API in the
+meanwhile.
+
 The previous example indicates how a declarative macro might use `expand!` to
 'eagerly' expand its inputs before itself. Conveniently, it turns out that the
 changes required to get a procedural macro to use `expand!` are quite small.
@@ -322,10 +345,10 @@ definitions](#delayed-definitions) and [paths within nested
 macros](#paths-within-nested-macros).
 
 This is more subtle than it might appear at first glance. An advanced
-implementation needs to account for the fact that macro definitions ca vary
-during expansion (see [appendix B](#appendix-b)). In fact, expansions
-can be mutually-dependent *between* nested eager macros (see [appendix
-C](#appendix-c)).
+implementation needs to account for the fact that a given macro invocations
+could resolve to different definitions during expansion, if care isn't taken
+(see [appendix B](#appendix-b)). In fact, expansions can be mutually-dependent
+*between* nested eager macros (see [appendix C](#appendix-c)).
 
 A guiding principle here is that, as much as possible, the result of eager
 expansion shouldn't depend on the *order* that macros are expanded. This makes
@@ -386,7 +409,7 @@ expansion](https://docs.racket-lang.org/reference/stxtrans.html#%28def._%28%28qu
   (they don't produce an error if a macro isn't in scope, they just don't
   expand it).
 * It's not clear how this system handles definitions introduced by eager
-  expansion.  Some
+  expansion. Some
   [parts](https://docs.racket-lang.org/reference/stxtrans.html#%28def._%28%28quote._~23~25kernel%29._syntax-local-make-definition-context%29%29)
   of the API suggest that manual syntax context manipulation is involved.
 
@@ -447,6 +470,8 @@ invocation. This adds an unexpected and unnecessary burden on macro authors.
 * Are there any corner-cases concerning attribute macros that aren't covered by
   treating them as two-argument proc-macros?
 * What can we learn from other language's eager macro systems, e.g. Racket?
+* How does `expand!` constrain the design of a future [`fn
+  please_expand`](#proc-macro-library) procedural API?
 
 <a id="appendix-a"></a>
 # Appendix A: Corner cases
