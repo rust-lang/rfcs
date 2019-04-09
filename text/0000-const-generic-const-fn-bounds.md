@@ -119,14 +119,14 @@ showcases `const Drop` in any useful way. Instead we create a `Drop` impl that
 has user visible side effects:
 
 ```rust
-let x = Cell::new(42);
-SomeDropType(&x);
+let mut x = 42;
+SomeDropType(&mut x);
 // x is now 41
 
-struct SomeDropType<'a>(&'a Cell<u32>);
+struct SomeDropType<'a>(&'mut u32);
 impl const Drop for SomeDropType {
     fn drop(&mut self) {
-        self.0.set(self.0.get() - 1);
+        *self.0 -= 1;
     }
 }
 ```
@@ -135,7 +135,7 @@ You are now allowed to actually let a value of `SomeDropType` get dropped within
 evaluation. This means that
 
 ```rust
-(SomeDropType(&Cell::new(42)), 42).1
+(SomeDropType(&mut 69), 42).1
 ```
 
 is now allowed, because we can prove
