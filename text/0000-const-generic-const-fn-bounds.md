@@ -175,7 +175,7 @@ To summarize, up to this point in the RFC there are three ways to interact with 
     * can pass any type that fulfills the other bounds, but may never go out of scope
 * mention `?const Drop` in the parameter bounds
     * can only pass types with explicit (const or not) `Drop` impls,
-      still can't drop any values inside the function
+      still can't drop any values inside the function (making this a useless bound)
 * mention `Drop` in the parameter bounds
     * can only pass types with explicit `const Drop` impls (so no `u32`)
 
