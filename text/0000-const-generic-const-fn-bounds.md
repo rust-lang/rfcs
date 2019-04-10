@@ -672,6 +672,13 @@ const fn foo<T>(foo: Foo<T>, bar: Foo<T>) -> T {
 }
 ```
 
+## Extend the semantics of `T: Drop` bounds?
+
+Instead of using the `ConstDrop` workaround, we could extend `T: Drop` (in regular functions) to
+also accept `i32` and other non-`Drop` types. In `const fn` this would mean you'd need to pass
+either a non-`Drop` type or a type with a `const Drop` impl. Before stabilization we should
+experiment with either design and discuss the effects this has on API design.
+
 ## `ConstDrop` is not a great name
 
 Bikeshed this name before stabilization. We don't want to end up with `T: const ConstDrop` bounds
