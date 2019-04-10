@@ -236,6 +236,10 @@ This function would probably have to have some compiler magic to recursively
 `drop` each member after `try_drop` is called without calling the `drop`
 instance on the overall `struct`.
 
+The pros of taking `&mut self` are that it would allow for `dyn Close` objects
+to be usable.  It also offers more compatibility with external libraries that
+already use `&mut self` for similar methods.
+
 # Prior art
 [prior-art]: #prior-art
 
