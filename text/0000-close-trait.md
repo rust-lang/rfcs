@@ -203,7 +203,15 @@ explicitly importing `Close`.
 
 We could implement `Close` for all `Drop` types by always succeeding.  Since
 this change can be done retroactively later without breaking backwards
-compatibility, I choose to leave it out of this RFC.
+compatibility, I choose to leave it out of this RFC.  Example implementation is
+included in case this is desirable in the future:
+
+    default impl<T> Close for T {
+        type Error = !;
+        fn close(self) -> Result<(), Self::Error> {
+            Ok(())
+        }
+    }
 
 ### Named `TryDrop` instead
 
