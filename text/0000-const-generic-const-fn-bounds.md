@@ -15,7 +15,7 @@ on their bound.
 # Motivation
 [motivation]: #motivation
 
-Currently one can declare const fns with generic parameters, but one cannot add trait bounds to these
+Without this RFC one can declare const fns with generic parameters, but one cannot add trait bounds to these
 generic parameters. Thus one is not able to call methods on the generic parameters (or on objects of the
 generic parameter type), because they are fully unconstrained.
 
@@ -169,7 +169,7 @@ an arbitrary `T`, we might call `T::drop` if `T` has a drop impl. While we can s
 `T`, because `u32` has no `Drop` impl. Even types that definitely need dropping, but have no
 explicit `Drop` impl (like `struct Foo(String);`), cannot be passed if `T` requires a `Drop` bound.
 
-To summarize, there are currently three ways to interact with `Drop`:
+To summarize, up to this point in the RFC there are three ways to interact with `Drop`:
 
 * don't mention `Drop` in the parameter bounds (or mention `?Drop`, amounting to the same thing)
     * can pass any type that fulfills the other bounds, but may never go out of scope
@@ -562,8 +562,8 @@ const fn foo(f: fn() -> i32) -> i32 {
 }
 ```
 
-is currently illegal. While we can change the language to allow this feature, two questions make
-themselves known:
+is illegal before and with this RFC. While we can change the language to allow this feature, two
+questions make themselves known:
 
 1. fn pointers in constants
 
