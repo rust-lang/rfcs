@@ -192,8 +192,7 @@ of other `ConstDrop` types, this would make adding a `!ConstDrop` field to a typ
 The body of a const function is allowed to generate drop glue for types that implement `ConstDrop`.
 
 To reduce the confusion between `ConstDrop` and `const Drop` for users,
-`impl const Drop for SomeType` requires a `ConstDrop` impl for `SomeType`, similar to how
-implementing `Copy` requires you to also implement `Clone`.
+`impl const Drop for SomeType` requires a `ConstDrop` impl for `SomeType`.
 
 ## Runtime uses don't have `const` restrictions
 
