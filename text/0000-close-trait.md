@@ -229,16 +229,30 @@ input parameters for semantically similar functions.
 `Close` has the signature `fn close(self) -> Result<(), Error>` whereas `Drop`
 has `fn drop(&mut self) -> ()`.  These signatures aren't identical, but they
 could be made to be.  We could rework the method to be `fn try_drop(&mut self)
--> Result<(), Error>` and have a similar wrapper function `std::mem::try_drop`
-that took it by value.  This seems very reasonable at first glance, but becomes
-much more difficult when considering how to implement `std::mem::try_drop`.
-This function would probably have to have some compiler magic to recursively
-`drop` each member after `try_drop` is called without calling the `drop`
-instance on the overall `struct`.
+-> Result<(), Error>`.  This yields a few implementation ideas:
 
-The pros of taking `&mut self` are that it would allow for `dyn Close` objects
-to be usable.  It also offers more compatibility with external libraries that
-already use `&mut self` for similar methods.
+1. Treat `try_drop` like `drop`.  Thus we have a similar wrapper function
+   `std::mem::try_drop` that took it by value.  Make the `try_drop` method
+   uncallable.  This would require a lot of new language features just to
+   achieve this simple library feature.  This function would have to have some
+   compiler magic to recursively `drop` each member after `try_drop` is called
+   without calling the `drop` instance on the overall `struct`.
+
+2. Have this method prepare the object for destruction, effectively making it
+   unusable.  This would allow for `dyn Close` objects to be usable.  It also
+   offers more compatibility with external libraries that already use `&mut
+   self` for similar methods.  However, it also brings some down sides.  It
+   renders the object into a unusable state, where every method called either
+   performs undefined behavior or returns an error.  The first case is bad and
+   goes against Rust's core principles.  The second is bad because it forces the
+   object to provide a special case specifically to handle implementing `Close`.
+   For this reason, I believe implementers will choose not to implement this
+   trait when it is so much easier to not worry about it.
+
+### As a method of Write
+
+I believe this is a bad idea because it would remove backwards compatibility.
+It also prevents us from closing reading resources.
 
 # Prior art
 [prior-art]: #prior-art
@@ -260,6 +274,19 @@ or
 [`java.io.Writer`](https://docs.oracle.com/javase/7/docs/api/java/io/Writer.html).
 This RFC is very similar in implementation to this interface except that
 instances of `Read` and `Write` are not required to implement `Close`.
+
+The Rust library Tokio has a similar concept.  It defines the method
+[`shutdown`](https://docs.rs/tokio/0.1.18/tokio/io/trait.AsyncWrite.html#tymethod.shutdown)
+as part of their trait `AsyncWrite`.  As described in the documentation there, this allows
+for handling errors in shutting down the stream before the object is dropped.
+It does this by taking `&mut self` and rendering `self` unusable after it is
+called.  A discussion of the tradeoffs of this are made above.
+
+The Rust library futures-preview has a similar concept as Tokio, defining the
+method
+[`poll_close`](https://docs.rs/futures-preview/0.3.0-alpha.13/futures/io/trait.AsyncWrite.html#tymethod.poll_close)
+as part of their trait `AsyncWrite`.  The semantics are the same as Tokio, but
+the name more resembles that of `Close`.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
