@@ -641,11 +641,11 @@ const fn foo(bar: &dyn ?const Trait) -> SomeType {
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-# Resolve syntax for making default method bodies `const`
+## Resolve syntax for making default method bodies `const`
 The syntax for specifying that a trait method's default body is `const` is left unspecified and uses
 the `#[default_method_body_is_const]` attribute as the placeholder syntax.
 
-# Resolve keyword order of `impl const Trait`
+## Resolve keyword order of `impl const Trait`
 
 There are two possible ways to write the keywords `const` and `impl`:
 
