@@ -263,6 +263,8 @@ instances of `Read` and `Write` are not required to implement `Close`.
 What module should this go in?  It seems logical to go in `std::io`, but it
 might be more appropriate for `std::mem` beside `std::mem::drop`.
 
+Should this be named `Close` or `TryDrop`?
+
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
