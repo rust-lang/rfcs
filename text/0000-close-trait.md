@@ -213,7 +213,7 @@ similarly to `TryFrom` and `TryInto`.  I do not prefer this so long as `close`
 takes `self` by value because I do not think it is intuitive to have different
 input parameters for semantically similar functions.
 
-    fn close(self) -> Result<(), Error>;
+    fn try_drop(self) -> Result<(), Error>;
     fn drop(&mut self) -> ();
 
 ### Taking `self` by `&mut`
