@@ -247,6 +247,16 @@ also ignores errors when closing the file.  It provides a
 [`close`](https://en.cppreference.com/w/cpp/io/basic_filebuf/close) method that
 rethrows exceptions while guaranteeing the file is closed.
 
+In Java, there exists a generic `close` method that yields errors.  This is the
+interface
+[`java.io.Closeable`](https://docs.oracle.com/javase/7/docs/api/java/io/Closeable.html).
+It is implemented by all classes extending either
+[`java.io.Reader`](https://docs.oracle.com/javase/7/docs/api/java/io/Reader.html)
+or
+[`java.io.Writer`](https://docs.oracle.com/javase/7/docs/api/java/io/Writer.html).
+This RFC is very similar in implementation to this interface except that
+instances of `Read` and `Write` are not required to implement `Close`.
+
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
