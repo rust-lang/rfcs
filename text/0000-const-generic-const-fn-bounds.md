@@ -169,30 +169,10 @@ an arbitrary `T`, we might call `T::drop` if `T` has a drop impl. While we can s
 `T`, because `u32` has no `Drop` impl. Even types that definitely need dropping, but have no
 explicit `Drop` impl (like `struct Foo(String);`), cannot be passed if `T` requires a `Drop` bound.
 
-To summarize, up to this point in the RFC there are three ways to interact with `Drop`:
-
-* don't mention `Drop` in the parameter bounds (or mention `?Drop`, amounting to the same thing)
-    * can pass any type that fulfills the other bounds, but may never go out of scope
-* mention `?const Drop` in the parameter bounds
-    * can only pass types with explicit (const or not) `Drop` impls,
-      still can't drop any values inside the function (making this a useless bound)
-* mention `Drop` in the parameter bounds
-    * can only pass types with explicit `const Drop` impls (so no `u32`)
-
-To resolve this, the language gets a new marker trait `ConstDrop` which is automatically implemented
-for:
-
-* any `Copy` type
-* arrays and tuples consisting solely of `ConstDrop` types
-
-`ConstDrop` is similar to `Copy`: you can only implement it for your type, if all fields are
-`ConstDrop`. While we could automatically implement `ConstDrop` for arbitrary types consisting only
-of other `ConstDrop` types, this would make adding a `!ConstDrop` field to a type a breaking change.
-
-The body of a const function is allowed to generate drop glue for types that implement `ConstDrop`.
-
-To reduce the confusion between `ConstDrop` and `const Drop` for users,
-`impl const Drop for SomeType` requires a `ConstDrop` impl for `SomeType`.
+To be able to know that a `T` can be dropped in a `const fn`, this RFC proposes to make `T: Drop`
+be a valid bound for any `T`, even types which have no `Drop` impl. In non-const functions this
+would make no difference, but `const fn` adding such a bound would allow dropping values of type
+`T` inside the const function.
 
 ## Runtime uses don't have `const` restrictions
 
@@ -671,20 +651,3 @@ const fn foo<T>(foo: Foo<T>, bar: Foo<T>) -> T {
     foo.t + bar.t
 }
 ```
-
-## Extend the semantics of `T: Drop` bounds?
-
-Instead of using the `ConstDrop` workaround, we could extend `T: Drop` (in regular functions) to
-also accept `i32` and other non-`Drop` types. In `const fn` this would mean you'd need to pass
-either a non-`Drop` type or a type with a `const Drop` impl. Before stabilization we should
-experiment with either design and discuss the effects this has on API design.
-
-## `ConstDrop` is not a great name
-
-Bikeshed this name before stabilization. We don't want to end up with `T: const ConstDrop` bounds
-in the future (see the "explicit `const` bounds" future extension to this RFC).
-
-One suggestion is to have a lowercase trait `drop` that signifies the drop glue and not the `Drop`
-trait. This would allow `T: drop` and `T: ?const drop` bounds signalling what's going on.
-A `T: drop` bound on a non-const function would be useless as every type may get dropped
-in non-const generic functions.
