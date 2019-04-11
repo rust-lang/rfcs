@@ -141,25 +141,6 @@ evaluation. This means that
 is now allowed, because we can prove
 that everything from the creation of the value to the destruction is const evaluable.
 
-Note that one cannot implement `const Drop` for structs with fields with just a regular `Drop` impl.
-While from a language perspective nothing speaks against that, this would be very surprising for
-users. Additionally it would make `const Drop` pretty useless. This is explained in more detail in
-the following subsection about generic code and `const Drop`.
-
-```rust
-struct Foo;
-impl Drop for Foo { fn drop(&mut self) {} }
-struct Bar(Foo);
-impl const Drop for Bar { fn drop(&mut self) {} } // not ok
-// cannot call with `T == Foo`, because of missing `const Drop` impl
-fn foo<T: Drop>(t: T) {
-    // Let t run out of scope and get dropped.
-    // Would not be ok if `T` is `Bar`,
-    // because the drop glue would drop `Bar`'s `Foo` field after the `Bar::drop` had been called.
-    // This function is therefore not accept by the compiler.
-}
-```
-
 ### const Drop in generic code
 
 `Drop` is special in Rust. You don't need to specify `T: Drop`, but `T::drop` will still be called
@@ -172,7 +153,38 @@ explicit `Drop` impl (like `struct Foo(String);`), cannot be passed if `T` requi
 To be able to know that a `T` can be dropped in a `const fn`, this RFC proposes to make `T: Drop`
 be a valid bound for any `T`, even types which have no `Drop` impl. In non-const functions this
 would make no difference, but `const fn` adding such a bound would allow dropping values of type
-`T` inside the const function.
+`T` inside the const function. Additionally it would forbid calling a `const fn` with a `T: Drop`
+bound with types that have non-const `Drop` impls (or have a field that has a non-const `Drop` impl).
+
+```rust
+struct Foo;
+impl Drop for Foo { fn drop(&mut self) {} }
+struct Bar;
+impl const Drop for Bar { fn drop(&mut self) {} }
+struct Boo;
+// cannot call with `T == Foo`, because of missing `const Drop` impl
+// `Bar` and `Boo` are ok
+const fn foo<T: Drop>(t: T) {}
+```
+
+Note that one cannot implement `const Drop` for structs with fields with just a regular `Drop` impl.
+While from a language perspective nothing speaks against that, this would be very surprising for
+users. Additionally it would make `const Drop` pretty useless. This is explained in more detail in
+the following subsection about generic code and `const Drop`.
+
+```rust
+struct Foo;
+impl Drop for Foo { fn drop(&mut self) {} }
+struct Bar(Foo);
+impl const Drop for Bar { fn drop(&mut self) {} } // not ok
+// cannot call with `T == Foo`, because of missing `const Drop` impl
+const fn foo<T: Drop>(t: T) {
+    // Let t run out of scope and get dropped.
+    // Would not be ok if `T` is `Bar`,
+    // because the drop glue would drop `Bar`'s `Foo` field after the `Bar::drop` had been called.
+    // This function is therefore not accept by the compiler.
+}
+```
 
 ## Runtime uses don't have `const` restrictions
 
@@ -347,9 +359,18 @@ A summary of the result of the discussion can be found at the bottom of [this bl
   but it covers the most common cases. See also the alternatives.
 * It becomes a breaking change to add a new method to a trait, even if that method has a default
   impl. One needs to provide a `const` default impl to not make the change a breaking change.
+* It becomes a breaking change to add a field (even a private one) that has a `Drop` impl which is
+  not `const Drop` (or which has such a field).
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
+
+## `ConstDrop` trait to opt into const-droppability
+
+Right now it is a breaking change to add a field (even a private one) that has a non-const `Drop`
+impl. This makes `const Drop` a marker trait similar to `Send` and `Sync`. Alternatively we can
+introduce an explicit `ConstDrop` (name bikesheddable) trait, that needs to be implemented for all
+types, even `Copy` types. Users would need to add `T: ConstDrop` bounds instead of `T: Drop` bounds.
 
 ## Effect system
 
