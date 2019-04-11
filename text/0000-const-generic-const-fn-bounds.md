@@ -169,8 +169,7 @@ const fn foo<T: Drop>(t: T) {}
 
 Note that one cannot implement `const Drop` for structs with fields with just a regular `Drop` impl.
 While from a language perspective nothing speaks against that, this would be very surprising for
-users. Additionally it would make `const Drop` pretty useless. This is explained in more detail in
-the following subsection about generic code and `const Drop`.
+users. Additionally it would make `const Drop` pretty useless.
 
 ```rust
 struct Foo;
