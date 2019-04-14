@@ -37,10 +37,10 @@ This allows for an efficient representation of Discriminant sets, which is both 
 
 ## Disciminant data
 
-`Discriminant#bit_size` and `Discriminant#data` are two methods to retrieve the structure of the discriminant.
+`Discriminant::bit_size` and `Discriminant#data` are two methods to retrieve the structure of the discriminant.
 
 ```rust
-const fn bit_size(&self) -> usize { }
+const fn bit_size() -> usize { }
 ```
 
 The `bit_size` function returns the number of bits necessary to represent this discriminant. This number is not subject to optimisation, so e.g. `Option<&str>` reports a bitsize of `1`.
@@ -59,21 +59,21 @@ enum RGB {
     Blue
 }
 
-std::mem::discriminant(Cell::Alive).bit_size == 1
-std::mem::discriminant(Option::None as Option<&str>).bit_size == 1
-std::mem::discriminant(RGB::Red).bit_size == 2
+Discriminant<Cell>.bit_size() == 1
+Discriminant<Option<&str>>.bit_size() == 1
+Discriminant<RGB::Red>.bit_size == 2
 ```
 
 This information can be used to pack multiple discriminants easily for in bitfields for efficient storage and easy indexing.
 
 ```rust
-fn data(&self) -> usize
+fn data(&self) -> u128
 ```
 
 Returns a bit representation of the discriminant. This data can be used to construct an efficient storage or index.
 
 ```rust
-fn from_data<T>(data: usize) -> Discriminant<T>
+fn from_data<T>(data: u128) -> Discriminant<T>
 ```
 
 Creates a Discriminant from emitted data usable for comparison.
@@ -107,8 +107,6 @@ The added methods increase API surface in stdlib.
 
 - Naming of the functions could be improved.
 - A basic implementation of a bitfield should be created during the implementation phase
-- Exact layout of the returned usize value is not clear, especially endianess.
-- `std::mem::discriminant` isn't const, which makes `bit_size` unreachable as a const function. Can `std::mem::discriminant` be const?
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
