@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-Add methods to `std::mem::Discriminant` which inform of the space necessary for a bitwise representation of an enums Dicriminant and the bits itself in an opaque fashion.
+Add methods to `std::mem::Discriminant` which inform of the space necessary for a bitwise representation of an enum's discriminant and the bits itself in an opaque fashion.
 
 # Motivation
 [motivation]: #motivation
@@ -25,15 +25,9 @@ Using these enums in collections is wasteful, as each instance reserves at least
 Similarly, `std::mem::size_of<Discriminant<Cell>>()` is at least 1 byte.
 For that reason, the book later goes on and replaces `Vec<Cell>` by [`fixedbitset`][game-of-life-exercise], ending up with a much less intuitive implementation.
 
-If it were possible to read the exact necessary size and the bit representation the descriminant, we could have interface like this:
+If it were possible to read the exact necessary size and the bit representation the descriminant, we could have a `PackedBits<T>` that uses exactly as much space as necessary.
 
-```rust
-let x = PackedBits<Cell>;
-```
-
-Where `PackedBits` uses exactly as much space as necessary.
-
-This allows for an efficient representation of Discriminant sets, which is both useful for simple enums, but also for crating an index of all Discriminant values present in collection.
+This allows for an efficient representation of discriminant sets, which is both useful for simple enums, but also for crating an index of all discriminant values present in collection.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -68,10 +62,10 @@ Discriminant<Option<&str>>.bit_size() == 1
 Discriminant<RGB>.bit_size() == 2
 ```
 
-This information can be used to pack multiple discriminants easily for in bitfields for efficient storage and easy indexing.
+This information can be used to pack multiple discriminants easily for efficient storage and easy indexing.
 
 ```rust
-fn data(&self) -> u128
+fn into_data(&self) -> u128
 ```
 
 Returns a bit representation of the discriminant.
