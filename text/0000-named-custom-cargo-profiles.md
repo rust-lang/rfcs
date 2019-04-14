@@ -59,7 +59,7 @@ go to a different directory by default:
     debug release release-lto
 
 Cargo will emit errors in case `inherits` loops are detected. When considering
-inheritence hierarchy, all profiles directly or indirectly inherit from
+inheritance hierarchy, all profiles directly or indirectly inherit from
 either from `release` or from `dev`.
 
 This also affects other Cargo commands:
