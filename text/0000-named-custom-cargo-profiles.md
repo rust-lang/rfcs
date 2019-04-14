@@ -21,7 +21,7 @@ which adds the flexibility of changing attributes of specific crates under one
 of the default profiles. However, it does not allow for a full custom profile
 name definition that can have its own additional final outputs.
 
-The motivation is illustrated by a prominant example — the ability to easily
+The motivation is illustrated by a prominent example — the ability to easily
 throw everything under a custom compilation mode in addition to the existing
 compilation modes.
 
