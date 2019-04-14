@@ -43,7 +43,7 @@ This allows for an efficient representation of Discriminant sets, which is both 
 fn bit_size(&self) -> usize { }
 ```
 
-The `bit_size` function returns the number of bits necessary to represent this discriminant. This number is not necessarily the number of bits actually used, as this is subject to optimization.
+The `bit_size` function returns the number of bits necessary to represent this discriminant. This number is not subject to optimisation, so e.g. `Option<&str>` reports a bitsize of `1`.
 
 For example:
 
