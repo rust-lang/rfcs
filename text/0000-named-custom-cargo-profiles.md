@@ -88,7 +88,7 @@ when left unspecified, defaults to the name of the profile. For example:
   `test` to their respective directories: `target/release` and `target/debug`.
   This preserves existing behavior.
 * The `dir-name` attribute is the only attribute not passed by inheritance.
-* Path seperators are not allowed in `dir-name`.
+* Path separators are not allowed in `dir-name`.
 
 
 ## Treatment to the pre-defined profiles
