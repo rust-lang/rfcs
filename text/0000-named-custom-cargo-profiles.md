@@ -10,7 +10,7 @@ The proposed change to Cargo is to add the ability to specify user-defined
 profiles in addition to the five predefined profiles, `dev`, `release`, `test`,
 `bench`, and the less talked-about `doc`. It is also desired in this scope to
 reduce confusion regarding where final outputs reside, and increase the
-flexbility to specify the user-defined profile attributes.
+flexibility to specify the user-defined profile attributes.
 
 # Motivation
 [motivation]: #motivation
