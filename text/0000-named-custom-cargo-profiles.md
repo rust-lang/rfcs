@@ -173,7 +173,7 @@ Release, Custom(String))`.
   loaded into it, before `TomlProfile` overrides are applied to them.
 * Similarly, `TomlProfiles` will be changed to hold profiles in a `BTreeMap`.
 * We would need to compute the actual `build_override` for a profile based on
-  resolution through the `inherited` key.
+  resolution through the `inherits` key.
 * Custom build scripts: For compatibility, the `PROFILE` environment currently
   being passed to the `build.rs` script is going to bear the name of the output
   directory and not the name of the profile.
