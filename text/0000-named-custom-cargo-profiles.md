@@ -8,9 +8,9 @@
 
 The proposed change to Cargo is to add the ability to specify user-defined
 profiles in addition to the five predefined profiles, `dev`, `release`, `test`,
-`bench`, and the less talked-about `doc`. It is also desired in this scope to
-reduce confusion regarding where final outputs reside, and increase the
-flexibility to specify the user-defined profile attributes.
+`bench`. It is also desired in this scope to reduce confusion regarding where
+final outputs reside, and increase the flexibility to specify the user-defined
+profile attributes.
 
 # Motivation
 [motivation]: #motivation
@@ -47,6 +47,9 @@ For example:
     inherits = "release"
     lto = true
 
+Valid profile names are: must not be empty, use only alphanumeric characters or
+`-` or `_`.
+
 Passing `--profile` with the profile's name to various Cargo commands will
 resolve to the custom profile. Overrides specified in the profiles from which
 the custom profile inherits will be inherited too, and all final outputs may
@@ -71,6 +74,18 @@ This also affects other Cargo commands:
 * `cargo doc` also receives `--profile`, but unless it is specified, uses
   the predefined `doc` profile which is described below.
 
+## Effect over the use of profile in commands
+
+The mixtures of profiles used for `--all-targets` is still in effect, as
+long as `--profile` is not specified.
+
+## Combined specification with `--release`
+
+For now, `--release` is supported for backward-compatibility.
+
+Using `--profile` and `--release` together in the same invocation emits an
+error unless `--profile=release`.  Using `--release` on its own is equivalent
+to specifying `--profile=release`
 
 ## New `dir-name` attribute
 
@@ -88,8 +103,13 @@ when left unspecified, defaults to the name of the profile. For example:
   `test` to their respective directories: `target/release` and `target/debug`.
   This preserves existing behavior.
 * The `dir-name` attribute is the only attribute not passed by inheritance.
-* Path separators are not allowed in `dir-name`.
+* Valid directory names are: must not be empty, use only alphanumeric
+  characters or `-` or `_`.
 
+## Cross compilation
+
+Under cross compilation with a profile, paths corresponding to
+`target/<platform-triple>/<dir-name>` will be created.
 
 ## Treatment to the pre-defined profiles
 
@@ -125,8 +145,8 @@ inherits = "dev"
 dir-name = "debug"
 ```
 
-
 * The (upcoming) `build` profile defaults to the following definition:
+
 ```
 [profile.build]
 inherits = "dev"
@@ -134,20 +154,7 @@ dir-name = "build"
 debug = false
 ```
 
-
-## Treatment to Cargo's 'Finished' print
-
-For `cargo build`, the profile's name is emitted in the "Finished" line:
-
-    Finished release-lto [optimized + lto] target(s) in 3.83s
-
-* As before, optimization mode is always printed, with `optimized` if
-  `opt-level > 0` and `unoptimized` otherwise.
-* As before, information regarding debuginfo is printed, with `debuginfo` if
-  `debug != false`, and nothing if `debug == false` (or `debug == 0`).
-* Other differences from the inherited root profile pre-defined defaults are
-  printed in a concise manner.
-
+(NOTE: the `build` profile is experimental and may be removed later)
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -175,13 +182,15 @@ Release, Custom(String))`.
 * We would need to compute the actual `build_override` for a profile based on
   resolution through the `inherits` key.
 * Custom build scripts: For compatibility, the `PROFILE` environment currently
-  being passed to the `build.rs` script is going to bear the name of the output
-  directory and not the name of the profile.
+  being passed to the `build.rs` script is set to either `release` or `debug`,
+  based on `inherits` relationship of the specified profile, in case it is not
+  `release` or `dev` directly.
 
-## Collision under the target directory
+## Profile name and directory name exclusion
 
-To guard against the unlikely case that a target name is identical to a profile
-name, we should compare the lists for overlap.
+To prevent collisions under the target directory, predefined set of string
+excludes both the custom profile names and the dir-name. For example,
+`package`, `build`, `debug`, `doc`, and strings that start with `.`.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -270,6 +279,21 @@ similar functionality in a different way.
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-This RFC mentioned a global binary cache. A global binary cache can reside
-under `target/.cache` or in the user home directory under `.cargo`, to be
-shared by multiple workspaces.
+This RFC mentions a global binary cache. A global binary cache can reside under
+`target/.cache` or in the user home directory under `.cargo`, to be shared by
+multiple workspaces. This may further assist in reducing compilation times when
+switching between compilation flags.
+
+## Treatment to Cargo's 'Finished' print
+
+Currently, the `Finished` line being emitted when Cargo is done building, is
+confusing, and sometimes does not bear a relation to the specified profile. We
+may take this opportunity to revise the output of this line to include the name
+of the profile.
+
+Some targets use more than one profile in their compilation process, so we may
+want to pick a different scheme than simply printing out the name of the main
+profile being used. One option is to print a line for each one of the built
+targets with concise description of profiles that used to build it, but there
+may be better options worth considering following the implementation of this
+RFC.
