@@ -220,7 +220,7 @@ to utilize a future implementation of a binary cache under the target directory
 By generating the workspace's `Cargo.toml` from a script, per build, we can
 control the parameters of the `release` profile without editing
 source-controlled files. Beside build-time complexity, this has another
-drawback, for example — it would trip the timestamp comparision with
+drawback, for example — it would trip the timestamp comparison with
 `Cargo.lock` and cause unnecessary updates to it.
 
 ## Cargo workflows
