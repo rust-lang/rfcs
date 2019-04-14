@@ -154,7 +154,7 @@ For `cargo build`, the profile's name is emitted in the "Finished" line:
 
 The 'final outputs' phrasing was used in this RFC, knowing that there are
 intermediate outputs that live under `target/` that are usually not a concern
-for most Cargo users. The paths that constitue the final build outputs however,
+for most Cargo users. The paths that constitute the final build outputs however,
 constitute as sort of a protocol for invokers of Cargo. This RFC extends on
 that protocol, allowing for outputs in more directories.
 
