@@ -218,10 +218,10 @@ Although the mechanism for opt-in for the long-term solution is unspecified, the
 actual usage of tool attributes seems pretty clear. Therefore we can be reasonably
 confident that this proposal is forward-compatible in its syntax, etc.
 
-For the white-listed tools, will their names be implicitly imported in the long-
-term solution? One could imagine either leaving them implicit (similar to the
-libraries prelude) or using warning cycles or an epoch to move them to explicit
-opt-in.
+For the white-listed tools, will their names be implicitly imported in the
+long-term solution? One could imagine either leaving them implicit (similar to
+the libraries prelude) or using warning cycles or an edition to move them to
+explicit opt-in.
 
 
 # Drawbacks

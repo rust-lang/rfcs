@@ -7,16 +7,17 @@
 [summary]: #summary
 
 Add a raw identifier format `r#ident`, so crates written in future language
-epochs/versions can still use an older API that overlaps with new keywords.
+editions/versions can still use an older API that overlaps with new keywords.
 
 # Motivation
 [motivation]: #motivation
 
-One of the primary examples of breaking changes in the epoch RFC is to add new
-keywords, and specifically `catch` is the first candidate. However, since
-that's seeking crate compatibility across epochs, this would leave a crate in a
-newer epoch unable to use `catch` identifiers in the API of a crate in an older
-epoch.  [@matklad found] 28 crates using `catch` identifiers, some public.
+One of the primary examples of breaking changes in the edition RFC is to add
+new keywords, and specifically `catch` is the first candidate. However, since
+that's seeking crate compatibility across editions, this would leave a crate in
+a newer edition unable to use `catch` identifiers in the API of a crate in an
+older edition. [@matklad found] 28 crates using `catch` identifiers, some
+public.
 
 A raw syntax that's *always* an identifier would allow these to remain
 compatible, so one can write `r#catch` where `catch`-as-identifier is needed.
@@ -57,14 +58,14 @@ they are mentioned, making them cumbersome to both the developer and users.
 Usually an alternate is preferable: `crate` -> `krate`, `const` -> `constant`,
 etc.
 
-However, new Rust epochs may add to the list of reserved keywords, making a
-formerly legal identifier now interpreted otherwise.  Since compatibility is
-maintained between crates of different epochs, this could mean that code written
-in a new epoch might not be able to name an identifier in the API of another
-crate.  Using a raw identifier, it can still be named and used.
+However, new Rust editions may add to the list of reserved keywords, making a
+formerly legal identifier now interpreted otherwise. Since compatibility is
+maintained between crates of different editions, this could mean that code
+written in a new edition might not be able to name an identifier in the API of
+another crate. Using a raw identifier, it can still be named and used.
 
 ```rust
-//! baseball.rs in epoch 2015
+//! baseball.rs in edition 2015
 pub struct Ball;
 pub struct Player;
 impl Player {
@@ -74,7 +75,7 @@ impl Player {
 ```
 
 ```rust
-//! main.rs in epoch 2018 -- `catch` is now a keyword!
+//! main.rs in edition 2018 -- `catch` is now a keyword!
 use baseball::*;
 fn main() {
     let mut player = Player;
@@ -107,9 +108,10 @@ let bar = r#foo * 2;
 [alternatives]: #alternatives
 
 If we don't have any way to refer to identifiers that were legal in prior
-epochs, but later became keywords, then this may hurt interoperability between
-crates of different epochs.  The `r#ident` syntax enables interoperability, and
-will hopefully invoke some intuition of being raw, similar to raw strings.
+editions, but later became keywords, then this may hurt interoperability
+between crates of different editions. The `r#ident` syntax enables
+interoperability, and will hopefully invoke some intuition of being raw,
+similar to raw strings.
 
 The `br#ident` syntax is also possible, but I see no advantage over `r#ident`.
 Identifiers don't need the same kind of distinction as `str` and `[u8]`.
@@ -153,12 +155,12 @@ Java also allows Unicode escapes, but they don't avoid keywords.
 For some new keywords, there may be contextual mitigations. In the case of
 `catch`, it couldn't be a fully contextual keyword because `catch { ... }` could
 be a struct literal. That context might be worked around with a path, like
-`old_epoch::catch { ... }` to use an identifier instead. Contexts that don't
+`old_edition::catch { ... }` to use an identifier instead. Contexts that don't
 make sense for a `catch` expression can just be identifiers, like `foo.catch()`.
 However, this might not be possible for all future keywords.
 
 There might also be a need for raw keywords in the other direction, e.g. so the
-older epoch can still use the new `catch` functionality somehow. I think this
+older edition can still use the new `catch` functionality somehow. I think this
 particular case is already served well enough by `do catch { ... }`, if we
 choose to stabilize it that way.  Perhaps `br#keyword` could be used for this,
 but that may not be a good intuitive relationship.
@@ -175,4 +177,4 @@ but that may not be a good intuitive relationship.
 
 - Do macros need any special care with such identifier tokens?
 - Should diagnostics use the `r#` syntax when printing identifiers that overlap keywords?
-- Does rustdoc need to use the `r#` syntax? e.g. to document `pub use old_epoch::*`
+- Does rustdoc need to use the `r#` syntax? e.g. to document `pub use old_edition::*`

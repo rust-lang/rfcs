@@ -13,11 +13,11 @@ This RFC seeks to clarify and streamline Rust's story around paths and visibilit
 - The `crate` keyword also acts as a visibility modifier, equivalent to today's `pub(crate)`. Consequently, uses of bare `pub` on items that are not actually publicly exported are linted, suggesting `crate` visibility instead.
 - A `foo.rs` and `foo/` subdirectory may coexist; `mod.rs` is no longer needed when placing submodules in a subdirectory.
 
-**These changes do not require a new epoch**. The new features are purely additive. They can ship with **allow-by-default** lints, which can gradually be moved to warn-by-default and deny-by-default over time, as better tooling is developed and more code has actively made the switch.
+**These changes do not require a new edition**. The new features are purely additive. They can ship with **allow-by-default** lints, which can gradually be moved to warn-by-default and deny-by-default over time, as better tooling is developed and more code has actively made the switch.
 
 *This RFC incorporates some text written by @withoutboats and @cramertj, who have both been involved in the long-running discussions on this topic.*
 
-[new epoch]: https://github.com/rust-lang/rfcs/pull/2052
+[new edition]: https://github.com/rust-lang/rfcs/pull/2052
 
 # Motivation
 [motivation]: #motivation
@@ -447,7 +447,7 @@ The actual changes in this RFC are fairly small tweaks to the current module
 system; most of the complexity comes from the migration plans.
 
 The proposed migration plan is minimally disruptive; **it does not require an
-epoch**.
+edition**.
 
 ## Basic changes
 
@@ -507,11 +507,11 @@ and Cargo/the ambient build system is needed.
 This approach is designed for backwards compatibility, but it means that you
 cannot have a top-level module and an external crate with the same
 name. Allowing that would require all fully-qualified paths into the current
-crate to start with `crate`, which can only be done on a future epoch. We can
+crate to start with `crate`, which can only be done on a future edition. We can
 and should consider making such a change eventually, but it is not required for
 this RFC.
 
-[epoch]: https://github.com/rust-lang/rfcs/pull/2052
+[edition]: https://github.com/rust-lang/rfcs/pull/2052
 [macros 2.0]: https://github.com/rust-lang/rfcs/blob/master/text/1561-macro-naming.md#importing-macros
 [previous RFC]: https://github.com/rust-lang/rfcs/pull/2088
 
@@ -574,14 +574,14 @@ motivation. The crucial insight of the design is that, by making absolute paths
 unambiguous about which crate they draw from, we can solve a number of
 confusions and papercuts with the module system.
 
-## Epoch-based migration story
+## Edition-based migration story
 
-We can avoid the need for fallback in resolution by leveraging epochs instead.
-On the current epoch, we would make `crate::` paths available and start warning
-about *not* using them for crate-internal paths, but we would not issue warnings
-about `extern crate`. In the next epoch, we would change absolute path
-interpretations, such that warning-free code on the previous epoch would
-continue to compile and have the same meaning.
+We can avoid the need for fallback in resolution by leveraging editions
+instead. On the current edition, we would make `crate::` paths available and
+start warning about *not* using them for crate-internal paths, but we would not
+issue warnings about `extern crate`. In the next edition, we would change
+absolute path interpretations, such that warning-free code on the previous
+edition would continue to compile and have the same meaning.
 
 ## Bike-sheddy choices
 
@@ -652,6 +652,6 @@ ideas off into a separate *experimental* RFC:
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
-- How should we approach migration? Via a fallback, as proposed, or via epochs?
-  It is probably best to make this determination with more experience,
+- How should we approach migration? Via a fallback, as proposed, or via
+  editions? It is probably best to make this determination with more experience,
   e.g. after we have a `rustfix` tool in hand.
