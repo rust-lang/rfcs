@@ -277,7 +277,7 @@ impl<T> VecIter<'_, T> { ... }
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-**Note: these changes are designed to *not* require a new epoch**. They do
+**Note: these changes are designed to *not* require a new edition**. They do
 expand our naming style lint, however.
 
 ## Lifetimes in `impl` headers
