@@ -206,12 +206,14 @@ this change can be done retroactively later without breaking backwards
 compatibility, I choose to leave it out of this RFC.  Example implementation is
 included in case this is desirable in the future:
 
-    default impl<T> Close for T {
-        type Error = !;
-        fn close(self) -> Result<(), Self::Error> {
-            Ok(())
-        }
+```rust
+default impl<T> Close for T {
+    type Error = !;
+    fn close(self) -> Result<(), Self::Error> {
+        Ok(())
     }
+}
+```
 
 ### Named `TryDrop` instead
 
@@ -221,8 +223,10 @@ similarly to `TryFrom` and `TryInto`.  I do not prefer this so long as `close`
 takes `self` by value because I do not think it is intuitive to have different
 input parameters for semantically similar functions.
 
-    fn try_drop(self) -> Result<(), Error>;
-    fn drop(&mut self) -> ();
+```rust
+fn try_drop(self) -> Result<(), Error>;
+fn drop(&mut self) -> ();
+```
 
 ### Taking `self` by `&mut`
 
@@ -254,7 +258,7 @@ could be made to be.  We could rework the method to be `fn try_drop(&mut self)
 Since we must avoid backwards compatability issues, this method must have a
 default implementation.  It could be defined as follows:
 
-```
+```rust
 pub trait Write {
     // ...
     fn close(mut self) -> io::Result<()> {
