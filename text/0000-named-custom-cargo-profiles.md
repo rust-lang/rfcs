@@ -38,7 +38,7 @@ Here's an example for a real-world user: [tikv/issue/4189](https://github.com/ti
 [guide-level-explanation]: #guide-level-explanation
 
 With this proposal implemented, a user can define custom profiles under new
-names, provided that an `inherited` key is used in order to receive attributes
+names, provided that an `inherits` key is used in order to receive attributes
 from other profiles.
 
 For example:
