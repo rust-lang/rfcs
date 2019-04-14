@@ -130,7 +130,7 @@ dir-name = "debug"
 ```
 [profile.build]
 inherits = "dev"
-dir-name = "debug"
+dir-name = "build"
 debug = false
 ```
 
