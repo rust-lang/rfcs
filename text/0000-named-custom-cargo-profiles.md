@@ -212,7 +212,7 @@ together with `CARGO_TARGET_DIR` we would be able to do the following:
 
 The main drawback for this alternative is invocation complexity, and not being able
 to utilize a future implementation of a binary cache under the target directory
-(see 'future possibilties').
+(see 'future possibilities').
 
 
 ## Workspace `Cargo.toml` auto-generation
