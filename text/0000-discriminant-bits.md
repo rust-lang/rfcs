@@ -11,7 +11,8 @@ Add methods to `std::mem::Discriminant` which inform of the space necessary for 
 # Motivation
 [motivation]: #motivation
 
-Rust encourages using enums to encode data with multiple variants. And example of this can be found in the [game of life tutorial][game-of-life-tutorial].
+Rust encourages using enums to encode data with multiple variants.
+An example of this can be found in the [game of life tutorial][game-of-life-tutorial].
 
 ```rust
 enum Cell {
@@ -20,7 +21,9 @@ enum Cell {
 }
 ```
 
-Using these enums in collections is wasteful, as each instance reserves at least 1 byte of space. Similarly, `std::mem::size_of<Discriminant<Cell>>()` is at least 1 byte. For that reason, the book later goes on and replaces `Vec<Cell>` by [`fixedbitset`][game-of-life-exercise].
+Using these enums in collections is wasteful, as each instance reserves at least 1 byte of space.
+Similarly, `std::mem::size_of<Discriminant<Cell>>()` is at least 1 byte.
+For that reason, the book later goes on and replaces `Vec<Cell>` by [`fixedbitset`][game-of-life-exercise], ending up with a much less intuitive implementation.
 
 If it were possible to read the exact necessary size and the bit representation the descriminant, we could have interface like this:
 
@@ -43,7 +46,8 @@ This allows for an efficient representation of Discriminant sets, which is both 
 const fn bit_size() -> usize { }
 ```
 
-The `bit_size` function returns the number of bits necessary to represent this discriminant. This number is not subject to optimisation, so e.g. `Option<&str>` reports a bitsize of `1`.
+The `bit_size` function returns the number of bits necessary to represent this discriminant.
+This number is not subject to optimisation, so e.g. `Option<&str>` reports a bitsize of `1`.
 
 For example:
 
@@ -61,7 +65,7 @@ enum RGB {
 
 Discriminant<Cell>.bit_size() == 1
 Discriminant<Option<&str>>.bit_size() == 1
-Discriminant<RGB::Red>.bit_size == 2
+Discriminant<RGB>.bit_size() == 2
 ```
 
 This information can be used to pack multiple discriminants easily for in bitfields for efficient storage and easy indexing.
@@ -70,7 +74,8 @@ This information can be used to pack multiple discriminants easily for in bitfie
 fn data(&self) -> u128
 ```
 
-Returns a bit representation of the discriminant. This data can be used to construct an efficient storage or index.
+Returns a bit representation of the discriminant.
+This data can be used to construct an efficient storage or index.
 
 ```rust
 fn from_data<T>(data: u128) -> Discriminant<T>
@@ -81,11 +86,12 @@ Creates a Discriminant from emitted data usable for comparison.
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-The feature may interact with non-exaustive enums. In this case, still, the currently used discriminant size should be used.
+The feature may interact with non-exaustive enums.
+In this case, still, the currently used discriminant size should be used.
 
 Adding the proposed functions probably entails adding a new compiler intrinsic `discriminant_size`.
 
-Empty enums are of 0 size.
+Empty enums are of size 0.
 
 # Drawbacks
 [drawbacks]: #drawbacks
