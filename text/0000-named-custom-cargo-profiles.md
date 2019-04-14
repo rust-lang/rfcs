@@ -142,7 +142,7 @@ For `cargo build`, the profile's name is emitted in the "Finished" line:
     Finished release-lto [optimized + lto] target(s) in 3.83s
 
 * As before, optimization mode is always printed, with `optimized` if
-  `opt-level > 0` and `unoptimized` othersize.
+  `opt-level > 0` and `unoptimized` otherwise.
 * As before, information regarding debuginfo is printed, with `debuginfo` if
   `debug != false`, and nothing if `debug == false` (or `debug == 0`).
 * Other differences from the inherited root profile pre-defined defaults are
