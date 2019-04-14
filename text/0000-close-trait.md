@@ -251,8 +251,21 @@ could be made to be.  We could rework the method to be `fn try_drop(&mut self)
 
 ### As a method of Write
 
-I believe this is a bad idea because it would remove backwards compatibility.
-It also prevents us from closing reading resources.
+Since we must avoid backwards compatability issues, this method must have a
+default implementation.  It could be defined as follows:
+
+```
+pub trait Write {
+    // ...
+    fn close(mut self) -> io::Result<()> {
+        self.flush()
+    }
+}
+```
+
+This would reduce the generality of this concept to io streams, but would
+eliminate the burden of adding `Close` as a generic argument to existing
+functions using `Write`.
 
 # Prior art
 [prior-art]: #prior-art
