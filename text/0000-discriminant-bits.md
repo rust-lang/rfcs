@@ -20,7 +20,7 @@ enum Cell {
 }
 ```
 
-Using these enums in collections is wasteful, as each instance reserves at least 1 byte of space. Similarly, `std::mem::size_of<Discriminant<Cell>>()` is at least 1 byte. For that reason, the book later goes on and replaces `Vec<Cell>` by a bit vector.
+Using these enums in collections is wasteful, as each instance reserves at least 1 byte of space. Similarly, `std::mem::size_of<Discriminant<Cell>>()` is at least 1 byte. For that reason, the book later goes on and replaces `Vec<Cell>` by [`fixedbitset`][game-of-life-exercise].
 
 If it were possible to read the exact necessary size and the bit representation the descriminant, we could have interface like this:
 
@@ -113,3 +113,6 @@ The added methods increase API surface in stdlib.
 [future-possibilities]: #future-possibilities
 
 The feature is self-contained and I don't see direct extensions.
+
+[game-of-life-tutorial]: https://rustwasm.github.io/docs/book/game-of-life/implementing.html
+[game-of-life-exercise]: https://rustwasm.github.io/docs/book/game-of-life/implementing.html#exercises
