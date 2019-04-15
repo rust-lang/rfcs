@@ -274,6 +274,15 @@ const fn new<T: Trait>(t: T) -> Foo<T> {
 }
 ```
 
+<details><summary>Click here for effect system syntax description</summary>
+```rust
+struct Foo<T: Trait>(T);
+<c: constness> const(c) fn new<T: const(c) Trait>(t: T) -> Foo<T> {
+    Foo(t)
+}
+```
+</details>
+
 Unfortunately, with the given syntax in this RFC, one can now only call the `new` function in a const
 context if `T` has
 an `impl const Trait for T { ... }`. Thus an opt-out similar to `?Sized` can be used:
@@ -284,6 +293,16 @@ const fn new<T: ?const Trait>(t: T) -> Foo<T> {
     Foo(t)
 }
 ```
+
+<details><summary>Click here for effect system syntax description</summary>
+```rust
+struct Foo<T: Trait>(T);
+// note the lack of `const(c)` before `Trait`
+<c: constness> const(c) fn new<T: Trait>(t: T) -> Foo<T> {
+    Foo(t)
+}
+```
+</details>
 
 ## `const` default method bodies
 
@@ -305,8 +324,8 @@ trait Foo {
 }
 ```
 
-While this conflicts with future work ideas like `const` trait methods or `const trait` declarations,
-these features are unnecessary for full expressiveness as discussed in their respective sections.
+While we could use `const fn bar() {}` as a syntax, that would conflict
+with future work ideas like `const` trait methods or `const trait` declarations.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -666,8 +685,26 @@ struct Foo<T: Add> {
     u: u32,
 }
 
-/// T has implied bound `Add`, but is that `const Add` or `?const Add` or `!const Add`?
+/// T has implied bound `Add`, but is that `const Add` or `?const Add`
 const fn foo<T>(foo: Foo<T>, bar: Foo<T>) -> T {
     foo.t + bar.t
+}
+```
+
+In our exemplary effect syntax would need to add an effect
+to struct definitions, too.
+
+```rust
+struct Foo<c: constness, T: const(c) Add> {
+    t: T,
+    u: u32,
+}
+// const Add
+<c: constness> const(c) fn foo<T>(foo: Foo<c, T>, bar: Foo<c, T>) -> T {
+    foo.t + bar.t
+}
+// ?const Add
+<c: constness, d: constness> const(c) fn foo<T>(foo: Foo<d, T>, bar: Foo<d, T>) -> T {
+    foo.t + bar.t // error
 }
 ```
