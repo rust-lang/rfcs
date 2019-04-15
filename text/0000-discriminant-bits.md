@@ -34,13 +34,12 @@ This allows for an efficient representation of discriminant sets, which is both 
 
 ## Disciminant data
 
-`Discriminant::bit_size` and `Discriminant#data` are two methods to retrieve the structure of the discriminant.
+`Discriminant::bit_size` is a method to retrieve the minimal number in bits necessary to represent this discriminant.
 
 ```rust
 const fn bit_size() -> usize { }
 ```
 
-The `bit_size` function returns the number of bits necessary to represent this discriminant.
 This number is not subject to optimisation, so e.g. `Option<&str>` reports a bitsize of `1`.
 
 For example:
@@ -57,25 +56,27 @@ enum RGB {
     Blue
 }
 
-Discriminant<Cell>.bit_size() == 1
-Discriminant<Option<&str>>.bit_size() == 1
-Discriminant<RGB>.bit_size() == 2
+Discriminant<Cell>::bit_size() == 1
+Discriminant<Option<&str>>::bit_size() == 1
+Discriminant<RGB>::bit_size() == 2
 ```
 
 This information can be used to pack multiple discriminants easily for efficient storage and easy indexing.
 
+`Discriminat<T>` gains the methods `into_bits` and `from_bits`:
+
 ```rust
-fn into_data(&self) -> u128
+fn into_bits(&self) -> u128
 ```
 
 Returns a bit representation of the discriminant.
 This data can be used to construct an efficient storage or index.
 
 ```rust
-fn from_data<T>(data: u128) -> Discriminant<T>
+fn from_bits(data: u128) -> Self
 ```
 
-Creates a Discriminant from emitted data usable for comparison.
+Creates a `Discriminant` from emitted bits usable for comparison.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -98,6 +99,8 @@ The added methods increase API surface in stdlib.
 - Why is this design the best in the space of possible designs?
 - What other designs have been considered and what is the rationale for not choosing them?
 - What is the impact of not doing this?
+- `from_data` and `into_data` could instead be straight `From/Into` implementations
+- Alternatively, `from/into_bits` could return a `Bits<T>` type with a richer interface
 
 # Prior art
 [prior-art]: #prior-art
