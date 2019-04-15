@@ -417,6 +417,8 @@ fn foo<T: const Bar>() -> i32 {
 }
 ```
 
+See also the [explicit `const` bounds](#explicit_const) extension to this RFC.
+
 ## Infer all the things
 
 We can just throw all this complexity out the door and allow calling any method on generic
@@ -625,6 +627,7 @@ Which is useless except for ensuring some sense of "purity" of the function poin
 subsequent calls will only modify global state if passed in via arguments.
 
 ## explicit `const` bounds
+[explicit_const]: #explicit-const
 
 `const` on the bounds (e.g. `T: const Trait`) requires an `impl const Trait` for any types used to
 replace `T`. This allows `const` trait bounds on any (even non-const) functions, e.g. in
