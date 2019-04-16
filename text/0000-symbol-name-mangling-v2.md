@@ -881,8 +881,10 @@ efficient demanglers:
 
 Parsing, decompression, and demangling can thus be done in a single pass
 over the mangled name without the need for complex data structures, which
-is useful when having to implement `#[no_std]` or C demanglers.
-
+is useful when having to implement `#[no_std]` or C demanglers. (Note that
+Punycode can complicate decoding slightly because it needs dynamic memory
+allocation in the general case but it can be implemented with an on-stack
+buffer for a reasonable maximum supported length).
 
 ## Mapping Rust Language Entities to Symbol Names
 
@@ -1144,3 +1146,4 @@ pub static QUUX: u32 = {
 - Removed "complexity" drawback since the scheme is not very complex anymore.
 - Removed unresolved question "Re-use `<disambiguator>` for crate disambiguator".
 - Added note about default generic arguments to reference-level-explanation.
+- Added note about Punycode making decoding more complicated.
