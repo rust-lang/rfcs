@@ -447,8 +447,8 @@ the `impl` to the symbol name.
 
 ```
 <path> = C <identifier>                      // crate-id root
-       | M <impl-path> <type>                            // inherent impl root
-       | X <impl-path> <type> <path>                     // trait impl root
+       | M <impl-path> <type>                // inherent impl root
+       | X <impl-path> <type> <path>         // trait impl root
        | N <namespace> <path> <identifier>   // nested path
        | I <path> {<generic-arg>} E          // generic arguments
 
@@ -560,7 +560,8 @@ occurrence of which could be replaced by a back reference.
 
 The things that are eligible for substitution are (1) all prefixes of
 paths (including the entire path itself), (2) all types except for
-basic types, and (3) instances of const data.
+basic types, and (3) type-level constants (array lengths and values
+passed to const generic params).
 
 Here's an example in order to illustrate the concept. The name
 
@@ -574,12 +575,12 @@ by a back reference. The number of at the beginning of each span given
 the 0-based byte position of where it occurred the first time.
 
 ```
-0         10        20        30        40        50        60        70        80        90
+  0         10        20        30        40        50        60        70        80        90
 _RINtNtC3std4iter5ChainINtNtC3std4iter3ZipINtNtC3std3vec8IntoItermEINtNtC3std3vec8IntoItermEEE
-                            7----              7----                    7----
-                          5-----------                                45---------
-                                                                    43--------------------
-                                                                   42-----------------------
+                            5----              5----                    5----
+                          3-----------                                43---------
+                                                                    41--------------------
+                                                                   40-----------------------
 ```
 
 The compiler is always supposed to use the longest replacement possible
@@ -587,7 +588,7 @@ in order to achieve the best compression. The compressed symbol looks
 as follows:
 
 ```
-_RINtNtC3std4iter5ChainINtB4_3ZipINtNtB6_3vec8IntoItermEBv_EE
+_RINtNtC3std4iter5ChainINtB2_3ZipINtNtB4_3vec8IntoItermEBt_EE
                           ^^^         ^^^               ^^^     back references
 ```
 
