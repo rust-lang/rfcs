@@ -1023,6 +1023,13 @@ does not propose to do this because:
 
 However, a final decision on the topic has not been made yet.
 
+**UPDATE**: This RFC suggests that parameter types are *not* encoded into
+function and method symbols. Symbol names will already get significantly
+longer due to encoding additional information and the additional
+safeguard provided against ABI mismatches is less relevant for Rust
+than it is for other languages that don't have a concept of
+library/crate metadata.
+
 
 # Appendix A - Suggested Demangling
 
@@ -1146,3 +1153,4 @@ pub static QUUX: u32 = {
 - Added note about Punycode making decoding more complicated.
 - Resolve question of complex constant data.
 - Add a recommended resolution for open question around Punycode identifiers.
+- Add a recommended resolution for open question around encoding function parameter types.
