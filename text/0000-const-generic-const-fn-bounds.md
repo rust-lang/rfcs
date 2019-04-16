@@ -332,6 +332,10 @@ struct Foo<T: Trait>(T);
 ```
 </details>
 
+This allows functions to have `T: ?const Trait` bounds on generic parameters without requiring users
+to supply a `const Trait` impl for types used for `T`. This feature is added under a separate
+feature gate and will be stabilized separately from (and after) `T: Trait` bounds on `const fn`.
+
 ## `const` default method bodies
 
 Trait methods can have default bodies for methods that are used if the method is not mentioned
@@ -407,6 +411,9 @@ A summary of the result of the discussion can be found at the bottom of [this bl
   impl. One needs to provide a `const` default impl to not make the change a breaking change.
 * It becomes a breaking change to add a field (even a private one) that has a `Drop` impl which is
   not `const Drop` (or which has such a field).
+* `?const` gives a lot of control to users and may make people feel an obligation to properly
+  annotate all of their generic parameters so that they propagate constness as permissively as
+  possible, but that this will create too much burden on the community in a variety of ways.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
