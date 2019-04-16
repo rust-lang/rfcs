@@ -183,6 +183,37 @@ Some further notes on (dis-)allowed patterns:
   same caveats: The programmer must ensure liveness and alignment. However,
   cast with `transmute` or `as _` is much more explicit.
 
+Pattern structure is enforced *after* the automatic addition of reference and
+pointer patterns. This ensures that even implicitely added pointer patterns can
+not result in a read through the pattern. The simplest of these accidental
+mistakes are however already prevent by the logic of adding pointer patterns as
+the pointer itself could be matched by a value pattern.
+
+```
+fn no_match_on_value(b: *const bool) -> usize {
+    match b {
+        // Error: mismatching type, expected value of type `*const bool` ...
+        true => 0,
+     // ^^^^ ... for this pattern
+	_ => 1,
+    }
+}
+
+struct Foo {
+    bar: usize,
+}
+
+fn no_match_on_implicit_value(b: *const Foo) -> usize {
+    match b {
+	// Error: can not match by value within pointer pattern.
+        Foo { bar: 0 } => 0,
+        //        ^^^ .. referring to this value pattern
+	// Note: pointer pattern occurs in expansion to `*const Foo { bar: 0 }`
+	_ => 1,
+    }
+}
+```
+
 Pointer patterns and raw bindings are also irrefutable patterns and can thus be
 used in `let`-bindings and similar. This was used in the example in the
 guide-level explanation:
