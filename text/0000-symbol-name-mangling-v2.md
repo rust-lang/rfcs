@@ -727,16 +727,7 @@ Mangled names conform to the following grammar:
 
 // The encoding of a constant depends on its type, currently only
 // unsigned integers (mainly usize, for arrays) are supported, and they
-// use their value, in base 16 (0-9a-f), not their memory representation..
-//
-// Note that while exposing target-specific data layout information, such
-// as pointer size, endianness, etc. should be avoided as much as possible,
-// it might become necessary to include raw bytes, even whole allocation
-// subgraphs (that miri created), for const generics with non-trivial types.
-//
-// However, demanglers could just show the raw encoding without trying to
-// turn it into expressions, unless they're part of e.g. a debugger, with
-// more information about the target data layout and/or from debuginfo.
+// use their value, in base 16 (0-9a-f), not their memory representation.
 <const-data> = {<hex-digit>} "_"
 
 // <base-62-number> uses 0-9-a-z-A-Z as digits, i.e. 'a' is decimal 10 and
@@ -768,6 +759,18 @@ order not to force the compiler to waste processing time on re-constructing
 different disambiguation indices, the internal unspecified "namespaces" are
 used. This may change in the future.
 
+### Type-Level Constants
+
+As described above, the grammar encodes constant values via the
+`<const-data> = {<hex-digit>} "_"` production, where `{<hex-digit>}` is
+the numeric value of the constant, not its representation as bytes. Using
+the numeric value is platform independent but does not easily scale to
+non-integer data types.
+
+In the future it is likely that Rust will support complex type-level
+constants (i.e. not just integers). This RFC suggests to develop a
+proper mangling for these as part of the future const-generics work,
+and, for now, only define a mangling for integer values.
 
 ### Punycode Identifiers
 
@@ -976,17 +979,6 @@ is taken from the [Swift][swift-gh] programming language's
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-### Complex Constant Data
-
-The RFC encodes constant values via the `<const-data> = {<hex-digit>} "_"`
-production, where `{<hex-digit>}` is the numeric value of the constant, not
-its representation as bytes. Using the numeric value is platform independent
-but does not easily scale to non-integer data types.
-
-It is unclear if this is something that needs to be resolved now or can
-be left for a future version of the mangling scheme.
-
-
 ### Punycode vs UTF-8
 During the pre-RFC phase, it has been suggested that Unicode identifiers
 should be encoded as UTF-8 instead of Punycode on platforms that allow it.
@@ -1148,3 +1140,4 @@ pub static QUUX: u32 = {
 - Removed unresolved question "Re-use `<disambiguator>` for crate disambiguator".
 - Added note about default generic arguments to reference-level-explanation.
 - Added note about Punycode making decoding more complicated.
+- Resolve question of complex constant data.
