@@ -229,7 +229,8 @@ impl<c: constness, T: const(c) Add> const(c) Add for Foo<T> {
 
 In this scheme on can see that if the `c` parameter is set to `const`, the `T` parameter requires a
 `const Add` bound, and creates a `const Add` impl for `Foo<T>` which then has a `const fn add`
-method. On the other hand, if `c` is `?const`, we get a regular impl without any constness anywhere.
+method. On the other hand, if `c` is "may or may not be `const`", we get a regular impl without any
+constness anywhere.
 For regular impls one can still pass a `T` which has a `const Add` impl, but that won't
 cause any constness for `Foo<T>`.
 
@@ -264,6 +265,8 @@ situations like the one described above.
 
 ## `?const` opt out
 
+### Motivation
+
 There is often desire to add bounds to a `const` function's generic arguments, without wanting to
 call any of the methods on those generic bounds. Prominent examples are `new` functions:
 
@@ -284,8 +287,33 @@ struct Foo<T: Trait>(T);
 </details>
 
 Unfortunately, with the given syntax in this RFC, one can now only call the `new` function in a const
-context if `T` has
-an `impl const Trait for T { ... }`. Thus an opt-out similar to `?Sized` can be used:
+context if `T` has an `impl const Trait for T { ... }`.
+
+This `new` constructor example is simplified from the following real use cases:
+
+1. Drop impls need to have the same generic bounds that the type declaration has.
+    If you want to have a const Drop implementation,
+    all bounds must be const Trait on the type and the Drop impl,
+    even if the Drop impl does not use said trait bounds.
+
+2. The standard library is full of cases where you have bounds on a generic type's declaration
+    (e.g. because the Drop impl needs them or to have earlier, more helpful, errors).
+    Any method (or its impl block) on that generic type will need to repeat those bounds.
+    Repeating those bounds will restrict the impls further than actually required.
+    We don't need `const Trait` bounds if all we do is store values of the generic
+    argument type in fields of the result type.
+    Examples from the standard library include, but are not limited to
+    * [RawVec::new](https://github.com/rust-lang/rust/blob/a7cef0bf0810d04da3101fe079a0625d2756744a/src/liballoc/raw_vec.rs#L51)
+    * [Iterator::map](https://github.com/rust-lang/rust/blob/a7cef0bf0810d04da3101fe079a0625d2756744a/src/libcore/iter/traits/iterator.rs#L558)
+        * and essentially all other `Iterator` methods that take a closure arg
+    * [HashMap::new](https://github.com/rust-lang/rust/blob/a7cef0bf0810d04da3101fe079a0625d2756744a/src/libstd/collections/hash/map.rs#L697)
+        * and `HashSet` (which is implemented on top of `HashMap`)
+    * [[T]::split](https://github.com/rust-lang/rust/blob/a7cef0bf0810d04da3101fe079a0625d2756744a/src/libcore/slice/mod.rs#L1045)
+        * and all other slice methods that take a closure
+
+### `?const` syntax
+
+Thus an opt-out similar to `?Sized` is proposed by this RFC:
 
 ```rust
 struct Foo<T: Trait>(T);
