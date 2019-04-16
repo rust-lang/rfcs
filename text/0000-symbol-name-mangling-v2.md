@@ -1003,6 +1003,10 @@ points that might influence the final decision:
   it is Punycode. Otherwise it can just assume UTF-8 which already
   subsumes ASCII.
 
+**UPDATE**: This RFC recommends that Punycode encoded identifiers must
+be supported by demanglers but that it is up to the compiler implementation
+(for now) to decide whether to use it for a given platform. This question
+will have to be revisited if Rust ever wants to define a stable ABI.
 
 ### Encoding parameter types for function symbols
 
@@ -1141,3 +1145,4 @@ pub static QUUX: u32 = {
 - Added note about default generic arguments to reference-level-explanation.
 - Added note about Punycode making decoding more complicated.
 - Resolve question of complex constant data.
+- Add a recommended resolution for open question around Punycode identifiers.
