@@ -83,9 +83,9 @@ accurate, it can only make results *more* accurate.
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 We could provide a separate set of types and allow extra accuracy in their
-operations; however, this would create ABI differences between floating-point
-functions, and the longer, less-well-known types seem unlikely to see
-widespread use.
+operations; however, this would create API incompatibilities between
+floating-point functions, and the longer, less-well-known types seem unlikely
+to see widespread use.
 
 We could provide an option to enable extra accuracy for the default
 floating-point types, but disable it by default. This would leave the majority
