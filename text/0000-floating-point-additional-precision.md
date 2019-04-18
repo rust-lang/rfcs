@@ -42,8 +42,11 @@ specifies how far the result may differ from an infinitely accurate,
 mathematically exact answer. The implementation of Rust for any target platform
 must provide at least that much accuracy. In some cases, Rust can perform
 operations with higher accuracy than required, and doing so provides greater
-performance (such as by removing intermediate rounding steps). This will never
-make any floating-point operation *less* accurate, but it can make
+performance (such as by removing intermediate rounding steps).
+
+A note for users of other languages: this is *not* the equivalent of the "fast
+math" option provided by some compilers. Unlike such options, this behavior
+will never make any floating-point operation *less* accurate, but it can make
 floating-point operations *more* accurate, making the result closer to the
 mathematically exact answer.
 
