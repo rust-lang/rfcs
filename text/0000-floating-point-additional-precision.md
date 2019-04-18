@@ -97,7 +97,11 @@ to see widespread use.
 We could provide an option to enable extra accuracy for the default
 floating-point types, but disable it by default. This would leave the majority
 of floating-point code unable to use these optimizations, however; defaults
-matter, and the majority of code seems likely to use the defaults.
+matter, and the majority of code seems likely to use the defaults. In addition,
+permitting extra floating-point precision by default would match the existing
+behavior of Rust, and would allow the Rust compiler to assume that code
+explicitly disabling extra precision has a specific requirement to do so and
+depends on that behavior.
 
 We could do nothing, and require code to use `a.mul_add(b, c)` for
 optimization; however, this would not allow for similar future optimizations,
