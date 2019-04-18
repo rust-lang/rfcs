@@ -74,12 +74,17 @@ over a codegen option.)
 [drawbacks]: #drawbacks
 
 If Rust already provided bit-for-bit identical floating-point computations
-across platforms, this change could potentially allow floating-point
-computations to differ by platform (though never below the standards-required
-accuracy). However, standards-compliant implementations of math functions on
-floating-point values may already vary slightly by platform, sufficiently so to
-produce different binary results. This proposal can never make results *less*
-accurate, it can only make results *more* accurate.
+across platforms, then this change could potentially allow floating-point
+computations to differ (in the amount of additional accuracy beyond the
+standards requirements) by platform, enabled target features (e.g. instruction
+sets), or optimization level.
+
+However, standards-compliant implementations of operations on floating-point
+values can and do *already* vary slightly by platform, sufficiently so to
+produce different binary results; in particular, floating-point operations in
+Rust can already produce more precise results depending on target platform and
+optimization level. As with that existing behavior, this proposal can never
+make results *less* accurate, it can only make results *more* accurate.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
