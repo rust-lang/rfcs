@@ -64,9 +64,11 @@ precision as the IEEE standard requires; such operations may provide *more*
 precision than the standard requires, such as by doing a series of operations
 with higher precision before storing a value of the desired precision.
 
-rustc may provide a codegen (`-C`) option to disable this behavior, such as `-C
-disable-extra-fp-precision`. Rust may also provide an attribute to disable this
-behavior from within code, such as `#[disable_extra_fp_precision]`.
+rustc should provide a codegen (`-C`) option to disable this behavior, such as
+`-C extra-fp-precision=off`. Rust should also provide attributes to enable and
+disable this behavior from within code, such as `#[extra_fp_precision]` or
+`#[extra_fp_precision(off)]`, respectively. (An attribute would take precedence
+over a codegen option.)
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -124,12 +126,6 @@ This has precedent in several other languages and compilers:
   equivalent if, for all possible values of their primaries, their
   mathematical values are equal. However, mathematically equivalent
   arithmetic expressions may produce different computational results."
-
-# Unresolved questions
-[unresolved-questions]: #unresolved-questions
-
-- Should we provide a rustc codegen option?
-- Should we provide an attribute?
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
