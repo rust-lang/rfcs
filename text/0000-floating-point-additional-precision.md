@@ -35,8 +35,6 @@ languages and compilers.
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-After this RFC, we could explain floating-point operations as follows:
-
 Floating-point operations in Rust have a guaranteed minimum accuracy, which
 specifies how far the result may differ from an infinitely accurate,
 mathematically exact answer. The implementation of Rust for any target platform
@@ -55,14 +53,14 @@ mathematically exact answer.
 
 Currently, Rust's [specification for floating-point
 types](https://doc.rust-lang.org/reference/types/numeric.html#floating-point-types)
-states that:
+states only that:
 > The IEEE 754-2008 "binary32" and "binary64" floating-point types are f32 and f64, respectively.
 
 This RFC proposes updating that definition as follows:
 
 The `f32` and `f64` types represent the IEEE 754-2008 "binary32" and "binary64"
-floating-point types. Operations on those types must provide no less
-precision than the IEEE standard requires; such operations may provide *more*
+floating-point types. Operations on those types must provide at least as much
+precision as the IEEE standard requires; such operations may provide *more*
 precision than the standard requires, such as by doing a series of operations
 with higher precision before storing a value of the desired precision.
 
