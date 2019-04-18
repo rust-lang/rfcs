@@ -22,8 +22,8 @@ Similarly, high-performance floating-point code could perform multiple
 operations with higher-precision floating-point registers before converting
 back to a lower-precision format.
 
-In general, providing more precision than required should not cause a
-mathematical algorithm to fail or to lose numeric accuracy.
+In general, providing more precision than required will only bring a
+calculation closer to the mathematically precise answer, never further away.
 
 This RFC proposes allowing floating-point types to perform intermediate
 calculations using more precision than the type itself, as long as they provide
