@@ -181,7 +181,7 @@ of the team or some part of the compiler (or multiple parts).
 
 Promotion decisions (from participant to contributor, and from
 contributor to member) are made by having an active team member send
-an e-mail to the alias `compiler-private@github.com`. This e-mail
+an e-mail to the alias `compiler-private@rust-lang.org`. This e-mail
 should include:
 
 - the name of the person to be promoted
