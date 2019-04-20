@@ -82,9 +82,10 @@ sets), or optimization level.
 However, standards-compliant implementations of operations on floating-point
 values can and do *already* vary slightly by platform, sufficiently so to
 produce different binary results; in particular, floating-point operations in
-Rust can already produce more precise results depending on target platform and
-optimization level. As with that existing behavior, this proposal can never
-make results *less* accurate, it can only make results *more* accurate.
+Rust can already produce more precise results depending on target platform,
+optimization level, the target's libm library, and the version of the target
+libm. As with that existing behavior, this proposal can never make results
+*less* accurate, it can only make results *more* accurate.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
