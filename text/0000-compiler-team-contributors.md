@@ -317,7 +317,7 @@ open source communities:
   (the precise amount depends on the code). However, gaining the ability to
   review code (known as becoming a "peer" for the module) is [done at the
   discretion of the module owner](https://www.mozilla.org/en-US/about/governance/policies/module-ownership/).
-- Python: Becoming a core developer tyipically starts when a core
+- Python: Becoming a core developer typically starts when a core
   developer offers you the chain to gain commit privilege and spends
   some time monitoring your commits to make sure you understand the
   development process. If other core developers agree that you should
