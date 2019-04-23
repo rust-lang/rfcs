@@ -150,6 +150,9 @@ Being promoted to contributor implies a number of privileges:
   other similar bots.
 - Contributors are members of the organization so they can modify
   labels and be assigned to issues.
+- Contributors are a member of the rust-lang/compiler team on GitHub,
+  so that they receive pings when people are looking to address the
+  team as a whole.
 - Contributors will be listed on the [compiler expert map](https://github.com/rust-lang/compiler-team/blob/9d8c387ddbd01ced14eaab480cddb00c2d723f36/experts/MAP.md),
   which lists folks who are familiar with each area of the compiler.
 - Contributors are listed on the rust-lang.org web page and invited to
@@ -172,6 +175,8 @@ of the team or some part of the compiler (or multiple parts).
   promoted to compiler team contributor or to the level of member.
 - Compiler team members are consulted on FCP decisions (which, in the
   compiler team, are relatively rare).
+- There will be a distinct GitHub team containing only the compiler
+  team members, but the name of this team is "to be determined".
 - Working groups must always include at least one compiler team member
   as a lead (though groups may have other leads who are not yet full
   members).
