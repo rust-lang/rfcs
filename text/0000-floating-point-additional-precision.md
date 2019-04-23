@@ -93,7 +93,8 @@ libm. As with that existing behavior, this proposal can never make results
 We could provide a separate set of types and allow extra accuracy in their
 operations; however, this would create API incompatibilities between
 floating-point functions, and the longer, less-well-known types seem unlikely
-to see widespread use.
+to see widespread use. Furthermore, allowing or disallowing extra accuracy
+seems more closely a property of the calculation than a property of the type.
 
 We could provide an option to enable extra accuracy for the default
 floating-point types, but disable it by default. This would leave the majority
