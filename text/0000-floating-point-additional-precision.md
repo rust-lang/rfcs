@@ -8,7 +8,7 @@
 
 Update the Rust specification to allow floating-point operations to provide
 *more* precision than specified, but not less precision; this allows many safe
-optimizations.
+optimizations. Specify robust mechanisms to disable this behavior.
 
 # Motivation
 [motivation]: #motivation
@@ -48,6 +48,14 @@ will never make any floating-point operation *less* accurate, but it can make
 floating-point operations *more* accurate, making the result closer to the
 mathematically exact answer.
 
+Due to differences in hardware, in platform libm implementations, and various
+other factors, Rust cannot fully guarantee identical results on all target
+platforms. (Doing so on *all* platforms would incur a massive performance
+loss.) However, with some additional care, applications desiring cross-platform
+identical results can potentially achieve that on multiple target platforms. In
+particular, applications prioritizing identical, portable results across two or
+more target platforms can disable extra floating-point precision entirely.
+
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
@@ -65,10 +73,21 @@ precision than the standard requires, such as by doing a series of operations
 with higher precision before storing a value of the desired precision.
 
 rustc should provide a codegen (`-C`) option to disable this behavior, such as
-`-C extra-fp-precision=off`. Rust should also provide attributes to enable and
-disable this behavior from within code, such as `#[extra_fp_precision]` or
-`#[extra_fp_precision(off)]`, respectively. (An attribute would take precedence
-over a codegen option.)
+`-C extra-fp-precision=off`; compiling with this option will disable extra
+precision in all crates compiled into an application. (Cargo should provide a
+means of specifying this option.) Rust should also provide attributes to
+disable this behavior from within code, such as `#[extra_fp_precision(off)]`;
+this attribute will disable extra precision within the module or function it is
+applied to. On platforms that do not currently implement disabling extra
+precision, the codegen option and attribute should produce an error (not a
+warning), to avoid surprises.
+
+In addition, because this change makes extra floating-point precision visible
+on more platforms, the Rust release notes, documentation, and similar channels
+should explicitly discuss the issue of extra floating-point precision and how
+to disable it. Furthermore, this change should not become part of a stable Rust
+release until at least eight stable releases *after* it first becomes
+implemented in the nightly compiler.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -85,16 +104,22 @@ produce different binary results; in particular, floating-point operations in
 Rust can already produce more precise results depending on target platform,
 optimization level, the target's libm library, and the version of the target
 libm. As with that existing behavior, this proposal can never make results
-*less* accurate, it can only make results *more* accurate.
+*less* accurate, it can only make results *more* accurate. Nonetheless, this
+change potentially introduces such variations on target platforms that did not
+previously have them.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-We could provide a separate set of types and allow extra accuracy in their
-operations; however, this would create API incompatibilities between
-floating-point functions, and the longer, less-well-known types seem unlikely
-to see widespread use. Furthermore, allowing or disallowing extra accuracy
-seems more closely a property of the calculation than a property of the type.
+For the attribute and codegen option, we could allow code to opt in via
+attribute even if disabled via codegen, and then provide a `force-off` codegen
+option to override that. This would have two serious downsides, however: it
+would propagate the perception of extra floating-point precision as an unsafe
+optimization that requires opting into, and it would make life more difficult
+for people who wish to opt out of this behavior and attempt to achieve
+identical results on multiple target platforms. This RFC recommends the simpler
+approach of not providing an enablement option via attribute, such that the
+codegen option always force-disables extra precision everywhere.
 
 We could provide an option to enable extra accuracy for the default
 floating-point types, but disable it by default. This would leave the majority
@@ -103,7 +128,24 @@ matter, and the majority of code seems likely to use the defaults. In addition,
 permitting extra floating-point precision by default would match the existing
 behavior of Rust, and would allow the Rust compiler to assume that code
 explicitly disabling extra precision has a specific requirement to do so and
-depends on that behavior.
+depends on that behavior. Nonetheless, this alternative would still provide the
+option to produce more optimized code, making it preferable over doing nothing.
+This alternative would necessitate respecifying the codegen option and
+attribute to support enabling it, as well as having a force-off codegen option
+to override enablement via the attribute.
+
+We could provide a separate set of types and allow extra accuracy in their
+operations; however, this would create API incompatibilities between
+floating-point functions, and the longer, less-well-known types seem unlikely
+to see widespread use. Furthermore, allowing or disallowing extra accuracy
+seems more closely a property of the calculation than a property of the type.
+
+We could provide additional methods for floating-point operations that allow
+passing additional flags, including floating-point contraction. The compiler
+could then fuse and otherwise optimize such operations. However, this would
+make optimized floating-point code *substantially* less ergonomic, due to the
+inability to use operators. To enable operators, we could additionally
+implement wrapper types, as above, with the same upsides and downsides.
 
 We could do nothing, and require code to use `a.mul_add(b, c)` for
 optimization; however, this would not allow for similar future optimizations,
@@ -121,10 +163,11 @@ discussion on this point.
 This has precedent in several other languages and compilers:
 
 - [C11](http://www.open-std.org/jtc1/sc22/wg14/www/docs/n1570.pdf) allows
-  this with the `STDC FP_CONTRACT` pragma enabled, and the default state
-  of that pragma is implementation-defined. GCC enables this pragma by
-  default, [as does the Microsoft C
-  compiler](https://docs.microsoft.com/en-us/cpp/preprocessor/fp-contract?view=vs-2019).
+  extra floating-point precision with the `STDC FP_CONTRACT` pragma enabled,
+  and the default state of that pragma is implementation-defined. GCC, ICC,
+  MSVC, and some other C compilers enable this behavior by default; Clang
+  disables it by default, though some downstream users of Clang re-enable it
+  system-wide.
 
 - [The C++ standard](http://eel.is/c++draft/expr.pre#6) states that "The
   values of the floating operands and the results of floating
