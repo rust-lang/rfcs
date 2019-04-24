@@ -9,7 +9,7 @@
 Add async & await syntaxes to make it more ergonomic to write code manipulating
 futures.
 
-This has a companion RFC to add a small futures API to libstd and libcore.
+This has [a companion RFC](2592-futures.md) to add a small futures API to libstd and libcore.
 
 # Motivation
 [motivation]: #motivation
