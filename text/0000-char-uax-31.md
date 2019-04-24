@@ -7,7 +7,8 @@
 [summary]: #summary
 
 Add functionc to the standard library for testing a `char` against [UAX TR31](https://unicode.org/reports/tr31/) ("Unicode Annex 31")
-`Pattern_White_Space`, `Pattern_Syntax`, `XID_Start`, `ID_Nonstart`, and `XID_Continue`.
+`Pattern_White_Space`, `Pattern_Syntax`, `XID_Start`, `ID_Nonstart`, and `XID_Continue` (the XID ones are already in the standard
+library, but are unstable; this RFC proposes to stablize them).
 
 # Motivation
 [motivation]: #motivation
@@ -45,17 +46,10 @@ These functions are also exposed as methods on the `char` type.
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-## `fn char::is_xid_start(self) -> bool`
-
-Check if `self` is a member of Unicode Annex 31's `XID_Start` code point category.
-
-## `fn char::is_xid_continue(self) -> bool`
-
-Check if `self` is a member of Unicode Annex 31's `XID_Continue` code point category.
-
 ## `fn char::is_id_nonstart(self) -> bool`
 
 Check if `self` is a member of Unicode Annex 31's `ID_Nonstart` code point category.
+This function is defined as `self.is_xid_continue() && !self.is_xid_start()`.
 
 ## `fn char::is_pattern_syntax(self) -> bool`
 
