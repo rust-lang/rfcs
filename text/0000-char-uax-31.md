@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-Add functionc to the standard library for testing a `char` against [UAX TR31](https://unicode.org/reports/tr31/) ("Unicode Annex 31")
+Add functions to the standard library for testing a `char` against [UAX TR31](https://unicode.org/reports/tr31/) ("Unicode Annex 31")
 `Pattern_White_Space`, `Pattern_Syntax`, `XID_Start`, `ID_Nonstart`, and `XID_Continue` (the XID ones are already in the standard
 library, but are unstable; this RFC proposes to stablize them).
 
