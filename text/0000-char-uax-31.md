@@ -70,7 +70,7 @@ even though Unicode places plenty of requirements on that process, too.
 
 The other problem is that a lot of languages aren't defined in terms of Annex 31 anyway,
 like Swift and HTML, which simply spell out the set of allowed code points themselves,
-so this isn't necessarily useful to allw of the language implementers.
+so this isn't necessarily useful to all of the language implementers.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
