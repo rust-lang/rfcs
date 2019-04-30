@@ -1,7 +1,7 @@
 - Feature Name: `param_attrs`
 - Start Date: 2018-10-14
-- RFC PR: 
-- Rust Issue: 
+- RFC PR: [rust-lang/rfcs#2565](https://github.com/rust-lang/rfcs/pull/2565)
+- Rust Issue: [rust-lang/rust#60406](https://github.com/rust-lang/rust/issues/60406)
 
 # Summary
 [summary]: #summary
