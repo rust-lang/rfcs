@@ -1,7 +1,7 @@
-- Feature Name: transparent_enunions
+- Feature Name: `transparent_enunions`
 - Start Date: 2019-02-13
-- RFC PR:
-- Rust Issue:
+- RFC PR: [rust-lang/rfcs#2645](https://github.com/rust-lang/rfcs/pull/2645)
+- Rust Issue: [rust-lang/rust#60405](https://github.com/rust-lang/rust/issues/60405)
 
 # Summary
 [summary]: #summary
