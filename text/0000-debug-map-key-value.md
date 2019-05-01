@@ -268,7 +268,7 @@ On balance, the additional `key` and `value` methods are a small and unsurprisin
 The universal alternative of simply _not doing this_ leaves consumers that do need to format map keys independently of values with a few options:
 
 - Write an alternative implementation of the format builders. The output from this alternative implementation would need to be kept reasonably in-sync with the one in the standard library. It doesn't change very frequently, but does from time to time. It would also have to take the same care as the standard library implementation to retain formatting flags when working with entries.
-- Buffer keys and format them together with values when the whole entry is available. Unless the key is guaranteed to live until the value is supplied (meaning it probably needs to be `'static`) then the key will need to be formatted into a string first. This means potential formatting flags will be lost when buffering.
+- Buffer keys and format them together with values when the whole entry is available. Unless the key is guaranteed to live until the value is supplied (meaning it probably needs to be `'static`) then the key will need to be formatted into a string first. This means allocating (though the cost could be amortized over the whole map) and potentially losing formatting flags when buffering.
 
 # Prior art
 [prior-art]: #prior-art
