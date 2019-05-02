@@ -195,19 +195,7 @@ impl<'a, 'b: 'a> DebugMap<'a, 'b> {
                 return Err(fmt::Error);
             }
 
-            if self.is_pretty() {
-                if !self.has_fields {
-                    self.fmt.write_str("\n")?;
-                }
-                let mut slot = None;
-                let mut writer = PadAdapter::wrap(&mut self.fmt, &mut slot);
-                key.fmt(&mut writer)?;
-            } else {
-                if self.has_fields {
-                    self.fmt.write_str(", ")?
-                }
-                key.fmt(self.fmt)?;
-            }
+            // write the key
 
             // Mark that we're in an entry
             self.has_key = true;
@@ -224,16 +212,7 @@ impl<'a, 'b: 'a> DebugMap<'a, 'b> {
                 return Err(fmt::Error);
             }
 
-            if self.is_pretty() {
-                let mut slot = None;
-                let mut writer = PadAdapter::wrap(&mut self.fmt, &mut slot);
-                writer.write_str(": ")?;
-                value.fmt(&mut writer)?;
-                writer.write_str(",\n")?;
-            } else {
-                self.fmt.write_str(": ")?;
-                value.fmt(self.fmt)?;
-            }
+            // write the value
 
             // Mark that we're not in an entry
             self.has_key = false;
@@ -269,6 +248,8 @@ The universal alternative of simply _not doing this_ leaves consumers that do ne
 
 - Write an alternative implementation of the format builders. The output from this alternative implementation would need to be kept reasonably in-sync with the one in the standard library. It doesn't change very frequently, but does from time to time. It would also have to take the same care as the standard library implementation to retain formatting flags when working with entries.
 - Buffer keys and format them together with values when the whole entry is available. Unless the key is guaranteed to live until the value is supplied (meaning it probably needs to be `'static`) then the key will need to be formatted into a string first. This means allocating (though the cost could be amortized over the whole map) and potentially losing formatting flags when buffering.
+
+Another alternative is to avoid poisoning the map if the sequence of entries doesn't follow the expected pattern of `key` then `value`. Instead, `DebugMap` could make a best-effort attempt to represent keys without values and values without keys. However, this approach has the drawback of masking incorrect `Debug` implementations, may produce a surprising output and doesn't reduce the complexity of the implementation (we'd still need to tell whether a key should be followed by a `: ` separator or a `, `).
 
 # Prior art
 [prior-art]: #prior-art
