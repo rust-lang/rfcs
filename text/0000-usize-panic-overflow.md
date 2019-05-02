@@ -20,7 +20,7 @@ is a frequent source of security vulnerabilities. We consider four examples:
 - [CVE-2018-1000810](https://groups.google.com/d/msg/rustlang-security-announcements/CmSuTm-SaU0/AzVznVcTCgAJ):
   Integer overflow leading to heap buffer overflow in `str::repeat`.
 - [CVE-2017-1000430](https://github.com/alicemaz/rust-base64/commit/24ead980daf11ba563e4fb2516187a56a71ad319):
-  Integer overflow leading to heap buffer overflow in the `base64` create.
+  Integer overflow leading to heap buffer overflow in the `base64` crate.
 - [CrosVM](https://bugs.chromium.org/p/chromium/issues/detail?id=892904): Integer
   overflow leading to heap buffer overflow in ChromeOS's hypervisor.
 - [ring](https://github.com/briansmith/ring/issues/742): Near-miss integer
