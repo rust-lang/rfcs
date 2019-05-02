@@ -1,3 +1,4 @@
+B
 - Feature Name: `custom_named_cargo_profiles`
 - Start Date: 2019-04-04
 - RFC PR: (leave this empty)
@@ -71,8 +72,6 @@ This also affects other Cargo commands:
   the predefined `test` profile which is described below.
 * `cargo bench` also receives `--profile`, but unless it is specified, uses
   the predefined `bench` profile which is described below.
-* `cargo doc` also receives `--profile`, but unless it is specified, uses
-  the predefined `doc` profile which is described below.
 
 ## Effect over the use of profile in commands
 
@@ -137,14 +136,6 @@ inherits = "dev"
 dir-name = "debug"
 ```
 
-* The `doc` profile defaults to the following definition, to preserve current
-  behavior:
-```
-[profile.doc]
-inherits = "dev"
-dir-name = "debug"
-```
-
 * The (upcoming) `build` profile defaults to the following definition:
 
 ```
@@ -175,9 +166,9 @@ implementation will replace it with a value of type `enum Profile {Dev,
 Release, Custom(String))`.
 
 * The `Profiles` struct in `cargo/core/profiles.rs` currently has hardcoded
-  `dev`, `release`, `test`, `bench`, and `doc` fields. This should be changed
-  into a `BTreeMap` based on profile names. The pre-defined profiles can be
-  loaded into it, before `TomlProfile` overrides are applied to them.
+  `dev`, `release`, `test`, `bench`. This should be changed into a `BTreeMap`
+  based on profile names. The pre-defined profiles can be loaded into it,
+  before `TomlProfile` overrides are applied to them.
 * Similarly, `TomlProfiles` will be changed to hold profiles in a `BTreeMap`.
 * We would need to compute the actual `build_override` for a profile based on
   resolution through the `inherits` key.
@@ -255,7 +246,7 @@ For example:
 * Profile names would collide with rustc target names under `target/`. Should
   the output directory be also under a different namespace, e.g.
   `target/custom/release-lto`?
-* Do we really need pre-defined profiles for `test`, `bench` and/or `doc`, or
+* Do we really need pre-defined profiles for `test`, `bench`, or
   can we make them obsolete?
 * Is it worthwhile keeping `test` and `bench` outputs in `target/debug` and
   `target/release`? Doing so would save compilation time and space.
