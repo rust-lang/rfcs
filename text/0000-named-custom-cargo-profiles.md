@@ -1,4 +1,3 @@
-B
 - Feature Name: `custom_named_cargo_profiles`
 - Start Date: 2019-04-04
 - RFC PR: (leave this empty)
