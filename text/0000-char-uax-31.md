@@ -72,6 +72,10 @@ The other problem is that a lot of languages aren't defined in terms of Annex 31
 like Swift and HTML, which simply spell out the set of allowed code points themselves,
 so this isn't necessarily useful to all of the language implementers.
 
+The other big drawback is that Unicode changes, so keeping the standard library synced with it represents a backwards-
+compatibility hazard. `is_whitespace` already has this problem, but the set of Unicode whitespace changes less
+frequently than XID does, so the behavior of these functions would be expected to change more often.
+
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
