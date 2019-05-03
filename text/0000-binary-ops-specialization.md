@@ -18,9 +18,10 @@ consider the new traits along with the old school non-specializable traits.
 [motivation]: #motivation
 
 Operator overloading brings a lot of convenience into usage of data types.
-When a Rust type is one of multiple representations of the same underlying
-data type (usually indicated by implementing the same `Borrow<T>`), it makes
-sense to define binary operator trait impls that work between each pair of
+For a set of Rust types which provide different representations of the same
+underlying data type (usually indicated by implementing the same `Borrow<T>`),
+it makes
+sense to define binary operator trait impls that apply between each pair of
 these types. However, with proliferation of special-purpose representations
 of widely used data types, such as byte arrays and strings, the number of
 possible such pairs undergoes a combinatorial explosion. Each of
@@ -52,7 +53,7 @@ where
 
 However, introducing default impls for already defined operator traits
 is a breaking change: there are crates that don't restrict their
-binary operator type pairs to ones sharing the same `Borrow` target.
+binary operators to types sharing the same `Borrow` target.
 One example is `bytes` defining `PartialEq` impls that allow comparing
 `Bytes` and the standard string types. While such data domain crossing is
 problematic for other reasons (e.g. differences in `Hash` for values that
@@ -66,7 +67,7 @@ forbidden. New operator traits with blanket default impls abstracted over
 ## New operator traits
 [new-operator-traits]: #new-operator-traits
 
-This proposal adds second-generation traits for all binary operators in
+This proposal adds second-generation traits for all binary operators defined in
 the standard library where the right-hand operand type is defined generically.
 The traits are named `PartialEq2`, `PartialOrd2`, `Add2`, etc. and defined
 with the same method signatures as their Rust 1.0 counterparts. Example
@@ -88,12 +89,12 @@ of an underlying data type that usually provides binary operators on itself.
 For example, `String` is the owned version of `str`, and `PathBuf` is that
 for `Path`. The underlying types themselves are counted in for the purposes
 of the following rule.
-These types usually implement `Borrow` to the basic type, and their Rust 1.0
-binary operator trait impls tend to cover any pairs with other types that
-satisfy the same `Borrow`. The rule for the crate defining such a type is to
-also define default impls of the new-style operator traits described in
-this RFC, where this type is the `&self` or `self` operand type, and a
-generic type parameter bound by `Borrow` defines the other operand's type:
+These types usually implement `Borrow` to the underlying type, and their
+Rust 1.0 binary operator trait impls tend to cover any pairs with other types
+that satisfy the same parameterized `Borrow`. The rule for a crate defining
+such a type is to also define default impls of the new operator traits
+described in this RFC, where a generic type parameter bound by `Borrow`
+defines the operand type other than `Self`:
 
 ```rust
 impl<Rhs> PartialEq2<Rhs> for String
@@ -106,7 +107,7 @@ where
 }
 ```
 
-The type parameter of the `Borrow` bound is the basic data type that `Self`
+The type parameter of the `Borrow` bound is the type that `Self`
 can also be borrowed as (which can be just `Self`). The role of `Borrow`
 therefore extends to restricting operand types of binary operators
 available for the implementing type.
@@ -115,9 +116,9 @@ provided implementations of `Borrow` and Rust 1.0 operator traits;
 `PathBuf`/`Path` is a [problematic][issue55319] exception.
 
 Operator traits that take ownership of the operands are trickier to implement
-for non-`Copy` types: these should not work between two borrowed types
-to avoid allocations hidden in operator notation, while consuming the
-owned operands in an operator expression may be non-ergonomic.
+for non-`Copy` types: these should not work between two borrowed values
+to avoid allocations hidden in operator notation, while moving the
+owned operands into an operator expression may be non-ergonomic.
 A precedent is set in the `Add` implementation for `String` to only let
 the left-hand operand value to be moved into the expression; the right-hand
 side needs to be borrowed as a `str` reference.
@@ -127,7 +128,7 @@ the new trait `Add2`:
 
 ```rust
 impl<'a, T> Add2<&'a T> for String
-where T: Borrow<str>
+where T: ?Sized + Borrow<str>
 {
     type Output = String;
 
@@ -137,8 +138,8 @@ where T: Borrow<str>
 }
 ```
 
-Other types do not have an underlying borrowable type to define their data
-domain, but they still need cross-type operator compatibility between some
+Other types do not have an underlying borrowable type indicating their data
+domain, but they still need binary operators to apply across some
 family of types. Examples from the standard library are `IpAddr`, `Ipv4Addr`,
 and `Ipv6Addr`. These types can have their operator trait impls defined
 in the old school non-generic way.
@@ -170,8 +171,8 @@ The proposed system allows legacy Rust 1.0 operator trait implementations
 to coexist with the new blanket implementations in a backward-compatible way.
 Systematic application of the [default impl rule][default-blanket-implementation-rule]
 can provide any-to-any operand type compatibility for all types sharing a
-particular `Borrow` bound, without necessity for any two crates, each defining
-one of these types, to be in a direct dependency relationship.
+particular `Borrow` bound, without necessity for any two crates defining
+these types to be in a direct dependency relationship.
 Specialized implementations of new style traits can be defined when practical,
 within the `Borrow` bound of the default implementation. Crates can also
 choose to provide default (or even fully specialized blanket) impls of
@@ -195,7 +196,7 @@ implementation errors. This takes further the precedent set by the
 [specialization RFC][rfc1210] that multiple different implementations may be
 considered to fit one use.
 
-`Borrow<T>` may prove to be too inflexible a bound for some interoperable
+`Borrow<T>` may prove too inflexible a bound for some interoperable
 type families. It's a challenge, though, to come up with an example in
 existing designs that goes beyond a few closely knit types.
 
