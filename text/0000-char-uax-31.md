@@ -21,7 +21,7 @@ a standardized set of code point categories for defining computer language synta
 
 This is being used in production Rust code already.
 Rust's own compiler already has functions to check against Annex 31 code point categories in the lexer,
-[but not everyone who works on the compiler knows about them](https://internals.rust-lang.org/t/for-await-loops/9819/16),
+[but not everyone who works on the compiler knows about them](https://internals.rust-lang.org/t/do-we-need-unicode-whitespace/9876),
 and since they're not in the standard library,
 not everyone who works on Rust-related tooling has access to them.
 I'm not asserting that putting these in libstd would've avoided that bug,
