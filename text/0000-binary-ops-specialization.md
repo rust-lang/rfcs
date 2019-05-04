@@ -30,23 +30,17 @@ relationship with any other of these crates, otherwise there cannot be
 an operator impl to make them work together.
 
 [Specialization][rfc1210] of blanket trait implementations could be used to
-deal with this problem. These two impls of `PartialEq` could automatically
+deal with this problem. This implementation of `PartialEq` could automatically
 enable equality comparison for `String` on the left hand side and any type
 on the right hand side that implements `Borrow<str>`:
 
 ```rust
-impl PartialEq<str> for String {
-    fn eq(&self, other: &str) -> bool {
-        &self[..] == other
-    }
-}
-
 impl<Rhs> PartialEq<Rhs> for String
 where
     Rhs: ?Sized + Borrow<str>,
 {
     default fn eq(&self, other: &Rhs) -> bool {
-        &self[..] == other.borrow()
+        self.as_str() == other.borrow()
     }
 }
 ```
