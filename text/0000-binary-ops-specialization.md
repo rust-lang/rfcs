@@ -70,7 +70,7 @@ for `PartialEq2`:
 ```rust
 pub trait PartialEq2<Rhs: ?Sized = Self> {
     fn eq2(&self, other: &Rhs) -> bool;
-    fn ne2(&self, other: &Rhs) -> bool { !self.eq(other) }
+    fn ne2(&self, other: &Rhs) -> bool { !self.eq2(other) }
 }
 ```
 
