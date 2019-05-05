@@ -1,7 +1,7 @@
-- Feature Name: arbitrary_enum_discriminant
+- Feature Name: `arbitrary_enum_discriminant`
 - Start Date: 2018-03-11
-- RFC PR: (leave this empty)
-- Rust Issue: (leave this empty)
+- RFC PR: [rust-lang/rfcs#2363](https://github.com/rust-lang/rfcs/pull/2363)
+- Rust Issue: [rust-lang/rust#60553](https://github.com/rust-lang/rust/issues/60553)
 
 # Summary
 [summary]: #summary
