@@ -172,28 +172,20 @@ C++ exception mechanism interoperable with C stackframes.
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-- What parts of the design do you expect to resolve through the RFC process before this gets merged?
-- What parts of the design do you expect to resolve through the implementation of this feature before stabilization?
-- What related issues do you consider out of scope for this RFC that could be addressed in the future independently of the solution that comes out of this RFC?
+As mentioned [above](#rationale-and-alternatives), further work will be
+required to provide a means of specifying details of the unwinding
+implementation to provide guarnateed-safe interoperability with (some) C and
+C++ code. That work is out of scope for this RFC.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-Think about what the natural extension and evolution of your proposal would
-be and how it would affect the language and project as a whole in a holistic
-way. Try to use this section as a tool to more fully consider all possible
-interactions with the project and language in your proposal.
-Also consider how the this all fits into the roadmap for the project
-and of the relevant sub-team.
+As mentioned [above](#rationale-and-alternatives), further work will be
+required to provide a means of specifying details of the unwinding
+implementation to provide guarnateed-safe interoperability with (some) C and
+C++ code. That work is out of scope for this RFC.
 
-This is also a good place to "dump ideas", if they are out of scope for the
-RFC you are writing but otherwise related.
-
-If you have tried and cannot think of any future possibilities,
-you may simply state that you cannot think of anything.
-
-Note that having something written down in the future-possibilities section
-is not a reason to accept the current or a future RFC; such notes should be
-in the section on motivation or rationale in this or subsequent RFCs.
-The section merely provides additional information.
-
+Note that this feature _does not_ commit the team to delivering future variants
+of the `#[unwind(...)]` annotation. For instance, compatibility with C code
+could be provided via a `rustc` flag specifying the (global) unwinding
+implementation to use.
