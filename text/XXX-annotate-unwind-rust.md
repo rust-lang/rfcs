@@ -6,25 +6,78 @@
 # Summary
 [summary]: #summary
 
-One paragraph explanation of the feature.
+A new function annotation, `#[unwind(Rust)]`, will be introduced; it will
+explicitly permit `extern` functions to unwind (`panic`) without aborting. No
+guarantees are made regarding the specific unwinding implementation.
 
 # Motivation
 [motivation]: #motivation
 
-Why are we doing this? What use cases does it support? What is the expected outcome?
+This will enable resolving
+[rust-lang/rust#58794](https://github.com/rust-lang/rust/issues/58794) without
+breaking existing code.
+
+Currently, unwinding through an FFI boundary is always undefined behavior. We
+would like to make the behavior safe by aborting when the stack is unwound to
+an FFI boundary. However, there are existing Rust crates (notably, wrappers
+around the `libpng` and `libjpeg` C libraries) that make use of the current
+implementation's behavior. The proposed annotation would act as an "opt out" of
+the safety guarantee provided by aborting at an FFI boundary.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-Explain the proposal as if it was already included in the language and you were teaching it to another Rust programmer. That generally means:
+Consider an `extern "C"` function that may `panic`:
 
-- Introducing new named concepts.
-- Explaining the feature largely in terms of examples.
-- Explaining how Rust programmers should *think* about the feature, and how it should impact the way they use Rust. It should explain the impact as concretely as possible.
-- If applicable, provide sample error messages, deprecation warnings, or migration guidance.
-- If applicable, describe the differences between teaching this to existing Rust programmers and new Rust programmers.
+```rust
+extern "C" fn may_panic(i: i32) {
+    if i < 0 {
+        panic!("Oops, I should have used u32.");
+    }
+}
+```
 
-For implementation-oriented RFCs (e.g. for compiler internals), this section should focus on how compiler contributors should think about the change, and give examples of its concrete impact. For policy RFCs, this section should provide an example-driven introduction to the policy, and explain its impact in concrete terms.
+In a future (TBD) version of Rust, calling this function with an argument less
+than zero will cause the program to be aborted. This is the only way the Rust
+compiler can ensure that the function is safe, because there is no way for it
+to know whether or not the calling code supports the same implementation of
+stack-unwinding used for Rust.
+
+As a concrete example, Rust code marked `exern "C"` may be invoked from C code,
+but C code on Linux or BSD may be compiled without support for native
+stack-unwinding. This means that the runtime would lack the necessary metadata
+to properly perform the unwinding operation.
+
+However, there are cases in which a `panic` through an `extern` function can be
+used safely. For instance, it is possible to invoke `extern` Rust functions
+via Rust code built with the same toolchain, in which case it would be
+irrelevant to the unwinding operation that the `panic`ing function is an
+`extern` function:
+
+```rust
+fn main() {
+    let result = panic::catch_unwind(|| {
+        may_panic(-1);
+    }
+    assert!(result.is_err());
+}
+```
+
+In order to ensure that `may_panic` will not simply abort in a future version
+of Rust, it must be marked `#[unwind(Rust)]`. This annotation can only be used
+with an `unsafe` function, since the compiler is unable to make guarantees
+about the behavior of the caller.
+
+```rust
+#[unwind(Rust)]
+unsafe extern "C" fn may_panic(i: i32) {
+    if i < 0 {
+        panic!("Oops, I should have used u32.");
+    }
+}
+```
+
+<!-- TODO: below here is still the template -->
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
