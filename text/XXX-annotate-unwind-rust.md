@@ -77,6 +77,24 @@ unsafe extern "C" fn may_panic(i: i32) {
 }
 ```
 
+**PLEASE NOTE:** Using this annotation **does not** provide any guarantees
+about the unwinding implementation. Therefore, using this feature to compile
+functions intended to be called by C code **does not make the behavior
+well-defined**; in particular, **the behavior may change in a future version of
+Rust.**
+
+The *only* well-defined behavior specified by this annotation is Rust-to-Rust
+unwinding.
+
+It is safe to call such a function from C or C++ code only if that code is
+guaranteed to provide the same unwinding implementation as the Rust compiler
+used to compile the function.
+
+Since the behavior may be subject to change without notice as the Rust compiler
+is updated, it is recommended that all projects that rely on unwinding from
+Rust code into C code lock the project's `rustc` version and only update it
+after ensuring that the behavior will remain correct.
+
 <!-- TODO: below here is still the template -->
 
 # Reference-level explanation
