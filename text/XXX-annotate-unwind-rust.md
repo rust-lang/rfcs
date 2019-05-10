@@ -95,23 +95,38 @@ is updated, it is recommended that all projects that rely on unwinding from
 Rust code into C code lock the project's `rustc` version and only update it
 after ensuring that the behavior will remain correct.
 
-<!-- TODO: below here is still the template -->
-
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-This is the technical portion of the RFC. Explain the design in sufficient detail that:
+Unwinding for functions marked `#[unwind(Rust)]` is performed as if the
+function were not marked `extern`. This is identical to the behavior of `rustc`
+for all versions prior to 1.35 except for 1.24.0.
 
-- Its interaction with other features is clear.
-- It is reasonably clear how the feature would be implemented.
-- Corner cases are dissected by example.
-
-The section should return to the examples given in the previous section, and explain more fully how the detailed proposal makes those examples work.
+This annotation has no effect on functions not marked `extern`.
 
 # Drawbacks
 [drawbacks]: #drawbacks
 
-Why should we *not* do this?
+Since the Rust unwinding implementation is not specified, this annotation is
+explicitly designed to expose a potentially non-forward-compatible API. As
+mentioned in (the guide-level explanation)[#guide-level-explanation], use of
+this annotation will make projects vulnerable to breakage (and specifically to
+undefined behavior) simply by updating their Rust compiler.
+
+Furthermore, this annotation will have different behaviors on different
+platforms, and determining whether it is safe to use on a particular platform
+is fairly difficult. So far, there are only two safe use cases identified:
+
+* On Windows, C code built with MSVC always respects SEH, the unwinding
+  mechanism used by both (MSVC) Rust and C++, so it should always be safe to
+  invoke such a function when MSVC is the only toolchain used, as long as
+  `rustc` uses SEH as its `panic` implementation.
+* In projects using LLVM or GCC exclusively, the `-fexceptions` flag ensures
+  that C code is compiled with C++ exception support, so the runtime behavior
+  should be safe as long as `rustc` uses the native C++ exception mechanism as
+  its `panic` implementation.
+
+<!-- TODO: below here is still the template -->
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
