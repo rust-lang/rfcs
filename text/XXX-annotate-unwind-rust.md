@@ -102,7 +102,9 @@ Unwinding for functions marked `#[unwind(Rust)]` is performed as if the
 function were not marked `extern`. This is identical to the behavior of `rustc`
 for all versions prior to 1.35 except for 1.24.0.
 
-This annotation has no effect on functions not marked `extern`.
+This annotation has no effect on functions not marked `extern`. It has no
+observable effect unless the marked function `panic`s (e.g. it has no
+observable effect when a function returns normally or enters an infinite loop).
 
 # Drawbacks
 [drawbacks]: #drawbacks
