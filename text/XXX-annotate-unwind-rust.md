@@ -128,31 +128,46 @@ is fairly difficult. So far, there are only two safe use cases identified:
   should be safe as long as `rustc` uses the native C++ exception mechanism as
   its `panic` implementation.
 
-<!-- TODO: below here is still the template -->
-
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-- Why is this design the best in the space of possible designs?
-- What other designs have been considered and what is the rationale for not choosing them?
-- What is the impact of not doing this?
+This is the minimum possible change to the language that will permit making
+`panic` safe by default while permitting existing users of the current behavior
+a way to keep their code working after
+[rust-lang/rust#58794](https://github.com/rust-lang/rust/issues/58794) is
+resolved.
+
+The language team has twice attempted to stabilize the desired default behavior
+of aborting when unwinding across an FFI boundary without providing a way to
+opt-out of this behavior, but it has become clear that the community will not
+accept such a change without a means of opting out because of the impact on
+existing projects (particularly [mozjpeg](https://crates.io/crates/mozjpeg)).
+
+Any alternatives that provide guarantees about the specific Rust unwinding
+implementation would make implementation more difficult and would lock us in to
+a specific annotation semantics for describing unwinding mechanisms. Suggested
+notations include:
+
+- `#[unwind(c)]`
+- `#[unwind(c++)]`
+- `#[unwind(c++-native)]`
+- `#[unwind(seh)]`
+
+This proposal does not exclude the possibility of introducing one or more of
+these notations at a later date, and indeed it will almost certainly be
+necessary to introduce a way to specify an unwinding implementation if the
+`rustc` default unwinding mechnanism ever changes. However, introducing such
+a notation would be a larger change to the language, and there is no consensus
+yet on what the notation should be.
 
 # Prior art
 [prior-art]: #prior-art
 
-Discuss prior art, both the good and the bad, in relation to this proposal.
-A few examples of what this can include are:
+The proposed behavior of this annotation is simply to maintain the existing
+behavior for un-annotated functions.
 
-- For language, library, cargo, tools, and compiler proposals: Does this feature exist in other programming languages and what experience have their community had?
-- For community proposals: Is this done by some other community and what were their experiences with it?
-- For other teams: What lessons can we learn from what other communities have done here?
-- Papers: Are there any published papers or great posts that discuss this? If you have some relevant papers to refer to, this can serve as a more detailed theoretical background.
-
-This section is intended to encourage you as an author to think about the lessons from other languages, provide readers of your RFC with a fuller picture.
-If there is no prior art, that is fine - your ideas are interesting to us whether they are brand new or if it is an adaptation from other languages.
-
-Note that while precedent set by other languages is some motivation, it does not on its own motivate an RFC.
-Please also take into consideration that rust sometimes intentionally diverges from common language features.
+As mentioned above, GCC and LLVM provide an `-fexceptions` flag that makes the
+C++ exception mechanism interoperable with C stackframes.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
