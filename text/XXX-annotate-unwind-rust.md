@@ -111,7 +111,7 @@ observable effect when a function returns normally or enters an infinite loop).
 
 Since the Rust unwinding implementation is not specified, this annotation is
 explicitly designed to expose a potentially non-forward-compatible API. As
-mentioned in (the guide-level explanation)[#guide-level-explanation], use of
+mentioned in [the guide-level explanation](#guide-level-explanation), use of
 this annotation will make projects vulnerable to breakage (and specifically to
 undefined behavior) simply by updating their Rust compiler.
 
