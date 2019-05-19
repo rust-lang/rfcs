@@ -115,7 +115,7 @@ impl fmt::Debug for Map {
 }
 ```
 
-Any incorrect calls to `key` and `value` will poison the `DebugMap` and cause it to return an error when calling `finish`.
+Any incorrect calls to `key` and `value` will panic.
 
 ## When to use `key` and `value`
 
@@ -189,12 +189,10 @@ impl<'a, 'b: 'a> DebugMap<'a, 'b> {
     }
 
     pub fn key(&mut self, key: &dyn fmt::Debug) -> &mut DebugMap<'a, 'b> {
-        self.result = self.result.and_then(|_| {
-            // Make sure there isn't a partial entry
-            if self.has_key {
-                return Err(fmt::Error);
-            }
+        // Make sure there isn't a partial entry
+        assert!(!self.has_key, "attempted to begin a new map entry without completing the previous one");
 
+        self.result = self.result.and_then(|_| {
             // write the key
 
             // Mark that we're in an entry
@@ -206,12 +204,10 @@ impl<'a, 'b: 'a> DebugMap<'a, 'b> {
     }
 
     pub fn value(&mut self, value: &dyn fmt::Debug) -> &mut DebugMap<'a, 'b> {
-        self.result = self.result.and_then(|_| {
-            // Make sure there is a partial entry to finish
-            if !self.has_key {
-                return Err(fmt::Error);
-            }
+        // Make sure there is a partial entry to finish
+        assert!(self.has_key, "attempted to format a map value before its key");
 
+        self.result = self.result.and_then(|_| {
             // write the value
 
             // Mark that we're not in an entry
@@ -225,9 +221,7 @@ impl<'a, 'b: 'a> DebugMap<'a, 'b> {
 
     pub fn finish(&mut self) -> fmt::Result {
         // Make sure there isn't a partial entry
-        if self.has_key {
-            return Err(fmt::Error);
-        }
+        assert!(!self.has_key, "attempted to finish a map with a partial entry");
 
         self.result.and_then(|_| self.fmt.write_str("}"))
     }
@@ -249,7 +243,7 @@ The universal alternative of simply _not doing this_ leaves consumers that do ne
 - Write an alternative implementation of the format builders. The output from this alternative implementation would need to be kept reasonably in-sync with the one in the standard library. It doesn't change very frequently, but does from time to time. It would also have to take the same care as the standard library implementation to retain formatting flags when working with entries.
 - Buffer keys and format them together with values when the whole entry is available. Unless the key is guaranteed to live until the value is supplied (meaning it probably needs to be `'static`) then the key will need to be formatted into a string first. This means allocating (though the cost could be amortized over the whole map) and potentially losing formatting flags when buffering.
 
-Another alternative is to avoid poisoning the map if the sequence of entries doesn't follow the expected pattern of `key` then `value`. Instead, `DebugMap` could make a best-effort attempt to represent keys without values and values without keys. However, this approach has the drawback of masking incorrect `Debug` implementations, may produce a surprising output and doesn't reduce the complexity of the implementation (we'd still need to tell whether a key should be followed by a `: ` separator or a `, `).
+Another alternative is to avoid panicking if the sequence of entries doesn't follow the expected pattern of `key` then `value`. Instead, `DebugMap` could make a best-effort attempt to represent keys without values and values without keys. However, this approach has the drawback of masking incorrect `Debug` implementations, may produce a surprising output and doesn't reduce the complexity of the implementation (we'd still need to tell whether a key should be followed by a `: ` separator or a `, `).
 
 # Prior art
 [prior-art]: #prior-art
