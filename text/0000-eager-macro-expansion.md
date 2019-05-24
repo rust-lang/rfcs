@@ -1319,3 +1319,22 @@ most flexibility otherwise (for instance in the [previous
 example](#appendix-c-after-eager-expansion), it *shouldn't matter* whether the
 compiler expands `id-inner` or `id-outer` first. It should even be able to
 expand them concurrently!).
+
+## Specifying expansion contexts
+The proc macor API outlined [above](#lazy-eager-expansion) assumes that a user
+of `ExpansionBuilder` will only ever want to expand one "chunk" of tokens at a
+time, however we could concieve of a use case where a user might want to expand
+several disjoint `TokenStream`s but have them "share" a context. For example:
+
+```rust
+let a = ExpansionBuilder::from_tokens(quote!{foo!()}).unwrap();
+let b = ExpansionBuilder::from_tokens(quote!{macro foo () {}}).unwrap();
+```
+
+Here, `a` and `b` are `Future`s which await the result of separate expansions.
+This means they'll have completely separate expansion contexts; importantly,
+the context of `a` won't be a child of the context of `b`, so it won't see the
+definition of `foo!`.
+
+How do we nicely expose a way for a user to have `a` and `b` share a context?
+Do we want to expose such an ability?
