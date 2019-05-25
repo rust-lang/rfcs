@@ -224,7 +224,7 @@ fn my_eager_pm(input: TokenStream) -> TokenStream {
 
 Now it doesn't matter what order the compiler tries to expand `my_eager_pm!`
 invocations; if it tries to expand `my_eager_pm!(foo!())` before `foo!` is
-defined, then the expansion will "pause" until such a definition appears. 
+defined, then the expansion will "pause" until such a definition appears.
 
 ## Semantics
 
@@ -250,32 +250,100 @@ my_eager_macro!(mk_macro!(bar); foo!());
 In this case, the eager expansions within each invocation of `my_eager_macro!`
 depend on a definition that will only be available once the other invocation
 has finished expanding. Since neither expansion can make progress, we should
-report an error along the lines of: 
+report an error along the lines of:
 
 ```
-Error: can't resolve eager invocation of `bar!` because the definition is in an
-       unexpandable macro
+Error: couldn't complete expansions of `my_eager_macro!`.
+
+Note: couldn't resolve eager invocation of `bar!`.
 |   my_eager_macro!(mk_macro!(foo); bar!());
 |                                   --------
 |                                   Invocation of `bar!` occurs here.
-|
+
+Note: couldn't resolve eager invocation of `foo!`.
 |   my_eager_macro!(mk_macro!(bar); foo!());
-|   ^^^^^^^^^^^^^^^ This macro can't be expanded because it needs
-|                   to eagerly expand `foo!`, which is defined in an
-|                   unexpandable macro.
-|
-|   my_eager_macro!(mk_macro!(bar); foo!());
-|                   -------------- Definition of `bar` occurs here.
+|                                   --------
+|                                   Invocation of `foo!` occurs here.
+
+Note: there were multiple expansions that couldn't be completed. Do you have a
+      cyclic dependency between eager macros?
 ```
 
-Notice that this error message would appear after as much expansion progress as
-possible. In particular, the compiler would have expanded `mk_macro!(bar)` in
-order to find the possible definition of `bar!`, and hence notice the deadlock.
+## A declarative API
+
+Using `ExpansionBuilder`, we can implement an ergonomic API for declarative
+macros to use eager expansion. We can use "continuation-passing style" to lift
+the imperative "awaiting" behaviour of the proc macro API to the functional world of
+decl macros.
+
+Here is an example of a (hypothetical, pre-bikeshedding) invocation syntax:
+```rust
+expand! {
+    #foo = {
+        concat!("a", "b")
+    };
+    #bar = {
+        stringify!(#foo)
+    };
+    println!(#bar)
+}
+```
+
+The intent here is that `expand!` is a proc macro that uses `ExpansionBuilder`
+to expand the right-hand side of each declaration `#name = { tokens };` in the
+input. It does so one at a time, interpolating the resulting tokens into the
+remaining declarations (using the same syntax as `quote!`). The final result of
+expansion is given by the last line.
+
+Stepping through our example, `expand!` would use `ExpansionBuilder` to expand
+`concat!("a", "b")` into `"ab"`. Then, `expand!` would replace free instances
+of `#foo` with `"ab"`; this result behaves _as though_ there were an
+intermediate expansion of the form:
+
+```rust
+expand! {
+    #bar = {
+        stringify!("ab")
+    };
+    println!(#bar)
+}
+```
+
+Now we repeat the process: we expand `stringify!("ab")` into `"\"ab\""`, then
+replace all free instances of `#bar` with `"\"ab\""`, and again the outcome is
+_as though_ there were an intermediate expansion of the form:
+
+```rust
+expand! {
+    println!("\"ab\"")
+}
+```
+
+Since there are no more pending expansions, `expand!` simply returns the final
+tokens, in this case `println!("\"ab\"")`. Note that the final result is _not_
+expanded.
+
+## Identifier macros
+
+The `expand!` macro gives decl macro writers a reasonable way to use
+`concat_idents!` by allowing writers to avoid the usual invocation location
+restrictions (as discussed in [the
+motivation](#interpolating-macros-in-output)):
+
+```rust
+expand! {
+    #name = { concat_idents!(foo, _, bar) };
+    fn #name() {};
+}
+```
+
+However, this touches on issues of hygiene as discussed
+[below](#hygiene-bending).
 
 ## Path resolution
 
-When eagerly expanding a macro, the invocation may use a _relative path_. For
-example:
+When eagerly expanding a macro, the eager invocation may use a _relative path_.
+For example:
 
 ```rust
 mod foo {
@@ -287,10 +355,11 @@ mod bar {
 }
 ```
 
-When a macro invocation is eagerly expanded, to minimize surprise the path
-should be resolved against the location of the surrounding invocation (in this
-example, we would resolve the eager invocation `super::bar::baz!` against the
-location `mod foo`, resulting in `mod bar::baz!`).
+When a macro invocation `a::b::c!` is eagerly expanded by another invocation
+`foo!` at location `x::y::z`, to minimize surprise the eager path `a::b::c`
+should be resolved against the location of the surrounding invocation `x::y::z`
+(in this example, we would resolve the eager invocation `super::bar::baz!`
+against the location `foo`, resulting in `bar::baz!`).
 
 A future feature may allow expansions to be resolved relative to a different
 path.
@@ -323,8 +392,9 @@ let mut x = 0; // Hygiene mark C (each expansion gets a new mark)
 x += 1;        // Hygiene mark A (the original mark)
 ```
 
-And of course the result is an error with the expected message "could not
-resolve `x`".
+And the result is an error on the `x += 1` line with the expected message
+"could not resolve `x`"; since every declaration of the identifier `x` has a
+different hygiene mark, the compiler treats them as different identifiers.
 
 Using the [`Span` API](https://doc.rust-lang.org/proc_macro/struct.Span.html)
 on token streams, a proc macro can modify the hygiene marks on its output to
@@ -540,7 +610,9 @@ invocation. This adds an unexpected and unnecessary burden on macro authors.
 * How do these proposals interact with hygiene?
 * Are there any corner-cases concerning attribute macros that aren't covered by
   treating them as two-argument proc-macros?
-* What can we learn from other language's eager macro systems, e.g. Racket?
+* What can we learn from the eager macro systems of other languages, e.g. Racket?
+* What should error messages look like?
+    * What are the likely common mistakes?
 
 <a id="appendix-a"></a>
 # Appendix A: Corner cases
