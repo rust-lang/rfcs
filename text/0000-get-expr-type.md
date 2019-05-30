@@ -1,6 +1,6 @@
 - Feature Name: `get_expr_type`
 - Start Date: 2019-05-30
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#2706](https://github.com/rust-lang/rfcs/pull/2706)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 # Summary
