@@ -41,33 +41,67 @@ Sub-slices and sub-arrays can be matched using `..` and `<IDENT> @ ..` can be us
 these sub-slices and sub-arrays to an identifier.
 
 ```rust
-// Matching slices using `ref` patterns:
-let v = vec![1, 2, 3];
+// Matching slices using `ref` and `ref mut`patterns:
+let mut v = vec![1, 2, 3];
 match v[..] {
-    [1, ref subslice @ .., 4] => assert_eq!(subslice.len(), 1),
-    [5, ref subslice @ ..] => assert_eq!(subslice.len(), 2),
-    [ref subslice @ .., 6] => assert_eq!(subslice.len(), 2),
+    [1, ref subslice @ .., 4] => assert_eq!(subslice.len(), 1), // typeof(subslice) == &[i32]
+    [5, ref subslice @ ..] => assert_eq!(subslice.len(), 2), // typeof(subslice) == &[i32]
+    [ref subslice @ .., 6] => assert_eq!(subslice.len(), 2), // typeof(subslice) == &[i32]
+    [x, .., y] => assert!(v.len() >= 2),
+    [..] => {} // Always matches
+}
+match v[..] {
+    [1, ref mut subslice @ .., 4] => assert_eq!(subslice.len(), 1), // typeof(subslice) == &mut [i32]
+    [5, ref mut subslice @ ..] => assert_eq!(subslice.len(), 2), // typeof(subslice) == &mut [i32]
+    [ref mut subslice @ .., 6] => assert_eq!(subslice.len(), 2), // typeof(subslice) == &mut [i32]
     [x, .., y] => assert!(v.len() >= 2),
     [..] => {} // Always matches
 }
 
 // Matching slices using default-binding-modes:
-let v = vec![1, 2, 3];
+let mut v = vec![1, 2, 3];
 match &v[..] {
-    [1, subslice @ .., 4] => assert_eq!(subslice.len(), 1),
-    [5, subslice @ ..] => assert_eq!(subslice.len(), 2),
-    [subslice @ .., 6] => assert_eq!(subslice.len(), 2),
+    [1, subslice @ .., 4] => assert_eq!(subslice.len(), 1), // typeof(subslice) == &[i32]
+    [5, subslice @ ..] => assert_eq!(subslice.len(), 2), // typeof(subslice) == &[i32]
+    [subslice @ .., 6] => assert_eq!(subslice.len(), 2), // typeof(subslice) == &[i32]
+    [x, .., y] => assert!(v.len() >= 2),
+    [..] => {} // Always matches
+}
+match &mut v[..] {
+    [1, subslice @ .., 4] => assert_eq!(subslice.len(), 1), // typeof(subslice) == &mut [i32]
+    [5, subslice @ ..] => assert_eq!(subslice.len(), 2), // typeof(subslice) == &mut [i32]
+    [subslice @ .., 6] => assert_eq!(subslice.len(), 2), // typeof(subslice) == &mut [i32]
     [x, .., y] => assert!(v.len() >= 2),
     [..] => {} // Always matches
 }
 
-// Matching arrays by-value:
-let v = [1, 2, 3];
+// Matching slices by value (error):
+let mut v = vec![1, 2, 3];
+match v[..] {
+    [x @ ..] => {} // ERROR cannot move out of type `[i32]`, a non-copy slice
+}
+
+// Matching arrays by-value and by reference (explicitly or using default-binding-modes):
+let mut v = [1, 2, 3];
 match v {
-  [1, subarray @ .., 3] => assert_eq!(subarray, [2]),
-  [5, subarray @ ..] => has_type::<[i32; 2]>(subarray),
-  [subarray @ .., 6] => has_type::<[i32, 2]>(subarray),
-  [x, .., y] => has_type::<[i32, 1]>(x),
+  [1, subarray @ .., 3] => assert_eq!(subarray, [2]), // typeof(subarray) == [i32; 1]
+  [5, subarray @ ..] => has_type::<[i32; 2]>(subarray), // typeof(subarray) == [i32; 2]
+  [subarray @ .., 6] => has_type::<[i32, 2]>(subarray), // typeof(subarray) == [i32; 2]
+  [x, .., y] => has_type::<[i32, 1]>(x), // typeof(subarray) == [i32; 1]
+  [..] => {},
+}
+match v {
+  [1, ref subarray @ .., 3] => assert_eq!(subarray, [2]), // typeof(subarray) == &[i32; 1]
+  [5, ref subarray @ ..] => has_type::<&[i32; 2]>(subarray), // typeof(subarray) == &[i32; 2]
+  [ref subarray @ .., 6] => has_type::<&[i32, 2]>(subarray), // typeof(subarray) == &[i32; 2]
+  [x, .., y] => has_type::<&[i32, 1]>(x), // typeof(subarray) == &[i32; 1]
+  [..] => {},
+}
+match &mut v {
+  [1, subarray @ .., 3] => assert_eq!(subarray, [2]), // typeof(subarray) == &mut [i32; 1]
+  [5, subarray @ ..] => has_type::<&mut [i32; 2]>(subarray), // typeof(subarray) == &mut [i32; 2]
+  [subarray @ .., 6] => has_type::<&mut [i32, 2]>(subarray), // typeof(subarray) == &mut [i32; 2]
+  [x, .., y] => has_type::<&mut [i32, 1]>(x), // typeof(subarray) == &mut [i32; 1]
   [..] => {},
 }
 ```
@@ -82,9 +116,8 @@ reference or mutable reference to a slice or array.
 
 `@` can be used to bind the result of `..` to an identifier.
 
- When used to match against a non-reference slice (`[u8]`), `x @ ..` would attempt to bind
-by-value, which would fail in the case that users haven't enabled `feature(unsized_locals)`
-(since otherwise it's not possible to bind `[u8]` to a variable directly).
+When used to match against a non-reference slice (`[u8]`), `x @ ..` would attempt to bind
+by-value, which would fail due a move from a non-copy type `[u8]`.
 
 `..`/`IDENT @ ..` is not a full pattern syntax, but rather a part of slice, tuple and tuple
 struct pattern syntaxes. In particular, `..` is not accepted by the `pat` macro matcher.
@@ -103,10 +136,10 @@ ambiguity with ranges, for example
 [`.. @ PAT`](https://github.com/rust-lang/rust/issues/23121#issuecomment-280920062) or
 [`PAT @ ..`](https://github.com/rust-lang/rust/issues/23121#issuecomment-280906823), or other
 similar alternatives.  
-We reject these syntaxes because they only bring benefits in incredibly contrived cases using a
+We reject these syntaxes because they only bring benefits in contrived cases using a
 feature that doesn't even exist yet, but normally they only add symbolic noise.
 
-More radical syntax changes not keeping consistency with `..`, for example
+More radical syntax changes do not keep consistency with `..`, for example
 [`[1, 2, 3, 4] ++ ref v`](https://github.com/rust-lang/rust/issues/23121#issuecomment-289220169).
 
 ### `..PAT` or `PAT..`
@@ -118,30 +151,32 @@ The two simplest variations are `..PAT` and `PAT..`.
 
 #### Ambiguity
 
-The issue is that these syntaxes are ambiguous with half-bounded ranges `..END` and `BEGIN..`.  
+The issue is that these syntaxes are ambiguous with half-bounded ranges `..END` and `BEGIN..`,
+and the full range `..`.  
 To be precise, such ranges are not currently supported in patterns, but they may be supported in
 the future.
 
 Syntactic ambiguity is not inherently bad. We see it every day in expressions like
 `a + b * c`. What is important is to disambiguate it reasonably by default and have a way to
 group operands in the alternative way when default disambiguation turns out to be incorrect.  
-In case of slice patterns the subslice interpretation seems overwhelmingly more likely, so we
+In case of slice patterns the subslice interpretation seems more likely, so we
 can take it as a default.  
-There was no visible demand for implementing half-bounded ranges in patterns so far, but if they
+There was very little demand for implementing half-bounded ranges in patterns so far
+(see https://github.com/rust-lang/rfcs/issues/947), but if they
 are implemented in the future they will be able to be used in slice patterns as well, but they
-will require explicit grouping with recently implemented
+could require explicit grouping with recently implemented
 [parentheses in patterns](https://github.com/rust-lang/rust/pull/48500) (`[a, (..end)]`) or an
 explicitly written start boundary (`[a, 0 .. end]`).  
 We can also make *some* disambiguation effort and, for example, interpret `..LITERAL` as a
 range because `LITERAL` can never match a subslice. Time will show if such an effort is necessary
 or not.
 
-If/when half-bounded ranges are supported in patterns, for better future compatibility we'll need
-to reserve `..PAT` as "rest of the list" in tuples and tuple structs as well, and avoid interpreting
-it as a range pattern in those positions.
+If/when half-bounded ranges are supported in patterns, for better future compatibility we could
+decide to reserve `..PAT` as "rest of the list" in tuples and tuple structs as well, and avoid
+interpreting it as a range pattern in those positions.
 
 Note that ambiguity with unbounded ranges as they are used in expressions (`..`) already exists in
-variant `Variant(..)` and tuple `(a, b, ..)` patterns, but it's very unlikely that the `..` syntax
+variant `Variant(..)` and tuple `(a, b, ..)` patterns, but it's unlikely that the `..` syntax
 will ever be used in patterns in the range meaning because it duplicates functionality of the
 wildcard pattern `_`.
 
@@ -153,7 +188,7 @@ That RFC received almost no discussion before it got merged and its motivation i
 relevant because arrays now use syntax `[T; N]` instead of `[T, ..N]` used in old Rust.
 
 This RFC originally proposed to switch back to `..PAT`.
-Some reasons to switch:
+Some reasons to switch were:
 - Symmetry with expressions.  
 One of the general ideas behind patterns is that destructuring with
 patterns has the same syntax as construction with expressions, if possible.  
@@ -161,7 +196,7 @@ In expressions we already have something with the meaning "rest of the list" - f
 update in struct expressions `S { field1, field2, ..remaining_fields }`.
 Right now we can use `S { field1, field1, .. }` in a pattern, but can't bind the remaining fields
 as a whole (by creating a new struct type on the fly, for example). It's not inconceivable that
-in Rust 2525 we have such ability and it's reasonable to expect it using syntax `..remaining_fields`
+in Rust 2030 we have such ability and it's reasonable to expect it using syntax `..remaining_fields`
 symmetric to expressions. It would be good for slice patterns to be consistent with it.  
 Without speculations, even if `..remaining_fields` in struct expressions and `..subslice` in slice
 patterns are not entirely the same thing, they are similar enough to keep them symmetric already.
@@ -176,7 +211,7 @@ avoid if possible.
 
 This RFC no longer includes the addition of `..PAT` or `PAT..`, but merely `..` as it results in
 a smaller starting surface-area for the feature which can be expanded in the future if necessary.
-The currently-proposed change is an extremely minimal addition to patterns (`..` for slices) which
+The currently-proposed change is a minimal addition to patterns (`..` for slices) which
 already exists in other forms (e.g. tuples) and generalizes well to pattern-matching out sub-tuples,
 e.g. `let (a, b @ .., c) = (1, 2, 3, 4);`.
 
