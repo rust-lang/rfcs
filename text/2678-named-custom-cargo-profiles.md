@@ -1,7 +1,7 @@
 - Feature Name: `custom_named_cargo_profiles`
 - Start Date: 2019-04-04
-- RFC PR: (leave this empty)
-- Rust Issue: N/A
+- RFC PR: [rust-lang/rfcs#2678](https://github.com/rust-lang/rfcs/pull/2678)
+- Cargo Issue: [rust-lang/cargo#6988](https://github.com/rust-lang/cargo/issues/6988)
 
 # Summary
 [summary]: #summary
