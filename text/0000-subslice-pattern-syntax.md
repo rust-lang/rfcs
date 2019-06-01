@@ -110,17 +110,30 @@ match &mut v {
 [reference-level-explanation]: #reference-level-explanation
 
 `..` can be used as a pattern fragment for matching sub-slices and sub-arrays.
-It is treated as a "non-reference-pattern" for the purpose of determining default-binding-modes,
-and so shifts the binding mode to by-`ref` or by-`ref mut` when used to match a subsection of a
-reference or mutable reference to a slice or array.
+
+The fragment's syntax is:
+```
+SUBSLICE = .. | BINDING @ ..
+BINDING = ref? mut? IDENT
+```
+
+The subslice fragment incorporates into the full subslice syntax in the same way as the `..`
+fragment incorporates into the stable tuple pattern syntax (with regards to allowed number of
+subslices, trailing commas, etc).
 
 `@` can be used to bind the result of `..` to an identifier.
+
+`..` is treated as a "non-reference-pattern" for the purpose of determining default-binding-modes,
+and so shifts the binding mode to by-`ref` or by-`ref mut` when used to match a subsection of a
+reference or mutable reference to a slice or array.
 
 When used to match against a non-reference slice (`[u8]`), `x @ ..` would attempt to bind
 by-value, which would fail due a move from a non-copy type `[u8]`.
 
-`..`/`IDENT @ ..` is not a full pattern syntax, but rather a part of slice, tuple and tuple
+`..` is not a full pattern syntax, but rather a part of slice, tuple and tuple
 struct pattern syntaxes. In particular, `..` is not accepted by the `pat` macro matcher.
+`BINDING @ ..` is also not a full pattern syntax, but rather a part of slice pattern syntax, so
+it is not accepted by the `pat` macro matcher either.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -209,8 +222,7 @@ range pattern, then it means that we consumed too much and need to reinterpret t
 somehow. It's probably possible to make this work, but it's some headache that we would like to
 avoid if possible.
 
-This RFC no longer includes the addition of `..PAT` or `PAT..`, but merely `..` as it results in
-a smaller starting surface-area for the feature which can be expanded in the future if necessary.
+This RFC no longer includes the addition of `..PAT` or `PAT..`.
 The currently-proposed change is a minimal addition to patterns (`..` for slices) which
 already exists in other forms (e.g. tuples) and generalizes well to pattern-matching out sub-tuples,
 e.g. `let (a, b @ .., c) = (1, 2, 3, 4);`.
