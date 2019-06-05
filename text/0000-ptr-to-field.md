@@ -62,13 +62,15 @@ impl<T: ?Sized> *mut T {
 }
 ```
 
-Now we need some syntax to refer to the fields of types. Some ideas for the syntax are
+Now we need some syntax to refer to the fields types. Some ideas for the syntax are
 
 * `Parent.field`  // my favorite, as it seems most natural
 * `Parent::field` // bad as it conflicts with associated functions
 * `Parent~field`  // or any other sigil
 
-We will call these field types, because they will desugar to a unit type that correctly implements `Field`, like so
+But syntax discussions are defered until after this RFC has been accepted. This is to focues the RFC's discussion on if this addition is needed and close and lingering soundness holes.
+
+Field types will desugar to a unit type that correctly implements `Field`, like so
 
 ```rust
 struct Foo {
@@ -124,7 +126,7 @@ impl<'a, F: Field> Project<F> for &'a F::Parent where F::Type: 'a {
 }
 ```
 
-The raw pointer implementations will be done via intrinsics or by depending on `F::FieldDescriptor`. If it is done by intrinsics, then `F::FieldDescriptor` can be removed. All other implementations of `Project` must boil down to some raw pointer projection. The raw pointer projections that we will provide include `project_unchecked` and a `Project` impl. The `project_unchecked` will assume that the input raw pointer is valid (i.e. points to a valid instance of `T` given a raw pointer `*[const|mut] T`) and optimize around that. The project impl will make no such guarantee, and if the pointer is not valid, then the behaviour is implementation defined, and may change between editions (but not other smaller version changes).
+The raw pointer implementations will be done via intrinsics or by depending on `F::FIELD_DESCRIPTOR`. If it is done by intrinsics, then `F::FIELD_DESCRIPTOR` can be removed. All other implementations of `Project` must boil down to some raw pointer projection. The raw pointer projections that we will provide include `project_unchecked` and a `Project` impl. The `project_unchecked` will assume that the input raw pointer is valid (i.e. points to a valid instance of `T` given a raw pointer `*[const|mut] T`) and optimize around that (i.e. it can use the `inbounds` assertion in LLVM). The project impl will make no such guarantee, and if the pointer is not valid, then the behaviour is implementation defined.
 
 For example of where `project_unchecked` would be UB.
 
@@ -168,8 +170,7 @@ If `PinProjectable` is accepted, then `Project` trait will also be implemented f
 # Drawbacks
 [drawbacks]: #drawbacks
 
-Why should we *not* do this?
-- This adds quite a bit of complexity and can increase compile times
+- This adds quite a bit of complexity to both the compiler and the standard library and could increase dramatically compile times
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
