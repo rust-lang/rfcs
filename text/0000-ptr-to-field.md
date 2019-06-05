@@ -104,6 +104,8 @@ unsafe trait PinProjectable: Field {}
 
 The field types needs to interact with the privacy rules for fields. A field type has the same privacy as the field it is derived from. Anything else would be too restrictive or unsound.
 
+The project trait will live inside the `std::project` module, and will not be added to `prelude`.
+
 As example of how to implement `Project`, here is the implementation for `&T`.
 
 ```rust
@@ -121,13 +123,46 @@ impl<'a, F: Field> Project<F> for &'a F::Parent where F::Type: 'a {
 }
 ```
 
-This is the technical portion of the RFC. Explain the design in sufficient detail that:
+The raw pointer implementations will be done via intrinsics or by depending on `F::MetaData`. If it is done by intrinsics, then `F::MetaData` can be removed. All other implementations of `Project` must boil down to some raw pointer projection. The raw pointer projections that we will provide include `project_unchecked` and a `Project` impl. The `project_unchecked` will assume that the input raw pointer is valid (i.e. points to a valid instance of `T` given a raw pointer `*[const|mut] T`) and optimize around that. The project impl will make no such guarantee, and if the pointer is not valid, then the behaviour is implementation defined, and may change between editions (but not other smaller version changes).
 
-- Its interaction with other features is clear.
-- It is reasonably clear how the feature would be implemented.
-- Corner cases are dissected by example.
+For example of where `project_unchecked` would be UB.
 
-The section should return to the examples given in the previous section, and explain more fully how the detailed proposal makes those examples work.
+```rust
+struct Foo {
+    bar: Bar
+}
+
+let x : *const Foo = 2usize as *const Foo;
+let y : *const Bar = x.project_unchecked(Foo.bar); // UB, x does not point to a valid instance of Foo
+```
+
+With `Project` trait
+
+```rust
+use std::project::Project;
+
+let z : *const Bar = x.project(Foo.bar); // not UB, but z's value will be implementation defined
+```
+
+If the raw pointer is valid, then the result of both `project_unchecked` and `Project::project` is a raw pointer to the given field.
+
+The `Project` trait will be implemented for `*const T`, `*mut T`, `&T`, `&mut T`. Other smart pointers can get implementations later if they need them. We will also provide the following implementations to allow better documentation of intent
+
+```rust
+impl<'a, T> Pin<&'a T> {
+    unsafe fn project_unchecked<F: Field<Parent = T>>(self, field: F) -> Pin<&'a F::Type> {
+        self.map_unchecked(|slf| slf.project(field))
+    }
+}
+
+impl<'a, T> Pin<&'a mut T> {
+    unsafe fn project_unchecked<F: Field<Parent = T>>(self, field: F) -> Pin<&'a mut F::Type> {
+        self.map_unchecked_mut(|slf| slf.project(field))
+    }
+}
+```
+
+If `PinProjectable` is accepted, then `Project` trait will also be implemented for `Pin<&T>`, `Pin<&mut T>` and will be bound by `PinProjectable`.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -152,7 +187,14 @@ Why should we *not* do this?
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-- Syntax for the type fields (not to be decided before accepting this RFC, but must be decided before stabilization)
+- Behavior of `<*[const|mut] T as Project>::project` when the raw pointer is invalid (does not point to a valid T)
+    - Can this behaviour change across editions? How about smaller version changes?
+    - This issue blocks accepting this RFC
+
+- Syntax for the type fields
+    - not to be decided before accepting this RFC, but must be decided before stabilization
+- Do we want a dedicated syntax to go with the Project trait?
+    - If yes, the actual syntax can be decided after accepting this RFC and before stabilization
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
