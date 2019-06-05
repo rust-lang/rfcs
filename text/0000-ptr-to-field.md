@@ -206,3 +206,4 @@ If `PinProjectable` is accepted, then `Project` trait will also be implemented f
 
 - Extend the `Project` trait to implement all smart pointers in the standard library
 - [`InitPtr`](https://internals.rust-lang.org/t/idea-pointer-to-field/10061/72), which encapsulates all of the safety requirements of `project_unchecked` into `InitPtr::new` and safely implements `Project`
+- Distant Future, we could reformulate `Copy` based on the `Field` trait so that it enforces that all of the fields of a type must be `Copy` in order to be the type to be `Copy`, and thus reduce the amount of magic in the compiler.
