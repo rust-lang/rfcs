@@ -195,6 +195,7 @@ If `PinProjectable` is accepted, then `Project` trait will also be implemented f
 - Are we going to accept `PinProjectable`?
     - If not, we won't have a safe way to do pin-projections
     - Do we want another way to do safe pin-projections?
+- Do we want to strip this proposal down to just the [api specified here](https://github.com/rust-lang/rfcs/pull/2708#issuecomment-499578814), where we only have the `Field` trait, `FieldDescriptor` type, and some associated functions on raw pointers.
 
 - Syntax for the type fields
     - not to be decided before accepting this RFC, but must be decided before stabilization
