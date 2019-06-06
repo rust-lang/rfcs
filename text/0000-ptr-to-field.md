@@ -28,7 +28,7 @@ struct FieldDescriptor {
 /// The compiler should prevent user implementations for `Field`,
 /// i.e. only the compiler is allowed to implement `Field`
 /// This is to prevent people from creating fake "fields"
-trait Field {
+unsafe trait Field {
     /// The type that the field is a part of
     type Parent;
     /// The type of the field
