@@ -30,9 +30,9 @@ struct FieldDescriptor {
 /// This is to prevent people from creating fake "fields"
 unsafe trait Field {
     /// The type that the field is a part of
-    type Parent;
+    type Parent: ?Sized;
     /// The type of the field
-    type Type;
+    type Type: ?Sized;
 
     /// The metadata required to get to the field using raw pointers
     const FIELD_DESCRIPTOR: FieldDescriptor;
