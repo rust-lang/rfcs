@@ -89,7 +89,6 @@ These will allowing projections through raw pointers without dereferencing the r
 This is the extent of the core api of this RFC.
 
 Using this we can do something like this
-
 ```rust
 struct Foo {
     bar: Bar,
@@ -104,7 +103,7 @@ struct Bar {
 let x : Foo = ...;
 let y : *const Foo = &x;
 
-let y_bar_name: *const String = unsafe { y.project_unchecked(Foo.bar).project_unchecked(Foo.name) };
+let y_bar_name: *const String = unsafe { y.project_unchecked(Foo.bar).project_unchecked(Bar.name) };
 ```
 
 In the end `y_bar_name` will contain a pointer to `x.bar.name`, all without dereferencing a single pointer! (Given that this is a verbose, we may want some syntax for this, but that is out of scope for this RFC)
