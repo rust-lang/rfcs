@@ -16,117 +16,219 @@ The motivation for this feature is to allow safe projection through smart pointe
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-First the core traits, type, and functions that need to be added
+This RFC introduces the idea of field types, and build projections on top of field types.
+
+## Terminology, types, and traits
+
+### Field Types
+
+A field type is a compiler generated type that represents a field. For example,
 
 ```rust
-/// Contains metadata about how to get to the field from the parent using raw pointers
-/// This is an opaque type that never needs to be stablized, and it only an implementation detail
-struct FieldDescriptor {
-    ...
+struct Person {
+    name: String,
+    age: u32,
 }
+```
 
-/// The compiler should prevent user implementations for `Field`,
-/// i.e. only the compiler is allowed to implement `Field`
-/// This is to prevent people from creating fake "fields"
-unsafe trait Field {
-    /// The type that the field is a part of
+A field type for the `name` field of `Person` would be `Person.name`.
+
+<sub>Note about syntax: the syntax `Type.field` is going to be used as a placeholder syntax for the rest of this RFC, but this is *not* the final syntax for field types, that decision will be made after this RFC gets accepted but before it gets stabilized.</sub>
+
+Field types serve a few important purposes
+* They are integrated with the new `Project` trait (explained later)
+* Becaue they are types, they can implement traits
+    * This will allow conditional implementations of `Project`, which is important for `Pin<P>` (also explained later)
+
+Because they are types we can also generalize over field types like so...
+
+### `trait Field` and `type FieldDescriptor`
+
+In order to generalize over field types, we have the `trait Field` 
+
+```rust
+trait Field {
+    /// The type of the type that the field comes from
     type Parent: ?Sized;
-    /// The type of the field
+
+    /// The type of the field itself
     type Type: ?Sized;
 
-    /// The metadata required to get to the field using raw pointers
     const FIELD_DESCRIPTOR: FieldDescriptor;
 }
 
+struct FieldDescriptor {
+    ...
+}
+```
+`FieldDescriptor` is an opaque type that will store some metadata about how to convert from a `*const Field::Parent` to a `*const Field::Type`. There is no way to safely construct `FieldDescriptor` from user code on Stable Rust until Rust gets a defined stable type layout for `repr(Rust)` types.
+
+The `Field` trait will allow generalizing over field types, and thus allow other apis to be created, for example...
+
+### `*const T`/`*mut T` methods
+
+We will add the following methods to raw pointers
+```rust
+// details about why we need both and what they do exactly in Reference-level explanation
+
+impl<T: ?Sized> *const T {
+    pub unsafe fn project_unchecked<F: Field<Parent = T>>(self, field: F) -> *const F::Type;
+    
+    pub fn wrapping_project<F: Field<Parent = T>>(self, field: F) -> *const F::Type;
+}
+
+impl<T: ?Sized> *mut T {
+    pub unsafe fn project_unchecked<F: Field<Parent = T>>(self, field: F) -> *mut F::Type;
+    
+    pub fn wrapping_project<F: Field<Parent = T>>(self, field: F) -> *mut F::Type;
+}
+```
+
+These will allowing projections through raw pointers without dereferencing the raw pointer. This is useful for building projections through other abstractions like smart pointers (`Rc<T>`, `Pin<&T>`)!
+
+This is the extent of the core api of this RFC.
+
+Using this we can do something like this
+
+```rust
+struct Foo {
+    bar: Bar,
+    age: u32
+}
+
+struct Bar {
+    name: String,
+    id: i32
+}
+
+let x : Foo = ...;
+let y : *const Foo = &x;
+
+let y_bar_name: *const String = unsafe { y.project_unchecked(Foo.bar).project_unchecked(Foo.name) };
+```
+
+In the end `y_bar_name` will contain a pointer to `x.bar.name`, all without dereferencing a single pointer! (Given that this is a verbose, we may want some syntax for this, but that is out of scope for this RFC)
+
+But, we can build on this foundation and create a more power abstraction, to generalize this project notion to smart pointers...
+
+### `trait Project`
+
+```rust
 trait Project<F: Field> {
-    /// The projected version of Self
     type Projection;
 
     fn project(self, field: F) -> Self::Projection;
 }
+```
 
-impl<T: ?Sized> *const T {
-    unsafe fn project_unchecked<F: Field<Parent = T>>(self, field: F) -> *const F::Type {
-        // make the field pointer, this code is allowed to assume that
-        // self points to a valid instance of T
-        ... 
-    }
-}
+This trait takes a pointer/smart pointer/reference and gives back a projections that represents a field on the pointee.
 
-impl<T: ?Sized> *mut T {
-    unsafe fn project_unchecked<F: Field<Parent = T>>(self, field: F) -> *mut F::Type {
-        // make the field pointer, this code is allowed to assume that
-        // self points to a valid instance of T
-        ...
+i.e.
+
+For raw pointers we could implement this as so
+
+```rust
+impl<T: ?Sized, F: Field<Parent = T>> Project<F> for *const T {
+    type Projection = F::Type;
+    
+    fn project(self, field: F) -> Self::Projection {
+        self.wrapping_project(field)
     }
 }
 ```
 
-Now we need some syntax to refer to the fields types. Some ideas for the syntax are
+On it's own, this doesn't look like much, but once we have implementations for `&T`, we can also get an implementation for `Pin<&T>`! Meaning we would have safe projections through pins! (See [implementing pin projections](#implementing-pin-projections) for details about this)
 
-* `Parent.field`  // my favorite, as it seems most natural
-* `Parent::field` // bad as it conflicts with associated functions
-* `Parent~field`  // or any other sigil
+But before we can get there we need to discuss...
 
-But syntax discussions are defered until after this RFC has been accepted. This is to focues the RFC's discussion on if this addition is needed and close and lingering soundness holes.
-
-Field types will desugar to a unit type that correctly implements `Field`, like so
+### `trait PinProjectable`
 
 ```rust
+unsafe trait PinProjectable {}
+```
+
+Due to some safety requirements that will be detailed in the reference-level explanation, we can't just freely hand out pin projections to every type (sad as it is). To enable pin projections to a field, a field type must implement `PinProjectable`.
+
+Like so,
+```rust
+unsafe impl PinProjectable for Foo.field {}
+```
+
+## Examples of usage
+
+Here is a toy example of how to use this api:
+Given the implementation of `Project for Pin<&mut T>`
+```rust
+use std::project::Project;
+
 struct Foo {
-    bar: Bar
+    bar: u32,
+    qaz: u32,
+    hal: u32,
+    ptr: *const u32,
+    pin: PhantomPinned
 }
 
-struct Foo.bar; // or some other name mangle that doesn't conflict with any other name
+// These type annotations are unnecessary, but I put them in for clarity 
 
-impl Field for Foo.bar { ... }
+let foo : Pin<Box<Foo>  = Box::pin(...);
+
+let foo : Pin<&mut Foo> = foo.as_mut();
+
+let bar : Pin<&mut u32> = foo.project(Foo.bar);
+
+*bar = 10;
+...
 ```
 
-These are the core parts of this proposal. Every other part of this proposal can be postponed or dropped without affecting this feature's core principles.
-
-Using these core parts we can build as a library projections through `Pin<&T>`, `Rc<_>` and more. We can then use this to safely project through smart pointers like so.
-
-```rust
-let foo   : Pin<Box<Foo>    = Box::pin(immovable);
-let foo   : Pin<&mut Foo>   = foo.as_mut();
-let field : Pin<&mut Field> = foo.project(Foo.field);
-```
-But to do safe pin projections we will need to introduce a marker trait. Adding this trait is up for debate.
-```rust
-/// The only people who can implement `PinProjectable` are the creator of the parent type
-/// This allows people to opt-in to allowing their fields to be pin projectable.
-/// The guarantee is that once you create `Pin<P<Parent>>`, all of the same guarantees that
-/// apply to `Pin<P<Parent>>` also apply to `Pin<P<Field>>`
-/// For all `Parent: Unpin`, these can be auto implemented for all of their fields.
-unsafe trait PinProjectable: Field {}
-```
+In entirely safe code, we are able to set the value of a field inside a pinned type!
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-The field types needs to interact with the privacy rules for fields. A field type has the same privacy as the field it is derived from. Anything else would be too restrictive or unsound.
+This section will go in detail about the semantics and implementation of the types, traits, and methods introduced by this RFC.
 
-The `Project`, and `Field` traits and the `FieldDescriptor` type will live inside the `std::project` module, and will not be added to `prelude`.
-The `PinProjectable` trait will be added to `std::marker` if it is accepted.
+## Field types
 
-As example of how to implement `Project`, here is the implementation for `&T`.
+Field types are just sugar for unit types (`struct Foo;`) that are declared right next to the `Parent` type.
 
+Like so,
 ```rust
-impl<'a, F: Field> Project<F> for &'a F::Parent where F::Type: 'a {
-    type Projection = &'a F::Type;
-
-    fn project(self, field: F) -> Self {
-        unsafe {
-            // This is safe because a reference is always valids
-            let ptr: *const F::Type = (self as *const F::Parent).project_unchecked(field);
-
-            &*ptr
-        }
-    }
+struct Person {
+    pub name: String,
+    pub(super) age: u32,
+    id: u32,
 }
+
+pub struct Person.name;
+pub(super) struct Person.age;
+struct Person.id;
 ```
 
-The raw pointer implementations will be done via intrinsics or by depending on `F::FIELD_DESCRIPTOR`. If it is done by intrinsics, then `F::FIELD_DESCRIPTOR` can be removed. All other implementations of `Project` must boil down to some raw pointer projection. The raw pointer projections that we will provide include `project_unchecked` and a `Project` impl. The `project_unchecked` will assume that the input raw pointer is valid (i.e. points to a valid instance of `T` given a raw pointer `*[const|mut] T`) and optimize around that (i.e. it can use the `inbounds` assertion in LLVM). The project impl will make no such guarantee, and if the pointer is not valid, then the behaviour is implementation defined.
+All field types will implement the following traits: `Debug`, `Clone`, `Copy`, `PartialEq`, `Eq`, `PartialOrd`, `Ord`, `Hash`, with the same implementation for unit types.
+
+They will also need to interact with the privacy rules for fields, and will have the same privacy as the field that they are derived from.
+
+You can make a field type for the following types of types (some example syntax is shown)
+* tuples `(T, U, ...)`
+    * `<(T, U)>.0`
+* tuple structs `Foo(T, U, ...)`
+    * `Foo.0`
+* structs `struct Foo { field: Field, ... }`
+    * same syntax as tuple struct
+* unions `union Foo { field: Field }`
+    * same syntax as tuple struct
+    * constructing a field type is `unsafe`, this is because accessing fields of `union`s is unsafe
+
+The compiler can decide whether to actual generate a field type, this is to help compile times (if you don't use field types, then the compiler shouldn't slow down too much because of this feature).
+
+## `*const T`/`*mut T`
+
+`project_unchecked` and `wrapping_project` will both live inside of `std::ptr`.
+
+We need both `project_unchecked` and `wrapping_project` because there are some important optimization available inside of LLVM related to aliasing and escape analysis. In particular the LLVM `inbounds` assertion tells LLVM that a pointer offset stays within the same allocation and if the pointer is invalid or the offset does not stay within the same allocation it is considered UB. This behaviour is exposed via `project_unchecked`. This can be used by implementations of the `Project` trait for smart pointers that are always valid, like `&T` to enable better codegen. `wrapping_project` on the other hand will not assert `inbounds`, and will just wrap around if the pointer offset is larger than `usize::max_value()`. This safe defined behaviour, even if it is almost always a bug, unlike `project_unchecked` which is UB on invalid pointers or offsets.
+
+This corresponds with `std::ptr::offset` and `std::ptr::wrapping_offset` in safety and behaviour. `project_unchecked` and `project` need to be implemented as intrinsics because there is no way to assert that the pointer metadata for fat pointers of `Field::Parent` and `Field::Type` will always match in general without some other compiler support. This is necessary to allow unsized types to be used transparently with this scheme.
 
 For example of where `project_unchecked` would be UB.
 
@@ -139,53 +241,94 @@ let x : *const Foo = 2usize as *const Foo;
 let y : *const Bar = x.project_unchecked(Foo.bar); // UB, x does not point to a valid instance of Foo
 ```
 
-With `Project` trait
+With `wrapping_project` trait
 
 ```rust
-use std::project::Project;
-
-let z : *const Bar = x.project(Foo.bar); // not UB, but z's value will be implementation defined
+let z : *const Bar = x.wrapping_project(Foo.bar); // not UB, but is still invalid
 ```
 
-If the raw pointer is valid, then the result of both `project_unchecked` and `Project::project` is a raw pointer to the given field.
+If the raw pointer is valid, then the result of both `project_unchecked` and `wrapping_project` is a raw pointer to the given field.
 
-The `Project` trait will be implemented for `*const T`, `*mut T`, `&T`, `&mut T`. Other smart pointers can get implementations later if they need them. We will also provide the following implementations to allow better documentation of intent
+## Type and Traits
+
+The `Project`, and `Field` traits and the `FieldDescriptor` type will live inside the `std::project` module, and will not be added to `prelude`.
+The `PinProjectable` trait will be added to `std::marker`, and will also not be added to `prelude`.
+
+The `Field` trait will only be implemented by the compiler, and it compiler should make sure that no other implementations exist. This allows unsafe code to assume that the implmentors or the `Field` trait always refer to valid fields. The `FieldDescriptor` type may be unnecessary raw pointer projections are implemented via intrinsics, if so we can remove it entirely.
+
+The `Project` trait will be implemented for `*const T`, `*mut T`, `&T`, `&mut T`, `Pin<&T>`, `Pin<&mut T>`. Other smart pointers can get implementations later if they need them. We may also provide the following implementations to allow better documentation of intent
+
+## `PinProjectable`
+
+The safety of `PinProjectable` depends on a few things. One if a field type is marked `PinProjectable`, then the `Drop` on `Parent` may not move that field or otherwise invalidate it. i.e. You must treat that field as if a `Pin<&Field::Type>` has been made on it outside of your code.
+
+Because the following impls conflict,
+
+```rust
+unsafe impl<F: Field> PinProjectable for F where F::Parent: Unpin {}
+
+struct Foo(std::marker::PhantomPinned);
+
+unsafe impl PinProjectable for Foo.0 {}
+```
+[Proof](https://play.rust-lang.org/?version=nightly&mode=debug&edition=2018&gist=b0796a8b631e0fec1804318caef162c7)
+
+I think making `PhantomPinned` a lang-item that is known to always implment `!Unpin` would solve this. This way only those who implment `!Unpin` types need to worry about implementing `PinProjectable`. Another way to solve this would be to somehow make `PinProjectable` a lang-item that allows this one case of conflicting impls. But I am unsure of how to properly handle this, both way s that I showed seem unsatisfactory. The blanket impl is highly desirable, because it enables those who don't write `!Unpin` types to ignore safe pin projections, and still have them available.
+
+Because of this, is `PinProjectable` worth it? Or do we want to punt it to another RFC.
+
+## Implementing pin projections
+[impl-pin-projections]: #implementing-pin-projections
+
+First we neeed an implmention of `Project` for `&T` before we can get `Pin<&T>`
+
+```rust
+impl<'a, F: Field> Project<F> for &'a F::Parent where F::Type: 'a {
+    type Projection = &'a F::Type;
+
+    fn project(self, field: F) -> Self {
+        unsafe {
+            // This is safe because a reference is always valids
+            // So offsetting the reference to a field is always fine
+            // The resulting pointer must always be valid
+            // because it came from a reference
+            let ptr: *const F::Type = (self as *const F::Parent).project_unchecked(field);
+
+            &*ptr
+        }
+    }
+}
+```
+
+We can introduce an unsafe projection interface to better document intent (this is optional)
 
 ```rust
 impl<'a, T> Pin<&'a T> {
-    unsafe fn project_unchecked<F: Field<Parent = T>>(self, field: F) -> Pin<&'a F::Type> {
+    /// This is unsafe because `Drop` code 
+    pub unsafe fn project_unchecked<F: Field<Parent = T>>(self, field: F) -> Pin<&'a F::Type> {
         self.map_unchecked(|slf| slf.project(field))
     }
 }
 
 impl<'a, T> Pin<&'a mut T> {
-    unsafe fn project_unchecked<F: Field<Parent = T>>(self, field: F) -> Pin<&'a mut F::Type> {
+    pub unsafe fn project_unchecked<F: Field<Parent = T>>(self, field: F) -> Pin<&'a mut F::Type> {
         self.map_unchecked_mut(|slf| slf.project(field))
     }
 }
 ```
 
-If `PinProjectable` is accepted, then `Project` trait will also be implemented for `Pin<&T>`, `Pin<&mut T>` and will be bound by `PinProjectable`.
+We can then implment safe pin projections like so
 
-Some notes about field types:
+```rust
+impl<'a, T> Project<F: Field<Parent = T>> for Pin<&'a T> 
+where F: PinProjectable {
+    type Projection = Pin<&'a F::Type>;
 
-You can make a field type for the following types of types
-* tuples `(T, U, ...)`
-    * `<(T, U)>.0`
-    * `<(T, U)>::0`
-    * `(T, U)~0`
-* tuple structs `Foo(T, U, ...)`
-    * `Foo.0`
-    * `Foo::0`
-    * `Foo~0`
-* structs `struct Foo { field: Field, ... }`
-    * same syntax as tuple struct
-* unions `union Foo { field: Field }`
-    * same syntax as tuple struct
-    * constructing a field type is `unsafe`, this is because accessing fields of `union`s is unsafe
-
-All fields types are treated as if they are declared in the same crate as their `Parent` type.
-This will allow users to implement traits for field types, like the `PinProjectable` trait.
+    fn project(self, field: F) -> Self::Projection {
+        unsafe { self.project_unchecked(field) }
+    }
+}
+```
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -209,13 +352,10 @@ This will allow users to implement traits for field types, like the `PinProjecta
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-- Behavior of `<*[const|mut] T as Project>::project` when the raw pointer is invalid (does not point to a valid T)
-    - Can this behaviour change across editions? How about smaller version changes?
-    - This issue blocks accepting this RFC
+- Do we want to strip this proposal down to just the [api specified here](https://github.com/rust-lang/rfcs/pull/2708#issuecomment-499578814), where we only have the `Field` trait, `FieldDescriptor` type, and some associated functions on raw pointers.
 - Are we going to accept `PinProjectable`?
     - If not, we won't have a safe way to do pin-projections
     - Do we want another way to do safe pin-projections?
-- Do we want to strip this proposal down to just the [api specified here](https://github.com/rust-lang/rfcs/pull/2708#issuecomment-499578814), where we only have the `Field` trait, `FieldDescriptor` type, and some associated functions on raw pointers.
 
 - Syntax for the type fields
     - not to be decided before accepting this RFC, but must be decided before stabilization
