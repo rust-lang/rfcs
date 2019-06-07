@@ -167,6 +167,26 @@ impl<'a, T> Pin<&'a mut T> {
 
 If `PinProjectable` is accepted, then `Project` trait will also be implemented for `Pin<&T>`, `Pin<&mut T>` and will be bound by `PinProjectable`.
 
+Some notes about field types:
+
+You can make a field type for the following types of types
+* tuples `(T, U, ...)`
+    * `<(T, U)>.0`
+    * `<(T, U)>::0`
+    * `(T, U)~0`
+* tuple structs `Foo(T, U, ...)`
+    * `Foo.0`
+    * `Foo::0`
+    * `Foo~0`
+* structs `struct Foo { field: Field, ... }`
+    * same syntax as tuple struct
+* unions `union Foo { field: Field }`
+    * same syntax as tuple struct
+    * constructing a field type is `unsafe`, this is because accessing fields of `union`s is unsafe
+
+All fields types are treated as if they are declared in the same crate as their `Parent` type.
+This will allow users to implement traits for field types, like the `PinProjectable` trait.
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
