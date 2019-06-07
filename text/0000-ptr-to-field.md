@@ -121,11 +121,9 @@ trait Project<F: Field> {
 }
 ```
 
-This trait takes a pointer/smart pointer/reference and gives back a projections that represents a field on the pointee.
+This trait takes a pointer/smart pointer/reference and gives back a projection that represents a field on the pointee.
 
-i.e.
-
-For raw pointers we could implement this as so
+i.e. For raw pointers we could implement this as so
 
 ```rust
 impl<T: ?Sized, F: Field<Parent = T>> Project<F> for *const T {
@@ -159,29 +157,38 @@ unsafe impl PinProjectable for Foo.field {}
 Here is a toy example of how to use this api:
 Given the implementation of `Project for Pin<&mut T>`
 ```rust
-use std::project::Project;
+/// Some other crate foo
 
 struct Foo {
-    bar: u32,
+    pub bar: u32,
     qaz: u32,
     hal: u32,
     ptr: *const u32,
     pin: PhantomPinned
 }
 
-// These type annotations are unnecessary, but I put them in for clarity 
+unsafe impl PinProjectable for Foo.bar {}
 
-let foo : Pin<Box<Foo>  = Box::pin(...);
+/// main.rs
 
-let foo : Pin<&mut Foo> = foo.as_mut();
+fn main() {
+    use std::project::Project;
+    use foo::Foo;
 
-let bar : Pin<&mut u32> = foo.project(Foo.bar);
+    // These type annotations are unnecessary, but I put them in for clarity 
 
-*bar = 10;
-...
+    let foo : Pin<Box<Foo>  = Box::pin(...);
+
+    let foo : Pin<&mut Foo> = foo.as_mut();
+
+    let bar : Pin<&mut u32> = foo.project(Foo.bar);
+
+    *bar = 10;
+}
 ```
 
-In entirely safe code, we are able to set the value of a field inside a pinned type!
+In entirely safe code (in `main.rs`), we are able to set the value of a field inside a pinned type!
+We still need some `unsafe` to tell that it is indeed safe to project through the pin, but that falls on the owner of `Foo`.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -215,9 +222,9 @@ You can make a field type for the following types of types (some example syntax 
 * tuple structs `Foo(T, U, ...)`
     * `Foo.0`
 * structs `struct Foo { field: Field, ... }`
-    * same syntax as tuple struct
+    * `Foo.field`
 * unions `union Foo { field: Field }`
-    * same syntax as tuple struct
+    * same syntax as structs
     * constructing a field type is `unsafe`, this is because accessing fields of `union`s is unsafe
 
 The compiler can decide whether to actual generate a field type, this is to help compile times (if you don't use field types, then the compiler shouldn't slow down too much because of this feature).
@@ -359,6 +366,9 @@ where F: PinProjectable {
 
 - Syntax for the type fields
     - not to be decided before accepting this RFC, but must be decided before stabilization
+    - Some other variations of the syntax are ...
+        - `Type::field` // This is bad because it conflicts with associated method, and there isn't a way to disambiguate them easily
+        - `Type~field`  // This adds a new sigil to the language
 - Do we want a dedicated syntax to go with the Project trait?
     - If yes, the actual syntax can be decided after accepting this RFC and before stabilization
 
