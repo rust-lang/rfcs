@@ -87,21 +87,21 @@ match v {
   [1, subarray @ .., 3] => assert_eq!(subarray, [2]), // typeof(subarray) == [i32; 1]
   [5, subarray @ ..] => has_type::<[i32; 2]>(subarray), // typeof(subarray) == [i32; 2]
   [subarray @ .., 6] => has_type::<[i32, 2]>(subarray), // typeof(subarray) == [i32; 2]
-  [x, .., y] => has_type::<[i32, 1]>(x), // typeof(subarray) == [i32; 1]
+  [x, .., y] => has_type::<i32>(x),
   [..] => {},
 }
 match v {
   [1, ref subarray @ .., 3] => assert_eq!(subarray, [2]), // typeof(subarray) == &[i32; 1]
   [5, ref subarray @ ..] => has_type::<&[i32; 2]>(subarray), // typeof(subarray) == &[i32; 2]
   [ref subarray @ .., 6] => has_type::<&[i32, 2]>(subarray), // typeof(subarray) == &[i32; 2]
-  [x, .., y] => has_type::<&[i32, 1]>(x), // typeof(subarray) == &[i32; 1]
+  [x, .., y] => has_type::<&i32>(x),
   [..] => {},
 }
 match &mut v {
   [1, subarray @ .., 3] => assert_eq!(subarray, [2]), // typeof(subarray) == &mut [i32; 1]
   [5, subarray @ ..] => has_type::<&mut [i32; 2]>(subarray), // typeof(subarray) == &mut [i32; 2]
   [subarray @ .., 6] => has_type::<&mut [i32, 2]>(subarray), // typeof(subarray) == &mut [i32; 2]
-  [x, .., y] => has_type::<&mut [i32, 1]>(x), // typeof(subarray) == &mut [i32; 1]
+  [x, .., y] => has_type::<&mut i32>(x),
   [..] => {},
 }
 ```
