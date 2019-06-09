@@ -258,7 +258,7 @@ impl<T> Foo for Vec<T> {
 In the current implementation, (6) is rejected because the compiler will not
 let you assume that `x` is of type `usize`. But in this proposal, you would be
 allowed to assume this. To permit this is not a problem because `Foo for Vec<T>`
-is not further specializable since `baz` in the implementation has not been
+is not further specializable since `Bar` in the implementation has not been
 marked as `default`.
 
 ### Trait objects
