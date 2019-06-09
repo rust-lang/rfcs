@@ -41,7 +41,7 @@ The following points were also noted in [RFC 192], but we expand upon them here:
    ```rust
    trait Arbitrary: Sized + fmt::Debug {
        type Parameters: Default = ();
-   
+
        fn arbitrary_with(args: Self::Parameters) -> Self::Strategy;
 
        fn arbitrary() -> Self::Strategy {
@@ -68,7 +68,7 @@ The following points were also noted in [RFC 192], but we expand upon them here:
    ```rust
    trait Arbitrary: Sized + fmt::Debug {
        fn arbitrary() -> Self::Strategy;
-   
+
        type Strategy: Strategy<Value = Self>;
    }
    ```
@@ -89,7 +89,7 @@ The following points were also noted in [RFC 192], but we expand upon them here:
    ```rust
    trait Arbitrary: Sized + fmt::Debug {
        type Parameters: Default = ();
-   
+
        fn arbitrary() -> Self::Strategy {
            Self::arbitrary_with(Default::default())
        }
@@ -971,10 +971,10 @@ associated type include:
    /// "Callbacks" for a push-based parser
    trait Sink {
        fn handle_foo(&mut self, ...);
-   
+
        default {
            type Output = Self;
-   
+
            // OK to assume what `Output` really is because any overriding
            // must override both `Outout` and `finish`.
            fn finish(self) -> Self::Output { self }
@@ -1115,7 +1115,7 @@ impl ComputerScientist for StephanieWeirich {
     // ERROR! You must override Details.
 }
 
-impl ComputerScientist for AndreiSabelfeld {    
+impl ComputerScientist for AndreiSabelfeld {
     type Details = LangSec;
     const THE_DETAILS: Self::Details = LangSec { papers: 90 };
     fn papers(details: Self::Details) -> u8 { details.papers }
