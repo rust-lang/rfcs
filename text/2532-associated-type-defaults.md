@@ -351,7 +351,7 @@ in other items specified in the implementation.
 If an implementation does make the associated type available for
 further specialization, then other definitions in the implementation
 may not assume the given underlying specified type of the associated type
-and may only assume that it is `Self::TheAsociatedType`.
+and may only assume that it is `Self::TheAssociatedType`.
 
 This applies generally to any item inside a `trait`.
 You may only assume the signature of an item, but not any provided definition,
