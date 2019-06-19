@@ -139,7 +139,7 @@ that satisfy `Borrow<str>`, the crate `std` may provide this
 default implementation of the new trait `DefaultAdd`:
 
 ```rust
-impl<&'a, T> DefaultAdd<&'a T> for String
+impl<'a, T> DefaultAdd<&'a T> for String
 where T: Borrow<str>
 {
     type Output = String;
