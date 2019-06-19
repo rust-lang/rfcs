@@ -156,15 +156,12 @@ family of types. Examples from the standard library are `IpAddr`, `Ipv4Addr`,
 and `Ipv6Addr`. These types can have their plain old operator trait impls
 defined just like they do now.
 
-## Overload resolution
-[overload-resolution]: #overload-resolution
+# Reference-level explanation
+[reference-level-explanation]: #reference-level-explanation
 
 When picking the implementation for an operator overloaded by the notional
 traits `Op` and `DefaultOp`, the compiler will consider the available
 implementations for `Op` first, before falling back to `DefaultOp`.
-
-# Reference-level explanation
-[reference-level-explanation]: #reference-level-explanation
 
 The proposed system allows the existing operator trait implementations
 to coexist with the newly introduced generic default overload trait
