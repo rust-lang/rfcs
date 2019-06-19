@@ -6,30 +6,34 @@
 # Summary
 [summary]: #summary
 
-Provide new traits for overloading binary operators, such as
-`PartialEq2`, `PartialOrd2`, `Add2`, `AddAssign2`, etc.,
-with default blanket implementations abstracted over `Borrow`
-for built-in and standard library types. This will drastically reduce
-the number of explicit impl items necessary to cover compatible type pairs.
+Provide a family of traits to augment overloading of binary operators
+with more practical generic implementations. The traits are named
+`DefaultPartialEq`, `DefaultPartialOrd`, `DefaultAdd`, `DefaultAddAssign`, etc.
+For these traits, default generic implementations abstracted over `Borrow`
+are to be provided for built-in and standard library types, including
+`[u8]`, `Vec`, `str`, `String`, `OsStr`, `OsString`, `Path`, `PathBuf`.
+This will drastically reduce the number of explicit impl items necessary to
+cover all type pairs on which the binary operators can act.
+
 When resolving the implementation for an operator, the compiler will
-consider the new traits along with the old school non-specializable traits.
+consider the impls for the new "default" overload trait corresponding to the
+operator as the second choice after its Rust 1.0 overload trait.
 
 # Motivation
 [motivation]: #motivation
 
 Operator overloading brings a lot of convenience into usage of data types.
-For a set of Rust types which provide different representations of the same
+For a set of types which provide different representations of the same
 underlying data type (usually indicated by implementing the same `Borrow<T>`),
-it makes
-sense to define binary operator trait impls that apply between each pair of
+it makes sense to define binary operator trait impls that act on each pair of
 these types. However, with proliferation of special-purpose representations
-of widely used data types, such as byte arrays and strings, the number of
-possible such pairs undergoes a combinatorial explosion. Each of
-the crates defining such special-purpose types has to be in a dependency
-relationship with any other of these crates, otherwise there cannot be
+of widely used data types like byte arrays and strings, the number of
+possible such pairs undergoes a quadratic explosion. Each of the crates
+defining a type in the operator-compatible set has to be in a dependency
+relationship with any other of such crates, otherwise there cannot be
 an operator impl to make them work together.
 
-[Specialization][rfc1210] of blanket trait implementations could be used to
+[Specialization][rfc1210] of trait implementations could be a convenient way to
 deal with this problem. This implementation of `PartialEq` could automatically
 enable equality comparison for `String` on the left hand side and any type
 on the right hand side that implements `Borrow<str>`:
@@ -45,88 +49,102 @@ where
 }
 ```
 
-However, introducing default impls for already defined operator traits
-is a breaking change: there are crates that don't restrict their
-binary operators to types sharing the same `Borrow` target.
+However, introducing default impls for operator traits that have been
+stable since Rust 1.0 is a breaking change: there are crates that don't
+restrict their binary operators to types sharing the same `Borrow` target,
+so their overload trait implementations will come into conflict.
 One example is `bytes` defining `PartialEq` impls that allow comparing
 `Bytes` and the standard string types. While such data domain crossing is
 problematic for other reasons (e.g. differences in `Hash` for values that
 compare as equal), the change should not break crates doing what has not been
-forbidden. New operator traits with blanket default impls abstracted over
-`Borrow` can provide a migration path and lay down discipline.
+previously forbidden. Newly introduced fallback overload traits with generic
+impls abstracted over `Borrow` provide a backward compatible solution
+and lay down some discipline.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-## New operator traits
-[new-operator-traits]: #new-operator-traits
+## Default operator traits
+[default-operator-traits]: #default-operator-traits
 
-This proposal adds second-generation traits for all binary operators defined in
-the standard library where the right-hand operand type is defined generically.
-The traits are named `PartialEq2`, `PartialOrd2`, `Add2`, etc. and defined
-with the same method signatures as their Rust 1.0 counterparts. Example
-for `PartialEq2`:
+This proposal adds secondary overload traits for all overloadable binary
+operators where the right-hand operand type is generic.
+The traits are named `DefaultPartialEq`, `DefaultPartialOrd`, `DefaultAdd`, etc.
+and defined with the same type parameters and method signatures as the plain
+old Rust 1.0 operator overload traits.
+
+Example for `DefaultPartialEq`:
 
 ```rust
-pub trait PartialEq2<Rhs: ?Sized = Self> {
-    fn eq2(&self, other: &Rhs) -> bool;
-    fn ne2(&self, other: &Rhs) -> bool { !self.eq2(other) }
+pub trait DefaultPartialEq<Rhs: ?Sized = Self> {
+    fn eq(&self, other: &Rhs) -> bool;
+    fn ne(&self, other: &Rhs) -> bool {
+        !self.eq(other)
+    }
 }
 ```
 
-## Default blanket implementation rule
-[default-blanket-implementation-rule]: #default-blanket-implementation-rule
+## Default implementation rule
+[default-implementation-rule]: #default-implementation-rule
 
 Types that need to work as an operand type in binary operators broadly
-fall into two categories. One category is use case specific representations
-of an underlying data type that usually provides binary operators on itself.
-For example, `String` is the owned version of `str`, and `PathBuf` is that
-for `Path`. The underlying types themselves are counted in for the purposes
-of the following rule.
-These types usually implement `Borrow` to the underlying type, and their
-Rust 1.0 binary operator trait impls tend to cover any pairs with other types
-that satisfy the same parameterized `Borrow`. The rule for a crate defining
-such a type is to also define default impls of the new operator traits
-described in this RFC, where a generic type parameter bound by `Borrow`
-defines the operand type other than `Self`:
+fall into two categories. One category is different purpose-specific
+representations of an underlying data type that provides binary
+operators acting on itself. We'll call it the **base operand type** for the
+purposes of this proposal.
+For example, `String` is the standard owned counterpart of `str`,
+and `PathBuf` is this for `Path`. The base operand type itself is
+considered together with its operand type family for the following rule.
+Types in each such family usually implement `Borrow` to the base operand type,
+and their binary operator trait impls, as currently provided, tend to cover
+any possible pairs with the other types in the family.
+
+The rule for a crate defining such a type is to also define generic default
+implementations of the default operator overload traits described in
+this RFC, where a generic type parameter bound by `Borrow` to the base
+operand type defines the operand type other than `Self`:
 
 ```rust
-impl<Rhs> PartialEq2<Rhs> for String
+impl<Rhs> DefaultPartialEq<Rhs> for String
 where
     Rhs: ?Sized + Borrow<str>,
 {
-    default fn eq2(&self, other: &Rhs) -> bool {
+    default fn eq(&self, other: &Rhs) -> bool {
         &self[..] == other.borrow()
     }
 }
 ```
 
-The type parameter of the `Borrow` bound is the type that `Self`
-can also be borrowed as (which can be just `Self`). The role of `Borrow`
-therefore extends to restricting operand types of binary operators
-available for the implementing type.
+The type parameter of the `Borrow` bound is the base operand type for `Self`
+(which is `Self` in case the impl is defined for the base type itself).
+The new semantic of `Borrow` therefore extends the "acts the same"
+guarantee to binary operators available for the implementing type, which
+is already the case for the intra-type traits `Eq`, `Ord`, and `Hash`.
 Notably, the standard library largely maintains this stratification in the
-provided implementations of `Borrow` and Rust 1.0 operator traits;
+provided implementations of `Borrow` and the plain old operator traits;
 `PathBuf`/`Path` is a [problematic][issue55319] exception.
 
 Operator traits that take ownership of the operands are trickier to implement
-for non-`Copy` types: these should not work between two borrowed values
-to avoid allocations hidden in operator notation, while moving the
-owned operands into an operator expression may be non-ergonomic.
+for non-`Copy` types: these should not work between two borrowed
+values to avoid allocations or other side effects hidden in operator notation,
+while moving both owned operands into an operator expression
+may be non-ergonomic.
 A precedent is set in the `Add` implementation for `String` to only let
-the left-hand operand value to be moved into the expression; the right-hand
-side needs to be borrowed as a `str` reference.
-To extend the operator's applicability to any types that satisfy
-`Borrow<str>`, the crate `std` defines this default implementation of
-the new trait `Add2`:
+the left hand operand value be moved into the expression, owing to the
+left-associative order of evaluation; the right hand side needs to coerce
+to an `str` reference.
+`Deref` coercions go a long way to make pointers to various string types
+fit that impl, but to extend the operator's applicability to any types
+that satisfy `Borrow<str>`, the crate `std` may provide this
+default implementation of the new trait `DefaultAdd`:
 
 ```rust
-impl<'a, T> Add2<&'a T> for String
-where T: ?Sized + Borrow<str>
+impl<&'a, T> DefaultAdd<&'a T> for String
+where T: Borrow<str>
 {
     type Output = String;
 
-    default fn add2(self, other: &'a T) -> String {
+    default fn add(self, other: &'a T) -> String {
         self + other.borrow()
     }
 }
@@ -135,93 +153,72 @@ where T: ?Sized + Borrow<str>
 Other types do not have an underlying borrowable type indicating their data
 domain, but they still need binary operators to apply across some
 family of types. Examples from the standard library are `IpAddr`, `Ipv4Addr`,
-and `Ipv6Addr`. These types can have their operator trait impls defined
-in the old school non-generic way.
+and `Ipv6Addr`. These types can have their plain old operator trait impls
+defined just like they do now.
 
 ## Overload resolution
 [overload-resolution]: #overload-resolution
 
-When picking the implementation for an operator backed by the proverbial
-traits `Op` and `Op2`, the compiler will consider the available trait
-implementations in the following order:
-
-1. Fully specialized impls of `Op2`;
-2. Fully specialized impls of `Op`;
-3. Default impls of `Op2`;
-4. Default impls of `Op`.
-
-## Path for future migration
-[path-for-future-migration]: #path-for-future-migration
-
-The Rust 1.0 binary operator traits can(?) be deprecated
-after the new traits are introduced. In the future backward-incompatible
-Rust 2.0, the new traits will lose their `2` name suffix and replace the
-old school operator traits.
+When picking the implementation for an operator overloaded by the notional
+traits `Op` and `DefaultOp`, the compiler will consider the available
+implementations for `Op` first, before falling back to `DefaultOp`.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-The proposed system allows legacy Rust 1.0 operator trait implementations
-to coexist with the new blanket implementations in a backward-compatible way.
-Systematic application of the [default impl rule][default-blanket-implementation-rule]
+The proposed system allows the existing operator trait implementations
+to coexist with the newly introduced generic default overload trait
+implementations in a complementary and backward compatible way.
+Systematic application of the [default impl rule][default-implementation-rule]
 can provide any-to-any operand type compatibility for all types sharing a
 particular `Borrow` bound, without necessity for any two crates defining
 these types to be in a direct dependency relationship.
-Specialized implementations of new style traits can be defined when practical,
-within the `Borrow` bound of the default implementation. Crates can also
-choose to provide default (or even fully specialized blanket) impls of
-the legacy traits, but new-style impls should be preferred in new APIs.
 
-The interleaved, specialized-first overload resolution rule is designed to
-prevent "spooky action at a distance" where e.g. adding a blanket impl of
-`Add2` for type `A` defined in one crate could shadow an existing
-`impl Add<B> for A` in another crate that defines `B`. The situation where
-non-generic impls of `Add` and `Add2`, defined in different crates, could
-apply to the same pair of types, is impossible due to acyclicity of crate
-dependencies and the orphan rule.
+Specialized implementations of the default overload traits can be defined
+when practical, within the `Borrow` bound of the default implementation.
+Crate authors are also free to provide new impls of the plain old overload
+traits, which override the generic impls of the default overload traits
+for purposes of operator overloading, or apply outside of the type families
+circumscribed by the default overload trait impls.
 
 # Drawbacks
 [drawbacks]: #drawbacks
 
-The second-generation traits add complexity, especially to operator
-overload resolution. It's likely that both new and old school trait impls
-will have to be provided side by side, which increases the possibility of
+The fallback overload traits add complexity, especially to operator
+overload resolution. It's likely that implementations for both default and
+plain old operator traits will have to be provided side by side to support
+older versions of the compiler, which increases the possibility of
 implementation errors. This takes further the precedent set by the
 [specialization RFC][rfc1210] that multiple different implementations may be
 considered to fit one use.
 
-`Borrow<T>` may prove too inflexible a bound for some interoperable
-type families. It's a challenge, though, to come up with an example in
-existing designs that goes beyond a few closely knit types.
-
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-The proposed [rule][default-blanket-implementation-rule] of defining
-operator impls slashes the combinatorial explosion of mostly tedious
-operator trait implementations seen today, leaving reasonable flexibility
-in which operand type pairs are allowed (with `Borrow` as the guiding force).
+The proposed [rule][default-implementation-rule] of defining generic
+operator impls slashes the quadratic explosion of mostly tedious
+non-generic operator trait implementations that takes place today.
+The crate authors are free to define non-generic impls of plain old operator
+traits as they see fit, including outside of the `Borrow` type family
+of the default generic impl.
 
-Addition of second-generation traits on top of the existing system
-provides a backward-compatible migration path for the Rust 1.x timeframe.
-
-If opt-in feature gates were possible in the stable channel, the new default
-impls could be defined for the Rust 1.0 traits and hidden behind a feature
-gate. It's unclear to the author if this could work without the need for
-all crates in the dependency graph to be compatible with the feature.
+Previous revisions of this RFC envisioned the new traits as replacements
+for the Rust 1.0 operator traits, which would be soft-deprecated. This
+limited the space for any new custom overload impls to specializations of the
+`Borrow` bound of the default generic impl, and complicated the rules
+for overload resolution in order to avoid "spooky action at a distance",
+when adding generic impls of new style operator traits could shadow old style
+concrete impls defined in a different crate.
 
 # Prior art
 [prior-art]: #prior-art
 
-Labeling second-generation APIs with suffix `2` to allow coexistence
-with the legacy APIs is common.
-
-The circumstances that led to the design seem unique to Rust.
+The language evolution that led to this design seems unique to Rust.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-Is it feasible to implement overload resolution in the compiler as proposed?
+None.
 
 [rfc1210]: ./1210-impl-specialization.md
 [issue55319]: https://github.com/rust-lang/rust/issues/55319
