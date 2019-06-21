@@ -314,13 +314,6 @@ impl VTable {
             alloc::Layout::from_size_align_unchecked(self.size(), self.align())
         }
     }
-
-    /// Drops the value pointed at by `data` assuming it has the type
-    /// associated with this vtable.
-    ///
-    /// Behaviour is Undefined if the type isn’t correct or the pointer
-    /// is invalid to reinterpret as `&mut TheType`.
-    pub unsafe fn drop_in_place(&self, data: *mut ()) { ... }
 }
 ```
 
@@ -388,10 +381,6 @@ Except for `VTable`’s methods, this RFC proposes a subset of what that thread 
 
 * Are there other generic standard library APIs like `ptr::null()`
   that have an (implicit) `T: Sized` bound that unneccesarily excludes extern types?
-
-* Should `VTable::drop_in_place` be removed?
-  `vtable.drop_in_place(data_ptr)` is identical to
-  `<*mut _>::from_raw_parts(data_ptr, vtable).drop_in_place()`
 
 * Should `<*mut _>::from_raw_parts` and friends be `unsafe fn`s?
 
