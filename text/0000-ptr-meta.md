@@ -81,18 +81,18 @@ First, let’s get some boilerplate out of the way:
 
 ```rust
 use std::marker::{PhantomData, Unsize};
-use std::ptr::{self, VTable};
+use std::ptr::{self, DynMetadata};
 
-trait DynTrait = Pointee<Metadata=&'static VTable>;
+trait DynTrait = Pointee<Metadata=DynMetadata>;
 
 pub struct ThinBox<Dyn: ?Sized + DynTrait> {
-    ptr: ptr::NonNull<WithVTable<()>>,
+    ptr: ptr::NonNull<WithMeta<()>>,
     phantom: PhantomData<Dyn>,
 }
 
 #[repr(C)]
-struct WithVTable<T: ?Sized> {
-    vtable: &'static VTable,
+struct WithMeta<T: ?Sized> {
+    vtable: DynMetadata,
     value: T,
 }
 ```
@@ -110,7 +110,7 @@ We let `Box` do the memory layout computation and allocation:
 impl<Dyn: ?Sized + DynTrait> ThinBox<Dyn> {
     pub fn new_unsize<S>(value: S) -> Self where S: Unsize<Dyn> {
         let vtable = ptr::metadata(&value as &Dyn);
-        let ptr = Box::into_raw_non_null(Box::new(WithVTable { vtable, value })).cast();
+        let ptr = Box::into_raw_non_null(Box::new(WithMeta { vtable, value })).cast();
         ThinBox { ptr, phantom: PhantomData }
     }
 }
@@ -125,7 +125,7 @@ Accessing the value requires knowing its alignment:
 impl<Dyn: ?Sized + DynTrait> ThinBox<Dyn> {
     fn data_ptr(&self) -> *mut () {
         unsafe {
-            let offset = std::mem::size_of::<&'static VTable>();
+            let offset = std::mem::size_of::<DynMetadata>();
             let value_align = self.ptr.as_ref().vtable.align();
             let offset = align_up_to(offset, value_align);
             (self.ptr.as_ptr() as *mut u8).add(offset) as *mut ()
@@ -175,6 +175,7 @@ are added to `core::ptr` and re-exported in `std::ptr`:
   If this RFC is implemented before type aliases are,
   uses of `Thin` should be replaced with its definition.
 * A `metadata` free function
+* A `DynMetadata` struct
 * A `from_raw_parts` constructor for each of `*const T` and `*mut T`
 
 The bounds on `null()` and `null_mut()` function in that same module
@@ -206,7 +207,7 @@ This similarly includes extern types.
 /// a data pointer that contains the memory address of the value, and some metadata.
 ///
 /// For statically-sized types that implement the `Sized` traits,
-/// pointers are said to be “thin”, metadata is zero-sized, and metadata’s type is `()`.
+/// pointers are said to be “thin”: metadata is zero-sized and its type is `()`.
 ///
 /// Pointers to [dynamically-sized types][dst] are said to be “fat”
 /// and have non-zero-sized metadata:
@@ -214,7 +215,7 @@ This similarly includes extern types.
 /// * For structs whose last field is a DST, metadata is the metadata for the last field
 /// * For the `str` type, metadata is the length in bytes as `usize`
 /// * For slice types like `[T]`, metadata is the length in items as `usize`
-/// * For trait objects like `dyn SomeTrait`, metadata is [`&'static VTable`][VTable]
+/// * For trait objects like `dyn SomeTrait`, metadata is [`DynMetadata`].
 ///
 /// In the future, the Rust language may gain new kinds of types
 /// that have different pointer metadata.
@@ -234,8 +235,8 @@ pub trait Pointee {
 /// Pointers to types implementing this trait alias are “thin”:
 ///
 /// ```rust
-/// fn always_true<T: std::ptr::Thin>() -> bool {
-///     assert_eq(std::mem::size_of::<&T>(), std::mem::size_of::<usize>())
+/// fn this_never_panics<T: std::ptr::Thin>() {
+///     assert_eq!(std::mem::size_of::<&T>(), std::mem::size_of::<usize>())
 /// }
 /// ```
 pub trait Thin = Pointee<Metadata=()>;
@@ -278,11 +279,12 @@ impl<T: ?Sized> NonNull<T> {
     }
 }
 
-/// The vtable for a trait object.
+/// The metadata for a `dyn SomeTrait` trait object type.
 ///
-/// A vtable (virtual call table) represents all the necessary information
+/// It is a pointer to a vtable (virtual call table)
+/// that represents all the necessary information
 /// to manipulate the concrete type stored inside a trait object.
-/// It notably it contains:
+/// The vtable notably it contains:
 ///
 /// * type size
 /// * type alignment
@@ -292,24 +294,25 @@ impl<T: ?Sized> NonNull<T> {
 /// Note that the first three are special because they’re necessary to allocate, drop,
 /// and deallocate any trait object.
 ///
-/// The layout of vtables is still unspecified, so this type is one a more-type-safe
-/// convenience for accessing those 3 special values. Note however that `VTable` does
+/// The layout of vtables is still unspecified, so this type is a more-type-safe
+/// convenience for accessing those 3 special values. Note however that `DynMetadata` does
 /// not actually know the trait it’s associated with, indicating that, at very least,
 /// the location of `size`, `align`, and `drop_in_place` is identical for all
 /// trait object vtables in a single program.
-pub struct VTable {
-    _priv: (),
+#[derive(Copy, Clone)]
+pub struct DynMetadata {
+    vtable_ptr: &'static (),
 }
 
-impl VTable {
+impl DynMetadata {
     /// Returns the size of the type associated with this vtable.
-    pub fn size(&self) -> usize { ... }
+    pub fn size(self) -> usize { ... }
 
     /// Returns the alignment of the type associated with this vtable.
-    pub fn align(&self) -> usize { ... }
+    pub fn align(self) -> usize { ... }
 
     /// Returns the size and alignment together as a `Layout`
-    pub fn layout(&self) -> alloc::Layout {
+    pub fn layout(self) -> alloc::Layout {
         unsafe {
             alloc::Layout::from_size_align_unchecked(self.size(), self.align())
         }
@@ -332,14 +335,14 @@ is Undefined Behavior with a dangling data pointer.
 
 A [previous iteration][2579] of this RFC proposed a `DynTrait`
 that would only be implemented for trait objects like `dyn SomeTrait`.
-There would be no `Metadata` associated type, `&'static VTable` was hard-coded in the trait.
+There would be no `Metadata` associated type, `DynMetadata` was hard-coded in the trait.
 In addition to being more general
 and (hopefully) more compatible with future custom DSTs proposals,
 this RFC resolves the question of what happens
 if trait objects with super-fat pointers with multiple vtable pointers are ever added.
-(Answer: they can use a different metadata type like `[&'static VTable; N]`.)
+(Answer: they can use a different metadata type like `[DynMetadata; N]`.)
 
-`VTable` could be made generic with a type parameter for the trait object type that it describes.
+`DynMetadata` could be made generic with a type parameter for the trait object type that it describes.
 This would avoid forcing that the size, alignment, and destruction pointers
 be in the same location (offset) for every vtable.
 But keeping them in the same location is probaly desirable anyway to keep code size small.
@@ -353,7 +356,7 @@ But keeping them in the same location is probaly desirable anyway to keep code s
 A previous [Custom Dynamically-Sized Types][cdst] RFC was postponed.
 [Internals thread #6663][6663] took the same ideas
 and was even more ambitious in being very general.
-Except for `VTable`’s methods, this RFC proposes a subset of what that thread did.
+Except for `DynMetadata`’s methods, this RFC proposes a subset of what that thread did.
 
 [cdst]: https://github.com/rust-lang/rfcs/pull/1524
 [6663]: https://internals.rust-lang.org/t/pre-erfc-lets-fix-dsts/6663
@@ -364,11 +367,7 @@ Except for `VTable`’s methods, this RFC proposes a subset of what that thread 
 
 * The name of `Pointee`. [Internals thread #6663][6663] used `Referent`.
 
-* The location of `VTable`. Is another module more appropriate than `std::ptr`?
-
-* Should `VTable` be an extern type?
-  Rather than a zero-size struct? Actual vtables vary in size,
-  but `VTable` presumably is never used exept behind `&'static`.
+* The location of `DynMetadata`. Is another module more appropriate than `std::ptr`?
 
 * The name of `Thin`.
   This name is short and sweet but `T: Thin` suggests that `T` itself is thin,
