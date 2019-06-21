@@ -1,6 +1,6 @@
 - Feature Name: `vec_append_from_within`
 - Start Date: 2019-06-21
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#2714](https://github.com/rust-lang/rfcs/pull/0000)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 # Summary
