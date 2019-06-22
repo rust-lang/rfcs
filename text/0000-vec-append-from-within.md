@@ -15,7 +15,7 @@ Copying parts of a data stream to its end is an essential operation in decompres
 
  * Relevant code in `inflate` crate was vulnerable (memory disclosure), [details here](https://www.reddit.com/r/rust/comments/8zpp5f/).
  * A vulnerability in such code in `libflate` is currently pending disclosure, see https://github.com/sile/libflate/issues/33.
- * **Rust standard library itself** had a buffer overflow bug in exactly this code. This is known as CVE-2018-1000810, [details here](https://blog.rust-lang.org/2018/09/21/Security-advisory-for-std.html).
+ * **Rust standard library itself** had a buffer overflow bug in exactly this code. This is known as CVE-2018-1000810. [Announcement](https://blog.rust-lang.org/2018/09/21/Security-advisory-for-std.html), [fix](https://github.com/rust-lang/rust/pull/54397).
 
 This proposal is an attempt to provide the minimum viable building block that will allow safe and efficient implementations of RLE and similar predictive algorithms.
 
