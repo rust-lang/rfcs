@@ -206,7 +206,8 @@ This similarly includes extern types.
 /// Raw pointer types and reference types in Rust can be thought of as made of two parts:
 /// a data pointer that contains the memory address of the value, and some metadata.
 ///
-/// For statically-sized types that implement the `Sized` traits,
+/// For statically-sized types (that implement the `Sized` traits)
+/// as well as for `extern` types,
 /// pointers are said to be “thin”: metadata is zero-sized and its type is `()`.
 ///
 /// Pointers to [dynamically-sized types][dst] are said to be “fat”
