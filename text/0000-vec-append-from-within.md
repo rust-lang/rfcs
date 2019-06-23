@@ -23,15 +23,19 @@ This proposal is an attempt to provide the minimum viable building block that wi
 [guide-level-explanation]: #guide-level-explanation
 
 ```rust
+// append one element
 let mut vec1 = vec![3,5,7];
 vec1.append_from_within(..1);
 assert_eq!(vec1, vec![3,5,7,3]);
+// append multiple elements
 let mut vec2 = vec![3,5,7];
 vec2.append_from_within(1..);
 assert_eq!(vec2, vec![3,5,7,5,7]);
+// repeat entire vector
 let mut vec3 = vec![3,5,7];
 vec3.append_from_within(..);
 assert_eq!(vec3, vec![3,5,7,3,5,7]);
+// range out of bounds panics
 let mut vec4 = vec![3,5,7];
 vec4.append_from_within((..1000)); // panic!
 ```
