@@ -23,10 +23,17 @@ This proposal is an attempt to provide the minimum viable building block that wi
 [guide-level-explanation]: #guide-level-explanation
 
 ```rust
-assert_eq!(vec![3,5,7].append_from_within((..1)), vec![3,5,7,3]);
-assert_eq!(vec![3,5,7].append_from_within((1..)), vec![3,5,7,5,7]);
-assert_eq!(vec![3,5,7].append_from_within((..)), vec![3,5,7,3,5,7]);
-vec![3,5,7].append_from_within((..1000)); // panic!
+let mut vec1 = vec![3,5,7];
+vec1.append_from_within(..1);
+assert_eq!(vec1, vec![3,5,7,3]);
+let mut vec2 = vec![3,5,7];
+vec2.append_from_within(1..);
+assert_eq!(vec2, vec![3,5,7,5,7]);
+let mut vec3 = vec![3,5,7];
+vec3.append_from_within(..);
+assert_eq!(vec3, vec![3,5,7,3,5,7]);
+let mut vec4 = vec![3,5,7];
+vec4.append_from_within((..1000)); // panic!
 ```
 
 This is similar to the recently stabilized [`slice::copy_within()`](https://doc.rust-lang.org/std/primitive.slice.html#method.copy_within), but appends to the vector instead of copying to a location within it.
