@@ -77,12 +77,20 @@ impl<T: ?Sized> *const T {
     pub unsafe fn project_unchecked<F: Field<Parent = T>>(self, field: F) -> *const F::Type;
     
     pub fn wrapping_project<F: Field<Parent = T>>(self, field: F) -> *const F::Type;
+
+    pub unsafe fn inverse_project_unchecked<F: Field<Type = T>>(self, field: F) -> *const F::Parent;
+    
+    pub fn inverse_wrapping_project<F: Field<Type = T>>(self, field: F) -> *const F::Parent;
 }
 
 impl<T: ?Sized> *mut T {
     pub unsafe fn project_unchecked<F: Field<Parent = T>>(self, field: F) -> *mut F::Type;
     
     pub fn wrapping_project<F: Field<Parent = T>>(self, field: F) -> *mut F::Type;
+    
+    pub unsafe fn inverse_project_unchecked<F: Field<Type = T>>(self, field: F) -> *mut F::Parent;
+    
+    pub fn inverse_wrapping_project<F: Field<Type = T>>(self, field: F) -> *mut F::Parent;
 }
 ```
 
@@ -158,7 +166,11 @@ The compiler can decide whether to actual generate a field type, this is to help
 
 We need both `project_unchecked` and `wrapping_project` because there are some important optimization available inside of LLVM related to aliasing and escape analysis. In particular the LLVM `inbounds` assertion tells LLVM that a pointer offset stays within the same allocation and if the pointer is invalid or the offset does not stay within the same allocation it is considered UB. This behaviour is exposed via `project_unchecked`. This can be used by implementations of the `Project` trait for smart pointers that are always valid, like `&T` to enable better codegen. `wrapping_project` on the other hand will not assert `inbounds`, and will just wrap around if the pointer offset is larger than `usize::max_value()`. This safe defined behaviour, even if it is almost always a bug, unlike `project_unchecked` which is UB on invalid pointers or offsets.
 
-This corresponds with `std::ptr::offset` and `std::ptr::wrapping_offset` in safety and behaviour. `project_unchecked` and `project` need to be implemented as intrinsics because there is no way to assert that the pointer metadata for fat pointers of `Field::Parent` and `Field::Type` will always match in general without some other compiler support. This is necessary to allow unsized types to be used transparently with this scheme.
+This corresponds with `std::ptr::add` and `std::ptr::wrapping_add` in safety and behaviour. `project_unchecked` and `project` need to be implemented as intrinsics because there is no way to assert that the pointer metadata for fat pointers of `Field::Parent` and `Field::Type` will always match in general without some other compiler support. This is necessary to allow unsized types to be used transparently with this scheme.
+
+`inverse_project_unchecked` and `inverse_wrapping_project` are just like their counterparts in safety. `inverse_project_unchecked` is UB to use on invalid pointers, where `inverse_wrapping_project` just wraps around on overflow. But there is one important safety check that must be performed before dereferencing the resulting pointer. The resulting pointer may not actually point to a valid `*const F::Parent` if `*const F::Type` does not live inside of a `F::Parent`, so one must take care to ensure that the parent pointer is indeed valid. This is different from `project_unchecked` and `wrapping_project` because there one only needs to validate the original pointer, not the resulting pointer.
+
+`inverse_project_unchecked` and `inverse_wrapping_project` correspond to `std::ptr::sub` and `std::ptr::wrapping_sub` in safety and behaviour. They also must be implemented as intrinsics for the same reasons as stated above.
 
 For example of where `project_unchecked` would be UB.
 
