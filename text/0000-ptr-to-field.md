@@ -163,15 +163,15 @@ The compiler can decide whether to actual generate a field type, this is to help
 
 ## `*const T`/`*mut T`
 
-`project_unchecked` and `wrapping_project` will both live inside of `std::ptr`.
+`project_unchecked` and `wrapping_project` will both live inside of `core::ptr`.
 
 We need both `project_unchecked` and `wrapping_project` because there are some important optimization available inside of LLVM related to aliasing and escape analysis. In particular the LLVM `inbounds` assertion tells LLVM that a pointer offset stays within the same allocation and if the pointer is invalid or the offset does not stay within the same allocation it is considered UB. This behaviour is exposed via `project_unchecked`. This can be used by implementations of the `Project` trait for smart pointers that are always valid, like `&T` to enable better codegen. `wrapping_project` on the other hand will not assert `inbounds`, and will just wrap around if the pointer offset is larger than `usize::max_value()`. This safe defined behaviour, even if it is almost always a bug, unlike `project_unchecked` which is UB on invalid pointers or offsets.
 
-This corresponds with `std::ptr::add` and `std::ptr::wrapping_add` in safety and behaviour. `project_unchecked` and `project` need to be implemented as intrinsics because there is no way to assert that the pointer metadata for fat pointers of `Field::Parent` and `Field::Type` will always match in general without some other compiler support. This is necessary to allow unsized types to be used transparently with this scheme.
+This corresponds with `core::ptr::add` and `core::ptr::wrapping_add` in safety and behaviour. `project_unchecked` and `project` need to be implemented as intrinsics because there is no way to assert that the pointer metadata for fat pointers of `Field::Parent` and `Field::Type` will always match in general without some other compiler support. This is necessary to allow unsized types to be used transparently with this scheme.
 
 `inverse_project_unchecked` and `inverse_wrapping_project` are just like their counterparts in safety. `inverse_project_unchecked` is UB to use on invalid pointers, where `inverse_wrapping_project` just wraps around on overflow. But there is one important safety check that must be performed before dereferencing the resulting pointer. The resulting pointer may not actually point to a valid `*const F::Parent` if `*const F::Type` does not live inside of a `F::Parent`, so one must take care to ensure that the parent pointer is indeed valid. This is different from `project_unchecked` and `wrapping_project` because there one only needs to validate the original pointer, not the resulting pointer.
 
-`inverse_project_unchecked` and `inverse_wrapping_project` correspond to `std::ptr::sub` and `std::ptr::wrapping_sub` in safety and behaviour. They also must be implemented as intrinsics for the same reasons as stated above.
+`inverse_project_unchecked` and `inverse_wrapping_project` correspond to `core::ptr::sub` and `core::ptr::wrapping_sub` in safety and behaviour. They also must be implemented as intrinsics for the same reasons as stated above.
 
 For example of where `project_unchecked` would be UB.
 
@@ -194,7 +194,7 @@ If the raw pointer is valid, then the result of both `project_unchecked` and `wr
 
 ## Type and Traits
 
-The `Field` trait and the `FieldDescriptor` type will live inside the `std::project` module, and will not be added to `prelude`.
+The `Field` trait and the `FieldDescriptor` type will live inside the `core::project` module, and will not be added to `prelude`.
 
 The `Field` trait will only be implemented by the compiler, and it compiler should make sure that no other implementations exist. This allows unsafe code to assume that the implmentors or the `Field` trait always refer to valid fields. The `FieldDescriptor` type may be unnecessary raw pointer projections are implemented via intrinsics, if so we can remove it entirely.
 
@@ -297,7 +297,7 @@ unsafe impl PinProjectable for Foo.bar {}
 /// main.rs
 
 fn main() {
-    use std::project::Project;
+    use core::project::Project;
     use foo::Foo;
 
     // These type annotations are unnecessary, but I put them in for clarity 
@@ -317,8 +317,8 @@ We still need some `unsafe` to tell that it is indeed safe to project through th
 
 ## Reference-level explanation (`Project` and `PinProjectable`)
 
-The `Project` trait will live inside the `std::project` module, and will not be added to `prelude`.
-The `PinProjectable` trait will be added to `std::marker`, and will also not be added to `prelude`.
+The `Project` trait will live inside the `core::project` module, and will not be added to `prelude`.
+The `PinProjectable` trait will be added to `core::marker`, and will also not be added to `prelude`.
 
 The `Project` trait will be implemented for `*const T`, `*mut T`, `&T`, `&mut T`, `Pin<&T>`, `Pin<&mut T>`. Other smart pointers can get implementations later if they need them. We may also provide the following implementations to allow better documentation of intent
 
@@ -331,7 +331,7 @@ Because the following impls conflict,
 ```rust
 unsafe impl<F: Field> PinProjectable for F where F::Parent: Unpin {}
 
-struct Foo(std::marker::PhantomPinned);
+struct Foo(core::marker::PhantomPinned);
 
 unsafe impl PinProjectable for Foo.0 {}
 ```
