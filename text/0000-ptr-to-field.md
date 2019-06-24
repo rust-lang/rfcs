@@ -61,6 +61,7 @@ struct FieldDescriptor {
     ...
 }
 ```
+
 `FieldDescriptor` is an opaque type that will store some metadata about how to convert from a `*const Field::Parent` to a `*const Field::Type`. There is no way to safely construct `FieldDescriptor` from user code on Stable Rust until Rust gets a defined stable type layout for `repr(Rust)` types.
 
 The `Field` trait will allow generalizing over field types, and thus allow other apis to be created, for example...
@@ -68,6 +69,7 @@ The `Field` trait will allow generalizing over field types, and thus allow other
 ### `*const T`/`*mut T` methods
 
 We will add the following methods to raw pointers
+
 ```rust
 // details about why we need both and what they do exactly in Reference-level explanation
 
@@ -104,91 +106,12 @@ struct Bar {
 let x : Foo = ...;
 let y : *const Foo = &x;
 
-let y_bar_name: *const String = unsafe { y.project_unchecked(Foo.bar).project_unchecked(Foo.name) };
+let y_bar_name: *const String = unsafe { y.project_unchecked(Foo.bar).project_unchecked(Bar.name) };
 ```
 
 In the end `y_bar_name` will contain a pointer to `x.bar.name`, all without dereferencing a single pointer! (Given that this is a verbose, we may want some syntax for this, but that is out of scope for this RFC)
 
-But, we can build on this foundation and create a more power abstraction, to generalize this project notion to smart pointers...
-
-### `trait Project`
-
-```rust
-trait Project<F: Field> {
-    type Projection;
-
-    fn project(self, field: F) -> Self::Projection;
-}
-```
-
-This trait takes a pointer/smart pointer/reference and gives back a projection that represents a field on the pointee.
-
-i.e. For raw pointers we could implement this as so
-
-```rust
-impl<T: ?Sized, F: Field<Parent = T>> Project<F> for *const T {
-    type Projection = F::Type;
-    
-    fn project(self, field: F) -> Self::Projection {
-        self.wrapping_project(field)
-    }
-}
-```
-
-On it's own, this doesn't look like much, but once we have implementations for `&T`, we can also get an implementation for `Pin<&T>`! Meaning we would have safe projections through pins! (See [implementing pin projections](#implementing-pin-projections) for details about this)
-
-But before we can get there we need to discuss...
-
-### `trait PinProjectable`
-
-```rust
-unsafe trait PinProjectable {}
-```
-
-Due to some safety requirements that will be detailed in the reference-level explanation, we can't just freely hand out pin projections to every type (sad as it is). To enable pin projections to a field, a field type must implement `PinProjectable`.
-
-Like so,
-```rust
-unsafe impl PinProjectable for Foo.field {}
-```
-
-## Examples of usage
-
-Here is a toy example of how to use this api:
-Given the implementation of `Project for Pin<&mut T>`
-```rust
-/// Some other crate foo
-
-struct Foo {
-    pub bar: u32,
-    qaz: u32,
-    hal: u32,
-    ptr: *const u32,
-    pin: PhantomPinned
-}
-
-unsafe impl PinProjectable for Foo.bar {}
-
-/// main.rs
-
-fn main() {
-    use std::project::Project;
-    use foo::Foo;
-
-    // These type annotations are unnecessary, but I put them in for clarity 
-
-    let foo : Pin<Box<Foo>  = Box::pin(...);
-
-    let foo : Pin<&mut Foo> = foo.as_mut();
-
-    let bar : Pin<&mut u32> = foo.project(Foo.bar);
-
-    *bar = 10;
-}
-```
-
-In entirely safe code (in `main.rs`), we are able to set the value of a field inside a pinned type!
-We still need some `unsafe` to tell that it is indeed safe to project through the pin, but that falls on the owner of `Foo`.
+But, we can build on this foundation and create a more power abstraction, to generalize this project notion to smart pointers.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -258,14 +181,134 @@ If the raw pointer is valid, then the result of both `project_unchecked` and `wr
 
 ## Type and Traits
 
-The `Project`, and `Field` traits and the `FieldDescriptor` type will live inside the `std::project` module, and will not be added to `prelude`.
-The `PinProjectable` trait will be added to `std::marker`, and will also not be added to `prelude`.
+The `Field` trait and the `FieldDescriptor` type will live inside the `std::project` module, and will not be added to `prelude`.
 
 The `Field` trait will only be implemented by the compiler, and it compiler should make sure that no other implementations exist. This allows unsafe code to assume that the implmentors or the `Field` trait always refer to valid fields. The `FieldDescriptor` type may be unnecessary raw pointer projections are implemented via intrinsics, if so we can remove it entirely.
 
+# Drawbacks
+[drawbacks]: #drawbacks
+
+- This adds quite a bit of complexity to both the compiler and the standard library and could increase dramatically compile times
+
+# Rationale and alternatives
+[rationale-and-alternatives]: #rationale-and-alternatives
+
+- The `&[mut] raw T` could solve some of the problems, but only for raw pointers. It doesn't help with abstractions.
+- Somehow expand on `Deref` to allow dereferencing to a smart pointer
+    - This would require Generic Associated Types at the very least, and maybe some other features like assocaited traits
+
+# Prior art
+[prior-art]: #prior-art
+
+- C++'s pointer to members `Parent::*field`
+- Java's `class Field`
+    - Similar reflection capabilies in other languages
+
+# Unresolved questions
+[unresolved-questions]: #unresolved-questions
+
+- Syntax for the type fields
+    - not to be decided before accepting this RFC, but must be decided before stabilization
+    - Some other variations of the syntax are ...
+        - `Type::field` // This is bad because it conflicts with associated method, and there isn't a way to disambiguate them easily
+        - `Type~field`  // This adds a new sigil to the language
+
+# Future possibilities
+[future-possibilities]: #future-possibilities
+
+- Extend the `Project` trait to implement all smart pointers in the standard library
+- [`InitPtr`](https://internals.rust-lang.org/t/idea-pointer-to-field/10061/72), which encapsulates all of the safety requirements of `project_unchecked` into `InitPtr::new` and safely implements `Project`
+- Distant Future, we could reformulate `Copy` based on the `Field` trait so that it enforces that all of the fields of a type must be `Copy` in order to be the type to be `Copy`, and thus reduce the amount of magic in the compiler.
+
+- a `Project` and `PinProjectable` traits
+
+## `trait Project`
+
+```rust
+trait Project<F: Field> {
+    type Projection;
+
+    fn project(self, field: F) -> Self::Projection;
+}
+```
+
+This trait takes a pointer/smart pointer/reference and gives back a projection that represents a field on the pointee.
+
+i.e. For raw pointers we could implement this as so
+
+```rust
+impl<T: ?Sized, F: Field<Parent = T>> Project<F> for *const T {
+    type Projection = F::Type;
+    
+    fn project(self, field: F) -> Self::Projection {
+        self.wrapping_project(field)
+    }
+}
+```
+
+On it's own, this doesn't look like much, but once we have implementations for `&T`, we can also get an implementation for `Pin<&T>`! Meaning we would have safe projections through pins! (See [implementing pin projections](#implementing-pin-projections) for details about this)
+
+But before we can get there we need to discuss...
+
+## `trait PinProjectable`
+
+```rust
+unsafe trait PinProjectable {}
+```
+
+Due to some safety requirements that will be detailed in the reference-level explanation, we can't just freely hand out pin projections to every type (sad as it is). To enable pin projections to a field, a field type must implement `PinProjectable`.
+
+Like so,
+```rust
+unsafe impl PinProjectable for Foo.field {}
+```
+
+## Examples of usage
+
+Here is a toy example of how to use this api:
+Given the implementation of `Project for Pin<&mut T>`
+```rust
+/// Some other crate foo
+
+struct Foo {
+    pub bar: u32,
+    qaz: u32,
+    hal: u32,
+    ptr: *const u32,
+    pin: PhantomPinned
+}
+
+unsafe impl PinProjectable for Foo.bar {}
+
+/// main.rs
+
+fn main() {
+    use std::project::Project;
+    use foo::Foo;
+
+    // These type annotations are unnecessary, but I put them in for clarity 
+
+    let foo : Pin<Box<Foo>  = Box::pin(...);
+
+    let foo : Pin<&mut Foo> = foo.as_mut();
+
+    let bar : Pin<&mut u32> = foo.project(Foo.bar);
+
+    *bar = 10;
+}
+```
+
+In entirely safe code (in `main.rs`), we are able to set the value of a field inside a pinned type!
+We still need some `unsafe` to tell that it is indeed safe to project through the pin, but that falls on the owner of `Foo`.
+
+## Reference-level explanation (`Project` and `PinProjectable`)
+
+The `Project` trait will live inside the `std::project` module, and will not be added to `prelude`.
+The `PinProjectable` trait will be added to `std::marker`, and will also not be added to `prelude`.
+
 The `Project` trait will be implemented for `*const T`, `*mut T`, `&T`, `&mut T`, `Pin<&T>`, `Pin<&mut T>`. Other smart pointers can get implementations later if they need them. We may also provide the following implementations to allow better documentation of intent
 
-## `PinProjectable`
+### `PinProjectable`
 
 The safety of `PinProjectable` depends on a few things. One if a field type is marked `PinProjectable`, then the `Drop` on `Parent` may not move that field or otherwise invalidate it. i.e. You must treat that field as if a `Pin<&Field::Type>` has been made on it outside of your code.
 
@@ -284,7 +327,7 @@ I think making `PhantomPinned` a lang-item that is known to always implment `!Un
 
 Because of this, is `PinProjectable` worth it? Or do we want to punt it to another RFC.
 
-## Implementing pin projections
+### Implementing pin projections
 [impl-pin-projections]: #implementing-pin-projections
 
 First we neeed an implmention of `Project` for `&T` before we can get `Pin<&T>`
@@ -336,45 +379,3 @@ where F: PinProjectable {
     }
 }
 ```
-
-# Drawbacks
-[drawbacks]: #drawbacks
-
-- This adds quite a bit of complexity to both the compiler and the standard library and could increase dramatically compile times
-
-# Rationale and alternatives
-[rationale-and-alternatives]: #rationale-and-alternatives
-
-- The `&[mut] raw T` could solve some of the problems, but only for raw pointers. It doesn't help with abstractions.
-- Somehow expand on `Deref` to allow dereferencing to a smart pointer
-    - This would require Generic Associated Types at the very least, and maybe some other features like assocaited traits
-
-# Prior art
-[prior-art]: #prior-art
-
-- C++'s pointer to members `Parent::*field`
-- Java's `class Field`
-    - Similar reflection capabilies in other languages
-
-# Unresolved questions
-[unresolved-questions]: #unresolved-questions
-
-- Do we want to strip this proposal down to just the [api specified here](https://github.com/rust-lang/rfcs/pull/2708#issuecomment-499578814), where we only have the `Field` trait, `FieldDescriptor` type, and some associated functions on raw pointers.
-- Are we going to accept `PinProjectable`?
-    - If not, we won't have a safe way to do pin-projections
-    - Do we want another way to do safe pin-projections?
-
-- Syntax for the type fields
-    - not to be decided before accepting this RFC, but must be decided before stabilization
-    - Some other variations of the syntax are ...
-        - `Type::field` // This is bad because it conflicts with associated method, and there isn't a way to disambiguate them easily
-        - `Type~field`  // This adds a new sigil to the language
-- Do we want a dedicated syntax to go with the Project trait?
-    - If yes, the actual syntax can be decided after accepting this RFC and before stabilization
-
-# Future possibilities
-[future-possibilities]: #future-possibilities
-
-- Extend the `Project` trait to implement all smart pointers in the standard library
-- [`InitPtr`](https://internals.rust-lang.org/t/idea-pointer-to-field/10061/72), which encapsulates all of the safety requirements of `project_unchecked` into `InitPtr::new` and safely implements `Project`
-- Distant Future, we could reformulate `Copy` based on the `Field` trait so that it enforces that all of the fields of a type must be `Copy` in order to be the type to be `Copy`, and thus reduce the amount of magic in the compiler.
