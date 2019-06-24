@@ -6,12 +6,14 @@
 # Summary
 [summary]: #summary
 
-This feature could serve as the backbone for some pointer to field syntax, and even if no syntax is made, this feature serves as a safe generic way to talk about types and their fields.
+This feature could serve as the backbone for some pointer to field syntax, and even if no syntax is made, this feature serves as a safe generic way to talk about types and their fields, and projections through raw pointers.
 
 # Motivation
 [motivation]: #motivation
 
-The motivation for this feature is to allow safe projection through smart pointers, for example `Pin<&mut T>` to `Pin<&mut Field>`. This is a much needed feature to make `Pin<P>` more usable in safe-contexts, without the need to use unsafe to map to a field. This also can allow projection through other smart pointers like `Rc<T>`, `Arc<T>`. This feature cannot be implemented as a library effectively because it depends on the layouts of types, so it requires integration with the Rust compiler until Rust gets a stable layout (which may never happen).
+The motivation for this feature is to build a foundation for libraries to allow projections through smart pointers. For example, through `Pin<&mut T>` to `Pin<&mut Field>`. This is a much needed feature to make `Pin<P>` more usable in safe-contexts, without the need to use unsafe to map to a field. This also can allow projection through other smart pointers like `Rc<T>`, `Arc<T>`. This feature cannot be implemented as a library effectively because it depends on the layouts of types, so it requires integration with the Rust compiler until Rust gets a stable layout (which may never happen).
+
+This feature will also allow for safer patterns in `unsafe` code that deals with intrusive data strutures via `inverse_*` projections. It will also provide projections through raw pointers, which are currently not possible to do safely without a `#[repr(...)]` attribute (and even then it is easy to make a mistake). This will make `unsafe` code easier to audit and easier to write sound `unsafe` code.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
