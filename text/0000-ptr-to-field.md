@@ -101,7 +101,6 @@ These will allowing projections through raw pointers without dereferencing the r
 This is the extent of the core api of this RFC.
 
 Using this we can do something like this
-
 ```rust
 struct Foo {
     bar: Bar,
