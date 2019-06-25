@@ -157,7 +157,7 @@ You can make a field type for the following kinds of types (some example syntax 
     * `Foo.field`
 * unions `union Foo { field: Field }`
     * same syntax as structs
-    * constructing a field type is `unsafe`, this is because accessing fields of `union`s is unsafe
+    * accessing a field type is `unsafe`, because accessing fields of `union`s is unsafe
 
 The compiler can decide whether to actual generate a field type, this is to help compile times (if you don't use field types, then the compiler shouldn't slow down too much because of this feature).
 
