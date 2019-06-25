@@ -37,12 +37,7 @@ A field type for the `name` field of `Person` would be `Person.name`.
 
 <sub>Note about syntax: the syntax `Type.field` is going to be used as a placeholder syntax for the rest of this RFC, but this is *not* the final syntax for field types, that decision will be made after this RFC gets accepted but before it gets stabilized.</sub>
 
-Field types serve a few important purposes
-* They are integrated with the new `Project` trait (explained later)
-* Becaue they are types, they can implement traits
-    * This will allow conditional implementations of `Project`, which is important for `Pin<P>` (also explained later)
-
-Because they are types we can also generalize over field types like so...
+Field types serve one important purpose, because they are types, they can implement traits, and thus be generalized over. This allows for powerful compile time guarantees that field types are being used correctly.
 
 ### `trait Field` and `type FieldDescriptor`
 
@@ -56,12 +51,10 @@ trait Field {
     /// The type of the field itself
     type Type: ?Sized;
 
-    const FIELD_DESCRIPTOR: FieldDescriptor;
+    const FIELD_DESCRIPTOR: FieldDescriptor<Self>;
 }
 
-struct FieldDescriptor {
-    ...
-}
+struct FieldDescriptor<F: Field + ?Sized> { .. }
 ```
 
 `FieldDescriptor` is an opaque type that will store some metadata about how to convert from a `*const Field::Parent` to a `*const Field::Type`. There is no way to safely construct `FieldDescriptor` from user code on Stable Rust until Rust gets a defined stable type layout for `repr(Rust)` types.
@@ -163,15 +156,19 @@ The compiler can decide whether to actual generate a field type, this is to help
 
 ## `*const T`/`*mut T`
 
-`project_unchecked` and `wrapping_project` will both live inside of `core::ptr`.
+`project_unchecked`, `wrapping_project`, `inverse_project_unchecked`, and `inverse_wrapping_project` will all be inherent methods on `*const T` and `*mut T`. They will be implemented on top of intrinsics (names of which don't matter), and those intrinsics will live in `core::intrinsics` (as all intrinsics do).
+
+raw pointer projections need to be implemented as intrinsics because there is no way to assert that the pointer metadata for fat pointers of `Field::Parent` and `Field::Type` will always match in general without some other compiler support. This is necessary to allow unsized types to be used transparently with this scheme. (See more details in next section).
 
 We need both `project_unchecked` and `wrapping_project` because there are some important optimization available inside of LLVM related to aliasing and escape analysis. In particular the LLVM `inbounds` assertion tells LLVM that a pointer offset stays within the same allocation and if the pointer is invalid or the offset does not stay within the same allocation it is considered UB. This behaviour is exposed via `project_unchecked`. This can be used by implementations of the `Project` trait for smart pointers that are always valid, like `&T` to enable better codegen. `wrapping_project` on the other hand will not assert `inbounds`, and will just wrap around if the pointer offset is larger than `usize::max_value()`. This safe defined behaviour, even if it is almost always a bug, unlike `project_unchecked` which is UB on invalid pointers or offsets.
 
-This corresponds with `core::ptr::add` and `core::ptr::wrapping_add` in safety and behaviour. `project_unchecked` and `project` need to be implemented as intrinsics because there is no way to assert that the pointer metadata for fat pointers of `Field::Parent` and `Field::Type` will always match in general without some other compiler support. This is necessary to allow unsized types to be used transparently with this scheme.
+This corresponds with `core::ptr::add` and `core::ptr::wrapping_add` in safety and behaviour.
 
-`inverse_project_unchecked` and `inverse_wrapping_project` are just like their counterparts in safety. `inverse_project_unchecked` is UB to use on invalid pointers, where `inverse_wrapping_project` just wraps around on overflow. But there is one important safety check that must be performed before dereferencing the resulting pointer. The resulting pointer may not actually point to a valid `*const F::Parent` if `*const F::Type` does not live inside of a `F::Parent`, so one must take care to ensure that the parent pointer is indeed valid. This is different from `project_unchecked` and `wrapping_project` because there one only needs to validate the original pointer, not the resulting pointer.
+`inverse_project_unchecked` and `inverse_wrapping_project` are have all of the same safety requirements as their counterparts, and some more.
 
-`inverse_project_unchecked` and `inverse_wrapping_project` correspond to `core::ptr::sub` and `core::ptr::wrapping_sub` in safety and behaviour. They also must be implemented as intrinsics for the same reasons as stated above.
+`inverse_project_unchecked` and `inverse_wrapping_project` produces a valid pointer without UB if and only if the initial pointer is both valid and points to a field in the parent type used to perform the inverse projection. `inverse_wrapping_project` will never cause UB, but may produce invalid pointers. `inverse_project_unchecked` will cause UB if the condition above is not met. This is different from `project_unchecked` and `wrapping_project` because they only need to validate the original pointer, not the resulting pointer.
+
+`inverse_project_unchecked` and `inverse_wrapping_project` correspond to `core::ptr::sub` and `core::ptr::wrapping_sub` in safety and behaviour.
 
 For example of where `project_unchecked` would be UB.
 
@@ -184,13 +181,43 @@ let x : *const Foo = 2usize as *const Foo;
 let y : *const Bar = x.project_unchecked(Foo.bar); // UB, x does not point to a valid instance of Foo
 ```
 
-With `wrapping_project` trait
+With `wrapping_project`
 
 ```rust
 let z : *const Bar = x.wrapping_project(Foo.bar); // not UB, but is still invalid
 ```
 
+For example of where `inverse_project_unchecked` would be UB.
+
+```rust
+struct Foo {
+    bar: Bar
+}
+
+let x : *const Foo = 2usize as *const Bar;
+let y : *const Bar = x.inverse_project_unchecked(Foo.bar); // UB, x does not point to a valid instance of Bar
+
+let v :        Bar = Bar(...);
+let v : *const Bar = &v;
+let y : *const Bar = v.inverse_project_unchecked(Foo.bar); // UB, v does not point to a field of Foo
+```
+
+With `inverse_wrapping_project`
+
+```rust
+
+let y : *const Bar = x.inverse_wrapping_project(Foo.bar); // not UB, but y is invalid
+
+let y : *const Bar = v.inverse_wrapping_project(Foo.bar); // not UB, but y is invalid
+```
+
 If the raw pointer is valid, then the result of both `project_unchecked` and `wrapping_project` is a raw pointer to the given field.
+
+## Pointer Metadata
+
+When projecting to a field the pointer metadata must be preserved. Currently types can only have 1 DST field, which means and we only have two forms of primitive DSTs, slices and trait objects. Slices's metadata is always a `usize` length, and trait objects always have a pointer to their v-table. When projecting to the DST. For either case the metadata should just be copied over to the resulting pointer if and only if the resulting pointer points to the DST field.
+
+If Rust ever gets multiple DST fields, pointer projections will need to adapt to handle that. If Rust gets Custom DSTs, then we must consider how that proposal affects pointer metadata.
 
 ## Type and Traits
 
