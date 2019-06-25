@@ -261,6 +261,8 @@ The `Field` trait will only be implemented by the compiler, and it compiler shou
 - [`InitPtr`](https://internals.rust-lang.org/t/idea-pointer-to-field/10061/72), which encapsulates all of the safety requirements of `project_unchecked` into `InitPtr::new` and safely implements `Project`
 - Distant Future, we could reformulate `Copy` based on the `Field` trait so that it enforces that all of the fields of a type must be `Copy` in order to be the type to be `Copy`, and thus reduce the amount of magic in the compiler.
 - Integration with Custom DSTs
+- Integration with a possible Enum Variants as Types feature
+    - This will allow projecting to enum variants safely
 
 - a `Project` and `PinProjectable` traits
     - These were in an earier version of this RFC, but were removed as they are not essential, and this RFC is already rather niche. So to limit the scope of this RFC, they were removed. If this RFC is accepted, then `Project` and `PinProjectable` could be implmented as library items outside of `std`.
