@@ -215,7 +215,7 @@ If the raw pointer is valid, then the result of both `project_unchecked` and `wr
 
 ## Pointer Metadata
 
-When projecting to a field the pointer metadata must be preserved. Currently types can only have 1 DST field, which means and we only have two forms of primitive DSTs, slices and trait objects. Slices's metadata is always a `usize` length, and trait objects always have a pointer to their v-table. When projecting to the DST. For either case the metadata should just be copied over to the resulting pointer if and only if the resulting pointer points to the DST field.
+When projecting to a field the pointer metadata must be preserved. Currently types can only have 1 DST field, meaning that the metadata on the parent is exactly the same as the metadata on the child (only DST field). We only have two forms of primitive DSTs, slices and trait objects. These last two facts mean that every DST must eventually boil down to one of these. Slices's metadata is always a `usize` length, and trait objects always have a pointer to their v-table. So when projecting a raw pointer to a DST field in either case the metadata should just be copied over to the resulting pointer. This works because we only have slices and trait objects as primitive DSTs. For every other type of projection the metadata will be zero-sized, so there isn't anything to worry about.
 
 If Rust ever gets multiple DST fields, pointer projections will need to adapt to handle that. If Rust gets Custom DSTs, then we must consider how that proposal affects pointer metadata.
 
@@ -252,6 +252,9 @@ The `Field` trait will only be implemented by the compiler, and it compiler shou
     - Some other variations of the syntax are ...
         - `Type::field` // This is bad because it conflicts with associated method, and there isn't a way to disambiguate them easily
         - `Type~field`  // This adds a new sigil to the language
+- How will pointer metadata be handled for more exotic Custom DSTs?
+    - see @CAD97's example [here](https://github.com/rust-lang/rfcs/pull/2708#discussion_r296933269)
+        > Note that this doesn't require equivalent metadata: a theoretical pointer with two metadatas could be split into two child fat pointers with one or the other metadata.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
@@ -259,6 +262,7 @@ The `Field` trait will only be implemented by the compiler, and it compiler shou
 - Extend the `Project` trait to implement all smart pointers in the standard library
 - [`InitPtr`](https://internals.rust-lang.org/t/idea-pointer-to-field/10061/72), which encapsulates all of the safety requirements of `project_unchecked` into `InitPtr::new` and safely implements `Project`
 - Distant Future, we could reformulate `Copy` based on the `Field` trait so that it enforces that all of the fields of a type must be `Copy` in order to be the type to be `Copy`, and thus reduce the amount of magic in the compiler.
+- Integration with Custom DSTs
 
 - a `Project` and `PinProjectable` traits
     - These were in an earier version of this RFC, but were removed as they are not essential, and this RFC is already rather niche. So to limit the scope of this RFC, they were removed. If this RFC is accepted, then `Project` and `PinProjectable` could be implmented as library items outside of `std`.
