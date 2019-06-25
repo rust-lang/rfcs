@@ -158,13 +158,13 @@ The compiler can decide whether to actual generate a field type, this is to help
 
 raw pointer projections need to be implemented as intrinsics because there is no way to assert that the pointer metadata for fat pointers of `Field::Parent` and `Field::Type` will always match in general without some other compiler support. This is necessary to allow unsized types to be used transparently with this scheme. (See more details in next section).
 
-We need both `project_unchecked` and `wrapping_project` because there are some important optimization available inside of LLVM related to aliasing and escape analysis. In particular the LLVM `inbounds` assertion tells LLVM that a pointer offset stays within the same allocation and if the pointer is invalid or the offset does not stay within the same allocation it is considered UB. This behaviour is exposed via `project_unchecked`. This can be used by implementations of the `Project` trait for smart pointers that are always valid, like `&T` to enable better codegen. `wrapping_project` on the other hand will not assert `inbounds`, and will just wrap around if the pointer offset is larger than `usize::max_value()`. This safe defined behaviour, even if it is almost always a bug, unlike `project_unchecked` which is UB on invalid pointers or offsets.
+We need both `project_unchecked` and `wrapping_project` because there are some important optimization available inside of LLVM related to aliasing and escape analysis. In particular the LLVM `inbounds` assertion tells LLVM that a pointer offset stays within the same allocation and if the pointer is invalid or the offset does not stay within the same allocation it is considered UB. This behaviour is exposed via `project_unchecked`. This can be used when the pointer is known without a doubt to be valid, such as when derived from `&T`, to enable better codegen. `wrapping_project` on the other hand will not assert `inbounds`, and will just wrap around if the pointer offset is larger than `usize::max_value()`. This safe defined behaviour, even if it is almost always a bug, unlike `project_unchecked` which is UB on invalid pointers or offsets.
 
 This corresponds with `<*const _>::add` and `<*const _>::wrapping_add` in safety and behaviour.
 
 `inverse_project_unchecked` and `inverse_wrapping_project` are have all of the same safety requirements as their counterparts, and some more.
 
-`inverse_project_unchecked` and `inverse_wrapping_project` produces a valid pointer without UB if and only if the initial pointer is both valid and points to a field in the parent type used to perform the inverse projection. `inverse_wrapping_project` will never cause UB, but may produce invalid pointers. `inverse_project_unchecked` will cause UB if the condition above is not met. This is different from `project_unchecked` and `wrapping_project` because they only need to validate the original pointer, not the resulting pointer.
+`inverse_project_unchecked` and `inverse_wrapping_project` produces a valid pointer without UB if and only if the initial pointer is both valid and points to a field in the parent type used to perform the inverse projection. `inverse_wrapping_project` will never cause UB, but may produce invalid pointers. `inverse_project_unchecked` will cause UB if the condition above is not met. This is different from `project_unchecked` and `wrapping_project` because they only need to prove the validity of the original pointer, and not the context in which it resides.
 
 `inverse_project_unchecked` and `inverse_wrapping_project` correspond to `<*const _>::sub` and `<*const _>::wrapping_sub` in safety and behaviour.
 
@@ -182,7 +182,7 @@ let y : *const Bar = x.project_unchecked(Foo.bar); // UB, x does not point to a 
 With `wrapping_project`
 
 ```rust
-let z : *const Bar = x.wrapping_project(Foo.bar); // not UB, but is still invalid
+let z : *const Bar = x.wrapping_project(Foo.bar); // not UB, but still produces an invalid pointer
 ```
 
 For example of where `inverse_project_unchecked` would be UB.
@@ -257,7 +257,6 @@ The `Field` trait will only be implemented by the compiler, and it compiler shou
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-- Extend the `Project` trait to implement all smart pointers in the standard library
 - [`InitPtr`](https://internals.rust-lang.org/t/idea-pointer-to-field/10061/72), which encapsulates all of the safety requirements of `project_unchecked` into `InitPtr::new` and safely implements `Project`
 - Distant Future, we could reformulate `Copy` based on the `Field` trait so that it enforces that all of the fields of a type must be `Copy` in order to be the type to be `Copy`, and thus reduce the amount of magic in the compiler.
 - Integration with Custom DSTs
