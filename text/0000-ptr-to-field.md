@@ -148,7 +148,7 @@ All field types will implement the following traits: `Debug`, `Clone`, `Copy`, `
 
 They will also need to interact with the privacy rules for fields, and will have the same privacy as the field that they are derived from.
 
-You can make a field type for the following types of types (some example syntax is shown)
+You can make a field type for the following kinds of types (some example syntax is shown)
 * tuples `(T, U, ...)`
     * `<(T, U)>.0`
 * tuple structs `Foo(T, U, ...)`
