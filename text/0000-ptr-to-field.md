@@ -166,7 +166,7 @@ This corresponds with `core::ptr::add` and `core::ptr::wrapping_add` in safety a
 
 `inverse_project_unchecked` and `inverse_wrapping_project` are have all of the same safety requirements as their counterparts, and some more.
 
-`inverse_project_unchecked` and `inverse_wrapping_project` produces a valid pointer without UB if and only if the initial pointer is both valid and points to a field in the parent type used to perform the inverse projection. `inverse_wrapping_project` will never cause UB, but may produce invalid pointers. `inverse_project_unchecked` will cause UB if the condition above is not met. This is different from `project_unchecked` and `wrapping_project` because they only need to validate the original pointer, not the resulting pointer.
+`inverse_project_unchecked` and `inverse_wrapping_project` produces a valid pointer without UB if and only if the initial pointer is both valid and points to a field in the parent type used to perform the inverse projection. `inverse_wrapping_project` will never cause UB, but may produce invalid pointers. `inverse_project_unchecked` will cause UB if the condition above is not met. This is different from `project_unchecked` and `wrapping_project` because they only need to prove the validity of the original pointer, and not the context in which it resides.
 
 `inverse_project_unchecked` and `inverse_wrapping_project` correspond to `core::ptr::sub` and `core::ptr::wrapping_sub` in safety and behaviour.
 
@@ -184,7 +184,7 @@ let y : *const Bar = x.project_unchecked(Foo.bar); // UB, x does not point to a 
 With `wrapping_project`
 
 ```rust
-let z : *const Bar = x.wrapping_project(Foo.bar); // not UB, but is still invalid
+let z : *const Bar = x.wrapping_project(Foo.bar); // not UB, but still produces an invalid pointer
 ```
 
 For example of where `inverse_project_unchecked` would be UB.
@@ -259,7 +259,6 @@ The `Field` trait will only be implemented by the compiler, and it compiler shou
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-- Extend the `Project` trait to implement all smart pointers in the standard library
 - [`InitPtr`](https://internals.rust-lang.org/t/idea-pointer-to-field/10061/72), which encapsulates all of the safety requirements of `project_unchecked` into `InitPtr::new` and safely implements `Project`
 - Distant Future, we could reformulate `Copy` based on the `Field` trait so that it enforces that all of the fields of a type must be `Copy` in order to be the type to be `Copy`, and thus reduce the amount of magic in the compiler.
 - Integration with Custom DSTs
