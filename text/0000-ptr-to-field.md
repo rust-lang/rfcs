@@ -92,6 +92,7 @@ impl<T: ?Sized> *mut T {
 These will allowing projections through raw pointers without dereferencing the raw pointer. This is useful for building projections through other abstractions like smart pointers (`Rc<T>`, `Pin<&T>`)!
 
 Using this we can do something like this
+
 ```rust
 struct Foo {
     bar: Bar,
@@ -111,7 +112,7 @@ let y_bar_name: *const String = unsafe { y.project_unchecked(Foo.bar).project_un
 
 In the end `y_bar_name` will contain a pointer to `x.bar.name`, all without dereferencing a single pointer! (Given that this is a verbose, we may want some syntax for this, but that is out of scope for this RFC)
 
-But, we can build on this foundation and create a more power abstraction, to generalize this project notion to smart pointers.
+But, we can build on this foundation and create a more power abstraction, to generalize this project notion to smart pointers. See future possibilities section for some ideas about how this could work, via the `Project` trait.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -123,6 +124,7 @@ This section will go in detail about the semantics and implementation of the typ
 Field types are just sugar for unit types (`struct Foo;`) that are declared right next to the `Parent` type.
 
 Like so,
+
 ```rust
 struct Person {
     pub name: String,
@@ -156,7 +158,7 @@ The compiler can decide whether to actual generate a field type, this is to help
 
 `project_unchecked`, `wrapping_project`, `inverse_project_unchecked`, and `inverse_wrapping_project` will all be inherent methods on `*const T` and `*mut T`. They will be implemented on top of intrinsics (names of which don't matter), and those intrinsics will live in `core::intrinsics` (as all intrinsics do).
 
-raw pointer projections need to be implemented as intrinsics because there is no way to assert that the pointer metadata for fat pointers of `Field::Parent` and `Field::Type` will always match in general without some other compiler support. This is necessary to allow unsized types to be used transparently with this scheme. (See more details in next section).
+Raw pointer projections need to be implemented as intrinsics because there is no way to assert that the pointer metadata for fat pointers of `Field::Parent` and `Field::Type` will always match in general without some other compiler support. This is necessary to allow unsized types to be used transparently with this scheme. (See more details in next section).
 
 We need both `project_unchecked` and `wrapping_project` because there are some important optimization available inside of LLVM related to aliasing and escape analysis. In particular the LLVM `inbounds` assertion tells LLVM that a pointer offset stays within the same allocation and if the pointer is invalid or the offset does not stay within the same allocation it is considered UB. This behaviour is exposed via `project_unchecked`. This can be used when the pointer is known without a doubt to be valid, such as when derived from `&T`, to enable better codegen. `wrapping_project` on the other hand will not assert `inbounds`, and will just wrap around if the pointer offset is larger than `usize::max_value()`. This safe defined behaviour, even if it is almost always a bug, unlike `project_unchecked` which is UB on invalid pointers or offsets.
 
@@ -192,21 +194,21 @@ struct Foo {
     bar: Bar
 }
 
-let x : *const Foo = 2usize as *const Bar;
-let y : *const Bar = x.inverse_project_unchecked(Foo.bar); // UB, x does not point to a valid instance of Bar
+let x : *const Bar = 2usize as *const Bar;
+let y : *const Foo = x.inverse_project_unchecked(Foo.bar); // UB, x does not point to a valid instance of Bar
 
 let v :        Bar = Bar(...);
 let v : *const Bar = &v;
-let y : *const Bar = v.inverse_project_unchecked(Foo.bar); // UB, v does not point to a field of Foo
+let y : *const Foo = v.inverse_project_unchecked(Foo.bar); // UB, v does not point to a field of Foo
 ```
 
 With `inverse_wrapping_project`
 
 ```rust
 
-let y : *const Bar = x.inverse_wrapping_project(Foo.bar); // not UB, but y is invalid
+let y : *const Foo = x.inverse_wrapping_project(Foo.bar); // not UB, but y is invalid
 
-let y : *const Bar = v.inverse_wrapping_project(Foo.bar); // not UB, but y is invalid
+let y : *const Foo = v.inverse_wrapping_project(Foo.bar); // not UB, but y is invalid
 ```
 
 If the raw pointer is valid, then the result of both `project_unchecked` and `wrapping_project` is a raw pointer to the given field.
@@ -232,6 +234,7 @@ The `Field` trait will only be implemented by the compiler, and it compiler shou
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 - The `&[mut] raw T` could solve some of the problems, but only for raw pointers. It doesn't help with abstractions.
+
 - Somehow expand on `Deref` to allow dereferencing to a smart pointer
     - This would require Generic Associated Types at the very least, and maybe some other features like assocaited traits
 
@@ -239,6 +242,7 @@ The `Field` trait will only be implemented by the compiler, and it compiler shou
 [prior-art]: #prior-art
 
 - C++'s pointer to members `Parent::*field`
+
 - Java's `class Field`
     - Similar reflection capabilies in other languages
 
@@ -250,6 +254,7 @@ The `Field` trait will only be implemented by the compiler, and it compiler shou
     - Some other variations of the syntax are ...
         - `Type::field` // This is bad because it conflicts with associated method, and there isn't a way to disambiguate them easily
         - `Type~field`  // This adds a new sigil to the language
+
 - How will pointer metadata be handled for more exotic Custom DSTs?
     - see @CAD97's example [here](https://github.com/rust-lang/rfcs/pull/2708#discussion_r296933269)
         > Note that this doesn't require equivalent metadata: a theoretical pointer with two metadatas could be split into two child fat pointers with one or the other metadata.
@@ -257,9 +262,12 @@ The `Field` trait will only be implemented by the compiler, and it compiler shou
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-- [`InitPtr`](https://internals.rust-lang.org/t/idea-pointer-to-field/10061/72), which encapsulates all of the safety requirements of `project_unchecked` into `InitPtr::new` and safely implements `Project`
+- [`InitPtr`](https://internals.rust-lang.org/t/idea-pointer-to-field/10061/72), which encapsulates all of the safety requirements of `project_unchecked` into `InitPtr::new` and safely implements `Project` (see below for `Project`)
+
 - Distant Future, we could reformulate `Copy` based on the `Field` trait so that it enforces that all of the fields of a type must be `Copy` in order to be the type to be `Copy`, and thus reduce the amount of magic in the compiler.
+
 - Integration with Custom DSTs
+
 - Integration with a possible Enum Variants as Types feature
     - This will allow projecting to enum variants safely
 
@@ -303,6 +311,7 @@ unsafe trait PinProjectable {}
 Due to some safety requirements that will be detailed in the reference-level explanation, we can't just freely hand out pin projections to every type (sad as it is). To enable pin projections to a field, a field type must implement `PinProjectable`.
 
 Like so,
+
 ```rust
 unsafe impl PinProjectable for Foo.field {}
 ```
@@ -311,6 +320,7 @@ unsafe impl PinProjectable for Foo.field {}
 
 Here is a toy example of how to use this api:
 Given the implementation of `Project for Pin<&mut T>`
+
 ```rust
 /// Some other crate foo
 
@@ -365,6 +375,7 @@ struct Foo(core::marker::PhantomPinned);
 
 unsafe impl PinProjectable for Foo.0 {}
 ```
+
 [Proof](https://play.rust-lang.org/?version=nightly&mode=debug&edition=2018&gist=b0796a8b631e0fec1804318caef162c7)
 
 I think making `PhantomPinned` a lang-item that is known to always implment `!Unpin` would solve this. This way only those who implment `!Unpin` types need to worry about implementing `PinProjectable`. Another way to solve this would be to somehow make `PinProjectable` a lang-item that allows this one case of conflicting impls. But I am unsure of how to properly handle this, both way s that I showed seem unsatisfactory. The blanket impl is highly desirable, because it enables those who don't write `!Unpin` types to ignore safe pin projections, and still have them available.
