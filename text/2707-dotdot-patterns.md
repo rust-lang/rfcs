@@ -1,7 +1,7 @@
 - Feature Name: `dotdot_patterns`
 - Start Date: 2019-06-01
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- RFC PR: [rust-lang/rfcs#2707](https://github.com/rust-lang/rfcs/pull/2707)
+- Rust Issue: [rust-lang/rust#62254](https://github.com/rust-lang/rust/issues/62254)
 
 # Summary
 [summary]: #summary
