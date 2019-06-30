@@ -1,7 +1,7 @@
-- Feature Name: slice_patterns
+- Feature Name: `slice_patterns`
 - Start Date: 2018-03-08
-- RFC PR: (leave this empty)
-- Rust Issue: (leave this empty)
+- RFC PR: [rust-lang/rfcs#2359](https://github.com/rust-lang/rfcs/pull/2359)
+- Rust Issue: [rust-lang/rust#62254](https://github.com/rust-lang/rust/issues/62254)
 
 # Summary
 [summary]: #summary
