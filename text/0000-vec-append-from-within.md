@@ -22,6 +22,8 @@ This proposal is an attempt to provide the minimum viable building block that wi
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
+This function appends copies of elements within the specified range to the end of the vector.
+
 ```rust
 // append one element
 let mut vec1 = vec![3,5,7];
