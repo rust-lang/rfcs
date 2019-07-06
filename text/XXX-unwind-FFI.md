@@ -15,6 +15,8 @@ Provide a well-defined mechanism for unwinding through FFI boundaries.
   generation of the final product will fail
   unless the panic strategy is `unwind`
   and a non-default panic runtime is specified.
+* Stabilize the `#![panic_runtime]` annotation (from
+  [RFC #1513](1513-less-unwinding.md)).
 * Provide an `unwind` runtime in the standard library
   that guarantees compatibility with the native exception mechanism
   provided by the compiler backend.
@@ -55,67 +57,98 @@ extern "C" fn may_panic(i: i32) {
 }
 ```
 
-----------------------------------------------------------------------------
-TODO below this line
-----------------------------------------------------------------------------
+In a future (TBD) version of Rust,
+calling this function with an argument less than
+zero will cause the program to be aborted.
+This is the only way the compiler can ensure that the function is safe,
+because there is no way for it to know whether or not the calling code
+supports the same implementation of stack-unwinding used for Rust.
 
-In a future (TBD) version of Rust, calling this function with an argument less
-than zero will cause the program to be aborted. This is the only way the Rust
-compiler can ensure that the function is safe, because there is no way for it
-to know whether or not the calling code supports the same implementation of
-stack-unwinding used for Rust.
+As a concrete example,
+this function may be invoked from C code on Linux or BSD
+compiled without support for native stack-unwinding.
+The C runtime would lack the necessary metadata
+to properly propagate the unwinding operation,
+so it would be undefined behavior to let the runtime attempt
+to unwind the C stack frames.
 
-As a concrete example, Rust code marked `exern "C"` may be invoked from C code,
-but C code on Linux or BSD may be compiled without support for native
-stack-unwinding. This means that the runtime would lack the necessary metadata
-to properly perform the unwinding operation.
+However, if the C code is compiled
+with support for the same stack-unwinding mechanism
+used to by the Rust code,
+unwinding across the FFI boundary is well-defined and safe,
+and in fact it can be a useful way to handle errors
+when working with certain C libraries, such as `libjpeg`.
 
-However, there are cases in which a `panic` through an `extern` function can be
-used safely. For instance, it is possible to invoke `extern` Rust functions
-via Rust code built with the same toolchain, in which case it would be
-irrelevant to the unwinding operation that the `panic`ing function is an
-`extern` function:
+Thus, the `may_panic` function may be makred `#[unwind(allow)]`,
+which ensures that the unwinding operation will be propagated to the caller
+rather than aborting the process.
+This annotation will also prevent the compiler
+from marking the function as `noexcept`
+(which permits the backend toolchain from optimizing based on the assumption
+that an unwinding operation cannot escape from a function).
 
-```rust
-fn main() {
-    let result = panic::catch_unwind(|| {
-        may_panic(-1);
-    }
-    assert!(result.is_err());
-}
+This annotation can only be used with an `unsafe` function,
+since the compiler is unable to guarantee
+that the caller will be compiled with a compatible stack-unwinding mechanism.
+
+This RFC does, however, provide a tool that will enable users
+to provide this guarantee themselves.
+We will stabilize the `!#[panic_runtime]` annotation,
+which [designates a crate as the provider of the final product's panic runtime]
+(1513-less-unwinding.md).
+Additionally, the standard library's current `panic=unwind` runtime crate,
+`libpanic_unwind`, which is compatible with native C++ style exceptions,
+will be provided under another name (such as `libpanic_native`)
+that guarantees the implementation will remain compatible with C++ exceptions
+(while the implementation of `libpanic_unwind` itself may change
+to no longer maintain that compatibility).
+
+In order for Cargo users to be able
+to specify the C++ compatible `panic_runtime` implementation,
+a new optional value, runtime, will be added to the `profile.dev.panic` option:
+
+```toml
+[profile.dev]
+panic = { 'unwind', runtime = 'native' }
 ```
 
-In order to ensure that `may_panic` will not simply abort in a future version
-of Rust, it must be marked `#[unwind(Rust)]`. This annotation can only be used
-with an `unsafe` function, since the compiler is unable to make guarantees
-about the behavior of the caller.
+`panic.runtime` may only be specified if the panic strategy is `unwind`.
+And just as there may only be one strategy
+in the dependency graph for a final product,
+there may only be one `runtime`.
 
-```rust
-#[unwind(Rust)]
-unsafe extern "C" fn may_panic(i: i32) {
-    if i < 0 {
-        panic!("Oops, I should have used u32.");
-    }
-}
-```
+For now, the only valid `runtime` keys will be:
 
-**PLEASE NOTE:** Using this annotation **does not** provide any guarantees
-about the unwinding implementation. Therefore, using this feature to compile
-functions intended to be called by C code **does not make the behavior
-well-defined**; in particular, **the behavior may change in a future version of
-Rust.**
+* `default` - identical to `panic = 'unwind'` with no `runtime` selected.
+  This will use Rust's default unwinding runtime,
+  unless another crate in the final product's dependency graph
+specifies `panic = 'abort'`,
+  in which case the `abort` strategy will take precedence as usual.
+  which is not guaranteed to be compatible with native exceptions.
+* `native` - as discussed above, this will preserve the behavior of the current
+  implementation of `libpanic_unwind`.
+* `crate` - indicates that a non-`std` crate will use `#![panic_runtime]` to
+  provide the runtime.
+* `self` - indicates that this crate itself provides `#![panic_runtime]`.
 
-The *only* well-defined behavior specified by this annotation is Rust-to-Rust
-unwinding.
+If the `native` or `crate` key is specified
+anywhere in a final product's dependency graph,
+no crate in that dependency graph may specify the `panic = abort` strategy;
+this mismatch will cause the build to fail.
 
-It is safe to call such a function from C or C++ code only if that code is
-guaranteed to provide the same unwinding implementation as the Rust compiler
-used to compile the function.
+The function annotation `#[panic(allowed)]` will only be permitted in crates
+that specify a non-default `panic.runtime`.
 
-Since the behavior may be subject to change without notice as the Rust compiler
-is updated, it is recommended that all projects that rely on unwinding from
-Rust code into C code lock the project's `rustc` version and only update it
-after ensuring that the behavior will remain correct.
+Crates that do not use the `profile.dev.panic` option at all
+will remain compatible with any `profile.dev.panic` configuration
+used to generate the final product.
+
+For non-Cargo users, equivalent `rustc` flags will be provided
+(which will be how Cargo itself implements the option).
+
+-------------------------------------------------------------------------------
+TODO - below this line
+-------------------------------------------------------------------------------
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -148,7 +181,7 @@ is fairly difficult. So far, there are only two safe use cases identified:
 * In projects using LLVM or GCC exclusively, the `-fexceptions` flag ensures
   that C code is compiled with C++ exception support, so the runtime behavior
   should be safe as long as `rustc` uses the native C++ exception mechanism as
-  its `panic` implementation.
+  its `panic` implementation.            `
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
