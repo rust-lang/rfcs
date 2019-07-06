@@ -1,4 +1,4 @@
-- Feature Name: (fill me in with a unique ident, `my_awesome_feature`)
+- Feature Name: `unwind-through-FFI`
 - Start Date: (fill me in with today's date, YYYY-MM-DD)
 - RFC PR: ???
 - Rust Issue: ???
@@ -6,23 +6,41 @@
 # Summary
 [summary]: #summary
 
-A new function annotation, `#[unwind(Rust)]`, will be introduced; it will
-explicitly permit `extern` functions to unwind (`panic`) without aborting. No
-guarantees are made regarding the specific unwinding implementation.
+Provide a well-defined mechanism for unwinding through FFI boundaries.
+
+* Stabilize the function annotation `#[unwind(allowed)]`,
+  which explicitly permits `extern` functions
+  to unwind (`panic`) without aborting.
+* If this annotation is used anywhere in the dependency tree, 
+  generation of the final product will fail
+  unless the panic strategy is `unwind`
+  and a non-default panic runtime is specified.
+* Provide an `unwind` runtime in the standard library
+  that guarantees compatibility with the native exception mechanism
+  provided by the compiler backend.
+* Provide a Cargo option under `[profile.def]` to specify a `panic` runtime.
 
 # Motivation
 [motivation]: #motivation
 
 This will enable resolving
-[rust-lang/rust#58794](https://github.com/rust-lang/rust/issues/58794) without
-breaking existing code.
+[rust-lang/rust#58794](https://github.com/rust-lang/rust/issues/58794)
+without breaking existing code.
 
-Currently, unwinding through an FFI boundary is always undefined behavior. We
-would like to make the behavior safe by aborting when the stack is unwound to
-an FFI boundary. However, there are existing Rust crates (notably, wrappers
-around the `libpng` and `libjpeg` C libraries) that make use of the current
-implementation's behavior. The proposed annotation would act as an "opt out" of
-the safety guarantee provided by aborting at an FFI boundary.
+Currently, unwinding through an FFI boundary is always undefined behavior.
+We would like to make the behavior safe
+by aborting when the stack is unwound to an FFI boundary.
+However, there are existing Rust crates
+(notably, wrappers around the `libpng` and `libjpeg` C libraries)
+that rely on the current implementation's compatibility
+with the native exception handling mechanism in
+GCC, LLVM, and MSVC.
+
+This RFC will give crate authors the ability
+to initiate stack-unwinding
+that can propagate through other languages' stack frames,
+as well as tools for ensuring compatibility with those languages.
+
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -36,6 +54,10 @@ extern "C" fn may_panic(i: i32) {
     }
 }
 ```
+
+----------------------------------------------------------------------------
+TODO below this line
+----------------------------------------------------------------------------
 
 In a future (TBD) version of Rust, calling this function with an argument less
 than zero will cause the program to be aborted. This is the only way the Rust
