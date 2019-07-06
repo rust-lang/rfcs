@@ -41,7 +41,7 @@ The following points were also noted in [RFC 192], but we expand upon them here:
    ```rust
    trait Arbitrary: Sized + fmt::Debug {
        type Parameters: Default = ();
-   
+
        fn arbitrary_with(args: Self::Parameters) -> Self::Strategy;
 
        fn arbitrary() -> Self::Strategy {
@@ -68,7 +68,7 @@ The following points were also noted in [RFC 192], but we expand upon them here:
    ```rust
    trait Arbitrary: Sized + fmt::Debug {
        fn arbitrary() -> Self::Strategy;
-   
+
        type Strategy: Strategy<Value = Self>;
    }
    ```
@@ -89,7 +89,7 @@ The following points were also noted in [RFC 192], but we expand upon them here:
    ```rust
    trait Arbitrary: Sized + fmt::Debug {
        type Parameters: Default = ();
-   
+
        fn arbitrary() -> Self::Strategy {
            Self::arbitrary_with(Default::default())
        }
@@ -258,7 +258,7 @@ impl<T> Foo for Vec<T> {
 In the current implementation, (6) is rejected because the compiler will not
 let you assume that `x` is of type `usize`. But in this proposal, you would be
 allowed to assume this. To permit this is not a problem because `Foo for Vec<T>`
-is not further specializable since `baz` in the implementation has not been
+is not further specializable since `Bar` in the implementation has not been
 marked as `default`.
 
 ### Trait objects
@@ -351,7 +351,7 @@ in other items specified in the implementation.
 If an implementation does make the associated type available for
 further specialization, then other definitions in the implementation
 may not assume the given underlying specified type of the associated type
-and may only assume that it is `Self::TheAsociatedType`.
+and may only assume that it is `Self::TheAssociatedType`.
 
 This applies generally to any item inside a `trait`.
 You may only assume the signature of an item, but not any provided definition,
@@ -971,10 +971,10 @@ associated type include:
    /// "Callbacks" for a push-based parser
    trait Sink {
        fn handle_foo(&mut self, ...);
-   
+
        default {
            type Output = Self;
-   
+
            // OK to assume what `Output` really is because any overriding
            // must override both `Outout` and `finish`.
            fn finish(self) -> Self::Output { self }
@@ -1115,7 +1115,7 @@ impl ComputerScientist for StephanieWeirich {
     // ERROR! You must override Details.
 }
 
-impl ComputerScientist for AndreiSabelfeld {    
+impl ComputerScientist for AndreiSabelfeld {
     type Details = LangSec;
     const THE_DETAILS: Self::Details = LangSec { papers: 90 };
     fn papers(details: Self::Details) -> u8 { details.papers }
