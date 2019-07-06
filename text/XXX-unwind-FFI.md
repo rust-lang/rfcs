@@ -179,6 +179,11 @@ are compatible with crates using any of the four values.
 Crates that explicitly specify the `default` runtime, however,
 are not compatible with crates using other runtimes.
 
+In order to verify that all crates in a dependency graph
+are compatible in this way,
+new metadata will need to be added to the `rlib` format.
+It may be possible to combine this metadata with the `panic` strategy metadata.
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
