@@ -16,17 +16,19 @@ Provide a well-defined mechanism for unwinding through FFI boundaries.
   unless the panic strategy is `unwind`
   and a non-default panic runtime is specified.
 * Stabilize the `#![panic_runtime]` annotation (from
-  [RFC #1513](1513-less-unwinding.md)).
+  [RFC #1513](less-unwinding)).
 * Provide an `unwind` runtime in the standard library
   that guarantees compatibility with the native exception mechanism
   provided by the compiler backend.
-* Provide a Cargo option under `[profile.def]` to specify a `panic` runtime.
+* Provide a Cargo option under `[profile.foo]` to specify a `panic` runtime.
+
+[less-unwinding]: https://github.com/rust-lang/rfcs/blob/master/text/1513-less-unwinding.md
 
 # Motivation
 [motivation]: #motivation
 
 This will enable resolving
-[rust-lang/rust#58794](https://github.com/rust-lang/rust/issues/58794)
+[rust-lang/rust#58794](rust-ffi-issue)
 without breaking existing code.
 
 Currently, unwinding through an FFI boundary is always undefined behavior.
@@ -43,6 +45,7 @@ to initiate stack-unwinding
 that can propagate through other languages' stack frames,
 as well as tools for ensuring compatibility with those languages.
 
+[rust-ffi-issue]: https://github.com/rust-lang/rust/issues/58794
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -95,7 +98,7 @@ This RFC does, however, provide a tool that will enable users
 to provide this guarantee themselves.
 We will stabilize the `!#[panic_runtime]` annotation,
 which [designates a crate as the provider of the final product's panic runtime]
-(1513-less-unwinding.md).
+(less-unwinding).
 Additionally, the standard library's current `panic=unwind` runtime crate,
 `libpanic_unwind`, which is compatible with native C++ style exceptions,
 will be provided under another name (such as `libpanic_native`)
@@ -105,7 +108,7 @@ to no longer maintain that compatibility).
 
 In order for Cargo users to be able
 to specify the C++ compatible `panic_runtime` implementation,
-a new optional value, runtime, will be added to the `profile.dev.panic` option:
+a new optional value, runtime, will be added to the `profile.foo.panic` option:
 
 ```toml
 [profile.dev]
@@ -139,8 +142,8 @@ this mismatch will cause the build to fail.
 The function annotation `#[panic(allowed)]` will only be permitted in crates
 that specify a non-default `panic.runtime`.
 
-Crates that do not use the `profile.dev.panic` option at all
-will remain compatible with any `profile.dev.panic` configuration
+Crates that do not use the `profile.foo.panic` option at all
+will remain compatible with any `profile.foo.panic` configuration
 used to generate the final product.
 
 For non-Cargo users, equivalent `rustc` flags will be provided
@@ -215,39 +218,64 @@ is compatible with native (C++ style) exceptions,
 no further guarantees were made
 regarding the behavior of the unwinding operation itself.
 
--------------------------------------------------------------------------------
-TODO - below this line
--------------------------------------------------------------------------------
+Another possibility would be to add the `panic.runtime` options
+as new `strategy` values for the `-C panic=foo` flag.
+This may be simpler to teach and to implement,
+but crates using `-C panic=native`
+would be incompatible with all existing crates.
 
-XXX ...explain why the more complex current version is better
+The current proposal ensures
+that Rust provides full control over unwinding behavior
+for maximum compatibility with other languages' runtimes
+and with existing crates.
+The interaction between the `#[unwind(allowed)]` annotation
+and the `panic.strategy` option
+provides the maximum safety that the toolchain can provide
+without limiting Rust's ability to interoperate
+with shared libraries in other languages
+(particularly `libpng` and `libjpeg` as mentioned
+[above](#motivation)).
 
 # Prior art
 [prior-art]: #prior-art
 
-1513
+[RFC #1513](less-unwinding) introduced
+the `#![panic_runtime]` attributes, the `-C panic` compiler flag, and
+the corresponding `profile.foo.panic` Cargo option.
 
-Existing unstable features
+The `#[unwind(allowed)]` annotation already exists as an unstable feature,
+though the current implementation does not impose any requirements
+on the `panic` implementation.
 
-As mentioned above, GCC and LLVM provide an `-fexceptions` flag that makes the
-C++ exception mechanism interoperable with C stackframes.
+As mentioned above, GCC and LLVM provide an `-fexceptions` flag
+that makes the C++ exception mechanism interoperable with C stackframes.
+The C standard does not refer to exceptions at all, however,
+and the C++ standard does not make any guarantees
+regarding the behavior of exceptions that escape from C++ stack frames
+into stack frames written in another language.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-As mentioned [above](#rationale-and-alternatives), further work will be
-required to provide a means of specifying details of the unwinding
-implementation to provide guarnateed-safe interoperability with (some) C and
-C++ code. That work is out of scope for this RFC.
+* Should the `panic.runtime` option and its permitted values be renamed?
+* What is the minimal subset of features listed here that must be released
+  prior to stabilizing the FFI abort-on-`panic` logic
+  in order to prevent breaking crates that link with `libpng` and `libjpeg`?
+* Would multiple `panic` runtimes within a single process space
+  be a potentially useful feature in the future?
+  If so, is this RFC forward-compatible with possible approaches
+  for providing this feature?
+* Will C++ code be able to interact with `panic.runtime=native`
+  by catching the native exception?
+  What operations (`Drop`ing, re-throwing, introspecting...) would be safe
+  for the C++ runtime to perform?
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-As mentioned [above](#rationale-and-alternatives), further work will be
-required to provide a means of specifying details of the unwinding
-implementation to provide guarnateed-safe interoperability with (some) C and
-C++ code. That work is out of scope for this RFC.
-
-Note that this feature _does not_ commit the team to delivering future variants
-of the `#[unwind(...)]` annotation. For instance, compatibility with C code
-could be provided via a `rustc` flag specifying the (global) unwinding
-implementation to use.
+If it is safe for C++ code to interact with `panic` objects from Rust,
+it may be useful to create a C header declaring an interface to do so.
+Such a header would not necessarily be provided by the Rust team
+or as part of the Rust toolchain distribution,
+but the author of such a header may need assistance
+from the author(s) of the native-unwinding runtime crate.
