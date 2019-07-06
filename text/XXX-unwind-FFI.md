@@ -12,7 +12,7 @@ Provide a well-defined mechanism for unwinding through FFI boundaries.
   which explicitly permits `extern` functions
   to unwind (`panic`) without aborting.
 * If this annotation is used anywhere in the dependency tree, 
-  generation of the final product will fail
+  generation of the final (binary) product will fail
   unless the panic strategy is `unwind`
   and a non-default panic runtime is specified.
 * Stabilize the `#![panic_runtime]` annotation (from
@@ -146,80 +146,87 @@ used to generate the final product.
 For non-Cargo users, equivalent `rustc` flags will be provided
 (which will be how Cargo itself implements the option).
 
--------------------------------------------------------------------------------
-TODO - below this line
--------------------------------------------------------------------------------
-
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-Unwinding for functions marked `#[unwind(Rust)]` is performed as if the
-function were not marked `extern`. This is identical to the behavior of `rustc`
-for all versions prior to 1.35 except for 1.24.0.
+Unwinding for functions with the `#[unwind(allowed)]` annotation
+is performed as if the function were not marked `extern`.
+This annotation has no effect on functions not marked `extern`.
+It has no observable effect unless the marked function `panic`s
+(e.g. it has no observable effect
+when a function returns normally or enters an infinite loop).
+The LLVM IR for such functions must not be marked `noexcept`.
 
-This annotation has no effect on functions not marked `extern`. It has no
-observable effect unless the marked function `panic`s (e.g. it has no
-observable effect when a function returns normally or enters an infinite loop).
+The compiler will have a new stable flag, `-C panic.runtime`,
+which will be required to enable the `#[unwind(allowed)]` annotation;
+as explained above, the flag will specify the expected source
+of the panic runtime to be used in the final (binary) product.
+If the source is `default`,
+the `libpanic_unwind` crate will provide the runtime,
+and the `#[unwind(allowed)]` annotation will not be permitted in that crate.
+
+Different values of `panic.runtime` will not be permitted for different crates
+in a single dependency graph,
+with the exception of `self`, which may only be used once
+in a dependency graph,
+and is only compatible with crates using the `crate` value.
+Because the `panic` runtime is lazily selected and linked,
+crates that do not specify a value for `panic.strategy`
+are compatible with crates using any of the four values.
+Crates that explicitly specify the `default` runtime, however,
+are not compatible with crates using other runtimes.
 
 # Drawbacks
 [drawbacks]: #drawbacks
 
-Since the Rust unwinding implementation is not specified, this annotation is
-explicitly designed to expose a potentially non-forward-compatible API. As
-mentioned in [the guide-level explanation](#guide-level-explanation), use of
-this annotation will make projects vulnerable to breakage (and specifically to
-undefined behavior) simply by updating their Rust compiler.
-
-Furthermore, this annotation will have different behaviors on different
-platforms, and determining whether it is safe to use on a particular platform
-is fairly difficult. So far, there are only two safe use cases identified:
-
-* On Windows, C code built with MSVC always respects SEH, the unwinding
-  mechanism used by both (MSVC) Rust and C++, so it should always be safe to
-  invoke such a function when MSVC is the only toolchain used, as long as
-  `rustc` uses SEH as its `panic` implementation.
-* In projects using LLVM or GCC exclusively, the `-fexceptions` flag ensures
-  that C code is compiled with C++ exception support, so the runtime behavior
-  should be safe as long as `rustc` uses the native C++ exception mechanism as
-  its `panic` implementation.            `
+* This change involves several elements of the toolchain,
+  from Cargo all the way to codegen and linking.
+  It also involves the simultaneous stabilization of multiple features.
+  Although it may be possible to stabilize some of these features
+  independently of the others,
+  the proposed changes are still somewhat complex,
+  even though implementation should be fairly simple.
+* The rules regarding the interaction between
+  `-C panic`, `-C panic.strategy`, and `#[unwind(allowed)]`
+  are somewhat complex.
+* Even with custom `panic` runtimes,
+  users may still inadvertently cause undefined behavior
+  by trying to link shared libraries that use different unwind runtimes.
+  For instance, there is no easy way to know whether a C shared library
+  on a non-Windows system
+  was compiled with the `-fexceptions` GCC or LLVM flag;
+  with this flag, such a library would be unwind-runtime-compatible
+  with a Rust shared library compiled with `-C panic.strategy=native`,
+  but without this flag, any attempt to unwind through the C stack frames
+  (regardless of the runtime used)
+  would be undefined behavior.
+  There is no way for Rust to guard against this scenario.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-This is the minimum possible change to the language that will permit making
-`panic` safe by default while permitting existing users of the current behavior
-a way to keep their code working after
-[rust-lang/rust#58794](https://github.com/rust-lang/rust/issues/58794) is
-resolved.
+This version of this RFC replaces a prior version
+that suggested a much more minimal change.
+Specifically, it suggested introduing a different function annotation,
+`#[unwind(Rust)]`, which would simply ensure that the marked function
+would not be marked `noexcept` and would not `abort` on `panic`.
+Because the current implementation of `libpanic_unwind`
+is compatible with native (C++ style) exceptions,
+no further guarantees were made
+regarding the behavior of the unwinding operation itself.
 
-The language team has twice attempted to stabilize the desired default behavior
-of aborting when unwinding across an FFI boundary without providing a way to
-opt-out of this behavior, but it has become clear that the community will not
-accept such a change without a means of opting out because of the impact on
-existing projects (particularly [mozjpeg](https://crates.io/crates/mozjpeg)).
+-------------------------------------------------------------------------------
+TODO - below this line
+-------------------------------------------------------------------------------
 
-Any alternatives that provide guarantees about the specific Rust unwinding
-implementation would make implementation more difficult and would lock us in to
-a specific annotation semantics for describing unwinding mechanisms. Suggested
-notations include:
-
-- `#[unwind(c)]`
-- `#[unwind(c++)]`
-- `#[unwind(c++-native)]`
-- `#[unwind(seh)]`
-
-This proposal does not exclude the possibility of introducing one or more of
-these notations at a later date, and indeed it will almost certainly be
-necessary to introduce a way to specify an unwinding implementation if the
-`rustc` default unwinding mechnanism ever changes. However, introducing such
-a notation would be a larger change to the language, and there is no consensus
-yet on what the notation should be.
+XXX ...explain why the more complex current version is better
 
 # Prior art
 [prior-art]: #prior-art
 
-The proposed behavior of this annotation is simply to maintain the existing
-behavior for un-annotated functions.
+1513
+
+Existing unstable features
 
 As mentioned above, GCC and LLVM provide an `-fexceptions` flag that makes the
 C++ exception mechanism interoperable with C stackframes.
