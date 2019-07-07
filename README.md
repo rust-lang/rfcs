@@ -106,9 +106,9 @@ merged into the RFC repository as a markdown file. At that point the RFC is
   - Copy `0000-template.md` to `text/0000-my-feature.md` (where "my-feature" is
     descriptive. don't assign an RFC number yet).
   - Fill in the RFC. Put care into the details: RFCs that do not present
-    convincing motivation, demonstrate understanding of the impact of the
-    design, or are disingenuous about the drawbacks or alternatives tend to be
-    poorly-received.
+    convincing motivation, demonstrate lack of understanding of the design's
+    impact, or are disingenuous about the drawbacks or alternatives tend to
+    be poorly-received.
   - Submit a pull request. As a pull request the RFC will receive design
     feedback from the larger community, and the author should be prepared to
     revise it in response.
