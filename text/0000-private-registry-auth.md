@@ -21,20 +21,40 @@ API calls.
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-If a custom registry is to be considered private, the registry can require authentication on all
-requests. This can be enabled on the client side by modifying the registry definition:
-```toml
-[registries.my-registry]
-index = "https://my-intranet:8080/git/index"
-auth_required = true
+If a custom registry is to be considered private, the registry can require
+authentication on all requests. This can be enabled on the server side by
+modifying the registry definition in the index:
+```json
+{
+    "dl": "https://my-intranet.local/api/v1/crates",
+    "api": "https://my-intranet.local/",
+    "auth_required": true,
+    "token_url": "https://my-intranet.local/me"
+}
 ```
-This will cause Cargo to send the token obtained via `cargo login` to the registry with all requests.
+
+This will cause Cargo to send the token obtained via `cargo login` to the
+registry with all requests. If not specified, will default to `false`.
+`cargo login` will prompt the user to obtain a token via the URL in `token_url`
+if specified, otherwise the `api` URL plus `/me`.
+
+It is up to the registry to decide whether authentication should be required for
+the Git index. If authentication is required, the registry should provide
+instructions on how to authenticate with Git along with how to add the registry
+to Cargo.
 
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-The option `registries.<registry>.auth_required` is a boolean that enables the sending of the token in the `Authorization` header on all requests, including downloads and API calls. This will be implemented with a check on any requests to the registry that sends the header if this value is true.
+The variable `auth_required` is a boolean that enables the sending of the token
+in the `Authorization` header on all requests, including downloads and API
+calls. This will be implemented with a check on any requests to the registry
+that sends the header if this value is true. This value defaults to `false`.
+
+The `token_url` variable is used to tell Cargo where to direct the user to get
+their token. If not specified, this will default to the value in `api` plus
+`/me`.
 
 <!-- This is the technical portion of the RFC. Explain the design in sufficient detail that:
 
@@ -54,9 +74,15 @@ This is probably biased, but I know of no drawbacks.
 
 This design may not be the best design, so feedback is appreciated.
 
-Another considered design was to use a cargo plugin to proxy requests through a local server that sends authentication with the server with requests. This design was decided against due to concerns about battery life, and the requirement to ensure the proxy is running whenever it is required, meaning possibly requiring a system service to keep it running.
+Another considered design was to use a cargo plugin to proxy requests through a
+local server that sends authentication with the server with requests. This
+design was decided against due to concerns about battery life, and the
+requirement to ensure the proxy is running whenever it is required, meaning
+possibly requiring a system service to keep it running.
 
-The impact of not doing this would be that large organizations would be hesitant to use Rust for internal/confidential projects, so there would not be as many large organizations supporting the growth of Rust.
+The impact of not doing this would be that large organizations would be hesitant
+to use Rust for internal/confidential projects, so there would not be as many
+large organizations supporting the growth of Rust.
 
 <!-- - Why is this design the best in the space of possible designs?
 - What other designs have been considered and what is the rationale for not choosing them?
@@ -65,7 +91,8 @@ The impact of not doing this would be that large organizations would be hesitant
 # Prior art
 [prior-art]: #prior-art
 
-Many other languages have package managers with support for private repositories. Not all will be listed here, but a select few as examples.
+Many other languages have package managers with support for private
+repositories. Not all will be listed here, but a select few as examples.
 
 - Python (Pio)
 - .NET (NuGet)
@@ -90,9 +117,14 @@ Please also take into consideration that rust sometimes intentionally diverges f
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-- Currently the `Authorization` header does not use an auth scheme. This is against standards. [rust-lang/cargo#4989](https://github.com/rust-lang/cargo/issues/4989) has been opened because of this. It is undecided whether to include a fix for this in this RFC or another. This would be a breaking change if not implemented right.
+- Currently the `Authorization` header does not use an auth scheme. This is
+  against standards. [rust-lang/cargo#4989](https://github.com/rust-lang/cargo/issues/4989)
+  has been opened because of this. It is undecided whether to include a fix for
+  this in this RFC or another. This would be a breaking change if not
+  implemented right.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-Possibly allowing non-Git indices, but it appears to be a large amount of work, so it is not vital to this RFC.
+Possibly allowing non-Git indices, but it appears to be a large amount of work,
+so it is not vital to this RFC.
