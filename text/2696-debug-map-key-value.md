@@ -1,7 +1,7 @@
 - Feature Name: `debug_map_key_value`
 - Start Date: 2019-05-01
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- RFC PR: [rust-lang/rfcs#2696](https://github.com/rust-lang/rfcs/pull/2696)
+- Rust Issue: [rust-lang/rust#62482](https://github.com/rust-lang/rust/issues/62482)
 
 # Summary
 [summary]: #summary
