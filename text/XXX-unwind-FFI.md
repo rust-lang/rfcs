@@ -139,7 +139,7 @@ anywhere in a final product's dependency graph,
 no crate in that dependency graph may specify the `panic = abort` strategy;
 this mismatch will cause the build to fail.
 
-The function annotation `#[panic(allowed)]` will only be permitted in crates
+The function annotation `#[unwind(allowed)]` will only be permitted in crates
 that specify a non-default `panic.runtime`.
 
 Crates that do not use the `profile.foo.panic` option at all
