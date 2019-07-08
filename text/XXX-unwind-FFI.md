@@ -8,7 +8,7 @@
 
 Provide a well-defined mechanism for unwinding through FFI boundaries.
 
-* Stabilize the function annotation `#[unwind(allowed)]`,
+* Add an `#[unwind(allowed)]` function attribute that's supported on `extern` functions and `extern` function declarations.
   which explicitly permits `extern` functions
   to unwind (`panic`) without aborting.
 * If this annotation is used anywhere in the dependency tree, 
@@ -86,7 +86,7 @@ Thus, the `may_panic` function may be makred `#[unwind(allow)]`,
 which ensures that the unwinding operation will be propagated to the caller
 rather than aborting the process.
 This annotation will also prevent the compiler
-from marking the function as `noexcept`
+from marking the function as `nounwind`
 (which permits the backend toolchain from optimizing based on the assumption
 that an unwinding operation cannot escape from a function).
 
@@ -154,11 +154,11 @@ For non-Cargo users, equivalent `rustc` flags will be provided
 
 Unwinding for functions with the `#[unwind(allowed)]` annotation
 is performed as if the function were not marked `extern`.
-This annotation has no effect on functions not marked `extern`.
+This annotation is not permitted on functions not marked `extern`.
 It has no observable effect unless the marked function `panic`s
 (e.g. it has no observable effect
 when a function returns normally or enters an infinite loop).
-The LLVM IR for such functions must not be marked `noexcept`.
+The LLVM IR for such functions must not be marked `nounwind`.
 
 The compiler will have a new stable flag, `-C panic.runtime`,
 which will be required to enable the `#[unwind(allowed)]` annotation;
