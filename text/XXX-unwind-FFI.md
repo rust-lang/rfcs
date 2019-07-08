@@ -112,7 +112,7 @@ a new optional value, runtime, will be added to the `profile.foo.panic` option:
 
 ```toml
 [profile.dev]
-panic = { 'unwind', runtime = 'native' }
+panic = { strategy = 'unwind', runtime = 'native' }
 ```
 
 `panic.runtime` may only be specified if the panic strategy is `unwind`.
