@@ -28,7 +28,7 @@ Provide a well-defined mechanism for unwinding through FFI boundaries.
 [motivation]: #motivation
 
 This will enable resolving
-[rust-lang/rust#58794](rust-ffi-issue)
+[rust-lang/rust#58794][rust-ffi-issue]
 without breaking existing code.
 
 Currently, unwinding through an FFI boundary is always undefined behavior.
