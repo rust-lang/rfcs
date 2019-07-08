@@ -16,7 +16,7 @@ Provide a well-defined mechanism for unwinding through FFI boundaries.
   unless the panic strategy is `unwind`
   and a non-default panic runtime is specified.
 * Stabilize the `#![panic_runtime]` annotation (from
-  [RFC #1513](less-unwinding)).
+  [RFC #1513][less-unwinding]).
 * Provide an `unwind` runtime in the standard library
   that guarantees compatibility with the native exception mechanism
   provided by the compiler backend.
@@ -244,7 +244,7 @@ with shared libraries in other languages
 # Prior art
 [prior-art]: #prior-art
 
-[RFC #1513](less-unwinding) introduced
+[RFC #1513][less-unwinding] introduced
 the `#![panic_runtime]` attributes, the `-C panic` compiler flag, and
 the corresponding `profile.foo.panic` Cargo option.
 
