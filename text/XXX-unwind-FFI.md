@@ -158,7 +158,6 @@ This annotation is not permitted on functions not marked `extern`.
 It has no observable effect unless the marked function `panic`s
 (e.g. it has no observable effect
 when a function returns normally or enters an infinite loop).
-The LLVM IR for such functions must not be marked `nounwind`.
 
 The compiler will have a new stable flag, `-C panic.runtime`,
 which will be required to enable the `#[unwind(allowed)]` annotation;
