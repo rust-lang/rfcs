@@ -153,7 +153,7 @@ section so as to obtain the desired short circuit operation.
 Once the traits have been implemented, several trait implementations should be added to the std library and the methods marked as deprecated.
 
 ```rust
-impl trait LogicalOr<Option<T>> for Option<T> {
+impl LogicalOr<Option<T>> for Option<T> {
     type Output = Self;
     ...
 }
