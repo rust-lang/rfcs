@@ -34,18 +34,18 @@ use-cases.
 
 A Rust target triple, like `x86_64-apple-darwin`, produce binaries that can run
 on all CPUs of the `x86_64` family that support certain architecture
-"extensions"; for this particular case, all CPUs the binary runs on must support
-the SSE3 vector extensions. That is, all Rust programs compiled for this target
-can safely make use of SSE3 instructions, since all CPUs where those binaries
-are allowed to run support them. On the other hand, the
-`x86_64-unknown-linux-gnu` target only requires SSE2 vector extensions. For a
-binary to use SSE3 instructions, it would first need to check whether the CPU
-supports them, since this is not necessarily the case. In Rust, the behavior of
-attempting to execute an unsupported instruction is undefined, and the compiler
-optimizes under the assumption that this does not happen.
+"extensions". This particular target requires SSE3 vector extensions, that is,
+binaries compiled for this target are only able to run on CPUs that support this
+particular extension. Other targets require different sets of extensions. For
+example, `x86_64-unknown-linux-gnu` only requires SSE2 support, allowing
+binaries to run on CPUs that do not support SSE3.
 
 In Rust, we call `x86_64` the target architecture "family", and extensions like
-SSE2 or SSE3 "target-features". 
+SSE2 or SSE3 "target-features". The behavior of attempting to execute an
+unsupported instruction is undefined, and the compiler optimizes under the
+assumption that this does not happen. It is therefore crucial for Rust code to
+be able to make sure that these extensions are only used when they are
+available.
 
 Currently, target-features can be detected:
 
@@ -70,7 +70,7 @@ or performing target-feature detection at run-time.
 
 As a consequence, there are crates in `crates.io` re-implementing methods of
 `libcore` types like `&str`, `[T]`, `Iterator`, etc. with much better
-performance.
+performance by using target-feature detection at run-time.
 
 One example is the `is_sorted` crate, which provides an implementation of
 `Iterator::is_sorted`, which performs 16x better for some inputs than the
