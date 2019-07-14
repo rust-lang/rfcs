@@ -16,8 +16,8 @@ as well.
 
 This proposal achieves that by exposing the API from `libcore` and by allowing
 users to provide their own run-time for performing target-feature detection. If
-no user-defined run-time is provided, a fallback is provided. If `libstd` is
-linked, this fallback is the current runtime, preserving the current stable Rust
+no user-defined run-time is provided, a fallback is provided. `libstd` provides
+a target-feature detection run-time, preserving the current stable Rust
 behavior.
 
 This enables all Rust code to use the stable target-feature detection APIs,
@@ -27,35 +27,76 @@ use-cases.
 # Motivation
 [motivation]: #motivation
 
-Binaries and libraries using the `std` library can perform run-time feature
-detection via the `is_x86_feature_detected!("avx")` architecture-specific
-macros. 
+## Background on target features
 
-This operation requires, in general, operating system support, and is therefore
-not available in `libcore`, which is operating system agnostic.
+> **Note**: if you know what target features are and how to write code that
+> conditionally uses them from Rust you can safely skip this sub-section.
 
-That is, `#![no_std]` libraries, like `liballoc` and `libcore`, cannot perform
-run-time feature detection, even though `libstd` often ends up being linked into
-the final binary. 
+A Rust target triple, like `x86_64-apple-darwin`, produce binaries that can run
+on all CPUs of the `x86_64` family that support certain architecture
+"extensions"; for this particular case, all CPUs the binary runs on must support
+the SSE3 vector extensions. That is, all Rust programs compiled for this target
+can safely make use of SSE3 instructions, since all CPUs where those binaries
+are allowed to run support them. On the other hand, the
+`x86_64-unknown-linux-gnu` target only requires SSE2 vector extensions. For a
+binary to use SSE3 instructions, it would first need to check whether the CPU
+supports them, since this is not necessarily the case. In Rust, the behavior of
+attempting to execute an unsupported instruction is undefined, and the compiler
+optimizes under the assumption that this does not happen.
 
-This results in some crates in crates.io having much better performance than the
-methods of the types provided by `libcore`, like `&str`, `[T]`, `Iterator`, etc.
+In Rust, we call `x86_64` the target architecture "family", and extensions like
+SSE2 or SSE3 "target-features". 
+
+Currently, target-features can be detected:
+
+* at compile-time: using `#[cfg(target_feature = literal)]` to conditionally
+  compile code.
+* at run-time: using the `is_{target_arch}_feature_detected!(literal)` macros
+  from the standard library to query whether the system the binary runs on
+  actually supports a feature or not.
+
+## Problem statement
+
+The `cfg(target_feature)` macro can be used by all Rust code, but is limited to
+the set of features that are unconditionally enabled for the target. 
+
+The architecture-specific `is_{target_arch}_feature_detected!(literal)` macros
+require operating-system support and are therefore only exposed by the standard
+library; `#![no_std]` libraries, like `liballoc` and `libcore` are platform
+agnostic and cannot currently perform run-time feature detection.
+
+That is, currently, libraries have to choose between being `#![no_std]`-compatible,
+or performing target-feature detection at run-time.
+
+As a consequence, there are crates in `crates.io` re-implementing methods of
+`libcore` types like `&str`, `[T]`, `Iterator`, etc. with much better
+performance.
 
 One example is the `is_sorted` crate, which provides an implementation of
-`Iterator::is_sorted`, which performs 16x better than the `libcore`
-implementation by using AVX. Another example include the `memchr` crate, as well
-as crates implementing algorithms to compute whether a `[u8]` is an ASCII
-string, or an UTF-8 string. These perform on the ballpark of about 1.6x better
-than the `libcore` implementations, by using AVX on x86.
+`Iterator::is_sorted`, which performs 16x better for some inputs than the
+`libcore` implementation by using AVX. Another example include the `memchr`
+crate, as well as crates implementing algorithms to compute whether a `[u8]` is
+an ASCII string or an UTF-8 string, which end up being used every time a program
+calls `String::from_utf8`. By using AVX on x86, these perform on the ballpark of
+about 1.6x better than the `libcore` implementations, and could probably do
+better using AVX-512. Most Rust code cannot, however, benefit from them, 
+because they will be using `String::from_utf8` via the standard library. 
 
-For `#![no_std]` binaries, the standard library is not linked into the final
-binary, and they cannot use any library that uses the runtime feature detection
-macros, because they are not available.
+This is a shame. Whether a library is `#![no_std]` or not is orthogonal to
+whether the final binary is able to perform run-time feature detection and most
+binaries using `#![no_std]` crates do end up linking `libstd` into the final
+binary.
+
+On the other hand, `#![no_std]` binaries cannot use any library that uses the
+runtime feature detection macros, even though for these it would be better to
+just report that all features are disabled instead of splitting the ecosystem.
 
 The goal of this RFC is to enable `#![no_std]` libraries and binaries to perform
 run-time feature detection.
 
-However, `#![no_std]` libraries and binaries are used in a wider-range of
+## Use cases
+
+`#![no_std]` libraries and binaries are used in a wider-range of
 applications than `#![std]` libraries ones, and they might often want to perform
 run-time feature detection differently. Among others:
 
@@ -170,9 +211,9 @@ The `static` variable must implement the `core::detect::TargetFeatureRuntime`
 `trait`.
 
 If no `#[target_feature_detection_runtime]` is provided anywhere in the
-dependency graph, Rust provides a default definition. For `#![no_std]` binaries
-and dynamic libraries, that is, for binaries and libraries that do not link
-against `libstd`, this definition always returns `false` (it does nothing).
+dependency graph, Rust provides a default definition that always returns `false`
+(no feature is detected). When `libstd` is linked, it provides a target-feature
+detection run-time.
 
 ## The `core::detect::TargetFeatureRuntime` trait
 [runtime-trait]: #runtime-trait
@@ -257,8 +298,8 @@ is_{architecture}_feature_detected!(string-literal) -> bool;
 # Drawbacks
 [drawbacks]: #drawbacks
 
-This increases the complexity of the implementation, adding another singleton
-run-time component. 
+This increases the complexity of the implementation, adding another "singleton"
+run-time component.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -352,6 +393,13 @@ work for all users.
   
 * Since the `TargetFeature` `enum` is architecture-specific, should it live in
   `core::arch::{target_arch}::TargetFeature` ?
+
+* How does it fit with the Roadmap? Does it fit with the Roadmap at all? Would
+  it fit with any future Roadmap?
+
+* Should the `libstd` run-time be overridable? For example, by only providing it
+  if no other crate in the dependency graph provides a runtime ? This would be a
+  forward-compatible extension, but no use case considered requires it.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
