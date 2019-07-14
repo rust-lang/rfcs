@@ -8,39 +8,43 @@
 
 Right now, the `is_..._feature_detected!("target-feature")` macros exported by
 `libstd` are the only proper way in which Rust libraries and binaries can
-perform runtime target-feature detection.
+perform target-feature detection at run-time.
 
-This RFC extends that support to `#![no_std]` libraries by moving the
+This RFC extends that support to `#![no_std]` libraries, by moving the
 target-feature detection macros to `libcore`. This enables all Rust libraries,
 including `libcore`, to perform target-feature detection at run-time.
 
 The implementation proposed can be, as an extension, stabilized. This would
 allow `#![no_std]` binaries to provide their own target-feature-detection
-run-time. This would allow `#![no_std]` binaries to benefit from
-target-feature-detection as well.
+run-time and benefit from it as well.
 
 # Motivation
 [motivation]: #motivation
 
-## Background on target features
+## Refresher on target features
 
-> **Note**: if you know what target features are and how to write code that
-> conditionally uses them from Rust you can safely skip this sub-section.
+> You can safely skip this sub-section if you are familiar with compile-time and
+> run-time target-feature detection in Rust.
 
 A Rust target triple, like `x86_64-apple-darwin`, produce binaries that can run
 on all CPUs of the `x86_64` family that support certain architecture
-"extensions". This particular target requires SSE3 vector extensions, that is,
-binaries compiled for this target are only able to run on CPUs that support this
-particular extension. Other targets require different sets of extensions. For
-example, `x86_64-unknown-linux-gnu` only requires SSE2 support, allowing
-binaries to run on CPUs that do not support SSE3.
+"extensions". This particular target requires SSE3 vector extensions, and Rust
+will emits them whenever it deems fit. As a consequence, binaries compiled for
+this target can only on CPUs that support SSE3 extension. Other targets require
+different sets of extensions. For example, `x86_64-unknown-linux-gnu` only
+requires SSE2 support, allowing binaries to run on CPUs that do not support
+SSE3. In Rust, we call `x86_64` the target architecture "family", and extensions
+like SSE2 or SSE3 "target-features".
 
-In Rust, we call `x86_64` the target architecture "family", and extensions like
-SSE2 or SSE3 "target-features". The behavior of attempting to execute an
-unsupported instruction is undefined, and the compiler optimizes under the
-assumption that this does not happen. It is therefore crucial for Rust code to
-be able to make sure that these extensions are only used when they are
-available.
+Many Rust applications compiled for `x86_64-unknonw-linux-gnu` do want to use
+SSE3 extensions when the CPU the binary runs on, and Rust allows enabling these
+extensions via the `#[target_feature]` function attribute. The behavior of a
+program that attempts to execute code that uses an extension that is not
+supported by the CPU in which the binary runs on is undefined, and the compiler
+generates machine code under the assumption that this does not happen. For such
+programs to be safe, they need to detect whether the CPU in which the binary
+runs on supports the particular features that they want to use, and only use
+them when the CPU actually supports them.
 
 Currently, target-features can be detected:
 
@@ -52,39 +56,40 @@ Currently, target-features can be detected:
 
 ## Problem statement
 
-The `cfg(target_feature)` macro can be used by all Rust code, but is limited to
-the set of features that are unconditionally enabled for the target. 
+The `cfg(target_feature = "target_feature_literal")` macro can be used by all
+Rust code, but is limited to the set of features that are unconditionally
+enabled for the target.
 
-The architecture-specific `is_{target_arch}_feature_detected!(literal)` macros
-require operating-system support and are therefore only exposed by the standard
-library; `#![no_std]` libraries, like `liballoc` and `libcore` are platform
-agnostic and cannot currently perform run-time feature detection.
+The architecture-specific
+`is_{target_arch}_feature_detected!(target_feature_literal)` macros require
+operating-system support and are therefore only exposed by the standard library;
+`#![no_std]` libraries, like `liballoc` and `libcore` are platform agnostic and
+cannot currently perform run-time feature detection.
 
 That is, currently, libraries have to choose between being `#![no_std]`-compatible,
 or performing target-feature detection at run-time.
 
 As a consequence, there are crates in `crates.io` re-implementing methods of
-`libcore` types like `&str`, `[T]`, `Iterator`, etc. with much better
-performance by using target-feature detection at run-time.
+`libcore` types like `&str`, `[T]`, `Iterator`, etc. but with much better
+performance, by using target-feature detection at run-time.
 
 One example is the `is_sorted` crate, which provides an implementation of
 `Iterator::is_sorted`, which performs 16x better for some inputs than the
-`libcore` implementation by using AVX. Another example include the `memchr`
-crate, as well as crates implementing algorithms to compute whether a `[u8]` is
-an ASCII string or an UTF-8 string, which end up being used every time a program
-calls `String::from_utf8`. By using AVX on x86, these perform on the ballpark of
-about 1.6x better than the `libcore` implementations, and could probably do
-better using AVX-512. Most Rust code cannot, however, benefit from them, 
-because they will be using `String::from_utf8` via the standard library. 
+`libcore` implementation by using AVX when available. Another example include
+the `memchr` crate, as well as crates implementing algorithms to compute whether
+a `[u8]` is an ASCII string or an UTF-8 string, which end up being used every
+time a program calls `String::from_utf8`. By using AVX on x86, these perform on
+the ballpark of about 1.6x better than the `libcore` implementations, and could
+probably do better using AVX-512. Most Rust does not, however, benefit from
+these, because this code calls `str::from_utf8` which is part of `libcore` which
+cannot use run-time target-feature detection..
 
 This is a shame. Whether a library is `#![no_std]` or not is orthogonal to
 whether the final binary is able to perform run-time feature detection and most
 binaries using `#![no_std]` crates do end up linking `libstd` into the final
-binary.
-
-On the other hand, `#![no_std]` binaries cannot use any library that uses the
-runtime feature detection macros, even though for these it would be better to
-just report that all features are disabled instead of splitting the ecosystem.
+binary. Simultaneously, `#![no_std]` binaries cannot use any library that
+performs run-time target-feature detection, even though it would be perfectly
+safe for the API to just return that no features are detected at run-time.
 
 The goal of this RFC is to enable `#![no_std]` libraries and binaries to perform
 run-time feature detection.
@@ -130,12 +135,13 @@ initialization overhead, no extra memory usage, and no code-size or binary size.
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-Users can continue to perform run-time feature detection by using the
-`is_{architecture}_feature_detected!` macros. These macros were previously only
-available from libstd, and are now available in `libcore`. That is, `#![no_std]`
-libraries and binaries can use them.
+Users can continue to perform run-time feature detection by using the stable
+`is_{architecture}_feature_detected!` macros. This RFC makes this macros
+available in `libcore`, such that `#![no_std]` libraries and binaries can use
+them.
 
-Users can now provide their own target-feature detection run-time:
+As an extension, this RFC also allows users to provide their own target-feature
+detection run-time:
 
 ```rust
 #[target_feature_detection_runtime]
@@ -143,8 +149,8 @@ static TargetFeatureRT: impl core::detect::TargetFeatureRuntime;
 ```
 
 by using the `#[target_feature_detection_runtime]` attribute on a `static`
-variable of a type that implements the `core::detect::TargetFeatureRuntime` `trait` (see
-[definition below][runtime-trait]).
+variable of a type that implements the `core::detect::TargetFeatureRuntime`
+`trait` (see [definition below][runtime-trait]).
 
 This is analogous to how the `#[global_allocator]` is currently defined in Rust
 programs.
@@ -178,25 +184,61 @@ unsafe impl core::detect::TargetFeatureRuntime for Runtime {
 }
 ```
 
+The initial user of this feature will be `libstd` itself, which will use it to
+implement its own target-feature detection run-time. When `libstd` is linked
+into the final binary, the target-feature detection macros will use this
+run-time to detect the available target-features.
+
+This extension could be considered an "implementation-detail" of how to expose
+the feature-detection macros in `libcore`, and can be technically stabilized at
+a later time. That is, we could expose the feature-detection macros in libcore
+first, worrying about the details of how to make that configurable at a later
+time.
+
+This RFC works these details out and proposes a concrete design for them.
+
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-This RFC introduces:
+This RFC exports the target-feature detection macros from `libcore`, and
+introduces:
 
 * a new attribute: `#[target_feature_detection_runtime]`,
 * a new trait: `core::detect::TargetFeatureRuntime`,
 * a new enum: `core::detect::TargetFeature`, and
 * a new function: `core::detect::is_target_feature_detected`.
 
-and moves the target-feature detection macros to `libcore`.
+Stabilizing the usage of the target-feature detection macros from `libcore`
+could be done before stabilizing the rest of the APIs proposed here, and would
+allow all `#![no_std]` libraries including `libcore` to use run-time
+target-feature detection, and benefit from it if `libstd` is linked into the
+final binary. 
 
-We could stabilize all of this in stages. First, we could just stabilize using
-the target-feature detection macros from `libcore`, which would unlock doing
-target-feature detection in `#![no_std]` libraries. Unlocking some of the main
-use-cases like being able to use them in `libcore` itself, and have them do
-something meaningful when `libstd` is linked. Then, we could extend that with
-the rest of the API, which allows `#![no_std]` binaries to provide their own
-target-feature detection runtime.
+The rest of the API could be initially left as unstable and remain only used by
+`libstd`. Stabilizing it would, however, allow `#![no_std]` binaries to benefit
+from proper target-feature detection as well.
+
+## Export target-feature detection macros from libcore
+
+This RFC exports the feature-detection macros from `libcore`. Right now, the
+only stable feature-detection macro is
+`is_x86_feature_detected!("target_feature_name")`.
+
+If the rest of the API is stabilized, the semantics of these macros could be
+made more precise, by using the rest of the API proposed here in their
+specification:
+
+```rust
+/// Returns `true` if `cfg!(target_feature = target-feature-literal)` is 
+/// `true`, and returns the value of `core::detect::is_feature_detected` 
+/// for the target-feature otherwise.
+///
+/// If the target-feature is not a known target-feature for the current 
+/// `architecture`, or the required `feature()` gate to use the feature 
+/// is not enabled, the program is ill-formed, and a compile-time 
+/// diagnostic is emitted.
+is_{architecture}_feature_detected!(string-literal) -> bool;
+```
 
 ## The `#[target_feature_detection_runtime]` attribute
 
@@ -217,14 +259,24 @@ The `static` variable must implement the `core::detect::TargetFeatureRuntime`
 
 If no `#[target_feature_detection_runtime]` is provided anywhere in the
 dependency graph, Rust provides a default definition that always returns `false`
-(no feature is detected). When `libstd` is linked, it provides a target-feature
-detection run-time.
+(no feature is detected). 
+
+The standard library provides a target-feature detection run-time for some Rust
+targets, and attempting to provide a user-defined run-time for these targets is
+illegal, since that would result in two run-times being part of the dependency
+graph.
+
+Being able to override the run-time provided by `libstd` could be pursued as an
+extension, but at the time of this writing no use cases for this feature have
+been found. This extension would work by only linking the `libstd` run-time if
+there is no run-time in the dependency graph, similarly to how
+`#[global_allocator]` currently works.
 
 ## The `core::detect::TargetFeatureRuntime` trait
 [runtime-trait]: #runtime-trait
 
-The run-time must be a `static` variable of a type that implements the
-`core::detect::TargetFeatureRuntime` trait:
+The target-feature detection run-time must be a `static` variable of a type that
+implements the `core::detect::TargetFeatureRuntime` trait:
 
 ```rust
 unsafe trait core::detect::TargetFeatureRuntime {
@@ -235,10 +287,15 @@ unsafe trait core::detect::TargetFeatureRuntime {
 }
 ```
 
-This `trait`, which is part of `libcore`, is `unsafe` to implement. A correct
-implementation, satisfying the specified semantics of its methods is required
-for soundness of safe Rust code. That is, an incorrect implementation can cause
-safe Rust code to have undefined behavior.
+This `trait` is `unsafe` to implement, and a correct implementation is required
+for soundness of safe Rust code. In particular, the trait method shall only
+return that a feature is supported by the current thread of execution if this is
+actually the case. An incorrect implementation of this trait could cause "safe"
+Rust code to have undefined behavior.
+
+Note that the `TargetFeature` enum (see below) is `#[non_exhaustive]`, that is,
+matching on this enum is required to handle unknown enum variants, and it is
+always correct to return that unknown features are not available at run-time.
 
 ## The `core::detect::TargetFeature` enum
 
@@ -274,31 +331,6 @@ fn is_target_feature_detected(feature: core::detect::TargetFeature) -> bool;
 
 This function calls the `TargetFeatureRuntime::is_target_feature_detected`
 method.
-
----
-
-Finally, this RFC moves the feature-detection macros of `libstd` to `libcore`.
-Right now, the only stable feature-detection macro is
-`is_x86_feature_detected!("target_feature_name")`.
-
-The semantics of these macros are modified to:
-
-```rust
-/// Returns `true` if `cfg!(target_feature = string-literal)` is `true`, and
-/// returns the value of `core::detect::is_feature_detected` for the feature
-/// otherwise.
-///
-/// If `feature` is not known to be a valid feature for the current 
-/// `architecture`, or the required `feature()` gates to use the feature are
-/// not enabled, the program is ill-formed, and a compile-time diagnostic is 
-/// emitted.
-is_{architecture}_feature_detected!(string-literal) -> bool;
-```
-
-> Implementation note: currently, the compilation-errors are emitted by the
-> macro by pattern-matching on the literals. The mapping from the literals to
-> the variants of the `TargetFeature` enum happens also at compile-time by
-> pattern matching the literals.
 
 # Drawbacks
 [drawbacks]: #drawbacks
