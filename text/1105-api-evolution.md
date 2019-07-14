@@ -234,10 +234,11 @@ Exhaustiveness checking means that a `match` that explicitly checks all the
 variants for an `enum` will break if a new variant is added. It is not currently
 possible to defend against this breakage in advance.
 
-A [postponed RFC](https://github.com/rust-lang/rfcs/pull/757) discusses a
-language feature that allows an enum to be marked as "extensible", which
-modifies the way that exhaustiveness checking is done and would make it possible
-to extend the enum without breakage.
+[RFC 2008] introduced the `#[non_exhaustive]` attribute for enums and structs,
+which indicates that more variants/fields may be added to an enum/struct in the future.
+This ensures that adding new variants is not a breaking change.
+
+[RFC 2008]: https://rust-lang.github.io/rfcs/2008-non-exhaustive.html
 
 #### Major change: adding new fields to a variant.
 
