@@ -193,6 +193,16 @@ This RFC introduces:
 * a new enum: `core::detect::TargetFeature`, and
 * a new function: `core::detect::is_target_feature_detected`.
 
+and moves the target-feature detection macros to `libcore`.
+
+We could stabilize all of this in stages. First, we could just stabilize using
+the target-feature detection macros from `libcore`, which would unlock doing
+target-feature detection in `#![no_std]` libraries. Unlocking some of the main
+use-cases like being able to use them in `libcore` itself, and have them do
+something meaningful when `libstd` is linked. Then, we could extend that with
+the rest of the API, which allows `#![no_std]` binaries to provide their own
+target-feature detection runtime.
+
 ## The `#[target_feature_detection_runtime]` attribute
 
 The `#[target_feature_runtime]` can be used to _define_ a target-feature
@@ -353,13 +363,18 @@ macros.
 
 ## Alternatives
 
-We don't have to solve this problem. This means that `libcore` and other
-`#![no_std]` libraries can't use run-time feature detection, and can't benefit,
-e.g., of advanced SIMD instructions.
+The main alternative is that we don't have to stabilize everything at the same
+time. We could implement this as proposed, but only stabilize using the
+target-feature detection macros via `libcore`. This would mean that initially,
+`#![no_std]` binaries won't be able to implement their own run-times, but that
+would unlock using the macros on all `#![no_std]` libraries, and these macros
+would do something meaningful if `libstd` is linked into the final binary.
 
-We also could do something different. For example, we could provide a "cache" in
-libcore, and an API for users or only for the standard library, to initialize
-this cache externally, e.g., during the standard library initialization routine.
+## libcore pulls target-features approach
+
+We could provide a "cache" in libcore, and an API for users or only for the
+standard library, to initialize this cache externally, e.g., during the standard
+library initialization routine.
 
 This runs into problems with `cdylib`s, where these routines might not be called
 automatically, potentially requiring C code to have to manually call into
@@ -387,6 +402,13 @@ work for all users.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
+
+* We could implement this RFC, without making any APIs public, by just moving
+  the feature-detection macros to `libcore`. That would allow `#![no_std]`
+  libraries to use them, and they will do something meaninful if `libstd` is
+  linked. `#![no_std]` binaries won't be able to provide their own run-time, but
+  the APIs for this (the trait, enum, and `#[target_feature_detection_runtime]`
+  attribute) could be stabilized at a later time.
 
 * Should the API use a `TargetFeature` `enum` or be stringly-typed like the
   macros and use string literals?
