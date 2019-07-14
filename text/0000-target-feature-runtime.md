@@ -6,8 +6,23 @@
 # Summary
 [summary]: #summary
 
-This RFC allows `#![no_std]` binaries and libraries (e.g. like `libcore` and
-`liballoc`) to perform run-time feature detection.
+Right now, only `#![std]` Rust libraries and binaries can perform target-feature
+detection at run-time via the stable APIs provided by the
+`is_..._feature_detected!("target-feature")` macros in `libstd`.
+
+This RFC extends that support to allow `#![no_std]` binaries and libraries (e.g.
+like `libcore` and `liballoc`) to perform target-feature detection at run-time
+as well.
+
+This proposal achieves that by exposing the API from `libcore` and by allowing
+users to provide their own run-time for performing target-feature detection. If
+no user-defined run-time is provided, a fallback is provided. If `libstd` is
+linked, this fallback is the current runtime, preserving the current stable Rust
+behavior.
+
+This enables all Rust code to use the stable target-feature detection APIs,
+while allowing final binary artifacts to customize its behavior to satisfy their
+use-cases.
 
 # Motivation
 [motivation]: #motivation
