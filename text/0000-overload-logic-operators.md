@@ -31,31 +31,33 @@ enum ShortCircuit<S, L> {
 
 trait LogicalOr<Rhs = Self>: Sized {
     type Output;
+    type Intermediate;
 
     /// Decide whether the *logical or* should short-circuit
     /// or not based on its left-hand side argument. If so,
     /// return its final result, otherwise return the value
     /// that will get passed to `logical_or()` (normally this
     /// means returning self back, but you can change the value).
-    fn short_circuit_or(self) -> ShortCircuit<Self::Output, Self>;
+    fn short_circuit_or(self) -> ShortCircuit<Self::Output, Intermediate>;
 
     /// Complete the *logical or* in case it did not short-circuit.
     /// Normally this would just return `rhs`.
-    fn logical_or(self, rhs: Rhs) -> Self::Output;
+    fn logical_or(lhs: Intermediate, rhs: Rhs) -> Self::Output;
 }
 
 trait LogicalAnd<Rhs = Self>: Sized {
     type Output;
+    type Intermediate;
 
     /// Decide whether the *logical and* should short-circuit
     /// or not based on its left-hand side argument. If so,
     /// return its final result, otherwise return the value
     /// that will get passed to `logical_and()` (normally this
     /// means returning self back, but you can change the value).
-    fn short_circuit_and(self) -> ShortCircuit<Self::Output, Self>;
+    fn short_circuit_and(self) -> ShortCircuit<Self::Output, Intermediate>;
 
     /// Complete the *logical and* in case it did not short-circuit.
-    fn logical_and(self, rhs: Rhs) -> Self::Output;
+    fn logical_and(lhs: Intermediate, rhs: Rhs) -> Self::Output;
 }
 ```
 
@@ -68,7 +70,7 @@ With a matching desugaring:
 
 match expr_a.short_circuit_or() {
     ShortCircuit::Short(res) => res,
-    ShortCircuit::Long(lhs) => lhs.logical_or(expr_b)
+    ShortCircuit::Long(lhs) => logical_or(lhs, expr_b)
 }
 ```
 
@@ -81,7 +83,7 @@ and
 
 match expr_a.short_circuit_and() {
     ShortCircuit::Short(res) => res,
-    ShortCircuit::Long(lhs) => lhs.logical_and(expr_b)
+    ShortCircuit::Long(lhs) => logical_and(lhs, expr_b)
 }
 ```
 
@@ -122,10 +124,10 @@ fn foo() -> Result<i32, MyError> {
 
 fn main() {
     Ok(4) || Ok(5);           // == Ok(4)
-    Err<MyError{}> || Ok(5);  // == Ok(5)
+    Err(MyError) || Ok(5);  // == Ok(5)
     Ok(4) || foo();           // == Ok(4) (foo is *not* called)
-    Err<MyError{}> || foo();  // == Ok(3) (foo is called)
-    Err<MyError{}> || 3;      // == 3
+    Err(MyError) || foo();  // == Ok(3) (foo is called)
+    Err(MyError) || 3;      // == 3
     Ok(2) || 1;               // == 2
 
     Ok(2) || Ok("hello");  // Error: LogicalOr<Result<&str, _>> not implemented for Result<i32, _>
@@ -158,21 +160,21 @@ impl LogicalOr<Option<T>> for Option<T> {
     ...
 }
 
-impl trait LogicalOr<T> for Option<T> {
+impl LogicalOr<T> for Option<T> {
     type Output = T;
 }
 
-impl trait LogicalAnd<Option<T>> for Option<T> {
+impl LogicalAnd<Option<T>> for Option<T> {
     type Output = Self;
     ...
 }
 
-impl trait LogicalOr<Result<T, E>> for Result<T, E> {
+impl LogicalOr<Result<T, E>> for Result<T, E> {
     type Output = Self;
     ...
 }
 
-impl trait LogicalOr<T> for Result<T, E> {
+impl LogicalOr<T> for Result<T, E> {
     type Output = T;
 }
 
@@ -182,16 +184,31 @@ impl trait LogicalOr<T> for Result<T, E> {
 [drawbacks]: #drawbacks
 
 1. Leaves the `||` and the `&&` as not strictly boolean operators, which might hurt readability
-2. Could lead to similarities to C++'s Operator bool() which => truthiness and is undesirable.
+2. Could lead to similarities to C++'s `operator bool()` which implies truthiness and is undesirable.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
+- This proposal has the two methods so that each of the questions: "should this short circuit?" and "how to combine when not short circuiting?" can be answered seperately. It could be possible to just return an `Option<Rhs>` for the `short_circuit` functions and then the desurgaring would not allow for any computation similar to `a | b` (using `BitOr`) when it does not short circuit.
 - This design is the best because it does not rely on other traits, which are how the other operator traits work in Rust. It has the minimum overhead since it does not rely on closures.
-- Two alternatives were discussed and shown to be inferior in either performance, explicitness, or design.
-- The first being "truthiness" conversion trait and then automatically allowing `||` and `&&` if both that trait and the `BitOr` or `BitAnd` traits were also implemented. This was discarded because we did not want to go down the javascript route of auto converting things to boolean (Rust already does not allow non-bools in check expressions) and auto traits are not something that Rust has so that was another reason not to go down this route.
-- The second being a trait that accepts an `FnOnce` argument and then the second argument of the operator would be then implicitly hoisted into a closure. This was rejected both because hiding closures is not a zero-cost abstraction, it would break the similarity with the boolean operators because `None || return` would not return from the function unlike `false || return`. This also does not have any benifit over just using `or_with` directly except for a few characters.
+- Some alternatives were discussed and shown to be inferior in either performance, explicitness, or design.
+  - It could be possible to just have the `short_circuit(&self)` method return `enum ShortCircuit { Short, Long }` and have the desugaring be:
+  ```
+  expr_a || expr_b
+  
+  ===>
+  
+  match expr_a.short_circuit() {
+      ShortCircuit::Short => expr_a,
+      ShortCircuit::Ling => expr_a.logical_or(expr_b)
+  }
+  ```
+  This is a simpler option which does have the benefits of not being complicated by intermediate types, not having `bool` conversion functions, and a simpler (arguably more understandable) desugaring since the lhs cannot be modified during the `short_circuit` check.
+  - The first being "truthiness" conversion trait and then automatically allowing `||` and `&&` if both that trait and the `BitOr` or `BitAnd` traits were also implemented. This was discarded because we did not want to go down the javascript route of auto converting things to boolean (Rust already does not allow non-bools in check expressions) and auto traits are not something that Rust has so that was another reason not to go down this route.
+  - The second being a trait that accepts an `FnOnce` argument and then the second argument of the operator would be then implicitly hoisted into a closure. This was rejected both because hiding closures is not a zero-cost abstraction, it would break the similarity with the boolean operators because `None || return` would not return from the function unlike `false || return`. This also does not have any benifit over just using `or_with` directly except for a few characters.
 - If this is not done it then the usability of Rust without having to go to the docs would stay the same.
+- It was suggested that each of `LogicalOr` and `LogicalAnd` should have a type parameter `type Intermediate;` which is the value assigned to `ShortCircuit::Long`. This was to either fasilitate adding some more information coupling or statically declaring that no information should be sent between the `short_circuit` and `logical_***`. It was for this second reason that the `Intermediate` type was added. There are code smell reasons for sending extra data between those to functions but the gains of usability from being able to send named zero-sized type seems to outweight them.
+
 
 # Prior art
 [prior-art]: #prior-art
