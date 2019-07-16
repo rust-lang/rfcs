@@ -96,7 +96,7 @@ fn bark() {
 fn moo() {
     foo(); // ERROR (unsafe block required)
     unsafe { foo() }; // OK
-    bar(); // ERROR (bar is not sse2)
+    bar(); // ERROR (moo is not sse2 but bar requires it)
     unsafe { bar() }; // OK 
 }
 ```
