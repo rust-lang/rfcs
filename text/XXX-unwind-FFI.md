@@ -82,7 +82,7 @@ unwinding across the FFI boundary is well-defined and safe,
 and in fact it can be a useful way to handle errors
 when working with certain C libraries, such as `libjpeg`.
 
-Thus, the `may_panic` function may be makred `#[unwind(allow)]`,
+Thus, the `may_panic` function may be marked `#[unwind(allow)]`,
 which ensures that the unwinding operation will be propagated to the caller
 rather than aborting the process.
 This annotation will also prevent the compiler
