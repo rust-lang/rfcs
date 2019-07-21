@@ -325,6 +325,7 @@ Some of the above languages were found to have analogues to `Debug` for recursiv
 
 * The precise format is subject to heavy bikeshedding.
 * When should the format be considered final?  On stabilization of `{:g?}`? On stabilization of `{:g}` if it occurs?
+* Public API for this and RFC #2226.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
