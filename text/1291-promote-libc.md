@@ -74,7 +74,7 @@ platforms it supports. The `libc` crate, however, **is not intended to be cross
 platform** but rather the opposite, an exact binding to the platform in
 question. In essence, the `libc` crate is targeted as "replacement for
 `#include` in Rust" for traditional system header files, but it makes no
-effort to be help being portable by tweaking type definitions and signatures.
+effort to be portable by tweaking type definitions and signatures.
 
 ### The Home of `libc`
 
