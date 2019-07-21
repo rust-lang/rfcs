@@ -214,8 +214,8 @@ Value | Precision | `{:.p$?}` | `{:.p$e}`  | `{:.s$g?}`    | Notes |
 `-0.0`    | `p=3,s=4`     | `-0.0000`   | `-0.000e0`  | **`-0.0`**  | 
 `1e-3`    | `___,s=1`  |  | | **`0.001`** | Low cutoff is independent of precision
 `1e-3`    | `___,s=0`  |  | | **`0.001`** | `{:.0p?}` is same as `{:.1p?}`
- `(1f32 + ε)` | `p=10,s=11` | `1.0000001192` | `1.0000001192e0` | **`1.0000001192`** | Excess digits faithfully represent the binary value
-`(1f32 + ε) * 1e-7` | `p=5,s=6`  | `0.00000`      | `1.00000e-7`     | **`1e-7`**         |
+`(1f32 + ε)` | `p=10,s=11` | `1.0000001192` | `1.0000001192e0` | **`1.0000001192`** | Excess digits faithfully represent the binary value
+`1e-7` | `p=5,s=6`  | `0.00000` | `1.00000e-7` | **`1e-7`** |
 
 # Drawbacks
 [drawbacks]: #drawbacks
