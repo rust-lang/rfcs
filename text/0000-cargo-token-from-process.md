@@ -1,4 +1,4 @@
-- Feature Name: `cargo_token_process`
+- Feature Name: `cargo_token_from_process`
 - Start Date: 2019-07-22
 - RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
@@ -35,7 +35,7 @@ with crates.io:
 
 ```toml
 [registry]
-token-process = "creds cargo"
+token-from-process = "creds cargo"
 ```
 
 When authentication is required Cargo will execute the command and use its
@@ -45,19 +45,19 @@ CLI utilities:
 
 ```toml
 [registry]
-token-process = "creds cargo | awk '{print($2)}'"
+token-from-process = "creds cargo | awk '{print($2)}'"
 ```
 
-It will be possible to use `token-process` on both crates.io and alternative
+It will be possible to use `token-from-process` on both crates.io and alternative
 registries.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-A new key, `token-process`, will be added to the `[registry]` and
+A new key, `token-from-process`, will be added to the `[registry]` and
 `[registries.NAME]` sections of the `.cargo/credentials` configuration file.
 When a `token` key is also present, the latter will take precedence over
-`token-process` to maintain backward compatibility, and a warning will be
+`token-from-process` to maintain backward compatibility, and a warning will be
 issued to let the user know about that.
 
 When a `cargo` subcommand needs the authentication token, Cargo will execute
@@ -86,12 +86,12 @@ can be adapted to work with virtually any secret storage the user might rely
 on, while being relatively easy to understand and use.
 
 An alternative with better user experience but more limited customization would
-be for Cargo to provide cross platform, native integration with the most popular
-secret storages, for example the system keyring:
+be for Cargo to provide cross platform, native integration with the most
+popular secret storages, for example the system keyring:
 
 ```toml
 [registry]
-system-keyring = true
+token-from-system-keyring = true
 ```
 
 The issue with the native integration proposal is it helps only a subset of
@@ -132,7 +132,7 @@ could allow users to add this configuration snippet:
 
 ```toml
 [registry]
-token-process = "cargo credentials-system-keyring"
+token-from-process = "cargo credentials-system-keyring"
 ```
 
 Encrypting the stored tokens or alternate authentication methods are out of the
