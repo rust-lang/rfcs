@@ -62,10 +62,10 @@ issued to let the user know about that.
 
 When a `cargo` subcommand needs the authentication token, Cargo will execute
 the string contained in the configuration key with the system shell (`cmd.exe`
-on Windows and `sh` on other platforms). If the command returns the `0` exit
-code, the stardard output (with trimmed newlines) will be treated as the
-authentication token. Otherwise an error message will be shown to the user,
-along with the standard output.
+on Windows and `sh` on other platforms). The process will inherit Cargo's
+standard input and error, and the standard output will be captured by Cargo to
+read the token (with trimmed newlines). If the command returns an exit code
+other than `0` Cargo will treat that as a failure.
 
 The following environment variables will be provided to the executed command:
 
