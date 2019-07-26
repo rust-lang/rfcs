@@ -9,7 +9,7 @@
 Introduce new variants of the `&` operator: `&raw mut <place>` to create a `*mut <T>`, and `&raw const <place>` to create a `*const <T>`.
 This creates a raw pointer directly, as opposed to the already existing `&mut <place> as *mut _`/`&<place> as *const _`, which create a temporary reference and then cast that to a raw pointer.
 As a consequence, the existing expressions `<term> as *mut <T>` and `<term> as *const <T>` where `<term>` has reference type are equivalent to `&raw mut *<term>` and `&raw const *<term>`, respectively.
-Moreover, add a lint to existing code that could use the new operator.
+Moreover, emit a lint for existing code that could use the new operator.
 
 # Motivation
 [motivation]: #motivation
@@ -87,27 +87,20 @@ The following is valid:
 let packed_cast = &raw const packed.field;
 ```
 
-
-
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-Rust contains two operators that perform place-to-rvalue conversion (matching `&` in C): one to create a reference (with some given mutability) and one to create a raw pointer (with some given mutability).
+Rust contains two operators that perform place-to-value conversion (matching `&` in C): one to create a reference (with some given mutability) and one to create a raw pointer (with some given mutability).
 In the MIR, this is reflected as either a distinct `Rvalue` or a flag on the existing `Ref` variant.
+Lowering to MIR should *not* insert an implicit reborrow of `<place>` in `&raw mut <place>`; that reborrow would assert validity and thus defeat the entire point.
 The borrow checker should do the usual checks on the place used in `&raw`, but can just ignore the result of this operation and the newly created "reference" can have any lifetime.
 When translating MIR to LLVM, nothing special has to happen as references and raw pointers have the same LLVM type anyway; the new operation behaves like `Ref`.
 When interpreting MIR in the Miri engine, the engine will know not to enforce any invariants on the raw pointer created by `&raw`.
 
-When doing unsafety checking, we make references to packed fields that do *not* use this new "raw reference" operation a *hard error even in unsafe blocks* (after a transition period).
-There is no situation in which this code is okay; it creates a reference that violates basic invariants.
-Taking a raw reference to a packed field, on the other hand, is a safe operation as the raw pointer comes with no special promises.
-"Unsafety checking" is thus not even a good term for this, maybe it should be a special pass dedicated to packed fields traversing MIR, or this can happen when lowering HIR to MIR.
-This check has nothing to do with whether we are in an unsafe block or not.
-
 Moreover, to prevent programmers from accidentally creating a safe reference when they did not want to, we add a lint that identifies situations where the programmer likely wants a raw reference, and suggest an explicit cast in that case.
 One possible heuristic here would be: If a safe reference (shared or mutable) is only ever used to create raw pointers, then likely it could be a raw pointer to begin with.
 The details of this are best worked out in the implementation phase of this RFC.
-The lint should, at the very least, fire for the cases covered by the syntactic sugar extension (see [Future possibilities][future-possibilities]), and it should fire when the factor that prevents this matching the sugar is just a redundant block, such as `{ &mut <place> } as *mut ?T`.
+The lint should, at the very least, fire for the cases covered by the [syntactic sugar extension][future-possibilities], and it should fire when the factor that prevents this matching the sugar is just a redundant block, such as `{ &mut <place> } as *mut ?T`.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -177,12 +170,21 @@ In the future, if Rust's type ascriptions end up performing coercions, those coe
 So `&packed.field: *const _` would be `&raw const packed.field`.
 If Rust ever gets type ascriptions with coercions for binders, likewise these coercions would be subject to these rules in cases like `match &packed.field { x: *const _ => x }`.
 
-## Other
+## Encouraging / requiring `&raw` in situations where references are often/definitely incorrect
+
+We could make references to packed fields that do *not* use this new "raw reference" operation a *hard error even in unsafe blocks* (after a transition period).
+There is no situation in which this code is okay; it creates a reference that violates basic invariants.
+Taking a raw reference to a packed field, on the other hand, is a safe operation as the raw pointer comes with no special promises.
 
 It has been suggested to [remove `static mut`][static-mut] because it is too easy to accidentally create references with lifetime `'static`.
 With `&raw` we could instead restrict `static mut` to only allow taking raw pointers (`&raw [mut|const] STATIC`) and entirely disallow creating references (`&[mut] STATIC`) even in safe code (in a future edition, likely; with lints in older editions).
 
-As mentioned above, expressions such as `&raw mut x.field` still trigger more UB than might be expected---as witnessed by a [couple of attempts found in the wild of people implementing `offsetof`][offset-of] with something like:
+## Other
+
+**Lowering of casts.** Currently, `mut_ref as *mut _` has a reborrow inserted, i.e., it gets lowered to `&mut *mut_ref as *mut _`.
+It seems like a good idea to lower this to `&raw mut *mut_ref` instead to avoid any effects the reborrow might have in terms of permitted aliasing.
+
+**`offsetof` woes.** As mentioned above, expressions such as `&raw mut x.field` still trigger more UB than might be expected---as witnessed by a [couple of attempts found in the wild of people implementing `offsetof`][offset-of] with something like:
 
 ```rust
 let x: *mut Struct = NonNull::dangling().as_ptr();
@@ -198,7 +200,8 @@ let field: *mut Field = &raw mut x.field;
 
 which is better, but still UB: we emit a `getelementptr inbounds` for the `.field` offset computation.
 It might be a good idea to just not do that -- we know that references are fine, but we could decide that when raw pointers are involved that might be dangling, we do not want to assert anything from just the fact that an offset is being computed.
-A plain `getelementptr` still provides some information to the alias analysis, and if we derive the `inbounds` entirely from the fact that the pointer is created from or turned into a reference, we would be able to not have any clause in the language semantics that calls out the offset computation as potentially triggering UB
+However, there are concerns that a plain `getelementptr` will not be sufficiently optimized because it also permits arithmetic that wraps around the end of the address space.
+LLVM currently does not support a `getelementptr nowrap` that disallows wrapping but permits cross-allocation arithmetic, but if that could be added, using it for raw pointers could save us from having to talk about the "no outofbounds arithmetic" rule in the semantics of field access (the UB triggered by creating dangling references would be enough).
 If people just hear "`&raw` means my pointer can be dangling" they might think the second version above is actually okay, forgetting that the field access itself has its own subtle rule; getting rid of that rule would remove one foot-gun for unsafe code authors to worry about.
 
 [static-mut]: https://github.com/rust-lang/rust/issues/53639
