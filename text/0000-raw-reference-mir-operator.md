@@ -183,6 +183,7 @@ With `&raw` we could instead restrict `static mut` to only allow taking raw poin
 
 **Lowering of casts.** Currently, `mut_ref as *mut _` has a reborrow inserted, i.e., it gets lowered to `&mut *mut_ref as *mut _`.
 It seems like a good idea to lower this to `&raw mut *mut_ref` instead to avoid any effects the reborrow might have in terms of permitted aliasing.
+This has the side-effect of being able to entirely remove reference-to-pointer-*casts* from the MIR; that conversion would be done by a "raw reborrow" instead (which is consistent with the pointer-to-reference situation).
 
 **`offsetof` woes.** As mentioned above, expressions such as `&raw mut x.field` still trigger more UB than might be expected---as witnessed by a [couple of attempts found in the wild of people implementing `offsetof`][offset-of] with something like:
 
