@@ -9,9 +9,7 @@
 Introduce new variants of the `&` operator: `&raw mut <place>` to create a `*mut <T>`, and `&raw const <place>` to create a `*const <T>`.
 This creates a raw pointer directly, as opposed to the already existing `&mut <place> as *mut _`/`&<place> as *const _`, which create a temporary reference and then cast that to a raw pointer.
 As a consequence, the existing expressions `<term> as *mut <T>` and `<term> as *const <T>` where `<term>` has reference type are equivalent to `&raw mut *<term>` and `&raw const *<term>`, respectively.
-Moreover, add a lint to existing code that could use the new operator, and treat existing code that creates a reference and immediately casts or coerces it to a raw pointer as if it had been written with the new syntax.
-
-As an option (referred to as [SUGAR] below), we could treat `&mut <place> as *mut _`/`&<place> as *const _` as if they had been written with `&raw` to avoid creating temporary references when that was likely not the intention.
+Moreover, add a lint to existing code that could use the new operator.
 
 # Motivation
 [motivation]: #motivation
@@ -79,8 +77,7 @@ let &x = &X; // this is actually dereferencing the pointer, certainly UB
 let _ = &X; // throwing away the value immediately changes nothing
 &X; // different syntax for the same thing
 
-let x = &X as *const T; // this is casting to raw but "too late", an intermediate reference has been created (only if we do no adapt [SUGAR])
-let x = &X as &T as *const T; // this is casting to raw but "too late" even if we adapt [SUGAR]
+let x = &X as *const T; // this is casting to raw but "too late", an intermediate reference has been created
 ```
 
 The only way to create a pointer to an unaligned or dangling location without triggering undefined behavior is to use `&raw`, which creates a raw pointer without an intermediate reference.
@@ -90,19 +87,6 @@ The following is valid:
 let packed_cast = &raw const packed.field;
 ```
 
-As an optional extension ([SUGAR]) to keep existing code working and to provide a way for projects to adjust to these rules before the syntax bikeshed is finished, and to do so in a way that they do not have to drop support for old Rust versions, we could also treat all of the following as if they had been written using `&raw const` instead of `&`:
-
-```rust
-let packed_cast = unsafe { &raw const packed.field as *const _ };
-let packed_coercion: *const _ = unsafe { &packed.field };
-let null_cast: *const _ = unsafe { &*ptr::null() } as *const _;
-let null_coercion: *const _ = unsafe { &*ptr::null() };
-```
-
-The intention is to cover all cases where a reference, just created, is immediately explicitly used as a value of raw pointer type.
-
-Notice that this only applies if no automatic call to `deref` or `deref_mut` got inserted:
-those are regular function calls taking a reference, so in that case a reference is created and it must satisfy the usual guarantees.
 
 
 # Reference-level explanation
@@ -114,11 +98,6 @@ The borrow checker should do the usual checks on the place used in `&raw`, but c
 When translating MIR to LLVM, nothing special has to happen as references and raw pointers have the same LLVM type anyway; the new operation behaves like `Ref`.
 When interpreting MIR in the Miri engine, the engine will know not to enforce any invariants on the raw pointer created by `&raw`.
 
-For the [SUGAR] option, when translating HIR to MIR, we recognize `&[mut] <place> as *[mut|const] ?T` (where `?T` can be any type, also a partial one like `_`) as well as coercions from `&[mut] <place>` to a raw pointer type as a special pattern and treat them as if they would have been written `&raw [mut|const] <place>`.
-We do this *after* auto-deref, meaning this pattern does not apply when a call to `deref` or `deref_mut` got inserted.
-Redundant parentheses are ignored, but block expressions are not:
-`{ &[mut] <place> }` materializes a reference that must be valid, no matter which coercions or casts follow outside the block.
-
 When doing unsafety checking, we make references to packed fields that do *not* use this new "raw reference" operation a *hard error even in unsafe blocks* (after a transition period).
 There is no situation in which this code is okay; it creates a reference that violates basic invariants.
 Taking a raw reference to a packed field, on the other hand, is a safe operation as the raw pointer comes with no special promises.
@@ -128,34 +107,15 @@ This check has nothing to do with whether we are in an unsafe block or not.
 Moreover, to prevent programmers from accidentally creating a safe reference when they did not want to, we add a lint that identifies situations where the programmer likely wants a raw reference, and suggest an explicit cast in that case.
 One possible heuristic here would be: If a safe reference (shared or mutable) is only ever used to create raw pointers, then likely it could be a raw pointer to begin with.
 The details of this are best worked out in the implementation phase of this RFC.
-The lint should, at the very least, fire for the cases covered by [SUGAR] if we do *not* adopt that option, and it should fire when the factor that prevents this matching [SUGAR] is just a redundant block, such as `{ &mut <place> } as *mut ?T`.
+The lint should, at the very least, fire for the cases covered by the syntactic sugar extension (see [Future possibilities][future-possibilities]), and it should fire when the factor that prevents this matching the sugar is just a redundant block, such as `{ &mut <place> } as *mut ?T`.
 
 # Drawbacks
 [drawbacks]: #drawbacks
 
-If we adapt [SUGAR], it might be surprising that the following two pieces of code are not equivalent:
-
-```rust
-// Variant 1
-let x = unsafe { &packed.field }; // Undefined behavior!
-let x = x as *const _;
-// Variant 2
-let x = unsafe { &packed.field as *const _ };
-```
-
-Notice, however, that the lint should fire in variant 1.
-
-If `as` ever becomes an operation that can be overloaded, the behavior of `&packed.field as *const _` with [SUGAR] can *not* be obtained by dispatching to the overloaded `as` operator.
-Calling that method would assert validity of the reference.
+This introduces new clauses into our grammar for a niche operation.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
-
-[SUGAR] is a compromise to keep the analysis that affects code generation simple.
-Detecting "Variant 1" (from the "Drawbacks" section) would need a much less local analysis.
-Hence the proposal to make them not equivalent.
-
-A drawback of not adapting [SUGAR] is that we will have to wait longer (namely, until stabilization of the new syntax) until people can finally write UB-free versions of code that handles dangling or unaligned raw pointers.
 
 One alternative to introducing a new primitive operation might be to somehow exempt "references immediately cast to a raw pointer" from the invariant.
 (Basically, a "dynamic" version of the static analysis performed by the lint.)
@@ -171,11 +131,6 @@ The need for taking a raw reference only arise because of Rust having both of th
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-With [SUGAR], should the lint apply to cases that are covered by the special desugaring or not?
-Also, if not, should the lint become `deny` eventually (maybe only on some editions)?
-(Without [SUGAR], the lint clearly must apply to `&mut <place> as *mut _`/`&<place> as *const _`, and that pattern is common enough that the cost of `deny` is too high.)
-
-The interaction with auto-deref is a bit unfortunate.
 Maybe the lint should also cover cases that look like `&[mut] <place> as *[mut|const] ?T` in the surface syntax but had a method call inserted, thus manifesting a reference (with the associated guarantees).
 The lint as described would not fire because the reference actually gets used as such (being passed to `deref`).
 However, what would the lint suggest to do instead?
@@ -184,9 +139,45 @@ There just is no way to write this code without creating a reference.
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-With [SUGAR], if Rust's type ascriptions end up performing coercions, those coercions should trigger the raw reference operator just like other coercions do.
+## "Syntactic sugar" extension
+
+We could treat `&mut <place> as *mut _`/`&<place> as *const _` as if they had been written with `&raw` to avoid creating temporary references when that was likely not the intention.
+We could also do this when `&mut <place>`/`& <place>` is used in a coercion site and gets coerced to a raw pointer.
+
+```rust
+let x = &X as *const T; // this is fine now
+let x: *const T; // this is fine if we also apply the "sugar" for coercions
+let x = &X as &T as *const T; // this is casting to raw but "too late" even if we adapt [SUGAR]
+let x = { &X } as *const T; // this is likely also too late (but should be covered by the lint)
+let x: *const T = if b { &X } else { &Y }; // this is likely also too late (and hopefully covered by the lint)
+```
+
+Notice that this only applies if no automatic call to `deref` or `deref_mut` got inserted:
+those are regular function calls taking a reference, so in that case a reference is created and it must satisfy the usual guarantees.
+
+The point of this to keep existing code working and to provide a way for projects to adjust to these rules before stabilization.
+Another good reason for this extension is that code could be adjusted without having to drop support for old Rust versions.
+
+However, it might be surprising that the following two pieces of code are not equivalent:
+
+```rust
+// Variant 1
+let x = unsafe { &packed.field }; // Undefined behavior!
+let x = x as *const _;
+// Variant 2
+let x = unsafe { &packed.field as *const _ }; // good code
+```
+
+This is at least partially mitigated by the fact that the lint should fire in variant 1.
+
+Another problem is that if `as` ever becomes an operation that can be overloaded, the behavior of `&packed.field as *const _` can *not* be obtained by dispatching to the overloaded `as` operator.
+Calling that method would assert validity of the reference.
+
+In the future, if Rust's type ascriptions end up performing coercions, those coercions should trigger the raw reference operator just like other coercions do.
 So `&packed.field: *const _` would be `&raw const packed.field`.
 If Rust ever gets type ascriptions with coercions for binders, likewise these coercions would be subject to these rules in cases like `match &packed.field { x: *const _ => x }`.
+
+## Other
 
 It has been suggested to [remove `static mut`][static-mut] because it is too easy to accidentally create references with lifetime `'static`.
 With `&raw` we could instead restrict `static mut` to only allow taking raw pointers (`&raw [mut|const] STATIC`) and entirely disallow creating references (`&[mut] STATIC`) even in safe code (in a future edition, likely; with lints in older editions).
