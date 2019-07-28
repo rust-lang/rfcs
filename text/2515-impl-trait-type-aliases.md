@@ -1,7 +1,7 @@
-- Feature Name: impl_trait_type_aliases
+- Feature Name: `impl_trait_type_aliases`
 - Start Date: 2018-08-03
-- RFC PR: (leave this empty)
-- Rust Issue: (leave this empty)
+- RFC PR: [rust-lang/rfcs#2515](https://github.com/rust-lang/rfcs/pull/2515)
+- Rust Issue: [rust-lang/rust#63063](https://github.com/rust-lang/rust/issues/63063)
 
 # Summary
 [summary]: #summary
