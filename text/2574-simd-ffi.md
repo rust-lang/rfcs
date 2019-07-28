@@ -1,7 +1,7 @@
 - Feature Name: `simd_ffi`
 - Start Date: 2018-10-12
-- RFC PR: (leave this empty)
-- Rust Issue: (leave this empty)
+- RFC PR: [rust-lang/rfcs#2574](https://github.com/rust-lang/rfcs/pull/2574)
+- Rust Issue: [rust-lang/rust#63068](https://github.com/rust-lang/rust/issues/63068)
 
 # Summary
 [summary]: #summary
