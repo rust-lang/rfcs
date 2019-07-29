@@ -272,7 +272,7 @@ extensions we could consider in the future. Prominent examples:
 1. Extending the backtrace API to allow programmatic iteration of backtrace
 frames and so on.
 2. Providing derives for traits like `Display` and `Error` in the standard
-libray.
+library.
 3. Providing helper methods on `Error` that have been experimented with in
 failure, such as the causes iterator.
 
