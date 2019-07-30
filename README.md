@@ -86,9 +86,10 @@ beforehand, to ascertain that the RFC may be desirable; having a consistent
 impact on the project requires concerted effort toward consensus-building.
 
 The most common preparations for writing and submitting an RFC include talking
-the idea over on #rust-internals, discussing the topic on our [developer discussion forum],
-and occasionally posting "pre-RFCs" on the developer forum. You may file issues
-on this repo for discussion, but these are not actively looked at by the teams.
+the idea over on our [official Discord server], discussing the topic on our
+[developer discussion forum], and occasionally posting "pre-RFCs" on the
+developer forum. You may file issues on this repo for discussion, but these are
+not actively looked at by the teams.
 
 As a rule of thumb, receiving encouraging feedback from long-standing project
 developers, and particularly members of the relevant [sub-team] is a good
@@ -247,8 +248,8 @@ circumstances. As usual, we are trying to let the process be driven by
 consensus and community norms, not impose more structure than necessary.
 
 
+[official Discord server]: https://discord.gg/rust-lang
 [developer discussion forum]: http://internals.rust-lang.org/
-[RFC issue tracker]: https://github.com/rust-lang/rfcs/issues
 [RFC repository]: http://github.com/rust-lang/rfcs
 [sub-team]: http://www.rust-lang.org/team.html
 
