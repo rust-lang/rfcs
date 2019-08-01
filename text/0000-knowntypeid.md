@@ -65,3 +65,8 @@ In Rust itself, this trait is very similar to `core::any::Any`. However, that tr
 [future-possibilities]: #future-possibilities
 
 This was originally written to enable the functionality of `Error::type_id` to be soundly utilized in stable Rust. However, this is a more impactful change, since it would possibly remove an existing, albeit unstable, method on a widely-used trait.
+
+# Credits
+[credits]: #credits
+
+This solution was originally identified by @programmerjake in https://github.com/rust-lang/rust/issues/60784#issuecomment-511039223. This RFC slightly differs in that it is not intended to be specific to the Error trait.
