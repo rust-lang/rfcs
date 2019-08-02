@@ -26,7 +26,7 @@ This is a revised and slimmed down version of the [earlier futures RFC](https://
 
 The core motivation for this RFC is to stabilize the supporting mechanisms for
 `async`/`await` syntax.  The syntax itself is motivated in the (already merged)
-[companion RFC], and there is a [blog post](http://aturon.github.io/2018/04/24/async-borrowing/)
+[companion RFC], and there is a [blog post](https://aturon.github.io/tech/2018/04/24/async-borrowing/)
 that goes through its importance in greater detail.
 
 As with closures, `async` syntax involves producing an anonymous type that implements
