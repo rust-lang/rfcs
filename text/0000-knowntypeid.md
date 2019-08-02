@@ -30,6 +30,71 @@ unsafe impl<T: ?Sized> KnownTypeId for T {}
 
 While not a part of this RFC, making `core::any::KnownTypeId` a supertrait of `std::error::Error` would solve the soundness issues with `Error::type_id` while preserving backwards compatbility with stable code and preserving the same functionality.
 
+As an example, let's say we have a trait CanDoThing, and we want to add the ability to convert an `&dyn CanDoThing + 'static` to `&DoesThing`. Before the update, we have this code:
+
+```rust
+pub trait CanDoThing {
+    fn do_it();
+}
+
+pub struct DoesThing;
+
+impl CanDoThing for DoesThing {
+    fn do_it() {
+        println!("Did the thing!");
+    }
+}
+```
+
+After the update, we have this:
+
+
+```rust
+pub trait CanDoThing: KnownTypeId {
+    fn do_it(&self);
+}
+
+pub struct DoesThing;
+
+impl CanDoThing for DoesThing {
+    fn do_it(&self) {
+        println!("Did the thing!");
+    }
+}
+
+impl dyn CanDoThing + 'static {
+    pub fn is<T: CanDoThing + 'static>(&self) -> bool {
+        TypeId::of::<T>() == self.type_id()
+    }
+    
+    pub fn downcast_ref<T: CanDoThing + 'static>(&self) -> Option<&T> {
+        if self.is::<T>() {
+            unsafe {
+                Some(&*(self as *const dyn CanDoThing as *const T))
+            }
+        } else {
+            None
+        }
+    }
+}
+```
+
+[(playground link)](https://play.rust-lang.org/?version=stable&mode=debug&edition=2018&gist=e22051b728be0fe9cad61a51fb8d2f49)
+
+In this case, we could use Any instead of KnownTypeId. However, what if another crate had this code?
+
+```rust
+struct MyThingDoer<'a> {
+    pub thing_text: &'a str,
+}
+
+impl CanDoThing for MyThingDoer<'_> { ... }
+```
+
+Before we added the Any bound, it worked fine. After we added it, that crate would get an error! If CanDoThing uses KnownTypeId instead, there isn't a problem.
+
+[(playground link)](https://play.rust-lang.org/?version=stable&mode=debug&edition=2018&gist=6fff1e3fd5c1e6334b253aa22dd98bca)
+
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
