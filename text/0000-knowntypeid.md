@@ -64,6 +64,7 @@ impl CanDoThing for DoesThing {
 
 impl dyn CanDoThing + 'static {
     pub fn is<T: CanDoThing + 'static>(&self) -> bool {
+        // `TypeId::of::<Self>()` would be `dyn CanDoThing`, not the "actual" type of Self
         TypeId::of::<T>() == self.type_id()
     }
     
