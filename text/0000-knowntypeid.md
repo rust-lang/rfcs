@@ -102,6 +102,8 @@ Before we added the Any bound, it worked fine. After we added it, that crate wou
 
 Making the method unsafe does not have the correct semantics, since it implies *using* the method is unsafe. A method being unsafe does not necessarily affect the safety of implementing it, unlike an unsafe trait. Thus, an unsafe trait is necessary for the proper semantics.
 
+Note that simply doing `TypeId::of::<Self>()` in an `impl dyn Trait` gives the TypeId of `dyn Trait`, and not the "real" type [(playground link)](https://play.rust-lang.org/?version=stable&mode=debug&edition=2018&gist=da9811b06256cd4b00e156aaf035be28).
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
