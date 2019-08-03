@@ -29,7 +29,7 @@ pub unsafe trait TypeInfo {
     }
 }
 
-unsafe impl<T: ?Sized> TypeInfo for T {}
+unsafe impl<T: ?Sized> TypeInfo for T {} // enables assuming all types implement TypeInfo, without breaking backwards compatibility
 ```
 
 While not a part of this RFC, making `core::any::TypeInfo` a supertrait of `std::error::Error` would solve the soundness issues with `Error::type_id` while preserving backwards compatbility with stable code and preserving the same functionality.
