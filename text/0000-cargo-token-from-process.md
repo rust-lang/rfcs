@@ -28,28 +28,28 @@ keyring.
 [guide-level-explanation]: #guide-level-explanation
 
 Suppose a user has their authentication token stored in a password manager, and
-the password manager provides a command, `creds cargo`, to decrypt and print
-that token in a secure way. Instead of also storing the token in plaintext, the
-user can add this snippet to their own `.cargo/credentials` to authenticate
-with crates.io:
+the password manager provides a command, `/usr/bin/cargo-creds`, to decrypt and
+print that token in a secure way. Instead of also storing the token in
+plaintext, the user can add this snippet to their own `.cargo/credentials` to
+authenticate with crates.io:
 
 ```toml
 [registry]
-token-from-process = "creds cargo"
+token-from-process = "/usr/bin/cargo-creds"
 ```
 
 When authentication is required Cargo will execute the command and use its
-output as the token, which will never be stored by Cargo on disk. The command
-will be executed inside the system's shell environment, to allow the usage of
-CLI utilities:
+output as the token, which will never be stored by Cargo on disk. If the
+command requires arguments, for example `password-manager creds crates-io`, you
+can add them in a list:
 
 ```toml
 [registry]
-token-from-process = "creds cargo | awk '{print($2)}'"
+token-from-process = ["password-manager", "creds", "crates-io"]
 ```
 
-It will be possible to use `token-from-process` on both crates.io and alternative
-registries.
+It will be possible to use `token-from-process` on both crates.io and
+alternative registries.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -60,12 +60,15 @@ When a `token` key is also present, the latter will take precedence over
 `token-from-process` to maintain backward compatibility, and a warning will be
 issued to let the user know about that.
 
+The `token-from-process` key accepts either a string containing the binary to
+call or a list containing the binary name and the arguments to provide to it.
+
 When a `cargo` subcommand needs the authentication token, Cargo will execute
-the string contained in the configuration key with the system shell (`cmd.exe`
-on Windows and `sh` on other platforms). The process will inherit Cargo's
-standard input and error, and the standard output will be captured by Cargo to
-read the token (with trimmed newlines). If the command returns an exit code
-other than `0` Cargo will treat that as a failure.
+the binary contained in the configuration key with the defined arguments (if
+provided by the user). The process will inherit Cargo's standard input and
+error, and the standard output will be captured by Cargo to read the token
+(with trimmed newlines). If the command returns an exit code other than `0`
+Cargo will treat that as a failure.
 
 The following environment variables will be provided to the executed command:
 
@@ -75,8 +78,7 @@ The following environment variables will be provided to the executed command:
 # Drawbacks
 [drawbacks]: #drawbacks
 
-This RFC requires cargo to execute a command with the system shell, which could
-make it more difficult to port Cargo to a new operative system without a shell.
+*No known drawbacks yet.*
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -104,8 +106,8 @@ secret storage we expect a lot of users to use.
 Multiple command line tools implement this system or a similar one to retrieve
 authentication tokens or other secrets:
 
-* [awscli][awscli] includes the `credentials_process` setting with the same
-  behavior as the one proposed in this RFC.
+* [awscli][awscli] includes the `credentials_process` setting with nearly the
+  same behavior as the one proposed in this RFC.
 * [Docker CLI][docker] offers "credential stores", programs the Docker CLI
   calls with specific arguments expecting JSON output. Implementations are
   provided for common storage systems, and the protocol is documented for users
@@ -120,7 +122,7 @@ authentication tokens or other secrets:
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-*Nothing here yet.*
+*No known unresolved questions yet.*
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
