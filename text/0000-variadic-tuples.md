@@ -63,18 +63,18 @@ macro_rules! last_type {
 
 ## Declaring a _variadic tuple_
 
-To declare a _variadic tuple_, we use `..#T`, where `T` is a type identifier.
+To declare a _variadic tuple_, we use `(..#T)`, where `T` is a type identifier.
 
 For instance:
-* `struct VariadicStruct<..#T1> ..`
-* `impl<..#Head> ..`
-* `impl<A, B, C, ..#_Tail> ..`
-* `fn my_function<..#A> ..`
-* `fn my_function<A, B, C, ..#D> ..`
+* `struct VariadicStruct<(..#T1)> ..`
+* `impl<(..#Head)> ..`
+* `impl<A, B, C, (..#_Tail)> ..`
+* `fn my_function<(..#A)> ..`
+* `fn my_function<A, B, C, (..#D)> ..`
 
 You can think this like a rule you give to the compiler to generated appropriate code when it runs into specific patterns:
-* `VariadicStruct<int, usize>` matches `VariadicStruct<..#T1>` where `..#T1` maps to `int, usize`
-* `VariadicStruct<int, usize, usize>` matches `VariadicStruct<..#T1>` where `..#T1` maps to `int, usize, usize`
+* `VariadicStruct<(int, usize)>` matches `VariadicStruct<(..#T1)>` where `(..#T1)` maps to `(int, usize)`
+* `VariadicStruct<(int, usize, usize)>` matches `VariadicStruct<(..#T1)>` where `(..#T1)` maps to `(int, usize, usize)`
 (We will see implementation examples later, with the expansion form)
 
 ## Expanding _variadic tuple_
@@ -83,11 +83,10 @@ When expanding a tuple, we use the form `T#..`, but more generally: `<pattern(T)
 
 Let's implement the `Hash` trait:
 
-
 ```rust
 // For the example, we consider the impl for (A, B, C). So `..#T matches `A, B, C`
 // We have the first expansion here, `T#..` expands to `A, B, C`
-impl<..#T, Last> Hash for (T#.., Last) 
+impl<(..#T), Last> Hash for (T#.., Last) 
 where
     {T: Hash}#..,                               // Expands to `A: Hash, B: Hash, C: Hash`
     Last: Hash + ?Sized, {
@@ -104,35 +103,37 @@ where
 
 ### Declarative form
 
-* Struct generic parameters     : `struct MyStruct<..#T>`
-* Function generic parameters   : `fn my_function<..#T>`
-* Type alias declaration        : `type MyTuple<..#T>`
-* impl block generic parameters : `impl<..#T>`
+* Struct generic parameters     : `struct MyStruct<(..#T)>`
+* Function generic parameters   : `fn my_function<(..#T)>`
+* Type alias declaration        : `type MyTuple<(..#T)>`
+* impl block generic parameters : `impl<(..#T)>`
 
 ### Expansion form
 
 * Struct member declaration:
   ```rust
-  struct MyStruct<..#T> {
+  struct MyStruct<(..#T)> {
     arrays: ([T; 32]#..),
   }
   ```
-* Function arguments        : `fn my_function<..#T>(values: &(Vec<T>#..))`
-* Function return type      : `fn my_function<..#T>(values: &(Vec<T>#..)) -> (&[T]#..)`
+* Function arguments        : `fn my_function<(..#T)>(values: &(Vec<T>#..))`
+* Function return type      : `fn my_function<(..#T)>(values: &(Vec<T>#..)) -> (&[T]#..)`
 * Function body             : 
 ```rust
-fn my_function<..#T>(values: &(Vec<T>#..)) -> (&[T]#..) {
+fn my_function<(..#T)>(values: &(Vec<T>#..)) -> (&[T]#..) {
     let ({ref T}#..) = values;
     (T#..)
 }
 ```
-* Type alias definition     : `type TupleOfVec<..#T> = (Vec<T>#..);`
-* impl block type           : `impl<..#T> MyStruct<T#..>`
+* Type alias definition     : `type TupleOfVec<(..#T)> = (Vec<T>#..);`
+* impl block type           : `impl<(..#T)> MyStruct<T#..>`
 * where clause              :
 ```rust
-impl<..#T> MyStruct<T#..>
+impl<(..#T)> MyStruct<(T#..)>
 where {T: Hash}#..
 ```
+
+
 
 
 Explain the proposal as if it was already included in the language and you were teaching it to another Rust programmer. That generally means:
@@ -147,6 +148,57 @@ For implementation-oriented RFCs (e.g. for compiler internals), this section sho
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
+
+## Recursion
+
+To implement some feature, we may want to use recursion over the arity of the tuple.
+For instance, let's implement a trait that gives the arity of a tuple:
+
+```rust
+trait Arity {
+    const VALUE: usize;
+}
+
+impl<Head, (..#Tail)> Arity for (Head, Tail#..) {
+    const VALUE: usize = <(Tail#..) as Arity>::VALUE + 1;
+}
+impl Arity for () {
+    const VALUE: usize = 0;
+}
+```
+
+Note:
+* The `impl<Head, (..#Tail)> Arity for (Head, Tail#..)` is the recursive implementation.
+* The `impl Arity for ()` is the termination of the recursive implementation.
+
+And when we compile the following code:
+```rust
+fn main() {
+    println!("Arity of (bool, usize): {}", <(bool, usize) as Arity>::VALUE);
+}
+```
+The compiler will execute these steps:
+1. Search `impl` of `Arity` for `(bool, usize)`
+1. `impl` not found, Search variadic `impl` of `Arity` for `(bool, usize)`
+1. Variadic impl found: `impl<Head, (..#Tail)> Arity for (Head, Tail#..)`
+1. Generate `impl` of `Arity` for `(bool, usize)`
+    1. Requires `impl` of `Arity` for `(usize,)`
+    1. Search `impl` of `Arity` for `(usize,)`
+    1. `impl` not found, Search variadic `impl` of `Arity` for `(usize,)`
+    1. Variadic impl found: `impl<Head, (..#Tail)> Arity for (Head, Tail#..)`
+    1. Generate `impl` of `Arity` for `(usize,)`
+        1. Requires `impl` of `Arity` for `()`
+        1. Search `impl` of `Arity` for `()`
+        1. `impl` found
+    1. Generation of `impl` of `Arity` for `(usize,)` completed
+1. Generation of `impl` of `Arity` for `(bool, usize)` completed
+
+## Using multiple _variadic tuple_
+
+```
+```
+
+
 
 This is the technical portion of the RFC. Explain the design in sufficient detail that:
 
@@ -170,6 +222,8 @@ Why should we *not* do this?
 
 # Prior art
 [prior-art]: #prior-art
+
+C++11 sets a decent precedent with its variadic templates, which can be used to define type-safe variadic functions, among other things. C++11 has a special case for variadic parameter packs.
 
 Discuss prior art, both the good and the bad, in relation to this proposal.
 A few examples of what this can include are:
@@ -201,7 +255,10 @@ Please also take into consideration that rust sometimes intentionally diverges f
 [future-possibilities]: #future-possibilities
 
 * Be able to create identifiers in an expansion form from the _variadic tuple_.
-  For instance, if `..#T` is `A, B, C`, then `let ({ref v%T%}#..) = value;` expands to `let (ref vA, ref vB, ref vC) = value;`
+  For instance, if `(..#T)` is `(A, B, C)`, then `let ({ref v%T%}#..) = value;` expands to `let (ref vA, ref vB, ref vC) = value;`
+
+
+
 
 Think about what the natural extension and evolution of your proposal would
 be and how it would affect the language and project as a whole in a holistic
