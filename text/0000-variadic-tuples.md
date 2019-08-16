@@ -195,8 +195,24 @@ The compiler will execute these steps:
 
 ## Using multiple _variadic tuple_
 
+```rust
+trait Append<T> {
+    type Out;
+
+    fn append(self, value: T) -> Self::Out;
+}
+
+impl<(..#L), (..#R)> Append<(R#..)> for (L#..) {
+    type Out = (L#.., R#..);
+
+    fn append(self, value: (R#..)) -> Self::Out; {
+        let (L#..) = self;
+        let (R#..) = value;
+        (L#.., R#..)
+    }
+}
 ```
-```
+
 
 
 
