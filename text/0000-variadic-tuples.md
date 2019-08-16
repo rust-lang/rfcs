@@ -31,7 +31,7 @@ The declarative form is `..#T` and an expansion form is `T#..`.
 
 Note: To illustrate the RFC, we will use the current implementation of the `Hash` trait for tuples.
 
-```
+```rust
 // Quote from Rust source code
 // This macro implements `Hash` for a tuple.
 // It is used like this: `impl_hash_tuple! { A B C D E F }` for a 6-arity tuple.
@@ -84,7 +84,7 @@ When expanding a tuple, we use the form `T#..`, but more generally: `<pattern(T)
 Let's implement the `Hash` trait:
 
 
-```
+```rust
 // For the example, we consider the impl for (A, B, C). So `..#T matches `A, B, C`
 // We have the first expansion here, `T#..` expands to `A, B, C`
 impl<..#T, Last> Hash for (T#.., Last) 
@@ -112,7 +112,7 @@ where
 ### Expansion form
 
 * Struct member declaration:
-  ```
+  ```rust
   struct MyStruct<..#T> {
     arrays: ([T; 32]#..),
   }
@@ -120,7 +120,7 @@ where
 * Function arguments        : `fn my_function<..#T>(values: &(Vec<T>#..))`
 * Function return type      : `fn my_function<..#T>(values: &(Vec<T>#..)) -> (&[T]#..)`
 * Function body             : 
-```
+```rust
 fn my_function<..#T>(values: &(Vec<T>#..)) -> (&[T]#..) {
     let ({ref T}#..) = values;
     (T#..)
@@ -129,7 +129,7 @@ fn my_function<..#T>(values: &(Vec<T>#..)) -> (&[T]#..) {
 * Type alias definition     : `type TupleOfVec<..#T> = (Vec<T>#..);`
 * impl block type           : `impl<..#T> MyStruct<T#..>`
 * where clause              :
-```
+```rust
 impl<..#T> MyStruct<T#..>
 where {T: Hash}#..
 ```
