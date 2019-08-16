@@ -1,20 +1,139 @@
-- Feature Name: (fill me in with a unique ident, `my_awesome_feature`)
-- Start Date: (fill me in with today's date, YYYY-MM-DD)
+- Feature Name: variadic_tuples
+- Start Date: 2019-08-16
 - RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 # Summary
 [summary]: #summary
 
-One paragraph explanation of the feature.
+Tuples types are ordered set of type, but users can only use tuple with a specified number of types.
+
+This RFC aims to allow the use of a _variadic tuple_ to be able to write implementation for tuples with an arbitrary number of type.
 
 # Motivation
 [motivation]: #motivation
 
-Why are we doing this? What use cases does it support? What is the expected outcome?
+## Arbitrary tuple arity support
+
+Currently, when a user wants to either use or add behavior to tuples, he writes an impl for each size of tuple.
+For easier maintenance, it is usually done with a `macro_rules` and implements up to 12 arity tuple. (ex: `Hash` implementation in `std`).
+
+The proposed RFC provides an easier way to define the implementation for those tuples and don't limit the arity of tuple supported.
+Also, the compiler will compile only required tuple arity implementation.
+
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
+
+The _variadic tuple_ occurs in two form: a declarative form and an expansion form.
+
+The declarative form is `..#T` and an expansion form is `T#..`.
+
+Note: To illustrate the RFC, we will use the current implementation of the `Hash` trait for tuples.
+
+```
+// Quote from Rust source code
+// This macro implements `Hash` for a tuple.
+// It is used like this: `impl_hash_tuple! { A B C D E F }` for a 6-arity tuple.
+macro_rules! impl_hash_tuple {
+    () => (
+        #[stable(feature = "rust1", since = "1.0.0")]
+        impl Hash for () {
+            fn hash<H: Hasher>(&self, _state: &mut H) {}
+        }
+    );
+
+    ( $($name:ident)+) => (
+        #[stable(feature = "rust1", since = "1.0.0")]
+        impl<$($name: Hash),+> Hash for ($($name,)+) where last_type!($($name,)+): ?Sized {
+            #[allow(non_snake_case)]
+            fn hash<S: Hasher>(&self, state: &mut S) {
+                let ($(ref $name,)+) = *self;
+                $($name.hash(state);)+
+            }
+        }
+    );
+}
+
+macro_rules! last_type {
+    ($a:ident,) => { $a };
+    ($a:ident, $($rest_a:ident,)+) => { last_type!($($rest_a,)+) };
+}
+```
+
+## Declaring a _variadic tuple_
+
+To declare a _variadic tuple_, we use `..#T`, where `T` is a type identifier.
+
+For instance:
+* `struct VariadicStruct<..#T1> ..`
+* `impl<..#Head> ..`
+* `impl<A, B, C, ..#_Tail> ..`
+* `fn my_function<..#A> ..`
+* `fn my_function<A, B, C, ..#D> ..`
+
+You can think this like a rule you give to the compiler to generated appropriate code when it runs into specific patterns:
+* `VariadicStruct<int, usize>` matches `VariadicStruct<..#T1>` where `..#T1` maps to `int, usize`
+* `VariadicStruct<int, usize, usize>` matches `VariadicStruct<..#T1>` where `..#T1` maps to `int, usize, usize`
+(We will see implementation examples later, with the expansion form)
+
+## Expanding _variadic tuple_
+
+When expanding a tuple, we use the form `T#..`, but more generally: `<pattern(T)>#..` where `<pattern(T)>` is an expression or a block expression using the identifier `T`.
+
+Let's implement the `Hash` trait:
+
+
+```
+// For the example, we consider the impl for (A, B, C). So `..#T matches `A, B, C`
+// We have the first expansion here, `T#..` expands to `A, B, C`
+impl<..#T, Last> Hash for (T#.., Last) 
+where
+    {T: Hash}#..,                               // Expands to `A: Hash, B: Hash, C: Hash`
+    Last: Hash + ?Sized, {
+
+    #[allow(non_snake_case)]
+    fn hash<S: Hasher>(&self, state: &mut S) {
+        let ({ref T}#.., ref last) = *self;     // Expands to `let (ref A, ref B, ref C, ref last) = *self;`
+        (T.hash(state)#.., last.hash(state));   // Expands to `(A.hash(state), B.hash(state), C.hash(state), last.hash(state));`
+    }
+}
+```
+
+## Allowed usages of _variadic tuple_
+
+### Declarative form
+
+* Struct generic parameters     : `struct MyStruct<..#T>`
+* Function generic parameters   : `fn my_function<..#T>`
+* Type alias declaration        : `type MyTuple<..#T>`
+* impl block generic parameters : `impl<..#T>`
+
+### Expansion form
+
+* Struct member declaration:
+  ```
+  struct MyStruct<..#T> {
+    arrays: ([T; 32]#..),
+  }
+  ```
+* Function arguments        : `fn my_function<..#T>(values: &(Vec<T>#..))`
+* Function return type      : `fn my_function<..#T>(values: &(Vec<T>#..)) -> (&[T]#..)`
+* Function body             : 
+```
+fn my_function<..#T>(values: &(Vec<T>#..)) -> (&[T]#..) {
+    let ({ref T}#..) = values;
+    (T#..)
+}
+```
+* Type alias definition     : `type TupleOfVec<..#T> = (Vec<T>#..);`
+* impl block type           : `impl<..#T> MyStruct<T#..>`
+* where clause              :
+```
+impl<..#T> MyStruct<T#..>
+where {T: Hash}#..
+```
+
 
 Explain the proposal as if it was already included in the language and you were teaching it to another Rust programmer. That generally means:
 
@@ -69,12 +188,20 @@ Please also take into consideration that rust sometimes intentionally diverges f
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
+* Tuple expansion may not be reserved only for _variadic tuple_, maybe it can be used as well on fixed arity tuple as well? (For consistency)
+* When using dynamic libraries, client libraries may relies that the host contains code up to a specific tuple arity. So we need to have a 
+  way to enforce the compiler to generate all the implementation up to a specific tuple arity. (12 will keep backward comptibility with current `std` impl)
+
+
 - What parts of the design do you expect to resolve through the RFC process before this gets merged?
 - What parts of the design do you expect to resolve through the implementation of this feature before stabilization?
 - What related issues do you consider out of scope for this RFC that could be addressed in the future independently of the solution that comes out of this RFC?
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
+
+* Be able to create identifiers in an expansion form from the _variadic tuple_.
+  For instance, if `..#T` is `A, B, C`, then `let ({ref v%T%}#..) = value;` expands to `let (ref vA, ref vB, ref vC) = value;`
 
 Think about what the natural extension and evolution of your proposal would
 be and how it would affect the language and project as a whole in a holistic
