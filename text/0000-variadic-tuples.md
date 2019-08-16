@@ -133,7 +133,7 @@ impl<(..#T)> MyStruct<(T#..)>
 where {T: Hash}#..
 ```
 
-
+---
 
 
 Explain the proposal as if it was already included in the language and you were teaching it to another Rust programmer. That generally means:
@@ -213,7 +213,7 @@ impl<(..#L), (..#R)> Append<(R#..)> for (L#..) {
 }
 ```
 
-
+---
 
 
 This is the technical portion of the RFC. Explain the design in sufficient detail that:
@@ -240,6 +240,8 @@ Why should we *not* do this?
 [prior-art]: #prior-art
 
 C++11 sets a decent precedent with its variadic templates, which can be used to define type-safe variadic functions, among other things. C++11 has a special case for variadic parameter packs.
+
+---
 
 Discuss prior art, both the good and the bad, in relation to this proposal.
 A few examples of what this can include are:
@@ -274,7 +276,7 @@ Please also take into consideration that rust sometimes intentionally diverges f
   For instance, if `(..#T)` is `(A, B, C)`, then `let ({ref v%T%}#..) = value;` expands to `let (ref vA, ref vB, ref vC) = value;`
 
 
-
+---
 
 Think about what the natural extension and evolution of your proposal would
 be and how it would affect the language and project as a whole in a holistic
