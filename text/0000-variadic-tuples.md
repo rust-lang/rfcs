@@ -462,6 +462,8 @@ C++11 sets a decent precedent with its variadic templates, which can be used to 
 - Tuple expansion may not be reserved only for variadic tuple, maybe it can be used as well on fixed arity tuple as well? (For consistency)
 - When using dynamic libraries, client libraries may relies that the host contains code up to a specific tuple arity. So we need to have a 
   way to enforce the compiler to generate all the implementation up to a specific tuple arity. (12 will keep backward comptibility with current `std` impl)
+  
+- TODO: Consider nested variadic tuples (similar co [C++ nested parameter packs](http://www.enseignement.polytechnique.fr/informatique/INF478/docs/Cpp/en/cpp/language/parameter_pack.html))
 
 # Future possibilities
 
