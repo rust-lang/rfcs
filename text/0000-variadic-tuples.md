@@ -20,7 +20,7 @@ This RFC aims to allow the use of a _variadic tuple_ which is a tuple with an ar
 Currently, when a user wants to either use or add behavior to tuples, he writes an impl for each tuple arity.
 For easier maintenance, it is usually done with a `macro_rules` and implemented up to 12 arity tuple. (see [ `Hash` implementation in `std`](https://github.com/rust-lang/rust/blob/master/src/libcore/hash/mod.rs)).
 
-_Variadic tuple_ will provide several benefits considering trait implementation for tuple or using tuples:
+Variadic tuple will provide several benefits considering trait implementation for tuple or using tuples:
 
 - Implementations will be easier to write
 - Implementations will be easier to read and maintain
@@ -30,7 +30,7 @@ _Variadic tuple_ will provide several benefits considering trait implementation 
 
 [guide-level-explanation]: #guide-level-explanation
 
-The _variadic tuple_ occurs in two form: a declarative form and an expansion form.
+The variadic tuple occurs in two form: a declarative form and an expansion form.
 
 The declarative form is `(..#T)` and an expansion form is `(T#..)`
 
@@ -66,17 +66,17 @@ macro_rules! last_type {
 }
 ```
 
-## Declaring a _variadic tuple_
+## Declaring a variadic tuple
 
-To declare a _variadic tuple_, we use `(..#T)`, where `T` is a type identifier.
+To declare a variadic tuple, we use `(..#T)`, where `T` is a type identifier.
 
 For instance:
 
-- `struct VariadicStruct<(..#T1)>` : declares a struct with a _variadic tuple_  identified by `T1` in its generic parameters
-- `impl<(..#Head)>`:  is an implementation block that uses a _variadic tuple_ identified by `Head`
+- `struct VariadicStruct<(..#T1)>` : declares a struct with a variadic tuple  identified by `T1` in its generic parameters
+- `impl<(..#Head)>`:  is an implementation block that uses a variadic tuple identified by `Head`
 - `impl<A, B, C, (..#_Tail)>`:  same as above, but with other generic parameters
-- `fn my_function<(..#A)>`: a function can also have _variadic tuple_
-- `fn my_function<A, B, (..#C), (..#D)>`: there can be several _variadic tuple_ declared in a generic parameter group
+- `fn my_function<(..#A)>`: a function can also have variadic tuple
+- `fn my_function<A, B, (..#C), (..#D)>`: there can be several variadic tuple declared in a generic parameter group
 
 You can think this like a rule you give to the compiler to generated appropriate code when it runs into specific patterns:
 
@@ -84,11 +84,11 @@ You can think this like a rule you give to the compiler to generated appropriate
 - `VariadicStruct<(int, usize, usize)>` matches `VariadicStruct<(..#T1)>` where `(..#T1)` maps to `(int, usize, usize)`
   (We will see implementation examples later, with the expansion form)
 
-## Expanding _variadic tuple_
+## Expanding variadic tuple
 
 At some point, we need to use the types that are declared in the declaration form, this is where we use the expansion form.
 
-When expanding a tuple, we use the form `T#..`, but more generally: `<expr(T)>#..` where `<expr(T)>` is an expression or a block expression using the identifier `T`.
+When expanding a tuple, we use the form `T#..`, but more generally: `<expr(T)>#..` where `<expr(T)>` is pattern optionally enclosed by parenthesis using the identifier `T`.
 
 Let's implement the `Hash` trait:
 
@@ -97,18 +97,18 @@ Let's implement the `Hash` trait:
 // We have the first expansion here, `(T#.., Last)` expands to `(A, B, C, Last)`
 impl<(..#T), Last> Hash for (T#.., Last) 
 where
-    {T: Hash}#..,                               // Expands to `A: Hash, B: Hash, C: Hash,`
+    (T: Hash)#..,                               // Expands to `A: Hash, B: Hash, C: Hash,`
     Last: Hash + ?Sized, {
 
     #[allow(non_snake_case)]
     fn hash<S: Hasher>(&self, state: &mut S) {
-        let ({ref T}#.., ref last) = *self;     // Expands to `let (ref A, ref B, ref C, ref last) = *self;`
+        let ((ref T)#.., ref last) = *self;     // Expands to `let (ref A, ref B, ref C, ref last) = *self;`
         (T.hash(state)#.., last.hash(state));   // Expands to `(A.hash(state), B.hash(state), C.hash(state), last.hash(state));`
     }
 }
 ```
 
-## Allowed usages of _variadic tuples_
+## Allowed usages of variadic tuples
 
 ### Declarative form
 
@@ -143,7 +143,7 @@ fn my_function<(..#T)>(values: &(Vec<T>#..)) -> (&[T]#..)
 
 ```rust
 fn my_function<(..#T)>(values: &(Vec<T>#..)) -> (&[T]#..) {
-    let ({ref T}#..) = values;
+    let ((ref T)#..) = values;
     (T#..)
 }
 ```
@@ -164,7 +164,7 @@ impl<(..#T)> MyStruct<(HashMap<usize, T>#..)>
 
 ```rust
 impl<(..#T)> MyStruct<(T#..)>
-where {T: Hash}#..
+where (T: Hash)#..
 ```
 
 # Reference-level explanation
@@ -223,7 +223,7 @@ The compiler will execute these steps:
 
 #### Missing implementation message
 
-An error can occur if the compiler don't find an implementation while generating _variadic tuple_ implementations.
+An error can occur if the compiler don't find an implementation while generating variadic tuple implementations.
 
 Let's consider this code:
 
@@ -273,7 +273,7 @@ error[E0277]: the trait bound `(): Arity` is not satisfied
 
 #### Cycle dependency error
 
-As a _variadic tuple_ implementation may depend on other _variadic tuple_ implementation, there can be dependency cycle issue.
+As a variadic tuple implementation may depend on other variadic tuple implementation, there can be dependency cycle issue.
 
 ```rust
 trait A { const VALUE: usize = 1; }
@@ -292,7 +292,7 @@ fn main() {
 
 This code won't compile because the impl for `A` requires the impl for `B` and the impl for `B` requires the impl for `A`.
 
-This kind of error can already by created without _variadic tuple_ (`E0275`), but _variadic tuple_ will introduce another place where this can happen. So we should have this error: 
+This kind of error can already by created without variadic tuple (`E0275`), but variadic tuple will introduce another place where this can happen. So we should have this error: 
 
 ```rust
 error[E0275]: overflow evaluating the requirement `(usize, bool): A`
@@ -308,15 +308,24 @@ note: required by `A::VALUE`
    |           ^^^^^^^^^^^^^^^^^^^^^^^
 ```
 
-## Using multiple _variadic tuples_
+## Using multiple variadic tuples
 
-### Expansion forms without _variadic tuple_ identifiers
+### Recursive variadic tuples
 
-Expansion forms without _variadic tuple_ identifiers are forbidden. 
+Recursive variadic tuples are forbidden.
+Example: 
+
+```rust
+fn my_func<(..#((..#T)))>() { ..}
+```
+
+### Expansion forms without variadic tuple identifiers
+
+Expansion forms without variadic tuple identifiers are forbidden. 
 
 ### Single identifier expansion forms
 
-We can declare and use multiple _variadic tuples_, if the expansion forms only involve a single _variadic tuple_ identifier, there is no constraints.
+We can declare and use multiple variadic tuples, if the expansion forms only involve a single variadic tuple identifier, there is no constraints.
 
 See this example of a `trait`that merge two tuples:
 
@@ -338,18 +347,18 @@ impl<(..#L), (..#R)> Merge<(R#..)> for (L#..) {
 }
 ```
 
-Note: a _variadic tuple_ identifier may occur more than once in an expansion form, for instance:
+Note: a variadic tuple identifier may occur more than once in an expansion form, for instance:
 
 ```rust
 fn double<(..#T)>(input: (#T..)) -> (T#..)
-	where {T: Add}#.., {
+	where (T: Add)#.., {
     ({T + T}#..)
 }
 ```
 
 ### Multiple identifier expansion forms
 
-An expansion form may include multiple different _variadic tuple_ identifiers. However, both _variadic tuple_ must have the same arity.
+An expansion form may include multiple different variadic tuple identifiers. However, both variadic tuple must have the same arity.
 
 For instance, let's consider this `struct`:
 
@@ -375,19 +384,19 @@ MegaMap<(usize, bool, String), (usize, bool)>
 
 ### Expansion errors
 
-_Variadic tuple_ expansions have their specific constraints, and if violated the compiler needs to issue an error.
+Variadic tuple expansions have their specific constraints, and if violated the compiler needs to issue an error.
 
-Also, _variadic tuple_ expansion will generate code and may produce obscure errors for existing compile error. To help user debug their compile issue, we need to provide information about the expansion the compiler tried to resolve.
+Also, variadic tuple expansion will generate code and may produce obscure errors for existing compile error. To help user debug their compile issue, we need to provide information about the expansion the compiler tried to resolve.
 
-#### Invalid _variadic tuple_ expansion error
+#### Invalid variadic tuple expansion error
 
-This will happen when the compiler tries to expand an expansion form with invalid _variadic tuple_.
+This will happen when the compiler tries to expand an expansion form with invalid variadic tuple.
 We need to introduce a new compile error for this one, let's call it `EXXXX`
 
 There are two kinds of invalid expansion errors
 
-- No _variadic tuple_ identifier is found in the expansion form
-- The expansion form contains multiple _variadic tuple_ identifiers, but those have different arities
+- No variadic tuple identifier is found in the expansion form
+- The expansion form contains multiple variadic tuple identifiers, but those have different arities
 
 ##### Different arities in an expansion form error 
 
@@ -427,7 +436,7 @@ note: when expanded with different variadic tuple arity `(..#Key) = (bool,)` and
    |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ```
 
-#### Missing _variadic tuple_ identifier error
+#### Missing variadic tuple identifier error
 
 The following code
 
@@ -516,17 +525,30 @@ C++11 sets a decent precedent with its variadic templates, which can be used to 
 
 [unresolved-questions]: #unresolved-questions
 
-- Tuple expansion may not be reserved only for _variadic tuple_, maybe it can be used as well on fixed arity tuple as well? (For consistency)
+- Tuple expansion may not be reserved only for variadic tuple, maybe it can be used as well on fixed arity tuple as well? (For consistency)
 - When using dynamic libraries, client libraries may relies that the host contains code up to a specific tuple arity. So we need to have a 
   way to enforce the compiler to generate all the implementation up to a specific tuple arity. (12 will keep backward comptibility with current `std` impl)
+
+- Maybe a better syntax can be found that includes the length constraint for variadic tuples.
+Example, instead of
+```rust
+fn my_function<(..#R), (..#L)>(r: (R#..), l: (L#..)) -> ((R, L)#..) { ... }
+```
+Use
+```rust
+fn my_function<(..#(R, L))>(r: (R#..), l: (L#..)) -> ((R, L)#..) { ... }
+```
+To enforce that variadic tuples `R` and `L` have the same arity.
 
 # Future possibilities
 
 [future-possibilities]: #future-possibilities
 
-- Be able to create identifiers in an expansion form from the _variadic tuple_.
-  For instance, if `(..#T)` is `(A, B, C)`, then `let ({ref v%T%}#..) = value;` expands to `let (ref vA, ref vB, ref vC) = value;`
-  - This feature will let user to have more flexibility when implementing code with _variadic tuple_
+- Be able to create identifiers in an expansion form from the variadic tuple.
+  For instance, if `(..#T)` is `(A, B, C)`, then `let ((ref v%T%)#..) = value;` expands to `let (ref vA, ref vB, ref vC) = value;`
+  - This feature will let user to have more flexibility when implementing code with variadic tuple
 - Improve the error message for `E0275` by providing the sequence of evaluated elements to give more help to the user about what can create the overflow.
-  - In the context of _variadic tuple_, this can be the sequence of _variadic tuple_ implementation that are tried by the compiler.
+  - In the context of variadic tuple, this can be the sequence of variadic tuple implementation that are tried by the compiler.
   - But, in the more generic case where two traits implementations requires each others, providing the dependency cycle can be really helpful.
+
+- Supporting recrusive variadic tuple (ie, declaration like: `(..#((..#T)))`)
