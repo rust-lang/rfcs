@@ -32,7 +32,7 @@ Variadic tuple will provide several benefits considering trait implementation fo
 
 The variadic tuple occurs in two form: a declarative form and an expansion form.
 
-The declarative form is `(..#T)` and an expansion form is `(T#..)`
+The declarative form is `(..#T)` and an example of an expansion form is `(..#Vec<T>)`
 
 Note: To illustrate the RFC, we will use the current implementation of the `Hash` trait for tuples.
 
@@ -84,26 +84,48 @@ You can think this like a rule you give to the compiler to generated appropriate
 - `VariadicStruct<(int, usize, usize)>` matches `VariadicStruct<(..#T1)>` where `(..#T1)` maps to `(int, usize, usize)`
   (We will see implementation examples later, with the expansion form)
 
+### Multiple variadic tuple sharing the same arity
+
+You can declare that several variadic tuple have the same arity in a generic parameter group:
+
+```rust
+/// Here we have 3 variadic tuple: T1, T2, T3
+/// T2 and T3 have the same arity
+/// The arity of T1 is independent of the others
+fn my_function<(..#T1), (..#(T2, T3))>() {
+  ... 
+}
+```
+
+See [Multiple identifier expansion forms](### Multiple identifier expansion forms) for a more detailed usage.
+
 ## Expanding variadic tuple
 
 At some point, we need to use the types that are declared in the declaration form, this is where we use the expansion form.
 
-When expanding a tuple, we use the form `T#..`, but more generally: `<expr(T)>#..` where `<expr(T)>` is pattern optionally enclosed by parenthesis using the identifier `T`.
+When expanding a tuple, we use the form `..#T`, but more generally: `..#<expr(T)>` where `<expr(T)>` is pattern using the identifier `T`.
+
+Note: The `<expr(T)>` can be enclosed by braces or parenthesis when the expression is complex.
+So you can have 3 different forms:
+
+1. `(..#Vec<T>)`: simple form
+2. `(..#(ref T))`: parenthesis form
+3. `(..#{let mut r = T::default(); r += 2; r})`: braces form
 
 Let's implement the `Hash` trait:
 
 ```rust
 // For the example, we consider the impl for (A, B, C). So `(..#T)` matches `(A, B, C)`
 // We have the first expansion here, `(T#.., Last)` expands to `(A, B, C, Last)`
-impl<(..#T), Last> Hash for (T#.., Last) 
+impl<(..#T), Last> Hash for (..#T, Last) 
 where
-    (T: Hash)#..,                               // Expands to `A: Hash, B: Hash, C: Hash,`
+    ..#(T: Hash),                               // Expands to `A: Hash, B: Hash, C: Hash,`
     Last: Hash + ?Sized, {
 
     #[allow(non_snake_case)]
     fn hash<S: Hasher>(&self, state: &mut S) {
-        let ((ref T)#.., ref last) = *self;     // Expands to `let (ref A, ref B, ref C, ref last) = *self;`
-        (T.hash(state)#.., last.hash(state));   // Expands to `(A.hash(state), B.hash(state), C.hash(state), last.hash(state));`
+        let (..#(ref T), ref last) = *self;     // Expands to `let (ref A, ref B, ref C, ref last) = *self;`
+        (..#T.hash(state), last.hash(state));   // Expands to `(A.hash(state), B.hash(state), C.hash(state), last.hash(state));`
     }
 }
 ```
@@ -112,6 +134,8 @@ where
 
 ### Declarative form
 
+The declarative form is used in a generic parameter group, so it can occur in:
+
 - Struct generic parameters     : `struct MyStruct<(..#T)>`
 - Function generic parameters   : `fn my_function<(..#T)>`
 - Type alias declaration        : `type MyTuple<(..#T)>`
@@ -119,52 +143,30 @@ where
 
 ### Expansion form
 
-- Struct member declaration
+The expansion form can occur in many places.
 
-  ```rust
-  struct MyStruct<(..#T)> {
-    arrays: ([T; 32]#..),
-  }
-  ```
-
-- Function arguments
+Various examples:
 
 ```rust
-fn my_function<(..#T)>(values: &(Vec<T>#..))
-```
+type TupleOfVec<(..#T)> = (..#Vec<T>);
 
-- Function return type
-
-```rust
-fn my_function<(..#T)>(values: &(Vec<T>#..)) -> (&[T]#..)
-```
-
-- Function body
-
-```rust
-fn my_function<(..#T)>(values: &(Vec<T>#..)) -> (&[T]#..) {
-    let ((ref T)#..) = values;
-    (T#..)
+fn my_function<(..#T)>(values: &(..#Vec<T>)) -> (..#&[T]) 
+where ..#(T: Clone,) {
+    let (..#(ref T)) = values;
+    (..#T)
 }
-```
 
-- Type alias definition
-
-```rust
-type TupleOfVec<(..#T)> = (Vec<T>#..);
-```
-
-- impl block type
-
-```rust
-impl<(..#T)> MyStruct<(HashMap<usize, T>#..)>
-```
-
-- where clause
-
-```rust
-impl<(..#T)> MyStruct<(T#..)>
-where (T: Hash)#..
+struct MyStruct<(..#T)> {
+  arrays: (..#[T; 4]),
+}
+impl<(..#T)> MyStruct<(..#Vec<T>)> 
+where ..#(T: Clone + 'static,) {
+  pub fn new() -> Self {
+    Self {
+      arrays: (..#[Vec<T>::new(), Vec<T>::new(), Vec<T>::new(), Vec<T>::new()])
+    }
+  }
+}
 ```
 
 # Reference-level explanation
@@ -181,8 +183,8 @@ trait Arity {
     const VALUE: usize;
 }
 
-impl<Head, (..#Tail)> Arity for (Head, Tail#..) {
-    const VALUE: usize = <(Tail#..) as Arity>::VALUE + 1;
+impl<Head, (..#Tail)> Arity for (Head, ..#Tail) {
+    const VALUE: usize = <(..#Tail) as Arity>::VALUE + 1;
 }
 impl Arity for () {
     const VALUE: usize = 0;
@@ -191,7 +193,7 @@ impl Arity for () {
 
 Note:
 
-- The `impl<Head, (..#Tail)> Arity for (Head, Tail#..)` is the recursive implementation.
+- The `impl<Head, (..#Tail)> Arity for (Head, ..#Tail)` is the recursive implementation.
 - The `impl Arity for ()` is the termination of the recursive implementation.
 
 And when we compile the following code:
@@ -206,12 +208,12 @@ The compiler will execute these steps:
 
 1. Search `impl` of `Arity` for `(bool, usize)`
 2. `impl` not found, Search variadic `impl` of `Arity` for `(bool, usize)`
-3. Variadic impl found: `impl<Head, (..#Tail)> Arity for (Head, Tail#..)`
+3. Variadic impl found: `impl<Head, (..#Tail)> Arity for (Head, ..#Tail)`
 4. Generate `impl` of `Arity` for `(bool, usize)`
    1. Requires `impl` of `Arity` for `(usize,)`
    2. Search `impl` of `Arity` for `(usize,)`
    3. `impl` not found, Search variadic `impl` of `Arity` for `(usize,)`
-   4. Variadic impl found: `impl<Head, (..#Tail)> Arity for (Head, Tail#..)`
+   4. Variadic impl found: `impl<Head, (..#Tail)> Arity for (Head, ..#Tail)`
    5. Generate `impl` of `Arity` for `(usize,)`
       1. Requires `impl` of `Arity` for `()`
       2. Search `impl` of `Arity` for `()`
@@ -232,8 +234,8 @@ trait Arity {
     const VALUE: usize;
 }
 
-impl<Head, (..#Tail)> Arity for (Head, Tail#..) {
-    const VALUE: usize = <(Tail#..) as Arity>::VALUE + 1;
+impl<Head, (..#Tail)> Arity for (Head, ..#Tail) {
+    const VALUE: usize = <(..#Tail) as Arity>::VALUE + 1;
 }
 
 fn main() {
@@ -255,19 +257,19 @@ error[E0277]: the trait bound `(): Arity` is not satisfied
     note: matched by variadic tuple impl of `Arity`
  --> src/main.rs:5:1
   |
-5 | impl<Head, (..#Tail)> Arity for (Head, Tail#..) {
+5 | impl<Head, (..#Tail)> Arity for (Head, ..#Tail) {
   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   = help: impl `Arity` for `(bool, u8)` requires impl `Arity` for `(u8,)`.
     note: matched by variadic tuple impl of `Arity`
  --> src/main.rs:5:1
   |
-5 | impl<Head, (..#Tail)> Arity for (Head, Tail#..) {
+5 | impl<Head, (..#Tail)> Arity for (Head, ..#Tail) {
   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   = help: impl `Arity` for `(u8,)` requires impl `Arity` for `()`.
     note: matched by variadic tuple impl of `Arity`
  --> src/main.rs:5:1
   |
-5 | impl<Head, (..#Tail)> Arity for (Head, Tail#..) {
+5 | impl<Head, (..#Tail)> Arity for (Head, ..#Tail) {
   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ```
 
@@ -279,11 +281,11 @@ As a variadic tuple implementation may depend on other variadic tuple implementa
 trait A { const VALUE: usize = 1; }
 trait B { const VALUE: usize = 2; }
 
-impl<Head, (..#T)> A for (Head, T#..) 
-where (T#..): B { const VALUE: usize = 3; }
+impl<Head, (..#T)> A for (Head, ..#T) 
+where (..#T): B { const VALUE: usize = 3; }
 
-impl<Head, (..#T)> B for (Head, T#..) 
-where (T#..): A { const VALUE: usize = 4; }
+impl<Head, (..#T)> B for (Head, ..#T) 
+where (..#T): A { const VALUE: usize = 4; }
 
 fn main() {
     let v = <(usize, bool) as A>::VALUE;
@@ -321,7 +323,7 @@ fn my_func<(..#((..#T)))>() { ..}
 
 ### Expansion forms without variadic tuple identifiers
 
-Expansion forms without variadic tuple identifiers are forbidden. 
+In that case, the expansion forms resolves to `()`.
 
 ### Single identifier expansion forms
 
@@ -336,13 +338,13 @@ trait Merge<T> {
     fn append(self, value: T) -> Self::Out;
 }
 
-impl<(..#L), (..#R)> Merge<(R#..)> for (L#..) {
-    type Out = (L#.., R#..);
+impl<(..#L), (..#R)> Merge<(..#R)> for (..#L) {
+    type Out = (..#L, ..#R);
 
-    fn merge(self, value: (R#..)) -> Self::Out; {
-        let (L#..) = self;
-        let (R#..) = value;
-        (L#.., R#..)
+    fn merge(self, value: (..#R)) -> Self::Out; {
+        let (..#L) = self;
+        let (..#R) = value;
+        (..#L, ..#R)
     }
 }
 ```
@@ -350,9 +352,9 @@ impl<(..#L), (..#R)> Merge<(R#..)> for (L#..) {
 Note: a variadic tuple identifier may occur more than once in an expansion form, for instance:
 
 ```rust
-fn double<(..#T)>(input: (#T..)) -> (T#..)
-	where (T: Add)#.., {
-    ({T + T}#..)
+fn double<(..#T)>(input: (..#T)) -> (..#T)
+	where ..#(T: Add), {
+    (..#(T + T))
 }
 ```
 
@@ -360,112 +362,44 @@ fn double<(..#T)>(input: (#T..)) -> (T#..)
 
 An expansion form may include multiple different variadic tuple identifiers. However, both variadic tuple must have the same arity.
 
-For instance, let's consider this `struct`:
+To ensure this, the declaration of these variadic tuples is a bit different:
 
 ```rust
-struct MegaMap<(..#Key), (..#Value)> {
-  maps: (HashMap<Key, Value>#..)
+struct MegaMap<(..#(Key, Value))> {
+  maps: (..#HashMap<Key, Value>)
 }
 ```
 
-Then the following usages are valid:
+So the syntax `(..#(Key, Value))` declares 2 variadic tuples with identifiers `Key` and `Value` that have the same arity.
+
+To use this syntax, the user must follow the same pattern:
 
 ```rust
-MegaMap<(usize,), (bool,)>
-MegaMap<(usize, i8), (String, Vec<usize>)>
+MegaMap<((usize, bool), )>
+MegaMap<((usize, i8), (String, Vec<usize>))>
 ```
 
-And these one are invalid:
+Note: Both identifiers `Key` and `Value` can be used in the same expansion form, but the can also be used in separate expansion forms.
+Example: 
 
 ```rust
-MegaMap<(usize,), (bool, bool)>
-MegaMap<(usize, bool, String), (usize, bool)>
+struct MegaMap<(..#(Key, Value))> {
+  keys: (..#Vec<Key>),
+  values: (..#Vec<Values>),
+}
+// Then if we expand the syntax we have:
+struct MegaMap<((usize, bool), (i32, string))> {
+	keys: (Vec<usize>, Vec<i32>),
+	values: (Vec<bool>, Vec<string>),
+}
 ```
 
 ### Expansion errors
 
-Variadic tuple expansions have their specific constraints, and if violated the compiler needs to issue an error.
+Variadic tuple expansion will generate code and may produce obscure errors for existing compile error. To help user debug their compile issue, we need to provide information about the expansion the compiler tried to resolve.
 
-Also, variadic tuple expansion will generate code and may produce obscure errors for existing compile error. To help user debug their compile issue, we need to provide information about the expansion the compiler tried to resolve.
-
-#### Invalid variadic tuple expansion error
-
-This will happen when the compiler tries to expand an expansion form with invalid variadic tuple.
-We need to introduce a new compile error for this one, let's call it `EXXXX`
-
-There are two kinds of invalid expansion errors
-
-- No variadic tuple identifier is found in the expansion form
-- The expansion form contains multiple variadic tuple identifiers, but those have different arities
-
-##### Different arities in an expansion form error 
-
-So, the following code
-
-```rust
-struct MegaMap<(..#Key), (..#Value)> {
-  maps: (HashMap<Key, Value>#..)
-}
-
-impl<(..#Key), (..#Value)> for MegaMap<(Key#..), (Value#..)> {
-    pub fn new() -> Self {
-			  Self {
-            maps: (HashMap<Key, Value>::new()#..)
-        }
-	  }
-}
-
-fn main() {
-  let mega_map: MegaMap<(bool,), (usize, String)> = MegaMap::new();
-}
-```
-
-Will produce this error
-
-```rust
-error[EXXXX]: variadic tuple expansion form `(HashMap<Key, Value>::new()#..)` can't be expanded
-  --> src/main.rs:8:17
-   |
-10 |     maps: (HashMap<Key, Value>::new()#..)
-   |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   |
-note: when expanded with different variadic tuple arity `(..#Key) = (bool,)` and `(..#Value) = (usize, String)`
-  --> src/main.rs:14:16
-   |
-14 | let mega_map: MegaMap<(bool,), (usize, String)> = MegaMap::new();
-   |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-```
-
-#### Missing variadic tuple identifier error
-
-The following code
-
-```rust
-fn make_mega_map<(..#Key), (..#Value)>() -> (HashMap<Key, Value>#..) {
-  (HashMap::<Key2, Value2>::new()#..)
-}
-
-fn main() {
-  let mega_map = make_mega_map::<(usize, bool), (bool, String)>();
-}
-```
-
-Will produce this error
-
-```rust
-error[EXXXX]: variadic tuple expansion form `(HashMap::<Key2, Value2>::new()#..)` can't be expanded
-  --> src/main.rs:2:4
-   |
-2  |  (HashMap::<Key2, Value2>::new()#..)
-   |  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   |
-note: no variadic tuple identifier was found in the expansion form
-note: when expanding with `(..#Key) = (usize, bool)` and `(..#Value) = (bool, String)`
-  --> src/main.rs:6:16
-   |
-6  | let mega_map = make_mega_map::<(usize, bool), (bool, String)>();
-   |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-```
+TODO: Add an error when multiple independent variadic tuple identifier are used in a single expansion form.
+ie: `fn my_func<(..#K), (..#V)>() -> (..#HashMap<K, V>) { ... }`
 
 #### Help and note for existing errors
 
@@ -474,12 +408,12 @@ note: when expanding with `(..#Key) = (usize, bool)` and `(..#Value) = (bool, St
 If we consider this code:
 
 ```rust
-fn make_mega_map<(..#Key), (..#Value)>() -> (HashMap<Key, Value>#..) {
-  (HashMap::<Key, Value2>::new()#..)
+fn make_mega_map<(..#(Key, Value))>() -> (..#HashMap<Key, Value>) {
+  (..#HashMap::<Key, Value2>::new())
 }
 
 fn main() {
-  let mega_map = make_mega_map::<(usize, bool), (bool, String)>();
+  let mega_map = make_mega_map::<(usize, bool), (f32, String)>();
 }
 ```
 
@@ -487,8 +421,8 @@ Then the expansion form is valid, even though the `Value2` identifier is probabl
 In that case, the expansion will be resolved as:
 
 ```rust
-fn make_mega_map<(usize, bool), (bool, String)>() -> (HashMap<usize, bool>, HashMap<bool, String>) {
-  (HashMap::<usize, Value2>::new(), HashMap::<bool, Value2>::new())
+fn make_mega_map<(usize, bool), (f32, String)>() -> (HashMap<usize, bool>, HashMap<f32, String>) {
+  (HashMap::<usize, Value2>::new(), HashMap::<f32, Value2>::new())
 }
 ```
 
@@ -498,12 +432,12 @@ Leading to a compile error with additional notes
 error[E0412]: cannot find type `Value2` in this scope
   --> src/main.rs:10:22
    |
-10 |  let mega_map = make_mega_map::<(usize, bool), (bool, String)>();
+10 |  let mega_map = make_mega_map::<(usize, bool), (f32, String)>();
    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ not found in this scope
-note: when expanding with `(..#Key) = (usize, bool)` and `(..#Value) = (bool, String)`
+note: when expanding with `(..#(Key, Value)) = ((usize, bool), (f32, String))`
   --> src/main.rs:2:4
    |
-2  |    (HashMap::<Key, Value2>::new()#..)
+2  |    (..#HashMap::<Key, Value2>::new())
    |
 ```
 
@@ -529,23 +463,12 @@ C++11 sets a decent precedent with its variadic templates, which can be used to 
 - When using dynamic libraries, client libraries may relies that the host contains code up to a specific tuple arity. So we need to have a 
   way to enforce the compiler to generate all the implementation up to a specific tuple arity. (12 will keep backward comptibility with current `std` impl)
 
-- Maybe a better syntax can be found that includes the length constraint for variadic tuples.
-Example, instead of
-```rust
-fn my_function<(..#R), (..#L)>(r: (R#..), l: (L#..)) -> ((R, L)#..) { ... }
-```
-Use
-```rust
-fn my_function<(..#(R, L))>(r: (R#..), l: (L#..)) -> ((R, L)#..) { ... }
-```
-To enforce that variadic tuples `R` and `L` have the same arity.
-
 # Future possibilities
 
 [future-possibilities]: #future-possibilities
 
 - Be able to create identifiers in an expansion form from the variadic tuple.
-  For instance, if `(..#T)` is `(A, B, C)`, then `let ((ref v%T%)#..) = value;` expands to `let (ref vA, ref vB, ref vC) = value;`
+  For instance, if `(..#T)` is `(A, B, C)`, then `let (..#(ref v%T%)) = value;` expands to `let (ref vA, ref vB, ref vC) = value;`
   - This feature will let user to have more flexibility when implementing code with variadic tuple
 - Improve the error message for `E0275` by providing the sequence of evaluated elements to give more help to the user about what can create the overflow.
   - In the context of variadic tuple, this can be the sequence of variadic tuple implementation that are tried by the compiler.
