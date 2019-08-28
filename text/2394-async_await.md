@@ -330,7 +330,7 @@ disadvantages.
 
 ### The lifetime elision problem
 
-As eluded to previously, the returned future captures all input lifetimes. By
+As alluded to previously, the returned future captures all input lifetimes. By
 default, `impl Trait` does not capture any lifetimes. To accurately reflect the
 outer return type, it would become necessary to eliminate lifetime elision:
 
