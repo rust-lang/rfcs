@@ -81,7 +81,7 @@ There are two different syntaxes:
 
 Declaration examples:
 
-- struct VariadicStruct<(..#T1)>` : declares a struct with a variadic tuple type identified by `T1` in its generic parameters
+- `struct VariadicStruct<(..#T1)>` : declares a struct with a variadic tuple type identified by `T1` in its generic parameters
 - `impl<(..#Head)>`:  is an implementation block that uses a variadic tuple type identified by `Head`
 - `impl<A, B, C, (..#_Tail)>`:  same as above, but with other generic parameters
 - `fn my_function<(..#A)>`: a function can also have variadic tuple types
@@ -197,11 +197,11 @@ where ..#(T: Clone) {
 
 An expansion form for variadic tuple has the syntax: `..#<expr(T1, T2, ..., Tn, id1, id2, ..., idm)>` where `T1`, `T2`, ..., `Tn` are variadic tuple type identifiers and `id1`, `id2`, ..., `idn` are variadic tuple identifiers.
 
-Note: All variadic tuple type used in the expansion form must have been declared together. The variadic tuple type used are the variadic tuple types identified by `T1`, `T2`, ..., `Tn` or the type of the variadic tuple identified by `id1`, `id2`, ..., `idn`.
+Note 1: All variadic tuple type used in the expansion form must have been declared together. The variadic tuple type used are the variadic tuple types identified by `T1`, `T2`, ..., `Tn` or the type of the variadic tuple identified by `id1`, `id2`, ..., `idn`.
 
-Note: An expansion form without any identifier resolves to the unit type `()`.
+Note 2: An expansion form without any identifier resolves to the unit type `()`.
 
-Note 2: The expression in an expansion form can be enclosed by parenthesis or braces for clarity.
+Note 3: The expression in an expansion form can be enclosed by parenthesis or braces for clarity.
 
 Examples:
 
