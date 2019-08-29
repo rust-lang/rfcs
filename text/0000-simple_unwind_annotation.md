@@ -25,25 +25,22 @@ The `#[unwind(allowed)]` attribute permits functions with non-Rust ABIs (e.g. `e
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-TODO: incorporate changes from discussion here:
-https://github.com/rust-lang/rust/pull/63909
-
-By default, Rust assumes that an external function imported with extern "C" { ... }
-cannot unwind, and Rust will abort if a panic would propagate out of a Rust
-function with a non-"Rust" ABI ("`extern`") specification. If you specify the #[unwind(allowed)]
-attribute on a function with a non-"Rust" ABI, Rust will instead allow an unwind (such as
-a panic) to proceed through that function boundary using Rust's normal unwind
-mechanism. This may potentially allow Rust code to call non-Rust code that
-calls back into Rust code, and then allow a panic to propagate from Rust to
-Rust across the non-Rust code.
+By default, Rust assumes that an external function imported with `extern "C" {
+... }` cannot unwind, and Rust will abort if a panic would propagate out of a
+Rust function with a non-"Rust" ABI ("`extern`") specification. If you specify
+the `#[unwind(allowed)]` attribute on a function with a non-"Rust" ABI, Rust
+will instead allow an unwind (such as a panic) to proceed through that function
+boundary using Rust's normal unwind mechanism. This may potentially allow Rust
+code to call non-Rust code that calls back into Rust code, and then allow a
+panic to propagate from Rust to Rust across the non-Rust code.
 
 The Rust unwind mechanism is intentionally not specified here. Catching a Rust
 panic in Rust code compiled with a different Rust toolchain or options is not
 specified. Catching a Rust panic in another language or vice versa is not
 specified. The Rust unwind may or may not run non-Rust destructors as it
-unwinds. Propagating a Rust panic through non-Rust code is unspecified; implementations
-that define the behavior may require
-target-specific options for the non-Rust code, or this feature may not be supported at all.
+unwinds. Propagating a Rust panic through non-Rust code is unspecified;
+implementations that define the behavior may require target-specific options
+for the non-Rust code, or this feature may not be supported at all.
 
 # Drawbacks
 [drawbacks]: #drawbacks
