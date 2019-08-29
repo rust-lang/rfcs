@@ -173,6 +173,40 @@ where ..#(T: Clone + 'static,) {
 
 [reference-level-explanation]: #reference-level-explanation
 
+## Syntax
+
+### Declarative form
+
+#### Grammar
+
+The declarative form can occur only in generic parameter groups. It can be either `(..#<ident>)` where `<ident>` is an identifier or `(..#<tuple_pattern>)` where `<tuple_pattern>` is a pattern made of a tuple of identifiers.
+
+Examples:
+
+- `(..#<ident>)`: `(..#A)`, `(..#_MyType)`, `(..#Identifier)`
+- `(..#<tuple_pattern>)`: `(..#(A, B))`, `(..#(_T1, _T2, _T3))`, `(..#(A, _T2, Ident3, __TZ))`
+
+Invalid examples:
+
+- (..#<ident>)`: `(..#Vec<A>)
+- `(..#<tuple_pattern>)`: `(..#(Vec<A>, B))`, `(..#(_T1, HashMap<_T2, _T3>))`
+
+#### Syntax type
+
+For this syntax: `(..#T)`, then `..#T`defines a list of types identified by `T`and `(..#T)`is a tuple type made with the list of type `..#T`.
+
+For this syntax: `(..#(A, B))`, `..#(A, B)`is a list of 2-tuple types and `(..#(A, B))`is a tuple type made with the list of 2-tuple type `..#(A, B)`
+
+### Expansion form
+
+#### Grammar
+
+An expansion form using the variadic tuples `A` and `B` have this syntax: `..#<expr(A, B)>` where `<expr(A, B)>` is an expression using the identifiers `A` and `B`.
+
+#### Syntax type
+
+An expansion form is an expression.
+
 ## Recursion
 
 To implement some feature, we may want to use recursion over the arity of the tuple.
@@ -399,7 +433,10 @@ struct MegaMap<((usize, bool), (i32, string))> {
 Variadic tuple expansion will generate code and may produce obscure errors for existing compile error. To help user debug their compile issue, we need to provide information about the expansion the compiler tried to resolve.
 
 TODO: Add an error when multiple independent variadic tuple identifier are used in a single expansion form.
-ie: `fn my_func<(..#K), (..#V)>() -> (..#HashMap<K, V>) { ... }`
+ie: `fn my_func<(..#K), (..#V)>() -> (..#HashMap<K, V>) { ... }` -> `K` and `V` may have different arities.
+
+TODO: Add an error when the type-level pattern matching is incorrect.
+ie: `fn my_func<(..#(K, Vec<V>))() { ... }` -> `(K, Vec<V>)` is not a tuple of identifiers.
 
 #### Help and note for existing errors
 
@@ -462,8 +499,6 @@ C++11 sets a decent precedent with its variadic templates, which can be used to 
 - Tuple expansion may not be reserved only for variadic tuple, maybe it can be used as well on fixed arity tuple as well? (For consistency)
 - When using dynamic libraries, client libraries may relies that the host contains code up to a specific tuple arity. So we need to have a 
   way to enforce the compiler to generate all the implementation up to a specific tuple arity. (12 will keep backward comptibility with current `std` impl)
-  
-- TODO: Consider nested variadic tuples (similar co [C++ nested parameter packs](http://www.enseignement.polytechnique.fr/informatique/INF478/docs/Cpp/en/cpp/language/parameter_pack.html))
 
 # Future possibilities
 
