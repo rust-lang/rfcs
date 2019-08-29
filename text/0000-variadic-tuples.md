@@ -230,14 +230,18 @@ Let's implement the `Hash` trait:
 // We have the first expansion here, `(..#T, Last)` expands to `(A, B, C, Last)`
 impl<(..#T), Last> Hash for (..#T, Last) 
 where
-    ..#(T: Hash,),                               // Expands to `A: Hash, B: Hash, C: Hash,`
+		// Expands to `A: Hash, B: Hash, C: Hash,`
+    ..#(T: Hash,),
     Last: Hash + ?Sized, {
 
     #[allow(non_snake_case)]
     fn hash<S: Hasher>(&self, state: &mut S) {
-        let (..#(ref v), ref last) = *self;			 // Destructure self to a variadic tuple `v` and a variable `last`. The variadic tuple type of `v` is `(..#&T)`
+      	// Destructure self to a variadic tuple `v` and a variable `last`. The variadic tuple type of `v` is `(..#&T)`
       	// So it will be equivalent to `let (ref a, ref b, ref c, ref last) = *self; let v = (a, b, c);`
-        (..#v.hash(state), last.hash(state));   // Expands to `(v.0.hash(state), v.1.hash(state), v.2.hash(state), last.hash(state));`
+        let (..#(ref v), ref last) = *self;			 
+      	
+      	// Expands to `(v.0.hash(state), v.1.hash(state), v.2.hash(state), last.hash(state));`
+        (..#v.hash(state), last.hash(state));   
     }
 }
 ```
