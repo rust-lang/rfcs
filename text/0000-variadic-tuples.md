@@ -30,9 +30,11 @@ Variadic tuple will provide several benefits considering trait implementation fo
 
 [guide-level-explanation]: #guide-level-explanation
 
-The variadic tuple occurs in two form: a declarative form and an expansion form.
+Let's call a _variadic tuple type_ a tuple type with an arbitrary arity and a _variadic tuple_ an instance of a variadic tuple type.
 
-The declarative form is `(..#T)` and an example of an expansion form is `(..#Vec<T>)`
+The variadic tuple type occurs in two form: a declarative form and an expansion form. And the variadic tuple only occurs in expansion forms.
+
+For a variadic tuple type, the declarative form is `(..#T)` and an example of an expansion form is `(..#Vec<T>)`.
 
 Note: To illustrate the RFC, we will use the current implementation of the `Hash` trait for tuples.
 
@@ -66,106 +68,177 @@ macro_rules! last_type {
 }
 ```
 
-## Declaring a variadic tuple
+## Variadic tuple type
 
-To declare a variadic tuple, we use `(..#T)`, where `T` is a type identifier.
+### Declaration
 
-For instance:
+Variadic tuple types are always declared in a generic parameter group.
 
-- `struct VariadicStruct<(..#T1)>` : declares a struct with a variadic tuple  identified by `T1` in its generic parameters
-- `impl<(..#Head)>`:  is an implementation block that uses a variadic tuple identified by `Head`
+There are two different syntaxes:
+
+1. `(..#T)`: declare a single variadic tuple type identified by `T`
+2. `(..#(T1, T2, ..., Tn))`: declare n variadic tuple types identified by `T1`, `T2`, ..., `Tn`, all these variadic tuple types have the same arity.
+
+Declaration examples:
+
+- struct VariadicStruct<(..#T1)>` : declares a struct with a variadic tuple type identified by `T1` in its generic parameters
+- `impl<(..#Head)>`:  is an implementation block that uses a variadic tuple type identified by `Head`
 - `impl<A, B, C, (..#_Tail)>`:  same as above, but with other generic parameters
-- `fn my_function<(..#A)>`: a function can also have variadic tuple
-- `fn my_function<A, B, (..#C), (..#D)>`: there can be several variadic tuple declared in a generic parameter group
+- `fn my_function<(..#A)>`: a function can also have variadic tuple types
+- `fn my_function<A, B, (..#C), (..#D)>`: there can be several variadic tuple types declared in a generic parameter group
 
-You can think this like a rule you give to the compiler to generated appropriate code when it runs into specific patterns:
-
-- `VariadicStruct<(int, usize)>` matches `VariadicStruct<(..#T1)>` where `(..#T1)` maps to `(int, usize)`
-- `VariadicStruct<(int, usize, usize)>` matches `VariadicStruct<(..#T1)>` where `(..#T1)` maps to `(int, usize, usize)`
-  (We will see implementation examples later, with the expansion form)
-
-### Multiple variadic tuple sharing the same arity
-
-You can declare that several variadic tuple have the same arity in a generic parameter group:
+Usage examples:
 
 ```rust
-/// Here we have 3 variadic tuple: T1, T2, T3
-/// T2 and T3 have the same arity
-/// The arity of T1 is independent of the others
-fn my_function<(..#T1), (..#(T2, T3))>() {
-  ... 
+struct VariadicStruct<(..#T)>
+VariadicStruct<(usize,)> 				// => (..#T) matches (usize,)
+VariadicStruct<(usize, bool)> 	// => (..#T) matches (usize, bool)
+
+fn variadic_fn<(..#(T1, T2))>() { ... }
+variadic_fn::<((usize, bool),)
+// (..#(T1, T2)) matches ((usize, bool),)
+// (..#T1) is (usize,)
+// (..#T2) is (bool,)
+variadic_fn::<((usize, bool), (String, i8)) // (..#(T1, T2)) matches ((usize, bool), (String, i8))
+// (..#T1) is (usize, String)
+// (..#T2) is (bool, i8)
+```
+
+### Expansion
+
+The expansion syntax is: `..#<expr(T1, T2, ..., Tn)>` where `<expr(T1, T2, ..., Tn)>` is an expression using the variadic tuple type identifiers `T1`, `T2`, ..., `Tn`.
+
+Note: The expression in an expansion form can be enclosed by parenthesis for clarity. Ex: `..#(T: Clone,)`.
+
+The expansion form is allowed in all places where a type is allowed and in `where` bounds.
+
+Examples:
+
+```rust
+type TuplesOfRef<'a, (..#T)> = (..#&'a T);
+TuplesOfRef<'b, (usize, bool)>; // = (&'b usize, &'b bool)
+
+struct MegaMap<(..#(K, V))> {
+  maps: (..#HashMap<K, V>),
+}
+// 
+// struct MegaMap<((usize, bool), (String, i8))> {
+//   maps: (HashMap<usize, bool>, HashMap<String, i8>),
+// }
+
+fn append<(..#L), (..#R)>(l: (..#L), r: (..#R)) -> (..#L, ..#R)
+where ..#(L: 'static + Clone), ..#(R: 'static + Clone) { ... }
+//
+// append<(usize, Vec<bool>), (&'static str, u8, i16)>(
+//     l: (usize, Vec<bool>), 
+//     r: (&'static str, u8, i16)
+// ) -> (usize, Vec<bool>, &'static str, u8, i16) { ... }
+```
+
+Note: If an expansion syntax does not contains any variadic tuple type identifier, it resolves to the unit type `( )`.
+
+Note2: If an expansion syntax contains multiple variadic tuple type identifiers, they must all have been declared together with the syntax `( ..#(T1, T2, ..., Tn))` to ensure they have the same arity.
+
+## Variadic tuple
+
+A _variadic tuple_ is a variable of a variadic tuple type.
+
+### Declaration
+
+A variadic tuple can be declared like any other variable:
+
+```rust
+fn my_func<(..#T)>(variadic_tuple: (..#T)) { ... }
+```
+
+### Destructuring a variadic tuple
+
+The main way to use a variadic tuple is by destructuring it to access its members.
+
+There are 3 syntaxes possible to destructure a variadic tuple for a variadic tuple `(..#T)`:
+
+1. `(..#v)` of variadic tuple type `(..#T)`
+2. `(..#(ref v))` of variadic tuple type `(..#&T)`
+3. `(..#(ref mut v))` of variadic tuple type `(..#&mut T)`
+
+Also, the destructure pattern can be combined with other members. For instance:
+
+```rust
+{
+  let source: (Head, ..#Tail) = _;
+  let (ref head, ..#(ref tail)) = &source;
+}
+{
+  let mut source: (..#L, ..#R) = _;
+  let (..#(ref mut l), ..#(ref mut r)) = &mut source;
+}
+
+```
+
+Examples:
+
+```rust
+// The function argument is destructured as a variadic tuple with identifier `v`
+fn my_func<(..#T)>((..#v): (..#T)) -> (..#T) { 
+	(..#(v + v))
+}
+
+impl<(..#T)> Clone for (..#T) 
+where ..#(T: Clone) {
+  fn clone(&self) -> Self {
+    // We destructure `*self` which has a variadic tuple type `(..#T)`
+    let (..#(ref v)) = *self;
+    (..#v.clone())
+  }
 }
 ```
 
-See [Multiple identifier expansion forms](### Multiple identifier expansion forms) for a more detailed usage.
+### Expansion
 
-## Expanding variadic tuple
+An expansion form for variadic tuple has the syntax: `..#<expr(T1, T2, ..., Tn, id1, id2, ..., idm)>` where `T1`, `T2`, ..., `Tn` are variadic tuple type identifiers and `id1`, `id2`, ..., `idn` are variadic tuple identifiers.
 
-At some point, we need to use the types that are declared in the declaration form, this is where we use the expansion form.
+Note: All variadic tuple type used in the expansion form must have been declared together. The variadic tuple type used are the variadic tuple types identified by `T1`, `T2`, ..., `Tn` or the type of the variadic tuple identified by `id1`, `id2`, ..., `idn`.
 
-When expanding a tuple, we use the form `..#T`, but more generally: `..#<expr(T)>` where `<expr(T)>` is pattern using the identifier `T`.
+Note: An expansion form without any identifier resolves to the unit type `()`.
 
-Note: The `<expr(T)>` can be enclosed by braces or parenthesis when the expression is complex.
-So you can have 3 different forms:
+Note 2: The expression in an expansion form can be enclosed by parenthesis or braces for clarity.
 
-1. `(..#Vec<T>)`: simple form
-2. `(..#(ref T))`: parenthesis form
-3. `(..#{let mut r = T::default(); r += 2; r})`: braces form
+Examples:
+
+```rust
+fn my_func<(..#T)>((..#i): (..#T)) {
+  (..#{ println!("{}", i) })
+}
+
+fn clone_add<(..#T)>((..#i): (..#T)) -> (..#T) 
+where ..#(T: Clone + Add) {
+  (..#(<T as Clone>::clone(&i) + i))
+}
+
+fn merge_into<(..#(L, R))>((..#l): (..#L), (..#r): (..#R)) -> (..#L, ..#L) 
+where ..#(L: From<R>) {
+   (..#l, ..#(R as Into<L>>::into(r)))
+}
+```
+
+## The `Hash`trait
 
 Let's implement the `Hash` trait:
 
 ```rust
 // For the example, we consider the impl for (A, B, C). So `(..#T)` matches `(A, B, C)`
-// We have the first expansion here, `(T#.., Last)` expands to `(A, B, C, Last)`
+// We have the first expansion here, `(..#T, Last)` expands to `(A, B, C, Last)`
 impl<(..#T), Last> Hash for (..#T, Last) 
 where
-    ..#(T: Hash),                               // Expands to `A: Hash, B: Hash, C: Hash,`
+    ..#(T: Hash,),                               // Expands to `A: Hash, B: Hash, C: Hash,`
     Last: Hash + ?Sized, {
 
     #[allow(non_snake_case)]
     fn hash<S: Hasher>(&self, state: &mut S) {
-        let (..#(ref T), ref last) = *self;     // Expands to `let (ref A, ref B, ref C, ref last) = *self;`
-        (..#T.hash(state), last.hash(state));   // Expands to `(A.hash(state), B.hash(state), C.hash(state), last.hash(state));`
+        let (..#(ref v), ref last) = *self;			 // Destructure self to a variadic tuple `v` and a variable `last`. The variadic tuple type of `v` is `(..#&T)`
+      	// So it will be equivalent to `let (ref a, ref b, ref c, ref last) = *self; let v = (a, b, c);`
+        (..#v.hash(state), last.hash(state));   // Expands to `(v.0.hash(state), v.1.hash(state), v.2.hash(state), last.hash(state));`
     }
-}
-```
-
-## Allowed usages of variadic tuples
-
-### Declarative form
-
-The declarative form is used in a generic parameter group, so it can occur in:
-
-- Struct generic parameters     : `struct MyStruct<(..#T)>`
-- Function generic parameters   : `fn my_function<(..#T)>`
-- Type alias declaration        : `type MyTuple<(..#T)>`
-- impl block generic parameters : `impl<(..#T)>`
-
-### Expansion form
-
-The expansion form can occur in many places.
-
-Various examples:
-
-```rust
-type TupleOfVec<(..#T)> = (..#Vec<T>);
-
-fn my_function<(..#T)>(values: &(..#Vec<T>)) -> (..#&[T]) 
-where ..#(T: Clone,) {
-    let (..#(ref T)) = values;
-    (..#T)
-}
-
-struct MyStruct<(..#T)> {
-  arrays: (..#[T; 4]),
-}
-impl<(..#T)> MyStruct<(..#Vec<T>)> 
-where ..#(T: Clone + 'static,) {
-  pub fn new() -> Self {
-    Self {
-      arrays: (..#[Vec<T>::new(), Vec<T>::new(), Vec<T>::new(), Vec<T>::new()])
-    }
-  }
 }
 ```
 
@@ -175,37 +248,77 @@ where ..#(T: Clone + 'static,) {
 
 ## Syntax
 
-### Declarative form
+### Variadic tuple type declaration
 
-#### Grammar
+A variadic tuple type identifier identifies a list of types.
 
-The declarative form can occur only in generic parameter groups. It can be either `(..#<ident>)` where `<ident>` is an identifier or `(..#<tuple_pattern>)` where `<tuple_pattern>` is a pattern made of a tuple of identifiers.
+When declared togethers, each identifiers identifies a list of types. For instance:
+
+```rust
+fn my_func<(..#(L, R))>() { }
+my_func::<((usize, bool), (i8, f32))>();
+// `(..#(L, R))` matches `((usize, bool), (i8, f32))`
+// `(..#L)` is `(usize, i8)`
+// `(..#R)` is `(bool, f32)`
+```
+
+Note: Although this looks like a type-level pattern matching, it can match against only tuple of identifiers. So the following declaration is invalid: `fn my_func<(..#(L, Vec<R>))>() { ... }`
+
+### Variadic tuple type expansion
+
+On location where a type is expected, the expansion will resolve to a type. On where bounds it can be used to declare bounds on the type contained in the variadic tuple type.
 
 Examples:
 
-- `(..#<ident>)`: `(..#A)`, `(..#_MyType)`, `(..#Identifier)`
-- `(..#<tuple_pattern>)`: `(..#(A, B))`, `(..#(_T1, _T2, _T3))`, `(..#(A, _T2, Ident3, __TZ))`
+```rust
+type TupleOfVec<(..#T)> = (..#Vec<T>);
 
-Invalid examples:
+fn my_func<(..#T)>() 
+where ..#(T: Clone) { ... }
+```
 
-- (..#<ident>)`: `(..#Vec<A>)
-- `(..#<tuple_pattern>)`: `(..#(Vec<A>, B))`, `(..#(_T1, HashMap<_T2, _T3>))`
+### Variadic tuple declaration
 
-#### Syntax type
+The declaration of a variadic tuple variable is still a variable. Nothing new here.
 
-For this syntax: `(..#T)`, then `..#T`defines a list of types identified by `T`and `(..#T)`is a tuple type made with the list of type `..#T`.
+```rust
+fn my_func<(..#T)>(input: (..#T)) { ... }
+```
 
-For this syntax: `(..#(A, B))`, `..#(A, B)`is a list of 2-tuple types and `(..#(A, B))`is a tuple type made with the list of 2-tuple type `..#(A, B)`
+### Variadic tuple destructuration
 
-### Expansion form
+When destructuring a variadic tuple it declares a variadic tuple identifiers that can be used in expansion forms. The identifier is a variable of type `(..#T)` or `(..#&T)` or `(..#&mut T)`, depending on the syntax used.
 
-#### Grammar
+```rust
+{
+  let source: (..#T, Tail) = _;
+  let (..#v, tail) = source;
+  // v is a variable of type `(..#T)`
+  let (..#(ref v), ref tail) = &source;
+  // v is a variable of type `(..#&T)`
+  let (..#(ref mut v), ref mut tail) = &mut source;
+    // v is a variable of type `(..#&mut T)`
+}
 
-An expansion form using the variadic tuples `A` and `B` have this syntax: `..#<expr(A, B)>` where `<expr(A, B)>` is an expression using the identifiers `A` and `B`.
+// If we use `(..#T)` = `(A, B, C)` as an example
+// Then `let (..#(ref v), ref tail) = &source`
+// is equivalent to:
+// `let (ref a, ref b, ref c, ref tail) = &source;`
+// `let v = (a, b, c);`
+```
 
-#### Syntax type
+### Variadic tuple expansion
 
-An expansion form is an expression.
+The variadic tuple expansion are "expression template". By replacing the identifiers by its appropriate value, the variadic tuple expansion will result in a list of expressions. The full expression form will be replaced by the resolved list of expression.
+
+```rust
+fn my_function<(..#T)>((..#i): (..#T)) {
+  (..#i.clone())
+  // `i.clone()` is the expression template parameterized by `i`
+  // it will resolve into a list of expressions: `i.0.clone(), i.1.clone(), ..., i.n.clone()`
+  // Finally, `..#i.clone()` will be replaced by the resolved list of expressions
+}
+```
 
 ## Recursion
 
@@ -255,11 +368,21 @@ The compiler will execute these steps:
    6. Generation of `impl` of `Arity` for `(usize,)` completed
 5. Generation of `impl` of `Arity` for `(bool, usize)` completed
 
-// TODO: recursion termination for fn
+### Recursion with functions
 
-### Recursion errors
+```rust
+fn recurse<Head, (..#Tail)>((head, ..#tail): (Head, ..#Tail))
+where Head: Debug, ..#(Tail: Debug) {
+  println!("{}", head);
+  recurse((..#tail));
+}
+// Termination needs to be implemented explicitly
+fn recurse<()>((): ()) { }
+```
 
-#### Missing implementation message
+## Errors
+
+#### Missing implementation message during variadic implementation resolution
 
 An error can occur if the compiler don't find an implementation while generating variadic tuple implementations.
 
@@ -309,7 +432,7 @@ error[E0277]: the trait bound `(): Arity` is not satisfied
   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ```
 
-#### Cycle dependency error
+#### Variadic implementation cycle dependency error
 
 As a variadic tuple implementation may depend on other variadic tuple implementation, there can be dependency cycle issue.
 
@@ -346,101 +469,34 @@ note: required by `A::VALUE`
    |           ^^^^^^^^^^^^^^^^^^^^^^^
 ```
 
-## Using multiple variadic tuples
+### Invalid variadic tuple type declaration
 
-### Recursive variadic tuples
+TODO
 
-Recursive variadic tuples are forbidden.
-Example: 
+### Invalid variadic tuple declaration
 
-```rust
-fn my_func<(..#((..#T)))>() { ..}
-```
+TODO
 
-### Expansion forms without variadic tuple identifiers
-
-In that case, the expansion forms resolves to `()`.
-
-### Single identifier expansion forms
-
-We can declare and use multiple variadic tuples, if the expansion forms only involve a single variadic tuple identifier, there is no constraints.
-
-See this example of a `trait`that merge two tuples:
-
-```rust
-trait Merge<T> {
-    type Out;
-
-    fn append(self, value: T) -> Self::Out;
-}
-
-impl<(..#L), (..#R)> Merge<(..#R)> for (..#L) {
-    type Out = (..#L, ..#R);
-
-    fn merge(self, value: (..#R)) -> Self::Out; {
-        let (..#L) = self;
-        let (..#R) = value;
-        (..#L, ..#R)
-    }
-}
-```
-
-Note: a variadic tuple identifier may occur more than once in an expansion form, for instance:
-
-```rust
-fn double<(..#T)>(input: (..#T)) -> (..#T)
-	where ..#(T: Add), {
-    (..#(T + T))
-}
-```
-
-### Multiple identifier expansion forms
-
-An expansion form may include multiple different variadic tuple identifiers. However, both variadic tuple must have the same arity.
-
-To ensure this, the declaration of these variadic tuples is a bit different:
-
-```rust
-struct MegaMap<(..#(Key, Value))> {
-  maps: (..#HashMap<Key, Value>)
-}
-```
-
-So the syntax `(..#(Key, Value))` declares 2 variadic tuples with identifiers `Key` and `Value` that have the same arity.
-
-To use this syntax, the user must follow the same pattern:
-
-```rust
-MegaMap<((usize, bool), )>
-MegaMap<((usize, i8), (String, Vec<usize>))>
-```
-
-Note: Both identifiers `Key` and `Value` can be used in the same expansion form, but the can also be used in separate expansion forms.
-Example: 
-
-```rust
-struct MegaMap<(..#(Key, Value))> {
-  keys: (..#Vec<Key>),
-  values: (..#Vec<Values>),
-}
-// Then if we expand the syntax we have:
-struct MegaMap<((usize, bool), (i32, string))> {
-	keys: (Vec<usize>, Vec<i32>),
-	values: (Vec<bool>, Vec<string>),
-}
-```
-
-### Expansion errors
-
-Variadic tuple expansion will generate code and may produce obscure errors for existing compile error. To help user debug their compile issue, we need to provide information about the expansion the compiler tried to resolve.
+### Invalid variadic tuple type expansion identifiers
 
 TODO: Add an error when multiple independent variadic tuple identifier are used in a single expansion form.
 ie: `fn my_func<(..#K), (..#V)>() -> (..#HashMap<K, V>) { ... }` -> `K` and `V` may have different arities.
 
-TODO: Add an error when the type-level pattern matching is incorrect.
-ie: `fn my_func<(..#(K, Vec<V>))() { ... }` -> `(K, Vec<V>)` is not a tuple of identifiers.
+### Invalid variadic tuple expansion identifiers
 
-#### Help and note for existing errors
+TODO: Occurs when a variadic tuple expansion form used variadic tuple types with different arities (not declared together)
+
+ ```rust
+ fn my_func<(..#L), (..#R)>((..#l): (..#L), (..#r): (..#R)) { let _ = (..#(l, r)); }
+ ```
+
+### Invalid variadic tuple destructuration
+
+TODO
+
+## Help and note for existing errors
+
+Variadic tuple expansion will generate code and may produce obscure errors for existing compile error. To help user debug their compile issue, we need to provide information about the expansion the compiler tried to resolve.
 
 ##### Unknown identifier in an expansion form
 
@@ -492,13 +548,12 @@ note: when expanding with `(..#(Key, Value)) = ((usize, bool), (f32, String))`
 
 [prior-art]: #prior-art
 
-C++11 sets a decent precedent with its variadic templates, which can be used to define type-safe variadic functions, among other things. C++11 has a special case for variadic parameter packs.
+C++11 sets a decent precedent with its variadic templates, which can be used to define type-safe variadic functions, among other things. This RFC is comparable to the design of _type parameter packs_ (variadic tuple type) and _function parameter pack_ (variadic tuple).
 
 # Unresolved questions
 
 [unresolved-questions]: #unresolved-questions
 
-- Tuple expansion may not be reserved only for variadic tuple, maybe it can be used as well on fixed arity tuple as well? (For consistency)
 - When using dynamic libraries, client libraries may relies that the host contains code up to a specific tuple arity. So we need to have a 
   way to enforce the compiler to generate all the implementation up to a specific tuple arity. (12 will keep backward comptibility with current `std` impl)
 
@@ -506,9 +561,6 @@ C++11 sets a decent precedent with its variadic templates, which can be used to 
 
 [future-possibilities]: #future-possibilities
 
-- Be able to create identifiers in an expansion form from the variadic tuple.
-  For instance, if `(..#T)` is `(A, B, C)`, then `let (..#(ref v%T%)) = value;` expands to `let (ref vA, ref vB, ref vC) = value;`
-  - This feature will let user to have more flexibility when implementing code with variadic tuple
 - Improve the error message for `E0275` by providing the sequence of evaluated elements to give more help to the user about what can create the overflow.
   - In the context of variadic tuple, this can be the sequence of variadic tuple implementation that are tried by the compiler.
   - But, in the more generic case where two traits implementations requires each others, providing the dependency cycle can be really helpful.
