@@ -255,6 +255,8 @@ The compiler will execute these steps:
    6. Generation of `impl` of `Arity` for `(usize,)` completed
 5. Generation of `impl` of `Arity` for `(bool, usize)` completed
 
+// TODO: recursion termination for fn
+
 ### Recursion errors
 
 #### Missing implementation message
