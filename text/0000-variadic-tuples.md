@@ -197,7 +197,7 @@ where ..#(T: Clone) {
 
 An expansion form for variadic tuple has the syntax: `..#<expr(T1, T2, ..., Tn, id1, id2, ..., idm)>` where `T1`, `T2`, ..., `Tn` are variadic tuple type identifiers and `id1`, `id2`, ..., `idn` are variadic tuple identifiers.
 
-Note 1: All variadic tuple type used in the expansion form must have been declared together. The variadic tuple type used are the variadic tuple types identified by `T1`, `T2`, ..., `Tn` or the type of the variadic tuple identified by `id1`, `id2`, ..., `idn`.
+Note 1: All variadic tuple type used in the expansion form must have been declared together. The variadic tuple type used are the variadic tuple types identified by `T1`, `T2`, ..., `Tn` and the type of the variadic tuple identified by `id1`, `id2`, ..., `idn`.
 
 Note 2: An expansion form without any identifier resolves to the unit type `()`.
 
@@ -217,7 +217,7 @@ where ..#(T: Clone + Add) {
 
 fn merge_into<(..#(L, R))>((..#l): (..#L), (..#r): (..#R)) -> (..#L, ..#L) 
 where ..#(L: From<R>) {
-   (..#l, ..#(R as Into<L>>::into(r)))
+   (..#l, ..#(<R as Into<L>>::into(r)))
 }
 ```
 
