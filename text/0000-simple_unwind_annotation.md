@@ -51,7 +51,9 @@ for the non-Rust code, or this feature may not be supported at all.
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-TODO
+The goal is to enable the current use-cases for unwinding panics through foreign code while providing safer behaviour towards bindings not expecting that, with minimal changes to the language.
+
+We should try not to prevent the RFC 2699 or other later RFC from resolving the above disadvantages on top of this one.
 
 - https://github.com/rust-lang/rfcs/pull/2699
 
