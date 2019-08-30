@@ -45,7 +45,8 @@ for the non-Rust code, or this feature may not be supported at all.
 # Drawbacks
 [drawbacks]: #drawbacks
 
-TODO
+- Only works as long as Rust uses the same unwinding mechanism as C++.
+- Does not allow external library bindings to specify whether callbacks they accept are expected to unwind.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
