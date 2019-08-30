@@ -70,5 +70,7 @@ TODO
 
 TODO
 
+- https://github.com/rust-lang/rfcs/pull/2699
+
 - `unwind(abort)`
 - non-"C" ABIs
