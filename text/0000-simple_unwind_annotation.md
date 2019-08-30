@@ -26,7 +26,7 @@ The `#[unwind(allowed)]` attribute permits functions with non-Rust ABIs (e.g. `e
 [reference-level-explanation]: #reference-level-explanation
 
 By default, Rust assumes that an external function imported with `extern "C" {
-... }` cannot unwind, and Rust will abort if a panic would propagate out of a
+... }` (or another ABI other than `"Rust"`) cannot unwind, and Rust will abort if a panic would propagate out of a
 Rust function with a non-"Rust" ABI ("`extern "ABI" fn`") specification. If you specify
 the `#[unwind(allowed)]` attribute on a function with a non-"Rust" ABI, Rust
 will instead allow an unwind (such as a panic) to proceed through that function
