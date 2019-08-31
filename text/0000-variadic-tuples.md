@@ -197,7 +197,7 @@ where ..#(T: Clone) {
 
 An expansion form for variadic tuple has the syntax: `..#<expr(T1, T2, ..., Tn, id1, id2, ..., idm)>` where `T1`, `T2`, ..., `Tn` are variadic tuple type identifiers and `id1`, `id2`, ..., `idn` are variadic tuple identifiers.
 
-Note 1: All variadic tuple type used in the expansion form must have been declared together. The variadic tuple type used are the variadic tuple types identified by `T1`, `T2`, ..., `Tn` and the type of the variadic tuple identified by `id1`, `id2`, ..., `idn`.
+Note 1: All variadic tuple type used in the expansion form must have been declared together. The variadic tuple type used are the variadic tuple types identified by `T1`, `T2`, ..., `Tn` or the type of the variadic tuple identified by `id1`, `id2`, ..., `idn`.
 
 Note 2: An expansion form without any identifier resolves to the unit type `()`.
 
@@ -217,7 +217,7 @@ where ..#(T: Clone + Add) {
 
 fn merge_into<(..#(L, R))>((..#l): (..#L), (..#r): (..#R)) -> (..#L, ..#L) 
 where ..#(L: From<R>) {
-   (..#l, ..#(<R as Into<L>>::into(r)))
+   (..#l, ..#(R as Into<L>>::into(r)))
 }
 ```
 
@@ -335,7 +335,7 @@ trait Arity {
 }
 
 impl<Head, (..#Tail)> Arity for (Head, ..#Tail) {
-    const VALUE: usize = <(..#Tail) as Arity>::VALUE + 1;
+    default const VALUE: usize = <(..#Tail) as Arity>::VALUE + 1;
 }
 impl Arity for () {
     const VALUE: usize = 0;
@@ -346,6 +346,7 @@ Note:
 
 - The `impl<Head, (..#Tail)> Arity for (Head, ..#Tail)` is the recursive implementation.
 - The `impl Arity for ()` is the termination of the recursive implementation.
+- We use the specialization feature here with the `default` token to declare a specialise implementation that is the termination of the recursive implementation
 
 And when we compile the following code:
 
@@ -548,6 +549,14 @@ note: when expanding with `(..#(Key, Value)) = ((usize, bool), (f32, String))`
 
 [rationale-and-alternatives]: #rationale-and-alternatives
 
+## Declaring and using multiple variadic tuple type with same aritiy
+
+In C++ multiple parameter packs can be expanded in a single expansion form as long as the packs have the same number of items, but there is no constraint concerning the declaration.
+
+For Rust, using the syntax `(..#(T1, T2, ..., Tn))` embeds the constraint that the variadic tuple types `T1`, `T2`, ..., `Tn` have the same arity. This is more consistent than not grouping the declaration (ie: `(..#T1), (..#T2), ..., (..#Tn))`) because the signature using the declaration contains all the information required.
+
+We don't need to look at the implementation or body code to know the required constraint about the variadic tuple type arities.
+
 # Prior art
 
 [prior-art]: #prior-art
@@ -558,8 +567,55 @@ C++11 sets a decent precedent with its variadic templates, which can be used to 
 
 [unresolved-questions]: #unresolved-questions
 
-- When using dynamic libraries, client libraries may relies that the host contains code up to a specific tuple arity. So we need to have a 
-  way to enforce the compiler to generate all the implementation up to a specific tuple arity. (12 will keep backward comptibility with current `std` impl)
+## Dynamic libraries tuple implementation assumption
+
+When using dynamic libraries, client libraries may relies that the host contains code up to a specific tuple arity. So we need to have a 
+way to enforce the compiler to generate all the implementation up to a specific tuple arity. (12 will keep backward comptibility with current `std` impl)
+
+## Termination syntax for functions
+
+The suggested termination syntax is too close to a duplicate function definition and this is not a behaviour that currently exists. (See this [RFC issue](https://github.com/rust-lang/rfcs/issues/1053))
+
+```rust
+fn recurse<Head, (..#Tail)>((head, ..#tail): (Head, ..#Tail))
+where Head: Debug, ..#(Tail: Debug) {
+  println!("{}", head);
+  recurse((..#tail));
+}
+// Termination needs to be implemented explicitly
+fn recurse<()>((): ()) { }
+```
+
+So there can be several alternative to deal with this:
+
+1. Forbiding variadic tuple for functions. In that case to have a similar functionality, we can use a trait as a workaround. It is more verbose but uses a trait instead. (Also, this may be dealt with in an another PR)
+
+   ```rust
+   trait MyFuncTrait<Head, (..#T)> { 
+     fn my_func(input: (Head, ..#T));
+   }
+   struct MyFunctTraitHelper;
+   impl<Head, (..#T)> MyFuncTrait<Head, (..#T)> for MyFuncTraitHelper {
+     fn my_func((h, ..#i): (Head, ..#T)) {
+       MyFunctTraitHelper::my_func((..#i));
+     }
+   }
+   impl<()> MyFuncTrait<()> for MyFuncTraitHelper {
+     fn my_func((): ()) { }
+   }
+   ```
+   
+1. Using a specific syntax to declare a specialized implementation.
+  
+  ```rust
+  default fn recurse<Head, (..#Tail)>((head, ..#tail): (Head, ..#Tail))
+  where Head: Debug, ..#(Tail: Debug) {
+    println!("{}", head);
+    recurse((..#tail));
+  }
+  // Termination needs to be implemented explicitly
+  fn recurse<()>((): ()) { }
+  ```
 
 # Future possibilities
 
