@@ -627,6 +627,8 @@ questions make themselves known:
     ```
 
     is already legal in Rust today, even though the `F` doesn't need to be a `const` function.
+    Since we can't reuse this syntax, do we need a different syntax or should we just keep constants
+    as they are and just reuse the syntax in `const fn` arguments?
 
 2. Opt out bounds might seem unintuitive?
 
