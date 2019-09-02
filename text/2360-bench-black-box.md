@@ -1,7 +1,7 @@
-- Feature Name: bench_black_box
+- Feature Name: `bench_black_box`
 - Start Date: 2018-03-12
-- RFC PR: (leave this empty)
-- Rust Issue: (leave this empty)
+- RFC PR: [rust-lang/rfcs#2360](https://github.com/rust-lang/rfcs/pull/2360)
+- Rust Issue: [rust-lang/rust#64102](https://github.com/rust-lang/rust/issues/64102)
 
 # Summary
 [summary]: #summary
