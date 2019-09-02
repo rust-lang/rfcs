@@ -108,7 +108,7 @@ variadic_fn::<((usize, bool), (String, i8)) // (..#(T1, T2)) matches ((usize, bo
 
 The expansion syntax is: `..#<expr(T1, T2, ..., Tn)>` where `<expr(T1, T2, ..., Tn)>` is an expression using the variadic tuple type identifiers `T1`, `T2`, ..., `Tn`.
 
-Note: The expression in an expansion form can be enclosed by parenthesis for clarity. Ex: `..#(T: Clone,)`.
+Note: The expression in an expansion form can be enclosed by parenthesis for clarity. Ex: `..#(T: Clone)`.
 
 The expansion form is allowed in all places where a type is allowed and in `where` bounds.
 
@@ -476,28 +476,111 @@ note: required by `A::VALUE`
 
 ### Invalid variadic tuple type declaration
 
-TODO
+The variadic tuple type declaration is invalid when it can't be parsed as either:
+- `(..#T)`
+- `(..#(T1, T2, .., Tn))`
 
-### Invalid variadic tuple declaration
+```rust
+struct MyStruct<(..#Vec<T>)> {
+  vecs: (..#Vec<T>)
+}
+```
 
-TODO
+```rust
+error[EXXXX]: invalid variadic tuple type declaration `(..#Vec<T>)`
+  --> src/main.rs:1:13
+   |
+10 |  struct MyStruct<(..#Vec<T>)> {
+   |                  ^^^^^^^^^^^
+   |
+note: expected either an identifier or a tuple of identifier instead of `Vec<T>`
+```
 
 ### Invalid variadic tuple type expansion identifiers
 
-TODO: Add an error when multiple independent variadic tuple identifier are used in a single expansion form.
-ie: `fn my_func<(..#K), (..#V)>() -> (..#HashMap<K, V>) { ... }` -> `K` and `V` may have different arities.
+Occurs when multiple independent variadic tuple type identifier are used in a single expansion form.
+
+```rust
+impl<(..#K), (..#V)> MyTrait for (..#HashMap<K, V>) {
+  
+}
+```
+
+```rust
+error[EXXXX]: invalid variadic tuple type expansion `(..#HashMap<K, V>)`
+  --> src/main.rs:4:13
+   |
+10 |  impl<(..#K), (..#V)> MyTrait for (..#HashMap<K, V>) {
+   |                                   ^^^^^^^^^^^^^^^^^^
+   |
+note: variadic tuple type identifiers `K`, `V` were not declared together
+  --> src/main.rs:4:13
+   |
+10 |  impl<(..#K), (..#V)> MyTrait for (..#HashMap<K, V>) {
+   |       ^^^^^^^^^^^^^^
+   |
+hint: expected `(..#(K, V))`
+```
 
 ### Invalid variadic tuple expansion identifiers
 
-TODO: Occurs when a variadic tuple expansion form used variadic tuple types with different arities (not declared together)
+Occurs when multiple independent variadic tuple identifier are used in a single expansion form.
 
- ```rust
- fn my_func<(..#L), (..#R)>((..#l): (..#L), (..#r): (..#R)) { let _ = (..#(l, r)); }
- ```
+```rust
+impl<(..#K), (..#V)> MyTrait for MyStruct {
+  fn my_function() {
+    let k: (..#K) = _;
+    let v: (..#V) = _;
+    let k_v = (..#(k, v));
+  }
+}
+```
 
-### Invalid variadic tuple destructuration
+```rust
+error[EXXXX]: invalid variadic tuple expansion `(..#(k, v))`
+  --> src/main.rs:4:13
+   |
+10 |      let k_v = (..#(k, v));
+   |                ^^^^^^^^^^^
+   |
+note: variadic tuple identifiers `k`, `v` with variadic tuple type identifiers `K`, `V` were not declared together
+  --> src/main.rs:4:13
+   |
+10 |  impl<(..#K), (..#V)> MyTrait for MyStruct {
+   |       ^^^^^^^^^^^^^^
+   |
+hint: expected `(..#(K, V))`
+```
 
-TODO
+### Invalid variadic tuple pattern matching
+
+The variadic tuple declaration is invalid when it can't be parsed as either:
+- `(..#id)`
+- `(..#(ref id))`
+- `(..#(ref mut id))`
+
+```rust
+struct MyStruct<(..#Vec<T>)> {
+  vecs: (..#Vec<T>)
+}
+
+impl<(..#T)> MyTrait for (..#T) {
+  fn my_func(&self) {
+    let (..#(&i)) = &self;
+
+  }
+}
+```
+
+```rust
+error[EXXXX]: invalid variadic tuple pattern `(..#(&i))`
+  --> src/main.rs:4:13
+   |
+10 |      let (..#(&i)) = &self;
+   |          ^^^^^^^^^
+   |
+note: expected `(..#id)` or `(..#(ref id))` or `(..#(ref mut id))`
+```
 
 ## Help and note for existing errors
 
