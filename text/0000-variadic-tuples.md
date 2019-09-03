@@ -74,6 +74,8 @@ macro_rules! last_type {
 
 Variadic tuple types are always declared in a generic parameter group.
 
+Note: variadic tuples are not supported in generic parameter group of `fn`
+
 There are two different syntaxes:
 
 1. `(..#T)`: declare a single variadic tuple type identified by `T`
@@ -84,8 +86,7 @@ Declaration examples:
 - `struct VariadicStruct<(..#T1)>` : declares a struct with a variadic tuple type identified by `T1` in its generic parameters
 - `impl<(..#Head)>`:  is an implementation block that uses a variadic tuple type identified by `Head`
 - `impl<A, B, C, (..#_Tail)>`:  same as above, but with other generic parameters
-- `fn my_function<(..#A)>`: a function can also have variadic tuple types
-- `fn my_function<A, B, (..#C), (..#D)>`: there can be several variadic tuple types declared in a generic parameter group
+- `impl<A, B, (..#C), (..#D)>`: there can be several variadic tuple types declared in a generic parameter group
 
 Usage examples:
 
@@ -94,12 +95,12 @@ struct VariadicStruct<(..#T)>
 VariadicStruct<(usize,)> 				// => (..#T) matches (usize,)
 VariadicStruct<(usize, bool)> 	// => (..#T) matches (usize, bool)
 
-fn variadic_fn<(..#(T1, T2))>() { ... }
-variadic_fn::<((usize, bool),)
+impl <(..#(T1, T2))> VariadicStruct<(..#(T1, T2)) { ... }
+VariadicStruct::<((usize, bool),)
 // (..#(T1, T2)) matches ((usize, bool),)
 // (..#T1) is (usize,)
 // (..#T2) is (bool,)
-variadic_fn::<((usize, bool), (String, i8)) // (..#(T1, T2)) matches ((usize, bool), (String, i8))
+VariadicStruct::<((usize, bool), (String, i8)) // (..#(T1, T2)) matches ((usize, bool), (String, i8))
 // (..#T1) is (usize, String)
 // (..#T2) is (bool, i8)
 ```
@@ -126,13 +127,18 @@ struct MegaMap<(..#(K, V))> {
 //   maps: (HashMap<usize, bool>, HashMap<String, i8>),
 // }
 
-fn append<(..#L), (..#R)>(l: (..#L), r: (..#R)) -> (..#L, ..#R)
-where ..#(L: 'static + Clone), ..#(R: 'static + Clone) { ... }
+trait Append<(..#L), (..#R)>
+where ..#(L: 'static + Clone), ..#(R: 'static + Clone) {
+    fn append(l: (..#L), r: (..#R)) -> (..#L, ..#R)
+}
+
 //
-// append<(usize, Vec<bool>), (&'static str, u8, i16)>(
-//     l: (usize, Vec<bool>), 
-//     r: (&'static str, u8, i16)
-// ) -> (usize, Vec<bool>, &'static str, u8, i16) { ... }
+// trait Append<(usize, Vec<bool>), (&'static str, u8, i16)> {
+//  fn append(
+//       l: (usize, Vec<bool>), 
+//       r: (&'static str, u8, i16)
+//   ) -> (usize, Vec<bool>, &'static str, u8, i16) { ... }
+// }
 ```
 
 Note: If an expansion syntax does not contains any variadic tuple type identifier, it resolves to the unit type `( )`.
@@ -148,7 +154,9 @@ A _variadic tuple_ is a variable of a variadic tuple type.
 A variadic tuple can be declared like any other variable:
 
 ```rust
-fn my_func<(..#T)>(variadic_tuple: (..#T)) { ... }
+trait MyFunc<(..#T)> {
+	fn my_func(variadic_tuple: (..#T)) { ... }
+}
 ```
 
 ### Destructuring a variadic tuple
@@ -179,8 +187,10 @@ Examples:
 
 ```rust
 // The function argument is destructured as a variadic tuple with identifier `v`
-fn my_func<(..#T)>((..#v): (..#T)) -> (..#T) { 
-	(..#(v + v))
+trait MyFunc<(..#T)> {
+	fn my_func((..#v): (..#T)) -> (..#T) { 
+        (..#(v + v))
+    }
 }
 
 impl<(..#T)> Clone for (..#T) 
@@ -206,19 +216,26 @@ Note 3: The expression in an expansion form can be enclosed by parenthesis or br
 Examples:
 
 ```rust
-fn my_func<(..#T)>((..#i): (..#T)) {
-  (..#{ println!("{}", i) })
+trait MyFunc<(..#T)> {
+    fn my_func((..#i): (..#T)) {
+      (..#{ println!("{}", i) })
+    }
 }
 
-fn clone_add<(..#T)>((..#i): (..#T)) -> (..#T) 
+trait CloneAdd<(..#T)> 
 where ..#(T: Clone + Add) {
-  (..#(<T as Clone>::clone(&i) + i))
+    fn clone_add<(..#T)>((..#i): (..#T)) -> (..#T) {
+      (..#(<T as Clone>::clone(&i) + i))
+    }
 }
 
-fn merge_into<(..#(L, R))>((..#l): (..#L), (..#r): (..#R)) -> (..#L, ..#L) 
+trait MergeInto<(..#(L, R))> 
 where ..#(L: From<R>) {
-   (..#l, ..#(R as Into<L>>::into(r)))
+    fn merge_into<(..#(L, R))>((..#l): (..#L), (..#r): (..#R)) -> (..#L, ..#L)  {
+       (..#l, ..#(R as Into<L>>::into(r)))
+    }
 }
+
 ```
 
 ## The `Hash`trait
@@ -259,14 +276,14 @@ A variadic tuple type identifier identifies a list of types.
 When declared togethers, each identifiers identifies a list of types. For instance:
 
 ```rust
-fn my_func<(..#(L, R))>() { }
-my_func::<((usize, bool), (i8, f32))>();
+struct MyStruct<(..#(L, R))> { ... }
+MyStruct::<((usize, bool), (i8, f32))> { ... }
 // `(..#(L, R))` matches `((usize, bool), (i8, f32))`
 // `(..#L)` is `(usize, i8)`
 // `(..#R)` is `(bool, f32)`
 ```
 
-Note: Although this looks like a type-level pattern matching, it can match against only tuple of identifiers. So the following declaration is invalid: `fn my_func<(..#(L, Vec<R>))>() { ... }`
+Note: Although this looks like a type-level pattern matching, it can match against only tuple of identifiers. So the following declaration is invalid: `struct MyStruct<(..#(L, Vec<R>))> { ... }`
 
 ### Variadic tuple type expansion
 
@@ -277,7 +294,7 @@ Examples:
 ```rust
 type TupleOfVec<(..#T)> = (..#Vec<T>);
 
-fn my_func<(..#T)>() 
+struct MyStruct<(..#T)>
 where ..#(T: Clone) { ... }
 ```
 
@@ -286,7 +303,10 @@ where ..#(T: Clone) { ... }
 The declaration of a variadic tuple variable is still a variable. Nothing new here.
 
 ```rust
-fn my_func<(..#T)>(input: (..#T)) { ... }
+trait MyFunc<(..#T)> {
+	fn my_func(input: (..#T)) { ... }    
+}
+
 ```
 
 ### Variadic tuple destructuration
@@ -316,11 +336,13 @@ When destructuring a variadic tuple it declares a variadic tuple identifiers tha
 The variadic tuple expansion are "expression template". By replacing the identifiers by its appropriate value, the variadic tuple expansion will result in a list of expressions. The full expression form will be replaced by the resolved list of expression.
 
 ```rust
-fn my_function<(..#T)>((..#i): (..#T)) {
-  (..#i.clone())
-  // `i.clone()` is the expression template parameterized by `i`
-  // it will resolve into a list of expressions: `i.0.clone(), i.1.clone(), ..., i.n.clone()`
-  // Finally, `..#i.clone()` will be replaced by the resolved list of expressions
+trait MyFunction<(..#T)> {
+    fn my_function((..#i): (..#T)) {
+      (..#i.clone())
+      // `i.clone()` is the expression template parameterized by `i`
+      // it will resolve into a list of expressions: `i.0.clone(), i.1.clone(), ..., i.n.clone()`
+      // Finally, `..#i.clone()` will be replaced by the resolved list of expressions
+    }
 }
 ```
 
@@ -372,18 +394,6 @@ The compiler will execute these steps:
       3. `impl` found
    6. Generation of `impl` of `Arity` for `(usize,)` completed
 5. Generation of `impl` of `Arity` for `(bool, usize)` completed
-
-### Recursion with functions
-
-```rust
-fn recurse<Head, (..#Tail)>((head, ..#tail): (Head, ..#Tail))
-where Head: Debug, ..#(Tail: Debug) {
-  println!("{}", head);
-  recurse((..#tail));
-}
-// Termination needs to be implemented explicitly
-fn recurse<()>((): ()) { }
-```
 
 ## Errors
 
@@ -477,6 +487,7 @@ note: required by `A::VALUE`
 ### Invalid variadic tuple type declaration
 
 The variadic tuple type declaration is invalid when it can't be parsed as either:
+
 - `(..#T)`
 - `(..#(T1, T2, .., Tn))`
 
@@ -555,6 +566,7 @@ hint: expected `(..#(K, V))`
 ### Invalid variadic tuple pattern matching
 
 The variadic tuple declaration is invalid when it can't be parsed as either:
+
 - `(..#id)`
 - `(..#(ref id))`
 - `(..#(ref mut id))`
@@ -567,7 +579,6 @@ struct MyStruct<(..#Vec<T>)> {
 impl<(..#T)> MyTrait for (..#T) {
   fn my_func(&self) {
     let (..#(&i)) = &self;
-
   }
 }
 ```
@@ -591,12 +602,16 @@ Variadic tuple expansion will generate code and may produce obscure errors for e
 If we consider this code:
 
 ```rust
-fn make_mega_map<(..#(Key, Value))>() -> (..#HashMap<Key, Value>) {
-  (..#HashMap::<Key, Value2>::new())
+trait MakeMegaMap<(..#(Key, Value))> {
+    fn make_mega_map() -> (..#HashMap<Key, Value>) {
+      (..#HashMap::<Key, Value2>::new())
+    }
 }
 
+impl<(..#(Key, Value))> MakeMegaMap<(..#(Key, Value))> for () {}
+
 fn main() {
-  let mega_map = make_mega_map::<(usize, bool), (f32, String)>();
+  let mega_map = <() as MakeMegaMap<<(usize, bool), (f32, String)>>::make_mega_map();
 }
 ```
 
@@ -604,8 +619,10 @@ Then the expansion form is valid, even though the `Value2` identifier is probabl
 In that case, the expansion will be resolved as:
 
 ```rust
-fn make_mega_map<(usize, bool), (f32, String)>() -> (HashMap<usize, bool>, HashMap<f32, String>) {
-  (HashMap::<usize, Value2>::new(), HashMap::<f32, Value2>::new())
+trait MakeMegaMap<((usize, bool), (f32, String))> {
+    fn make_mega_map() -> (HashMap<usize, bool>, HashMap<f32, String>) {
+      (HashMap::<usize, Value2>::new(), HashMap::<f32, Value2>::new())
+    }
 }
 ```
 
@@ -615,8 +632,8 @@ Leading to a compile error with additional notes
 error[E0412]: cannot find type `Value2` in this scope
   --> src/main.rs:10:22
    |
-10 |  let mega_map = make_mega_map::<(usize, bool), (f32, String)>();
-   |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ not found in this scope
+10 |  let mega_map = <() as MakeMegaMap<<(usize, bool), (f32, String)>>::make_mega_map();
+   |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ not found in this scope
 note: when expanding with `(..#(Key, Value)) = ((usize, bool), (f32, String))`
   --> src/main.rs:2:4
    |
@@ -632,7 +649,7 @@ note: when expanding with `(..#(Key, Value)) = ((usize, bool), (f32, String))`
 
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-## Declaring and using multiple variadic tuple type with same aritiy
+## Declaring and using multiple variadic tuple type with same arity
 
 In C++ multiple parameter packs can be expanded in a single expansion form as long as the packs have the same number of items, but there is no constraint concerning the declaration.
 
@@ -655,9 +672,15 @@ C++11 sets a decent precedent with its variadic templates, which can be used to 
 When using dynamic libraries, client libraries may relies that the host contains code up to a specific tuple arity. So we need to have a 
 way to enforce the compiler to generate all the implementation up to a specific tuple arity. (12 will keep backward comptibility with current `std` impl)
 
-## Termination syntax for functions
+# Future possibilities
 
-The suggested termination syntax is too close to a duplicate function definition and this is not a behaviour that currently exists. (See this [RFC issue](https://github.com/rust-lang/rfcs/issues/1053))
+[future-possibilities]: #future-possibilities
+
+## Supporting variadic tuple for function generic parameter groups
+
+Supporting variadic tuple for function generic parameter groups requires to provide a specialized implementation for the recursion termination.
+
+For instance:
 
 ```rust
 fn recurse<Head, (..#Tail)>((head, ..#tail): (Head, ..#Tail))
@@ -669,43 +692,33 @@ where Head: Debug, ..#(Tail: Debug) {
 fn recurse<()>((): ()) { }
 ```
 
-So there can be several alternative to deal with this:
+Currently, specialization or overlapping bounds are not permitted for functions. This is a quite big requirement so this feature won't be supported in this RFC.
 
-1. Forbiding variadic tuple for functions. In that case to have a similar functionality, we can use a trait as a workaround. It is more verbose but uses a trait instead. (Also, this may be dealt with in an another PR)
+However when such a feature will land in Rust, supporting variadic tuple for function generic parameter will be way easier.
 
-   ```rust
-   trait MyFuncTrait<Head, (..#T)> { 
-     fn my_func(input: (Head, ..#T));
-   }
-   struct MyFunctTraitHelper;
-   impl<Head, (..#T)> MyFuncTrait<Head, (..#T)> for MyFuncTraitHelper {
-     fn my_func((h, ..#i): (Head, ..#T)) {
-       MyFunctTraitHelper::my_func((..#i));
-     }
-   }
-   impl<()> MyFuncTrait<()> for MyFuncTraitHelper {
-     fn my_func((): ()) { }
-   }
-   ```
-   
-1. Using a specific syntax to declare a specialized implementation.
-  
-  ```rust
-  default fn recurse<Head, (..#Tail)>((head, ..#tail): (Head, ..#Tail))
-  where Head: Debug, ..#(Tail: Debug) {
-    println!("{}", head);
-    recurse((..#tail));
-  }
-  // Termination needs to be implemented explicitly
-  fn recurse<()>((): ()) { }
-  ```
+Note, see the RFC issues [290](https://github.com/rust-lang/rfcs/issues/290) and [1053](https://github.com/rust-lang/rfcs/issues/1053).
 
-# Future possibilities
+## Better utilities to manipulate tuples
 
-[future-possibilities]: #future-possibilities
+If we consider tuples as a list of types we can perform more computation at compile time and provide more possibilities for zero cost abstractions.
 
-- Improve the error message for `E0275` by providing the sequence of evaluated elements to give more help to the user about what can create the overflow.
-  - In the context of variadic tuple, this can be the sequence of variadic tuple implementation that are tried by the compiler.
-  - But, in the more generic case where two traits implementations requires each others, providing the dependency cycle can be really helpful.
+Such utilities can be:
 
-- Supporting recrusive variadic tuple (ie, declaration like: `(..#((..#T)))`)
+- `TupleContains<T>`:  implemented by tuples containing the type `T` in its members
+- `UniqueTuple`: implemented by all tuple, an associated type is the based on the same tuple but with only unique types
+- `SortedTuple`: implemented by all tuple, an associated type is the based on the same tuple but with only sorted types
+- `Arity`: a trait implemented by all tuple providing the arity of the tuple with a `const`
+- An equivalent to C++'s  `std::get`
+
+Those are not directly related to this RFC, but those utilities will be a natural additional step to better support tuple.
+
+## Improve the error message for `E0275`
+
+Improve the error message for `E0275` by providing the sequence of evaluated elements to give more help to the user about what can create the overflow.
+
+- In the context of variadic tuple, this can be the sequence of variadic tuple implementation that are tried by the compiler.
+- But, in the more generic case where two traits implementations requires each others, providing the dependency cycle can be really helpful.
+
+## Supporting recursive variadic tuple
+
+Supporting recrusive variadic tuple (ie, declaration like: `(..#((..#T)))`)
