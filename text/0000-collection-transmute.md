@@ -84,7 +84,7 @@ This would mean our example above would become:
 
 ```rust
 let x = vec![0i32; 2];
-let y = x.transmute::<[u8; 4]>();
+let y = unsafe { x.transmute::<[u8; 4]>() };
 ```
 
 The documentation of `mem::transmute` should link to the new methods.
