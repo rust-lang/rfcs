@@ -216,7 +216,8 @@ Note 3: The expression in an expansion form can be enclosed by parenthesis or br
 Examples:
 
 ```rust
-trait MyFunc<(..#T)> {
+trait MyFunc<(..#T)>
+where ..#(T: Display) {
     fn my_func((..#i): (..#T)) {
       (..#{ println!("{}", i) })
     }
@@ -684,7 +685,7 @@ For instance:
 
 ```rust
 fn recurse<Head, (..#Tail)>((head, ..#tail): (Head, ..#Tail))
-where Head: Debug, ..#(Tail: Debug) {
+where Head: Display, ..#(Tail: Display) {
   println!("{}", head);
   recurse((..#tail));
 }
