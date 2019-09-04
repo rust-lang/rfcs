@@ -357,44 +357,21 @@ trait Arity {
     const VALUE: usize;
 }
 
-impl<Head, (..#Tail)> Arity for (Head, ..#Tail) {
-    default const VALUE: usize = <(..#Tail) as Arity>::VALUE + 1;
+// Default implementation for all tuples
+impl<(..#T)> Arity for (..#T) {
+    default const VALUE: usize = 0;
 }
-impl Arity for () {
-    const VALUE: usize = 0;
+
+// Specialized implementation for the recursion
+impl<Head, (..#Tail)> Arity for (Head, ..#Tail) {
+    const VALUE: usize = <(..#Tail) as Arity>::VALUE + 1;
 }
 ```
 
 Note:
 
 - The `impl<Head, (..#Tail)> Arity for (Head, ..#Tail)` is the recursive implementation.
-- The `impl Arity for ()` is the termination of the recursive implementation.
-- We use the specialization feature here with the `default` token to declare a specialise implementation that is the termination of the recursive implementation
-
-And when we compile the following code:
-
-```rust
-fn main() {
-    println!("Arity of (bool, usize): {}", <(bool, usize) as Arity>::VALUE);
-}
-```
-
-The compiler will execute these steps:
-
-1. Search `impl` of `Arity` for `(bool, usize)`
-2. `impl` not found, Search variadic `impl` of `Arity` for `(bool, usize)`
-3. Variadic impl found: `impl<Head, (..#Tail)> Arity for (Head, ..#Tail)`
-4. Generate `impl` of `Arity` for `(bool, usize)`
-   1. Requires `impl` of `Arity` for `(usize,)`
-   2. Search `impl` of `Arity` for `(usize,)`
-   3. `impl` not found, Search variadic `impl` of `Arity` for `(usize,)`
-   4. Variadic impl found: `impl<Head, (..#Tail)> Arity for (Head, ..#Tail)`
-   5. Generate `impl` of `Arity` for `(usize,)`
-      1. Requires `impl` of `Arity` for `()`
-      2. Search `impl` of `Arity` for `()`
-      3. `impl` found
-   6. Generation of `impl` of `Arity` for `(usize,)` completed
-5. Generation of `impl` of `Arity` for `(bool, usize)` completed
+- The `impl<(..#T)> Arity for (..#T)` is the default implementation and will act as the termination of the recursion.
 
 ## Errors
 
@@ -422,30 +399,13 @@ This code must not compile as the termination implementation is missing.
 So we will have a `E0277`error:
 
 ```rust
-error[E0277]: the trait bound `(): Arity` is not satisfied
+error[E0277]: the trait bound `(bool, u8): Arity` is not satisfied
  --> src/main.rs:10:4
   |
 7 |     let arity = <(usize, bool, u8) as Arity>::VALUE;
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `Arity` is not implemented for `()`
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `Arity` is not implemented for `(bool, u8)`
   |
   = help: impl `Arity` for `(usize, bool, u8)` requires impl `Arity` for `(bool, u8)`
-    note: matched by variadic tuple impl of `Arity`
- --> src/main.rs:5:1
-  |
-5 | impl<Head, (..#Tail)> Arity for (Head, ..#Tail) {
-  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  = help: impl `Arity` for `(bool, u8)` requires impl `Arity` for `(u8,)`.
-    note: matched by variadic tuple impl of `Arity`
- --> src/main.rs:5:1
-  |
-5 | impl<Head, (..#Tail)> Arity for (Head, ..#Tail) {
-  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  = help: impl `Arity` for `(u8,)` requires impl `Arity` for `()`.
-    note: matched by variadic tuple impl of `Arity`
- --> src/main.rs:5:1
-  |
-5 | impl<Head, (..#Tail)> Arity for (Head, ..#Tail) {
-  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ```
 
 #### Variadic implementation cycle dependency error
@@ -649,6 +609,30 @@ note: when expanding with `(..#(Key, Value)) = ((usize, bool), (f32, String))`
 # Rationale and alternatives
 
 [rationale-and-alternatives]: #rationale-and-alternatives
+
+## Recursive implementations of trait with variadic tuple
+
+Recursive implementation is done by implementing the termination on all types and then the recursive implementation as a specialization.
+
+Doing this way, the Rust compiler is able to validate the generic parameters before monomorphization.
+
+```rust
+trait Arity {
+    const VALUE: usize;
+}
+
+// Default implementation for all tuples
+impl<(..#T)> Arity for (..#T) {
+    default const VALUE: usize = 0;
+}
+
+// Specialized implementation for the recursion
+impl<Head, (..#Tail)> Arity for (Head, ..#Tail) {
+	// (..#Tail) does implement `Arity`, so 
+	// <(..#Tail) as Arity> is valid.
+    const VALUE: usize = <(..#Tail) as Arity>::VALUE + 1;
+}
+```
 
 ## Declaring and using multiple variadic tuple type with same arity
 
