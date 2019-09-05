@@ -22,14 +22,18 @@ if some_condition {
 
 This is an
 [extremely common pattern](https://sourcegraph.com/search?q=repogroup%3Acrates+%2Felse%5Cs*%7B%5Cs*None%5Cs*%7D%2F+count%3A1000)
-in Rust code, but is quite verbose, taking several lines to achieve something with only two important
-data: the `bool` and the `T`. If we instead collapse the expression on to a single line, the legibility of the code is reduced. In
-addition, chaining a conversion from a `bool` to an `Option<T>` is inconvenient in this form and
-usually requires binding an extra variable to remain readable. Abstracting this common pattern into
-a method will make code more readable and require less repetitive typing on the user's part.
+in Rust code, but is quite verbose, taking several lines to achieve something with only two
+important data: the `bool` and the `T`. If we instead collapse the expression on to a single line by
+simply removing newlines (i.e. `if some_condition { Some(t) } else { None }`), the legibility of the
+code is reduced. In addition, chaining a conversion from a `bool` to an `Option<T>` is inconvenient
+in this form and usually requires binding an extra variable to remain readable. Abstracting this
+common pattern into a method will make code more readable and require less repetitive typing on the
+user's part.
 
-A method for converting from `bool` to `Option<T>` has been requested several times in the past [[1]](https://github.com/rust-lang/rfcs/pull/2180) [[2]](https://github.com/rust-lang/rust/issues/50523) [[3]](https://github.com/rust-lang/rfcs/issues/2606) in the past and shows a significant desire
-from users.
+A method for converting from `bool` to `Option<T>` has been requested several times in the past
+[[1]](https://github.com/rust-lang/rfcs/pull/2180)
+[[2]](https://github.com/rust-lang/rust/issues/50523)
+[[3]](https://github.com/rust-lang/rfcs/issues/2606) and shows a significant desire from users.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -56,7 +60,9 @@ impl bool {
 }
 ```
 
-The primitive type `bool` currently has no methods, so it will be necessary to add support similarly to other primitive types that do have methods, like [`char`](https://doc.rust-lang.org/src/core/char/methods.rs.html#11-1393).
+The primitive type `bool` currently has no methods, so it will be necessary to add support similarly
+to other primitive types that do have methods, like
+[`char`](https://doc.rust-lang.org/src/core/char/methods.rs.html#11-1393).
 
 # Drawbacks
 [drawbacks]: #drawbacks
