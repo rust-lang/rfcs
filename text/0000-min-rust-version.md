@@ -46,12 +46,13 @@ tree, but will not be built are excluded from this check (e.g. target-dependent
 or optional crates).
 
 `rust` field should respect the following minimal requirements:
-- value should be a version in semver format WITHOUT range operators. Note that
-"1.50" is a valid value and implies "1.50.0".
-- version can not be bigger than the current stable toolchain
-- version can not be smaller than 1.27 (version in which  `package.rust` field
-became a warning instead of an error)
-- version can not be smaller than release version of a used edition, i.e.
+- Value should be a version in semver format **without** range operators. Note
+that "1.50" is a valid value and implies "1.50.0".
+- Version can not be bigger than a current stable toolchain (it will be checked
+by crates.io during crate upload).
+- Version can not be smaller than 1.27 (version in which  `package.rust` field
+became a warning instead of an error).
+- Version can not be smaller than release version of a used edition, i.e.
 combination of `rust = "1.27"` and `edition = "2018"` is an invalid one.
 
 # Future work and extensions
