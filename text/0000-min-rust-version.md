@@ -1,4 +1,4 @@
-- Feature Name: min_rust_version
+the minimum version- Feature Name: min_rust_version
 - Start Date: 2018-06-28
 - RFC PR: (leave this empty)
 - Rust Issue: (leave this empty)
@@ -54,7 +54,7 @@ became a warning instead of an error)
 - version can not be smaller than release version of a used edition, i.e.
 combination of `rust = "1.27"` and `edition = "2018"` is an invalid one.
 
-# Future work (Extensions)
+# Future work and extensions
 [future-work]: #future-work
 
 ## Influencing version resolution
@@ -123,7 +123,7 @@ specified in the `package` section.
 If target condition is true, then `cargo ` will use `rust` value from this section.
 If several target section conditions are true, then maximum value will be used.
 
-# Nightly and stable versions
+## Nightly and stable versions
 
 Some crates may prefer to target only the most recent stable or nightly toolchain.
 In addition to the versions we could allow `stable` and `nightly` values to declare
