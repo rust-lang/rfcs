@@ -62,7 +62,8 @@ impl bool {
 
 The primitive type `bool` currently has no methods, so it will be necessary to add support similarly
 to other primitive types that do have methods, like
-[`char`](https://doc.rust-lang.org/src/core/char/methods.rs.html#11-1393).
+[`char`](https://doc.rust-lang.org/src/core/char/methods.rs.html#11-1393). This will require the
+addition of a new lang item: `#[lang = "bool"]`.
 
 # Drawbacks
 [drawbacks]: #drawbacks
