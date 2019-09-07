@@ -65,6 +65,8 @@ to other primitive types that do have methods, like
 [`char`](https://doc.rust-lang.org/src/core/char/methods.rs.html#11-1393). This will require the
 addition of a new lang item: `#[lang = "bool"]`.
 
+A reference implementation is provided in [#64255](https://github.com/rust-lang/rust/pull/64255).
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
