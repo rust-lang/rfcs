@@ -50,7 +50,9 @@ compatible with the unspecified Rust unwinding mechanism.
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-The `#[unwind(allowed)]` attribute permits function declarations and definitions with non-Rust ABIs (e.g. `extern "C" fn`) to unwind rather than terminating the process.
+When used on Rust functions with non-Rust ABIs (e.g. `extern "C" fn`), the `#[unwind(allowed)]` attribute permits unwinding out of the annotated function; without the attribute, the process will automatically be terminated at the function boundary.
+
+When used on declarations of imported functions (e.g. `extern "C" { fn ... }`), the `#[unwind(allowed)]` attribute ensures that if the function unwinds, the unwind will be propagated though any calling code; without the attribute, the behavior is undefined.
 
 Calls to function pointers with non-Rust ABIs, as opposed to declared or defined functions,
 currently are permitted to unwind. This RFC does not change this behavior.
@@ -78,7 +80,7 @@ for the non-Rust code, or this feature may not be supported at all.
 # Drawbacks
 [drawbacks]: #drawbacks
 
-- Only works as long as the foreign code supports the same unwinding mechanism as Rust.
+- Only works as long as the foreign code supports the same unwinding mechanism as Rust. (Currently, Rust and C++ code compiled for ABI-compatible backends use the same mechanism.)
 - Does not allow external library bindings to specify whether callbacks they accept are expected to unwind.
 
 # Rationale and alternatives
@@ -103,7 +105,7 @@ The alternatives considered are:
 
    - Additional non-Rust code must be maintained.
    - `setjmp`/`longjmp` incur runtime overhead even when no unwinding is required, whereas many
-     system unwinders incur runtime overhead only when unwinding.
+     unwinding mechanisms incur runtime overhead only when unwinding.
    - Wrappers that must be present at Rust compile time are not suitable for applications with
      dynamic, generated code.
 
