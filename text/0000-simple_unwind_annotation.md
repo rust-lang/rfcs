@@ -94,8 +94,8 @@ We should try not to prevent the RFC 2699 or other later RFC from resolving the 
 
 The alternatives considered are:
 
-1. Solve the soundness bug by aborting instead of unwinding when reaching an FFI boundary
-   (https://github.com/rust-lang/rust/issues/52652). As a workaround for applications that would
+1. Stabilize the [abort-on-FFI-boundary behavior](https://github.com/rust-lang/rust/issues/52652)
+   without providing any mechanism to change this behavior. As a workaround for applications that would
    otherwise need this unwinding, we would recommend the use of wrappers to translate Rust panics to
    and from C ABI-compatible values at FFI boundaries, with a foreign control mechanism like
    `setjmp`/`longjmp` or C++ exceptions to skip or unwind segments of foreign stack.
