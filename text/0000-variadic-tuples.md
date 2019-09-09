@@ -32,9 +32,7 @@ Variadic tuple will provide several benefits considering trait implementation fo
 
 Let's call a _variadic tuple type_ a tuple type with an arbitrary arity and a _variadic tuple_ an instance of a variadic tuple type.
 
-The variadic tuple type occurs in two form: a declarative form and an expansion form. And the variadic tuple only occurs in expansion forms.
-
-For a variadic tuple type, the declarative form is `(..T)` and an example of an expansion form is `(..Vec<T>)`.
+A variadic tuple type is declared with`(..T)` and a variadic tuple type can be expanded with `(..Vec<T>)`.
 
 Note: To illustrate the RFC, we will use the current implementation of the `Hash` trait for tuples.
 
@@ -74,7 +72,7 @@ macro_rules! last_type {
 
 Variadic tuple types are always declared in a generic parameter group.
 
-Note: variadic tuples are not supported in generic parameter group of `fn`
+*Note: variadic tuples are not supported in generic parameter group of `fn`*
 
 There are two different syntaxes:
 
@@ -189,7 +187,7 @@ Examples:
 // The function argument is destructured as a variadic tuple with identifier `v`
 trait MyFunc<(..T)> {
 	fn my_func((..v): (..T)) -> (..T) { 
-        (..(v + v))
+        ...
     }
 }
 
@@ -198,42 +196,73 @@ where ..(T: Clone) {
   fn clone(&self) -> Self {
     // We destructure `*self` which has a variadic tuple type `(..T)`
     let (..(ref v)) = *self;
-    (..v.clone())
+    ...
   }
 }
 ```
 
-### Expansion
+### Iterating over variadic tuple
 
-An expansion form for variadic tuple has the syntax: `..<expr(T1, T2, ..., Tn, id1, id2, ..., idm)>` where `T1`, `T2`, ..., `Tn` are variadic tuple type identifiers and `id1`, `id2`, ..., `idn` are variadic tuple identifiers.
+We can iterate over the member of a variadic tuple or over the type of a variadic tuple type.
 
-Note 1: All variadic tuple type used in the expansion form must have been declared together. The variadic tuple type used are the variadic tuple types identified by `T1`, `T2`, ..., `Tn` or the type of the variadic tuple identified by `id1`, `id2`, ..., `idn`.
+*Important note: the iteration is inlined by the compiler, it is not a generic runtime heterogenous iteration of tuple members.*
 
-Note 2: An expansion form without any identifier resolves to the unit type `()`.
+We use the following syntax to iterate on variadic tuples:
 
-Note 3: The expression in an expansion form can be enclosed by parenthesis or braces for clarity.
+```rust
+// The result of the for block is a variadic tuple made of
+// the result of each iteration
+let result: (..Option<&V>) = {
+    // `key` and `map` are variables iterating the variadic tuples `(..k): (..K)` and `(..maps): (..&HashMap<K, V>)`, `key` will iterate by reference (because of the ref keyword)
+    // `KEY` and `VALUE` are type variables iterating the variadic tuple types `(..K)` and `(..V)`
+    // `..(k, maps)` declares the iterated variadic tuples `(..k)` and `(..maps)`
+    // `..(K, V)` declares the iterated variadic tuple types
+    for (ref key, map) type (KEY, VALUE) in ..(k, maps) type ..(K, V) {
+        HashMap::<KEY, VALUE>::get(&map, key)
+    }
+};
+```
+
+Note: when iterating over multiple variadic tuple or variadic tuple types, they must have all the same arity. To ensure this, all variadic tuple types involved must have been declared together.
 
 Examples:
 
 ```rust
-trait MyFunc<(..#T)>
-where ..(T: Display) {
-    fn my_func((..i): (..T)) {
-      (..{ println!("{}", i) })
+impl<(..(K, V))> MegaMap<(..(K, V))>
+where ..(K: Hash), {
+    fn get(&self, (..k): (..K)) -> (..Option<V>) {
+        let (..ref maps) = &self.maps;
+
+        let result: (..Option<&V>) = {
+            for (ref k, map) type (K, V) in ..(k, maps) type ..(K, V) {
+                HashMap::<K, V>::get(&map, k)
+            }
+        };
+
+        result
     }
 }
 
-trait CloneAdd<(..T)> 
-where ..(T: Clone + Add) {
-    fn clone_add<(..T)>((..i): (..T)) -> (..T) {
-      (..(<T as Clone>::clone(&i) + i))
-    }
-}
+impl<(..T), Last> Hash for (..T, Last)
+where
+    ..(T: Hash),
+    Last: Hash + ?Sized, {
 
-trait MergeInto<(..(L, R))> 
-where ..(L: From<R>) {
-    fn merge_into<(..(L, R))>((..l): (..L), (..r): (..R)) -> (..L, ..L)  {
-       (..l, ..(R as Into<L>>::into(r)))
+    #[allow(non_snake_case)]
+    fn hash<S: Hasher>(&self, state: &mut S) {
+        let (..ref tuple, ref last) = *self;
+       
+        // Use case: only variadic tuple
+        for member in ..(tuple,) {
+          member.hash(state);
+        }
+        last.hash(state);
+
+        // Use case: variadic tuple and type
+        for member type (H,) in ..(tuple,) type ..(T,) {
+          <T as Hash>::hash(&member, state);
+        }
+        last.hash(state);
     }
 }
 
@@ -254,12 +283,17 @@ where
 
     #[allow(non_snake_case)]
     fn hash<S: Hasher>(&self, state: &mut S) {
-      	// Destructure self to a variadic tuple `v` and a variable `last`. The variadic tuple type of `v` is `(..&T)`
-      	// So it will be equivalent to `let (ref a, ref b, ref c, ref last) = *self; let v = (a, b, c);`
-        let (..(ref v), ref last) = *self;			 
-      	
-      	// Expands to `(v.0.hash(state), v.1.hash(state), v.2.hash(state), last.hash(state));`
-        (..v.hash(state), last.hash(state));   
+      	// Destructure self to a variadic tuple `tuple` and a variable `last`. The variadic tuple type of `tuple` is `(..&T)`
+      	// So it will be equivalent to `let (ref a, ref b, ref c, ref last) = *self; let tuple = (a, b, c);`
+        let (..ref tuple, ref last) = *self;
+        for member in ..(tuple,) {
+          member.hash(state);
+        }
+        // The for loop will be inlined as: 
+        // v.0.hash(state);
+        // v.1.hash(state);
+        // v.2.hash(state);
+        last.hash(state);
     }
 }
 ```
@@ -318,11 +352,11 @@ When destructuring a variadic tuple it declares a variadic tuple identifiers tha
 {
   let source: (..T, Tail) = _;
   let (..v, tail) = source;
-  // v is a variable of type `(..#T)`
+  // v is a variable of type `(..T)`
   let (..(ref v), ref tail) = &source;
-  // v is a variable of type `(..#&T)`
+  // v is a variable of type `(..&T)`
   let (..(ref mut v), ref mut tail) = &mut source;
-    // v is a variable of type `(..#&mut T)`
+    // v is a variable of type `(..&mut T)`
 }
 
 // If we use `(..T)` = `(A, B, C)` as an example
@@ -332,20 +366,68 @@ When destructuring a variadic tuple it declares a variadic tuple identifiers tha
 // `let v = (a, b, c);`
 ```
 
-### Variadic tuple expansion
+### Variadic tuple iteration
 
-The variadic tuple expansion are "expression template". By replacing the identifiers by its appropriate value, the variadic tuple expansion will result in a list of expressions. The full expression form will be replaced by the resolved list of expression.
+The syntax for the variadic tuple iteration is:
 
 ```rust
-trait MyFunction<(..T)> {
-    fn my_function((..i): (..T)) {
-      (..i.clone())
-      // `i.clone()` is the expression template parameterized by `i`
-      // it will resolve into a list of expressions: `i.0.clone(), i.1.clone(), ..., i.n.clone()`
-      // Finally, `..i.clone()` will be replaced by the resolved list of expressions
+for $var_id type $type_var_id in $variadic_tuples type $variadic_tuple_types {
+    $body
+}
+```
+
+`$var_id` is a pattern matching the tuple to iterate, it follows the same rules as the variadic tuple destructuration, only 3 syntaxes are allowed for an identifier: `id`, `ref id` or `ref mut id`. (like: `(key value)`, `(ref key, value)`, `(ref mut key, value)`)
+
+`$type_var_id` is a pattern matching the variadic tuple types to iterate, but it has only the first syntax allowed. (No ref, or mut).
+
+`$variadic_tuples` declares the iterated variadic tuples, it has the syntax `..id` or `..(id1, id2, ..., idn)`.
+
+`$variadic_tuple_types` declares the iterated variadic tuple types, it has the syntax `..ID` or `..(ID1, ID2, ..., IDn)`.
+
+Example:
+
+```rust
+impl<(..(K, V))> MegaMap<(..(K, V))>
+where ..(K: Hash), {
+    fn get(&self, (..k): (..K)) -> (..Option<V>) {
+        let (..ref maps) = &self.maps;
+
+        let result: (..Option<&V>) = {
+            for (ref k, map) type (K, V) in ..(k, maps) type ..(K, V) {
+                HashMap::<K, V>::get(&map, k)
+            }
+        };
+
+        // for the compiler, the for block has a kind of
+        // `[[(variadic_tuple, variadic_tuple_type)], [variadic_tuple_type]] -> (variadic_tuple, variadic_tuple_type)`
+        //
+        //  But, we can decompose in two separate steps:
+        // `{ HashMap::<K, V>::get(&map, k) }` is a generic fn: 
+        // ```rust
+        // fn block_body<K, V>(k: &K, map: &HashMap<K, V>) -> Option<&V> 
+        // where K: Hash { // Inherit bounds from context (here: the trait) 
+        //   HashMap::<K, V>::get(&map, k)
+        // }
+        // ```
+        // 
+        // Then the for loop is an inlined for loop calling the 
+        // `block_body`
+        //
+        // ```rust
+        // (
+        //    block_body::<K0, V0>(&k.0, maps.0),
+        //    block_body::<K1, V1>(&k.1, maps.1),
+        //    ...
+        //    block_body::<Kn, Vn>(&k.n, maps.n),
+        // )
+        // ```
+
+        result
     }
 }
 ```
+
+
 
 ## Recursion
 
@@ -494,36 +576,6 @@ note: variadic tuple type identifiers `K`, `V` were not declared together
 hint: expected `(..(K, V))`
 ```
 
-### Invalid variadic tuple expansion identifiers
-
-Occurs when multiple independent variadic tuple identifier are used in a single expansion form.
-
-```rust
-impl<(..K), (..V)> MyTrait for MyStruct {
-  fn my_function() {
-    let k: (..K) = _;
-    let v: (..V) = _;
-    let k_v = (..(k, v));
-  }
-}
-```
-
-```rust
-error[EXXXX]: invalid variadic tuple expansion `(..(k, v))`
-  --> src/main.rs:4:13
-   |
-10 |      let k_v = (..(k, v));
-   |                ^^^^^^^^^^
-   |
-note: variadic tuple identifiers `k`, `v` with variadic tuple type identifiers `K`, `V` were not declared together
-  --> src/main.rs:4:13
-   |
-10 |  impl<(..K), (..V)> MyTrait for MyStruct {
-   |       ^^^^^^^^^^^^
-   |
-hint: expected `(..(K, V))`
-```
-
 ### Invalid variadic tuple pattern matching
 
 The variadic tuple declaration is invalid when it can't be parsed as either:
@@ -565,7 +617,9 @@ If we consider this code:
 ```rust
 trait MakeMegaMap<(..(Key, Value))> {
     fn make_mega_map() -> (..HashMap<Key, Value>) {
-      (..HashMap::<Key, Value2>::new())
+        for () type (KEY, VALUE) in () type ..(Key, Value2) {
+            HashMap::<KEY, VALUE>::new()
+        }
     }
 }
 
@@ -577,16 +631,6 @@ fn main() {
 ```
 
 Then the expansion form is valid, even though the `Value2` identifier is probably mistyped.
-In that case, the expansion will be resolved as:
-
-```rust
-trait MakeMegaMap<((usize, bool), (f32, String))> {
-    fn make_mega_map() -> (HashMap<usize, bool>, HashMap<f32, String>) {
-      (HashMap::<usize, Value2>::new(), HashMap::<f32, Value2>::new())
-    }
-}
-```
-
 Leading to a compile error with additional notes
 
 ```rust
@@ -597,9 +641,9 @@ error[E0412]: cannot find type `Value2` in this scope
    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ not found in this scope
 note: when expanding with `(..(Key, Value)) = ((usize, bool), (f32, String))`
   --> src/main.rs:2:4
-   |
-2  |    (..HashMap::<Key, Value2>::new())
-   |
+   |  for () type (KEY, VALUE) in () type ..(Key, Value2) {
+2  |    HashMap::<KEY, VALUE>::new()              ^^^^^^^
+   |  }
 ```
 
 # Drawbacks
@@ -633,6 +677,22 @@ impl<Head, (..Tail)> Arity for (Head, ..Tail) {
     const VALUE: usize = <(..Tail) as Arity>::VALUE + 1;
 }
 ```
+
+## Iteration over variadic tuples syntax
+
+When iterating over variadic tuples, we need to define both variable and type variable. To do so, we use the for loop syntax and separate variables and type variables with the `type` keyword.
+
+This keyword is already reserved and has no meaning inside a for loop, so it can be used here.
+
+```rust
+let result: (..Option<&V>) = {
+    for (ref k, map) type (K, V) in ..(k, maps) type ..(K, V) {
+        HashMap::<K, V>::get(&map, k)
+    }
+};
+```
+
+
 
 ## Declaring and using multiple variadic tuple type with same arity
 
