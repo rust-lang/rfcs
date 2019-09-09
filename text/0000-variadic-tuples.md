@@ -34,7 +34,7 @@ Let's call a _variadic tuple type_ a tuple type with an arbitrary arity and a _v
 
 The variadic tuple type occurs in two form: a declarative form and an expansion form. And the variadic tuple only occurs in expansion forms.
 
-For a variadic tuple type, the declarative form is `(..#T)` and an example of an expansion form is `(..#Vec<T>)`.
+For a variadic tuple type, the declarative form is `(..T)` and an example of an expansion form is `(..Vec<T>)`.
 
 Note: To illustrate the RFC, we will use the current implementation of the `Hash` trait for tuples.
 
@@ -78,58 +78,58 @@ Note: variadic tuples are not supported in generic parameter group of `fn`
 
 There are two different syntaxes:
 
-1. `(..#T)`: declare a single variadic tuple type identified by `T`
-2. `(..#(T1, T2, ..., Tn))`: declare n variadic tuple types identified by `T1`, `T2`, ..., `Tn`, all these variadic tuple types have the same arity.
+1. `(..T)`: declare a single variadic tuple type identified by `T`
+2. `(..(T1, T2, ..., Tn))`: declare n variadic tuple types identified by `T1`, `T2`, ..., `Tn`, all these variadic tuple types have the same arity.
 
 Declaration examples:
 
-- `struct VariadicStruct<(..#T1)>` : declares a struct with a variadic tuple type identified by `T1` in its generic parameters
-- `impl<(..#Head)>`:  is an implementation block that uses a variadic tuple type identified by `Head`
-- `impl<A, B, C, (..#_Tail)>`:  same as above, but with other generic parameters
-- `impl<A, B, (..#C), (..#D)>`: there can be several variadic tuple types declared in a generic parameter group
+- `struct VariadicStruct<(..T1)>` : declares a struct with a variadic tuple type identified by `T1` in its generic parameters
+- `impl<(..Head)>`:  is an implementation block that uses a variadic tuple type identified by `Head`
+- `impl<A, B, C, (.._Tail)>`:  same as above, but with other generic parameters
+- `impl<A, B, (..C), (..D)>`: there can be several variadic tuple types declared in a generic parameter group
 
 Usage examples:
 
 ```rust
-struct VariadicStruct<(..#T)>
-VariadicStruct<(usize,)> 				// => (..#T) matches (usize,)
-VariadicStruct<(usize, bool)> 	// => (..#T) matches (usize, bool)
+struct VariadicStruct<(..T)>
+VariadicStruct<(usize,)> 				// => (..T) matches (usize,)
+VariadicStruct<(usize, bool)> 	// => (..T) matches (usize, bool)
 
-impl <(..#(T1, T2))> VariadicStruct<(..#(T1, T2)) { ... }
+impl <(..(T1, T2))> VariadicStruct<(..(T1, T2)) { ... }
 VariadicStruct::<((usize, bool),)
-// (..#(T1, T2)) matches ((usize, bool),)
-// (..#T1) is (usize,)
-// (..#T2) is (bool,)
-VariadicStruct::<((usize, bool), (String, i8)) // (..#(T1, T2)) matches ((usize, bool), (String, i8))
-// (..#T1) is (usize, String)
-// (..#T2) is (bool, i8)
+// (..(T1, T2)) matches ((usize, bool),)
+// (..T1) is (usize,)
+// (..T2) is (bool,)
+VariadicStruct::<((usize, bool), (String, i8)) // (..(T1, T2)) matches ((usize, bool), (String, i8))
+// (..T1) is (usize, String)
+// (..T2) is (bool, i8)
 ```
 
 ### Expansion
 
-The expansion syntax is: `..#<expr(T1, T2, ..., Tn)>` where `<expr(T1, T2, ..., Tn)>` is an expression using the variadic tuple type identifiers `T1`, `T2`, ..., `Tn`.
+The expansion syntax is: `..<expr(T1, T2, ..., Tn)>` where `<expr(T1, T2, ..., Tn)>` is an expression using the variadic tuple type identifiers `T1`, `T2`, ..., `Tn`.
 
-Note: The expression in an expansion form can be enclosed by parenthesis for clarity. Ex: `..#(T: Clone)`.
+Note: The expression in an expansion form can be enclosed by parenthesis for clarity. Ex: `..(T: Clone)`.
 
 The expansion form is allowed in all places where a type is allowed and in `where` bounds.
 
 Examples:
 
 ```rust
-type TuplesOfRef<'a, (..#T)> = (..#&'a T);
+type TuplesOfRef<'a, (..T)> = (..&'a T);
 TuplesOfRef<'b, (usize, bool)>; // = (&'b usize, &'b bool)
 
-struct MegaMap<(..#(K, V))> {
-  maps: (..#HashMap<K, V>),
+struct MegaMap<(..(K, V))> {
+  maps: (..HashMap<K, V>),
 }
 // 
 // struct MegaMap<((usize, bool), (String, i8))> {
 //   maps: (HashMap<usize, bool>, HashMap<String, i8>),
 // }
 
-trait Append<(..#L), (..#R)>
-where ..#(L: 'static + Clone), ..#(R: 'static + Clone) {
-    fn append(l: (..#L), r: (..#R)) -> (..#L, ..#R)
+trait Append<(..L), (..R)>
+where ..(L: 'static + Clone), ..(R: 'static + Clone) {
+    fn append(l: (..L), r: (..R)) -> (..L, ..R)
 }
 
 //
@@ -143,7 +143,7 @@ where ..#(L: 'static + Clone), ..#(R: 'static + Clone) {
 
 Note: If an expansion syntax does not contains any variadic tuple type identifier, it resolves to the unit type `( )`.
 
-Note2: If an expansion syntax contains multiple variadic tuple type identifiers, they must all have been declared together with the syntax `( ..#(T1, T2, ..., Tn))` to ensure they have the same arity.
+Note2: If an expansion syntax contains multiple variadic tuple type identifiers, they must all have been declared together with the syntax `( ..(T1, T2, ..., Tn))` to ensure they have the same arity.
 
 ## Variadic tuple
 
@@ -154,8 +154,8 @@ A _variadic tuple_ is a variable of a variadic tuple type.
 A variadic tuple can be declared like any other variable:
 
 ```rust
-trait MyFunc<(..#T)> {
-	fn my_func(variadic_tuple: (..#T)) { ... }
+trait MyFunc<(..T)> {
+	fn my_func(variadic_tuple: (..T)) { ... }
 }
 ```
 
@@ -163,22 +163,22 @@ trait MyFunc<(..#T)> {
 
 The main way to use a variadic tuple is by destructuring it to access its members.
 
-There are 3 syntaxes possible to destructure a variadic tuple for a variadic tuple `(..#T)`:
+There are 3 syntaxes possible to destructure a variadic tuple for a variadic tuple `(..T)`:
 
-1. `(..#v)` of variadic tuple type `(..#T)`
-2. `(..#(ref v))` of variadic tuple type `(..#&T)`
-3. `(..#(ref mut v))` of variadic tuple type `(..#&mut T)`
+1. `(..v)` of variadic tuple type `(..T)`
+2. `(..(ref v))` of variadic tuple type `(..&T)`
+3. `(..(ref mut v))` of variadic tuple type `(..&mut T)`
 
 Also, the destructure pattern can be combined with other members. For instance:
 
 ```rust
 {
-  let source: (Head, ..#Tail) = _;
-  let (ref head, ..#(ref tail)) = &source;
+  let source: (Head, ..Tail) = _;
+  let (ref head, ..(ref tail)) = &source;
 }
 {
-  let mut source: (..#L, ..#R) = _;
-  let (..#(ref mut l), ..#(ref mut r)) = &mut source;
+  let mut source: (..L, ..R) = _;
+  let (..(ref mut l), ..(ref mut r)) = &mut source;
 }
 
 ```
@@ -187,25 +187,25 @@ Examples:
 
 ```rust
 // The function argument is destructured as a variadic tuple with identifier `v`
-trait MyFunc<(..#T)> {
-	fn my_func((..#v): (..#T)) -> (..#T) { 
-        (..#(v + v))
+trait MyFunc<(..T)> {
+	fn my_func((..v): (..T)) -> (..T) { 
+        (..(v + v))
     }
 }
 
-impl<(..#T)> Clone for (..#T) 
-where ..#(T: Clone) {
+impl<(..T)> Clone for (..T) 
+where ..(T: Clone) {
   fn clone(&self) -> Self {
-    // We destructure `*self` which has a variadic tuple type `(..#T)`
-    let (..#(ref v)) = *self;
-    (..#v.clone())
+    // We destructure `*self` which has a variadic tuple type `(..T)`
+    let (..(ref v)) = *self;
+    (..v.clone())
   }
 }
 ```
 
 ### Expansion
 
-An expansion form for variadic tuple has the syntax: `..#<expr(T1, T2, ..., Tn, id1, id2, ..., idm)>` where `T1`, `T2`, ..., `Tn` are variadic tuple type identifiers and `id1`, `id2`, ..., `idn` are variadic tuple identifiers.
+An expansion form for variadic tuple has the syntax: `..<expr(T1, T2, ..., Tn, id1, id2, ..., idm)>` where `T1`, `T2`, ..., `Tn` are variadic tuple type identifiers and `id1`, `id2`, ..., `idn` are variadic tuple identifiers.
 
 Note 1: All variadic tuple type used in the expansion form must have been declared together. The variadic tuple type used are the variadic tuple types identified by `T1`, `T2`, ..., `Tn` or the type of the variadic tuple identified by `id1`, `id2`, ..., `idn`.
 
@@ -217,23 +217,23 @@ Examples:
 
 ```rust
 trait MyFunc<(..#T)>
-where ..#(T: Display) {
-    fn my_func((..#i): (..#T)) {
-      (..#{ println!("{}", i) })
+where ..(T: Display) {
+    fn my_func((..i): (..T)) {
+      (..{ println!("{}", i) })
     }
 }
 
-trait CloneAdd<(..#T)> 
-where ..#(T: Clone + Add) {
-    fn clone_add<(..#T)>((..#i): (..#T)) -> (..#T) {
-      (..#(<T as Clone>::clone(&i) + i))
+trait CloneAdd<(..T)> 
+where ..(T: Clone + Add) {
+    fn clone_add<(..T)>((..i): (..T)) -> (..T) {
+      (..(<T as Clone>::clone(&i) + i))
     }
 }
 
-trait MergeInto<(..#(L, R))> 
-where ..#(L: From<R>) {
-    fn merge_into<(..#(L, R))>((..#l): (..#L), (..#r): (..#R)) -> (..#L, ..#L)  {
-       (..#l, ..#(R as Into<L>>::into(r)))
+trait MergeInto<(..(L, R))> 
+where ..(L: From<R>) {
+    fn merge_into<(..(L, R))>((..l): (..L), (..r): (..R)) -> (..L, ..L)  {
+       (..l, ..(R as Into<L>>::into(r)))
     }
 }
 
@@ -244,22 +244,22 @@ where ..#(L: From<R>) {
 Let's implement the `Hash` trait:
 
 ```rust
-// For the example, we consider the impl for (A, B, C). So `(..#T)` matches `(A, B, C)`
-// We have the first expansion here, `(..#T, Last)` expands to `(A, B, C, Last)`
-impl<(..#T), Last> Hash for (..#T, Last) 
+// For the example, we consider the impl for (A, B, C). So `(..T)` matches `(A, B, C)`
+// We have the first expansion here, `(..T, Last)` expands to `(A, B, C, Last)`
+impl<(..T), Last> Hash for (..T, Last) 
 where
 		// Expands to `A: Hash, B: Hash, C: Hash,`
-    ..#(T: Hash,),
+    ..(T: Hash,),
     Last: Hash + ?Sized, {
 
     #[allow(non_snake_case)]
     fn hash<S: Hasher>(&self, state: &mut S) {
-      	// Destructure self to a variadic tuple `v` and a variable `last`. The variadic tuple type of `v` is `(..#&T)`
+      	// Destructure self to a variadic tuple `v` and a variable `last`. The variadic tuple type of `v` is `(..&T)`
       	// So it will be equivalent to `let (ref a, ref b, ref c, ref last) = *self; let v = (a, b, c);`
-        let (..#(ref v), ref last) = *self;			 
+        let (..(ref v), ref last) = *self;			 
       	
       	// Expands to `(v.0.hash(state), v.1.hash(state), v.2.hash(state), last.hash(state));`
-        (..#v.hash(state), last.hash(state));   
+        (..v.hash(state), last.hash(state));   
     }
 }
 ```
@@ -277,14 +277,14 @@ A variadic tuple type identifier identifies a list of types.
 When declared togethers, each identifiers identifies a list of types. For instance:
 
 ```rust
-struct MyStruct<(..#(L, R))> { ... }
+struct MyStruct<(..(L, R))> { ... }
 MyStruct::<((usize, bool), (i8, f32))> { ... }
-// `(..#(L, R))` matches `((usize, bool), (i8, f32))`
-// `(..#L)` is `(usize, i8)`
-// `(..#R)` is `(bool, f32)`
+// `(..(L, R))` matches `((usize, bool), (i8, f32))`
+// `(..L)` is `(usize, i8)`
+// `(..R)` is `(bool, f32)`
 ```
 
-Note: Although this looks like a type-level pattern matching, it can match against only tuple of identifiers. So the following declaration is invalid: `struct MyStruct<(..#(L, Vec<R>))> { ... }`
+Note: Although this looks like a type-level pattern matching, it can match against only tuple of identifiers. So the following declaration is invalid: `struct MyStruct<(..(L, Vec<R>))> { ... }`
 
 ### Variadic tuple type expansion
 
@@ -293,10 +293,10 @@ On location where a type is expected, the expansion will resolve to a type. On w
 Examples:
 
 ```rust
-type TupleOfVec<(..#T)> = (..#Vec<T>);
+type TupleOfVec<(..T)> = (..Vec<T>);
 
-struct MyStruct<(..#T)>
-where ..#(T: Clone) { ... }
+struct MyStruct<(..T)>
+where ..(T: Clone) { ... }
 ```
 
 ### Variadic tuple declaration
@@ -304,29 +304,29 @@ where ..#(T: Clone) { ... }
 The declaration of a variadic tuple variable is still a variable. Nothing new here.
 
 ```rust
-trait MyFunc<(..#T)> {
-	fn my_func(input: (..#T)) { ... }    
+trait MyFunc<(..T)> {
+	fn my_func(input: (..T)) { ... }    
 }
 
 ```
 
 ### Variadic tuple destructuration
 
-When destructuring a variadic tuple it declares a variadic tuple identifiers that can be used in expansion forms. The identifier is a variable of type `(..#T)` or `(..#&T)` or `(..#&mut T)`, depending on the syntax used.
+When destructuring a variadic tuple it declares a variadic tuple identifiers that can be used in expansion forms. The identifier is a variable of type `(..T)` or `(..&T)` or `(..&mut T)`, depending on the syntax used.
 
 ```rust
 {
-  let source: (..#T, Tail) = _;
-  let (..#v, tail) = source;
+  let source: (..T, Tail) = _;
+  let (..v, tail) = source;
   // v is a variable of type `(..#T)`
-  let (..#(ref v), ref tail) = &source;
+  let (..(ref v), ref tail) = &source;
   // v is a variable of type `(..#&T)`
-  let (..#(ref mut v), ref mut tail) = &mut source;
+  let (..(ref mut v), ref mut tail) = &mut source;
     // v is a variable of type `(..#&mut T)`
 }
 
-// If we use `(..#T)` = `(A, B, C)` as an example
-// Then `let (..#(ref v), ref tail) = &source`
+// If we use `(..T)` = `(A, B, C)` as an example
+// Then `let (..(ref v), ref tail) = &source`
 // is equivalent to:
 // `let (ref a, ref b, ref c, ref tail) = &source;`
 // `let v = (a, b, c);`
@@ -337,12 +337,12 @@ When destructuring a variadic tuple it declares a variadic tuple identifiers tha
 The variadic tuple expansion are "expression template". By replacing the identifiers by its appropriate value, the variadic tuple expansion will result in a list of expressions. The full expression form will be replaced by the resolved list of expression.
 
 ```rust
-trait MyFunction<(..#T)> {
-    fn my_function((..#i): (..#T)) {
-      (..#i.clone())
+trait MyFunction<(..T)> {
+    fn my_function((..i): (..T)) {
+      (..i.clone())
       // `i.clone()` is the expression template parameterized by `i`
       // it will resolve into a list of expressions: `i.0.clone(), i.1.clone(), ..., i.n.clone()`
-      // Finally, `..#i.clone()` will be replaced by the resolved list of expressions
+      // Finally, `..i.clone()` will be replaced by the resolved list of expressions
     }
 }
 ```
@@ -358,20 +358,20 @@ trait Arity {
 }
 
 // Default implementation for all tuples
-impl<(..#T)> Arity for (..#T) {
+impl<(..T)> Arity for (..T) {
     default const VALUE: usize = 0;
 }
 
 // Specialized implementation for the recursion
-impl<Head, (..#Tail)> Arity for (Head, ..#Tail) {
-    const VALUE: usize = <(..#Tail) as Arity>::VALUE + 1;
+impl<Head, (..Tail)> Arity for (Head, ..Tail) {
+    const VALUE: usize = <(..Tail) as Arity>::VALUE + 1;
 }
 ```
 
 Note:
 
-- The `impl<Head, (..#Tail)> Arity for (Head, ..#Tail)` is the recursive implementation.
-- The `impl<(..#T)> Arity for (..#T)` is the default implementation and will act as the termination of the recursion.
+- The `impl<Head, (..Tail)> Arity for (Head, ..Tail)` is the recursive implementation.
+- The `impl<(..T)> Arity for (..T)` is the default implementation and will act as the termination of the recursion.
 
 ## Errors
 
@@ -386,8 +386,8 @@ trait Arity {
     const VALUE: usize;
 }
 
-impl<Head, (..#Tail)> Arity for (Head, ..#Tail) {
-    const VALUE: usize = <(..#Tail) as Arity>::VALUE + 1;
+impl<Head, (..Tail)> Arity for (Head, ..Tail) {
+    const VALUE: usize = <(..Tail) as Arity>::VALUE + 1;
 }
 
 fn main() {
@@ -416,11 +416,11 @@ As a variadic tuple implementation may depend on other variadic tuple implementa
 trait A { const VALUE: usize = 1; }
 trait B { const VALUE: usize = 2; }
 
-impl<Head, (..#T)> A for (Head, ..#T) 
-where (..#T): B { const VALUE: usize = 3; }
+impl<Head, (..T)> A for (Head, ..T) 
+where (..T): B { const VALUE: usize = 3; }
 
-impl<Head, (..#T)> B for (Head, ..#T) 
-where (..#T): A { const VALUE: usize = 4; }
+impl<Head, (..T)> B for (Head, ..T) 
+where (..T): A { const VALUE: usize = 4; }
 
 fn main() {
     let v = <(usize, bool) as A>::VALUE;
@@ -449,20 +449,20 @@ note: required by `A::VALUE`
 
 The variadic tuple type declaration is invalid when it can't be parsed as either:
 
-- `(..#T)`
-- `(..#(T1, T2, .., Tn))`
+- `(..T)`
+- `(..(T1, T2, .., Tn))`
 
 ```rust
-struct MyStruct<(..#Vec<T>)> {
-  vecs: (..#Vec<T>)
+struct MyStruct<(..Vec<T>)> {
+  vecs: (..Vec<T>)
 }
 ```
 
 ```rust
-error[EXXXX]: invalid variadic tuple type declaration `(..#Vec<T>)`
+error[EXXXX]: invalid variadic tuple type declaration `(..Vec<T>)`
   --> src/main.rs:1:13
    |
-10 |  struct MyStruct<(..#Vec<T>)> {
+10 |  struct MyStruct<(..Vec<T>)> {
    |                  ^^^^^^^^^^^
    |
 note: expected either an identifier or a tuple of identifier instead of `Vec<T>`
@@ -473,25 +473,25 @@ note: expected either an identifier or a tuple of identifier instead of `Vec<T>`
 Occurs when multiple independent variadic tuple type identifier are used in a single expansion form.
 
 ```rust
-impl<(..#K), (..#V)> MyTrait for (..#HashMap<K, V>) {
+impl<(..K), (..V)> MyTrait for (..HashMap<K, V>) {
   
 }
 ```
 
 ```rust
-error[EXXXX]: invalid variadic tuple type expansion `(..#HashMap<K, V>)`
+error[EXXXX]: invalid variadic tuple type expansion `(..HashMap<K, V>)`
   --> src/main.rs:4:13
    |
-10 |  impl<(..#K), (..#V)> MyTrait for (..#HashMap<K, V>) {
-   |                                   ^^^^^^^^^^^^^^^^^^
+10 |  impl<(..#K), (..#V)> MyTrait for (..HashMap<K, V>) {
+   |                                   ^^^^^^^^^^^^^^^^^
    |
 note: variadic tuple type identifiers `K`, `V` were not declared together
   --> src/main.rs:4:13
    |
-10 |  impl<(..#K), (..#V)> MyTrait for (..#HashMap<K, V>) {
-   |       ^^^^^^^^^^^^^^
+10 |  impl<(..K), (..V)> MyTrait for (..HashMap<K, V>) {
+   |       ^^^^^^^^^^^^
    |
-hint: expected `(..#(K, V))`
+hint: expected `(..(K, V))`
 ```
 
 ### Invalid variadic tuple expansion identifiers
@@ -499,59 +499,59 @@ hint: expected `(..#(K, V))`
 Occurs when multiple independent variadic tuple identifier are used in a single expansion form.
 
 ```rust
-impl<(..#K), (..#V)> MyTrait for MyStruct {
+impl<(..K), (..V)> MyTrait for MyStruct {
   fn my_function() {
-    let k: (..#K) = _;
-    let v: (..#V) = _;
-    let k_v = (..#(k, v));
+    let k: (..K) = _;
+    let v: (..V) = _;
+    let k_v = (..(k, v));
   }
 }
 ```
 
 ```rust
-error[EXXXX]: invalid variadic tuple expansion `(..#(k, v))`
+error[EXXXX]: invalid variadic tuple expansion `(..(k, v))`
   --> src/main.rs:4:13
    |
-10 |      let k_v = (..#(k, v));
-   |                ^^^^^^^^^^^
+10 |      let k_v = (..(k, v));
+   |                ^^^^^^^^^^
    |
 note: variadic tuple identifiers `k`, `v` with variadic tuple type identifiers `K`, `V` were not declared together
   --> src/main.rs:4:13
    |
-10 |  impl<(..#K), (..#V)> MyTrait for MyStruct {
-   |       ^^^^^^^^^^^^^^
+10 |  impl<(..K), (..V)> MyTrait for MyStruct {
+   |       ^^^^^^^^^^^^
    |
-hint: expected `(..#(K, V))`
+hint: expected `(..(K, V))`
 ```
 
 ### Invalid variadic tuple pattern matching
 
 The variadic tuple declaration is invalid when it can't be parsed as either:
 
-- `(..#id)`
-- `(..#(ref id))`
-- `(..#(ref mut id))`
+- `(..id)`
+- `(..(ref id))`
+- `(..(ref mut id))`
 
 ```rust
-struct MyStruct<(..#Vec<T>)> {
-  vecs: (..#Vec<T>)
+struct MyStruct<(..Vec<T>)> {
+  vecs: (..Vec<T>)
 }
 
-impl<(..#T)> MyTrait for (..#T) {
+impl<(..T)> MyTrait for (..#T) {
   fn my_func(&self) {
-    let (..#(&i)) = &self;
+    let (..(&i)) = &self;
   }
 }
 ```
 
 ```rust
-error[EXXXX]: invalid variadic tuple pattern `(..#(&i))`
+error[EXXXX]: invalid variadic tuple pattern `(..(&i))`
   --> src/main.rs:4:13
    |
-10 |      let (..#(&i)) = &self;
-   |          ^^^^^^^^^
+10 |      let (..(&i)) = &self;
+   |          ^^^^^^^^
    |
-note: expected `(..#id)` or `(..#(ref id))` or `(..#(ref mut id))`
+note: expected `(..id)` or `(..(ref id))` or `(..(ref mut id))`
 ```
 
 ## Help and note for existing errors
@@ -563,13 +563,13 @@ Variadic tuple expansion will generate code and may produce obscure errors for e
 If we consider this code:
 
 ```rust
-trait MakeMegaMap<(..#(Key, Value))> {
-    fn make_mega_map() -> (..#HashMap<Key, Value>) {
-      (..#HashMap::<Key, Value2>::new())
+trait MakeMegaMap<(..(Key, Value))> {
+    fn make_mega_map() -> (..HashMap<Key, Value>) {
+      (..HashMap::<Key, Value2>::new())
     }
 }
 
-impl<(..#(Key, Value))> MakeMegaMap<(..#(Key, Value))> for () {}
+impl<(..(Key, Value))> MakeMegaMap<(..(Key, Value))> for () {}
 
 fn main() {
   let mega_map = <() as MakeMegaMap<<(usize, bool), (f32, String)>>::make_mega_map();
@@ -595,10 +595,10 @@ error[E0412]: cannot find type `Value2` in this scope
    |
 10 |  let mega_map = <() as MakeMegaMap<<(usize, bool), (f32, String)>>::make_mega_map();
    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ not found in this scope
-note: when expanding with `(..#(Key, Value)) = ((usize, bool), (f32, String))`
+note: when expanding with `(..(Key, Value)) = ((usize, bool), (f32, String))`
   --> src/main.rs:2:4
    |
-2  |    (..#HashMap::<Key, Value2>::new())
+2  |    (..HashMap::<Key, Value2>::new())
    |
 ```
 
@@ -622,15 +622,15 @@ trait Arity {
 }
 
 // Default implementation for all tuples
-impl<(..#T)> Arity for (..#T) {
+impl<(..T)> Arity for (..T) {
     default const VALUE: usize = 0;
 }
 
 // Specialized implementation for the recursion
-impl<Head, (..#Tail)> Arity for (Head, ..#Tail) {
+impl<Head, (..Tail)> Arity for (Head, ..Tail) {
 	// (..#Tail) does implement `Arity`, so 
 	// <(..#Tail) as Arity> is valid.
-    const VALUE: usize = <(..#Tail) as Arity>::VALUE + 1;
+    const VALUE: usize = <(..Tail) as Arity>::VALUE + 1;
 }
 ```
 
@@ -638,7 +638,7 @@ impl<Head, (..#Tail)> Arity for (Head, ..#Tail) {
 
 In C++ multiple parameter packs can be expanded in a single expansion form as long as the packs have the same number of items, but there is no constraint concerning the declaration.
 
-For Rust, using the syntax `(..#(T1, T2, ..., Tn))` embeds the constraint that the variadic tuple types `T1`, `T2`, ..., `Tn` have the same arity. This is more consistent than not grouping the declaration (ie: `(..#T1), (..#T2), ..., (..#Tn))`) because the signature using the declaration contains all the information required.
+For Rust, using the syntax `(..(T1, T2, ..., Tn))` embeds the constraint that the variadic tuple types `T1`, `T2`, ..., `Tn` have the same arity. This is more consistent than not grouping the declaration (ie: `(..T1), (..#T2), ..., (..Tn))`) because the signature using the declaration contains all the information required.
 
 We don't need to look at the implementation or body code to know the required constraint about the variadic tuple type arities.
 
@@ -668,10 +668,10 @@ Supporting variadic tuple for function generic parameter groups requires to prov
 For instance:
 
 ```rust
-fn recurse<Head, (..#Tail)>((head, ..#tail): (Head, ..#Tail))
-where Head: Display, ..#(Tail: Display) {
+fn recurse<Head, (..Tail)>((head, ..tail): (Head, ..Tail))
+where Head: Display, ..(Tail: Display) {
   println!("{}", head);
-  recurse((..#tail));
+  recurse((..tail));
 }
 // Termination needs to be implemented explicitly
 fn recurse<()>((): ()) { }
@@ -706,4 +706,4 @@ Improve the error message for `E0275` by providing the sequence of evaluated ele
 
 ## Supporting recursive variadic tuple
 
-Supporting recrusive variadic tuple (ie, declaration like: `(..#((..#T)))`)
+Supporting recrusive variadic tuple (ie, declaration like: `(..((..T)))`)
