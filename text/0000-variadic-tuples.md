@@ -93,12 +93,12 @@ struct VariadicStruct<(..T)>
 VariadicStruct<(usize,)> 				// => (..T) matches (usize,)
 VariadicStruct<(usize, bool)> 	// => (..T) matches (usize, bool)
 
-impl <(..(T1, T2))> VariadicStruct<(..(T1, T2)) { ... }
-VariadicStruct::<((usize, bool),)
+impl <(..(T1, T2))> VariadicStruct<(..(T1, T2))> { ... }
+VariadicStruct::<((usize, bool),)>
 // (..(T1, T2)) matches ((usize, bool),)
 // (..T1) is (usize,)
 // (..T2) is (bool,)
-VariadicStruct::<((usize, bool), (String, i8)) // (..(T1, T2)) matches ((usize, bool), (String, i8))
+VariadicStruct::<((usize, bool), (String, i8))> // (..(T1, T2)) matches ((usize, bool), (String, i8))
 // (..T1) is (usize, String)
 // (..T2) is (bool, i8)
 ```
