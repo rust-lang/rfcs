@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-Provides a new ABI string `extern "C+panic"` to denote functions that use the C ABI, but may also
+Provides a new ABI string `extern "C panic"` to denote functions that use the C ABI, but may also
 unwind with a Rust panic.
 
 # Motivation
@@ -50,12 +50,12 @@ compatible with the unspecified Rust unwinding mechanism.
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-Rust function definitions with the `"C+panic"` ABI string (e.g., `extern "C+panic" fn`) are
+Rust function definitions with the `"C panic"` ABI string (e.g., `extern "C panic" fn`) are
 permitted to unwind with a panic, as opposed to `extern "C" fn` functions which will abort the
 process if a panic reaches the function boundary.
 
-When used on declarations of imported functions (e.g., `extern "C+panic" { fn ... }`), or function
-pointers (e.g., `extern "C+panic" fn()`) the `"C+panic"` ABI string means that if the function
+When used on declarations of imported functions (e.g., `extern "C panic" { fn ... }`), or function
+pointers (e.g., `extern "C panic" fn()`) the `"C panic"` ABI string means that if the function
 unwinds, the unwind will be propagated though any calling code. If an `extern "C"` imported function
 or function pointer unwinds, the behavior is undefined.
 
@@ -65,7 +65,7 @@ or function pointer unwinds, the behavior is undefined.
 Currently, Rust assumes that an external function imported with `extern "C" {
 ... }` (or another ABI other than `"Rust"`) cannot unwind, and Rust will abort if a panic would propagate out of a
 Rust function with a non-"Rust" ABI ("`extern "ABI" fn`") specification. Under this RFC,
-functions with the `"C+panic"` ABI string
+functions with the `"C panic"` ABI string
 instead allows an unwind (such as a panic) to proceed through that function
 boundary using Rust's normal unwind mechanism. This may potentially allow Rust
 code to call non-Rust code that calls back into Rust code, and then allow a
@@ -79,9 +79,9 @@ unwinds. Propagating a Rust panic through non-Rust code is unspecified;
 implementations that define the behavior may require target-specific options
 for the non-Rust code, or this feature may not be supported at all.
 
-For the purposes of the type system, `"C+panic"` is considered a totally distinct ABI string from
+For the purposes of the type system, `"C panic"` is considered a totally distinct ABI string from
 `"C"`. While there may be some circumstances where it is sensible to use an `extern "C" fn` in place
-of an `extern "C+panic" fn`, and vice-versa, this introduces questions of subtyping and variance
+of an `extern "C panic" fn`, and vice-versa, this introduces questions of subtyping and variance
 that are beyond the scope of this RFC. This restrictive approach is forwards-compatible with more
 permissive typing in future work like #2699.
 
