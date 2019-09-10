@@ -137,11 +137,11 @@ The alternatives considered are:
 3. Using an attribute on function definitions and declarations to indicate that unwinding should be
    allowed, regardless of the ABI string. This would be easy to implement, as there is currently
    such an attribute in unstable Rust. An attribute is not a complete solution, though, as there is
-   no current way to syntactically attach an attribute to a function pointer type. We considered
-   making all function pointers unwindable without changing the existing syntax (see #2602), because
-   Rust currently does not emit `nounwind` for calls to function pointers, however this would
-   require changes to the language reference that would codify inconsistency between function
-   pointers and definitions/declarations.
+   no current way to syntactically attach an attribute to a function pointer type (see
+   https://github.com/rust-lang/rfcs/pull/2602). We considered making all function pointers
+   unwindable without changing the existing syntax, because Rust currently does not emit `nounwind`
+   for calls to function pointers, however this would require changes to the language reference that
+   would codify inconsistency between function pointers and definitions/declarations.
 
 # Prior art
 [prior-art]: #prior-art
