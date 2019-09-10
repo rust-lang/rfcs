@@ -126,7 +126,9 @@ struct MegaMap<(..(K, V))> {
 // }
 
 trait Append<(..L), (..R)>
-where ..(L: 'static + Clone), ..(R: 'static + Clone) {
+where 
+	..(L: 'static + Clone), 
+	..(R: 'static + Clone), {
     fn append(l: (..L), r: (..R)) -> (..L, ..R)
 }
 
@@ -457,13 +459,15 @@ trait Arity {
     const VALUE: usize;
 }
 
-// Default implementation for all tuples
-impl<(..T)> Arity for (..T) {
-    default const VALUE: usize = 0;
+// Termination implementation of the recursion
+impl<()> Arity for () {
+    const VALUE: usize = 0;
 }
 
 // Specialized implementation for the recursion
-impl<Head, (..Tail)> Arity for (Head, ..Tail) {
+impl<Head, (..Tail)> Arity for (Head, ..Tail)
+where
+	(..Tail): Arity, {
     const VALUE: usize = <(..Tail) as Arity>::VALUE + 1;
 }
 ```
@@ -486,7 +490,9 @@ trait Arity {
     const VALUE: usize;
 }
 
-impl<Head, (..Tail)> Arity for (Head, ..Tail) {
+impl<Head, (..Tail)> Arity for (Head, ..Tail)
+where
+	(..Tail): Arity, {
     const VALUE: usize = <(..Tail) as Arity>::VALUE + 1;
 }
 
@@ -503,9 +509,11 @@ error[E0277]: the trait bound `(bool, u8): Arity` is not satisfied
  --> src/main.rs:10:4
   |
 7 |     let arity = <(usize, bool, u8) as Arity>::VALUE;
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `Arity` is not implemented for `(bool, u8)`
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `Arity` is not implemented for `()`
   |
   = help: impl `Arity` for `(usize, bool, u8)` requires impl `Arity` for `(bool, u8)`
+  = help: impl `Arity` for `(bool, u8)` requires impl `Arity` for `(u8,)`
+  = help: impl `Arity` for `(u8,)` requires impl `Arity` for `()`
 ```
 
 #### Variadic implementation cycle dependency error
@@ -672,30 +680,6 @@ note: when expanding with `(..(Key, Value)) = ((usize, bool), (f32, String))`
 
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-## Recursive implementations of trait with variadic tuple
-
-Recursive implementation is done by implementing the termination on all types and then the recursive implementation as a specialization.
-
-Doing this way, the Rust compiler is able to validate the generic parameters before monomorphization.
-
-```rust
-trait Arity {
-    const VALUE: usize;
-}
-
-// Default implementation for all tuples
-impl<(..T)> Arity for (..T) {
-    default const VALUE: usize = 0;
-}
-
-// Specialized implementation for the recursion
-impl<Head, (..Tail)> Arity for (Head, ..Tail) {
-    // (..#Tail) does implement `Arity`, so 
-    // <(..#Tail) as Arity> is valid.
-    const VALUE: usize = <(..Tail) as Arity>::VALUE + 1;
-}
-```
-
 ## Iteration over variadic tuples syntax
 
 When iterating over variadic tuples, we need to define both variable and type variable. To do so, we use the for loop syntax and separate variables and type variables with the `type` keyword.
@@ -730,16 +714,37 @@ C++11 sets a decent precedent with its variadic templates, which can be used to 
 
 [unresolved-questions]: #unresolved-questions
 
+## Variadic tuple expansion syntax is confusing
+
+Using a syntax like `..(id,)` in an expression is ambiguous with the range syntax. So this one needs to be changed.
+
+An example with context:
+```rust
+let result: (..Option<&V>) = {
+    for (ref k, map) type (K, V) in ..(k, maps) type ..(K, V) {
+        HashMap::<K, V>::get(&map, k)
+    }
+};
+```
+
 ## Dynamic libraries tuple implementation assumption
 
 When using dynamic libraries, client libraries may relies that the host contains code up to a specific tuple arity. So we need to have a 
 way to enforce the compiler to generate all the implementation up to a specific tuple arity. (12 will keep backward comptibility with current `std` impl)
 
+## Variadic tuple for functions
+
+Supporting variadic tuple for function with recursive implementation over the variadic tuples is not possible. (See below).
+
+However, when the funtion is not recursive over the variadic tuple, it can be a nice addition to help implementation of libraries using tuples.
+
+In that case, the compiler must detect if there is such a recursion an issue a compile error.
+
 # Future possibilities
 
 [future-possibilities]: #future-possibilities
 
-## Supporting variadic tuple for function generic parameter groups
+## Supporting variadic tuple for function generic parameter groups with recursion
 
 Supporting variadic tuple for function generic parameter groups requires to provide a specialized implementation for the recursion termination.
 
