@@ -107,7 +107,7 @@ evaluating any of the body (just like an async function).
 ```rust
 fn main() {
     let closure = async || {
-         println("Hello from async closure.");
+         println!("Hello from async closure.");
     };
     println!("Hello from main");
     let future = closure();
