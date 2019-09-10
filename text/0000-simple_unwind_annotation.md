@@ -1,4 +1,4 @@
-- Feature Name: `simple_unwind_attribute`
+- Feature Name: `simple_c_panic_abi`
 - Start Date: 2019-08-29
 - RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
@@ -6,8 +6,8 @@
 # Summary
 [summary]: #summary
 
-Provides an annotation to permit functions with explicit ABI specifications
-(such as `extern "C"`) to unwind, and affirms that calls to function pointers with explicit ABI specifications may unwind.
+Provides a new ABI string `extern "C panic"` to denote functions that use the C ABI, but may also
+unwind with a Rust panic.
 
 # Motivation
 [motivation]: #motivation
@@ -50,21 +50,23 @@ compatible with the unspecified Rust unwinding mechanism.
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-When used on Rust functions with non-Rust ABIs (e.g. `extern "C" fn`), the `#[unwind(allowed)]` attribute permits unwinding out of the annotated function; without the attribute, the process will automatically be terminated at the function boundary.
+Rust function definitions with the `"C panic"` ABI string (e.g., `extern "C panic" fn`) are
+permitted to unwind with a panic, as opposed to `extern "C" fn` functions which will abort the
+process if a panic reaches the function boundary.
 
-When used on declarations of imported functions (e.g. `extern "C" { fn ... }`), the `#[unwind(allowed)]` attribute ensures that if the function unwinds, the unwind will be propagated though any calling code; without the attribute, the behavior is undefined.
-
-Calls to function pointers with non-Rust ABIs, as opposed to declared or defined functions,
-currently are permitted to unwind. This RFC does not change this behavior.
+When used on declarations of imported functions (e.g., `extern "C panic" { fn ... }`) or function
+pointers (e.g., `extern "C panic" fn()`), the `"C panic"` ABI string means that if the function
+unwinds, the unwind will be propagated though any calling code. If an `extern "C"` imported function
+or function pointer unwinds, the behavior is undefined.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-By default, Rust assumes that an external function imported with `extern "C" {
+Currently, Rust assumes that an external function imported with `extern "C" {
 ... }` (or another ABI other than `"Rust"`) cannot unwind, and Rust will abort if a panic would propagate out of a
-Rust function with a non-"Rust" ABI ("`extern "ABI" fn`") specification. If you specify
-the `#[unwind(allowed)]` attribute on a function with a non-"Rust" ABI, Rust
-will instead allow an unwind (such as a panic) to proceed through that function
+Rust function with a non-"Rust" ABI ("`extern "ABI" fn`") specification. Under this RFC,
+functions with the `"C panic"` ABI string
+instead allow Rust panic unwinding to proceed through that function
 boundary using Rust's normal unwind mechanism. This may potentially allow Rust
 code to call non-Rust code that calls back into Rust code, and then allow a
 panic to propagate from Rust to Rust across the non-Rust code.
@@ -77,11 +79,16 @@ unwinds. Propagating a Rust panic through non-Rust code is unspecified;
 implementations that define the behavior may require target-specific options
 for the non-Rust code, or this feature may not be supported at all.
 
+For the purposes of the type system, `"C panic"` is considered a totally distinct ABI string from
+`"C"`. While there may be some circumstances for which an `extern "C" fn` in place
+of an `extern "C panic" fn` (or vice-versa) would be useful, this introduces questions of subtyping and variance
+that are beyond the scope of this RFC. This restrictive approach is forwards-compatible with more
+permissive typing in future work like #2699.
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
 - Only works as long as the foreign code supports the same unwinding mechanism as Rust. (Currently, Rust and C++ code compiled for ABI-compatible backends use the same mechanism.)
-- Does not allow external library bindings to specify whether callbacks they accept are expected to unwind.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -126,6 +133,15 @@ The alternatives considered are:
    to disrupt current development on a number of projects that depend on unwinding. Adding an unwind
    attribute means that we can address those current needs right away, and then transition to
    #2699's eventual solution by converting the attribute into a deprecated proc-macro.
+
+3. Using an attribute on function definitions and declarations to indicate that unwinding should be
+   allowed, regardless of the ABI string. This would be easy to implement, as there is currently
+   such an attribute in unstable Rust. An attribute is not a complete solution, though, as there is
+   no current way to syntactically attach an attribute to a function pointer type (see
+   https://github.com/rust-lang/rfcs/pull/2602). We considered making all function pointers
+   unwindable without changing the existing syntax, because Rust currently does not emit `nounwind`
+   for calls to function pointers, however this would require changes to the language reference that
+   would codify inconsistency between function pointers and definitions/declarations.
 
 # Prior art
 [prior-art]: #prior-art
