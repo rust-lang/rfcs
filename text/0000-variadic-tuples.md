@@ -90,8 +90,8 @@ Usage examples:
 
 ```rust
 struct VariadicStruct<(..T)>
-VariadicStruct<(usize,)> 				// => (..T) matches (usize,)
-VariadicStruct<(usize, bool)> 	// => (..T) matches (usize, bool)
+VariadicStruct<(usize,)>                // => (..T) matches (usize,)
+VariadicStruct<(usize, bool)>   // => (..T) matches (usize, bool)
 
 impl <(..(T1, T2))> VariadicStruct<(..(T1, T2))> { ... }
 VariadicStruct::<((usize, bool),)>
@@ -153,7 +153,7 @@ A variadic tuple can be declared like any other variable:
 
 ```rust
 trait MyFunc<(..T)> {
-	fn my_func(variadic_tuple: (..T)) { ... }
+    fn my_func(variadic_tuple: (..T)) { ... }
 }
 ```
 
@@ -186,7 +186,7 @@ Examples:
 ```rust
 // The function argument is destructured as a variadic tuple with identifier `v`
 trait MyFunc<(..T)> {
-	fn my_func((..v): (..T)) -> (..T) { 
+    fn my_func((..v): (..T)) -> (..T) { 
         ...
     }
 }
@@ -217,9 +217,9 @@ let result: (..Option<&V>) = {
     // `KEY` and `VALUE` are type variables iterating the variadic tuple types `(..K)` and `(..V)`
     // `..(k, maps)` declares the iterated variadic tuples `(..k)` and `(..maps)`
     // `..(K, V)` declares the iterated variadic tuple types
-    for (ref key, map) type (KEY, VALUE) in ..(k, maps) type ..(K, V) {
+    (for (ref key, map) type (KEY, VALUE) in ..(k, maps) type ..(K, V) {
         HashMap::<KEY, VALUE>::get(&map, key)
-    }
+    })
 };
 ```
 
@@ -234,9 +234,9 @@ where ..(K: Hash), {
         let (..ref maps) = &self.maps;
 
         let result: (..Option<&V>) = {
-            for (ref k, map) type (K, V) in ..(k, maps) type ..(K, V) {
+            (for (ref k, map) type (K, V) in ..(k, maps) type ..(K, V) {
                 HashMap::<K, V>::get(&map, k)
-            }
+            })
         };
 
         result
@@ -253,19 +253,35 @@ where
         let (..ref tuple, ref last) = *self;
        
         // Use case: only variadic tuple
-        for member in ..(tuple,) {
+        (for member in ..(tuple,) {
           member.hash(state);
-        }
+        });
         last.hash(state);
 
         // Use case: variadic tuple and type
-        for member type (H,) in ..(tuple,) type ..(T,) {
+        (for member type (H,) in ..(tuple,) type ..(T,) {
           <T as Hash>::hash(&member, state);
-        }
+        });
         last.hash(state);
     }
 }
 
+trait Merge<(..R)> {
+    type Value;
+    fn merge(self, r: (..R)) -> Self::Value;
+}
+
+impl<(..L), (..R)> Merge<(..R)> for (..L) {
+    type Value = (..L, ..R);
+
+    fn merge(self, r: (..R)) -> Self::Value {
+        let (..l) = self;
+        (
+            for (l1,) in ..(l,) { l1 },
+            for (r1,) in ..(r,) { r1 },
+        )
+    }
+}
 ```
 
 ## The `Hash`trait
@@ -277,22 +293,24 @@ Let's implement the `Hash` trait:
 // We have the first expansion here, `(..T, Last)` expands to `(A, B, C, Last)`
 impl<(..T), Last> Hash for (..T, Last) 
 where
-		// Expands to `A: Hash, B: Hash, C: Hash,`
+        // Expands to `A: Hash, B: Hash, C: Hash,`
     ..(T: Hash,),
     Last: Hash + ?Sized, {
 
     #[allow(non_snake_case)]
     fn hash<S: Hasher>(&self, state: &mut S) {
-      	// Destructure self to a variadic tuple `tuple` and a variable `last`. The variadic tuple type of `tuple` is `(..&T)`
-      	// So it will be equivalent to `let (ref a, ref b, ref c, ref last) = *self; let tuple = (a, b, c);`
+        // Destructure self to a variadic tuple `tuple` and a variable `last`. The variadic tuple type of `tuple` is `(..&T)`
+        // So it will be equivalent to `let (ref a, ref b, ref c, ref last) = *self; let tuple = (a, b, c);`
         let (..ref tuple, ref last) = *self;
-        for member in ..(tuple,) {
+        (for member in ..(tuple,) {
           member.hash(state);
-        }
+        });
         // The for loop will be inlined as: 
-        // v.0.hash(state);
-        // v.1.hash(state);
-        // v.2.hash(state);
+        // ( 
+        //    { v.0.hash(state); },
+        //    { v.1.hash(state); },
+        //    { v.2.hash(state); },
+        // );
         last.hash(state);
     }
 }
@@ -339,7 +357,7 @@ The declaration of a variadic tuple variable is still a variable. Nothing new he
 
 ```rust
 trait MyFunc<(..T)> {
-	fn my_func(input: (..T)) { ... }    
+    fn my_func(input: (..T)) { ... }    
 }
 
 ```
@@ -393,9 +411,9 @@ where ..(K: Hash), {
         let (..ref maps) = &self.maps;
 
         let result: (..Option<&V>) = {
-            for (ref k, map) type (K, V) in ..(k, maps) type ..(K, V) {
+            (for (ref k, map) type (K, V) in ..(k, maps) type ..(K, V) {
                 HashMap::<K, V>::get(&map, k)
-            }
+            })
         };
 
         // for the compiler, the for block has a kind of
@@ -672,8 +690,8 @@ impl<(..T)> Arity for (..T) {
 
 // Specialized implementation for the recursion
 impl<Head, (..Tail)> Arity for (Head, ..Tail) {
-	// (..#Tail) does implement `Arity`, so 
-	// <(..#Tail) as Arity> is valid.
+    // (..#Tail) does implement `Arity`, so 
+    // <(..#Tail) as Arity> is valid.
     const VALUE: usize = <(..Tail) as Arity>::VALUE + 1;
 }
 ```
