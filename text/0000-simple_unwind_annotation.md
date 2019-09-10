@@ -66,7 +66,7 @@ Currently, Rust assumes that an external function imported with `extern "C" {
 ... }` (or another ABI other than `"Rust"`) cannot unwind, and Rust will abort if a panic would propagate out of a
 Rust function with a non-"Rust" ABI ("`extern "ABI" fn`") specification. Under this RFC,
 functions with the `"C panic"` ABI string
-instead allows an unwind (such as a panic) to proceed through that function
+instead allow Rust panic unwinding to proceed through that function
 boundary using Rust's normal unwind mechanism. This may potentially allow Rust
 code to call non-Rust code that calls back into Rust code, and then allow a
 panic to propagate from Rust to Rust across the non-Rust code.
