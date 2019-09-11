@@ -282,7 +282,7 @@ FCP (where each person must check their box) to be feasible. This
 could be resolved by moving away from FCP-based decision making (which
 is rarely used in the compiler anyhow), but it may also be worth
 considering another level of membership (e.g., a **senior
-member"). Senior members could be used for FCP-level decisions, which
+member**). Senior members could be used for FCP-level decisions, which
 would presumably be relatively rare. At present there is a kind of
 implicit amount of "seniority" amongst members, where the opinions of
 people who have been around for longer are obviously given great
