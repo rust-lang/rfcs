@@ -329,6 +329,8 @@ where
 
 ## Syntax
 
+Note EBNF syntax is based on [Rust's grammar](https://doc.rust-lang.org/nightly/grammar.html).
+
 ### Variadic tuple type declaration
 
 A variadic tuple type identifier identifies a list of types.
@@ -341,6 +343,13 @@ MyStruct::<((usize, bool), (i8, f32))> { ... }
 // `(..(L, R))` matches `((usize, bool), (i8, f32))`
 // `(..L)` is `(usize, i8)`
 // `(..R)` is `(bool, f32)`
+```
+
+variadic tuple type declaration
+```ebnf
+var_tuple_type_decl : single_var_tuple_decl | multiple_var_tuple_decl;
+single_var_tuple_decl : "(.." ident ")";
+multiple_var_tuple_decl: "(..(" ident ["," ident] * "))";
 ```
 
 Note: Although this looks like a type-level pattern matching, it can match against only tuple of identifiers. So the following declaration is invalid: `struct MyStruct<(..(L, Vec<R>))> { ... }`
@@ -356,6 +365,18 @@ type TupleOfVec<(..T)> = (..Vec<T>);
 
 struct MyStruct<(..T)>
 where ..(T: Clone) { ... }
+```
+
+variadic tuple type expansion
+```ebnf
+var_tuple_type_exp : raw_var_tuple_type_exp | par_var_tuple_type_exp;
+raw_var_tuple_type_exp : ".." type_expr;
+par_var_tuple_type_exp : "..(" type_expr ")";
+```
+
+variadic tuple type expansion in where bounds
+```ebnf
+var_tuple_type_exp_where : "..(" type_expr ":" bound-list ")";
 ```
 
 ### Variadic tuple declaration
@@ -386,6 +407,14 @@ When destructuring a variadic tuple it declares a variadic tuple identifiers tha
 // is equivalent to:
 // `let (ref a, ref b, ref c, ref tail) = &source;`
 // `let v = (a, b, c);`
+```
+
+variadic tuple destructuration
+```ebnf
+tuple_destr : "(" tuple_destr_ident_any [ "," tuple_destr_ident_any ] * ")";
+tuple_destr_ident_any : [ tuple_destr_ident_var | tuple_destr_ident ];
+tuple_destr_ident : ident | "ref" ident | "ref" "mut" ident;
+tuple_destr_ident_var : ".." ident | "..(" "ref" ident ")" | "..(" "ref" "mut" ident ")";
 ```
 
 ### Variadic tuple iteration
@@ -449,6 +478,16 @@ where ..(K: Hash), {
 }
 ```
 
+variadic tuple iteration
+```ebnf
+for_var_tuple : for_var_tuple_with_tuple_and_type | for_var_tuple_with_type | for_var_tuple_with_tuple;
+for_var_tuple_with_tuple_and_type : "for" for_tuple_destr "type" for_tuple_type_destr "in" for_tuple_ident "type" for_tuple_ident block_expr;
+for_var_tuple_with_type : "for" "type" for_tuple_type_destr "in" "type" for_tuple_ident block_expr;
+for_var_tuple_with_tuple : "for" for_tuple_destr "in" for_tuple_ident block_expr;
+for_tuple_destr : tuple_destr_ident | "(" tuple_destr_ident [ "," tuple_destr_ident ] * ")";
+for_tuple_ident : ident | "(" ident [ "," ident ] * ")"; 
+for_tuple_type_destr : for_tuple_ident;
+```
 
 
 ## Recursion
