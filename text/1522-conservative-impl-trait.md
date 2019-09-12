@@ -322,7 +322,7 @@ across abstraction barriers and provide information about a type without the
 type's author having to explicitly opt in.
 
 This means, however, that it has to be considered a silent breaking change to
-change a function with a abstract return type in a way that removes OIBIT impls,
+change a function with an abstract return type in a way that removes OIBIT impls,
 which might be a problem. (As noted above, this is already the case for `struct`
 definitions.)
 
@@ -344,7 +344,7 @@ use something like a newtype.
 
 ### Anonymity
 
-A abstract return type cannot be named in this proposal, which means that it
+An abstract return type cannot be named in this proposal, which means that it
 cannot be placed into `structs` and so on. This is not a fundamental limitation
 in any sense; the limitation is there both to keep this RFC simple, and because
 the precise way we might want to allow naming of such types is still a bit
@@ -487,7 +487,7 @@ and the compatibility of the current compiler with it is unknown,
 it is not yet possible to reach a concrete solution here.
 
 In addition to that, there are also different proposals as to whether
-a abstract return type is its own thing or sugar for a associated type,
+an abstract return type is its own thing or sugar for a associated type,
 how it interacts with other associated items and so on,
 so forbidding them in traits seems like the best initial course of action.
 
