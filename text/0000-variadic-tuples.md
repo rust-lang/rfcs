@@ -158,7 +158,7 @@ fn my_func<(..T)>(variadic_tuple: (..T)) { ... }
 
 ### Destructuring a variadic tuple
 
-The main way to use a variadic tuple is by destructuring it to access its members.
+A variadic tuple can be destructured to manipulate its members
 
 There are 3 syntaxes possible to destructure a variadic tuple for a variadic tuple `(..T)`:
 
@@ -171,10 +171,14 @@ Also, the destructure pattern can be combined with other members. For instance:
 ```rust
 {
   let source: (Head, ..Tail) = _;
+  // `head` is a variable of type `Head`
+  // `tail` is a tuple variable of type `(..&Tail)`
   let (ref head, ..(ref tail)) = &source;
 }
 {
   let mut source: (..L, ..R) = _;
+  // `l` is a tuple variable of type `(..&mut L)`
+  // `r` is a tuple variable of type `(..&mut R)`
   let (..(ref mut l), ..(ref mut r)) = &mut source;
 }
 
@@ -184,15 +188,17 @@ Examples:
 
 ```rust
 // The function argument is destructured as a variadic tuple with identifier `v`
-fn my_func<(..T)>((..v): (..T)) -> (..T) { 
+fn my_func<Head, (..T)>((head, ..v): (Head, ..T)) -> (..T) { 
     ...
 }
 
-impl<(..T)> Clone for (..T) 
-where ..(T: Clone) {
+impl<Head, (..T)> Clone for (Head, ..T) 
+where 
+    ..(T: Clone),
+    Head: Clone, {
   fn clone(&self) -> Self {
-    // We destructure `*self` which has a variadic tuple type `(..T)`
-    let (..(ref v)) = *self;
+    // We destructure `*self` which has a variadic tuple type `(Head, ..T)`
+    let (ref head, ..(ref v)) = *self;
     ...
   }
 }
@@ -210,9 +216,9 @@ We use the following syntax to iterate on variadic tuples:
 // The result of the for block is a variadic tuple made of
 // the result of each iteration
 let result: (..Option<&V>) = {
-    // `key` and `map` are variables iterating the variadic tuples `(..k): (..K)` and `(..maps): (..&HashMap<K, V>)`, `key` will iterate by reference (because of the ref keyword)
+    // `key` and `map` are variables iterating the variadic tuples `k: (..K)` and `maps: (..&HashMap<K, V>)`, `key` will iterate by reference (because of the ref keyword)
     // `KEY` and `VALUE` are type variables iterating the variadic tuple types `(..K)` and `(..V)`
-    // `..(k, maps)` declares the iterated variadic tuples `(..k)` and `(..maps)`
+    // `..(k, maps)` declares the iterated variadic tuples `k` and `maps`
     // `..(K, V)` declares the iterated variadic tuple types
     (for (ref key, map) type (KEY, VALUE) in ..(k, maps) type ..(K, V) {
         HashMap::<KEY, VALUE>::get(&map, key)
@@ -227,11 +233,9 @@ Examples:
 ```rust
 impl<(..(K, V))> MegaMap<(..(K, V))>
 where ..(K: Hash), {
-    fn get(&self, (..k): (..K)) -> (..Option<V>) {
-        let (..ref maps) = &self.maps;
-
+    fn get(&self, k: (..K)) -> (..Option<V>) {
         let result: (..Option<&V>) = {
-            (for (ref k, map) type (K, V) in ..(k, maps) type ..(K, V) {
+            (for (ref k, map) type (K, V) in ..(k, &self.maps) type ..(K, V) {
                 HashMap::<K, V>::get(&map, k)
             })
         };
@@ -271,10 +275,9 @@ trait Merge<(..R)> {
 impl<(..L), (..R)> Merge<(..R)> for (..L) {
     type Value = (..L, ..R);
 
-    fn merge(self, (..r): (..R)) -> Self::Value {
-        let (..l) = self;
+    fn merge(self, r: (..R)) -> Self::Value {
         (
-            for l1 in ..l { l1 },
+            for l1 in ..self { l1 },
             for r1 in ..r { r1 },
         )
     }
@@ -389,17 +392,17 @@ fn my_func<(..T)>(input: (..T)) { ... }
 
 ### Variadic tuple destructuration
 
-When destructuring a variadic tuple it declares a variadic tuple identifiers that can be used in expansion forms. The identifier is a variable of type `(..T)` or `(..&T)` or `(..&mut T)`, depending on the syntax used.
+When destructuring a variadic tuple, we can destructure the variadic parts into tuple variables. The identifier is a variable of type `(..T)` or `(..&T)` or `(..&mut T)`, depending on the syntax used.
 
 ```rust
 {
   let source: (..T, Tail) = _;
-  let (..v, tail) = source;
   // v is a variable of type `(..T)`
-  let (..(ref v), ref tail) = &source;
+  let (..v, tail) = source;
   // v is a variable of type `(..&T)`
+  let (..(ref v), ref tail) = &source;
+  // v is a variable of type `(..&mut T)`
   let (..(ref mut v), ref mut tail) = &mut source;
-    // v is a variable of type `(..&mut T)`
 }
 
 // If we use `(..T)` = `(A, B, C)` as an example
@@ -440,11 +443,10 @@ Example:
 ```rust
 impl<(..(K, V))> MegaMap<(..(K, V))>
 where ..(K: Hash), {
-    fn get(&self, (..k): (..K)) -> (..Option<V>) {
-        let (..ref maps) = &self.maps;
+    fn get(&self, k: (..K)) -> (..Option<V>) {
 
         let result: (..Option<&V>) = {
-            (for (ref k, map) type (K, V) in ..(k, maps) type ..(K, V) {
+            (for (ref k, map) type (K, V) in ..(k, &self.maps) type ..(K, V) {
                 HashMap::<K, V>::get(&map, k)
             })
         };
@@ -525,7 +527,7 @@ Recursion for functions over variadic tuple is not supported.
 Consider this code:
 ```rust
 fn arity<Head, (..Tail)>((h, ..tail): (Head, ..Tail)) -> usize {
-    arity::<(..Tail)>((..tail)) + 1
+    arity::<(..Tail)>(tail) + 1
 }
 // We need to define an explicit implementation of `fn arity<()>`, but there is no mechanism in Rust
 // currently to specialize a function implementation
@@ -542,7 +544,7 @@ Recursive function implementation over variadic tuple are not supported.
 The following code:
 ```rust
 fn arity<Head, (..Tail)>((h, ..tail): (Head, ..Tail)) -> usize {
-    arity::<(..Tail)>((..tail)) + 1
+    arity::<(..Tail)>(tail) + 1
 }
 ```
 
@@ -557,7 +559,7 @@ error[EXXXX]: the function `fn arity` is recursive over variadic tuple, this is 
   = help: The implementation of `arity` requires an implementation with `arity::<(..Tail)>`
  --> src/main.rs:11:4
   |
-8 |      arity::<(..Tail)>((..tail)) + 1
+8 |      arity::<(..Tail)>(tail) + 1
   |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^
   |
   = help: `arity` must be called with either the same generic arguments or without variadic tuple types
@@ -674,7 +676,7 @@ impl<(..K), (..V)> MyTrait for (..HashMap<K, V>) {
 error[EXXXX]: invalid variadic tuple type expansion `(..HashMap<K, V>)`
   --> src/main.rs:4:13
    |
-10 |  impl<(..#K), (..#V)> MyTrait for (..HashMap<K, V>) {
+10 |  impl<(..K), (..V)> MyTrait for (..HashMap<K, V>) {
    |                                   ^^^^^^^^^^^^^^^^^
    |
 note: variadic tuple type identifiers `K`, `V` were not declared together
@@ -727,7 +729,7 @@ If we consider this code:
 ```rust
 trait MakeMegaMap<(..(Key, Value))> {
     fn make_mega_map() -> (..HashMap<Key, Value>) {
-        for () type (KEY, VALUE) in () type ..(Key, Value2) {
+        for type (KEY, VALUE) in type ..(Key, Value2) {
             HashMap::<KEY, VALUE>::new()
         }
     }
@@ -751,8 +753,8 @@ error[E0412]: cannot find type `Value2` in this scope
    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ not found in this scope
 note: when expanding with `(..(Key, Value)) = ((usize, bool), (f32, String))`
   --> src/main.rs:2:4
-   |  for () type (KEY, VALUE) in () type ..(Key, Value2) {
-2  |    HashMap::<KEY, VALUE>::new()              ^^^^^^^
+   |  for type (KEY, VALUE) in type ..(Key, Value2) {
+2  |    HashMap::<KEY, VALUE>::new()        ^^^^^^^
    |  }
 ```
 
@@ -794,9 +796,8 @@ trait Merge<(..R> {
 }
 impl<(..L), (..R)> Merge<(..R)> for (..L) {
     type Value = (..L, ..R);
-    fn merge(self, (..r): (..R)) -> Self::Value {
-        let (..l) = self;
-        (for l in ..l { l }, for r in ..r { r })
+    fn merge(self, r: (..R)) -> Self::Value {
+        (for l in ..self { l }, for r in ..r { r })
     }
 }
 
@@ -817,7 +818,7 @@ where
 
     fn rev(self) -> Self::Value { 
         let (h, ..t) = self; 
-        let rev_t = <(..Tail) as Rev>::rev((..t)); rev_t.merge((h,)) 
+        let rev_t = <(..Tail) as Rev>::rev(t); rev_t.merge((h,)) 
     }
 }
 
@@ -836,7 +837,7 @@ where
     (..T): Rev<Value = (..RevT)>,
     ..(T: Hash), {
 
-    let (..rev_t) = <(..T) as Rev>::rev(value);
+    let rev_t = <(..T) as Rev>::rev(value);
 
     // Here we use the identifiers of the reversed variadic tuple and variadic tuple type in the iteration
     let hashes = (for rev_t type RevT in ..&rev_t type ..RevT { 
@@ -910,7 +911,7 @@ For instance:
 fn recurse<Head, (..Tail)>((head, ..tail): (Head, ..Tail))
 where Head: Display, ..(Tail: Display) {
   println!("{}", head);
-  recurse((..tail));
+  recurse(tail);
 }
 // Termination needs to be implemented explicitly
 fn recurse<()>((): ()) { }
