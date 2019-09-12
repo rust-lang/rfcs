@@ -729,7 +729,79 @@ let result: (..Option<&V>) = {
 };
 ```
 
+## Variadic tuple utilities library
 
+The iteration for loop syntax can be combined with utilities to have more flexibility.
+
+Example:
+
+```rust
+// Trait utilities
+
+// Merge two tuple togethers
+trait Merge<(..R> {
+    type Value;
+    fn merge(self, r: (..R)) -> Self::Value;
+}
+impl<(..L), (..R)> Merge<(..R)> for (..L) {
+    type Value = (..L, ..R);
+    fn merge(self, (..r): (..R)) -> Self::Value {
+        let (..l) = self;
+        (for (l,) in ..(l,) { l }, for (r,) in ..(r,) { r })
+    }
+}
+
+// Reverse a tuple's members
+trait Rev {
+    type Value;
+    fn rev(self) -> Self::Value;
+}
+impl Rev for () { 
+    type Value = ();
+    fn rev(self) -> Self::Value { () }
+}
+impl<Head, (..Tail)> Rev for (Head, ..Tail) 
+where
+    (..Tail): Rev,
+    <(..Tail)>::Value: Merge<(Head,)> {
+    type Value = <<(..Tail)>::Value as Merge<(Head,)>>::Output;
+
+    fn rev(self) -> Self::Value { 
+        let (h, ..t) = self; 
+        let rev_t = <(..Tail) as Rev>::rev((..t)); rev_t.merge((h,)) 
+    }
+}
+
+// Utility to create a tuple of a single type, for instance: ToT<usize> = (..T) -> (..usize)
+// We could have a syntaxic sugar to do this (future RFC?)
+trait ToT<T> {
+    type Value = T;
+}
+impl<T, A> ToT<T> for A { }
+
+
+// Example usage
+// Reverse the tuple and provide a tuple with the hashes of the tuple members
+fn reverse_tuple_and_hash<(..T), (..RevT)>(value: (..T)) -> (<(..T) as Rev>::Value, (..<T as ToT<usize>>::Value)),
+where
+    (..T): Rev<Value = (..RevT)>,
+    ..(T: Hash), {
+
+    let (..rev_t) = <(..T) as Rev>::rev(value);
+
+    // Here we use the identifiers of the reversed variadic tuple and variadic tuple type in the iteration
+    let hashes = (for (rev_t,) type (RevT,) in ..(&rev_t) type ..(RevT,) { 
+        let mut s = DefaultHasher::new();
+        <RevT as Hash>::hash(&rev_t, &mut s);
+        s.finish()
+    });
+
+    (
+        (for (rev_t,) in ..(rev_t,) { rev_t }), 
+        hashes,
+    )
+}
+```
 
 ## Declaring and using multiple variadic tuple type with same arity
 
@@ -803,17 +875,26 @@ Note, see the RFC issues [290](https://github.com/rust-lang/rfcs/issues/290) and
 
 ## Better utilities to manipulate tuples
 
-If we consider tuples as a list of types we can perform more computation at compile time and provide more possibilities for zero cost abstractions.
+Some utilities can be provided as libraries (see [Variadic tuple utilities library](##variadic-tuple-utilities-library)), but some will requires implementions provided by the compiler.
 
 Such utilities can be:
+```rust
+// mod std::tuple
+trait Unique<(..T)> {
+    // A tuple without members with the same type
+    type Value;
+}
 
-- `TupleContains<T>`:  implemented by tuples containing the type `T` in its members
-- `UniqueTuple`: implemented by all tuple, an associated type is the based on the same tuple but with only unique types
-- `SortedTuple`: implemented by all tuple, an associated type is the based on the same tuple but with only sorted types
-- `Arity`: a trait implemented by all tuple providing the arity of the tuple with a `const`
-- An equivalent to C++'s  `std::get`
+trait Sorted<(..T)> {
+    // A tuple where its members are sorted by TypeId
+    type Value;
+}
 
-Those are not directly related to this RFC, but those utilities will be a natural additional step to better support tuple.
+trait Get<(..T)> {
+    // Get the value of the ith member of a tuple
+    fn get<V>(&self, index: usize) -> Option<&V>;
+}
+```
 
 ## Improve the error message for `E0275`
 
