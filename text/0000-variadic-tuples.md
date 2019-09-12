@@ -873,6 +873,39 @@ However when such a feature will land in Rust, supporting variadic tuple for fun
 
 Note, see the RFC issues [290](https://github.com/rust-lang/rfcs/issues/290) and [1053](https://github.com/rust-lang/rfcs/issues/1053).
 
+## Syntaxic sugar to create tuple with the same type of a specific arity
+
+Consider this use case:
+```rust
+trait ToT<T> {
+    type Value = T;
+}
+impl<T, A> ToT<T> for A { }
+
+fn tuple_of_hashes<(..T)>((..t): (..T)) -> (..<T as ToT<usize>::Value) {
+    (for (t,) in ..(t,) { 
+        let mut s = DefaultHasher::new();
+        t.hash(&mut s);
+        s.finish()
+    })
+}
+```
+
+We use the `ToT` trait to produce a tuple of `usize` with the same arity of `T`.
+We may find a syntaxic sugar to do the same thing, like: `(@T..usize)` meaning:
+evaluate the `(..usize)` variadic tuple type expansion with the arity of `T`.
+
+So it would be rewritten as:
+```rust
+fn tuple_of_hashes<(..T)>((..t): (..T)) -> (@T..usize) {
+    (for (t,) in ..(t,) { 
+        let mut s = DefaultHasher::new();
+        t.hash(&mut s);
+        s.finish()
+    })
+}
+```
+
 ## Better utilities to manipulate tuples
 
 Some utilities can be provided as libraries (see [Variadic tuple utilities library](##variadic-tuple-utilities-library)), but some will requires implementions provided by the compiler.
