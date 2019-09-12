@@ -250,13 +250,13 @@ where
         let (..ref tuple, ref last) = *self;
        
         // Use case: only variadic tuple
-        (for member in ..(tuple,) {
+        (for member in ..tuple {
           member.hash(state);
         });
         last.hash(state);
 
         // Use case: variadic tuple and type
-        (for member type (H,) in ..(tuple,) type ..(T,) {
+        (for member type H in ..tuple type ..T {
           <T as Hash>::hash(&member, state);
         });
         last.hash(state);
@@ -274,10 +274,20 @@ impl<(..L), (..R)> Merge<(..R)> for (..L) {
     fn merge(self, r: (..R)) -> Self::Value {
         let (..l) = self;
         (
-            for (l1,) in ..(l,) { l1 },
-            for (r1,) in ..(r,) { r1 },
+            for l1 in ..l { l1 },
+            for r1 in ..r { r1 },
         )
     }
+}
+
+trait Integer {
+    fn one() -> Self;
+}
+
+fn add_one<(..T)>((..t): (..T)) -> (..T)
+where
+    ..(T: Integer + Add), {
+    (for t type T in ..t type ..T { t + T::one() })
 }
 ```
 
@@ -299,7 +309,7 @@ where
         // Destructure self to a variadic tuple `tuple` and a variable `last`. The variadic tuple type of `tuple` is `(..&T)`
         // So it will be equivalent to `let (ref a, ref b, ref c, ref last) = *self; let tuple = (a, b, c);`
         let (..ref tuple, ref last) = *self;
-        (for member in ..(tuple,) {
+        (for member in ..tuple {
           member.hash(state);
         });
         // The for loop will be inlined as: 
@@ -747,7 +757,7 @@ impl<(..L), (..R)> Merge<(..R)> for (..L) {
     type Value = (..L, ..R);
     fn merge(self, (..r): (..R)) -> Self::Value {
         let (..l) = self;
-        (for (l,) in ..(l,) { l }, for (r,) in ..(r,) { r })
+        (for l in ..l { l }, for r in ..r { r })
     }
 }
 
@@ -790,14 +800,14 @@ where
     let (..rev_t) = <(..T) as Rev>::rev(value);
 
     // Here we use the identifiers of the reversed variadic tuple and variadic tuple type in the iteration
-    let hashes = (for (rev_t,) type (RevT,) in ..(&rev_t) type ..(RevT,) { 
+    let hashes = (for rev_t type RevT in ..&rev_t type ..RevT { 
         let mut s = DefaultHasher::new();
         <RevT as Hash>::hash(&rev_t, &mut s);
         s.finish()
     });
 
     (
-        (for (rev_t,) in ..(rev_t,) { rev_t }), 
+        (for rev_t in ..rev_t { rev_t }), 
         hashes,
     )
 }
@@ -883,7 +893,7 @@ trait ToT<T> {
 impl<T, A> ToT<T> for A { }
 
 fn tuple_of_hashes<(..T)>((..t): (..T)) -> (..<T as ToT<usize>::Value) {
-    (for (t,) in ..(t,) { 
+    (for t in ..t { 
         let mut s = DefaultHasher::new();
         t.hash(&mut s);
         s.finish()
@@ -898,7 +908,7 @@ evaluate the `(..usize)` variadic tuple type expansion with the arity of `T`.
 So it would be rewritten as:
 ```rust
 fn tuple_of_hashes<(..T)>((..t): (..T)) -> (@T..usize) {
-    (for (t,) in ..(t,) { 
+    (for t in ..t { 
         let mut s = DefaultHasher::new();
         t.hash(&mut s);
         s.finish()
