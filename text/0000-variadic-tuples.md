@@ -72,8 +72,6 @@ macro_rules! last_type {
 
 Variadic tuple types are always declared in a generic parameter group.
 
-*Note: variadic tuples are not supported in generic parameter group of `fn`*
-
 There are two different syntaxes:
 
 1. `(..T)`: declare a single variadic tuple type identified by `T`
@@ -82,7 +80,8 @@ There are two different syntaxes:
 Declaration examples:
 
 - `struct VariadicStruct<(..T1)>` : declares a struct with a variadic tuple type identified by `T1` in its generic parameters
-- `impl<(..Head)>`:  is an implementation block that uses a variadic tuple type identified by `Head`
+- `fn my_func<(..T1), (..T2)>()`: a function can have variadic tuple type parameters
+- `impl<(..Head)>`: is an implementation block that uses a variadic tuple type identified by `Head`
 - `impl<A, B, C, (.._Tail)>`:  same as above, but with other generic parameters
 - `impl<A, B, (..C), (..D)>`: there can be several variadic tuple types declared in a generic parameter group
 
@@ -125,19 +124,19 @@ struct MegaMap<(..(K, V))> {
 //   maps: (HashMap<usize, bool>, HashMap<String, i8>),
 // }
 
-trait Append<(..L), (..R)>
+fn append<(..L), (..R)>(l: (..L), r: (..R)) -> (..L, ..R)
 where 
-	..(L: 'static + Clone), 
-	..(R: 'static + Clone), {
-    fn append(l: (..L), r: (..R)) -> (..L, ..R)
+    ..(L: 'static + Clone), 
+    ..(R: 'static + Clone), {
+    ...
 }
 
 //
-// trait Append<(usize, Vec<bool>), (&'static str, u8, i16)> {
-//  fn append(
+// fn append<(usize, Vec<bool>), (&'static str, u8, i16)>(
 //       l: (usize, Vec<bool>), 
 //       r: (&'static str, u8, i16)
-//   ) -> (usize, Vec<bool>, &'static str, u8, i16) { ... }
+//   ) -> (usize, Vec<bool>, &'static str, u8, i16) {
+//   ...
 // }
 ```
 
@@ -154,9 +153,7 @@ A _variadic tuple_ is a variable of a variadic tuple type.
 A variadic tuple can be declared like any other variable:
 
 ```rust
-trait MyFunc<(..T)> {
-    fn my_func(variadic_tuple: (..T)) { ... }
-}
+fn my_func<(..T)>(variadic_tuple: (..T)) { ... }
 ```
 
 ### Destructuring a variadic tuple
@@ -187,10 +184,8 @@ Examples:
 
 ```rust
 // The function argument is destructured as a variadic tuple with identifier `v`
-trait MyFunc<(..T)> {
-    fn my_func((..v): (..T)) -> (..T) { 
-        ...
-    }
+fn my_func<(..T)>((..v): (..T)) -> (..T) { 
+    ...
 }
 
 impl<(..T)> Clone for (..T) 
@@ -358,10 +353,7 @@ where ..(T: Clone) { ... }
 The declaration of a variadic tuple variable is still a variable. Nothing new here.
 
 ```rust
-trait MyFunc<(..T)> {
-    fn my_func(input: (..T)) { ... }    
-}
-
+fn my_func<(..T)>(input: (..T)) { ... }   
 ```
 
 ### Variadic tuple destructuration
@@ -467,7 +459,7 @@ impl<()> Arity for () {
 // Specialized implementation for the recursion
 impl<Head, (..Tail)> Arity for (Head, ..Tail)
 where
-	(..Tail): Arity, {
+    (..Tail): Arity, {
     const VALUE: usize = <(..Tail) as Arity>::VALUE + 1;
 }
 ```
@@ -477,9 +469,52 @@ Note:
 - The `impl<Head, (..Tail)> Arity for (Head, ..Tail)` is the recursive implementation.
 - The `impl<(..T)> Arity for (..T)` is the default implementation and will act as the termination of the recursion.
 
+### Recursion for functions
+
+Recursion for functions over variadic tuple is not supported.
+
+Consider this code:
+```rust
+fn arity<Head, (..Tail)>((h, ..tail): (Head, ..Tail)) -> usize {
+    arity::<(..Tail)>((..tail)) + 1
+}
+// We need to define an explicit implementation of `fn arity<()>`, but there is no mechanism in Rust
+// currently to specialize a function implementation
+// So we don't deal with this use case in this RFC
+// Instead, the compiler will issue a compile error
+```
+
 ## Errors
 
-#### Missing implementation message during variadic implementation resolution
+### Recursive function implementation over variadic tuple
+
+Recursive function implementation over variadic tuple are not supported.
+
+The following code:
+```rust
+fn arity<Head, (..Tail)>((h, ..tail): (Head, ..Tail)) -> usize {
+    arity::<(..Tail)>((..tail)) + 1
+}
+```
+
+Will issue:
+```rust
+error[EXXXX]: the function `fn arity` is recursive over variadic tuple, this is not supported
+ --> src/main.rs:10:4
+  |
+7 |  fn arity<Head, (..Tail)>((h, ..tail): (Head, ..Tail)) -> usize
+  |  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+  |
+  = help: The implementation of `arity` requires an implementation with `arity::<(..Tail)>`
+ --> src/main.rs:11:4
+  |
+8 |      arity::<(..Tail)>((..tail)) + 1
+  |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = help: `arity` must be called with either the same generic arguments or without variadic tuple types
+```
+
+### Missing implementation message during variadic implementation resolution
 
 An error can occur if the compiler don't find an implementation while generating variadic tuple implementations.
 
@@ -492,7 +527,7 @@ trait Arity {
 
 impl<Head, (..Tail)> Arity for (Head, ..Tail)
 where
-	(..Tail): Arity, {
+    (..Tail): Arity, {
     const VALUE: usize = <(..Tail) as Arity>::VALUE + 1;
 }
 
@@ -516,7 +551,7 @@ error[E0277]: the trait bound `(bool, u8): Arity` is not satisfied
   = help: impl `Arity` for `(u8,)` requires impl `Arity` for `()`
 ```
 
-#### Variadic implementation cycle dependency error
+### Variadic implementation cycle dependency error
 
 As a variadic tuple implementation may depend on other variadic tuple implementation, there can be dependency cycle issue.
 
