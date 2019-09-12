@@ -973,6 +973,19 @@ fn tuple_of_hashes<(..T)>((..t): (..T)) -> (@T..usize) {
 }
 ```
 
+## Supporting bounds inside generic parameter groups
+
+Writing such code feels natural
+```rust
+impl<(..(T: Clone))> Clone for (..T) {
+    fn clone(&self) -> Self {
+        (for c in self { c.clone() })
+    }
+}
+```
+
+So for variadic tuple that are declared alone, we may authorize bound lists.
+
 ## Better utilities to manipulate tuples
 
 Some utilities can be provided as libraries (see [Variadic tuple utilities library](##variadic-tuple-utilities-library)), but some will requires implementions provided by the compiler.
