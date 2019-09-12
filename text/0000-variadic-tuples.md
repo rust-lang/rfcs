@@ -271,7 +271,7 @@ trait Merge<(..R)> {
 impl<(..L), (..R)> Merge<(..R)> for (..L) {
     type Value = (..L, ..R);
 
-    fn merge(self, r: (..R)) -> Self::Value {
+    fn merge(self, (..r): (..R)) -> Self::Value {
         let (..l) = self;
         (
             for l1 in ..l { l1 },
