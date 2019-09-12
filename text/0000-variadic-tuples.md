@@ -922,6 +922,23 @@ However when such a feature will land in Rust, supporting variadic tuple for fun
 
 Note, see the RFC issues [290](https://github.com/rust-lang/rfcs/issues/290) and [1053](https://github.com/rust-lang/rfcs/issues/1053).
 
+## Syntaxic sugar to make enclosing parenthesis optional
+
+For generic parameter group containing one variadic tuple type, it may be conveninent to omit the parenthesis.
+
+```rust
+// Instead of 
+struct MyStruct<A, (..B), C>;
+// Write
+struct MyStruct<A, ..B, C>;
+
+// And the expansions will matches
+// Instead of
+MyStruct::<usize, (bool, i8, String), i8>;
+// Write
+MyStruct::<usize, bool, i8, String, i8>;
+```
+
 ## Syntaxic sugar to create tuple with the same type of a specific arity
 
 Consider this use case:
