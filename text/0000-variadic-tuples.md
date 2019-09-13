@@ -162,9 +162,9 @@ A variadic tuple can be destructured to manipulate its members
 
 There are 3 syntaxes possible to destructure a variadic tuple for a variadic tuple `(..T)`:
 
-1. `(..v)` of variadic tuple type `(..T)`
-2. `(..(ref v))` of variadic tuple type `(..&T)`
-3. `(..(ref mut v))` of variadic tuple type `(..&mut T)`
+1. `(v @ ..)` of variadic tuple type `(..T)`
+2. `(ref v @ ..))` of variadic tuple type `(..&T)`
+3. `(ref mut v @ ..)` of variadic tuple type `(..&mut T)`
 
 Also, the destructure pattern can be combined with other members. For instance:
 
@@ -173,13 +173,13 @@ Also, the destructure pattern can be combined with other members. For instance:
   let source: (Head, ..Tail) = _;
   // `head` is a variable of type `Head`
   // `tail` is a tuple variable of type `(..&Tail)`
-  let (ref head, ..(ref tail)) = &source;
+  let (ref head, ref tail @ ..) = source;
 }
 {
   let mut source: (..L, ..R) = _;
   // `l` is a tuple variable of type `(..&mut L)`
   // `r` is a tuple variable of type `(..&mut R)`
-  let (..(ref mut l), ..(ref mut r)) = &mut source;
+  let (ref mut @ l .., ref mut r @ ..) = source;
 }
 
 ```
@@ -188,7 +188,7 @@ Examples:
 
 ```rust
 // The function argument is destructured as a variadic tuple with identifier `v`
-fn my_func<Head, (..T)>((head, ..v): (Head, ..T)) -> (..T) { 
+fn my_func<Head, (..T)>((head, v @ ..): (Head, ..T)) -> (..T) { 
     ...
 }
 
@@ -198,7 +198,7 @@ where
     Head: Clone, {
   fn clone(&self) -> Self {
     // We destructure `*self` which has a variadic tuple type `(Head, ..T)`
-    let (ref head, ..(ref v)) = *self;
+    let (ref head, ref v @ ..) = *self;
     ...
   }
 }
@@ -251,7 +251,7 @@ where
 
     #[allow(non_snake_case)]
     fn hash<S: Hasher>(&self, state: &mut S) {
-        let (..ref tuple, ref last) = *self;
+        let (ref tuple @ .., ref last) = *self;
        
         // Use case: only variadic tuple
         (for member in ..tuple {
@@ -311,7 +311,7 @@ where
     fn hash<S: Hasher>(&self, state: &mut S) {
         // Destructure self to a variadic tuple `tuple` and a variable `last`. The variadic tuple type of `tuple` is `(..&T)`
         // So it will be equivalent to `let (ref a, ref b, ref c, ref last) = *self; let tuple = (a, b, c);`
-        let (..ref tuple, ref last) = *self;
+        let (ref tuple @ .., ref last) = *self;
         (for member in ..tuple {
           member.hash(state);
         });
@@ -398,11 +398,11 @@ When destructuring a variadic tuple, we can destructure the variadic parts into 
 {
   let source: (..T, Tail) = _;
   // v is a variable of type `(..T)`
-  let (..v, tail) = source;
+  let (v @ .., tail) = source;
   // v is a variable of type `(..&T)`
-  let (..(ref v), ref tail) = &source;
+  let (ref v @ .., ref tail) = &source;
   // v is a variable of type `(..&mut T)`
-  let (..(ref mut v), ref mut tail) = &mut source;
+  let (ref mut v @ ..), ref mut tail) = &mut source;
 }
 
 // If we use `(..T)` = `(A, B, C)` as an example
@@ -416,8 +416,8 @@ variadic tuple destructuration
 ```ebnf
 tuple_destr : "(" tuple_destr_ident_any [ "," tuple_destr_ident_any ] * ")";
 tuple_destr_ident_any : [ tuple_destr_ident_var | tuple_destr_ident ];
-tuple_destr_ident : [ "ref" "mut"? ]? ident;
-tuple_destr_ident_var : ".." ident | "..(" [ "ref" "mut"? ] ident ")";
+tuple_destr_ident : [ "ref" "mut" ? ] ? ident;
+tuple_destr_ident_var : [ "ref" "mut" ? ] ? ident "@" "..";
 ```
 
 ### Variadic tuple iteration
@@ -491,7 +491,6 @@ for_tuple_ident : ident | "(" ident [ "," ident ] * ")";
 for_tuple_type_destr : for_tuple_ident;
 ```
 
-
 ## Recursion
 
 To implement some feature, we may want to use recursion over the arity of the tuple.
@@ -526,7 +525,7 @@ Recursion for functions over variadic tuple is not supported.
 
 Consider this code:
 ```rust
-fn arity<Head, (..Tail)>((h, ..tail): (Head, ..Tail)) -> usize {
+fn arity<Head, (..Tail)>((h, tail @ ..): (Head, ..Tail)) -> usize {
     arity::<(..Tail)>(tail) + 1
 }
 // We need to define an explicit implementation of `fn arity<()>`, but there is no mechanism in Rust
@@ -543,7 +542,7 @@ Recursive function implementation over variadic tuple are not supported.
 
 The following code:
 ```rust
-fn arity<Head, (..Tail)>((h, ..tail): (Head, ..Tail)) -> usize {
+fn arity<Head, (..Tail)>((h, tail @ ..): (Head, ..Tail)) -> usize {
     arity::<(..Tail)>(tail) + 1
 }
 ```
@@ -553,8 +552,8 @@ Will issue:
 error[EXXXX]: the function `fn arity` is recursive over variadic tuple, this is not supported
  --> src/main.rs:10:4
   |
-7 |  fn arity<Head, (..Tail)>((h, ..tail): (Head, ..Tail)) -> usize
-  |  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+7 |  fn arity<Head, (..Tail)>((h, tail @ ..): (Head, ..Tail)) -> usize
+  |  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
   |
   = help: The implementation of `arity` requires an implementation with `arity::<(..Tail)>`
  --> src/main.rs:11:4
@@ -692,9 +691,9 @@ hint: expected `(..(K, V))`
 
 The variadic tuple declaration is invalid when it can't be parsed as either:
 
-- `(..id)`
-- `(..(ref id))`
-- `(..(ref mut id))`
+- `(id @ ..)`
+- `(ref id @ ..)`
+- `(ref mut id @ ..)`
 
 ```rust
 struct MyStruct<(..Vec<T>)> {
@@ -715,7 +714,7 @@ error[EXXXX]: invalid variadic tuple pattern `(..(&i))`
 10 |      let (..(&i)) = &self;
    |          ^^^^^^^^
    |
-note: expected `(..id)` or `(..(ref id))` or `(..(ref mut id))`
+note: expected `(id @ ..)` or `(ref id @ ..)` or `(ref mut id @ ..)`
 ```
 
 ## Help and note for existing errors
@@ -817,7 +816,7 @@ where
     type Value = <<(..Tail)>::Value as Merge<(Head,)>>::Output;
 
     fn rev(self) -> Self::Value { 
-        let (h, ..t) = self; 
+        let (h, t @ ..) = self; 
         let rev_t = <(..Tail) as Rev>::rev(t); rev_t.merge((h,)) 
     }
 }
@@ -896,6 +895,29 @@ Supporting variadic tuple for function with recursive implementation over the va
 However, when the funtion is not recursive over the variadic tuple, it can be a nice addition to help implementation of libraries using tuples.
 
 In that case, the compiler must detect if there is such a recursion an issue a compile error.
+
+## Variadic tuple destructuration with multiple `..`
+
+A use case involving destructuration of multiple variadic tuple is a split operator for variadic tuples:
+
+```rust
+fn split<(..L), (..R)>(value: (..L, ..R)) -> ((..L), (..R)) {
+    // This involves multiple `..` patterns which is not allowed
+    // and for a reason, even if we have the variadic tuple types to`"guess"
+    // how the split is performed, it is still not explicit
+    let (l @ .., r @ ..) = value;
+    (l, r)
+}
+```
+
+Maybe this kind of use case can be solved by annotating the binding:
+```rust
+fn split<(..L), (..R)>(value: (..L, ..R)) -> ((..L), (..R)) {
+    let (l @ .. : (..L), r @ .. : (..R)) = value;
+    (l, r)
+}
+```
+
 
 # Future possibilities
 
