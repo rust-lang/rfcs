@@ -416,8 +416,8 @@ variadic tuple destructuration
 ```ebnf
 tuple_destr : "(" tuple_destr_ident_any [ "," tuple_destr_ident_any ] * ")";
 tuple_destr_ident_any : [ tuple_destr_ident_var | tuple_destr_ident ];
-tuple_destr_ident : ident | "ref" ident | "ref" "mut" ident;
-tuple_destr_ident_var : ".." ident | "..(" "ref" ident ")" | "..(" "ref" "mut" ident ")";
+tuple_destr_ident : [ "ref" | "ref" "mut" ]? ident;
+tuple_destr_ident_var : ".." ident | "..(" [ "ref" | "ref" "mut" ] ident ")";
 ```
 
 ### Variadic tuple iteration
