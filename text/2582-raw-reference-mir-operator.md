@@ -1,7 +1,7 @@
-- Feature Name: raw_reference_mir_operator
+- Feature Name: `raw_ref_op`
 - Start Date: 2018-11-01
-- RFC PR: (leave this empty)
-- Rust Issue: (leave this empty)
+- RFC PR: [rust-lang/rfcs#2582](https://github.com/rust-lang/rfcs/pull/2582)
+- Rust Issue: [rust-lang/rust#](https://github.com/rust-lang/rust/issues/)
 
 # Summary
 [summary]: #summary
