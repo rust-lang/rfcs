@@ -115,6 +115,15 @@ One alternative to introducing a new primitive operation might be to somehow exe
 However, I believe that the semantics of a MIR program, including whether it as undefined behavior, should be deducible by executing it one step at a time.
 Given that, it is unclear how a semantics that "lazily" checks references should work, and how it could be compatible with the annotations we emit for LLVM.
 
+As an alternative to `&raw const <place>`, one might want to use `&raw <place>` for better symmetry with shared references.
+However, this introduces ambiguities into the parser because `raw` is not a keyword.
+For further details, see discussion [here][syntax-1] and [here][syntax-2] and [here][syntax-3].
+
+[syntax-1]: https://github.com/rust-lang/rfcs/pull/2582#issuecomment-465519395
+[syntax-2]: https://github.com/rust-lang/rfcs/pull/2582#issuecomment-483439054
+[syntax-3]: https://github.com/rust-lang/rfcs/pull/2582#issuecomment-489468105
+
+
 # Prior art
 [prior-art]: #prior-art
 
