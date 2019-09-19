@@ -42,7 +42,7 @@ Following this proposal, we will add two methods to `bool`:
 
 ```rust
 impl bool {
-    fn then<T>(self, t: T) -> Option<T> {
+    fn to_option<T>(self, t: T) -> Option<T> {
         if self {
             Some(t)
         } else {
@@ -50,7 +50,7 @@ impl bool {
         }
     }
 
-    fn then_with<T, F: FnOnce() -> T>(self, f: F) -> Option<T> {
+    fn to_option_with<T, F: FnOnce() -> T>(self, f: F) -> Option<T> {
         if self {
             Some(f())
         } else {
@@ -81,13 +81,14 @@ The implementations here are the only reasonable ones.
 The following names have been suggested in the past. The choice in this proposal has been made to
 avoid possible confusion (e.g. avoiding a name that suggests a conversion from `bool` to
 `Option<()>` rather than `Option<T>`), and to be consist with existing naming conventions (e.g.
-`then_with` rather than `then_do` to be consist with methods such as `get_or_insert_with`),
-but ultimately comes down to personal preference.
+`to_option_with` to be consist with methods such as `get_or_insert_with`),
+but ultimately comes down to personal preference and indication of
+[community consensus](https://github.com/rust-lang/rfcs/pull/2757#issuecomment-529228631).
 
+- [`to_opt` or `to_option`](https://github.com/rust-lang/rfcs/issues/2606#issuecomment-476019577)
 - [`then` and `then_do`](https://github.com/rust-lang/rfcs/pull/2180#issuecomment-350498489)
 - [`some`](https://github.com/rust-lang/rfcs/issues/2606#issue-387773675)
 - [`as_some` and `as_some_from`](https://docs.rs/boolinator/2.4.0/boolinator/trait.Boolinator.html)
-- [`to_opt` or `to_option`](https://github.com/rust-lang/rfcs/issues/2606#issuecomment-476019577)
 - [`some_if` and `lazy_if`](https://github.com/rust-lang/rfcs/pull/2180)
 
 This functionality could instead be provided by a crate (e.g.
@@ -110,6 +111,6 @@ None.
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-Methods for converting from a `bool` to a `Result<T, E>`, e.g. `then_else` and `then_else_with`,
+Methods for converting from a `bool` to a `Result<T, E>`, e.g. `to_result` and `to_result_with`,
 would be obvious candidates for inclusion into the standard library, which could also be included
 as an addendum to this proposal if desire is expressed.
