@@ -153,12 +153,13 @@ will work correctly on the specified MSRV, only appropriate CI testing can do th
 - MSRV selected by `cargo publish` with `rust = "stable"` can be too
 conservative.
 
-# Rationale and Alternatives
+# Alternatives
 [alternatives]: #alternatives
 
 - Automatically calculate MSRV.
 - Do nothing and rely on [LTS releases](https://github.com/rust-lang/rfcs/pull/2483)
 for bumping crate MSRVs.
+- Allow version and path based `cfg` attributes as proposed in [RFC 2523](https://github.com/rust-lang/rfcs/pull/2523).
 
 # Prior art
 [prior-art]: #prior-art
