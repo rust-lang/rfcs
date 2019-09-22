@@ -109,7 +109,7 @@ designed to improve over the informal process in the following ways:
 * Give confidence to those with a stake in Rust's development that they
 understand why new features are being merged
 
-As an alternative alternative, we could adopt an even stricter RFC process than the one proposed here. If desired, we should likely look to Python's [PEP] process for inspiration.
+As an alternative, we could adopt an even stricter RFC process than the one proposed here. If desired, we should likely look to Python's [PEP] process for inspiration.
 
 # Unresolved questions
 
