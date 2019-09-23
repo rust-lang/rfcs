@@ -446,9 +446,9 @@ where ..(K: Hash), {
     fn get(&self, k: (..K)) -> (..Option<V>) {
 
         let result: (..Option<&V>) = {
-            (for (ref k, map) <Key, Value> @in (k, &self.maps) <K, V> {
+            for (ref k, map) <Key, Value> @in (k, &self.maps) <K, V> {
                 HashMap::<Key, Value>::get(&map, k)
-            })
+            }
         };
 
         // for the compiler, the for block has a kind of
@@ -486,6 +486,39 @@ for_var_tuple : "for" for_tuple_ident ? for_tuple_type_ident ? "@in" for_tuple_i
 for_tuple_ident : ident | "(" ident [ "," ident ] * ")";
 for_tuple_type_ident : "<" ident [ "," ident ] * ">";
 ```
+
+Note: When using a single for loop to create a tuple, the outer parenthesis are optional:
+```rust
+// Both syntaxes are equivalent:
+let result: (..Option<&V>) = for (ref k, map) <Key, Value> @in (k, &self.maps) <K, V> {
+    HashMap::<Key, Value>::get(&map, k)
+};
+
+let result: (..Option<&V>) = (for (ref k, map) <Key, Value> @in (k, &self.maps) <K, V> {
+    HashMap::<Key, Value>::get(&map, k)
+});
+```
+
+Note2: When using multiple for loops to create a tuple, the parenthesis must be explicit:
+```rust
+// We have a single tuple with all member at the same level
+fn append<(..L), (..R)>(l: (..L), r: (..R)) -> (..L, ..R) {
+    (
+        for l1 @in l { l1 },
+        for r1 @in r { r1 },
+    )
+}
+
+// Is not equivalent to:
+fn append<(..L), (..R)>(l: (..L), r: (..R)) -> ((..L), ..R) {
+    (
+        (for l1 @in l { l1 }),
+        for r1 @in r { r1 },
+    )
+}
+// Where only the tuple `r` is destructured.
+```
+
 
 ## Recursion
 
@@ -724,7 +757,7 @@ If we consider this code:
 ```rust
 trait MakeMegaMap<(..(Key, Value))> {
     fn make_mega_map() -> (..HashMap<Key, Value>) {
-        for type (KEY, VALUE) in type ..(Key, Value2) {
+        for <KEY, VALUE> @in <Key, Value2> {
             HashMap::<KEY, VALUE>::new()
         }
     }
@@ -748,8 +781,8 @@ error[E0412]: cannot find type `Value2` in this scope
    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ not found in this scope
 note: when expanding with `(..(Key, Value)) = ((usize, bool), (f32, String))`
   --> src/main.rs:2:4
-   |  for type (KEY, VALUE) in type ..(Key, Value2) {
-2  |    HashMap::<KEY, VALUE>::new()        ^^^^^^^
+   |  for <KEY, VALUE> @in <Key, Value2> {
+2  |    HashMap::<KEY, VALUE>::new()       
    |  }
 ```
 
