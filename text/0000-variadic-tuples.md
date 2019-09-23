@@ -218,9 +218,9 @@ We use the following syntax to iterate on variadic tuples:
 let result: (..Option<&V>) = {
     // `key` and `map` are variables iterating the variadic tuples `k: (..K)` and `maps: (..&HashMap<K, V>)`, `key` will iterate by reference (because of the ref keyword)
     // `KEY` and `VALUE` are type variables iterating the variadic tuple types `(..K)` and `(..V)`
-    // `..(k, maps)` declares the iterated variadic tuples `k` and `maps`
-    // `..(K, V)` declares the iterated variadic tuple types
-    (for (ref key, map) type (KEY, VALUE) in ..(k, maps) type ..(K, V) {
+    // `(k, maps)` declares the iterated variadic tuples `k` and `maps`
+    // `<K, V>` declares the iterated variadic tuple types
+    (for (ref key, map) <KEY, VALUE> @in (k, maps) <K, V> {
         HashMap::<KEY, VALUE>::get(&map, key)
     })
 };
@@ -235,7 +235,7 @@ impl<(..(K, V))> MegaMap<(..(K, V))>
 where ..(K: Hash), {
     fn get(&self, k: (..K)) -> (..Option<V>) {
         let result: (..Option<&V>) = {
-            (for (ref k, map) type (K, V) in ..(k, &self.maps) type ..(K, V) {
+            (for (ref k, map) <K, V> @in (k, &self.maps) <K, V> {
                 HashMap::<K, V>::get(&map, k)
             })
         };
@@ -254,13 +254,13 @@ where
         let (ref tuple @ .., ref last) = *self;
        
         // Use case: only variadic tuple
-        (for member in ..tuple {
+        (for member @in tuple {
           member.hash(state);
         });
         last.hash(state);
 
         // Use case: variadic tuple and type
-        (for member type H in ..tuple type ..T {
+        (for member <H> @in tuple <T> {
           <T as Hash>::hash(&member, state);
         });
         last.hash(state);
@@ -277,8 +277,8 @@ impl<(..L), (..R)> Merge<(..R)> for (..L) {
 
     fn merge(self, r: (..R)) -> Self::Value {
         (
-            for l1 in ..self { l1 },
-            for r1 in ..r { r1 },
+            for l1 @in self { l1 },
+            for r1 @in r { r1 },
         )
     }
 }
@@ -290,7 +290,7 @@ trait Integer {
 fn add_one<(..T)>((..t): (..T)) -> (..T)
 where
     ..(T: Integer + Add), {
-    (for t type T in ..t type ..T { t + T::one() })
+    (for t <T> @in t <T> { t + T::one() })
 }
 ```
 
@@ -312,7 +312,7 @@ where
         // Destructure self to a variadic tuple `tuple` and a variable `last`. The variadic tuple type of `tuple` is `(..&T)`
         // So it will be equivalent to `let (ref a, ref b, ref c, ref last) = *self; let tuple = (a, b, c);`
         let (ref tuple @ .., ref last) = *self;
-        (for member in ..tuple {
+        (for member @in tuple {
           member.hash(state);
         });
         // The for loop will be inlined as: 
@@ -425,7 +425,7 @@ tuple_destr_ident_var : [ "ref" "mut" ? ] ? ident "@" "..";
 The syntax for the variadic tuple iteration is:
 
 ```rust
-for $var_id type $type_var_id in $variadic_tuples type $variadic_tuple_types {
+for $var_id <$type_var_id> @in $variadic_tuples <$variadic_tuple_types> {
     $body
 }
 ```
@@ -446,8 +446,8 @@ where ..(K: Hash), {
     fn get(&self, k: (..K)) -> (..Option<V>) {
 
         let result: (..Option<&V>) = {
-            (for (ref k, map) type (K, V) in ..(k, &self.maps) type ..(K, V) {
-                HashMap::<K, V>::get(&map, k)
+            (for (ref k, map) <Key, Value> @in (k, &self.maps) <K, V> {
+                HashMap::<Key, Value>::get(&map, k)
             })
         };
 
@@ -482,13 +482,9 @@ where ..(K: Hash), {
 
 variadic tuple iteration
 ```ebnf
-for_var_tuple : for_var_tuple_with_tuple_and_type | for_var_tuple_with_type | for_var_tuple_with_tuple;
-for_var_tuple_with_tuple_and_type : "for" for_tuple_destr "type" for_tuple_type_destr "in" for_tuple_ident "type" for_tuple_ident block_expr;
-for_var_tuple_with_type : "for" "type" for_tuple_type_destr "in" "type" for_tuple_ident block_expr;
-for_var_tuple_with_tuple : "for" for_tuple_destr "in" for_tuple_ident block_expr;
-for_tuple_destr : tuple_destr_ident | "(" tuple_destr_ident [ "," tuple_destr_ident ] * ")";
-for_tuple_ident : ident | "(" ident [ "," ident ] * ")"; 
-for_tuple_type_destr : for_tuple_ident;
+for_var_tuple : "for" for_tuple_ident ? for_tuple_type_ident ? "@in" for_tuple_ident ? for_tuple_type_ident ? block_expr;
+for_tuple_ident : ident | "(" ident [ "," ident ] * ")";
+for_tuple_type_ident : "<" ident [ "," ident ] * ">";
 ```
 
 ## Recursion
@@ -773,8 +769,8 @@ This keyword is already reserved and has no meaning inside a for loop, so it can
 
 ```rust
 let result: (..Option<&V>) = {
-    for (ref k, map) type (K, V) in ..(k, maps) type ..(K, V) {
-        HashMap::<K, V>::get(&map, k)
+    for (ref k, map) <Key, Value> @in (k, maps) <K, V> {
+        HashMap::<Key, Value>::get(&map, k)
     }
 };
 ```
@@ -796,7 +792,7 @@ trait Merge<(..R> {
 impl<(..L), (..R)> Merge<(..R)> for (..L) {
     type Value = (..L, ..R);
     fn merge(self, r: (..R)) -> Self::Value {
-        (for l in ..self { l }, for r in ..r { r })
+        (for l @in self { l }, for r @in r { r })
     }
 }
 
@@ -846,7 +842,7 @@ where
     });
 
     (
-        (for rev_t in ..rev_t { rev_t }), 
+        (for rev_t @in rev_t { rev_t }), 
         hashes,
     )
 }
@@ -869,19 +865,6 @@ C++11 sets a decent precedent with its variadic templates, which can be used to 
 # Unresolved questions
 
 [unresolved-questions]: #unresolved-questions
-
-## Variadic tuple expansion syntax is confusing
-
-Using a syntax like `..(id,)` in an expression is ambiguous with the range syntax. So this one needs to be changed.
-
-An example with context:
-```rust
-let result: (..Option<&V>) = {
-    for (ref k, map) type (K, V) in ..(k, maps) type ..(K, V) {
-        HashMap::<K, V>::get(&map, k)
-    }
-};
-```
 
 ## Dynamic libraries tuple implementation assumption
 
@@ -945,7 +928,7 @@ However when such a feature will land in Rust, supporting variadic tuple for fun
 
 Note, see the RFC issues [290](https://github.com/rust-lang/rfcs/issues/290) and [1053](https://github.com/rust-lang/rfcs/issues/1053).
 
-## Syntaxic sugar to make enclosing parenthesis optional
+## Syntaxic sugar to make enclosing parenthesis optional in variadic tuple declarations
 
 For generic parameter group containing one variadic tuple type, it may be conveninent to omit the parenthesis.
 
@@ -961,6 +944,22 @@ MyStruct::<usize, (bool, i8, String), i8>;
 // Write
 MyStruct::<usize, bool, i8, String, i8>;
 ```
+
+## Syntaxic sugar to make enclosing parenthesis optional in for loop
+
+In for loop iterating only on variadic tuples, the parenthesis may be dropped
+
+```rust
+// Instead of 
+(for (k, v) @in (key, values) {
+    ...
+})
+// Write
+(for (k, v) @in key, values {
+    ...
+})
+```
+
 
 ## Syntaxic sugar to create tuple with the same type of a specific arity
 
