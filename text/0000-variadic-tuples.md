@@ -20,7 +20,7 @@ This RFC aims to allow the use of a _variadic tuple_ which is a tuple with an ar
 Currently, when a user wants to either use or add behavior to tuples, he writes an impl for each tuple arity.
 For easier maintenance, it is usually done with a `macro_rules` and implemented up to 12 arity tuple. (see [ `Hash` implementation in `std`](https://github.com/rust-lang/rust/blob/master/src/libcore/hash/mod.rs)).
 
-Variadic tuple will provide several benefits considering trait implementation for tuple or using tuples:
+Variadic tuple will provide several benefits considering trait implementation for tuple or using variadic tuples:
 
 - Implementations will be easier to write
 - Implementations will be easier to read and maintain
@@ -32,7 +32,7 @@ Variadic tuple will provide several benefits considering trait implementation fo
 
 Let's call a _variadic tuple type_ a tuple type with an arbitrary arity and a _variadic tuple_ an instance of a variadic tuple type.
 
-A variadic tuple type is declared with`(..T)` and a variadic tuple type can be expanded with `(..Vec<T>)`.
+A variadic tuple type is declared with `(..T)` and a variadic tuple type can be expanded with `(..Vec<T>)`.
 
 Note: To illustrate the RFC, we will use the current implementation of the `Hash` trait for tuples.
 
@@ -84,6 +84,7 @@ Declaration examples:
 - `impl<(..Head)>`: is an implementation block that uses a variadic tuple type identified by `Head`
 - `impl<A, B, C, (.._Tail)>`:  same as above, but with other generic parameters
 - `impl<A, B, (..C), (..D)>`: there can be several variadic tuple types declared in a generic parameter group
+- `impl<A, B, (..(C, D)), (..E)>`: and we can mix both syntaxes
 
 Usage examples:
 
@@ -179,7 +180,7 @@ Also, the destructure pattern can be combined with other members. For instance:
   let mut source: (..L, ..R) = _;
   // `l` is a tuple variable of type `(..&mut L)`
   // `r` is a tuple variable of type `(..&mut R)`
-  let (ref mut @ l .., ref mut r @ ..) = source;
+  let (ref mut @ l .. : (..L), ref mut r @ .. : (..R)) = source;
 }
 
 ```
@@ -235,8 +236,8 @@ impl<(..(K, V))> MegaMap<(..(K, V))>
 where ..(K: Hash), {
     fn get(&self, k: (..K)) -> (..Option<V>) {
         let result: (..Option<&V>) = {
-            (for (ref k, map) <K, V> @in (k, &self.maps) <K, V> {
-                HashMap::<K, V>::get(&map, k)
+            (for (ref k, map) <Key, Value> @in (k, &self.maps) <K, V> {
+                HashMap::<Key, Value>::get(&map, k)
             })
         };
 
@@ -254,15 +255,15 @@ where
         let (ref tuple @ .., ref last) = *self;
        
         // Use case: only variadic tuple
-        (for member @in tuple {
+        for member @in tuple {
           member.hash(state);
-        });
+        };
         last.hash(state);
 
         // Use case: variadic tuple and type
-        (for member <H> @in tuple <T> {
+        for member <H> @in tuple <T> {
           <T as Hash>::hash(&member, state);
-        });
+        };
         last.hash(state);
     }
 }
@@ -290,7 +291,7 @@ trait Integer {
 fn add_one<(..T)>((..t): (..T)) -> (..T)
 where
     ..(T: Integer + Add), {
-    (for t <T> @in t <T> { t + T::one() })
+    (for t1 <T1> @in t <T> { t1 + T1::one() })
 }
 ```
 
@@ -312,9 +313,9 @@ where
         // Destructure self to a variadic tuple `tuple` and a variable `last`. The variadic tuple type of `tuple` is `(..&T)`
         // So it will be equivalent to `let (ref a, ref b, ref c, ref last) = *self; let tuple = (a, b, c);`
         let (ref tuple @ .., ref last) = *self;
-        (for member @in tuple {
+        for member @in tuple {
           member.hash(state);
-        });
+        };
         // The for loop will be inlined as: 
         // ( 
         //    { v.0.hash(state); },
@@ -396,13 +397,13 @@ When destructuring a variadic tuple, we can destructure the variadic parts into 
 
 ```rust
 {
-  let source: (..T, Tail) = _;
+  let mut source: (..T, Tail) = _;
   // v is a variable of type `(..T)`
   let (v @ .., tail) = source;
   // v is a variable of type `(..&T)`
-  let (ref v @ .., ref tail) = &source;
+  let (ref v @ .., ref tail) = source;
   // v is a variable of type `(..&mut T)`
-  let (ref mut v @ ..), ref mut tail) = &mut source;
+  let (ref mut v @ ..), ref mut tail) = source;
 }
 
 // If we use `(..T)` = `(A, B, C)` as an example
@@ -434,9 +435,9 @@ for $var_id <$type_var_id> @in $variadic_tuples <$variadic_tuple_types> {
 
 `$type_var_id` is a pattern matching the variadic tuple types to iterate, but it has only the first syntax allowed. (No ref, or mut).
 
-`$variadic_tuples` declares the iterated variadic tuples, it has the syntax `..id` or `..(id1, id2, ..., idn)`.
+`$variadic_tuples` declares the iterated variadic tuples, it has the syntax `id` or `(id1, id2, ..., idn)`.
 
-`$variadic_tuple_types` declares the iterated variadic tuple types, it has the syntax `..ID` or `..(ID1, ID2, ..., IDn)`.
+`$variadic_tuple_types` declares the iterated variadic tuple types, it has the syntax `<ID>` or `<ID1, ID2, ..., IDn>`.
 
 Example:
 
@@ -713,7 +714,7 @@ note: variadic tuple type identifiers `K`, `V` were not declared together
 10 |  impl<(..K), (..V)> MyTrait for (..HashMap<K, V>) {
    |       ^^^^^^^^^^^^
    |
-hint: expected `(..(K, V))`
+hint: expected `impl<(..(K, V))>` instead of `impl<(..K), (..V)>`
 ```
 
 ### Invalid variadic tuple pattern matching
@@ -725,11 +726,11 @@ The variadic tuple declaration is invalid when it can't be parsed as either:
 - `(ref mut id @ ..)`
 
 ```rust
-struct MyStruct<(..Vec<T>)> {
+struct MyStruct<(..T)> {
   vecs: (..Vec<T>)
 }
 
-impl<(..T)> MyTrait for (..#T) {
+impl<(..T)> MyTrait for (..T) {
   fn my_func(&self) {
     let (..(&i)) = &self;
   }
@@ -746,46 +747,6 @@ error[EXXXX]: invalid variadic tuple pattern `(..(&i))`
 note: expected `(id @ ..)` or `(ref id @ ..)` or `(ref mut id @ ..)`
 ```
 
-## Help and note for existing errors
-
-Variadic tuple expansion will generate code and may produce obscure errors for existing compile error. To help user debug their compile issue, we need to provide information about the expansion the compiler tried to resolve.
-
-##### Unknown identifier in an expansion form
-
-If we consider this code:
-
-```rust
-trait MakeMegaMap<(..(Key, Value))> {
-    fn make_mega_map() -> (..HashMap<Key, Value>) {
-        for <KEY, VALUE> @in <Key, Value2> {
-            HashMap::<KEY, VALUE>::new()
-        }
-    }
-}
-
-impl<(..(Key, Value))> MakeMegaMap<(..(Key, Value))> for () {}
-
-fn main() {
-  let mega_map = <() as MakeMegaMap<<(usize, bool), (f32, String)>>::make_mega_map();
-}
-```
-
-Then the expansion form is valid, even though the `Value2` identifier is probably mistyped.
-Leading to a compile error with additional notes
-
-```rust
-error[E0412]: cannot find type `Value2` in this scope
-  --> src/main.rs:10:22
-   |
-10 |  let mega_map = <() as MakeMegaMap<<(usize, bool), (f32, String)>>::make_mega_map();
-   |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ not found in this scope
-note: when expanding with `(..(Key, Value)) = ((usize, bool), (f32, String))`
-  --> src/main.rs:2:4
-   |  for <KEY, VALUE> @in <Key, Value2> {
-2  |    HashMap::<KEY, VALUE>::new()       
-   |  }
-```
-
 # Drawbacks
 
 [drawbacks]: #drawbacks
@@ -796,9 +757,9 @@ note: when expanding with `(..(Key, Value)) = ((usize, bool), (f32, String))`
 
 ## Iteration over variadic tuples syntax
 
-When iterating over variadic tuples, we need to define both variable and type variable. To do so, we use the for loop syntax and separate variables and type variables with the `type` keyword.
-
-This keyword is already reserved and has no meaning inside a for loop, so it can be used here.
+When iterating over variadic tuples, we need to define both variable and type variable. To do so, we use a for loop syntax that is close to the existing one with the folowing differences:
+- Instead of `in` we use `@in` to explicitly state which kind of for loop is expected
+- Generics variable and lists are enclosed by brackets, like they are in generic parameters
 
 ```rust
 let result: (..Option<&V>) = {
@@ -818,7 +779,7 @@ Example:
 // Trait utilities
 
 // Merge two tuple togethers
-trait Merge<(..R> {
+trait Merge<(..R)> {
     type Value;
     fn merge(self, r: (..R)) -> Self::Value;
 }
@@ -841,12 +802,13 @@ impl Rev for () {
 impl<Head, (..Tail)> Rev for (Head, ..Tail) 
 where
     (..Tail): Rev,
-    <(..Tail)>::Value: Merge<(Head,)> {
-    type Value = <<(..Tail)>::Value as Merge<(Head,)>>::Output;
+    <(..Tail) as Rev>::Value: Merge<(Head,)> {
+    type Value = <<(..Tail) as Rev>::Value as Merge<(Head,)>>::Output;
 
     fn rev(self) -> Self::Value { 
         let (h, t @ ..) = self; 
-        let rev_t = <(..Tail) as Rev>::rev(t); rev_t.merge((h,)) 
+        let rev_t = <(..Tail) as Rev>::rev(t);
+        rev_t.merge((h,)) 
     }
 }
 
@@ -868,9 +830,9 @@ where
     let rev_t = <(..T) as Rev>::rev(value);
 
     // Here we use the identifiers of the reversed variadic tuple and variadic tuple type in the iteration
-    let hashes = (for rev_t type RevT in ..&rev_t type ..RevT { 
+    let hashes = (for ref rev_t <RevT> in rev_t <RevT> { 
         let mut s = DefaultHasher::new();
-        <RevT as Hash>::hash(&rev_t, &mut s);
+        <RevT as Hash>::hash(rev_t, &mut s);
         s.finish()
     });
 
@@ -885,7 +847,7 @@ where
 
 In C++ multiple parameter packs can be expanded in a single expansion form as long as the packs have the same number of items, but there is no constraint concerning the declaration.
 
-For Rust, using the syntax `(..(T1, T2, ..., Tn))` embeds the constraint that the variadic tuple types `T1`, `T2`, ..., `Tn` have the same arity. This is more consistent than not grouping the declaration (ie: `(..T1), (..#T2), ..., (..Tn))`) because the signature using the declaration contains all the information required.
+For Rust, using the syntax `(..(T1, T2, ..., Tn))` embeds the constraint that the variadic tuple types `T1`, `T2`, ..., `Tn` have the same arity. This is more consistent than not grouping the declaration (ie: `(..T1), (..T2), ..., (..Tn))`) because the signature using the declaration contains all the information required.
 
 We don't need to look at the implementation or body code to know the required constraint about the variadic tuple type arities.
 
@@ -903,14 +865,6 @@ C++11 sets a decent precedent with its variadic templates, which can be used to 
 
 When using dynamic libraries, client libraries may relies that the host contains code up to a specific tuple arity. So we need to have a 
 way to enforce the compiler to generate all the implementation up to a specific tuple arity. (12 will keep backward comptibility with current `std` impl)
-
-## Variadic tuple for functions
-
-Supporting variadic tuple for function with recursive implementation over the variadic tuples is not possible. (See below).
-
-However, when the funtion is not recursive over the variadic tuple, it can be a nice addition to help implementation of libraries using tuples.
-
-In that case, the compiler must detect if there is such a recursion an issue a compile error.
 
 ## Variadic tuple destructuration with multiple `..`
 
