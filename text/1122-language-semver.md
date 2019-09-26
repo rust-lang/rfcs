@@ -229,6 +229,16 @@ future as well. The `-Z` flags are of course explicitly unstable, but
 some of the `-C`, rustdoc, and linker-specific flags are expected to
 evolve over time (see e.g. [#24451]).
 
+## [Amendment] Misuse of `accessible(..)`
+
+[RFC 2523]: https://github.com/rust-lang/rfcs/blob/master/text/2523-cfg-path-version.md
+
+[RFC 2523] introduces `#[cfg(accessible($path)]`. Based on the accessibility of
+a to-the-current-crate external `$path`, the flag allows conditional compilation.
+When combined with `#[cfg(feature = "unstable")]`, this has certain breakage risks.
+Such breakage due to misuse, as outlined in the RFC, is considered acceptable and
+not covered by our stability promises. Please see the RFC for more details.
+
 # Drawbacks
 
 The primary drawback is that making breaking changes are disruptive,

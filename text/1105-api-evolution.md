@@ -763,6 +763,16 @@ type parameter to `foo` can break code, even if a default is provided.
 This could be easily addressed by adding a notation like `...` to leave
 additional parameters unspecified: `foo::<T, ...>(x, y)`.
 
+## [Amendment] Misuse of `accessible(..)`
+
+[RFC 2523]: https://github.com/rust-lang/rfcs/blob/master/text/2523-cfg-path-version.md
+
+[RFC 2523] introduces `#[cfg(accessible($path)]`. Based on the accessibility of
+a to-the-current-crate external `$path`, the flag allows conditional compilation.
+When combined with `#[cfg(feature = "unstable")]`, this has certain breakage risks.
+Such breakage due to misuse, as outlined in the RFC, is considered acceptable and
+not covered by our stability promises. Please see the RFC for more details.
+
 # Drawbacks and Alternatives
 
 The main drawback to the approach laid out here is that it makes the stability
