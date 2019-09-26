@@ -140,3 +140,8 @@ token-from-process = "cargo credentials-system-keyring"
 Encrypting the stored tokens or alternate authentication methods are out of the
 scope of this RFC, but could be proposed in the future to provide additional
 security for our users.
+
+Future RFCs introducing new kinds of secrets used by Cargo (i.e. 2FA codes)
+could also add support for fetching those secrets from a process, in a similar
+way to this RFC. Defining how that should work is outside the scope of this RFC
+though.
