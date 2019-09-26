@@ -1,7 +1,7 @@
-- Feature Name: `cfg_path_version`
+- Feature Name: `cfg_version` and `cfg_accessible`
 - Start Date: 2018-08-12
-- RFC PR: _
-- Rust Issue: _
+- RFC PR: [rust-lang/rfcs#2523](https://github.com/rust-lang/rfcs/pull/2523)
+- Rust Issue: [rust-lang/rust#64796](https://github.com/rust-lang/rust/issues/64796) and [rust-lang/rust#64797](https://github.com/rust-lang/rust/issues/64797)
 
 # Summary
 [summary]: #summary
