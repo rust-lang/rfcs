@@ -79,7 +79,7 @@ Yanked crates will be ignored in this process.
 Implementing this functionality hopefully will allow us to close the long-standing
 debate regarding whether MSRV bump is a breaking change or not and will allow
 crate authors to feel less restrictive about bumping their crate's MSRV. (though
-it may be a usefull convention for post-1.0 crates to bump minor version on MSRV
+it may be a useful convention for post-1.0 crates to bump minor version on MSRV
 bump to allow publishing backports which fix serious issues using patch version)
 
 Note that described MSRV constraints and checks for dependency versions resolution
