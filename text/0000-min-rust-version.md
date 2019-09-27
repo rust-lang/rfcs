@@ -1,4 +1,4 @@
-the minimum version- Feature Name: min_rust_version
+- Feature Name: min_rust_version
 - Start Date: 2018-06-28
 - RFC PR: (leave this empty)
 - Rust Issue: (leave this empty)
