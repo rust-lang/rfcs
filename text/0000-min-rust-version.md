@@ -90,7 +90,7 @@ can be disabled with the `--no-msrv-check` option.
 `cargo publish` will check that upload is done with a toolchain version specified
 in the `rust` field. If toolchain version is different, `cargo` will refuse to
 upload the crate. It will be a failsafe to prevent uses of incorrect `rust` values
-due to unintended MSRV bumps. This check can be disabled by using the exisiting
+due to unintended MSRV bumps. This check can be disabled by using the existing
 `--no-verify` option.
 
 ## Making `rust` field mandatory
