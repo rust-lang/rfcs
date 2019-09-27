@@ -135,7 +135,7 @@ For some bleeding-edge crates which experience frequent breaks on Nightly update
 crate can be built. One way to achieve this is by using the following syntax:
 - auto-select: "nightly" This variant will behave in the same way as "stable", i.e.
 it will take a current nightly version and will use it in a "more or equal" constraint.
-- single version: "nightly: 2018-01-01" (tha main variant)
+- single version: "nightly: 2018-01-01" (the main variant)
 - enumeration: "nightly: 2018-01-01, 2018-01-15"
 - semver-like conditions: "nightly: >=2018-01-01", "nightly: >=2018-01-01, <=2018-01-15",
 "nightly: >=2018-01-01, <=2018-01-15, 2018-01-20". (the latter is interpreted as
