@@ -80,7 +80,8 @@ be aware of.
 # Detailed design
 
 Add a new function attribute to the language, `#[naked]`, indicating the
-function should have prologue/epilogue emission disabled.
+function should have prologue/epilogue emission disabled. Naked functions
+will never be inlined.
 
 Because the calling convention of a naked function is not guaranteed to match
 any calling convention the compiler is compatible with, calls to naked functions
