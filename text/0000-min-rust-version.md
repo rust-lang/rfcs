@@ -105,7 +105,7 @@ field. In other words `edition = "2018"` will imply `rust = "1.31"` and
 ## `cfg`-based MSRVs
 
 Some crates can have different MSRVs depending on target architecture or enabled
-features. In such cases it can be usefull to describe how MSRV depends on them,
+features. In such cases it can be useful to describe how MSRV depends on them,
 e.g. in the following way:
 ```toml
 [package]
