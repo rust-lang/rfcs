@@ -60,7 +60,7 @@ combination of `rust = "1.27"` and `edition = "2018"` is an invalid one.
 
 ## Influencing version resolution
 
-The value of `rust` field (explicit or autmatically selected by `cargo`) will
+The value of `rust` field (explicit or automatically selected by `cargo`) will
 be used to select appropriate dependency versions.
 
 For example, let's imagine that your crate depends on crate `foo` with 10 published
