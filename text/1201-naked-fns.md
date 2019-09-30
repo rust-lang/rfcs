@@ -71,11 +71,9 @@ address of its caller when called with the C ABI on x86.
 ---
 
 Because the compiler depends on a function prologue and epilogue to maintain
-storage for local variable bindings, it is generally unsafe to write anything
-but inline assembly inside a naked function.  The [LLVM language
-reference](http://llvm.org/docs/LangRef.html#function-attributes) describes this
-feature as having "very system-specific consequences", which the programmer must
-be aware of.
+storage for local variable bindings, including anything but inline assembly
+inside a naked function is not allowed. Refering to the parameters inside of a
+naked function is also not allowed.
 
 # Detailed design
 
@@ -117,19 +115,22 @@ the functions `correct1` and `correct2` are permitted.
 
 ```
 #[naked]
-extern "C" fn error(x: &mut u8) {
-    *x += 1;
+#[cfg(target_arch="x86")]
+extern "C" fn error() {
+    unsafe { asm!("int3") }
 }
 
 #[naked]
-unsafe extern "C" fn correct1(x: &mut u8) {
-    *x += 1;
+#[cfg(target_arch="x86")]
+unsafe extern "C" fn correct1() {
+    unsafe { asm!("int3") }
 }
 
 #[naked]
-extern "C" fn correct2(x: &mut u8) {
+#[cfg(target_arch="x86")]
+extern "C" fn correct2() {
     unsafe {
-        *x += 1;
+        unsafe { asm!("int3") }
     }
 }
 ```
@@ -197,16 +198,6 @@ calling conventions could be added to the compiler as needed, or emulated with
 external libraries such as `libffi`.
 
 # Unresolved questions
-
-It is easy to quietly generate wrong code in naked functions, such as by causing
-the compiler to allocate stack space for temporaries where none were
-anticipated. There is currently no restriction on writing Rust statements inside
-a naked function, while most compilers supporting similar features either
-require or strongly recommend that authors write only inline assembly inside
-naked functions to ensure no code is generated that assumes a particular stack
-layout. It may be desirable to place further restrictions on what statements are
-permitted in the body of a naked function, such as permitting only `asm!`
-statements.
 
 The `unsafe` requirement on naked functions may not be desirable in all cases.
 However, relaxing that requirement in the future would not be a breaking change.
