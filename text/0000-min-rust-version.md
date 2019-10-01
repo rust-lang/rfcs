@@ -100,7 +100,7 @@ a newly uploaded crates. MSRV for older crates will be determined by the `editio
 field. In other words `edition = "2018"` will imply `rust = "1.31"` and
 `edition = "2015"` will imply `rust = "1.0"`.
 
-`cargo init` will use version of a currently used toolchain.
+`cargo init` would use the version of the toolchain used.
 
 ## `cfg`-based MSRVs
 
