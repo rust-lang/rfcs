@@ -111,7 +111,7 @@ e.g. in the following way:
 [package]
 rust = "1.30"
 
-[target.x86_64-pc-windows-gnu]
+[target.x86_64-pc-windows-gnu.package]
 rust = "1.35"
 
 [target.'cfg(feature = "foo")'.package]
