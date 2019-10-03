@@ -341,7 +341,7 @@ MyStruct::<((usize, bool), (i8, f32))> { ... }
 // `(..R)` is `(bool, f32)`
 ```
 
-variadic tuple type declaration
+* variadic tuple type declaration
 ```ebnf
 var_tuple_type_decl : single_var_tuple_decl | multiple_var_tuple_decl;
 single_var_tuple_decl : "(.." ident ")";
