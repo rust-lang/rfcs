@@ -149,22 +149,14 @@ Note2: If an expansion syntax contains multiple variadic tuple type identifiers,
 
 A _variadic tuple_ is a variable of a variadic tuple type.
 
-### Declaration
-
-A variadic tuple can be declared like any other variable:
-
-```rust
-fn my_func<(..T)>(variadic_tuple: (..T)) { ... }
-```
-
 ### Destructuring a variadic tuple
 
-A variadic tuple can be destructured to manipulate its members
+A variadic tuple can be destructured to manipulate its members.
 
 There are 3 syntaxes possible to destructure a variadic tuple for a variadic tuple `(..T)`:
 
 1. `(v @ ..)` of variadic tuple type `(..T)`
-2. `(ref v @ ..))` of variadic tuple type `(..&T)`
+2. `(ref v @ ..)` of variadic tuple type `(..&T)`
 3. `(ref mut v @ ..)` of variadic tuple type `(..&mut T)`
 
 Also, the destructure pattern can be combined with other members. For instance:
@@ -172,7 +164,7 @@ Also, the destructure pattern can be combined with other members. For instance:
 ```rust
 {
   let source: (Head, ..Tail) = _;
-  // `head` is a variable of type `Head`
+  // `head` is a variable of type `&Head`
   // `tail` is a tuple variable of type `(..&Tail)`
   let (ref head, ref tail @ ..) = source;
 }
@@ -180,7 +172,7 @@ Also, the destructure pattern can be combined with other members. For instance:
   let mut source: (..L, ..R) = _;
   // `l` is a tuple variable of type `(..&mut L)`
   // `r` is a tuple variable of type `(..&mut R)`
-  let (ref mut @ l .. : (..L), ref mut r @ .. : (..R)) = source;
+  let (ref mut @ l .., ref mut r @ ..) = source;
 }
 
 ```
@@ -295,7 +287,7 @@ where
 }
 ```
 
-## The `Hash`trait
+## The `Hash` trait
 
 Let's implement the `Hash` trait:
 
@@ -371,27 +363,19 @@ struct MyStruct<(..T)>
 where ..(T: Clone) { ... }
 ```
 
-variadic tuple type expansion
+* variadic tuple type
 ```ebnf
 var_tuple_type_exp : raw_var_tuple_type_exp | par_var_tuple_type_exp;
 raw_var_tuple_type_exp : ".." type_expr;
 par_var_tuple_type_exp : "..(" type_expr ")";
 ```
 
-variadic tuple type expansion in where bounds
+* variadic bounds
 ```ebnf
 var_tuple_type_exp_where : "..(" type_expr ":" bound-list ")";
 ```
 
-### Variadic tuple declaration
-
-The declaration of a variadic tuple variable is still a variable. Nothing new here.
-
-```rust
-fn my_func<(..T)>(input: (..T)) { ... }   
-```
-
-### Variadic tuple destructuration
+### Destructuring a variadic tuple
 
 When destructuring a variadic tuple, we can destructure the variadic parts into tuple variables. The identifier is a variable of type `(..T)` or `(..&T)` or `(..&mut T)`, depending on the syntax used.
 
@@ -403,7 +387,7 @@ When destructuring a variadic tuple, we can destructure the variadic parts into 
   // v is a variable of type `(..&T)`
   let (ref v @ .., ref tail) = source;
   // v is a variable of type `(..&mut T)`
-  let (ref mut v @ ..), ref mut tail) = source;
+  let (ref mut v @ .., ref mut tail) = source;
 }
 
 // If we use `(..T)` = `(A, B, C)` as an example
@@ -413,7 +397,7 @@ When destructuring a variadic tuple, we can destructure the variadic parts into 
 // `let v = (a, b, c);`
 ```
 
-variadic tuple destructuration
+* variadic tuple destructuration
 ```ebnf
 tuple_destr : "(" tuple_destr_ident_any [ "," tuple_destr_ident_any ] * ")";
 tuple_destr_ident_any : [ tuple_destr_ident_var | tuple_destr_ident ];
@@ -481,7 +465,7 @@ where ..(K: Hash), {
 }
 ```
 
-variadic tuple iteration
+* variadic tuple iteration
 ```ebnf
 for_var_tuple : "for" for_tuple_ident ? for_tuple_type_ident ? "@in" for_tuple_ident ? for_tuple_type_ident ? block_expr;
 for_tuple_ident : ident | "(" ident [ "," ident ] * ")";
@@ -500,7 +484,7 @@ let result: (..Option<&V>) = (for (ref k, map) <Key, Value> @in (k, &self.maps) 
 });
 ```
 
-Note2: When using multiple for loops to create a tuple, the parenthesis must be explicit:
+Note: When using multiple for loops to create a tuple, the parenthesis must be explicit:
 ```rust
 // We have a single tuple with all member at the same level
 fn append<(..L), (..R)>(l: (..L), r: (..R)) -> (..L, ..R) {
@@ -719,11 +703,7 @@ hint: expected `impl<(..(K, V))>` instead of `impl<(..K), (..V)>`
 
 ### Invalid variadic tuple pattern matching
 
-The variadic tuple declaration is invalid when it can't be parsed as either:
-
-- `(id @ ..)`
-- `(ref id @ ..)`
-- `(ref mut id @ ..)`
+The variadic tuple declaration is invalid when it can't be parsed.
 
 ```rust
 struct MyStruct<(..T)> {
@@ -813,7 +793,7 @@ where
 }
 
 // Utility to create a tuple of a single type, for instance: ToT<usize> = (..T) -> (..usize)
-// We could have a syntaxic sugar to do this (future RFC?)
+// We could have a syntactic sugar to do this (future RFC?)
 trait ToT<T> {
     type Value = T;
 }
@@ -915,7 +895,7 @@ However when such a feature will land in Rust, supporting variadic tuple for fun
 
 Note, see the RFC issues [290](https://github.com/rust-lang/rfcs/issues/290) and [1053](https://github.com/rust-lang/rfcs/issues/1053).
 
-## Syntaxic sugar to make enclosing parenthesis optional in variadic tuple declarations
+## Make enclosing parenthesis optional in variadic tuple declarations
 
 For generic parameter group containing one variadic tuple type, it may be conveninent to omit the parenthesis.
 
@@ -932,7 +912,7 @@ MyStruct::<usize, (bool, i8, String), i8>;
 MyStruct::<usize, bool, i8, String, i8>;
 ```
 
-## Syntaxic sugar to make enclosing parenthesis optional in for loop
+## Syntactic sugar to make enclosing parenthesis optional in for loop
 
 In for loop iterating only on variadic tuples, the parenthesis may be dropped
 
@@ -948,7 +928,7 @@ In for loop iterating only on variadic tuples, the parenthesis may be dropped
 ```
 
 
-## Syntaxic sugar to create tuple with the same type of a specific arity
+## Syntactic sugar to create tuple with the same type of a specific arity
 
 Consider this use case:
 ```rust
@@ -967,7 +947,7 @@ fn tuple_of_hashes<(..T)>((..t): (..T)) -> (..<T as ToT<usize>::Value) {
 ```
 
 We use the `ToT` trait to produce a tuple of `usize` with the same arity of `T`.
-We may find a syntaxic sugar to do the same thing, like: `(@T..usize)` meaning:
+We may find a syntactic sugar to do the same thing, like: `(@T..usize)` meaning:
 evaluate the `(..usize)` variadic tuple type expansion with the arity of `T`.
 
 So it would be rewritten as:
