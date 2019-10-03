@@ -868,6 +868,8 @@ fn split<(..L), (..R)>(value: (..L, ..R)) -> ((..L), (..R)) {
 }
 ```
 
+In that case it will requires the [generalized type ascription](https://github.com/rust-lang/rfcs/pull/2522) feature.
+
 
 # Future possibilities
 
