@@ -85,6 +85,9 @@ And does so without an ugly prefix and key naming convention.
 
 From build system perspective, Cargo is fairly unique in it's behavior of not allowing arbitrary keys in-place in build configuration files.
 
+- [json-ld](https://www.w3.org/TR/json-ld/): Is somewhat similiar if not more structured, it supports contexts of the style `@prefix:suffix`.
+
+
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
