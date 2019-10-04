@@ -76,9 +76,14 @@ And does so without an ugly prefix and key naming convention.
     The other benefit of this choice is that `_` is not reqired to be quoted by toml.
 
     At-Sign: Was chosen for the proposal because it stresses that the key is being direct _at_ the plugin, rather than an implementation detail that cargo itself ignores the field.
+- Choice of in field separator this proposal currently outlines using Dot as the in field separator between plugin name and key.
+    Alternative choices:
 
-    
+    Colon: such as "@pluginname:key"  This has the benefit of being compatible with the json-ld specification.
+    Since toml documents are valid JSON documents, we could perhaps convert a Cargo.toml document by translating
+    the existing fields into "@Cargo:package", and convert Cargo.toml into json-ld and back.
 
+    This seems like an interesting idea worth exploring, in that it brings along the potential checking the validity of a Cargo.toml containing plugin fields.
 
 # Prior art
 [prior-art]: #prior-art
