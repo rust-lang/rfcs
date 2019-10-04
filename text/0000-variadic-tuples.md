@@ -841,11 +841,6 @@ C++11 sets a decent precedent with its variadic templates, which can be used to 
 
 [unresolved-questions]: #unresolved-questions
 
-## Dynamic libraries tuple implementation assumption
-
-When using dynamic libraries, client libraries may relies that the host contains code up to a specific tuple arity. So we need to have a 
-way to enforce the compiler to generate all the implementation up to a specific tuple arity. (12 will keep backward comptibility with current `std` impl)
-
 ## Variadic tuple destructuration with multiple `..`
 
 A use case involving destructuration of multiple variadic tuple is a split operator for variadic tuples:
