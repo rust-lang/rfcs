@@ -91,6 +91,13 @@ fn make_iter(limit: u8) -> impl Iterator<Item = u8> {
     (0..limit).map(move |x| (x..limit)).flatten()
 }
 
+// Even better
+fn make_iter(limit: u8) -> impl Iterator<Item = u8> {
+    #[cfg(not(accessible(::std::iter::Flatten)))]
+    use itertools::Itertools;
+    (0..limit).map(move |x| (x..limit)).flatten()
+}
+
 fn main() {
     println!("{:?}", make_iter(10).collect::<Vec<_>>());
 }
