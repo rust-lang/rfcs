@@ -26,15 +26,11 @@ Variadic tuple will provide several benefits considering trait implementation fo
 - Implementations will be easier to read and maintain
 - The compiler will compile implementation only for required tuple arity
 
-# Guide-level explanation
+## Use cases
 
-[guide-level-explanation]: #guide-level-explanation
+### `Hash` trait
 
-Let's call a _variadic tuple type_ a tuple type with an arbitrary arity and a _variadic tuple_ an instance of a variadic tuple type.
-
-A variadic tuple type is declared with `(..T)` and a variadic tuple type can be expanded with `(..Vec<T>)`.
-
-Note: To illustrate the RFC, we will use the current implementation of the `Hash` trait for tuples.
+We can look at the current implementation of the `Hash` trait to see the difference with the suggested implementation:
 
 ```rust
 // Quote from Rust source code
@@ -65,6 +61,75 @@ macro_rules! last_type {
     ($a:ident, $($rest_a:ident,)+) => { last_type!($($rest_a,)+) };
 }
 ```
+
+The implementation will translate to:
+```rust
+impl<(..T), Last> Hash for (..T, Last) 
+where
+    ..(T: Hash,),
+    Last: Hash + ?Sized, {
+
+    #[allow(non_snake_case)]
+    fn hash<S: Hasher>(&self, state: &mut S) {
+        let (ref tuple @ .., ref last) = *self;
+        for member @in tuple {
+          member.hash(state);
+        };
+        last.hash(state);
+    }
+}
+```
+
+
+### Easier zero cost abstraction with tuples
+
+We can use tuples as list of types, and use ZST i ntuples to define behaviours only at compile time.
+
+For instance, we can use a ZST to define a capability and a tuple as a list of capabilities.
+In that way, we can define implementaions that can only be used for specific capabilities:
+
+```rust
+// We define 4 capabilities here
+struct CanRead;
+struct CanAdd;
+struct CanWrite;
+struct CanRemove;
+
+struct Token<(..C)>;
+
+// A helper to know if a tuple contains a specific type
+trait Has<T> {
+const VALUE: bool;
+}
+impl<T> Has<T> for () {
+const VALUE: bool = false;
+}
+impl<T, Head, (..Tuple)> Has<T> for (Head, ..Tuple)
+where (..Tuple): Has<T>, {
+const VALUE: bool = TypeId::of::<Head>() == TypeId::of::<T>() || (..Tuple)::VALUE;
+}
+
+// Use this function only with tokens with read capabitilites
+fn read<(..T)>(token: Token<(..T)>)
+where T: Has<CanRead> {
+    // We use the static_assert crate here, the compiler will issue an error if we use an invalid token.
+    const_assert!(T::Value);
+}
+```
+
+# Guide-level explanation
+
+[guide-level-explanation]: #guide-level-explanation
+
+
+In Rust, you can combine any number of types together to form a tuple. For example, you could have a function which orders a meal that returns a Drink, a Meal, and a Side. We could represent this as the tuple (Drink, Meal, Side).
+
+In this case, the tuple has three items, but really, we can have any number. If we have no items, we get (), the "empty tuple" or "unit" type. We can even put a type T in a tuple with only one item, whose type is (T,).
+
+If we want to be able to cover any size of tuple, we use what's called a variadic tuple type, whose instances are variadic tuples.
+
+
+A variadic tuple type is declared with `(..T)` and a variadic tuple type can be expanded with `(..Vec<T>)`.
 
 ## Variadic tuple type
 
