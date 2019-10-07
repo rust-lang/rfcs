@@ -149,52 +149,16 @@ Note2: If an expansion syntax contains multiple variadic tuple type identifiers,
 
 A _variadic tuple_ is a variable of a variadic tuple type.
 
-### Destructuring a variadic tuple
+### Bounding variadic tuples in patterns
 
-A variadic tuple can be destructured to manipulate its members.
-
-There are 3 syntaxes possible to destructure a variadic tuple for a variadic tuple `(..T)`:
-
-1. `(v @ ..)` of variadic tuple type `(..T)`
-2. `(ref v @ ..)` of variadic tuple type `(..&T)`
-3. `(ref mut v @ ..)` of variadic tuple type `(..&mut T)`
-
-Also, the destructure pattern can be combined with other members. For instance:
+We can use `..` to bound variables to variadic tuples.
 
 ```rust
-{
-  let source: (Head, ..Tail) = _;
-  // `head` is a variable of type `&Head`
-  // `tail` is a tuple variable of type `(..&Tail)`
-  let (ref head, ref tail @ ..) = source;
-}
-{
-  let mut source: (..L, ..R) = _;
-  // `l` is a tuple variable of type `(..&mut L)`
-  // `r` is a tuple variable of type `(..&mut R)`
-  let (ref mut @ l .., ref mut r @ ..) = source;
-}
-
-```
-
-Examples:
-
-```rust
-// The function argument is destructured as a variadic tuple with identifier `v`
-fn my_func<Head, (..T)>((head, v @ ..): (Head, ..T)) -> (..T) { 
-    ...
-}
-
-impl<Head, (..T)> Clone for (Head, ..T) 
-where 
-    ..(T: Clone),
-    Head: Clone, {
-  fn clone(&self) -> Self {
-    // We destructure `*self` which has a variadic tuple type `(Head, ..T)`
-    let (ref head, ref v @ ..) = *self;
-    ...
-  }
-}
+// Examples
+let source: (Head, ..Tail)
+let (head, tail @ ..): (Head, (..Tail)) = source;
+let (head, tail @ ..): (&Head, (..&Tail)) = &source;
+let (head, tail @ ..): (&mut Head, (..&mut Tail)) = &mut source;
 ```
 
 ### Iterating over variadic tuple
