@@ -152,6 +152,7 @@ A _variadic tuple_ is a variable of a variadic tuple type.
 ### Bounding variadic tuples in patterns
 
 We can use `..` to bound variables to variadic tuples.
+We can as well bind by reference depending on the original expression's type.
 
 ```rust
 // Examples
