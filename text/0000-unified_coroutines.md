@@ -72,34 +72,83 @@ The behavior, in which a generator consumes a different value upon each resume i
 There are possible other syntaxes to denote the fact that the value assigned to `name` is different after each `yield`, but we believe that the simplest syntax, which is used in the example above, is in this case the best.
 
 ### Alternative syntaxes
-Assigning into the name to denote that the value is changed
+There are several other possible syntaxes, but each one has its problems. Several are outlined here
+
+1. Assigning into the name to denote that the value is changed
 ```rust
-let gen = |name: &static str| {
+let gen = |name :&'static str| {
     name = yield "hello";
     name = yield name;
 }
 ```
-Or
+We are unable to denote assignment to multiple values at the same time, and would therefore have to revert to using a tuple and possibly some kind of
+destructuring assignment.
+
+2. Creating a new binding upon each yield
 ```rust
-let gen = |name: &static str| {
+let gen = |name :&'static str| {
+
     let (name, ) = yield "hello";
     let (name, ) = yield name;
 }
 ```
-We think that both of these approaches are wrong. In the first approach, we are unable to denote assignment to multiple values at the same time, and the second example denotes shadowing of the `name` binding, which also is incorrect behavior. Another issue with these approaches is, that they require the programmer, to write additional code to get the default behavior. In other words: What happens when the user does not perform the required assignment? Simply said, this code is permitted, but nonsensical:
+We are creating a new binding upon each yield point, and therefore are shadowing earlier bindings. This would mean that by default, the generator stores all of the arguments passed into it through the resumes. Another issue with these approaches is, that they require progmmer, to write additional code to get the default behavior. In other words: What happens when user does not perform the required assignment ? Simply said, this code is permitted, but nonsensical:
 ```rust
 let gen = |name: &static str| {
     yield "hello";
     let (name, ) = yield name;
 }
 ```
-The example looks like we aren't assigning to the `name` binding, and therefore upon the second yield we should return the value which was passed into the first resume function, but the implementation of such behavior would be extremely complex and probably would not correspond to what the user wanted to do in the first place. Another problem is that this design would require making `yield` an expression, which would remove the correspondence of `yield` statement with the `return` statement.
+Another issue is, how does this work with loops ? What is the value assigned to `third` in following example ?
+```rust
+let gen = |a| {
+    loop {
+        println!("a : {:?}", a);
+        let (a,) = yield 1;
+        println!("b : {:?}", a);
+        let (a,) = yield 2;
+    }        
+}
+let first = gen.resume(("0"));
+let sec = gen.resume(("1"));
+let third gen.resume(("2"));
+```
+
+
+3. Introducing a 'parametrized' yield;
+```rust
+let gen = | name: &'static str| {
+    yield(name) "hello";
+    yield(name) name;
+}
+```
+Introduces a new concept of a parametrized statement, which is not used anywhere else in the language, and makes the default behavior store the passed argument inside the generator, making the easiest choice the wrong one on many cases.
+
 
 The design we propose, in which the generator arguments are mentioned only at the start of the generator most closely resembles what is hapenning. And the user can't make a mistake by not assigning to the argument bindings from the yield statement. Only drawback of this approach is, the 'magic'. Since the value of the `name` is magically changed after each `yield`. But we pose that this is very similar to a closure being 'magically' transformed into a generator if it contains a `yield` statement and as such is an acceptable amount of 'magic' behavior for this feature.
 
 ![magic](https://media2.giphy.com/media/12NUbkX6p4xOO4/giphy.gif)
 
 Nonetheless, the introduction of this implicit behavior will require additional cognitive load for new users when learning this feature. However, the behavior of Generators without arguments is unchanged, and therefore this change does not impose this cost upfront, making it possible to introduce the more complex behavior in progressively more complex examples.
+
+Another issue posed by our approach is lifetimes of the generator arguments.
+```rust
+let gen = |a| {
+    loop {
+        println!("a : {:?}", a);
+        yield 1;
+        println!("b : {:?}", a);
+        yield 2;
+    }        
+}
+let first = gen.resume(("0"));
+let sec = gen.resume(("1"));
+let third gen.resume(("2"));
+```
+In the loop example, the lifetime of `a` is different upon each resuming of the generator, and in the case of generator resuming from the second yield point, the lifetime starts at the end of the generator, and ends at the beginning, which is not expected.
+However, if we take into consideration the form generators take when they are transformed into MIR, in this representation the lifetimes the arguments are no different than they would be in a manual `match` based implementation [Seee addendum](addendum-samples)
+
+### Standard library changes
 
 This change would result in following generator trait.
 
@@ -258,6 +307,7 @@ Alternatives:
 - Only current alternative is storing required information inside side channels such as `Rc<RefCell<Args>>` 
 or a thread local storage, which introduces runtime overhead and requires `std`. Proposed design is `no_std` compatible.
 - The proposed syntax could be changed, but from the explored options, we pose that the simplest syntax is best, even though it introduces new semantics.
+- Implement radically new syntax just for generators
 - Leave the generator as is, leaving it disconnected from the rest of the language.
 - Remove generators completely 
 
