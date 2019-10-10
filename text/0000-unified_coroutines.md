@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-Unify the `Generator` traits with the `Fn*` family of traits. Add a way to pass to pass new arguments upon each resuming of the generator.
+Unify the `Generator` traits with the `Fn*` family of traits. Add a way to pass new arguments upon each resuming of the generator.
 
 # Motivation
 [motivation]: #motivation
@@ -49,7 +49,7 @@ Yielded("World")
 
 This RFC proposes the ability of a generator to take arguments with a syntax used by closures.
 ```rust
-let gen = |name : &'static str| {
+let gen = |name: &'static str| {
     yield "Hello";
     yield name;
 }
@@ -57,15 +57,15 @@ let gen = |name : &'static str| {
 
 Then, we propose a way to pass the arguments to the generator in the form of a tuple.
 ```rust 
-println!("{}", gen.resume(("Not used"));
-println!("{}", gen.resume(("World"));
+println!("{}", gen.resume(("Not used")));
+println!("{}", gen.resume(("World")));
 ```
 Which would also result in:
 ```rust
 Yielded("Hello")
 Yielded("World")
 ```
-Notice that the argument to first resume call was unused, and the generator yielded only only the value which was passed to the second resume. This behavior is radically different from the first example, in which the name variable from outer scope was captured by generator and yielded with the second `yield` statment;
+Notice that the argument to first resume call was unused, and the generator yielded only the value which was passed to the second resume. This behavior is radically different from the first example, in which the name variable from outer scope was captured by generator and yielded with the second `yield` statment;
 
 The behavior, in which a generator consumes a different value upon each resume is currently not possible without introducing some kind of side channel, like storing the expected value in thread local storage, which is what the current implementation of async-await does.
 
@@ -74,28 +74,28 @@ There are possible other syntaxes to denote the fact that the value assigned to 
 ### Alternative syntaxes
 Assigning into the name to denote that the value is changed
 ```rust
-let gen = |name :&static str| {
+let gen = |name: &static str| {
     name = yield "hello";
     name = yield name;
 }
 ```
 Or
 ```rust
-let gen = |name :&static str| {
+let gen = |name: &static str| {
     let (name, ) = yield "hello";
     let (name, ) = yield name;
 }
 ```
-We think that both of these approaches are wrong. In the first approach, we are unable to denote assignment to multiple values at the same time, and the second example denotes shadowing of the `name` binding, which also is incorrect behavior. Another issue with these approaches is, that they require progmmer, to write additional code to get the default behavior. In other words: What happens when user does not perform the required assignment ? Simply said, this code is permitted, but nonsensical:
+We think that both of these approaches are wrong. In the first approach, we are unable to denote assignment to multiple values at the same time, and the second example denotes shadowing of the `name` binding, which also is incorrect behavior. Another issue with these approaches is, that they require the programmer, to write additional code to get the default behavior. In other words: What happens when the user does not perform the required assignment? Simply said, this code is permitted, but nonsensical:
 ```rust
-let gen = |name :&static str| {
+let gen = |name: &static str| {
     yield "hello";
     let (name, ) = yield name;
 }
 ```
-The example looks like we aren't assigning to the `name` binding, and therefore upon the second yield we should return the value which was passed into the first resume function, but the implementation of such behavior would be extremely complex and probably would not correspond to what user wanted to do in the first place. Another problem is that this design would require making `yield` an expression, which would remove the correspondence of `yield` statement with the `return` statement.
+The example looks like we aren't assigning to the `name` binding, and therefore upon the second yield we should return the value which was passed into the first resume function, but the implementation of such behavior would be extremely complex and probably would not correspond to what the user wanted to do in the first place. Another problem is that this design would require making `yield` an expression, which would remove the correspondence of `yield` statement with the `return` statement.
 
-The design we propose, in which the generator arguments are mentioned only at the start of the generator most closely resembles what is hapenning. And the user can't make a mistake by not assigning to the argument bindings from the yield statement. Only drawback of this approach is, the 'magic'. Since the value of the `name` is magically changed after each `yield`. But we pose that this is very similar to a closure being 'magically' transformed into a generator if it contains a `yield` statement and as such is acceptable amount of 'magic' behavior for this feature.
+The design we propose, in which the generator arguments are mentioned only at the start of the generator most closely resembles what is hapenning. And the user can't make a mistake by not assigning to the argument bindings from the yield statement. Only drawback of this approach is, the 'magic'. Since the value of the `name` is magically changed after each `yield`. But we pose that this is very similar to a closure being 'magically' transformed into a generator if it contains a `yield` statement and as such is an acceptable amount of 'magic' behavior for this feature.
 
 ![magic](https://media2.giphy.com/media/12NUbkX6p4xOO4/giphy.gif)
 
@@ -234,10 +234,10 @@ and utlize generators as a trait alias for a `FnPin<Args, Output = GeneratorStat
 
 1. Increased complexity of implementation of the Generator feature. 
 
-2. If we only implement necessary parts of this RFC, users will need to pass empty tuple into the `resume` function for most common case, which could be solved by introducing a a trivial trait
+2. If we only implement necessary parts of this RFC, users will need to pass empty tuple into the `resume` function for most common case, which could be solved by introducing a trivial trait
 ```rust
 trait NoArgGenerator : Generator<()> {
-    fn resume(self : Pun<&mut Self>) ->  GeneratorState<Self::Yield, Self::Return> {
+    fn resume(self: Pun<&mut Self>) ->  GeneratorState<Self::Yield, Self::Return> {
         self.resume_with_args(())
     }
 }
@@ -272,21 +272,21 @@ or a thread local storage, which introduces runtime overhead and requires `std`.
 
 - Python & Lua coroutines - They can be resumed with arguments, with yield expression returning these values [usage](https://www.tutorialspoint.com/lua/lua_coroutines.htm). 
   
-  These are interesting, since they both adopt a syntax, in which the yield expression returns values passed to resume. We think that this approach is right one for dynamic languages like Python or lua but the wrong one for Rust. The reason is, these languages are dynamically typed, and allow passing of multiple values into the coroutine. The design proposed here is static, and allows passing only a single argument into the coroutine, a tuple. The argument tuple is treated the same way as in the `Fn*` family of traits. 
+  These are interesting, since they both adopt a syntax, in which the yield expression returns values passed to resume. We think that this approach is the right one for dynamic languages like Python or lua but the wrong one for Rust. The reason is, these languages are dynamically typed, and allow passing of multiple values into the coroutine. The design proposed here is static, and allows passing only a single argument into the coroutine, a tuple. The argument tuple is treated the same way as in the `Fn*` family of traits. 
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 - Proposed syntax: Do we somehow require assignemnt from yield expression(As outlined by [different pre-rfc](https://internals.rust-lang.org/t/pre-rfc-generator-resume-args/10011)), or we do we specify arguments only at the start of the coroutine, and require 
-explanation of the different behavior in combination with the `yield` keyword explanation ?
+explanation of the different behavior in combination with the `yield` keyword explanation?
 
-- Do we unpack the coroutine arguments, unifying the behavior with closures, or do we force only a single argument and encourage the use of tuples ?
+- Do we unpack the coroutine arguments, unifying the behavior with closures, or do we force only a single argument and encourage the use of tuples?
 
-- Do we allow non `'static` coroutine arguments ? How would they interact with the lifetime of the generator, if the generator moved the values passed into `resume` into its local state ?
+- Do we allow non `'static` coroutine arguments? How would they interact with the lifetime of the generator, if the generator moved the values passed into `resume` into its local state?
 
-- Do we adopt the `FnGen` form of the generator trait and include it into the `Fn*` trait hierarchy making it first class citizen in the type system of closures ?
+- Do we adopt the `FnGen` form of the generator trait and include it into the `Fn*` trait hierarchy making it first class citizen in the type system of closures?
 
-- Do we introduce the `FnPin` trait into the `Fn*` hierarchy and make `FnGen/Generator` just an alias ?
+- Do we introduce the `FnPin` trait into the `Fn*` hierarchy and make `FnGen/Generator` just an alias?
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
@@ -332,7 +332,7 @@ However, the main goal of this RFC is to provide a basis for these decisions and
 # Addendum: samples
 [addendum-samples]: #addendum-samples
 
-The Generator concept is transformed into state machine on the MIR level, which is contained inside single function. The current implementation is transformed to something like this:
+The Generator concept is transformed into a state machine on the MIR level, which is contained inside a single function. The current implementation is transformed to something like this:
 
 ```rust
 let captured_string = "Hello";
@@ -371,7 +371,7 @@ let mut generator = {
 };
 ```
 
-After implementing changes in this RFC, the generated code could be approximated by this:
+After implementing the changes in this RFC, the generated code could be approximated by this:
 
 ```rust
 let captured_string = "Hello"
