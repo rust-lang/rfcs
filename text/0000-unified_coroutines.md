@@ -30,13 +30,16 @@ Current generators take the form of a closure, which contains at least a single 
 
 ```rust
 let name = "World";
+let done = "Done";
 let gen = || {
     yield "Hello";
     yield name;
+    return done;
 };
 ```
 And are used by calling the `resume` method on the generator.
 ```rust
+println!("{}", gen.resume());
 println!("{}", gen.resume());
 println!("{}", gen.resume());
 ```
@@ -45,6 +48,7 @@ Which results in
 ```rust
 Yielded("Hello")
 Yielded("World")
+Finished("Done")
 ```
 
 This RFC proposes the ability of a generator to take arguments with a syntax used by closures.
@@ -52,6 +56,7 @@ This RFC proposes the ability of a generator to take arguments with a syntax use
 let gen = |name: &'static str| {
     yield "Hello";
     yield name;
+    return name;
 }
 ```
 
@@ -59,13 +64,17 @@ Then, we propose a way to pass the arguments to the generator in the form of a t
 ```rust 
 println!("{}", gen.resume(("Not used")));
 println!("{}", gen.resume(("World")));
+println!("{}", gen.resume(("Done")));
 ```
 Which would also result in:
 ```rust
 Yielded("Hello")
 Yielded("World")
+Finished("Done")
 ```
 Notice that the argument to first resume call was unused, and the generator yielded only the value which was passed to the second resume. This behavior is radically different from the first example, in which the name variable from outer scope was captured by generator and yielded with the second `yield` statment;
+
+The value of `a` in previous example is `"Hello"` between its start, and first `yield`, and `"World"` between first and second `yield`. And assumes the value of `"Done"` between second yield and a the `return` statement
 
 The behavior, in which a generator consumes a different value upon each resume is currently not possible without introducing some kind of side channel, like storing the expected value in thread local storage, which is what the current implementation of async-await does.
 
@@ -128,7 +137,7 @@ let gen = |a| {
 }
 let first = gen.resume(("0"));
 let sec = gen.resume(("1"));
-let third gen.resume(("2"));
+let third = gen.resume(("2"));
 ```
 
 
@@ -165,7 +174,7 @@ let sec = gen.resume(("1"));
 let third gen.resume(("2"));
 ```
 In the loop example, the lifetime of `a` is different upon each resuming of the generator, and in the case of generator resuming from the second yield point, the lifetime starts at the end of the generator, and ends at the beginning, which is not expected.
-However, if we take into consideration the form generators take when they are transformed into MIR, in this representation the lifetimes the arguments are no different than they would be in a manual `match` based implementation [Seee addendum](addendum-samples)
+However, if we take into consideration the form generators take when they are transformed into MIR, in this representation the lifetimes the arguments are no different than they would be in a manual `match` based implementation [See addendum](addendum-samples)
 
 ### Standard library changes
 
@@ -305,7 +314,7 @@ and utlize generators as a trait alias for a `FnPin<Args, Output = GeneratorStat
 2. If we only implement necessary parts of this RFC, users will need to pass empty tuple into the `resume` function for most common case, which could be solved by introducing a trivial trait
 ```rust
 trait NoArgGenerator : Generator<()> {
-    fn resume(self: Pun<&mut Self>) ->  GeneratorState<Self::Yield, Self::Return> {
+    fn resume(self: Pin<&mut Self>) ->  GeneratorState<Self::Yield, Self::Return> {
         self.resume_with_args(())
     }
 }
