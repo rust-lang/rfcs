@@ -343,9 +343,8 @@ Rationale:
 - Allows implementations of new patterns, such as complex state machines, which are an extremely useful tool in several areas, eg. network protocol implementations.
 
 Alternatives:
-- Only current alternative is storing required information inside side channels such as `Rc<RefCell<Args>>` 
-or a thread local storage, which introduces runtime overhead and requires `std`. Proposed design is `no_std` compatible.
 - The proposed syntax could be changed, but from the explored options, we pose that the simplest syntax is best, even though it introduces new semantics.
+- Explore async generators to replace `coroutine`-like generator use cases and find another way to solve the `task::Context` argument problem faced by async-await.
 - Implement radically new syntax just for generators
 - Leave the generator as is, leaving it disconnected from the rest of the language.
 - Remove generators completely 
