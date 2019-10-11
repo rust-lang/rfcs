@@ -99,7 +99,7 @@ Drawback of this approach is, the 'magic'. Since the value of the `name` is magi
 
 ![magic](https://media2.giphy.com/media/12NUbkX6p4xOO4/giphy.gif)
 
-But, like shia himself, this point is controversial, and is the main issue that prevented us from adding generator arguments to the language in the first place. There are possible other syntaxes to denote the fact that the value assigned to `name` is different after each `yield`, but we believe that the simplest syntax, which is used in the example above, is in this case the best. Additional examples are described [later](alternative-syntaxes)
+But, like Shia himself, this point is controversial, and is the main issue that prevented us from adding generator arguments to the language in the first place. There are possible other syntaxes to denote the fact that the value assigned to `name` is different after each `yield`, but we believe that the simplest syntax, which is used in the example above, is in this case the best. Additional examples are described [later](alternative-syntaxes)
 
 The introduction of this implicit behavior will require additional cognitive load for new users when learning this feature. However, the behavior of Generators without arguments is unchanged, and therefore this change does not impose this cost upfront, making it possible to introduce the more complex behavior in progressively more complex examples.
 
@@ -236,7 +236,7 @@ and utlize generators as a trait alias for a `FnPin<Args, Output = GeneratorStat
 
 But, contrary to this point, we might not want to conflate the `Generator` trait with the `Fn*` trait hierarchy,
 because of future compatilibity with possible formalizations of newly added rust features. 
-See work on effect systems by (Russel Johnston)[https://gist.github.com/rpjohnst/a68de4c52d9b0b0f6ddf54ca293cceee]
+See work on effect systems by [Russel Johnston](https://gist.github.com/rpjohnst/a68de4c52d9b0b0f6ddf54ca293cceee)
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -264,7 +264,7 @@ Alternatives:
 
 
 ### Alternative syntaxes
-[alternative-syntaaxex]: #alternative-syntaxes
+[alternative-syntaxes]: #alternative-syntaxes
 There are several other possible syntaxes, to denote that the value of generator arguments is different after each yield. Several are outlined here:
 
 1. Assigning into the name to denote that the value is changed
@@ -352,7 +352,7 @@ explanation of the different behavior in combination with the `yield` keyword ex
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
-One of the areas of improvement, is interaction with generators. Currently the generator takes the form of a closure, but the resume method is called like a trait method. One of the future improvements would be making generators callable like closures, since this RFC recomments their unification with closures.
+One of the areas of improvement, is interaction with generators. Currently the generator takes the form of a closure, but the resume method is called like a trait method. One of the future improvements would be making generators callable like closures, through the `extern "rust-call"` interface, since this RFC recomments their unification with closures.
 
 So, current syntax with 2 arguments looks like:
 ```rust
@@ -387,7 +387,7 @@ let a = gen.resume(("Why", "Hello", "There !"));
 let b = gen.resume(("Why", "Hello", "There !"));
 let c = gen.resume(("Why", "Hello", "There !"));
 ```
-Since this approach most closely resembles current approach to Function traits, and since we consider the concept of a Coroutine/Generator a generalization of the Function concept we aim to unify these 2 concepts. Then, the further work that deals with closures could be transparently applied to generators.
+Since this approach most closely resembles current approach to Function traits.
 
 However, the main goal of this RFC is to provide a basis for these decisions and discussions after the `FnGen/Generator` trait is introduced, and the ability of generators to accept arguments is implemented.
 
