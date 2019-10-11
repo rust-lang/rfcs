@@ -100,7 +100,7 @@ let gen = |..args| {
     args = yield name;
 }
 ```
-This syntactic choice would probably be the better one. However, we do not want to introduce a behavior, which would separate teh generators from closures.
+This syntactic choice would probably be the better one. However, we do not want to introduce a behavior, which would further separate generators from closures.
 
 2. Creating a new binding upon each yield
 ```rust
