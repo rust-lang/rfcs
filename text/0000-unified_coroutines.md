@@ -81,8 +81,26 @@ let gen = |name :&'static str| {
     name = yield name;
 }
 ```
-We are unable to denote assignment to multiple values at the same time, and would therefore have to revert to using a tuple and possibly some kind of
-destructuring assignment.
+We are unable to denote assignment to multiple values at the same time, and would therefore have to revert to using a tuple and possibly some kind of destructuring assignment. The problem is the non-coherence between receiving arguments for the first time,
+and upon multiple resumes. This however is only a syntactic inconvenience, and as such we think that this approach is a very good possible choice.
+
+If we could perform tuple destructuring when assigning:
+```rust
+let gen = |name :&'static str, val : i32| {
+    name, val = yield "hello";
+    or
+    (name, val, ) = yield name;
+}
+```
+Or if we could 'pack' the arguments into tuple:
+```rust
+let gen = |..args| {
+    args = yield "hello";
+    or
+    args = yield name;
+}
+```
+This syntactic choice would probably be the better one. However, we do not want to introduce a behavior, which would separate teh generators from closures.
 
 2. Creating a new binding upon each yield
 ```rust
@@ -129,7 +147,9 @@ The design we propose, in which the generator arguments are mentioned only at th
 
 ![magic](https://media2.giphy.com/media/12NUbkX6p4xOO4/giphy.gif)
 
-Nonetheless, the introduction of this implicit behavior will require additional cognitive load for new users when learning this feature. However, the behavior of Generators without arguments is unchanged, and therefore this change does not impose this cost upfront, making it possible to introduce the more complex behavior in progressively more complex examples.
+But, like shia, this point is controversial, and main issue that prevented us from adding generator arguments to the language in the first place.
+
+The introduction of this implicit behavior will require additional cognitive load for new users when learning this feature. However, the behavior of Generators without arguments is unchanged, and therefore this change does not impose this cost upfront, making it possible to introduce the more complex behavior in progressively more complex examples.
 
 Another issue posed by our approach is lifetimes of the generator arguments.
 ```rust
@@ -239,7 +259,7 @@ The implementation of MIR generation will be more complex, and the author of thi
 [theoretical-basis]: #theoretical-basis
 The goal of this RFC is to unify the Rust's implementation of Generators, and the theoretical concept of 'Coroutine' as a generalization of the 'Subroutine/Function', and with this unification also comes the unification of rusts Generators and Functions for free.
 
-The current implementaion servers its purpose (at least for async-await), but is sevely limited and disjointed from the rest of the language. By introducing the arguments in the same way that they are represented in proposed `Fn` traits, we can bring these 2 concepts more closely together. Additinal info about this unification can be found in [future-possibilities], but if the generator arguments are introduced in proposed form, the future modifications will be just syntax improvements, and will not change the semantics in a significant way.
+The current implementation serves its purpose (at least for async-await), but is sevely limited and disjointed from the rest of the language. By introducing the arguments in the same way that they are represented in proposed `Fn` traits, we can bring these 2 concepts more closely together. Additinal info about this unification can be found in [future-possibilities], but if the generator arguments are introduced in proposed form, the future modifications will be just syntax improvements, and will not change the semantics in a significant way.
 
 Example of current `Fn*` traits:
 ```rust
