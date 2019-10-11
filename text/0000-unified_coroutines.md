@@ -96,11 +96,10 @@ Or if we could 'pack' the arguments into tuple:
 ```rust
 let gen = |..args| {
     args = yield "hello";
-    or
-    args = yield name;
+    args = yield args.name;
 }
 ```
-This syntactic choice would probably be the better one. However, we do not want to introduce a behavior, which would further separate generators from closures.
+This syntactic choice would probably be the better one. Making the change of the `name` explicit. However, we do not want to introduce a behavior, which would further separate generators from closures.
 
 2. Creating a new binding upon each yield
 ```rust
@@ -143,11 +142,11 @@ let gen = | name: &'static str| {
 Introduces a new concept of a parametrized statement, which is not used anywhere else in the language, and makes the default behavior store the passed argument inside the generator, making the easiest choice the wrong one on many cases.
 
 
-The design we propose, in which the generator arguments are mentioned only at the start of the generator most closely resembles what is hapenning. And the user can't make a mistake by not assigning to the argument bindings from the yield statement. Only drawback of this approach is, the 'magic'. Since the value of the `name` is magically changed after each `yield`. But we pose that this is very similar to a closure being 'magically' transformed into a generator if it contains a `yield` statement and as such is an acceptable amount of 'magic' behavior for this feature.
+The design we propose, in which the generator arguments are mentioned only at the start of the generator most closely resembles what is hapenning. And the user can't make a mistake by not assigning to the argument bindings from the yield statement. Only drawback of this approach is, the 'magic'. Since the value of the `name` is magically changed after each `yield`. But we pose that this is very similar to a closure being 'magically' transformed into a generator if it contains a `yield` statement.
 
 ![magic](https://media2.giphy.com/media/12NUbkX6p4xOO4/giphy.gif)
 
-But, like shia, this point is controversial, and main issue that prevented us from adding generator arguments to the language in the first place.
+But, like shia himself, this point is controversial, and is the main issue that prevented us from adding generator arguments to the language in the first place.
 
 The introduction of this implicit behavior will require additional cognitive load for new users when learning this feature. However, the behavior of Generators without arguments is unchanged, and therefore this change does not impose this cost upfront, making it possible to introduce the more complex behavior in progressively more complex examples.
 
