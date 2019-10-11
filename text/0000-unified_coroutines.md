@@ -54,7 +54,7 @@ Finished("Done")
 This RFC proposes the ability of a generator to take arguments with a syntax used by closures.
 ```rust
 let gen = |name: &'static str| {
-    yield "Hello";
+    yield "Hello";                
     yield name;
     return name;
 }
@@ -72,9 +72,20 @@ Yielded("Hello")
 Yielded("World")
 Finished("Done")
 ```
-Notice that the argument to first resume call was unused, and the generator yielded only the value which was passed to the second resume. This behavior is radically different from the first example, in which the name variable from outer scope was captured by generator and yielded with the second `yield` statment;
+Or expanded with values in between:
+```rust
+let gen = |name: &'static str| {
+    // name = "Not used"
+    yield "Hello";      
+    // name = "World
+    yield name;
+    // name = "Done"
+    return name;
+}
+```
+Notice that in this example the argument to first resume call was unused, and the generator yielded only the value which was passed to the second resume. This behavior is radically different from the first example, in which the name variable from outer scope was captured by generator and yielded with the second `yield` statment;
 
-The value of `a` in previous example is `"Hello"` between its start, and first `yield`, and `"World"` between first and second `yield`. And assumes the value of `"Done"` between second yield and a the `return` statement
+The value of `name` in previous example is `"Hello"` between its start, and first `yield`, and `"World"` between first and second `yield`. And assumes the value of `"Done"` between second yield and a the `return` statement
 
 The behavior, in which a generator consumes a different value upon each resume is currently not possible without introducing some kind of side channel, like storing the expected value in thread local storage, which is what the current implementation of async-await does.
 
