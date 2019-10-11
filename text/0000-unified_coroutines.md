@@ -11,7 +11,7 @@ Unify the `Generator` traits with the `Fn*` family of traits. Add a way to pass 
 # Motivation
 [motivation]: #motivation
 
-The generators/coroutines are extremely powerful concept, but its implementation in Rust is severely limited, and  its usage requires workarounds to achieve useful patterns. The current view of generators is also extremely disconnected from similar concepts, which already exist in the language and the standard library;
+The generators/coroutines are extremely powerful concept, but their implementation in Rust is severely limited, and usage requires workarounds in order to achieve useful patterns. The current view of generators is also extremely disconnected from similar concepts, which already exist in the language and the standard library.
 
 
 # Guide-level explanation
@@ -22,7 +22,7 @@ an interface, which is used to transfer data. Upon entering, caller can pass dat
 
 Many programming languages(including Rust) also adopted more general concept, callled coroutine. The coroutine , or `Generator` in Rust terms differs from function/subroutine in a single way. It allows the coroutine to `suspend` itself, by storing its state, and `yield`ing control back to the caller, along with data. The caller can then repeatedly pass more data back into the coroutine, and `resume` it. This back-and forth communication is an extremely useful tool for solving a wide class of problems.
 
-Except this is not the truth for Rust's coroutines. The `Generator`, as it  was introduced in order to provide a tool for implementing `async-await`, does not provide this functionality. In order to implement async-await feature, the generators were implemented in their most basic form. And in this form, Generators can't accept arguments, and are  connected to closures only in their syntax, and not their representation in the type system.
+Except this is not the truth for Rust's coroutines. The `Generator`, as it  was introduced in order to provide a tool for implementing `async-await`, does not provide this functionality. In order to implement async-await feature, the generators were implemented in their most basic form. And in this form, Generators can't accept arguments, and require invocation of a method, in order to 
 
 These issues severely lessen the usability of the generator feature, and are not difficult to solve.
 
@@ -76,11 +76,11 @@ Or expanded with values in between:
 ```rust
 let gen = |name: &'static str| {
     // name = "Not used"
-    yield "Hello";      
+    yield "Hello";  // name is also dropped here    
     // name = "World
-    yield name;
+    yield name; // name not dropped, since it is returned from yield
     // name = "Done"
-    return name;
+    return name; // name not dropped
 }
 ```
 Notice that in this example the argument to first resume call was unused, and the generator yielded only the value which was passed to the second resume. This behavior is radically different from the first example, in which the name variable from outer scope was captured by generator and yielded with the second `yield` statment;
@@ -89,103 +89,19 @@ The value of `name` in previous example is `"Hello"` between its start, and firs
 
 The behavior, in which a generator consumes a different value upon each resume is currently not possible without introducing some kind of side channel, like storing the expected value in thread local storage, which is what the current implementation of async-await does.
 
-There are possible other syntaxes to denote the fact that the value assigned to `name` is different after each `yield`, but we believe that the simplest syntax, which is used in the example above, is in this case the best.
-
-### Alternative syntaxes
-There are several other possible syntaxes, but each one has its problems. Several are outlined here
-
-1. Assigning into the name to denote that the value is changed
-```rust
-let gen = |name :&'static str| {
-    name = yield "hello";
-    name = yield name;
-}
-```
-We are unable to denote assignment to multiple values at the same time, and would therefore have to revert to using a tuple and possibly some kind of destructuring assignment. The problem is the non-coherence between receiving arguments for the first time,
-and upon multiple resumes. This however is only a syntactic inconvenience, and as such we think that this approach is a very good possible choice.
-
-If we could perform tuple destructuring when assigning:
-```rust
-let gen = |name :&'static str, val : i32| {
-    name, val = yield "hello";
-    or
-    (name, val, ) = yield name;
-}
-```
-Or if we could 'pack' the arguments into tuple:
-```rust
-let gen = |..args| {
-    args = yield "hello";
-    args = yield args.name;
-}
-```
-This syntactic choice would probably be the better one. Making the change of the `name` explicit. However, we do not want to introduce a behavior, which would further separate generators from closures.
-
-2. Creating a new binding upon each yield
-```rust
-let gen = |name :&'static str| {
-
-    let (name, ) = yield "hello";
-    let (name, ) = yield name;
-}
-```
-We are creating a new binding upon each yield point, and therefore are shadowing earlier bindings. This would mean that by default, the generator stores all of the arguments passed into it through the resumes. Another issue with these approaches is, that they require progmmer, to write additional code to get the default behavior. In other words: What happens when user does not perform the required assignment ? Simply said, this code is permitted, but nonsensical:
-```rust
-let gen = |name: &static str| {
-    yield "hello";
-    let (name, ) = yield name;
-}
-```
-Another issue is, how does this work with loops ? What is the value assigned to `third` in following example ?
-```rust
-let gen = |a| {
-    loop {
-        println!("a : {:?}", a);
-        let (a,) = yield 1;
-        println!("b : {:?}", a);
-        let (a,) = yield 2;
-    }        
-}
-let first = gen.resume(("0"));
-let sec = gen.resume(("1"));
-let third = gen.resume(("2"));
-```
+The design we propose, in which the generator arguments are mentioned only at the start of the generator most closely resembles what is hapenning. By default, every time an argument is passed into the generator, it is then dropped before the next yield. 
+And could be stored inside the generator if the user wants to by assigning the value into a new bindinging which is used accros yield points.
 
 
-3. Introducing a 'parametrized' yield;
-```rust
-let gen = | name: &'static str| {
-    yield(name) "hello";
-    yield(name) name;
-}
-```
-Introduces a new concept of a parametrized statement, which is not used anywhere else in the language, and makes the default behavior store the passed argument inside the generator, making the easiest choice the wrong one on many cases.
+##### Drawbacks 
 
-
-The design we propose, in which the generator arguments are mentioned only at the start of the generator most closely resembles what is hapenning. And the user can't make a mistake by not assigning to the argument bindings from the yield statement. Only drawback of this approach is, the 'magic'. Since the value of the `name` is magically changed after each `yield`. But we pose that this is very similar to a closure being 'magically' transformed into a generator if it contains a `yield` statement.
+Drawback of this approach is, the 'magic'. Since the value of the `name` is magically changed after each `yield`. But we pose that this is very similar to a closure being 'magically' transformed into a generator if it contains a `yield` statement.
 
 ![magic](https://media2.giphy.com/media/12NUbkX6p4xOO4/giphy.gif)
 
-But, like shia himself, this point is controversial, and is the main issue that prevented us from adding generator arguments to the language in the first place.
+But, like shia himself, this point is controversial, and is the main issue that prevented us from adding generator arguments to the language in the first place. There are possible other syntaxes to denote the fact that the value assigned to `name` is different after each `yield`, but we believe that the simplest syntax, which is used in the example above, is in this case the best. Additional examples are described [later](alternative-syntaxes)
 
 The introduction of this implicit behavior will require additional cognitive load for new users when learning this feature. However, the behavior of Generators without arguments is unchanged, and therefore this change does not impose this cost upfront, making it possible to introduce the more complex behavior in progressively more complex examples.
-
-Another issue posed by our approach is lifetimes of the generator arguments.
-```rust
-let gen = |a| {
-    loop {
-        println!("a : {:?}", a);
-        yield 1;
-        println!("b : {:?}", a);
-        yield 2;
-    }        
-}
-let first = gen.resume(("0"));
-let sec = gen.resume(("1"));
-let third gen.resume(("2"));
-```
-In the loop example, the lifetime of `a` is different upon each resuming of the generator, and in the case of generator resuming from the second yield point, the lifetime starts at the end of the generator, and ends at the beginning, which is not expected.
-However, if we take into consideration the form generators take when they are transformed into MIR, in this representation the lifetimes the arguments are no different than they would be in a manual `match` based implementation [See addendum](addendum-samples)
 
 ### Standard library changes
 
@@ -202,6 +118,7 @@ pub trait Generator<Args> {
 While the RFC does not deal with the lifetimes of the arguments, the similarity of the modified `Generator` trait with the existing `Fn*` traits suggests that rules which currently apply to closures will also apply to generators. [More info later](theoretical-basis).
 
 ### Use cases:
+
 1. Futures generated by async-await. The current implementation of async futures requires the use of thread-local storage in order to  pass the `task::Context` argument into underlying futures. This imposes small, but not zero overhead, which would be removed by this RFC.
 
 2. Protocol state machines - When a user wants to implement a state machine in order to correctly represent a network protocol, 
@@ -274,7 +191,7 @@ The proposed changes to generator trait are pretty straightforward and do not ch
 
 The implementation of MIR generation will be more complex, and the author of this RFC is unable to properly gauge the amount of work that will be required.
 
-### Theoretical basis
+## Theoretical basis
 [theoretical-basis]: #theoretical-basis
 The goal of this RFC is to unify the Rust's implementation of Generators, and the theoretical concept of 'Coroutine' as a generalization of the 'Subroutine/Function', and with this unification also comes the unification of rusts Generators and Functions for free.
 
@@ -284,10 +201,10 @@ Example of current `Fn*` traits:
 ```rust
 pub trait FnOnce<Args> {
     type Output;
-    fn call_once(self, args: Args) -> Self::Output;
+    extern "rust-call" fn call_once(self, args: Args) -> Self::Output;
 }
 pub trait FnMut<Args> : FnOnce<Args> {
-    fn call_mut(&mut self, args: Args) -> Self::Output;
+    extern "rust-call" fn call_mut(&mut self, args: Args) -> Self::Output;
 }
 ```
 And a proposed `Generator` trait:
@@ -317,20 +234,16 @@ pub trait FnPin<Args> : FnOnce<Args> {
 And either utilize the `FnPin` as a `FnGen/Generator` supertrait, or disregard the `FnGen/Generator` trait completely 
 and utlize generators as a trait alias for a `FnPin<Args, Output = GeneratorState<Self::Yield, Self::Return>>`
 
+But, contrary to this point, we might not want to conflate the `Generator` trait with the `Fn*` trait hierarchy,
+because of future compatilibity with possible formalizations of newly added rust features. 
+See work on effect systems by (Russel Johnston)[https://gist.github.com/rpjohnst/a68de4c52d9b0b0f6ddf54ca293cceee]
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
 1. Increased complexity of implementation of the Generator feature. 
 
-2. If we only implement necessary parts of this RFC, users will need to pass empty tuple into the `resume` function for most common case, which could be solved by introducing a trivial trait
-```rust
-trait NoArgGenerator : Generator<()> {
-    fn resume(self: Pin<&mut Self>) ->  GeneratorState<Self::Yield, Self::Return> {
-        self.resume_with_args(())
-    }
-}
-```
-If we introduce this trait, and rename the original `Generator::resume` method to `Generator::resume_with_args`, the existing behavior will not change. But we think this approach is **WRONG**, and the Generator trait should stay with the changes proposed above (`resume`/`call_resume` accepting a tuple). The rationale for this decision is provided in [future-possibilities] section.
+2. If we only implement necessary parts of this RFC, users will need to pass empty tuple into the `resume` function for most common case. This could be then solved by introducing a `TODO: Desugared like function calls of closures` The rationale for this decision is provided in [future-possibilities] section.
 
 3. Need to teach the special interaction between generator arguments and the yield statement.
 
@@ -348,6 +261,67 @@ Alternatives:
 - Implement radically new syntax just for generators
 - Leave the generator as is, leaving it disconnected from the rest of the language.
 - Remove generators completely 
+
+
+### Alternative syntaxes
+[alternative-syntaaxex]: #alternative-syntaxes
+There are several other possible syntaxes, to denote that the value of generator arguments is different after each yield. Several are outlined here:
+
+1. Assigning into the name to denote that the value is changed
+```rust
+let gen = |name: &'static str| {
+    (name, ) = yield "hello";
+    args = yield name;
+    name = args.0
+}
+```
+We are unable to denote assignment to multiple values at the same time, and would therefore have to revert to using a tuple and possibly some kind of destructuring assignment. The problem is the non-coherence between receiving arguments for the first time,
+and upon multiple resumes. This however is only a syntactic inconvenience, and as such we think that this approach is a very good possible choice.
+
+If we could perform tuple destructuring when assigning:
+```rust
+let gen = |name: &'static str, val: i32| {
+    name, val = yield "hello";
+    or
+    (name, val, ) = yield name;
+}
+```
+Or if we could 'pack' the arguments into tuple:
+```rust
+let gen = |..args| {
+    args = yield "hello";
+    args = yield args.name;
+}
+```
+This syntactic choice would probably be the better one. Making the change of the `name` explicit. However, we do not want to introduce a behavior, which would further separate generators from closures.
+
+3. Introducing a 'parametrized' yield;
+```rust
+let gen = | name: &'static str| {
+    yield(name) "hello";
+    yield(name) name;
+}
+```
+Introduces a new concept of a parametrized statement, which is not used anywhere else in the language, and makes the default behavior store the passed argument inside the generator, making the easiest choice the wrong one on many cases.
+
+
+Another issue posed by our approach is lifetimes of the generator arguments.
+```rust
+let gen = |a| {
+    loop {
+        println!("a : {:?}", a);
+        yield 1;
+        println!("b : {:?}", a);
+        yield 2;
+    }        
+}
+let first = gen.resume(("0"));
+let sec = gen.resume(("1"));
+let third gen.resume(("2"));
+```
+In the loop example, the lifetime of `a` is different upon each resuming of the generator, and in the case of generator resuming from the second yield point, the lifetime starts at the end of the generator, and ends at the beginning, which is not expected.
+However, if we take into consideration the form generators take when they are transformed into MIR, in this representation the lifetimes of the arguments are no different than they would be in a manual `match` based implementation [See addendum](addendum-samples)
+
 
 # Prior art
 [prior-art]: #prior-art
