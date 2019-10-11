@@ -243,7 +243,7 @@ See work on effect systems by [Russel Johnston](https://gist.github.com/rpjohnst
 
 1. Increased complexity of implementation of the Generator feature. 
 
-2. If we only implement necessary parts of this RFC, users will need to pass empty tuple into the `resume` function for most common case. This could be then solved by introducing a `TODO: Desugared like function calls of closures` The rationale for this decision is provided in [future-possibilities] section.
+2. If we only implement necessary parts of this RFC, users will need to pass empty tuple into the `resume` function for most common case. This could be then solved by introducing a similar desugating mechanism as is used for closures today. More info in  [future-possibilities] section.
 
 3. Need to teach the special interaction between generator arguments and the yield statement.
 
