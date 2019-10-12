@@ -321,6 +321,35 @@ In the loop example, the lifetime of `a` is different upon each resuming of the 
 However, if we take into consideration the form generators take when they are transformed into MIR, in this representation the lifetimes of the arguments are no different than they would be in a manual `match` based implementation [See addendum](addendum-samples)
 
 
+### Alternative designs
+[alternative-designs]: #alternative-designs
+[Source](https://internals.rust-lang.org/t/crazy-idea-coroutine-closures/1576)
+This design presumes that `yield` will be an expression that resolves into a list of arguments that which were passed into `resume`.
+
+In order to solve the disconnect between receving an argument list at the start of the generator, and a tuple when the generator, this proposal from 2015 advocates for 2 different methods on the `Generator` trait, `start` and `resume`. In this chapter we will present a modified view.
+
+Make following syntax return a closure,which returns a generator:
+```rust
+let makegen : impl FnOnce() -> impl Generator<(String,String)> = || {
+    println!("running gen");
+    let (name, value) = yield 0;
+    let (name, value) = yield 1;
+    let (name, value) = yield 2;
+};
+
+or 
+
+let makegen : impl FnOnce() -> impl Generator<(String,String)> = || gen/coro {
+    println!("running gen");
+    let (name, value) = yield 0;
+    let (name, value) = yield 1;
+    let (name, value) = yield 2;
+};
+```
+This aproach wold fix the syntactic disconnect between receiving arguments for the first `resume` of the generator and the next ones, but the issue of arguments to previous yields being implcitly available and therefore potentially storable is still there.
+
+
+
 # Prior art
 [prior-art]: #prior-art
 
@@ -333,6 +362,8 @@ However, if we take into consideration the form generators take when they are tr
 - Python & Lua coroutines - They can be resumed with arguments, with yield expression returning these values [usage](https://www.tutorialspoint.com/lua/lua_coroutines.htm). 
   
   These are interesting, since they both adopt a syntax, in which the yield expression returns values passed to resume. We think that this approach is the right one for dynamic languages like Python or lua but the wrong one for Rust. The reason is, these languages are dynamically typed, and allow passing of multiple values into the coroutine. The design proposed here is static, and allows passing only a single argument into the coroutine, a tuple. The argument tuple is treated the same way as in the `Fn*` family of traits. 
+
+- Alternative design of a `FnOnce` closure which returns a generator, and therefore fixes th syntactic disconnect between receiving arguments between the `start` and `resume` of the generator [Link](https://internals.rust-lang.org/t/crazy-idea-coroutine-closures/1576)
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
