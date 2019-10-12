@@ -83,15 +83,14 @@ let gen = |name: &'static str| {
     return name; // name not dropped
 }
 ```
-Notice that in this example the argument to first resume call was unused, and the generator yielded only the value which was passed to the second resume. This behavior is radically different from the first example, in which the name variable from outer scope was captured by generator and yielded with the second `yield` statment;
+Notice that in this example the argument to first resume call was unused, but was still available from the start of the generator until the first `yield` point. The generator has then yielded the value which was passed to the second resume. This behavior is radically different from the first example, in which the name variable from outer scope was captured by generator and yielded with the second `yield` statment, and as such is not representable in the current form of generators.
 
 The value of `name` in previous example is `"Hello"` between its start, and first `yield`, and `"World"` between first and second `yield`. And assumes the value of `"Done"` between second yield and a the `return` statement
 
 The behavior, in which a generator consumes a different value upon each resume is currently not possible without introducing some kind of side channel, like storing the expected value in thread local storage, which is what the current implementation of async-await does.
 
 The design we propose, in which the generator arguments are mentioned only at the start of the generator most closely resembles what is hapenning. By default, every time an argument is passed into the generator, it is then dropped before the next yield. 
-And could be stored inside the generator if the user wants to by assigning the value into a new bindinging which is used accros yield points.
-
+And could be stored inside the generator if the user wants. To store a resume argument inside the generator, all the user has to do, is to assign it to a binding, which is used acroos `yield` points.
 
 ##### Drawbacks 
 
@@ -99,7 +98,7 @@ Drawback of this approach is, the 'magic'. Since the value of the `name` is magi
 
 ![magic](https://media2.giphy.com/media/12NUbkX6p4xOO4/giphy.gif)
 
-But, like Shia himself, this point is controversial, and is the main issue that prevented us from adding generator arguments to the language in the first place. There are possible other syntaxes to denote the fact that the value assigned to `name` is different after each `yield`, but we believe that the simplest syntax, which is used in the example above, is in this case the best. Additional examples are described [later](alternative-syntaxes)
+But, like Shia himself, this point is controversial, and is the main issue that prevented us from adding generators with arguments to the language in the first place. There are possible other syntaxes to denote the fact that the value assigned to `name` is different after each `yield`, but we believe that the simplest syntax, which is used in the example above, is in this case the best. Additional examples are described [later](alternative-syntaxes)
 
 The introduction of this implicit behavior will require additional cognitive load for new users when learning this feature. However, the behavior of Generators without arguments is unchanged, and therefore this change does not impose this cost upfront, making it possible to introduce the more complex behavior in progressively more complex examples.
 
@@ -243,7 +242,7 @@ See work on effect systems by [Russel Johnston](https://gist.github.com/rpjohnst
 
 1. Increased complexity of implementation of the Generator feature. 
 
-2. If we only implement necessary parts of this RFC, users will need to pass empty tuple into the `resume` function for most common case. This could be then solved by introducing a similar desugating mechanism as is used for closures today. More info in  [future-possibilities] section.
+2. If we only implement necessary parts of this RFC, users will need to pass empty tuple into the `resume` function for most common case. This could be then solved by introducing a similar desugating mechanism as is used for calling closures today. More info in  [future-possibilities] section.
 
 3. Need to teach the special interaction between generator arguments and the yield statement.
 
@@ -295,7 +294,7 @@ let gen = |..args| {
 ```
 This syntactic choice would probably be the better one. Making the change of the `name` explicit. However, we do not want to introduce a behavior, which would further separate generators from closures.
 
-3. Introducing a 'parametrized' yield;
+2. Introducing a 'parametrized' yield;
 ```rust
 let gen = | name: &'static str| {
     yield(name) "hello";
@@ -303,7 +302,6 @@ let gen = | name: &'static str| {
 }
 ```
 Introduces a new concept of a parametrized statement, which is not used anywhere else in the language, and makes the default behavior store the passed argument inside the generator, making the easiest choice the wrong one on many cases.
-
 
 Another issue posed by our approach is lifetimes of the generator arguments.
 ```rust
@@ -352,11 +350,11 @@ explanation of the different behavior in combination with the `yield` keyword ex
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
-One of the areas of improvement, is interaction with generators. Currently the generator takes the form of a closure, but the resume method is called like a trait method. One of the future improvements would be making generators callable like closures, through the `extern "rust-call"` interface, since this RFC recomments their unification with closures.
+One of the areas of improvement, is interaction with generators. Currently the generator takes the form of a closure, but the resume method is called like a trait method. One of the future improvements would be making generators callable like closures, through the `extern "rust-call"` interface, since this RFC recommends their unification with closures.
 
 So, current syntax with 2 arguments looks like:
 ```rust
-let mut gen = Pin::box(|name| {
+let mut gen = Pin::box(|name, arg2| {
     yield ("Hello", name);
     yield ("Bye", name);
 });
@@ -365,7 +363,7 @@ gen.resume(("world", "!"));
 ```
 Would become 
 ```rust
-let mut gen = Pin::box(|name| {
+let mut gen = Pin::box(|name, arg2| {
     yield ("Hello", name);
     yield ("Bye", name);
 });
@@ -375,7 +373,7 @@ let second = gen("world", "!");
 
 And this is would fully unify the interface provided by generators with the one provided by closures, but is intertwined with other issues, like [Fn traits](https://github.com/rust-lang/rust/issues/29625) and thus would block the current RFC. Therefore we propose generator syntax accepting the multiple arguments:
 ```rust
-let gen = |a,b,c| {
+let gen = |a, b, c| {
   yield a;
   yield b;
   yield c;
