@@ -20,9 +20,9 @@ The generators/coroutines are extremely powerful concept, but their implementati
 Consider a function. In the olden days, also called a subroutine. This concept is at the core of every programming language, since it is extremely useful. The subroutine has a single entrypoint and a single exit point. Both of these points provide 
 an interface, which is used to transfer data. Upon entering, caller can pass data into the subroutine and upon exiting, the subroutine can return data back to the caller.
 
-Many programming languages(including Rust) also adopted more general concept, callled coroutine. The coroutine , or `Generator` in Rust terms differs from function/subroutine in a single way. It allows the coroutine to `suspend` itself, by storing its state, and `yield`ing control back to the caller, along with data. The caller can then repeatedly pass more data back into the coroutine, and `resume` it. This back-and forth communication is an extremely useful tool for solving a wide class of problems.
+Many programming languages(including Rust) also adopted more general concept, callled coroutine. The coroutine , or `Generator` in Rust terms differs from function/subroutine in a single way. It allows the coroutine to `suspend` itself, by storing its state, and `yield`ing control back to the caller, along with data. The caller can then repeatedly pass more data back into the coroutine, and `resume` it. This back-and-forth communication is an extremely useful tool for solving a wide class of problems.
 
-Except this is not the truth for Rust's coroutines. The `Generator`, as it  was introduced in order to provide a tool for implementing `async-await`, does not provide this functionality. In order to implement async-await feature, the generators were implemented in their most basic form. And in this form, Generators can't accept arguments, and require invocation of a method, in order to 
+Except this is not the truth for Rust's coroutines. The `Generator`, as it  was introduced in order to provide a tool for implementing `async-await`, does not provide this functionality. In order to implement async-await feature, the generators were implemented in their most basic form. And in this form, Generators can't accept arguments.
 
 These issues severely lessen the usability of the generator feature, and are not difficult to solve.
 
@@ -39,9 +39,9 @@ let gen = || {
 ```
 And are used by calling the `resume` method on the generator.
 ```rust
-println!("{}", gen.resume());
-println!("{}", gen.resume());
-println!("{}", gen.resume());
+println!("{:?}", gen.resume());
+println!("{:?}", gen.resume());
+println!("{:?}", gen.resume());
 ```
 
 Which results in 
@@ -62,9 +62,9 @@ let gen = |name: &'static str| {
 
 Then, we propose a way to pass the arguments to the generator in the form of a tuple.
 ```rust 
-println!("{}", gen.resume(("Not used")));
-println!("{}", gen.resume(("World")));
-println!("{}", gen.resume(("Done")));
+println!("{:?}", gen.resume(("Not used")));
+println!("{:?}", gen.resume(("World")));
+println!("{:?}", gen.resume(("Done")));
 ```
 Which would also result in:
 ```rust
@@ -216,7 +216,7 @@ pub trait Generator<Args> {
     fn resume(self: Pin<&mut Self>, args: Args) -> GeneratorState<Self::Yield, Self::Return>;
 }
 ```
-Considering the closeness of these 2 concepts, it might be beneficial to utilize a different form of the `Generator` trait.
+Considering the similarity of these 2 traits, a following trait might be hierarchy might be desirable:
 ```rust
 pub trait FnGen<Args> : FnOnce<Args, Output=GeneratorState<Self::Yield,Self::Return>> {
     type Yield;
