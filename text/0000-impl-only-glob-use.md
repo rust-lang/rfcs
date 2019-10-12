@@ -39,6 +39,8 @@ The `* as _` syntax might be too strange and thus off-putting for some users, es
 
 The proposed syntax is simply a combination of glob import's and `impl`-only import's syntax.
 
+An alternative syntax for this feature would be `use module::trait * as _`, which makes its functionality more obvious in exchange for being a larger deviation from existing syntax.
+
 The impact of not implementing this RFC would be very low: A small amount of people will get symbol name clashes that could have been avoided with this feature, and another small amount of people will discover that the syntax described in it is not supported.
 
 # Prior art
