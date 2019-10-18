@@ -22,7 +22,7 @@ static BACKTRACE: Lazy<Option<String>> = Lazy::new(|| {
 [motivation]: #motivation
 
 Working with lazy initialized values is ubiquitous, [`lazy_static`] and [`lazycell`] crates have more than 20 million downloads combined.
-Although some of the popularity of `lazy_static` can be attributed to current limitations of constant evaluation in Rust, there are many cases when even perfect const fn can't replace lazy values.
+Although some of the popularity of `lazy_static` can be attributed to current limitations of constant evaluation in Rust, there are many cases when even perfect `const fn` can't replace lazy values.
 
 At the same time, working with lazy values in Rust is not easy:
 
@@ -333,7 +333,7 @@ type OnceCell<T> = OnceFlipCell<(), T>;
 
 That is, we can store some initial state in the cell and consume it during initialization.
 In practice, such flexibility seems to be rarely required.
-Even if we add a type, similar to `OnceFlipCell`, having a dedicated `OnceCell` (which *could* be implemented on top of `OnceFlipCell`) type simplifies common use-case.
+Even if we add a type, similar to `OnceFlipCell`, having a dedicated `OnceCell` (which *could* be implemented on top of `OnceFlipCell`) type simplifies a common use-case.
 
 ## Poisoning
 
@@ -380,7 +380,7 @@ There are two drawbacks of using fn pointer type:
 ## Only thread-safe flavor
 
 It is possible to add only `sync` version of the types, as they are the most useful.
-However, this will be against zero cost abstractions spirit.
+However, this would be against zero cost abstractions spirit.
 Additionally, non thread-safe version is required to replace `thread_local!` macro without imposing synchronization.
 
 # Prior art
