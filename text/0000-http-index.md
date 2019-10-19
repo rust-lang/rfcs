@@ -49,6 +49,10 @@ To simplify the implementation, and parallelize fetches effectively, Cargo will 
 
 If a dependency requires `foo >=1.0.2`, then Cargo would need to fetch information about `maybe-dep` (once), even if `foo v1.0.4` ends up being selected later. However, it would not need to fetch `old-dep`. If the version requirement was upgraded to `foo >=v1.0.4` then there wouldn't be any extra fetches.
 
+## Offline support
+
+The proposed solution fully preserves Cargo's ability to work offline. Fetching of crates while online by necessity downloads enough of the index to use them, and all this data remains cached for use offline.
+
 ## Bandwidth reduction
 
 Cargo supports HTTP/2, which handles many similar requests efficiently.
@@ -57,7 +61,9 @@ All fetched dependency files can be cached, and refreshed using conditional HTTP
 
 Dependency files compress well. Currently the largest file of `rustc-ap-rustc_data_structures` compresses from 1MiB to 26KiB with Brotli. Many servers support transparently serving pre-compressed files (i.e. request for `/rustc-ap-rustc_data_structures` can be served from `rustc-ap-rustc_data_structures.gz` with an appropriate content encoding header), so the index can use high compression levels without increasing CPU cost of serving the files.
 
-### Optionally, a rotated incremental changelog
+Even in the worst case of downloading the entire index file by file, it should still use significantly less bandwidth than git clone (individually compressed files add up to about 39MiB).
+
+## Optionally, a rotated incremental changelog
 
 To further reduce number requests needed to update the index, the index may maintain an append-only log of changes. For each change (crate version published or yanked), the log would append a line with: epoch number (explained below), last-modified timestamp, and the name of the changed crate, e.g.
 
@@ -80,7 +86,7 @@ When the log grows too big, the epoch number can be incremented, and the log res
 # Drawbacks
 [drawbacks]: #drawbacks
 
-* A basic solution, without the incremental changelog, needs more requests and has higher latency to update the index. With the help of the incremental changelog, this is largely mitigated.
+* A basic solution, without the incremental changelog, needs more requests and has higher latency to update the index. With the help of the incremental changelog, this is largely mitigated. For GitHub-hosted indexes Cargo has a fast path that checks in GitHub API whether the master branch has changed. With the changelog file, the same fast path can be implemented by making a conditional HTTP request for the changelog file (i.e. checking `ETag` or `Last-Modified`).
 * Performant implementation of this solution depends on making many small requests in parallel. This in practice requires HTTP/2 support on the server.
 * It's uncertain if GitHub pages can handle this many files and the amount of traffic they generate, so the index may need to be hosted elsewhere.
 * Since alternative registries are stable, the git-based protocol is stable, and can't be removed.
@@ -93,8 +99,6 @@ When the log grows too big, the epoch number can be incremented, and the log res
 An obvious alternative would be to create a web API that can be asked to perform dependency resolution server-side (i.e. take a list dependencies and return a lockfile or similar). However, this would require running dependency resolution algorithm server-side. Maintenance of a dynamic API, critical for daily use for nearly all Rust users, is much harder and more expensive than serving of static files.
 
 The proposed solution doesn't require any custom server-side logic. The index can be hosted on a static-file CDN, and can be easily cached and mirrored by users. It's not necessary to change how the index is populated, and the canonical version of the index can be kept as a git repository with the full history. This makes it easy to keep backwards compatibility with older versions of Cargo, as well as 3rd party tools that use the index in its current format.
-
-The proposed solution fully preserves Cargo's ability to work offline (for every crate tarball available to use, there will be an index file cached).
 
 ## Initial index from rustup
 
