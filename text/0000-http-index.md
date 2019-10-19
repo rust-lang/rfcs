@@ -20,7 +20,7 @@ A while ago, GitHub indicated they [don't want to support shallow clones of larg
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-Expose the index over HTTP as simple files, keeping the existing content and directory layout unchanged, e.g.:
+Expose the index over HTTP as simple files, keeping the existing content and directory layout unchanged (the existing raw.githubusercontent.com view may even be enough for this). The current format is structured like this:
 
 ```
 /config.json
@@ -88,7 +88,7 @@ When the log grows too big, the epoch number can be incremented, and the log res
 
 * A basic solution, without the incremental changelog, needs more requests and has higher latency to update the index. With the help of the incremental changelog, this is largely mitigated. For GitHub-hosted indexes Cargo has a fast path that checks in GitHub API whether the master branch has changed. With the changelog file, the same fast path can be implemented by making a conditional HTTP request for the changelog file (i.e. checking `ETag` or `Last-Modified`).
 * Performant implementation of this solution depends on making many small requests in parallel. This in practice requires HTTP/2 support on the server.
-* It's uncertain if GitHub pages can handle this many files and the amount of traffic they generate, so the index may need to be hosted elsewhere.
+* If GitHub won't like high-traffic usage of the index via raw.githubusercontent.com, the index may need to be hosted elsewhere.
 * Since alternative registries are stable, the git-based protocol is stable, and can't be removed.
 
 # Rationale and alternatives
