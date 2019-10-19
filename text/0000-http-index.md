@@ -90,6 +90,7 @@ When the log grows too big, the epoch number can be incremented, and the log res
 * Performant implementation of this solution depends on making many small requests in parallel. This in practice requires HTTP/2 support on the server.
 * If GitHub won't like high-traffic usage of the index via raw.githubusercontent.com, the index may need to be hosted elsewhere.
 * Since alternative registries are stable, the git-based protocol is stable, and can't be removed.
+* Tools that perform fuzzy search of the index (e.g. `cargo add`) may need to make multiple requests or use some other method.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
