@@ -106,6 +106,10 @@ Rust/Cargo installation could come bundled with an initial version of the index.
 
 The proposed solution scales much better, because Cargo needs to download and cache only a "working set" of the index, and unused/abandoned/spam crates won't cost anything.
 
+## Rsync
+
+The rsync protocol requires scanning and checksumming of source and destination files, which creates a lot of unnecessary I/O, and it requires SSH or a custom daemon running on the server, which limits hosting options for the index.
+
 # Prior art
 [prior-art]: #prior-art
 
