@@ -255,7 +255,7 @@ For this reason, the implementaion would simply deadlock, with a note that a dea
 [drawbacks]: #drawbacks
 
 * This is a moderately large addition to stdlib, there's a chance we do something wrong.
-  This can be mitigated by piece-wise stabilization (in particular, `Lazy` convenience types are optional) and the fact that API is battle-tested via `once_cell` crate.
+  This can be mitigated by piece-wise stabilization (in particular, `Lazy` convenience types are optional) and the fact that API is tested in the crates.io ecosystem via `once_cell` crate.
 
 * The design of `Lazy` type uses default type-parameter as a work-around for the absence of type-inference of statics.
 
