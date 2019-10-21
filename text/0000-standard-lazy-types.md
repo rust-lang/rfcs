@@ -180,7 +180,7 @@ static GLOBAL_DATA: Lazy<Mutex<HashMap<i32, String>>> = Lazy::new(|| {
 });
 ```
 
-Moreover, once `#[thread_local]` attribute is stable (which is not on the road to stabilization yet), `Lazy` will supplant `std::thread_local!` as well:
+Moreover, once `#[thread_local]` attribute is stable, `Lazy` might supplant `std::thread_local!` as well:
 
 ```rust
 use std::cell::{RefCell, Lazy};
@@ -202,6 +202,8 @@ fn main() {
     assert_eq!(*thunk, 6);
 }
 ```
+
+However, `#[thread_local]` attribute is pretty far from stabilization at the moment, and due to the required special handling of destructors, it's unclear if just using `cell::Lazy` will work out.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
