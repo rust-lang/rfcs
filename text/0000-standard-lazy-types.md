@@ -70,7 +70,7 @@ impl<T> OnceCell<T> {
     /// remains uninitialized.
     ///
     /// It is an error to reentrantly initialize the cell from `f`. Doing
-    /// so results in a panic.
+    /// so results in a panic or a deadlock.
     pub fn get_or_init<F>(&self, f: F) -> &T
     where
         F: FnOnce() -> T,
@@ -86,7 +86,7 @@ impl<T> OnceCell<T> {
     /// remains uninitialized.
     ///
     /// It is an error to reentrantly initialize the cell from `f`. Doing
-    /// so results in a panic.
+    /// so results in a panic or a deadlock.
     pub fn get_or_try_init<F, E>(&self, f: F) -> Result<&T, E>
     where
         F: FnOnce() -> Result<T, E>,
@@ -246,6 +246,8 @@ Non thread-safe flavor can be added to `core` as well.
 The thread-safe variant is implemented similarly to `std::sync::Once`.
 Crucially, it has support for blocking: if many threads call `get_or_init` concurrently, only one will be able to execute the closure, while all other threads will block.
 For this reason, most of `std::sync::OnceCell` API can not be provided in `core`.
+In the `sync` case, reliably panicking on re-entrant initialization is not trivial.
+For this reason, the implementaion would simply deadlock, with a note that a deadlock might be elevated to panic in the future.
 
 # Drawbacks
 [drawbacks]: #drawbacks
