@@ -21,7 +21,7 @@ static BACKTRACE: Lazy<Option<String>> = Lazy::new(|| {
 # Motivation
 [motivation]: #motivation
 
-Working with lazy initialized values is ubiquitous, [`lazy_static`] and [`lazycell`] crates have more than 20 million downloads combined.
+Working with lazy initialized values is ubiquitous, [`lazy_static`] and [`lazycell`] crates are used throughout the ecosystem.
 Although some of the popularity of `lazy_static` can be attributed to current limitations of constant evaluation in Rust, there are many cases when even perfect `const fn` can't replace lazy values.
 
 At the same time, working with lazy values in Rust is not easy:
