@@ -245,8 +245,7 @@ Non thread-safe flavor can be added to `core` as well.
 
 The thread-safe variant is implemented similarly to `std::sync::Once`.
 Crucially, it has support for blocking: if many threads call `get_or_init` concurrently, only one will be able to execute the closure, while all other threads will block.
-For this reason, `std::sync::OnceCell` can not be provided in core.
-Even the minimal `OnceCell::<T>::set` API requires support for blocking, because one can't atomically set arbitrary `T`.
+For this reason, most of `std::sync::OnceCell` API can not be provided in `core`.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -334,6 +333,48 @@ type OnceCell<T> = OnceFlipCell<(), T>;
 That is, we can store some initial state in the cell and consume it during initialization.
 In practice, such flexibility seems to be rarely required.
 Even if we add a type, similar to `OnceFlipCell`, having a dedicated `OnceCell` (which *could* be implemented on top of `OnceFlipCell`) type simplifies a common use-case.
+
+## Variations of `set`
+
+The RFC proposes "obvious" signature for the `set` method:
+
+```rust
+fn set(&self, value: T) -> Result<(), T>;
+```
+
+Note, however, that `set` establishes an invariant that the cell is initialized, so a more precise signature would be
+
+```rust
+fn set(&self, value: T) -> (&T, Option<T>);
+```
+
+To be able to return a reference, `set` might need to block a thread.
+For example, if two threads call `set` concurrently, one of them needs to block while the other moves the value into the cell.
+It is possible to provide a non-blocking alternative to `set`:
+
+```rust
+fn try_set(&self, value: T) -> Result<&T, (Option<&T>, T)>
+```
+
+That is, if value is set successfully, a reference is returned.
+Otherwise, ther the cell is either fully initialized, and a reference is returned as well, or the cell is being initialized, and no valid reference exist yet.
+
+## Support for `no_std`
+
+The RFC proposes to add `cell::OnceCell` and `cell::Lazy` to `core`, while keeping `sync::OnceCell` and `sync::Lazy` `std`-only.
+However, there's a subset of `sync::OnceCell` that can be provided in `core`:
+
+```rust
+impl<T> OnceCell<T> {
+    const fn new() -> OnceCell<T>;
+    fn get(&self) -> Option<&T>;
+    fn try_set(&self, value: T) -> Result<&T, (Option<&T>, T)>
+}
+```
+
+It is possible because, while `OnceCell` needs block for full API, its internal state can be implemented as a single `AtomicUsize`, so the `core` part does not need to know about blocking.
+It is unclear if this API would be significantly useful.
+In particular, the guarantees of non-blocking `set` are pretty weak, and are not enough to implement the `Lazy` wrapper.
 
 ## Poisoning
 
