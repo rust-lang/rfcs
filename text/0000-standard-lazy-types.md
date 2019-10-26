@@ -189,6 +189,8 @@ use std::cell::{RefCell, Lazy};
 pub static FOO: Lazy<RefCell<u32>> = Lazy::new(|| RefCell::new(1));
 ```
 
+However, `#[thread_local]` attribute is pretty far from stabilization at the moment, and due to the required special handling of destructors, it's unclear if just using `cell::Lazy` will work out.
+
 Unlike `lazy_static!`, `Lazy` can be used used for locals:
 
 ```rust
@@ -202,8 +204,6 @@ fn main() {
     assert_eq!(*thunk, 6);
 }
 ```
-
-However, `#[thread_local]` attribute is pretty far from stabilization at the moment, and due to the required special handling of destructors, it's unclear if just using `cell::Lazy` will work out.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
