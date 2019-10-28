@@ -11,7 +11,7 @@
   * The "project group" term is newly introduced: it is a specific type of
     working group whose goal is to flesh out a particular proposal or complete
     a project.
-  * This project group plans to recommend specifications of how "C unwind" works on major
+  * This project group plans to recommend specifications of how "C unwind" will work on major
     platforms.
   * The primary goal is to enable Rust panics to propagate safely across
     foreign frames.
