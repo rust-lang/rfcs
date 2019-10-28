@@ -137,7 +137,7 @@ Implicit named arguments seek to combine the brevity of positional arguments wit
 
     format_args!("The {species}'s name is {name}")
 
-## Alternatives
+## Alternative Implementations and Syntax
 
 Users who wish to use implicit named arguments could make use of a third-party crate, for example the existing [fstrings crate](https://crates.io/crates/fstrings), which was built during early discussion about this proposal. This RFC accepts that deferring to a third-party crate is a reasonable option. It would however miss out on the opportunity to provide a small and straightforward ergnomic boost to many macros which are core to the rust language as well as the ecosytem which is derived from these standard library macros.
 
@@ -145,13 +145,96 @@ For similar reasons this RFC would argue that introducing a new alternative macr
 
 An alternative syntax for implicit named arguments is welcomed by this RFC if it can be argued why it is preferable to the RFC's proposed form. The RFC author argues the chosen syntax is the most suitable, because it matches the existing syntax for named arguments.
 
+## Alternative Solution - Interpolation
+[interpolation]: #interpolation
+
+Some may argue that if it becomes possible to write identifiers into format strings and have them passed as implicit named arguments to the macro, why not make it possible to do similar with expressions. For example, these macro invocations seem innocent enough, reasonably readable, and are supported in Python 3 and Javascript's string formatting mechanisms:
+
+    println!("hello {get_person()}");  // function call
+    println!("hello {self.person}");   // field access
+
+The RFC author anticipates in particular that field access may be requested by many as part of this RFC. After careful consideration this RFC does not propose to go further than the single identifier special case, proposed above as implicit named arguments.
+
+If any expressions beyond identifiers become accepted in format strings, then the RFC author expects that users will inevitably ask "why is *my* particular expression not accepted?". This could lead to feature creep, and before long perhaps the following might become valid Rust:
+
+    println!("hello { if self.foo { &self.person } else { &self.other_person } }");
+
+This no longer seems easily readable to the RFC author.
+
+### Proposed Interpolation Syntax
+
+Early review of this RFC raised an observation that the endpoint of such feature creep would be that eventually Rust would embrace interpolation of any expressions inside these macros.
+
+To keep interpolation isolated from named and positional arguments, as well as for readability and (possibly) to reduce parsing complexity, curly-plus-bracket syntax was proposed for interpolation:
+
+    println!("hello {(get_person())}");
+    println!("hello {(self.person)}");
+
+Indeed the RFC's perverse example reads slightly easier with this syntax:
+
+    println!("hello {( if self.foo { &self.person } else { &self.other_person } )}");
+
+Because the interpolation syntax `{(expr)}` is orthogonal to positional `{}` and named `{ident}` argument syntax, and is a superset of the functionality which would be offered by implict named arguments, the argument was made that we should make the leap directly to interpolation without introducing implicit named arguments so as to avoid complicating the existing cases.
+
+### Argument Against Interpolation
+
+It should first be noted that the interpolation in other languages is often a language feature; if they have string formatting functions they typically do not enjoy syntax-level support. Instead other language formatting functions often behave similarly to Rust's positional and/or named arguments to formatting macros.
+
+For example, Python 3's `.format()` method is on the surface extremely similar to Rust's formatting macros:
+
+    "hello {}".format(person)
+    "hello {person}".format(person=person)
+
+However, Python 3 cannot improve the ergonomics of these functions in the same way that this RFC proposes to use implicit named arguments. This is for technical reasons: Python simply does not have a language mechanism which could be used to add implicit named arguments to the `.format()` method. As a result, offering improved ergonomics in Python would neccesitate the introduction of a language-level interpolation syntax.
+
+(Note, the closest Python 3's `.format()` can get to implicit named arguments is this:
+
+    "hello {person}".format(**locals())
+
+but as noted in [PEP 498](https://www.python.org/dev/peps/pep-0498/#no-use-of-globals-or-locals), the Python language designers had reasons why they wanted to avoid this pattern becoming commonplace in Python code.)
+
+Rust's macros are not constrained by the same technical limitations, being free to introduce syntax as long as it is supported by the macro system and hygeiene. The macros can therefore enjoy carefully-designed ergonomic improvements without needing to reach for large extensions such as interpolation.
+
+The RFC author would argue that if named arguments (implicit or regular) become popular as a result of implementation of this RFC, then the following interpolation-free invocations would be easy to read and good style:
+
+    // Just use named arguments in simple cases
+    println!("hello {person}", person=get_person());
+    println!("hello {person}", person=self.person);
+
+    // For longwinded expressions, create identifiers to pass implicitly
+    // so as to keep the macro invocation concise.
+    let person = if self.foo { &self.person } else { &self.other_person };
+    println!("hello {person}");
+
+Similar to how implicit named arguments can be offered by third-party crates, interpolation macros already exist in the [ifmt crate](https://crates.io/crates/ifmt).
+
+### Interpolation Summary
+
+The overall argument is not to deny that the standard library macros in question would not become more expressive if they were to gain fully interpolation.
+
+However, the RFC author argues that adding interpolation to these macros is less neccessary to improve ergonomics when comparing against other languages which chose to introduce language-level interpolation support. Introduction of implicit named arguments will cater for many of the common instances where interpolation would have been desired. The existing positional and named arguments can accept arbitrary expressions, and are not so unergonomic that they feel overly cumbersome when the expression in question is also nontrivial.
+
 
 # Prior art
 [prior-art]: #prior-art
 
-A number of languages support string-interpolation functionality similar to what Rust's formatting macros offer. The RFC author's influence comes primarily from Python 3's "f-strings" and Javscript's backticks.
+## Field Init Shorthand
 
-For a comparison of the three languages, the following code would be the equivalent way to produce a new string combining a `greeting` and a `person`:
+Rust already has another case in the language where the single identifier case is special-cased:
+
+    struct Foo { bar: u8 }
+    let bar = 1u8;
+
+    let foo = Foo { bar: bar };
+    let foo = Foo { bar };        // This shorthand only accepts single identifiers
+
+This syntax is widely used and clear to read. It's [introduced in the Rust Book as one of the first topics in the section on structs](https://doc.rust-lang.org/book/ch05-01-defining-structs.html#using-the-field-init-shorthand-when-variables-and-fields-have-the-same-name). This sets a precedent that the Rust language is prepared to accept special treatment for single identifiers when it keeps syntax concise and clear.
+
+## Other languages
+
+A number of languages support string-interpolation functionality with similar syntax to what Rust's formatting macros. The RFC author's influence comes primarily from Python 3's "f-strings" and Javscript's backticks.
+
+The following code would be the equivalent way to produce a new string combining a `greeting` and a `person` in a variety of languages:
 
     // Rust
     format!("{} {}", greeting, person)                                // positional form,
@@ -163,17 +246,30 @@ For a comparison of the three languages, the following code would be the equival
     // Javascript
     `${greeting} ${person}`
 
-It is the RFC author's experience that Python and Javascript's functionality read easily from left-to-right and it is clear where each variable is being substituted into the format string.
+    // C# / VB
+    $"{greeting} {person}"
 
-In the Rust forms illustrated above, the positional form suffers the drawback of not reading strictly from left to right; the reader of the code must refer back-and-forth between the format string and the argument list to determine where each variable will be subsituted. The named form avoids this drawback at the cost of much longer code.
+    // Swift
+    "\(greeting) \(person)"
+
+    // Ruby
+    "#{greeting} #{person}"
+
+    // Scala / PHP
+    s"$greeting $person"
+
+It is the RFC author's experience that these interpolating mechanisms read easily from left-to-right and it is clear where each variable is being substituted into the format string.
+
+In the Rust formatting macros as illustrated above, the positional form suffers the drawback of not reading strictly from left to right; the reader of the code must refer back-and-forth between the format string and the argument list to determine where each variable will be subsituted. The named form avoids this drawback at the cost of much longer code.
 
 Implementing implicit named arguments in the fashion suggested in this RFC would eliminate the drawbacks of each of the Rust forms and permit new syntax much closer to the other languages:
 
     // Rust - implicit named arguments
     format!("{greeting} {person}")
 
-It should be noted, however, that both Python 3's f-strings and Javascript's backticks accept a wide variety of expressions beyond the simple identifier case that this RFC is focussed on. The RFC author argues that supporting expressions inside format strings is unneccessary in Rust, however does not rule out that this is possible as a future extension. Please see the discusison in the [future possibilities](#future-possibilities) section at the end of this RFC.
+It should be noted, however, that other languages' string interpolation mechanisms allow substitution of a wide variety of expressions beyond the simple identifier case that this RFC is focussed on.
 
+Please see the discusison on [interpolation](#interpolation) as an alternative to this RFC.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
@@ -232,32 +328,10 @@ It is not clear how significant a change this might require to `format_args!`'s 
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-Some may argue that if it becomes possible to write identifiers into format strings and have them passed as implicit named arguments to the macro, why not make it possible to do similar with expressions. For example, these macro invocations seem innocent enough, reasonably readable, and are supported in Python 3 and Javascript's string formatting mechanisms:
+The main alternative raised by this RFC is interpolation, which is a superset of the functionality offered by implicit named arguments.
 
-    println!("hello {get_person()}");  // function call
-    println!("hello {self.person}");   // field access
-
-The RFC author anticipates in particular that field access may be requested by many as part of this RFC. After careful consideration this RFC does not propose to go further than the single identifier expression, described above as implicit named arguments.
-
-If any expressions beyond identifiers become accepted in format strings, then the RFC author expects that users will inevitably ask "why is *my* particular expression not accepted?". This could lead to feature creep, and before long perhaps the following might become valid Rust:
-
-    println!("hello { if self.foo { &self.person } else { &self.other_person } });
-
-This no longer seems easily readable to the RFC author.
-
-Instead, the RFC author would argue that if named arguments (implicit or regular) become popular as a result of implementation of this RFC, then the following invocations would be easy to read and good style:
-
-    // Just use named arguments in simple cases
-    println!("hello {person}", person=get_person());
-    println!("hello {person}", person=self.person);
-
-    // For longwinded expressions, create identifiers to pass implicitly
-    // so as to keep the macro invocation concise.
-    let person = if self.foo { &self.person } else { &self.other_person };
-    println!("hello {person}");
-
-(It should be noted that Python 3's f-strings and Javascript's backticks are not able to accept arguments other than the format string itself, and so they cannot enjoy the benefits of Rust's existing mechanism of named arguments.)
-
-The RFC author would be prepared to extend the RFC if discussion about certain simple expressions raises a strong desire for these to also become acceptable in format strings. But he cautions that it may be difficult to agree where to draw the line, and so proposes the sole addition of implicit named arguments as a fine ergonomic improvement for now which doesn't rule out further extensions in the future.
+Accepting the addition of implicit named arguments now is not incompatible with adding interpolation at a later date.
 
 In particular the RFC author expects that more than once in the future he'll be frustrated that formatting macro invocations which involve field access will require significantly more typing than invocations receiving implicit named arguments!
+
+However, for reasons discussed above, interpolation is not the objective of this RFC.
