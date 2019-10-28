@@ -1,0 +1,263 @@
+- Feature Name: `format_args_implicits`
+- Start Date: 2019-10-27
+- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+
+# Summary
+[summary]: #summary
+
+Add implicit named arguments to `std::format_args!`, inferred from the format string.
+
+This would result in downstream macros based on `format_args!` to accept implicit named arguments, for example:
+
+    let (person, species, name) = ("Charlie Brown", "dog", "Snoopy");
+
+    // implicit named argument `person`
+    print!("Hello {person}");
+
+    // implicit named arguments `species` and `name`
+    format!("The {species}'s name is {name}.");
+
+(Downstream macros based on `format_args!` includes but is not limited to `format!`, `print!`, `write!`, `panic!`, and macros in the `log` crate.)
+
+
+# Motivation
+[motivation]: #motivation
+
+The macros for formatting text are a core piece of the Rust standard library. They're often one of the first things users new to the language will be exposed to. Making small changes to improve the ergonomics of these macros will improve the language for all - whether new users writing their first lines of Rust, or seasoned developers scattering logging calls throughout their program.
+
+This proposal to introduce implicit named arguments aims to improve ergonomics by reducing the amount of typing needed in typical invocations of these macros, as well as (subjectively) improving readability.
+
+
+# Guide-level explanation
+[guide-level-explanation]: #guide-level-explanation
+
+If this proposal were accepted, the following (currently invalid) macro invocation:
+
+    format_args!("hello {person}")
+
+would become a valid macro invocation, and would be equivalent to a shorthand for the already valid:
+
+    format_args!("hello {person}", person=person)
+
+This identifier `person` would be known as an **implicit named argument** to the macro. `format_args!` would be able to accept any number of such implicit named arguments in this fashion. Each implicit named argument would have to be an identifier which existed in the scope in which the macro is invoked.
+
+Should `person` not exist in the scope, the usual error E0425 would be emitted by the compiler:
+
+    error[E0425]: cannot find value `person` in this scope
+    --> .\foo.rs:X:Y
+    |
+    3 |     println!("hello {person}");
+    |                       ^^^^^^^^ not found in this scope
+
+As a result of this change, downstream macros based on `format_args!` would also be able to accept implicit named arguments in the same way. This would provide ergonomic benefit to many macros across the ecosystem, including:
+
+ - `format!`
+ - `print!` and `println!`
+ - `eprint!` and `eprintln!`
+ - `write!` and `writeln!`
+ - `panic!`, `unreachable!` and `unimplemented!`
+ - `assert!` and similar
+ - macros in the `log` crate
+
+(This is not an exhaustive list of the many macros this would affect. In discussion of this RFC if any further commonly-used macros are noted, they should be added to this list.)
+
+# Reference-level explanation
+[reference-level-explanation]: #reference-level-explanation
+
+
+The implementation pathway is directly motivated by the guide level explanation given above:
+
+1. The `format_args!` macro can continue to parse the format string and arguments provided to it in the existing fashion, categorising arguments as either positional or named.
+
+2. In the current implementation of `format_args!`, after parsing has occurred, all the arguments referred to by the format string are validated against the actual arguments provided. If a named argument is referred to in the format string but no corresponding named argument was provided to the macro, then an error is emitted:
+
+        error: there is no argument named `person`
+        --> src/foo.rs:X:Y
+          |
+       20 |     println!("hello {person}");
+          |                     ^^^^^^^^
+
+   If this RFC were implemented, instead of this resulting in an error, this named argument would be treated as an **implicit named argument** and the final result of the expansion of the `format_args!` macro would be the same as if a named argument, with name equivalent to the identifier, had been provided to the macro invocation.
+
+## Macro Hygiene
+
+Expanding the macro in this fashion will need to generate an identifier which corresponds to the implicit named argument. The hygiene of this generated identifier would be inherited from the format string, with location information reduced to the section of the format string which contains the implicit named argument.
+
+# Drawbacks
+[drawbacks]: #drawbacks
+
+As the syntax proposed does not currently compile, the author of this RFC does not foresee concerns about this addition creating breaking changes to Rust code already in production.
+
+However, this proposal does increase the complexity of the macros in question, as there would now be three options for how users may provide arguments to the them (positional arguments, named arguments, and the new implicit named arguments).
+
+It would also alter the learning pathway for users as they encounter these macros for the first time. If implicit named arguments prove convenient and popular in the Rust ecosystem, it may be that new users of the language learn how to use the macros in implicit named argument form before they encounter the other two options, and may even not learn about the other two options until some time into their Rust journey.
+
+Furthermore, users familiar with implicit named arguments, but not the other options, may attempt to pass expressions as arguments to format macros. Expressions would not be valid implicit named arguments. For example:
+
+    // get_person() is a function call expression, not an identifier,
+    // so could not be accepted as an implicit named argument
+    println!("hello {}", get_person());
+
+This is not world-ending, as users who only know about implicit named arguments (and not positional or named arguments) might write something like the following:
+
+    let person = get_person();
+    println!("hello {person}");
+
+While two lines rather than one, it is still perfectly readable code.
+
+
+# Rationale and alternatives
+[rationale-and-alternatives]: #rationale-and-alternatives
+
+The core macro resonsible for all Rust's string formatting mechanism is `std::format_args!`. It requires a format string, as well as a corresponding number of additional arguments which will be substituted into appropriate locations in the format string.
+
+There are two types of arguments `format_args!` can accept:
+
+1. Positional arguments, which require less typing and so (in the RFC author's experience) are used more frequently:
+
+       format_args!("The {}'s name is {}.", species, name)
+
+2. Named arguments, which require more typing but (in the RFC author's experience) have the upside that the the format string itself is easier to read:
+
+       format_args!(
+           "The {species}'s name is {name}",
+           species=species,
+           name=name
+       )
+
+Neither positional or named arguments are restricted to identifiers. They can accept any valid Rust expression, for example:
+
+    format_args!("Hello {}", get_person())
+    format_args!("Hello {person}", person=get_person())
+
+However, this RFC author's experience is that a significant majority of arguments to formatting macros are simple identifiers. (It is openly acknowledged that this is a subjective statement.)
+
+Implicit named arguments seek to combine the brevity of positional arguments with the clarity that named arguments provide to the format string:
+
+    format_args!("The {species}'s name is {name}")
+
+## Alternatives
+
+Users who wish to use implicit named arguments could make use of a third-party crate, for example the existing [fstrings crate](https://crates.io/crates/fstrings), which was built during early discussion about this proposal. This RFC accepts that deferring to a third-party crate is a reasonable option. It would however miss out on the opportunity to provide a small and straightforward ergnomic boost to many macros which are core to the rust language as well as the ecosytem which is derived from these standard library macros.
+
+For similar reasons this RFC would argue that introducing a new alternative macro to `format_args!` in the standard library would not be a good outcome compared to adding to the existing macro.
+
+An alternative syntax for implicit named arguments is welcomed by this RFC if it can be argued why it is preferable to the RFC's proposed form. The RFC author argues the chosen syntax is the most suitable, because it matches the existing syntax for named arguments.
+
+
+# Prior art
+[prior-art]: #prior-art
+
+A number of languages support string-interpolation functionality similar to what Rust's formatting macros offer. The RFC author's influence comes primarily from Python 3's "f-strings" and Javscript's backticks.
+
+For a comparison of the three languages, the following code would be the equivalent way to produce a new string combining a `greeting` and a `person`:
+
+    // Rust
+    format!("{} {}", greeting, person)                                // positional form,
+    format!("{greeting} {person}", greeting=greeting, person=person)  // or named form
+
+    # Python 3
+    f"{greeting} {person}"
+
+    // Javascript
+    `${greeting} ${person}`
+
+It is the RFC author's experience that Python and Javascript's functionality read easily from left-to-right and it is clear where each variable is being substituted into the format string.
+
+In the Rust forms illustrated above, the positional form suffers the drawback of not reading strictly from left to right; the reader of the code must refer back-and-forth between the format string and the argument list to determine where each variable will be subsituted. The named form avoids this drawback at the cost of much longer code.
+
+Implementing implicit named arguments in the fashion suggested in this RFC would eliminate the drawbacks of each of the Rust forms and permit new syntax much closer to the other languages:
+
+    // Rust - implicit named arguments
+    format!("{greeting} {person}")
+
+It should be noted, however, that both Python 3's f-strings and Javascript's backticks accept a wide variety of expressions beyond the simple identifier case that this RFC is focussed on. The RFC author argues that supporting expressions inside format strings is unneccessary in Rust, however does not rule out that this is possible as a future extension. Please see the discusison in the [future possibilities](#future-possibilities) section at the end of this RFC.
+
+
+# Unresolved questions
+[unresolved-questions]: #unresolved-questions
+
+## Should implicit named arguments be accepted for formatting parameters?
+
+Some of the formatting traits can accept additional formatting parameters to control how the argument is displayed. For example, the precision with which to display a floating-point number:
+
+    println!("{:.5}", x);  // print x to 5 decimal places
+
+It is also possible for the precision to refer to either positional or named arguments using "dollar syntax":
+
+    println!("{:.1$}", x, 5);
+    println!("{:.prec$}", x, prec=5);
+
+As a result of this RFC, formatting parameters could potentially also accept implicit named arguments:
+
+    println!("{x:.precision$}");
+
+The RFC author believes Rust users familiar with implicit named arguments may expect the above to compile (as long as `x` and `precision` were valid identifiers in the scope in question). However, feedback is requested during this RFC process as to whether the this should be indeed become acceptable as part of the RFC.
+
+All such formatting parameters can refer to arguments using dollar syntax, and so this question also applies to them.
+
+## Should we improve the error for invalid expressions in format strings?
+
+Users familiar with implicit named arguments may attempt to write expressions inside format strings, for example a function call:
+
+    println!("hello {get_person()}");
+
+The current error message that would be emitted does not explain that arbitrary expressions are not possible inside format strings:
+
+    error: invalid format string: expected `'}'`, found `'('`
+    --> .\foo.rs:X:Y
+      |
+    3 |     println!("hello {get_person()}");
+      |                     -          ^ expected `}` in format string
+      |                     |
+      |                     because of this opening brace
+      |
+      = note: if you intended to print `{`, you can escape it using `{{`
+
+An new message which informs the users of alternative possibilities may be helpful:
+
+    error: expressions may not be used inside format strings
+    --> .\scratch\test.rs:3:37
+      |
+    3 |     println!("hello {get_person()}");
+      |                     ^^^^^^^^^^^^^^ expression is here
+      |
+    = note: if you wanted to pass an expression as an argument to a formatting macro,
+      try as a positional argument, e.g. println!("hello {}", get_person());
+            or as a named argument, e.g. println!("hello {foo}", foo=get_person());
+
+It is not clear how significant a change this might require to `format_args!`'s parsing machinery, or how this error message might scale with the complexity of the format string in question.
+
+# Future possibilities
+[future-possibilities]: #future-possibilities
+
+Some may argue that if it becomes possible to write identifiers into format strings and have them passed as implicit named arguments to the macro, why not make it possible to do similar with expressions. For example, these macro invocations seem innocent enough, reasonably readable, and are supported in Python 3 and Javascript's string formatting mechanisms:
+
+    println!("hello {get_person()}");  // function call
+    println!("hello {self.person}");   // field access
+
+The RFC author anticipates in particular that field access may be requested by many as part of this RFC. After careful consideration this RFC does not propose to go further than the single identifier expression, described above as implicit named arguments.
+
+If any expressions beyond identifiers become accepted in format strings, then the RFC author expects that users will inevitably ask "why is *my* particular expression not accepted?". This could lead to feature creep, and before long perhaps the following might become valid Rust:
+
+    println!("hello { if self.foo { &self.person } else { &self.other_person } });
+
+This no longer seems easily readable to the RFC author.
+
+Instead, the RFC author would argue that if named arguments (implicit or regular) become popular as a result of implementation of this RFC, then the following invocations would be easy to read and good style:
+
+    // Just use named arguments in simple cases
+    println!("hello {person}", person=get_person());
+    println!("hello {person}", person=self.person);
+
+    // For longwinded expressions, create identifiers to pass implicitly
+    // so as to keep the macro invocation concise.
+    let person = if self.foo { &self.person } else { &self.other_person };
+    println!("hello {person}");
+
+(It should be noted that Python 3's f-strings and Javascript's backticks are not able to accept arguments other than the format string itself, and so they cannot enjoy the benefits of Rust's existing mechanism of named arguments.)
+
+The RFC author would be prepared to extend the RFC if discussion about certain simple expressions raises a strong desire for these to also become acceptable in format strings. But he cautions that it may be difficult to agree where to draw the line, and so proposes the sole addition of implicit named arguments as a fine ergonomic improvement for now which doesn't rule out further extensions in the future.
+
+In particular the RFC author expects that more than once in the future he'll be frustrated that formatting macro invocations which involve field access will require significantly more typing than invocations receiving implicit named arguments!
