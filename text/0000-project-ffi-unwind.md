@@ -83,7 +83,7 @@ shepherds.
 The first step of the project group is to define a **roadmap** indicating the
 planned sequence in which it will design and propose particular behaviors and
 features.  Once the project group feels it has completed work on some item in
-the roadmap, that item will be submitted to the community as an RFC or FCP.
+the roadmap, that item will be submitted as an RFC or FCP for review by the lang team and the community at large.
 
 ## Stabilizing unspecified "TBD" behavior
 [stabilizing-tbd]: stabilizing-unspecified-tbd-behavior
