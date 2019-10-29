@@ -7,7 +7,7 @@
 [summary]: #summary
 
 * To create a "project group" with the purpose of designing subsequent RFCs to
-  flesh out the details of the "C unwind" ABI
+  extend the language to support unwinding that crosses FFI boundaries
   * The "project group" term is newly introduced: it is a specific type of
     working group whose goal is to flesh out a particular proposal or complete
     a project.
