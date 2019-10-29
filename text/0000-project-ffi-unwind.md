@@ -141,7 +141,7 @@ considerations:
 * The possibility that C++ may adopt new unwinding mechanisms in the future.
 * The possibility that Rust may alter its unwinding mechanism in the future --
   in particular, the project group must not propose a design that would
-  constrain Rust's unwinding implementation.
+  constrain Rust's unwinding implementation on any target.
 
 ### Participation in the project group
 
