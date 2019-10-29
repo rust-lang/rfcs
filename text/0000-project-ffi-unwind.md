@@ -195,7 +195,7 @@ potential exploration. Three noteworthy examples are:
 
 * Catching foreign unwinding (e.g. Rust catching C++ exceptions, or C++
   catching Rust `panic`s)
-* Defining subtype relationships among `fn`s using ABIs with different `unwind`
+* Defining coercions among `fn`s using ABIs with different `unwind`
   behavior
 * Monitoring progress, or even participating in discussion about, the [ISO C and
   C++ proposal][c-cpp-unified-proposal] for cross-language error handling
