@@ -255,8 +255,11 @@ The following code would be the equivalent way to produce a new string combining
     // Ruby
     "#{greeting} #{person}"
 
-    // Scala / PHP
+    // Scala
     s"$greeting $person"
+    
+    // PHP
+    "$greeting $person"
 
 It is the RFC author's experience that these interpolating mechanisms read easily from left-to-right and it is clear where each variable is being substituted into the format string.
 
