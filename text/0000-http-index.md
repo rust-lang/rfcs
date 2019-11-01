@@ -40,7 +40,7 @@ It's possible to request dependency files in parallel, so the worst-case latency
 
 ## Greedy fetch
 
-To simplify the implementation, and parallelize fetches effectively, Cargo will have to fetch all dependency information before performing the actual dependency resolution algorithm. This means it'll have to pessimistically fetch information about all sub dependencies of all dependency versions that *may* match known version requrements. This won't add much overhead, because requests are per create, not per crate version. It causes additional fetches only for dependencies that were used before, but were later dropped. Fetching is still narrowed by required version ranges, so even worst cases can be avoided by bumping version requirements. For example:
+To simplify the implementation, and parallelize fetches effectively, Cargo will have to fetch all dependency information before performing the actual dependency resolution algorithm. This means it'll have to pessimistically fetch information about all sub dependencies of all dependency versions that *may* match known version requirements. This won't add much overhead, because requests are per create, not per crate version. It causes additional fetches only for dependencies that were used before, but were later dropped. Fetching is still narrowed by required version ranges, so even worst cases can be avoided by bumping version requirements. For example:
 
 * foo v1.0.1 depends on old-dep v1.0.0
 * foo v1.0.2 depends on maybe-dep v1.0.2
