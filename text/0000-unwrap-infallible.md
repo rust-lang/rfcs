@@ -1,7 +1,7 @@
 - Feature Name: `unwrap_infallible`
 - Start Date: 2019-11-01
 - RFC PR: [rust-lang/rfcs#2799](https://github.com/rust-lang/rfcs/pull/2799)
-- Rust Issue: 
+- Rust Issue: [rust-lang/rust#61695](https://github.com/rust-lang/rust/issues/61695)
 
 # Summary
 [summary]: #summary
