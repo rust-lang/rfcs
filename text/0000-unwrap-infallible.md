@@ -124,7 +124,7 @@ other crates for their own types.
 ## Going without
 
 Without a convenient conversion, developers conscious of the refactoring hazard
-have to write verbose statements like
+have to write verbose expressions like
 `res.unwrap_or_else(|never| match never {})`, or invent their own utilities
 for a shorthand. Others may never learn of the pitfall and use `unwrap` as
 the quickest suitable way to write a conversion found in the documentation of
