@@ -49,7 +49,7 @@ the error type).
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-The method `unwrap_infallible` is most readily avalable on `Result<_, !>`.
+The method `unwrap_infallible` is most readily available on `Result<_, !>`.
 The failure branch is eliminated by the compiler even in the debug profile.
 
 Extending the error type to `E: Into<!>` allows crate authors who have defined
