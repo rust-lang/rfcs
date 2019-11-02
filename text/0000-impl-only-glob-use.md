@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-Allow `use path::* as _` as a way to import implementations of all traits from `path`.
+Allow `use path::trait * as _` as a way to import implementations of all traits from `path`.
 
 # Motivation
 [motivation]: #motivation
@@ -22,24 +22,22 @@ Some well-known crates with which this pattern is often used are `rayon` and `gt
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-Like `use module::Trait as _` can be used to import an individual trait's implementations without bringing it into scope, `use module::* as _` can be used to import trait implementations for all public traits from `module` into scope.
+Like `use module::Tr as _` can be used to import an individual trait's implementations without bringing it into scope, `use module::trait * as _` can be used to import trait implementations for all public traits from `module` into scope.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-`use module::*` has to do the same thing `use module::Trait` does for every trait that `module` publicly defines or re-exports.
+`use module::trait * as _` is equivalent to one `use module::Tr as _` statement for each trait `Tr` that `module` publicly defines or re-exports.
 
 # Drawbacks
 [drawbacks]: #drawbacks
 
-The `* as _` syntax might be too strange and thus off-putting for some users, especially those new to the language. Just like with `use Thing as _`, it is not immediately obvious what it does. Additionally, it might be harder to guess or recall its functionality when reading code as it contains no hint that it is about trait implementations – in contrast to `use Thing as _`, where this could be more easily deduced when knowing `Thing` is a trait.
+Just like `use module::Tr as _`, it is not immediately obvious what `use module::trait * as _` does. It is likely more confusing for newcomers to read than `use module::*`.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-The proposed syntax is simply a combination of glob import's and `impl`-only import's syntax.
-
-An alternative syntax for this feature would be `use module::trait * as _`, which makes its functionality more obvious in exchange for being a larger deviation from existing syntax.
+The most obvious alternative syntax-wise would be `use module::* as _`, a combination of glob imports and `impl`-only trait imports. This was also the syntax proposed in the initial version of this RFC; however it was deemed too obscure by many.
 
 The impact of not implementing this RFC would be very low: A small amount of people will get symbol name clashes that could have been avoided with this feature, and another small amount of people will discover that the syntax described in it is not supported.
 
@@ -58,4 +56,4 @@ The author of this RFC is not aware of comparable syntax and / or import semanti
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-A potential future import syntax might simplify trait implementation imports yet again by recursively importing them from a given crate or module. Following the globbing syntax used in other places, this syntax could be `use cratename::** as _`.
+A potential future import syntax might simplify trait implementation imports yet again by recursively importing them from a given crate or module. The syntax for this could for example be `use cratename::trait ** as _`.
