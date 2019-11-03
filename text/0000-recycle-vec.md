@@ -7,6 +7,8 @@
 [summary]: #summary
 
 Add method `Vec::recycle` that allows safe reuse of the backing allocation of the `Vec`.
+It does this by consuming the input `Vec`, emptying it, reinterpreting the type and
+then reusing its allocation as the backing buffer of a new `Vec`.
 
 # Motivation
 [motivation]: #motivation
