@@ -44,7 +44,7 @@ For each crate in the dependency tree, including the root crate, the recorded ve
 # Drawbacks
 [drawbacks]: #drawbacks
 
-- Slightly increases the size of the generated binaries. However, the increase is typically below 1%. A "Hello World" on x86 Linux compiles into a ~1Mb file in the best case (recent Rust without jemalloc, LTO enabled). Its Cargo.lock even with a couple of dependencies is less than 1Kb, that's under 1/1000 of the size of the binary. Since Cargo.lock grows linearly with the number of dependencies, it will keep being negligible.
+- Slightly increases the size of the generated binaries. However, the increase is typically below 1%. A "Hello World" on x86 Linux compiles into a ~1Mb file in the best case (recent Rust without jemalloc, LTO enabled). Its Cargo.lock even with a couple of dependencies is less than 1Kb, that's under 1/1000 of the size of the binary. Since Cargo.lock grows linearly with the number of dependencies, it will keep being negligible. This [seems to hold empirically](https://github.com/rust-lang/rfcs/pull/2801#issuecomment-549184251) too.
 - Adds more platform-specific code to the build process, which needs to be maintained.
 
 # Rationale and alternatives
