@@ -20,16 +20,14 @@ The primary use case for this information is cross-referencing versions of the d
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-Every time an executable is compiled with Cargo, the contents of Cargo.lock are embedded in the generated binary. It can be recovered using existing tools like `readelf` or Rust-specific tooling, and then inspected manually or processed in an automated way just like the regular `Cargo.lock` file.
+Every time an executable is compiled with Cargo, the contents of `Cargo.lock` are embedded in the generated binary. It can be recovered using existing tools like `readelf` or Rust-specific tooling, and then inspected manually or processed in an automated way just like the regular `Cargo.lock` file.
 
 WASM, asm.js and embedded platforms excempt from this mechanism since they have very strict code size requirements. For those platforms we encourage you to use tooling that record the hash of every executable in a database and associates the hash with its Cargo.lock, compiler and LLVM version used for the build.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-The version information is encoded in an additional arbitrary section of the executable (PE, ELF and Mach-O all allow arbitrary sections) by Cargo. Section name is subject to bikeshedding.
-
-For each crate in the dependency tree, including the root crate, the recorded version information contains the name, version, origin URL and checksum (equivalent to the current contents of `Cargo.lock` file). The exact format is TBD - see [unresolved questions](#unresolved-questions).
+The version information is encoded in an additional arbitrary section of the executable by Cargo. The exact mechanism varies depending on the executable format (ELF, Mach-O, PE, etc.). Section name is subject to bikeshedding.
 
 A prototype implementation for Linux in `bash` looks like this:
 
@@ -41,10 +39,12 @@ objcopy --add-section .dep-list=Cargo.lock --set-section-flags .dep-list=noload,
 objcopy -O binary --set-section-flags .dep-list=alloc --only-section=.dep-list mybinary.withdeps Cargo.lock.extracted
 ```
 
+For each crate in the dependency tree, including the root crate, the recorded version information contains the name, version, origin URL and checksum (equivalent to the current contents of `Cargo.lock` file). The exact format is TBD - see [unresolved questions](#unresolved-questions).
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
-- Slightly increases the size of the generated binaries. However, the increase is below 1%. A "Hello World" on x86 Linux compiles into a ~1Mb file in the best case (recent Rust without jemalloc, LTO enabled). Its Cargo.lock even with a couple of dependencies is less than 1Kb, that's under 1/1000 of the size of the binary. Since Cargo.lock grows linearly with the number of dependencies, it will keep being negligible.
+- Slightly increases the size of the generated binaries. However, the increase is typically below 1%. A "Hello World" on x86 Linux compiles into a ~1Mb file in the best case (recent Rust without jemalloc, LTO enabled). Its Cargo.lock even with a couple of dependencies is less than 1Kb, that's under 1/1000 of the size of the binary. Since Cargo.lock grows linearly with the number of dependencies, it will keep being negligible.
 - Adds more platform-specific code to the build process, which needs to be maintained.
 
 # Rationale and alternatives
@@ -73,7 +73,7 @@ Alternatives:
 # Prior art
 [prior-art]: #prior-art
 
-`rustc` already embeds compiler and LLVM version in the executables built with it. You can see it by running `strings your_executable | grep 'rustc version'`.
+The Rust compiler already embeds compiler and LLVM version in the executables built with it. You can see it by running `strings your_executable | grep 'rustc version'`.
 
 The author is not aware of direct prior art in other languages. Since build system and package management system are usually decoupled, most languages did not have the opportunity to implement anything like this.
 
@@ -93,21 +93,3 @@ In microservice environments it is fairly typical to expose an HTTP endpoint ret
 - Surface dependency information through an HTTP endpoint in a microservice environment. The [proof-of-concept](https://github.com/Shnatsel/rust-audit/issues/2) has a feature request for it. However, this does not require support from Cargo and can be implemented as a crate.
   - Is data embedded in an ELF section accessible to the application itself at runtime?
 - Record and surface versions of C libraries statically linked into the Rust executable, e.g. OpenSSL.
-
-Think about what the natural extension and evolution of your proposal would
-be and how it would affect the language and project as a whole in a holistic
-way. Try to use this section as a tool to more fully consider all possible
-interactions with the project and language in your proposal.
-Also consider how the this all fits into the roadmap for the project
-and of the relevant sub-team.
-
-This is also a good place to "dump ideas", if they are out of scope for the
-RFC you are writing but otherwise related.
-
-If you have tried and cannot think of any future possibilities,
-you may simply state that you cannot think of anything.
-
-Note that having something written down in the future-possibilities section
-is not a reason to accept the current or a future RFC; such notes should be
-in the section on motivation or rationale in this or subsequent RFCs.
-The section merely provides additional information.
