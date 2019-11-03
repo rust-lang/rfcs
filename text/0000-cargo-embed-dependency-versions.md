@@ -77,6 +77,8 @@ The Rust compiler already embeds compiler and LLVM version in the executables bu
 
 Go compiler embeds `go.mod` dependency information into its compiled binaries. Unlike Rust, Go does not have a machine-readable vulnerability database yet, but this information is already used by e.g. [golicense](https://github.com/mitchellh/golicense).
 
+The most common way to manage Ruby apps involves `Gemfile.lock` which can be thought of as a runtime `Cargo.lock`. Some companies have automation searching for these files in production VMs/containers and cross-referencing them against [RubySec](https://rubysec.com/).
+
 Since build system and package management system are usually decoupled, most other languages did not have the opportunity to implement anything like this.
 
 In microservice environments it is fairly typical to expose an HTTP endpoint returning the application version, see e.g. [example from Go cookbook](https://blog.kowalczyk.info/article/vEja/embedding-build-number-in-go-executable.html). However, this typically does not include versions of the dependencies.
