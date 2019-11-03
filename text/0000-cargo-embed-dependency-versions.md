@@ -1,6 +1,6 @@
 - Feature Name: `cargo_embed_dependency_versions`
-- Start Date: (fill me in with today's date, YYYY-MM-DD)
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- Start Date: 2019-11-03
+- RFC PR: [rust-lang/rfcs#2801](https://github.com/rust-lang/rfcs/pull/2801)
 - Rust Issue: None
 
 # Summary
