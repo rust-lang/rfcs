@@ -22,7 +22,7 @@ The primary use case for this information is cross-referencing versions of the d
 
 Every time an executable is compiled with Cargo, the contents of `Cargo.lock` are embedded in the generated binary. It can be recovered using existing tools like `readelf` or Rust-specific tooling, and then inspected manually or processed in an automated way just like the regular `Cargo.lock` file.
 
-WASM, asm.js and embedded platforms excempt from this mechanism since they have very strict code size requirements. For those platforms we encourage you to use tooling that record the hash of every executable in a database and associates the hash with its Cargo.lock, compiler and LLVM version used for the build.
+WASM, asm.js and embedded platforms are excempt from this mechanism since they have very strict code size requirements. For those platforms we encourage you to use tooling that record the hash of every executable in a database and associates the hash with its Cargo.lock, compiler and LLVM version used for the build.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -75,7 +75,9 @@ Alternatives:
 
 The Rust compiler already embeds compiler and LLVM version in the executables built with it. You can see it by running `strings your_executable | grep 'rustc version'`.
 
-The author is not aware of direct prior art in other languages. Since build system and package management system are usually decoupled, most languages did not have the opportunity to implement anything like this.
+Go compiler embeds `go.mod` dependency information into its compiled binaries. Unlike Rust, Go does not have a machine-readable vulnerability database yet, but this information is already used by e.g. [golicense](https://github.com/mitchellh/golicense).
+
+Since build system and package management system are usually decoupled, most other languages did not have the opportunity to implement anything like this.
 
 In microservice environments it is fairly typical to expose an HTTP endpoint returning the application version, see e.g. [example from Go cookbook](https://blog.kowalczyk.info/article/vEja/embedding-build-number-in-go-executable.html). However, this typically does not include versions of the dependencies.
 
