@@ -18,7 +18,7 @@ This would result in downstream macros based on `format_args!` to accept implici
     // implicit named arguments `species` and `name`
     format!("The {species}'s name is {name}.");
 
-(Downstream macros based on `format_args!` includes but is not limited to `format!`, `print!`, `write!`, `panic!`, and macros in the `log` crate.)
+(Downstream macros based on `format_args!` include but are not limited to `format!`, `print!`, `write!`, `panic!`, and macros in the `log` crate.)
 
 
 # Motivation
@@ -185,7 +185,7 @@ For example, Python 3's `.format()` method is on the surface extremely similar t
     "hello {}".format(person)
     "hello {person}".format(person=person)
 
-However, Python 3 cannot improve the ergonomics of these functions in the same way that this RFC proposes to use implicit named arguments. This is for technical reasons: Python simply does not have a language mechanism which could be used to add implicit named arguments to the `.format()` method. As a result, offering improved ergonomics in Python would neccesitate the introduction of a language-level interpolation syntax.
+However, Python 3 cannot improve the ergonomics of these functions in the same way that this RFC proposes to use implicit named arguments. This is for technical reasons: Python simply does not have a language mechanism which could be used to add implicit named arguments to the `.format()` method. As a result, offering improved ergonomics in Python necessitated the introduction of a language-level interpolation syntax (f-strings, described in the [prior art](#prior-art) section).
 
 (Note, the closest Python 3's `.format()` can get to implicit named arguments is this:
 
@@ -257,8 +257,8 @@ The following code would be the equivalent way to produce a new string combining
 
     // Scala
     s"$greeting $person"
-    
-    // PHP
+
+    // Perl and PHP
     "$greeting $person"
 
 It is the RFC author's experience that these interpolating mechanisms read easily from left-to-right and it is clear where each variable is being substituted into the format string.
@@ -272,7 +272,7 @@ Implementing implicit named arguments in the fashion suggested in this RFC would
 
 It should be noted, however, that other languages' string interpolation mechanisms allow substitution of a wide variety of expressions beyond the simple identifier case that this RFC is focussed on.
 
-Please see the discusison on [interpolation](#interpolation) as an alternative to this RFC.
+Please see the discussion on [interpolation](#interpolation) as an alternative to this RFC.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
