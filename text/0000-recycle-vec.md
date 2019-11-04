@@ -6,9 +6,11 @@
 # Summary
 [summary]: #summary
 
-Add method `Vec::recycle` that allows safe reuse of the backing allocation of the `Vec`.
-It does this by consuming the input `Vec`, emptying it, reinterpreting the type and
-then reusing its allocation as the backing buffer of a new `Vec`.
+Add method `fn recycle<U>(mut self) -> Vec<U>` for `Vec<T>` that allows safe reuse
+of the backing allocation of the `Vec<T>` at a different, but compatible, type `Vec<U>`.
+The vector is emptied and any values contained in it will be dropped.
+As a result, no elements of type `T` are transmuted to `U` and so this operation is safe.
+The target type must have the same size and alignment as the source type.
 
 # Motivation
 [motivation]: #motivation
@@ -126,12 +128,11 @@ The implementation of this RFC is very clear and concise; it's as follows:
 ```
 impl Vec<T> {
     fn recycle<U>(mut self) -> Vec<U> {
-        self.truncate(0);
         assert_eq!(core::mem::size_of::<T>(), core::mem::size_of::<U>());
         assert_eq!(core::mem::align_of::<T>(), core::mem::align_of::<U>());
-        let capacity = self.capacity();
-        let ptr = self.as_mut_ptr() as *mut U;
-        core::mem::forget(self);
+        self.clear();
+        let (ptr, len, capacity) = self.into_raw_parts();
+        let ptr = ptr as *mut U;
         unsafe { Vec::from_raw_parts(ptr, 0, capacity) }
     }
 }
@@ -245,6 +246,8 @@ In this space, Rust remains quite alone.
 Should we add this API to other, or possibly all collections in the standard library?
 - The backwards-compatibilty hazard before having compile-time asserts must be reconciled somehow
 or the stabilization must be delayed until compile-time asserts are available.
+  - It seems that there are currently no plans about supporting generic type parameters in const context. This means that
+  asserting a size of a type as a compile time assertion seems to be like a far-fetched feature.
 - Anything else?
 
 # Future possibilities
