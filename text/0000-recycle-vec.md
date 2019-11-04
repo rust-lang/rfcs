@@ -226,7 +226,16 @@ https://www.reddit.com/r/rust/comments/dmvsm0/a_question_about_where_clauses_and
 # Prior art
 [prior-art]: #prior-art
 
-The same API is provided by the crate `recycle_vec` via an extension trait on `Vec`: https://crates.io/crates/recycle_vec
+A prior implementation of a similar API is provided by the crate `vec-utils`:
+https://crates.io/crates/vec_utils
+
+The same API as here is also provided by the crate `recycle_vec`, intended to test the implementation:
+https://crates.io/crates/recycle_vec
+
+There is also an unmerged RFC about transmuting `Vec`s: https://github.com/rust-lang/rfcs/pull/2756
+The difference with this RFC is that this RFC intends to provide a safe
+API for reusing the allocation and doesn't concern itself with transmuting/reinterpreting the
+content values of `Vec`.
 
 The author is unaware about prior art outside of the Rust language and its ecosystem;
 it might be hard to find as the proposed API is positioned in the cutting point of high performance processing,
