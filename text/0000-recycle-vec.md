@@ -205,6 +205,13 @@ directly subtyping relations between two generic types in where clauses. [1]
 Thus, it was deemed to be sufficient to limit verification of the memory layout to the checking
 of size and alignment of the stored type.
 
+There is an alternative to this API, provided by https://crates.io/crates/vec_utils,
+that instead of panicking on mismatching size or alignment, just allocates a new `Vec`
+and returns it. This has the advantage that it works well in generic contexts.
+The API proposed here takes stricter stance against allocating, not allowing
+allocating by mistake. On the other hand, it's harder to use in generic contexts.
+There might be room for providing both kind of APIs.
+
 The impact of not doing is this is that those who need to reuse allocations and run into
 lifetime problems as described in the Guide-level explanation, either
 1. use a crate such as https://crates.io/crates/recycle_vec
@@ -257,6 +264,9 @@ Should we add this API to other, or possibly all collections in the standard lib
 or the stabilization must be delayed until compile-time asserts are available.
   - It seems that there are currently no plans about supporting generic type parameters in const context. This means that
   asserting a size of a type as a compile time assertion seems to be like a far-fetched feature.
+- The API provided by this RFC panics on size or alignment mismatch. An alternative to this is to consider the allocation just an
+optional optimization, and silently allocate a new, compatible `Vec` in case the old allocation can't be reused. It's also
+plausible that both kind of APIs are provided.
 - Anything else?
 
 # Future possibilities
