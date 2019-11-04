@@ -331,10 +331,14 @@ It is not clear how significant a change this might require to `format_args!`'s 
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-The main alternative raised by this RFC is interpolation, which is a superset of the functionality offered by implicit named arguments.
+The main alternative raised by this RFC is interpolation, which is a superset of the functionality offered by implicit named arguments. However, for reasons discussed above, interpolation is not the objective of this RFC.
 
 Accepting the addition of implicit named arguments now is not incompatible with adding interpolation at a later date.
 
-In particular the RFC author expects that more than once in the future he'll be frustrated that formatting macro invocations which involve field access will require significantly more typing than invocations receiving implicit named arguments!
+Future discussion on this topic may also focus on adding interpolation for just a subset of possible expressions, for example `dotted.paths`. We noted in debate for this RFC that particularly for formatting parameters the existing dollar syntax appears problematic for both parsing and reading, for example `{self.x:self.width$.self.precision$}`.
 
-However, for reasons discussed above, interpolation is not the objective of this RFC.
+The conclusion we came to in the RFC discussion is that adding even just interpolations for `dotted.paths` will therefore want a new syntax, which we nominally chose as the `{(expr)}` syntax already suggested in the [interpolation](#interpolation) alternative section of this RFC.
+
+Using this parentheses syntax, for example, we might one day accept `{(self.x):(self.width).(self.precision)}` to support `dotted.paths` and a few other simple expressions. The choice of whether to support an expanded subset, support interpolation of all expressions, or not to add any further complexity to this macro is deferred to the future.
+
+A future proposal for extending interpolation support might wish to explore alternative syntaxes to `{(expr)}` parentheses which can also be parsed and read comfortably.
