@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-Add method `Result::unwrap_infallible` to provide a convenient alternative
+Add method `Result::into_ok` to provide a convenient alternative
 to `unwrap` for converting `Result` values with an uninhabitable `Err` type,
 while ensuring infallibility at compile time.
 
@@ -32,7 +32,7 @@ or is claimed to be infallibly convertible to `!` by a provided `From` impl:
 
 ```rust
 impl<T, E: Into<!>> Result<T, E> {
-    pub fn unwrap_infallible(self) -> T {
+    pub fn into_ok(self) -> T {
         match self {
             Ok(x) => x,
             Err(e) => e.into(),
@@ -49,7 +49,7 @@ the error type).
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-The method `unwrap_infallible` is most readily available on `Result<_, !>`.
+The method `into_ok` is most readily available on `Result<_, !>`.
 The failure branch is eliminated by the compiler even in the debug profile.
 
 Extending the error type to `E: Into<!>` allows crate authors who have defined
@@ -76,7 +76,7 @@ impl From<MyNeverToken> for ! {
 }
 ```
 
-The implementation of `unwrap_infallible`, as provided above, relies on
+The implementation of `into_ok`, as provided above, relies on
 the `From` impl being divergent without panicking, which fits the general
 contract of `From`/`Into`.
 
@@ -90,8 +90,10 @@ Can't think of any.
 
 Adding an inherent method to `Result` is a backward-compatible way to
 provide convenience in supporting a safe coding practice.
-The method `unwrap_infallible` fits in nicely with other methods in the
-`unwrap*` family and is easily discoverable in the documentation.
+The method is easily discoverable in the documentation.
+Its name, `into_ok`, is chosen to be short, yet distinct to facilitate
+audit and refactoring. The conventional meaning of `into*` methods implies
+an infallible conversion.
 
 ## A blanket From impl
 
@@ -132,7 +134,7 @@ the quickest suitable way to write a conversion found in the documentation of
 
 ## Third-party crate
 
-The crate [unwrap-infallible][ext-crate] provides the `unwrap_infallible`
+The crate [unwrap-infallible][ext-crate] provides a similar `unwrap_infallible`
 method in an extension trait. A third-party crate, though, is not as
 discoverable as having a method available on `Result` in the standard library.
 
