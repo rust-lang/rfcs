@@ -150,7 +150,7 @@ which can provide specialized defaults without actually providing a
 full trait implementation:
 
 ```rust
-// the `default` qualifier here means (1) not all items are impled
+// the `default` qualifier here means (1) not all items are implied
 // and (2) those that are can be further specialized
 default impl<T: Clone, Rhs> Add<Rhs> for T {
     fn add_assign(&mut self, rhs: R) {
