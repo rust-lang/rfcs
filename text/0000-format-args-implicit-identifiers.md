@@ -193,7 +193,7 @@ However, Python 3 cannot improve the ergonomics of these functions in the same w
 
 but as noted in [PEP 498](https://www.python.org/dev/peps/pep-0498/#no-use-of-globals-or-locals), the Python language designers had reasons why they wanted to avoid this pattern becoming commonplace in Python code.)
 
-Rust's macros are not constrained by the same technical limitations, being free to introduce syntax as long as it is supported by the macro system and hygeiene. The macros can therefore enjoy carefully-designed ergonomic improvements without needing to reach for large extensions such as interpolation.
+Rust's macros are not constrained by the same technical limitations, being free to introduce syntax as long as it is supported by the macro system and hygiene. The macros can therefore enjoy carefully-designed ergonomic improvements without needing to reach for large extensions such as interpolation.
 
 The RFC author would argue that if named arguments (implicit or regular) become popular as a result of implementation of this RFC, then the following interpolation-free invocations would be easy to read and good style:
 
