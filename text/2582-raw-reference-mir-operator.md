@@ -1,7 +1,7 @@
 - Feature Name: `raw_ref_op`
 - Start Date: 2018-11-01
 - RFC PR: [rust-lang/rfcs#2582](https://github.com/rust-lang/rfcs/pull/2582)
-- Rust Issue: [rust-lang/rust#](https://github.com/rust-lang/rust/issues/)
+- Rust Issue: [rust-lang/rust#64490](https://github.com/rust-lang/rust/issues/64490)
 
 # Summary
 [summary]: #summary
