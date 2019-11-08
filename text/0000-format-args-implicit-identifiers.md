@@ -3,6 +3,7 @@
 - RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
+
 # Summary
 [summary]: #summary
 
@@ -17,6 +18,12 @@ This would result in downstream macros based on `format_args!` to accept implici
 
     // implicit named arguments `species` and `name`
     format!("The {species}'s name is {name}.");
+
+Implicit named argument capture only occurs when a corresponding named argument is not provided to the macro invocation. So in the below example, no implicit lookup for `species` is performed:
+
+    // explicit named argument `species`
+    // implicit named argument `name`
+    format!("The {species}'s name is {name}.", species="cat");
 
 (Downstream macros based on `format_args!` include but are not limited to `format!`, `print!`, `write!`, `panic!`, and macros in the `log` crate.)
 
@@ -46,9 +53,29 @@ Should `person` not exist in the scope, the usual error E0425 would be emitted b
 
     error[E0425]: cannot find value `person` in this scope
     --> .\foo.rs:X:Y
-    |
-    3 |     println!("hello {person}");
-    |                       ^^^^^^^^ not found in this scope
+      |
+    X |     println!("hello {person}");
+      |                     ^^^^^^^^ not found in this scope
+
+Implicit arguments would have lower precedence than the existing named arguments `format_args!` already accepts. For example, in the example below, the `person` named argument is explicit, and so the `person` variable in the same scope would not be captured:
+
+    let person = "David";
+
+    // Person is an explicit named argument, so this
+    // expands to "hello Matt".
+    println!("hello {person}", person="Matt");
+
+Indeed, in this example above the `person` variable would be unused, and so in this case the unused varible warning will apply, like the below:
+
+    warning: unused variable: `person`
+    --> src/foo.rs:X:Y
+      |
+    X |     let person = "David";
+      |         ^^^^^^ help: consider prefixing with an underscore: `_person`
+      |
+      = note: `#[warn(unused_variables)]` on by default
+
+Because implicit named arguments would have lower precedence than explicit named arguments, it is anticipated that no breaking changes would occur to existing code by implementing this RFC.
 
 As a result of this change, downstream macros based on `format_args!` would also be able to accept implicit named arguments in the same way. This would provide ergonomic benefit to many macros across the ecosystem, including:
 
@@ -62,9 +89,9 @@ As a result of this change, downstream macros based on `format_args!` would also
 
 (This is not an exhaustive list of the many macros this would affect. In discussion of this RFC if any further commonly-used macros are noted, they should be added to this list.)
 
+
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
-
 
 The implementation pathway is directly motivated by the guide level explanation given above:
 
@@ -79,6 +106,8 @@ The implementation pathway is directly motivated by the guide level explanation 
           |                     ^^^^^^^^
 
    If this RFC were implemented, instead of this resulting in an error, this named argument would be treated as an **implicit named argument** and the final result of the expansion of the `format_args!` macro would be the same as if a named argument, with name equivalent to the identifier, had been provided to the macro invocation.
+
+   Because `person` is only treated as an implicit named argument if no exisiting named argument can be found, this ensures that implicit named arguments have lower precedence than explicit named arguments.
 
 ## Macro Hygiene
 
