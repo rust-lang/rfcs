@@ -7,7 +7,7 @@
 # Summary
 [summary]: #summary
 
-Add implicit named arguments to `std::format_args!`, inferred from the format string.
+Add implicit named arguments to `std::format_args!`, inferred from the format string literal.
 
 This would result in downstream macros based on `format_args!` to accept implicit named arguments, for example:
 
@@ -52,30 +52,10 @@ This identifier `person` would be known as an **implicit named argument** to the
 Should `person` not exist in the scope, the usual error E0425 would be emitted by the compiler:
 
     error[E0425]: cannot find value `person` in this scope
-    --> .\foo.rs:X:Y
+     --> .\foo.rs:X:Y
       |
     X |     println!("hello {person}");
       |                     ^^^^^^^^ not found in this scope
-
-Implicit arguments would have lower precedence than the existing named arguments `format_args!` already accepts. For example, in the example below, the `person` named argument is explicit, and so the `person` variable in the same scope would not be captured:
-
-    let person = "David";
-
-    // Person is an explicit named argument, so this
-    // expands to "hello Matt".
-    println!("hello {person}", person="Matt");
-
-Indeed, in this example above the `person` variable would be unused, and so in this case the unused varible warning will apply, like the below:
-
-    warning: unused variable: `person`
-    --> src/foo.rs:X:Y
-      |
-    X |     let person = "David";
-      |         ^^^^^^ help: consider prefixing with an underscore: `_person`
-      |
-      = note: `#[warn(unused_variables)]` on by default
-
-Because implicit named arguments would have lower precedence than explicit named arguments, it is anticipated that no breaking changes would occur to existing code by implementing this RFC.
 
 As a result of this change, downstream macros based on `format_args!` would also be able to accept implicit named arguments in the same way. This would provide ergonomic benefit to many macros across the ecosystem, including:
 
@@ -86,8 +66,37 @@ As a result of this change, downstream macros based on `format_args!` would also
  - `panic!`, `unreachable!` and `unimplemented!`
  - `assert!` and similar
  - macros in the `log` crate
+ - macros in the `failure` crate
 
-(This is not an exhaustive list of the many macros this would affect. In discussion of this RFC if any further commonly-used macros are noted, they should be added to this list.)
+(This is not an exhaustive list of the many macros this would affect. In discussion of this RFC if any further commonly-used macros are noted, they may be added to this list.)
+
+## Precedence
+
+Implicit arguments would have lower precedence than the existing named arguments `format_args!` already accepts. For example, in the example below, the `person` named argument is explicit, and so the `person` variable in the same scope would not be captured:
+
+    let person = "Charlie";
+
+    // Person is an explicit named argument, so this
+    // expands to "hello Snoopy".
+    println!("hello {person}", person="Snoopy");
+
+Indeed, in this example above the `person` variable would be unused, and so in this case the unused varible warning will apply, like the below:
+
+    warning: unused variable: `person`
+     --> src/foo.rs:X:Y
+      |
+    X |     let person = "Charlie";
+      |         ^^^^^^ help: consider prefixing with an underscore: `_person`
+      |
+      = note: `#[warn(unused_variables)]` on by default
+
+Because implicit named arguments would have lower precedence than explicit named arguments, it is anticipated that no breaking changes would occur to existing code by implementing this RFC.
+
+## Generated Format Strings
+
+`format_args!` can accept an expression instead of a string literal as its first argument. `format_args!` will attempt to expand any such expression to a string literal. If successful then the `format_args!` expansion will continue as if the user had passed that string literal verbatim.
+
+No implicit named argument capture will be performed if the format string is generated from an expansion. See the [macro hygiene](#macro-hygiene) discussion for the motivation behind this decision.
 
 
 # Reference-level explanation
@@ -101,17 +110,79 @@ The implementation pathway is directly motivated by the guide level explanation 
 
         error: there is no argument named `person`
         --> src/foo.rs:X:Y
-          |
-       20 |     println!("hello {person}");
-          |                     ^^^^^^^^
+         |
+       X |     println!("hello {person}");
+         |                     ^^^^^^^^
 
    If this RFC were implemented, instead of this resulting in an error, this named argument would be treated as an **implicit named argument** and the final result of the expansion of the `format_args!` macro would be the same as if a named argument, with name equivalent to the identifier, had been provided to the macro invocation.
 
    Because `person` is only treated as an implicit named argument if no exisiting named argument can be found, this ensures that implicit named arguments have lower precedence than explicit named arguments.
 
 ## Macro Hygiene
+[macro-hygiene]: #macro-hygiene
+
 
 Expanding the macro in this fashion will need to generate an identifier which corresponds to the implicit named argument. The hygiene of this generated identifier would be inherited from the format string, with location information reduced to the section of the format string which contains the implicit named argument.
+
+An interesting case to consider is that `format_args!`-based macros can accept any expression in the format string position. The macro then attempts to expand this expression to a string literal.
+
+This means the below examples of `format!` invocations could compile successfully in stable Rust today:
+
+    format!(include_str!("README.md"), foo=1)
+    format!(concat!("hello ", "{bar}")), bar=2)
+
+This RFC argues that `format_args!` should not attempt to expand any implicit named arguments if the macro is provided with an expression instead of a verbatim string literal.
+
+The following are motivations why this RFC argues this case:
+
+* This RFC's motivation for implicit named arguments is to give users a concise syntax for string formatting. When the format string is generated from some other expression this motivation for concise syntax is irrelevant.
+
+* The hygienic context of the string literal generated by the expansion is entirely dependent on the expression. For example, the string literal produced by the `concat!` macro resides in a separate hygienic context. In combination with implicit named arguments using hygiene inherited from the format string, this would lead to puzzling errors like the below:
+
+      error[E0425]: cannot find value `person` in this scope
+       --> scratch/test.rs:4:14
+        |
+        |     let person = "Charlie";
+      4 |     println!(concat!("hello {person}"));
+        |              ^^^^^^^^^^^^^^^^^^^^^^^^^ not found in this scope
+
+* The expression may expand to a format string which contains new identifiers not written by the users, bypassing macro hygiene in suprising ways. For example, if the `concat!` macro did not have the hygiene issue described above, it could be to "splice together" an implicit named argument like so:
+
+       let person = "Charlie";
+       println!(concat!("hello {p", "er", "son", "}"));
+
+   The RFC author argues that it appears highly undesirable that implicit capture of the `person` identifier should occur in this example given above.
+
+* Using the hygienic context of the format string for implicit named arguments can have potentially suprising results even just with `macro_rules!` macros.
+
+  For example, the RFC author found that with a proof-of-concept implementation of implicit named arguments the invocation below would print `"Snoopy"`:
+
+      const PERSON: &'static str = "Charlie";
+
+      fn main() {
+          macro_rules! bar {
+            () => { "{PERSON}" };
+          }
+
+          const PERSON: &'static str = "Snoopy";
+          println!(bar!());
+      }
+
+  However, by merely changing to `let` bindings and moving the `"Charlie"` declaration three lines down to be inside the `main()` function, as below, the invocation would instead print `"Charlie"`:
+
+      fn main() {
+          let person = "Charlie";
+          macro_rules! bar {
+              () => { "{person}" };
+          }
+
+          let person = "Snoopy";
+          println!(bar!());
+      }
+
+   While it can be argued that this example is very contrived, the RFC author believes that it is undesirable to add such subtle interactions to the `format_args!` family of macros.
+
+These appear to give strong motivation to disable implicit argument capture when `format_args!` expands an expression instead of a verbatim string literal.
 
 # Drawbacks
 [drawbacks]: #drawbacks
