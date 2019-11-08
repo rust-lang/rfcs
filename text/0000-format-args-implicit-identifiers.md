@@ -39,7 +39,7 @@ This proposal to introduce implicit named arguments aims to improve ergonomics b
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-If this proposal were accepted, the following (currently invalid) macro invocation:
+If this proposal were captured, the following (currently invalid) macro invocation:
 
     format_args!("hello {person}")
 
@@ -377,7 +377,50 @@ Please see the discussion on [interpolation](#interpolation) as an alternative t
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-## Should implicit named arguments be accepted for formatting parameters?
+## Interaction with `panic!`
+
+The `panic!` macro forwards to `format_args!` for string formatting. For example, the below code compiles on stable Rust today:
+
+    fn main() {
+        panic!("Error code: {code}", code=1);
+        // thread 'main' panicked at 'Error code: 1' ...
+    }
+
+However, in current stable Rust the `panic!` macro does not forward to `format_args!` if there is only a single argument. This would interact poorly with implicit named arguments. In the invocation below, for example, users familiar with implicit named argument capture would expect the panic message to be formatted. Instead, given `panic!`'s current semantics, the panic message would be the unformatted literal:
+
+    fn main() {
+        let code = 1;
+        panic!("Error code: {code}");
+        // thread 'main' panicked at 'Error code: {code}' ...
+    }
+
+This semantic of `panic!` has previously been acknowledged as a "papercut", for example in [this Rust issue](https://github.com/rust-lang/rust/issues/22932). However, it has so far been left as-is because changing the design was low priority, and changing it may break existing code.
+
+If this RFC were to be implemented, users will very likely expect invoking `panic!` with only a string literal will capture any implicit named arguments. This semantic would quickly become percieved as a major bug rather than a papercut.
+
+Implementing this RFC therefore would bring strong motivation for making a small breaking change to `panic!`: when a single argument passed to panic is a string literal, instead of the final panic message being that literal (the current behavior), the final panic message will be the formatted literal, substituting any implicit named arguments denoted in the literal.
+
+That is, the desired behavior is as the example below:
+
+    fn main() {
+        let code = 1;
+        panic!("Error code: {code}");
+        // thread 'main' panicked at 'Error code: 1' ...
+    }
+
+This change to `panic!` would alter the behavior of existing code (such as the example above). It would also stop some code from being accepted, such as `panic!("{}")`, which is valid code today but would become a compile fail (because this would be a missing positional argument). Crates implementing macros with similar semantics to `panic!` (such as `failure`) may also wish to make changes to their crates in sync with the change to `panic!`. This suggests that this change to `panic!` would perhaps be ideal for release as part of a future Rust edition, say, 2021.
+
+The details of this pathway to change panic are open to discussion. Some possible options:
+
+* `panic!` itself could be made a builtin macro (which would allow its behavior to vary between editions)
+
+* A `$expr:literal` match arm could be added to `panic!`. This arm could forward to a built-in macro which controlled behaviour appropriately.
+
+* A new implementation of `panic!` could be written, and switching between them could be done with a new `std::prelude`.
+
+Whichever route is chosen, it is agreed that this RFC should not be stabilised unless `format!("{foo}")` and `panic!("{foo}")` can be made consistent with respect to implicit named arguments.
+
+## Should implicit named arguments be captured for formatting parameters?
 
 Some of the formatting traits can accept additional formatting parameters to control how the argument is displayed. For example, the precision with which to display a floating-point number:
 
@@ -388,7 +431,7 @@ It is also possible for the precision to refer to either positional or named arg
     println!("{:.1$}", x, 5);
     println!("{:.prec$}", x, prec=5);
 
-As a result of this RFC, formatting parameters could potentially also accept implicit named arguments:
+As a result of this RFC, formatting parameters could potentially also make use implicit named argument capture:
 
     println!("{x:.precision$}");
 
