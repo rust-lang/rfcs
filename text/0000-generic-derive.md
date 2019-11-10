@@ -1,6 +1,6 @@
 - Feature Name: `generic_derive`
 - Start Date: 2019-11-09
-- RFC PR: 
+- RFC PR: [rust-lang/rfcs#2811](https://github.com/rust-lang/rfcs/pull/2811)
 - Rust Issue: 
 
 # Summary
