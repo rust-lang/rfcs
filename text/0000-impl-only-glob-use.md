@@ -29,6 +29,17 @@ Like `use module::Tr as _` can be used to import an individual trait's implement
 
 `use module::trait * as _` is equivalent to one `use module::Tr as _` statement for each trait `Tr` that `module` publicly defines or re-exports.
 
+Examples:
+
+```rust
+use gtk::{self, prelude::trait * as _};
+use rayon::{
+    iter::{once, repeat},
+    prelude::trait * as _,
+    ThreadPool, ThreadPoolBuilder,
+};
+```
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
