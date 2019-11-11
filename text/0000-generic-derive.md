@@ -207,7 +207,8 @@ sufficient for this RFC as well.
   `#[derive(<T: Bound> Trait1 + Trait2 + Trait3)]` is also possible,
   either standalone or as an item in a comma-separated list.
 - It's possible to extend the syntax even further by supporting a `where`
-  clause as a more readable alternative to bounds in the angle bracket syntax:
+  clause, allowing more complex bounds, or just as a more readable alternative
+  to bounds in the angle bracket syntax:
 
   ```rust
     #[derive(<Fut1, Fut2, F> Future where
