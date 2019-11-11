@@ -210,11 +210,11 @@ sufficient for this RFC as well.
   clause as a more readable alternative to bounds in the angle bracket syntax:
 
   ```rust
-    #[derive(<Fut1, Fut2, F> Future) where
+    #[derive(<Fut1, Fut2, F> Future where
         Fut1: TryFuture,
         Fut2: TryFuture<Error = Fut1::Error>,
         F: FnOnce(<Fut1 as TryFuture>::Ok) -> Fut2,
-    ]
+    )]
     enum AndThen<Fut1, Fut2, F> {
         // ...
     }
@@ -226,7 +226,7 @@ sufficient for this RFC as well.
   in the current syntax for `where` clauses:
 
   ```rust
-    #[derive(Unwrap) where St: Unwrap, F:]
+    #[derive(Unwrap where St: Unwrap, F:)]
     struct MyFold<St, F> {
         // ...
     }
