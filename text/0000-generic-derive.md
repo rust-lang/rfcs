@@ -232,7 +232,7 @@ sufficient for this RFC as well.
     }
   ```
 
-  This form would be also harder on the macro implementation, which would
+  This form would also be harder on the macro implementation, which would
   not get a list of parameters to paste directly into the generated impl item,
   but would have to assemble them from the type definition item and the
   possible trait parameters.
