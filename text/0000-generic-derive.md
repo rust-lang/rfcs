@@ -161,7 +161,7 @@ The `DeriveGenerics` struct is provided by `proc_macro` as follows:
 ```rust
 pub struct DeriveGenerics {
     /// List of impl parameters, including the enclosing angle brackets.
-    /// Empty if the derive input item has no generics.
+    /// Empty if the derive attribute item has no generics.
     pub impl_generics: TokenStream,
     /// Generic arguments of the trait path including the angle brackets
     /// or functional syntax, or empty if the trait has no generic parameters.
