@@ -96,7 +96,9 @@ I could not think of any drawbacks.
       be their desire.
     + Performance: I have no knowledge about compiler. But I _guess_ comparing 2 instances of `Duration`
       generates more code than having one instance checking its internal fields. If it's true, we should prefer
-      `is_zero()` instead of this constant.
+      `is_zero()` over this constant.
+    + A `Duration` offers other functions such as `as_secs()`, `as_nanos()`... So using the constant only for 
+      zero-verifying might not be useful.
 
 - Second alternative:
 
@@ -108,7 +110,7 @@ I could not think of any drawbacks.
 # Prior art
 [prior-art]: #prior-art
 
-I have no examples of prior arts.
+- <https://time-rs.github.io/time/time/struct.Duration.html#method.is_zero>
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
