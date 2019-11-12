@@ -81,7 +81,7 @@ I could not think of any drawbacks.
 
 - First alternative:
 
-    In (issue #2809)(https://github.com/rust-lang/rfcs/issues/2809), one developer suggested new constant in
+    In [issue #2809](https://github.com/rust-lang/rfcs/issues/2809), one developer suggested new constant in
     `core::time` module:
 
     ```rust
