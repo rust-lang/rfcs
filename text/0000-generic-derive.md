@@ -77,6 +77,7 @@ use futures::future::{TryFuture, IntoFuture, MapOk};
     > Future
 )]
 enum AndThen<Fut1, Fut2, F> {
+    #[try_step]
     First(MapOk<Fut1, F>),
     #[after(First)]
     #[future(output)]
