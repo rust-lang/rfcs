@@ -211,17 +211,22 @@ the extended `derive` syntax proposed here is holistic, consistent with the
 syntax of the generated impl item to the extent of informing literal parts
 of it, and may allow further extension in similarly holistic ways.
 The extension proposed here is opted into by the macro authors if and when
-they wish to do so, while the solution proposed in RFC 2353 expects all
-macro authors to implement support for the new attributes "so that a consistent
-experience is maintained in the ecosystem".
+they wish to do so, while the solution proposed in [rust-lang/rfcs#2353]
+expects all macro authors to implement support for the new attributes
+"so that a consistent experience is maintained in the ecosystem".
 
 [rust-lang/rfcs#2353]: https://github.com/rust-lang/rfcs/pull/2353
 
-An alternative has been proposed in the pre-RFC discussion to enable custom
-bounds by trait-specific inert attributes. This has some disadvantages of
-the alternative above, furthermore, it bifurcates the solution into mostly
-similar custom attributes that add to cognitive load and may lead to
-maintenance trouble if the preferred syntax is changed again.
+An alternative has been proposed in the pre-RFC discussion to customize
+bounds by trait-specific helper attributes. This is already a practice in
+some projects, including Servo. It has some disadvantages of the alternative
+above, furthermore, it bifurcates the solution into mostly similar custom
+attributes that add to cognitive load and may lead to maintenance trouble
+if the preferred syntax is changed again. The proposal discussed here, however,
+does not exclude augmentation with helper attributes, which may help further
+reduce boilerplate in deriving traits within a large codebase, or in a
+particularly popular API. A more systematic approach like all or part of
+[rust-lang/rfcs#2353] is also not incompatible with this one.
 
 Everything proposed here is also possible to implement with custom attribute
 macros instead of `derive` macros. But this would unnecessarily multiply
