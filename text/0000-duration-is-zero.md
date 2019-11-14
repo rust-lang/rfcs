@@ -1,6 +1,6 @@
 - Feature Name: `Duration::is_zero()`
 - Start Date: 2019-11-12
-- RFC PR: N/A
+- RFC PR: Not available
 - RFC Issue: [rust-lang/rfcs#2809](https://github.com/rust-lang/rfcs/issues/2809)
 
 # Summary
@@ -45,7 +45,7 @@ Adding new function `is_zero(&self) -> bool` to `core::time::Duration`.
 - Example usage:
 
     + `std::net::TcpStream::connect_timeout()` takes a duration as timeout. The documentation says: _It is an
-      error to pass a zero `Duration` to this function._ This is a good example of the proposal function
+      error to pass a zero `Duration` to this function._ This is a good example of the proposed function
       `is_zero()`.
 
     + `std::thread::sleep()` takes a duration. A zero duration does not help much in this case. If one program
@@ -90,15 +90,11 @@ I could not think of any drawbacks.
 
     Some drawbacks I think of are:
 
-    + Developers need to import the constant or the `time` module (for usage like
-      `if some_duration == time::ZERO`).
+    + Developers need to import one more component: either the constant or the `time` module (for usage like
+      `if some_duration == time::ZERO`). While with `is_zero()`, they can just call it directly on any
+      `Duration` instance.
     + Importing the constant might introduce new conflicting name to developer's existing code, which might not
       be their desire.
-    + Performance: I have no knowledge about compiler. But I _guess_ comparing 2 instances of `Duration`
-      generates more code than having one instance checking its internal fields. If it's true, we should prefer
-      `is_zero()` over this constant.
-    + A `Duration` offers other functions such as `as_secs()`, `as_nanos()`... So using the constant only for 
-      zero-verifying might not be useful.
 
 - Second alternative:
 
@@ -106,6 +102,35 @@ I could not think of any drawbacks.
 
     I think `is_empty()` is related to collections (string, vector, set, map, slice...) However a duration is
     not like a collection. So this name is not appropriate.
+
+- Third alternative:
+
+    ```rust
+    impl Duration {
+
+        /// Creates new zero duration
+        pub const fn zero() -> Self {
+            ...
+        }
+
+    }
+    ```
+
+    This one was suggested by a developer, originally I didn't have this in mind. So from my view, I might not
+    see proper use cases of it. However for this RFC, I think it's less convenient than `is_zero()`. For example:
+
+    ```rust
+    // It's longer if we type this
+    if some_duration == Duration::zero() { ... }
+
+    // Or, we have to declare new (internal) constant, and we might need
+    // to repeat this for each independent project.
+    const ZERO: Duration = Duration::zero();
+    if some_duration == ZERO { ... }
+    ```
+
+    But I think `zero()` might be useful in other situations. So I'll add this one to
+    [Future possibilities][future-possibilities] section.
 
 # Prior art
 [prior-art]: #prior-art
@@ -120,4 +145,18 @@ I could not think of any unresolved questions.
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-I could not think of any future possibilities.
+One future possibility is this:
+
+```rust
+impl Duration {
+
+    /// Creates new zero duration
+    pub const fn zero() -> Self {
+        ...
+    }
+
+}
+```
+
+It's one of above alternatives. From my view, I explained that it's less convenient than `is_zero()`. But I
+think it might be useful for other developers.
