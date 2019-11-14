@@ -267,9 +267,9 @@ sufficient for this RFC as well.
 
 - Should it be permitted to have two derive macros in scope for the
   same trait, one with a `proc_macro_derive_with_generics` entry point
-  and the other with a plain `proc_macro_derive`? Conversely, should having
-  both kinds of entry points for the same trait in one procedural macro crate
-  be disallowed?
+  and the other with a plain `proc_macro_derive`? Conversely, should it be
+  disallowed to have both kinds of entry points for the same trait in one
+  procedural macro crate?
 - Should the `proc_macro_derive` annotation be reused for the extended
   function signature, rather than introducing `proc_macro_derive_with_generics`
   and needing a policy on coexistence of the two kinds as per the questions
