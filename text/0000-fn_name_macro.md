@@ -13,7 +13,7 @@ This RFC adds an additional macro, `function!`, to the `core` crate. When invoke
 # Motivation
 [motivation]: #motivation
 
-This is a useful extension of Rust's existing debug reporting: `file!`, `line!`, `col!` and `module_path!`.
+This is a useful extension of Rust's existing debug reporting: `file!`, `line!`, `column!` and `module_path!`.
 
 For most people the name of the function is a much more immediate way to understand the context of a message than file name and line number.
 
