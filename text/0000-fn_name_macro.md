@@ -20,7 +20,7 @@ For most people, the name of the function is a much more immediate way to unders
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-For debug information about what's happening within the program there's several useful macros that you might use. One of them is the `function!` macro, which expands to the name of the current function. If used outside of a function it causes a compilation error.
+For debug information about what's happening within the program there are several useful macros that you might use. One of them is the `function!` macro, which expands to the name of the current function. If used outside of a function it causes a compilation error.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
