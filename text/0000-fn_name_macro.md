@@ -40,7 +40,7 @@ The exact text is considered "debug" information and not subject to Rust's stabi
 
 Previous discussion was within an issue of the RFCs repo: https://github.com/rust-lang/rfcs/issues/1743
 
-In summary, this is _extremely_ useful for debug purposes, and has been highly desired for nearly two years.
+In summary, this is useful for debug purposes, and has been desired for nearly two years.
 
 Alternative: we could call it `fn_name!` instead.
 
