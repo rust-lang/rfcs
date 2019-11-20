@@ -35,6 +35,14 @@ Despite the obvious intent, 1.0 came and went and there were plenty of other thi
 
 3. Beginner ease. For a beginner, finding two identical ways to achieve something immediately raises the question of "why", to which the answer here is ultimately uninteresting (and even then, the question of "which one to use" remains unanswered; neither current approach is idiomatic). As noted, deprecated items can be removed from the documentation, thereby decreasing the likelihood of head-scratching and incredulous sidelong glances from people new to Rust.
 
+4. Remove ambiguity between primitive type and module with same name. Currently if you import an
+integer module and access constants in the module and methods on the type, it's very unclear what
+comes from where:
+    ```rust
+    use std::u32;
+    assert_eq!(u32::MAX, u32::max_value());
+    ```
+
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
