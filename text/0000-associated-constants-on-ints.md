@@ -27,7 +27,7 @@ Finally, so obvious was this solution that [the original RFC for associated item
 
 > For example, today's Rust includes a variety of numeric traits, including Float, which must currently expose constants as static functions [...] Associated constants would allow the consts to live directly on the traits
 
-Despite the obvious intent, 1.0 came and went and there were plenty of other things to occupy everyone's attention. Now, two days shy of Rust's fourth anniversary, let's re-examine the situation. We propose to deprecate all of the aforementioned functions and constants in favor of associated constants defined on the appropriate types, and to additionally deprecate the `i8`, `i16`, `i32`, `i64`, `i128`, `isize`, `u8`, `u16`, `u32`, `u64`, `u128`, `usize`, `f32`, and `f64` modules in `std`. Advantages of this:
+Despite the obvious intent, 1.0 came and went and there were plenty of other things to occupy everyone's attention. Now, two days shy of Rust's fourth anniversary, let's re-examine the situation. We propose to deprecate all of the aforementioned functions and constants in favor of associated constants defined on the appropriate types, and to additionally deprecate all constants living directly in the `i8`, `i16`, `i32`, `i64`, `i128`, `isize`, `u8`, `u16`, `u32`, `u64`, `u128`, `usize`, `f32` and `f64` modules in `std`. But leaving `std::f64::consts` and `std::f32::consts` as they are. Advantages of this:
 
 1. Consistency with the rest of the language. As demonstrated by the above quotes, associated consts have been the natural way to express these concepts in Rust since before associated consts were even implemented; this approach satisfies the principle of least surprise.
 
@@ -164,38 +164,6 @@ Deprecate the following items in the standard library:
 
 [std::f32::RADIX](https://doc.rust-lang.org/std/f32/constant.RADIX.html)
 
-[std::f32::consts::E](https://doc.rust-lang.org/std/f32/consts/constant.E.html)
-
-[std::f32::consts::FRAC_1_PI](https://doc.rust-lang.org/std/f32/consts/constant.E.html)
-
-[std::f32::consts::FRAC_2_PI](https://doc.rust-lang.org/std/f32/consts/constant.FRAC_2_PI.html)
-
-[std::f32::consts::FRAC_2_SQRT_PI](https://doc.rust-lang.org/std/f32/consts/constant.FRAC_2_SQRT_PI.html)
-
-[std::f32::consts::FRAC_1_SQRT_2](https://doc.rust-lang.org/std/f32/consts/constant.FRAC_1_SQRT_2.html)
-
-[std::f32::consts::FRAC_PI_2](https://doc.rust-lang.org/std/f32/consts/constant.FRAC_PI_2.html)
-
-[std::f32::consts::FRAC_PI_3](https://doc.rust-lang.org/std/f32/consts/constant.FRAC_PI_3.html)
-
-[std::f32::consts::FRAC_PI_4](https://doc.rust-lang.org/std/f32/consts/constant.FRAC_PI_4.html)
-
-[std::f32::consts::FRAC_PI_6](https://doc.rust-lang.org/std/f32/consts/constant.FRAC_PI_6.html)
-
-[std::f32::consts::FRAC_PI_8](https://doc.rust-lang.org/std/f32/consts/constant.FRAC_PI_8.html)
-
-[std::f32::consts::LN_2](https://doc.rust-lang.org/std/f32/consts/constant.LN_2.html)
-
-[std::f32::consts::LN_10](https://doc.rust-lang.org/std/f32/consts/constant.LN_10.html)
-
-[std::f32::consts::LOG2_E](https://doc.rust-lang.org/std/f32/consts/constant.LOG2_E.html)
-
-[std::f32::consts::LOG10_E](https://doc.rust-lang.org/std/f32/consts/constant.LOG10_E.html)
-
-[std::f32::consts::PI](https://doc.rust-lang.org/std/f32/consts/constant.PI.html)
-
-[std::f32::consts::SQRT_2](https://doc.rust-lang.org/std/f32/consts/constant.SQRT_2.html)
-
 [std::f64::DIGITS](https://doc.rust-lang.org/std/f64/constant.DIGITS.html)
 
 [std::f64::EPSILON](https://doc.rust-lang.org/std/f64/constant.EPSILON.html)
@@ -224,39 +192,8 @@ Deprecate the following items in the standard library:
 
 [std::f64::RADIX](https://doc.rust-lang.org/std/f64/constant.RADIX.html)
 
-[std::f64::consts::E](https://doc.rust-lang.org/std/f64/consts/constant.E.html)
-
-[std::f64::consts::FRAC_1_PI](https://doc.rust-lang.org/std/f64/consts/constant.E.html)
-
-[std::f64::consts::FRAC_2_PI](https://doc.rust-lang.org/std/f64/consts/constant.FRAC_2_PI.html)
-
-[std::f64::consts::FRAC_2_SQRT_PI](https://doc.rust-lang.org/std/f64/consts/constant.FRAC_2_SQRT_PI.html)
-
-[std::f64::consts::FRAC_1_SQRT_2](https://doc.rust-lang.org/std/f64/consts/constant.FRAC_1_SQRT_2.html)
-
-[std::f64::consts::FRAC_PI_2](https://doc.rust-lang.org/std/f64/consts/constant.FRAC_PI_2.html)
-
-[std::f64::consts::FRAC_PI_3](https://doc.rust-lang.org/std/f64/consts/constant.FRAC_PI_3.html)
-
-[std::f64::consts::FRAC_PI_4](https://doc.rust-lang.org/std/f64/consts/constant.FRAC_PI_4.html)
-
-[std::f64::consts::FRAC_PI_6](https://doc.rust-lang.org/std/f64/consts/constant.FRAC_PI_6.html)
-
-[std::f64::consts::FRAC_PI_8](https://doc.rust-lang.org/std/f64/consts/constant.FRAC_PI_8.html)
-
-[std::f64::consts::LN_2](https://doc.rust-lang.org/std/f64/consts/constant.LN_2.html)
-
-[std::f64::consts::LN_10](https://doc.rust-lang.org/std/f64/consts/constant.LN_10.html)
-
-[std::f64::consts::LOG2_E](https://doc.rust-lang.org/std/f64/consts/constant.LOG2_E.html)
-
-[std::f64::consts::LOG10_E](https://doc.rust-lang.org/std/f64/consts/constant.LOG10_E.html)
-
-[std::f64::consts::PI](https://doc.rust-lang.org/std/f64/consts/constant.PI.html)
-
-[std::f64::consts::SQRT_2](https://doc.rust-lang.org/std/f64/consts/constant.SQRT_2.html)
-
-Replace each item with an associated const value on the appropriate type. Deprecate the fourteen numeric-type modules and remove them from the documentation.
+Replace each item with an associated const value on the appropriate type. Deprecate the twelve
+integer type modules and remove them from the documentation.
 
 # Drawbacks
 [drawbacks]: #drawbacks
