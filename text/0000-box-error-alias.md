@@ -1,5 +1,5 @@
-- Feature Name: (fill me in with a unique ident, `box_error_alias`)
-- Start Date: (fill me in with today's date, 2019-11-20)
+- Feature Name: `box_error_alias`
+- Start Date: 2019-11-20
 - RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
@@ -19,9 +19,9 @@ Rust error handling has a long and complicated history, and it is still evolving
 reflects the fact that errors perform a multitude of functions, and these different functions
 require different implementations: for example, if errors are regularly encountered in a real-time
 thread, then one would not want their creation to involve an allocation or the indirection of a
-trait object, whereas for a cli app developer, most errors may not occur on the happy path, and so
+trait object, whereas for a cli app, most errors may not occur on the happy path, and so
 their performance is inconsequential. Likewise, a low-level library may want fine-grained control
-of error handling and recovery, whereas the cli app may only want to handle a small subset of
+of error handling and recovery, whereas a cli app may only want to handle a small subset of
 errors, simply printing a message to screen for the rest.
 
 The error trait in rust's standard library provides a helpful way to perform two tasks: firstly it
@@ -33,23 +33,21 @@ handling in rust should evolve. Instead, it proposes a simple type alias to serv
 motivations
 
  1. A unified name for boxed errors, to make them easier to recognise,
- 2. A short descriptive name for error trait objects, to reduce noise and cognitive load,
+ 2. A short descriptive name for error trait objects, to reduce code noise and cognitive load,
  3. A place to show the value of making errors `Send + Sync + 'static`, and
  3. A place in the standard library to document the pattern of using a trait object to return any
     error, aiding discoverability.
 
-Currently what happens in practice is the rust programmer either creates an alias for
+Currently what happens in practice is rust programmers either create an alias for
 `Box<dyn Error + Send + Sync + 'static>` in some utility module, where each user will use a
-sligtly different name, or just writes out the full type that `BoxFuture` aliases.
+sligtly different name, or just write out the full type that `BoxFuture` aliases.
 
 This idea evolved on a [thread in irlo](https://internals.rust-lang.org/t/proposal-add-std-boxerror/10953)
 before this RFC was written, and there names such as `AnyError` were suggested, as well as using an
-opaque object with a raw pointer as is the case in the [`failure` crate](https://github.com/rust-lang-nursery/failure).
+opaque object with a raw pointer as is the case in the [`failure` crate][`failure`].
 However, this RFC only satisfies the narrow goal of providing a trait alias for `Box<Error + ..>`,
 allowing more experimentation to take place regarding the specific design of an opaque and more
 full-featured error type in the crate ecosystem.
-
-An example of prior art is the `BoxFuture` type in the `futures` crate.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -150,6 +148,8 @@ There are many error models in the rust ecosystem, including many type-erased er
 include [`anyhow`] and [`failure`] among others. Prior art for a type synonym is the many crates
 that define it internally.
 
+An example of prior art of name choice is the [`BoxFuture`] type in the [`futures`] crate.
+
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
@@ -163,3 +163,8 @@ There are many ways that the Error trait could be enhanced, for example by provi
 `AnyError` type, or providing a method like `Error::wrap` that would take an error, and make it the
 source of an `AnyError`. This RFC attempts to be very focused on a small change, and so these ideas
 are better discussed elsewhere.
+
+[`anyhow`]: https://github.com/dtolnay/anyhow
+[`failure`]: https://github.com/rust-lang-nursery/failure
+[`BoxFuture`]: https://docs.rs/futures/0.3.1/futures/future/type.BoxFuture.html
+[`futures`]: https://github.com/rust-lang-nursery/futures-rs
