@@ -19,17 +19,17 @@ Rust error handling has a long and complicated history, and it is still evolving
 reflects the fact that errors perform a multitude of functions, and these different functions
 require different implementations: for example, if errors are regularly encountered in a real-time
 thread, then one would not want their creation to involve an allocation or the indirection of a
-trait object, whereas for a cli app, most errors may not occur on the happy path, and so
+trait object, whereas for a CLI app, most errors may not occur on the happy path, and so
 their performance is inconsequential. Likewise, a low-level library may want fine-grained control
-of error handling and recovery, whereas a cli app may only want to handle a small subset of
+of error handling and recovery, whereas a CLI app may only want to handle a small subset of
 errors, simply printing a message to screen for the rest.
 
-The error trait in rust's standard library provides a helpful way to perform two tasks: firstly it
-requires a Display implementation - so all errors can be logged/written/etc, and secondly it
+The error trait in Rust's standard library provides a helpful way to perform two tasks: firstly it
+requires a `Display` implementation - so all errors can be logged/written/etc, and secondly it
 provides the error with the option of exposing another inner error, thereby allowing chains of
 errors to be created. [Research into the best way to represent errors](https://internals.rust-lang.org/t/thoughts-on-error-context-in-error-handling-libraries/10349/4)
-is ongoing in rust, and this RFC does not attempt to resolve the discussion around how error
-handling in rust should evolve. Instead, it proposes a simple type alias to serve the following
+is ongoing in Rust, and this RFC does not attempt to resolve the discussion around how error
+handling in Rust should evolve. Instead, it proposes a simple type alias to serve the following
 motivations
 
  1. A unified name for boxed errors, to make them easier to recognise,
@@ -38,7 +38,7 @@ motivations
  3. A place in the standard library to document the pattern of using a trait object to return any
     error, aiding discoverability.
 
-Currently what happens in practice is rust programmers either create an alias for
+Currently what happens in practice is Rust programmers either create an alias for
 `Box<dyn Error + Send + Sync + 'static>` in some utility module, where each user will use a
 sligtly different name, or just write out the full type that `BoxFuture` aliases.
 
@@ -70,27 +70,27 @@ functionality of errors may be further constrained by the requirements of the pr
 environment: an embedded chip with low memory performing tasks in realtime may not have run-time
 memory allocation as an option.
 
-In general, rust programmers will create different types to handle these different situations. The type
+In general, Rust programmers will create different types to handle these different situations. The type
 for a recoverable error may just be some fixed-size block of data, whereas a more serious error may
 contain references to descriptions of the error or other errors that cause it. Rust provides the
 `Error` trait, which includes converting the error into a string and referencing any underlying
-error, but rust programmers can still implement this trait even though they don't want to be allocating
+error, but Rust programmers can still implement this trait even though they don't want to be allocating
 strings or inner errors, since it is the caller of the methods who causes the allocations/etc. In
-this way, rust allows all errors to be able to describe themselves, which is very useful during
+this way, Rust allows all errors to be able to describe themselves, which is very useful during
 development and prototyping, as well as helping to support different use cases for library code.
 
 Whist the `Error` trait helps error authors to provide self-describing errors, it does not help
 code using these errors to easily combine them with other errors of different types, and displaying
 the contents of an error that might be one of multiple types. The standard way to solve this
 problem is to create a trait object behind a thick pointer, hence the signature `Box<dyn Error..>`.
-The trait object obscures the actual type, instead presenting the Error interface, and is easily
+The trait object obscures the actual type, instead presenting the `Error` interface, and is easily
 created from any error using the `impl From<'a, E: Error + Send + Sync + 'a> for Box<dyn Error +
 Send + Sync + 'a>`.
 
 `BoxError` is simply a synonym for `Box<dyn Error + Send + Sync + 'static>`. Here are some examples
 showing its usefulness.
 
-## Example: Returning from `main`
+## Example: Simple database function.
 
 Here we are getting a database version from a file and returning it. We are in the prototyping
 stage and don't want to devote too much time to complex error handling.
@@ -144,7 +144,7 @@ hypothetical `AnyError` are
 # Prior art
 [prior-art]: #prior-art
 
-There are many error models in the rust ecosystem, including many type-erased error types. Crates
+There are many error models in the Rust ecosystem, including many type-erased error types. Crates
 include [`anyhow`] and [`failure`] among others. Prior art for a type synonym is the many crates
 that define it internally.
 
@@ -153,7 +153,7 @@ An example of prior art of name choice is the [`BoxFuture`] type in the [`future
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
- - Should the error be `Send + Sync`. It seems like a good default, and nothing is stopping rust
+ - Should the error be `Send + Sync`. It seems like a good default, and nothing is stopping Rust
    programmers simply not using the alias if they want a `Box<dyn Error + 'static>`.
 
 # Future possibilities
