@@ -111,8 +111,8 @@ The implementation is very straight forward, simply the code in the [summary].
 # Drawbacks
 [drawbacks]: #drawbacks
 
- 1. Increases std api surface area, although semantically there is no change since it is a type
-    alias.
+ 1. Increases std api surface area, although semantically there is no change since it only a type
+    alias is added.
  2. Could potentially encourage people to use it instead of a specialized type like
     [`anyhow::Error`](https://docs.rs/anyhow/latest/anyhow/struct.Error.html).
 
