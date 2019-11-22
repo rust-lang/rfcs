@@ -51,14 +51,14 @@ remaining questions about `async` syntax before it, too, is stabilized.
 
 The APIs proposed for stabilization have a lengthy history:
 
-- The `Future` trait began with the futures crate; [0.1 was released](http://aturon.github.io/2016/08/11/futures/)
+- The `Future` trait began with the futures crate; [0.1 was released](https://aturon.github.io/tech/2016/08/11/futures/)
 in August of 2016. That release established the core ideas of the task/polling model,
 as well as many other aspects of the API that are retained here. The 0.1 series
 continues to be heavily used throughout the Rust ecosystem and in production systems.
 
 - In early 2018, as work began toward `async`/`await`, the futures team set up
 an RFC process and wrote [several RFCs](https://github.com/rust-lang-nursery/futures-rfcs/pulls?q=is%3Apr+is%3Aclosed) to make revisions to the core APIs based
-on longstanding community feedback. These RFCs ultimately resulted in a [0.2le release](http://aturon.github.io/2018/02/27/futures-0-2-RC/), which [shipped](http://aturon.github.io/2018/04/06/futures2/) in April.
+on longstanding community feedback. These RFCs ultimately resulted in a [0.2le release](https://aturon.github.io/tech/2018/02/27/futures-0-2-RC/), which [shipped](https://aturon.github.io/tech/2018/04/06/futures2/) in April.
 
 - During the same period, @withoutboats's work on the pinning APIs supporting borrowing
 within `async` blocks [came to completion](https://boats.gitlab.io/blog/post/2018-04-06-async-await-final/).
@@ -438,14 +438,14 @@ So far we've been able to push the task/polling model into virtually every niche
 Rust wishes to occupy, and the main downside has been, in essence, the lack of
 async/await syntax (and
 the
-[borrowing it supports](http://aturon.github.io/2018/04/24/async-borrowing/)).
+[borrowing it supports](https://aturon.github.io/tech/2018/04/24/async-borrowing/)).
 
 This RFC does not attempt to provide a complete introduction to the task model
 that originated with the futures crate. A fuller account of the design rationale
 and alternatives can be found in the following two blog posts:
 
-- [Zero-cost futures in Rust](http://aturon.github.io/2016/08/11/futures/)
-- [Designing futures for Rust](http://aturon.github.io/2016/09/07/futures-design/)
+- [Zero-cost futures in Rust](https://aturon.github.io/tech/2016/08/11/futures/)
+- [Designing futures for Rust](https://aturon.github.io/tech/2016/09/07/futures-design/)
 
 To summarize, the main alternative model for futures is a callback-based approach,
 which was attempted for several months before the current approach was discovered.
