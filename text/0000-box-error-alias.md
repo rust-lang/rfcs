@@ -9,8 +9,10 @@
 Add a type alias to std::error of the form
 
 ```rust
-pub type BoxError = Box<dyn Error + Send + Sync + 'static>;
+pub type BoxError = Box<dyn Error + Send + Sync>;
 ```
+
+which given the absence of a lifetime is also `'static`.
 
 # Motivation
 [motivation]: #motivation
@@ -39,7 +41,7 @@ motivations
     error, aiding discoverability.
 
 Currently what happens in practice is Rust programmers either create an alias for
-`Box<dyn Error + Send + Sync + 'static>` in some utility module, where each user will use a
+`Box<dyn Error + Send + Sync>` in some utility module, where each user will use a
 sligtly different name, or just write out the full type that `BoxFuture` aliases.
 
 This idea evolved on a [thread in irlo](https://internals.rust-lang.org/t/proposal-add-std-boxerror/10953)
@@ -87,7 +89,7 @@ The trait object obscures the actual type, instead presenting the `Error` interf
 created from any error using the `impl From<'a, E: Error + Send + Sync + 'a> for Box<dyn Error +
 Send + Sync + 'a>`.
 
-`BoxError` is simply a synonym for `Box<dyn Error + Send + Sync + 'static>`. Here are some examples
+`BoxError` is simply a synonym for `Box<dyn Error + Send + Sync>`. Here are some examples
 showing its usefulness.
 
 ## Example: Simple database function.
@@ -154,7 +156,7 @@ An example of prior art of name choice is the [`BoxFuture`] type in the [`future
 [unresolved-questions]: #unresolved-questions
 
  - Should the error be `Send + Sync`. It seems like a good default, and nothing is stopping Rust
-   programmers simply not using the alias if they want a `Box<dyn Error + 'static>`.
+   programmers simply not using the alias if they want a `Box<dyn Error>`.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
