@@ -23,7 +23,7 @@ enum Cell {
 
 Using these enums in collections is wasteful, as each instance reserves at least 1 byte of space.
 Similarly, `std::mem::size_of<Discriminant<Cell>>()` is at least 1 byte.
-For that reason, the book later goes on and replaces `Vec<Cell>` by [`fixedbitset`][game-of-life-exercise], ending up with a much less intuitive implementation.
+For that reason, the Wasm book later goes on and replaces `Vec<Cell>` by [`fixedbitset`][game-of-life-exercise], ending up with a much less intuitive implementation.
 
 If it were possible to read the exact necessary size and the bit representation the descriminant, we could have a `PackedBits<T>` that uses exactly as much space as necessary.
 
