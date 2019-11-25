@@ -81,7 +81,7 @@ Creates a `Discriminant` from emitted bits usable for comparison.
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-The feature may interact with non-exaustive enums.
+The feature may interact with non-exhaustive enums.
 In this case, still, the currently used discriminant size should be used.
 
 Adding the proposed functions probably entails adding a new compiler intrinsic `discriminant_size`.
