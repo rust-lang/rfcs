@@ -63,7 +63,7 @@ Discriminant<RGB>::bit_size() == 2
 
 This information can be used to pack multiple discriminants easily for efficient storage and easy indexing.
 
-`Discriminat<T>` gains the methods `into_bits` and `from_bits`:
+`Discriminant<T>` gains the methods `into_bits` and `from_bits`:
 
 ```rust
 fn into_bits(&self) -> u128
