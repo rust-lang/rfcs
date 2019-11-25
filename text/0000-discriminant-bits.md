@@ -37,7 +37,7 @@ This allows for an efficient representation of discriminant sets, which is both 
 `Discriminant::bit_size` is a method to retrieve the minimal number in bits necessary to represent this discriminant.
 
 ```rust
-const fn bit_size() -> usize { }
+const fn bit_size() -> usize;
 ```
 
 This number is not subject to optimisation, so e.g. `Option<&str>` reports a bitsize of `1`.
