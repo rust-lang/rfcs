@@ -73,8 +73,8 @@ are not marked as `unsafe`:
 
 ```rust
 // Example 1:
-#[target_feature = "sse2"] unsafe fn foo() { }  // RFC2045
-#[target_feature = "sse2"] fn bar() { }  // NEW
+#[target_feature(enable = "sse2")] unsafe fn foo() { }  // RFC2045
+#[target_feature(enable = "sse2")] fn bar() { }  // NEW
 
 // This function does not have the "sse2" target feature:
 fn meow() {
@@ -84,7 +84,7 @@ fn meow() {
     unsafe { bar() }; // OK
 }
 
-#[target_feature = "sse2"]
+#[target_feature(enable = "sse2")]
 fn bark() {
     foo(); // ERROR (foo is unsafe: unsafe block required)
     unsafe { foo() }; // OK
@@ -92,7 +92,7 @@ fn bark() {
     unsafe { bar() }; // OK (as well - warning: unnecessary unsafe block)
 }
 
-#[target_feature = "avx"]  // avx != sse2
+#[target_feature(enable = "avx")]  // avx != sse2
 fn moo() {
     foo(); // ERROR (unsafe block required)
     unsafe { foo() }; // OK
@@ -132,7 +132,7 @@ method implementations:
 trait Foo { fn foo(); }
 struct Fooish();
 impl Foo for Fooish { 
-    #[target_feature = "sse2"] fn foo() { }  
+    #[target_feature(enable = "sse2")] fn foo() { }  
     // ^ ERROR: #[target_feature] on trait method impl requires 
     // unsafe fn but Foo::foo is safe
     // (this is already an error per RFC2045)
@@ -141,7 +141,7 @@ impl Foo for Fooish {
 trait Bar { unsafe fn bar(); }
 struct Barish();
 impl Bar for Barish { 
-    #[target_feature = "sse2"] unsafe fn bar() { }  // OK (RFC2045)
+    #[target_feature(enable = "sse2")] unsafe fn bar() { }  // OK (RFC2045)
 }
 ```
 
@@ -150,7 +150,7 @@ impl Bar for Barish {
 
 ```rust
 // Example 3
-#[target_feature] fn meow() {}
+#[target_feature(enable = "avx")] fn meow() {}
 
 static x: fn () -> () = meow;
 // ^ ERROR: meow can only be assigned to unsafe fn pointers due to 
