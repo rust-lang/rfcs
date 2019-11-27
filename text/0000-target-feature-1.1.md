@@ -124,6 +124,9 @@ This change already solves all three issues mentioned in the motivation:
   calls-sites across which they cannot be inlined while making call-sites across
   which they can be inlined more ergonomic to write.
 
+The `#[target_feature]` attribute continues to be allowed on inherent methods -
+this RFC does not change that.
+
 The `#[target_feature]` attribute continues to not be allowed on safe trait
 method implementations:
 
@@ -182,12 +185,7 @@ unnecessarily complicate future language features like an effect system.
 
 Since `#[target_feature]` are effects or restrictions (depending on whether we
 `enable` or `disable` them), the alternative would be to integrate them with an
-effect system. Since `#[target_feature]` is already on its path to stabilization
-and its required to make SIMD in Rust minimally useful, not stabilizing
-`#[target_feature]` at this point is not an option unless we are willing to
-delay SIMD until an effect system is stabilized. Until then, `#[target_feature]`
-and this RFC solve real problems and provide another use-case that such an
-effect system will need to enable to be useful for Rust programmers.
+effect system. 
 
 # Prior art
 [prior-art]: #prior-art
