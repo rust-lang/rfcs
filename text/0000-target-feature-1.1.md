@@ -40,7 +40,7 @@ by doing run-time feature detection, or using conditional compilation.
 
 And that's it. That's all [RFC 2045 (`target_feature`)] had to say about this.
 Back then, there were many other problems that needed to be solved for all of
-this to be minially useful, and [RFC 2045 (`target_feature`)] dealt with those.
+this to be minimally useful, and [RFC 2045 (`target_feature`)] dealt with those.
 
 However, the consensus back then was that this is far from ideal for many
 reasons:
