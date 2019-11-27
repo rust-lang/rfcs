@@ -128,7 +128,8 @@ The `#[target_feature]` attribute continues to be allowed on inherent methods -
 this RFC does not change that.
 
 The `#[target_feature]` attribute continues to not be allowed on safe trait
-method implementations:
+method implementations because that would require an `unsafe` trait method
+declaration:
 
 ```rust
 // Example 2:
