@@ -237,9 +237,14 @@ the language (beyond just a simple attribute) which could lead to the
 deprecation of the `#[target_feature]` attribute.
 
 It is also unclear how any of this interacts with effect-polymorphism at this
-point, but we could support something like `impl const Trait` and `T: const Trait`:
+point, but we could _maybe_ support something like `impl const Trait` and `T:
+const Trait`:
 
 ```rust
 impl #[target_feature(enable = "...")] Trait for Type { ... }
 fn foo<T: #[target_feature(enable = "...")] Trait>(...) { ...}
 ```
+
+if all trait methods are `unsafe`; otherwise they can't have the
+`#[target_feature]` attribute.
+
