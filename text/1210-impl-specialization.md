@@ -44,7 +44,7 @@ operator:
 
 ```rust
 trait AddAssign<Rhs=Self> {
-    fn add_assign(&mut self, Rhs);
+    fn add_assign(&mut self, rhs: Rhs);
 }
 ```
 
@@ -138,7 +138,7 @@ they are always overloaded together:
 trait Add<Rhs=Self> {
     type Output;
     fn add(self, rhs: Rhs) -> Self::Output;
-    fn add_assign(&mut self, Rhs);
+    fn add_assign(&mut self, rhs: Rhs);
 }
 ```
 
@@ -153,7 +153,7 @@ full trait implementation:
 // the `default` qualifier here means (1) not all items are implied
 // and (2) those that are can be further specialized
 default impl<T: Clone, Rhs> Add<Rhs> for T {
-    fn add_assign(&mut self, rhs: R) {
+    fn add_assign(&mut self, rhs: Rhs) {
         let tmp = self.clone() + rhs;
         *self = tmp;
     }
@@ -1350,11 +1350,11 @@ using the `default` keyword at the `impl` level:
 trait Add<Rhs=Self> {
     type Output;
     fn add(self, rhs: Rhs) -> Self::Output;
-    fn add_assign(&mut self, Rhs);
+    fn add_assign(&mut self, rhs: Rhs);
 }
 
 default impl<T: Clone, Rhs> Add<Rhs> for T {
-    fn add_assign(&mut self, rhs: R) {
+    fn add_assign(&mut self, rhs: Rhs) {
         let tmp = self.clone() + rhs;
         *self = tmp;
     }
