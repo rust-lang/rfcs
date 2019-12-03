@@ -368,6 +368,61 @@ need from an eager expansion API. For example:
 
 ### Attribute macros
 
+We assume that for nested attribute macros the least surprising behaviour is
+for them to be expanded "outside in". For example, if I have two eager
+attribute macros `my_eager_foo` and `my_eager_bar`, then in this example
+`my_eager_foo` would see the result of expanding `my_eager_bar`:
+
+```rust
+#[my_eager_foo]
+#[my_eager_bar]
+mod whatever { ... }
+```
+
+The situation is less clear for outer attributes. Which macro should be
+expanded first in this case?
+
+```rust
+#[my_eager_foo]
+mod whatever {
+    #![my_eager_bar]
+    ...
+}
+```
+
+### Helper attributes
+
+'Derive' attribute macros can define additional 'helper' attributes, used by
+the invoker to annotate derive macro input. When expanding invocations, the
+compiler must be careful not to try and expand these helper attributes as
+though they were actual invocations.
+
+Here is an example to justify why this is best dealt with by the compiler. Say
+I have an eager derive macro `derive_foo` for the trait `Foo` with the helper
+attribute `foo_helper`, and consider this invocation:
+
+```rust
+#[derive(Foo)]
+struct S {
+    #[some_other_eager_attr_macro]
+    #[foo_helper]
+    field: usize
+}
+```
+
+When `derive_foo` eagerly expands `#[some_other_eager_attr_macro]`, that macro
+in turn will try to expand the token stream `#[foo_helper] field: usize`. Two
+things could go wrong here:
+
+* If there is an attribute macro called `#[foo_helper]` in scope, it might get
+  expanded. This is probably not the behaviour expected by the invoker of
+  `#[derive(Foo)]`, nor of the author of `derive_foo`.
+* If there isn't such a macro, the compiler might report a missing definition.
+
+Both of these issues are handled by the compiler keeping track of the fact that
+`#[foo_helper]` is being expanded "inside" a macro derive context, and leaving
+the helper attribute in-place.
+
 ### Name resolution
 
 ### Expansion context
