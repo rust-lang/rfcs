@@ -423,8 +423,8 @@ things could go wrong here:
 * If there isn't such a macro, the compiler might report a missing definition.
 
 Both of these issues are handled by the compiler keeping track of the fact that
-`#[foo_helper]` is being expanded "inside" a macro derive context, and leaving
-the helper attribute in-place.
+`#[some_other_eager_attr_macro]` is being expanded "inside" a macro derive
+context, and leaving the helper attribute `#[foo_helper]` in-place.
 
 ### Deadlock
 
