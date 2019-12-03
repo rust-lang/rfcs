@@ -82,10 +82,13 @@ We expose the following API in the `proc_macro` crate, to allow proc macro
 authors to iteratively expand all macros within a token stream:
 
 ```rust
+use proc_macro::{LexError, Diagnostic, TokenStream};
+
 pub struct ExpansionBuilder { /* No public fields. */ }
 pub enum ExpansionError {
     LexError(LexError),
     ParseError(Diagnostic),
+    MissingDefinition(Diagnostic),
     /* What other errors do we want to report?
        What failures can the user reasonably handle? */
 }
@@ -120,6 +123,8 @@ Here is an example showing how a proc macro can find out what the result of
 returns the result.
 
 ```rust
+use proc_macro::quote;
+
 let tokens = quote!{
     concat!("hello ", "world!")
 };
@@ -199,8 +204,8 @@ invoke it with:
 - The token stream they want to insert the result into, which can use the
   identifier to determine where to insert the result.
 
-For example, this invocation of `expand!` should reproduce the intended behaviour of our
-earlier `eager_stringify!(concat!(...))` example:
+For example, this invocation of `expand!` should reproduce the intended
+behaviour of our earlier `eager_stringify!(let x = ...)` example:
 
 ```rust
 expand! {
@@ -256,7 +261,7 @@ return the result of expanding the proc macro with some input token stream.
 This interaction works the other way as well: for example, if a proc macro wants
 to access span information, it does so by sending a request to the compiler.
 This RFC adds the `ExpansionBuilder` API as a way to construct a new kind of
-request to the compiler - namely, a request to expand macro invocations in a
+request to the compiler -- a request to expand macro invocations in a
 token stream.
 
 ## Why is expansion aysnchronous?
@@ -310,17 +315,18 @@ to construct a _single_ macro invocation at a time, perhaps by exposing
 constructors like this:
 
 ```rust
+use syn::{Macro, Attribute};
+
 impl ExpansionBuilder {
-    pub fn bang_macro(path: Path, input: Group) -> Self;
+    pub fn bang_macro(macro: Macro) -> Self;
     pub fn attribute_macro(
-        path: Path,
-       attribute_input: TokenStream,
-       item_input: TokenStream
+        macro: Attribute,
+        body: TokenStream
     ) -> Self;
 }
 ```
 
-This would force proc macro authros to traverse their inputs, perform the
+This would force proc macro authors to traverse their inputs, perform the
 relevant expansion, and then interpolate the results. Presumably utilities would
 show up in crates like `syn` to make this easier. However, this alternative API
 _doesn't_ handle cases where the macro invocation uses local definitions or
@@ -344,21 +350,30 @@ responsibility of the compiler.
 
 The builder pattern lets us start off with a fairly bare-bones API which then
 becomes progressively more sophisticated as we learn what proc macro authors
-need from an eager expansion API. For example, it isn't obvious how to treat
-requests to expand expressions from a proc macro that has been invoked in item
-position; we might need to add a new constructor `from_expr_tokens`.
-
-The builder pattern also lets us deprecate methods which overreach or
-underperform. If it turns out that the reasons for [accepting a token
-stream](#why-take-in-a-token-stream) are offset by an unexpected increase in
-implementation complexity, we might backpedal and expose a more constrained API.
+need from an eager expansion API. For example:
+* It isn't obvious how to treat requests to expand expressions from a proc
+  macro that has been invoked in item position; we might need to add a new
+  constructor `from_expr_tokens`.
+* The proposed API only does complete, recursive expansion. Some proc macros
+  might need to expand invocations "one level deep" in order to inspect
+  intermediate results; the builder pattern lets us add that level of
+  fine-grained control.
+* The builder pattern also lets us deprecate methods which overreach or
+  underperform. If it turns out that the reasons for [accepting a token
+  stream](#why-take-in-a-token-stream) are offset by an unexpected increase in
+  implementation complexity, we might backpedal and expose a more constrained
+  API.
 
 ## Corner cases
+
+### Attribute macros
 
 ### Name resolution
 
 ### Expansion context
 
 ### Hygiene
+
+### Deadlock
 
 ### Expansion order
