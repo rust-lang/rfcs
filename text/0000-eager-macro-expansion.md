@@ -419,7 +419,7 @@ things could go wrong here:
 
 * If there is an attribute macro called `#[foo_helper]` in scope, it might get
   expanded. This is probably not the behaviour expected by the invoker of
-  `#[derive(Foo)]`, nor of the author of `derive_foo`.
+  `#[derive(Foo)]` or the author of `derive_foo`.
 * If there isn't such a macro, the compiler might report a missing definition.
 
 Both of these issues are handled by the compiler keeping track of the fact that
