@@ -426,12 +426,52 @@ Both of these issues are handled by the compiler keeping track of the fact that
 `#[foo_helper]` is being expanded "inside" a macro derive context, and leaving
 the helper attribute in-place.
 
-### Name resolution
+### Deadlock
+
+Two eager macro expansions could depend on each other. For example, assume that
+`my_eager_identity!` is a macro which expands its input, then returns the
+result unchanged. Here are two invocations of `my_eager_identity!` which can't
+proceed until the other finishes expanding:
+
+```rust
+my_eager_identity! {
+    macro foo() {}
+    bar!();
+}
+
+my_eager_identity! {
+    macro bar() {}
+    foo!();
+}
+```
+
+The compiler can detect this kind of deadlock, and should report it to the
+user. The error message should be similar to the standard "cannot find macro"
+error message, but with more context about having occurred during an eager
+expansion:
+
+```
+error: cannot find macro `bar` in this scope during eager expansion
+  |
+1 | my_eager_identity! {
+  | ------------------- when eagerly expanding within this macro
+...
+3 |     bar!();
+  |     ^^^ could not find a definition for this macro
+
+error: cannot find macro `baz` in this scope during eager expansion
+  |
+6 | my_eager_identity! {
+  | ------------------- when eagerly expanding within this macro
+...
+8 |     baz!();
+  |     ^^^ could not find a definition for this macro
+```
 
 ### Expansion context
 
-### Hygiene
+### Name resolution
 
-### Deadlock
+### Hygiene
 
 ### Expansion order
