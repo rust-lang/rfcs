@@ -42,7 +42,10 @@ their input:
     //                  ^^^^^^^^^^^^^^^^^^
     // This call isn't expanded before being passed to `my_attr_macro`, and
     // can't be since attr macros are passed opaque token streams by design.
-    struct X {...}
+    struct X {
+        my_field_definition_macro!(...)
+    //  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Same with this one.
+    }
     ```
 
 In these situations, macros need to either re-emit the input macro invocation
