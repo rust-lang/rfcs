@@ -63,223 +63,109 @@ everyone's attention. Now, two days shy of Rust's fourth anniversary, let's re-e
 situation. We propose to deprecate all of the aforementioned functions and constants in favor of
 associated constants defined on the appropriate types, and to additionally deprecate all constants
 living directly in the `i8`, `i16`, `i32`, `i64`, `i128`, `isize`, `u8`, `u16`, `u32`, `u64`,
-`u128`, `usize`, `f32` and `f64` modules in `std`. But leaving `std::f64::consts` and
-`std::f32::consts` as they are. Advantages of this:
+`u128`, `usize`, `f32` and `f64` modules in `std`. Advantages of this:
 
 1. Consistency with the rest of the language. As demonstrated by the above quotes, associated consts
 have been the natural way to express these concepts in Rust since before associated consts were even
 implemented; this approach satisfies the principle of least surprise.
 
 2. Documentation. On the front page of the [standard library API
-docs](https://doc.rust-lang.org/std/index.html), 14 of the 56 modules in the standard library (25%)
-are the aforementioned numeric modules whose only purpose is to namespace these constants. This
-number will continue to rise as new numeric primitives are added to Rust, as already seen with
+docs](https://doc.rust-lang.org/std/index.html), 12 of the 60 modules in the standard library (20%)
+are the aforementioned numeric modules which exist only to namespace two constants each. This
+number will increase as new numeric primitives are added to Rust, as already seen with
 `i128` and `u128`. Although deprecated modules cannot be easily removed from std, they can be
 removed from the documentation, making the stdlib API docs less cluttered and easier to navigate.
 
 3. Beginner ease. For a beginner, finding two identical ways to achieve something immediately raises
-the question of "why", to which the answer here is ultimately uninteresting (and even then, the
-question of "which one to use" remains unanswered; neither current approach is idiomatic). As noted,
-deprecated items can be removed from the documentation, thereby decreasing the likelihood of
-head-scratching and incredulous sidelong glances from people new to Rust.
+the question of "why", to which the answer here is ultimately uninteresting (and mildly
+embarrassing). Even then the question of "which one to use" remains unanswered; neither current
+approach is more idiomatic than the other. As noted, deprecated items can be removed from the
+documentation, thereby decreasing the likelihood of head-scratching and incredulous sidelong
+glances from people new to Rust.
 
-4. Remove ambiguity between primitive type and module with same name. Currently if you import an
-integer module and access constants in the module and methods on the type, it's very unclear what
-comes from where:
-    ```rust
-    use std::u32;
-    assert_eq!(u32::MAX, u32::max_value());
-    ```
+4. Removal of ambiguity between primitive types and their identically-named modules. Currently
+if you import an integer module and access constants in the module and methods on the type,
+one has no apparent indication as to what comes from where:
+
+```rust
+use std::u32;
+assert_eq!(u32::MAX, u32::max_value());
+```
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-Deprecate the following items in the standard library:
-
-[i8::min_value](https://doc.rust-lang.org/std/primitive.i8.html#method.min_value)
-
-[i8::max_value](https://doc.rust-lang.org/std/primitive.i8.html#method.max_value)
-
-[std::i8::MIN](https://doc.rust-lang.org/std/i8/constant.MIN.html)
-
-[std::i8::MAX](https://doc.rust-lang.org/std/i8/constant.MIN.html)
-
-[i16::min_value](https://doc.rust-lang.org/std/primitive.i16.html#method.min_value)
-
-[i16::max_value](https://doc.rust-lang.org/std/primitive.i16.html#method.max_value)
-
-[std::i16::MIN](https://doc.rust-lang.org/std/i16/constant.MIN.html)
-
-[std::i16::MAX](https://doc.rust-lang.org/std/i16/constant.MIN.html)
-
-[i32::min_value](https://doc.rust-lang.org/std/primitive.i32.html#method.min_value)
-
-[i32::max_value](https://doc.rust-lang.org/std/primitive.i32.html#method.max_value)
-
-[std::i32::MIN](https://doc.rust-lang.org/std/i32/constant.MIN.html)
-
-[std::i32::MAX](https://doc.rust-lang.org/std/i32/constant.MIN.html)
-
-[i64::min_value](https://doc.rust-lang.org/std/primitive.i64.html#method.min_value)
-
-[i64::max_value](https://doc.rust-lang.org/std/primitive.i64.html#method.max_value)
-
-[std::i64::MIN](https://doc.rust-lang.org/std/i64/constant.MIN.html)
-
-[std::i64::MAX](https://doc.rust-lang.org/std/i64/constant.MIN.html)
-
-[i128::min_value](https://doc.rust-lang.org/std/primitive.i128.html#method.min_value)
-
-[i128::max_value](https://doc.rust-lang.org/std/primitive.i128.html#method.max_value)
-
-[std::i128::MIN](https://doc.rust-lang.org/std/i128/constant.MIN.html)
-
-[std::i128::MAX](https://doc.rust-lang.org/std/i128/constant.MIN.html)
-
-[isize::min_value](https://doc.rust-lang.org/std/primitive.isize.html#method.min_value)
-
-[isize::max_value](https://doc.rust-lang.org/std/primitive.isize.html#method.max_value)
-
-[std::isize::MIN](https://doc.rust-lang.org/std/isize/constant.MIN.html)
-
-[std::isize::MAX](https://doc.rust-lang.org/std/isize/constant.MIN.html)
-
-[u8::min_value](https://doc.rust-lang.org/std/primitive.u8.html#method.min_value)
-
-[u8::max_value](https://doc.rust-lang.org/std/primitive.u8.html#method.max_value)
-
-[std::u8::MIN](https://doc.rust-lang.org/std/u8/constant.MIN.html)
-
-[std::u8::MAX](https://doc.rust-lang.org/std/u8/constant.MIN.html)
-
-[u16::min_value](https://doc.rust-lang.org/std/primitive.u16.html#method.min_value)
-
-[u16::max_value](https://doc.rust-lang.org/std/primitive.u16.html#method.max_value)
-
-[std::u16::MIN](https://doc.rust-lang.org/std/u16/constant.MIN.html)
-
-[std::u16::MAX](https://doc.rust-lang.org/std/u16/constant.MIN.html)
-
-[u32::min_value](https://doc.rust-lang.org/std/primitive.u32.html#method.min_value)
-
-[u32::max_value](https://doc.rust-lang.org/std/primitive.u32.html#method.max_value)
-
-[std::u32::MIN](https://doc.rust-lang.org/std/u32/constant.MIN.html)
-
-[std::u32::MAX](https://doc.rust-lang.org/std/u32/constant.MIN.html)
-
-[u64::min_value](https://doc.rust-lang.org/std/primitive.u64.html#method.min_value)
-
-[u64::max_value](https://doc.rust-lang.org/std/primitive.u64.html#method.max_value)
-
-[std::u64::MIN](https://doc.rust-lang.org/std/u64/constant.MIN.html)
-
-[std::u64::MAX](https://doc.rust-lang.org/std/u64/constant.MIN.html)
-
-[u128::min_value](https://doc.rust-lang.org/std/primitive.u128.html#method.min_value)
-
-[u128::max_value](https://doc.rust-lang.org/std/primitive.u128.html#method.max_value)
-
-[std::u128::MIN](https://doc.rust-lang.org/std/u128/constant.MIN.html)
-
-[std::u128::MAX](https://doc.rust-lang.org/std/u128/constant.MIN.html)
-
-[usize::min_value](https://doc.rust-lang.org/std/primitive.usize.html#method.min_value)
-
-[usize::max_value](https://doc.rust-lang.org/std/primitive.usize.html#method.max_value)
-
-[std::usize::MIN](https://doc.rust-lang.org/std/usize/constant.MIN.html)
-
-[std::usize::MAX](https://doc.rust-lang.org/std/usize/constant.MIN.html)
-
-[std::f32::DIGITS](https://doc.rust-lang.org/std/f32/constant.DIGITS.html)
-
-[std::f32::EPSILON](https://doc.rust-lang.org/std/f32/constant.EPSILON.html)
-
-[std::f32::INFINITY](https://doc.rust-lang.org/std/f32/constant.INFINITY.html)
-
-[std::f32::MANTISSA_DIGITS](https://doc.rust-lang.org/std/f32/constant.MANTISSA_DIGITS.html)
-
-[std::f32::MAX](https://doc.rust-lang.org/std/f32/constant.MAX.html)
-
-[std::f32::MAX_10_EXP](https://doc.rust-lang.org/std/f32/constant.MAX_10_EXP.html)
-
-[std::f32::MAX_EXP](https://doc.rust-lang.org/std/f32/constant.MAX_EXP.html)
-
-[std::f32::MIN](https://doc.rust-lang.org/std/f32/constant.MIN.html)
-
-[std::f32::MIN_10_EXP](https://doc.rust-lang.org/std/f32/constant.MIN_10_EXP.html)
-
-[std::f32::MIN_EXP](https://doc.rust-lang.org/std/f32/constant.MIN_EXP.html)
-
-[std::f32::MIN_POSITIVE](https://doc.rust-lang.org/std/f32/constant.MIN_POSITIVE.html)
-
-[std::f32::NAN](https://doc.rust-lang.org/std/f32/constant.NAN.html)
-
-[std::f32::NEG_INFINITY](https://doc.rust-lang.org/std/f32/constant.NEG_INFINITY.html)
-
-[std::f32::RADIX](https://doc.rust-lang.org/std/f32/constant.RADIX.html)
-
-[std::f64::DIGITS](https://doc.rust-lang.org/std/f64/constant.DIGITS.html)
-
-[std::f64::EPSILON](https://doc.rust-lang.org/std/f64/constant.EPSILON.html)
-
-[std::f64::INFINITY](https://doc.rust-lang.org/std/f64/constant.INFINITY.html)
-
-[std::f64::MANTISSA_DIGITS](https://doc.rust-lang.org/std/f64/constant.MANTISSA_DIGITS.html)
-
-[std::f64::MAX](https://doc.rust-lang.org/std/f64/constant.MAX.html)
-
-[std::f64::MAX_10_EXP](https://doc.rust-lang.org/std/f64/constant.MAX_10_EXP.html)
-
-[std::f64::MAX_EXP](https://doc.rust-lang.org/std/f64/constant.MAX_EXP.html)
-
-[std::f64::MIN](https://doc.rust-lang.org/std/f64/constant.MIN.html)
-
-[std::f64::MIN_10_EXP](https://doc.rust-lang.org/std/f64/constant.MIN_10_EXP.html)
-
-[std::f64::MIN_EXP](https://doc.rust-lang.org/std/f64/constant.MIN_EXP.html)
-
-[std::f64::MIN_POSITIVE](https://doc.rust-lang.org/std/f64/constant.MIN_POSITIVE.html)
-
-[std::f64::NAN](https://doc.rust-lang.org/std/f64/constant.NAN.html)
-
-[std::f64::NEG_INFINITY](https://doc.rust-lang.org/std/f64/constant.NEG_INFINITY.html)
-
-[std::f64::RADIX](https://doc.rust-lang.org/std/f64/constant.RADIX.html)
-
-Replace each item with an associated const value on the appropriate type. Deprecate the twelve
-integer type modules and remove them from the documentation.
+1. Deprecate the following items in the standard library:
+    - i8::{[min_value](https://doc.rust-lang.org/std/primitive.i8.html#method.min_value), [max_value](https://doc.rust-lang.org/std/primitive.i8.html#method.max_value)}
+    - std::i8::{[MIN](https://doc.rust-lang.org/std/i8/constant.MIN.html), [MAX](https://doc.rust-lang.org/std/i8/constant.MIN.html)}
+    - i16::{[min_value](https://doc.rust-lang.org/std/primitive.i16.html#method.min_value), [max_value](https://doc.rust-lang.org/std/primitive.i16.html#method.max_value)}
+    - std::i16::{[MIN](https://doc.rust-lang.org/std/i16/constant.MIN.html), [MAX](https://doc.rust-lang.org/std/i16/constant.MIN.html)}
+    - i32::{[min_value](https://doc.rust-lang.org/std/primitive.i32.html#method.min_value), [max_value](https://doc.rust-lang.org/std/primitive.i32.html#method.max_value)}
+    - std::i32::{[MIN](https://doc.rust-lang.org/std/i32/constant.MIN.html), [MAX](https://doc.rust-lang.org/std/i32/constant.MIN.html)}
+    - i64::{[min_value](https://doc.rust-lang.org/std/primitive.i64.html#method.min_value), [max_value](https://doc.rust-lang.org/std/primitive.i64.html#method.max_value)}
+    - std::i64::{[MIN](https://doc.rust-lang.org/std/i64/constant.MIN.html), [MAX](https://doc.rust-lang.org/std/i64/constant.MIN.html)}
+    - i128::{[min_value](https://doc.rust-lang.org/std/primitive.i128.html#method.min_value), [max_value](https://doc.rust-lang.org/std/primitive.i128.html#method.max_value)}
+    - std::i128::{[MIN](https://doc.rust-lang.org/std/i128/constant.MIN.html), [MAX](https://doc.rust-lang.org/std/i128/constant.MIN.html)}
+    - isize::{[min_value](https://doc.rust-lang.org/std/primitive.isize.html#method.min_value), [max_value](https://doc.rust-lang.org/std/primitive.isize.html#method.max_value)}
+    - std::isize::{[MIN](https://doc.rust-lang.org/std/isize/constant.MIN.html), [MAX](https://doc.rust-lang.org/std/isize/constant.MIN.html)}
+    - u8::{[min_value](https://doc.rust-lang.org/std/primitive.u8.html#method.min_value), [max_value](https://doc.rust-lang.org/std/primitive.u8.html#method.max_value)}
+    - std::u8::{[MIN](https://doc.rust-lang.org/std/u8/constant.MIN.html), [MAX](https://doc.rust-lang.org/std/u8/constant.MIN.html)}
+    - u16::{[min_value](https://doc.rust-lang.org/std/primitive.u16.html#method.min_value), [max_value](https://doc.rust-lang.org/std/primitive.u16.html#method.max_value)}
+    - std::u16::{[MIN](https://doc.rust-lang.org/std/u16/constant.MIN.html), [MAX](https://doc.rust-lang.org/std/u16/constant.MIN.html)}
+    - u32::{[min_value](https://doc.rust-lang.org/std/primitive.u32.html#method.min_value), [max_value](https://doc.rust-lang.org/std/primitive.u32.html#method.max_value)}
+    - std::u32::{[MIN](https://doc.rust-lang.org/std/u32/constant.MIN.html), [MAX](https://doc.rust-lang.org/std/u32/constant.MIN.html)}
+    - u64::{[min_value](https://doc.rust-lang.org/std/primitive.u64.html#method.min_value), [max_value](https://doc.rust-lang.org/std/primitive.u64.html#method.max_value)}
+    - std::u64::{[MIN](https://doc.rust-lang.org/std/u64/constant.MIN.html), [MAX](https://doc.rust-lang.org/std/u64/constant.MIN.html)}
+    - u128::{[min_value](https://doc.rust-lang.org/std/primitive.u128.html#method.min_value), [max_value](https://doc.rust-lang.org/std/primitive.u128.html#method.max_value)}
+    - std::u128::{[MIN](https://doc.rust-lang.org/std/u128/constant.MIN.html), [MAX](https://doc.rust-lang.org/std/u128/constant.MIN.html)}
+    - usize::{[min_value](https://doc.rust-lang.org/std/primitive.usize.html#method.min_value), [max_value](https://doc.rust-lang.org/std/primitive.usize.html#method.max_value)}
+    - std::usize::{[MIN](https://doc.rust-lang.org/std/usize/constant.MIN.html), [MAX](https://doc.rust-lang.org/std/usize/constant.MIN.html)}
+    - std::f32::{[DIGITS](https://doc.rust-lang.org/std/f32/constant.DIGITS.html), [EPSILON](https://doc.rust-lang.org/std/f32/constant.EPSILON.html), [INFINITY](https://doc.rust-lang.org/std/f32/constant.INFINITY.html), [MANTISSA_DIGITS](https://doc.rust-lang.org/std/f32/constant.MANTISSA_DIGITS.html), [MAX](https://doc.rust-lang.org/std/f32/constant.MAX.html), [MAX_10_EXP](https://doc.rust-lang.org/std/f32/constant.MAX_10_EXP.html), [MAX_EXP](https://doc.rust-lang.org/std/f32/constant.MAX_EXP.html), [MIN](https://doc.rust-lang.org/std/f32/constant.MIN.html), [MIN_10_EXP](https://doc.rust-lang.org/std/f32/constant.MIN_10_EXP.html), [MIN_EXP](https://doc.rust-lang.org/std/f32/constant.MIN_EXP.html), [MIN_POSITIVE](https://doc.rust-lang.org/std/f32/constant.MIN_POSITIVE.html), [NAN](https://doc.rust-lang.org/std/f32/constant.NAN.html), [NEG_INFINITY](https://doc.rust-lang.org/std/f32/constant.NEG_INFINITY.html), [RADIX](https://doc.rust-lang.org/std/f32/constant.RADIX.html)}
+    - std::f64::{[DIGITS](https://doc.rust-lang.org/std/f64/constant.DIGITS.html), [EPSILON](https://doc.rust-lang.org/std/f64/constant.EPSILON.html), [INFINITY](https://doc.rust-lang.org/std/f64/constant.INFINITY.html), [MANTISSA_DIGITS](https://doc.rust-lang.org/std/f64/constant.MANTISSA_DIGITS.html), [MAX](https://doc.rust-lang.org/std/f64/constant.MAX.html), [MAX_10_EXP](https://doc.rust-lang.org/std/f64/constant.MAX_10_EXP.html), [MAX_EXP](https://doc.rust-lang.org/std/f64/constant.MAX_EXP.html), [MIN](https://doc.rust-lang.org/std/f64/constant.MIN.html), [MIN_10_EXP](https://doc.rust-lang.org/std/f64/constant.MIN_10_EXP.html), [MIN_EXP](https://doc.rust-lang.org/std/f64/constant.MIN_EXP.html), [MIN_POSITIVE](https://doc.rust-lang.org/std/f64/constant.MIN_POSITIVE.html), [NAN](https://doc.rust-lang.org/std/f64/constant.NAN.html), [NEG_INFINITY](https://doc.rust-lang.org/std/f64/constant.NEG_INFINITY.html), [RADIX](https://doc.rust-lang.org/std/f64/constant.RADIX.html)}
+2. Deprecate the following modules and remove them from the stdlib documentation: `std::{i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize}` (note that this does not apply to either of `std::{f32, f64}`; see the Alternatives section below)
+3. Add the following associated constants corresponding to the above deprecated module-level constants:
+    - i8::{MAX, MIN}
+    - i16::{MAX, MIN}
+    - i32::{MAX, MIN}
+    - i64::{MAX, MIN}
+    - i128::{MAX, MIN}
+    - isize::{MAX, MIN}
+    - u8::{MAX, MIN}
+    - u16::{MAX, MIN}
+    - u32::{MAX, MIN}
+    - u64::{MAX, MIN}
+    - u128::{MAX, MIN}
+    - usize::{MAX, MIN}
+    - f32::{DIGITS, EPSILON, INFINITY, MANTISSA_DIGITS, MAX, MAX_10_EXP, MAX_EXP, MIN, MIN_EXP, MIN_POSITIVE, NAN, NEG_INFINITY, RADIX}
+    - f64::{DIGITS, EPSILON, INFINITY, MANTISSA_DIGITS, MAX, MAX_10_EXP, MAX_EXP, MIN, MIN_EXP, MIN_POSITIVE, NAN, NEG_INFINITY, RADIX}
+
+Future editions of Rust will additionally have the option of making these deprecated items
+no longer accessible to users of the new edition.
 
 # Drawbacks
 [drawbacks]: #drawbacks
 
-Deprecation warnings are annoying.
+1. Deprecation warnings, although these can be trivially addressed.
+2. Because associated items cannot be directly imported, code of the form `use i32::MAX; foo(MAX, MAX);`
+   will most likely be changed to `foo(i32::MAX, i32::MAX)`, which is slightly more verbose.
+   However, given how many `MAX` and `MIN` constants there are in the stdlib,
+   it is easy to argue that such unprefixed constants in the wild would be confusing,
+   and ought to be avoided in the first place. In any case, users desperate for such behavior
+   will be trivially capable of doing `const MAX = i32::MAX; foo(MAX, MAX);`
 
-# Rationale and alternatives
-[rationale-and-alternatives]: #rationale-and-alternatives
+# Alternatives
+[alternatives]: #alternatives
 
-There is an alternative design where the proposed changes are also done to the `consts` submodules
-in `std::f32` and `std::f64`, which contain constants of a more mathematical bent (the sort of
-thing other languages might put in a `std::math` module). Doing so would be more consistent. Given
-that we do not consider the mathematical/machine constant distinction to be particularly useful or
-intuitive. In particular, this distinction is not consistent with the existing set of associated
-functions implemented on `f32` and `f64`, which consist of a mix of both functions concerned with
-mathematical operations (e.g. `f32::atanh`) and functions concerned with machine representation
-(e.g. `f32::is_sign_negative`). The reason this RFC leaves the `consts` module as is, is because
-the language currently does not allow imports of type-relative names, and likely never will. This
-means every associated constant must be accessed by prefixing it with the type, `f32::PI` instead
-of just `PI`. Having to do so met some resistance. So the scope of the RFC was changed to leave
-the mathematical constants, where the exact float type might not be as important, compared to
-constants tightly coupled with its type, such as for `MIN`.
-
-As noted, if a `math` module existed in Rust's stdlib this would be the natural place to put
-aforementioned constants from `consts`, however, such a module does not exist; further, any
-consideration of this hyptothetical module would, for the sake of consistency, want to also adopt
-not only the aforementioned mathematical associated functions that currently exist on `f32` and
-`f64`, but would also want to adopt the integral mathematical functions such as `i32::pow`--all
-while in some way recreating the module-level distinction between the operations as they exist on
-the various different numeric types. This is all to say that such a `std::math` module is out of
-scope for this proposal, in addition to lacking the technical motivation of this proposal.
-Ultimately, however, leaving `f32` and `f64` along and making the proposed changes only to the
-integral types would still be considered a success by this RFC.
+Unlike the twelve integral modules, the two floating-point modules would not themselves be
+entirely deprecated by the changes proposed here. This is because the `std::f32` and `std::f64`
+modules each contain a `consts` submodule, in which reside constants of a more mathematical bent
+(the sort of things other languages might put in a `std::math` module).
+It is the author's opinion that special treatment for such "math-oriented constants" (as opposed to
+the "machine-oriented constants" addressed by this RFC) is not particularly precedented; e.g. this
+separation is not consistent with the existing set of associated functions implemented on `f32`
+and `f64`, which consist of a mix of both functions concerned with mathematical operations
+(e.g. `f32::atanh`) and functions concerned with machine representation (e.g.
+`f32::is_sign_negative`). However, although earlier versions of this RFC proposed deprecating
+`std::{f32, f64}::consts`, the current version does not do so, as this was met with mild resistance
+(and, in any case, the greatest gains from this RFC will be its impact on the integral modules).
+Ultimately, there is no reason that such a change could not be left to a future RFC if desired.
