@@ -86,16 +86,14 @@ glances from people new to Rust.
 4. Removal of ambiguity between primitive types and their identically-named modules. Currently
 if you import an integer module and access constants in the module and methods on the type,
 one has no apparent indication as to what comes from where:
-
 ```rust
 use std::u32;
 assert_eq!(u32::MAX, u32::max_value());
 ```
-
 The fact that this sort of shadowing of primitive types works in the first place is surprising
-even to experience Rust programmers; the fact that such a pattern is seemingly encouraged by
+even to experienced Rust programmers; the fact that such a pattern is seemingly encouraged by
 the standard library is even more of a surprise. By making this change we would be able to
-remove all modules in the standard library whose names shadow primitive types.
+remove all modules in the standard library whose names shadow integral types.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
