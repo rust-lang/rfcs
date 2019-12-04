@@ -92,6 +92,11 @@ use std::u32;
 assert_eq!(u32::MAX, u32::max_value());
 ```
 
+The fact that this sort of shadowing of primitive types works in the first place is surprising
+even to experience Rust programmers; the fact that such a pattern is seemingly encouraged by
+the standard library is even more of a surprise. By making this change we would be able to
+remove all modules in the standard library whose names shadow primitive types.
+
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
@@ -151,12 +156,12 @@ no longer accessible to users of the new edition.
    However, given how many `MAX` and `MIN` constants there are in the stdlib,
    it is easy to argue that such unprefixed constants in the wild would be confusing,
    and ought to be avoided in the first place. In any case, users desperate for such behavior
-   will be trivially capable of doing `const MAX = i32::MAX; foo(MAX, MAX);`
+   will be trivially capable of doing `const MAX: i32 = i32::MAX; foo(MAX, MAX);`
 
 # Alternatives
 [alternatives]: #alternatives
 
-Unlike the twelve integral modules, the two floating-point modules would not themselves be
+- Unlike the twelve integral modules, the two floating-point modules would not themselves be
 entirely deprecated by the changes proposed here. This is because the `std::f32` and `std::f64`
 modules each contain a `consts` submodule, in which reside constants of a more mathematical bent
 (the sort of things other languages might put in a `std::math` module).
@@ -166,6 +171,21 @@ separation is not consistent with the existing set of associated functions imple
 and `f64`, which consist of a mix of both functions concerned with mathematical operations
 (e.g. `f32::atanh`) and functions concerned with machine representation (e.g.
 `f32::is_sign_negative`). However, although earlier versions of this RFC proposed deprecating
-`std::{f32, f64}::consts`, the current version does not do so, as this was met with mild resistance
-(and, in any case, the greatest gains from this RFC will be its impact on the integral modules).
+`std::{f32, f64}::consts` (and thereby `std::{f32, f64}` as well), the current version does not do
+so, as this was met with mild resistance (and, in any case, the greatest gains from this RFC will
+be its impact on the integral modules).
 Ultimately, there is no reason that such a change could not be left to a future RFC if desired.
+However, one alternative design would be to turn all the constants in `{f32, f64}` into associated
+consts as well, which would leave no more modules in the standard library that shadow primitive
+types. A different alternative would be to restrict this RFC only to the integral modules, leaving
+f32 and f64 for a future RFC, since the integral modules are the most important aspect of this
+RFC and it would be a shame for them to get bogged down by the unrelated concerns of the
+floating-point modules.
+
+- Rather than immediately deprecating the existing items in the standard library, we could add
+the new associated consts without any corresponding deprecations. The downside of this idea is
+that we now have *three* ways of doing the exact same thing, and without deprecation warnings
+(and their associated notes) there is little enough to guide users as to which is solution
+is the idiomatic one. It is the author's opinion that there is no downside to deprecation
+warnings in this case, especially since mitigation of the warning is trivial (as discussed in
+the Drawbacks section above).
