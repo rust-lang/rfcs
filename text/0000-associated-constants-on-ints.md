@@ -95,6 +95,10 @@ even to experienced Rust programmers; the fact that such a pattern is seemingly 
 the standard library is even more of a surprise. By making this change we would be able to
 remove all modules in the standard library whose names shadow integral types.
 
+5. Removal of a frustrating papercut. Even experienced Rust programmers are prone to trip over
+this and curse at having to be reminded of a bizarre and jarring artifact of Rust 1.0.
+By removing these artifacts we can make the experience of using Rust more universally pleasant.
+
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
