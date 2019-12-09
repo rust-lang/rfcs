@@ -11,7 +11,7 @@ Selective download of the crates-io index over HTTP, similar to a solution used 
 # Motivation
 [motivation]: #motivation
 
-The full crate index is relatively big and slow to download. It will keep growing as crates.io grows, making the problem worse. The need to download the full index slows down the first use of Cargo. It's especially slow and wasteful in stateless CI environments, which download the full index, use only a tiny fraction of it, and throw it away. Caching of the index in hosted CI environments is difficult (`.cargo` dir is large) and often not effective (e.g. upload and download of large caches in Travis CI is almost as slow as a fresh index download).
+The full crate index is relatively big and slow to download. It will keep growing as crates.io grows, making the problem worse. The requirement to download the full index slows down the first use of Cargo. It's especially slow and wasteful in stateless CI environments, which download the full index, use only a tiny fraction of it, and throw it away. Caching of the index in hosted CI environments is difficult (`.cargo` dir is large) and often not effective (e.g. upload and download of large caches in Travis CI is almost as slow as a fresh index download).
 
 The kind of data stored in the index is not a good fit for the git protocol. The index content (as of eb037b4863) takes 176MiB as an uncompressed tarball, 16MiB with `gz -1`, and 10MiB compressed with `xz -6`. Git clone reports downloading 215MiB. That's more than just the uncompressed latest index content, and over **20 times more** than a compressed tarball.
 
@@ -36,7 +36,7 @@ Expose the index over HTTP as simple files, keeping the existing content and dir
 
 To learn about crates and resolve dependencies, Cargo (or any other client) would make requests to known URLs for each dependency it needs to learn about, e.g. `https://index.example.com/se/rd/serde`. For each dependency the client would also have to request information about its dependencies, recursively, until all dependencies are fetched (and cached) locally.
 
-It's possible to request dependency files in parallel, so the worst-case latency of such dependency resolution is limited to the maximum depth of the dependency tree. In practice it may be less, because dependencies may occur in multiple places in the tree, allowing earlier discovery and increasing parallelization. Additionally, if there's a lock file, all dependencies listed in it can be speculatively checked in parallel. Similarly, cached dependency files can be used to speculatively check known sub-dependencies sooner.
+It's possible to request dependency files in parallel, so the worst-case latency of such dependency resolution is limited to the maximum depth of the dependency tree. In practice it's less, because dependencies occur in multiple places in the tree, allowing earlier discovery and increasing parallelization. Additionally, if there's a lock file, all dependencies listed in it can be speculatively checked in parallel. Similarly, cached dependency files can be used to speculatively check known sub-dependencies sooner.
 
 ## Greedy fetch
 
@@ -87,10 +87,10 @@ When the log grows too big, the epoch number can be incremented, and the log res
 [drawbacks]: #drawbacks
 
 * A basic solution, without the incremental changelog, needs more requests and has higher latency to update the index. With the help of the incremental changelog, this is largely mitigated. For GitHub-hosted indexes Cargo has a fast path that checks in GitHub API whether the master branch has changed. With the changelog file, the same fast path can be implemented by making a conditional HTTP request for the changelog file (i.e. checking `ETag` or `Last-Modified`).
-* Performant implementation of this solution depends on making many small requests in parallel. This in practice requires HTTP/2 support on the server.
-* If GitHub won't like high-traffic usage of the index via raw.githubusercontent.com, the index may need to be hosted elsewhere.
+* Performant implementation of this solution depends on making many small requests in parallel. HTTP/2 support on the server makes checking twice as fast compared to HTTP/1.1, but speed over HTTP/1.1 is still reasonable.
+* If GitHub won't like high-traffic usage of the index via raw.githubusercontent.com, the index may need to be cached/hosted elsewhere.
 * Since alternative registries are stable, the git-based protocol is stable, and can't be removed.
-* Tools that perform fuzzy search of the index (e.g. `cargo add`) may need to make multiple requests or use some other method.
+* Tools that perform fuzzy search of the index (e.g. `cargo add`) may need to make multiple requests or use some other method. URLs are already normalized to lowercase, so case-insensitivity doesn't require extra requests.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -99,7 +99,7 @@ When the log grows too big, the epoch number can be incremented, and the log res
 
 An obvious alternative would be to create a web API that can be asked to perform dependency resolution server-side (i.e. take a list dependencies and return a lockfile or similar). However, this would require running dependency resolution algorithm server-side. Maintenance of a dynamic API, critical for daily use for nearly all Rust users, is much harder and more expensive than serving of static files.
 
-The proposed solution doesn't require any custom server-side logic. The index can be hosted on a static-file CDN, and can be easily cached and mirrored by users. It's not necessary to change how the index is populated, and the canonical version of the index can be kept as a git repository with the full history. This makes it easy to keep backwards compatibility with older versions of Cargo, as well as 3rd party tools that use the index in its current format.
+The proposed solution doesn't require any custom server-side logic. The index can be hosted on a static-file CDN, and can be easily cached and mirrored by users. It's not necessary to change how the index is populated. The canonical version of the index can be kept as a git repository with the full history. This makes it easy to keep backwards compatibility with older versions of Cargo, as well as 3rd party tools that use the index in its current format.
 
 ## Initial index from rustup
 
@@ -122,7 +122,7 @@ Bundler used to have a full index fetched ahead of time, similar to Cargo's, unt
 [unresolved-questions]: #unresolved-questions
 
 * Should the changelog use a more extensible format?
-* Instead of one file that gets reset, maybe it could be split into series of files (e.g. one per day or month, or a previous file ending with a filename of the next one).
+* Instead of one file that gets reset, maybe the changelog could be split into series of files (e.g. one per day or month, or a previous file ending with a filename of the next one).
 * Can the changelog be compressed on the HTTP level? There are subtle differences between content encoding and transfer encoding, important for `Range` requests.
 * Should freshness of files be checked with an `Etag` or `Last-Modified`? Should these be "statelessly" derived from the hash of the file or modification date in the filesystem, or explicitly stored somewhere?
 * How to configure whether an index (including alternative registries) should be fetched over git or the new HTTP? The current syntax uses `https://` URLs for git-over-HTTP.
