@@ -83,6 +83,12 @@ Because the log is append-only, the client can incrementally update it using a `
 
 When the log grows too big, the epoch number can be incremented, and the log reset back to empty. The epoch number allows clients to detect that the log has been reset, even if the `Range` they requested happened to be valid for the new log file.
 
+## Handling deleted crates
+
+When a client checks freshness of a crate that has been deleted, it will make a request to the server and notice a 404/410/451 HTTP status. The client can then act accordingly, and clean up local data (even tarball and source checkout).
+
+If the client is not interested in deleted crate, it won't check it, but chances are it never did, and didn't download it. If ability to proactively erase caches of deleted crates is important, then the "incremental changelog" feature can be extended to notify about deletions.
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
