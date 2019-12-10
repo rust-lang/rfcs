@@ -1,5 +1,5 @@
 - Feature Name: N/A
-- Start Date: 2019-09-24
+- Start Date: 2019-12-10
 - RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
 - Rust Issue: N/A
 
@@ -32,10 +32,10 @@ This behavior includes future-incompatibility lints.
 
 As a running example, assume we have a crate `unwary` with an upstream
 crate dependency `brash`, and `brash` has code that triggers a
-future-incompatibility lint, such as `type SVec<T: Send> = Vec<T>;`,
-(see [rust-lang/rust#21903][], linting for bounds in type aliases).
+future-incompatibility lint, in this case a borrow `&x.data.0` of a packed field
+(see [rust-lang/rust#46043][], "safe packed borrows").
 
-[rust-lang/rust#21903]: https://github.com/rust-lang/rust/issues/21903
+[rust-lang/rust#46043]: https://github.com/rust-lang/rust/issues/46043
 
 If `brash` is a non-path dependency of `unwary`, then building
 `unwary` will suppress the warning associated with `brash` in its
@@ -55,16 +55,16 @@ unwary % cargo build                                                # no warning
 unwary % cd ../brash
 brash % cargo build                                                 # (but a `brash` developer will see it when they build.)
    Compiling brash v0.1.0 (/tmp/brash)
-warning: bounds on generic parameters are not enforced in type aliases
- --> src/lib.rs:5:14
-  |
-5 | type SVec<T: Send> = Vec<T>;
-  |              ^^^^
-  |
-  = note: `#[warn(type_alias_bounds)]` on by default
-  = help: the bound will not be checked when the type alias is used, and should be removed
-  = warning: this was previously accepted by the compiler but is being phased out; it will become a hard error in a future release!
-  = note: for more information, see issue #21903 <https://github.com/rust-lang/rust/issues/21903>
+warning: borrow of packed field is unsafe and requires unsafe function or block (error E0133)
+  --> src/lib.rs:13:9
+   |
+13 | let y = &x.data.0;
+   |         ^^^^^^^^^
+   |
+   = note: `#[warn(safe_packed_borrows)]` on by default
+   = warning: this was previously accepted by the compiler but is being phased out; it will become a hard error in a future release!
+   = note: for more information, see issue #46043 <https://github.com/rust-lang/rust/issues/46043>
+   = note: fields of packed structs might be misaligned: dereferencing a misaligned pointer or even just creating a misaligned reference is undefined behavior
     Finished dev [unoptimized + debuginfo] target(s) in 0.30s
 brash %
 ```
@@ -82,16 +82,16 @@ Example of today's behavior (where in this case, `brash` is a path dependency of
 crates % cd unwary
 unwary % cargo build                                                # We *do* see warning on first build...
    Compiling brash v0.1.0 (/tmp/brash)
-warning: bounds on generic parameters are not enforced in type aliases
- --> src/lib.rs:5:14
-  |
-5 | type SVec<T: Send> = Vec<T>;
-  |              ^^^^
-  |
-  = note: `#[warn(type_alias_bounds)]` on by default
-  = help: the bound will not be checked when the type alias is used, and should be removed
-  = warning: this was previously accepted by the compiler but is being phased out; it will become a hard error in a future release!
-  = note: for more information, see issue #21903 <https://github.com/rust-lang/rust/issues/21903>
+warning: borrow of packed field is unsafe and requires unsafe function or block (error E0133)
+  --> src/lib.rs:13:9
+   |
+13 | let y = &x.data.0;
+   |         ^^^^^^^^^
+   |
+   = note: `#[warn(safe_packed_borrows)]` on by default
+   = warning: this was previously accepted by the compiler but is being phased out; it will become a hard error in a future release!
+   = note: for more information, see issue #46043 <https://github.com/rust-lang/rust/issues/46043>
+   = note: fields of packed structs might be misaligned: dereferencing a misaligned pointer or even just creating a misaligned reference is undefined behavior
    Compiling unwary v0.1.0 (/tmp/unwary)
     Finished dev [unoptimized + debuginfo] target(s) in 0.30s
 unwary % touch src/main.rs
@@ -218,16 +218,16 @@ unary % cargo describe-future-incompatibilities
 The `brash` crate currently triggers a future incompatibility warning with Rust,
 with the following diagnostic:
 
-> warning: bounds on generic parameters are not enforced in type aliases
->  --> src/lib.rs:5:14
->   |
-> 5 | type SVec<T: Send> = Vec<T>;
->   |              ^^^^
->   |
->   = note: `#[warn(type_alias_bounds)]` on by default
->   = help: the bound will not be checked when the type alias is used, and should be removed
->   = warning: this was previously accepted by the compiler but is being phased out; it will become a hard error in a future release!
->   = note: for more information, see issue #21903 <https://github.com/rust-lang/rust/issues/21903>
+> warning: borrow of packed field is unsafe and requires unsafe function or block (error E0133)
+>   --> src/lib.rs:12:9
+>    |
+> 12 | let y = &x.data.0; // UB, also future-compatibility warning
+>    |         ^^^^^^^^^
+>    |
+>    = note: `#[warn(safe_packed_borrows)]` on by default
+>    = warning: this was previously accepted by the compiler but is being phased out; it will become a hard error in a future release!
+>    = note: for more information, see issue #46043 <https://github.com/rust-lang/rust/issues/46043>
+>    = note: fields of packed structs might be misaligned: dereferencing a misaligned pointer or even just creating a misaligned reference is undefined behavior
 
 
 The `bold` crate currently triggers a future incompatibility warning with Rust,
@@ -247,17 +247,15 @@ with the following diagnostic:
 The `rash` crate currently triggers a future incompatibility warning with Rust,
 with the following diagnostic:
 
-> warning: borrow of packed field is unsafe and requires unsafe function or block (error E0133)
->   --> src/lib.rs:12:9
->    |
-> 12 | let y = &x.data.0; // UB, also future-compatibility warning
->    |         ^^^^^^^^^
->    |
->    = note: `#[warn(safe_packed_borrows)]` on by default
->    = warning: this was previously accepted by the compiler but is being phased out; it will become a hard error in a future release!
->    = note: for more information, see issue #46043 <https://github.com/rust-lang/rust/issues/46043>
->    = note: fields of packed structs might be misaligned: dereferencing a misaligned pointer or even just creating a misaligned reference is undefined behavior
-
+> error: defaults for type parameters are only allowed in `struct`, `enum`, `type`, or `trait` definitions.
+>  --> src/lib.rs:4:8
+>   |
+> 4 | fn bar<T=i32>(x: T) { }
+>   |        ^
+>   |
+>   = note: `#[deny(invalid_type_param_default)]` on by default
+>   = warning: this was previously accepted by the compiler but is being phased out; it will become a hard error in a future release!
+>   = note: for more information, see issue #36887 <https://github.com/rust-lang/rust/issues/36887>
 ```
 
 This way, developers who want to understand the problem have a way to find out more,
@@ -289,16 +287,16 @@ even when the root crate is the sole trigger of incompatibility lints.
 crates % cd brash
 brash % cargo build
    Compiling brash v0.1.0 (/tmp/brash)
-warning: bounds on generic parameters are not enforced in type aliases
- --> src/lib.rs:5:14
-  |
-5 | type SVec<T: Send> = Vec<T>;
-  |              ^^^^
-  |
-  = note: `#[warn(type_alias_bounds)]` on by default
-  = help: the bound will not be checked when the type alias is used, and should be removed
-  = warning: this was previously accepted by the compiler but is being phased out; it will become a hard error in a future release!
-  = note: for more information, see issue #21903 <https://github.com/rust-lang/rust/issues/21903>
+warning: borrow of packed field is unsafe and requires unsafe function or block (error E0133)
+  --> src/lib.rs:13:9
+   |
+13 | let y = &x.data.0;
+   |         ^^^^^^^^^
+   |
+   = note: `#[warn(safe_packed_borrows)]` on by default
+   = warning: this was previously accepted by the compiler but is being phased out; it will become a hard error in a future release!
+   = note: for more information, see issue #46043 <https://github.com/rust-lang/rust/issues/46043>
+   = note: fields of packed structs might be misaligned: dereferencing a misaligned pointer or even just creating a misaligned reference is undefined behavior
     Finished dev [unoptimized + debuginfo] target(s) in 0.30s
 
     warning: the crate brash contains code that will be rejected by a future version of Rust.
@@ -561,6 +559,42 @@ dependency).
    there is not in conflict with what I am proposing here; I am just saying that
    it would not be sufficient for resolving the problem at hand.
 
+## Would extending cap-lints be preferable?
+
+One goal of the RFC as written was to try to minimize the impact on
+the Rust ecosystem. Thus it does not change the behavior of the default
+output error-format, and instead leverages `--error-format=json`.
+But this might be too subtle an approach.
+
+One other way to still minimize impact would be to extend
+the `--cap-lints` hierarchy so that it looks like this:
+
+```
+allow
+warn-future-incompat
+warn
+deny-future-incompat
+deny
+```
+
+Now, passing `--cap-lints=warn-future-incompat` would mean that we allow
+(with no warning) all non-future-incompat lints, and warn on future-incompat ones.
+
+Likewise, `--cap-lints=deny-future-incompat` would mean that we warn
+on all non-future-incompat lints, and error on future-incompat ones.
+
+Finally (and crucially), we would change the default for `cargo build`
+to be `cap-lints=warn-future-incompat`. Then by default, developers
+would be more directly informed about future incompatibilities in
+their dependencies.
+
+I opted not to take this approach in the design proposed of this RFC
+because I suspect it would suffer from the same problems exhibited by
+["minimum lint levels"][rust-lang/rust#59658]: it would present a
+bunch of diagnostics that developers cannot immediately resolve
+locally. (However, it may still be a reasonable feature to add to
+`rustc` and `cargo`!)
+
 # Prior art
 [prior-art]: #prior-art
 
@@ -655,29 +689,28 @@ For ease of reference, here is the text located at the gist url above:
 
 > This crate currently triggers a future incompatibility warning with Rust.
 >
-> In src/lib.rs:5:14, there is the following code:
+> In src/lib.rs:13:9, there is the following code:
 >
 > ```rust
-> type SVec<T: Send> = Vec<T>;
+> let y = &x.data.0;
 > ```
 >
-> This causes `rustc` to issue the following diagnostic, from https://github.com/rust-lang/rust/issues/41620
+> This causes `rustc` to issue the following diagnostic, from https://github.com/rust-lang/rust/issues/46043
 >
 > ```
-> warning: bounds on generic parameters are not enforced in type aliases
->  --> src/lib.rs:5:14
->   |
-> 5 | type SVec<T: Send> = Vec<T>;
->   |              ^^^^
->   |
->   = note: `#[warn(type_alias_bounds)]` on by default
->   = help: the bound will not be checked when the type alias is used, and should be removed
->   = warning: this was previously accepted by the compiler but is being phased out; it will become a hard error in a future release!
->   = note: for more information, see issue #21903 <https://github.com/rust-lang/rust/issues/21903>
+> warning: borrow of packed field is unsafe and requires unsafe function or block (error E0133)
+>   --> src/lib.rs:13:9
+>    |
+> 13 | let y = &x.data.0;
+>    |         ^^^^^^^^^
+>    |
+>    = note: `#[warn(safe_packed_borrows)]` on by default
+>    = warning: this was previously accepted by the compiler but is being phased out; it will become a hard error in a future release!
+>    = note: for more information, see issue #46043 <https://github.com/rust-lang/rust/issues/46043>
+>    = note: fields of packed structs might be misaligned: dereferencing a misaligned pointer or even just creating a misaligned reference is undefined behavior
 > ```
 >
 > Since this construct is going to become a hard error in the future, we should eliminate occurrences of it.
-
 
 Further refinement of this idea: If we did start suggesting bug report
 templates, then Cargo might also be able to *search* for issues with
