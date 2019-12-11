@@ -1,4 +1,4 @@
-- Feature Name: `project-asm`
+- Feature Name: `project-inline-asm`
 - Start Date: 2019-12-07
 - RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
@@ -48,7 +48,7 @@ Certain elements are definitively out of scope:
 
 * The chosen `asm!` syntax should not involve rustc "understanding" the asm code itself, since this would require a huge amount of work in the compiler to support the full assembly syntax of multiple architectures. Instead, interpretation of the assembly code should be left to the compiler backend (LLVM) or an external assembler (GAS).
 
-[asm project]: https://github.com/rust-lang/project-asm
+[asm project]: https://github.com/rust-lang/project-inline-asm
 [zulip]: https://rust-lang.zulipchat.com/#narrow/stream/216763-project-inline-asm
 [cranelift]: https://github.com/CraneStation/cranelift/issues/444
 [project group]: https://github.com/rust-lang/wg-governance/blob/master/draft-rfcs/working-group-terminology.md
