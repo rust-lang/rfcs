@@ -117,7 +117,7 @@ But this feedback should not be *just* the raw diagnostic output for
 `brash`! The developer of a crate like `unwary` typically cannot do
 anything in the short term about warnings emitted by upstream crates,
 
- * (The `unwary` developer *can* file issues against `brash`a or even
+ * (The `unwary` developer *can* file issues against `brash` or even
     contribute code to fix `brash`, but that does not resolve the
     immediate problem until new version of `brash` is released by its
     maintainer.)
@@ -438,7 +438,6 @@ currently categorized as `C-future-incompatility` on the Rust repo to
 use this system. For example, there may be cases where we would be better
 served to use the edition mechanism to introduce the hard-error, but leave
 the functionality unchanged for older Rust editions. In any case, that
-
 is a policy matter for the relevant teams, and is out of scope for
 this RFC. I just want to make it clear that the mechanism suggested
 here may not be appropriate for every single lint currently
@@ -608,7 +607,7 @@ use.)
 [unresolved-questions]: #unresolved-questions
 
 There are future-incompatibility warnings emitted by cargo itself,
-such as discussed on [rust-lang/cargo#6313 (comment)][]. I imagine it
+such as discussed on [rust-lang/cargo#6313 (comment)][cargo 6313 comment]. I imagine it
 shouldn't require much effort to incorporate support for such lints, but 
 I have not explicitly addressed nor seriously investigated this.
 
