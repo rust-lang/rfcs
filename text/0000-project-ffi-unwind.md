@@ -88,19 +88,22 @@ the roadmap, that item will be submitted as an RFC or FCP for review by the lang
 ## Stabilizing unspecified "TBD" behavior
 [stabilizing-tbd]: stabilizing-unspecified-tbd-behavior
 
-We would like to be able to provide features in stable Rust without a full
-formal specification but with an informal statement of intent regarding the
-behavior. These features would be considered "unspecified behavior" (rather
-than "undefined behavior"), and their behavior would therefore be subject to
-some change, but such a change would be guaranteed not to violate the project
-group's stated intent for the feature.
+We would like to be able to provide features in stable Rust where some
+of the details are only partially specified. For example, we might add
+a new ABI "C unwind" that can be used from stable Rust, while
+explicitly leaving the behavior when a foreign exception unwinds
+across such a boundary unspecified. In such cases, we would attempt to
+provide some bounds on what might happen -- for example, we might
+state that a Rust panic propagating across a "C unwind" boundary must
+be preserved and handled as normal.
 
-Internally, a project group should refer to such unspecified behavior as "TBD",
-to indicate that refining the specification of the behavior is within the scope
-of the project. Outside of the context of the project group, such as in general
-reference material for the language, the behavioral intent as determined by the
-project group should be described, but will not imply any special status
-compared to other instances of unspecified behavior in the language.
+In some cases, we intend to mark some of this unspecified behavior as
+"To Be Determined" (TBD). This classification is meant to convey that
+the behavior is behavior we intend to specify as part of this group,
+although we have not done so *yet*. This categorization is purely
+intental to the working group, however; such behavior would remain
+formally unspecified until an RFC or other binding decision is
+reached.
 
 ## Details of the FFI-unwind project group
 
