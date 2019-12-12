@@ -125,13 +125,16 @@ The FFI-unwind project group has the following initial scope:
 * in particular, to define with sufficient detail to enable the use cases
   described in the Motivation section of this RFC
   
-Certain elements are definitively out of scope:
+Certain elements are considered out of scope, at least to start:
 
-* The group does not intend to consider mechanisms to enable "interop"
-  between Rust panics and exceptions from other languges. For example,
-  we do not intend to permit Rust code to catch C++ exceptions, though
-  we will have to consider what happens when a C++ exception unwinds
-  past a `catch_unwind` boundary.
+* We do not expect to add new mechanisms for interacting with or
+  throwing foreign exceptions.
+    * However, if we specify what happens when a foreign exception
+      passes into Rust code, then we must also specify how that
+      exception will interact with pre-existing mechanisms like
+      destructors and `catch_unwind`. We just don't intend to create
+      new mechanisms.
+
 
 ### Constraints and considerations
 
