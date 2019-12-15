@@ -43,10 +43,6 @@ The project group has the following additional goals:
 With a lower priority, the project group also intends to tackle the following secondary, future goals:
 * support for module-level assembly (`global_asm!`).
 * support for naked functions (`#[naked]`).
-  
-Certain elements are definitively out of scope:
-
-* The chosen `asm!` syntax should not involve rustc "understanding" the asm code itself, since this would require a huge amount of work in the compiler to support the full assembly syntax of multiple architectures. Instead, interpretation of the assembly code should be left to the compiler backend (LLVM) or an external assembler (GAS).
 
 [asm project]: https://github.com/rust-lang/project-inline-asm
 [zulip]: https://rust-lang.zulipchat.com/#narrow/stream/216763-project-inline-asm
