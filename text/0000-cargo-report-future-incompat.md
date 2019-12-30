@@ -437,8 +437,10 @@ reasonable for someone to resolve this problem in the short term.
 Some claim that "our current approach" has been working, and therefore
 no change is needed here. However, my counterargument is that the only
 reason we haven't had to resolve this before is that compiler and
-language teams have been very conservative in changing
-existing future-incompatibility lints into hard errors,
+language teams have been forced to be very conservative in changing
+existing future-incompatibility lints into hard errors, because it
+takes a lot of effort to make such transitions, (in no small part
+**because** of the issue described here).
 
 In the cases where the compiler and language teams have turned such
 lints into hard errors, the teams spent signficant time evaluating
