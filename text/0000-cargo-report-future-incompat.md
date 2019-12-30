@@ -178,8 +178,8 @@ unwary % cargo build
 unwary %
 ```
 
-If the depedency graph for the current crate contains multiple versions of
-a crate listed by the end report, then the end report shoiuld include which
+If the dependency graph for the current crate contains multiple versions of
+a crate listed by the end report, then the end report should include which
 version (or versions) of that crate are causing the lint to fire.
 
 Invoking the command `cargo describe-future-incompatibilities` will make cargo
@@ -304,7 +304,7 @@ current future-incompatibility lint triggers.
 
 As noted above, we want to continue to suppress normal lint checks for
 upstream dependencies. Therefore, Cargo will continue to pass
-`--cap-lints=allow` for non-path upstream depedencies.
+`--cap-lints=allow` for non-path upstream dependencies.
 
 However, the Rust compiler's behavior will change slightly. Even when
 `--cap-lints=allow` is turned on, we need Cargo to know when a
