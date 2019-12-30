@@ -351,7 +351,7 @@ The responsibilities of Cargo:
     of the whole build.
 
   * Cargo is responsible for storing a record of any future-incompatibility
-    for a crate somewhere in the `build/` directory, so that it can
+    for a crate somewhere in the `target/` directory, so that it can
     emit the same report without having to rebuild the crate on subsequent
     rebuilds of the root crate.
 
@@ -394,10 +394,11 @@ Rust, if known, where it will become a hard error.
 
 Since `cargo` is expected to continue to emit the report even when the
 upstream dependencies are not rebuilt, Cargo will store the
-future-incompatibility status for each crate somewhere in the `build/`
-directory on the file-system. (This is analogous to how incremental
-compilation caches diagnostic output, so that future runs will still
-emit the same report even when we do not recompile the same input.)
+future-incompatibility status for each crate somewhere in the `target/`
+directory on the file-system.
+(This should be a trivial constraint today: Cargo on the nightly channel
+is already locally caching warnings emitted while building upstream 
+path-dependencies.)
 
 
 ## Policy issues
