@@ -584,6 +584,12 @@ I have not explicitly addressed nor seriously investigated this.
 
 * Is using `--error-format=json` as the way to switch `rustc` into the future-incompatibility checking mode reasonable?
 
+  * An variant on the strategy:
+    we could use the `--json CONFIG` option to `rustrc` as a way for
+    `cargo` to opt into the feature.
+    This way, clients already using `--error-format=json`
+    would not need to know abot this change.
+
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
