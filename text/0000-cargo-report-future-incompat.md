@@ -403,6 +403,61 @@ is already locally caching warnings emitted while building upstream
 path-dependencies.)
 
 
+## Annoyance modulation
+
+Emitting a warning on all subsequent cargo invocations until the
+problem is resolved may be overkill for some users.
+
+In particular, it may not be reasonable for someone to resolve the 
+flagged problem in the short term.
+
+In order to allow users to opt-out of being warned about future
+incompatiblity issues on every build, this RFC proposes
+extending the `.cargo/config` file with keys that allow
+the user to fine-tune the frequency of how often cargo will
+print the report. For example:
+
+```
+[future_incompatibility_report]
+# This setting can be used to reduce the frequency with which Cargo will report
+# future incompatibility issues.
+#
+# The possible values are:
+# * "always" (default): always emit the report if any future incompatibility 
+#                       lint fires,
+# * "never": never emit the report,
+# * "post-cargo-update": emit the report the first time we encounter a given
+#                         future incompatibility lint after the most recent
+#                         `cargo update` run for a crate,
+# * "daily": emit the report the first time any particular lint fires each day,
+# * "weekly": emit the report the first time any particular lint fires
+#             each week (starting from Monday, following ISO 8601),
+# * "lunar": emit the report the first time any particular lint fires every
+#            four weeks. (We recommend using this value in tandem with
+#            an IDE that present the current phase of the moon in its UI.)
+frequency = "always"
+
+# This allows a further fine-tuning for lints that have been given an
+# explicit schedule for when they will be turned into hard errors.
+#
+# If false, such scheduled lints are treated the same as unscheduled ones.
+#
+# If true, such scheduled lints issue their report more frequently
+# as time marches towards the release date when the warning becomes an error.
+#
+# Specifically,
+# * 6 weeks before that release, the report is emitted at least once per week,
+# * 2 weeks before that release, the report is emitted on every build.
+#
+# (Note that a consequence of the above definition, this value of this setting
+# has no effect if the `future_incompat_report_frequency` is "always".)
+telescoping_schedule = true
+```
+
+(This RFC does not actually prescribe the precise set of keys and
+values laid out above. We trust the Cargo team to determine an
+appropriate set of knobs to expose to the user.)
+
 ## Policy issues
 
 We probably do not want to blindly convert all lints to
@@ -424,16 +479,6 @@ future-compatibility checking mode. This avoids the need to add a new
 stable command line flag to `rustc`; but it also may be a confusing
 change in compiler semantics for any non-cargo client of `rustc` that
 is using `--error-format=json`.
-
-Emitting a warning on all subsequent cargo invocations until the
-problem is resolved may be overkill. In particular, it may not be
-reasonable for someone to resolve this problem in the short term.
-
- * (Perhaps we could restrict it so that it only gets re-emitted once
-   each day or some other way to modulate the annoyance level; but of
-   course then the diagnostic would have to state very clearly that it
-   is doing that strange magic.)
-
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
