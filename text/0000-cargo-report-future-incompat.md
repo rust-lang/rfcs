@@ -111,14 +111,20 @@ Furthermore, we want the feedback to provide guidance as to how the
 `unwary` maintainer can address the issue. Here are some potential
 forms this additional guidance could take.
 
- * If cargo is not running in "offline mode", it can take the
-   future-incompatibilty signaling as an opportunity to query
-   `crates.io` to find out if a newer version of the upstream crate is
-   available, and if so, suggest to the user they might upgrade to it.
+ * cargo could respond to the future-incompatibilty signaling by querying
+   the local index to find out if a newer version of the upstream crate is
+   available. If a newer version is available, then it could 
+   suggest to the user they might upgrade to it.
    If such an upgrade could be done via `cargo update`, then the
-   output could obviously suggest that as well. (This is just a
-   heuristic measure, as it would not attempt to check ahead of time
-   if the newer version actually resolves the problem in question.)
+   output could obviously suggest that as well.
+
+   (This is just a heuristic measure, as it would not attempt to
+   check ahead of time if the newer version actually resolves the
+   problem in question.)
+
+   A further refinement on this idea would be to query
+   `crates.io` itself If cargo is not running in "offline mode". But
+   querying the index may well suffice in practice.
 
  * Cargo could suggest to the `unwary` maintainer that they file a bug
    (or search for previously-filed bug) in the source repository for
