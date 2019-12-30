@@ -396,15 +396,12 @@ emit the same report even when we do not recompile the same input.)
 
 ## Policy issues
 
-We probably do not want to blindly convert every lint that is
-currently categorized as `C-future-incompatility` on the Rust repo to
-use this system. For example, there may be cases where we would be better
-served to use the edition mechanism to introduce the hard-error, but leave
-the functionality unchanged for older Rust editions. In any case, that
-is a policy matter for the relevant teams, and is out of scope for
-this RFC. I just want to make it clear that the mechanism suggested
-here may not be appropriate for every single lint currently
-categorized as `C-future-incompatility`.
+We probably do not want to blindly convert all lints to
+use this system. 
+The mechanism suggested here may not be appropriate for every single
+lint currently categorized as `C-future-incompatility` on the Rust repo.
+That decision is a policy matter for the relevant teams,
+and the form of such policy is out of scope for this RFC.
 
 # Drawbacks
 [drawbacks]: #drawbacks
