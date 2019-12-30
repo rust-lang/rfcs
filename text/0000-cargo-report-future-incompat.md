@@ -127,7 +127,7 @@ forms this additional guidance could take.
    querying the index may well suffice in practice.
 
  * Cargo could suggest to the `unwary` maintainer that they file a bug
-   (or search for previously-filed bug) in the source repository for
+   (or search for previously-filed bugs) in the source repository for
    the upstream crate that is issuing the future-incompatibility
    warning. (That is, the `brash` author might not be aware of the
    issue; for example, if they last updated their crate before the
