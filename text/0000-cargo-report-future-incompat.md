@@ -363,10 +363,8 @@ The responsibilities of Cargo:
 ## Implmentation strategy: Leverage JSON error-format
 
 The cleanest way to implement the above division of responsbilities
-without perturbing *non-cargo* uses of `rustc` is probably to make two changes:
-
- * Cargo should *always* use `--error-format=json` for its `rustc`
-   invocations, and
+without perturbing *non-cargo* uses of `rustc` is probably to make 
+the following change:
 
  * `rustc` should treat `--error-format=json` as signal that it should
    emit a future-incompatibility summary report for the crate.
@@ -585,8 +583,6 @@ I have not explicitly addressed nor seriously investigated this.
 ## Implementation questions
 
 * Is using `--error-format=json` as the way to switch `rustc` into the future-incompatibility checking mode reasonable?
-
-* Is turning on `--error-format=json` by default everywhere in `cargo` reasonable?
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
