@@ -69,43 +69,6 @@ warning: borrow of packed field is unsafe and requires unsafe function or block 
 brash %
 ```
 
-Even if `brash` is a path-dependency of `unwary` (which means building
-`unwary` will issue the warning associated with `brash` when it builds
-that crate), but subsequent rebuilds of `unwary` will not rebuild
-`brash`, and thus will not emit the diagnostic for the
-future-incompatibility issue (at least not until `unwary` updates to a
-newer version of `brash` or of Rust itself).
-
-Example of today's behavior (where in this case, `brash` is a path dependency of `unwary`):
-
-```
-crates % cd unwary
-unwary % cargo build                                                # We *do* see warning on first build...
-   Compiling brash v0.1.0 (/tmp/brash)
-warning: borrow of packed field is unsafe and requires unsafe function or block (error E0133)
-  --> src/lib.rs:13:9
-   |
-13 | let y = &x.data.0;
-   |         ^^^^^^^^^
-   |
-   = note: `#[warn(safe_packed_borrows)]` on by default
-   = warning: this was previously accepted by the compiler but is being phased out; it will become a hard error in a future release!
-   = note: for more information, see issue #46043 <https://github.com/rust-lang/rust/issues/46043>
-   = note: fields of packed structs might be misaligned: dereferencing a misaligned pointer or even just creating a misaligned reference is undefined behavior
-   Compiling unwary v0.1.0 (/tmp/unwary)
-    Finished dev [unoptimized + debuginfo] target(s) in 0.30s
-unwary % touch src/main.rs
-unwary % cargo build                                                # ... but no warning issued about still-present problem in path dependency.
-   Compiling unwary v0.1.0 (/tmp/unwary)
-    Finished dev [unoptimized + debuginfo] target(s) in 0.30s
-unwary %
-```
-
-Therefore, if the developer does not do something to address the
-warning the first time they see it, it is likely to go unaddressed
-until the developer upgrades to a version of Rust that actually fails
-to compile `brash`. This is a frustrating developer experience.
-
 Cargo passes `--cap-lints=allow` on upstream dependencies for good
 reason, as discussed in [Rust RFC 1193][] and the comment thread from
 [rust-lang/rust#59658][].
