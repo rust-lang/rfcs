@@ -178,6 +178,10 @@ unwary % cargo build
 unwary %
 ```
 
+If the depedency graph for the current crate contains multiple versions of
+a crate listed by the end report, then the end report shoiuld include which
+version (or versions) of that crate are causing the lint to fire.
+
 Invoking the command `cargo describe-future-incompatibilities` will make cargo
 query information cached from the previous build and print out a more informative
 diagnostic message:
