@@ -1,7 +1,7 @@
 - Feature Name: `demote_apple_32bit`
 - Start Date: 2019-12-10
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- RFC PR: [rust-lang/rfcs#2837](https://github.com/rust-lang/rfcs/pull/2837)
+- Rust Issue: [rust-lang/rust#67724](https://github.com/rust-lang/rust/issues/67724)
 
 # Summary
 [summary]: #summary
