@@ -434,7 +434,7 @@ print the report. For example:
 #             each week (starting from Monday, following ISO 8601),
 # * "lunar": emit the report the first time any particular lint fires every
 #            four weeks. (We recommend using this value in tandem with
-#            an IDE that present the current phase of the moon in its UI.)
+#            an IDE that presents the current phase of the moon in its UI.)
 frequency = "always"
 
 # This allows a further fine-tuning for lints that have been given an
