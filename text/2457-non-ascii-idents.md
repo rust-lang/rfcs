@@ -75,7 +75,7 @@ The lexer defines identifiers as:
 
 `XID_Start` and `XID_Continue` are used as defined in the aforementioned standard. The definition of identifiers is forward compatible with each successive release of Unicode as only appropriate new characters are added to the classes but none are removed. We effectively are using UAX 31's default definition of valid identifier, with a tailoring that underscores are included with `XID_Start`. (Note that this allows bare underscores to be identifiers, that is currently also the case with `_` in identifier contexts being a reserved keyword)
 
-Parsers for Rust syntax normalize identifiers to [NFC][UAX15]. Every API accepting raw identifiers (such as `proc_macro::Ident::new` normalizes them to NFC and APIs returning them as strings (like `proc_macro::Ident::to_string`) return the normalized form. This means two identifiers are equal if their NFC forms are equal.
+Rust lexers normalize identifiers to [NFC][UAX15]. Every API accepting identifiers as strings (such as `proc_macro::Ident::new` normalizes them to NFC and APIs returning them as strings (like `proc_macro::Ident::to_string`) return the normalized form. Procedural and declarative macros receive normalized identifiers in their input as well. This means two identifiers are equal if their NFC forms are equal.
 
 A `non_ascii_idents` lint is added to the compiler. This lint is `allow` by default. The lint checks if any identifier in the current context contains a codepoint with a value equal to or greater than 0x80 (outside ASCII range). Not only locally defined identifiers are checked but also those imported from other crates and modules into the current context.
 
