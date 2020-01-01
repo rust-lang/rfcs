@@ -298,5 +298,5 @@ The [Go language][Go] allows identifiers in the form **Letter (Letter | Number)\
 [RFC 0430]: http://rust-lang.github.io/rfcs/0430-finalizing-naming-conventions.html
 [TR39Allowed]: https://www.unicode.org/reports/tr39/#General_Security_Profile
 [TR39RestrictionLevel]: https://www.unicode.org/reports/tr39/#Restriction_Level_Detection
-[unicode-set-confusables]: https://unicode.org/cldr/utility/list-unicodeset.jsp?a=%5B%5B%3AIdentifier_Status%CE%B2%3DAllowed%3A%5D%26%5B%3AXID_Continue%3DYes%3A%5D%26%5B%3AConfMA%CE%B2%3A%5D%5D&g=&i=ConfMA%CE%B2%2CScript_Extensions
-[unicode-set-allowed]: https://unicode.org/cldr/utility/list-unicodeset.jsp?a=%5B%5B%3AIdentifier_Status%CE%B2%3DAllowed%3A%5D%26%5B%3AXID_Continue%3DYes%3A%5D%5D&g=&i=Script_Extensions
+[unicode-set-confusables]: https://unicode.org/cldr/utility/list-unicodeset.jsp?a=%5B%5B%3AIdentifier_Status%3DAllowed%3A%5D%26%5B%3AXID_Continue%3DYes%3A%5D%26%5B%3AConfusable_MA%3A%5D%5D&g=&i=Confusable_MA%2CScript_Extensions
+[unicode-set-allowed]: https://unicode.org/cldr/utility/list-unicodeset.jsp?a=%5B%5B%3AIdentifier_Status%3DAllowed%3A%5D%26%5B%3AXID_Continue%3DYes%3A%5D%5D&g=&i=Script_Extensions
