@@ -22,7 +22,7 @@ This RFC proposes a portable alternative to signal-handling to deal with the ter
 
 Depending on the underlying operating system, sub-processes may be associated with a process-id (pid) and most operating systems provide  so called process-handles (process descriptors). Such handles may be used to perform async polling or sending signals to the corresponding process. Such process handles may be used to establish strict ownership for child-processes in Rust.
 
-The process-handle feature shall permita portable API for various operating systems. The following listing shows the process-handle features being available for different operating systems, and might be the base for a generalized Rust-API in `std::process`.
+The process-handle feature shall permit a portable API for various operating systems. The following listing shows the process-handle features being available for different operating systems, and might be the base for a generalized Rust-API in `std::process`.
 
 - As with Windows, the fucntion `CreateProcess` provides the HANDLE for the newly created child-process.
 - As with OpenBSD Unix provides process handles 
@@ -97,4 +97,3 @@ Platform specific features and abstract APIs dealing with process-handles.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
-
