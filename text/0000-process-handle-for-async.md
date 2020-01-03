@@ -33,7 +33,7 @@ The process-handle feature shall permit a portable API for various operating sys
 As for the latter case when the underlying OS does not provide a suitable native process-handle, the forkfd concept may be used. This is based on so called death-pipes: An anonymous pipe is established between parent-process (RX end) and the child-process (TX end). Here the parent-process may use RX end to poll for read-events (file descriptor) in async manner, for example using a future.
 Now, if the child-process terminates the TX end is being destroyed and the RX-end in the parent process will receive and EOF read-event.
 
-All of the listed process-handle flavors share the common concept to perform async polling for process-termination and might be the base for a generalized process-handle concpet in Rust `std::process`, leveraging a strong ownership-concpet for child-processes. The handling of signal SIGCHLD and sharing of child-process meta-data would no longer be required.
+All of the listed process-handle flavors share the common concept to perform async polling for process-termination and might be the base for a generalized process-handle concept in Rust `std::process`, leveraging a strong ownership-concept for child-processes. The handling of signal SIGCHLD and sharing of child-process meta-data would no longer be required.
 
 Pros:
 
