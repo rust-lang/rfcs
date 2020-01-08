@@ -9,6 +9,8 @@
 Deprecate the existing `asm!` macro and provide an identical one called
 `llvm_asm!`. The feature gate is also renamed from `asm` to `llvm_asm`.
 
+Unlike `asm!`, `llvm_asm!` is not intended to ever become stable.
+
 # Motivation
 [motivation]: #motivation
 
@@ -62,8 +64,10 @@ for inline assembly, which allows direct access to variables in scope and does n
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-When the new `asm!` macro is implemented it will replace the current one. This
+When the [new `asm!` macro][inline-asm-rfc] is implemented it will replace the current one. This
 will break anyone who has not yet transitioned their code to `llvm_asm!`. No
 silent miscompilations are expected since the operand separator will be changed
 from `:` to `,`, which will guarantee that any existing `asm!` invocations will
 fail with a syntax error with the new `asm!` macro.
+
+[inline-asm-rfc]: https://github.com/rust-lang/project-inline-asm/blob/master/rfcs/0000-inline-asm.md
