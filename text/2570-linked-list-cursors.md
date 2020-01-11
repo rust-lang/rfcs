@@ -66,13 +66,13 @@ fn remove_replace<T, P, F>(list: &mut LinkedList<T>, p: P, f: F)
     let mut cursor = list.cursor_mut();
     // move to the first element, if it exists
     loop {
-        let should_replace = match cursor.peek() {
+        let should_replace = match cursor.peek_next() {
             Some(element) => p(element),
             None => break,
         };
         if should_replace {
             let old_element = cursor.pop().unwrap();
-            cursor.insert(f(old_element));
+            cursor.insert_after(f(old_element));
         }
         cursor.move_next();
     }
@@ -108,7 +108,7 @@ fn main() {
         }
         cursor.move_next();
     }
-    cursor.insert(12);
+    cursor.insert_after(12);
 }
 ```
 In general, the cursor interface is not the easiest way to do something.
@@ -142,9 +142,9 @@ impl<'list, T> Cursor<'list, T> {
     /// Get the current element
     pub fn current(&self) -> Option<&'list T>;
     /// Get the following element
-    pub fn peek(&self) -> Option<&'list T>;
+    pub fn peek_next(&self) -> Option<&'list T>;
     /// Get the previous element
-    pub fn peek_before(&self) -> Option<&'list T>;
+    pub fn peek_prev(&self) -> Option<&'list T>;
 }
 
 impl<'list T> CursorMut<'list, T> {
@@ -157,9 +157,9 @@ impl<'list T> CursorMut<'list, T> {
     /// Get the current element
     pub fn current(&mut self) -> Option<&mut T>;
     /// Get the next element
-    pub fn peek(&mut self) -> Option<&mut T>;
+    pub fn peek_next(&mut self) -> Option<&mut T>;
     /// Get the previous element
-    pub fn peek_before(&mut self) -> Option<&mut T>;
+    pub fn peek_prev(&mut self) -> Option<&mut T>;
 
     /// Get an immutable cursor at the current element
     pub fn as_cursor<'cm>(&'cm self) -> Cursor<'cm, T>;
@@ -167,7 +167,7 @@ impl<'list T> CursorMut<'list, T> {
     // Now the list editing operations
 
     /// Insert `item` after the cursor
-    pub fn insert(&mut self, item: T);
+    pub fn insert_after(&mut self, item: T);
     /// Insert `item` before the cursor
     pub fn insert_before(&mut self, item: T);
 
@@ -177,15 +177,15 @@ impl<'list T> CursorMut<'list, T> {
     pub fn pop_before(&mut self) -> Option<T>;
 
     /// Insert `list` between the current element and the next
-    pub fn insert_list(&mut self, list: LinkedList<T>);
+    pub fn splice_after(&mut self, list: LinkedList<T>);
     /// Insert `list` between the previous element and current
-    pub fn insert_list_before(&mut self, list: LinkedList<T>);
+    pub fn splice_before(&mut self, list: LinkedList<T>);
 
     /// Split the list in two after the current element
     /// The returned list consists of all elements following the current one.
     // note: consuming the cursor is not necessary here, but it makes sense
     // given the interface
-    pub fn split(self) -> LinkedList<T>;
+    pub fn split_after(self) -> LinkedList<T>;
     /// Split the list in two before the current element
     pub fn split_before(self) -> LinkedList<T>;
 }
@@ -195,17 +195,17 @@ One should closely consider the lifetimes in this interface. Both `Cursor` and
 the annotation of `'list`.
 
 The lifetime elision for their constructors is correct as
-```
+```rust
 pub fn cursor(&self) -> Cursor<T>
 ```
 becomes
-```
+```rust
 pub fn cursor<'list>(&'list self) -> Cursor<'list, T>
 ```
 which is what we would expect. (the same goes for `CursorMut`).
 
-Since `Cursor` cannot mutate its list, `current`, `peek` and `peek_before` all
-live as long as `'list`. However, in `CursorMut` we must be careful to make
+Since `Cursor` cannot mutate its list, `current`, `peek_next` and `peek_prev`
+all live as long as `'list`. However, in `CursorMut` we must be careful to make
 these methods borrow. Otherwise, one could produce multiple mutable references
 to the same element.
 
