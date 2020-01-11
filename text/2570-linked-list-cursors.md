@@ -71,7 +71,7 @@ fn remove_replace<T, P, F>(list: &mut LinkedList<T>, p: P, f: F)
             None => break,
         };
         if should_replace {
-            let old_element = cursor.pop().unwrap();
+            let old_element = cursor.remove_current().unwrap();
             cursor.insert_after(f(old_element));
         }
         cursor.move_next();
@@ -171,10 +171,9 @@ impl<'list T> CursorMut<'list, T> {
     /// Insert `item` before the cursor
     pub fn insert_before(&mut self, item: T);
 
-    /// Remove and return the item following the cursor
-    pub fn pop(&mut self) -> Option<T>;
-    /// Remove and return the item before the cursor
-    pub fn pop_before(&mut self) -> Option<T>;
+    /// Remove the current item. The new current item is the item following the
+    /// removed one.
+    pub fn remove_current(&mut self) -> Option<T>;
 
     /// Insert `list` between the current element and the next
     pub fn splice_after(&mut self, list: LinkedList<T>);
