@@ -61,21 +61,21 @@ list many times. With the cursor interface, one can do the following:
 
 ``` rust
 fn remove_replace<T, P, F>(list: &mut LinkedList<T>, p: P, f: F)
-	where P: Fn(&T) -> bool, F: Fn(T) -> T
+    where P: Fn(&T) -> bool, F: Fn(T) -> T
 {
-	let mut cursor = list.cursor_mut();
-	// move to the first element, if it exists
-	loop {
-		let should_replace = match cursor.peek() {
-			Some(element) => p(element),
-			None => break,
-		};
-		if should_replace {
-			let old_element = cursor.pop().unwrap();
-			cursor.insert(f(old_element));
-		} 
-		cursor.move_next();
-	}
+    let mut cursor = list.cursor_mut();
+    // move to the first element, if it exists
+    loop {
+        let should_replace = match cursor.peek() {
+            Some(element) => p(element),
+            None => break,
+        };
+        if should_replace {
+            let old_element = cursor.pop().unwrap();
+            cursor.insert(f(old_element));
+        }
+        cursor.move_next();
+    }
 }
 ```
 
@@ -84,31 +84,31 @@ iterator, perform operations on it and collect. This is easier, however it still
 requires much needless allocation.
 
 For another example, consider code that was previously using `IterMut`
-extensions. 
+extensions.
 ``` rust
 fn main() {
-	let mut list: LinkedList<_> = (0..10).collect();
-	let mut iter = list.iter_mut();
-	while let Some(x) = iter.next() {
-		if x >= 5 {
-			break;
-		}
-	}
-	iter.insert_next(12);
+    let mut list: LinkedList<_> = (0..10).collect();
+    let mut iter = list.iter_mut();
+    while let Some(x) = iter.next() {
+        if x >= 5 {
+            break;
+        }
+    }
+    iter.insert_next(12);
 }
 ```
 This can be changed almost verbatim to `CursorMut`:
 ``` rust
 fn main() {
-	let mut list: LinkedList<_> = (0..10).collect();
-	let mut cursor = list.cursor_mut() {
-	while let Some(x) = cursor.peek_next() {
-		if x >= 5 {
-			break;
-		}
-		cursor.move_next();
-	}
-	cursor.insert(12);
+    let mut list: LinkedList<_> = (0..10).collect();
+    let mut cursor = list.cursor_mut() {
+    while let Some(x) = cursor.peek_next() {
+        if x >= 5 {
+            break;
+        }
+        cursor.move_next();
+    }
+    cursor.insert(12);
 }
 ```
 In general, the cursor interface is not the easiest way to do something.
@@ -133,61 +133,61 @@ These would provide the following interface:
 
 ``` rust
 impl<'list, T> Cursor<'list, T> {
-	/// Move to the subsequent element of the list if it exists or the empty
-	/// element
-	pub fn move_next(&mut self);
-	/// Move to the previous element of the list
-	pub fn move_prev(&mut self);
-	
-	/// Get the current element
-	pub fn current(&self) -> Option<&'list T>;
-	/// Get the following element
-	pub fn peek(&self) -> Option<&'list T>;
-	/// Get the previous element
-	pub fn peek_before(&self) -> Option<&'list T>;
+    /// Move to the subsequent element of the list if it exists or the empty
+    /// element
+    pub fn move_next(&mut self);
+    /// Move to the previous element of the list
+    pub fn move_prev(&mut self);
+
+    /// Get the current element
+    pub fn current(&self) -> Option<&'list T>;
+    /// Get the following element
+    pub fn peek(&self) -> Option<&'list T>;
+    /// Get the previous element
+    pub fn peek_before(&self) -> Option<&'list T>;
 }
 
 impl<'list T> CursorMut<'list, T> {
-	/// Move to the subsequent element of the list if it exists or the empty
-	/// element
-	pub fn move_next(&mut self);
-	/// Move to the previous element of the list
-	pub fn move_prev(&mut self);
+    /// Move to the subsequent element of the list if it exists or the empty
+    /// element
+    pub fn move_next(&mut self);
+    /// Move to the previous element of the list
+    pub fn move_prev(&mut self);
 
-	/// Get the current element
-	pub fn current(&mut self) -> Option<&mut T>;
-	/// Get the next element
-	pub fn peek(&mut self) -> Option<&mut T>;
-	/// Get the previous element
-	pub fn peek_before(&mut self) -> Option<&mut T>;
+    /// Get the current element
+    pub fn current(&mut self) -> Option<&mut T>;
+    /// Get the next element
+    pub fn peek(&mut self) -> Option<&mut T>;
+    /// Get the previous element
+    pub fn peek_before(&mut self) -> Option<&mut T>;
 
-	/// Get an immutable cursor at the current element
-	pub fn as_cursor<'cm>(&'cm self) -> Cursor<'cm, T>;
+    /// Get an immutable cursor at the current element
+    pub fn as_cursor<'cm>(&'cm self) -> Cursor<'cm, T>;
 
-	// Now the list editing operations
+    // Now the list editing operations
 
-	/// Insert `item` after the cursor
-	pub fn insert(&mut self, item: T);
-	/// Insert `item` before the cursor
-	pub fn insert_before(&mut self, item: T);
+    /// Insert `item` after the cursor
+    pub fn insert(&mut self, item: T);
+    /// Insert `item` before the cursor
+    pub fn insert_before(&mut self, item: T);
 
-	/// Remove and return the item following the cursor
-	pub fn pop(&mut self) -> Option<T>;
-	/// Remove and return the item before the cursor
-	pub fn pop_before(&mut self) -> Option<T>;
+    /// Remove and return the item following the cursor
+    pub fn pop(&mut self) -> Option<T>;
+    /// Remove and return the item before the cursor
+    pub fn pop_before(&mut self) -> Option<T>;
 
-	/// Insert `list` between the current element and the next
-	pub fn insert_list(&mut self, list: LinkedList<T>);
-	/// Insert `list` between the previous element and current
-	pub fn insert_list_before(&mut self, list: LinkedList<T>);
+    /// Insert `list` between the current element and the next
+    pub fn insert_list(&mut self, list: LinkedList<T>);
+    /// Insert `list` between the previous element and current
+    pub fn insert_list_before(&mut self, list: LinkedList<T>);
 
-	/// Split the list in two after the current element
-	/// The returned list consists of all elements following the current one.
-	// note: consuming the cursor is not necessary here, but it makes sense
-	// given the interface
-	pub fn split(self) -> LinkedList<T>;
-	/// Split the list in two before the current element
-	pub fn split_before(self) -> LinkedList<T>;
+    /// Split the list in two after the current element
+    /// The returned list consists of all elements following the current one.
+    // note: consuming the cursor is not necessary here, but it makes sense
+    // given the interface
+    pub fn split(self) -> LinkedList<T>;
+    /// Split the list in two before the current element
+    pub fn split_before(self) -> LinkedList<T>;
 }
 ```
 One should closely consider the lifetimes in this interface. Both `Cursor` and
