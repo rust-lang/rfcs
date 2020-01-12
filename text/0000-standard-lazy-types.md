@@ -432,6 +432,48 @@ It is possible to add only `sync` version of the types, as they are the most use
 However, this would be against zero cost abstractions spirit.
 Additionally, non thread-safe version is required to replace `thread_local!` macro without imposing synchronization.
 
+## Synchronization Guarantees
+
+In theory, it is possible to specify two different synchronization guarantees for `get` operation, release/acquire or release/consume.
+They differ in how they treat side effects.
+If thread **A** executes `get_or_init(f)`, and thread **B** executes `get` and observes the value, release/acquire guarantees that **B** also observes side-effects of `f`.
+
+Here's a program which allows to observe the difference:
+
+```rust
+static FLAG: AtomicBool = AtomicBool::new(false);
+static CELL: OnceCell<()> = OnceCell::new();
+
+// thread1
+CELL.get_or_init(|| FLAG.store(true, Relaxed));
+
+// thread2
+if CELL.get().is_some() {
+  assert!(FLAG.load(Relaxed))
+}
+```
+
+Under release/acquire, the assert never fires.
+Under release/consume, it might fire.
+
+Release/consume can potentially be implemented more efficiently on weak memory model architectures.
+However, the situation with `consume` ordering is cloudy right now:
+
+* [nobody knows what it actually means](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/p0371r0.html),
+* [but people rely on it in practice for performance](https://docs.rs/crossbeam-utils/0.7.0/crossbeam_utils/atomic/trait.AtomicConsume.html#tymethod.load_consume).
+
+We can do one of the following:
+
+1. Specify and implement `acquire` ordering,
+2. Specify `consume` but implement `acquire` (or hack `consume` in an implementation-defined manner) with the hope to make implementation more efficient later.
+3. Specify and implement `acquire`, but provide additional API which can take `Ordering` as an argument.
+
+Option two seems the most promising:
+
+* it is forward compatible with specifying `acquire` later,
+* for typical `OnceCell` use-cases, `consume` should be enough.
+  For guaranteeing side effects, `std::sync::Once` may be used instead.
+
 # Prior art
 [prior-art]: #prior-art
 
@@ -453,6 +495,7 @@ This design doesn't always work in Rust, as closing over `self` runs afoul of th
 - What is the best naming/place for these types?
 - What is the best naming scheme for methods? Is it `get_or_try_init` or `try_inert_with`?
 - Is the `F = fn() -> T` hack worth it?
+- Which synchronization guarantee should we pick?
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
