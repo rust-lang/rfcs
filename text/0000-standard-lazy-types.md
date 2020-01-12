@@ -249,7 +249,7 @@ The thread-safe variant is implemented similarly to `std::sync::Once`.
 Crucially, it has support for blocking: if many threads call `get_or_init` concurrently, only one will be able to execute the closure, while all other threads will block.
 For this reason, most of `std::sync::OnceCell` API can not be provided in `core`.
 In the `sync` case, reliably panicking on re-entrant initialization is not trivial.
-For this reason, the implementaion would simply deadlock, with a note that a deadlock might be elevated to panic in the future.
+For this reason, the implementation would simply deadlock, with a note that a deadlock might be elevated to a panic in the future.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -376,9 +376,13 @@ impl<T> OnceCell<T> {
 }
 ```
 
-It is possible because, while `OnceCell` needs block for full API, its internal state can be implemented as a single `AtomicUsize`, so the `core` part does not need to know about blocking.
+It is possible because, while `OnceCell` needs blocking for full API, its internal state can be implemented as a single `AtomicUsize`, so the `core` part does not need to know about blocking.
 It is unclear if this API would be significantly useful.
 In particular, the guarantees of non-blocking `set` are pretty weak, and are not enough to implement the `Lazy` wrapper.
+
+While it is possible to implement blocking in `#[no_std]` via a spin lock, we explicitly choose not to do so.
+Spin locks are a sharp tool, which should only be used in specific circumstances (namely, when you have full control over thread scheduling).
+`#[no_std]` code might end up in user space applications with preemptive scheduling, where unbounded spin locks are inappropriate.
 
 ## Poisoning
 
