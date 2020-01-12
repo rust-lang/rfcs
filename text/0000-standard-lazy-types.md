@@ -384,6 +384,8 @@ While it is possible to implement blocking in `#[no_std]` via a spin lock, we ex
 Spin locks are a sharp tool, which should only be used in specific circumstances (namely, when you have full control over thread scheduling).
 `#[no_std]` code might end up in user space applications with preemptive scheduling, where unbounded spin locks are inappropriate.
 
+A spin-lock based implementation of `OnceCell` is provided on crates.io in [`conquer-once`] crate.
+
 ## Poisoning
 
 As a cell can be empty or fully initialized, the proposed API does not use poisoning.
@@ -506,3 +508,4 @@ This design doesn't always work in Rust, as closing over `self` runs afoul of th
 [`lazy_static`]: https://crates.io/crates/lazy_static
 [`lazycell`]: https://crates.io/crates/lazycell
 [`once_cell`]: https://crates.io/crates/once_cell
+[`conquer-once`]: https://github.com/oliver-giersch/conquer-once
