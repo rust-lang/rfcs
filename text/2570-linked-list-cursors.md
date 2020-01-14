@@ -63,7 +63,7 @@ list many times. With the cursor interface, one can do the following:
 fn remove_replace<T, P, F>(list: &mut LinkedList<T>, p: P, f: F)
     where P: Fn(&T) -> bool, F: Fn(T) -> T
 {
-    let mut cursor = list.cursor_mut();
+    let mut cursor = list.cursor_front_mut();
     // move to the first element, if it exists
     loop {
         let should_replace = match cursor.peek_next() {
@@ -101,7 +101,7 @@ This can be changed almost verbatim to `CursorMut`:
 ``` rust
 fn main() {
     let mut list: LinkedList<_> = (0..10).collect();
-    let mut cursor = list.cursor_mut() {
+    let mut cursor = list.cursor_front_mut() {
     while let Some(x) = cursor.peek_next() {
         if x >= 5 {
             break;
@@ -122,17 +122,26 @@ One gets a cursor the exact same way as one would get an iterator. The
 returned cursor would point to the "empty" element, i.e. if you got an element
 and called `current` you would receive `None`.
 ``` rust
-// Provides a cursor to the first element of the list
-pub fn cursor(&self) -> Cursor<T>;
+/// Provides a cursor to the first element of the list.
+pub fn cursor_front(&self) -> Cursor<T>;
 
-/// Provides a cursor with mutable references and access to the list
-pub fn cursor_mut(&mut self) -> CursorMut<T>;
+/// Provides a mutable cursor to the first element of the list.
+pub fn cursor_front_mut(&mut self) -> CursorMut<T>;
+
+/// Provides a cursor to the last element of the list.
+pub fn cursor_back(&self) -> Cursor<T>;
+
+/// Provides a mutable cursor to the last element of the list.
+pub fn cursor_back_mut(&mut self) -> CursorMut<T>;
 ```
 
 These would provide the following interface:
 
 ``` rust
 impl<'list, T> Cursor<'list, T> {
+    /// Returns the cursor position index within the `LinkedList`.
+    pub fn index(&self) -> Option<usize>;
+
     /// Move to the subsequent element of the list if it exists or the empty
     /// element
     pub fn move_next(&mut self);
@@ -148,6 +157,9 @@ impl<'list, T> Cursor<'list, T> {
 }
 
 impl<'list T> CursorMut<'list, T> {
+    /// Returns the cursor position index within the `LinkedList`.
+    pub fn index(&self) -> Option<usize>;
+
     /// Move to the subsequent element of the list if it exists or the empty
     /// element
     pub fn move_next(&mut self);
@@ -182,11 +194,9 @@ impl<'list T> CursorMut<'list, T> {
 
     /// Split the list in two after the current element
     /// The returned list consists of all elements following the current one.
-    // note: consuming the cursor is not necessary here, but it makes sense
-    // given the interface
-    pub fn split_after(self) -> LinkedList<T>;
+    pub fn split_after(&mut self) -> LinkedList<T>;
     /// Split the list in two before the current element
-    pub fn split_before(self) -> LinkedList<T>;
+    pub fn split_before(&mut self) -> LinkedList<T>;
 }
 ```
 One should closely consider the lifetimes in this interface. Both `Cursor` and
@@ -195,11 +205,11 @@ the annotation of `'list`.
 
 The lifetime elision for their constructors is correct as
 ```rust
-pub fn cursor(&self) -> Cursor<T>
+pub fn cursor_front(&self) -> Cursor<T>
 ```
 becomes
 ```rust
-pub fn cursor<'list>(&'list self) -> Cursor<'list, T>
+pub fn cursor_front<'list>(&'list self) -> Cursor<'list, T>
 ```
 which is what we would expect. (the same goes for `CursorMut`).
 
