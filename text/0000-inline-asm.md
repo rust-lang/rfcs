@@ -19,6 +19,10 @@ In systems programming some tasks require dropping down to the assembly level. T
 
 The inline assembler syntax currently available in nightly Rust is very ad-hoc. It provides a thin wrapper over the inline assembly syntax available in LLVM IR. For stabilization a more user-friendly syntax that lends itself to implementation across various backends is preferable.
 
+A collection of use cases for inline asm can be found in [this repository][catalogue].
+
+[catalogue]: https://github.com/bjorn3/inline_asm_catalogue/
+
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
@@ -79,7 +83,7 @@ unsafe {
         add {0}, {number}
     ", out(reg) o, in(reg) i, number = imm 5);
 }
-assert_eq!(i, 8);
+assert_eq!(o, 8);
 ```
 
 This will add `5` to the input in variable `i` and write the result to variable `o`.
@@ -130,7 +134,7 @@ can be written at any time, and can therefore not share its location with any ot
 However, to guarantee optimal performance it is important to use as few registers as possible,
 so they won't have to be saved and reloaded around the inline assembly block.
 To achieve this Rust provides a `lateout` specifier. This can be used on any output that is
-guaranteed to be written only after all inputs have been consumed.
+written only after all inputs have been consumed.
 There is also a `inlateout` variant of this specifier.
 
 Here is an example where `inlateout` *cannot* be used:
@@ -204,7 +208,7 @@ fn mul(a: u32, b: u32) -> u64 {
 
 This uses the `mul` instruction to multiply two 32-bit inputs with a 64-bit result.
 The only explicit operand is a register, that we fill from the variable `a`.
-The second implicit operand is the `eax` register which we fill from the variable `b`.
+The second operand is implicit, and must be the `eax` register, which we fill from the variable `b`.
 The lower 32 bits of the result are stored in `eax` from which we fill the variable `lo`.
 The higher 32 bits are stored in `edx` from which we fill the variable `hi`.
 
@@ -368,7 +372,7 @@ Several types of operands are supported:
 
 ## Register operands
 
-Input and output operands can be specified either as an explicit register or as a register class from which the register allocator can select a register. Explicit registers are specified as string literals (e.g. `"eax"`) while register classes are specified as raw identifiers (e.g. `reg`).
+Input and output operands can be specified either as an explicit register or as a register class from which the register allocator can select a register. Explicit registers are specified as string literals (e.g. `"eax"`) while register classes are specified as identifiers (e.g. `reg`).
 
 Note that explicit registers treat register aliases (e.g. `r14` vs `lr` on ARM) and smaller views of a register (e.g. `eax` vs `rax`) as equivalent to the base register. It is a compile-time error to use the same explicit register two input operand or two output operands. Additionally on ARM, it is a compile-time error to use overlapping VFP registers in input operands or in output operands.
 
@@ -521,7 +525,7 @@ Currently the following flags are defined:
 - `noreturn`: The `asm` block never returns, and its return type is defined as `!` (never). Behavior is undefined if execution falls through past the end of the asm code.
 - `nostack`: The `asm` block does not push data to the stack, or write to the stack red-zone (if supported by the target). If this flag is *not* used then the stack pointer is guaranteed to be suitably aligned (according to the target ABI) for a function call.
 
-The `nomem` and `readonly` flags are mutually exclusive: it is an error to specify both. Specifying `pure` on an asm block with no outputs is linted against since such a block will be optimized away to nothing.
+The `nomem` and `readonly` flags are mutually exclusive: it is a compile-time error to specify both. Specifying `pure` on an asm block with no outputs is linted against since such a block will be optimized away to nothing.
 
 These flag registers which must be preserved if `preserves_flags` is set:
 - x86
