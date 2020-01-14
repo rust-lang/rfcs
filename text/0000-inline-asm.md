@@ -418,7 +418,7 @@ Here is the list of currently supported register classes:
 
 > Notes on allowed types:
 > - Pointers and references are allowed where the equivalent integer type is allowed.
-> - `iLEN` refers to both sized and unsigned integer types. It also implicitly includes `isize` and `usize` where the length matches.
+> - `iLEN` refers to both signed and unsigned integer types. It also implicitly includes `isize` and `usize` where the length matches.
 > - Fat pointers are not allowed.
 > - `vLEN` refers to a SIMD vector that is `LEN` bits wide.
 
