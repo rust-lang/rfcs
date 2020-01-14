@@ -10,7 +10,9 @@ This RFC specifies a new syntax for inline assembly which is suitable for eventu
 
 The initial implementation of this feature will focus on the ARM, x86 and RISC-V architectures. Support for more architectures will be added based on user demand.
 
-The existing `asm!` macro will be renamed to `llvm_asm!` to provide an easy way to maintain backwards-compatibility with existing code using inline asm. However `llvm_asm!` is not intended to ever be stabilized.
+The transition from the existing `asm!` macro is described in RFC [2843][rfc-llvm-asm]. The existing `asm!` macro will be renamed to `llvm_asm!` to provide an easy way to maintain backwards-compatibility with existing code using inline asm. However `llvm_asm!` is not intended to ever be stabilized.
+
+[rfc-llvm-asm]: https://github.com/rust-lang/rfcs/pull/2843
 
 # Motivation
 [motivation]: #motivation
@@ -247,7 +249,21 @@ This instruction writes to `eax`, `ebx`, `ecx`, and `edx`, but for the cache siz
 
 However we still need to tell the compiler that `eax` and `edx` have been modified so that it can save any values that were in these registers before the asm. This is done by declaring these as outputs but with `_` instead of a variable name, which indicates that the output value is to be discarded.
 
-This can also be used with a general register class (e.g. `reg`) to obtain a scratch register for use inside the asm code.
+This can also be used with a general register class (e.g. `reg`) to obtain a scratch register for use inside the asm code:
+
+```rust
+// Multiply x by 6 using shifts and adds
+let mut x = 4;
+unsafe {
+    asm!("
+        mov {tmp}, {x}
+        shl {tmp}, 1
+        shl {x}, 2
+        add {x}, {tmp}
+    ", x = inout(reg) x, tmp = out(reg) _);
+}
+assert_eq!(x, 4 * 6);
+```
 
 ## Register template modifiers
 
@@ -402,7 +418,7 @@ Here is the list of currently supported register classes:
 
 > Notes on allowed types:
 > - Pointers and references are allowed where the equivalent integer type is allowed.
-> - `iLEN` refers to both sized and unsized integer types. It also implicitly includes `isize` and `usize` where the length matches.
+> - `iLEN` refers to both sized and unsigned integer types. It also implicitly includes `isize` and `usize` where the length matches.
 > - Fat pointers are not allowed.
 > - `vLEN` refers to a SIMD vector that is `LEN` bits wide.
 
@@ -421,6 +437,7 @@ Some registers have multiple names. These are all treated by the compiler as ide
 | x86 | `bp` | `bpl`, `ebp`, `rbp` |
 | x86 | `sp` | `spl`, `esp`, `rsp` |
 | x86 | `ip` | `eip`, `rip` |
+| x86 | `st(0)` | `st` |
 | x86 | `r[8-15]` | `r[8-15]b`, `r[8-15]w`, `r[8-15]d` |
 | x86 | `xmm[0-31]` | `ymm[0-31]`, `zmm[0-31]` |
 | AArch64 | `x[0-30]` | `w[0-30]` |
@@ -464,6 +481,8 @@ Some registers cannot be used for input or output operands:
 | x86 | `ah`, `bh`, `ch`, `dh` | These are poorly supported by compiler backends. Use 16-bit register views (e.g. `ax`) instead. |
 | x86 | `k0` | This is a constant zero register which can't be modified. |
 | x86 | `ip` | This is the program counter, not a real register. |
+| x86 | `mm[0-7]` | MMX registers are not currently supported (but may be in the future). |
+| x86 | `st([0-7])` | x87 registers are not currently supported (but may be in the future). |
 | AArch64 | `xzr` | This is a constant zero register which can't be modified. |
 | ARM | `pc` | This is the program counter, not a real register. |
 | RISC-V | `x0` | This is a constant zero register which can't be modified. |
