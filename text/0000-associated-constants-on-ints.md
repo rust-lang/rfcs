@@ -143,8 +143,8 @@ By removing these artifacts we can make the experience of using Rust more univer
     - u64::{MAX, MIN}
     - u128::{MAX, MIN}
     - usize::{MAX, MIN}
-    - f32::{DIGITS, EPSILON, INFINITY, MANTISSA_DIGITS, MAX, MAX_10_EXP, MAX_EXP, MIN, MIN_EXP, MIN_POSITIVE, NAN, NEG_INFINITY, RADIX}
-    - f64::{DIGITS, EPSILON, INFINITY, MANTISSA_DIGITS, MAX, MAX_10_EXP, MAX_EXP, MIN, MIN_EXP, MIN_POSITIVE, NAN, NEG_INFINITY, RADIX}
+    - f32::{DIGITS, EPSILON, INFINITY, MANTISSA_DIGITS, MAX, MAX_10_EXP, MAX_EXP, MIN, MIN_10_EXP, MIN_EXP, MIN_POSITIVE, NAN, NEG_INFINITY, RADIX}
+    - f64::{DIGITS, EPSILON, INFINITY, MANTISSA_DIGITS, MAX, MAX_10_EXP, MAX_EXP, MIN, MIN_10_EXP, MIN_EXP, MIN_POSITIVE, NAN, NEG_INFINITY, RADIX}
 
 Future editions of Rust will additionally have the option of making these deprecated items
 no longer accessible to users of the new edition.
