@@ -540,32 +540,11 @@ Currently the following flags are defined:
 - `pure`: The `asm` block has no side effects, and its outputs depend only on its direct inputs (i.e. the values themselves, not what they point to). This allows the compiler to execute the `asm` block fewer times than specified in the program (e.g. by hoisting it out of a loop) or even eliminate it entirely if the outputs are not used. A warning is emitted if this flag is used on an `asm` with no outputs.
 - `nomem`: The `asm` blocks does not read or write to any memory. This allows the compiler to cache the values of modified global variables in registers across the `asm` block since it knows that they are not read or written to by the `asm`.
 - `readonly`: The `asm` block does not write to any memory. This allows the compiler to cache the values of unmodified global variables in registers across the `asm` block since it knows that they are not written to by the `asm`.
-- `preserves_flags`: The `asm` block does not modify the flags register (defined below). This allows the compiler to avoid recomputing the condition flags after the `asm` block.
+- `preserves_flags`: The `asm` block does not modify the flags register (defined in the [rules][rules] below). This allows the compiler to avoid recomputing the condition flags after the `asm` block.
 - `noreturn`: The `asm` block never returns, and its return type is defined as `!` (never). Behavior is undefined if execution falls through past the end of the asm code.
 - `nostack`: The `asm` block does not push data to the stack, or write to the stack red-zone (if supported by the target). If this flag is *not* used then the stack pointer is guaranteed to be suitably aligned (according to the target ABI) for a function call.
 
 The `nomem` and `readonly` flags are mutually exclusive: it is a compile-time error to specify both. Specifying `pure` on an asm block with no outputs is linted against since such a block will be optimized away to nothing.
-
-These flag registers which must be preserved if `preserves_flags` is set:
-- x86
-  - Status flags in `EFLAGS` (CF, PF, AF, ZF, SF, OF).
-  - Direction flag in `EFLAGS` (DF).
-  - Floating-point status word (all).
-  - Floating-point exception flags in `MXCSR` (PE, UE, OE, ZE, DE, IE).
-- ARM
-  - Condition flags in `CPSR` (N, Z, C, V)
-  - Saturation flag in `CPSR` (Q)
-  - Greater than or equal flags in `CPSR` (GE).
-  - Condition flags in `FPSCR` (N, Z, C, V)
-  - Saturation flag in `FPSCR` (QC)
-  - Floating-point exception flags in `FPSCR` (IDC, IXC, UFC, OFC, DZC, IOC).
-- AArch64
-  - Condition flags (`NZCV` register).
-  - Floating-point status (`FPSR` register).
-- RISC-V
-  - Floating-point exception flags in `fcsr` (`fflags`).
-
-> Note: As a general rule, these are the flags which are *not* preserved when performing a function call.
 
 ## Mapping to LLVM IR
 
@@ -613,6 +592,42 @@ If the `noreturn` flag is set then an `unreachable` LLVM instruction is inserted
 [llvm-constraint]: http://llvm.org/docs/LangRef.html#supported-constraint-code-list
 [llvm-clobber]: http://llvm.org/docs/LangRef.html#clobber-constraints
 [issue-65452]: https://github.com/rust-lang/rust/issues/65452
+
+## Rules for inline assembly
+[rules]: #rules
+
+- Any registers not specified as inputs will contain an undefined value on entry to the asm block.
+- Any registers not specified as outputs must have the same value upon exiting the asm block as they had on entry.
+- Behavior is undefined if execution unwinds out of an asm block.
+- Any memory reads/writes performed by the asm code follow the same rules as `volatile_read` and `volatile_write`.
+  - Refer to the unsafe code guidelines for the exact rules.
+  - If the `readonly` flag is set, then only memory reads (with the same rules as `volatile_read`) are allowed.
+  - If the `nomem` flag is set then no reads or write to memory are allowed.
+- Unless the `nostack` flag is set, asm code is allowed to use stack space below the stack pointer.
+  - On entry to the asm block the stack pointer is guaranteed to be suitably aligned (according to the target ABI) for a function call.
+  - You are responsible for making sure you don't overflow the stack (e.g. use stack probing to ensure you hit a guard page).
+  - You should adjust the stack pointer when allocating stack memory as required by the target ABI.
+- If the `noreturn` flag is set then behavior is undefined if execution falls through to the end of the asm block.
+- These flags registers must be restored upon exiting the asm block if `preserves_flags` is set:
+  - x86
+    - Status flags in `EFLAGS` (CF, PF, AF, ZF, SF, OF).
+    - Direction flag in `EFLAGS` (DF).
+    - Floating-point status word (all).
+    - Floating-point exception flags in `MXCSR` (PE, UE, OE, ZE, DE, IE).
+  - ARM
+    - Condition flags in `CPSR` (N, Z, C, V)
+    - Saturation flag in `CPSR` (Q)
+    - Greater than or equal flags in `CPSR` (GE).
+    - Condition flags in `FPSCR` (N, Z, C, V)
+    - Saturation flag in `FPSCR` (QC)
+    - Floating-point exception flags in `FPSCR` (IDC, IXC, UFC, OFC, DZC, IOC).
+  - AArch64
+    - Condition flags (`NZCV` register).
+    - Floating-point status (`FPSR` register).
+  - RISC-V
+    - Floating-point exception flags in `fcsr` (`fflags`).
+
+> Note: As a general rule, these are the flags which are *not* preserved when performing a function call.
 
 # Drawbacks
 [drawbacks]: #drawbacks
