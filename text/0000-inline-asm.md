@@ -284,7 +284,7 @@ In this example, we use the `reg_abcd` register class to restrict the register a
 Let us assume that the register allocator has chosen to allocate `x` in the `ax` register.
 The `h` modifier will emit the register name for the high byte of that register and the `b` modifier will emit the register name for the low byte. The asm code will therefore be expanded as `mov ah, al` which copies the low byte of the value into the high byte.
 
-## Flags
+## Options
 
 By default, an inline assembly block is treated the same way as an external FFI function call with a custom calling convention: it may read/write memory, have observable side effects, etc. However in many cases, it is desirable to give the compiler more information about what the assembly code is actually doing so that it can optimize better.
 
@@ -297,20 +297,20 @@ unsafe {
     asm!(
         "add {0}, {1}",
         inlateout(reg) a, in(reg) b,
-        flags(pure, nomem, nostack)
+        options(pure, nomem, nostack)
     );
 }
 assert_eq!(a, 8);
 ```
 
-Flags can be provided as an optional final argument to the `asm!` macro. We specified three flags here:
+Options can be provided as an optional final argument to the `asm!` macro. We specified three options here:
 - `pure` means that the asm code has no observable side effects and that its output depends only on its inputs. This allows the compiler optimizer to call the inline asm fewer times or even eliminate it entirely.
 - `nomem` means that the asm code does not read or write to memory. By default the compiler will assume that inline assembly can read or write any memory address that is accessible to it (e.g. through a pointer passed as an operand, or a global).
 - `nostack` means that the asm code does not push any data onto the stack. This allows the compiler to use optimizations such as the stack red zone on x86_64 to avoid stack pointer adjustments.
 
 These allow the compiler to better optimize code using `asm!`, for example by eliminating pure `asm!` blocks whose outputs are not needed.
 
-See the reference for the full list of available flags and their effects.
+See the reference for the full list of available options and their effects.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -318,7 +318,7 @@ See the reference for the full list of available flags and their effects.
 Inline assembler is implemented as an unsafe macro `asm!()`.
 The first argument to this macro is a template string literal used to build the final assembly.
 The following arguments specify input and output operands.
-When required, flags are specified as the final argument.
+When required, options are specified as the final argument.
 
 The following ABNF specifies the general syntax:
 
@@ -328,9 +328,9 @@ reg_spec := <arch specific register class> / "<arch specific register name>"
 operand_expr := expr / "_" / expr "=>" expr / expr "=>" "_"
 reg_operand := dir_spec "(" reg_spec ")" operand_expr
 operand := reg_operand / "imm" const_expr / "sym" path
-flag := "pure" / "nomem" / "readonly" / "preserves_flags" / "noreturn"
-flags := "flags(" flag *["," flag] ")"
-asm := "asm!(" format_string *("," [ident "="] operand) ["," flags] ")"
+option := "pure" / "nomem" / "readonly" / "preserves_flags" / "noreturn"
+options := "options(" option *["," option] ")"
+asm := "asm!(" format_string *("," [ident "="] operand) ["," options] ")"
 ```
 
 [format-syntax]: https://doc.rust-lang.org/std/fmt/#syntax
@@ -533,18 +533,18 @@ The supported modifiers are a subset of LLVM's (and GCC's) [asm template argumen
 
 [llvm-argmod]: http://llvm.org/docs/LangRef.html#asm-template-argument-modifiers
 
-## Flags
+## Options
 
 Flags are used to further influence the behavior of the inline assembly block.
-Currently the following flags are defined:
-- `pure`: The `asm` block has no side effects, and its outputs depend only on its direct inputs (i.e. the values themselves, not what they point to). This allows the compiler to execute the `asm` block fewer times than specified in the program (e.g. by hoisting it out of a loop) or even eliminate it entirely if the outputs are not used. A warning is emitted if this flag is used on an `asm` with no outputs.
+Currently the following options are defined:
+- `pure`: The `asm` block has no side effects, and its outputs depend only on its direct inputs (i.e. the values themselves, not what they point to). This allows the compiler to execute the `asm` block fewer times than specified in the program (e.g. by hoisting it out of a loop) or even eliminate it entirely if the outputs are not used. A warning is emitted if this option is used on an `asm` with no outputs.
 - `nomem`: The `asm` blocks does not read or write to any memory. This allows the compiler to cache the values of modified global variables in registers across the `asm` block since it knows that they are not read or written to by the `asm`.
 - `readonly`: The `asm` block does not write to any memory. This allows the compiler to cache the values of unmodified global variables in registers across the `asm` block since it knows that they are not written to by the `asm`.
 - `preserves_flags`: The `asm` block does not modify the flags register (defined in the [rules][rules] below). This allows the compiler to avoid recomputing the condition flags after the `asm` block.
 - `noreturn`: The `asm` block never returns, and its return type is defined as `!` (never). Behavior is undefined if execution falls through past the end of the asm code.
-- `nostack`: The `asm` block does not push data to the stack, or write to the stack red-zone (if supported by the target). If this flag is *not* used then the stack pointer is guaranteed to be suitably aligned (according to the target ABI) for a function call.
+- `nostack`: The `asm` block does not push data to the stack, or write to the stack red-zone (if supported by the target). If this option is *not* used then the stack pointer is guaranteed to be suitably aligned (according to the target ABI) for a function call.
 
-The `nomem` and `readonly` flags are mutually exclusive: it is a compile-time error to specify both. Specifying `pure` on an asm block with no outputs is linted against since such a block will be optimized away to nothing.
+The `nomem` and `readonly` options are mutually exclusive: it is a compile-time error to specify both. Specifying `pure` on an asm block with no outputs is linted against since such a block will be optimized away to nothing.
 
 ## Mapping to LLVM IR
 
@@ -566,8 +566,8 @@ As written this RFC requires architectures to map from Rust constraint specifica
 * a register name `r1` is mapped to `{r1}`
 * additionally mappings for register classes are added as appropriate (cf. [llvm-constraint])
 * `lateout` operands with an `_` expression that are specified as an explicit register are converted to LLVM clobber constraints. For example, `lateout("r1") _` is mapped to `~{r1}` (cf. [llvm-clobber]).
-* If the `nomem` flag is not set then `~{memory}` is added to the clobber list. (Although this is currently ignored by LLVM)
-* If the `preserves_flags` flag is not set then the following are added to the clobber list:
+* If the `nomem` option is not set then `~{memory}` is added to the clobber list. (Although this is currently ignored by LLVM)
+* If the `preserves_flags` option is not set then the following are added to the clobber list:
   - (x86) `~{dirflag}~{flags}~{fpsr}`
   - (ARM/AArch64) `~{cc}`
 
@@ -579,13 +579,13 @@ For some operand types, we will automatically insert some modifiers into the tem
 Additionally, the following attributes are added to the LLVM `asm` statement:
 
 * The `nounwind` attribute is always added: unwinding from an inline asm block is not allowed (and not supported by LLVM anyways).
-* If the `nomem` flag is set then the `readnone` attribute is added to the LLVM `asm` statement.
-* If the `readonly` flag is set then the `readonly` attribute is added to the LLVM `asm` statement.
-* If the `pure` flag is not set then the `sideffect` flag is added the LLVM `asm` statement.
-* If the `nostack` flag is not set then the `alignstack` flag is added the LLVM `asm` statement.
+* If the `nomem` option is set then the `readnone` attribute is added to the LLVM `asm` statement.
+* If the `readonly` option is set then the `readonly` attribute is added to the LLVM `asm` statement.
+* If the `pure` option is not set then the `sideffect` flag is added the LLVM `asm` statement.
+* If the `nostack` option is not set then the `alignstack` flag is added the LLVM `asm` statement.
 * On x86 the `inteldialect` flag is added the LLVM `asm` statement so that the Intel syntax is used instead of the AT&T syntax.
 
-If the `noreturn` flag is set then an `unreachable` LLVM instruction is inserted after the asm invocation.
+If the `noreturn` option is set then an `unreachable` LLVM instruction is inserted after the asm invocation.
 
 > Note that `alignstack` is not currently supported by GCC, so we will need to implement support in GCC if Rust ever gets a GCC back-end.
 
@@ -601,14 +601,14 @@ If the `noreturn` flag is set then an `unreachable` LLVM instruction is inserted
 - Behavior is undefined if execution unwinds out of an asm block.
 - Any memory reads/writes performed by the asm code follow the same rules as `volatile_read` and `volatile_write`.
   - Refer to the unsafe code guidelines for the exact rules.
-  - If the `readonly` flag is set, then only memory reads (with the same rules as `volatile_read`) are allowed.
-  - If the `nomem` flag is set then no reads or write to memory are allowed.
-- Unless the `nostack` flag is set, asm code is allowed to use stack space below the stack pointer.
+  - If the `readonly` option is set, then only memory reads (with the same rules as `volatile_read`) are allowed.
+  - If the `nomem` option is set then no reads or write to memory are allowed.
+- Unless the `nostack` option is set, asm code is allowed to use stack space below the stack pointer.
   - On entry to the asm block the stack pointer is guaranteed to be suitably aligned (according to the target ABI) for a function call.
   - You are responsible for making sure you don't overflow the stack (e.g. use stack probing to ensure you hit a guard page).
   - You should adjust the stack pointer when allocating stack memory as required by the target ABI.
-- If the `noreturn` flag is set then behavior is undefined if execution falls through to the end of the asm block.
-- These flags registers must be restored upon exiting the asm block if `preserves_flags` is set:
+- If the `noreturn` option is set then behavior is undefined if execution falls through to the end of the asm block.
+- These flags registers must be restored upon exiting the asm block if the `preserves_flags` option is set:
   - x86
     - Status flags in `EFLAGS` (CF, PF, AF, ZF, SF, OF).
     - Direction flag in `EFLAGS` (DF).
