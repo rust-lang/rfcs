@@ -593,6 +593,85 @@ If the `noreturn` option is set then an `unreachable` LLVM instruction is insert
 [llvm-clobber]: http://llvm.org/docs/LangRef.html#clobber-constraints
 [issue-65452]: https://github.com/rust-lang/rust/issues/65452
 
+## Supporting back-ends without inline assembly
+
+While LLVM supports inline assembly, rustc may gain alternative backends such as Cranelift or GCC. If a back-end does not support inline assembly natively then we can fall back to invoking an external assembler. The intent is that support for `asm!` should be independent of the rustc back-end used: it should always work, but with lower performance if the backend does not support inline assembly.
+
+Take the following (AArch64) asm block as an example:
+
+```rust
+unsafe fn foo(mut a: i32, b: i32) -> (i32, i32)
+{
+    let c;
+    asm!("<some asm code>", inout(reg) a, in("x0") b, out("x20") c);
+    (a, c)
+}
+```
+
+This could be expanded to an external asm file with the following contents:
+
+```
+# Function prefix directives
+.section ".text.foo_inline_asm"
+.globl foo_inline_asm
+.p2align 2
+.type foo_inline_asm, @function
+foo_inline_asm:
+
+// If necessary, save callee-saved registers to the stack here.
+str x20, [sp, #-16]!
+
+// Move the pointer to the argument out of the way since x0 is used.
+mov x1, x0
+
+// Load inputs values
+ldr w2, [x1, #0]
+ldr w0, [x1, #4]
+
+<some asm code>
+
+// Store output values
+str w2, [x1, #0]
+str w20, [x1, #8]
+
+// If necessary, restore callee-saved registers here.
+ldr x20, [sp], #16
+
+ret
+
+# Function suffix directives
+.size foo_inline_asm, . - foo_inline_asm
+```
+
+And the following Rust code:
+
+```rust
+unsafe fn foo(mut a: i32, b: i32) -> (i32, i32)
+{
+    let c;
+    {
+        #[repr(C)]
+        struct foo_inline_asm_args {
+            a: i32,
+            b: i32,
+            c: i32,
+        }
+        extern "C" {
+            fn foo_inline_asm(args: *mut foo_inline_asm_args);
+        }
+        let mut args = foo_inline_asm_args {
+            a: a,
+            b: b,
+            c: mem::uninitialized(),
+        };
+        foo_inline_asm(&mut args);
+        a = args.a;
+        c = args.c;
+    }
+    (a, c)
+}
+```
+
 ## Rules for inline assembly
 [rules]: #rules
 
@@ -668,82 +747,7 @@ If we discover that there is a demand for a new register class or special operan
 
 ## Difficulty of support
 
-Inline assembly is a difficult feature to implement in a compiler backend. While LLVM does support it, this may not be the case for alternative backends such as [Cranelift][cranelift] (see [this issue][cranelift-asm]).
-
-However it is possible to implement support for inline assembly without support from the compiler backend by using an external assembler instead. Take the following (AArch64) asm block as an example:
-
-```rust
-unsafe fn foo(mut a: i32, b: i32) -> (i32, i32)
-{
-    let c;
-    asm!("<some asm code>", inout(reg) a, in("x0") b, out("x20") c);
-    (a, c)
-}
-```
-
-This could be expanded to an external asm file with the following contents:
-
-```
-# Function prefix directives
-.section ".text.foo_inline_asm"
-.globl foo_inline_asm
-.p2align 2
-.type foo_inline_asm, @function
-foo_inline_asm:
-
-// If necessary, save callee-saved registers to the stack here.
-str x20, [sp, #-16]!
-
-// Move the pointer to the argument out of the way since x0 is used.
-mov x1, x0
-
-// Load inputs values
-ldr w2, [x1, #0]
-ldr w0, [x1, #4]
-
-<some asm code>
-
-// Store output values
-str w2, [x1, #0]
-str w20, [x1, #8]
-
-// If necessary, restore callee-saved registers here.
-ldr x20, [sp], #16
-
-ret
-
-# Function suffix directives
-.size foo_inline_asm, . - foo_inline_asm
-```
-
-And the following Rust code:
-
-```rust
-unsafe fn foo(mut a: i32, b: i32) -> (i32, i32)
-{
-    let c;
-    {
-        #[repr(C)]
-        struct foo_inline_asm_args {
-            a: i32,
-            b: i32,
-            c: i32,
-        }
-        extern "C" {
-            fn foo_inline_asm(args: *mut foo_inline_asm_args);
-        }
-        let mut args = foo_inline_asm_args {
-            a: a,
-            b: b,
-            c: mem::uninitialized(),
-        };
-        foo_inline_asm(&mut args);
-        a = args.a;
-        c = args.c;
-    }
-    (a, c)
-}
-```
+Inline assembly is a difficult feature to implement in a compiler backend. While LLVM does support it, this may not be the case for alternative backends such as [Cranelift][cranelift] (see [this issue][cranelift-asm]). We provide a fallback implementation using an external assembler for such backends.
 
 [cranelift]: https://cranelift.readthedocs.io/
 [cranelift-asm]: https://github.com/bytecodealliance/cranelift/issues/444
