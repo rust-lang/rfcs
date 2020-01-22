@@ -409,10 +409,11 @@ Here is the list of currently supported register classes:
 | AArch64 | `vreg` | `v[0-31]` | `w` | `i8`, `i16`, `i32`, `i64`, `f32`, `f64`, `v64`, `v128` |
 | AArch64 | `vreg_low` | `v[0-15]` | `x` | `i8`, `i16`, `i32`, `i64`, `f32`, `f64`, `v64`, `v128` |
 | AArch64 | `vreg_low8` | `v[0-7]` | `y` | `i8`, `i16`, `i32`, `i64`, `f32`, `f64`, `v64`, `v128` |
-| ARM | `reg` | `r[0-r10]`, `r12`, `r14` | `r` | `i8`, `i16`, `i32` |
+| ARM (ARM/Thumb2) | `reg` | `r[0-r10]`, `r12`, `r14` | `r` | `i8`, `i16`, `i32` |
+| ARM (Thumb1) | `reg` | `r[0-r7]` | `r` | `i8`, `i16`, `i32` |
 | ARM | `vreg` | `s[0-31]`, `d[0-31]`, `q[0-15]` | `w` | `f32`, `f64`, `v64`, `v128` |
 | ARM | `vreg_low` | `s[0-31]`, `d[0-15]`, `q[0-7]` | `t` | `f32`, `f64`, `v64`, `v128` |
-| ARM | `vreg_low8` | `s[0-15]`, `d[0-d]`, `q[0-3]` | `x` | `f32`, `f64`, `v64`, `v128` |
+| ARM | `vreg_low8` | `s[0-15]`, `d[0-8]`, `q[0-3]` | `x` | `f32`, `f64`, `v64`, `v128` |
 | RISC-V | `reg` | `x1`, `x[5-7]`, `x[9-31]` | `r` | `i8`, `i16`, `i32`, `i64` (RV64 only) |
 | RISC-V | `vreg` | `f[0-31]` | `f` | `f32`, `f64` |
 
