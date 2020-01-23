@@ -1,8 +1,8 @@
 - Feature Name: impl-trait-existential-types
 - Start Date: 2017-07-20
 - RFC PR: [rust-lang/rfcs#2071](https://github.com/rust-lang/rfcs/pull/2071)
-- Rust Issue: [rust-lang/rust#63063](https://github.com/rust-lang/rust/issues/44685) (existential types)
-- Rust Issue: [rust-lang/rust#63065](https://github.com/rust-lang/rust/issues/44686) (impl Trait in const/static/let)
+- Rust Issue: [rust-lang/rust#63063](https://github.com/rust-lang/rust/issues/63063) (existential types)
+- Rust Issue: [rust-lang/rust#63065](https://github.com/rust-lang/rust/issues/63065) (impl Trait in const/static/let)
 
 # Summary
 [summary]: #summary
