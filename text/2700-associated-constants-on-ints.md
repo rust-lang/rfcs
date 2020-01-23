@@ -1,7 +1,7 @@
-- Feature Name: assoc-int-consts
+- Feature Name: `assoc_int_consts`
 - Start Date: 2019-05-13
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- RFC PR: [rust-lang/rfcs#2700](https://github.com/rust-lang/rfcs/pull/2700)
+- Rust Issue: [rust-lang/rust#68490](https://github.com/rust-lang/rust/issues/68490)
 
 # Summary
 [summary]: #summary
