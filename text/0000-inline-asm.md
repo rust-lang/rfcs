@@ -678,6 +678,7 @@ unsafe fn foo(mut a: i32, b: i32) -> (i32, i32)
 
 - Any registers not specified as inputs will contain an undefined value on entry to the asm block.
 - Any registers not specified as outputs must have the same value upon exiting the asm block as they had on entry.
+  - This only applies to registers which can be specified as an input or output.
 - Behavior is undefined if execution unwinds out of an asm block.
 - Any memory reads/writes performed by the asm code follow the same rules as `volatile_read` and `volatile_write`.
   - Refer to the unsafe code guidelines for the exact rules.
@@ -687,6 +688,7 @@ unsafe fn foo(mut a: i32, b: i32) -> (i32, i32)
   - On entry to the asm block the stack pointer is guaranteed to be suitably aligned (according to the target ABI) for a function call.
   - You are responsible for making sure you don't overflow the stack (e.g. use stack probing to ensure you hit a guard page).
   - You should adjust the stack pointer when allocating stack memory as required by the target ABI.
+  - The stack pointer must be restored to its original value before leaving the asm block.
 - If the `noreturn` option is set then behavior is undefined if execution falls through to the end of the asm block.
 - These flags registers must be restored upon exiting the asm block if the `preserves_flags` option is set:
   - x86
