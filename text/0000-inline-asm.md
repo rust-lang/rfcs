@@ -83,7 +83,7 @@ unsafe {
     asm!("
         mov {0}, {1}
         add {0}, {number}
-    ", out(reg) o, in(reg) i, number = imm 5);
+    ", out(reg) o, in(reg) i, number = const 5);
 }
 assert_eq!(o, 8);
 ```
@@ -96,8 +96,8 @@ The example shows a few things:
 
 First we can see that inputs are declared by writing `in` instead of `out`.
 
-Second one of our operands has a type we haven't seen yet, `imm`.
-This tells the compiler to expand this argument to an immediate inside the assembly template.
+Second one of our operands has a type we haven't seen yet, `const`.
+This tells the compiler to expand this argument to value directly inside the assembly template.
 This is only possible for constants and literals.
 
 Third we can see that we can specify an argument number, or name as in any format string.
@@ -110,7 +110,7 @@ We can further refine the above example to avoid the `mov` instruction:
 ```rust
 let mut x: u32 = 3;
 unsafe {
-    asm!("add {0}, {number}", inout(reg) x, number = imm 5);
+    asm!("add {0}, {number}", inout(reg) x, number = const 5);
 }
 assert_eq!(x, 8);
 ```
@@ -124,7 +124,7 @@ It is also possible to specify different variables for the input and output part
 let x: u32 = 3;
 let y: u32;
 unsafe {
-    asm!("add {0}, {number}", inout(reg) x => y, number = imm 5);
+    asm!("add {0}, {number}", inout(reg) x => y, number = const 5);
 }
 assert_eq!(y, 8);
 ```
@@ -327,7 +327,7 @@ dir_spec := "in" / "out" / "lateout" / "inout" / "inlateout"
 reg_spec := <arch specific register class> / "<arch specific register name>"
 operand_expr := expr / "_" / expr "=>" expr / expr "=>" "_"
 reg_operand := dir_spec "(" reg_spec ")" operand_expr
-operand := reg_operand / "imm" const_expr / "sym" path
+operand := reg_operand / "const" const_expr / "sym" path
 option := "pure" / "nomem" / "readonly" / "preserves_flags" / "noreturn"
 options := "options(" option *["," option] ")"
 asm := "asm!(" format_string *("," [ident "="] operand) ["," options] ")"
@@ -378,7 +378,7 @@ Several types of operands are supported:
 * `inlateout(<reg>) <expr>` / `inlateout(<reg>) <in expr> => <out expr>`
   - Identical to `inout` except that the register allocator can reuse a register allocated to an `in` (this can happen if the compiler knows the `in` has the same initial value as the `inlateout`).
   - You should only write to the register after all inputs are read, otherwise you may clobber an input.
-* `imm <expr>`
+* `const <expr>`
   - `<expr>` must be an integer or floating-point constant expression.
   - The value of the expression is formatted as a string and substituted directly into the asm template string.
 * `sym <path>`
@@ -562,7 +562,7 @@ If an `inout` is used where the output type is smaller than the input type then 
 As written this RFC requires architectures to map from Rust constraint specifications to LLVM constraint codes. This is in part for better readability on Rust's side and in part for independence of the backend:
 
 * Register classes are mapped to the appropriate constraint code as per the table above.
-* `imm` operands are formatted and injected directly into the asm string.
+* `const` operands are formatted and injected directly into the asm string.
 * `sym` is mapped to `s` for statics and `X` for functions.
 * a register name `r1` is mapped to `{r1}`
 * additionally mappings for register classes are added as appropriate (cf. [llvm-constraint])
@@ -573,7 +573,7 @@ As written this RFC requires architectures to map from Rust constraint specifica
   - (ARM/AArch64) `~{cc}`
 
 For some operand types, we will automatically insert some modifiers into the template string.
-* For `sym` and `imm` operands, we automatically insert the `c` modifier which removes target-specific modifiers from the value (e.g. `#` on ARM).
+* For `sym` operands, we automatically insert the `c` modifier which removes target-specific modifiers from the value (e.g. `#` on ARM).
 * On AArch64, we will warn if a value smaller than 64 bits is used without a modifier since this is likely a bug (it will produce `x*` instead of `w*`). Clang has this same warning.
 * On ARM, we will automatically add the `P` or `q` LLVM modifier for `f64`, `v64` and `v128` passed into a `vreg`. This will cause those registers to be formatted as `d*` and `q*` respectively.
 
@@ -895,9 +895,9 @@ GCC supports `%=` which generates a unique identifier per instance of an asm blo
 
 We can support this in the future with a special operand type.
 
-## `imm` and `sym` for `global_asm!`
+## `const` and `sym` for `global_asm!`
 
-The `global_asm!` macro could be extended to support `imm` and `sym` operands since those can be resolved by simple string substitution. Symbols used in `global_asm!` will be marked as `#[used]` to ensure that they are not optimized away by the compiler.
+The `global_asm!` macro could be extended to support `const` and `sym` operands since those can be resolved by simple string substitution. Symbols used in `global_asm!` will be marked as `#[used]` to ensure that they are not optimized away by the compiler.
 
 ## Memory operands
 
