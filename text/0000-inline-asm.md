@@ -306,7 +306,7 @@ assert_eq!(a, 8);
 Options can be provided as an optional final argument to the `asm!` macro. We specified three options here:
 - `pure` means that the asm code has no observable side effects and that its output depends only on its inputs. This allows the compiler optimizer to call the inline asm fewer times or even eliminate it entirely.
 - `nomem` means that the asm code does not read or write to memory. By default the compiler will assume that inline assembly can read or write any memory address that is accessible to it (e.g. through a pointer passed as an operand, or a global).
-- `nostack` means that the asm code does not push any data onto the stack. This allows the compiler to use optimizations such as the stack red zone on x86_64 to avoid stack pointer adjustments.
+- `nostack` means that the asm code does not push any data onto the stack. This allows the compiler to use optimizations such as the stack red zone on x86-64 to avoid stack pointer adjustments.
 
 These allow the compiler to better optimize code using `asm!`, for example by eliminating pure `asm!` blocks whose outputs are not needed.
 
@@ -324,7 +324,7 @@ The following ABNF specifies the general syntax:
 
 ```
 dir_spec := "in" / "out" / "lateout" / "inout" / "inlateout"
-reg_spec := <arch specific register class> / "<arch specific register name>"
+reg_spec := <register class> / "<explicit register>"
 operand_expr := expr / "_" / expr "=>" expr / expr "=>" "_"
 reg_operand := dir_spec "(" reg_spec ")" operand_expr
 operand := reg_operand / "const" const_expr / "sym" path
@@ -390,40 +390,45 @@ Several types of operands are supported:
 
 Input and output operands can be specified either as an explicit register or as a register class from which the register allocator can select a register. Explicit registers are specified as string literals (e.g. `"eax"`) while register classes are specified as identifiers (e.g. `reg`).
 
-Note that explicit registers treat register aliases (e.g. `r14` vs `lr` on ARM) and smaller views of a register (e.g. `eax` vs `rax`) as equivalent to the base register. It is a compile-time error to use the same explicit register two input operand or two output operands. Additionally on ARM, it is a compile-time error to use overlapping VFP registers in input operands or in output operands.
+Note that explicit registers treat register aliases (e.g. `r14` vs `lr` on ARM) and smaller views of a register (e.g. `eax` vs `rax`) as equivalent to the base register. It is a compile-time error to use the same explicit register two input operand or two output operands. Additionally, it is also a compile-time error to use overlapping registers (e.g. ARM VFP) in input operands or in output operands.
 
-Different registers classes have different constraints on which Rust types they allow. For example, `reg` generally only allows integers and pointers, but not floats or SIMD vectors.
+Only the following types are allowed as operands for inline assembly:
+- Integers (signed and unsigned)
+- Floating-point numbers
+- Pointers and references (thin only)
+- Function pointers
+- SIMD vectors (structs defined with `#[repr(simd)]` and which implement `Copy`)
 
-If a value is of a smaller size than the register it is allocated in then the upper bits of that register will have an undefined value for inputs and will be ignored for outputs. It is a compile-time error for a value to be of a larger size than the register it is allocated in.
+Each register class has a width which limits the size of operands that can be passed through that register class. If a value is of a smaller size than the register it is allocated in then the upper bits of that register will have an undefined value for inputs and will be ignored for outputs. It is a compile-time error for a value to be of a larger size than the register it is allocated in.
 
 Here is the list of currently supported register classes:
 
-| Architecture | Register class | Registers | LLVM constraint code | Allowed types |
-| ------------ | -------------- | --------- | ----- | ------------- |
-| x86 | `reg` | `ax`, `bx`, `cx`, `dx`, `si`, `di`, `r[8-15]` (x86-64 only) | `r` | `i8`, `i16`, `i32`, `i64` (x86-64 only) |
-| x86 | `reg_abcd` | `ax`, `bx`, `cx`, `dx` | `Q` | `i8`, `i16`, `i32`, `i64` (x86-64 only) |
-| x86 | `vreg` | `xmm[0-7]` (x86) `xmm[0-15]` (x86-64) | `x` | `i32`, `i64`, `f32`, `f64`, `v128`, `v256`, `v512` |
-| x86 | `vreg_evex` | `xmm[0-31]` (AVX-512, otherwise same as `vreg`) | `v` | `i32`, `i64`, `f32`, `f64`, `v128`, `v256`, `v512` |
-| x86 (AVX-512) | `kreg` | `k[1-7]` | `Yk` | `i16`, `i32`, `i64` |
-| AArch64 | `reg` | `x[0-28]`, `x30` | `r` | `i8`, `i16`, `i32`, `i64` |
-| AArch64 | `vreg` | `v[0-31]` | `w` | `i8`, `i16`, `i32`, `i64`, `f32`, `f64`, `v64`, `v128` |
-| AArch64 | `vreg_low` | `v[0-15]` | `x` | `i8`, `i16`, `i32`, `i64`, `f32`, `f64`, `v64`, `v128` |
-| AArch64 | `vreg_low8` | `v[0-7]` | `y` | `i8`, `i16`, `i32`, `i64`, `f32`, `f64`, `v64`, `v128` |
-| ARM (ARM/Thumb2) | `reg` | `r[0-r10]`, `r12`, `r14` | `r` | `i8`, `i16`, `i32` |
-| ARM (Thumb1) | `reg` | `r[0-r7]` | `r` | `i8`, `i16`, `i32` |
-| ARM | `vreg` | `s[0-31]`, `d[0-31]`, `q[0-15]` | `w` | `f32`, `f64`, `v64`, `v128` |
-| ARM | `vreg_low` | `s[0-31]`, `d[0-15]`, `q[0-7]` | `t` | `f32`, `f64`, `v64`, `v128` |
-| ARM | `vreg_low8` | `s[0-15]`, `d[0-8]`, `q[0-3]` | `x` | `f32`, `f64`, `v64`, `v128` |
-| RISC-V | `reg` | `x1`, `x[5-7]`, `x[9-31]` | `r` | `i8`, `i16`, `i32`, `i64` (RV64 only) |
-| RISC-V | `vreg` | `f[0-31]` | `f` | `f32`, `f64` |
+| Architecture | Register class | Register width | Registers | LLVM constraint code |
+| ------------ | -------------- | -------------- | --------- | -------------------- |
+| x86 | `reg` | 32 / 64 | `ax`, `bx`, `cx`, `dx`, `si`, `di`, `r[8-15]` (x86-64 only) | `r` |
+| x86 | `reg_abcd` | 32 / 64 | `ax`, `bx`, `cx`, `dx` | `Q` |
+| x86 (SSE) | `xmm_reg` | 128 | `xmm[0-7]` (x86) `xmm[0-15]` (x86-64) | `x` |
+| x86 (AVX2) | `ymm_reg` | 256 | `ymm[0-7]` (x86) `ymm[0-15]` (x86-64) | `x` |
+| x86 (AVX-512) | `zmm_reg` | 512 | `zmm[0-7]` (x86) `zmm[0-31]` (x86-64) | `v` |
+| x86 (AVX-512) | `kreg` | 64 | `k[1-7]` | `Yk` |
+| AArch64 | `reg` | 64 | `x[0-28]`, `x30` | `r` |
+| AArch64 | `vreg` | 128 | `v[0-31]` | `w` |
+| AArch64 | `vreg_low16` | 128 | `v[0-15]` | `x` |
+| ARM | `reg` | 32 | `r[0-r10]`, `r12`, `r14` | `r` |
+| ARM (Thumb) | `reg_thumb` | 32 | `r[0-r7]` | `l` |
+| ARM (ARM) | `reg_thumb` | 32 | `r[0-r10]`, `r12`, `r14` | `l` |
+| ARM | `sreg` | 32 | `s[0-31]` | `t` |
+| ARM | `sreg_low16` | 32 | `s[0-15]` | `x` |
+| ARM | `dreg` | 64 | `d[0-31]` | `w` |
+| ARM | `dreg_low16` | 64 | `d[0-15]` | `t` |
+| ARM | `dreg_low8` | 64 | `d[0-8]` | `x` |
+| ARM | `qreg` | 128 | `q[0-15]` | `w` |
+| ARM | `qreg_low8` | 128 | `q[0-7]` | `t` |
+| ARM | `qreg_low4` | 128 | `q[0-3]` | `x` |
+| RISC-V | `reg` | 32 / 64 | `x1`, `x[5-7]`, `x[9-31]` | `r` |
+| RISC-V | `freg` | 64 | `f[0-31]` | `f` |
 
-> Notes on allowed types:
-> - Pointers and references are allowed where the equivalent integer type is allowed.
-> - `iLEN` refers to both signed and unsigned integer types. It also implicitly includes `isize` and `usize` where the length matches.
-> - Fat pointers are not allowed.
-> - `vLEN` refers to a SIMD vector that is `LEN` bits wide.
-
-Additional constraint specifications may be added in the future based on demand for additional register classes (e.g. MMX, x87, etc).
+Additional register classes may be added in the future based on demand (e.g. MMX, x87, etc).
 
 Some registers have multiple names. These are all treated by the compiler as identical to the base register name. Here is the list of all supported register aliases:
 
@@ -493,44 +498,49 @@ Some registers cannot be used for input or output operands:
 
 The placeholders can be augmented by modifiers which are specified after the `:` in the curly braces. These modifiers do not affect register allocation, but change the way operands are formatted when inserted into the template string. Only one modifier is allowed per template placeholder.
 
-The supported modifiers are a subset of LLVM's (and GCC's) [asm template argument modifiers][llvm-argmod].
+The supported modifiers are a subset of LLVM's (and GCC's) [asm template argument modifiers][llvm-argmod], but do not use the same letter codes.
 
-| Architecture | Register class | Modifier | Input type | Example output |
-| ------------ | -------------- | -------- | ---------- | -------------- |
-| x86 | `reg` | None | `i8` | `al` |
-| x86 | `reg` | None | `i16` | `ax` |
-| x86 | `reg` | None | `i32` | `eax` |
-| x86 | `reg` | None | `i64` | `rax` |
-| x86-32 | `reg_abcd` | `b` | Any | `al` |
-| x86-64 | `reg` | `b` | Any | `al` |
-| x86 | `reg_abcd` | `h` | Any | `ah` |
-| x86 | `reg` | `w` | Any | `ax` |
-| x86 | `reg` | `k` | Any | `eax` |
-| x86-64 | `reg` | `q` | Any | `rax` |
-| x86 | `vreg` | None | `i32`, `i64`, `f32`, `f64`, `v128` | `xmm0` |
-| x86 (AVX) | `vreg` | None | `v256` | `ymm0` |
-| x86 (AVX-512) | `vreg` | None | `v512` | `zmm0` |
-| x86 (AVX-512) | `kreg` | None | Any | `k1` |
-| AArch64 | `reg` | None | Any | `x0` |
-| AArch64 | `reg` | `w` | Any | `w0` |
-| AArch64 | `reg` | `x` | Any | `x0` |
-| AArch64 | `vreg` | None | Any | `v0` |
-| AArch64 | `vreg` | `b` | Any | `b0` |
-| AArch64 | `vreg` | `h` | Any | `h0` |
-| AArch64 | `vreg` | `s` | Any | `s0` |
-| AArch64 | `vreg` | `d` | Any | `d0` |
-| AArch64 | `vreg` | `q` | Any | `q0` |
-| ARM | `reg` | None | Any | `r0` |
-| ARM | `vreg` | None | `f32` | `s0` |
-| ARM | `vreg` | None | `f64`, `v64` | `d0` |
-| ARM | `vreg` | None | `v128` | `q0` |
-| ARM | `vreg` | `e` / `f` | `v128` | `d0` / `d1` |
-| RISC-V | `reg` | None | Any | `x1` |
-| RISC-V | `vreg` | None | Any | `f0` |
+| Architecture | Register class | Modifier | Example output | LLVM modifier |
+| ------------ | -------------- | -------- | -------------- | ------------- |
+| x86-32 | `reg` | None | `eax` | `w` |
+| x86-64 | `reg` | None | `rax` | `q` |
+| x86-32 | `reg_abcd` | `l` | `al` | `b` |
+| x86-64 | `reg` | `l` | `al` | `b` |
+| x86 | `reg_abcd` | `h` | `ah` | `h` |
+| x86 | `reg` | `x` | `ax` | `h` |
+| x86 | `reg` | `e` | `eax` | `w` |
+| x86-64 | `reg` | `r` | `rax` | `q` |
+| x86 | `xmm_reg` | None | `xmm0` | `x` |
+| x86 | `ymm_reg` | None | `ymm0` | `t` |
+| x86 | `zmm_reg` | None | `zmm0` | `g` |
+| x86 | `*mm_reg` | `x` | `xmm0` | `x` |
+| x86 | `*mm_reg` | `y` | `ymm0` | `t` |
+| x86 | `*mm_reg` | `z` | `zmm0` | `g` |
+| x86 | `kreg` | None | `k1` | None |
+| AArch64 | `reg` | None | `x0` | `x` |
+| AArch64 | `reg` | `w` | `w0` | `w` |
+| AArch64 | `reg` | `x` | `x0` | `x` |
+| AArch64 | `vreg` | None | `v0` | None |
+| AArch64 | `vreg` | `v` | `v0` | None |
+| AArch64 | `vreg` | `b` | `b0` | `b` |
+| AArch64 | `vreg` | `h` | `h0` | `h` |
+| AArch64 | `vreg` | `s` | `s0` | `s` |
+| AArch64 | `vreg` | `d` | `d0` | `d` |
+| AArch64 | `vreg` | `q` | `q0` | `q` |
+| ARM | `reg` | None | `r0` | None |
+| ARM | `sreg` | None | `s0` | None |
+| ARM | `dreg` | None | `d0` | `P` |
+| ARM | `qreg` | None | `q0` | `q` |
+| ARM | `qreg` | `e` / `f` | `d0` / `d1` | `e` / `f` |
+| RISC-V | `reg` | None | `x1` | None |
+| RISC-V | `freg` | None | `f0` | None |
 
 > Notes:
 > - on ARM `e` / `f`: this prints the low or high doubleword register name of a NEON quad (128-bit) register.
-> - on AArch64 `reg`: a warning is emitted if the input type is smaller than 64 bits, suggesting to use the `w` modifier. The warning can be suppressed by explicitly using the `x` modifier.
+> - on x86: our behavior for `reg` with no modifiers differs from what GCC does. GCC will infer the modifier based on the operand value type, while we default to the largest size.
+> - on x86 `xmm_reg`: the `x`, `t` and `g` LLVM modifiers are not yet implemented in LLVM (they are supported by GCC only), but this should be a simple change.
+
+As stated in the previous section, passing an input value smaller than the register width will result in the upper bits of the register containing undefined values. This is not a problem if the inline asm only accesses the lower bits of the register, which can be done using template modifiers. Since this an easy pitfall, the compiler will warn if a value smaller than the register width is used as an input or output. However this warning is suppressed if all uses of the operand in the template string explicitly specify a modifier, even if this modifier is already the default.
 
 [llvm-argmod]: http://llvm.org/docs/LangRef.html#asm-template-argument-modifiers
 
@@ -559,23 +569,17 @@ The direction specification maps to a LLVM constraint specification as follows (
 
 If an `inout` is used where the output type is smaller than the input type then some special handling is needed to avoid LLVM issues. See [this bug][issue-65452].
 
-As written this RFC requires architectures to map from Rust constraint specifications to LLVM constraint codes. This is in part for better readability on Rust's side and in part for independence of the backend:
+As written this RFC requires architectures to map from Rust constraint specifications to LLVM [constraint codes][llvm-constraint]. This is in part for better readability on Rust's side and in part for independence of the backend:
 
 * Register classes are mapped to the appropriate constraint code as per the table above.
 * `const` operands are formatted and injected directly into the asm string.
-* `sym` is mapped to `s` for statics and `X` for functions.
+* `sym` is mapped to `s` for statics and `X` for functions. We automatically insert the `c` modifier which removes target-specific modifiers from the value (e.g. `#` on ARM).
 * a register name `r1` is mapped to `{r1}`
-* additionally mappings for register classes are added as appropriate (cf. [llvm-constraint])
 * `lateout` operands with an `_` expression that are specified as an explicit register are converted to LLVM clobber constraints. For example, `lateout("r1") _` is mapped to `~{r1}` (cf. [llvm-clobber]).
 * If the `nomem` option is not set then `~{memory}` is added to the clobber list. (Although this is currently ignored by LLVM)
 * If the `preserves_flags` option is not set then the following are added to the clobber list:
   - (x86) `~{dirflag}~{flags}~{fpsr}`
   - (ARM/AArch64) `~{cc}`
-
-For some operand types, we will automatically insert some modifiers into the template string.
-* For `sym` operands, we automatically insert the `c` modifier which removes target-specific modifiers from the value (e.g. `#` on ARM).
-* On AArch64, we will warn if a value smaller than 64 bits is used without a modifier since this is likely a bug (it will produce `x*` instead of `w*`). Clang has this same warning.
-* On ARM, we will automatically add the `P` or `q` LLVM modifier for `f64`, `v64` and `v128` passed into a `vreg`. This will cause those registers to be formatted as `d*` and `q*` respectively.
 
 Additionally, the following attributes are added to the LLVM `asm` statement:
 
