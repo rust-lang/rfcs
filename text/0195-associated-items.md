@@ -698,7 +698,7 @@ type; the first two will typecheck, while the third will not.
   means that the blanket `impl` of `Foo` applies even though we do not know the
   *concrete* type that `U` will be. That fact means, moreover, that we can
   compute exactly what the associated type `U::T` will be, and know that it will
-  satisfy `Show. Coherence guarantees that that the blanket `impl` is the only
+  satisfy `Show`. Coherence guarantees that that the blanket `impl` is the only
   one that could apply to `U`. (See the section "Impl specialization" under
   "Unresolved questions" for a deeper discussion of this point.)
 
