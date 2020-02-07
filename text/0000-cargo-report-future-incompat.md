@@ -307,19 +307,25 @@ upstream dependencies. Therefore, Cargo will continue to pass
 `--cap-lints=allow` for non-path upstream dependencies.
 
 At the same time, we want to minimize disruption to existing users of Rust.
+
 Therefore, the behavior of flags that directly interact with lints, like
 `-Dwarnings`, will remain unchanged by this RFC.
 
 For example, in our running example of `unwary`:
-  * running `cargo rustc -- -Dwarnings` will behave the same as today
-    (the lints in the downstream `brash` dependency will be capped
-    and their warnings hidden), and
-  * running `RUSTFLAGS=-Dwarnings` will also behave the same as today
-    (the `rustc` invocation on the downstream `brash` depedency
-    will be invoked with `-Dwarnings` and thus the build of the `brash`
-    dependency will fail).
+  * running either `cargo rustc -- -Dwarnings` or `RUSTFLAGS=-Dwarnings cargo build`
+    will invoke `rustc` itself the same way, and each `rustc` invocation will emit
+    the same set of diagnostics that it does today for each of those cases.
+  * Thus, the warning lints in the downstream `brash` non-path dependency will
+    be capped, and the future-incompatiblity warnings associated with that `rustc`
+    invocation will be hidden.
+  * When `cargo` emits a future-incompatibility report at the end of the build,
+    and reports that `brash` contains code that will be rejected by
+    a future version of Rust, this report is *not* a lint, and does *not* interact
+    with `-Dwarnings`.
+  * In summary: getting a future-incompatibility report when you
+    have passed `-Dwarnings` to `rustc` will *not* fail the build.
 
-However, the Rust compiler's behavior will change slightly. Even when
+However, the Rust compiler's behavior *will* change slightly. Even when
 `--cap-lints=allow` is turned on, we need Cargo to know when a
 future-incompatibilty lint is triggered.
 
