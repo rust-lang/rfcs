@@ -82,7 +82,7 @@ anything in the short term about warnings emitted by upstream crates,
 
  * (The `unwary` developer *can* file issues against `brash` or even
     contribute code to fix `brash`, but that does not resolve the
-    immediate problem until new version of `brash` is released by its
+    immediate problem until a new version of `brash` is released by its
     maintainer.)
 
 Therefore the diagnostics associated with building upstream
