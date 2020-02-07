@@ -480,6 +480,19 @@ lint currently categorized as `C-future-incompatility` on the Rust repo.
 That decision is a policy matter for the relevant teams,
 and the form of such policy is out of scope for this RFC.
 
+Whatever form that policy takes, it is worth noting: Users who encounter
+upstream future-incompatibility issues may have neither free time nor external
+development resources to draw upon. The rustc developers need to take some care
+in deciding *when* a future-incompatibility lint should start being reported via
+this mechanism.
+
+ * If our primary goal is to minimize user frustration with our tools and
+   ecosystem, then future-incompatibility reporting for a given lint should be
+   turned only after much of the crate ecosystem have new fixed versions. In
+   other words, we should strive for a steady-state where the typical user
+   response to a future-incompatibility report is that user then runs 
+   `cargo update`, or they ask for a (pre-existing) PR to be merged.
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
