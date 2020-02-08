@@ -630,7 +630,7 @@ This RFC supports returning DSTs for two reasons:
 * It allows emplacing dynamic byte blobs, which is really important for use cases like Mio and Serde.
 * It is one of the main requirements set out in the older RFC's mortician's note.
 
-The specific design for DST returning is, of course, optimized for emplacement, and the main use case is for emplacing big byte blobs. It supports returning trait objects as well, but that's not really what it's for, and it kind of shows. A proposal using implicit boxing would be more useful for such a case, though at that point it seems unnecessary (if you're given a function that returns a bare trait object, you can call it with `Box::new_with` and get on with your life).
+The specific design for DST returning is, of course, optimized for emplacement, and the main use case is for emplacing big byte blobs. It supports returning trait objects as well, but that's not really what it's for, and it kind of shows. The macros described in [future-possibilities] for implicit emplacement could help cover that use case.
 
 # Prior art
 [prior-art]: #prior-art
@@ -743,6 +743,14 @@ fn valid_but_terrible() {
     takes_slice(n);
 }
 ```
+
+## New macros for implicit emplacement
+
+The new methods proposed in this RFC are explicitly opt-in. The user chooses to call `Box::new_with(|| getActualData(...))` instead of `Box::new(getActualData(...))`. This syntax has a few drawbacks: it's verbose, it's explicit for someone skimming the code, and since it's not the default syntax, developers are likely not to use it unless they absolutely need to, even in cases where it could help performance.
+
+A mitigation might be to add `box!`, `rc!`, `arc!` (and so on) macros to construct these types of object, similarly to existing `vec!` macro.
+
+The idea being that the macro would do the work of chosing whether to use the "construct then copy" variant or the "emplace" variant. New developers would just be told to use `rc!(my_data)` without having to worry about which variant is used.
 
 ## Integration with futures, streams, serde, and other I/O stuff
 
