@@ -341,29 +341,19 @@ If allocation fails, `write_return_with` may panic without calling `f`. The retu
 
 IMPORTANT IMPLEMENTATION NOTE: Because of the way unsized return generators are codegenned as generators, it would be possible to tell that `write_unsized_return_with` wasn't actually panicking by wrapping its invocation in `catch_panic`. To ensure the user cannot do this, the closure passed to `catch_panic` must return a sized type; we still technically won't be unwinding through their stack frames, but we will be calling the drop functions with `is_panicking` set to true, so they won't be able to tell. Additionally, of course, the return slot for sized types is always pre-allocated, so this function will never panic in that case.
 
-#### Example: raw_as_bytes_with
+#### Example: zeroed_array
 
 ```rust
-mod str {
-  /// This is a function adapter. Usage:
-  ///
-  ///     fn get_str() -> str;
-  ///     let get_bytes = str::raw_as_bytes_with(get_str);
-  ///     get_bytes()
-  pub fn raw_as_bytes_with<Args, F: FnOnce<Args, Output=str>>(f: F) -> impl FnOnce<Args, Output=[u8]> {
-    unsafe {
-      struct ConvertFn<F>(F);
-      impl<Args, F: FnOnce<Args, Output=str>> FnOnce<Args> for ConvertFn<F> {
-        type Output = [u8];
-        fn call(self, a: Args) -> [u8] {
-          let finish = read_unsized_return_with(|| self.0.call(a));
-          write_unsized_return_with(
-            finish.layout(),
-            |slot: &mut MaybeUninit<[u8]>| finish.finish(MaybeUninit::from_mut_ptr(slot.as_mut_ptr() as *mut str))) as *mut str as *mut [u8] as &mut [u8]
-        }
-      }
-    }
-  }
+unsafe fn zeroed_array<T>(n: usize) -> [T] {
+    let (array_layout, _) = Layout::new::<T>().repeat(n).unwrap();
+    write_unsized_return_with(
+        array_layout,
+        |slot: *mut u8| {
+            for i in 0 .. size_of::<T>() {
+                *slot.offset(i) = 0;
+            }
+        },
+    )
 }
 ```
 
@@ -442,6 +432,32 @@ impl<T> Vec<T> {
         debug_assert!(slice.len() <= count);
         self.set_len(self.len() + slice.len());
     }
+}
+```
+
+#### Example: raw_as_bytes_with
+
+```rust
+mod str {
+  /// This is a function adapter. Usage:
+  ///
+  ///     fn get_str() -> str;
+  ///     let get_bytes = str::raw_as_bytes_with(get_str);
+  ///     get_bytes()
+  pub fn raw_as_bytes_with<Args, F: FnOnce<Args, Output=str>>(f: F) -> impl FnOnce<Args, Output=[u8]> {
+    unsafe {
+      struct ConvertFn<F>(F);
+      impl<Args, F: FnOnce<Args, Output=str>> FnOnce<Args> for ConvertFn<F> {
+        type Output = [u8];
+        fn call(self, a: Args) -> [u8] {
+          let finish = read_unsized_return_with(|| self.0.call(a));
+          write_unsized_return_with(
+            finish.layout(),
+            |slot: &mut MaybeUninit<[u8]>| finish.finish(MaybeUninit::from_mut_ptr(slot.as_mut_ptr() as *mut str))) as *mut str as *mut [u8] as &mut [u8]
+        }
+      }
+    }
+  }
 }
 ```
 
@@ -669,19 +685,7 @@ Additionally, a few much-simpler lints can push users in the direction of gettin
 
 While this RFC specifies a bunch of cases where existing containers should incorporate `read_unsized_return_with` to allow in-place construction of container members, it doesn't specify any built-in functions that should use `write_(unsized_)return_with` exclusively.
 
-Functions which return potentially-large data structures that they construct will probably wind up using it. For example, `std::mem::zeroed` can be implemented like this:
-
-```rust
-unsafe fn zeroed<T>() -> T {
-    write_return_with(|slot: *mut u8| {
-        for i in 0 .. size_of::<T>() {
-            *slot.offset(i) = 0;
-        }
-    });
-}
-```
-
-Once type-level integers are provided, a function for constructing arrays in-place would also be possible:
+Functions which return potentially-large data structures that they construct will probably wind up using it. For example, once type-level integers are provided, a function for constructing arrays in-place would be possible:
 
 ```rust
 fn fill_array<T, F: Fn() -> T, const N: usize>(f: F) -> [T; N] {
