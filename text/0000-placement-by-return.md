@@ -18,10 +18,10 @@ Starting with the questions given at the end of the [old RFC's mortician's note]
 # Motivation
 [motivation]: #motivation
 
-Rust has a dysfunctional relationship with objects that are large or variable in size. It can accept them as parameters pretty well using references, but creating them is horrible:
+Rust has a dysfunctional relationship with objects that are large or variable in size. It can accept them as parameters pretty well using references, but creating them is unwieldy and inneficient:
 
 * A function pretty much has to use `Vec` to create huge arrays, even if the array is fixed size. The way you'd want to do it, `Box::new([0; 1_000_000])`, will allocate the array on the stack and then copy it into the Box. This same form of copying shows up in tons of API's, like serde's Serialize trait.
-* There's no safe way to create gigantic, singular structs at all. If your 1M array is wrapped somehow, you pretty much have to allocate the memory by hand and transmute.
+* There's no safe way to create gigantic, singular structs without overhead. If your 1M array is wrapped somehow, you pretty much have to allocate the memory by hand and transmute.
 * You can't return bare unsized types. [RFC-1909](https://github.com/rust-lang/rfcs/blob/master/text/1909-unsized-rvalues.md) allows you to create them locally, and pass them as arguments, but not return them.
 
 As far as existing emplacement proposals go, this one was written with the following requirements in mind:
@@ -44,7 +44,7 @@ let boxed_data_struct = Box::new_with(DataStruct::new); // instead of Box::new(D
 
 The `new_with` function will perform the allocation first, then evaluate the closure, placing the result directly within it. The `new` function, on the other hand, evaluates the argument *then* performs the allocation and copies the value into it.
 
-A similar function exist for Vec and other data structures, with names like `push_with` and `insert_with`.
+Similar functions exist for Vec and other data structures, with names like `push_with` and `insert_with`.
 
 When writing constructors, you should create large data structures directly on the return line. For example:
 
@@ -127,7 +127,7 @@ fn not_bad() -> [i32] {
 
 ## Did you say I can return unsized types?
 
-A function that directly returns an unsized type should be compiled into two functions, essentially as a special kind of generator. Like this, basically:
+A function that directly returns an unsized type should be compiled into two functions, essentially as a special kind of generator:
 
 ```rust
 // sugar
@@ -138,6 +138,7 @@ fn function_that_calls_my_function() -> str {
     println!("Hi there!");
     my_function()
 }
+
 // desugar my_function
 // this is written in order to aid understanding, not because these are good APIs
 use std::alloc::Layout;
@@ -161,6 +162,7 @@ impl __MyFunction__Internal {
     str::from_raw_parts_mut(slot, state.local_0.len())
   }
 }
+
 // desugar function_that_calls_my_function
 use std::alloc::Layout;
 struct __FunctionThatCallsMyFunction__Internal {
@@ -183,8 +185,8 @@ This interface ends up putting some pretty harsh limitations on what functions t
 
 * Constants and dereferencing constants (as shown above). These are desugared by yielding the layout of the literal and returning the literal by copying it.
 * Directly returning the value of another function that also returns the same unsized type. These are desugared by forwarding, as shown above with `function_that_calls_my_function`.
-* Unsized coersions. These are desugared by storing the sized type as function state, yielding the layout of the sized type, and returning by copying.
 * Variable-length array literals, similar to those in [RFC 1909](https://github.com/rust-lang/rfcs/blob/master/text/1909-unsized-rvalues.md). These are desugared by yielding the length variable, then returning the payload through ptr offsets and ptr writes.
+* Unsized coercions. These are desugared by storing the sized type as function state, yielding the layout of the sized type, and returning by copying.
 * Blocks, unsafe blocks, and branches that have acceptable expressions in their tail position.
 
 As is typical for generators, these functions may need to be desugared into simple "state machines" if they return branches or have more than one exit point.
@@ -206,6 +208,7 @@ fn with_multiple_exit_points() -> [i32] {
     let n = 100;
     [1; n] // returning variable-length-array expression
 }
+
 // desugar with_branch
 // this is written in order to aid understanding, not because these are good APIs
 use std::alloc::Layout;
@@ -236,6 +239,7 @@ impl __WithBranch__Internal {
     }
   }
 }
+
 // desugar with_multiple_exit_points
 enum __WithMultipleExitPoints__Internal {
   S0(&[i32]),
@@ -280,6 +284,7 @@ fn return_a_sized_value() -> i32 {
     println!("got random value");
     4 // determined by a fair dice roll
 }
+
 // desugar return_a_sized_value
 // this is written in order to aid understanding, not because these are good APIs
 use std::alloc::Layout;
@@ -302,13 +307,23 @@ This is how it would conceptually work whenever a facility designed to handle pl
 
 ## Absolutely minimum viable copy elision
 
-To make sure this functionality is useful for sized types, we should probably also guarantee some amount of copy elision:
+To make sure this functionality can be used with no overhead, the language should guarantee some amount of copy elision. The following operations should be guaranteed zero-copy:
 
 * Directly returning the result of another function that also returns the same type.
 * Blocks, unsafe blocks, and branches that have acceptable expressions in their tail position.
-* Struct and array literals.
+* Array and struct literals, including struct literals ending with an unsized value.
 
-The first two cases are chosen as "must-have" copy elision because they allow functions that use the unsafe methods to be composed with other functions without introducing overhead. The last rule is added because it's trivial to guarantee, and because the line between "tuple struct literal" and "function call" is blurry anyway.
+These operations are "must-have" copy elision because they allow functions returning unsized types through unsafe methods to be composed with other functions without introducing overhead.
+
+In the case of array and struct literals, the copy elision must be recursive. For example:
+
+```rust
+fn no_copy() -> Struct2 {
+    Struct2 { member: Struct { member: getData() } }
+}
+```
+
+In the above example, the data returned by `getData()` may be sized or unsized. Either way, it should not be copied at all (aside from its initial creation), whether when constructing the Struct, the Struct2, or returning the data.
 
 Guaranteed Copy Elision only kicks in when a GCE-applicable expression is directly returned from a function, either by being the function's last expression or by being the expression part of a `return` statement.
 
@@ -584,21 +599,21 @@ Using an alternative ABI remains practical as a solution for the "peanut butter"
 [The previous emplacement RFC was rejected for the following reasons](https://github.com/rust-lang/rust/issues/27779#issuecomment-378416911), most of which this new RFC addresses:
 
 * The implementation does not fulfil the design goals
-  
+
     * Place an object at a specific address
-  
+
       This is literally what `read_return_with` does.
-    
+
     * Allocate objects in arenas (references the original C++ goals)
 
       This is what `new_with` and related functions achieve.
-    
+
     * Be competitive with the implementation in C++
-  
+
       Passing a closure is essentially the same thing as passing an initializer list, so it should have the same performance as C++ emplacement.
 
  * The functionality of placement is unpredictable
- 
+
    This is probably the least-well-addressed concern. This RFC spends a lot of its text spelling out when GCE can kick in, which means it should be possible for a coder (or a lint) to tell whether a value is being copied or not, but it's still invisible.
 
    The other way it tries to address predictability is by offering the explicit-mode `write_return_with` intrinsic. Unfortunately, it's unsafe.
@@ -651,7 +666,7 @@ The specific design for DST returning is, of course, optimized for emplacement, 
 # Prior art
 [prior-art]: #prior-art
 
-Any place where my proposal is ambiguous? Let me know and I'll try to make it [the same as C++17 Guaranteed Copy Elision](https://jonasdevlieghere.com/guaranteed-copy-elision/).
+Any place where this proposal is ambiguous? Let me know and I'll try to make it [the same as C++17 Guaranteed Copy Elision](https://jonasdevlieghere.com/guaranteed-copy-elision/).
 
 It was after I came up with the idea that I realized `write_return_with` is basically a feature in the Go language, but Go has dedicated syntax for it and zero-initializes the return slot. I don't know of any prior art for `read_return_with`; it's not really all that similar to "placement new", even though it's arguably achieving the same goal.
 
@@ -701,6 +716,7 @@ fn fill_array<T, F: Fn() -> T, const N: usize>(f: F) -> [T; N] {
         });
     }
 }
+
 // This struct is used to take care of freeing the already-created items
 // in case `f` panics in the middle of filling the array.
 struct Filled<T>(*mut T, *mut T);
@@ -867,4 +883,3 @@ trait Serializer {
   }
 }
 ```
-
