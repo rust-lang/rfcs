@@ -22,7 +22,7 @@ Rust has a dysfunctional relationship with objects that are large or variable in
 
 * A function pretty much has to use `Vec` to create huge arrays, even if the array is fixed size. The way you'd want to do it, `Box::new([0; 1_000_000])`, will allocate the array on the stack and then copy it into the Box. This same form of copying shows up in tons of API's, like serde's Serialize trait.
 * There's no safe way to create gigantic, singular structs at all. If your 1M array is wrapped somehow, you pretty much have to allocate the memory by hand and transmute.
-* You can't return bare unsized types. [You can create them locally, and you can pass them as arguments](https://github.com/rust-lang/rfcs/blob/master/text/1909-unsized-rvalues.md), but not return them.
+* You can't return bare unsized types. [RFC-1909](https://github.com/rust-lang/rfcs/blob/master/text/1909-unsized-rvalues.md) allows you to create them locally, and pass them as arguments, but not return them.
 
 As far as existing emplacement proposals go, this one was written with the following requirements in mind:
 
@@ -66,8 +66,8 @@ fn bad() -> [i32; 1_000_000] {
     }
     arr
 }
-// This function will compile successfully, but it will allocate the array on the stack,
-// which is probably very bad.
+// This function will compile successfully with #![feature(unsized_locals)]
+// but it will allocate the array on the stack, which is probably very bad.
 fn bad_dst() {
     fn takes_dst(_k: [i32]) {}
     fn returns_dst() -> [i32] { let n = 1_000_000; [1; n] }
@@ -183,8 +183,8 @@ This interface ends up putting some pretty harsh limitations on what functions t
 
 * Constants and dereferencing constants (as shown above). These are desugared by yielding the layout of the literal and returning the literal by copying it.
 * Directly returning the value of another function that also returns the same unsized type. These are desugared by forwarding, as shown above with `function_that_calls_my_function`.
-* [RFC 1909](https://github.com/rust-lang/rfcs/blob/master/text/1909-unsized-rvalues.md) variable-length array literals. These are desugared by yielding the length variable, and returned by writing the value repeatedly though ptr offsets and ptr write.
 * Unsized coersions. These are desugared by storing the sized type as function state, yielding the layout of the sized type, and returning by copying.
+* Variable-length array literals, similar to those in [RFC 1909](https://github.com/rust-lang/rfcs/blob/master/text/1909-unsized-rvalues.md). These are desugared by yielding the length variable, then returning the payload through ptr offsets and ptr writes.
 * Blocks, unsafe blocks, and branches that have acceptable expressions in their tail position.
 
 As is typical for generators, these functions may need to be desugared into simple "state machines" if they return branches or have more than one exit point.
@@ -268,28 +268,6 @@ impl __WithMultipleExitPoints__Internal {
         }
     }
   }
-}
-```
-
-Important point: returning unsized variables is not allowed.
-
-```rust
-// fn invalid() -> [i32] {
-//     let n = 100;
-//     let k = [1; n];
-//     k // ERROR: cannot return unsized variable
-// }
-```
-
-This is because there's no way to break all such functions in half the way we need to. Where would we put `k` between the calls to `start()` and the call to `finish()`? We can't just put it in the struct, because we need to know how big a generator's stack frames will be in order to generate its state machine struct.
-
-On the other hand, a function that returns an unsized value can have its return value assigned to a
-local variable (the compiler will `start()` the function to get a layout for it, then `alloca()` the space, then `finish()` the function into that space). This is a natural thing to support, and it's great for trait objects, but it's probably a horrible idea to do it with dynamically-sized slices, and should be linted against.
-
-```rust
-fn valid_but_terrible() {
-    let n: [i32] = returns_slice();
-    takes_slice(n);
 }
 ```
 
@@ -729,6 +707,40 @@ impl<T> Drop for Filled<T> {
             self.0 = self.0.offset(1);
         }
     }
+}
+```
+
+## Synergy with RFC-1909
+
+This proposal was written to be independent from
+[RFC-1909 (unsized rvalues)](https://github.com/rust-lang/rfcs/blob/master/text/1909-unsized-rvalues.md).
+
+While the two their
+
+While the two proposals cover similar concepts (directly manipulating unsized types), they're mostly orthogonal in implementation. RFC-1909 is about using alloca to allow unsized types in function parameters and locals, and explicitly excludes function returns. This proposal is about emplacement, which doesn't require `alloca`, can be done exclusively through interfaces like `Box::new_with`.
+
+In fact, even if both RFCs were implemented and standardized, it's not clear whether unsized returns should be allowed to be implicitly stored in locals using `alloca`. This is because `alloca` always grows the stack size without reusing existing memory, which means that any code creating locals of generic types in a loop would lead excessive stack sizes when called with an unsized type, in a way that isn't clear when looking at the offending code alone.
+
+Moreover, functions returning unsized types wouldn't be allowed to store them in locals:
+
+```rust
+// fn invalid() -> [i32] {
+//     let n = 100;
+//     let k = [1; n];
+//     k // ERROR: cannot return unsized variable
+// }
+```
+
+This is because `invalid()` is implicitly compiled into a generator; the compiler must generate a state machine struct to store its state between the call to `start()` and the call to `finish()`. Since k is stored in `alloca()`-created space, it can't be stored in a fixed-size state machine.
+
+On the other hand, storing a function's unsized return into a unsized local may be useful for some cases, such as trait objects. (though the concerns about implicit `alloca()` calls still apply).
+
+However, doing so with a dynamically-sized slices would create a serious performance risk, and should at least be linted against.
+
+```rust
+fn valid_but_terrible() {
+    let n: [i32] = returns_slice();
+    takes_slice(n);
 }
 ```
 
