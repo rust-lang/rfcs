@@ -74,7 +74,7 @@ In this case we put it in an arbitrary general purpose register by specifying `r
 The compiler will choose an appropriate register to insert into
 the template and will read the variable from there after the inline assembly finishes executing.
 
-Let see another example that also uses an input:
+Let us see another example that also uses an input:
 
 ```rust
 let i: u32 = 3;
@@ -273,7 +273,7 @@ In some cases, fine control is needed over the way a register name is formatted 
 let mut x: u16 = 0xab;
 
 unsafe {
-    asm!("mov {0:h} {0:b}", inout(reg_abcd) x);
+    asm!("mov {0:h}, {0:b}", inout(reg_abcd) x);
 }
 
 assert_eq!(x, 0xabab);
@@ -390,7 +390,7 @@ Several types of operands are supported:
 
 Input and output operands can be specified either as an explicit register or as a register class from which the register allocator can select a register. Explicit registers are specified as string literals (e.g. `"eax"`) while register classes are specified as identifiers (e.g. `reg`).
 
-Note that explicit registers treat register aliases (e.g. `r14` vs `lr` on ARM) and smaller views of a register (e.g. `eax` vs `rax`) as equivalent to the base register. It is a compile-time error to use the same explicit register two input operand or two output operands. Additionally, it is also a compile-time error to use overlapping registers (e.g. ARM VFP) in input operands or in output operands.
+Note that explicit registers treat register aliases (e.g. `r14` vs `lr` on ARM) and smaller views of a register (e.g. `eax` vs `rax`) as equivalent to the base register. It is a compile-time error to use the same explicit register for two input operand or two output operands. Additionally, it is also a compile-time error to use overlapping registers (e.g. ARM VFP) in input operands or in output operands.
 
 Only the following types are allowed as operands for inline assembly:
 - Integers (signed and unsigned)
