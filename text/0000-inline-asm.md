@@ -199,8 +199,9 @@ fn mul(a: u32, b: u32) -> u64 {
             // The x86 mul instruction takes eax as an implicit input and writes
             // the 64-bit result of the multiplication to eax:edx.
             "mul {}",
-            in(reg) a, in("eax") b,
-            lateout("eax") lo, lateout("edx") hi
+            in(reg) a,
+            inlateout("eax") b => lo,
+            lateout("edx") hi
         );
     }
 
@@ -213,8 +214,6 @@ The only explicit operand is a register, that we fill from the variable `a`.
 The second operand is implicit, and must be the `eax` register, which we fill from the variable `b`.
 The lower 32 bits of the result are stored in `eax` from which we fill the variable `lo`.
 The higher 32 bits are stored in `edx` from which we fill the variable `hi`.
-
-Note that `lateout` must be used for `eax` here since we are specifying the same register as both an input and an output.
 
 ## Clobbered registers
 
@@ -232,9 +231,8 @@ let ecx: u32;
 unsafe {
     asm!(
         "cpuid",
-        in("eax") 4, in("ecx") 0,
-        lateout("ebx") ebx, lateout("ecx") ecx,
-        lateout("eax") _, lateout("edx") _
+        inout("eax") 4 => _, inout("ecx") 0 => ecx,
+        lateout("ebx") ebx, lateout("edx") _
     );
 }
 
@@ -365,7 +363,6 @@ Several types of operands are supported:
 * `lateout(<reg>) <expr>`
   - Identical to `out` except that the register allocator can reuse a register allocated to an `in`.
   - You should only write to the register after all inputs are read, otherwise you may clobber an input.
-  - `lateout` must be used instead of `out` if you are specifying the same explicit register as an `in`.
 * `inout(<reg>) <expr>`
   - `<reg>` can refer to a register class or an explicit register. The allocated register name is substituted into the asm template string.
   - The allocated register will contain the value of `<expr>` at the start of the asm code.
@@ -390,7 +387,7 @@ Several types of operands are supported:
 
 Input and output operands can be specified either as an explicit register or as a register class from which the register allocator can select a register. Explicit registers are specified as string literals (e.g. `"eax"`) while register classes are specified as identifiers (e.g. `reg`).
 
-Note that explicit registers treat register aliases (e.g. `r14` vs `lr` on ARM) and smaller views of a register (e.g. `eax` vs `rax`) as equivalent to the base register. It is a compile-time error to use the same explicit register for two input operand or two output operands. Additionally, it is also a compile-time error to use overlapping registers (e.g. ARM VFP) in input operands or in output operands.
+Note that explicit registers treat register aliases (e.g. `r14` vs `lr` on ARM) and smaller views of a register (e.g. `eax` vs `rax`) as equivalent to the base register. It is a compile-time error to use the same explicit register for two different operands. Additionally, it is also a compile-time error to use overlapping registers (e.g. ARM VFP) in different operands.
 
 Only the following types are allowed as operands for inline assembly:
 - Integers (signed and unsigned)
