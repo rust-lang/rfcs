@@ -198,6 +198,11 @@ produced by that RFC and by many discussions in the `stdsimd` repo.
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
+None.
+
+# Future possibilities
+[future-possibilities]: #future-possibilities
+
 ## Negative features
 
 [RFC 2045 (`target_feature`)] introduced the `#[target_feature(enable = "x")]`
