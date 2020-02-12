@@ -1,6 +1,6 @@
 - Feature Name: `#[target_feature]` 1.1
 - Start Date: 2018-04-06
-- RFC PR: (leave this empty)
+- RFC PR: [rust-lang/rust#2396](https://github.com/rust-lang/rfcs/pull/2396)
 - Rust Issue: (leave this empty)
 
 # Summary
