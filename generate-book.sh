@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 set -e
 
@@ -6,14 +6,17 @@ if [ ! -d src ]; then
     mkdir src
 fi
 
-echo "[Introduction](introduction.md)\n" > src/SUMMARY.md
+printf '[Introduction](introduction.md)\n\n' > src/SUMMARY.md
 
-for f in $(ls text/* | sort)
+find ./text ! -type d -print0 | xargs -0 -I {} ln -frs {} -t src/
+
+find ./text ! -type d -name '*.md' -print0 \
+  | sort -z \
+  | while read -r -d '' file;
 do
-    echo "- [$(basename $f ".md")]($(basename $f))" >> src/SUMMARY.md
-    cp $f src
-done
+    printf -- '- [%s](%s)\n' "$(basename "$file" ".md")" "$(basename "$file")" 
+done >> src/SUMMARY.md
 
-cp README.md src/introduction.md
+ln -frs README.md src/introduction.md
 
 mdbook build
