@@ -178,7 +178,7 @@ among others can be addressed by their name.
 
 ```rust
 unsafe {
-    asm!("out 0x64, {}", in("rax") cmd);
+    asm!("out 0x64, rax", in("rax") cmd);
 }
 ```
 
@@ -186,8 +186,11 @@ In this example we call the `out` instruction to output the content of the `cmd`
 to port `0x64`. Since the `out` instruction only accepts `rax` (and its sub registers) as operand
 we had to use the `rax` constraint specifier.
 
+Note that unlike other operand types, explicit register operands cannot be used in the template string: you can't use `{}` and should write the register name directly instead. Also, they must appear at the end of the operand list after all other operand types.
+
 It is somewhat common that instructions have operands that are not explicitly listed in the
-assembly (template). Hence, unlike in regular formatting macros, we support excess arguments:
+assembly (template). By default all operands must be used in the template string, but it is possible
+to opt-out of this by giving an operand the name `_`:
 
 ```rust
 fn mul(a: u64, b: u64) -> u128 {
@@ -231,8 +234,10 @@ let ecx: u64;
 unsafe {
     asm!(
         "cpuid",
-        inout("eax") 4 => _, inout("ecx") 0 => ecx,
-        lateout("ebx") ebx, lateout("edx") _
+        inout("eax") 4 => _,
+        inout("ecx") 0 => ecx,
+        lateout("ebx") ebx,
+        lateout("edx") _
     );
 }
 
@@ -341,9 +346,7 @@ asm := "asm!(" format_string *("," [ident "="] operand) ["," options] ")"
 
 The assembler template uses the same syntax as [format strings][format-syntax] (i.e. placeholders are specified by curly braces). The corresponding arguments are accessed in order, by index, or by name. However, implicit named arguments (introduced by [RFC #2795][rfc-2795]) are not supported.
 
-As with format strings, named arguments must appear after positional arguments. However additional unnamed arguments may appear after named arguments: these are implicit arguments, which cannot be addressed using template placeholders but may be used to specify fixed register inputs or outputs.
-
-The compiler will lint against any operands that are not used in the template string, except for operands that specify an explicit register.
+As with format strings, named arguments must appear after positional arguments. Explicit register operands must appear at the end of the operand list, after any named arguments if any. Explicit register operands cannot be used by placeholders in the template string. All other operands must appear at least once in the template string, otherwise a compiler error is generated.
 
 The assembly code syntax used is that of the GNU assembler (GAS). The only exception is on x86 where the Intel syntax is used instead of GCC's AT&T syntax.
 
