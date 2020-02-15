@@ -166,7 +166,7 @@ those invocations will also be expanded, and so on.
 
 ```rust
 let tokens = quote!{
-    let x = vec![concat!("hello, ", "world!"); 1]
+    let x = vec![concat!("hello ", "world!"); 1]
 };
 
 let expansion = ExpansionBuilder::from_tokens(tokens);
@@ -197,8 +197,8 @@ result is the string `let x = concat ! ("hello ", "world!")`, whereas we want
 
 We could write `eager_stringify!` as a fairly straighforward proc macro using
 `ExpansionBuilder`. However, since decl macros are much quicker and easier to
-write and use, it would be nice to have a reusable "utility" which we could use
-to define `eager_stringify!`.
+write and use, it would be nice to have a reusable "utility" macro which we
+could use to define `eager_stringify!`.
 
 Let's call our utility macro `expand!`. The idea is that users of `expand!` will
 invoke it with:
@@ -266,106 +266,6 @@ to access span information, it does so by sending a request to the compiler.
 This RFC adds the `ExpansionBuilder` API as a way to construct a new kind of
 request to the compiler -- a request to expand macro invocations in a
 token stream.
-
-## Why is expansion aysnchronous?
-
-Depending on the order in which macros get expanded by the compiler, a proc
-macro using the `ExpansionBuilder` API might try to expand a token stream
-containing a macro that isn't defined, but _would_ be defined if some other
-macro were expanded first. For example:
-
-```rust
-macro make_macro($name:ident) {
-    macro $name () { "hello!" }
-}
-
-make_macro!(foo);
-
-my_eager_macro!{ let x = foo!(); }
-```
-
-If `my_eager_macro!` tries to expand `foo!()` _after_ `make_macro!(foo)` is
-expanded, all is well: the compiler will see the new definition of `macro foo`,
-so when `my_eager_macro!` uses `ExpansionBuilder` to expand `foo!()`, the
-compiler knows what to return. However, what should we do if the compiler tries
-to expand `my_eager_macro!` _before_ expanding `make_macro!(foo)`? There are
-several options:
-
-* A: Only expand macros in a non-blocking order. This is hard, because the
-  knowledge that `my_eager_macro!` depends on `foo!` being defined is only
-  available once `my_eager_macro!` is executing. Similarly, we only know that
-  `make_macro!` defines `foo!` after it has finished expanding.
-* B: The compiler could indicate to `my_eager_macro!` that its expansion request
-  can't be completed yet, due to a missing definition. This means
-  `my_eager_macro!` needs to handle that outcome, preferably by indicating to
-  the compiler that the compiler should retry the expansion of `my_eager_macro!`
-  once a definition of `foo!` is available.
-* C: The compiler could delay returning a complete expansion result until it is
-  able to, while allowing `my_eager_macro!` to make as much progress as it can
-  without the result.
-
-This RFC goes with option C by making `expand` an `async fn`, since this
-provides a clear indication to proc macro authors that they should consider and
-handle this scenario. Additionally, this behaviour of `expand` -- delaying the
-return of expansion results until all the necessary definitions are available --
-is probably the outcome that most authors would opt-in to if given the choice
-via option B.
-
-## Why take in a token stream?
-
-We could imagine an alternative `ExpansionBuilder` API which required the user
-to construct a _single_ macro invocation at a time, perhaps by exposing
-constructors like this:
-
-```rust
-use syn::{Macro, Attribute};
-
-impl ExpansionBuilder {
-    pub fn bang_macro(macro: Macro) -> Self;
-    pub fn attribute_macro(
-        macro: Attribute,
-        body: TokenStream
-    ) -> Self;
-}
-```
-
-This would force proc macro authors to traverse their inputs, perform the
-relevant expansion, and then interpolate the results. Presumably utilities would
-show up in crates like `syn` to make this easier. However, this alternative API
-_doesn't_ handle cases where the macro invocation uses local definitions or
-relative paths. For example. how would a user of `bang_macro` use it to expand
-the invocation of `bar!` in the following token stream?
-
-```rust
-quote!{
-    mod foo {
-        pub macro bar () {}
-    }
-
-    foo::bar!();
-}
-```
-
-By contrast, the proposed `from_tokens` interface makes handling these cases the
-responsibility of the compiler.
-
-## Why use a builder pattern?
-
-The builder pattern lets us start off with a fairly bare-bones API which then
-becomes progressively more sophisticated as we learn what proc macro authors
-need from an eager expansion API. For example:
-* It isn't obvious how to treat requests to expand expressions from a proc
-  macro that has been invoked in item position; we might need to add a new
-  constructor `from_expr_tokens`.
-* The proposed API only does complete, recursive expansion. Some proc macros
-  might need to expand invocations "one level deep" in order to inspect
-  intermediate results; the builder pattern lets us add that level of
-  fine-grained control.
-* The builder pattern also lets us deprecate methods which overreach or
-  underperform. If it turns out that the reasons for [accepting a token
-  stream](#why-take-in-a-token-stream) are offset by an unexpected increase in
-  implementation complexity, we might backpedal and expose a more constrained
-  API.
 
 ## Corner cases
 
@@ -468,10 +368,248 @@ error: cannot find macro `baz` in this scope during eager expansion
   |     ^^^ could not find a definition for this macro
 ```
 
-### Expansion context
-
-### Name resolution
-
 ### Hygiene
 
+Eager expansion is orthogonal to macro hygiene. Hygiene information is
+associated with tokens in token streams, and fresh hygiene contexts will be
+automatically generated by the compiler for iteratively eagerly expanded
+macros.
+
 ### Expansion order
+
+The compiler makes no guarantees about the order in which procedural macros get
+expanded, except that eager expansions which refer to an undefined macro cannot
+be expanded until a definition appears. This adds to the long list of reasons
+why a macro author or user shouldn't rely on the order of expansion when
+reasoning about side-effects.
+
+# Design Rationale
+
+## Why is expansion aysnchronous?
+
+Depending on the order in which macros get expanded by the compiler, a proc
+macro using the `ExpansionBuilder` API might try to expand a token stream
+containing a macro that isn't defined, but _would_ be defined if some other
+macro were expanded first. For example:
+
+```rust
+macro make_macro($name:ident) {
+    macro $name () { "hello!" }
+}
+
+make_macro!(foo);
+
+my_eager_macro!{ let x = foo!(); }
+```
+
+If `my_eager_macro!` tries to expand `foo!()` _after_ `make_macro!(foo)` is
+expanded, all is well: the compiler will see the new definition of `macro foo`,
+so when `my_eager_macro!` uses `ExpansionBuilder` to expand `foo!()`, the
+compiler knows what to return. However, what should we do if the compiler tries
+to expand `my_eager_macro!` _before_ expanding `make_macro!(foo)`? There are
+several options:
+
+* A: Only expand macros in a non-blocking order. This is hard, because the
+  knowledge that `my_eager_macro!` depends on `foo!` being defined is only
+  available once `my_eager_macro!` is executing. Similarly, we only know that
+  `make_macro!` defines `foo!` after it has finished expanding.
+* B: The compiler could indicate to `my_eager_macro!` that its expansion request
+  can't be completed yet, due to a missing definition. This means
+  `my_eager_macro!` needs to handle that outcome, preferably by indicating to
+  the compiler that the compiler should retry the expansion of `my_eager_macro!`
+  once a definition of `foo!` is available.
+* C: The compiler could delay returning a complete expansion result until it is
+  able to, while allowing `my_eager_macro!` to make as much progress as it can
+  without the result.
+
+This RFC goes with option C by making `expand` an `async fn`, since this
+provides a clear indication to proc macro authors that they should consider and
+handle this scenario. Additionally, this behaviour of `expand` -- delaying the
+return of expansion results until all the necessary definitions are available --
+is probably the outcome that most authors would opt-in to if given the choice
+via option B.
+
+## Why take in a token stream?
+
+We could imagine an alternative `ExpansionBuilder` API which required the user
+to construct a _single_ macro invocation at a time, perhaps by exposing
+constructors like this:
+
+```rust
+use syn::{Macro, Attribute};
+
+impl ExpansionBuilder {
+    pub fn bang_macro(macro: Macro) -> Self;
+    pub fn attribute_macro(
+        macro: Attribute,
+        body: TokenStream
+    ) -> Self;
+}
+```
+
+This would force proc macro authors to traverse their inputs, perform the
+relevant expansion, and then interpolate the results. Presumably utilities would
+show up in crates like `syn` to make this easier. However, this alternative API
+_doesn't_ handle cases where the macro invocation uses local definitions or
+relative paths. For example. how would a user of `bang_macro` use it to expand
+the invocation of `bar!` in the following token stream?
+
+```rust
+quote!{
+    mod foo {
+        pub macro bar () {}
+    }
+
+    foo::bar!();
+}
+```
+
+By contrast, the proposed `from_tokens` interface makes handling these cases the
+responsibility of the compiler.
+
+## Why use a builder pattern?
+
+The builder pattern lets us start off with a fairly bare-bones API which then
+becomes progressively more sophisticated as we learn what proc macro authors
+need from an eager expansion API. For example:
+* It isn't obvious how to treat requests to expand expressions from a proc
+  macro that has been invoked in item position; we might need to add a new
+  constructor `from_expr_tokens`.
+* The proposed API only does complete, recursive expansion. Some proc macros
+  might need to expand invocations "one level deep" in order to inspect
+  intermediate results; the builder pattern lets us add that level of
+  fine-grained control.
+* The builder pattern also lets us deprecate methods which overreach or
+  underperform. If it turns out that the reasons for [accepting a token
+  stream](#why-take-in-a-token-stream) are offset by an unexpected increase in
+  implementation complexity, we might backpedal and expose a more constrained
+  API.
+
+## Prior art
+
+Rust's macro system is heavily influenced by the syntax metaprogramming systems
+of languages like Lisp, Scheme, and Racket (see discussion on the [Rust
+subreddit](https://old.reddit.com/r/rust/comments/azlqnj/prior_art_for_rusts_macros/)).
+
+In particular, Racket has very similar semantics in terms of hygiene, allowing
+'use before define', and allowing macros to define macros. As an example of all
+of these, the rough equivalent of this Rust code:
+
+```rust
+foo!(hello);
+foo!((hello, world!));
+mk_macro!(foo);
+
+macro mk_macro($name:ident) {
+    macro $name ($arg:tt) {
+        println!("mk_macro: {}: {}",
+            stringify!($name), stringify!($arg));
+    }
+}
+```
+
+Is this Racket code:
+
+```racket
+(let ()
+    (foo hello)
+    (foo (hello, world!))
+    (mk_macro foo))
+
+(define-syntax-rule
+    (mk_macro name)
+    (define-syntax-rule
+        (name arg)
+        (printf "mk_macro: ~a: ~a\n" 'name 'arg)))
+```
+
+And both of them print out (modulo some odd spacing from `stringify!`):
+
+```
+mk_macro: foo: hello
+mk_macro: foo: (hello, world!)
+```
+
+Looking at the API that Racket exposes to offer [eager
+expansion](https://docs.racket-lang.org/reference/stxtrans.html#%28def._%28%28quote._~23~25kernel%29._local-expand%29%29)
+(alongside similar functions on that page), we see the following:
+* Eager macros are essentially procedural macros that call one of the expansion
+  methods.
+* These expansion methods perform a 'best effort' expansion of their input
+  (they don't produce an error if a macro isn't in scope, they just don't
+  expand it).
+* It's not clear how this system handles definitions introduced by eager
+  expansion. Some
+  [parts](https://docs.racket-lang.org/reference/stxtrans.html#%28def._%28%28quote._~23~25kernel%29._syntax-local-make-definition-context%29%29)
+  of the API suggest that manual syntax context manipulation is involved.
+
+Overall, it's not obvious that a straightforward translation of Racket's eager
+macros is desirable or achievable (although it could provide inspiration for a
+more fleshed-out procedural macro API). Future work should include identifying
+Racket equivalents of the examples in this RFC to confirm this.
+
+# Drawbacks
+
+* Requires authors to opt-in to expansion, rather than somehow providing an
+  ecosystem-wide solution similar to the one proposed by [@petrochenkov for
+  macros in inert
+  attributes](https://internals.rust-lang.org/t/macro-expansion-points-in-attributes/11455).
+* Exposes more of the compiler internals as an eventually stable API, which may
+  make alternative compiler implementations more complicated.
+
+# Alternatives
+
+## Third-party expansion libraries
+
+We could encourage the creation of a 'macros for macro authors' crate with
+implementations of common macros (for instance, those in the standard library)
+and make it clear that macro support isn't guaranteed for arbitrary macro calls
+passed in to proc macros. This feels unsatisfying, since it fractures the macro
+ecosystem and leads to very indirect unexpected behaviour (for instance, one
+proc macro may use a different macro expansion library than another, and they
+might return different results). This also doesn't help address macro calls in
+built-in attributes.
+
+## Global eager expansion
+
+Opt-out eager expansion is backwards-incompatible with current macro behaviour:
+* Consider `stringify!(concat!("a", "b"))`. If expanded eagerly, the result is
+  `"ab"`. If expanded normally, the result is `concat ! ( "a" , "b" )`.
+* Consider `quote!(expects_a_struct!(struct #X))`. If we eagerly expand
+  `expects_a_struct!` this will probably fail: `expects_a_struct!` expects a
+  normal complete struct declaration, not a `quote!` interpolation marker
+  (`#X`).
+
+Detecting these macro calls would require the compiler to parse arbitrary token
+trees within macro arguments, looking for a `$path ! ( $($tt)*)` pattern, and
+then treating that pattern as a macro call. Doing this everywhere essentially
+bans that pattern from being used in custom macro syntax, which seems
+excessive.
+
+## Eager expansion invocation syntax
+
+[RFC 1628](https://github.com/rust-lang/rfcs/pull/1628) proposes adding an
+alternative invocation syntax to explicitly make the invocation eager (the
+proposal text suggests `foo$!(...)`). The lang team couldn't reach
+[consensus](https://github.com/rust-lang/rfcs/pull/1628#issuecomment-415617835)
+on the design.
+
+In addition to the issues discussed in RFC 1628, any proposal which marks
+macros as eager 'in-line' with the invocation runs into a simiar issue to the
+[global eager expansion](#global-eager-expansion) suggestion, which
+is that it bans certain token patterns from macro inputs.
+
+Additionally, special invocation syntax makes macro *output* sensitive to the
+invocation grammar: a macro might need to somehow 'escape' `$!` in its output
+to prevent the compiler from trying to treat the surrounding tokens as an
+invocation. This adds an unexpected and unnecessary burden on macro authors.
+
+# Unresolved questions
+
+These are design questions that would be best investigated while implementing
+the proposed interface, as well as afterwards with feedback from users:
+* Are there any corner-cases concerning attribute macros that aren't covered by
+  treating them as two-argument proc-macros?
+* How do we handle outer attributes?
+* What can we learn from the eager macro systems of other languages, e.g.
+  Racket?
