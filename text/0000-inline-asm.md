@@ -56,14 +56,14 @@ Now inserting an instruction that does nothing is rather boring. Let us do somet
 actually acts on data:
 
 ```rust
-let x: u32;
+let x: u64;
 unsafe {
     asm!("mov {}, 5", out(reg) x);
 }
 assert_eq!(x, 5);
 ```
 
-This will write the value `5` into the `u32` variable `x`.
+This will write the value `5` into the `u64` variable `x`.
 You can see that the string literal we use to specify instructions is actually a template string.
 It is governed by the same rules as Rust [format strings][format-syntax].
 The arguments that are inserted into the template however look a bit different then you may
@@ -77,8 +77,8 @@ the template and will read the variable from there after the inline assembly fin
 Let us see another example that also uses an input:
 
 ```rust
-let i: u32 = 3;
-let o: u32;
+let i: u64 = 3;
+let o: u64;
 unsafe {
     asm!("
         mov {0}, {1}
@@ -108,7 +108,7 @@ readability, and allows reordering instructions without changing the argument or
 We can further refine the above example to avoid the `mov` instruction:
 
 ```rust
-let mut x: u32 = 3;
+let mut x: u64 = 3;
 unsafe {
     asm!("add {0}, {number}", inout(reg) x, number = const 5);
 }
@@ -121,8 +121,8 @@ This is different from specifying an input and output separately in that it is g
 It is also possible to specify different variables for the input and output parts of an `inout` operand:
 
 ```rust
-let x: u32 = 3;
-let y: u32;
+let x: u64 = 3;
+let y: u64;
 unsafe {
     asm!("add {0}, {number}", inout(reg) x => y, number = const 5);
 }
@@ -142,9 +142,9 @@ There is also a `inlateout` variant of this specifier.
 Here is an example where `inlateout` *cannot* be used:
 
 ```rust
-let mut a = 4;
-let b = 4;
-let c = 4;
+let mut a: u64 = 4;
+let b: u64 = 4;
+let c: u64 = 4;
 unsafe {
     asm!("
         add {0}, {1}
@@ -159,8 +159,8 @@ Here the compiler is free to allocate the same register for inputs `b` and `c` s
 However the following example can use `inlateout` since the output is only modified after all input registers have been read:
 
 ```rust
-let mut a = 4;
-let b = 4;
+let mut a: u64 = 4;
+let b: u64 = 4;
 unsafe {
     asm!("add {0}, {1}", inlateout(reg) a, in(reg) b);
 }
@@ -178,42 +178,42 @@ among others can be addressed by their name.
 
 ```rust
 unsafe {
-    asm!("out 0x64, {}", in("eax") cmd);
+    asm!("out 0x64, {}", in("rax") cmd);
 }
 ```
 
 In this example we call the `out` instruction to output the content of the `cmd` variable
-to port `0x64`. Since the `out` instruction only accepts `eax` (and its sub registers) as operand
-we had to use the `eax` constraint specifier.
+to port `0x64`. Since the `out` instruction only accepts `rax` (and its sub registers) as operand
+we had to use the `rax` constraint specifier.
 
 It is somewhat common that instructions have operands that are not explicitly listed in the
 assembly (template). Hence, unlike in regular formatting macros, we support excess arguments:
 
 ```rust
-fn mul(a: u32, b: u32) -> u64 {
-    let lo: u32;
-    let hi: u32;
+fn mul(a: u64, b: u64) -> u128 {
+    let lo: u64;
+    let hi: u64;
 
     unsafe {
         asm!(
-            // The x86 mul instruction takes eax as an implicit input and writes
-            // the 64-bit result of the multiplication to eax:edx.
+            // The x86 mul instruction takes rax as an implicit input and writes
+            // the 128-bit result of the multiplication to rax:rdx.
             "mul {}",
             in(reg) a,
-            inlateout("eax") b => lo,
-            lateout("edx") hi
+            inlateout("rax") b => lo,
+            lateout("rdx") hi
         );
     }
 
-    hi as u64 << 32 + lo as u64
+    hi as u128 << 64 + lo as u128
 }
 ```
 
-This uses the `mul` instruction to multiply two 32-bit inputs with a 64-bit result.
+This uses the `mul` instruction to multiply two 64-bit inputs with a 128-bit result.
 The only explicit operand is a register, that we fill from the variable `a`.
-The second operand is implicit, and must be the `eax` register, which we fill from the variable `b`.
-The lower 32 bits of the result are stored in `eax` from which we fill the variable `lo`.
-The higher 32 bits are stored in `edx` from which we fill the variable `hi`.
+The second operand is implicit, and must be the `rax` register, which we fill from the variable `b`.
+The lower 64 bits of the result are stored in `rax` from which we fill the variable `lo`.
+The higher 64 bits are stored in `rdx` from which we fill the variable `hi`.
 
 ## Clobbered registers
 
@@ -225,8 +225,8 @@ We need to tell the compiler about this since it may need to save and restore th
 around the inline assembly block.
 
 ```rust
-let ebx: u32;
-let ecx: u32;
+let ebx: u64;
+let ecx: u64;
 
 unsafe {
     asm!(
@@ -251,7 +251,7 @@ This can also be used with a general register class (e.g. `reg`) to obtain a scr
 
 ```rust
 // Multiply x by 6 using shifts and adds
-let mut x = 4;
+let mut x: u64 = 4;
 unsafe {
     asm!("
         mov {tmp}, {x}
@@ -266,6 +266,10 @@ assert_eq!(x, 4 * 6);
 ## Register template modifiers
 
 In some cases, fine control is needed over the way a register name is formatted when inserted into the template string. This is needed when an architecture's assembly language has several names for the same register, each typically being a "view" over a subset of the register (e.g. the low 32 bits of a 64-bit register).
+
+By default the compiler will always choose the name that refers to the full register size (e.g. `rax` on x86-64, `eax` on x86, etc). This is the case even if you pass in a smaller data type (e.g. `u16`) or if you explicitly specify a register (e.g. `in("cx")` will be rendered as `rcx` by default).
+
+This default can be overriden by using modifiers on the template string operands, just like you would with format strings:
 
 ```rust
 let mut x: u16 = 0xab;
@@ -289,8 +293,8 @@ By default, an inline assembly block is treated the same way as an external FFI 
 Let's take our previous example of an `add` instruction:
 
 ```rust
-let mut a = 4;
-let b = 4;
+let mut a: u64 = 4;
+let b: u64 = 4;
 unsafe {
     asm!(
         "add {0}, {1}",
@@ -842,12 +846,12 @@ On the other hand by necessity this splits the direction and constraint specific
 the variable name, which makes this syntax overall harder to read.
 
 ```rust
-fn mul(a: u32, b: u32) -> u64 {
-    let (lo, hi) = unsafe {
-        asm!("mul {}", in(reg) a, in("eax") b, lateout("eax"), lateout("edx"))
+fn mul(a: u64, b: u64) -> u128 {
+    let (lo, hi): (u64, u64) = unsafe {
+        asm!("mul {}", in(reg) a, in("rax") b, lateout("rax"), lateout("rdx"))
     };
 
-    hi as u64 << 32 + lo as u64
+    hi as u128 << 64 + lo as u128
 }
 ```
 
