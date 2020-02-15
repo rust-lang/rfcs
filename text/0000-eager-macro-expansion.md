@@ -107,7 +107,7 @@ impl ExpansionBuilder {
     /// expression.
     pub fn from_tokens(tokens: TokenStream) -> Self;
 
-    /// Sends the expansion requeset to the compiler, then awaits the results of
+    /// Sends the expansion request to the compiler, then awaits the results of
     /// expansion.
     ///
     /// The main causes for an expansion not completing right away are:
@@ -195,7 +195,7 @@ result is the string `let x = concat ! ("hello ", "world!")`, whereas we want
 `eager_stringify!(let x = concat!("hello ", "world!"))` to become the string
 `let x = "hello world!"`.
 
-We could write `eager_stringify!` as a fairly straighforward proc macro using
+We could write `eager_stringify!` as a fairly straightforward proc macro using
 `ExpansionBuilder`. However, since decl macros are much quicker and easier to
 write and use, it would be nice to have a reusable "utility" macro which we
 could use to define `eager_stringify!`.
@@ -385,7 +385,7 @@ reasoning about side-effects.
 
 # Design Rationale
 
-## Why is expansion aysnchronous?
+## Why is expansion asynchronous?
 
 Depending on the order in which macros get expanded by the compiler, a proc
 macro using the `ExpansionBuilder` API might try to expand a token stream
@@ -451,7 +451,7 @@ This would force proc macro authors to traverse their inputs, perform the
 relevant expansion, and then interpolate the results. Presumably utilities would
 show up in crates like `syn` to make this easier. However, this alternative API
 _doesn't_ handle cases where the macro invocation uses local definitions or
-relative paths. For example. how would a user of `bang_macro` use it to expand
+relative paths. For example, how would a user of `bang_macro` use it to expand
 the invocation of `bar!` in the following token stream?
 
 ```rust
@@ -551,8 +551,8 @@ Racket equivalents of the examples in this RFC to confirm this.
 # Drawbacks
 
 * Requires authors to opt-in to expansion, rather than somehow providing an
-  ecosystem-wide solution similar to the one proposed by [@petrochenkov for
-  macros in inert
+  ecosystem-wide solution similar to the one proposed by petrochenkov for
+  [macros in inert
   attributes](https://internals.rust-lang.org/t/macro-expansion-points-in-attributes/11455).
 * Exposes more of the compiler internals as an eventually stable API, which may
   make alternative compiler implementations more complicated.
@@ -595,7 +595,7 @@ proposal text suggests `foo$!(...)`). The lang team couldn't reach
 on the design.
 
 In addition to the issues discussed in RFC 1628, any proposal which marks
-macros as eager 'in-line' with the invocation runs into a simiar issue to the
+macros as eager 'in-line' with the invocation runs into a similar issue to the
 [global eager expansion](#global-eager-expansion) suggestion, which
 is that it bans certain token patterns from macro inputs.
 
