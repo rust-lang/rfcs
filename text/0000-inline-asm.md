@@ -869,6 +869,18 @@ Note however that it is relatively easy to add support for AT&T using a proc mac
 
 [gas-syntax]: https://sourceware.org/binutils/docs/as/i386_002dVariations.html
 
+## Validate the assembly code in rustc
+
+There may be some slight differences in the set of assembly code that is accepted by different compiler back-ends (e.g. LLVM's integrated assembler vs using GAS as an external assembler). Examples of such differences are:
+
+- LLVM's [assembly extensions][llvm-asm-ext]
+- Linking against the system LLVM instead of rustc's, which may/may not support some newer instructions.
+- GAS or LLVM introducing new assembler directives.
+
+While it might be possible for rustc to verify that inline assembly code conforms to a minimal stable subset of the assembly syntax supported by LLVM and GAS, doing so would effectively require rustc to parse the assembly code itself. Implementing a full assembler for all target architectures supported by this RFC is a huge amount of work, most of which is redundant with the work that LLVM has already done in implementing an assembler. As such, this RFC does not propose that rustc perform any validation of the generated assembly code.
+
+[llvm-asm-ext]: https://llvm.org/docs/Extensions.html#machine-specific-assembly-syntax
+
 # Prior art
 [prior-art]: #prior-art
 
