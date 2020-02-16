@@ -858,6 +858,17 @@ fn mul(a: u64, b: u64) -> u128 {
 }
 ```
 
+## Use AT&T syntax on x86
+
+x86 is particular in that there are [two widely used dialects] for its assembly code: Intel syntax, which is the official syntax for x86 assembly, and AT&T syntax which is used by GCC (via GAS). There is no functional difference between those two dialects, they both support the same functionality but with a [different syntax][gas-syntax]. This RFC chooses to use Intel syntax since it is more widely used and users generally find it easier to read and write.
+
+Note however that it is relatively easy to add support for AT&T using a proc macro (e.g. `asm_att!()`) which wraps around `asm!`. Only two transformations are needed:
+- A `%` needs to be added in front of register operands in the template string.
+- The `.att_syntax prefix` directive should be inserted at the start of the template string to switch the assembler to AT&T mode.
+- The `.intel_syntax noprefix` directive should be inserted at the end of the template string to restore the assembler to Intel mode.
+
+[gas-syntax]: https://sourceware.org/binutils/docs/as/i386_002dVariations.html
+
 # Prior art
 [prior-art]: #prior-art
 
