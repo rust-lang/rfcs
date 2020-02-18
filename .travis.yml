@@ -3,8 +3,17 @@ branches:
   only:
     - master
 
+cache:
+  directories:
+  - ~/.cargo
+  - target
+before_cache:
+  - cargo install cargo-cache --no-default-features --features ci-autoclean cargo-cache
+  - cargo cache
+install:
+  - export CARGO_TARGET_DIR=$TRAVIS_BUILD_DIR/target
+  - cargo install mdbook
 script:
-  - (cargo install mdbook --vers '^0.2.0' --force || true)
   - ./generate-book.sh
 
 env:
