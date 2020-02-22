@@ -220,10 +220,21 @@ We're going to show how we could write a procedural macro that could be used by
 declarative macros for eager expansion.
 
 As an example, say we want to create `eager_stringify!`, an eager version of
-`stringify!`. If we write `stringify!(let x = concat!("hello ", "world!"))`, the
-result is the string `let x = concat ! ("hello ", "world!")`, whereas we want
-`eager_stringify!(let x = concat!("hello ", "world!"))` to become the string
-`let x = "hello world!"`.
+`stringify!`. Remember that `stringify!` turns the tokens in its input into
+strings and concatenates them:
+```rust
+assert_eq!(
+    stringify!(let x = concat!("hello ", "world!")),
+    r#"let x = concat ! ("hello ", "world!")")
+```
+We want `eager_stringify!` to behave similarly, but to expand any macros it
+sees in its input before concatenating the resulting tokens:
+```rust
+assert_eq!(
+    eager_stringify!(let x = concat!("hello ", "world!")),
+    r#"let x = "hello world!""#)
+```
+As an aside, this means `eager_stringify!` needs to be able to parse its input.
 
 We could write `eager_stringify!` as a fairly straightforward proc macro using
 `ExpansionBuilder`. However, since decl macros are much quicker and easier to
@@ -255,13 +266,11 @@ Let's assume we already have the following:
 - A function `interpolate(tokens: TokenStream, name: Ident, output:
   TokenStream) -> TokenStream` which looks for instances of the token sequence
   `#$name` inside `output` and replaces them with `tokens`, returning the
-  result.
-
-  For example,
+  result. For example, the token stream returned by:
   ```rust
   interpolate(quote!(a + b), foo, quote!([#foo, #bar]))
   ```
-  should return the same token stream as:
+  Should be the same token stream as:
   ```rust
   quote!([a + b, #bar])
   ```
