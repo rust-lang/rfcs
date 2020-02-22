@@ -97,11 +97,16 @@ pub enum ExpansionError {
 }
 
 impl ExpansionBuilder {
-    /// Creates a new macro expansion request to iteratively expand all macro
-    /// invocations that occur in `tokens`.
+    /// Creates a new macro expansion request to expand macro invocations that
+    /// occur in `tokens`.
     ///
     /// Expansion results will be interpolated within the input stream before
     /// being returned.
+    ///
+    /// By default, macro invocations in `tokens` will have their expansion
+    /// results recursively expanded, until there are no invocations left to
+    /// expand. To change this, use the `set_max_depth` method on the returned
+    /// instance of `ExpansionBuilder`.
     ///
     /// `tokens` should parse as valid Rust -- for instance, as an item or
     /// expression.
@@ -110,20 +115,45 @@ impl ExpansionBuilder {
     /// Sends the expansion request to the compiler, then awaits the results of
     /// expansion.
     ///
-    /// The main causes for an expansion not completing right away are:
-    /// - Procedural macros performing IO or complex analysis.
-    /// - The input token stream referring to a macro that hasn't been defined
-    ///   yet.
+    /// The returned future will be ready unless expansion requires expanding a
+    /// procedural macro or a macro that hasn't been defined yet but might be
+    /// after further expansion. In those cases, the returned future will be
+    /// woken once all the required expansions have completed.
     pub async fn expand(self) -> Result<TokenStream, ExpansionError>;
+
+    /// Sets the maximum depth of expansion. For example, if the depth is 2,
+    /// then the result of expanding the following tokens:
+    /// ```rust
+    /// {
+    ///     vec![vec![vec![17; 1]; 2]; 3];
+    ///     concat!("a", "b");
+    /// }
+    /// ```
+    /// Will be the following tokens:
+    /// ```rust
+    /// {
+    ///     std::vec::from_elem(std::vec::from_elem(vec![17; 1]. 2), 3);
+    ///     "ab";
+    /// }
+    /// ```
+    ///
+    /// Notice that, since the innermost invocation of `vec!` is "inside" two
+    /// other invocatoins of `vec!`, it is left unexpanded.
+    ///
+    /// If `depth` is 0, all macro invocations in the input will be recursively
+    /// expanded to completion; this is the default behaviour for an instance
+    /// of `ExpansionBuilder` created with `ExpansionBuilder::from_tokens`. 
+    pub fn set_max_depth(&mut self, depth: usize) -> &mut self;
 }
 ```
+
+In addition, we allow proc macros to be `async` so that macro authors can more
+easily make use of `ExpansionBuilder::expand`.
 
 ## Simple examples
 
 Here is an example showing how a proc macro can find out what the result of
-`concat!("hello ", "world!")` is. We assume we have access to a function
-`await_future<T>(impl Future<T>) -> T` which polls a future to completion and
-returns the result.
+`concat!("hello ", "world!")` is.
 
 ```rust
 use proc_macro::quote;
@@ -133,7 +163,7 @@ let tokens = quote!{
 };
 
 let expansion = ExpansionBuilder::from_tokens(tokens);
-let result = await_future(expansion.expand()).unwrap();
+let result = expansion.expand().await.unwrap();
 
 let expected_result = quote!("hello world!");
 assert_eq!(result.into_string(), expected_result.into_string());
@@ -148,7 +178,7 @@ let tokens = quote!{
 };
 
 let expansion = ExpansionBuilder::from_tokens(tokens);
-let result = await_future(expansion.expand()).unwrap();
+let result = expansion.expand().await.unwrap();
 
 // As we saw above, the invocation `concat!(...)` expands into the literal
 // "hello world!". This literal gets interpolated into `tokens` at the same
@@ -170,7 +200,7 @@ let tokens = quote!{
 };
 
 let expansion = ExpansionBuilder::from_tokens(tokens);
-let result = await_future(expansion.expand()).unwrap();
+let result = expansion.expand().await.unwrap();
 
 // `vec![concat!(...); 1]` expands into `std::vec::from_elem(concat!(...), n)`.
 // Instead of returning this result, the compiler continues expanding the input.
@@ -225,18 +255,26 @@ Let's assume we already have the following:
 - A function `interpolate(tokens: TokenStream, name: Ident, output:
   TokenStream) -> TokenStream` which looks for instances of the token sequence
   `#$name` inside `output` and replaces them with `tokens`, returning the
-  result. For example, `interpolate(quote!(a + b), foo, quote!([#foo, #bar]))`
-  should return `quote!([a + b, #bar])`.
+  result.
+
+  For example,
+  ```rust
+  interpolate(quote!(a + b), foo, quote!([#foo, #bar]))
+  ```
+  should return the same token stream as:
+  ```rust
+  quote!([a + b, #bar])
+  ```
 
 Then we can implement `expand!` as a proc macro:
 
 ```rust
 #[proc_macro]
-pub fn expand(input: TokenStream) -> TokenStream {
+pub async fn expand(input: TokenStream) -> TokenStream {
     let (input, name, output) = parse_input(input);
 
     let expansion = ExpansionBuilder::from_tokens(input);
-    let result = await_future(expansion.expand()).unwrap();
+    let result = expansion.expand().await.unwrap();
 
     return interpolate(result, name, output);
 }
@@ -382,6 +420,46 @@ expanded, except that eager expansions which refer to an undefined macro cannot
 be expanded until a definition appears. This adds to the long list of reasons
 why a macro author or user shouldn't rely on the order of expansion when
 reasoning about side-effects.
+
+### Defining 'depth'
+
+The method `ExpansionBuilder::set_max_depth` determines how many "layers" of
+expansion will be performed by the compiler. The intent is that this will allow
+proc macro authors to expand other proc macros for their side effects, as well
+as "incrementally" expand decl macros to see their intermediate states.
+
+The current "layer" of macro invocations are all the invocations that show up
+in the AST. For example, in this input:
+
+```rust
+concat!("a", "b");
+
+do_twice!(vec![17; 1]);
+
+macro do_twice($($input:tt)*) {
+    $($input)* ; $($input)*
+}
+```
+
+The invocations of `concat!` and `do_nothing!` appear in the parsed AST,
+whereas the invocation of `vec!` does not; the arguments to macros are always
+opaque token streams.
+
+After we expand all the macros in the current layer, we get this output:
+```rust
+"ab";
+
+vec![17; 1]; vec![17; 1];
+
+macro do_twice($($input:tt)*) {
+    $($input)* ; $($input)*
+}
+```
+Now there are two invocations of `vec!` in the current layer.
+
+With this example in mind, we can more clearly describe `set_max_depth` as
+specifying how many times to iteratively expand the current layer of
+invocations.
 
 # Design Rationale
 
