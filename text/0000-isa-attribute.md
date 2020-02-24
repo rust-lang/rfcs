@@ -6,96 +6,109 @@
 # Summary
 [summary]: #summary
 
-This RFC proposes a new function attribute, `#[isa]`.  The minimal initial implementation will provide `#[isa = "a32"]` and `#[isa = "t32"]` on ARM targets, corresponding respectively to disabling and enabling the LLVM feature `thumb-mode` for the annotated function.
+This RFC proposes a new function attribute, `#[instruction_set(?)]` which allows you to declare the instruction set to be used with compiling the function. It also proposes two initial allowed values (`a32` and `t32`) for use with this attribute. Other allowed values could be added to the language later.
 
 # Motivation
 [motivation]: #motivation
 
-Starting with `ARMv4T`, ARM cores support a slimmed-down instruction set called Thumb.  (Due to the introduction of AArch64, the original ARM and Thumb instruction sets are now referred to as A32 and T32, and this RFC will use this terminology from here on in.) Switching between these instruction sets ("interworking") can be done at the instruction level by clearing or setting the lowest bit of the program counter.  LLVM already knows how to insert interworking shims, but Rust lacks the necessary language-level support.  Prior to the adoption of [RFC 2045], it was possible to use the unstable `target_feature` attribute to disable or enable `thumb-mode`, but the stabilised syntax for that attribute focused on enabling opt-in features such as SIMD and vector instructions; since `thumb-mode` is an "either-or" feature, it is no longer the right tool for the job.
+Most programmers are familiar with the idea of a CPU family having more than one instruction set. `x86_64` is backwards compatible with `x86`, and an `x86_64` CPU can run an `x86` program if necessary.
 
-[RFC 2045]: https://github.com/rust-lang/rfcs/blob/master/text/2045-target-feature.md
+Starting with `ARMv4T`, many ARM CPUs support two separate instruction sets. At the time they were called "ARM code" and "Thumb code", but with the development of `AArch64`, they're now called `a32` and `t32`. Unlike with the `x86` / `x86_64` situation, on ARM you can have a single program that intersperses both `a32` and `t32` code. A particular form of branch instruction allows for the CPU to change between the two modes any time it branches, and so generally code is designated as being either `a32` or `t32` on a per-function basis.
+
+In LLVM, selecting that code should be `a32` or `t32` is done by either disabling (for `a32`) or enabling (for `t32`) the `thumb-mode` target feature. Previously, Rust was able to do this using the `target_feature` attribute because it was able to either add _or subtract_ an LLVM target feature during a function. However, when [RFC 2045](https://github.com/rust-lang/rfcs/blob/master/text/2045-target-feature.md) was accepted, its final form did not allow for the subtraction of target features. Its final form is primarily designed around always opting _in_ to additional features, and it's no longer the correct tool for an "either A or B, but not both" situation like `a32`/`t32` is.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-Some platforms have multiple different instruction sets, optimised for different requirements; for example, ARM targets have a denser but less feature-packed instruction set named T32 alongside the normal A32.  Rust supports configuring which instruction set any given function is compiled to via the `#[isa]` attribute.  For example, if on an ARM target you wish for a particular function to be compiled to T32 instructions for reduced code size, you would annotate the function like so.
+Some platforms support having more than one instruction set used within a single program. Generally, each one will be better for specific parts of a program. Every target has a default instruction set, based on the target triple. If you would like to set a specific function to use an alternate instruction set you use the `#[instruction_set(?)]` attribute, specifying the desired instruction set in parentheses.
+
+Currently this is only of use on ARM family CPUs, which support both the `a32` and `t32` instruction sets. Targets starting with `arm` default to `a32` and targets starting with `thumb` default to `t32`.
 
 ```rust
-#[isa = "t32"]
-fn some_function() {
-    // ...
+// this uses the default instruction set for your target
+
+fn add_one(x: i32) -> i32 {
+    x + 1
+}
+
+// This will compile as `a32` code on both `arm` and thumb` targets
+
+#[instruction_set(a32)]
+fn add_five(x: i32) -> i32 {
+    x + 5
 }
 ```
 
-That's all you need to do - LLVM inserts interworking shims where necessary, so the change is completely transparent.
+To ease the amount of `cfg_attr` required with this attribute, if you specify an instruction set that isn't available on the target used the attribute is simply ignored. For example, if you specify `t32` and then build the code for `x86_64` or `wasm32`, the attribute is ignored.
+
+If you specify an instruction set that the compiler doesn't recognize at all then you will get an error.
+
+```rust
+#[instruction_set(unicorn)]
+fn this_does_not_build() -> i32 {
+    7
+}
+```
+
+The specifics of _when_ to specify a non-default instruction set on a function are platform specific. Unless a piece of platform documentation has indicated a specific requirement, you do not need to think about adding this attribute at all.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-Functions are inlined across ISA boundaries as if the `#[isa]` attribute did not exist.
+Every target is now considered to have one default instruction set (for functions that lack the `instruction_set` attribute), as well as possibly supporting specific additional instruction sets:
 
-Annotating a function with an ISA that does not exist yields a compile-time error.
+* Targets with `arm` arch default to the `a32` instruction set, but can also use `t32`.
+* Targets with `thumb` arch default to the `t32` instruction set, but can also use `a32`.
+* All other current targets each have only one instruction set, which is also their default instruction set.
 
-```rust
-#[isa = "unicorn"]
-fn some_function() {
-    // ...
-}
-```
+Backend support:
+* In LLVM this corresponds to enabling or disabling the `thumb-mode` target feature on a function.
+* Other future backends (eg: Cranelift) would presumably support this in some similar way. A "quick and dirty" version of `a32`/`t32` interworking can be achieved simply by simply placing all `a32` code in one translation unit, all `t32` code in another, and then telling the linker to sort it out. Currently, Cranelift does not support ARM chips _at all_, but they can easily work towards this over time.
 
-```
-error: "unicorn" is not a recognised ISA for the target `armv5te-unknown-linux-gnueabi`
-  --> src/lib.rs:1:1
-   |
- 1 | #[isa = "unicorn"]
-   |         ^^^^^^^^^ help: valid ISAs are `a32`, `t32`
-```
+Guarantees:
+* If an alternate instruction set is designated on a function then the compiler _must_ respect that. It is not a hint, it is a guarantee.
 
-Annotating a function with two different ISAs at once yields a compile-time error.  (This is likely to be the result of a typo when editing code.)
+What is a Compile Error:
+* If an alternate instruction set is designated that is known to exist but not appropriate for the current arch (eg: `a32` on an `x86_64` build) then the compiler will silently ignore the attribute. This helps keep code as portable as possible, similar to the [windows_subsystem](https://github.com/rust-lang/rfcs/blob/master/text/1665-windows-subsystem.md) attribute being used on programs compiled for Linux and Mac simply being silently ignored.
+* If an alternate instruction set is designated that doesn't exist _anywhere_ (eg: "unicorn") then that is a compiler error.
+* If the attribute appears more than once on a function that is a compile error.
+* If the current backend is lacking support for compiling with the alternate instruction set, then that should trigger a compile error.
 
-```rust
-#[isa = "a32"]
-#[isa = "t32"]
-fn some_function() {
-    // ...
-}
-```
+Inlining:
+* For the alternate instruction sets proposed by this RFC, `a32` and `t32`, what is affected is the actual generated assembly and symbol placement of the generated function. If a function's body is inlined into the caller then the attribute no longer has a meaningful effect within the caller's body, and would be ignored.
+* This does mean that any inline `asm!` calls in alternate instruction set functions could be inlined into the wrong instruction set within the caller's body. It would be up to the programmer to specify `inline(never)` if this is a concern. However, the primary goal of this RFC is to eliminate the need for inline `asm!` in the first place.
 
-```
-error: a function cannot have two `#[isa]` attributes at the same time
-  --> src/lib.rs:1:1
-   |
- 1 | #[isa = "a32"]
-   | -------------- first attribute was here
-...
- 2 | #[isa = "t32"]
-   | ^^^^^^^^^^^^^^ help: remove one of these attributes
-```
+How _specifically_ does it work on ARM:
+* Within an ELF file, all `t32` code functions are stored as having odd value addresses, and when a branch-exchange (`bx`) or branch-link-exchange (`blx`) instruction is used then the target address's lowest bit is used to move the CPU between the `a32` and `t32` states appropriately.
+* Accordingly, this does _not_ count as a full new ABI of its own. Both "Rust" and "C" ABI functions and function pointers are the same type as they were before.
+* Linkers for ARM platforms such as [gnu ld](https://sourceware.org/binutils/docs/ld/ARM.html#ARM) have various flags to help the "interwork" process, depending on your compilation settings.
+* This is considered a very low level and platform specific feature, so potentially having to pass additional linker args **is** considered an acceptable level of complexity for the programmer.
 
 # Drawbacks
 [drawbacks]: #drawbacks
 
-Adding another attribute complicates Rust's design.
+* Adding another attribute complicates Rust's design.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-Extending `target_feature` to allow `#[target_feature(disable = "...")]` and adding `thumb-mode` to the whitelist would support this functionality without adding another attribute; however, this is verbose, and does not fit with the `target_feature` attribute's focus on features such as AVX and SSE whose absence is not necessarily compensated by the presence of something else.
+* Extending `target_feature` to allow `#[target_feature(disable = "...")]` and adding `thumb-mode` to the whitelist would support this functionality without adding another attribute; however, this is verbose, and does not fit with the `target_feature` attribute's current focus on features such as AVX and SSE whose absence is not necessarily compensated for by the presence of something else.
 
-Doing nothing is an option; it is possible to incorporate code using other instruction sets through other means such as external assembly.  However, this steps outside Rust's safety guarantees.
+* Doing nothing is an option; it is currently possible to incorporate code using other instruction sets through means such as external assembly and build scripts. However, this has greatly reduced ergonomics.
 
 # Prior art
 [prior-art]: #prior-art
 
-GCC supports opting into interworking with the `--thumb-interwork` flag - its syntactic equivalents to `#[isa = "a32"]` and `#[isa = "t32"]` are `__attribute__((target("arm")))` and `__attribute__((target("thumb")))`.
+In C you can use `__attribute__((target("arm")))` and `__attribute__((target("thumb")))` to access similar functionality. It's a compiler-specific extension, but it's supported by both GCC and Clang.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-- Are there any presently-supported architectures with a mechanism like A32/T32 which `#[isa]` could support?
+- Hopefully none?
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-- RISC-V allegedly supports truncated instructions in a similar fashion to T32; the `#[isa]` attribute may benefit users of that architecture in the future.
-- Should Rust gain support for the 65C816, the `#[isa]` attribute might be extended to allow shifting into its 65C02 compatibility mode and back again.
+* LLVM might eventually gain support for inter-instruction-set calls that allow calls between two arches (eg: a hybrid PowerPC/RISC-V). In that case, we could extend the attribute to allow new options.
+
+* If Rust gains support for the 65C816, the `#[instruction_set(?)]` attribute might be extended to allow shifting into its 65C02 compatibility mode and back again.
