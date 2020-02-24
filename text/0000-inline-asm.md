@@ -391,17 +391,18 @@ Several types of operands are supported:
   - `<path>` must refer to a `fn` or `static`.
   - A mangled symbol name referring to the item is substituted into the asm template string.
   - The substituted string does not include any modifiers (e.g. GOT, PLT, relocations, etc).
+  - `<path>` is allowed to point to a `#[thread_local]` static, in which case the asm code can combine the symbol with relocations (e.g. `@TPOFF`) to read from thread-local data.
 
 ## Register operands
 
 Input and output operands can be specified either as an explicit register or as a register class from which the register allocator can select a register. Explicit registers are specified as string literals (e.g. `"eax"`) while register classes are specified as identifiers (e.g. `reg`).
 
-Note that explicit registers treat register aliases (e.g. `r14` vs `lr` on ARM) and smaller views of a register (e.g. `eax` vs `rax`) as equivalent to the base register. It is a compile-time error to use the same explicit register for two different operands. Additionally, it is also a compile-time error to use overlapping registers (e.g. ARM VFP) in different operands.
+Note that explicit registers treat register aliases (e.g. `r14` vs `lr` on ARM) and smaller views of a register (e.g. `eax` vs `rax`) as equivalent to the base register. It is a compile-time error to use the same explicit register for two input operands or two output operands. Additionally, it is also a compile-time error to use overlapping registers (e.g. ARM VFP) in input operands or in output operands.
 
 Only the following types are allowed as operands for inline assembly:
 - Integers (signed and unsigned)
 - Floating-point numbers
-- Pointers and references (thin only)
+- Pointers (thin only)
 - Function pointers
 - SIMD vectors (structs defined with `#[repr(simd)]` and which implement `Copy`)
 
@@ -554,14 +555,17 @@ As stated in the previous section, passing an input value smaller than the regis
 
 Flags are used to further influence the behavior of the inline assembly block.
 Currently the following options are defined:
-- `pure`: The `asm` block has no side effects, and its outputs depend only on its direct inputs (i.e. the values themselves, not what they point to). This allows the compiler to execute the `asm` block fewer times than specified in the program (e.g. by hoisting it out of a loop) or even eliminate it entirely if the outputs are not used. A warning is emitted if this option is used on an `asm` with no outputs.
+- `pure`: The `asm` block has no side effects, and its outputs depend only on its direct inputs (i.e. the values themselves, not what they point to). This allows the compiler to execute the `asm` block fewer times than specified in the program (e.g. by hoisting it out of a loop) or even eliminate it entirely if the outputs are not used.
 - `nomem`: The `asm` blocks does not read or write to any memory. This allows the compiler to cache the values of modified global variables in registers across the `asm` block since it knows that they are not read or written to by the `asm`.
 - `readonly`: The `asm` block does not write to any memory. This allows the compiler to cache the values of unmodified global variables in registers across the `asm` block since it knows that they are not written to by the `asm`.
 - `preserves_flags`: The `asm` block does not modify the flags register (defined in the [rules][rules] below). This allows the compiler to avoid recomputing the condition flags after the `asm` block.
 - `noreturn`: The `asm` block never returns, and its return type is defined as `!` (never). Behavior is undefined if execution falls through past the end of the asm code.
 - `nostack`: The `asm` block does not push data to the stack, or write to the stack red-zone (if supported by the target). If this option is *not* used then the stack pointer is guaranteed to be suitably aligned (according to the target ABI) for a function call.
 
-The `nomem` and `readonly` options are mutually exclusive: it is a compile-time error to specify both. Specifying `pure` on an asm block with no outputs is linted against since such a block will be optimized away to nothing.
+The compiler performs some additional checks on options:
+- The `nomem` and `readonly` options are mutually exclusive: it is a compile-time error to specify both.
+- It is a compile-time error to specify `pure` on an asm block with no outputs or only discarded outputs (`_`).
+- It is a compile-time error to specify `noreturn` on an asm block with outputs.
 
 ## Mapping to LLVM IR
 
@@ -579,9 +583,8 @@ As written this RFC requires architectures to map from Rust constraint specifica
 
 * Register classes are mapped to the appropriate constraint code as per the table above.
 * `const` operands are formatted and injected directly into the asm string.
-* `sym` is mapped to `s` for statics and `X` for functions. We automatically insert the `c` modifier which removes target-specific modifiers from the value (e.g. `#` on ARM).
+* `sym` is mapped to the `s` constraint code. We automatically insert the `c` modifier which removes target-specific modifiers from the value (e.g. `#` on ARM).
 * a register name `r1` is mapped to `{r1}`
-* `lateout` operands with an `_` expression that are specified as an explicit register are converted to LLVM clobber constraints. For example, `lateout("r1") _` is mapped to `~{r1}` (cf. [llvm-clobber]).
 * If the `nomem` option is not set then `~{memory}` is added to the clobber list. (Although this is currently ignored by LLVM)
 * If the `preserves_flags` option is not set then the following are added to the clobber list:
   - (x86) `~{dirflag},~{flags},~{fpsr}`
@@ -601,7 +604,6 @@ If the `noreturn` option is set then an `unreachable` LLVM instruction is insert
 > Note that `alignstack` is not currently supported by GCC, so we will need to implement support in GCC if Rust ever gets a GCC back-end.
 
 [llvm-constraint]: http://llvm.org/docs/LangRef.html#supported-constraint-code-list
-[llvm-clobber]: http://llvm.org/docs/LangRef.html#clobber-constraints
 [issue-65452]: https://github.com/rust-lang/rust/issues/65452
 
 ## Supporting back-ends without inline assembly
