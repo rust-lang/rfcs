@@ -388,7 +388,7 @@ Several types of operands are supported:
   - `<expr>` must be an integer or floating-point constant expression.
   - The value of the expression is formatted as a string and substituted directly into the asm template string.
 * `sym <path>`
-  - `<path>` must refer to a `fn` or `static` defined in the current crate.
+  - `<path>` must refer to a `fn` or `static`.
   - A mangled symbol name referring to the item is substituted into the asm template string.
   - The substituted string does not include any modifiers (e.g. GOT, PLT, relocations, etc).
 
