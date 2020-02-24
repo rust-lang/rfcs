@@ -508,13 +508,13 @@ The supported modifiers are a subset of LLVM's (and GCC's) [asm template argumen
 
 | Architecture | Register class | Modifier | Example output | LLVM modifier |
 | ------------ | -------------- | -------- | -------------- | ------------- |
-| x86-32 | `reg` | None | `eax` | `w` |
+| x86-32 | `reg` | None | `eax` | `k` |
 | x86-64 | `reg` | None | `rax` | `q` |
 | x86-32 | `reg_abcd` | `l` | `al` | `b` |
 | x86-64 | `reg` | `l` | `al` | `b` |
 | x86 | `reg_abcd` | `h` | `ah` | `h` |
-| x86 | `reg` | `x` | `ax` | `h` |
-| x86 | `reg` | `e` | `eax` | `w` |
+| x86 | `reg` | `x` | `ax` | `w` |
+| x86 | `reg` | `e` | `eax` | `k` |
 | x86-64 | `reg` | `r` | `rax` | `q` |
 | x86 | `xmm_reg` | None | `xmm0` | `x` |
 | x86 | `ymm_reg` | None | `ymm0` | `t` |
@@ -543,7 +543,7 @@ The supported modifiers are a subset of LLVM's (and GCC's) [asm template argumen
 
 > Notes:
 > - on ARM `e` / `f`: this prints the low or high doubleword register name of a NEON quad (128-bit) register.
-> - on x86: our behavior for `reg` with no modifiers differs from what GCC does. GCC will infer the modifier based on the operand value type, while we default to the largest size.
+> - on x86: our behavior for `reg` with no modifiers differs from what GCC does. GCC will infer the modifier based on the operand value type, while we default to the full register size.
 > - on x86 `xmm_reg`: the `x`, `t` and `g` LLVM modifiers are not yet implemented in LLVM (they are supported by GCC only), but this should be a simple change.
 
 As stated in the previous section, passing an input value smaller than the register width will result in the upper bits of the register containing undefined values. This is not a problem if the inline asm only accesses the lower bits of the register, which can be done using template modifiers. Since this an easy pitfall, the compiler will warn if a value smaller than the register width is used as an input or output. However this warning is suppressed if all uses of the operand in the template string explicitly specify a modifier, even if this modifier is already the default.
@@ -571,7 +571,7 @@ The direction specification maps to a LLVM constraint specification as follows (
 * `out(reg)` => `=&r` (Rust's outputs are early-clobber outputs in LLVM/GCC terminology)
 * `inout(reg)` => `=&r,0` (an early-clobber output with an input tied to it, `0` here is a placeholder for the position of the output)
 * `lateout(reg)` => `=r` (Rust's late outputs are regular outputs in LLVM/GCC terminology)
-* `inlateout(reg)` => `=r, 0` (cf. `inout` and `lateout`)
+* `inlateout(reg)` => `=r,0` (cf. `inout` and `lateout`)
 
 If an `inout` is used where the output type is smaller than the input type then some special handling is needed to avoid LLVM issues. See [this bug][issue-65452].
 
@@ -584,7 +584,7 @@ As written this RFC requires architectures to map from Rust constraint specifica
 * `lateout` operands with an `_` expression that are specified as an explicit register are converted to LLVM clobber constraints. For example, `lateout("r1") _` is mapped to `~{r1}` (cf. [llvm-clobber]).
 * If the `nomem` option is not set then `~{memory}` is added to the clobber list. (Although this is currently ignored by LLVM)
 * If the `preserves_flags` option is not set then the following are added to the clobber list:
-  - (x86) `~{dirflag}~{flags}~{fpsr}`
+  - (x86) `~{dirflag},~{flags},~{fpsr}`
   - (ARM/AArch64) `~{cc}`
 
 Additionally, the following attributes are added to the LLVM `asm` statement:
