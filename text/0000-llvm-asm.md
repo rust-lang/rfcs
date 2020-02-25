@@ -32,7 +32,7 @@ You should replace all uses of `asm!` with `llvm_asm!` in your code to avoid bre
 
 All references to `asm!` inside the compiler will be changed to refer to `llvm_asm!` instead.
 `asm!` will become a simple (deprecated) `macro_rules!` which redirects to `llvm_asm!`.
-The deprecation warning will advise users that the semantics of `asm!` will change in the future and invite them to use `llvm_asm!` instead.
+The deprecation warning will advise users that the semantics of `asm!` will change in the future and invite them to use `llvm_asm!` instead. The `llvm_asm!` macro will be guarded by the `llvm_asm` feature gate.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -59,7 +59,7 @@ for inline assembly, which allows direct access to variables in scope and does n
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-- Should the deprecated `asm!` macro be under the `asm` or `llvm_asm` feature gate?
+None
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
