@@ -696,6 +696,9 @@ unsafe fn foo(mut a: i32, b: i32) -> (i32, i32)
   - Refer to the unsafe code guidelines for the exact rules.
   - If the `readonly` option is set, then only memory reads (with the same rules as `volatile_read`) are allowed.
   - If the `nomem` option is set then no reads or write to memory are allowed.
+- On targets that support modifying code at runtime, the compiler cannot assume that the instructions in the asm are the ones that will actually end up executed.
+  - This effectively means that the compiler must treat the `asm!` as a black box and only take the interface specification into account, not the instructions themselves.
+  - Runtime code patch is allowed, via target-specific mechanisms (outside the scope of this RFC).
 - Unless the `nostack` option is set, asm code is allowed to use stack space below the stack pointer.
   - On entry to the asm block the stack pointer is guaranteed to be suitably aligned (according to the target ABI) for a function call.
   - You are responsible for making sure you don't overflow the stack (e.g. use stack probing to ensure you hit a guard page).
