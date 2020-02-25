@@ -21,7 +21,7 @@ In systems programming some tasks require dropping down to the assembly level. T
 
 The inline assembler syntax currently available in nightly Rust is very ad-hoc. It provides a thin wrapper over the inline assembly syntax available in LLVM IR. For stabilization a more user-friendly syntax that lends itself to implementation across various backends is preferable.
 
-A collection of use cases for inline asm can be found in [this repository][catalogue].
+Inline assembly is widely used in the Rust community and is one of the top reasons keeping people on the nightly toolchain. Examples of crates using inline assembly include `cortex-m`, `x86`, `riscv`, `parking_lot`, `libprobe`, `msp430`, etc. A collection of use cases for inline asm can also be found in [this repository][catalogue].
 
 [catalogue]: https://github.com/bjorn3/inline_asm_catalogue/
 
