@@ -430,7 +430,7 @@ Here is the list of currently supported register classes:
 | ARM | `qreg` | `q[0-15]` | `w` |
 | ARM | `qreg_low8` | `q[0-7]` | `t` |
 | ARM | `qreg_low4` | `q[0-3]` | `x` |
-| RISC-V | `reg` | `x1`, `x[5-7]`, `x[9-31]` | `r` |
+| RISC-V | `reg` | `x1`, `x[5-7]`, `x[9-15]`, `x[16-31]` (non-RV32E) | `r` |
 | RISC-V | `freg` | `f[0-31]` | `f` |
 
 Additional register classes may be added in the future based on demand (e.g. MMX, x87, etc).
