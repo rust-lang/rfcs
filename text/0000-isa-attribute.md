@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-This RFC proposes a new function attribute, `#[instruction_set(?)]` which allows you to declare the instruction set to be used with compiling the function. It also proposes two initial allowed values (`a32` and `t32`) for use with this attribute. Other allowed values could be added to the language later.
+This RFC proposes a new function attribute, `#[instruction_set(arch, set)]` which allows you to declare the instruction set to be used when compiling the function for a given arch. It also proposes two initial allowed values for the ARM arch (`a32` and `t32`). Other allowed values could be added to the language later.
 
 # Motivation
 [motivation]: #motivation
@@ -20,7 +20,7 @@ In LLVM, selecting that code should be `a32` or `t32` is done by either disablin
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-Some platforms support having more than one instruction set used within a single program. Generally, each one will be better for specific parts of a program. Every target has a default instruction set, based on the target triple. If you would like to set a specific function to use an alternate instruction set you use the `#[instruction_set(?)]` attribute, specifying the desired instruction set in parentheses.
+Some platforms support having more than one instruction set used within a single program. Generally, each one will be better for specific parts of a program. Every target has a default instruction set, based on the target triple. If you would like to set a specific function to use an alternate instruction set you use the `#[instruction_set(arch, set)]` attribute. This specifies that when the code is built for then given arch, it should use the alternate instruction set specified instead of the default one.
 
 Currently this is only of use on ARM family CPUs, which support both the `a32` and `t32` instruction sets. Targets starting with `arm` default to `a32` and targets starting with `thumb` default to `t32`.
 
@@ -33,18 +33,18 @@ fn add_one(x: i32) -> i32 {
 
 // This will compile as `a32` code on both `arm` and thumb` targets
 
-#[instruction_set(a32)]
+#[instruction_set(arm, a32)]
 fn add_five(x: i32) -> i32 {
     x + 5
 }
 ```
 
-To ease the amount of `cfg_attr` required with this attribute, if you specify an instruction set that isn't available on the target used the attribute is simply ignored. For example, if you specify `t32` and then build the code for `x86_64` or `wasm32`, the attribute is ignored.
+To help with code portability, when the function is compiled for any arch other than the arch given then the attribute has no effect. If the `add_five` function were built for `x86_64` then it would be the same as having no `instruction_set` attribute.
 
-If you specify an instruction set that the compiler doesn't recognize at all then you will get an error.
+If you specify an instruction set that the compiler doesn't recognize then you will get an error.
 
 ```rust
-#[instruction_set(unicorn)]
+#[instruction_set(arm, unicorn)]
 fn this_does_not_build() -> i32 {
     7
 }
@@ -57,9 +57,9 @@ The specifics of _when_ to specify a non-default instruction set on a function a
 
 Every target is now considered to have one default instruction set (for functions that lack the `instruction_set` attribute), as well as possibly supporting specific additional instruction sets:
 
-* Targets with `arm` arch default to the `a32` instruction set, but can also use `t32`.
-* Targets with `thumb` arch default to the `t32` instruction set, but can also use `a32`.
-* All other current targets each have only one instruction set, which is also their default instruction set.
+* The targets with names that start with `arm` default to `(arm, a32)`, but can also use `(arm, t32)`.
+* The targets with names that start with `thumb` default to `(arm, t32)`, but can also use `(arm, a32)`.
+* The `instruction_set` attribute is not currently defined for use with any other arch.
 
 Backend support:
 * In LLVM this corresponds to enabling or disabling the `thumb-mode` target feature on a function.
@@ -69,10 +69,9 @@ Guarantees:
 * If an alternate instruction set is designated on a function then the compiler _must_ respect that. It is not a hint, it is a guarantee.
 
 What is a Compile Error:
-* If an alternate instruction set is designated that is known to exist but not appropriate for the current arch (eg: `a32` on an `x86_64` build) then the compiler will silently ignore the attribute. This helps keep code as portable as possible, similar to the [windows_subsystem](https://github.com/rust-lang/rfcs/blob/master/text/1665-windows-subsystem.md) attribute being used on programs compiled for Linux and Mac simply being silently ignored.
-* If an alternate instruction set is designated that doesn't exist _anywhere_ (eg: "unicorn") then that is a compiler error.
-* If the attribute appears more than once on a function that is a compile error.
-* If the current backend is lacking support for compiling with the alternate instruction set, then that should trigger a compile error.
+* If an alternate instruction set is designated that doesn't exist (eg: "unicorn") then that is a compiler error.
+* If the attribute appears more than once for a _single arch_ on a function that is a compile error.
+* Specifying an alternate instruction set attribute more than once with each usage being for a _different arch_ it is allowed.
 
 Inlining:
 * For the alternate instruction sets proposed by this RFC, `a32` and `t32`, what is affected is the actual generated assembly and symbol placement of the generated function. If a function's body is inlined into the caller then the attribute no longer has a meaningful effect within the caller's body, and would be ignored.
@@ -82,7 +81,7 @@ How _specifically_ does it work on ARM:
 * Within an ELF file, all `t32` code functions are stored as having odd value addresses, and when a branch-exchange (`bx`) or branch-link-exchange (`blx`) instruction is used then the target address's lowest bit is used to move the CPU between the `a32` and `t32` states appropriately.
 * Accordingly, this does _not_ count as a full new ABI of its own. Both "Rust" and "C" ABI functions and function pointers are the same type as they were before.
 * Linkers for ARM platforms such as [gnu ld](https://sourceware.org/binutils/docs/ld/ARM.html#ARM) have various flags to help the "interwork" process, depending on your compilation settings.
-* This is considered a very low level and platform specific feature, so potentially having to pass additional linker args **is** considered an acceptable level of complexity for the programmer.
+* This is considered a very low level and platform specific feature, so potentially having to pass additional linker args **is** considered an acceptable level of complexity for the programmer, though we should attempt to provide "good defaults" if we can of course.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -112,3 +111,5 @@ In C you can use `__attribute__((target("arm")))` and `__attribute__((target("th
 * LLVM might eventually gain support for inter-instruction-set calls that allow calls between two arches (eg: a hybrid PowerPC/RISC-V). In that case, we could extend the attribute to allow new options.
 
 * If Rust gains support for the 65C816, the `#[instruction_set(?)]` attribute might be extended to allow shifting into its 65C02 compatibility mode and back again.
+
+* MIPS has a 16-bit encoding which uses a similar scheme as ARM, where the low bit of a function's address is set when the 16-bit encoding is in use for that function.
