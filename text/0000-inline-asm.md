@@ -583,7 +583,7 @@ As stated in the previous section, passing an input value smaller than the regis
 
 Flags are used to further influence the behavior of the inline assembly block.
 Currently the following options are defined:
-- `pure`: The `asm` block has no side effects, and its outputs depend only on its direct inputs (i.e. the values themselves, not what they point to). This allows the compiler to execute the `asm` block fewer times than specified in the program (e.g. by hoisting it out of a loop) or even eliminate it entirely if the outputs are not used.
+- `pure`: The `asm` block has no side effects, and its outputs depend only on its direct inputs (i.e. the values themselves, not what they point to) or values read from memory (unless the `nomem` options is also set). This allows the compiler to execute the `asm` block fewer times than specified in the program (e.g. by hoisting it out of a loop) or even eliminate it entirely if the outputs are not used.
 - `nomem`: The `asm` blocks does not read or write to any memory. This allows the compiler to cache the values of modified global variables in registers across the `asm` block since it knows that they are not read or written to by the `asm`.
 - `readonly`: The `asm` block does not write to any memory. This allows the compiler to cache the values of unmodified global variables in registers across the `asm` block since it knows that they are not written to by the `asm`.
 - `preserves_flags`: The `asm` block does not modify the flags register (defined in the [rules][rules] below). This allows the compiler to avoid recomputing the condition flags after the `asm` block.
@@ -592,6 +592,7 @@ Currently the following options are defined:
 
 The compiler performs some additional checks on options:
 - The `nomem` and `readonly` options are mutually exclusive: it is a compile-time error to specify both.
+- The `pure` option must be combined with either the `nomem` or `readonly` options, otherwise a compile-time error is emitted.
 - It is a compile-time error to specify `pure` on an asm block with no outputs or only discarded outputs (`_`).
 - It is a compile-time error to specify `noreturn` on an asm block with outputs.
 
@@ -621,8 +622,9 @@ As written this RFC requires architectures to map from Rust constraint specifica
 Additionally, the following attributes are added to the LLVM `asm` statement:
 
 * The `nounwind` attribute is always added: unwinding from an inline asm block is not allowed (and not supported by LLVM anyways).
-* If the `nomem` option is set then the `readnone` attribute is added to the LLVM `asm` statement.
-* If the `readonly` option is set then the `readonly` attribute is added to the LLVM `asm` statement.
+* If the `nomem` and `pure` options are both set then the `readnone` attribute is added to the LLVM `asm` statement.
+* If the `readonly` and `pure` options are both set then the `readonly` attribute is added to the LLVM `asm` statement.
+* If the `nomem` option is set without the `pure` option then the `inaccessiblememonly` attribute is added to the LLVM `asm` statement.
 * If the `pure` option is not set then the `sideffect` flag is added the LLVM `asm` statement.
 * If the `nostack` option is not set then the `alignstack` flag is added the LLVM `asm` statement.
 * On x86 the `inteldialect` flag is added the LLVM `asm` statement so that the Intel syntax is used instead of the AT&T syntax.
@@ -735,6 +737,9 @@ unsafe fn foo(mut a: i32, b: i32) -> (i32, i32)
   - You should adjust the stack pointer when allocating stack memory as required by the target ABI.
   - The stack pointer must be restored to its original value before leaving the asm block.
 - If the `noreturn` option is set then behavior is undefined if execution falls through to the end of the asm block.
+- If the `pure` option is set then behavior is undefined if the `asm` has side-effects other than its direct outputs. Behavior is also undefined if two executions of the `asm` code with the same inputs result in different outputs.
+  - When used with the `nomem` option, "inputs" are just the direct inputs of the `asm!`.
+  - When used with the `readonly` option, "inputs" comprise the direct inputs of the `asm!` and any memory that the `asm!` block is allowed to read.
 - These flags registers must be restored upon exiting the asm block if the `preserves_flags` option is set:
   - x86
     - Status flags in `EFLAGS` (CF, PF, AF, ZF, SF, OF).
