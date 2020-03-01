@@ -366,7 +366,7 @@ Several types of operands are supported:
   - The allocated register must contain the same value at the end of the asm code (except if a `lateout` is allocated to the same register).
 * `out(<reg>) <expr>`
   - `<reg>` can refer to a register class or an explicit register. The allocated register name is substituted into the asm template string.
-  - The allocated register will contain an unknown value at the start of the asm code.
+  - The allocated register will contain an undefined value at the start of the asm code.
   - `<expr>` must be a (possibly uninitialized) place expression, to which the contents of the allocated register is written to at the end of the asm code.
   - An underscore (`_`) may be specified instead of an expression, which will cause the contents of the register to be discarded at the end of the asm code (effectively acting as a clobber).
 * `lateout(<reg>) <expr>`
@@ -717,16 +717,18 @@ unsafe fn foo(mut a: i32, b: i32) -> (i32, i32)
 [rules]: #rules
 
 - Any registers not specified as inputs will contain an undefined value on entry to the asm block.
-- Any registers not specified as outputs must have the same value upon exiting the asm block as they had on entry.
-  - This only applies to registers which can be specified as an input or output.
+- Any registers not specified as outputs must have the same value upon exiting the asm block as they had on entry, otherwise behavior is undefined.
+  - This only applies to registers which can be specified as an input or output. Other registers follow target-specific rules and are outside the scope of this RFC.
+  - Note that a `lateout` may be allocated to the same register as an `in`, in which case this rule does not apply. Code should not rely on this however since it depends on the results of register allocation.
 - Behavior is undefined if execution unwinds out of an asm block.
 - Any memory reads/writes performed by the asm code follow the same rules as `volatile_read` and `volatile_write`.
   - Refer to the unsafe code guidelines for the exact rules.
   - If the `readonly` option is set, then only memory reads (with the same rules as `volatile_read`) are allowed.
   - If the `nomem` option is set then no reads or write to memory are allowed.
-- On targets that support modifying code at runtime, the compiler cannot assume that the instructions in the asm are the ones that will actually end up executed.
+  - These rules do not apply to memory which is private to the asm code, such as stack space allocated within the asm block.
+- The compiler cannot assume that the instructions in the asm are the ones that will actually end up executed.
   - This effectively means that the compiler must treat the `asm!` as a black box and only take the interface specification into account, not the instructions themselves.
-  - Runtime code patch is allowed, via target-specific mechanisms (outside the scope of this RFC).
+  - Runtime code patching is allowed, via target-specific mechanisms (outside the scope of this RFC).
 - Unless the `nostack` option is set, asm code is allowed to use stack space below the stack pointer.
   - On entry to the asm block the stack pointer is guaranteed to be suitably aligned (according to the target ABI) for a function call.
   - You are responsible for making sure you don't overflow the stack (e.g. use stack probing to ensure you hit a guard page).
