@@ -457,7 +457,7 @@ Each register class has constraints on which value types they can be used with. 
 | RISC-V | `freg` | `f` | `f32` |
 | RISC-V | `freg` | `d` | `f64` |
 
-> Note: For the purposes of the above table pointers, function pointers and `isize`/`usize` are treated as the equivalent integer type (`i32` or `i64`).
+> Note: For the purposes of the above table pointers, function pointers and `isize`/`usize` are treated as the equivalent integer type (`i16`/`i32`/`i64` depending on the target).
 
 If a value is of a smaller size than the register it is allocated in then the upper bits of that register will have an undefined value for inputs and will be ignored for outputs. The only exception is the `freg` register class on RISC-V where `f32` values are NaN-boxed in a `f64` as required by the RISC-V architecture.
 
