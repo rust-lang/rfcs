@@ -30,13 +30,11 @@ Owners should use a separate account from their main GitHub account dedicated to
 
 ### Rust-Lang Repositories
 
-Access to and permissions for repositories within the Rust-Lang organization should be administered through GitHub teams. Rust-Lang GitHub teams are administered through the [Team repository](https://github.com/rust-lang/team).
+Access to and permissions for repositories within the Rust-Lang organization must be administered through GitHub teams, rather than through individual GitHub accounts. Note that this refers to the GitHub notion of teams, not the Rust governance structure notion of teams. Rust-Lang GitHub teams are administered through the [Team repository](https://github.com/rust-lang/team).
 
 GitHub provides several permission levels for access to a repository. Please refer to [GitHub's documentation](https://help.github.com/en/github/setting-up-and-managing-organizations-and-teams/repository-permission-levels-for-an-organization) for details on permission levels and what each level can do.
 
 Repositories in the Rust-Lang organization should follow these permission guidelines:
-
-Permissions should **only** be given to teams within the Rust-Lang organization, not to individuals.
 
 * **Admin** - only Rust team or working group leads should have this permission level
 * **Write** - contributors within GitHub teams may have this permission level at the discretion of the team leads
