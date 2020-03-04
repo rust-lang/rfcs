@@ -433,6 +433,8 @@ Here is the list of currently supported register classes:
 | RISC-V | `reg` | `x1`, `x[5-7]`, `x[9-15]`, `x[16-31]` (non-RV32E) | `r` |
 | RISC-V | `freg` | `f[0-31]` | `f` |
 
+> Note: On x86 the `ah`, `bh`, `ch`, `dh` register are never allocated for `i8` operands. This allows values allocated to e.g. `al` to use the full `rax` register.
+
 Additional register classes may be added in the future based on demand (e.g. MMX, x87, etc).
 
 Each register class has constraints on which value types they can be used with. This is necessary because the way a value is loaded into a register depends on its type. For example, on big-endian systems, loading a `i32x4` and a `i8x16` into a SIMD register may result in different register contents even if the byte-wise memory representation of both values is identical. The availability of supported types for a particular register class may depend on what target features are currently enabled.
