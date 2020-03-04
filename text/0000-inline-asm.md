@@ -721,6 +721,7 @@ unsafe fn foo(mut a: i32, b: i32) -> (i32, i32)
 [rules]: #rules
 
 - Any registers not specified as inputs will contain an undefined value on entry to the asm block.
+  - An "undefined value" in this context means that the register can have any one of the possible value allowed by the architecture. Notably it is not the same as an LLVM `undef` which can have a different value every time you read it (since such a concept does not exist in assembly code).
 - Any registers not specified as outputs must have the same value upon exiting the asm block as they had on entry, otherwise behavior is undefined.
   - This only applies to registers which can be specified as an input or output. Other registers follow target-specific rules and are outside the scope of this RFC.
   - Note that a `lateout` may be allocated to the same register as an `in`, in which case this rule does not apply. Code should not rely on this however since it depends on the results of register allocation.
