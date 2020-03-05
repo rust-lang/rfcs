@@ -272,7 +272,7 @@ assert_eq!(x, 4 * 6);
 
 In some cases, fine control is needed over the way a register name is formatted when inserted into the template string. This is needed when an architecture's assembly language has several names for the same register, each typically being a "view" over a subset of the register (e.g. the low 32 bits of a 64-bit register).
 
-By default the compiler will always choose the name that refers to the full register size (e.g. `rax` on x86-64, `eax` on x86, etc). This is the case even if you pass in a smaller data type (e.g. `u16`) or if you explicitly specify a register (e.g. `in("cx")` will be rendered as `rcx` by default).
+By default the compiler will always choose the name that refers to the full register size (e.g. `rax` on x86-64, `eax` on x86, etc).
 
 This default can be overriden by using modifiers on the template string operands, just like you would with format strings:
 
@@ -290,6 +290,8 @@ In this example, we use the `reg_abcd` register class to restrict the register a
 
 Let us assume that the register allocator has chosen to allocate `x` in the `ax` register.
 The `h` modifier will emit the register name for the high byte of that register and the `b` modifier will emit the register name for the low byte. The asm code will therefore be expanded as `mov ah, al` which copies the low byte of the value into the high byte.
+
+If you use a smaller data type (e.g. `u16`) with an operand and forget the use template modifiers, the compiler will emit a warning and suggest the correct modifier to use.
 
 ## Options
 
