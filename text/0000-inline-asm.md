@@ -763,6 +763,12 @@ unsafe fn foo(mut a: i32, b: i32) -> (i32, i32)
     - Floating-point status (`FPSR` register).
   - RISC-V
     - Floating-point exception flags in `fcsr` (`fflags`).
+- The requirement of restoring the stack pointer and non-output registers to their original value only applies when exiting an `asm!` block.
+  - This means that `asm!` blocks that never return (even if not marked `noreturn`) don't need to preserve these registers.
+  - When returning to a different `asm!` block than you entered (e.g. for context switching), these registers must contain the value they had upon entering the `asm!` block that you are *exiting*.
+    - You cannot exit an `asm!` block that has not been entered. Neither can you exit an `asm!` block that has already been exited.
+    - You are responsible for switching any target-specific state (e.g. thread-local storage, stack bounds).
+    - The set of memory locations that you may access is the intersection of those allowed by the `asm!` blocks you entered and exited.
 
 > Note: As a general rule, these are the flags which are *not* preserved when performing a function call.
 
