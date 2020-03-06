@@ -188,9 +188,7 @@ we had to use the `rax` constraint specifier.
 
 Note that unlike other operand types, explicit register operands cannot be used in the template string: you can't use `{}` and should write the register name directly instead. Also, they must appear at the end of the operand list after all other operand types.
 
-It is somewhat common that instructions have operands that are not explicitly listed in the
-assembly (template). By default all operands must be used in the template string, but it is possible
-to opt-out of this by giving an operand the name `_`:
+Consider this example which uses the x86 `mul` instruction:
 
 ```rust
 fn mul(a: u64, b: u64) -> u128 {
