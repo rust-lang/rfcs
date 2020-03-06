@@ -350,11 +350,9 @@ The assembler template uses the same syntax as [format strings][format-syntax] (
 
 As with format strings, named arguments must appear after positional arguments. Explicit register operands must appear at the end of the operand list, after any named arguments if any. Explicit register operands cannot be used by placeholders in the template string. All other operands must appear at least once in the template string, otherwise a compiler error is generated.
 
-The assembly code syntax used is that of the GNU assembler (GAS). The only exception is on x86 where the Intel syntax is used instead of GCC's AT&T syntax.
+The exact assembly code syntax is target-specific and opaque to the compiler except for the way operands are substituted into the template string to form the code passed to the assembler.
 
-This RFC only specifies how operands are substituted into the template string. Actual interpretation of the final asm string is left to the assembler.
-
-However there is one restriction on the asm string: any assembler state (e.g. the current section which can be changed with `.section`) must be restored to its original value at the end of the asm string.
+The 4 targets specified in this RFC (x86, ARM, AArch64, RISCV) all use the assembly code syntax of the GNU assembler (GAS). On x86, the `.intel_syntax noprefix` mode of GAS is used. These targets impose an additional restriction on the assembly code: any assembler state (e.g. the current section which can be changed with `.section`) must be restored to its original value at the end of the asm string.
 
 [rfc-2795]: https://github.com/rust-lang/rfcs/pull/2795
 
