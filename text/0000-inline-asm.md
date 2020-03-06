@@ -926,6 +926,14 @@ While it might be possible for rustc to verify that inline assembly code conform
 
 [llvm-asm-ext]: https://llvm.org/docs/Extensions.html#machine-specific-assembly-syntax
 
+## Include the target architecture name in `asm!`
+
+Including the name of the target architecture as part of the `asm!` invocation could allow IDEs to perform syntax highlighting on the assembly code. However this has several downsides:
+- It would add a significant amount of complexity to the `asm!` macro which already has many options.
+- Since assembly code is inherently target-specific, `asm!` is already going to be behind a `#[cfg]`. Repeating the architecture name would be redundant.
+- Most inline asm is small and wouldn't really benefit from syntax highlighting.
+- The `asm!` template isn't real assembly code (`{}` placeholders, `{` escaped to `{{`), which may confuse syntax highlighters.
+
 # Prior art
 [prior-art]: #prior-art
 
