@@ -336,8 +336,8 @@ operand_expr := expr / "_" / expr "=>" expr / expr "=>" "_"
 reg_operand := dir_spec "(" reg_spec ")" operand_expr
 operand := reg_operand / "const" const_expr / "sym" path
 option := "pure" / "nomem" / "readonly" / "preserves_flags" / "noreturn"
-options := "options(" option *["," option] ")"
-asm := "asm!(" format_string *("," [ident "="] operand) ["," options] ")"
+options := "options(" option *["," option] [","] ")"
+asm := "asm!(" format_string *("," [ident "="] operand) ["," options] [","] ")"
 ```
 
 [format-syntax]: https://doc.rust-lang.org/std/fmt/#syntax
