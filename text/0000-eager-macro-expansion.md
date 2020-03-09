@@ -64,7 +64,7 @@ outstanding issues (see
 example).
 
 An older motivation to allow macro calls in attributes was to get
-`#[doc(include_str!("path/to/doc.txt"))]` working, in order to provide an
+`#[doc = include_str!("path/to/doc.txt")]` working, in order to provide an
 ergonomic way to keep documentation outside of Rust source files. This was
 eventually emulated by the accepted [RFC
 1990](https://github.com/rust-lang/rfcs/pull/1990), indicating that macros in
@@ -450,7 +450,7 @@ macro do_twice($($input:tt)*) {
 }
 ```
 
-The invocations of `concat!` and `do_nothing!` appear in the parsed AST,
+The invocations of `concat!` and `do_twice!` appear in the parsed AST,
 whereas the invocation of `vec!` does not; the arguments to macros are always
 opaque token streams.
 
