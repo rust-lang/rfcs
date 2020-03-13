@@ -1,4 +1,4 @@
-- Feature Name: `symbol_name_mangling_v2`
+- Feature Name: N/A
 - Start Date: 2018-11-27
 - RFC PR: [rust-lang/rfcs#2603](https://github.com/rust-lang/rfcs/pull/2603)
 - Rust Issue: [rust-lang/rust#60705](https://github.com/rust-lang/rust/issues/60705)
