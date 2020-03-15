@@ -952,7 +952,9 @@ See the section [above][dsl].
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-None
+## Namespacing the `asm!` macro
+
+Should the `asm!` macro be available directly from the prelude as it is now, or should it have to be imported from `std::arch::$ARCH::asm`? The advantage of the latter is that it would make it explicit that the `asm!` macro is target-specific, but it would make cross-platform code slightly longer to write.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
