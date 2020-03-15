@@ -625,7 +625,7 @@ Additionally, the following attributes are added to the LLVM `asm` statement:
 * If the `nomem` and `pure` options are both set then the `readnone` attribute is added to the LLVM `asm` statement.
 * If the `readonly` and `pure` options are both set then the `readonly` attribute is added to the LLVM `asm` statement.
 * If the `nomem` option is set without the `pure` option then the `inaccessiblememonly` attribute is added to the LLVM `asm` statement.
-* If the `pure` option is not set then the `sideffect` flag is added the LLVM `asm` statement.
+* If the `pure` option is not set then the `sideeffect` flag is added the LLVM `asm` statement.
 * If the `nostack` option is not set then the `alignstack` flag is added the LLVM `asm` statement.
 * On x86 the `inteldialect` flag is added the LLVM `asm` statement so that the Intel syntax is used instead of the AT&T syntax.
 
@@ -719,7 +719,7 @@ unsafe fn foo(mut a: i32, b: i32) -> (i32, i32)
 [rules]: #rules
 
 - Any registers not specified as inputs will contain an undefined value on entry to the asm block.
-  - An "undefined value" in this context means that the register can have any one of the possible values allowed by the architecture. Notably it is not the same as an LLVM `undef` which can have a different value every time you read it (since such a concept does not exist in assembly code).
+  - An "undefined value" in the context of this RFC means that the register can (non-deterministically) have any one of the possible values allowed by the architecture. Notably it is not the same as an LLVM `undef` which can have a different value every time you read it (since such a concept does not exist in assembly code).
 - Any registers not specified as outputs must have the same value upon exiting the asm block as they had on entry, otherwise behavior is undefined.
   - This only applies to registers which can be specified as an input or output. Other registers follow target-specific rules and are outside the scope of this RFC.
   - Note that a `lateout` may be allocated to the same register as an `in`, in which case this rule does not apply. Code should not rely on this however since it depends on the results of register allocation.
