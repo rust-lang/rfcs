@@ -944,6 +944,10 @@ Including the name of the target architecture as part of the `asm!` invocation c
 - Most inline asm is small and wouldn't really benefit from syntax highlighting.
 - The `asm!` template isn't real assembly code (`{}` placeholders, `{` escaped to `{{`), which may confuse syntax highlighters.
 
+## Operands before template string
+
+The operands could be placed before the template string, which could make the asm easier to read in some cases. However we decided against it because the benefits are small and the syntax would no longer mirror that of Rust format string.
+
 # Prior art
 [prior-art]: #prior-art
 
