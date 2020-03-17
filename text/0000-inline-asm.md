@@ -340,6 +340,8 @@ options := "options(" option *["," option] [","] ")"
 asm := "asm!(" format_string *("," [ident "="] operand) ["," options] [","] ")"
 ```
 
+The macro will initially be supported only on ARM, AArch64, x86, x86-64 and RISC-V targets. Support for more targets may be added in the future. The compiler will emit an error if `asm!` is used on an unsupported target.
+
 [format-syntax]: https://doc.rust-lang.org/std/fmt/#syntax
 
 ## Template string
@@ -350,7 +352,7 @@ As with format strings, named arguments must appear after positional arguments. 
 
 The exact assembly code syntax is target-specific and opaque to the compiler except for the way operands are substituted into the template string to form the code passed to the assembler.
 
-The 4 targets specified in this RFC (x86, ARM, AArch64, RISCV) all use the assembly code syntax of the GNU assembler (GAS). On x86, the `.intel_syntax noprefix` mode of GAS is used. These targets impose an additional restriction on the assembly code: any assembler state (e.g. the current section which can be changed with `.section`) must be restored to its original value at the end of the asm string.
+The 4 targets specified in this RFC (x86, ARM, AArch64, RISC-V) all use the assembly code syntax of the GNU assembler (GAS). On x86, the `.intel_syntax noprefix` mode of GAS is used. These targets impose an additional restriction on the assembly code: any assembler state (e.g. the current section which can be changed with `.section`) must be restored to its original value at the end of the asm string.
 
 [rfc-2795]: https://github.com/rust-lang/rfcs/pull/2795
 
