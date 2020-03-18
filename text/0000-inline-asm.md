@@ -154,7 +154,7 @@ unsafe {
 assert_eq!(a, 12);
 ```
 
-Here the compiler is free to allocate the same register for inputs `b` and `c` since it knows they have the same value. However it must allocate a separate register for `a` since it uses `inout` and not `inlateout`.
+Here the compiler is free to allocate the same register for inputs `b` and `c` since it knows they have the same value. However it must allocate a separate register for `a` since it uses `inout` and not `inlateout`. If `inlateout` was used, then `a` and `c` could be allocated to the same register, in which case the first instruction to overwrite the value of `c` and cause the assembly code to produce the wrong result.
 
 However the following example can use `inlateout` since the output is only modified after all input registers have been read:
 
