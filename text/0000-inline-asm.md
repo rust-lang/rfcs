@@ -728,6 +728,7 @@ unsafe fn foo(mut a: i32, b: i32) -> (i32, i32)
   - This only applies to registers which can be specified as an input or output. Other registers follow target-specific rules and are outside the scope of this RFC.
   - Note that a `lateout` may be allocated to the same register as an `in`, in which case this rule does not apply. Code should not rely on this however since it depends on the results of register allocation.
 - Behavior is undefined if execution unwinds out of an asm block.
+  - This also applies if the assembly code calls a function which then unwinds.
 - Any memory reads/writes performed by the asm code follow the same rules as `volatile_read` and `volatile_write`.
   - Refer to the unsafe code guidelines for the exact rules.
   - If the `readonly` option is set, then only memory reads (with the same rules as `volatile_read`) are allowed.
