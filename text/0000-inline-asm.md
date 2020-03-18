@@ -232,7 +232,9 @@ let ecx: u64;
 unsafe {
     asm!(
         "cpuid",
+        // EAX 4 selects the "Deterministic Cache Parameters" CPUID leaf
         inout("eax") 4 => _,
+        // ECX 0 selects the L0 cache information.
         inout("ecx") 0 => ecx,
         lateout("ebx") ebx,
         lateout("edx") _
