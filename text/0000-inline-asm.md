@@ -729,10 +729,10 @@ unsafe fn foo(mut a: i32, b: i32) -> (i32, i32)
   - Note that a `lateout` may be allocated to the same register as an `in`, in which case this rule does not apply. Code should not rely on this however since it depends on the results of register allocation.
 - Behavior is undefined if execution unwinds out of an asm block.
   - This also applies if the assembly code calls a function which then unwinds.
-- Any memory reads/writes performed by the asm code follow the same rules as `volatile_read` and `volatile_write`.
+- The set of memory locations that assembly code is allowed the read and write are the same as those allowed for an FFI function.
   - Refer to the unsafe code guidelines for the exact rules.
-  - If the `readonly` option is set, then only memory reads (with the same rules as `volatile_read`) are allowed.
-  - If the `nomem` option is set then no reads or write to memory are allowed.
+  - If the `readonly` option is set, then only memory reads are allowed.
+  - If the `nomem` option is set then no reads or writes to memory are allowed.
   - These rules do not apply to memory which is private to the asm code, such as stack space allocated within the asm block.
 - The compiler cannot assume that the instructions in the asm are the ones that will actually end up executed.
   - This effectively means that the compiler must treat the `asm!` as a black box and only take the interface specification into account, not the instructions themselves.
