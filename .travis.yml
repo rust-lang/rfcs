@@ -19,4 +19,4 @@ script:
 env:
   RUSTINFRA_DEPLOY_DIR: book
 import:
-  - rust-lang/simpleinfra/travis-configs/static-websites.yml
+  - rust-lang/simpleinfra:travis-configs/static-websites.yml
