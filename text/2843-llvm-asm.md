@@ -1,7 +1,7 @@
 - Feature Name: `llvm_asm`
 - Start Date: 2019-12-31
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- RFC PR: [rust-lang/rfcs#2843](https://github.com/rust-lang/rfcs/pull/2843)
+- Rust Issue: [rust-lang/rust#70173](https://github.com/rust-lang/rust/issues/70173)
 
 # Summary
 [summary]: #summary
@@ -70,4 +70,4 @@ silent miscompilations are expected since the operand separator will be changed
 from `:` to `,`, which will guarantee that any existing `asm!` invocations will
 fail with a syntax error with the new `asm!` macro.
 
-[inline-asm-rfc]: https://github.com/rust-lang/project-inline-asm/blob/master/rfcs/0000-inline-asm.md
+[inline-asm-rfc]: https://github.com/rust-lang/rfcs/pull/2873
