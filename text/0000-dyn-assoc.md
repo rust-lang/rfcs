@@ -1,6 +1,6 @@
 - Feature Name: dyn-assoc
 - Start Date: 2020-03-19
-- RFC PR: N/A
+- [RFC PR](https://github.com/rust-lang/rfcs/pull/2886 "GitHub pull request for this RFC")
 - Rust Issue: N/A
 
 # Summary
