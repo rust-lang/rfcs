@@ -30,13 +30,13 @@ trait ThingDoer {
 }
 struct HWThingDoer;
 impl ThingDoer for HWThingDoer {
-    fn do_a_thing() -> Self {
+    fn do_a_thing() {
         println!("Did a thing using the GPU at insane speed!");
     }
 }
 struct DefaultThingDoer;
 impl ThingDoer for DefaultThingDoer {
-    fn do_a_thing() -> Self {
+    fn do_a_thing() {
         println!("Did a thing entirely on the CPU.");
     }
 }
@@ -56,7 +56,7 @@ This can be used to retreive `'static` state of a trait implementation without t
 
 A much more frequent use case of associated functions is for adding constructors, i.e. returning `Self`. But because `Self` in the case of trait objects is unsized, constructors in traits should return some kind of wrapper which makes these trait objects sized, making it possible to store the result on the stack. The best candidate for this job is `Box`, since it's the simplest way of allocating something on the heap from safe code, which is subject to a zero-cost conversion into a reference counter. `Box` also exposes an interface for casting trait objects down to a concrete type, which can be used to store the object entirely on the stack if the selection of possible types is known at development time (eg. if the trait and its implementors are `pub(crate)`).
 
-To be a valid trait object, the return type of these functions should `Box<dyn Trait>` instead of `Box<Self>`, since `Self` in trait refers to the **concrete type implementing the trait** instead of the trait as a trait object.
+To be a valid trait object, the return type of these functions should be `Box<dyn Trait>` instead of `Box<Self>`, since `Self` in trait refers to the **concrete type implementing the trait** instead of the trait as a trait object.
 
 ## Associated constants
 Associated constants work in a similar way:
@@ -90,13 +90,13 @@ trait ThingDoer {
 }
 struct HWThingDoer;
 impl ThingDoer for HWThingDoer {
-    fn do_a_thing() -> Self {
+    fn do_a_thing() {
         println!("Did a thing using the GPU at insane speed!");
     }
 }
 struct DefaultThingDoer;
 impl ThingDoer for DefaultThingDoer {
-    fn do_a_thing() -> Self {
+    fn do_a_thing() {
         println!("Did a thing entirely on the CPU.");
     }
 }
