@@ -59,18 +59,23 @@ path = "src/main.rs"
 dependencies = { clap = "*" }
 ```
 
-Now, `clap` is required for the binary `myproject_cli`, but not for the library `myproject`.
+Now, `clap` is required for the binary `myproject_cli`, but not for the library `myproject`, and can be used in the same way as crate-wide dependencies. In this example, `clap` could be used from the binary artifact, but attempting to use it from the library artifact would result in an unresolved import error. This has the potential to improve compile time and reduce binary size by omitting dependencies where they're not actually required. 
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-This feature would add a new `dependencies` key to the `bin`, `lib`, `test`, `bench`, and `example` sections of the `Cargo.toml` file, describing dependencies that are used only for that artifact, in addition to the ones defined in the top-level `dependencies` and `dev-dependencies` sections. These dependencies would be specified in the same way they would be in the top-level `dependencies` section.
+This feature would add a new `dependencies` key to the `bin`, `lib`, `test`, `bench`, and `example` sections of the `Cargo.toml` file, describing dependencies that are used only for that artifact, in addition to the ones defined in the top-level `dependencies` and `dev-dependencies` sections. These dependencies would be specified in the same way they would be in the top-level `dependencies` section, allowing version patterns, features, and alternative sources to be specified [as described in the Cargo manual](https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html).
+
+When compiling the given artifacts, the additional dependencies would be made available and linked in the same fashion as regular dependencies, allowing them to be imported with `use` and `extern crate` statements. Attempting to use the dependency from other artifacts would fail to resolve the import, raising [E0432](https://doc.rust-lang.org/error-index.html#E0432). A new help message could be added to cargo to make it easier for the user to debug the issue - e.g. `dependency specified for artifact A is not available when compiling artifact B, did you mean to specify it as a crate dependency?`.
+
+When dependencies with the same name are specified as both an artifact-specific dependency and a crate-wide dependency, a new error will be raised by cargo, even if the dependencies are identical, indicating that this isn't allowed. This could be changed in the future, with some ideas described below in the [future possibilities](#future-possibilities) section.
 
 # Drawbacks
 [drawbacks]: #drawbacks
 
 - This is a relatively uncommon use case, and there is overlap with the functionality of the `required-features` key.
-  - It may be a better idea to improve upon the existing `required-features` functionality (e.g. automatically enabling features when compiling a specific artifact) than to add another method of configuring dependencies.
+  - It may be a better idea to improve upon the existing `required-features` functionality (e.g. automatically enabling required features when compiling a specific artifact) than to add another method of configuring dependencies.
+- There's also some overlap with the existing functionality to specify `dev-dependencies` - it's hard to imagine many cases where you'd want to have dependencies specific to an individual `test`, `bench`, or `example` that wouldn't be desirable as crate-wide `dev-dependencies`.
 - It's more difficult for a reader to determine what dependencies a project uses while reading the `Cargo.toml`.
 
 # Rationale and alternatives
@@ -89,9 +94,12 @@ Specifically for test/bench/example artifacts, the `dev-dependencies` section ma
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
+- How would this interact with features? Ideally, a feature could be defined that enables an artifact-specific dependency, but how would this affect compilation of other artifacts that don't include this dependency?
 - Is cargo written in a way that it's possible to separate dependencies for different artifacts? Currently, using feature flags or `dev-dependencies` to conditionally enable dependencies results in the dependencies being disabled/enabled for all artifacts of the given crate.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-I believe this is a feature that fits well into the general 2019 roadmap goal of maturity, making Cargo more versatile, even if for a relatively specific use case.
+- Specifying an artifact-specific and crate-wide dependency with the same name could be allowed under certain circumstances, such as:
+  - Enabling a feature(s) of a dependency for a specific artifact, but not for the entire crate
+  - Indicating more specific version requirements for the same dependency as long as the constraints are compatible according to semantic versioning
