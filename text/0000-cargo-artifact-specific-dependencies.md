@@ -66,13 +66,13 @@ Now, `clap` is required for the binary `myproject_cli`, but not for the library 
 
 This feature would add a new `dependencies` key to the `bin`, `lib`, `test`, `bench`, and `example` sections of the `Cargo.toml` file, accepting a table describing dependencies that are used only for that artifact, in addition to the ones defined in the top-level `dependencies` and `dev-dependencies` sections. These dependencies would be specified in the same way they would be in the top-level `dependencies` section, allowing version patterns, features, and alternative sources to be specified [as described in the Cargo manual](https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html).
 
-Additionally, artifact-specific dependencies can be specified as a non-inline table. This is semantically identical to declaring the dependencies inline, and the syntax would look similar to crate-wide dependencies:
+Additionally, artifact-specific dependencies can be specified as a non-inline table immediately following the artifact section. This is semantically identical to declaring the dependencies inline, and the syntax would look similar to crate-wide dependencies:
 
 ```toml
 [[bin]]
 name = "myproject_cli"
 
-[bin.myproject_cli.dependencies]
+[bin.dependencies]
 clap = "*"
 
 [lib]
