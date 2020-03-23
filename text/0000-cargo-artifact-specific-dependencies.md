@@ -64,7 +64,23 @@ Now, `clap` is required for the binary `myproject_cli`, but not for the library 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-This feature would add a new `dependencies` key to the `bin`, `lib`, `test`, `bench`, and `example` sections of the `Cargo.toml` file, describing dependencies that are used only for that artifact, in addition to the ones defined in the top-level `dependencies` and `dev-dependencies` sections. These dependencies would be specified in the same way they would be in the top-level `dependencies` section, allowing version patterns, features, and alternative sources to be specified [as described in the Cargo manual](https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html).
+This feature would add a new `dependencies` key to the `bin`, `lib`, `test`, `bench`, and `example` sections of the `Cargo.toml` file, accepting a table describing dependencies that are used only for that artifact, in addition to the ones defined in the top-level `dependencies` and `dev-dependencies` sections. These dependencies would be specified in the same way they would be in the top-level `dependencies` section, allowing version patterns, features, and alternative sources to be specified [as described in the Cargo manual](https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html).
+
+Additionally, artifact-specific dependencies can be specified as a non-inline table. This is semantically identical to declaring the dependencies inline, and the syntax would look similar to crate-wide dependencies:
+
+```toml
+[[bin]]
+name = "myproject_cli"
+
+[bin.myproject_cli.dependencies]
+clap = "*"
+
+[lib]
+name = "myproject"
+
+[lib.dependencies] # only one library can be specified, so lib name isn't required
+# ...
+```
 
 When compiling the given artifacts, the additional dependencies would be made available and linked in the same fashion as regular dependencies, allowing them to be imported with `use` and `extern crate` statements. Attempting to use the dependency from other artifacts would fail to resolve the import, raising [E0432](https://doc.rust-lang.org/error-index.html#E0432). A new help message could be added to cargo to make it easier for the user to debug the issue - e.g. `dependency specified for artifact A is not available when compiling artifact B, did you mean to specify it as a crate dependency?`.
 
