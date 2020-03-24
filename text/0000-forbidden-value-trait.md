@@ -37,6 +37,13 @@ Unless we turn the optimizations themselves into a language feature (which is no
 
 This is a simple proposal, but a step further would be to make all standard library types that have a forbidden value that is currently used for optimizations implement `ForbiddenValue`. And an even further step would be have Rust (the language) specify which optimizations are guaranteed to happen.
 
+With const generics, the trait could be better as:
+```rust
+unsafe trait ForbiddenValue<const SIZE: usize> {
+    const FORBIDDEN_BYTES: [u8; SIZE];
+}
+```
+
 # Unresolved questions
 
 Are there some alignment issues with `ForbiddenValue::FORBIDDEN_VALUE_BYTES`? I don't think so, because the compiler is free to use those bytes however it likes.
