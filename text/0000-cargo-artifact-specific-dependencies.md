@@ -104,8 +104,9 @@ Specifically for test/bench/example artifacts, the `dev-dependencies` section ma
 # Prior art
 [prior-art]: #prior-art
 
-- CMake allows, and in fact, recommends, specifying library dependencies that only apply to a specific build artifact through its `target_link_libraries` command
-- Gradle allows different build artifacts to use different source sets/dependency configurations
+- CMake allows, and in fact, recommends, specifying library dependencies that only apply to a specific build artifact through its `target_link_libraries` command [(Source)](https://cmake.org/cmake/help/latest/command/target_link_libraries.html)
+- Swift is implementing functionality to specify dependencies per-target by specifying dependencies in the package manifest and then enabling them for targets as necessary [(Source)](https://github.com/apple/swift-evolution/blob/master/proposals/0226-package-manager-target-based-dep-resolution.md)
+- Gradle allows different build artifacts to use different source sets/dependency configurations (this is less directly comparable due to the way Java loads libraries at runtime)
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
