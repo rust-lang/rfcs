@@ -84,7 +84,25 @@ name = "myproject"
 
 When compiling the given artifacts, the additional dependencies would be made available and linked in the same fashion as regular dependencies, allowing them to be imported with `use` and `extern crate` statements. Attempting to use the dependency from other artifacts would fail to resolve the import, raising [E0432](https://doc.rust-lang.org/error-index.html#E0432). A new help message could be added to cargo to make it easier for the user to debug the issue - e.g. `dependency specified for artifact A is not available when compiling artifact B, did you mean to specify it as a crate dependency?`.
 
-When dependencies with the same name are specified as both an artifact-specific dependency and a crate-wide dependency, a new error will be raised by cargo, even if the dependencies are identical, indicating that this isn't allowed. This could be changed in the future, with some ideas described below in the [future possibilities](#future-possibilities) section.
+When dependencies with the same name are specified as both an artifact-specific dependency and a crate-wide dependency, a new error will be raised by cargo, even if the dependencies are identical, indicating that this isn't allowed. The existing checks to prevent the same version of a single dependency being used twice would also apply between crate-wide and artifact-specific dependencies. Thus, both of the following examples would be illegal:
+
+```toml
+[dependencies]
+regex = "*"
+
+[[bin]]
+# ...
+dependencies.regex = { version = "*", package = "alternative_regex" }
+```
+
+```toml
+[dependencies]
+regex = "*"
+
+[[bin]]
+# ...
+dependencies.re = { version = "*", package = "regex" }
+```
 
 # Drawbacks
 [drawbacks]: #drawbacks
