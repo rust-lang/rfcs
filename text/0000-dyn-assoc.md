@@ -52,7 +52,7 @@ fn main() {
 This can be used to retrieve `'static` state of a trait implementation without the need to immutably borrow the trait object used to locate its underlying type, which becomes a clarity problem if it's already mutably borrowed in the same scope. One good example of this kind of usage is having a backend trait optionally support certain extensions, the support for which would be determined by runtime factors (or in an even more complex case by both compile time and runtime factors). This makes things easier when working with OpenGL or Vulkan, for example (or any other Khronos API, really, they seem to a certain API design style), because these have the concept of hardware extensions, some of which are then included into the core specification and can optionally be used by applications if they are developed for a lower version of the API but still wish to have access to the features on newer hardware.
 
 ## Mentions of the implementing type in associated functions
-[mentions-of-the-implementing-type-in-assoc-fn-guide]: ##mentions-of-the-implementing-type-in-associated-functions
+[mentions-of-the-implementing-type-in-assoc-fn-guide]: #mentions-of-the-implementing-type-in-associated-functions
 
 A much more frequent use case of associated functions is for adding constructors, i.e. returning `Self`. But because `Self` in the case of trait objects is unsized, constructors in traits should return some kind of wrapper which makes these trait objects sized, making it possible to store the result on the stack. The best candidate for this job is `Box`, since it's the simplest way of allocating something on the heap from safe code, which is subject to a zero-cost conversion into a reference counter. `Box` also exposes an interface for casting trait objects down to a concrete type, which can be used to store the object entirely on the stack if the selection of possible types is known at development time (eg. if the trait and its implementors are `pub(crate)`).
 
@@ -80,10 +80,78 @@ fn main() {
 ```
 This can be used by library authors to selectively accept trait objects if certain constants match certain criteria, as well as for introspecting implementation details at runtime, as shown with the floating-point mantissa example.
 
+## Generic contexts
+[generic-contexts]: #generic-contexts
+There's only one case when we don't have direct access to the trait object: compile-time generics. This example demonstrates the issue:
+```rust
+trait Foo {
+    const CONST: usize;
+    
+    fn assoc();
+}
+// Long story short, we're taking a generic argument
+// without a vtable, but we need to do dynamic dispatch.
+fn foo<T: Foo + ?Sized>() {
+    let _ = T::CONST;
+    T::assoc();
+}
+
+fn main() {
+    foo::<dyn Foo>();
+}
+```
+We need to somehow provide `foo<T>()` with a vtable for the trait object, but we don't have one. With the `trait_object.associated_function()` syntax (or the alternatives described in the [unresolved questions][unresolved-questions] section), there's the trait object which we use to perform dynamic dispatch in the calling function — we're calling associated functions and are looking up constants from the **trait** of the trait object, **having the trait object available to also be used to have trait methods called**. But in this case, we don't have a trait object to start with. As a result, if we're calling a function/method/whatever with generic arguments **and the callee uses the associated members** and are passing in `dyn Foo`, the compiler emits an error: "no trait object provided to perform dynamic dispatch", highlighting the exact associated function which requires a trait object with "trait object required here" like some other errors do.
+
+This issue also exists when using the generics on types:
+```rust
+trait Foo {
+    const MY_NAME: &'static str;
+}
+struct MyBox<T: Foo + ?Sized>(Box<T>);
+
+impl<T: Foo + ?Sized> MyBox<T> {
+    fn get_name() -> &'static str {
+        T::MY_NAME
+    }
+}
+```
+In this case, the compiler **detects that the type is using the associated members of `T`** and, if we then try to give `dyn Foo` to it, produces the a similar error: "cannot use dyn Trait as a generic parameter because the type requires a trait object to (call associated function|use associated constant)", with a similar highlight as above.
+
+If we have a trait object, however, and we want to use compile-time generics, we can use it directly as the generic parameter:
+```rust
+trait Foo {
+    const CONST: usize;
+    
+    fn assoc();
+}
+// Long story short, we're taking a generic argument
+// without a vtable, but we need to do dynamic dispatch.
+fn foo<T: Foo + ?Sized>() {
+    let _ = T::CONST;
+    T::assoc();
+}
+
+struct DefaultFoo;'
+impl Foo for DefaultFoo {
+    const CONST: usize = 42;
+    
+    fn assoc() {
+        println!("I'm doing great, thank you!");
+    }
+}
+
+fn main() {
+    // We'd have a constructor here if the implementor wasn't a unit type:
+    let tobject: Box<dyn Foo> = Box::from(DefaultFoo);
+    foo::<tobject>();
+}
+```
+Here, we're saying to the compiler: "take this trait object and use it to resolve all usage of associated constants/functions in this function I'm calling". Same with types with generic arguments.
+
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-The main point of technical discussion around this feature is how would dynamic dispatch work if there's no `&self`. Consider the first example from the [previous section][guide-level-explanation]:
+The main point of technical discussion around this feature is how would dynamic dispatch work if there's no `&self`. Consider the first example from the [guide-level section][guide-level-explanation]:
 ```rust
 trait ThingDoer {
     fn do_a_thing();
@@ -141,8 +209,15 @@ fn main() {
 ```
 Supporting the actual `Self` type [might still be introduced in a later RFC][future-possibilities].
 
+## Generic contexts
+As [described][generic-contexts] in the guide-level explanation, we can put trait objects themselves in the generics to get associated members to work in functions which do not take the trait object as an argument and are not dynamically dispatched from the side which has the trait object. How does this work?
+
+For functions with generic arguments, the vtable (not the trait object, only its vtable) is passed as an invisible argument on the stack/registers, which is present only in the morphomization of the function which takes a trait object in its generics. If a function has more than one `?Sized` generic argument, the morphomization (generated at compile time) which requires multiple trait objects should take multiple invisible vtable arguments. The arguments are automatically filled out when the callee puts  the trait object(s) into the angle brackets (if they don't provide all the trait objects required and fill some with `dyn Trait`, an error is produced as described back in the guide-level section).
+
+For types with generic arguments, the vtables exist inside instances of that type as invisible private fields. Like the vtable function arguments, these are only visible to the compiler (but they obviously contribute to the size, which remains known since vtable pointers are just pointers). If an associated function is called, however (no `self` — no access to the invisible vtable fields), the vtables should be provided as invisible vtable arguments, as with regular functions.
+
 ## Edge cases
-None known yet.
+None unresolved yet.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -175,6 +250,8 @@ The only major unresolved question about this feature is the syntax. Currently, 
 ```rust
 trait_object.CONSTANT
 trait_object.associated_function()
+function_with_generics::<trait_object>()
+let gt: GenericType<trait_object>
 ```
 While this cannot ever have the risk of trait methods and associated functions colliding their names (since these reside in the same namespace), this can confuse Rust beginners, since method syntax usually means that the function called somehow directly **operates** with the trait object. This wouldn't be a problem for those coming from a C++ background, where static methods on classes can be called on the instances using method syntax, even though the static function does not receive the `this` pointer.
 
@@ -183,10 +260,14 @@ The two alternative syntax constructs are:
 // #1
 trait_object::Self::CONSTANT
 trait_object::Self::associated_function()
+function_with_generics::<trait_object::Self>()
+let gt: GenericType<trait_object::Self>
 
 // #2, author's personal favorite
 trait_object::impl::CONSTANT
 trait_object::impl::associated_function()
+function_with_generics::<trait_object::impl>()
+let gt: GenericType<trait_object::impl>
 ```
 Construct #1 also might seem confusing, since it's merely an interface towards the associated members of the trait implementation of the trait object rather than the actual type itself. Still, the syntax described in the above sections and alternative #1 are still left as possibilites, even though #2 is more likely to be the stabilized way.
 
