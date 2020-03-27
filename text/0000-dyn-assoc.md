@@ -131,7 +131,7 @@ fn foo<T: Foo + ?Sized>() {
     T::assoc();
 }
 
-struct DefaultFoo;'
+struct DefaultFoo;
 impl Foo for DefaultFoo {
     const CONST: usize = 42;
     
@@ -143,10 +143,98 @@ impl Foo for DefaultFoo {
 fn main() {
     // We'd have a constructor here if the implementor wasn't a unit type:
     let tobject: Box<dyn Foo> = Box::from(DefaultFoo);
-    foo::<tobject>();
+    foo::<tobject.as_ref()>();
 }
 ```
 Here, we're saying to the compiler: "take this trait object and use it to resolve all usage of associated constants/functions in this function I'm calling". Same with types with generic arguments.
+
+### The vtable ambiguity rule
+Consider the following code:
+```rust
+trait Foo {
+    const CONST: usize;
+}
+fn foo<T: Foo + ?Sized>(t1: &T, t2: &T) -> usize {
+    T::CONST
+}
+struct DefaultFoo;
+impl Foo for DefaultFoo {
+    const CONST: usize = 42;
+}
+struct OtherFoo;
+impl Foo for OtherFoo {
+    const CONST: usize = 87;
+}
+
+fn main() {
+    let tobject1: Box<dyn Foo> = Box::from(DefaultFoo);
+    let tobject2: Box<dyn Foo> = Box::from(OtherFoo);
+
+    foo(tobject1.as_ref(), tobject2.as_ref());
+}
+```
+What happens here? More specifically, what does `T::CONST` do in `foo`, where does it resolve to? We can't implicitly infer the vtable used, since there are two instead of one. The only way to solve this is to introduce the vtable ambiguity rule: "a vtable should either be specified for the generic parameter or should be trivial to infer". Not following the rule should produce an error.
+
+There are two ways to resolve the issue:
+- Introduce an equality bound
+- Explicitly use one of the vtables
+
+Let's look at both options in order. An eqality bound would look like this:
+```rust
+trait Foo {
+    const CONST: usize;
+}
+fn foo<T: Foo + ?Sized>(t1: &T, t2: &T) -> usize
+where t1::impl == t2::impl {
+    T::CONST
+}
+struct DefaultFoo;
+impl Foo for DefaultFoo {
+    const CONST: usize = 42;
+}
+struct OtherFoo;
+impl Foo for OtherFoo {
+    const CONST: usize = 87;
+}
+
+fn main() {
+    let tobject1: Box<dyn Foo> = Box::from(DefaultFoo);
+    let tobject2: Box<dyn Foo> = Box::from(OtherFoo);
+
+    foo(tobject1.as_ref(), tobject2.as_ref());
+}
+```
+This adds a **runtime** check, requiring the vtables of `t1` and `t2` to match, i.e. both trait objects should refer to the exact same concrete type. More checks should be stacked, i.e. `t1::impl == t2::impl == t3::impl == tn::impl`. This empathizes the overhead of comparing the vtables.
+
+Explicitly using one of the vtables would look like this:
+```rust
+trait Foo {
+    const CONST: usize;
+}
+fn foo<T: Foo + ?Sized>(t1: &T, t2: &T) -> usize {
+    t1.CONST           // This line changed!
+}
+struct DefaultFoo;
+impl Foo for DefaultFoo {
+    const CONST: usize = 42;
+}
+struct OtherFoo;
+impl Foo for OtherFoo {
+    const CONST: usize = 87;
+}
+
+fn main() {
+    let tobject1: Box<dyn Foo> = Box::from(DefaultFoo);
+    let tobject2: Box<dyn Foo> = Box::from(OtherFoo);
+
+    foo(tobject1.as_ref(), tobject2.as_ref());
+}
+```
+In this example, `foo` explicitly uses one specific vtable, removing any kind of ambiguity. This does not include any runtime checks, and is generally preferrable.
+
+Types with generic arguments work the exact same way: potentially having multiple trait objects of the same trait but of different vtables either requires an equality bound or method-syntax access.
+
+This is only an issue if the generic type parameter has a `?Sized` bound. Otherwise, it's fine to use the normal `T::assoc` syntax.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
