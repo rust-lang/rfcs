@@ -176,7 +176,7 @@ impl __FunctionThatCallsMyFunction__Internal {
     __MyFunction__Internal::start(&mut state.delegate)
   }
   unsafe fn finish(state: *mut __FunctionThatCallsMyFunction__Internal, slot: *mut u8) -> &mut str {
-    __MyFunction__Internal::start(&mut state.delegate, slot)
+    __MyFunction__Internal::finish(&mut state.delegate, slot)
   }
 }
 ```
@@ -192,64 +192,69 @@ This interface ends up putting some pretty harsh limitations on what functions t
 As is typical for generators, these functions may need to be desugared into simple "state machines" if they return branches or have more than one exit point.
 
 ```rust
-fn with_branch() -> Option<Error> {
+fn with_branch() -> dyn MyTrait {
     if coin_flip() {
-        None as Option<!>
+        MyTraitImpl()
     } else {
-        Some("tails")
+        ComplicatedTraitImpl()
     }
-}
-fn with_multiple_exit_points() -> [i32] {
-    while keep_going() {
-        if got_cancelation() {
-            return *&[]; // returning constant
-        }
-    }
-    let n = 100;
-    [1; n] // returning variable-length-array expression
 }
 
 // desugar with_branch
 // this is written in order to aid understanding, not because these are good APIs
 use std::alloc::Layout;
 enum __WithBranch__Internal {
-  S0(Option<!>),
-  S1(Option<&'static str>),
+  S0(MyTraitImpl),
+  S1(ComplicatedTraitImpl),
 }
 impl __WithBranch__Internal {
   unsafe fn start(state: *mut __WithBranch__Internal) -> Layout {
     if coin_flip() {
-        *state = __WithBranch__Internal::S0(None);
-        Layout::new::<Option<!>>()
+        *state = __WithBranch__Internal::S0(MyTraitImpl());
+        Layout::new::<MyTraitImpl>()
     } else {
-        *state = __WithBranch__Internal::S1(Some("tails"));
-        Layout::new::<Option<&'static str>>()
+        *state = __WithBranch__Internal::S1(ComplicatedTraitImpl());
+        Layout::new::<ComplicatedTraitImpl>()
     }
   }
-  unsafe fn finish(state: *mut __MyFunction__Internal, slot: *mut u8) -> &mut [i32] {
+  unsafe fn finish(state: *mut __MyFunction__Internal, slot: *mut u8) -> &mut dyn MyTrait {
     match *state {
         __WithBranch__Internal::S0(value) => {
-            ptr::copy(literal, slot, mem::size_of_value(value));
-            slice::from_raw_parts_mut(slot, value.len())
+            ptr::copy(&value, slot, mem::size_of::<MyTraitImpl>(value));
+            &mut mem::transmute::<*mut u8, MyTraitImpl>(slot) as &mut dyn MyTrait
         }
-        __WithBranch_Internal::S1(value) => {
-            ptr::copy(literal, slot, mem::size_of_value(value));
-            slice::from_raw_parts_mut(slot, value.len())
+        __WithBranch__Internal::S1(value) => {
+            ptr::copy(&value, slot, mem::size_of::<ComplicatedTraitImpl>(value));
+            &mut mem::transmute::<*mut u8, ComplicatedTraitImpl>(slot) as &mut dyn MyTrait
         }
     }
   }
 }
+```
+
+More elaborate example:
+
+```
+fn with_multiple_exit_points() -> [i32] {
+    while keep_going() {
+        if got_cancelation() {
+            return []; // returning constant
+        }
+    }
+    let n = 100;
+    [1; n] // returning variable-length-array expression
+}
 
 // desugar with_multiple_exit_points
 enum __WithMultipleExitPoints__Internal {
-  S0(&[i32]),
+  S0(),
   S1(i32, usize),
 }
 impl __WithMultipleExitPoints__Internal {
   unsafe fn start(state: *mut __WithMultipleExitPoints__Internal) -> Layout {
     while keep_going() {
         if got_cancelation() {
-            *state = __WithMultipleExitPoints__Internal::S0(&[]);
+            *state = __WithMultipleExitPoints__Internal::S0();
             return Layout::for_value(&[]);
         }
     }
@@ -257,18 +262,14 @@ impl __WithMultipleExitPoints__Internal {
     *state = __WithMultipleExitPoints__Internal::S1(1, n);
     Layout::from_size_align_unchecked(n * mem::size_of::<i32>(), mem::align_of::<i32>())
   }
-  unsafe fn finish(state: *mut __WithMultipleExitPoints__Internal, slot: *mut u8) -> &mut Option<Error> {
+  unsafe fn finish(state: *mut __WithMultipleExitPoints__Internal, slot: *mut u8) -> &[i32] {
     match *state {
-        __WithMultipleExitPoints__Internal::S0(literal) => {
-            ptr::copy(literal, slot, mem::size_of_value(literal));
-            /* as you can see, I need to extract the vtable pointer */
-            let t: TraitObject = mem::transmute(&mut literal as &mut Option<Error>);
-            mem::transmute(TraitObject { data: slot, ..t })
+        __WithMultipleExitPoints__Internal::S0() => {
+            slice::from_raw_parts_mut(slot, 0)
         }
         __WithMultipleExitPoints_Internal::S1(value, n) => {
             for i in 0..n { ptr::write(slot.offset(i), value) };
-            let t: TraitObject = mem::transmute(&mut literal as &mut Option<Error>);
-            mem::transmute(TraitObject { data: slot, ..t })
+            slice::from_raw_parts_mut(slot, n)
         }
     }
   }
