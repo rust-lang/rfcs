@@ -81,160 +81,7 @@ fn main() {
 This can be used by library authors to selectively accept trait objects if certain constants match certain criteria, as well as for introspecting implementation details at runtime, as shown with the floating-point mantissa example.
 
 ## Generic contexts
-[generic-contexts]: #generic-contexts
-There's only one case when we don't have direct access to the trait object: compile-time generics. This example demonstrates the issue:
-```rust
-trait Foo {
-    const CONST: usize;
-    
-    fn assoc();
-}
-// Long story short, we're taking a generic argument
-// without a vtable, but we need to do dynamic dispatch.
-fn foo<T: Foo + ?Sized>() {
-    let _ = T::CONST;
-    T::assoc();
-}
-
-fn main() {
-    foo::<dyn Foo>();
-}
-```
-We need to somehow provide `foo<T>()` with a vtable for the trait object, but we don't have one. With the `trait_object.associated_function()` syntax (or the alternatives described in the [unresolved questions][unresolved-questions] section), there's the trait object which we use to perform dynamic dispatch in the calling function — we're calling associated functions and are looking up constants from the **trait** of the trait object, **having the trait object available to also be used to have trait methods called**. But in this case, we don't have a trait object to start with. As a result, if we're calling a function/method/whatever with generic arguments **and the callee uses the associated members** and are passing in `dyn Foo`, the compiler emits an error: "no trait object provided to perform dynamic dispatch", highlighting the exact associated function which requires a trait object with "trait object required here" like some other errors do.
-
-This issue also exists when using the generics on types:
-```rust
-trait Foo {
-    const MY_NAME: &'static str;
-}
-struct MyBox<T: Foo + ?Sized>(Box<T>);
-
-impl<T: Foo + ?Sized> MyBox<T> {
-    fn get_name() -> &'static str {
-        T::MY_NAME
-    }
-}
-```
-In this case, the compiler **detects that the type is using the associated members of `T`** and, if we then try to give `dyn Foo` to it, produces the a similar error: "cannot use dyn Trait as a generic parameter because the type requires a trait object to (call associated function|use associated constant)", with a similar highlight as above.
-
-If we have a trait object, however, and we want to use compile-time generics, we can use it directly as the generic parameter:
-```rust
-trait Foo {
-    const CONST: usize;
-    
-    fn assoc();
-}
-// Long story short, we're taking a generic argument
-// without a vtable, but we need to do dynamic dispatch.
-fn foo<T: Foo + ?Sized>() {
-    let _ = T::CONST;
-    T::assoc();
-}
-
-struct DefaultFoo;
-impl Foo for DefaultFoo {
-    const CONST: usize = 42;
-    
-    fn assoc() {
-        println!("I'm doing great, thank you!");
-    }
-}
-
-fn main() {
-    // We'd have a constructor here if the implementor wasn't a unit type:
-    let tobject: Box<dyn Foo> = Box::from(DefaultFoo);
-    foo::<tobject.as_ref()>();
-}
-```
-Here, we're saying to the compiler: "take this trait object and use it to resolve all usage of associated constants/functions in this function I'm calling". Same with types with generic arguments.
-
-### The vtable ambiguity rule
-Consider the following code:
-```rust
-trait Foo {
-    const CONST: usize;
-}
-fn foo<T: Foo + ?Sized>(t1: &T, t2: &T) -> usize {
-    T::CONST
-}
-struct DefaultFoo;
-impl Foo for DefaultFoo {
-    const CONST: usize = 42;
-}
-struct OtherFoo;
-impl Foo for OtherFoo {
-    const CONST: usize = 87;
-}
-
-fn main() {
-    let tobject1: Box<dyn Foo> = Box::from(DefaultFoo);
-    let tobject2: Box<dyn Foo> = Box::from(OtherFoo);
-
-    foo(tobject1.as_ref(), tobject2.as_ref());
-}
-```
-What happens here? More specifically, what does `T::CONST` do in `foo`, where does it resolve to? We can't implicitly infer the vtable used, since there are two instead of one. The only way to solve this is to introduce the vtable ambiguity rule: "a vtable should either be specified for the generic parameter or should be trivial to infer". Not following the rule should produce an error.
-
-There are two ways to resolve the issue:
-- Introduce an equality bound
-- Explicitly use one of the vtables
-
-Let's look at both options in order. An eqality bound would look like this:
-```rust
-trait Foo {
-    const CONST: usize;
-}
-fn foo<T: Foo + ?Sized>(t1: &T, t2: &T) -> usize
-where t1::impl == t2::impl {
-    T::CONST
-}
-struct DefaultFoo;
-impl Foo for DefaultFoo {
-    const CONST: usize = 42;
-}
-struct OtherFoo;
-impl Foo for OtherFoo {
-    const CONST: usize = 87;
-}
-
-fn main() {
-    let tobject1: Box<dyn Foo> = Box::from(DefaultFoo);
-    let tobject2: Box<dyn Foo> = Box::from(OtherFoo);
-
-    foo(tobject1.as_ref(), tobject2.as_ref());
-}
-```
-This adds a **runtime** check, requiring the vtables of `t1` and `t2` to match, i.e. both trait objects should refer to the exact same concrete type. More checks should be stacked, i.e. `t1::impl == t2::impl == t3::impl == tn::impl`. This empathizes the overhead of comparing the vtables.
-
-Explicitly using one of the vtables would look like this:
-```rust
-trait Foo {
-    const CONST: usize;
-}
-fn foo<T: Foo + ?Sized>(t1: &T, t2: &T) -> usize {
-    t1.CONST           // This line changed!
-}
-struct DefaultFoo;
-impl Foo for DefaultFoo {
-    const CONST: usize = 42;
-}
-struct OtherFoo;
-impl Foo for OtherFoo {
-    const CONST: usize = 87;
-}
-
-fn main() {
-    let tobject1: Box<dyn Foo> = Box::from(DefaultFoo);
-    let tobject2: Box<dyn Foo> = Box::from(OtherFoo);
-
-    foo(tobject1.as_ref(), tobject2.as_ref());
-}
-```
-In this example, `foo` explicitly uses one specific vtable, removing any kind of ambiguity. This does not include any runtime checks, and is generally preferrable.
-
-Types with generic arguments work the exact same way: potentially having multiple trait objects of the same trait but of different vtables either requires an equality bound or method-syntax access.
-
-This is only an issue if the generic type parameter has a `?Sized` bound. Otherwise, it's fine to use the normal `T::assoc` syntax.
+Using trait objects with associated members in compile-time generics is not allowed, just like before the RFC. The reason is that this would introduce numerous complications related to compile-time checks being inconsistent with concrete type usage in compile-time generics.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -297,13 +144,6 @@ fn main() {
 ```
 Supporting the actual `Self` type [might still be introduced in a later RFC][future-possibilities].
 
-## Generic contexts
-As [described][generic-contexts] in the guide-level explanation, we can put trait objects themselves in the generics to get associated members to work in functions which do not take the trait object as an argument and are not dynamically dispatched from the side which has the trait object. How does this work?
-
-For functions with generic arguments, the vtable (not the trait object, only its vtable) is passed as an invisible argument on the stack/registers, which is present only in the morphomization of the function which takes a trait object in its generics. If a function has more than one `?Sized` generic argument, the morphomization (generated at compile time) which requires multiple trait objects should take multiple invisible vtable arguments. The arguments are automatically filled out when the callee puts  the trait object(s) into the angle brackets (if they don't provide all the trait objects required and fill some with `dyn Trait`, an error is produced as described back in the guide-level section).
-
-For types with generic arguments, the vtables exist inside instances of that type as invisible private fields. Like the vtable function arguments, these are only visible to the compiler (but they obviously contribute to the size, which remains known since vtable pointers are just pointers). If an associated function is called, however (no `self` — no access to the invisible vtable fields), the vtables should be provided as invisible vtable arguments, as with regular functions.
-
 ## Edge cases
 None unresolved yet.
 
@@ -338,8 +178,6 @@ The only major unresolved question about this feature is the syntax. Currently, 
 ```rust
 trait_object.CONSTANT
 trait_object.associated_function()
-function_with_generics::<trait_object>()
-let gt: GenericType<trait_object>
 ```
 While this cannot ever have the risk of trait methods and associated functions colliding their names (since these reside in the same namespace), this can confuse Rust beginners, since method syntax usually means that the function called somehow directly **operates** with the trait object. This wouldn't be a problem for those coming from a C++ background, where static methods on classes can be called on the instances using method syntax, even though the static function does not receive the `this` pointer.
 
@@ -348,14 +186,10 @@ The two alternative syntax constructs are:
 // #1
 trait_object::Self::CONSTANT
 trait_object::Self::associated_function()
-function_with_generics::<trait_object::Self>()
-let gt: GenericType<trait_object::Self>
 
 // #2, author's personal favorite
 trait_object::impl::CONSTANT
 trait_object::impl::associated_function()
-function_with_generics::<trait_object::impl>()
-let gt: GenericType<trait_object::impl>
 ```
 Construct #1 also might seem confusing, since it's merely an interface towards the associated members of the trait implementation of the trait object rather than the actual type itself. Still, the syntax described in the above sections and alternative #1 are still left as possibilites, even though #2 is more likely to be the stabilized way.
 
