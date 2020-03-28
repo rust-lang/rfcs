@@ -24,8 +24,6 @@ name = "myproject"
 version = "0.1.0"
 edition = "2018"
 
-[dependencies]
-
 [lib]
 name = "myproject"
 path = "src/lib.rs"
@@ -46,8 +44,6 @@ To solve this, we can add dependencies for a specific artifact, like so:
 name = "myproject"
 version = "0.1.0"
 edition = "2018"
-
-[dependencies]
 
 [lib]
 name = "myproject"
@@ -78,7 +74,7 @@ clap = "*"
 [lib]
 name = "myproject"
 
-[lib.dependencies] # only one library can be specified, so lib name isn't required
+[lib.dependencies]
 # ...
 ```
 
