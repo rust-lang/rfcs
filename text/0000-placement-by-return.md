@@ -15,6 +15,13 @@ Starting with the questions given at the end of the [old RFC's mortician's note]
  * **Can the new RFC handle cases where allocation fails? Does this align with wider language plans (if any) for fallible allocation?** Yes.
  * **are there upcoming/potential language features that could affect the design of the new RFC? e.g. custom allocators, NoMove, HKTs? What would the implications be?** Not really. `Pin` can have a `new_with` function just like anyone else, custom allocators would happen entirely behind this, true HKT's are probably never going to be added, and associated type constructors aren't going to affect this proposal since the proposal defines no new traits or types that would use them.
 
+## Glossary
+
+- **GCE:** [Guaranteed Copy Elision](https://stackoverflow.com/questions/38043319/how-does-guaranteed-copy-elision-work).
+- **NRVO:** [Named Return Value Optimization](https://shaharmike.com/cpp/rvo/).
+- **DST:** [Dynamically-Sized Type](https://doc.rust-lang.org/reference/dynamically-sized-types.html).
+- **HKT:** Higher-Kinded Type.
+
 # Motivation
 [motivation]: #motivation
 
@@ -586,7 +593,46 @@ Additionally, this proposal deliberately does not implement NRVO. This means peo
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-## Why not use an alternative ABI for returning Result?
+At the heart of the rationale for this RFC is that, **if we want any kind of placement in Rust, there are only two possibilities:**
+
+- Guaranteed Copy Ellision,
+
+- Passing references to uninitialized memory.
+
+This RFC chooses GCE. Everything else is a result of that choice.
+
+## Vs passing uninitialized memory
+
+There has been some discussion (note: if someone could find links, that'd be appreciated) of solving placement using references to undefined memory.
+
+For instance, the following code:
+
+```rust
+let giantStruct = GiantStruct::new();
+doSomething(&giantStruct);
+```
+
+could be replaced with
+
+```rust
+let giantStruct;
+GiantStruct::init(&uninit giantStruct);
+doSomething(&giantStruct);
+```
+
+(with the understanding that `&uninit` communicates that `giantStruct` should not be read, only written to)
+
+There are several major drawback to this approach:
+
+- It's less elegant. Data is created in an invalid state, then passed to a function. The GCE approach just returns the values the caller needs.
+
+- It's not obvious what to do with `giantStruct` if `GiantStruct::init` returns early, panics, or calls a method of `GiantStruct` before it's done building the object. This is particularly relevant for `read`-like APIs, which will often fill only a part of the buffer passed to them. The GCE approach is simpler: it either returns usable data, or it panics.
+
+- The caller has to know in advance how much memory to allocate; `giantStruct::init` has no obvious way to communicate how much memory it will need.
+
+Overall, GCE just seems like the approach that is most idiomatic to Rust. Creating a large object is as simple as calling `GiantStruct::new`, like [existing code](https://github.com/rust-ammonia/ammonia/blob/a6f0cf7886653ce1a982aab1c522cd44eab1267a/src/lib.rs#L342-L355) does.
+
+## Vs alternative ABI for returning Result
 
 The biggest drawback to this proposal, like most placement proposals, is that it works poorly with Result. You can emplace a function returning `Result<T>` into a `Box<Result<T>>`, and you cannot emplace it into a `Box<T>`.
 
@@ -650,11 +696,11 @@ Using an alternative ABI remains practical as a solution for the "peanut butter"
 
 ## Vs other possible tweaks to this RFC
 
-The design for this proposal is meant to allow already-idiomatic "constructors" like [this one](https://github.com/rust-ammonia/ammonia/blob/a6f0cf7886653ce1a982aab1c522cd44eab1267a/src/lib.rs#L342-L355) to be allocated directly into a container. Any proposal that wishes to pull that off *has* to involve GCE, including more elaborate ones like RFC-8089. The choice of modeling that part of the proposal after existing parts of C++17 was made for familiarity and ease of implementation. Clang already does this stuff in LLVM, so we know it's possible.
+GCE is integral to this proposal, as mentionned above. The choice of modeling the proposal after existing parts of C++17 was made for familiarity and ease of implementation. Clang already does this stuff in LLVM, so we know it's possible.
 
 The weird bypass functions, `write_return_with` and `read_return_with`, both accept closures because the only alternatives I could think of involved even weirder calling convention hacks, even weirder type system hacks (`fn get_return_slot<T>() -> *mut T`, for example, would be required to ensure that `T` is the same as the return type of the current function), or new language features like Go's nameable return slot.
 
-The idea of compiling functions that return unsized types into pseudo-generators came from the Rust Discord server. [Thanks @rpjohnst](https://discordapp.com/channels/442252698964721669/443151225160990732/550731094027403285)!
+The idea of compiling functions that return unsized types into pseudo-generators is somewhat common; the version that inspired this proposal came from the Rust Discord server. [Thanks @rpjohnst](https://discordapp.com/channels/442252698964721669/443151225160990732/550731094027403285)!
 
 This RFC supports returning DSTs for two reasons:
 
@@ -791,19 +837,19 @@ However, there are several obstacles to this syntax:
 
   While this is feasible with Box or Rc (which could, for instance, always allocate extraneous bytes before their stored data to accomodate the discriminant), it's harder for methods such as `Vec::push_with`, which require working on contiguous memory.
 
-There are several potential solutions to the second problem, though they all require language-wide changes, which are beyond the scope of this RFC.
+There are several potential solutions to the second problem:
 
 ### Split the discriminant from the payload
 
 We could decide that enums (or at least a specific subset of enums, including Result, Option, and other specialized types) should be stored differently.
 
-Instead of storying the discriminant next to the payload, it would always be stored separately, eg in a register. References to these enums would be fat pointers, with the first word pointing to the payload, and the second word storying the discriminant.
+Instead of storying the discriminant next to the payload, it would always be stored separately, eg in a register. References to these enums would be fat pointers, with the first word pointing to the payload, and the second word storing the discriminant.
 
-Functions returning results could then store their payload in the return slot, while returning the discriminant directly a register.
+Functions returning `Result` could then store their payload in the return slot, while returning the discriminant directly through a register; they could even take two return slots: one for the `Ok` variant and another for the `Err` variant.
 
-We could even pass multiple return slots; for instance, if a function returns a Result, we could pass one return slot for the ok variant and another for the err variant.
+Of course, a naive implementation of this change would be far-reaching, and break backwards compatibility. Among other things, it would severely impact how Results and Options and similar types are stored in containers.
 
-Of course, this semantic change would be far-reaching, and break backwards compatibility. Among other things, it would severely impact how Results and Options and similar types are stored in containers. This feature would probably require an edition change to be even considered (though edition changes don't apply to the standard library).
+One possible mitigation might be treat enums as normal, contiguous chunks of data when storing them and passing them to function; and to treat them as fat pointers when returning them from functions. However, the semantics in that case are non-trivial; among other things, they might clash with future attempts to add NRVO.
 
 ### Always store the discriminant as a suffix
 
@@ -815,8 +861,21 @@ This solution would make it possible to adapt methods like `Vec::push_with`, `Ve
 
 It would not work with methods such as `Vec::insert_with`, except in special cases where the Result is known to have the same memory layout as its payload (eg `Result<Box<i32>, ()>`).
 
-This solution would incur additional cache inefficiency (imagine a Result where the discriminant is stored after 10 mB of payload), though this isn't something average users would need to be worry about, and there would be easy mitigations for those who do.
+This solution would incur additional cache inefficiency (imagine a Result where the discriminant is stored after 10 MB of payload), though this isn't something average users would need to be worry about, and there would be easy mitigations for those who do.
 
+### Should this RFC pick a strategy?
+
+The two solutions proposed above both require language-wide changes.
+
+One might argue that a proposal for placement that doesn't support faillible returns "out of the box" is flawed. To quote a reviewer:
+
+> After all, we surely want to support them eventually. [...] If this RFC is accepted, but we later discover that supporting fallible allocators requires a completely different design, we'll end up having to maintain two new sets of APIs in all the collections, on top of the existing non-placement-aware APIs. One set of duplicate APIs will already be a (well-justified) burden for language learners; there's no need to add another!
+
+That said, I believe that this RFC is an acceptable Minimum Viable Product. To put it bluntly, any solution for faillible placement will probably require months of debate and analysis work, that will take away from the core proposal.
+
+(Also, while a lot of people have shown enthusiasm for "split the discriminat" solution, I personally believe this enthusiasm is partly due to them underestimating the amount of semantic work needed to implement it.)
+
+I also believe that this RFC is a good base for future development. While I don't want to commit to any future solution for faillible placement, both solutions this RFC proposes are compatible with this RFC; I believe that any potential solution would rely on GCE as well (for reasons explained in [rationale-and-alternatives]).
 
 ## Integration with futures, streams, serde, and other I/O stuff
 
