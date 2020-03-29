@@ -60,8 +60,10 @@ unsafe blocks, which is somewhat inconsistent with `unsafe fn`.)
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-When you perform an unsafe operation, like dereferencing a raw pointer or
-calling an `unsafe` function, you must enclose that code in an `unsafe` block.
+The `unsafe` keyword in Rust serves two related purposes.
+
+When you perform an "unsafe to call" operation, like dereferencing a raw pointer
+or calling an `unsafe fn`, you must enclose that code in an `unsafe {}` block.
 The purpose of this is to acknowledge that the operation you are performing here
 has *not* been checked by the compiler, you are responsible yourself for
 upholding Rust's safety guarantees.  Generally, unsafe operations come with
@@ -72,59 +74,72 @@ When you are writing a function that itself has additional conditions to ensure
 safety (say, it accesses some data without making some necessary bounds checks,
 or it takes some raw pointers as arguments and performs memory operations based
 on them), then you should mark this as an `unsafe fn` and it is up to you to
-document the conditions that must be met for the arguments.
+document the conditions that must be met for the arguments.  This use of the
+`unsafe` keyword makes your function itself "unsafe to call".
 
-Your `unsafe fn` will likely perform unsafe operations; these have to be
-enclosed by an `unsafe` block as usual.  This is the place where you have to
-check that the requirements you documented for your own function are sufficient
-to satisfy the conditions required to perform this unsafe operation.
+The same duality can be observed in traits: `unsafe trait` is like `unsafe fn`;
+it makes implementing this trait an "unsafe to call" operation and it is up to
+whoever defines the trait to precisely document what is unsafe about it.
+`unsafe impl` is like `unsafe {}`, it acknowledges that there are extra
+requirements here that are not checked by the compiler and that the programmer
+is responsible to uphold.
+
+For this reason, "unsafe to call" operations inside an `unsafe fn` must be
+contained inside an `unsafe {}` block like everywhere else.  The author of these
+functions has to ensure that the requirements of the operation are upheld.  To
+this end, the author may of course assume that the caller of the `unsafe fn` in
+turn uphold their own requirements.
+
+For backwards compatibility reasons, this unsafety check inside `unsafe fn` is
+controlled by a lint, `unsafe_op_in_unsafe_fn`.  By setting
+`#[deny(unsafe_op_in_unsafe_fn)]`, the compiler is as strict about unsafe
+operations inside `unsafe fn` as it is everywhere else.
+
+This lint is allow-by-default initially, and will be warn-by-default across all
+editions eventually.  In future editions, it may become deny-by-default, or even
+a hard error.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-1.  First of all, we no longer warn that an `unsafe` block is unnecessary when it is
-    nested immediately inside an `unsafe fn`.  So, the following compiles without
-    any warning:
+The new `unsafe_op_in_unsafe_fn` lint triggers when an unsafe operation is used
+inside an `unsafe fn` but outside `unsafe {}` blocks.  So, the following will
+emit a warning:
 
-    ```rust
-    unsafe fn get_unchecked<T>(x: &[T], i: usize) -> &T {
-      unsafe { x.get_unchecked(i) }
-    }
-    ```
+```rust
+#[warn(unsafe_op_in_unsafe_fn)]
+unsafe fn get_unchecked<T>(x: &[T], i: usize) -> &T {
+  x.get_unchecked(i)
+}
+```
 
-    However, nested `unsafe` blocks are still redundant, so this warns:
+Moreover, if and only if the `unsafe_op_in_unsafe_fn` lint is not `allow`ed, we
+no longer warn that an `unsafe` block is unnecessary when it is nested
+immediately inside an `unsafe fn`.  So, the following compiles without any
+warning:
 
-    ```rust
-    unsafe fn get_unchecked<T>(x: &[T], i: usize) -> &T {
-      unsafe { unsafe { x.get_unchecked(i) } }
-    }
-    ```
+```rust
+#[warn(unsafe_op_in_unsafe_fn)]
+unsafe fn get_unchecked<T>(x: &[T], i: usize) -> &T {
+  unsafe { x.get_unchecked(i) }
+}
+```
 
-2.  Optionally, we could add a clippy "correctness" lint to warn about unsafe
-    operations inside an `unsafe fn`, but outside an `unsafe` block.  So, this
-    would trigger the lint:
+However, nested `unsafe` blocks are still redundant, so this warns:
 
-    ```rust
-    unsafe fn get_unchecked<T>(x: &[T], i: usize) -> &T {
-      x.get_unchecked(i)
-    }
-    ```
-
-3.  In a next step, we move this lint to rustc proper, make it warn-by-default.
-    This gets us into a state where programmers are much less likely to
-    accidentally perform undesired unsafe operations inside `unsafe fn`.
-
-4.  Even later (in the 2021 edition?), it might be desirable to turn this
-    warning into an error.
+```rust
+#[warn(unsafe_op_in_unsafe_fn)]
+unsafe fn get_unchecked<T>(x: &[T], i: usize) -> &T {
+  unsafe { unsafe { x.get_unchecked(i) } }
+}
+```
 
 # Drawbacks
 [drawbacks]: #drawbacks
 
-This new warning will likely fire for the vast majority of `unsafe fn` out there.
-
-Many `unsafe fn` are actually rather short (no more than 3 lines) and will
-likely end up just being one large `unsafe` block.  This change would make such
-functions less ergonomic to write, they would likely become
+Many `unsafe fn` are actually rather short (no more than 3 lines) and will end
+up just being one large `unsafe` block.  This change would make such functions
+less ergonomic to write, they would likely become
 
 ```rust
 unsafe fn foo(...) -> ... { unsafe {
@@ -165,14 +180,20 @@ culture of thinking about this in terms of proof obligations.
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-Should this lint be in clippy first before in becomes warn-by-default in rustc,
-to avoid a huge flood of warnings showing up at once?  Should the lint ever
-become a hard error (on newer editions), or remain a warning indefinitely?
+What is the timeline for adding the lint, and cranking up its default level?
+Should the default level depend on the edition?
+
+Should we ever make this deny-by-default or even a hard error, in a future
+edition?
 
 Should we require `cargo fix` to be able to do *something* about this warning
-before making it warn-by-default?  `cargo fix` could, for example, wrap the body
-of every `unsafe fn` in one big `unsafe` block.  That would not improve the
-amount of care that is taken for unsafety in the fixed code, but it would
-provide a way to the incrementally improve the big functions, and new functions
-written later would have the appropriate amount of care applied to them from the
-start.
+before making it even warn-by-default?  (We certainly need to do something
+before making it deny-by-default or a hard error in a future edition.)  `cargo
+fix` could add big `unsafe {}` blocks around the entire body of every `unsafe
+fn`.  That would not improve the amount of care that is taken for unsafety in
+the fixed code, but it would provide a way to the incrementally improve the big
+functions, and new functions written later would have the appropriate amount of
+care applied to them from the start.  Potentially, `rustfmt` could be taught to
+format `unsafe` blocks that wrap the entire function body in a way that avoids
+double-indent.  "function bodies as expressions" would enable a format like
+`unsafe fn foo() = unsafe { body }`.
