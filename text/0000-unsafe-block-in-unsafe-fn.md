@@ -38,24 +38,24 @@ However, this neglects the other aspect of `unsafe` that I described above: To
 make the programmer aware that they are treading dangerous ground even when they
 may not realize they are doing so.
 
-Using some more formal terminology, an `unsafe` block generally comes with a
-proof *obligation*: The programmer has to ensure that this code is actually safe
-to execute in the current context, because the compiler just trusts the
-programmer to get this right.  In contrast, `unsafe fn` represents an
-*assumption*: As the author of this function, I make some assumptions that I
-expect my callees to uphold.  (In terms of
-[introduction and elimination forms of natural deduction](https://en.wikipedia.org/wiki/Natural_deduction#Introduction_and_elimination),
-`unsafe` blocks are where you introduce, and `unsafe fn` is where you
-eliminate.)
+In fact, this double role of `unsafe` in `unsafe fn` (making it both unsafe to
+call and enabling it to call other unsafe operations) conflates the two *dual*
+roles that `unsafe` plays in Rust.  On the one hand, there are places that
+*define* a proof obligation, these make things "unsafe to call/do" (e.g., the
+language definition says that dereferencing a raw pointer requires it not to be
+dangling).  On the other hand, there are places that *discharge* the proof
+obligation, these are "unsafe blocks of code" (e.g., unsafe code that
+dereferences a raw pointer has to locally argue why it cannot be dangling).
 
-Making `unsafe fn` also implicitly play the role of an `unsafe` block conflates
-these two dual aspects of unsafety (one party making an assumption, another
-party having the obligation to prove that assumption).  There is no reason to
-believe that the assumption made by the `unsafe fn` is the same as the
-obligation incurred by unsafe operations inside this function, and hence the
-author of the `unsafe fn` should better carefully check that their assumptions
-are sufficient to justify the unsafe operations they are performing.  This is
-what an `unsafe` block would indicate.
+`unsafe {}` blocks are about *discharging* obligations, but `unsafe fn` are
+about *defining* obligations.  The fact that the body of an `unsafe fn` is also
+implicitly treated like a block has made it hard to realize this duality
+[even for experienced Rust developers][unsafe-dual].  (Completing the picture,
+`unsafe Trait` also defines an obligation, that is discharged by `unsafe impl`.
+Curiously, `unsafe impl` does *not* implicitly make all bodies of this `impl`
+unsafe blocks, which is somewhat inconsistent with `unsafe fn`.)
+
+[unsafe-dual]: https://github.com/rust-lang/rfcs/pull/2585#issuecomment-577852430
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
