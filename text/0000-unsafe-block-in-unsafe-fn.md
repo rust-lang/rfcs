@@ -154,6 +154,8 @@ I explained the rationale in the motivation section.
 
 The alternative is to not do anything, and live with the current situation.
 
+We could bikeshed the lint name.
+
 We could introduce named proof obligations (proposed by @Centril) such that the
 compiler can be be told (to some extend) if the assumptions made by the `unsafe
 fn` are sufficient to discharge the requirements of the unsafe operations.
