@@ -52,8 +52,9 @@ about *defining* obligations.  The fact that the body of an `unsafe fn` is also
 implicitly treated like a block has made it hard to realize this duality
 [even for experienced Rust developers][unsafe-dual].  (Completing the picture,
 `unsafe Trait` also defines an obligation, that is discharged by `unsafe impl`.
-Curiously, `unsafe impl` does *not* implicitly make all bodies of this `impl`
-unsafe blocks, which is somewhat inconsistent with `unsafe fn`.)
+Curiously, `unsafe trait` does *not* implicitly make all bodies of default
+functions defined inside this trait unsafe blocks, which is somewhat
+inconsistent with `unsafe fn` when viewed through this lens.)
 
 [unsafe-dual]: https://github.com/rust-lang/rfcs/pull/2585#issuecomment-577852430
 
@@ -156,6 +157,11 @@ The alternative is to not do anything, and live with the current situation.
 
 We could bikeshed the lint name.
 
+We could avoid using `unsafe` for dual purpose, and instead have `unsafe_to_call
+fn` for functions that are "unsafe to call" but do not implicitly have an
+`unsafe {}` block in their body.  For consistency, we might want `unsafe_to_impl
+trait` for traits, though the behavior would be the same as `unsafe trait`.
+
 We could introduce named proof obligations (proposed by @Centril) such that the
 compiler can be be told (to some extend) if the assumptions made by the `unsafe
 fn` are sufficient to discharge the requirements of the unsafe operations.
@@ -163,10 +169,6 @@ fn` are sufficient to discharge the requirements of the unsafe operations.
 We could restrict this requirement to use `unsafe` blocks in `unsafe fn` to
 those `unsafe fn` that contain at least one `unsafe` block, meaning short
 `unsafe fn` would keep compiling like they do now.
-
-We could have separate marker for `unsafe fn` with and without an implicitly
-unsafe body, e.g. `unsafe unsafe fn` has an unsafe body, or `unsafe fn foo(...)
--> ... unsafe { }` has an unsafe body, or `unsafe_to_call fn` has a safe body.
 
 # Prior art
 [prior-art]: #prior-art
