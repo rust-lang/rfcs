@@ -151,23 +151,17 @@ unsafe fn foo(...) -> ... { unsafe {
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-I explained the rationale in the motivation section.
+To achieve the goals laid out in the motivation section, the proposed approach
+is least invasive in the sense that it avoids introducing new keywords, and
+instead relies on the existing lint mechanism to perform the transition.
 
-The alternative is to not do anything, and live with the current situation.
-
-We could bikeshed the lint name.
+One alternative always is to not do anything, and live with the current
+situation.
 
 We could avoid using `unsafe` for dual purpose, and instead have `unsafe_to_call
 fn` for functions that are "unsafe to call" but do not implicitly have an
 `unsafe {}` block in their body.  For consistency, we might want `unsafe_to_impl
 trait` for traits, though the behavior would be the same as `unsafe trait`.
-
-We could avoid having the "unnecessary unsafe" lint depend on
-`unsafe_op_in_unsafe_fn` and instead always behave like those blocks are
-necessary (if they contain an "unsafe to call" operation).  That would avoid a
-dependency of one lint on another, but it could possibly be confusing when,
-inside an `unsafe fn`, some operations are guarded by an unsafe block and others
-are not.
 
 We could introduce named proof obligations (proposed by @Centril) such that the
 compiler can be be told (to some extend) if the assumptions made by the `unsafe
@@ -176,6 +170,8 @@ fn` are sufficient to discharge the requirements of the unsafe operations.
 We could restrict this requirement to use `unsafe` blocks in `unsafe fn` to
 those `unsafe fn` that contain at least one `unsafe` block, meaning short
 `unsafe fn` would keep compiling like they do now.
+
+And of course, the lint name is subject to bikeshedding.
 
 # Prior art
 [prior-art]: #prior-art
@@ -208,3 +204,7 @@ care applied to them from the start.  Potentially, `rustfmt` could be taught to
 format `unsafe` blocks that wrap the entire function body in a way that avoids
 double-indent.  "function bodies as expressions" would enable a format like
 `unsafe fn foo() = unsafe { body }`.
+
+It is not entirely clear if having the behavior of one lint depend on another
+will work (though most likely, it will).  If it does not, we should try to find
+some other mechanism to opt-in to the new treatment of `unsafe fn` bodies.
