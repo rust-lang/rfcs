@@ -162,6 +162,13 @@ fn` for functions that are "unsafe to call" but do not implicitly have an
 `unsafe {}` block in their body.  For consistency, we might want `unsafe_to_impl
 trait` for traits, though the behavior would be the same as `unsafe trait`.
 
+We could avoid having the "unnecessary unsafe" lint depend on
+`unsafe_op_in_unsafe_fn` and instead always behave like those blocks are
+necessary (if they contain an "unsafe to call" operation).  That would avoid a
+dependency of one lint on another, but it could possibly be confusing when,
+inside an `unsafe fn`, some operations are guarded by an unsafe block and others
+are not.
+
 We could introduce named proof obligations (proposed by @Centril) such that the
 compiler can be be told (to some extend) if the assumptions made by the `unsafe
 fn` are sufficient to discharge the requirements of the unsafe operations.
