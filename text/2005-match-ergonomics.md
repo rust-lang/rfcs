@@ -257,7 +257,7 @@ match &Some(3) {
 
 // Desugared:
 match &Some(3) {
-  &Some(ref P) => {
+  &Some(ref p) => {
     ...
   },
   x => {
