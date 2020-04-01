@@ -850,13 +850,21 @@ There are several potential solutions to the second problem:
 
 We could decide that enums (or at least a specific subset of enums, including Result, Option, and other specialized types) should be stored differently.
 
-Instead of storying the discriminant next to the payload, it would always be stored separately, eg in a register. References to these enums would be fat pointers, with the first word pointing to the payload, and the second word storing the discriminant.
+Instead of storing the discriminant next to the payload, it would be stored separately, eg in a register. References to these enums, at least in some cases, would be fat pointers, with the first word pointing to the payload, and the second word storing the discriminant.
 
 Functions returning `Result` could then store their payload in the return slot, while returning the discriminant directly through a register; they could even take two return slots: one for the `Ok` variant and another for the `Err` variant.
 
-Of course, a naive implementation of this change would be far-reaching, and break backwards compatibility. Among other things, it would severely impact how Results and Options and similar types are stored in containers.
+There are multiple strategies to implement that change:
 
-One possible mitigation might be treat enums as normal, contiguous chunks of data when storing them and passing them to function; and to treat them as fat pointers when returning them from functions. However, the semantics in that case are non-trivial; among other things, they might clash with future attempts to add NRVO.
+- Change the ABI of all enums, so that all references to enums are always fat pointers (including function parameters, struct members, etc). This would be the most naive implementation, and incur some heavy breaking changes. Among other things, it would severely impact how Results and Options and similar types are stored in containers.
+
+- Treat enums as normal, contiguous chunks of data when storing them and passing them to functions; and treat them as fat pointers when returning them (in a way that is purely transparent to the user).
+
+  This may have non-trivial implications, especially if we later implement NRVO. Since NRVO would allow the user to take references to a Result even as it is being emplaced, the Result's layout could no longer be abstracted away by the compiler.
+
+On the other hand, some of these objections may be overblown. A more detailed analysis may reveal that transparent discriminant splitting would have trivial semantics; or it could reveal complex edge cases.
+
+Such an analysis is left for a future RFC.
 
 ### Always store the discriminant as a suffix
 
@@ -878,11 +886,11 @@ One might argue that a proposal for placement that doesn't support faillible ret
 
 > After all, we surely want to support them eventually. [...] If this RFC is accepted, but we later discover that supporting fallible allocators requires a completely different design, we'll end up having to maintain two new sets of APIs in all the collections, on top of the existing non-placement-aware APIs. One set of duplicate APIs will already be a (well-justified) burden for language learners; there's no need to add another!
 
-That said, I believe that this RFC is an acceptable Minimum Viable Product. To put it bluntly, any solution for faillible placement will probably require months of debate and analysis work, that will take away from the core proposal.
+That said, I believe that this RFC is an acceptable Minimum Viable Product. To put it bluntly, any solution for faillible placement will probably require months of debate and analysis work, that would unnecessarily slow down the core proposal.
 
-(Also, while a lot of people have shown enthusiasm for "split the discriminat" solution, I personally believe this enthusiasm is partly due to them underestimating the amount of semantic work needed to implement it.)
+(Also, while a lot of people have shown enthusiasm for "split the discriminant" solution, I personally believe this enthusiasm is partly due to them underestimating the amount of semantic work needed to implement it.)
 
-I also believe that this RFC is a good base for future development. While I don't want to commit to any future solution for faillible placement, both solutions this RFC proposes are compatible with this RFC; I believe that any potential solution would rely on GCE as well (for reasons explained in [rationale-and-alternatives]).
+I also believe that this RFC is a good base for future development. While I don't want to commit to any future solution for faillible placement, both solutions this RFC proposes are compatible with this RFC, and I believe that any potential solution would rely on GCE as well (for the reasons explained in [rationale-and-alternatives]).
 
 ## Integration with futures, streams, serde, and other I/O stuff
 
