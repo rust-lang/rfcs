@@ -132,6 +132,13 @@ fn not_bad() -> [i32] {
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
+When a function returns a value while respecting the constraints described above, the value's observable address will not change, if the value's type is:
+
+- Larger than an implementation-defined size (eg a register).
+- Unsized.
+
+(note: we could add a trait in a future RFC that would guarantee a type is always emplaced, even when it's register-sized, if use cases appear that need the "unchanged address" guarantee)
+
 ## Did you say I can return unsized types?
 
 A function that directly returns an unsized type should be compiled into two functions, essentially as a special kind of generator:
