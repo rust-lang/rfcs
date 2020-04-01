@@ -999,3 +999,97 @@ trait Serializer {
   }
 }
 ```
+
+## Named Return Value Optimization
+
+In this context, NRVO refers to the ability to write code like:
+
+```rust
+let x = initial_state;
+f(&mut x);
+return x
+```
+
+and have it be guaranteed to never copy x.
+
+Some use cases:
+
+- Creating a trait object, calling some of its methods, then returning it.
+- Creating a large zero-initialized array, setting a few of its elements, then returning it.
+- Creating intermediate variables storing large/unsized objects that are part of a future return, without copying them around.
+
+A future proposal implementing NRVO would need to address the following problems:
+
+- Which patterns do or do not trigger NRVO.
+- How to give the user feedback at to when NRVO is triggered.
+- Whether to apply NRVO to multiple variables in the same function, eg:
+
+```rust
+// Should not be copied
+let giantStruct1 = GiantStruct::new();
+// Should not be copied either
+let giantStruct2 = GiantStruct::new();
+return (giantStruct1, giantStruct2);
+```
+
+### Lazy parameters
+
+Lazy parameters would be a more powerful and wide-reaching feature, mirroring GCE and NRVO to streamline emplacement.
+
+Instead of writing:
+
+```rust
+impl<T> Vec<T> {
+    fn push_with<F: FnOnce() -> T>(&mut self, f: F);
+}
+
+some_vec.push_with(|| create_large_data(params));
+```
+
+the developer would write:
+
+```rust
+impl<T> Vec<T> {
+    fn push(&mut self, lazy value: T);
+}
+
+some_vec.push(create_large_data(params));
+```
+
+which the compiler would silently rearrange, either by creating a closure, or by splitting `Vec::push` in two, and reserving space for `create_large_data` in the first half.
+
+Both the main advantage and the main weakness of this feature is that it would be silent: on one hand, this obfuscates what really happens to the user; on the other hand, it would avoid API duplication; library developers wouldn't need to have `do_thing`, `do_thing_with`, and `do_thing_with_result` methods for every feature where they want emplacement. And emplacement would become the default, bringing performance improvements to everyone for cheap.
+
+### Implicit reordering
+
+If we want to push the concept of NRVO and lazy parameters to its extreme conclusion, we could also allow the compiler to silently reorder statements to guarantee zero-copy emplacement in situations where a variable is created before the data it's supposed to be emplaced in.
+
+For instance, the following code:
+
+```rust
+some_vec.push_with(|| {
+    let x = create_x();
+
+    doThings(&mut x);
+    doMoreThings(&mut x);
+
+    x
+});
+```
+
+could be replaced with:
+
+```rust
+let x = create_x();
+
+doThings(&mut x);
+doMoreThings(&mut x);
+
+some_vec.push(x);
+```
+
+while still eliding copies.
+
+The second code has the advantage of being easier to follow semantically. Values are created, set and mutated before being used, with no nesting involved.
+
+On the other hand, the caveats mentionned with lazy arguments apply again, except on fire. This feature would essentially involve the compiler lying to the developer about how their code executes. This is nothing new in the context of compiler optimizations, but in the context of language semantics, it's not something to be considered lightly.
