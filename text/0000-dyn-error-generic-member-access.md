@@ -7,12 +7,27 @@
 [summary]: #summary
 
 This RFC proposes a pair of additions to the `Error` trait to support accessing
-generic forms of context from `dyn Error` trait objects, one method on the
-`Error` trait itself for returning references to members based on a given type
-id, and another fn implemented for `dyn Error` that uses a generic return type
-to get the type id to pass into the trait object's fn. These functions will act
-as a generalized version of `backtrace` and `source`, and would primarily be
-used during error reporting when rendering a chain of opaque errors.
+generic forms of context from `dyn Error` trait objects. These functions will
+act as a generalized version of `backtrace` and `source`, and would primarily
+be used during error reporting when rendering a chain of opaque errors.
+
+```rust
+pub trait Error {
+    /// Provide an untyped reference to a member whose type matches the provided `TypeId`.
+    ///
+    /// Returns `None` by default, implementors are encouraged to override.
+    fn provide_context(&self, ty: TypeId) -> Option<&dyn Any> {
+        None
+    }
+}
+
+impl dyn Error {
+    /// Retrieve a reference to `T`-typed context from the error if it is available.
+    pub fn context<T: Any>(&self) -> Option<&T> {
+        self.provide_context(TypeId::of::<T>())?.downcast_ref::<T>()
+    }
+}
+```
 
 # Motivation
 [motivation]: #motivation
