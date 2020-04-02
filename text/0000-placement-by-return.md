@@ -894,7 +894,7 @@ I also believe that this RFC is a good base for future development. While I don'
 
 ## Integration with futures, streams, serde, and other I/O stuff
 
-This RFC does not compose terribly well with `Result`, `Option`, and other pattern-matching constructs; this makes it hard to use with async APIs. `Future` and `Stream`, in particular, wraps the result of polling in the `Poll` enum, so while it's certainly possible to allocate such a result into a `Box<Poll<T>>` without copying, its not possible to get a `Box<T>` without copying given the existing futures API.
+<details>This RFC does not compose terribly well with `Result`, `Option`, and other pattern-matching constructs; this makes it hard to use with async APIs. `Future` and `Stream`, in particular, wraps the result of polling in the `Poll` enum, so while it's certainly possible to allocate such a result into a `Box<Poll<T>>` without copying, its not possible to get a `Box<T>` without copying given the existing futures API.
 
 Mapping doesn't work, either, because it will pass the payload of a future as a parameter, which means that futures have to allocate storage for their contents. Sized types work as usual, and `Future<[u8]>` would wind up allocating stack space for the byte blob in order to pass it to the mapping function as a move-ref, as described in [RFC 1901 "unsized rvalues"](https://github.com/rust-lang/rfcs/blob/master/text/1909-unsized-rvalues.md).
 
@@ -999,10 +999,11 @@ trait Serializer {
   }
 }
 ```
+</details>
 
 ## Named Return Value Optimization
 
-In this context, NRVO refers to the ability to write code like:
+<details>In this context, NRVO refers to the ability to write code like:
 
 ```rust
 let x = initial_state;
@@ -1093,3 +1094,4 @@ while still eliding copies.
 The second code has the advantage of being easier to follow semantically. Values are created, set and mutated before being used, with no nesting involved.
 
 On the other hand, the caveats mentionned with lazy arguments apply again, except on fire. This feature would essentially involve the compiler lying to the developer about how their code executes. This is nothing new in the context of compiler optimizations, but in the context of language semantics, it's not something to be considered lightly.
+</details>
