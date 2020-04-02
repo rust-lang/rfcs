@@ -30,14 +30,14 @@ used, or forms of context that are defined outside of the standard library.
 
 ## Example use cases this enables
 
-* `SpanTrace` a backtrace like type from the `tracing-error` library
+* using `backtrace::Backtrace` instead of `std::backtrace::Backtrace`
 * zig-like Error Return Traces by extracting `Location` types from errors
-  gathered via `#[track_caller]`
+  gathered via `#[track_caller]` or some similar mechanism.
 * error source trees instead of chains by accessing the source of an error as a
   slice of errors rather than as a single error, such as a set of errors caused
   when parsing a file
+* `SpanTrace` a backtrace like type from the `tracing-error` library
 * Help text such as suggestions or warnings attached to an error report
-
 
 By adding a generic form of these functions that works around the restriction
 on generics in vtables we could support a greater diversity of error handling
@@ -47,28 +47,26 @@ reports.
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-When implementing error handling in rust there are two main aspects that should
-be considered, the creation of errors and the reporting of errors.
-
 Error handling in rust consists mainly of two steps, creation/propogation and
-reporting. The `std::error::Error` trait exists to bridge this gap. It does so
-by acting as a consistent interface that all Error types can implement to allow
-Error Reporting types to handle them in a consistent manner when constructing
-reports for end users.
+reporting. The `std::error::Error` trait exists to bridge the gap between these
+two concerns. It does so by acting as a consistent interface that all error
+types can implement to allow error reporting types to handle them in a
+consistent manner when constructing reports for end users.
 
 The error trait accomplishes this by providing a set of methods for accessing
-members of `dyn Error` trait objects. For accessing the message that should be
-rendered to the end user the Error trait implements the `Display` trait. For
-accessing `dyn Error` members it provides the `source` function, which
-conventionally represents the lower level error that caused a subsequent error.
-For accessing a `Backtrace` of the state of the stack when an error was created
-it provides the `backtrace` function. For all other forms of context relevant
-to an Error Report the error trait provides the `context`/`context_any`
-functions.
+members of `dyn Error` trait objects. The main member, the error message
+itself, is handled by the `Display` trait which is a requirement for
+implementing the Error trait. For accessing `dyn Error` members it provides the
+`source` function, which conventionally represents the lower level error that
+caused the current error. And for accessing a `Backtrace` of the state of the
+stack when an error was created it provides the `backtrace` function. For all
+other forms of context relevant to an Error Report the error trait provides the
+`context`/`context_any` functions.
 
-As an example lets explore how one could implement an error reporting type that
-retrieves the Location where each error in the chain was created, if it exists,
-and renders it as part of the chain of errors.
+As an example of how to use these types to construct an error report lets
+explore how one could implement an error reporting type that retrieves the
+Location where each error in the chain was created, if it exists, and renders
+it as part of the chain of errors.
 
 The goal is to implement an Error Report that looks something like this:
 
@@ -170,17 +168,28 @@ impl fmt::Debug for ErrorReporter {
 There are two additions necessary to the standard library to implement this
 proposal:
 
-
-First we need to add a function for dyn Error trait objects that will be used
-by error reporters to access members given a generic type. This function
-circumvents restrictions on generics in trait functions by being implemented
-for trait objects only, rather than as a member of the trait itself.
+1.) Add a function for dyn Error trait objects that will be used by error
+reporters to access members given a generic type. This function circumvents
+restrictions on generics in trait functions by being implemented for trait
+objects only, rather than as a member of the trait itself.
 
 ```rust
 impl dyn Error {
     pub fn context<T: Any>(&self) -> Option<&T> {
         self.context_any(TypeId::of::<T>())?.downcast_ref::<T>()
     }
+}
+```
+
+With the expected usage:
+
+```rust
+// With explicit parameter passing
+let spantrace = error.context::<SpanTrace>();
+
+// With a type inference
+fn get_spantrace(error: &(dyn Error + 'static)) -> Option<&SpanTrace> {
+    error.context()
 }
 ```
 
