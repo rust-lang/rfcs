@@ -6,16 +6,7 @@
 # Summary
 [summary]: #summary
 
-This RFC proposes two additions to the `Error` trait to support accessing
-generic forms of context from `dyn Error` trait objects, generalizing the
-pattern used in `backtrace` and `source` and allowing ecosystem iteration on
-error reporting infrastructure outside of the standard library. The two
-proposed additions are a new trait method `Error::provide_context` which offers
-`TypeId`-based member lookup and a new inherent fn `<dyn Error>::context` which
-makes use of an implementor's `provide_context` to return a typed reference
-directly. These additions would primarily be useful in "error reporting"
-contexts where we typically no longer have type information and may be
-composing errors from many sources.
+This RFC proposes two additions to the `Error` trait to support accessing generic forms of context from `dyn Error` trait objects. This generalizes the pattern used in `backtrace` and `source` and allows ecosystem iteration on error reporting infrastructure outside of the standard library. The two proposed additions are a new trait method `Error::provide_context`, which offers `TypeId`-based member lookup, and a new inherent fn `<dyn Error>::context`, which makes use of an implementor's `provide_context` to return a typed reference directly. These additions would primarily be useful in "error reporting" contexts, where we typically no longer have type information and may be composing errors from many sources.
 
 ```rust
 pub trait Error {
@@ -38,57 +29,27 @@ impl dyn Error {
 # Motivation
 [motivation]: #motivation
 
-Today, there are a number of forms of context that are traditionally gathered
-when creating errors. These members are gathered so that a final error
-reporting type or function can access them and render them independently of the
-`Display` implementation for each specific error type. This allows for
-consistently formatted and flexible error reports. Today, there are 2 such
-forms of context that are traditionally gathered, `backtrace` and `source`.
+In Rust today, errors traditionally gather two forms of context when they are created: context for the *current error message* and context for the *final* *error report*. The `Error` trait exists to provide a consistent interface to context intended for error reports. This context includes the error message, the source error, and, more recently, backtraces.
 
-However, the current approach of promoting each form of context to a fn on the
-`Error` trait doesn't leave room for forms of context that are not commonly
-used, or forms of context that are defined outside of the standard library.
+However, the current approach of promoting each form of context to a method on the `Error` trait doesn't leave room for forms of context that are not commonly used, or forms of context that are defined outside of the standard library.
 
 ## Example use cases this enables
-
 * using `backtrace::Backtrace` instead of `std::backtrace::Backtrace`
-* zig-like Error Return Traces by extracting `Location` types from errors
-  gathered via `#[track_caller]` or some similar mechanism.
-* error source trees instead of chains by accessing the source of an error as a
-  slice of errors rather than as a single error, such as a set of errors caused
-  when parsing a file
-* `SpanTrace` a backtrace like type from the `tracing-error` library
+* zig-like Error Return Traces by extracting `Location` types from errors gathered via `#[track_caller]` or some similar mechanism.
+* error source trees instead of chains by accessing the source of an error as a slice of errors rather than as a single error, such as a set of errors caused when parsing a file
+* [`SpanTrace`], a backtrace-like type from the `tracing-error` library
 * Help text such as suggestions or warnings attached to an error report
 
-By adding a generic form of these functions that works around the restriction
-on generics in vtables we could support a greater diversity of error handling
-needs and make room for experimentation with new forms of context in error
-reports.
+By adding a generic form of these functions that works around the restriction on generics in trait objects, we could support a greater diversity of error handling needs, as well as making room for experimentation with new forms of context in error reports.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-Error handling in rust consists mainly of two steps, creation/propogation and
-reporting. The `std::error::Error` trait exists to bridge the gap between these
-two steps. It does so by acting as a consistent interface that all error types
-can implement to allow error reporting types to handle them in a consistent
-manner when constructing reports for end users.
+Error handling in Rust consists of two steps: creation/propagation and reporting. The `std::error::Error` trait exists to bridge the gap between these two steps. It does so by acting as a consistent interface that all error types can implement. This allows error reporting types to handle them in a consistent manner when constructing reports for end users.
 
-The error trait accomplishes this by providing a set of methods for accessing
-members of `dyn Error` trait objects. The main member, the error message
-itself, is handled by the `Display` trait which is a requirement for
-implementing the Error trait. For accessing `dyn Error` members it provides the
-`source` function, which conventionally represents the lower level error that
-caused the current error. And for accessing a `Backtrace` of the state of the
-stack when an error was created it provides the `backtrace` function. For all
-other forms of context relevant to an Error Report the error trait provides the
-`context`/`provide_context` functions.
+The error trait accomplishes this by providing a set of methods for accessing members of `dyn Error` trait objects. The main member, the error message itself, is handled by the `Display` trait, which is a requirement for implementing the Error trait. For accessing `dyn Error` members, it provides the `source` function, which conventionally represents the lower level error that caused the current error. And, for accessing a `Backtrace` of the state of the stack when an error was created, it provides the `backtrace` function. For all other forms of context relevant to an error report, the error trait provides the `context` and `provide_context` functions.
 
-As an example of how to use these types to construct an error report lets
-explore how one could implement an error reporting type that retrieves the
-Location where each error in the chain was created, if it exists, and renders
-it as part of the chain of errors. Our end goal is to get an error report that
-looks something like this:
+As an example of how to use these types to construct an error report, let’s explore how one could implement an error reporting type. In this example, our error reporting type will retrieve the source code location where each error in the chain was created (if it exists) and render it as part of the chain of errors. Our end goal is to get an error report that looks something like this:
 
 ```
 Error:
@@ -97,8 +58,7 @@ Error:
     1: No such file or directory (os error 2)
 ```
 
-The first step is to define or use a Location type. In this example we will
-define our own but we could use also use `std::panic::Location` for example.
+The first step is to define or use a type to represent a source location. In this example, we will define our own, but we could also use `std::panic::Location` or a similar type.
 
 ```rust
 struct Location {
@@ -107,7 +67,7 @@ struct Location {
 }
 ```
 
-Next we need to gather the location when creating our error types.
+Next, we need to gather the location when creating our error types.
 
 ```rust
 struct ExampleError {
@@ -136,8 +96,7 @@ fn read_instrs(path: &Path) -> Result<String, ExampleError> {
 }
 ```
 
-Next we need to implement the `Error` trait to expose these members to the
-Error Reporter.
+Next, we need to implement the `Error` trait to expose these members to the error reporter.
 
 ```rust
 impl std::error::Error for ExampleError {
@@ -155,8 +114,7 @@ impl std::error::Error for ExampleError {
 }
 ```
 
-And finally, we create an error reporter that prints the error and its source
-recursively along with the location data if it was gathered.
+And, finally, we create an error reporter that prints the error and its source recursively, along with any location data that was gathered
 
 ```rust
 struct ErrorReporter(Box<dyn Error + Send + Sync + 'static>);
@@ -185,13 +143,9 @@ impl fmt::Debug for ErrorReporter {
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-There are two additions necessary to the standard library to implement this
-proposal:
+There are two additions necessary to the standard library to implement this proposal:
 
-Add a function for dyn Error trait objects that will be used by error
-reporters to access members given a generic type. This function circumvents
-restrictions on generics in trait functions by being implemented for trait
-objects only, rather than as a member of the trait itself.
+Add a function for dyn Error trait objects that will be used by error reporters to access members given a generic type. This function circumvents restrictions on generics in trait functions by being implemented for trait objects only, rather than as a member of the trait itself.
 
 ```rust
 impl dyn Error {
@@ -213,8 +167,7 @@ fn get_spantrace(error: &(dyn Error + 'static)) -> Option<&SpanTrace> {
 }
 ```
 
-Add a member to the `Error` trait to provide the `&dyn Any` trait objects to
-the `context` fn for each member based on the type_id.
+Add a member to the `Error` trait to provide the `&dyn Any` trait objects to the `context` fn for each member based on the type_id.
 
 ```rust
 trait Error {
@@ -241,29 +194,19 @@ fn provide_context(&self, type_id: TypeId) -> Option<&dyn Any> {
 # Drawbacks
 [drawbacks]: #drawbacks
 
-* The API for defining how to return types is cumbersome and possibly not
-  accessible for new rust users.
-    * If the type is stored in an Option getting it converted to an `&Any` will
-      probably challenge new devs, this can be made easier with documented
-      examples covering common use cases and macros like `thiserror`.
+* The API for defining how to return types is cumbersome and possibly not accessible for new rust users.
+    * If the type is stored in an Option getting it converted to an `&Any` will probably challenge new devs, this can be made easier with documented examples covering common use cases and macros like `thiserror`.
 ```rust
 } else if typeid == TypeId::of::<SpanTrace>() {
     self.span_trace.as_ref().map(|s| s as &dyn Any)
 }
 ```
-* When you return the wrong type and the downcast fails you get `None` rather
-  than a compiler error guiding you to the right return type, which can make it
-  challenging to debug mismatches between the type you return and the type you
-  use to check against the type_id
-    * The downcast could be changed to panic when it fails
+* When you return the wrong type and the downcast fails you get `None` rather than a compiler error guiding you to the right return type, which can make it challenging to debug mismatches between the type you return and the type you use to check against the type_id The downcast could be changed to panic when it fails
     * There is an alternative implementation that mostly avoids this issue
-* This approach cannot return slices or trait objects because of restrictions
-  on `Any`
+* This approach cannot return slices or trait objects because of restrictions on `Any`
     * The alternative implementation avoids this issue
-* The `context` function name is currently widely used throughout the rust
-  error handling ecosystem in libraries like `anyhow` and `snafu` as an
-  ergonomic version of `map_err`. If we settle on `context` as the final name
-  it will possibly break existing libraries.
+* The `context` function name is currently widely used throughout the rust error handling ecosystem in libraries like `anyhow` and `snafu` as an ergonomic version of `map_err`. If we settle on `context` as the final name it will possibly break existing libraries.
+
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -272,22 +215,13 @@ The two alternatives I can think of are:
 
 ## Do Nothing
 
-We could not do this, and continue to add accessor functions to the `Error`
-trait whenever a new type reaches critical levels of popularity in error
-reporting.
+We could not do this, and continue to add accessor functions to the `Error` trait whenever a new type reaches critical levels of popularity in error reporting.
 
-If we choose to do nothing we will continue to see hacks around the current
-limitations on the error trait such as the `Fail` trait, which added the
-missing function access methods that didn't previously exist on the `Error`
-trait and type erasure / unnecessary boxing of errors to enable downcasting to
-extract members.
-[[1]](https://docs.rs/tracing-error/0.1.2/src/tracing_error/error.rs.html#269-274).
+If we choose to do nothing we will continue to see hacks around the current limitations on the error trait such as the `Fail` trait, which added the missing function access methods that didn't previously exist on the `Error` trait and type erasure / unnecessary boxing of errors to enable downcasting to extract members. [[1]](https://docs.rs/tracing-error/0.1.2/src/tracing_error/error.rs.html#269-274).
 
 ## Use an alternative to Any for passing generic types across the trait boundary
 
-Nika Layzell has proposed an alternative implementation using a `Provider` type
-which avoids using `&dyn Any`. I do not necessarily think that the main
-suggestion is necessarily better, but it is much simpler.
+Nika Layzell has proposed an alternative implementation using a `Provider` type which avoids using `&dyn Any`. I do not necessarily think that the main suggestion is necessarily better, but it is much simpler.
 
 * https://play.rust-lang.org/?version=nightly&mode=debug&edition=2018&gist=0af9dbf0cd20fa0bea6cff16a419916b
 * https://github.com/mystor/object-provider
@@ -306,51 +240,37 @@ fn provide_context<'r, 'a>(&'a self, request: Request<'r, 'a>) -> ProvideResult<
 The advantages of this design are that:
 
 1. It supports accessing trait objects and slices
-2. If the user specifies the type they are trying to pass in explicitly they
-   will get compiler errors when the type doesn't match.
-3. Takes advantage of deref sugar to help with conversions from wrapper types
-   to inner types.
+2. If the user specifies the type they are trying to pass in explicitly they will get compiler errors when the type doesn't match.
+3. Takes advantage of deref sugar to help with conversions from wrapper types to inner types.
 4. Less verbose implementation
 
 The disadvatages are:
 
 1. More verbose function signature, very lifetime heavy
 2. The Request type uses unsafe code which needs to be verified
-3. could encourage implementations where they pass the provider to
-   `source.provide` first which would prevent the error reporter from knowing
-   which error in the chain gathered each piece of context and might cause
-   context to show up multiple times in a report.
+3. could encourage implementations where they pass the provider to `source.provide` first which would prevent the error reporter from knowing which error in the chain gathered each piece of context and might cause context to show up multiple times in a report.
 
 # Prior art
 [prior-art]: #prior-art
 
-I do not know of any other languages whose error handling has similar
-facilities for accessing members when reporting errors. For the most part prior
-art exists within rust itself in the form of previous additions to the `Error`
-trait.
+I do not know of any other languages whose error handling has similar facilities for accessing members when reporting errors. For the most part prior art exists within rust itself in the form of previous additions to the `Error` trait.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-- What should the names of these functions be?
-    - `context`/`context_ref`/`provide_context`
-    - `member`/`member_ref`
-    - `provide`/`request`
-- Should we go with the implementation that uses `Any` or the one that supports
-  accessing dynamically sized types like traits and slices?
-- Should there be a by value version for accessing temporaries?
-    - I bring this up specifically for the case where you want to use this
-      function to get an `Option<&[&dyn Error]>` out of an error, in this case
-      its unlikely that the error behind the trait object is actually storing
-      the errors as `dyn Errors`, and theres no easy way to allocate storage to
-      store the trait objects.
+* What should the names of these functions be?
+    * `context`/`context_ref`/`provide_context`
+    * `member`/`member_ref`
+    * `provide`/`request`
+* Should we go with the implementation that uses `Any` or the one that supports accessing dynamically sized types like traits and slices?
+* Should there be a by value version for accessing temporaries?
+    * I bring this up specifically for the case where you want to use this function to get an `Option<&[&dyn Error]>` out of an error, in this case its unlikely that the error behind the trait object is actually storing the errors as `dyn Errors`, and theres no easy way to allocate storage to store the trait objects.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-I'd love to see the various error creating libraries like `thiserror` adding
-support for making members exportable as context for reporters.
+I'd love to see the various error creating libraries like `thiserror` adding support for making members exportable as context for reporters.
 
-Also, I'm interested in adding support for `Error Return Traces`, similar to
-zigs, and I think that this accessor function might act as a critical piece of
-that implementation.
+Also, I'm interested in adding support for `Error Return Traces`, similar to zigs, and I think that this accessor function might act as a critical piece of that implementation.
+
+[`SpanTrace`]: https://docs.rs/tracing-error/0.1.2/tracing_error/struct.SpanTrace.html
