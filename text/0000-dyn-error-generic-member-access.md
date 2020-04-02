@@ -236,10 +236,9 @@ fn provide_context(&self, type_id: TypeId) -> Option<&dyn Any> {
   use to check against the type_id
     * The downcast could be changed to panic when it fails
     * There is an alternative implementation that mostly avoids this issue
-* Introduces more overhead from the downcasts
 * This approach cannot return slices or trait objects because of restrictions
   on `Any`
-    * The alternative solution avoids this issue
+    * The alternative implementation avoids this issue
 * The `context` function name is currently widely used throughout the rust
   error handling ecosystem in libraries like `anyhow` and `snafu` as an
   ergonomic version of `map_err`. If we settle on `context` as the final name
@@ -268,8 +267,9 @@ extract members.
 Nika Layzell has proposed an alternative implementation using a `Provider` type
 which avoids using `&dyn Any`. I do not necessarily think that the main
 suggestion is necessarily better, but it is much simpler.
-    * https://play.rust-lang.org/?version=nightly&mode=debug&edition=2018&gist=0af9dbf0cd20fa0bea6cff16a419916b
-    * https://github.com/mystor/object-provider
+
+* https://play.rust-lang.org/?version=nightly&mode=debug&edition=2018&gist=0af9dbf0cd20fa0bea6cff16a419916b
+* https://github.com/mystor/object-provider
 
 With this design an implementation of the `provide_context` fn might instead look like:
 
@@ -287,7 +287,9 @@ The advantages of this design are that:
 1. It supports accessing trait objects and slices
 2. If the user specifies the type they are trying to pass in explicitly they
    will get compiler errors when the type doesn't match.
-3. Less verbose implementation
+3. Takes advantage of deref sugar to help with conversions from wrapper types
+   to inner types.
+4. Less verbose implementation
 
 The disadvatages are:
 
