@@ -49,9 +49,9 @@ reports.
 
 Error handling in rust consists mainly of two steps, creation/propogation and
 reporting. The `std::error::Error` trait exists to bridge the gap between these
-two concerns. It does so by acting as a consistent interface that all error
-types can implement to allow error reporting types to handle them in a
-consistent manner when constructing reports for end users.
+two steps. It does so by acting as a consistent interface that all error types
+can implement to allow error reporting types to handle them in a consistent
+manner when constructing reports for end users.
 
 The error trait accomplishes this by providing a set of methods for accessing
 members of `dyn Error` trait objects. The main member, the error message
@@ -61,14 +61,13 @@ implementing the Error trait. For accessing `dyn Error` members it provides the
 caused the current error. And for accessing a `Backtrace` of the state of the
 stack when an error was created it provides the `backtrace` function. For all
 other forms of context relevant to an Error Report the error trait provides the
-`context`/`context_any` functions.
+`context`/`provide_context` functions.
 
 As an example of how to use these types to construct an error report lets
 explore how one could implement an error reporting type that retrieves the
 Location where each error in the chain was created, if it exists, and renders
-it as part of the chain of errors.
-
-The goal is to implement an Error Report that looks something like this:
+it as part of the chain of errors. Our end goal is to get an error report that
+looks something like this:
 
 ```
 Error:
@@ -125,7 +124,7 @@ impl std::error::Error for ExampleError {
         Some(&self.source)
     }
 
-    fn context_any(&self, type_id: TypeID) -> Option<&dyn Any> {
+    fn provide_context(&self, type_id: TypeId) -> Option<&dyn Any> {
         if id == TypeId::of::<Location>() {
             Some(&self.location)
         } else {
@@ -168,7 +167,7 @@ impl fmt::Debug for ErrorReporter {
 There are two additions necessary to the standard library to implement this
 proposal:
 
-1.) Add a function for dyn Error trait objects that will be used by error
+Add a function for dyn Error trait objects that will be used by error
 reporters to access members given a generic type. This function circumvents
 restrictions on generics in trait functions by being implemented for trait
 objects only, rather than as a member of the trait itself.
@@ -176,7 +175,7 @@ objects only, rather than as a member of the trait itself.
 ```rust
 impl dyn Error {
     pub fn context<T: Any>(&self) -> Option<&T> {
-        self.context_any(TypeId::of::<T>())?.downcast_ref::<T>()
+        self.provide_context(TypeId::of::<T>())?.downcast_ref::<T>()
     }
 }
 ```
@@ -193,14 +192,26 @@ fn get_spantrace(error: &(dyn Error + 'static)) -> Option<&SpanTrace> {
 }
 ```
 
-Second we need to add a member to the `Error` trait to provide the `&dyn Any`
-trait objects to the `context` fn for each member based on the type_id.
+Add a member to the `Error` trait to provide the `&dyn Any` trait objects to
+the `context` fn for each member based on the type_id.
 
 ```rust
 trait Error {
     /// ...
 
-    fn context_any(&self, id: TypeId) -> Option<&dyn Any> {
+    fn provide_context(&self, id: TypeId) -> Option<&dyn Any> {
+        None
+    }
+}
+```
+
+With the expected usage:
+
+```rust
+fn provide_context(&self, type_id: TypeId) -> Option<&dyn Any> {
+    if id == TypeId::of::<Location>() {
+        Some(&self.location)
+    } else {
         None
     }
 }
@@ -229,6 +240,10 @@ trait Error {
 * This approach cannot return slices or trait objects because of restrictions
   on `Any`
     * The alternative solution avoids this issue
+* The `context` function name is currently widely used throughout the rust
+  error handling ecosystem in libraries like `anyhow` and `snafu` as an
+  ergonomic version of `map_err`. If we settle on `context` as the final name
+  it will possibly break existing libraries.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -246,7 +261,7 @@ limitations on the error trait such as the `Fail` trait, which added the
 missing function access methods that didn't previously exist on the `Error`
 trait and type erasure / unnecessary boxing of errors to enable downcasting to
 extract members.
-[1](https://docs.rs/tracing-error/0.1.2/src/tracing_error/error.rs.html#269-274).
+[[1]](https://docs.rs/tracing-error/0.1.2/src/tracing_error/error.rs.html#269-274).
 
 ## Use an alternative to Any for passing generic types across the trait boundary
 
@@ -256,10 +271,10 @@ suggestion is necessarily better, but it is much simpler.
     * https://play.rust-lang.org/?version=nightly&mode=debug&edition=2018&gist=0af9dbf0cd20fa0bea6cff16a419916b
     * https://github.com/mystor/object-provider
 
-With this design an implementation of the `context_any` fn might instead look like:
+With this design an implementation of the `provide_context` fn might instead look like:
 
 ```rust
-fn provide<'r, 'a>(&'a self, request: Request<'r, 'a>) -> ProvideResult<'r, 'a> {
+fn provide_context<'r, 'a>(&'a self, request: Request<'r, 'a>) -> ProvideResult<'r, 'a> {
     request
         .provide::<PathBuf>(&self.path)?
         .provide::<Path>(&self.path)?
@@ -295,7 +310,7 @@ trait.
 [unresolved-questions]: #unresolved-questions
 
 - What should the names of these functions be?
-    - `context`/`context_ref`/`context_any`
+    - `context`/`context_ref`/`provide_context`
     - `member`/`member_ref`
     - `provide`/`request`
 - Should we go with the implementation that uses `Any` or the one that supports
