@@ -1,6 +1,6 @@
 - Feature Name: Add fns for generic member access to dyn Error and the Error trait
 - Start Date: 2020-04-01
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/2895)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 # Summary
@@ -8,12 +8,11 @@
 
 This RFC proposes a pair of additions to the `Error` trait to support accessing
 generic forms of context from `dyn Error` trait objects, one method on the
-`Error` trait itself for returning references to members based on a given
-typeid, and another fn implemented for `dyn Error` that uses a generic return
-type to get the type id to pass into the trait object's fn. These functions
-will act as a generalized version of `backtrace`, `source`, and `cause`, and
-would primarily be used during error reporting when rendering a chain of opaque
-errors.
+`Error` trait itself for returning references to members based on a given type
+id, and another fn implemented for `dyn Error` that uses a generic return type
+to get the type id to pass into the trait object's fn. These functions will act
+as a generalized version of `backtrace` and `source`, and would primarily be
+used during error reporting when rendering a chain of opaque errors.
 
 # Motivation
 [motivation]: #motivation
@@ -21,18 +20,15 @@ errors.
 Today, there are a number of forms of context that are traditionally gathered
 when creating errors. These members are gathered so that a final error
 reporting type or function can access them and render them independently of the
-`Display` implementation for that specific error type to allow for consistently
-formatted and flexible error reports. Today, there are 2 such forms of context
-that are traditionally gathered, `backtrace` and `source`.
+`Display` implementation for each specific error type. This allows for
+consistently formatted and flexible error reports. Today, there are 2 such
+forms of context that are traditionally gathered, `backtrace` and `source`.
 
 However, the current approach of promoting each form of context to a fn on the
 `Error` trait doesn't leave room for forms of context that are not commonly
 used, or forms of context that are defined outside of the standard library.
 
-By adding a generic form of these functions that works around the issues of
-monomorphization on trait objects we can support more forms of context and
-forms of context that are experimented with outside of the standard library
-such as:
+## Example use cases this enables
 
 * `SpanTrace` a backtrace like type from the `tracing-error` library
 * zig-like Error Return Traces by extracting `Location` types from errors
@@ -40,10 +36,13 @@ such as:
 * error source trees instead of chains by accessing the source of an error as a
   slice of errors rather than as a single error, such as a set of errors caused
   when parsing a file
+* Help text such as suggestions or warnings attached to an error report
 
-With a generic form of member access available on `Error` trait objects we
-could support a greater diversity of error handling needs and make room for
-experimentation on new forms of context in error reports.
+
+By adding a generic form of these functions that works around the restriction
+on generics in vtables we could support a greater diversity of error handling
+needs and make room for experimentation with new forms of context in error
+reports.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -233,6 +232,12 @@ We could not do this, and continue to add accessor functions to the `Error`
 trait whenever a new type reaches critical levels of popularity in error
 reporting.
 
+If we choose to do nothing we will continue to see hacks around the current
+limitations on the error trait such as the `Fail` trait, which added the
+missing function access methods that didn't previously exist on the `Error`
+trait and type erasure / unnecessary boxing of errors to enable downcasting to
+extract members.
+[1](https://docs.rs/tracing-error/0.1.2/src/tracing_error/error.rs.html#269-274).
 
 ## Use an alternative to Any for passing generic types across the trait boundary
 
