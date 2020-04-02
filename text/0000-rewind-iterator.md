@@ -203,9 +203,19 @@ expands the size of the standard library interface. None beyond that.
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 Setting aside obvious bikeshedding questions around naming (like
-`Bidirectional`), there are some other approaches we could take here:
+`Bidirectional`), here are some other considerations:
 
-First, iterator types that support this feature could just provide
+Many iterators implement `Clone`, which essentially provides something
+equivalent to `RewindIterator`. However, not all iterators can implement
+`Clone`. Primary among these are all iterators that mutably borrow the
+underlying data structure, since they cannot be cloned. One could
+imagine something like a `SnapshotIterator`, which allows you to get a
+"temporary" iterator that rewinds the source iterator automatically when
+it is dropped, but this would probably require generic associated types
+to let us tie the returned snapshot iterator to the mutable borrow of
+the original iterator.
+
+Iterator types that support rewinding could instead just provide
 inherent methods that allow you to move the iterator in interesting ways
 (such as backwards). Some iterators, like those of `BTreeMap`, may even
 provide ways for the iterator to "jump", such as to the next element in
@@ -214,12 +224,12 @@ proposes that the relatively common ability to move an iterator
 backwards be shared such that developers can take advantage of types
 with this feature in a generic way.
 
-Second, the trait could be modified such that `previous` did not
-_return_ the previous element, but instead _just_ moved the iterator
-back. The return value of `previous` is already a little strange, as it
-is not immediately obvious whether the element you get is the one that
-`next` just yielded, or the one _before_ that. Specifically, should this
-assert succeed or fail?
+The trait could be modified such that `previous` did not _return_ the
+previous element, but instead _just_ moved the iterator back. The return
+value of `previous` is already a little strange, as it is not
+immediately obvious whether the element you get is the one that `next`
+just yielded, or the one _before_ that. Specifically, should this assert
+succeed or fail?
 
 ```rust
 let next = iter.next();
@@ -229,13 +239,6 @@ assert_eq!(next, prev);
 
 I opted to keep `previous` as analogous to `next` as possible; the exact
 behavior should ultimately be documented anyway.
-
-Third, instead of providing the user with a way to make individual steps
-backwards and forwards, we could instead have a trait like
-`SnapshotIterator`, which allows you to get a "temporary" iterator that
-rewinds the source iterator automatically when it is dropped. This would
-probably require generic associated types to let us tie the returned
-snapshot iterator to the mutable borrow of the original iterator.
 
 # Prior art
 [prior-art]: #prior-art
