@@ -85,7 +85,7 @@ a major change proposal first.
 
 ## Can I work on code experimentally before a MCP is accepted?
 
-Of course!  You are free to work on PRs or write code. But those PRs should be marked as experimental and they should not land, nor should anyone be expected to review them ((unless folks want to).
+Of course!  You are free to work on PRs or write code. But those PRs should be marked as experimental and they should not land, nor should anyone be expected to review them (unless folks want to).
 
 ## What constitutes a major change?
 
