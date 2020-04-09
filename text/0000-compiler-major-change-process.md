@@ -165,6 +165,17 @@ Here are some examples of things that don't merit any MCP:
 * fixing an ICE or tweaking diagnostics
 * renaming "less widely used" methods
 
+## When should Major Change Proposals be closed?
+
+Major Change Proposals can be closed:
+
+* by the author, if they have lost interest in pursuing it.
+* by a team lead or expert, if there are strong objections from key
+  members of the team that don't look likely to be overcome.
+* by folks doing triage, if there have been three months of
+  inactivity. In this case, people should feel free to re-open the
+  issue if they would like to "rejuvenate" it.
+
 # Template for major change proposals
 
 [major change template]: #Template-for-major-change-proposals
