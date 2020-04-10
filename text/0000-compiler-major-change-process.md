@@ -83,6 +83,11 @@ Some proposals will not be accepted. Some of the possible reasons:
 The PR should be closed or marked as blocked, with a request to create
 a major change proposal first.
 
+If the PR description already contains suitable text that could serve
+as an MCP, then simply copy and paste that into an MCP issue. Using an
+issue consistently helps to ensure that the tooling and process works
+smoothly.
+
 ## Can I work on code experimentally before a MCP is accepted?
 
 Of course!  You are free to work on PRs or write code. But those PRs should be marked as experimental and they should not land, nor should anyone be expected to review them (unless folks want to).
