@@ -37,9 +37,10 @@ GitHub provides several permission levels for access to a repository. Please ref
 Repositories in the Rust-Lang organization should follow these permission guidelines:
 
 * **Admin** - only Rust team or working group leads should have this permission level
-* **Write** - contributors within GitHub teams may have this permission level at the discretion of the team leads
-* **Triage** - contributors within GitHub teams involved in issue and pull request management (i.e. closing, re-opening, and assigning issues and pull requests) should be granted this access
+* **Write** - contributors within GitHub teams may have this permission level at the discretion of the team leads. Members of the triage team should also ge given this level of access so they have the ability edit issue descriptions.
 * **Read** - by default, everyone should have access to read repositories
+
+GitHub does provide another permission level - Triage - which is geared toward contributors involved in issue and pull request management. This permission level unfortunately does not allow contributors to edit issue descriptions, which is something Rust's triage teams do frequently. Therefore, contributors in triage roles should be assigned "Write" permissions, rather than "Triage" permissions.
 
 By default, repositories should be public and allow read access to all. When needed, some repositories can have limited read access (i.e. repositories related to security). 
 
