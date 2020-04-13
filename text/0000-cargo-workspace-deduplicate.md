@@ -168,12 +168,12 @@ with `path` dependencies if you publish to crates.io. Coupled with the
 workspace-level dependencies above this means you never have to write the
 version of a path dependency anywhere!
 
-## Package versions can reference other workspace members
+## Package metadata can reference other workspace members
 
-To deduplicate `version` directives in `Cargo.toml` workspace members, Cargo
-will now support a way to indirectly declare the version of your package. The
-way this works is that you say a package's version should be the same as
-another's, like so:
+To deduplicate `[package]` directives in `Cargo.toml` workspace members, Cargo
+will now support a way to indirectly declare values as well as inherit them.
+For example to say that one package's version is the same as another's you'd
+write:
 
 ```toml
 [package]
@@ -186,10 +186,8 @@ This directive tells Cargo another workspace member's version, named
 well. This should then allow you to only have to write down the version number
 for a workspace graph of crates once.
 
-## Package metadata filled in from workspace
-
-In addition to a new `[workspace.dependencies]` section, the following keys can
-now also be defined inside of a `[workspace]` section:
+In addition to a new `[workspace.dependencies]` section, package metadata keys
+can now also be defined inside of a `[workspace]` section:
 
 ```toml
 [workspace]
@@ -202,17 +200,9 @@ When parsing a member package, if any of the above directives are missing from a
 the directive in the `Cargo.toml` is assumed to take the value of the directive
 from the workspace member.
 
-For example you can specify the repository/author/license information of all
-member crates by simply writing this in your workspace:
-
-```toml
-[workspace]
-authors = ["Nice Folks"]
-license = "MIT"
-repository = "https://github.com/example/example"
-```
-
-or you can deny publication of all workspace members by default with:
+For example above you're specifying the authors/license information for all
+workspace members that don't otherwise list it, and you could also deny
+publication of all workspace members by default with:
 
 ```toml
 [workspace]
@@ -257,6 +247,7 @@ also defined in `[package]` today, namely:
 
 ```toml
 [workspace]
+version = "1.2.3"
 authors = ["Nice Folks"]
 description = "..."
 documentation = "https://example.github.io/example"
@@ -268,6 +259,10 @@ license-file = "./LICENSE"
 keywords = ["cli"]
 categories = ["development-tools"]
 publish = false
+edition = "2018"
+
+[workspace.badges]
+# ...
 ```
 
 Each of these keys have no meaning in a `[workspace]` table yet, but will have
@@ -275,11 +270,8 @@ meaning when they're assigned to crates internally. That part comes later though
 in this design! Note that the format and accepted values for these keys are the
 same as the `[package]` section of `Cargo.toml`.
 
-Finally, the `[workspace.badges]` table can also be specified and mirrors the
-`[badges]` table per-package.
-
-For now keys such as `edition` and `metadata` are explicitly left out, but they
-can always be added in the future if necessary.
+For now the `metadata` key is explicitly left out (due to complications around
+merging table values), but it can always be added in the future if necessary.
 
 ## Updates to a package `Cargo.toml`
 
@@ -288,17 +280,18 @@ The interpretation of a `Cargo.toml` manifest within Cargo will now require a
 expand each member's `Cargo.toml` directive. Additionally `Cargo.toml` will
 syntactically accept some more forms.
 
-### Placeholder Versions
+### Placeholder Values
 
-Previously the version of a package was specified as:
+Previously package metadata values must be declared explicitly in each
+`Cargo.toml`:
 
 ```toml
 [package]
 version = "1.2.3"
 ```
 
-Cargo will now accept a table definition of `package.version` which defines the
-`package.version.workspace` key as well. The `package.version.workspace` key
+Cargo will now accept a table definition of `package.$key` which defines the
+`package.$key.workspace` key as well. The `package.$key.workspace` key
 must be a string, and it must name a package present in the workspace
 elsewhere. For example:
 
@@ -309,17 +302,15 @@ version = { workspace = "other" }
 ```
 
 This directive indicates that the version of `foo` is the same as the version of
-the workspace member `other`. Cyclic references between packages for the version
+the workspace member `other`. Cyclic references between packages for metadata
 are disallowed and will result in an error from Cargo. A package also cannot
-reference itself for its own version.
+reference itself for its own value.
 
-### Metadata defaults to workspace metadata
-
-A number of metadata keys in `[package]` are not required to be defined, and if
-they are not defined they will default to the value in `[workspace]` if it is
-present there. If no `[workspace]` is present or the `[workspace]` section
-doesn't define these keys then their values will remain undefined as they are
-today.
+In addition to allowing explicitly referencing other workspace members for their
+values, you can also omit values entirely from the `[package]` section and
+they'll be automatically inferred if listed in `[workspace]`. If no
+`[workspace]` is present or the `[workspace]` section doesn't define these keys
+then their values will remain undefined as they are today.
 
 The following keys in `[package]` are now inferred to be the value in
 `[workspace]` if the value in `[package]` isn't present and the value in
@@ -327,6 +318,7 @@ The following keys in `[package]` are now inferred to be the value in
 
 ```toml
 [package]
+version = "1.2.3"
 authors = ["Nice Folks"]
 description = "..."
 documentation = "https://example.github.io/example"
@@ -343,6 +335,16 @@ publish = false
 Note that directives like `license-file` are resolved relative to their
 definition, so `license-file` is relative to the `[workspace]` section that
 defined it.
+
+The order of precedence for the value of a key in `[package]` for a particular
+package will be, in descending order:
+
+* First, if an explicit value is listed, that's used. For example `version =
+  "1.2.3"`.
+* If a workspace member is referenced, that member's value is then used. for
+  example `authors = { workspace = "other-crate" }`
+* If the `[workspace]` section defines the key, then it is automatically filled
+  in for each `[package]`.
 
 ### New dependency directives
 
@@ -435,7 +437,7 @@ bar = { path = "../bar" }
 Cargo currently already "elaborates" the manifest during publication. For
 example it removes `path` keys in dependency lists to only have the version
 requirement pointing to crates.io. During publication Cargo will also elaborate
-any substituted information from the `[workspace]`, becuase `[workspace]` is
+any substituted information from the `[workspace]`, because `[workspace]` is
 also removed during publication!
 
 This means that `workspace = true` will never be present in `Cargo.toml` files
@@ -553,6 +555,11 @@ possible bikeshedding! Virtually all of the aspects of the proposal that modify
 `Cargo.toml` can be tweaked in various ways such as names used or where they're
 placed. In any case discussion about compelling alternatives is always
 encouraged!
+
+Some alternative syntaxes:
+
+* Instead of `foo = { workspace = "other-name" }` we could use `foo = {
+  workspace = true, package = "other-name" }`.
 
 ## Not including metadata by default
 
