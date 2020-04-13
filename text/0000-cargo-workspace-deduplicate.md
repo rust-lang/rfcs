@@ -328,12 +328,15 @@ The following keys in `[package]` are now inferred to be the value in
 ```toml
 [package]
 authors = ["Nice Folks"]
+description = "..."
+documentation = "https://example.github.io/example"
+readme = "README.md"
+homepage = "https://example.com"
+repository = "https://github.com/example/example"
 license = "MIT"
 license-file = "./LICENSE"
-repository = "https://github.com/example/example"
-documentation = "https://example.github.io/example"
-categories = ["development-tools"]
 keywords = ["cli"]
+categories = ["development-tools"]
 publish = false
 ```
 
