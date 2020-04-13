@@ -561,6 +561,9 @@ Some alternative syntaxes:
 * Instead of `foo = { workspace = "other-name" }` we could use `foo = {
   workspace = true, package = "other-name" }`.
 
+* Instead of `foo = { workspace = true }` this could also be inferred from `foo
+  = {}`.
+
 ## Not including metadata by default
 
 One possible change to the proposal as well is to not include missing metadata
