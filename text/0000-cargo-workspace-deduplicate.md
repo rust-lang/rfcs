@@ -228,10 +228,15 @@ foo = "0.1"
 ```
 
 The `dependencies` sub-table has the same form as the `[dependencies]` table in
-manifests, except that they cannot be declared as `optional` (the key must be
-omitted or `false`). The `[workspace]` table will not support other kinds of
-dependencies like `dev-dependencies`, `build-dependencies`, or
-`target."...".dependencies`.  Only `[workspace.dependencies]` will be supported.
+manifests with a few exceptions:
+
+* Dependencies cannot be declared as `optional`. The `optional` key must be
+  omitted or, if present, must be `false`.
+* The `workspace` key is not allowed.
+
+The `[workspace]` table will not support other kinds of dependencies like
+`dev-dependencies`, `build-dependencies`, or `target."...".dependencies`.  Only
+`[workspace.dependencies]` will be supported.
 
 To review, the `[workspace.dependencies]` table will be key/value pairs. Each
 key is the name of a dependency while the dependency is a dependency directive.
@@ -359,11 +364,45 @@ directive. An example of this looks like:
 log = { workspace = true }
 ```
 
-The `workspace` key cannot be defined with any other keys other than `optional`.
-For example you cannot define both `workspace` and `git`. The value of the
-`workspace` key is either `true` or a string. Other values will yield an error.
+The `workspace` key cannot be defined with other keys that configure the source
+of the dependency. This means you cannot define `workspace` with keys like
+`version`, `registry`, `registry-index`, `path`, `git`, `branch`, `tag`, `rev`,
+or `package`. The `workspace` key can be combined with other keys, however:
 
-An example of a string would look like:
+* `optional` - this introduces an optional dependency as usual, as well as a
+  feature named after the key (left hand side) of the dependency directive).
+  Note that the `[workspace.dependencies]` table is not allowed to specify
+  `optional`.
+
+* `features` - this indicates, as usual, that extra features are being enabled
+  over the already-enabled features in the directive found in
+  `[workspace.dependencies]`. The result set of enabled features is the union of
+  the features specified inline with the features specified in the directive in
+  the workspace table.
+
+* `default-features` - specifying this key is a little more subtle than with
+  normal dependencies. If this key is not specified in the `[dependencies]`
+  section of a package then it does not default to as if it were `true` (like
+  omitting it typically does). Instead the value, including the implicit
+  default, is used from the `[workspace.dependencies]` table. Otherwise if the
+  value is present in a package `[dependencies]` table it boolean or's with the
+  value, including the implicit default, in `[workspace.dependencies]`. The
+  logic here for resolving `default-features` looks like:
+
+| Package directive | Workspace Directive | resolved value |
+|-------------------|---------------------|----------------|
+| *not present*     | *not present*       | `true`         |
+| *not present*     | `true`              | `true`         |
+| *not present*     | `false`             | `false`        |
+| `true`            | *not present*       | `true`         |
+| `true`            | `true`              | `true`         |
+| `true`            | `false`             | `true`         |
+| `false`           | *not present*       | `true`         |
+| `false`           | `true`              | `true`         |
+| `false`           | `false`             | `false`        |
+
+The value of the `workspace` key can be the boolean `true`, but an explicit
+`false` is disallowed for now. A string can also be used like so:
 
 ```toml
 [dependencies]
@@ -376,6 +415,22 @@ of the key in `[dependencies]` if `workspace = true` is specified, or if
 `workspace = "string"` is specified then `string` will be looked up in
 `[workspace.dependencies]`. It's an error to specify a dependency with
 `workspace` that isn't listed in `[workspace.dependencies]`.
+
+For example this directive will be replaced with the
+`workspace.dependencies.log` directive:
+
+```toml
+[dependencies]
+log = { workspace = true }
+```
+
+while this directive will be replaced with the `workspace.dependencies.log2`
+  directive:
+
+```toml
+[dependencies]
+log = { workspace = "log2" }
+```
 
 ### Path dependencies infer `version` directive
 
