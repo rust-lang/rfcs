@@ -464,7 +464,7 @@ bar = { path = "../bar", version = "1.0.1" }
 
 The `version` key for `path` dependencies, if not specified, will be inferred to
 the version of the path dependency itself. Note that this is a version
-requirement not an actual semver vesion, and the version requirement will be
+requirement not an actual semver version, and the version requirement will be
 interpreted as "at least the current version, and anything semver compatible
 with it".
 
@@ -546,7 +546,7 @@ a full elaborated form of a manifest 100% of the time.
 
 This proposal also extends `Cargo.toml` with changes that will break any
 existing tools which assume a particular format of `Cargo.toml`. For example if
-a tool expects `package.vesion` to be a `String` that runs a risk of being
+a tool expects `package.version` to be a `String` that runs a risk of being
 broken in the future due to the ability to specify a table there instead.
 
 Additionally this proposal complicates a reader's understanding of `Cargo.toml`.
