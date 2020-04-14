@@ -2,6 +2,7 @@
 - Start Date: 2020-04-17
 - RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
 - Rust Issue: [rust-lang/rust#71126](https://github.com/rust-lang/rust/issues/71126)
+- Proof-of-concept: [rust-lang/rust#71156](https://github.com/rust-lang/rust/pull/71156)
 
 # Summary
 [summary]: #summary
@@ -43,7 +44,7 @@ You may use `_` and `..` as in a normal declaration pattern to ignore certain va
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-The feature as described here has been implemented as a proof-of-concept. It follows essentially the
+The feature as described here has been implemented as a proof-of-concept (https://github.com/rust-lang/rust/pull/71156). It follows essentially the
 [suggestions of @Kimundi](https://github.com/rust-lang/rfcs/issues/372#issuecomment-214022963) and
 [of @drunwald](https://github.com/rust-lang/rfcs/issues/372#issuecomment-262519146).
 
