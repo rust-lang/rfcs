@@ -528,6 +528,33 @@ implicit substitutions, if any, will be invisible to users of `cargo metadata`.
 Similar to `cargo metadata`, the `cargo read-manifest` command will perform all
 necessary subsitutions when presenting the output as JSON.
 
+## Effect resolution for relative `path` dependencies
+
+Like today, `path` dependencies will be resolved relative to the file that
+defines them. This means that references to dependencies defined in the
+workspace means paths are still relative to the workspace root itself.
+
+For example if you write down a `[workspace.depencencies]` directive with a
+relative path:
+
+```toml
+# Cargo.toml
+[workspace.dependencies]
+my-crate = { path = "crates/my-crate" }
+```
+
+And then you reference this in another crate:
+
+```toml
+# crates/other-crate/Cargo.toml
+[dependencies]
+my-crate = { workspace = true }
+```
+
+then the `my-crate` dependency references the crate located at `crates/my-crate`
+relative to the workspace root, not located at
+`crates/other-crate/crates/my-crate`.
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
