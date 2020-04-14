@@ -13,7 +13,7 @@ accepted:
 (a, b) = (0, 1);
 (x, y, .., z) = (1.0, 2.0, 3.0, 4.0, 5.0);
 [_, f] = foo();
-Struct { c: d, d: c } = bar();
+Struct { x: a, y: b } = bar();
 ```
 
 This brings assignment in line with `let` declaration, in which destructuring is permitted. This
