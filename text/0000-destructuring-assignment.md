@@ -149,14 +149,16 @@ e.g. how this could interact with custom implementations of the operators.
 
 ## Order-of-assignment
 
+The right-hand side of the assignment is always performed first. Then, assignments are performed left-to-right. Note that component expressions in the left-hand side may be complex, not simply identifiers, and may require execution to resolve to lvalues.
+
 In a declaration, each identifier may be bound at most once. That is, the following is invalid:
 
 ```rust
 let (a, a) = (1, 2);
 ```
 
-For destructuring assignments, we currently permit assignments containing identical identifiers, with assignments performed left-to-right. However, these trigger an "unused assignment"
-warning. Assignments are performed left-to-right.
+For destructuring assignments, we currently permit assignments containing identical identifiers. However, these trigger an "unused assignment"
+warning.
 
 ```rust
 (a, a) = (1, 2); // warning: value assigned to `a` is never read
