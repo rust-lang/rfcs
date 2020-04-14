@@ -200,9 +200,8 @@ We thus feel that a lint is more appropriate.
 # Drawbacks
 [drawbacks]: #drawbacks
 
-We find no convincing reason not to allow this. Though technically this increases the complexity of
-the compiler, it does so minimally: the desugaring is noninvasive and simple. On the other hand, for
-users, this change makes the language feel more consistent and decreases surprise, as evidenced by the discussion in [the open issue](https://github.com/rust-lang/rfcs/issues/372) for this feature.
+- It could be argued that this feature increases the surface area of the language and thus complexity. However, we feel that by decreasing surprise, it actually makes the language less complex for users.
+- It is possible that these changes could result in some confusing diagnostics. However, we have not found any during testing, and these could in any case be ironed out before stabilisation.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
