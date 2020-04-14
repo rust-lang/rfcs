@@ -115,6 +115,26 @@ Functional record update syntax (i.e. `..x`) is forbidden in destructuring assig
 there is no sensible and clear semantics for it in this setting. This restriction could be relaxed
 in the future if a use-case is found.
 
+The desugaring treats the `_` expression as an `_` pattern and the fully empty range `..` as a `..` pattern. No corresponding assignments are generated. For example:
+
+```rust
+let mut a;
+(a, _) = (3, 4);
+(.., a) = (1, 2, 3, 4);
+
+// desugars to:
+
+{
+    let (_a, _) = (3, 4);
+    a = _a;
+}
+
+{
+    let (.., _a) = (1, 2, 3, 4);
+    a = _a;
+}
+```
+
 ## Compound destructuring assignment
 
 We forbid destructuring compound assignment, i.e. destructuring for operators like `+=`, `*=` and so
