@@ -619,6 +619,9 @@ Some alternative syntaxes:
 * Instead of `foo = { workspace = true }` this could also be inferred from `foo
   = {}`.
 
+* Instead of `foo = { workspace = true }` this could be inferred from `foo =
+  "ws"` or similarly `foo = "workspace"`.
+
 ## Not including metadata by default
 
 One possible change to the proposal as well is to not include missing metadata
