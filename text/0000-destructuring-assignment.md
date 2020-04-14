@@ -90,6 +90,15 @@ In the desugaring, we convert the expression `(a, b)` into an analogous pattern 
 identifiers are fresh and thus do not conflict with existing variables). A nice side-effect is that
 we inherit the diagnostics for normal pattern-matching, so users benefit from existing diagnostics for destructuring declarations.
 
+## Diagnostics
+
+It is worth being explicit that in with implementation, the diagnostics that are reported are
+pattern diagnostics: that is, because the desugaring occurs regardless, the messages will imply that
+the left-hand side of an assignment is a true pattern (the one the expression has been converted
+to). We think that this results in a better user experience, as intuitively the left-hand side of a
+destructuring assignment acts like a pattern "in spirit", but this is technically false: we should
+be careful that this does not result in misleading diagnostics.
+
 ## Underscores and ellipses
 
 In patterns, we may use `_` and `..` to ignore certain values, without binding them. While range
