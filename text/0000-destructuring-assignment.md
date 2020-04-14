@@ -101,7 +101,14 @@ we inherit the diagnostics for normal pattern-matching, so users benefit from ex
 It is worth being explicit that in with implementation, the diagnostics that are reported are
 pattern diagnostics: that is, because the desugaring occurs regardless, the messages will imply that
 the left-hand side of an assignment is a true pattern (the one the expression has been converted
-to). We think that this results in a better user experience, as intuitively the left-hand side of a
+to). For example:
+
+```rust
+[*a] = [1, 2]; // error: pattern requires 1 element but array has 2
+```
+
+Whilst `[*a]` is not strictly speaking a pattern, it behaves similarly to one in this context. We
+think that this results in a better user experience, as intuitively the left-hand side of a
 destructuring assignment acts like a pattern "in spirit", but this is technically false: we should
 be careful that this does not result in misleading diagnostics.
 
@@ -149,7 +156,9 @@ e.g. how this could interact with custom implementations of the operators.
 
 ## Order-of-assignment
 
-The right-hand side of the assignment is always performed first. Then, assignments are performed left-to-right. Note that component expressions in the left-hand side may be complex, not simply identifiers, and may require execution to resolve to lvalues.
+The right-hand side of the assignment is always evaluated first. Then, assignments are performed
+left-to-right. Note that component expressions in the left-hand side may be complex, and not simply
+identifiers.
 
 In a declaration, each identifier may be bound at most once. That is, the following is invalid:
 
