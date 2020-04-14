@@ -32,7 +32,13 @@ feature is
 [guide-level-explanation]: #guide-level-explanation
 
 You may destructure a value when making an assignment, just as when you declare variables. See the
-[Summary](#Summary) for examples.
+[Summary](#Summary) for examples. The following structures may be destructured:
+
+- Tuples.
+- Slices.
+- (Tuple) structs.
+
+You may use `_` and `..` as in a normal declaration pattern to ignore certain values.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
