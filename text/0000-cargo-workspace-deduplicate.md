@@ -640,14 +640,17 @@ encouraged!
 
 Some alternative syntaxes:
 
-* Instead of `foo = { workspace = "other-name" }` we could use `foo = {
-  workspace = true, package = "other-name" }`.
+```toml
+[dependencies]
+# Instead of `foo = { workspace = true }`
+foo = {}
+foo = "ws"
+foo = "workspace"
+foo.workspace = true # technically the same, but idiomatically different
 
-* Instead of `foo = { workspace = true }` this could also be inferred from `foo
-  = {}`.
-
-* Instead of `foo = { workspace = true }` this could be inferred from `foo =
-  "ws"` or similarly `foo = "workspace"`.
+# Instead of `foo = { workspace = "other-name" }`
+foo = { workspace = true, package = "other-name" }
+```
 
 ## Not including metadata by default
 
