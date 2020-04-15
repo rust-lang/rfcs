@@ -99,7 +99,7 @@ we inherit the diagnostics for normal pattern-matching, so users benefit from ex
 
 ## Diagnostics
 
-It is worth being explicit that in with implementation, the diagnostics that are reported are
+It is worth being explicit that, in the implementation, the diagnostics that are reported are
 pattern diagnostics: that is, because the desugaring occurs regardless, the messages will imply that
 the left-hand side of an assignment is a true pattern (the one the expression has been converted
 to). For example:
@@ -148,6 +148,23 @@ let mut a;
     a = _a;
 }
 ```
+
+## Unsupported patterns
+
+We do not support the following "patterns" in destructuring assignment:
+
+- `&x = foo();`.
+- `&mut x = foo();`.
+- `ref x = foo();`.
+
+This is primarily for learnability: the behaviour of `&` can already be slightly confusing to
+newcomers, as it has different meanings depending on whether it is used in an expression or pattern.
+In destructuring assignment, the left-hand side of an assignment consists of sub*expressions*, but
+which act intuitively like patterns, so it is not clear what `&` and friends should mean. We feel it is more
+confusing than helpful to allow these cases. Conversely, destructuring tuples, slices or structs is
+very natural and we do not foresee confusion with allowing these.
+
+Our implementation is forwards-compatible with allowing these patterns in destructuring assigmnent, in any case, so we lose nothing by not allowing them from the start.
 
 ## Compound destructuring assignment
 
@@ -249,6 +266,7 @@ it makes sense.
 - It could make sense to permit
 [destructuring compound assignments](#Compound-destructuring-assignment) in the future, though we
 defer this question for later discussions.
+- It could make sense to permit [`ref` and `&`](#Unsupported-patterns) in the future.
 - It [has been suggested](https://github.com/rust-lang/rfcs/issues/372#issuecomment-365606878) that
 mixed declarations and assignments could be permitted, as in the following:
 
