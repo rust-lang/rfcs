@@ -14,6 +14,7 @@ accepted:
 (a, b) = (0, 1);
 (x, y, .., z) = (1.0, 2.0, 3.0, 4.0, 5.0);
 [_, f] = foo();
+[g, _, h, ..] = ['a', 'w', 'e', 's', 'o', 'm', 'e', '!'];
 Struct { x: a, y: b } = bar();
 ```
 
@@ -148,6 +149,8 @@ let mut a;
     a = _a;
 }
 ```
+
+and similarly for slices and structs.
 
 ## Unsupported patterns
 
