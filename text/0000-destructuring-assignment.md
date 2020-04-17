@@ -11,7 +11,7 @@ We allow destructuring on assignment, as in `let` declarations. For instance, th
 accepted:
 
 ```rust
-(a, b) = (0, 1);
+(a, (b, c)) = (0, (1, 2));
 (x, y, .., z) = (1.0, 2.0, 3.0, 4.0, 5.0);
 [_, f] = foo();
 [g, _, h, ..] = ['a', 'w', 'e', 's', 'o', 'm', 'e', '!'];
