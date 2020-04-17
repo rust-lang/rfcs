@@ -20,13 +20,18 @@ Access control for the [Rust-Lang GitHub Organization](https://www.github.com/ru
 This policy applies to both the [Rust-Lang GitHub Organization](https://github.com/rust-lang/) and all repositories within that organization.
 
 ### Rust-Lang Organization
+
 Membership in the Rust-Lang GitHub organization is managed by the organization owners.
 
 All members of the [Core Team](https://github.com/rust-lang/team/blob/master/teams/core.toml) have the right to be organization owners.
 
 Selected members of the [Infrastructure Team](https://github.com/rust-lang/team/blob/master/teams/infra.toml) can also be organization owners if their work requires it.
 
-Owners should use a separate account from their main GitHub account dedicated to managing the organization. This account may not be used to commit code and must have 2FA enabled.
+Owners should use a separate account from their main GitHub account dedicated to managing the organization. The reason for this is many GitHub users use their account with other [GitHub apps](https://developer.github.com/apps/about-apps/#about-github-apps) (the risk is even greater with [OAuth apps](https://developer.github.com/apps/about-apps/#about-oauth-apps)). It is extremely difficult for a user to ensure their GitHub account has not been compromised - as shown in this [threat model](https://github.com/mozilla-services/GitHub-Audit/blob/master/docs/threat.md). As a result of this, the separate owner account may not be used with any OAuth or GitHub applications and it may not be used to commit code. The intent is to reduce the risk of a compromise of an account with full owner permissions to all repositories in the Rust-Lang org.
+
+If a non-owner account has extensive permissions in the Rust-Lang org, we recommend using GitHub apps and OAuth apps with caution.
+
+All GitHub accounts used to interact with the Rust-Lang GitHub organization (owner or non-owner) must have 2FA enabled.
 
 ### Rust-Lang Repositories
 
