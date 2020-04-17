@@ -95,7 +95,25 @@ We support the following classes of expressions:
 
 In the desugaring, we convert the expression `(a, b)` into an analogous pattern `(_a, _b)` (whose
 identifiers are fresh and thus do not conflict with existing variables). A nice side-effect is that
-we inherit the diagnostics for normal pattern-matching, so users benefit from existing diagnostics for destructuring declarations.
+we inherit the diagnostics for normal pattern-matching, so users benefit from existing diagnostics
+for destructuring declarations.
+
+Nested structures are destructured appropriately, for instance:
+
+```rust
+let (a, b, c);
+((a, b), c) = ((1, 2), 3);
+
+// desugars to:
+
+let (a, b, c);
+{
+    let ((_a, _b), _c) = ((1, 2), 3);
+    a = _a;
+    b = _b;
+    c = _c;
+};
+```
 
 ## Diagnostics
 
