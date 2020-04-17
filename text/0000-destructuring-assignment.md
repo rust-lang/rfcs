@@ -38,6 +38,7 @@ You may destructure a value when making an assignment, just as when you declare 
 - Tuples.
 - Slices.
 - Structs (inclduing unit and tuple structs).
+- Unique variants of enums.
 
 You may use `_` and `..` as in a normal declaration pattern to ignore certain values.
 
@@ -92,6 +93,7 @@ We support the following classes of expressions:
 - Tuples.
 - Slices.
 - Structs (inclduing unit and tuple structs).
+- Unique variants of enums.
 
 In the desugaring, we convert the expression `(a, b)` into an analogous pattern `(_a, _b)` (whose
 identifiers are fresh and thus do not conflict with existing variables). A nice side-effect is that
@@ -114,6 +116,10 @@ let (a, b, c);
     c = _c;
 };
 ```
+
+Note that `#[non_exhaustive]` must be taken into account properly: enums marked `#[non_exhaustive]`
+may not have their variants destructured, and structs marked `#[non_exhaustive]` may only be
+destructured using `..`.
 
 ## Diagnostics
 
