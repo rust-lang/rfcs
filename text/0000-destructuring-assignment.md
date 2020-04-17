@@ -263,8 +263,11 @@ We thus feel that a lint is more appropriate.
 # Drawbacks
 [drawbacks]: #drawbacks
 
-- It could be argued that this feature increases the surface area of the language and thus complexity. However, we feel that by decreasing surprise, it actually makes the language less complex for users.
-- It is possible that these changes could result in some confusing diagnostics. However, we have not found any during testing, and these could in any case be ironed out before stabilisation.
+- It could be argued that this feature increases the surface area of the language and thus
+  complexity. However, we feel that by decreasing surprise, it actually makes the language less
+  complex for users.
+- It is possible that these changes could result in some confusing diagnostics. However, we have not
+  found any during testing, and these could in any case be ironed out before stabilisation.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -273,18 +276,40 @@ As we argue above, we believe this change increases the perceived consistency of
 idiomatic code in the presence of mutability, and that the
 implementation is simple and intuitive.
 
-One potential alternative that has been put forth in the past is to allow arbitrary patterns on the left-hand side of an assignment,
-but as discussed above and [extensively in this
+One potential alternative that has been put forth in the past is to allow arbitrary patterns on the
+left-hand side of an assignment, but as discussed above and [extensively in this
 thread](https://github.com/rust-lang/rfcs/issues/372), it is difficult to see how this could work in
-practice (especially with complex left-hand sides that do not simply involve identifiers) and it is not clear that this would have any advantages.
+practice (especially with complex left-hand sides that do not simply involve identifiers) and it is
+not clear that this would have any advantages.
+
+Another suggested alternative is to introduce a new keyword for indicating an assignment to an
+existing expression during a `let` variable declaration. For example, something like the following:
+
+```rust
+let (a, reassign b) = expr;
+```
+
+This has the advantage that we can reuse the existing infrastructure for patterns. However, it has
+the following disadvantages, which we believe make it less suitable than our proposal:
+
+- It requires a new keyword or overloading an existing one, both of which have syntactic and
+  semantic overhead.
+- It is something that needs to be learnt by users: conversely, we maintain that it is natural to
+  attempt destructuring assignment with the syntax we propose already, so does not need to be
+  learnt.
+- It changes the meaning of `let` (which has previously been associated only with binding new
+  variables).
+- To be consistent, we ought to allow `let reassign x = value;`, which introduces another way
+  to simply write `x = value;`.
+- It is longer and no more readable than the proposed syntax.
 
 # Prior art
 [prior-art]: #prior-art
 
-The most persuasive prior art is Rust itself, which already permits destructuring
-declarations. Intuitively, a declaration is an assignment that also introduces a new binding.
-Therefore, it seems clear that assignments should act similarly to declarations where possible.
-However, it is also the case that destructuring assignments are present in many languages that permit destructuring
+The most persuasive prior art is Rust itself, which already permits destructuring declarations.
+Intuitively, a declaration is an assignment that also introduces a new binding. Therefore, it seems
+clear that assignments should act similarly to declarations where possible. However, it is also the
+case that destructuring assignments are present in many languages that permit destructuring
 declarations.
 
 - JavaScript
@@ -305,15 +330,15 @@ None.
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-- The implementation already supports destructuring of every class of expressions that currently make
-sense in Rust. This feature naturally should be extended to any new class of expressions for which
-it makes sense.
-- It could make sense to permit
-[destructuring compound assignments](#Compound-destructuring-assignment) in the future, though we
-defer this question for later discussions.
+- The implementation already supports destructuring of every class of expressions that currently
+  make sense in Rust. This feature naturally should be extended to any new class of expressions for
+  which it makes sense.
+- It could make sense to permit [destructuring compound
+  assignments](#Compound-destructuring-assignment) in the future, though we defer this question for
+  later discussions.
 - It could make sense to permit [`ref` and `&`](#Unsupported-patterns) in the future.
 - It [has been suggested](https://github.com/rust-lang/rfcs/issues/372#issuecomment-365606878) that
-mixed declarations and assignments could be permitted, as in the following:
+  mixed declarations and assignments could be permitted, as in the following:
 
 ```rust
 let a;
