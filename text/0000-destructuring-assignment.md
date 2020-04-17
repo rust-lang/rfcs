@@ -117,6 +117,9 @@ let (a, b, c);
 };
 ```
 
+We also allow arbitrary parenthesisation, as with patterns, although unnecessary parentheses will
+trigger the `unused_parens` lint.
+
 Note that `#[non_exhaustive]` must be taken into account properly: enums marked `#[non_exhaustive]`
 may not have their variants destructured, and structs marked `#[non_exhaustive]` may only be
 destructured using `..`.
