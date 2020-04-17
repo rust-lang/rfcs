@@ -156,7 +156,8 @@ Functional record update syntax (i.e. `..x`) is forbidden in destructuring assig
 there is no sensible and clear semantics for it in this setting. This restriction could be relaxed
 in the future if a use-case is found.
 
-The desugaring treats the `_` expression as an `_` pattern and the fully empty range `..` as a `..` pattern. No corresponding assignments are generated. For example:
+The desugaring treats the `_` expression as an `_` pattern and the fully empty range `..` as a `..`
+pattern. No corresponding assignments are generated. For example:
 
 ```rust
 let mut a;
@@ -185,15 +186,24 @@ We do not support the following "patterns" in destructuring assignment:
 - `&x = foo();`.
 - `&mut x = foo();`.
 - `ref x = foo();`.
+- (`box` patterns, which are deprecated.)
 
 This is primarily for learnability: the behaviour of `&` can already be slightly confusing to
 newcomers, as it has different meanings depending on whether it is used in an expression or pattern.
 In destructuring assignment, the left-hand side of an assignment consists of sub*expressions*, but
-which act intuitively like patterns, so it is not clear what `&` and friends should mean. We feel it is more
-confusing than helpful to allow these cases. Conversely, destructuring tuples, slices or structs is
-very natural and we do not foresee confusion with allowing these.
+which act intuitively like patterns, so it is not clear what `&` and friends should mean. We feel it
+is more confusing than helpful to allow these cases. Conversely, destructuring tuples, slices or
+structs is very natural and we do not foresee confusion with allowing these.
 
-Our implementation is forwards-compatible with allowing these patterns in destructuring assigmnent, in any case, so we lose nothing by not allowing them from the start.
+Our implementation is forwards-compatible with allowing these patterns in destructuring assigmnent,
+in any case, so we lose nothing by not allowing them from the start.
+
+Additionally, we do not give analogues for any of the following, which make little sense in this
+context:
+
+- Literal patterns.
+- Range patterns.
+- Or patterns.
 
 ## Compound destructuring assignment
 
