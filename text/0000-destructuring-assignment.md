@@ -189,14 +189,17 @@ We do not support the following "patterns" in destructuring assignment:
 - `&x = foo();`.
 - `&mut x = foo();`.
 - `ref x = foo();`.
+- `x @ y = foo()`.
 - (`box` patterns, which are deprecated.)
 
 This is primarily for learnability: the behaviour of `&` can already be slightly confusing to
 newcomers, as it has different meanings depending on whether it is used in an expression or pattern.
 In destructuring assignment, the left-hand side of an assignment consists of sub*expressions*, but
 which act intuitively like patterns, so it is not clear what `&` and friends should mean. We feel it
-is more confusing than helpful to allow these cases. Conversely, destructuring tuples, slices or
-structs is very natural and we do not foresee confusion with allowing these.
+is more confusing than helpful to allow these cases. Similarly, although coming up with a sensible
+meaning for `@`-bindings in destructuring assignment is not inconceivable, we believe they would be
+confusing at best in this context. Conversely, destructuring tuples, slices or structs is very
+natural and we do not foresee confusion with allowing these.
 
 Our implementation is forwards-compatible with allowing these patterns in destructuring assigmnent,
 in any case, so we lose nothing by not allowing them from the start.
