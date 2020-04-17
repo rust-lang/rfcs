@@ -88,6 +88,9 @@ Struct { x: a, y: b } = Struct { x: 3, y: 4};
 }
 ```
 
+Note that the desugaring ensures that destructuring assignment, like normal assignment, is an
+expression.
+
 We support the following classes of expressions:
 
 - Tuples.
