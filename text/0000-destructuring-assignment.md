@@ -25,10 +25,9 @@ will simplify and improve idiomatic code involving mutability.
 [motivation]: #motivation
 
 Destructuring assignment increases the consistency of the language, in which assignment is typically
-expected to behave similarly to variable declations. The aim is that this feature will increase the
-clarity and concision of idiomatic Rust, primarily in code that makes use of mutability. This
-feature is
-[highly desired among Rust developers](https://github.com/rust-lang/rfcs/issues/372).
+expected to behave similarly to variable declarations. The aim is that this feature will increase
+the clarity and concision of idiomatic Rust, primarily in code that makes use of mutability. This
+feature is [highly desired among Rust developers](https://github.com/rust-lang/rfcs/issues/372).
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -38,7 +37,7 @@ You may destructure a value when making an assignment, just as when you declare 
 
 - Tuples.
 - Slices.
-- (Tuple) structs.
+- Structs (inclduing unit and tuple structs).
 
 You may use `_` and `..` as in a normal declaration pattern to ignore certain values.
 
@@ -92,7 +91,7 @@ We support the following classes of expressions:
 
 - Tuples.
 - Slices.
-- (Tuple) structs.
+- Structs (inclduing unit and tuple structs).
 
 In the desugaring, we convert the expression `(a, b)` into an analogous pattern `(_a, _b)` (whose
 identifiers are fresh and thus do not conflict with existing variables). A nice side-effect is that
