@@ -20,7 +20,7 @@ Starting with the questions given at the end of the [old RFC's mortician's note]
 - **GCE:** [Guaranteed Copy Elision](https://stackoverflow.com/questions/38043319/how-does-guaranteed-copy-elision-work).
 - **NRVO:** [Named Return Value Optimization](https://shaharmike.com/cpp/rvo/).
 - **DST:** [Dynamically-Sized Type](https://doc.rust-lang.org/reference/dynamically-sized-types.html).
-- **HKT:** Higher-Kinded Type.
+- **HKT:** [Higher-Kinded Type](https://stackoverflow.com/a/6417328/3511753).
 
 # Motivation
 [motivation]: #motivation
@@ -28,14 +28,14 @@ Starting with the questions given at the end of the [old RFC's mortician's note]
 Rust has a dysfunctional relationship with objects that are large or variable in size. It can accept them as parameters pretty well using references, but creating them is unwieldy and inneficient:
 
 * A function pretty much has to use `Vec` to create huge arrays, even if the array is fixed size. The way you'd want to do it, `Box::new([0; 1_000_000])`, will allocate the array on the stack and then copy it into the Box. This same form of copying shows up in tons of API's, like serde's Serialize trait.
-* There's no safe way to create gigantic, singular structs without overhead. If your 1M array is wrapped somehow, you pretty much have to allocate the memory by hand and transmute.
+* There's no safe way to create gigantic, singular structs without overhead. If your 1M array is wrapped in a struct, then the only safe way to dynamically allocate one is to use `Box::new(MyStruct::new())`, which ends up creating an instance of `MyStruct` on the stack and copying it to the box, 1M array included.
 * You can't return bare unsized types. [RFC-1909](https://github.com/rust-lang/rfcs/blob/master/text/1909-unsized-rvalues.md) allows you to create them locally, and pass them as arguments, but not return them.
 
 As far as existing emplacement proposals go, this one was written with the following requirements in mind:
 
 * **It needs to be possible to wrap it in a safe API.** Safe API examples are given for built-in data structures, including a full sketch of the implementation for Box, including exception safety.
 * **It needs to support already-idiomatic constructors like `fn new() -> GiantStruct { GiantStruct { ... } }`** Since this proposal is defined in terms of Guaranteed Copy Elision, this is a gimme.
-* **It needs to be possible to in-place populate data structures that cannot be written using a single literal expression.** The `write_return_with` intrinsic allows this to be done in an unsafe way. Sketches for APIs built on top of them are also given in the [future-possibilities] section.
+* **It needs to be possible to in-place populate data structures that cannot be written using a single literal expression.** The `write_return_with` intrinsic suggested in this proposal allows this to be done in an unsafe way. Sketches for APIs built on top of them are also given in the [future-possibilities] section.
 * **It needs to avoid adding egregious overhead in cases where the values being populated are small (in other words, if the value being initialized is the size of a pointer or smaller, it needs to be possible for the compiler to optimize away the outptr).** Since this proposal is written in terms of Guaranteed Copy Elision, this is a gimme. The exception of the "weird bypass functions" `read_return_with` and `write_return_with` may seem to break this; see the [example desugarings here](#How-do-the-return-slot-functions-work-when-the-copy-is-not-actually-elided) for info on how these functions work when the copy is not actually elided.
 * **It needs to solve most of the listed problems with the old proposals.** Since this one actually goes the distance and defines when copy elision will kick in, it fixes the biggest problems that the old `box` literal system had. It is also written in terms of present-day Rust, using `impl Trait`, and with the current direction of Rust in mind.
 
@@ -60,12 +60,14 @@ When writing constructors, you should create large data structures directly on t
 fn good() -> [i32; 1_000_000] {
     [1; 1_000_000]
 }
+
 // This function will return a raw slice, and can also be called as `Box::new_with(good_dst)`
 fn good_dst() -> [i32] {
     let n = 1_000_000;
     [1; n]
 }
-// This function will copy the array when it returns.
+
+// This function may or may not copy the array when it returns.
 fn bad() -> [i32; 1_000_000] {
     let mut arr = [0; 1_000_000];
     for i in 0..1_000_000 {
@@ -73,6 +75,7 @@ fn bad() -> [i32; 1_000_000] {
     }
     arr
 }
+
 // This function will compile successfully with #![feature(unsized_locals)]
 // but it will allocate the array on the stack, which is probably very bad.
 fn bad_dst() {
@@ -132,7 +135,12 @@ fn not_bad() -> [i32] {
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-When a function returns a value while respecting the constraints described above, the value's observable address will not change, if the value's type is:
+When a function constructs a value directly in of the following places:
+
+- A return statement.
+- The last expression of the last block, which is implicitly used as a return statement.
+
+Then the return value's observable address will not change, if the value's type is:
 
 - Larger than an implementation-defined size (eg a register).
 - Unsized.
@@ -141,7 +149,12 @@ When a function returns a value while respecting the constraints described above
 
 ## Did you say I can return unsized types?
 
-A function that directly returns an unsized type should be compiled into two functions, essentially as a special kind of generator:
+A function that directly returns an unsized type will be split into two functions, essentially as a special kind of generator:
+
+- The first half will yield the layout of the memory needed to allocate the return value.
+- The second half will write that return value into the allocated memory.
+
+The compiler and unsafe code must ensure that the allocated memory passed to the second function matches the layout yielded by the first function.
 
 ```rust
 // sugar
@@ -325,8 +338,8 @@ This is how it would conceptually work whenever a facility designed to handle pl
 To make sure this functionality can be used with no overhead, the language should guarantee some amount of copy elision. The following operations should be guaranteed zero-copy:
 
 * Directly returning the result of another function that also returns the same type.
-* Blocks, unsafe blocks, and branches that have acceptable expressions in their tail position.
 * Array and struct literals, including struct literals ending with an unsized value.
+* Blocks, unsafe blocks, and branches that have acceptable expressions in their tail position.
 
 These operations are "must-have" copy elision because they allow functions returning unsized types through unsafe methods to be composed with other functions without introducing overhead.
 
