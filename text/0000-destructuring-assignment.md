@@ -46,9 +46,10 @@ You may use `_` and `..` as in a normal declaration pattern to ignore certain va
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-The feature as described here has been implemented as a proof-of-concept (https://github.com/rust-lang/rust/pull/71156). It follows essentially the
-[suggestions of @Kimundi](https://github.com/rust-lang/rfcs/issues/372#issuecomment-214022963) and
-[of @drunwald](https://github.com/rust-lang/rfcs/issues/372#issuecomment-262519146).
+The feature as described here has been implemented as a proof-of-concept
+(https://github.com/rust-lang/rust/pull/71156). It follows essentially the [suggestions of
+@Kimundi](https://github.com/rust-lang/rfcs/issues/372#issuecomment-214022963) and [of
+@drunwald](https://github.com/rust-lang/rfcs/issues/372#issuecomment-262519146).
 
 The Rust compiler already parses complex expressions on the left-hand side of an assignment, but
 does not handle them other than emitting an error later in compilation. We propose to add
@@ -58,6 +59,18 @@ Actually supporting patterns directly on the left-hand side of an assignment sig
 complicates Rust's grammar and it is not clear that it is even technically feasible. Conversely,
 handling some classes of expressions is much simpler, and is indistinguishable to users, who will
 receive pattern-oriented diagnostics due to the desugaring of expressions into patterns.
+
+In effect, we are extending the [place
+expressions](https://doc.rust-lang.org/reference/expressions.html#place-expressions-and-value-expressions) (also called "lvalues")
+that Rust accepts by the following:
+
+- Underscore: `_`.
+- Tuples: `(place, place, place)`, `(place, .., place)`, `(.., place, place)`, `(place, place, ..)`.
+- Slices: `[place, place, place]`, `[place, .., place]`, `[.., place, place]`, `[place, place, ..]`.
+- Tuple structs: `path(place, place, place)`, `path(place, .., place)`, `path(.., place, place)`,
+  `path(place, place, ..)`.
+- Structs: `path { field: place, field: place }`, `path { field: place, field: place, .. }`.
+- Unit structs: `path`.
 
 The general idea is that we will desugar the following complex assignments as demonstrated.
 
