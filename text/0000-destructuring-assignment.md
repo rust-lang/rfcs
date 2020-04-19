@@ -16,6 +16,7 @@ accepted:
 [_, f, *baz()] = foo();
 [g, _, h, ..] = ['a', 'w', 'e', 's', 'o', 'm', 'e', '!'];
 Struct { x: a, y: b } = bar();
+Struct { x, y } = Struct { x: 5, y: 6 };
 ```
 
 This brings assignment in line with `let` declaration, in which destructuring is permitted. This
