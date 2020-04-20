@@ -7,7 +7,7 @@
 # Summary
 [summary]: #summary
 
-The RFC proposes a plan to adopt rust-analyzer as Rust's official IDE. The transition to rust-analyzer will take place in a few stages:
+The RFC proposes a plan to adopt rust-analyzer as Rust's official LSP implementation. The transition to rust-analyzer will take place in a few stages:
 
 * **Feedback** -- encourage people to use rust-analyzer and report problems
 * **Deprecation** -- actively transition people from the RLS to rust-analyzer
