@@ -178,7 +178,7 @@ write:
 ```toml
 [package]
 name = "foo"
-version = { workspace = "other-workspace-member" }
+version = { inherit = "other-workspace-member" }
 ```
 
 This directive tells Cargo another workspace member's version, named
@@ -195,18 +195,23 @@ authors = ["Nice Folks"]
 license = "MIT"
 ```
 
-When parsing a member package, if any of the above directives are missing from a
-`Cargo.toml`, and the directive is present in the manifest, then the value of
-the directive in the `Cargo.toml` is assumed to take the value of the directive
-from the workspace member.
+This allows packages to inherit their metadata not only from other workspace
+members, but also from the workspace itself. For example a package can inherit
+the above attributes with:
 
-For example above you're specifying the authors/license information for all
-workspace members that don't otherwise list it, and you could also deny
-publication of all workspace members by default with:
+```toml
+[package]
+authors = { inherit = true }
+license = { inherit = true }
+```
+
+Finally, you can also automatically have values inherited to all packages from a
+workspace with an explicit opt-in. For example a workspace could default deny
+publication of all workspace members with:
 
 ```toml
 [workspace]
-publish = false
+publish = { value = false, inherit = true }
 ```
 
 # Reference-level explanation
@@ -270,6 +275,10 @@ edition = "2018"
 # ...
 ```
 
+Keys can also be defined with `{ value = ..., inherit = true }` syntax where
+`inherit` is a boolean and `value` has the same type of the original value of
+the key.
+
 Each of these keys have no meaning in a `[workspace]` table yet, but will have
 meaning when they're assigned to crates internally. That part comes later though
 in this design! Note that the format and accepted values for these keys are the
@@ -296,30 +305,31 @@ version = "1.2.3"
 ```
 
 Cargo will now accept a table definition of `package.$key` which defines the
-`package.$key.workspace` key as well. The `package.$key.workspace` key
-must be a string, and it must name a package present in the workspace
-elsewhere. For example:
+`package.$key.inherit` key as well. The `package.$key.inherit` key must be
+either a boolean or a string. If it's a string it must name a package present
+in the workspace elsewhere. For example:
 
 ```toml
 [package]
 name = "foo"
-version = { workspace = "other" }
+version = { inherit = "other-package" }
+license = { inherit = true }
 ```
 
 This directive indicates that the version of `foo` is the same as the version of
-the workspace member `other`. Cyclic references between packages for metadata
-are disallowed and will result in an error from Cargo. A package also cannot
+the workspace member `other-package`, and the `license` directive is the same as
+`workspace.license`. Cyclic references between packages for metadata are
+disallowed and will result in an error from Cargo. A package also cannot
 reference itself for its own value.
 
-In addition to allowing explicitly referencing other workspace members for their
-values, you can also omit values entirely from the `[package]` section and
-they'll be automatically inferred if listed in `[workspace]`. If no
-`[workspace]` is present or the `[workspace]` section doesn't define these keys
-then their values will remain undefined as they are today.
+If a metadata member is not defined in `[package]`, then its value is
+automatically inherited from the `[workspace]` directive if the directive in the
+workspace is both specified and is specified with `inherit = true`. If a
+workspace directive is not specified or if it is specified with `inherit =
+false` (the default), then the package metadata directive will remain blank.
 
-The following keys in `[package]` are now inferred to be the value in
-`[workspace]` if the value in `[package]` isn't present and the value in
-`[workspace]` is.
+The following keys in `[package]` can be inherited from `[workspace]` either
+automatically or with explicit inheritance.
 
 ```toml
 [package]
@@ -346,10 +356,10 @@ package will be, in descending order:
 
 * First, if an explicit value is listed, that's used. For example `version =
   "1.2.3"`.
-* If a workspace member is referenced, that member's value is then used. for
-  example `authors = { workspace = "other-crate" }`
-* If the `[workspace]` section defines the key, then it is automatically filled
-  in for each `[package]`.
+* If an `inherit` directive is used, it's inherited from that location. For
+  example `authors = { inherit = "other-crate" }`
+* If the `[workspace]` section defines the key with `inherit = true`, then it is
+  automatically filled in for each `[package]`.
 
 ### New dependency directives
 
@@ -652,27 +662,17 @@ foo.workspace = true # technically the same, but idiomatically different
 foo = { workspace = true, package = "other-name" }
 ```
 
-## Not including metadata by default
+## Including metadata by default
 
-One possible change to the proposal as well is to not include missing metadata
-from `[package]` by default from `[workspace]`, if defined. For example an
-explicit opt-in could be required:
+One possible change to the proposal as well is to include missing metadata
+from `[package]` by default from `[workspace]`, if defined. The `inherit` key
+would not be needed as an explicit opt-in for inheriting metadata.
 
-```toml
-[package]
-repository = { workspace = true }
-```
-
-or you could blanket opt-in everything
-
-```toml
-[package]
-inherit-workspace-metadata = true
-```
-
-These options feel a bit more verbose than necessary, though, and not
-necessarily aligned with Cargo's existing manifest idioms where it infers things
-like `[[bin.name]]` or lists of tests and such.
+In the future, however, Cargo will want to support nested workspaces, and
+automatic inheritance means that you might be "changing directives from afar" by
+automatically updating workspace members. Additionally there are some use cases
+today where git submodules are used to pull in crates, and it would be a bit
+bizarre if by doing so you change the metadata of a crate.
 
 ## Motivating issues
 
