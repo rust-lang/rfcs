@@ -51,6 +51,8 @@ By default, repositories should be public and allow read access to all. When nee
 
 Bot accounts controlled by the Infrastructure Team (such as the [Rust High Five Bot](https://github.com/rust-highfive)) can be granted any level of access required for them to work at the discretion of the Infrastructure Team.
 
+Rust teams that need broad access to public Rust-Lang repositories - such as the moderation team - should create a GitHub team managed through the [Team repository](https://github.com/rust-lang/team) - and grant that team access to all appropriate repositories.
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
