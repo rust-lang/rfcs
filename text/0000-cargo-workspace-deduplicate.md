@@ -132,17 +132,13 @@ log = { workspace = true }
 ```
 
 This directive indicates that the `log` dependency should be looked up from
-`workspace.dependencies` in the workspace root. You can also indicate which
-dependency should be used with:
+`workspace.dependencies` in the workspace root. You can reference any name
+defined in `[workspace.dependencies]` too:
 
 ```toml
 [dependencies]
-log = { workspace = "log2" }
+log2 = { workspace = true }
 ```
-
-where this indicates that the crate's `log` dependency will be the `log2`
-dependency specified in the workspace `Cargo.toml`. This means that to this
-local crate `log` will be `log v2.0.0` from crates.io.
 
 ## No longer need both `version` and `path` to publish to Crates.io
 
@@ -171,47 +167,32 @@ version of a path dependency anywhere!
 ## Package metadata can reference other workspace members
 
 To deduplicate `[package]` directives in `Cargo.toml` workspace members, Cargo
-will now support a way to indirectly declare values as well as inherit them.
-For example to say that one package's version is the same as another's you'd
-write:
+will now support declaring that metadata directives should be inherited from the
+workspace. For example to version every package the same within a workspace you
+can specify:
 
 ```toml
 [package]
 name = "foo"
-version = { inherit = "other-workspace-member" }
+version = { workspace = true }
 ```
 
-This directive tells Cargo another workspace member's version, named
-`other-workspace-member`, will be used as the version for the `foo` package as
-well. This should then allow you to only have to write down the version number
-for a workspace graph of crates once.
-
-In addition to a new `[workspace.dependencies]` section, package metadata keys
+This directive tells Cargo that the version of `foo` is the same as the
+`workspace.version` directive found in the workspace manifest. This means that
+in addition to a new `[workspace.dependencies]` section, package metadata keys
 can now also be defined inside of a `[workspace]` section:
 
 ```toml
 [workspace]
-authors = ["Nice Folks"]
-license = "MIT"
+version = "0.25.2"
 ```
 
-This allows packages to inherit their metadata not only from other workspace
-members, but also from the workspace itself. For example a package can inherit
-the above attributes with:
+Many other package metadata attributes are supported as well
 
 ```toml
 [package]
-authors = { inherit = true }
-license = { inherit = true }
-```
-
-Finally, you can also automatically have values inherited to all packages from a
-workspace with an explicit opt-in. For example a workspace could default deny
-publication of all workspace members with:
-
-```toml
-[workspace]
-publish = { value = false, inherit = true }
+authors = { workspace = true }
+license = { workspace = true }
 ```
 
 # Reference-level explanation
@@ -237,7 +218,7 @@ manifests with a few exceptions:
 
 * Dependencies cannot be declared as `optional`. The `optional` key must be
   omitted or, if present, must be `false`.
-* The `workspace` key is not allowed.
+* The `workspace` key (defined later in this proposal) is not allowed.
 
 The `[workspace]` table will not support other kinds of dependencies like
 `dev-dependencies`, `build-dependencies`, or `target."...".dependencies`.  Only
@@ -248,7 +229,7 @@ key is the name of a dependency while the dependency is a dependency directive.
 This could be a string meaning a crates.io dependency or a table which further
 configures the dependency.
 
-Dependencies declare in `[workspace.dependencies]` have no meaning as-is. They
+Dependencies declared in `[workspace.dependencies]` have no meaning as-is. They
 do not affect the build nor do they force packages to depend on those
 dependencies. This part comes later below.
 
@@ -274,10 +255,6 @@ edition = "2018"
 [workspace.badges]
 # ...
 ```
-
-Keys can also be defined with `{ value = ..., inherit = true }` syntax where
-`inherit` is a boolean and `value` has the same type of the original value of
-the key.
 
 Each of these keys have no meaning in a `[workspace]` table yet, but will have
 meaning when they're assigned to crates internally. That part comes later though
@@ -305,61 +282,40 @@ version = "1.2.3"
 ```
 
 Cargo will now accept a table definition of `package.$key` which defines the
-`package.$key.inherit` key as well. The `package.$key.inherit` key must be
-either a boolean or a string. If it's a string it must name a package present
-in the workspace elsewhere. For example:
+`package.$key.workspace` key as a boolean. For example you can specify:
 
 ```toml
 [package]
 name = "foo"
-version = { inherit = "other-package" }
-license = { inherit = true }
+license = { workspace = true }
 ```
 
-This directive indicates that the version of `foo` is the same as the version of
-the workspace member `other-package`, and the `license` directive is the same as
-`workspace.license`. Cyclic references between packages for metadata are
-disallowed and will result in an error from Cargo. A package also cannot
-reference itself for its own value.
+This directive indicates that the license of `foo` is the same as
+`workspace.license`. If `workspace.license` isn't defined then this generates an
+error.
 
-If a metadata member is not defined in `[package]`, then its value is
-automatically inherited from the `[workspace]` directive if the directive in the
-workspace is both specified and is specified with `inherit = true`. If a
-workspace directive is not specified or if it is specified with `inherit =
-false` (the default), then the package metadata directive will remain blank.
-
-The following keys in `[package]` can be inherited from `[workspace]` either
-automatically or with explicit inheritance.
+The following keys in `[package]` can be inherited from `[workspace]` with the
+new `workspace = true` directive.
 
 ```toml
 [package]
-version = "1.2.3"
-authors = ["Nice Folks"]
-description = "..."
-documentation = "https://example.github.io/example"
-readme = "README.md"
-homepage = "https://example.com"
-repository = "https://github.com/example/example"
-license = "MIT"
-license-file = "./LICENSE"
-keywords = ["cli"]
-categories = ["development-tools"]
-publish = false
+version = { workspace = true }
+authors = { workspace = true }
+description = { workspace = true }
+documentation = { workspace = true }
+readme = { workspace = true }
+homepage = { workspace = true }
+repository = { workspace = true }
+license = { workspace = true }
+license-file = { workspace = true }
+keywords = { workspace = true }
+categories = { workspace = true }
+publish = { workspace = true }
 ```
 
 Note that directives like `license-file` are resolved relative to their
 definition, so `license-file` is relative to the `[workspace]` section that
 defined it.
-
-The order of precedence for the value of a key in `[package]` for a particular
-package will be, in descending order:
-
-* First, if an explicit value is listed, that's used. For example `version =
-  "1.2.3"`.
-* If an `inherit` directive is used, it's inherited from that location. For
-  example `authors = { inherit = "other-crate" }`
-* If the `[workspace]` section defines the key with `inherit = true`, then it is
-  automatically filled in for each `[package]`.
 
 ### New dependency directives
 
@@ -390,57 +346,10 @@ or `package`. The `workspace` key can be combined with other keys, however:
   the features specified inline with the features specified in the directive in
   the workspace table.
 
-* `default-features` - specifying this key is a little more subtle than with
-  normal dependencies. If this key is not specified in the `[dependencies]`
-  section of a package then it does not default to as if it were `true` (like
-  omitting it typically does). Instead the value, including the implicit
-  default, is used from the `[workspace.dependencies]` table. Otherwise if the
-  value is present in a package `[dependencies]` table it boolean or's with the
-  value, including the implicit default, in `[workspace.dependencies]`. The
-  logic here for resolving `default-features` looks like:
-
-| Package directive | Workspace Directive | resolved value |
-|-------------------|---------------------|----------------|
-| *not present*     | *not present*       | `true`         |
-| *not present*     | `true`              | `true`         |
-| *not present*     | `false`             | `false`        |
-| `true`            | *not present*       | `true`         |
-| `true`            | `true`              | `true`         |
-| `true`            | `false`             | `true`         |
-| `false`           | *not present*       | `true`         |
-| `false`           | `true`              | `true`         |
-| `false`           | `false`             | `false`        |
-
-The value of the `workspace` key can be the boolean `true`, but an explicit
-`false` is disallowed for now. A string can also be used like so:
-
-```toml
-[dependencies]
-log = { workspace = "log2" }
-```
-
-This directive indicates that `{ workspace = ... }` will be replaced with the
-directive in `[workspace.dependencies]`. The key to replace is either the name
-of the key in `[dependencies]` if `workspace = true` is specified, or if
-`workspace = "string"` is specified then `string` will be looked up in
-`[workspace.dependencies]`. It's an error to specify a dependency with
-`workspace` that isn't listed in `[workspace.dependencies]`.
-
-For example this directive will be replaced with the
-`workspace.dependencies.log` directive:
-
-```toml
-[dependencies]
-log = { workspace = true }
-```
-
-while this directive will be replaced with the `workspace.dependencies.log2`
-  directive:
-
-```toml
-[dependencies]
-log = { workspace = "log2" }
-```
+For now if a `workspace = true` dependency is specified then also specifying the
+`default-features` value is disallowed. The `default-features` value for a
+directive is inherited from the `[workspace.dependencies]` declaration, which
+defaults to `true` if nothing else is specified.
 
 ### Path dependencies infer `version` directive
 
@@ -657,22 +566,37 @@ foo = {}
 foo = "ws"
 foo = "workspace"
 foo.workspace = true # technically the same, but idiomatically different
-
-# Instead of `foo = { workspace = "other-name" }`
-foo = { workspace = true, package = "other-name" }
 ```
 
 ## Including metadata by default
 
-One possible change to the proposal as well is to include missing metadata
-from `[package]` by default from `[workspace]`, if defined. The `inherit` key
-would not be needed as an explicit opt-in for inheriting metadata.
+This proposal indicates that package metadata is not inherited by default from
+the workspace. This may be desired in some scenarios instead of repeating
+`license = { workspace = true }` everywhere, and there's likely two possible
+ways this could happen.
 
-In the future, however, Cargo will want to support nested workspaces, and
-automatic inheritance means that you might be "changing directives from afar" by
-automatically updating workspace members. Additionally there are some use cases
-today where git submodules are used to pull in crates, and it would be a bit
-bizarre if by doing so you change the metadata of a crate.
+* Workspace directives could be implicitly and automatically inherited to
+  members. In the future, however, Cargo will want to support nested
+  workspaces, and it's unclear how these features will interact. In order to
+  strik a reasonable middle-ground for now a simple solution which should
+  address many use cases is proposed and we can continue to refine this over
+  time as necessary.
+
+* Directives could be flagged to be explicitly inherited to workspace members as
+  an optional way of specifying this. For now though to keep this proposal
+  simple this is left out as a possible future extension of Cargo.
+
+## Inheriting metadata from other packages
+
+One possible extension of this RFC is for metadata to not only be inheritable
+from the `[workspace]` table but also from other packages. For example a
+scenario seen in the wild is that some repositories have multiple "cliques" of
+crates which are all versioned as a unit. In this scenario one "clique" can have
+its version directives deduplicated with this proposal, but not multiple ones.
+
+It's hoped though that an eventual feature of nested workspaces would solve this
+issue in Cargo. That way each "clique" could correspond to one workspace, and
+that way we wouldn't need extra support to inherit directives from anywhere.
 
 ## Motivating issues
 
