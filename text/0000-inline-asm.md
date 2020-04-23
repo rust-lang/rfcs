@@ -268,6 +268,38 @@ unsafe {
 assert_eq!(x, 4 * 6);
 ```
 
+## Symbol operands
+
+A special operand type, `sym`, allows you to use the symbol name of a `fn` or `static` in inline assembly code.
+This allows you to call a function or access a global variable without needing to keep its address in a register.
+
+```rust
+extern "C" fn foo(arg: i32) {
+    println!("arg = {}", arg);
+}
+
+fn call_foo(arg: i32) {
+    unsafe {
+        asm!(
+            "call {}"
+            sym foo,
+            // 1st argument in rdi, which is caller-saved
+            inout("rdi") arg => _,
+            // All caller-saved registers must be marked as clobberred
+            out("rax") _, out("rcx") _, out("rdx") _, out("rsi") _,
+            out("r8") _, out("r9") _, out("r10") _, out("r11") _,
+            out("xmm0") _, out("xmm1") _, out("xmm2") _, out("xmm3") _,
+            out("xmm4") _, out("xmm5") _, out("xmm6") _, out("xmm7") _,
+            out("xmm8") _, out("xmm9") _, out("xmm10") _, out("xmm11") _,
+            out("xmm12") _, out("xmm13") _, out("xmm14") _, out("xmm15") _,
+        )
+    }
+}
+```
+
+Note that the `fn` or `static` item does not need to be public or `#[no_mangle]`:
+the compiler will automatically insert the appropriate mangled symbol name into the assembly code.
+
 ## Register template modifiers
 
 In some cases, fine control is needed over the way a register name is formatted when inserted into the template string. This is needed when an architecture's assembly language has several names for the same register, each typically being a "view" over a subset of the register (e.g. the low 32 bits of a 64-bit register).
