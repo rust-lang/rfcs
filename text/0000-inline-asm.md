@@ -354,7 +354,7 @@ As with format strings, named arguments must appear after positional arguments. 
 
 The exact assembly code syntax is target-specific and opaque to the compiler except for the way operands are substituted into the template string to form the code passed to the assembler.
 
-The 4 targets specified in this RFC (x86, ARM, AArch64, RISC-V) all use the assembly code syntax of the GNU assembler (GAS). On x86, the `.intel_syntax noprefix` mode of GAS is used. These targets impose an additional restriction on the assembly code: any assembler state (e.g. the current section which can be changed with `.section`) must be restored to its original value at the end of the asm string. Assembly code that does not conform to the GAS syntax will result in assembler-specific behavior.
+The 4 targets specified in this RFC (x86, ARM, AArch64, RISC-V) all use the assembly code syntax of the GNU assembler (GAS). On x86, the `.intel_syntax noprefix` mode of GAS is used. On ARM, the `.syntax unified` mode is used. These targets impose an additional restriction on the assembly code: any assembler state (e.g. the current section which can be changed with `.section`) must be restored to its original value at the end of the asm string. Assembly code that does not conform to the GAS syntax will result in assembler-specific behavior.
 
 [rfc-2795]: https://github.com/rust-lang/rfcs/pull/2795
 
