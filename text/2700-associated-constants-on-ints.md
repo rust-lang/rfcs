@@ -119,18 +119,18 @@ By removing these artifacts we can make the experience of using Rust more univer
     - f64::{DIGITS, EPSILON, INFINITY, MANTISSA_DIGITS, MAX, MAX_10_EXP, MAX_EXP, MIN, MIN_10_EXP, MIN_EXP, MIN_POSITIVE, NAN, NEG_INFINITY, RADIX}
 
 2. Redefine the following module-level constants in terms of the associated constants added in step 1:
-    - std::i8::{[MIN](https://doc.rust-lang.org/std/i8/constant.MIN.html), [MAX](https://doc.rust-lang.org/std/i8/constant.MIN.html)}
-    - std::i16::{[MIN](https://doc.rust-lang.org/std/i16/constant.MIN.html), [MAX](https://doc.rust-lang.org/std/i16/constant.MIN.html)}
-    - std::i32::{[MIN](https://doc.rust-lang.org/std/i32/constant.MIN.html), [MAX](https://doc.rust-lang.org/std/i32/constant.MIN.html)}
-    - std::i64::{[MIN](https://doc.rust-lang.org/std/i64/constant.MIN.html), [MAX](https://doc.rust-lang.org/std/i64/constant.MIN.html)}
-    - std::i128::{[MIN](https://doc.rust-lang.org/std/i128/constant.MIN.html), [MAX](https://doc.rust-lang.org/std/i128/constant.MIN.html)}
-    - std::isize::{[MIN](https://doc.rust-lang.org/std/isize/constant.MIN.html), [MAX](https://doc.rust-lang.org/std/isize/constant.MIN.html)}
-    - std::u8::{[MIN](https://doc.rust-lang.org/std/u8/constant.MIN.html), [MAX](https://doc.rust-lang.org/std/u8/constant.MIN.html)}
-    - std::u16::{[MIN](https://doc.rust-lang.org/std/u16/constant.MIN.html), [MAX](https://doc.rust-lang.org/std/u16/constant.MIN.html)}
-    - std::u32::{[MIN](https://doc.rust-lang.org/std/u32/constant.MIN.html), [MAX](https://doc.rust-lang.org/std/u32/constant.MIN.html)}
-    - std::u64::{[MIN](https://doc.rust-lang.org/std/u64/constant.MIN.html), [MAX](https://doc.rust-lang.org/std/u64/constant.MIN.html)}
-    - std::u128::{[MIN](https://doc.rust-lang.org/std/u128/constant.MIN.html), [MAX](https://doc.rust-lang.org/std/u128/constant.MIN.html)}
-    - std::usize::{[MIN](https://doc.rust-lang.org/std/usize/constant.MIN.html), [MAX](https://doc.rust-lang.org/std/usize/constant.MIN.html)}
+    - std::i8::{[MIN](https://doc.rust-lang.org/std/i8/constant.MIN.html), [MAX](https://doc.rust-lang.org/std/i8/constant.MAX.html)}
+    - std::i16::{[MIN](https://doc.rust-lang.org/std/i16/constant.MIN.html), [MAX](https://doc.rust-lang.org/std/i16/constant.MAX.html)}
+    - std::i32::{[MIN](https://doc.rust-lang.org/std/i32/constant.MIN.html), [MAX](https://doc.rust-lang.org/std/i32/constant.MAX.html)}
+    - std::i64::{[MIN](https://doc.rust-lang.org/std/i64/constant.MIN.html), [MAX](https://doc.rust-lang.org/std/i64/constant.MAX.html)}
+    - std::i128::{[MIN](https://doc.rust-lang.org/std/i128/constant.MIN.html), [MAX](https://doc.rust-lang.org/std/i128/constant.MAX.html)}
+    - std::isize::{[MIN](https://doc.rust-lang.org/std/isize/constant.MIN.html), [MAX](https://doc.rust-lang.org/std/isize/constant.MAX.html)}
+    - std::u8::{[MIN](https://doc.rust-lang.org/std/u8/constant.MIN.html), [MAX](https://doc.rust-lang.org/std/u8/constant.MAX.html)}
+    - std::u16::{[MIN](https://doc.rust-lang.org/std/u16/constant.MIN.html), [MAX](https://doc.rust-lang.org/std/u16/constant.MAX.html)}
+    - std::u32::{[MIN](https://doc.rust-lang.org/std/u32/constant.MIN.html), [MAX](https://doc.rust-lang.org/std/u32/constant.MAX.html)}
+    - std::u64::{[MIN](https://doc.rust-lang.org/std/u64/constant.MIN.html), [MAX](https://doc.rust-lang.org/std/u64/constant.MAX.html)}
+    - std::u128::{[MIN](https://doc.rust-lang.org/std/u128/constant.MIN.html), [MAX](https://doc.rust-lang.org/std/u128/constant.MAX.html)}
+    - std::usize::{[MIN](https://doc.rust-lang.org/std/usize/constant.MIN.html), [MAX](https://doc.rust-lang.org/std/usize/constant.MAX.html)}
     - std::f32::{[DIGITS](https://doc.rust-lang.org/std/f32/constant.DIGITS.html), [EPSILON](https://doc.rust-lang.org/std/f32/constant.EPSILON.html), [INFINITY](https://doc.rust-lang.org/std/f32/constant.INFINITY.html), [MANTISSA_DIGITS](https://doc.rust-lang.org/std/f32/constant.MANTISSA_DIGITS.html), [MAX](https://doc.rust-lang.org/std/f32/constant.MAX.html), [MAX_10_EXP](https://doc.rust-lang.org/std/f32/constant.MAX_10_EXP.html), [MAX_EXP](https://doc.rust-lang.org/std/f32/constant.MAX_EXP.html), [MIN](https://doc.rust-lang.org/std/f32/constant.MIN.html), [MIN_10_EXP](https://doc.rust-lang.org/std/f32/constant.MIN_10_EXP.html), [MIN_EXP](https://doc.rust-lang.org/std/f32/constant.MIN_EXP.html), [MIN_POSITIVE](https://doc.rust-lang.org/std/f32/constant.MIN_POSITIVE.html), [NAN](https://doc.rust-lang.org/std/f32/constant.NAN.html), [NEG_INFINITY](https://doc.rust-lang.org/std/f32/constant.NEG_INFINITY.html), [RADIX](https://doc.rust-lang.org/std/f32/constant.RADIX.html)}
     - std::f64::{[DIGITS](https://doc.rust-lang.org/std/f64/constant.DIGITS.html), [EPSILON](https://doc.rust-lang.org/std/f64/constant.EPSILON.html), [INFINITY](https://doc.rust-lang.org/std/f64/constant.INFINITY.html), [MANTISSA_DIGITS](https://doc.rust-lang.org/std/f64/constant.MANTISSA_DIGITS.html), [MAX](https://doc.rust-lang.org/std/f64/constant.MAX.html), [MAX_10_EXP](https://doc.rust-lang.org/std/f64/constant.MAX_10_EXP.html), [MAX_EXP](https://doc.rust-lang.org/std/f64/constant.MAX_EXP.html), [MIN](https://doc.rust-lang.org/std/f64/constant.MIN.html), [MIN_10_EXP](https://doc.rust-lang.org/std/f64/constant.MIN_10_EXP.html), [MIN_EXP](https://doc.rust-lang.org/std/f64/constant.MIN_EXP.html), [MIN_POSITIVE](https://doc.rust-lang.org/std/f64/constant.MIN_POSITIVE.html), [NAN](https://doc.rust-lang.org/std/f64/constant.NAN.html), [NEG_INFINITY](https://doc.rust-lang.org/std/f64/constant.NEG_INFINITY.html), [RADIX](https://doc.rust-lang.org/std/f64/constant.RADIX.html)}
 
