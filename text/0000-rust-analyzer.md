@@ -84,7 +84,7 @@ Today, [to install rust-analyzer for VSCode][r-a-install], one simply installs t
 
 [r-a-install]: https://rust-analyzer.github.io/manual.html#installation
 
-The experience of installing rust-analyzer for other editors is more varied. The rust-analyzer project only directly supports VSCode.  Other editor plugins are maintained independently.
+The experience of installing rust-analyzer for other editors is more varied. Currently, the rust-analyzer project only directly supports VSCode, while other editor plugins are maintained independently. During this period where rust-analyzer is still under heavy development, this makes sense. As rust-analyzer matures, we may wish to re-evaluate and contribute directly to their development or maintain them within the rust-lang org.
 
 ### Timeline for transition
 
