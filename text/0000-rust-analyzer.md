@@ -147,6 +147,8 @@ More generally, switching the offical IDE from RLS to rust-analyzer will incure 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
+## Reimplement rust-analyzer within rustc
+
 The primary alternative considered was to halt work on rust-analyzer and instead attempt to port the lessons from its development to rustc. In effect, the idea would be to create a LSP server based on rustc itself.
 
 The primary appeal of this plan is that there would always be a single codebase. Moreover, the fundamental architecture of rustc has been moving steadily towards the demand-driven, IDE-friendly design that rust-analyzer has also adopted (the two have indeed influenced one another), so this would be a natural extension of that work.
@@ -156,6 +158,16 @@ However, there are a number of practical concerns with taking that approach. One
 Further, the "reimplement" approach would represent a constraint on the ordering in which we do our work. With the design proposed in this RFC, for example, rust-analyzer is able to make use of the chalk library already. This is only possible because rust-analyzer has a "stub" version of Rust's name resolution engine and type checker embedded in it -- this type checker is not perfect, but it's good enough to drive chalk and gain useful experience. This allows us to create an end-to-end IDE user experience sooner, in effect.
 
 In contrast, if we were to try and rebuild rust-analyzer within rustc, even if we had rustc adopt chalk or some other IDE-friendly trait resolution algorithm, that would not be of use to IDE users until we had also upgraded the name resolution algorithm and type checker to be IDE friendly. In short, having a "prototype" version of these algorithms that lives in rust-anaylzer is both a pro and a con: it means we have to maintain two versions, but it means users get benefits faster and developers can experiment more freely.
+
+## Require feature parity between the existing RLS and rust-analyzer
+
+One of the key points in this RFC is that feature parity with RLS is not strictly required. While rust-analyzer offers a number of things that the RLS does not support, there are three specific ways that it lags behind:
+
+* It does not support reporting errors or lints without saving
+* It does not support precise find-all-usages, goto-definition, or renames, in some cases falling back to approximations.
+* It does not persist data to disk, which can lead to large startup times.
+
+The reasons behind these limitations are that it will take some time to implement those features "the right way" (i.e., using the demand-driven approach that rust-analyzer is pioneering). Initially, we expected to require full feature parity, but we realized that this would lead to us creating "throwaway" code to temporarily patch over the limitation, and that this would in turn slow the progress towards our ultimate goals. Therefore, we decided not to require this, but instead to opt for a "feedback" period to assess the biggest pain points and see what we can do to relieve them.
 
 # Prior art
 [prior-art]: #prior-art
