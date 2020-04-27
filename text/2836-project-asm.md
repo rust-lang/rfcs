@@ -1,7 +1,7 @@
 - Feature Name: `project-inline-asm`
 - Start Date: 2019-12-07
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- RFC PR: [rust-lang/rfcs#2836](https://github.com/rust-lang/rfcs/pull/2836)
+- Rust Issue: [rust-lang/rust#29722](https://github.com/rust-lang/rust/issues/29722)
 
 # Summary
 [summary]: #summary
