@@ -142,8 +142,9 @@ It's interesting that many compilers went through a phase with parallel implemen
 Notable exceptions:
 
 * Kotlin, TypeScript -- these languages were implemented with IDEs in mind from the start
-* OCaml with merlin and C++ with clangd -- languages with header files and forward declarations make it easier to adapt traditional compiler architecture to certain IDE tasks like completion.
+* OCaml with merlin/[ocaml-lsp] and C++ with clangd -- languages with header files and forward declarations make it easier to adapt traditional compiler architecture to certain IDE tasks like completion
 
+[ocaml-lsp]: https://github.com/ocaml/ocaml-lsp
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
