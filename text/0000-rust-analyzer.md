@@ -102,6 +102,27 @@ Presently, rust-analyzer binaries are distributed on a weekly basis by the rust-
 
 Before the deprecation period begins, rust-analyzer should fully conform to the LSP protocol.
 
+Furthermore, rust-analyzer sometimes adds extensions to the core LSP
+protocol, to enable features that the core LSP does not yet
+support. Some examples include:
+
+* running specific tests (https://github.com/microsoft/language-server-protocol/issues/944)
+* inlay hints (https://github.com/microsoft/vscode-languageserver-node/pull/609)
+
+In some cases, these extensions go on to become part of the standard
+protocol, as happened with these two extensions:
+
+* extend selection (https://github.com/microsoft/language-server-protocol/issues/613)
+* syntax highlighting (https://github.com/microsoft/vscode-languageserver-node/issues/576)
+
+rust-analyzer will document the status and stability of these
+extensions. Further, disruptive or unstable extensions will be made
+opt-in (via client settings) until they are suitable for wider
+use. However, we do not consider it a "semver violation" to remove
+support for extensions if they don't seem to be working out, as the
+LSP protocol already permits a negotiation between client and server
+with respect to which extensions are supported.
+
 ### What is the transition plan?
 
 The precise transition plan is not part of this RFC. It will be determined and announced as we enter the deprecation period, based on the feedback we've gotten and how many users have manually transitioned away from the RLS. We will endeavor to keep the experience as smooth as possible, but it may require some manual steps.
