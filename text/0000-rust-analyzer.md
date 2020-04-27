@@ -10,8 +10,8 @@
 The RFC proposes a plan to adopt rust-analyzer as Rust's official LSP implementation. The transition to rust-analyzer will take place in a few stages:
 
 * **Feedback** -- encourage people to use rust-analyzer and report problems
-* **Transition** -- actively transition people from the RLS to rust-analyzer
-* **Deprecation** -- stop supporting the older RLS
+* **Deprecation period** -- announce that the RLS is deprecated and encourage people to migrate to rust-analyzer
+* **Final transition** -- stop supporting the older RLS
 
 As detailed below, one major concern with rust-analyzer as it stands today is that it shares very little code with rustc. To avoid creating an unsustainable maintainance burden, this RFC proposes extracting shared libraries that will be used by both rustc and rust-analyzer ("library-ification"), which should eventually lead to rustc and rust-analyzer being two front-ends over a shared codebase.
 
