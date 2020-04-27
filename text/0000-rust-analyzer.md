@@ -94,6 +94,14 @@ Transition will occur in three phases:
 * **Deprecation period:** We announce that support for the RLS is deprecated. We begin putting in place the tooling to transition existing users away from the RLS.
 * **Final transition:** We no longer support the RLS plugin in its older form and no longer distribute RLS over rustup.
 
+### How will rust-analyzer binaries be distributed
+
+Presently, rust-analyzer binaries are distributed on a weekly basis by the rust-analyzer project. The plugin detects when new releases are available and automatically upgrades. We expect to transition that binary distribution to use rustup. This change to use rustup should occur during the feedback period.
+
+### Conformance to the LSP protocol
+
+Before the deprecation period begins, rust-analyzer should fully conform to the LSP protocol.
+
 ### What is the transition plan?
 
 The precise transition plan is not part of this RFC. It will be determined and announced as we enter the deprecation period, based on the feedback we've gotten and how many users have manually transitioned away from the RLS. We will endeavor to keep the experience as smooth as possible, but it may require some manual steps.
