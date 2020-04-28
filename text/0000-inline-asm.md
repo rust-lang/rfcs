@@ -446,6 +446,7 @@ Here is the list of currently supported register classes:
 | ------------ | -------------- | --------- | -------------------- |
 | x86 | `reg` | `ax`, `bx`, `cx`, `dx`, `si`, `di`, `r[8-15]` (x86-64 only) | `r` |
 | x86 | `reg_abcd` | `ax`, `bx`, `cx`, `dx` | `Q` |
+| x86 | `reg_byte` | `al`, `ah`, `bl`, `bh`, `cl`, `ch`, `dl`, `dh` <br> `sil` (x86-64 only), `dil`, (x86-64 only) `r[8-15]b` (x86-64 only) | `r` |
 | x86 | `xmm_reg` | `xmm[0-7]` (x86) `xmm[0-15]` (x86-64) | `x` |
 | x86 | `ymm_reg` | `ymm[0-7]` (x86) `ymm[0-15]` (x86-64) | `x` |
 | x86 | `zmm_reg` | `zmm[0-7]` (x86) `zmm[0-31]` (x86-64) | `v` |
@@ -467,7 +468,7 @@ Here is the list of currently supported register classes:
 | RISC-V | `reg` | `x1`, `x[5-7]`, `x[9-15]`, `x[16-31]` (non-RV32E) | `r` |
 | RISC-V | `freg` | `f[0-31]` | `f` |
 
-> Note: On x86 the `ah`, `bh`, `ch`, `dh` register are never allocated for `i8` operands. This allows values allocated to e.g. `al` to use the full `rax` register.
+> Note: On x86 we treat `reg_byte` differently from `reg` because the compiler can allocate `al` and `ah` separately whereas `reg` reserves the whole register.
 
 Additional register classes may be added in the future based on demand (e.g. MMX, x87, etc).
 
@@ -475,8 +476,9 @@ Each register class has constraints on which value types they can be used with. 
 
 | Architecture | Register class | Target feature | Allowed types |
 | ------------ | -------------- | -------------- | ------------- |
-| x86-32 | `reg` | None | `i8`, `i16`, `i32`, `f32` |
-| x86-64 | `reg` | None | `i8`, `i16`, `i32`, `f32`, `i64`, `f64` |
+| x86-32 | `reg` | None | `i16`, `i32`, `f32` |
+| x86-64 | `reg` | None | `i16`, `i32`, `f32`, `i64`, `f64` |
+| x86 | `reg_byte` | None | `i8` |
 | x86 | `xmm_reg` | `sse` | `i32`, `f32`, `i64`, `f64`, <br> `i8x16`, `i16x8`, `i32x4`, `i64x2`, `f32x4`, `f64x2` |
 | x86 | `ymm_reg` | `avx` | `i32`, `f32`, `i64`, `f64`, <br> `i8x16`, `i16x8`, `i32x4`, `i64x2`, `f32x4`, `f64x2` <br> `i8x32`, `i16x16`, `i32x8`, `i64x4`, `f32x8`, `f64x4` |
 | x86 | `zmm_reg` | `avx512f` | `i32`, `f32`, `i64`, `f64`, <br> `i8x16`, `i16x8`, `i32x4`, `i64x2`, `f32x4`, `f64x2` <br> `i8x32`, `i16x16`, `i32x8`, `i64x4`, `f32x8`, `f64x4` <br> `i8x64`, `i16x32`, `i32x16`, `i64x8`, `f32x16`, `f64x8` |
@@ -505,12 +507,12 @@ Some registers have multiple names. These are all treated by the compiler as ide
 
 | Architecture | Base register | Aliases |
 | ------------ | ------------- | ------- |
-| x86 | `ax` | `al`, `eax`, `rax` |
-| x86 | `bx` | `bl`, `ebx`, `rbx` |
-| x86 | `cx` | `cl`, `ecx`, `rcx` |
-| x86 | `dx` | `dl`, `edx`, `rdx` |
-| x86 | `si` | `sil`, `esi`, `rsi` |
-| x86 | `di` | `dil`, `edi`, `rdi` |
+| x86 | `ax` | `eax`, `rax` |
+| x86 | `bx` | `ebx`, `rbx` |
+| x86 | `cx` | `ecx`, `rcx` |
+| x86 | `dx` | `edx`, `rdx` |
+| x86 | `si` | `esi`, `rsi` |
+| x86 | `di` | `edi`, `rdi` |
 | x86 | `bp` | `bpl`, `ebp`, `rbp` |
 | x86 | `sp` | `spl`, `esp`, `rsp` |
 | x86 | `ip` | `eip`, `rip` |
@@ -555,7 +557,6 @@ Some registers cannot be used for input or output operands:
 | ------------ | -------------------- | ------ |
 | All | `sp` | The stack pointer must be restored to its original value at the end of an asm code block. |
 | All | `bp` (x86), `r11` (ARM), `x29` (AArch64), `x8` (RISC-V) | The frame pointer cannot be used as an input or output. |
-| x86 | `ah`, `bh`, `ch`, `dh` | These are poorly supported by compiler backends. Use 16-bit register views (e.g. `ax`) instead. |
 | x86 | `k0` | This is a constant zero register which can't be modified. |
 | x86 | `ip` | This is the program counter, not a real register. |
 | x86 | `mm[0-7]` | MMX registers are not currently supported (but may be in the future). |
@@ -581,6 +582,7 @@ The supported modifiers are a subset of LLVM's (and GCC's) [asm template argumen
 | x86 | `reg` | `x` | `ax` | `w` |
 | x86 | `reg` | `e` | `eax` | `k` |
 | x86-64 | `reg` | `r` | `rax` | `q` |
+| x86 | `reg_byte` | None | `al` / `ah` | None |
 | x86 | `xmm_reg` | None | `xmm0` | `x` |
 | x86 | `ymm_reg` | None | `ymm0` | `t` |
 | x86 | `zmm_reg` | None | `zmm0` | `g` |
@@ -611,7 +613,7 @@ The supported modifiers are a subset of LLVM's (and GCC's) [asm template argumen
 > - on x86: our behavior for `reg` with no modifiers differs from what GCC does. GCC will infer the modifier based on the operand value type, while we default to the full register size.
 > - on x86 `xmm_reg`: the `x`, `t` and `g` LLVM modifiers are not yet implemented in LLVM (they are supported by GCC only), but this should be a simple change.
 
-As stated in the previous section, passing an input value smaller than the register width will result in the upper bits of the register containing undefined values. This is not a problem if the inline asm only accesses the lower bits of the register, which can be done by using a template modifier to use a subregister name in the asm code (e.g. `al` instead of `rax`). Since this an easy pitfall, the compiler will suggest a template modifier to use where appropriate given the input type. If all references to an operand already have modifiers then the warning is suppressed for that operand.
+As stated in the previous section, passing an input value smaller than the register width will result in the upper bits of the register containing undefined values. This is not a problem if the inline asm only accesses the lower bits of the register, which can be done by using a template modifier to use a subregister name in the asm code (e.g. `ax` instead of `rax`). Since this an easy pitfall, the compiler will suggest a template modifier to use where appropriate given the input type. If all references to an operand already have modifiers then the warning is suppressed for that operand.
 
 [llvm-argmod]: http://llvm.org/docs/LangRef.html#asm-template-argument-modifiers
 
