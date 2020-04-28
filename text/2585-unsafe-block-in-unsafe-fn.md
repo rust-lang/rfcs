@@ -1,7 +1,7 @@
-- Feature Name: unsafe_block_in_unsafe_fn
+- Feature Name: `unsafe_block_in_unsafe_fn`
 - Start Date: 2018-11-04
-- RFC PR: (leave this empty)
-- Rust Issue: (leave this empty)
+- RFC PR: [rust-lang/rfcs#2585](https://github.com/rust-lang/rfcs/pull/2585)
+- Rust Issue: [rust-lang/rust#71688](https://github.com/rust-lang/rust/issues/71668)
 
 # Summary
 [summary]: #summary
