@@ -49,9 +49,9 @@ GitHub does provide another permission level - Triage - which is geared toward c
 
 By default, repositories should be public and allow read access to all. When needed, some repositories can have limited read access (i.e. repositories related to security). 
 
-Bot accounts controlled by the Infrastructure Team (such as the [Rust High Five Bot](https://github.com/rust-highfive)) can be granted any level of access required for them to work at the discretion of the Infrastructure Team.
+Some teams - such as the moderation team - need broad access to public Rust-Lang repositories. The first way to manage this is through creating a GitHub team managed through the [Team Repository](https://github.com/rust-lang/team) and granting that team appropriate permissions to all appropriate repos. Another way is to create tooling that will allow a member of the moderation team to selectively and temporarily gain  the access that they need when it is needed (such as deleting a comment or issue). For now, we are proceeding with managing access to repos for moderation through a GitHub team, however, should it be needed, we can develop tooling to apply more fine grained and time limited access.
 
-Rust teams that need broad access to public Rust-Lang repositories - such as the moderation team - should create a GitHub team managed through the [Team repository](https://github.com/rust-lang/team) - and grant that team access to all appropriate repositories.
+Bot accounts controlled by the Infrastructure Team (such as the [Rust High Five Bot](https://github.com/rust-highfive)) can be granted any level of access required for them to work at the discretion of the Infrastructure Team.
 
 # Drawbacks
 [drawbacks]: #drawbacks
