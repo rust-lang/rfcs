@@ -10,8 +10,8 @@
 The RFC proposes a plan to adopt rust-analyzer as Rust's official LSP implementation. The transition to rust-analyzer will take place in a few stages:
 
 * **Feedback** -- encourage people to use rust-analyzer and report problems
-* **Deprecation** -- actively transition people from the RLS to rust-analyzer
-* **Transition** -- stop supporting the older RLS
+* **Transition** -- actively transition people from the RLS to rust-analyzer
+* **Deprecation** -- stop supporting the older RLS
 
 As detailed below, one major concern with rust-analyzer as it stands today is that it shares very little code with rustc. To avoid creating an unsustainable maintainance burden, this RFC proposes extracting shared libraries that will be used by both rustc and rust-analyzer ("library-ification"), which should eventually lead to rustc and rust-analyzer being two front-ends over a shared codebase.
 
@@ -39,7 +39,7 @@ Even in its current, experimental form, many users derive value from rust-analyz
 
 There are several things that we would like to improve about the current situation:
 
-* We would to concentrate our efforts behind one LSP server, not support both the RLS and rust-analyzer.
+* We would like to concentrate our efforts behind one LSP server, not support both the RLS and rust-analyzer.
     * Further, the goal for some time has been to adopt a query-based architecture much like the one that rust-analyzer is using.
 * We would like to (eventually) avoid having two implementations of the Rust compiler to support, one in rustc and one in rust-analyzer.
 * We would like to "pay down" technical debt within the compiler itself and to make it approachable.
@@ -47,12 +47,12 @@ There are several things that we would like to improve about the current situati
 
 However, in making the transition from the existing RLS setup to rust-analyzer, we have to be careful not to introduce user confusion. In particular, we wish to make the experience of "managing one's editor" smooth, both for:
 
-* existing RLS users (who need to transition from the RLS to rust-analyzer), and
-* new Rust useres (who need to find and install rust-analyzer for the first time).
+* Existing RLS users (who need to transition from the RLS to rust-analyzer), and
+* New Rust users (who need to find and install rust-analyzer for the first time).
 
 ## Separate goal: making the compiler more approachable via 'library-ification'
 
-Independently from IDEs, The compiler team has been pursuing a process of "library-ification", meaning convering rustc from a monolithic codebase into one with well-defined libraries and reasonably stable API boundaries. You can find more details in the [design meeting from 2019-09-13][2019-09-13]. The goal is ultimately for both rustc and rust-analyzer to be shallow wrappers around the same core codebases, as well as to improve the accessibility of the rustc codebase by having well-defined modules that can be learned independently.
+Independently from IDEs, The compiler team has been pursuing a process of "library-ification", meaning converting rustc from a monolithic codebase into one with well-defined libraries and reasonably stable API boundaries. You can find more details in the [design meeting from 2019-09-13][2019-09-13]. The goal is ultimately for both rustc and rust-analyzer to be shallow wrappers around the same core codebases, as well as to improve the accessibility of the rustc codebase by having well-defined modules that can be learned independently.
 
 [2019-09-13]: https://rust-lang.github.io/compiler-team/minutes/design-meeting/2019-09-13-rust-analyzer-and-libraryification/
 
@@ -69,7 +69,7 @@ For example, the compiler currently interns all of its types and frees them all 
 
 Similarly, in rustc, we have been moving towards a model where the dependency graph between queries is streamed out to the disk as soon as it is generated, and never stored in memory. This is because the dependency information is only needed when you start the *next* compilation. But in an IDE, that dependency information is needed as soon as the next keypress, and hence it doesn't make sense to stream it to disk.
 
-Library-ification can address these concerns by two distinct "host processes" that make use of shared libraries differently. In the case of types, for example, we can be generic over whether types ar interned or stored in some other sort of pointer. Similarly, the query infrastructure might have two modes or implementations strategies. 
+Library-ification can address these concerns by two distinct "host processes" that make use of shared libraries differently. In the case of types, for example, we can be generic over whether types are interned or stored in some other sort of pointer. Similarly, the query infrastructure might have two modes or implementation strategies. 
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -96,7 +96,7 @@ Transition will occur in three phases:
 
 ### What is the transition plan?
 
-The precise transition plan is not part of this RFC. It will be determined and announced as we enter the Deprecation period, based on the feedback we've gotten and how many users have manually transitioned away from the RLS. We will endeavor to keep the experience as smooth as possible, but it may require some manual steps.
+The precise transition plan is not part of this RFC. It will be determined and announced as we enter the deprecation period, based on the feedback we've gotten and how many users have manually transitioned away from the RLS. We will endeavor to keep the experience as smooth as possible, but it may require some manual steps.
 
 ### Branding: how to talk about rust-analyzer/RLS going forward?
 
