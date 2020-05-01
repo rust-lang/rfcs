@@ -71,4 +71,5 @@ None at this time.
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-* It might be desirable to also make an `experiments` crate which can provide various proc-macros that use the experimental keywords. We would also "whitelist" this crate so that it's assured to be available on the Rust Playground's list of crates, and then people could share example proposed usages of the experimental proc-macros.
+* It might be desirable to also make an `experiments` crate which can provide various proc-macros that use the experimental keywords.
+  * We would also ensure that the `experiments` crate is available on the Rust Playground in addition to the "100 most common crates.io crates" that it normally supports. This would help users share ideas and experimental iterations without everyone having to publish their own experimental crates.
