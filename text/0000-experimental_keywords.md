@@ -16,7 +16,7 @@ An experimental keyword is given with `r#$keyword`, such as:
 # Motivation
 [motivation]: #motivation
 
-It is often the case that we know we want a new ability to be available for users to try out as soon as possible, even before we know what the final syntax for that ability should look like. In the past the compiler has had special macros for this purpose (`try!` and `await!`). This RFC is a continuation of that idea, while also trying to improve the understanding to general users that the ability they're using isn't in its final form.
+It is often the case that we know we want a new ability to be available for users to try out as soon as possible, even before we know what the final syntax for that ability should look like. In the past the compiler has had slightly silly keyword combinations or special proc-macros for this purpose (`do catch` and `await!`). This RFC is a continuation of that idea, while also trying to improve the understanding to general users that the ability they're using isn't in its final form.
 
 Previously, introducing _any_ new keyword at all had to be done only on an edition change because of the compatibility hazard. Since `r # $ token` is not currently a valid token sequence for anything at all, we can use the `r#$` prefix as a way to "namespace" the experimental keywords away from the main language.
 
