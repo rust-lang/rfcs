@@ -25,6 +25,7 @@ That said, it will be possible (on a case by case basis) for an experimental key
 * It's also possible that the "real" usage of an experimental keyword will be decided to be a proc-macro in the standard library, rather than some bit of syntax (example: the primary way to access inline assembly is not decided on yet, but it's likely to be a proc-macro).
 
 It is probable that usage of an experimental keyword after the final syntax has been stabilized will fire a warning that you should move to the final syntax, but this can be decided on a case by case basis for each language feature.
+* Notably, experimental keywords are intended to be available in all editions, but it's possible that a particular final syntax for a feature might not be usable within all previous editions. In such a case, we would not warn against using the experimental keyword form when the crate was compiling using that older edition.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
