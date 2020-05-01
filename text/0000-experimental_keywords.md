@@ -78,6 +78,7 @@ None at this time.
 
 * It might be desirable to also make an `experiments` crate which can provide various proc-macros that use the experimental keywords.
   * We would also ensure that the `experiments` crate is available on the Rust Playground in addition to the "100 most common crates.io crates" that it normally supports. This would help users share ideas and experimental iterations without everyone having to publish their own experimental crates.
+  * Alternately, the `experiments` crate could simply always be available via the sysroot (like the `proc_macro` crate).
 
 * It is likely that `cargo-fix` and/or `rustfmt` would be able to automatically convert code using an experimental keyword into the "final syntax" form once a final syntax is decided.
   * This would greatly help the transition from experimental keyword to final syntax, but such support would be on a case by case basis.
