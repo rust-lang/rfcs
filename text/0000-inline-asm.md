@@ -369,7 +369,7 @@ reg_spec := <register class> / "<explicit register>"
 operand_expr := expr / "_" / expr "=>" expr / expr "=>" "_"
 reg_operand := dir_spec "(" reg_spec ")" operand_expr
 operand := reg_operand / "const" const_expr / "sym" path
-option := "pure" / "nomem" / "readonly" / "preserves_flags" / "noreturn"
+option := "pure" / "nomem" / "readonly" / "preserves_flags" / "noreturn" / "att_syntax"
 options := "options(" option *["," option] [","] ")"
 asm := "asm!(" format_string *("," [ident "="] operand) ["," options] [","] ")"
 ```
@@ -386,7 +386,7 @@ As with format strings, named arguments must appear after positional arguments. 
 
 The exact assembly code syntax is target-specific and opaque to the compiler except for the way operands are substituted into the template string to form the code passed to the assembler.
 
-The 4 targets specified in this RFC (x86, ARM, AArch64, RISC-V) all use the assembly code syntax of the GNU assembler (GAS). On x86, the `.intel_syntax noprefix` mode of GAS is used. On ARM, the `.syntax unified` mode is used. These targets impose an additional restriction on the assembly code: any assembler state (e.g. the current section which can be changed with `.section`) must be restored to its original value at the end of the asm string. Assembly code that does not conform to the GAS syntax will result in assembler-specific behavior.
+The 4 targets specified in this RFC (x86, ARM, AArch64, RISC-V) all use the assembly code syntax of the GNU assembler (GAS). On x86, the `.intel_syntax noprefix` mode of GAS is used by default. On ARM, the `.syntax unified` mode is used. These targets impose an additional restriction on the assembly code: any assembler state (e.g. the current section which can be changed with `.section`) must be restored to its original value at the end of the asm string. Assembly code that does not conform to the GAS syntax will result in assembler-specific behavior.
 
 [rfc-2795]: https://github.com/rust-lang/rfcs/pull/2795
 
@@ -425,7 +425,7 @@ Several types of operands are supported:
   - `<path>` must refer to a `fn` or `static`.
   - A mangled symbol name referring to the item is substituted into the asm template string.
   - The substituted string does not include any modifiers (e.g. GOT, PLT, relocations, etc).
-  - `<path>` is allowed to point to a `#[thread_local]` static, in which case the asm code can combine the symbol with relocations (e.g. `@TPOFF`) to read from thread-local data.
+  - `<path>` is allowed to point to a `#[thread_local]` static, in which case the asm code can combine the symbol with relocations (e.g. `@plt`, `@TPOFF`) to read from thread-local data.
 
 ## Register operands
 
@@ -630,6 +630,7 @@ Currently the following options are defined:
 - `preserves_flags`: The `asm` block does not modify the flags register (defined in the [rules][rules] below). This allows the compiler to avoid recomputing the condition flags after the `asm` block.
 - `noreturn`: The `asm` block never returns, and its return type is defined as `!` (never). Behavior is undefined if execution falls through past the end of the asm code. A `noreturn` asm block behaves just like a function which doesn't return; notably, local variables in scope are not dropped before it is invoked.
 - `nostack`: The `asm` block does not push data to the stack, or write to the stack red-zone (if supported by the target). If this option is *not* used then the stack pointer is guaranteed to be suitably aligned (according to the target ABI) for a function call.
+- `att_syntax`: This option is only valid on x86, and causes the assembler to use the `.att_syntax prefix` mode of the GNU assembler. Register operands are substituted in with a leading `%`.
 
 The compiler performs some additional checks on options:
 - The `nomem` and `readonly` options are mutually exclusive: it is a compile-time error to specify both.
@@ -668,7 +669,7 @@ Additionally, the following attributes are added to the LLVM `asm` statement:
 * If the `nomem` option is set without the `pure` option then the `inaccessiblememonly` attribute is added to the LLVM `asm` statement.
 * If the `pure` option is not set then the `sideeffect` flag is added the LLVM `asm` statement.
 * If the `nostack` option is not set then the `alignstack` flag is added the LLVM `asm` statement.
-* On x86 the `inteldialect` flag is added the LLVM `asm` statement so that the Intel syntax is used instead of the AT&T syntax.
+* On x86, if the `att_syntax` option is not set then the `inteldialect` flag is added to the LLVM `asm` statement.
 
 If the `noreturn` option is set then an `unreachable` LLVM instruction is inserted after the asm invocation.
 
@@ -819,7 +820,7 @@ This RFC proposes a completely new inline assembly format.
 It is not possible to just copy examples of GCC-style inline assembly and re-use them.
 There is however a fairly trivial mapping between the GCC-style and this format that could be documented to alleviate this.
 
-Additionally, this RFC proposes using the Intel asm syntax on x86 instead of the AT&T syntax. We believe this syntax will be more familiar to most users, but may be surprising for users used to GCC-style asm.
+Additionally, this RFC proposes using the Intel asm syntax by default on x86 instead of the AT&T syntax. We believe this syntax will be more familiar to most users, but may be surprising for users used to GCC-style asm.
 
 The `cpuid` example above would look like this in GCC-sytle inline assembly:
 
@@ -954,17 +955,6 @@ fn mul(a: u64, b: u64) -> u128 {
     hi as u128 << 64 + lo as u128
 }
 ```
-
-## Use AT&T syntax on x86
-
-x86 is particular in that there are [two widely used dialects] for its assembly code: Intel syntax, which is the official syntax for x86 assembly, and AT&T syntax which is used by GCC (via GAS). There is no functional difference between those two dialects, they both support the same functionality but with a [different syntax][gas-syntax]. This RFC chooses to use Intel syntax since it is more widely used and users generally find it easier to read and write.
-
-Note however that it is relatively easy to add support for AT&T using a proc macro (e.g. `asm_att!()`) which wraps around `asm!`. Only two transformations are needed:
-- A `%` needs to be added in front of register operands in the template string.
-- The `.att_syntax prefix` directive should be inserted at the start of the template string to switch the assembler to AT&T mode.
-- The `.intel_syntax noprefix` directive should be inserted at the end of the template string to restore the assembler to Intel mode.
-
-[gas-syntax]: https://sourceware.org/binutils/docs/as/i386_002dVariations.html
 
 ## Validate the assembly code in rustc
 
