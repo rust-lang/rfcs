@@ -409,7 +409,7 @@ Several types of operands are supported:
 * `inout(<reg>) <expr>`
   - `<reg>` can refer to a register class or an explicit register. The allocated register name is substituted into the asm template string.
   - The allocated register will contain the value of `<expr>` at the start of the asm code.
-  - `<expr>` must be an initialized place expression, to which the contents of the allocated register is written to at the end of the asm code.
+  - `<expr>` must be a mutable initialized place expression, to which the contents of the allocated register is written to at the end of the asm code.
 * `inout(<reg>) <in expr> => <out expr>`
   - Same as `inout` except that the initial value of the register is taken from the value of `<in expr>`.
   - `<out expr>` must be a (possibly uninitialized) place expression, to which the contents of the allocated register is written to at the end of the asm code.
