@@ -446,7 +446,8 @@ Here is the list of currently supported register classes:
 | ------------ | -------------- | --------- | -------------------- |
 | x86 | `reg` | `ax`, `bx`, `cx`, `dx`, `si`, `di`, `r[8-15]` (x86-64 only) | `r` |
 | x86 | `reg_abcd` | `ax`, `bx`, `cx`, `dx` | `Q` |
-| x86 | `reg_byte` | `al`, `ah`, `bl`, `bh`, `cl`, `ch`, `dl`, `dh` <br> `sil` (x86-64 only), `dil`, (x86-64 only) `r[8-15]b` (x86-64 only) | `r` |
+| x86-32 | `reg_byte` | `al`, `bl`, `cl`, `dl`, `ah`, `bh`, `ch`, `dh` | `q` |
+| x86-64 | `reg_byte` | `al`, `bl`, `cl`, `dl`, `sil`, `dil`, `r[8-15]b`, `ah`\*, `bh`\*, `ch`\*, `dh`\* | `q` |
 | x86 | `xmm_reg` | `xmm[0-7]` (x86) `xmm[0-15]` (x86-64) | `x` |
 | x86 | `ymm_reg` | `ymm[0-7]` (x86) `ymm[0-15]` (x86-64) | `x` |
 | x86 | `zmm_reg` | `zmm[0-7]` (x86) `zmm[0-31]` (x86-64) | `v` |
@@ -469,6 +470,8 @@ Here is the list of currently supported register classes:
 | RISC-V | `freg` | `f[0-31]` | `f` |
 
 > Note: On x86 we treat `reg_byte` differently from `reg` because the compiler can allocate `al` and `ah` separately whereas `reg` reserves the whole register.
+>
+> Note #2: On x86-64 the high byte registers (e.g. `ah`) are only available when used as an explicit register. Specifying the `reg_byte` register class for an operand will always allocate a low byte register.
 
 Additional register classes may be added in the future based on demand (e.g. MMX, x87, etc).
 
