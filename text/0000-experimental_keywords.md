@@ -59,6 +59,10 @@ This RFC alters the language so that `r # $ token` is an accepted token sequence
 * Alternative: We could select _some other_ sequence of invalid tokens to use as a prefix for experimental keywords.
   * `r#$` is used because it is close enough to the "raw literal" and "raw string" syntaxes that people are very likely to understand what's going on even if they're not familiar with a specific experimental keyword when they first see it.
 
+* Alternative: We could limit the experimental keyword usage to Nightly only until the final syntax is decided upon.
+  * This would save people who only use the Stable channel from having to worry about using a new feature one way and then potentially being encouraged to update to a second syntax later.
+  * However, in the 2019 Survey, only 30% of users responded that they use Nightly, so a very large portion of the community would end up excluded from the experimentation phase.
+
 # Prior art
 [prior-art]: #prior-art
 
