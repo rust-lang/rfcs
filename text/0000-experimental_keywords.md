@@ -67,6 +67,7 @@ This RFC alters the language so that `r # $ token` is an accepted token sequence
 [prior-art]: #prior-art
 
 * The Ember framework for javascript places experimental framework abilities into a special module that is clearly experimental so that users can try new things and become familiar with new features even before the feature is fully stable.
+* There has been some negative experiences elsewhere with exposing things under non-final names, such as [vendor prefixes](https://developer.mozilla.org/en-US/docs/Glossary/Vendor_Prefix) in CSS or [`X-` headers](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers) in HTTP. I think it would be good for them to be mentioned here, with some details about why this won't have those problems.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
