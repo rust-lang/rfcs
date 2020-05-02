@@ -27,6 +27,14 @@ That said, it will be possible (on a case by case basis) for an experimental key
 It is probable that usage of an experimental keyword after the final syntax has been stabilized will fire a warning that you should move to the final syntax, but this can be decided on a case by case basis for each language feature.
 * Notably, experimental keywords are intended to be available in all editions, but it's possible that a particular final syntax for a feature might not be usable within all previous editions. In such a case, we would not warn against using the experimental keyword form when the crate was compiling using that older edition.
 
+---
+
+One concrete example of how experimental keywords could be put into practice is the ["raw references" RFC](https://github.com/rust-lang/rust/issues/64490):
+* Essentially everyone agrees that we should offer the ability to directly get a pointer to a field of a struct without an intermediate reference.
+* The exact syntax to settle on is up in the air.
+* In the mean time people are having to put up with sometimes having unsound code.
+* So it's better to make code sound _now_ and make code nice looking _later on_.
+
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
