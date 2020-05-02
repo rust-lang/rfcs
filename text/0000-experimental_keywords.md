@@ -29,6 +29,12 @@ It is probable that usage of an experimental keyword after the final syntax has 
 
 ---
 
+And to be **extra clear** about the scope of this RFC:
+* This RFC _only_ proposes that the experimental keywords ability be added to the compiler for use in future language changes and that it be _possible_ for experimental keywords to be stabilized.
+* Any actual stabilization of any experimental keyword would have **as high of a burden** as the full normal stabilization process for any other language feature. It would **not** be automatic or assured to happen in any way at all.
+
+---
+
 One concrete example of how experimental keywords could be put into practice is the ["raw references" RFC](https://github.com/rust-lang/rust/issues/64490):
 * Essentially everyone agrees that we should offer the ability to directly get a pointer to a field of a struct without an intermediate reference.
 * The exact syntax to settle on is up in the air.
