@@ -16,7 +16,7 @@ additions would primarily be useful in "error reporting" contexts, where we
 typically no longer have type information and may be composing errors from many
 sources.
 
-_note_: This RFC focuses on the more complicate of it's two proposed solutions
+_note_: This RFC focuses on the more complicated of it's two proposed solutions
 in order to support accessing DSTs. The [alternative proposal] is easier to
 understand and may be more palatable.
 
@@ -402,18 +402,33 @@ pub trait Error {
     /// Provide an untyped reference to a member whose type matches the provided `TypeId`.
     ///
     /// Returns `None` by default, implementors are encouraged to override.
-    fn provide(&self, ty: TypeId) -> Option<&dyn Any> {
+    fn get_context(&self, ty: TypeId) -> Option<&dyn Any> {
         None
     }
 }
 
 impl dyn Error {
     /// Retrieve a reference to `T`-typed context from the error if it is available.
-    pub fn request<T: Any>(&self) -> Option<&T> {
+    pub fn context<T: Any>(&self) -> Option<&T> {
         self.get_context(TypeId::of::<T>())?.downcast_ref::<T>()
     }
 }
 ```
+
+### Why isn't this the primary proposal?
+
+There are two big issues with using the `Any` trait that I believe justify the
+more complicated solution.
+
+- You cannot return dynamically sized types as `&dyn Any`
+- It's easy to introduce runtime errors with `&dyn Any` by either comparing to
+  or returning the wrong type
+
+By making all the type id comparison internal to the `Request` type it is
+impossible to compare the wrong type ids. And by encouraging explicit type
+parameters when calling `provide` the compiler is able to catch errors where
+the type passed in doesn't match the type that was expected. So while the API
+for the main proposal is more complicated it should be less error prone.
 
 # Prior art
 [prior-art]: #prior-art
