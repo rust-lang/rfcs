@@ -67,10 +67,14 @@ and, more recently, backtraces.
 However, the current approach of promoting each form of context to a method on
 the `Error` trait doesn't leave room for forms of context that are not commonly
 used, or forms of context that are defined outside of the standard library.
-Adding a generic equivalent to these member access functions would leave room
-for many more forms of context in error reports.
 
-## Example use cases this enables
+## Extracting non-std types from `dyn Errors`
+
+By adding a generic form of these member access functions we are no longer
+restricted to types defined in the standard library. This opens the door to
+many new forms of error reporting.
+
+### Example use cases this enables
 
 * using alternatives to `std::backtrace::Backtrace` such as
   `backtrace::Backtrace` or [`SpanTrace`]
@@ -80,10 +84,6 @@ for many more forms of context in error reports.
   slice of errors rather than as a single error, such as a set of errors caused
   when parsing a file
 * Help text such as suggestions or warnings attached to an error report
-
-To support these use cases without ecosystem fragmentation, we would extend the
-Error trait with a dynamic context API that allows implementors and clients to
-enrich errors in an opt-in fashion.
 
 ## Moving `Error` into `libcore`
 
