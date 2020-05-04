@@ -272,5 +272,5 @@ variant of closures: `|| 42`. This is backwards compatible with the current prop
 This could allow us to deprecate the more esoteric classes of promotable
 expressions (e.g., `&(u32::MAX + u32::MAX)`) in favor of inline `const`
 expressions. This would have to be done at an edition boundary. We would only
-do promotion for aggregates, literals, and combinations thereof, and
+do promotion for aggregates, literals, constants and combinations thereof, and
 `#[rustc_promotable]` would be removed from the standard library.
