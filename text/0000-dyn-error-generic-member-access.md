@@ -207,12 +207,15 @@ impl fmt::Debug for ErrorReporter {
 }
 ```
 
+As you can see the error trait provides the facilities needed to create error
+reports enriched by information that may be present in source errors.
+
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 The following changes need to be made to implement this proposal:
 
-## Add a type like [`ObjectProvider::Request`] to std
+### Add a type like [`ObjectProvider::Request`] to std
 
 This type fills the same role as `&dyn Any` except that it supports other trait
 objects as the requested type.
@@ -331,7 +334,7 @@ pub struct FulfilledRequest(PhantomData<&'static Cell<()>>);
 pub type ProvideResult<'r, 'a> = Result<Request<'r, 'a>, FulfilledRequest>;
 ```
 
-## Define a generic accessor on the `Error` trait
+### Define a generic accessor on the `Error` trait
 
 ```rust
 pub trait Error {
@@ -344,7 +347,7 @@ pub trait Error {
 }
 ```
 
-## Use this `Request` type to handle passing generic types out of the trait object
+### Use this `Request` type to handle passing generic types out of the trait object
 
 ```rust
 impl dyn Error {
