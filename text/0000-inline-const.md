@@ -182,11 +182,6 @@ This RFC extends the [grammar for patterns] to be,
 >    | PathInExpression
 >    | QualifiedPathInExpression
 >    | ConstBlockExpression // new
->
-> PathPattern :
->       PathInExpression
->    | QualifiedPathInExpression
->    | ConstBlockExpression // new
 > ```
 
 In both the expression and pattern context, an inline `const` behaves exactly
