@@ -75,7 +75,7 @@ fn foo() -> &u32 {
 However, the fact that we are executing the array initializer or expression
 after the `&` at compile-time is not obvious to the user. To avoid violating
 their assumptions, we are very careful to promote only in cases where the user
-cannot possibly tell that their code is not executing at runtime. This means
+cannot possibly tell that their code is not executing at runtime. This means a
 [long list of rules][prom-rules] for determining the promotability of expressions, and it
 means expressions that call a `const fn` or that result in a type with a `Drop`
 impl need to use a named `const` declaration.
