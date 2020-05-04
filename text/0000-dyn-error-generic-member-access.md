@@ -16,6 +16,10 @@ additions would primarily be useful in "error reporting" contexts, where we
 typically no longer have type information and may be composing errors from many
 sources.
 
+_note_: This RFC focuses on the more complicate of it's two proposed solutions
+in order to support accessing DSTs. The [alternative proposal] is easier to
+understand and may be more palatable.
+
 ## TLDR
 
 Add this method to the `Error` trait
@@ -452,4 +456,4 @@ let mut locations = e
 
 [`SpanTrace`]: https://docs.rs/tracing-error/0.1.2/tracing_error/struct.SpanTrace.html
 [`ObjectProvider::Request`]: https://github.com/yaahc/nostd-error-poc/blob/master/fakecore/src/any.rs
-
+[alternative proposal]: #use-an-alternative-proposal-that-relies-on-the-any-trait-for-downcasting
