@@ -1,6 +1,6 @@
 - Feature Name: `inline_const`
 - Start Date: 2020-04-30
-- RFC PR: TBD
+- RFC PR: [rust-lang/rfcs#2920](https://github.com/rust-lang/rfcs/pull/2920)
 - Rust Issue: TBD
 
 # Summary
