@@ -93,7 +93,7 @@ fn foo(x: &i32) -> &i32 {
   if *x < 0 { const { &4i32.pow(4) } } else { x }
 }
 
-fn foo() -> &u32 {0..5
+fn foo() -> &u32 {
     let three_ranges = [const { (0..=5).into_inner() }; 3];
 }
 ```
