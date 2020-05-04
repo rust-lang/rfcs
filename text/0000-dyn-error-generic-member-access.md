@@ -10,15 +10,15 @@ This RFC proposes additions to the `Error` trait to support accessing generic
 forms of context from `dyn Error` trait objects. This generalizes the pattern
 used in `backtrace` and `source`. This proposal adds the method
 `Error::get_context` to the error trait, which offers `TypeId`-based member
-lookup, and a new inherent fn `<dyn Error>::context`, which makes use of an
+lookup and a new inherent fn `<dyn Error>::context` which makes use of an
 implementor's `get_context` to return a typed reference directly. These
-additions would primarily be useful in "error reporting" contexts, where we
-typically no longer have type information and may be composing errors from many
-sources.
+additions would primarily be useful for error reporting, where we typically no
+longer have type information and may be composing errors from many sources.
 
-_note_: This RFC focuses on the more complicated of it's two proposed solutions
-in order to support accessing DSTs. The [alternative proposal] is easier to
-understand and may be more palatable.
+_note_: This RFC focuses on the more complicated of it's two proposed
+solutions. The proposed solution provides support accessing dynamically sized
+types. The [alternative proposal] is easier to understand and may be more
+palatable.
 
 ## TLDR
 
