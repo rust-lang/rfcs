@@ -390,10 +390,9 @@ extract members.
 
 ## Use an alternative proposal that relies on the `Any` trait for downcasting
 
-This approach is much simpler, but critically doesn't support providing
-dynamically sized types, and it is more error prone because it cannot provide
-compile time errors when the type you provide does not match the type_id you
-were given.
+This approach is simpler, but doesn't support providing dynamically sized
+types and is more error prone because it cannot provide compile time errors
+when the type you provide does not match the type_id you were given.
 
 ```rust
 pub trait Error {
@@ -441,9 +440,6 @@ trait.
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-Libraries like `thiserror` could add support for making members exportable as
-context for reporters.
-
 This opens the door to supporting `Error Return Traces`, similar to zigs, where
 if each return location is stored in a `Vec<&'static Location<'static>>` a full
 return trace could be built up with:
@@ -457,3 +453,4 @@ let mut locations = e
 
 [`SpanTrace`]: https://docs.rs/tracing-error/0.1.2/tracing_error/struct.SpanTrace.html
 [`ObjectProvider::Request`]: https://github.com/yaahc/nostd-error-poc/blob/master/fakecore/src/any.rs
+
