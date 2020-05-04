@@ -1,4 +1,4 @@
-- Feature Name: Add functions for generic member access to dyn Error and the Error trait
+- Feature Name: Add functions for generic member access to dyn Error and the `Error` trait
 - Start Date: 2020-04-01
 - RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/2895)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
@@ -9,7 +9,7 @@
 This RFC proposes additions to the `Error` trait to support accessing generic
 forms of context from `dyn Error` trait objects. This generalizes the pattern
 used in `backtrace` and `source`. This proposal adds the method
-`Error::get_context` to the error trait, which offers `TypeId`-based member
+`Error::get_context` to the `Error` trait, which offers `TypeId`-based member
 lookup and a new inherent function `<dyn Error>::context` which makes use of an
 implementor's `get_context` to return a typed reference directly. These
 additions would primarily be useful for error reporting, where we typically no
@@ -90,7 +90,7 @@ many new forms of error reporting.
 
 ## Moving `Error` into `libcore`
 
-Adding a generic member access function to the Error trait and removing the
+Adding a generic member access function to the `Error` trait and removing the
 `backtrace` function would make it possible to move the `Error` trait to libcore
 without losing support for backtraces on std. The only difference being that
 in places where you can currently write `error.backtrace()` on nightly you
@@ -108,14 +108,14 @@ allows error reporting types to handle errors in a consistent manner when
 constructing reports for end users while still retaining control over the
 format of the full report.
 
-The error trait accomplishes this by providing a set of methods for accessing
+The `Error` trait accomplishes this by providing a set of methods for accessing
 members of `dyn Error` trait objects. It requires that types implement the
 display trait, which acts as the interface to the main member, the error
 message itself.  It provides the `source` function for accessing `dyn Error`
 members, which typically represent the current error's cause. It provides the
 `backtrace` function, for accessing a `Backtrace` of the state of the stack
 when an error was created. For all other forms of context relevant to an error
-report, the error trait provides the `context` and `get_context` functions.
+report, the `Error` trait provides the `context` and `get_context` functions.
 
 As an example of how to use this interface to construct an error report, let’s
 explore how one could implement an error reporting type. In this example, our
@@ -211,7 +211,7 @@ impl fmt::Debug for ErrorReporter {
 }
 ```
 
-As you can see the error trait provides the facilities needed to create error
+As you can see the `Error` trait provides the facilities needed to create error
 reports enriched by information that may be present in source errors.
 
 # Reference-level explanation
@@ -364,9 +364,9 @@ impl dyn Error {
 # Drawbacks
 [drawbacks]: #drawbacks
 
-* The `Request` api is being added purely to help with this function, there may be
-  some design iteration here that could be done to make this more generally
-  applicable, it seems very similar to `dyn Any`.
+* The `Request` api is being added purely to help with this function. This will
+  likely need some design work to make it more generally applicable, hopefully
+  as a struct in `core::any`.
 * The `context` function name is currently widely used throughout the rust
   error handling ecosystem in libraries like `anyhow` and `snafu` as an
   ergonomic version of `map_err`. If we settle on `context` as the final name
@@ -376,8 +376,6 @@ impl dyn Error {
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-The two alternatives I can think of are:
-
 ## Do Nothing
 
 We could not do this, and continue to add accessor functions to the `Error`
@@ -385,7 +383,7 @@ trait whenever a new type reaches critical levels of popularity in error
 reporting.
 
 If we choose to do nothing we will continue to see hacks around the current
-limitations on the error trait such as the `Fail` trait, which added the
+limitations on the `Error` trait such as the `Fail` trait, which added the
 missing function access methods that didn't previously exist on the `Error`
 trait and type erasure / unnecessary boxing of errors to enable downcasting to
 extract members.
@@ -393,10 +391,6 @@ extract members.
 
 
 ## Use an alternative proposal that relies on the `Any` trait for downcasting
-
-This approach is simpler, but doesn't support providing dynamically sized
-types and is more error prone because it cannot provide compile time errors
-when the type you provide does not match the type_id you were given.
 
 ```rust
 pub trait Error {
@@ -426,7 +420,7 @@ more complicated solution.
   or returning the wrong type
 
 By making all the type id comparison internal to the `Request` type it is
-impossible to compare the wrong type ids. And by encouraging explicit type
+impossible to compare the wrong type ids. By encouraging explicit type
 parameters when calling `provide` the compiler is able to catch errors where
 the type passed in doesn't match the type that was expected. So while the API
 for the main proposal is more complicated it should be less error prone.
@@ -435,9 +429,9 @@ for the main proposal is more complicated it should be less error prone.
 [prior-art]: #prior-art
 
 I do not know of any other languages whose error handling has similar
-facilities for accessing members when reporting errors. For the most part prior
-art exists within rust itself in the form of previous additions to the `Error`
-trait.
+facilities for accessing members when reporting errors. For the most part,
+prior art for this proposal comes from within rust itself in the form of
+previous additions to the `Error` trait.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
