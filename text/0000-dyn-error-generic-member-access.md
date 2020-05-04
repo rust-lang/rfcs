@@ -9,18 +9,15 @@
 This RFC proposes additions to the `Error` trait to support accessing generic
 forms of context from `dyn Error` trait objects. This generalizes the pattern
 used in `backtrace` and `source` and allows ecosystem iteration on error
-reporting infrastructure outside of the standard library. The two proposed
-additions are a new trait method `Error::get_context`, which offers
-`TypeId`-based member lookup, and a new inherent fn `<dyn Error>::context`,
+reporting infrastructure outside of the standard library. This proposal adds
+the method `Error::get_context` to the error trait, which offers `TypeId`-based
+member lookup, and a new inherent fn `<dyn Error>::context`,
 which makes use of an implementor's `get_context` to return a typed reference
 directly. These additions would primarily be useful in "error reporting"
 contexts, where we typically no longer have type information and may be
 composing errors from many sources.
 
-The names here are just placeholders. The specifics of the `Request` type are a
-suggested starting point. And the `Request` style api could be replaced with a
-much simpler API based on  `TypeId` + `dyn Any` at the cost of being
-incompatible with dynamically sized types. The basic proposal is this:
+## TLDR
 
 Add this method to the `Error` trait
 
@@ -35,7 +32,7 @@ pub trait Error {
 }
 ```
 
-Where an example implementation of this method would look like:
+Example implementation:
 
 ```rust
 fn get_context<'r, 'a>(&'a self, request: Request<'r, 'a>) -> ProvideResult<'r, 'a> {
@@ -48,7 +45,7 @@ fn get_context<'r, 'a>(&'a self, request: Request<'r, 'a>) -> ProvideResult<'r, 
 }
 ```
 
-And usage would then look like this:
+Example usage:
 
 ```rust
 let e: &dyn Error = &concrete_error;
@@ -63,7 +60,7 @@ if let Some(bt) = e.context::<Backtrace>() {
 
 In Rust, errors typically gather two forms of context when they are created:
 context for the *current error message* and context for the *final* *error
-report*. The `Error` trait exists to provide a interface to context intended
+report*. The `Error` trait exists to provide an interface to context intended
 for error reports. This context includes the error message, the source error,
 and, more recently, backtraces.
 
