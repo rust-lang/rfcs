@@ -153,7 +153,7 @@ In addition, there was a lot of discussion both from the Cargo team and the comm
 
 # What lessons can we learn from what other communities have done here?
 
-There are pros and cons to having templates or some type of template ecosystem. I think the biggest question is **who will maintain them?**It may not be directly related, but it's an important point to consider should templates be added to `cargo new` .
+There are pros and cons to having templates or some type of template ecosystem. I think the biggest question is **who will maintain them?** It may not be directly related, but it's an important point to consider should templates be added to `cargo new` .
 
 If we return to our examples from the JavaScript industry, there are two that stick out:
 
