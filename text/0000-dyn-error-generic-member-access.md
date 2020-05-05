@@ -222,8 +222,11 @@ The following changes need to be made to implement this proposal:
 This type fills the same role as `&dyn Any` except that it supports other trait
 objects as the requested type.
 
-Here is the implementation for the proof of concept, taken from Nika Layzell's
+Here is the implementation for the proof of concept, based on Nika Layzell's
 [object-provider crate]:
+
+A usable version of this is available in the [proof of concept] repo under
+`fakecore/src/any.rs`.
 
 ```rust
 use core::any::TypeId;
@@ -453,3 +456,4 @@ let mut locations = e
 [`Request`]: https://github.com/yaahc/nostd-error-poc/blob/master/fakecore/src/any.rs
 [alternative proposal]: #use-an-alternative-proposal-that-relies-on-the-any-trait-for-downcasting
 [object-provider crate]: https://github.com/mystor/object-provider
+[proof of concept]: https://github.com/yaahc/nostd-error-poc
