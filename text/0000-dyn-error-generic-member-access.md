@@ -28,7 +28,45 @@ Add this method to the `Error` trait
 pub trait Error {
     // ...
 
-    /// Provides an object of type `T` in response to this request.
+    /// Provides type based access to context intended for error reports
+    ///
+    /// Used in conjunction with [`context`] to extract references to member variables from `dyn
+    /// Error` trait objects.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use core::pin::Pin;
+    /// use backtrace::Backtrace;
+    /// use core::fmt;
+    /// use fakecore::any::Request;
+    ///
+    /// #[derive(Debug)]
+    /// struct Error {
+    ///     backtrace: Backtrace,
+    /// }
+    ///
+    /// impl fmt::Display for Error {
+    ///     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    ///         write!(f, "Example Error")
+    ///     }
+    /// }
+    ///
+    /// impl fakecore::error::Error for Error {
+    ///     fn provide_context<'a>(&'a self, mut request: Pin<&mut Request<'a>>) {
+    ///         request.provide::<Backtrace>(&self.backtrace);
+    ///     }
+    /// }
+    ///
+    /// fn main() {
+    ///     let backtrace = Backtrace::new();
+    ///     let error = Error { backtrace };
+    ///     let dyn_error = &error as &dyn fakecore::error::Error;
+    ///     let backtrace_ref = dyn_error.context::<Backtrace>().unwrap();
+    ///
+    ///     assert!(core::ptr::eq(&error.backtrace, backtrace_ref));
+    /// }
+    /// ```
     fn provide_context<'a>(&'a self, request: Pin<&mut Request<'a>>) {}
 }
 ```
