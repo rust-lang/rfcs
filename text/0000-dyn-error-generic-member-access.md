@@ -219,7 +219,7 @@ reports enriched by information that may be present in source errors.
 
 The following changes need to be made to implement this proposal:
 
-### Add a type like [`Request`] to std
+### Add a type like [`Request`] to core
 
 This type fills the same role as `&dyn Any` except that it supports other trait
 objects as the requested type.
