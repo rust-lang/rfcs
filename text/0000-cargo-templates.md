@@ -147,7 +147,7 @@ The community has also created two crates that solve similar problems:
 
 * [cargo-generate](<https://crates.io/crates/cargo-generate>): a developer tool to help you get up and running quickly with a new Rust project by leveraging a pre-existing git repository as a template
 * [kickstart](https://github.com/Keats/kickstart): created by @Keats described as "A scaffolding tool to get new projects up and running quickly"
-* [cookiecutter](<https://github.com/cookiecutter/cookiecutter>) : not a Rust project, but "A command-line utility that creates projects from cookiecutters (project templates)"
+* [cookiecutter](https://github.com/cookiecutter/cookiecutter) : not a Rust project, but "A command-line utility that creates projects from cookiecutters (project templates)"
 
 In addition, there was a lot of discussion both from the Cargo team and the community on [this issue](https://github.com/rust-lang/cargo/issues/3506). It has been decided that there [still remains disagreement](https://github.com/rust-lang/cargo/pull/8029#issuecomment-604756599) among both the Cargo team and the community on how to solve this, hence why this RFC seems to be the logical next step.
 
