@@ -44,7 +44,7 @@ fn get_context<'r, 'a>(&'a self, request: Request<'r, 'a>) -> ProvideResult<'r, 
         .provide::<SpanTrace>(&self.span_trace)?
         .provide::<dyn Error>(&self.source)?
         .provide::<Vec<&'static Location<'static>>>(&self.locations)?
-        .provide::<[&'static Location<'static>>(&self.locations)
+        .provide::<[&'static Location<'static>]>(&self.locations)
 }
 ```
 
