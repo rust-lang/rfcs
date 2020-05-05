@@ -219,12 +219,13 @@ reports enriched by information that may be present in source errors.
 
 The following changes need to be made to implement this proposal:
 
-### Add a type like [`ObjectProvider::Request`] to std
+### Add a type like [`Request`] to std
 
 This type fills the same role as `&dyn Any` except that it supports other trait
 objects as the requested type.
 
-Here is the implementation for the proof of concept:
+Here is the implementation for the proof of concept, taken from Nika Layzell's
+[object-provider crate]:
 
 ```rust
 /// A dynamic request for an object based on its type.
@@ -465,5 +466,6 @@ let mut locations = e
 ```
 
 [`SpanTrace`]: https://docs.rs/tracing-error/0.1.2/tracing_error/struct.SpanTrace.html
-[`ObjectProvider::Request`]: https://github.com/yaahc/nostd-error-poc/blob/master/fakecore/src/any.rs
+[`Request`]: https://github.com/yaahc/nostd-error-poc/blob/master/fakecore/src/any.rs
 [alternative proposal]: #use-an-alternative-proposal-that-relies-on-the-any-trait-for-downcasting
+[object-provider crate]: https://github.com/mystor/object-provider
