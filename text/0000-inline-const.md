@@ -257,6 +257,27 @@ AFAIK, this was [first proposed] by @scottmcm.
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
+## Generic Parameters
+
+Named constants defined inside a function cannot use generic parameters that
+are in scope within that function.
+
+```rust
+fn foo<T>() {
+    const SIZE: usize = { std::mem::size_of::<T>() }; // ERROR
+}
+```
+
+If we use the same rule for inline constants, there would be a class of
+implicitly promotable expressions (e.g. `std::ptr::null::<T>()`, `T::CONST +
+T::ANOTHER_CONST`), that could not be written inside an inline constant. We
+would need to resolve this somehow before we stop promoting these expressions
+as discussed in [future possibilites].
+
+Alternatively, we could allow inline constants to refer to generic parameters.
+Associated constants already behave this way, so I think this is possible.
+However, it may result in more post-monomorphization const-eval errors.
+
 ## Naming
 
 I prefer the name inline `const`, since it signals that there is no difference
