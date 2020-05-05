@@ -199,17 +199,21 @@ An inline `const` is eligible for promotion in an implicit context (just like a
 named `const`), so the following are all guaranteed to work:
 
 ```rust
-let x: &'static i32 = &const { 4i32.pow(4) }; // NOT IDIOMATIC
-let x: &'static i32 = const { &4i32.pow(4) }; // IDIOMATIC
+let x: &'static i32 = &const { 4i32.pow(4) };
+let x: &'static i32 = const { &4i32.pow(4) };
 
 // If RFC 2203 is stabilized
-let v = [const { Vec::new() }; 3];  // IDIOMATIC
-let v = const { [ Vec::new(); 3] }; // NOT IDIOMATIC
+let v = [const { Vec::new() }; 3];
+let v = const { [Vec::new(); 3] };
 ```
 
-Whether to lint against the non idiomatic versions is an open question.
-Personally, I would like to lint against `&const {...}` but not `const { [expr;
-3] }`.
+I don't have strong feelings about which version should be preferred.
+**@RalfJung** points out that `&const { 4 + 2 }` is more readable than `const {
+&(4 + 2) }`.
+
+Note that it may be possible for RFC 2203 to use the explicit rules for
+promotability when `T: !Copy`. In this case, the last part of the example above
+could simply be written as `[Vec::new(); 3]`.
 
 Inline `const`s are allowed within `const` and `static` initializers, just as we
 currently allow nested `const` declarations. Whether to lint against inline
