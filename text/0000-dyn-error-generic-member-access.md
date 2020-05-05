@@ -440,11 +440,11 @@ previous additions to the `Error` trait.
     * `context`/`context_ref`/`get_context`/`provide_context`
     * `member`/`member_ref`
     * `provide`/`request`
-* Should there be a by value version for accessing temporaries?
+* Should there be a by-value version for accessing temporaries?
     * We bring this up specifically for the case where you want to use this
-      function to get an `Option<&[&dyn Error]>` out of an error, in this case
-      its unlikely that the error behind the trait object is actually storing
-      the errors as `dyn Errors`, and theres no easy way to allocate storage to
+      function to get an `Option<&[&dyn Error]>` out of an error, in this case,
+      it is unlikely that the error behind the trait object is actually storing
+      the errors as `dyn Error`s, and theres no easy way to allocate storage to
       store the trait objects.
 * How should context handle failed downcasts?
     * suggestion: panic, as providing a type that doesn't match the typeid
