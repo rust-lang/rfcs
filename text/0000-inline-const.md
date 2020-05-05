@@ -225,9 +225,11 @@ currently allow nested `const` declarations. Whether to lint against inline
 This excludes other uses of the `const` keyword in expressions and patterns.
 I'm not aware of any other proposals that would take advantage of this.
 
-This would also be the first use of type inference for const initializers. I'm
-not aware of any technical issues that would arise from this, but perhaps I'm
-overlooking something?
+This would also be the first use of type inference for const initializers. Type
+inference for named constants was proposed in [RFC 1349]. I don't believe the
+blockers for this were technical, so I think this is possible.
+
+[RFC 1349]: https://github.com/rust-lang/rfcs/issues/1349
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
