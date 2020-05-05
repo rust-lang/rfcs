@@ -278,8 +278,14 @@ It would be possible to allow the syntax `const expr` for an inline `const` that
 consists of a single expression. This is analagous to the single expression
 variant of closures: `|| 42`. This is backwards compatible with the current proposal.
 
-This could allow us to deprecate the more esoteric classes of promotable
-expressions (e.g., `&(u32::MAX + u32::MAX)`) in favor of inline `const`
-expressions. This would have to be done at an edition boundary. We would only
-do promotion for aggregates, literals, constants and combinations thereof, and
-`#[rustc_promotable]` would be removed from the standard library.
+Eventually, I would like to try making any expression that could possibly panic
+inelgible for implicit promotion. This includes *all* `const fn` calls as well
+as all arithmetic expressions (e.g., `&(0u32 - 1)`), which currently work due
+to [the way MIR is lowered][arith-assert]. Even though bitwise operators can
+never panic, I would also stop promoting them to be consistent.  This would
+have to be done at an edition boundary. We would only do promotion for
+aggregates, literals, constants and combinations thereof (**@RalfJung** notes
+that this is the subset of the language valid in patterns), and
+`#[rustc_promotable]` would be ignored by later editions of the compiler.
+
+[arith-assert]: https://github.com/rust-lang/const-eval/issues/19#issuecomment-447052258
