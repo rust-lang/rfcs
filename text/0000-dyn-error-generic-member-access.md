@@ -9,9 +9,9 @@
 This RFC proposes additions to the `Error` trait to support accessing generic
 forms of context from `dyn Error` trait objects. This generalizes the pattern
 used in `backtrace` and `source`. This proposal adds the method
-`Error::get_context` to the `Error` trait, which offers `TypeId`-based member
+`Error::provide_context` to the `Error` trait, which offers `TypeId`-based member
 lookup and a new inherent function `<dyn Error>::context` which makes use of an
-implementor's `get_context` to return a typed reference directly. These
+implementor's `provide_context` to return a typed reference directly. These
 additions would primarily be useful for error reporting, where we typically no
 longer have type information and may be composing errors from many sources.
 
@@ -29,7 +29,7 @@ pub trait Error {
     // ...
 
     /// Provides an object of type `T` in response to this request.
-    fn get_context<'r, 'a>(&'a self, request: Request<'r, 'a>) -> ProvideResult<'r, 'a> {
+    fn provide_context<'r, 'a>(&'a self, request: Request<'r, 'a>) -> ProvideResult<'r, 'a> {
         Ok(request)
     }
 }
@@ -38,7 +38,7 @@ pub trait Error {
 Example implementation:
 
 ```rust
-fn get_context<'r, 'a>(&'a self, request: Request<'r, 'a>) -> ProvideResult<'r, 'a> {
+fn provide_context<'r, 'a>(&'a self, request: Request<'r, 'a>) -> ProvideResult<'r, 'a> {
     request
         .provide::<Backtrace>(&self.backtrace)?
         .provide::<SpanTrace>(&self.span_trace)?
@@ -115,7 +115,7 @@ message itself.  It provides the `source` function for accessing `dyn Error`
 members, which typically represent the current error's cause. It provides the
 `backtrace` function, for accessing a `Backtrace` of the state of the stack
 when an error was created. For all other forms of context relevant to an error
-report, the `Error` trait provides the `context` and `get_context` functions.
+report, the `Error` trait provides the `context` and `provide_context` functions.
 
 As an example of how to use this interface to construct an error report, let’s
 explore how one could implement an error reporting type. In this example, our
@@ -178,7 +178,7 @@ impl std::error::Error for ExampleError {
         Some(&self.source)
     }
 
-    fn get_context<'r, 'a>(&'a self, request: Request<'r, 'a>) -> ProvideResult<'r, 'a> {
+    fn provide_context<'r, 'a>(&'a self, request: Request<'r, 'a>) -> ProvideResult<'r, 'a> {
         request.provide::<Location>(&self.location)
     }
 }
@@ -346,7 +346,7 @@ pub trait Error {
     // ...
 
     /// Provides an object of type `T` in response to this request.
-    fn get_context<'r, 'a>(&'a self, request: Request<'r, 'a>) -> ProvideResult<'r, 'a> {
+    fn provide_context<'r, 'a>(&'a self, request: Request<'r, 'a>) -> ProvideResult<'r, 'a> {
         Ok(request)
     }
 }
@@ -357,7 +357,7 @@ pub trait Error {
 ```rust
 impl dyn Error {
     pub fn context<T: ?Sized + 'static>(&self) -> Option<&T> {
-        Request::with::<T, _>(|req| self.get_context(req))
+        Request::with::<T, _>(|req| self.provide_context(req))
     }
 }
 ```
@@ -398,7 +398,7 @@ pub trait Error {
     /// Provide an untyped reference to a member whose type matches the provided `TypeId`.
     ///
     /// Returns `None` by default, implementors are encouraged to override.
-    fn get_context(&self, ty: TypeId) -> Option<&dyn Any> {
+    fn provide_context(&self, ty: TypeId) -> Option<&dyn Any> {
         None
     }
 }
@@ -406,7 +406,7 @@ pub trait Error {
 impl dyn Error {
     /// Retrieve a reference to `T`-typed context from the error if it is available.
     pub fn context<T: Any>(&self) -> Option<&T> {
-        self.get_context(TypeId::of::<T>())?.downcast_ref::<T>()
+        self.provide_context(TypeId::of::<T>())?.downcast_ref::<T>()
     }
 }
 ```
@@ -438,7 +438,7 @@ previous additions to the `Error` trait.
 [unresolved-questions]: #unresolved-questions
 
 * What should the names of these functions be?
-    * `context`/`context_ref`/`get_context`/`provide_context`
+    * `context`/`context_ref`/`provide_context`/`provide_context`
     * `member`/`member_ref`
     * `provide`/`request`
 * Should there be a by-value version for accessing temporaries?
