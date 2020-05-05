@@ -145,7 +145,7 @@ A [similar RFC](https://internals.rust-lang.org/t/pre-rfc-cargo-templates/5056) 
 
 The community has also created two crates that solve similar problems:
 
-* [cargo-generate](<https://crates.io/crates/cargo-generate>): a developer tool to help you get up and running quickly with a new Rust project by leveraging a pre-existing git repository as a template
+* [cargo-generate](https://crates.io/crates/cargo-generate): a developer tool to help you get up and running quickly with a new Rust project by leveraging a pre-existing git repository as a template
 * [kickstart](https://github.com/Keats/kickstart): created by @Keats described as "A scaffolding tool to get new projects up and running quickly"
 * [cookiecutter](https://github.com/cookiecutter/cookiecutter) : not a Rust project, but "A command-line utility that creates projects from cookiecutters (project templates)"
 
