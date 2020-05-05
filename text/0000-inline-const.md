@@ -251,7 +251,7 @@ before a block.
 
 I'm not aware of equivalents in other languages.
 
-AFAIK, this was [first proposed] by @scottmcm.
+AFAIK, this was [first proposed] by **@scottmcm**.
 
 [zig]: https://kristoff.it/blog/what-is-zig-comptime/#compile-time-function-calls
 [first proposed]: https://internals.rust-lang.org/t/quick-thought-const-blocks/7803/9
@@ -285,15 +285,15 @@ However, it may result in more post-monomorphization const-eval errors.
 I prefer the name inline `const`, since it signals that there is no difference
 between a named `const` and an inline one.
 
-@scottmcm prefers "`const` block", which is closer to the syntax and parallels
+**@scottmcm** prefers "`const` block", which is closer to the syntax and parallels
 the current terminology of `async` block and `unsafe` block. It also avoids any
 accidental conflation with the `#[inline]` attribute, which is unrelated.
 Additionally, it doesn't extend nicely to the single-expression variant
 discussed in [future possibilities].
 
-@RalfJung prefers "anonymous `const`". @scottmcm mentioned in Zulip that this
-could be confused with the `const _: () = ...;` syntax introduced in [RFC
-2526]. The reference refers to these as "unnamed" constants.
+**@RalfJung** prefers "anonymous `const`". **@scottmcm** mentioned in Zulip
+that this could be confused with the `const _: () = ...;` syntax introduced in
+[RFC 2526]. The reference refers to these as "unnamed" constants.
 
 [RFC 2526]: https://github.com/rust-lang/rfcs/pull/2526
 
