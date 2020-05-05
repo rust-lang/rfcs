@@ -244,10 +244,14 @@ that they are best considered as a unit, however.
 # Prior art
 [prior-art]: #prior-art
 
+Zig has the `comptime` keyword that [works similarly][zig] when it appears
+before a block.
+
 I'm not aware of equivalents in other languages.
 
 AFAIK, this was [first proposed] by @scottmcm.
 
+[zig]: https://kristoff.it/blog/what-is-zig-comptime/#compile-time-function-calls
 [first proposed]: https://internals.rust-lang.org/t/quick-thought-const-blocks/7803/9
 
 # Unresolved questions
