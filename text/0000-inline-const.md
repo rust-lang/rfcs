@@ -252,10 +252,19 @@ AFAIK, this was [first proposed] by @scottmcm.
 ## Naming
 
 I prefer the name inline `const`, since it signals that there is no difference
-between a named `const` and an inline one. @scottmcm prefers "`const` block",
-which is closer to the syntax and parallels the current terminology of `async`
-block and `unsafe` block. It also avoids any accidental conflation with the
-`#[inline]` attribute, which is unrelated.
+between a named `const` and an inline one.
+
+@scottmcm prefers "`const` block", which is closer to the syntax and parallels
+the current terminology of `async` block and `unsafe` block. It also avoids any
+accidental conflation with the `#[inline]` attribute, which is unrelated.
+Additionally, it doesn't extend nicely to the single-expression variant
+discussed in [future possibilities].
+
+@RalfJung prefers "anonymous `const`". @scottmcm mentioned in Zulip that this
+could be confused with the `const _: () = ...;` syntax introduced in [RFC
+2526]. The reference refers to these as "unnamed" constants.
+
+[RFC 2526]: https://github.com/rust-lang/rfcs/pull/2526
 
 ## Lints
 
@@ -263,7 +272,7 @@ As mentioned in the reference-level specification, we need to decide whether we
 want to lint against certain types of inline `const` expressions.
 
 # Future possibilities
-[future-possibilities]: #future-possibilities
+[future possibilities]: #future-possibilities
 
 It would be possible to allow the syntax `const expr` for an inline `const` that
 consists of a single expression. This is analagous to the single expression
