@@ -278,6 +278,7 @@ const fn new<T: Trait>(t: T) -> Foo<T> {
 ```
 
 <details><summary>Click here for effect system syntax description</summary>
+
 ```rust
 struct Foo<T: Trait>(T);
 <c: constness> const(c) fn new<T: const(c) Trait>(t: T) -> Foo<T> {
