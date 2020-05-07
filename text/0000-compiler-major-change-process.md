@@ -98,7 +98,7 @@ The rough intuition is "something that would require updates to the [rustc-dev-g
 
 * Something that alters the architecture of some part(s) of the compiler, since this is what the rustc-dev-guide aims to document.
 * A simple change that affects a lot of people, such as altering the names of very common types or changing coding conventions.
-* Adding a compiler flag or other public facing changes, which should be documented (ultimately) in the rustc book.
+* Adding a compiler flag or other public facing changes, which should be documented (ultimately) in the rustc book. This is only appropriate for "minor" tweaks, however, and not major things that may impact a lot of users. Also, public facing changes will require a full FCP before landing on stable.
 
 Note that, in some cases, the change may be deemed **too big** and a full FCP or RFC may be required to move forward. This could occur with significant public facing change or with sufficiently large changes to the architecture. The compiler team leads can make this call.
 
@@ -107,9 +107,17 @@ Note that whether something is a major change proposal is not necessarily relate
 [rustc-dev-guide]: https://rustc-dev-guide.rust-lang.org
 [rustc book]: https://doc.rust-lang.org/rustc/index.html
 
-Major change proposals are appropriate for "minor" public facing
-changes, such as introducing new `-C` flags. Basically, decisions that
-fall squarely under T-compiler's purview.
+## Public-facing changes require rfcbot fcp
+
+The MCP "seconding" process is only meant to be used to get agreement
+on the technical architecture we plan to use. It is not sufficient to
+stabilize new features or make public-facing changes like adding a -C
+flag. For that, an `rfcbot fcp` is required (or perhaps an RFC, if the
+change is large enough).
+
+For landing compiler flags in particular, a good approach is to start
+with an MCP introducing a `-Z` flag and then "stabilize" the flag by
+moving it to `-C` in a PR later (which would require `rfcbot fcp`).
 
 Major change proposals are not sufficient for language changes or
 changes that affect cargo.
@@ -196,12 +204,15 @@ This is a **major change proposal**, which means a proposal to make a notable ch
 
 # MCP Checklist
 
-* [x] Fill out and file this issue. The @rust-lang/wg-prioritization group will add this to the triage meeting agenda so folks see it.
-* [ ] Create a Zulip topic in the stream `#t-compiler/major changes` with the name `XXX compiler-team#NNN`, where `XXX` is the title of this issue and `NNN` is whatever issue number gets assigned. Discuss the MCP in there, and feel free to update the proposal as needed.
-* [ ] Find a **reviewer**, and add their name to this comment (see the section below).
-* [ ] Find a **second**, someone who is knowledgeable of the area and approves of the design, and have them leave a comment on the issue.
-* [ ] Announce this proposal at the triage meeting (ping @rust-lang/wg-prioritization to have them add it to the agenda). **All edits should be done before you do this.**
-* [ ] After one week, assuming no unresolved concerns, the MCP is accepted! (We sometimes skip this week period if it seems unnecessary.) Add the `mcp-accepted` label and close the issue; we can link to it for future reference.
+* [x] MCP **filed**. Automatically, as a result of filing this issue:
+  * The @rust-lang/wg-prioritization group will add this to the triage meeting agenda so folks see it.
+  * A Zulip topic in the stream `#t-compiler/major changes` will be created for this issue.
+* [ ] MCP **seconded**. The MCP is "seconded" when a compiler team member or contributor issues the `@rustbot second` command. This should only be done by someone knowledgable with the area -- before seconding, it may be a good idea to cc other stakeholders as well and get their opinion.
+* [ ] **Final comment period** (FCP). Once the MCP is approved, the FCP begins and lasts for 10 days. This is a time for other members to review and raise concerns -- **concerns that should block acceptance should be noted as comments on the thread**, ideally with a link to Zulip for further discussion.
+* [ ] MCP **Accepted**. At the end of the FCP, a compiler team lead will review the comments and discussion and decide whether to accept the MCP.
+  * At this point, the `major-change-accepted` label is added and the issue is closed. You can link to it for future reference.
+  
+**A note on stability.** If your change is proposing a new stable feature, such as a `-C flag`, then a full team checkoff will be required before the feature can be landed. Often it is better to start with an unstable flag, like a `-Z` flag, and then move to stabilize as a secondary step.
 
 # TL;DR
 
