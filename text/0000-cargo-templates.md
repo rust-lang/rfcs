@@ -64,8 +64,8 @@ Note: the same examples could be used with `cargo init` as well.
 
 To summarize, the following is the syntax for using a template
 
-* `cargo new <project-name> --template <crate-name>/<template-name>`
-* `cargo init <project-name> --template <crate-name>/<template-name>`
+* `cargo new <path> --template <crate-name>/<template-name>`
+* `cargo init <path> --template <crate-name>/<template-name>`
 
 # Drawbacks
 
