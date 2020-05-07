@@ -98,7 +98,7 @@ The rough intuition is "something that would require updates to the [rustc-dev-g
 
 * Something that alters the architecture of some part(s) of the compiler, since this is what the rustc-dev-guide aims to document.
 * A simple change that affects a lot of people, such as altering the names of very common types or changing coding conventions.
-* Adding a compiler flag or other public facing changes, which should be documented (ultimately) in the rustc book. This is only appropriate for "minor" tweaks, however, and not major things that may impact a lot of users. Also, public facing changes will require a full FCP before landing on stable.
+* Adding a compiler flag or other public facing changes, which should be documented (ultimately) in the rustc book. This is only appropriate for "minor" tweaks, however, and not major things that may impact a lot of users. (Also, public facing changes will require a full FCP before landing on stable, but an MCP can be a good way to propose the idea.)
 
 Note that, in some cases, the change may be deemed **too big** and a full FCP or RFC may be required to move forward. This could occur with significant public facing change or with sufficiently large changes to the architecture. The compiler team leads can make this call.
 
