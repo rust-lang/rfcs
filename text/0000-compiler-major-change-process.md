@@ -238,7 +238,7 @@ We opted not to require an ordinary rfcbot fcp because that feels too cumbersome
 # Prior art
 [prior-art]: #prior-art
 
-The state of the art for these sorts of things in practice is that either people just write PRs, or perhaps someone opens a Zulip topic and pings a suitable set of people. This often works well in practice but can also lead to surprises, where stakeholds are overlooked. Moreover, it offers no means to manage review load or to have a chance to express concerns before a lot of code is written.
+The state of the art for these sorts of things in practice is that either people just write PRs, or perhaps someone opens a Zulip topic and pings a suitable set of people. This often works well in practice but can also lead to surprises, where stakeholders are overlooked. Moreover, it offers no means to manage review load or to have a chance to express concerns before a lot of code is written.
 
 This idea was loosely based on the "intent to ship" convention that many browsers have adopted. See e.g. Mozilla's [Exposure Guidelines](https://wiki.mozilla.org/ExposureGuidelines) or Chrome's process for [launching features](https://www.chromium.org/blink/launching-features). Unlike those processes, however, it's meant for internal refactors as well as (minor) public facing features.
 
