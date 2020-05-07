@@ -48,16 +48,18 @@ is as follows:
 [major change]: #What-constitutes-a-major-change
 
 * Open a tracking issue on the [rust-lang/compiler-team] repo using the [major change template].
-* Create a Zulip topic in the stream `#t-compiler/major changes`, where people will discuss the design.
+    * A Zulip topic in the stream `#t-compiler/major changes` will automatically be created for you by a bot.
     * If concerns are raised, you may want to modify the proposal to address those concerns.
     * Alternatively, you can submit a [design meeting proposal] to have a longer, focused discussion.
 * To be accepted, a major change proposal needs three things:
     * One or more **reviewers**, who commit to reviewing the work. This can be the person making the proposal, if they intend to mentor others.
-    * A **second**, an expert in the affected area(s) of the compiler who approves of the idea, but is not the one originating the proposal.
-    * To be **announced at a triage meeting** and go through **final comment period** (a 1 week wait to give people time).
-        * MCPs should not be announced if they have outstanding, unresolved concerns by compiler team members. Check with a team lead if there is any doubt.
+    * A **second**, a member of the compiler team or a contributor who approves of the idea, but is not the one originating the proposal.
+    * A **final comment period** (a 10 day wait to give people time to comment).
         * The FCP can be skipped if the change is easily reversed and/or further objections are considered unlikely. This often happens if there has been a lot of prior discussion, for example.
-* Once the major change is accepted, PRs can start to land.
+* Once the FCP completes, if there are no outstanding concerns, PRs can start to land.
+    * If those PRs make outward-facing changes that affect stable
+      code, then either the MCP or the PR(s) must be approved with a
+      `rfcbot fcp merge` comment.
 
 ## Conditional acceptance
 
