@@ -1,9 +1,9 @@
 # Major Change Proposal RFC
 
 - Feature Name: N/A
-- Start Date: (fill me in with today's date, YYYY-MM-DD)
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- Start Date: 2020-05-07
+- RFC PR: [rust-lang/rfcs#2904](https://github.com/rust-lang/rfcs/pull/2904)
+- Rust Issue: N/A
 
 # Summary
 [summary]: #summary
