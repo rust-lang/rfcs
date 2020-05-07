@@ -137,7 +137,7 @@ would instead need to write `error.context::<Backtrace>()`.
 
 Error handling in Rust consists of three steps: creation/propagation, handling,
 and reporting. The `std::error::Error` trait exists to bridge the gap between
-creation and reporting. It does so by acting as a interface that all error
+creation and reporting. It does so by acting as an interface that all error
 types can implement that defines how to access context intended for error
 reports, such as the error message, source, or location it was created. This
 allows error reporting types to handle errors in a consistent manner when
