@@ -146,7 +146,7 @@ format of the full report.
 
 The `Error` trait accomplishes this by providing a set of methods for accessing
 members of `dyn Error` trait objects. It requires that types implement the
-display trait, which acts as the interface to the main member, the error
+`Display` trait, which acts as the interface to the main member, the error
 message itself.  It provides the `source` function for accessing `dyn Error`
 members, which typically represent the current error's cause. It provides the
 `backtrace` function, for accessing a `Backtrace` of the state of the stack
@@ -468,15 +468,15 @@ impl dyn Error {
 
 ### Why isn't this the primary proposal?
 
-There are two big issues with using the `Any` trait that I believe justify the
+There are two significant issues with using the `Any` trait that motivate the
 more complicated solution.
 
 - You cannot return dynamically sized types as `&dyn Any`
 - It's easy to introduce runtime errors with `&dyn Any` by either comparing to
   or returning the wrong type
 
-By making all the type id comparison internal to the `Request` type it is
-impossible to compare the wrong type ids. By encouraging explicit type
+By making all the `TypeId` comparison internal to the `Request` type it is
+impossible to compare the wrong `TypeId`s. By encouraging explicit type
 parameters when calling `provide` the compiler is able to catch errors where
 the type passed in doesn't match the type that was expected. So while the API
 for the main proposal is more complicated it should be less error prone.
