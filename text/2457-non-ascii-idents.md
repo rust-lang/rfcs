@@ -105,13 +105,15 @@ A new `confusable_idents` lint is added to the compiler. The default setting is 
 
 Note: The confusable detection is set to `warn` instead of `deny` to enable forward compatibility. The list of confusable characters will be extended in the future and programs that were once valid would fail to compile.
 
-The confusable detection algorithm is based on [Unicode® Technical Standard #39 Unicode Security Mechanisms Section 4 Confusable Detection][TR39Confusable]. For every distinct identifier X execute the function `skeleton(X)`. If there exist two distinct identifiers X and Y in the same crate where `skeleton(X) = skeleton(Y)` report it. The compiler uses the same mechanism to check if an identifier is too similar to a keyword.
+The confusable detection algorithm is based on [Unicode® Technical Standard #39 Unicode Security Mechanisms Section 4 Confusable Detection][TR39Confusable]. For every distinct identifier X execute the function `skeleton(X)`. If there exist two distinct identifiers X and Y in the same crate where `skeleton(X) = skeleton(Y)` report it. If both X and Y contain only ASCII characters, do not warn. The compiler uses the same mechanism to check if an identifier is too similar to a keyword.
+
+Note: The Unicode standard assumes that certain ASCII characters can easily be confused e. g. `0`/`O` and `l`/`1`. While this is true for many contexts, (programming focused) monospace fonts clearly distinguish these characters. Therefore the warning is not necessary here but would be triggered by a lot of existing code.
 
 Note: A fast way to implement this is to compute `skeleton` for each identifier once and place the result in a hashmap as a key. If one tries to insert a key that already exists check if the two identifiers differ from each other. If so report the two confusable identifiers.
 
 ## Exotic codepoint detection
 
-A new `less_used_codepoints` lint is added to the compiler. The default setting is to `warn`.
+A new `uncommon_codepoints` lint is added to the compiler. The default setting is to `warn`.
 
 The lint is triggered by identifiers that contain a codepoint that is not part of the set of "Allowed" codepoints as described by [Unicode® Technical Standard #39 Unicode Security Mechanisms Section 3.1 General Security Profile for Identifiers][TR39Allowed].
 
@@ -121,8 +123,8 @@ For reference, a list of all the code points allowed by this lint can be found [
 
 There are some specific interesting code points that we feel necessary to call out here:
 
- - `less_used_codepoints` will warn on U+200C ZERO WIDTH NON-JOINER and U+200D ZERO WIDTH JOINER, despite these being useful in the  Perso-Arabic and some Indic scripts. In Indic scripts these characters force different visual forms, which is not very necessary for programming. These have further semantic meaning in Arabic where they can be used to mark prefixes or mixed-script words, which will not crop up so often in programming (we're not able to use `-` in identifiers for marking pre/suffixes in Latin-script identifiers and it's fine). Persian seems to make the most use of these, with some compound words requiring use of these. For now this RFC does not attempt to deal with this and follows the recommendation of the specification, if there is a need for it in the future we can add this for Persian users.
- - `less_used_codepoints` will not warn about U+02BB MODIFIER LETTER TURNED COMMA or U+02BC MODIFIER LETTER APOSTROPHE. These look somewhat like punctuation relevant to Rust's syntax, so they're a bit tricky. However, these code points are important in Ukranian, Hawaiian, and a bunch of other languages (U+02BB is considered a full-fledged letter in Hawaiian). For now this RFC follows the recommendation of the specification and allows these, however we can change this in the future. The hope is that syntax highlighting is enough to deal with confusions caused by such characters.
+ - `uncommon_codepoints` will warn on U+200C ZERO WIDTH NON-JOINER and U+200D ZERO WIDTH JOINER, despite these being useful in the  Perso-Arabic and some Indic scripts. In Indic scripts these characters force different visual forms, which is not very necessary for programming. These have further semantic meaning in Arabic where they can be used to mark prefixes or mixed-script words, which will not crop up so often in programming (we're not able to use `-` in identifiers for marking pre/suffixes in Latin-script identifiers and it's fine). Persian seems to make the most use of these, with some compound words requiring use of these. For now this RFC does not attempt to deal with this and follows the recommendation of the specification, if there is a need for it in the future we can add this for Persian users.
+ - `uncommon_codepoints` will not warn about U+02BB MODIFIER LETTER TURNED COMMA or U+02BC MODIFIER LETTER APOSTROPHE. These look somewhat like punctuation relevant to Rust's syntax, so they're a bit tricky. However, these code points are important in Ukranian, Hawaiian, and a bunch of other languages (U+02BB is considered a full-fledged letter in Hawaiian). For now this RFC follows the recommendation of the specification and allows these, however we can change this in the future. The hope is that syntax highlighting is enough to deal with confusions caused by such characters.
 
 
 ## Adjustments to the "bad style" lints
@@ -146,7 +148,7 @@ Note: Scripts with upper- and lowercase variants ("bicameral scripts") behave si
 
 We keep track of the script groups in use in a document using the comparison heuristics in [Unicode® Technical Standard #39 Unicode Security Mechanisms Section 5.2 Restriction-Level Detection][TR39RestrictionLevel].
 
-We identify lists of code points which are `Allowed` by [UTS 39 section 3.1][TR39Allowed] (i.e., code points not already linted by `less_used_codepoints`) and are "exact" confusables between code points from other `Allowed` scripts. This is stuff like Cyrillic `о` (confusable with Latin `o`), but does not include things like Hebrew `ס` which is somewhat distinguishable from Latin `o`. This list of exact confusables can be modified in the future.
+We identify lists of code points which are `Allowed` by [UTS 39 section 3.1][TR39Allowed] (i.e., code points not already linted by `uncommon_codepoints`) and are "exact" confusables between code points from other `Allowed` scripts. This is stuff like Cyrillic `о` (confusable with Latin `o`), but does not include things like Hebrew `ס` which is somewhat distinguishable from Latin `o`. This list of exact confusables can be modified in the future.
 
 We expect most of these to be between Cyrillic-Latin-Greek and some in Ethiopic-Armenian, but a proper review can be done before stabilization. There are also confusable modifiers between many script.
 
@@ -162,7 +164,7 @@ The exception for `Latin` is made because the standard library is Latin-script. 
 The code used for implementing the various lints and checks will be released to crates.io. This includes:
 
  - Testing validity of an identifier
- - Testing for `less_used_codepoints` ([UTS #39 Section 3.1][TR39Allowed])
+ - Testing for `uncommon_codepoints` ([UTS #39 Section 3.1][TR39Allowed])
  - Script identification and comparison for `mixed_script_confusables`  ([UTS #39 Section 5.2][TR39RestrictionLevel])
  - `skeleton(X)` algorithm for confusable detection ([UTS #39 Section 4][TR39Confusable])
 
@@ -249,7 +251,7 @@ The main confusable script pairs we have to worry about are Cyrillic/Latin/Greek
 
 There are many confusables _within_ scripts -- Arabic has a bunch of these as does Han (both with other Han characters and with kana), but since these are within the same language group this is outside the scope of this RFC. Such confusables are equivalent to `l` vs `I` being confusable in some fonts.
 
-For reference, a list of all possible Rust identifier characters that do not trip `less_used_codepoints` but have confusables can be found [here][unicode-set-confusables], with their confusable skeleton and script group mentioned on the right. Note that in many cases the confusables are visually distinguishable, or are diacritic marks.
+For reference, a list of all possible Rust identifier characters that do not trip `uncommon_codepoints` but have confusables can be found [here][unicode-set-confusables], with their confusable skeleton and script group mentioned on the right. Note that in many cases the confusables are visually distinguishable, or are diacritic marks.
 
 
 # Prior art
@@ -272,7 +274,6 @@ The [Go language][Go] allows identifiers in the form **Letter (Letter | Number)\
 * Should [ZWNJ and ZWJ be allowed in identifiers][TR31Layout]?
 * How are non-ASCII idents best supported in debuggers?
 * Which name mangling scheme is used by the compiler?
-* Is there a better name for the `less_used_codepoints` lint?
 * Which lint should the global mixed scripts confusables detection trigger?
 * How badly do non-ASCII idents exacerbate const pattern confusion
   (rust-lang/rust#7526, rust-lang/rust#49680)?
