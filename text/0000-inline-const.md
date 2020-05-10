@@ -310,7 +310,7 @@ consists of a single expression. This is analagous to the single expression
 variant of closures: `|| 42`. This is backwards compatible with the current proposal.
 
 Eventually, I would like to try making any expression that could possibly panic
-inelgible for implicit promotion. This includes *all* `const fn` calls as well
+ineligible for implicit promotion. This includes *all* `const fn` calls as well
 as all arithmetic expressions (e.g., `&(0u32 - 1)`), which currently work due
 to [the way MIR is lowered][arith-assert]. Even though bitwise operators can
 never panic, I would also stop promoting them to be consistent.  This would
