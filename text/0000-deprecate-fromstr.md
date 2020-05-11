@@ -27,7 +27,7 @@ struct Point {
     y: i32,
 }
 
-impl From<&str> for Point {
+impl TryFrom<&str> for Point {
     type Error = ParseIntError;
 
     fn try_from(s: &str) -> Result<Self, Self::Error> {
@@ -56,14 +56,25 @@ assert_eq!(p.unwrap(), Point { x: 1, y: 2 })
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-- Replace all `FromStr` implementation in `std` with the corresponding `TryFrom<&str>`
-- Rewrite `str::parse()` to use `TryFrom<&str>`
 - Mark `FromStr` as deprecated
+- Mark `std::parse()` as deprecated
+- Make `FromStr` implement `TryFrom<&str>`:
+```rust
+impl<T> TryFrom<String> for T
+where
+    T: FromStr,
+{
+    type Error = <T as FromStr>::Err;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        value.parse()
+    }
+}
+```
 
 # Drawbacks
 [drawbacks]: #drawbacks
 
-- Backward compatibility will be broken
 - `TryFrom<&str> for U` implies `TryInto<U> for &str` which may be unwanted
 
 # Rationale and alternatives
