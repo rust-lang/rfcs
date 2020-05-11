@@ -227,16 +227,16 @@ We need to tell the compiler about this since it may need to save and restore th
 around the inline assembly block.
 
 ```rust
-let ebx: u64;
-let ecx: u64;
+let ebx: u32;
+let ecx: u32;
 
 unsafe {
     asm!(
         "cpuid",
         // EAX 4 selects the "Deterministic Cache Parameters" CPUID leaf
-        inout("eax") 4u64 => _,
+        inout("eax") 4 => _,
         // ECX 0 selects the L0 cache information.
-        inout("ecx") 0u64 => ecx,
+        inout("ecx") 0 => ecx,
         lateout("ebx") ebx,
         lateout("edx") _
     );
