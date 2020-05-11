@@ -11,9 +11,7 @@ Deprecate [`FromStr`](https://doc.rust-lang.org/std/str/trait.FromStr.html) in f
 # Motivation
 [motivation]: #motivation
 
-`FromStr` was created when `TryFrom` did not exist.
-
-As such, `FromStr` is now superfluous.
+`FromStr` was created when `TryFrom` did not exist, `FromStr` is now superfluous.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
