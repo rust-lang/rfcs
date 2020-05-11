@@ -353,14 +353,9 @@ impl<'a> Request<'a> {
         self
     }
 
-    /// Get the `TypeId` of the requested type.
-    fn type_id(&self) -> TypeId {
-        self.type_id
-    }
-
     /// Returns `true` if the requested type is the same as `T`
     pub fn is<T: ?Sized + 'static>(&self) -> bool {
-        self.type_id() == TypeId::of::<T>()
+        self.type_id == TypeId::of::<T>()
     }
 
     /// Try to downcast this `Request` into a reference to the typed
@@ -400,7 +395,7 @@ impl<'a> Request<'a> {
 impl<'a> fmt::Debug for Request<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct("Request")
-            .field("type_id", &self.type_id())
+            .field("type_id", &self.type_id)
             .finish()
     }
 }
