@@ -57,7 +57,7 @@ assert_eq!(p.unwrap(), Point { x: 1, y: 2 })
 [reference-level-explanation]: #reference-level-explanation
 
 - Mark `FromStr` as deprecated
-- Mark `std::parse()` as deprecated
+- Mark `str::parse()` as deprecated
 - Make `FromStr` implement `TryFrom<&str>`:
 ```rust
 impl<T> TryFrom<String> for T
