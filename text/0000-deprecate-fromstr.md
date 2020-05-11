@@ -11,7 +11,9 @@ Deprecate [`FromStr`](https://doc.rust-lang.org/std/str/trait.FromStr.html) in f
 # Motivation
 [motivation]: #motivation
 
-[`FromStr`](https://doc.rust-lang.org/std/str/trait.FromStr.html) was created when [`TryFrom`](https://doc.rust-lang.org/std/convert/trait.TryFrom.html) did not exist, [`FromStr`](https://doc.rust-lang.org/std/str/trait.FromStr.html) is now superfluous.
+[`FromStr`](https://doc.rust-lang.org/std/str/trait.FromStr.html) was created when [`TryFrom`](https://doc.rust-lang.org/std/convert/trait.TryFrom.html) did not exist.
+
+However now that [`TryFrom`](https://doc.rust-lang.org/std/convert/trait.TryFrom.html) is stable [`FromStr`](https://doc.rust-lang.org/std/str/trait.FromStr.html) become superfluous.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -58,9 +60,9 @@ assert_eq!(p.unwrap(), Point { x: 1, y: 2 })
 
 - Mark [`FromStr`](https://doc.rust-lang.org/std/str/trait.FromStr.html) as deprecated
 - Mark [`str::parse()`](https://doc.rust-lang.org/std/primitive.str.html#method.parse) as deprecated
-- Make [`FromStr`](https://doc.rust-lang.org/std/str/trait.FromStr.html) implement `TryFrom<&str>` with [specialization](https://github.com/rust-lang/rfcs/pull/1210):
+- Create a new blanket implementation for `TryFrom<&str>` (requires [specialization](https://github.com/rust-lang/rfcs/pull/1210)):
 ```rust
-impl<T> TryFrom<String> for T
+impl<T> TryFrom<&str> for T
 where
     T: FromStr,
 {
@@ -83,7 +85,7 @@ where
 # Prior art
 [prior-art]: #prior-art
 
-Some discussion about a tangential problem https://github.com/rust-lang/rfcs/issues/2143
+Some discussion about a tangential problem: https://github.com/rust-lang/rfcs/issues/2143
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
