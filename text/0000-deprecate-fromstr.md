@@ -1,6 +1,6 @@
 - Feature Name: deprecate_fromstr
 - Start Date: 2020-05-11
-- RFC PR: TBD
+- RFC PR: [#2924](https://github.com/rust-lang/rfcs/pull/2924)
 - Rust Issue: TBD
 
 # Summary
