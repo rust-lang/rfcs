@@ -52,7 +52,7 @@ unsafe impl ForbiddenValues<[[u8; 4]; 3], [u8; 4]> for FastFloat {
 
 # Drawbacks
 
-Unless we turn the optimizations themselves into a language feature (which is not what I'm proposing), someone might mistakenly assume that some optimization is always guaranteed to happen, and rely on some value of type `T` being equal to `T::FORBIDDEN_VALUES[0]`. This design doesn't make it easy to implement a large number of forbidden values (like a range of integers for example).
+Unless we turn the optimizations themselves into a language feature (which is not what I'm proposing), someone might mistakenly assume that some optimization is always guaranteed to happen, and rely on some value being equal to `T::FORBIDDEN_VALUES[0]`. This design doesn't make it easy to implement a large number of forbidden values (like a range of integers for example).
 
 # Alternatives
 
@@ -67,4 +67,4 @@ unsafe trait ForbiddenValues<const SIZE: usize, const COUNT: usize> {
 
 # Unresolved questions
 
-Are there some alignment issues with `ForbiddenValue::FORBIDDEN_VALUE_BYTES`? I don't think so, because the compiler is free to use those bytes however it likes.
+Are there some alignment issues with `ForbiddenValues::FORBIDDEN_VALUES`? I don't think so, because the compiler is free to use those bytes however it likes.
