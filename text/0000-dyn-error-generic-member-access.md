@@ -71,6 +71,17 @@ pub trait Error {
 }
 ```
 
+And this inherent method on `dyn Error` trait objects:
+
+```rust
+impl dyn Error {
+    pub fn context<T: ?Sized + 'static>(&self) -> Option<&T> {
+        Request::with::<T, _>(|req| self.provide_context(req))
+    }
+}
+```
+
+
 Example implementation:
 
 ```rust
@@ -127,10 +138,11 @@ many new forms of error reporting.
 ## Moving `Error` into `libcore`
 
 Adding a generic member access function to the `Error` trait and removing the
-`backtrace` function would make it possible to move the `Error` trait to libcore
-without losing support for backtraces on std. The only difference being that
-in places where you can currently write `error.backtrace()` on nightly you
-would instead need to write `error.context::<Backtrace>()`.
+currently unstable `backtrace` function would make it possible to move the
+`Error` trait to libcore without losing support for backtraces on std. The only
+difference being that in places where you can currently write
+`error.backtrace()` on nightly you would instead need to write
+`error.context::<Backtrace>()`.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -148,10 +160,11 @@ The `Error` trait accomplishes this by providing a set of methods for accessing
 members of `dyn Error` trait objects. It requires that types implement the
 `Display` trait, which acts as the interface to the main member, the error
 message itself.  It provides the `source` function for accessing `dyn Error`
-members, which typically represent the current error's cause. It provides the
-`backtrace` function, for accessing a `Backtrace` of the state of the stack
-when an error was created. For all other forms of context relevant to an error
-report, the `Error` trait provides the `context` and `provide_context` functions.
+members, which typically represent the current error's cause. Via
+`#![feature(backtrace)]` it provides the `backtrace` function, for accessing a
+`Backtrace` of the state of the stack when an error was created. For all other
+forms of context relevant to an error report, the `Error` trait provides the
+`context` and `provide_context` functions.
 
 As an example of how to use this interface to construct an error report, let’s
 explore how one could implement an error reporting type. In this example, our
@@ -162,9 +175,12 @@ like this:
 
 ```
 Error:
-    0: Failed to read instrs from ./path/to/instrs.json
-        at instrs.rs:42
-    1: No such file or directory (os error 2)
+    0: ERROR MESSAGE
+        at LOCATION
+    1: SOURCE'S ERROR MESSAGE
+        at SOURCE'S LOCATION
+    2: SOURCE'S SOURCE'S ERROR MESSAGE
+    ...
 ```
 
 The first step is to define or use a type to represent a source location. In
@@ -247,18 +263,41 @@ impl fmt::Debug for ErrorReporter {
 }
 ```
 
-As you can see the `Error` trait provides the facilities needed to create error
-reports enriched by information that may be present in source errors.
+Now we have an error reporter that is ready for use, a simple program using it
+would look like this.
+
+```rust
+fn main() -> Result<(), ErrorReporter> {
+    let path = "./path/to/instrs.json";
+    let _instrs = read_instrs(path.into())?;
+}
+```
+
+Which, if run without creating the `instrs.json` file prints this error report:
+
+```
+Error:
+    0: Failed to read instrs from ./path/to/instrs.json
+        at instrs.rs:42
+    1: No such file or directory (os error 2)
+```
+
+Mission accomplished! The error trait gave us everything we needed to build
+error reports enriched by context relevant to our application. This same
+pattern can be implement many error reporting patterns, such as including help
+text, spans, http status codes, or backtraces in errors which are still
+accessible after the error has been converted to a `dyn Error`.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 The following changes need to be made to implement this proposal:
 
-### Add a type like [`Request`] to core
+### Add a `Request` type to `libcore` for type-indexed context
 
-This type fills the same role as `&dyn Any` except that it supports other trait
-objects as the requested type.
+`Request` is a type to emulate nested dynamic typing. This type fills the same
+role as `&dyn Any` except that it supports other trait objects as the requested
+type.
 
 Here is the implementation for the proof of concept, based on Nika Layzell's
 [object-provider crate]:
@@ -493,7 +532,7 @@ previous additions to the `Error` trait.
 [unresolved-questions]: #unresolved-questions
 
 * What should the names of these functions be?
-    * `context`/`context_ref`/`provide_context`/`provide_context`
+    * `context`/`context_ref`/`provide_context`/`provide_context`/`request_context`
     * `member`/`member_ref`
     * `provide`/`request`
 * Should there be a by-value version for accessing temporaries?
@@ -502,9 +541,6 @@ previous additions to the `Error` trait.
       it is unlikely that the error behind the trait object is actually storing
       the errors as `dyn Error`s, and theres no easy way to allocate storage to
       store the trait objects.
-* How should context handle failed downcasts?
-    * suggestion: panic, as providing a type that doesn't match the typeid
-      requested is a program error
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
