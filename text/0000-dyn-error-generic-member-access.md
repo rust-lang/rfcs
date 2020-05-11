@@ -354,7 +354,7 @@ impl<'a> Request<'a> {
     }
 
     /// Get the `TypeId` of the requested type.
-    pub fn type_id(&self) -> TypeId {
+    fn type_id(&self) -> TypeId {
         self.type_id
     }
 
