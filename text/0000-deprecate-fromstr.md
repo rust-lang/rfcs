@@ -11,7 +11,7 @@ Deprecate [`FromStr`](https://doc.rust-lang.org/std/str/trait.FromStr.html) in f
 # Motivation
 [motivation]: #motivation
 
-`FromStr` was created when `TryFrom` did not exist, `FromStr` is now superfluous.
+[`FromStr`](https://doc.rust-lang.org/std/str/trait.FromStr.html) was created when [`TryFrom`](https://doc.rust-lang.org/std/convert/trait.TryFrom.html) did not exist, [`FromStr`](https://doc.rust-lang.org/std/str/trait.FromStr.html) is now superfluous.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -56,9 +56,9 @@ assert_eq!(p.unwrap(), Point { x: 1, y: 2 })
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-- Mark `FromStr` as deprecated
-- Mark `str::parse()` as deprecated
-- Make `FromStr` implement `TryFrom<&str>`:
+- Mark [`FromStr`](https://doc.rust-lang.org/std/str/trait.FromStr.html) as deprecated
+- Mark [`str::parse()`](https://doc.rust-lang.org/std/primitive.str.html#method.parse) as deprecated
+- Make [`FromStr`](https://doc.rust-lang.org/std/str/trait.FromStr.html) implement `TryFrom<&str>` with [specialization](https://github.com/rust-lang/rfcs/pull/1210):
 ```rust
 impl<T> TryFrom<String> for T
 where
