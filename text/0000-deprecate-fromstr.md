@@ -56,7 +56,7 @@ impl From<&str> for Dummy {
 struct Dummy<'a>(&'a str);
 
 // This doesn't compile
-impl<'a> FromStr for Dummy<'a> {
+impl<'a> std::str::FromStr for Dummy<'a> {
     type Err = core::convert::Infallible;
     
     fn from_str(s: &str) -> Result<Self, Self::Err> {
