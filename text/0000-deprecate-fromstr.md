@@ -6,14 +6,73 @@
 # Summary
 [summary]: #summary
 
-Deprecate [`FromStr`](https://doc.rust-lang.org/std/str/trait.FromStr.html) in favor of [`TryFrom<&str>`](https://doc.rust-lang.org/std/convert/trait.TryFrom.html)
+Deprecate [`FromStr`](https://doc.rust-lang.org/std/str/trait.FromStr.html) in favor of [`TryFrom<&str>`](https://doc.rust-lang.org/std/convert/trait.TryFrom.html) and [`From<&str>`](https://doc.rust-lang.org/std/convert/trait.From.html).
 
 # Motivation
 [motivation]: #motivation
 
-[`FromStr`](https://doc.rust-lang.org/std/str/trait.FromStr.html) was created when [`TryFrom`](https://doc.rust-lang.org/std/convert/trait.TryFrom.html) did not exist.
+[`FromStr`](https://doc.rust-lang.org/std/str/trait.FromStr.html) was created when [`TryFrom`](https://doc.rust-lang.org/std/convert/trait.TryFrom.html) didn't exist. Now that it is stable, [`FromStr`](https://doc.rust-lang.org/std/str/trait.FromStr.html) becomes superfluous. 
 
-However now that [`TryFrom`](https://doc.rust-lang.org/std/convert/trait.TryFrom.html) is stable [`FromStr`](https://doc.rust-lang.org/std/str/trait.FromStr.html) become superfluous.
+[`FromStr`](https://doc.rust-lang.org/std/str/trait.FromStr.html) definition is virtually identical to [`TryFrom<&str>`](https://doc.rust-lang.org/std/convert/trait.TryFrom.html):
+```rust
+pub trait FromStr: Sized {
+    type Err;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err>;
+}
+
+// Where T is &str
+pub trait TryFrom<T>: Sized {
+    type Error;
+
+    fn try_from(value: T) -> Result<Self, Self::Error>;
+}
+```
+
+Infallible conversions become more idiomatic:
+```rust
+struct Dummy(String);
+
+impl std::str::FromStr for Dummy {
+    type Err = core::convert::Infallible;
+    
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Dummy(s.to_owned()))
+    }
+}
+
+//vs
+
+impl From<&str> for Dummy {
+
+    fn from(s: &str) -> Self {
+        Dummy(s.to_owned())
+    }
+}
+```
+
+[`FromStr`](https://doc.rust-lang.org/std/str/trait.FromStr.html) limits lifetimes in a way that prevents borrowing the passed string:
+```rust
+struct Dummy<'a>(&'a str);
+
+// This doesn't compile
+impl<'a> FromStr for Dummy<'a> {
+    type Err = core::convert::Infallible;
+    
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Dummy(s))
+    }
+}
+
+//This works
+impl<'a> From<&'a str> for Dummy<'a> {
+
+    fn from(s: &'a str) -> Self {
+        Dummy(s)
+    }
+}
+
+```
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -60,27 +119,17 @@ assert_eq!(p.unwrap(), Point { x: 1, y: 2 })
 
 - Mark [`FromStr`](https://doc.rust-lang.org/std/str/trait.FromStr.html) as deprecated
 - Mark [`str::parse()`](https://doc.rust-lang.org/std/primitive.str.html#method.parse) as deprecated
-- Create a new blanket implementation for `TryFrom<&str>` (requires [specialization](https://github.com/rust-lang/rfcs/pull/1210)):
-```rust
-impl<T> TryFrom<&str> for T
-where
-    T: FromStr,
-{
-    type Error = <T as FromStr>::Err;
-
-    fn try_from(value: String) -> Result<Self, Self::Error> {
-        value.parse()
-    }
-}
-```
+- Implement [`TryFrom<&str>`](https://doc.rust-lang.org/std/convert/trait.TryFrom.html) for all types implementing [`FromStr`](https://doc.rust-lang.org/std/str/trait.FromStr.html)
 
 # Drawbacks
 [drawbacks]: #drawbacks
 
-- `TryFrom<&str> for U` implies `TryInto<U> for &str` which may be unwanted
+To be discussed
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
+
+To be discussed
 
 # Prior art
 [prior-art]: #prior-art
@@ -90,5 +139,9 @@ Some discussion about a tangential problem: https://github.com/rust-lang/rfcs/is
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
+To be discussed
+
 # Future possibilities
 [future-possibilities]: #future-possibilities
+
+To be discussed
