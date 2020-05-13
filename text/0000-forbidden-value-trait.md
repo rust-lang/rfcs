@@ -23,7 +23,7 @@ where
 }
 ```
 
-To implement `ForbiddenValue<A, B>` for type `T`, the following conditions must be met:
+To implement `ForbiddenValues<A, B>` for type `T`, the following conditions must be met:
 1) Type `T` has a stable layout and representation
 2) Type `B` is a fixed-size array of `u8`
 3) Type `A` is a fixed-size array of `B`
@@ -68,3 +68,5 @@ unsafe trait ForbiddenValues<const SIZE: usize, const COUNT: usize> {
 # Unresolved questions
 
 Are there some alignment issues with `ForbiddenValues::FORBIDDEN_VALUES`? I don't think so, because the compiler is free to use those bytes however it likes.
+
+Given that producing a forbidden value of a `bool`, `char`, or an enum type is considered undefined behaviour, I suppose it makes sense to ask if producing a value of type `T` that is equal to some item in `T::FORBIDDEN_VALUES` should be considered undefined behaviour.
