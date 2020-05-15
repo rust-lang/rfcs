@@ -29,7 +29,10 @@ To implement `ForbiddenValues` for type `T`, the following conditions must be me
 ```rust
 *(&raw const t as *const [u8; size_of::<T>()]) != f
 ```
-2. `T` must not be a type that has forbidden values the compiler already knows about (e.g. `char`)
+
+2. For each pair of separate items `a` and `b` in `T::FORBIDDEN`, `a != b`
+
+3. `T` must not be a type that has forbidden values the compiler already knows about (e.g. `char`)
 
 Then compilers would be allowed to use `T::FORBIDDEN` to represent forbidden values of type `T` in whatever optimizations they decide to perform.
 
