@@ -49,3 +49,5 @@ unsafe trait ForbiddenValues {
 Are there some alignment issues with `ForbiddenValues::FORBIDDEN`? I don't think so, because the compiler is free to use those bytes however it likes.
 
 Given that producing a forbidden value of a `bool`, `char`, or an enum type is considered undefined behaviour, I suppose it makes sense to ask if it should be considered undefined behaviour to produce a value `t` of type `T` such that for some item `f` in `T::FORBIDDEN`, `*(&raw const t as *const [u8; size_of::<T>()]) == f`.
+
+Should the user be able to implement `ForbiddenValues` for a type that the compiler already knows has forbidden values (e.g. `char`). If so, the resulting set of forbidden values should be a union of the already known ones and the new ones - could this cause some issues?
