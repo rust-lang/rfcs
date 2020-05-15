@@ -118,7 +118,7 @@ same way as the `[dependencies]` section in `Cargo.toml`:
 [workspace.dependencies]
 log = "0.3.1"
 log2 = { version = "2.0.0", package = "log" }
-serde = { git = 'https://github.com/serde-rs/serde" }
+serde = { git = 'https://github.com/serde-rs/serde' }
 wasm-bindgen-cli = { path = "crates/cli" }
 ```
 
