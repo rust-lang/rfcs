@@ -429,6 +429,8 @@ Several types of operands are supported:
   - The substituted string does not include any modifiers (e.g. GOT, PLT, relocations, etc).
   - `<path>` is allowed to point to a `#[thread_local]` static, in which case the asm code can combine the symbol with relocations (e.g. `@plt`, `@TPOFF`) to read from thread-local data.
 
+Operand expressions are evaluated from left to right, just like function call arguments. After the `asm!` has executed, outputs are written to in left to right order. This is significant if two outputs point to the same place: that place will contain the value of the rightmost output.
+
 ## Register operands
 
 Input and output operands can be specified either as an explicit register or as a register class from which the register allocator can select a register. Explicit registers are specified as string literals (e.g. `"eax"`) while register classes are specified as identifiers (e.g. `reg`). Using string literals for register names enables support for architectures that use special characters in register names, such as MIPS (`$0`, `$1`, etc).
