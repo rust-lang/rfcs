@@ -823,8 +823,12 @@ unsafe fn foo(mut a: i32, b: i32) -> (i32, i32)
     - You cannot exit an `asm!` block that has not been entered. Neither can you exit an `asm!` block that has already been exited.
     - You are responsible for switching any target-specific state (e.g. thread-local storage, stack bounds).
     - The set of memory locations that you may access is the intersection of those allowed by the `asm!` blocks you entered and exited.
+- You cannot assume that an `asm!` block will appear exactly once in the output binary. The compiler is allowed to instantiate multiple copies of the `asm!` block, for example when the function containing it is inlined in multiple places.
+  - As a consequence, you should only use [local labels] inside inline assembly code. Defining symbols in assembly code may lead to assembler and/or linker errors due to duplicate symbol definitions.
 
-> **Note**: As a general rule, these are the flags which are *not* preserved when performing a function call.
+> **Note**: As a general rule, the flags covered by `preserves_flags` are those which are *not* preserved when performing a function call.
+
+[local labels]: https://sourceware.org/binutils/docs/as/Symbol-Names.html#Local-Labels
 
 # Drawbacks
 [drawbacks]: #drawbacks
