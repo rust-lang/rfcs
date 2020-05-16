@@ -801,7 +801,6 @@ unsafe fn foo(mut a: i32, b: i32) -> (i32, i32)
 - These flags registers must be restored upon exiting the asm block if the `preserves_flags` option is set:
   - x86
     - Status flags in `EFLAGS` (CF, PF, AF, ZF, SF, OF).
-    - Direction flag in `EFLAGS` (DF).
     - Floating-point status word (all).
     - Floating-point exception flags in `MXCSR` (PE, UE, OE, ZE, DE, IE).
   - ARM
@@ -816,6 +815,8 @@ unsafe fn foo(mut a: i32, b: i32) -> (i32, i32)
     - Floating-point status (`FPSR` register).
   - RISC-V
     - Floating-point exception flags in `fcsr` (`fflags`).
+- On x86, the direction flag (DF in `EFLAGS`) is clear on entry to an asm block and must be clear on exit.
+  - Behavior is undefined if the direction flag is set on exiting an asm block.
 - The requirement of restoring the stack pointer and non-output registers to their original value only applies when exiting an `asm!` block.
   - This means that `asm!` blocks that never return (even if not marked `noreturn`) don't need to preserve these registers.
   - When returning to a different `asm!` block than you entered (e.g. for context switching), these registers must contain the value they had upon entering the `asm!` block that you are *exiting*.
