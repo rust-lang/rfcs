@@ -252,7 +252,7 @@ can only be referenced from within a fn body.
 ### References to generic impls
 
 Users never explicitly "reference" an impl. Rather, the trait matching
-system implicitly instantaites impls as part of trait matching. This
+system implicitly instantiates impls as part of trait matching. This
 implies that all type parameters are always instantiated with type
 variables. These type variables are assigned fallbacks according to
 the defaults given.

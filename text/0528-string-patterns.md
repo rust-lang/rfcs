@@ -138,9 +138,9 @@ pub trait DoubleEndedSearcher<'a>: ReverseSearcher<'a> {}
 ```
 
 The basic idea of a `Searcher` is to expose a interface for
-iterating through all connected string fragments of the haystack while classifing them as either a match, or a reject.
+iterating through all connected string fragments of the haystack while classifying them as either a match, or a reject.
 
-This happens in form of the returned enum value. A `Match` needs to contain the start and end indices of a complete non-overlapping match, while a `Rejects` may be emitted for arbitary non-overlapping rejected parts of the string, as long as the start and end indices lie on valid utf8 boundaries.
+This happens in form of the returned enum value. A `Match` needs to contain the start and end indices of a complete non-overlapping match, while a `Rejects` may be emitted for arbitrary non-overlapping rejected parts of the string, as long as the start and end indices lie on valid utf8 boundaries.
 
 Similar to iterators, depending on the concrete implementation a searcher can have
 additional capabilities that build on each other, which is why they will be

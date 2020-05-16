@@ -54,7 +54,7 @@ sense to inherit, since all that the `?Sized` notation is saying is
 "do not add `Sized`", and you can't inherit the absence of a
 thing. Having traits simply not inherit from `Sized` by default
 sidesteps this problem altogether and avoids the need for a special
-syntax to supress the (now absent) default.
+syntax to suppress the (now absent) default.
 
 Removing the default also has the benefit of making traits applicable
 to more types by default. One particularly useful case is trait

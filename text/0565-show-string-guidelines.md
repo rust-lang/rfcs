@@ -129,7 +129,7 @@ There are two main reasons for this choice:
   [more direct convenience](https://github.com/SimonSapin/rust-std-candidates#the-show-debugging-macro).
 
 * When creating tailored string output via interpolation, the expected "default"
-  formatting for things like strings is unquoted and unescapted. It would be
+  formatting for things like strings is unquoted and unescaped. It would be
   surprising if the default specifiers below did not yield `"hello, world!" as the
   output string.
 

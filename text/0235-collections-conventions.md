@@ -1367,7 +1367,7 @@ fn partitioned(&self, f: |&T| -> bool) -> (Vec<T>, Vec<T>);
 These two functions transform a vector/slice into a pair of vectors, based on a
 "partitioning" function that says which of the two vectors to place elements
 into. The `partition` variant works by moving elements of the vector, while
-`paritioned` clones elements.
+`partitioned` clones elements.
 
 There are a few unfortunate aspects of an API like this one:
 

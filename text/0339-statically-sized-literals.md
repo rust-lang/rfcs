@@ -162,7 +162,7 @@ Minor breakage:
 fn main() {
     let s = "Hello";
     fn f(arg: &str) {}
-    f(s); // Will require explicit slicing f(s[]) or implicit DST coersion from reference f(&s)
+    f(s); // Will require explicit slicing f(s[]) or implicit DST coercion from reference f(&s)
 }
 ```
 

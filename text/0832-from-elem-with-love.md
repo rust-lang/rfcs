@@ -52,7 +52,7 @@ let vec = Vec::from_elem(elem, n)
 * `#4` and `#5` are considered verbose and noisy. They also need to clone one more
 time than other methods *strictly* need to.
 
-However the issues for `#2` are *entirely* artifical. It's simply a side-effect of
+However the issues for `#2` are *entirely* artificial. It's simply a side-effect of
 forwarding the impl to the identical array syntax. We can just make the code in the
 `vec!` macro better. This naturally extends the compile-timey `[x; n]` array sugar
 to the more runtimey semantics of Vec, without introducing "another way to do it".

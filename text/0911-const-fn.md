@@ -36,7 +36,7 @@ all the fields of `std::thread_local::imp::Key` are public, so they can be
 filled in by a macro - and they're also marked "stable" (due to the lack of
 stability hygiene in macros).
 
-A pre-RFC for the removal of the dangerous (and oftenly misued) `static mut`
+A pre-RFC for the removal of the dangerous (and often misused) `static mut`
 received positive feedback, but only under the condition that abstractions
 could be created and used in `const` and `static` items.
 
@@ -110,7 +110,7 @@ casts, field accesses/indexing, capture-less closures, references and blocks
 this is not transitive, allowing the (perfectly harmless) creation of, e.g.
 `None::<Vec<T>>` (as an aside, this rule could be used to allow `[x; N]` even
 for non-`Copy` types of `x`, but that is out of the scope of this RFC)
-* references are trully immutable, no value with interior mutability can be placed
+* references are truly immutable, no value with interior mutability can be placed
 behind a reference, and mutable references can only be created from zero-sized
 values (e.g. `&mut || {}`) - this allows a reference to be represented just by
 its value, with no guarantees for the actual address in memory

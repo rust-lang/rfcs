@@ -12,7 +12,7 @@ Currently the `Box<T>` type is special-cased and converted to the old
 `~T` internally. This is mostly invisible to the user, but it shows up
 in some places that give special treatment to `Box<T>`. This RFC is
 specifically concerned with the fact that the borrow checker has
-greater precision when derefencing `Box<T>` vs other smart pointers
+greater precision when dereferencing `Box<T>` vs other smart pointers
 that rely on the `Deref` traits. Unlike the other kinds of special
 treatment, we do not currently have a plan for how to extend this
 behavior to all smart pointer types, and hence we would like to remove
@@ -103,7 +103,7 @@ treatment of box to other smart pointer types:
    if the optimization is not performed it affects what programs can
    successfully type check. (Naturally it is also observable.)
    
-2. Some sort of unsafe deref trait that acknolwedges possibliity of
+2. Some sort of unsafe deref trait that acknowledges possibility of
    other pointers into the referent. Unappealing because the problem
    is not that bad as to require unsafety.
    

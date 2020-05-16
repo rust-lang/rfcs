@@ -18,7 +18,7 @@ literals to not require the `:` (e.g., if we allow empty structs to be written
 with braces, or if we allow struct literals to unify field names to local
 variable names, as has been suggested in the past and which we currently do for
 struct literal patterns). We should also be able to give better error messages
-today if users make these mistakes. More worringly, we might come up with some
+today if users make these mistakes. More worryingly, we might come up with some
 language feature in the future which is not predictable now and which breaks
 with the current system.
 

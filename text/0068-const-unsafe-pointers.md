@@ -104,7 +104,7 @@ the language, `const`.
 
 * How much can the compiler help out when coercing `&mut T` to `*mut T`? As
   previously stated, the source pointer `&mut T` is consumed during the
-  coerction (it's already a linear type), but this can lead to some unexpected
+  coercion (it's already a linear type), but this can lead to some unexpected
   results:
 
       extern {
