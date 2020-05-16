@@ -442,7 +442,7 @@ Only the following types are allowed as operands for inline assembly:
 - Floating-point numbers
 - Pointers (thin only)
 - Function pointers
-- SIMD vectors (structs defined with `#[repr(simd)]` and which implement `Copy`). This includes archtecture-specific vector types defined in `std::arch` such as `__m128` (x86) or `int8x16_t` (ARM).
+- SIMD vectors (structs defined with `#[repr(simd)]` and which implement `Copy`). This includes architecture-specific vector types defined in `std::arch` such as `__m128` (x86) or `int8x16_t` (ARM).
 
 Here is the list of currently supported register classes:
 
