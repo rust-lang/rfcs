@@ -229,9 +229,9 @@ impl Read for TcpStream {
             // If the read succeeded, tell the buffer that the read-to portion has been initialized. This method is
             // unsafe; we are responsible for ensuring that this portion of the buffer has actually been initialized.
             buf.assume_initialized(nread);
-            // And indicate that we've written the bytes as well. Unlike `assert_initialized`, this method is safe, and
-            // asserts that the written portion of the buffer does not advance beyond the initialized portion of the
-            // buffer. If we didn't call `assert_initialized` above, this call could panic.
+            // And indicate that we've written the bytes as well. Unlike `assert_initialized`, this method is safe,
+            // and asserts that the written portion of the buffer does not advance beyond the initialized portion of
+            // the buffer. If we didn't call `assert_initialized` above, this call could panic.
             buf.add_written(nread);
 
             Ok(())
@@ -248,8 +248,8 @@ impl Read for TcpStream {
 ///
 /// This type is a sort of "double cursor". It tracks three regions in the buffer: a region at the beginning of the
 /// buffer that has been logically written to, a region that has been initialized at some point but not yet logically
-/// written to, and a region at the end that is fully uninitialized. The written-to region is guaranteed to be a subset
-/// of the initialized region.
+/// written to, and a region at the end that is fully uninitialized. The written-to region is guaranteed to be a
+/// subset of the initialized region.
 pub struct ReadBuf<'a> {
     buf: &'a mut [MaybeUninit<u8>],
     written: usize,
@@ -302,13 +302,13 @@ impl<'a> ReadBuf<'a> {
 
     /// Returns a mutable reference to the unwritten-to part of the buffer, ensuring it is fully initialized.
     ///
-    /// Since `ReadBuf` tracks the region of the buffer that has been initialized, this is effectively "free" after the
-    /// first use.
+    /// Since `ReadBuf` tracks the region of the buffer that has been initialized, this is effectively "free" after
+    /// the first use.
     #[inline]
     pub fn initialize_unwritten(&mut self) -> &mut [u8] { ... }
 
-    /// Returns a mutable reference to the first `n` bytes of the unwritten-to part of the buffer, ensuring it is fully
-    /// initialized.
+    /// Returns a mutable reference to the first `n` bytes of the unwritten-to part of the buffer, ensuring it is
+    /// fully initialized.
     ///
     /// # Panics
     ///
@@ -340,8 +340,8 @@ impl<'a> ReadBuf<'a> {
     ///
     /// The number of initialized bytes is not changed.
     ///
-    /// Note that this can be used to *shrink* the written region of the buffer in addition to growing it (for example,
-    /// by a `Read` implementation that compresses data in-place).
+    /// Note that this can be used to *shrink* the written region of the buffer in addition to growing it (for
+    /// example, by a `Read` implementation that compresses data in-place).
     ///
     /// # Panics
     ///
@@ -351,8 +351,8 @@ impl<'a> ReadBuf<'a> {
 
     /// Asserts that the first `n` unwritten bytes of the buffer are initialized.
     ///
-    /// `ReadBuf` assumes that bytes are never de-initialized, so this method does nothing when called with fewer bytes
-    /// than are already known to be initialized.
+    /// `ReadBuf` assumes that bytes are never de-initialized, so this method does nothing when called with fewer
+    /// bytes than are already known to be initialized.
     ///
     /// # Safety
     ///
