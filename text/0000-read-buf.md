@@ -74,7 +74,7 @@ impl Read for BrokenReader2 {
 In either case, the `process_data` call above would be working with uninitialized memory. Uninitialized memory is a
 dangerous (and often misunderstood) beast. Uninitialized memory does not have an *arbitrary* value; it actually has an
 *undefined* value. Undefined values can very quickly turn into undefined behavior. Check out
-[Ralf's blog post](https://www.ralfj.de/blog/2019/07/14/uninit.html) for a more extensive discussion of unintialized
+[Ralf's blog post](https://www.ralfj.de/blog/2019/07/14/uninit.html) for a more extensive discussion of uninitialized
 memory.
 
 ## But how bad are undefined values really?
