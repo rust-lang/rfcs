@@ -14,15 +14,15 @@ To recap, `static_assert` looks like this:
 ```rust
 #![feature(static_assert)]
 #[static_assert]
-static asssertion: bool = true;
+static assertion: bool = true;
 ```
 
 If `assertion` is `false` instead, this fails to compile:
 
 ```text
 error: static assertion failed
-static asssertion: bool = false;
-                          ^~~~~
+static assertion: bool = false;
+                         ^~~~~
 ```
 
 If you don’t have the `feature` flag, you get another interesting error:

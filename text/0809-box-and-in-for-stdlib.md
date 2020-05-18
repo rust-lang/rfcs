@@ -124,13 +124,13 @@ tandem with types provided by the stdlib, such as `Box<T>`.
 
 [RFC 92]: https://github.com/rust-lang/rfcs/blob/master/text/0092-struct-grammar.md
 
-* The only stablized implementation for the `box <expr>` operator
+* The only stabilized implementation for the `box <expr>` operator
   proposed by this RFC is `Box<T>`. The question of which other types
   should support integration with `box <expr>` is a library design
   issue and needs to go through the conventions and library
   stabilization process.
 
-  Similarly, this RFC does not propose *any* stablized implementation
+  Similarly, this RFC does not propose *any* stabilized implementation
   for the `in <place-expr> { <block> }` operator. (An obvious candidate for
   `in <place-expr> { <block> }` integration would be a `Vec::emplace_back`
   method; but again, the choice of which such methods to add is a

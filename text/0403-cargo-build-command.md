@@ -167,7 +167,7 @@ It is illegal to define `links` without also defining `build`.
 A number of native dependencies have various dependencies depending on what
 platform they're building for. For example, libcurl does not depend on OpenSSL
 on Windows, but it is a common dependency on unix-based systems. To this end,
-Cargo will gain support for platform-specific dependencies, solving constriant 7
+Cargo will gain support for platform-specific dependencies, solving constraint 7
 above:
 
 ```toml
@@ -258,7 +258,7 @@ separate set of dependencies solves a number of constraints:
 
 * When cross-compiling, the build tool as well as all of its dependencies are
   required to be built for the host architecture instead of the target
-  architecture. A clear deliniation will indicate precisely what dependencies
+  architecture. A clear delineation will indicate precisely what dependencies
   need to be built for the host architecture.
 * Common packages, such as one to build `cmake`-based dependencies, can develop
   conventions around filesystem hierarchy formats to require minimum

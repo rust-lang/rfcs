@@ -184,7 +184,7 @@ expressing the constraint that one lifetime be strictly greater than
 another lifetime or type (the form `'a:'b` only formally says that
 `'a` must live *at least* as long as `'b`).
 
-Thus, client code like that in `unwary_client` can inadvertantly set
+Thus, client code like that in `unwary_client` can inadvertently set
 up scenarios where Sylvester's code may break, and Sylvester might be
 completely unaware of the vulnerability.
 

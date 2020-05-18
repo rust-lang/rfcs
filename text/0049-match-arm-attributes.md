@@ -9,7 +9,7 @@ Allow attributes on match arms.
 # Motivation
 
 One sometimes wishes to annotate the arms of match statements with
-attributes, for example with conditional complilation `#[cfg]`s or
+attributes, for example with conditional compilation `#[cfg]`s or
 with branch weights (the latter is the most important use).
 
 For the conditional compilation, the work-around is duplicating the

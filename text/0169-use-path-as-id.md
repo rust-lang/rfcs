@@ -44,7 +44,7 @@ mod new_code {
 There are two benefits we can see by comparing `mod old_code` and `mod
 new_code`:
 
- * As alluded to above, now all of the imported identfifiers are on
+ * As alluded to above, now all of the imported identifiers are on
    the right-hand side of the block of view items.
 
  * Additionally, the left-hand side looks much more regular, since one
@@ -194,7 +194,7 @@ extern crate old_name as new_name;
 ```
 
 I have no opinion on whether this should be added or not.  Arguably
-this choice is orthgonal to the goals of this RFC (since, if this is a
+this choice is orthogonal to the goals of this RFC (since, if this is a
 good idea, it could just as well be implemented with the `=` syntax).
 Perhaps it should just be filed as a separate RFC on its own.
 

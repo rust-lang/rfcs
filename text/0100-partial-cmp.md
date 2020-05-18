@@ -4,7 +4,7 @@
 
 # Summary
 
-Add a `partial_cmp` method to `PartialOrd`, analagous to `cmp` in `Ord`.
+Add a `partial_cmp` method to `PartialOrd`, analogous to `cmp` in `Ord`.
 
 # Motivation
 
@@ -93,7 +93,7 @@ should be. It would also require more work to implement `PartialOrd` once the
 currently planned `cmp` reform has finished as noted above.
 
 `partial_cmp` could just be called `cmp`, but it seems like UFCS would need to
-be implemented first for that to be workrable.
+be implemented first for that to be workable.
 
 # Unresolved questions
 

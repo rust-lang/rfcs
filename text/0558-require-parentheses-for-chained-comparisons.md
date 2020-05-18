@@ -19,7 +19,7 @@ This code is currently accepted and is evaluated as `((a == b) == c)`.
 This may be confusing to programmers coming from languages like Python,
 where chained comparison operators are evaluated as `(a == b && b == c)`.
 
-In C, the same problem exists (and is excerbated by implicit conversions).
+In C, the same problem exists (and is exacerbated by implicit conversions).
 Styleguides like Misra-C require the use of parentheses in this case.
 
 By requiring the use of parentheses, we avoid potential confusion now,

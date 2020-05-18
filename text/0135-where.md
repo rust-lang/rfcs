@@ -444,7 +444,7 @@ This is unfortunately somewhat ambiguous, since a bound like `T:Eq`
 could either be declared a type parameter `T` or as a condition that
 the (existing) type `T` implement `Eq`.
 
-**Use a colon intead of the keyword.** There is some precedent for
+**Use a colon instead of the keyword.** There is some precedent for
 this from the type state days. Unfortunately, it doesn't work with
 traits due to the supertrait list, and it also doesn't look good with
 the use of `:` as a trait-bound separator:

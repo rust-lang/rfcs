@@ -84,7 +84,7 @@ not always be sufficient to determine the type of a `vec![]`.
 
 
 ## The Cloneian Candidate
-This proposal is artifically restricting itself to `Copy` rather than full
+This proposal is artificially restricting itself to `Copy` rather than full
 `Clone` as a concession to the general Rustic philosophy of Clones being
 explicit. Since this proposal is largely motivated by simple shuffling of
 primitives, this is sufficient. Also, because `Copy: Clone`, it would be

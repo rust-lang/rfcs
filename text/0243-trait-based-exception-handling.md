@@ -122,7 +122,7 @@ associated block. If no exception is thrown, then the result is
 `Ok(v)` where `v` is the value of the block. Otherwise, if an
 exception is thrown, then the result is `Err(e)`. Note that unlike
 other languages, a `catch` block always catches all errors, and they
-must all be coercable to a single type, as a `Result` only has a
+must all be coercible to a single type, as a `Result` only has a
 single `Err` type. This dramatically simplifies thinking about the
 behavior of exception-handling code.
 
@@ -262,7 +262,7 @@ a distinct motivation, and we should evaluate them independently.
 
 # Unresolved questions
 
-These questions should be satisfactorally resolved before stabilizing the
+These questions should be satisfactorily resolved before stabilizing the
 relevant features, at the latest.
 
 ## Optional `match` sugar

@@ -224,7 +224,7 @@ we find we need more type information to proceed with some
 type-overloaded operation, rather than reporting an error we can try
 and resolve pending constraints. If that helps give more information,
 we can carry on. Once we reach the end of the function, we must then
-resolve all pending constriants that have not yet been resolved for
+resolve all pending constraints that have not yet been resolved for
 some other reason.
 
 Note that there is some interaction with the distinction between input
@@ -527,7 +527,7 @@ slightly modified example:
 As before, we'll start out with a type of `Monster`, but this type the
 method `move_to_room()` has a receiver type of `Gc<Monster>`. This
 doesn't match cases 1, 2, or 3, so we proceed to case 4 and *unwind*
-by one adustment. Since the most recent adjustment was to deref from
+by one adjustment. Since the most recent adjustment was to deref from
 `Gc<Monster>` to `Monster`, we are left with a type of
 `Gc<Monster>`. We now search again. This time, we match case 1. So the
 final result is `Mob::move_to_room(victim, room)`. This last case is
@@ -660,7 +660,7 @@ extent.
 ## The "resolve" algorithm
 
 The basis for the coherence check, method lookup, and vtable lookup
-algoritms is the same function, called *RESOLVE*. The basic idea is
+algorithms is the same function, called *RESOLVE*. The basic idea is
 that it takes a set of obligations and tries to resolve them. The result
 is four sets:
 

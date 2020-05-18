@@ -126,7 +126,7 @@ impl<B,I,F> Iterator for Map<I,F>,
 ```
 
 Note that this final option is not legal without this change, because
-the type parameter `B` on the impl woudl be unconstrained.
+the type parameter `B` on the impl would be unconstrained.
 
 # Drawbacks
 
