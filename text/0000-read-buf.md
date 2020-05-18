@@ -229,9 +229,9 @@ impl Read for TcpStream {
             // If the read succeeded, tell the buffer that the read-to portion has been initialized. This method is
             // unsafe; we are responsible for ensuring that this portion of the buffer has actually been initialized.
             buf.assume_initialized(nread);
-            // And indicate that we've written the bytes as well. Unlike `assert_initialized`, this method is safe,
+            // And indicate that we've written the bytes as well. Unlike `assume_initialized`, this method is safe,
             // and asserts that the written portion of the buffer does not advance beyond the initialized portion of
-            // the buffer. If we didn't call `assert_initialized` above, this call could panic.
+            // the buffer. If we didn't call `assume_initialized` above, this call could panic.
             buf.add_written(nread);
 
             Ok(())
