@@ -977,7 +977,7 @@ fn mul(a: u64, b: u64) -> u128 {
 
 ## Use AT&T syntax by default on x86
 
-x86 is particular in that there are [two widely used dialects] for its assembly code: Intel syntax, which is the official syntax for x86 assembly, and AT&T syntax which is used by GCC (via GAS). There is no functional difference between those two dialects, they both support the same functionality but with a [different syntax][gas-syntax]. This RFC chooses to use Intel syntax by default since it is more widely used and users generally find it easier to read and write.
+x86 is particular in that there are [two widely used dialects][gas-syntax] for its assembly code: Intel syntax, which is the official syntax for x86 assembly, and AT&T syntax which is used by GCC (via GAS). There is no functional difference between those two dialects, they both support the same functionality but with a different syntax. This RFC chooses to use Intel syntax by default since it is more widely used and users generally find it easier to read and write.
 
 [gas-syntax]: https://sourceware.org/binutils/docs/as/i386_002dVariations.html
 
