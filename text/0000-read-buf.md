@@ -332,7 +332,7 @@ impl<'a> ReadBuf<'a> {
     ///
     /// # Panics
     ///
-    /// Panics if the written region of the buffer would become argion than the initialized region.
+    /// Panics if the written region of the buffer would become larger than the initialized region.
     #[inline]
     pub fn add_written(&mut self, n: usize) { ... }
 
@@ -423,8 +423,8 @@ will be added:
 pub trait Read {
     /// Read the exact number of bytes required to fill `buf`.
     ///
-    /// This is equivalent to the `read_exact` method, except that it is passed a `ReadBuf` rather than `[u8]` to allow
-    /// use with uninitialized buffers.
+    /// This is equivalent to the `read_exact` method, except that it is passed a `ReadBuf` rather than `[u8]` to
+    /// allow use with uninitialized buffers.
     fn read_buf_exact(&mut self, buf: &mut ReadBuf<'_>) -> io::Result<()> {
         while buf.remaining() > 0 {
             let prev_written = buf.written().len();
