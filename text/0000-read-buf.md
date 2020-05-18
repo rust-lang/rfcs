@@ -135,7 +135,7 @@ nontrivial performance improvements from doing so:
 Given that the ecosystem has already found that uninitialized buffer use is important enough to deal with, the standard
 library should provide a more robust framework to work with.
 
-In addition, working with uninitialized buffers can be *more complex* than working with regular initialized buffers!
+In addition, working with regular initialized buffers can be *more complex* than working with uninitialized buffers!
 Back in 2015, the standard library's implementation of `Read::read_to_end` was found to be wildly inefficient due to
 insufficiently careful management of buffer sizes because it was initializing them.
 [The fix](https://github.com/rust-lang/rust/pull/23820) improved the performance of small reads by over 4,000x! If
