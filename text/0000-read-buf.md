@@ -43,7 +43,9 @@ let nread = reader.read(&mut buf)?;
 process_data(&buf[..nread]);
 ```
 
-However, this is unsound when working with an arbitrary reader. The `Read` trait is not unsafe, so the soundness of
+However, whether it is allowed to call `assume_init()` on an array of uninitialized integers is
+[still subject of discussion](https://github.com/rust-lang/unsafe-code-guidelines/issues/71).
+And either way, this is definitely unsound when working with an arbitrary reader. The `Read` trait is not unsafe, so the soundness of
 working with an implementation can't depend on the "reasonableness" of the implementation for soundness. The
 implementation could read from the buffer, or return the wrong number of bytes read:
 
