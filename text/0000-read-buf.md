@@ -314,7 +314,7 @@ impl<'a> ReadBuf<'a> {
     ///
     /// Panics if `self.remaining()` is less than `n`.
     #[inline]
-    pub fn initialize_unwriten_to(&mut self, n: usize) -> &mut [u8] { ... }
+    pub fn initialize_unwritten_to(&mut self, n: usize) -> &mut [u8] { ... }
 
     /// Returns the number of bytes at the end of the slice that have not yet been written to.
     #[inline]
