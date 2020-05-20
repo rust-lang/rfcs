@@ -149,8 +149,8 @@ the buffer did not need to be initialized, the simpler implementation would have
 The `ReadBuf` type manages a *progressively initialized* buffer of bytes. It is primarily used to avoid buffer
 initialization overhead when working with types implementing the `Read` trait. It wraps a buffer of
 possibly-uninitialized bytes and tracks how much of the buffer has been initialized and how much of the buffer has been
-written to. Tracking the set of initialized bytes allows initialization costs to only be paid once, even if the buffer
-is used repeatedly in a loop.
+filled. Tracking the set of initialized bytes allows initialization costs to only be paid once, even if the buffer is
+used repeatedly in a loop.
 
 Here's a small example of working with a reader using a `ReadBuf`:
 
@@ -166,14 +166,14 @@ loop {
     some_reader.read_buf(&mut buf)?;
 
     // If nothing was written into the buffer, we're at EOF.
-    if buf.written().is_empty() {
+    if buf.filled().is_empty() {
         break;
     }
 
     // Otherwise, process the data.
-    process_data(buf.written());
+    process_data(buf.filled());
 
-    // And then clear the buffer out so we can read into it again. This just resets the amount of data "written" to 0,
+    // And then clear the buffer out so we can read into it again. This just resets the amount of filled data to 0,
     // but preserves the memory of how much of the buffer has been initialized.
     buf.clear();
 }
@@ -192,16 +192,16 @@ impl Read for MyReader {
     fn read_buf(&mut self, buf: &mut ReadBuf<'_>) -> io::Result<()> {
         // Get access to the unwritten part of the buffer, making sure it has been fully initialized. Since `ReadBuf`
         // tracks the initialization state of the buffer, this is "free" after the first time it's called.
-        let unwritten: &mut [u8] = buf.initialize_unwritten();
+        let unfilled: &mut [u8] = buf.initialize_unfilled();
 
         // Fill the whole buffer with some nonsense.
-        for (i, byte) in unwritten.iter_mut().enumerate() {
+        for (i, byte) in unfilled.iter_mut().enumerate() {
             *byte = i as u8;
         }
 
         // And indicate that we've written the whole thing.
-        let len = unwritten.len();
-        buf.add_written(len);
+        let len = unfilled.len();
+        buf.add_filled(len);
 
         Ok(())
     }
@@ -214,10 +214,10 @@ An unsafe `Read` implementation:
 impl Read for TcpStream {
     fn read_buf(&mut self, buf: &mut ReadBuf<'_>) -> io::Result<()> {
         unsafe {
-            // Get access to the unwritten part of the buffer, without initializing it. This method is unsafe; we are
+            // Get access to the filled part of the buffer, without initializing it. This method is unsafe; we are
             // responsible for ensuing that we don't "de-initialize" portions of it that have previously been
             // initialized.
-            let unwritten: &mut [MaybeUninit<u8>] = buf.unwritten_mut();
+            let unfilled: &mut [MaybeUninit<u8>] = buf.unfilled_mut();
 
             // We're just delegating to the libc read function, which returns an `isize`. The return value indicates
             // an error if negative and the number of bytes read otherwise.
@@ -230,11 +230,11 @@ impl Read for TcpStream {
             let nread = nread as usize;
             // If the read succeeded, tell the buffer that the read-to portion has been initialized. This method is
             // unsafe; we are responsible for ensuring that this portion of the buffer has actually been initialized.
-            buf.assume_initialized(nread);
+            buf.assume_init(nread);
             // And indicate that we've written the bytes as well. Unlike `assume_initialized`, this method is safe,
             // and asserts that the written portion of the buffer does not advance beyond the initialized portion of
             // the buffer. If we didn't call `assume_initialized` above, this call could panic.
-            buf.add_written(nread);
+            buf.add_filled(nread);
 
             Ok(())
         }
@@ -246,15 +246,15 @@ impl Read for TcpStream {
 [reference-level-explanation]: #reference-level-explanation
 
 ```rust
-/// A wrapper around a byte buffer that is incrementally written to and initialized.
+/// A wrapper around a byte buffer that is incrementally filled and initialized.
 ///
 /// This type is a sort of "double cursor". It tracks three regions in the buffer: a region at the beginning of the
-/// buffer that has been logically written to, a region that has been initialized at some point but not yet logically
-/// written to, and a region at the end that is fully uninitialized. The written-to region is guaranteed to be a
+/// buffer that has been logically filled with data, a region that has been initialized at some point but not yet
+/// logically filled, and a region at the end that is fully uninitialized. The filled region is guaranteed to be a
 /// subset of the initialized region.
 pub struct ReadBuf<'a> {
     buf: &'a mut [MaybeUninit<u8>],
-    written: usize,
+    filled: usize,
     initialized: usize,
 }
 
@@ -273,94 +273,94 @@ impl<'a> ReadBuf<'a> {
     #[inline]
     pub fn len(&self) -> usize { ... }
 
-    /// Returns a shared reference to the written-to portion of the buffer.
+    /// Returns a shared reference to the filled portion of the buffer.
     #[inline]
-    pub fn written(&self) -> &[u8] { ... }
+    pub fn filled(&self) -> &[u8] { ... }
 
-    /// Returns a mutable reference to the written-to portion of the buffer.
+    /// Returns a mutable reference to the filled portion of the buffer.
     #[inline]
-    pub fn written_mut(&mut self) -> &mut [u8] { ... }
+    pub fn filled_mut(&mut self) -> &mut [u8] { ... }
 
     /// Returns a shared reference to the initialized portion of the buffer.
     ///
-    /// This includes the written-to portion.
+    /// This includes the filled portion.
     #[inline]
     pub fn initialized(&self) -> &[u8] { ... }
 
     /// Returns a mutable reference to the initialized portion of the buffer.
     ///
-    /// This includes the written-to portion.
+    /// This includes the filled portion.
     #[inline]
     pub fn initialized_mut(&mut self) -> &mut [u8] { ... }
 
-    /// Returns a mutable reference to the unwritten-to part of the buffer without ensuring that it has been fully
+    /// Returns a mutable reference to the unfilled part of the buffer without ensuring that it has been fully
     /// initialized.
     ///
     /// # Safety
     ///
     /// The caller must not de-initialize portions of the buffer that have already been initialized.
     #[inline]
-    pub unsafe fn unwritten_mut(&mut self) -> &mut [MaybeUninit<u8>] { ... }
+    pub unsafe fn unfilled_mut(&mut self) -> &mut [MaybeUninit<u8>] { ... }
 
-    /// Returns a mutable reference to the unwritten-to part of the buffer, ensuring it is fully initialized.
+    /// Returns a mutable reference to the unfilled part of the buffer, ensuring it is fully initialized.
     ///
     /// Since `ReadBuf` tracks the region of the buffer that has been initialized, this is effectively "free" after
     /// the first use.
     #[inline]
-    pub fn initialize_unwritten(&mut self) -> &mut [u8] { ... }
+    pub fn initialize_unfilled(&mut self) -> &mut [u8] { ... }
 
-    /// Returns a mutable reference to the first `n` bytes of the unwritten-to part of the buffer, ensuring it is
+    /// Returns a mutable reference to the first `n` bytes of the unfilled part of the buffer, ensuring it is
     /// fully initialized.
     ///
     /// # Panics
     ///
     /// Panics if `self.remaining()` is less than `n`.
     #[inline]
-    pub fn initialize_unwritten_to(&mut self, n: usize) -> &mut [u8] { ... }
+    pub fn initialize_unfilled_to(&mut self, n: usize) -> &mut [u8] { ... }
 
-    /// Returns the number of bytes at the end of the slice that have not yet been written to.
+    /// Returns the number of bytes at the end of the slice that have not yet been filled.
     #[inline]
     pub fn remaining(&self) -> usize { ... }
 
-    /// Clears the buffer, resetting the written-to region to empty.
+    /// Clears the buffer, resetting the filled region to empty.
     ///
     /// The number of initialized bytes is not changed, and the contents of the buffer are not modified.
     #[inline]
     pub fn clear(&mut self) { ... }
 
-    /// Increases the size of the written-to region of the buffer.
+    /// Increases the size of the filled region of the buffer.
     ///
     /// The number of initialized bytes is not changed.
     ///
     /// # Panics
     ///
-    /// Panics if the written region of the buffer would become larger than the initialized region.
+    /// Panics if the filled region of the buffer would become larger than the initialized region.
     #[inline]
-    pub fn add_written(&mut self, n: usize) { ... }
+    pub fn add_filled(&mut self, n: usize) { ... }
 
-    /// Sets the size of the written-to region of the buffer.
+    /// Sets the size of the filled region of the buffer.
     ///
     /// The number of initialized bytes is not changed.
     ///
-    /// Note that this can be used to *shrink* the written region of the buffer in addition to growing it (for
+    /// Note that this can be used to *shrink* the filled region of the buffer in addition to growing it (for
     /// example, by a `Read` implementation that compresses data in-place).
     ///
     /// # Panics
     ///
-    /// Panics if the written region of the buffer would become larger than the intialized region.
+    /// Panics if the filled region of the buffer would become larger than the intialized region.
     #[inline]
     pub fn set_written(&mut self, n: usize) { ... }
 
-    /// Asserts that the first `n` unwritten bytes of the buffer are initialized.
+    /// Asserts that the first `n` unfilled bytes of the buffer are initialized.
     ///
     /// `ReadBuf` assumes that bytes are never de-initialized, so this method does nothing when called with fewer
     /// bytes than are already known to be initialized.
     ///
     /// # Safety
     ///
-    /// The caller must ensure that `n` unwritten bytes of the buffer have already been initialized.
+    /// The caller must ensure that `n` unfilled bytes of the buffer have already been initialized.
     #[inline]
-    pub unsafe fn assume_initialized(&mut self, n: usize) { ... }
+    pub unsafe fn assume_init(&mut self, n: usize) { ... }
 
     /// Appends data to the buffer, advancing the written position and possibly also the initialized position.
     ///
@@ -390,8 +390,8 @@ pub trait Read {
     ///
     /// The default implementation delegates to `read`.
     fn read_buf(&mut self, buf: &mut ReadBuf<'_>) -> io::Result<()> {
-        let n = self.read(buf.initialize_unwritten())?;
-        buf.add_written(n);
+        let n = self.read(buf.initialize_unfilled())?;
+        buf.add_filled(n);
         Ok(())
     }
 
@@ -429,14 +429,14 @@ pub trait Read {
     /// allow use with uninitialized buffers.
     fn read_buf_exact(&mut self, buf: &mut ReadBuf<'_>) -> io::Result<()> {
         while buf.remaining() > 0 {
-            let prev_written = buf.written().len();
+            let prev_filled = buf.filled().len();
             match self.read_buf(&mut buf) {
                 Ok(()) => {}
                 Err(e) if e.kind() == io::ErrorKind::Interrupted => continue,
                 Err(e) => return Err(e),
             }
 
-            if buf.written.len() == prev_written {
+            if buf.filled().len() == prev_filled {
                 return Err(io::Error::new(io::ErrorKind::UnexpectedEof, "failed to fill buffer"));
             }
         }
@@ -455,7 +455,7 @@ pub trait Read {
 
             let mut read_buf = ReadBuf::uninit(buf.spare_capacity_mut());
             unsafe {
-                read_buf.assume_initialized(initialized);
+                read_buf.assume_init(initialized);
             }
 
             match self.read_buf(&mut read_buf) {
@@ -464,12 +464,12 @@ pub trait Read {
                 Err(e) => return Err(e),
             }
 
-            if read_buf.written().is_empty() {
+            if read_buf.filled().is_empty() {
                 break;
             }
 
-            initialized = read_buf.initialized().len() - read_buf.written().len();
-            let new_len = buf.len() + read_buf.written().len();
+            initialized = read_buf.initialized().len() - read_buf.filled().len();
+            let new_len = buf.len() + read_buf.filled().len();
             unsafe {
                 buf.set_len(new_len);
             }
@@ -495,12 +495,12 @@ where
             Err(e) => return Err(e),
         };
 
-        if buf.written().is_empty() {
+        if buf.filled().is_empty() {
             break;
         }
 
-        len += buf.written().len() as u64;
-        writer.write_all(buf.written())?;
+        len += buf.filled().len() as u64;
+        writer.write_all(buf.filled())?;
         buf.clear();
     }
 
