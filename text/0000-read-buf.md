@@ -221,7 +221,7 @@ impl Read for TcpStream {
 
             // We're just delegating to the libc read function, which returns an `isize`. The return value indicates
             // an error if negative and the number of bytes read otherwise.
-            let nread = libc::read(self.fd, unwritten.as_mut_ptr().cast::<libc::c_void>(), unwritten.len());
+            let nread = libc::read(self.fd, unfilled.as_mut_ptr().cast::<libc::c_void>(), unfilled.len());
 
             if nread < 0 {
                 return Err(io::Error::last_os_error());
