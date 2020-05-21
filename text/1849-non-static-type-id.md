@@ -3,6 +3,14 @@
 - RFC PR: [rust-lang/rfcs#1849](https://github.com/rust-lang/rfcs/pull/1849)
 - Rust Issue: [rust-lang/rust#41875](https://github.com/rust-lang/rust/issues/41875)
 
+# UPDATE
+
+The lang team ultimately [decided to retract this RFC][retraction]. It
+was never implemented. The motivation for retraction was that the
+change was too prone to mis-use and did not provide adequate benefit.
+
+[retraction]: https://github.com/rust-lang/rust/issues/41875#issuecomment-623023056
+
 # Summary
 [summary]: #summary
 
