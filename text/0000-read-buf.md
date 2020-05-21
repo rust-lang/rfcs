@@ -349,7 +349,7 @@ impl<'a> ReadBuf<'a> {
     ///
     /// Panics if the filled region of the buffer would become larger than the intialized region.
     #[inline]
-    pub fn set_written(&mut self, n: usize) { ... }
+    pub fn set_filled(&mut self, n: usize) { ... }
 
     /// Asserts that the first `n` unfilled bytes of the buffer are initialized.
     ///
