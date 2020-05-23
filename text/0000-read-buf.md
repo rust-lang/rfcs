@@ -376,13 +376,6 @@ The `Read` trait uses this type in some of its methods:
 
 ```rust
 pub trait Read {
-    /// The existing `read` method gains a default implementation that delegates to `read_buf`.
-    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        let mut buf = ReadBuf::new(buf);
-        self.read_buf(&mut buf)?;
-        Ok(buf.written().len())
-    }
-
     /// Pull some bytes from this source into the specified buffer.
     ///
     /// This is equivalent to the `read` method, except that it is passed a `ReadBuf` rather than `[u8]` to allow use
@@ -411,12 +404,21 @@ Thinking back to the `BrokenReader` in the motivation section, the worst an impl
 unsound unsafe code) is to fail to actually write useful data into the buffer. Code using a `BrokenReader` may see bad
 data in the buffer, but the bad data at least has defined contents now!
 
-Note that `read` and `read_buf` have default implementations that delegate to each other. `read_buf` must have a default
-implementation for backwards compatibility, and we want `read` to have a default implementation so that `Read`
-implementations can simply contain code for `read_buf`. This cycle does mean that a trivial `Read` implementation of
-`impl Read for Foo {}` will compile but calls will infinitely recurse. We would ideally create a lint that exactly one
-of the two methods is implemented, but that is not a hard requirement. Such an implementation is pretty obviously
-ridiculous and this hopefully shouldn't be a huge problem in practice.
+Note that `read` is still a required method of the `Read` trait. It can be easily written to delegate to read_buf:
+
+```rust
+impl Read for SomeReader {
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        let mut buf = ReadBuf::new(buf);
+        self.read_buf(&mut buf)?;
+        Ok(buf.filled().len())
+    }
+
+    fn read_buf(&mut self, buf: &mut ReadBuf<'_>) -> io::Result<()> {
+        ...
+    }
+}
+```
 
 Some of `Read`'s convenience methods will be modified to take advantage of `read_buf`, and some new convenience methods
 will be added:
@@ -507,6 +509,8 @@ where
     Ok(len)
 }
 ```
+
+The existing `std::io::Initializer` type and `Read::initializer` method will be removed.
 
 Vectored writes use a similar API:
 
@@ -622,5 +626,6 @@ Some of the complexity in the implementation of `read_to_end` above is due to ha
 `Vec<u8>`'s spare capacity has already been initialized between iterations of the read loop. There is probably some kind
 of abstraction that could be defined to encapsulate that logic.
 
-Should `read` gain a default implementation? It avoids forcing boilerplate for implementations that use `read_buf` as
-the "main" method, but does allow the broken empty implementation.
+Users shouldn't be required to manually write a version of `read` that delegates to `read_buf`. We should be able to
+eventually add a default implementation of `read`, along with a requirement that one of `read` and `read_buf` must be
+overridden.
