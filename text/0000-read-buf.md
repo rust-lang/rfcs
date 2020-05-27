@@ -269,9 +269,9 @@ impl<'a> ReadBuf<'a> {
     #[inline]
     pub fn uninit(buf: &'a mut [MaybeUninit<u8>]) -> ReadBuf<'a> { ... }
 
-    /// Returns the full size of the buffer.
+    /// Returns the total capacity of the buffer.
     #[inline]
-    pub fn len(&self) -> usize { ... }
+    pub fn capacity(&self) -> usize { ... }
 
     /// Returns a shared reference to the filled portion of the buffer.
     #[inline]
