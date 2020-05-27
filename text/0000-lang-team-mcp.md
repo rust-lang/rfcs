@@ -60,7 +60,7 @@ This should help with the problem that longer RFCs threads can be quite hard to 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-Hello! If you would like propose a change to the Rust language, you've come to the right place. The process can be summarized as follows:
+Hello! If you would like propose a change to the Rust language, you've come to the right place. The process can be summarized as follows (but check out the [flowchart] for a graphical version):
 
 * Open a **major change proposal** (MCP) issue on the lang-team repository
     * The issue should summarize the motivation and sketch out some details of your idea.
@@ -75,6 +75,15 @@ Hello! If you would like propose a change to the Rust language, you've come to t
     * There are no lang team members who have available bandwidth to serve as a liaison right now.
     * The problem being solved doesn't seem important enough or is not a match for Rust's current priorities.
     * The proposal has flaws in its design that don't seem like they can be solved.
+    
+## Flowchart
+
+You can also view the [flowchart in graphical form][flowchart]. This
+is derived from a [mermaid document][flowchart-source] and would be
+posted on the lang-team website.
+
+[flowchart]: https://is.gd/nMrsVE
+[flowchart-source]: https://is.gd/LdRVWk
 
 ## Reasons to accept or decline a proposal
 
