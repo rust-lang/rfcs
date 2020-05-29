@@ -22,9 +22,10 @@ operator as the second choice after its Rust 1.0 overload trait.
 # Motivation
 [motivation]: #motivation
 
-Operator overloading brings a lot of convenience into usage of data types.
-For a set of types which provide different representations of the same
-underlying data type (usually indicated by implementing the same `Borrow<T>`),
+Operator overloading makes data types more convenient to use.
+For a set of types which provide different containers and ownership patterns
+for the same underlying data type (usually indicated by implementing the same
+`Borrow<T>`),
 it makes sense to define binary operator trait impls that act on each pair of
 these types. However, with proliferation of special-purpose representations
 of widely used data types like byte arrays and strings, the number of
