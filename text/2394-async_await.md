@@ -89,7 +89,7 @@ async fn print_async() {
 fn main() {
      let future = print_async();
      println!("Hello from main");
-     futures::block_on(future);
+     futures::executor::block_on(future);
 }
 ```
 
