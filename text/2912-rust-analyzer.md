@@ -1,8 +1,7 @@
 - Feature Name: (fill me in with a unique ident, `my_awesome_feature`)
 - Start Date: 2020-04-20
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
-- master [compiler team IDE strategy and planning](/9qrJYdSLTK2MWG4-pbmpWw?edit) document
+- RFC PR: [rust-lang/rfcs#2912](https://github.com/rust-lang/rfcs/pull/2912)
+- Rust Issue: [rust-analyzer/rust-analyzer#4224](https://github.com/rust-analyzer/rust-analyzer/issues/4224)
 
 # Summary
 [summary]: #summary
