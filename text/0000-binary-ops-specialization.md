@@ -1,6 +1,6 @@
 - Feature Name: binary_ops_specialization
 - Start Date: 2018-10-20
-- RFC PR:
+- RFC PR: [rust-lang/rfcs#2578](https://github.com/rust-lang/rfcs/pull/2578)
 - Rust Issue:
 
 # Summary
