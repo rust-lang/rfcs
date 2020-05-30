@@ -253,11 +253,6 @@ circumstances. As usual, we are trying to let the process be driven by
 consensus and community norms, not impose more structure than necessary.
 
 
-[official Discord server]: https://discord.gg/rust-lang
-[developer discussion forum]: https://internals.rust-lang.org/
-[RFC repository]: https://github.com/rust-lang/rfcs
-[sub-team]: https://www.rust-lang.org/team.html
-
 ## License
 [License]: #license
 
@@ -268,7 +263,14 @@ This repository is currently in the process of being licensed under either of:
 
 at your option. Some parts of the repository are already licensed according to those terms. For more see [RFC 2044](https://github.com/rust-lang/rfcs/pull/2044) and its [tracking issue](https://github.com/rust-lang/rust/issues/43461).
 
+
 ### Contributions
 [Contributions]: #contributions
 
 Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in the work by you, as defined in the Apache-2.0 license, shall be dual licensed as above, without any additional terms or conditions.
+
+
+[official Discord server]: https://discord.gg/rust-lang
+[developer discussion forum]: https://internals.rust-lang.org/
+[RFC repository]: https://github.com/rust-lang/rfcs
+[sub-team]: https://www.rust-lang.org/team.html
