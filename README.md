@@ -21,6 +21,7 @@ language is evolving in.
   - [Opening](#rust-rfcs)
   - [Table of Contents]
   - [When you need to follow this process]
+  - [Sub-team specific guidelines]
   - [Before creating an RFC]
   - [What the process is]
   - [The RFC life-cycle]
@@ -29,6 +30,7 @@ language is evolving in.
   - [RFC Postponement]
   - [Help this is all too informal!]
   - [License]
+  - [Contributions]
 
 
 ## When you need to follow this process
@@ -265,5 +267,6 @@ This repository is currently in the process of being licensed under either of:
 at your option. Some parts of the repository are already licensed according to those terms. For more see [RFC 2044](https://github.com/rust-lang/rfcs/pull/2044) and its [tracking issue](https://github.com/rust-lang/rust/issues/43461).
 
 ### Contributions
+[Contributions]: #contributions
 
 Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in the work by you, as defined in the Apache-2.0 license, shall be dual licensed as above, without any additional terms or conditions.
