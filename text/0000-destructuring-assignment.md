@@ -13,7 +13,7 @@ accepted:
 ```rust
 (a, (b.x.y, c)) = (0, (1, 2));
 (x, y, .., z) = (1.0, 2.0, 3.0, 4.0, 5.0);
-[_, f, *baz()] = foo();
+[_, f, *baz(), a[i]] = foo();
 [g, _, h, ..] = ['a', 'w', 'e', 's', 'o', 'm', 'e', '!'];
 Struct { x: a, y: b } = bar();
 Struct { x, y } = Struct { x: 5, y: 6 };
@@ -128,7 +128,7 @@ identifiers are fresh and thus do not conflict with existing variables). A nice 
 we inherit the diagnostics for normal pattern-matching, so users benefit from existing diagnostics
 for destructuring declarations.
 
-Nested structures are destructured appropriately, for instance:
+Nested structures may be destructured, for instance:
 
 ```rust
 let (a, b, c);
@@ -151,6 +151,11 @@ trigger the `unused_parens` lint.
 Note that `#[non_exhaustive]` must be taken into account properly: enums marked `#[non_exhaustive]`
 may not have their variants destructured, and structs marked `#[non_exhaustive]` may only be
 destructured using `..`.
+
+Patterns must be irrefutable. In particular, only slice patterns whose length is known at compile-
+time, and the trivial slice `[..]` may be used for destructuring assignment.
+
+As expected from the desugaring, the default binding modes of normal `let` destructuring applying.
 
 ## Diagnostics
 
