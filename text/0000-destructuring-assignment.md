@@ -60,17 +60,28 @@ complicates Rust's grammar and it is not clear that it is even technically feasi
 handling some classes of expressions is much simpler, and is indistinguishable to users, who will
 receive pattern-oriented diagnostics due to the desugaring of expressions into patterns.
 
-In effect, we are extending the [place
-expressions](https://doc.rust-lang.org/reference/expressions.html#place-expressions-and-value-expressions) (also called "lvalues")
-that Rust accepts by the following:
+To describe the context of destructuring assignments more precisely, we add a new class of
+expressions, which we call "assignee expressions".
+Assignee expressions are analogous to [place
+expressions](https://doc.rust-lang.org/reference/expressions.html#place-expressions-and-value-expressions)
+(also called "lvalues") in that they refer to expressions representing a memory location, but may
+only appear on the left-hand side of an assignment (unlike place expressions). Every place
+expression is also an assignee expression.
 
+The class of assignee expressions is defined inductively:
+
+- Place: `place`.
 - Underscore: `_`.
-- Tuples: `(place, place, place)`, `(place, .., place)`, `(.., place, place)`, `(place, place, ..)`.
-- Slices: `[place, place, place]`, `[place, .., place]`, `[.., place, place]`, `[place, place, ..]`.
-- Tuple structs: `path(place, place, place)`, `path(place, .., place)`, `path(.., place, place)`,
-  `path(place, place, ..)`.
-- Structs: `path { field: place, field: place }`, `path { field: place, field: place, .. }`.
+- Tuples: `(assignee, assignee, assignee)`, `(assignee, .., assignee)`, `(.., assignee, assignee)`, `(assignee, assignee, ..)`.
+- Slices: `[assignee, assignee, assignee]`, `[assignee, .., assignee]`, `[.., assignee, assignee]`, `[assignee, assignee, ..]`.
+- Tuple structs: `path(assignee, assignee, assignee)`, `path(assignee, .., assignee)`, `path(.., assignee, assignee)`,
+  `path(assignee, assignee, ..)`.
+- Structs: `path { field: assignee, field: assignee }`, `path { field: assignee, field: assignee, .. }`.
 - Unit structs: `path`.
+
+The place expression "The left operand of an assignment or compound assignment expression." ibid.
+is changed to "The left operand of a compound assignment expression.", while
+"The left operand of an assignment expression." is now an assignee expression.
 
 The general idea is that we will desugar the following complex assignments as demonstrated.
 
