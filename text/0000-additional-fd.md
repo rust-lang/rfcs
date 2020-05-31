@@ -1,6 +1,6 @@
 - Feature Name: additional-fd-command
 - Start Date: 2020-05-31
-- RFC PR: TODO
+- RFC PR: https://github.com/rust-lang/rfcs/pull/2939
 
 # Summary
 
