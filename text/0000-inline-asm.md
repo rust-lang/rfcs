@@ -207,7 +207,7 @@ fn mul(a: u64, b: u64) -> u128 {
         );
     }
 
-    (hi as u128) << 64 + lo as u128
+    ((hi as u128) << 64) + lo as u128
 }
 ```
 
