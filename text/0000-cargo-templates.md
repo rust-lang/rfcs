@@ -13,9 +13,10 @@ Add the ability to reference a template when running `cargo new` or `cargo init`
 
 [Source](https://internals.rust-lang.org/t/pre-rfc-cargo-new-templates/12060/10?u=jsjoeio.)
 
-The expected outcome is to:
-
-* support templates that live on the crates.io registry inside a directory called `templates` at the root of a crate
+The expected outcome is to define a convention for creating templates.  This 
+convention will be used by users, template authors, and tool developers when 
+searching for an using templates, developing templates, and developing tools
+that produce or consume templates.  
 
 # Guide-level explanation
 
