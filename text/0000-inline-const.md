@@ -22,10 +22,16 @@ fn mock_ip(use_localhost: bool) -> &'static Ipv6Addr {
     }
 }
 
+const MMIO_BIT1: u8 = 4;
+const MMIO_BIT2: u8 = 5;
+
 fn main() {
-    match *x {
-        0 ..= const { u32::MAX / 2 } => println!("low"),
-        const { u32::MAX / 2 + 1 } ..= u32::MAX => println!("high"),
+    match read_mmio() {
+        0 => {}
+        const { 1 << MMIO_BIT1 } => println!("FOO"),
+        const { 1 << MMIO_BIT2 } => println!("BAR"),
+
+        _ => unreachable!(),
     }
 }
 ```
