@@ -91,8 +91,19 @@ impl need to use a named `const` declaration.
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-This proposal is a middle ground, which is less verbose than named constants but
-more obvious and expressive than promotion.
+This proposal is a middle ground, which is less verbose than named constants
+but more obvious and expressive than promotion. In expression context, it
+behaves much like the user had written the following, where `Ty` is the
+inferred type of the code within the inline `const` expression (represented by
+the ellipsis):
+
+```rust
+{ const UNIQUE_IDENT: Ty = ...; UNIQUE_IDENT }
+```
+
+With this extension to the language, users can ensure that their code executes
+at compile-time without needing to declare a separate `const` item that is only
+used once.
 
 ```rust
 fn foo(x: &i32) -> &i32 {
@@ -103,10 +114,6 @@ fn foo() -> &u32 {
     let three_ranges = [const { (0..=5).into_inner() }; 3];
 }
 ```
-
-With this extension to the language, users can ensure that their code executes
-at compile-time without needing to declare a separate `const` item that is only
-used once.
 
 ## Patterns
 
@@ -190,40 +197,55 @@ This RFC extends the [grammar for patterns] to be,
 >    | ConstBlockExpression // new
 > ```
 
-In both the expression and pattern context, an inline `const` behaves exactly
-as if the user had declared a uniquely identified `const` with the block's
-contents as its initializer. For example, in expression context, writing
-`const { ... }` is equivalent to writing:
+In both the expression and pattern context, an inline `const` behaves as if the
+user had declared a uniquely named constant in the containing scope and
+referenced it.
+
+## Generic Parameters
+
+For now, inline `const` expressions and patterns cannot refer to in-scope
+generic parameters. As of this writing, the same restriction applies to array
+length expressions, which seem like a good precedent for this RFC. As far as I
+know, this is only a temporary restriction; the long-term goal is to allow
+array length expressions to use generic parameters. When this happens, inline
+`const` expressions and patterns will also be allowed to refer to in-scope
+generics.
 
 ```rust
-{ const UNIQUE_IDENT: Ty = ...; UNIQUE_IDENT }
+fn foo<T>() {
+    let x = [4i32; std::mem::size_of::<T>()];   // NOT ALLOWED (for now)
+    let x = const { std::mem::size_of::<T>() }; // NOT ALLOWED (for now)
+}
 ```
 
-where `Ty` is inferred from the expression inside the braces.
+## Containing `unsafe`
 
-An inline `const` is eligible for promotion in an implicit context (just like a
-named `const`), so the following are all guaranteed to work:
+At present, containing `unsafe` blocks do not apply to array length expressions inside:
 
 ```rust
-let x: &'static i32 = &const { 4i32.pow(4) };
-let x: &'static i32 = const { &4i32.pow(4) };
-
-// If RFC 2203 is stabilized
-let v = [const { Vec::new() }; 3];
-let v = const { [Vec::new(); 3] };
+fn bar() {
+    let x = unsafe {
+        [4i32; std::intrinsics::unchecked_add(2i32, 3i32)] // ERROR
+    };
+}
 ```
 
-I don't have strong feelings about which version should be preferred.
-**@RalfJung** points out that `&const { 4 + 2 }` is more readable than `const {
-&(4 + 2) }`.
+I find this somewhat strange, but consistency is important, so inline `const`
+expressions should behave the same way. The following would also fail to
+compile:
 
-Note that it may be possible for RFC 2203 to use the explicit rules for
-promotability when `T: !Copy`. In this case, the last part of the example above
-could simply be written as `[Vec::new(); 3]`.
+```rust
+fn bar() {
+    let x = unsafe {
+      const { std::intrinsics::unchecked_add(2i32, 3i32) } // ERROR
+    };
+}
+```
 
-Inline `const`s are allowed within `const` and `static` initializers, just as we
-currently allow nested `const` declarations. Whether to lint against inline
-`const` expressions inside a `const` or `static` is also an open question.
+If [#72359] is considered a bug and resolved, that change would also apply to
+inline `const` expressions and patterns.
+
+[#72359]: https://github.com/rust-lang/rust/issues/72359
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -265,27 +287,6 @@ AFAIK, this was [first proposed] by **@scottmcm**.
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-## Generic Parameters
-
-Named constants defined inside a function cannot use generic parameters that
-are in scope within that function.
-
-```rust
-fn foo<T>() {
-    const SIZE: usize = { std::mem::size_of::<T>() }; // ERROR
-}
-```
-
-If we use the same rule for inline constants, there would be a class of
-implicitly promotable expressions (e.g. `std::ptr::null::<T>()`, `T::CONST +
-T::ANOTHER_CONST`), that could not be written inside an inline constant. We
-would need to resolve this somehow before we stop promoting these expressions
-as discussed in [future possibilites].
-
-Alternatively, we could allow inline constants to refer to generic parameters.
-Associated constants already behave this way, so I think this is possible.
-However, it may result in more post-monomorphization const-eval errors.
-
 ## Naming
 
 I prefer the name inline `const`, since it signals that there is no difference
@@ -303,10 +304,31 @@ that this could be confused with the `const _: () = ...;` syntax introduced in
 
 [RFC 2526]: https://github.com/rust-lang/rfcs/pull/2526
 
-## Lints
+## Lints about placement of inline `const`
 
-As mentioned in the reference-level specification, we need to decide whether we
-want to lint against certain types of inline `const` expressions.
+An inline `const` is eligible for promotion in an implicit context (just like a
+named `const`), so the following are all guaranteed to work:
+
+```rust
+let x: &'static i32 = &const { 4i32.pow(4) };
+let x: &'static i32 = const { &4i32.pow(4) };
+
+// If RFC 2203 is stabilized
+let v = [const { Vec::new() }; 3];
+let v = const { [Vec::new(); 3] };
+```
+
+I don't have strong feelings about which version should be preferred.
+**@RalfJung** points out that `&const { 4 + 2 }` is more readable than `const {
+&(4 + 2) }`.
+
+Note that it may be possible for RFC 2203 to use the explicit rules for
+promotability when `T: !Copy`. In this case, the last part of the example above
+could simply be written as `[Vec::new(); 3]`.
+
+Inline `const`s are allowed within `const` and `static` initializers, just as we
+currently allow nested `const` declarations. Whether to lint against inline
+`const` expressions inside a `const` or `static` is also an open question.
 
 # Future possibilities
 [future possibilities]: #future-possibilities
