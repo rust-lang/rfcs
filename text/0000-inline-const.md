@@ -268,8 +268,7 @@ approach](https://github.com/rust-lang/rust/pull/70042#issuecomment-612221597)
 instead.
 
 It would also possible to separate out the parts of this RFC relating to patterns
-so that they can be decided upon seperately. I think they are similar enough
-that they are best considered as a unit, however.
+so that they can be decided upon seperately.
 
 # Prior art
 [prior-art]: #prior-art
