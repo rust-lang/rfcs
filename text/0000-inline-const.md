@@ -60,7 +60,7 @@ fn foo() -> &u32 {
 }
 ```
 
-Writing out a `const` declaration everytime we need a long-lived reference or
+Writing out a `const` declaration every time we need a long-lived reference or
 a non-`Copy` array initializer can be annoying. To improve the situation,
 [RFC 1414] introduced rvalue static promotion to extend lifetimes, and
 [RFC 2203] extended the concept of promotion to array initializers.
@@ -268,7 +268,7 @@ approach](https://github.com/rust-lang/rust/pull/70042#issuecomment-612221597)
 instead.
 
 It would also possible to separate out the parts of this RFC relating to patterns
-so that they can be decided upon seperately.
+so that they can be decided upon separately.
 
 # Prior art
 [prior-art]: #prior-art
@@ -333,7 +333,7 @@ currently allow nested `const` declarations. Whether to lint against inline
 [future possibilities]: #future-possibilities
 
 It would be possible to allow the syntax `const expr` for an inline `const` that
-consists of a single expression. This is analagous to the single expression
+consists of a single expression. This is analogous to the single expression
 variant of closures: `|| 42`. This is backwards compatible with the current proposal.
 
 At some point (an edition boundary?), we may want to narrow the scope of
