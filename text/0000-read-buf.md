@@ -233,7 +233,7 @@ impl Read for TcpStream {
             buf.assume_init(nread);
             // And indicate that we've written the bytes as well. Unlike `assume_initialized`, this method is safe,
             // and asserts that the written portion of the buffer does not advance beyond the initialized portion of
-            // the buffer. If we didn't call `assume_initialized` above, this call could panic.
+            // the buffer. If we didn't call `assume_init` above, this call could panic.
             buf.add_filled(nread);
 
             Ok(())
