@@ -13,22 +13,31 @@ child_process.spawn which has the option to do it.
 
 # Design
 Here is an example for how it can be
+
+Parent process:
 ```rust
+let (read3, write3) = std::io::pipe();
+let (read4, write4) = std::io::pipe();
+
 let process = Command::new("prog")
-              .stdio(&[Stdio::null(),Stdio::null(),Stdio::null(),Stdio::pipe_write(),Stdio::pipe_read()]).spawn().unwrap();
-process.stdio[3].unwrap().write("Foo").unwrap();
+              .stdio(&[Stdio::null(), Stdio::null(), Stdio::null(), read3, write4])
+              .spawn().unwrap();
+write3.write("Foo").unwrap();
 
 let mut s = String::new();
-process.stdio[4].read_to_string(&mut s).unwrap();
+read4.read_to_string(&mut s).unwrap();
 ```
 
-In std::process::Command there can be a function stdio
+Child process:
 ```rust
-pub fn stdio()<T: Into<Stdio>>(&mut self,cfg:&[T]) -> &mut Command
-```
-In std::process::Stdio there can be pipe_read and pipe_write
+let read3 = std::io::PipeReader::from_fd(3);
+let write4 = std::io::PipeWriter::from_fd(4);
 
-There can be a field stdio in std::process::Child that takes an fd as index 
+let mut s = String::new();
+read3.read_to_string(&mut s).unwrap();
+
+write4.write("Bar").unwrap();
+```
 
 # Implementation 
 In my library I had to use pipes for IPC so I did a basic rust implementation here https://github.com/Srinivasa314/alcro/blob/master/src/chrome/pipe.rs
