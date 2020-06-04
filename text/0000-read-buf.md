@@ -558,7 +558,7 @@ impl<'a> ReadBufs<'a> {
 
 This introduces a nontrivial amount of complexity to one of the standard library's core traits, and results in sets of
 almost-but-not-quite identical methods (`read`/`read_buf`, `read_exact`/`read_buf_exact`, etc). It's unfortunate that
-an empty implementation of `Read` will compile and stack overflow.
+an implementor of `Read` based on `read_buf` needs to add a boilerplate `read` implementation.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
