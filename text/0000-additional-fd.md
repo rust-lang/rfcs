@@ -20,13 +20,22 @@ let (read3, write3) = std::io::pipe();
 let (read4, write4) = std::io::pipe();
 
 let process = Command::new("prog")
-              .stdio(&[Stdio::null(), Stdio::null(), Stdio::null(), read3, write4])
+              .stdin(Stdio::null())
+              .stdout(Stdio::null())
+              .stderr(Stdio::null())
+              .pipes(&[&read3, &write4])
               .spawn().unwrap();
 write3.write("Foo").unwrap();
 
 let mut s = String::new();
 read4.read_to_string(&mut s).unwrap();
 ```
+
+The pipe() function can return a tuple of PipeReader and PipeWriter
+
+The pipes method in std::process::Command can take a slice of &dyn Pipe where Pipe is a trait that specifies
+* The raw fd/HANDLE
+* Whether it is a PipeReader or PipeWriter
 
 Child process:
 ```rust
