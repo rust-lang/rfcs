@@ -59,12 +59,13 @@ Refer:
 [open_osfhandle](https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/open-osfhandle)
 [get_osfhandle](https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/get-osfhandle)
 
-
 For windows `lpReserved2` of `startupinfo` in `CreateProcess` can be used
 (The method used by libuv:
 https://github.com/nodejs/node/blob/8ae28ff3ac49cbf83f4fc3445d63b9900f3cdcda/deps/uv/src/win/process-stdio.c#L32)
 
 The struct should be packed and crtflags are as in https://github.com/nodejs/node/blob/8ae28ff3ac49cbf83f4fc3445d63b9900f3cdcda/deps/uv/src/win/process-stdio.c#L57
+
+The child process can get the HANDLE from fd even _without_ needing the CRT using GetStartupInfo
 
 # Alternative
 
