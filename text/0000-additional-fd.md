@@ -23,7 +23,7 @@ let process = Command::new("prog")
               .stdin(Stdio::null())
               .stdout(Stdio::null())
               .stderr(Stdio::null())
-              .pipes(&[&read3, &write4])
+              .pass(&[&read3, &write4])
               .spawn().unwrap();
 write3.write("Foo").unwrap();
 
@@ -33,9 +33,9 @@ read4.read_to_string(&mut s).unwrap();
 
 The pipe() function can return a tuple of PipeReader and PipeWriter
 
-The pipes method in std::process::Command can take a slice of &dyn Pipe where Pipe is a trait that specifies
+The pass method in std::process::Command can take a slice of &dyn RawFile where RawFile is a trait that specifies
 * The raw fd/HANDLE
-* Whether it is a PipeReader or PipeWriter
+* The flags associated with it
 
 Child process:
 ```rust
