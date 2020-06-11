@@ -203,8 +203,9 @@ The precise plans will be determined then, but they will likely include:
     * The idea here was that it would be useful to have the text of the proposal as something we can merge as "not accepted" in order to have a better record.
     * We ultimately moved to an issue for a few reasons:
         * YAGNI: The tooling and workflow seemed more esoteric. The idea of opening first to a "not accepted" directory and then merging just felt a bit "unexpected" and harder to explain and envision.
-        * It is hard to collaborate actively on a PR; a hackmd or other such document is better for this purpose.
-        * Capturing the initial version of a proposal *but not the associated discussion thread* is pretty incomplete. There's a decent chance that the proposal didn't go forward because of critiques or concerns that surfaced early on and people could easily overlook that.
+        * Accessibility: opening an issue lets us use github issue templates and makes the process feel lightweight.
+        * Uniformity: the compiler-team MCP process uses issues, in part because of their accessibility.
+        * If we have people inline the proposal into the issue text, then it also serves to capture the initial version of the proposal, but in a way that also captures the associated discussion in context.
         * The current workflow does allow us to capture and explicitly choose to postpone proposals where not needed.
 * We could require chartering project groups to be done as an RFC
     * In the past, we used RFCs to charter project groups, but the sense is that this process was a bit more heavy-weight than was really necessary, and that it would be better to reserve RFCs for actual proposals.
