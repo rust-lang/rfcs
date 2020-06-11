@@ -101,7 +101,7 @@ Reasons to decline a proposal, or to oppose the creation of a project group, inc
 * There isn't available bandwidth to tackle the problem right now.
     * In particular, it may require input from particular members who have the requisite expertise, and they may be too busy with other things.
 * The proposed solutions disproportionate to the scale of the problem.
-    * For example, the solutions may be too invasive or they will likely be too much work to implement, and we can't really envision solutions that would 
+    * For example, the solutions may have fundamental flaws, be too invasive, or be too much work to implement.
 * The proposal is incomplete or is proposing a direction that seems wrong.
     * The team may ask for the proposal to include more potential solutions, or to be rewritten to emphasize a particular direction that we think would be better. If the author of the proposal disagrees with that direction, they should make the case for the existing solutions, but of course the proposal may not ultimately be accepted if the lang team doesn't find that case persuasive
 
