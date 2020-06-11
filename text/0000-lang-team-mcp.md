@@ -148,6 +148,8 @@ We will create a template for lang-team proposals that has the following section
 * Solution sketches
     * sketch of one or more ways to solve the problem
 
+You can see a [first draft of the template here](https://github.com/rust-lang/lang-team/blob/master/.github/ISSUE_TEMPLATE/major_change.md).
+
 The intent is that proposals do not have to be exhaustively researched. They should contain enough details to understand the idea at a high level, but they don't have to have all the details worked out yet.
 
 The intent is also that proposals will largely be accepted or declined "as is" -- if major changes are required, it is better to close and open a fresh proposal.
