@@ -168,6 +168,10 @@ As part of this process, the lang-team plans to organize and expose more clearly
 
 [lang-team website]: https://lang-team.rust-lang.org/
 
+## What happens if an RFC is opened with an associated proposal?
+
+We will close T-lang RFCs that are opened without associated proposals and redirect the author to create an MCP first. This does not apply to pre-existing RFCs -- for those, we will have a transition period, as described in the next section.
+
 ## Transitioning to the new system
 
 There are a number of existing RFCs, many of which have received quite a lot of work, that have to be transitioned to the new system. We do not want to just "auto close" all of those RFCs because in many cases they represent a significant amount of effort and "near consensus".
