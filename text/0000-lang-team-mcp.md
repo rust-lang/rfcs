@@ -53,7 +53,7 @@ Building on the previous point, we believe that this new process will allow us t
 
 ## Swifter resolution of RFCs, with design iteration taking place in project groups
 
-Because RFCs will be the end result of more discussion, we can expect to resolve them faster. If the discussion uncovers critical flaws or new considerations, the RFC may be withdrawn and edited, and a new RFC posted instead. This can also happen if there is simply a lot of feedback, even if the design doesn't change -- in those cases, the new RFC will be updated to include a summary of the major points as well as responses to them. When working on amended RFCs, we can focus the discussion on the oustanding questions and avoid rehashing oldr debates.
+Because RFCs will be the end result of more discussion, we can expect to resolve them faster. If the discussion uncovers critical flaws or new considerations, the RFC may be withdrawn and edited, and a new RFC posted instead. This can also happen if there is simply a lot of feedback, even if the design doesn't change -- in those cases, the new RFC will be updated to include a summary of the major points as well as responses to them. When working on amended RFCs, we can focus the discussion on the outstanding questions and avoid rehashing older debates.
 
 This should help with the problem that longer RFCs threads can be quite hard to follow. This is compounded by the fact that the RFC evolves over the course of the discussion, sometimes changing dramatically. Getting "up to speed" on the state of an RFC thread involves reading a mix of stale comments on older drafts that have long since been addressed, thoughts on motivation, details of the design, and other things, and trying to sort them into an order.
 
