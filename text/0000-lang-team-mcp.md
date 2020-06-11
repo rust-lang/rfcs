@@ -105,6 +105,15 @@ Reasons to decline a proposal, or to oppose the creation of a project group, inc
 * The proposal is incomplete or is proposing a direction that seems wrong.
     * The team may ask for the proposal to include more potential solutions, or to be rewritten to emphasize a particular direction that we think would be better. If the author of the proposal disagrees with that direction, they should make the case for the existing solutions, but of course the proposal may not ultimately be accepted if the lang team doesn't find that case persuasive
 
+## When are proposals discussed
+
+We will look at pending proposals during our weekly triage meetings and try to
+post updates or questions promptly. Since the intent of a proposal is not to
+iterate on a design, but rather to determine if there is an available and
+interested lang team liaison, we should be able to move much more quickly in
+deciding whether to assign a proposal or not. The intent is to avoid the kind of
+limbo that we've seen in the past with pending RFCs.
+
 ## Simple MCPs can be implemented directly
 
 In some cases, MCPs are sufficiently simple that we can just move straight to implementation. In this case, someone from the lang-team will leave a command indicating that we'd be happy to see a PR implementing this proposal and close the issue, and you can go ahead and create a PR against the rust-lang/rust repository directly. In that PR, you can cc the lang team and we will `fcp merge` the PR to make the final, official decision.
