@@ -20,7 +20,7 @@ It is occasionally necessary in systems programming to know whether the range of
 
 ## Read Only Memory
 
-If a type is suitable for read only memory, then it cannot have any interior mutability. For example, an `AtomicU8` is a poor candidate for being put into read only memory because the type system has no way to ensure that type is not mutated. It is, however, allowed to put a `Box<AtomicUsize>` in read only memory as long as the heap allocation remains in writable memory.
+If a type is suitable for read only memory, then it cannot have any interior mutability. For example, an `AtomicU8` cannot be placed in read-only memory, since it's possible to modify it via `.store` using only an immutable reference. On the other hand, a `Box<AtomicU8>` _can_ be placed in read only memory as long as the heap allocation remains in writable memory.
 
 The [main reason](https://github.com/rust-lang/rust/blob/84ec8238b14b4cf89e82eae11907b59629baff2c/src/libcore/marker.rs#L702) libcore has a private version of `Freeze` is to decide:
 > whether a `static` of that type is placed in read-only static memory or writable static memory
@@ -33,7 +33,7 @@ Optimistic concurrency (e.g. seqlocks, software transactional memory) relies hea
 
 One example coming from [`swym`](https://docs.rs/swym/0.1.0-preview/swym/tcell/struct.TCell.html#method.borrow) is the method `borrow`. `borrow` returns snapshots of data - shallow memcpys - that are guaranteed to not be torn, and be valid for the duration of the containing transaction. These snapshots hold on to the lifetime of the `TCell` in order to act like a true reference, without blocking updates to the `TCell` from other threads. Other threads promise to not mutate the value that had its snapshot taken until the transaction has finished, but are permitted to move the value in memory. In the presence of interior mutability, these snapshots differ significantly from a true reference.
 
-The following example uses a `Mutex` (a `Send`/`Sync`, but not `Freeze` type to create UB):
+The following example uses a `Mutex`, a `Send`/`Sync` but not `Freeze` type, to create UB:
 
 ```rust
 let x = TCell::new(Mutex::new("hello there".to_owned()));
@@ -56,9 +56,9 @@ Similarly to the above example, `crossbeam` would be able to expand `Atomic` to 
 
 ## What types are `Freeze`?
 
-The list of `Freeze` types is long, including primitives, `String`, `Vec`, `Option<String>`, `Box<T>`, `Arc<T>`, `Rc<T>`, etc. This is because you cannot modify the memory contained directly within these types through an immutable reference.
+Types that contain an `UnsafeCell` in their memory layout, either directly or transitively, are not `Freeze` (modulo `unsafe impl Freeze for MyType`). This includes `Cell`, `RefCell`, `Mutex`, `AtomicUsize`, etc, as well as any types with a non-`Freeze` member.
 
-Types that do not implement `Freeze` include types used in parallel programming such as, `Mutex<T>`, `AtomicUsize`, etc, as well as `Cell`, `RefCell`, and `UnsafeCell`. This is because their memory can be modified via an immutable reference.
+All other types are `Freeze`. This includes all primitives, `String`, `Vec`, `Option<String>`, `Box`, `Arc`, `Rc`, etc.
 
 ## My type doesn't implement `Freeze`, but I need it to be `Freeze`.
 
