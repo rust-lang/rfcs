@@ -147,9 +147,15 @@ The community desire for `Freeze` is also currently small.
 
 This design has been relied on by rustc for 3 years, and has not required any significant maintenance, nor does this author expect there to be much maintenance after making it `pub`.
 
-Crate owners who incidentally have `Freeze` types in their API, and wish to add in interior mutability at a later date, can do so by simply `Box`ing up any parts of their type which may be modified through an immutable reference to avoid breaking changes.
+The addition of `PhantomUnfrozen` is brand new, and while users could write a similar type to opt out of `Freeze`, it would [remove](https://rust.godbolt.org/z/zX_iuC) the `noalias readonly` llvm attributes which are used by the optimizer (note: all `PhantomData` types are `Freeze`).
 
-No other designs have been considered.
+```rust
+#[repr(transparent)]
+struct PhantomUnfrozen(UnsafeCell<()>); // slight pessimization
+unsafe impl Sync for PhantomUnfrozen {}
+```
+
+Crate owners who incidentally have `Freeze` types in their API, and wish to add in interior mutability at a later date, can do so by simply `Box`ing up any parts of their type which may be modified through an immutable reference to avoid breaking changes.
 
 The impact of not doing this would be admittedly small. Users who want this feature would have to wait for `optin-builtin-traits`, use nightly rust, `Box` up data they intend to `Freeze`, or rely on `unsafe` code. This RFC author would elect to keep [`swym`](https://github.com/mtak-/swym) on nightly rust rather than pay the performance overhead of heap allocation.
 
@@ -166,12 +172,6 @@ The D programming language has a similar feature known as [immutable references]
 
 ## Design questions
 - Should this trait have a different name besides `Freeze`? `Freeze` was a [public API](https://github.com/rust-lang/rust/pull/13076) long ago, and its meaning has somewhat changed. This may be confusing for old-timers and/or newcomers who are googling the trait. Additionally, `freeze` is the name of an LLVM instruction used for turning uninitialized data into a fixed-but-arbitrary data value.
-- Is `PhantomUnfrozen` desirable? Users can write their own `PhantomUnfrozen` like so:
-```rust
-#[repr(transparent)]
-struct PhantomUnfrozen(UnsafeCell<()>);
-unsafe impl Sync for PhantomUnfrozen {}
-```
 - Should `UnsafeCell<ZeroSizedType>` implement `Freeze`? It's a situation that might possibly occur in the wild, and could be supported.
 
 ## Out of Scope
