@@ -56,7 +56,7 @@ Similarly to the above example, `crossbeam` would be able to expand `Atomic` to 
 
 ## What types are `Freeze`?
 
-Types that contain an `UnsafeCell` in their memory layout, either directly or transitively, are not `Freeze` (modulo `unsafe impl Freeze for MyType`). This includes `Cell`, `RefCell`, `Mutex`, `AtomicUsize`, etc, as well as any types with a non-`Freeze` member.
+Types that contain an `UnsafeCell` in their memory layout, either directly or transitively, are not `Freeze`. This includes `Cell`, `RefCell`, `Mutex`, `AtomicUsize`, etc, as well as any types with a non-`Freeze` member.
 
 All other types are `Freeze`. This includes all primitives, `String`, `Vec`, `Option<String>`, `Box`, `Arc`, `Rc`, etc.
 
@@ -64,14 +64,7 @@ All other types are `Freeze`. This includes all primitives, `String`, `Vec`, `Op
 
 To convert a type which is not `Freeze`, into a `Freeze` type, all that is required is to stick it on the heap. For example, `Box<T>` is `Freeze` even if `T` is an `UnsafeCell`.
 
-If you really know what you are doing, and promise not to mutate any data in your type through an immutable reference, then you can implement `Freeze` like so:
-
-```rust
-struct MyType { /* .. */ }
-unsafe impl Freeze for MyType {}
-```
-
-This requires `unsafe`, because UB is possible if in fact the memory occupied by `MyType` is mutable through an immutable reference to `MyType`.
+Explicit implementations of `Freeze`, `unsafe impl Freeze for ..`, are forbidden by the compiler.
 
 ## How do I opt-out of `Freeze`?
 
@@ -88,9 +81,9 @@ struct MyType {
 
 `Freeze` has been privately implemented in libcore for 3 years, and has not had major changes during that time. In that time it has been relied upon for deciding whether a `static` of a type is placed in read-only static memory or writable static memory.
 
-`Freeze` needs to be made `pub` instead of `pub(crate)`. `PhantomUnfrozen` would be a new addition.
+`Freeze` needs to be made `pub` instead of `pub(crate)`. `PhantomUnfrozen` would be a new addition. The compiler requires some changes to forbid explicit implementations of `Freeze`.
 
-## Implementation
+## libcore Implementation
 
 `libcore/marker.rs`:
 ```rust
@@ -107,6 +100,40 @@ unsafe impl<T: ?Sized> Freeze for &mut T {}
 pub struct PhantomUnfrozen;
 impl !Freeze for PhantomUnfrozen {}
 ```
+
+## Compiler
+
+The compiler should forbid all explicit implementations of the trait `Freeze` outside of libcore.
+
+### Error Messages
+
+When a user attempts to explicitly implement `Freeze` like so:
+
+```rust
+pub struct X {
+    a: Mutex<()>,
+}
+
+unsafe impl Freeze for X {}
+```
+
+The suggested error message is:
+
+```rust
+error[EXXXX]: `Freeze` cannot be explicitly implemented
+ --> src/lib.rs:8:6
+  |
+8 | unsafe impl Freeze for X {}
+  |             ^^^^^^ the trait `Freeze` cannot be explicitly implemented for `X`
+  |
+  | hint: to make `X` satisfy `Freeze`, try adding a `Box` around `a`:
+  |
+5 |   a: Mutex<()>,
+  |      ^^^^^^^^^ change this to `Box<Mutex<()>>`
+  |   
+```
+
+The particular design of such an error message is left open to implementations.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -153,4 +180,5 @@ unsafe impl Sync for PhantomUnfrozen {}
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-It's possible that the community might want a feature similar to D's "immutable references". Basically this would be `Freeze` but transitive across pointers; however, I am unsure what the use case would be.
+- Lifting the restriction that `Freeze` cannot be explicitly implemented would be a natural evolution of this feature. The unsafe code guidelines would need to be updated with a thorough explanation of the circumstances that an explicit implementation is or is not UB.
+- It's possible that the community might want a feature similar to D's "immutable references". Basically this would be `Freeze` but transitive across pointers; however, I am unsure what the use case would be.
