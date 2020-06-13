@@ -138,6 +138,7 @@ The D programming language has a similar feature known as [immutable references]
 [unresolved-questions]: #unresolved-questions
 
 ## Design questions
+- Should this trait have a different name besides `Freeze`? `Freeze` was a [public API](https://github.com/rust-lang/rust/pull/13076) long ago, and its meaning has somewhat changed. This may be confusing for oldtimers and/or newcomers who are googling the trait. Additionally, `freeze` is the name of an LLVM instruction used for turning uninitialized data into a fixed-but-arbitrary data value.
 - Is `PhantomUnfrozen` desirable? Users can write their own `PhantomUnfrozen` like so:
 ```rust
 #[repr(transparent)]
