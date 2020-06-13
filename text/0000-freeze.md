@@ -145,7 +145,7 @@ The community desire for `Freeze` is also currently small.
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-This design has been relied on by rustc for 3 years, and has not required any significant maintenence, nor does this author expect there to be much maintenence after making it `pub`.
+This design has been relied on by rustc for 3 years, and has not required any significant maintenance, nor does this author expect there to be much maintenance after making it `pub`.
 
 Crate owners who incidentally have `Freeze` types in their API, and wish to add in interior mutability at a later date, can do so by simply `Box`ing up any parts of their type which may be modified through an immutable reference to avoid breaking changes.
 
@@ -165,7 +165,7 @@ The D programming language has a similar feature known as [immutable references]
 [unresolved-questions]: #unresolved-questions
 
 ## Design questions
-- Should this trait have a different name besides `Freeze`? `Freeze` was a [public API](https://github.com/rust-lang/rust/pull/13076) long ago, and its meaning has somewhat changed. This may be confusing for oldtimers and/or newcomers who are googling the trait. Additionally, `freeze` is the name of an LLVM instruction used for turning uninitialized data into a fixed-but-arbitrary data value.
+- Should this trait have a different name besides `Freeze`? `Freeze` was a [public API](https://github.com/rust-lang/rust/pull/13076) long ago, and its meaning has somewhat changed. This may be confusing for old-timers and/or newcomers who are googling the trait. Additionally, `freeze` is the name of an LLVM instruction used for turning uninitialized data into a fixed-but-arbitrary data value.
 - Is `PhantomUnfrozen` desirable? Users can write their own `PhantomUnfrozen` like so:
 ```rust
 #[repr(transparent)]
