@@ -80,10 +80,13 @@ Let us see another example that also uses an input:
 let i: u64 = 3;
 let o: u64;
 unsafe {
-    asm!("
-        mov {0}, {1}
-        add {0}, {number}
-    ", out(reg) o, in(reg) i, number = const 5);
+    asm!(
+        "mov {0}, {1}",
+        "add {0}, {number}",
+        out(reg) o,
+        in(reg) i,
+        number = const 5,
+    );
 }
 assert_eq!(o, 8);
 ```
@@ -94,13 +97,18 @@ and then adding `5` to it.
 
 The example shows a few things:
 
-First we can see that inputs are declared by writing `in` instead of `out`.
+First, we can see that `asm!` allows multiple template string arguments; each
+one is treated as a separate line of assembly code, as if they were all joined
+together with newlines between them. This makes it easy to format assembly
+code.
 
-Second one of our operands has a type we haven't seen yet, `const`.
+Second, we can see that inputs are declared by writing `in` instead of `out`.
+
+Third, one of our operands has a type we haven't seen yet, `const`.
 This tells the compiler to expand this argument to value directly inside the assembly template.
 This is only possible for constants and literals.
 
-Third we can see that we can specify an argument number, or name as in any format string.
+Fourth, we can see that we can specify an argument number, or name as in any format string.
 For inline assembly templates this is particularly useful as arguments are often used more than once.
 For more complex inline assembly using this facility is generally recommended, as it improves
 readability, and allows reordering instructions without changing the argument order.
@@ -146,10 +154,13 @@ let mut a: u64 = 4;
 let b: u64 = 4;
 let c: u64 = 4;
 unsafe {
-    asm!("
-        add {0}, {1}
-        add {0}, {2}
-    ", inout(reg) a, in(reg) b, in(reg) c);
+    asm!(
+        "add {0}, {1}",
+        "add {0}, {2}",
+        inout(reg) a,
+        in(reg) b,
+        in(reg) c,
+    );
 }
 assert_eq!(a, 12);
 ```
@@ -203,7 +214,7 @@ fn mul(a: u64, b: u64) -> u128 {
             "mul {}",
             in(reg) a,
             inlateout("rax") b => lo,
-            lateout("rdx") hi
+            lateout("rdx") hi,
         );
     }
 
@@ -238,7 +249,7 @@ unsafe {
         // ECX 0 selects the L0 cache information.
         inout("ecx") 0 => ecx,
         lateout("ebx") ebx,
-        lateout("edx") _
+        lateout("edx") _,
     );
 }
 
@@ -259,12 +270,14 @@ This can also be used with a general register class (e.g. `reg`) to obtain a scr
 // Multiply x by 6 using shifts and adds
 let mut x: u64 = 4;
 unsafe {
-    asm!("
-        mov {tmp}, {x}
-        shl {tmp}, 1
-        shl {x}, 2
-        add {x}, {tmp}
-    ", x = inout(reg) x, tmp = out(reg) _);
+    asm!(
+        "mov {tmp}, {x}",
+        "shl {tmp}, 1",
+        "shl {x}, 2",
+        "add {x}, {tmp}",
+        x = inout(reg) x,
+        tmp = out(reg) _,
+    );
 }
 assert_eq!(x, 4 * 6);
 ```
@@ -359,6 +372,7 @@ See the reference for the full list of available options and their effects.
 
 Inline assembler is implemented as an unsafe macro `asm!()`.
 The first argument to this macro is a template string literal used to build the final assembly.
+Additional template string literal arguments may be provided; all of the template string arguments are interpreted as if concatenated into a single template string with `\n` between them.
 The following arguments specify input and output operands.
 When required, options are specified as the final argument.
 
@@ -372,16 +386,18 @@ reg_operand := dir_spec "(" reg_spec ")" operand_expr
 operand := reg_operand / "const" const_expr / "sym" path
 option := "pure" / "nomem" / "readonly" / "preserves_flags" / "noreturn" / "att_syntax"
 options := "options(" option *["," option] [","] ")"
-asm := "asm!(" format_string *("," [ident "="] operand) ["," options] [","] ")"
+asm := "asm!(" format_string *("," format_string) *("," [ident "="] operand) ["," options] [","] ")"
 ```
 
 The macro will initially be supported only on ARM, AArch64, x86, x86-64 and RISC-V targets. Support for more targets may be added in the future. The compiler will emit an error if `asm!` is used on an unsupported target.
 
 [format-syntax]: https://doc.rust-lang.org/std/fmt/#syntax
 
-## Template string
+## Template string arguments
 
 The assembler template uses the same syntax as [format strings][format-syntax] (i.e. placeholders are specified by curly braces). The corresponding arguments are accessed in order, by index, or by name. However, implicit named arguments (introduced by [RFC #2795][rfc-2795]) are not supported.
+
+An `asm!` invocation may have one or more template string arguments; an `asm!` with multiple template string arguments is treated as if all the strings were concatenated with a `\n` between them. The expected usage is for each template string argument to correspond to a line of assembly code. All template string arguments must appear before any other arguments.
 
 As with format strings, named arguments must appear after positional arguments. Explicit register operands must appear at the end of the operand list, after named arguments if any.
 
@@ -1007,6 +1023,12 @@ Including the name of the target architecture as part of the `asm!` invocation c
 
 The operands could be placed before the template string, which could make the asm easier to read in some cases. However we decided against it because the benefits are small and the syntax would no longer mirror that of Rust format string.
 
+## Operands interleaved with template string arguments
+
+An asm directive could contain a series of template string arguments, each followed by the operands referenced in that template string argument. This could potentially simplify long blocks of assembly. However, this could introduce significant complexity and difficulty of reading, due to the numbering of positional arguments, and the possibility of referencing named or numbered arguments other than those that appear grouped with a given template string argument.
+
+Experimentation with such mechanisms could take place in wrapper macros around `asm!`, rather than in `asm!` itself.
+
 # Prior art
 [prior-art]: #prior-art
 
@@ -1043,7 +1065,9 @@ GCC supports passing C labels (the ones used with `goto`) to an inline asm block
 This could be supported by allowing code blocks to be specified as operand types. The following code will print `a` if the input value is `42`, or print `b` otherwise.
 
 ```rust
-asm!("cmp {}, 42; jeq {}",
+asm!(
+    "cmp {}, 42",
+    "jeq {}",
     in(reg) val,
     label { println!("a"); },
     fallthrough { println!("b"); }
