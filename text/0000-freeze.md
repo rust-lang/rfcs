@@ -6,11 +6,10 @@
 # Summary
 [summary]: #summary
 
-This RFC introduces new APIs to libcore/libstd to serve as safe abstractions for data which has no "shallow" interior mutability.
+This RFC introduces a new API to libcore/libstd to serve as a safe abstraction for data which has no "shallow" interior mutability.
 
 ```rust
 pub unsafe auto trait Freeze {}
-pub struct PhantomUnfrozen;
 ```
 
 # Motivation
@@ -52,7 +51,7 @@ Similarly to the above example, `crossbeam` would be able to expand `Atomic` to 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-`Freeze` is a new marker trait, similar to `Send` and `Sync`, that is intended to only be implemented for types which have no direct interior mutability, and are therefore safe to place in read only memory.
+`Freeze` is a new marker trait, similar to `Send` and `Sync`, that is only implemented for types which have no direct interior mutability, and are therefore safe to place in read only memory.
 
 ## What types are `Freeze`?
 
@@ -62,26 +61,32 @@ All other types are `Freeze`. This includes all primitives, `String`, `Vec`, `Op
 
 ## My type doesn't implement `Freeze`, but I need it to be `Freeze`.
 
-To convert a type which is not `Freeze`, into a `Freeze` type, all that is required is to stick it on the heap. For example, `Box<T>` is `Freeze` even if `T` is an `UnsafeCell`.
+To convert a type which is not `Freeze`, into a `Freeze` type, add a pointer based indirection around the type. For example, `&T`, `&mut T` and `Box<T>` are `Freeze` even if `T` is an `UnsafeCell`.
 
 Explicit implementations of `Freeze`, `unsafe impl Freeze for ..`, are forbidden by the compiler.
 
 ## How do I opt-out of `Freeze`?
 
-This is only useful when you suspect your type might, at some point in the future, include a non-`Freeze` type. To protect your users from relying on the current implementation of your type, simply add `PhantomUnfrozen` as a member to your type.
+This is only useful when you suspect your type might, at some point in the future, include a non-`Freeze` type. To protect your users from relying on the current implementation of your type, add an `UnsafeCell<()>` as a member to your type.
 
 ```rust
 struct MyType {
-    _dont_rely_on_freeze: PhantomUnfrozen,
+    _dont_rely_on_freeze: UnsafeCell<()>,
 }
+
+// only if appropriate
+unsafe impl Sync for MyType {}
+unsafe impl RefUnwindSafe for MyType {}
 ```
+
+Adding `UnsafeCell<()>` as a field to your type also forces your type to not be `Sync` and `RefUnwindSafe`. This may or may not be desirable.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 `Freeze` has been privately implemented in libcore for 3 years, and has not had major changes during that time. In that time it has been relied upon for deciding whether a `static` of a type is placed in read-only static memory or writable static memory.
 
-`Freeze` needs to be made `pub` instead of `pub(crate)`. `PhantomUnfrozen` would be a new addition. The compiler requires some changes to forbid explicit implementations of `Freeze`.
+`Freeze` needs to be made `pub` instead of `pub(crate)`. The compiler requires some changes to forbid explicit implementations of `Freeze`.
 
 ## libcore Implementation
 
@@ -96,9 +101,6 @@ unsafe impl<T: ?Sized> Freeze for *const T {}
 unsafe impl<T: ?Sized> Freeze for *mut T {}
 unsafe impl<T: ?Sized> Freeze for &T {}
 unsafe impl<T: ?Sized> Freeze for &mut T {}
-
-pub struct PhantomUnfrozen;
-impl !Freeze for PhantomUnfrozen {}
 ```
 
 ## Compiler
@@ -121,7 +123,7 @@ The suggested error message is:
 
 ```rust
 error[EXXXX]: `Freeze` cannot be explicitly implemented
- --> src/lib.rs:8:6
+ --> src/lib.rs:8:13
   |
 8 | unsafe impl Freeze for X {}
   |             ^^^^^^ the trait `Freeze` cannot be explicitly implemented for `X`
@@ -147,15 +149,9 @@ The community desire for `Freeze` is also currently small.
 
 This design has been relied on by rustc for 3 years, and has not required any significant maintenance, nor does this author expect there to be much maintenance after making it `pub`.
 
-The addition of `PhantomUnfrozen` is brand new, and while users could write a similar type to opt out of `Freeze`, it would [remove](https://rust.godbolt.org/z/zX_iuC) the `noalias readonly` llvm attributes which are used by the optimizer (note: all `PhantomData` types are `Freeze`).
+It is risky to give users the ability to explicitly `unsafe impl Freeze`, so the compiler forbids it. It is not expected for users to be writing their own `Freeze` abstractions (like `Sync`). Either a type has direct interior mutability or it doesn't.
 
-```rust
-#[repr(transparent)]
-struct PhantomUnfrozen(UnsafeCell<()>); // slight pessimization
-unsafe impl Sync for PhantomUnfrozen {}
-```
-
-Crate owners who incidentally have `Freeze` types in their API, and wish to add in interior mutability at a later date, can do so by simply `Box`ing up any parts of their type which may be modified through an immutable reference to avoid breaking changes.
+Crate owners who incidentally have `Freeze` types in their API, and wish to add in interior mutability at a later date, can do so by simply adding any pointer based indirection (e.g. `Box`) to any parts of their type which may be modified through an immutable reference to avoid breaking changes. Moreover, adding interior mutability is often already a breaking change. `UnsafeCell<T>` is not `Sync` nor `RefUnwindSafe`, and is invariant over `T`.
 
 The impact of not doing this would be admittedly small. Users who want this feature would have to wait for `optin-builtin-traits`, use nightly rust, `Box` up data they intend to `Freeze`, or rely on `unsafe` code. This RFC author would elect to keep [`swym`](https://github.com/mtak-/swym) on nightly rust rather than pay the performance overhead of heap allocation.
 
@@ -172,7 +168,6 @@ The D programming language has a similar feature known as [immutable references]
 
 ## Design questions
 - Should this trait have a different name besides `Freeze`? `Freeze` was a [public API](https://github.com/rust-lang/rust/pull/13076) long ago, and its meaning has somewhat changed. This may be confusing for old-timers and/or newcomers who are googling the trait. Additionally, `freeze` is the name of an LLVM instruction used for turning uninitialized data into a fixed-but-arbitrary data value.
-- Should `UnsafeCell<ZeroSizedType>` implement `Freeze`? It's a situation that might possibly occur in the wild, and could be supported.
 
 ## Out of Scope
 - Discussions of whether `UnsafeCell` should or could implement `Copy`.
