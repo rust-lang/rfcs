@@ -112,7 +112,7 @@ existing set of endpoints in that scope.
 The pattern for the crate scope is desugared into a regular expression,
 following these rules:
 
-* **`^`** is added at the start of the pattern, and **`|`** is added at the end of it.
+* **`^`** is added at the start of the pattern, and **`$`** is added at the end of it.
 * **`,`** is desugared into `|`, separating multiple patterns.
 * **`*`** is desugared into `.+`, matching one or more characters greedily.
 * All other characters are quoted to prevent them from having a special meaning.
