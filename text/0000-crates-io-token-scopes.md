@@ -69,8 +69,8 @@ the token can interact with. Crate names can contain `*` to match one or more
 characters.
 
 For example, a crates scope of `serde,serde-*` allows the token to act on the
-`serde` crate or any crate starting with `serde-`, if the user is an owner of
-those crates.
+`serde` crate or any present or future crates starting with `serde-`, if the
+user is an owner of those crates.
 
 The crates scope will allow access to all present and future crates matching
 it. When an endpoint that doesn't interact with crates is called by a token
@@ -132,9 +132,9 @@ foo,foo-*
 Any combination of those characters is allowed, but crates.io might define a
 complexity limit for the generated regular expressions.
 
-Every time an endpoint acting on a crate is called the regex is desugared,
-compiled and used to match the crate name. If no match is found the request is
-denied.
+The pattern will be evaluated during each API call, and if no match is found
+the request will be denied. Because it's evaluated every time, a crates scope
+will allow interacting with matching crates published after token creation.
 
 The check for the crates scope is separate from crate ownership: having a scope
 that technically permits to interact with a crate the user doesn't own will be
