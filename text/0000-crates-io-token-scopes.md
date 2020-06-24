@@ -20,7 +20,7 @@ developers using the `cargo` CLI on their workstations, it's not acceptable for
 CI scenarios, such as publishing crates automatically once a git tag is pushed.
 
 The implementation of scoped tokens would allow users to restrict the actions a
-token can do, decreasing the blast radius in case of automation bugs or token
+token can do, decreasing the risk in case of automation bugs or token
 compromise.
 
 # Guide-level explanation
