@@ -9,7 +9,7 @@ New 'self named life-time that implicitly bound to life-time of current structur
 
 # Motivation
 
-Moptivation is for simplification iterative development and improving refactoring of the code
+Motivation is to simplify iterative development and improving refactoring of the code
 
 Sometimes during refactoring such code:
 ```rust
@@ -80,11 +80,11 @@ struct Application<'self> { // 'self is implicit life-time of Application
 
 On user side call should be like this:
 ```rust
-fn make_app(config: &Config) -> App;
+fn make_app(config: &Config) -> Application;
 ```
 or
 ```rust
-fn make_app(config: &Config) -> App<'_>;
+fn make_app(config: &Config) -> Application<'_>;
 ```
 
 # Drawbacks
