@@ -6,6 +6,19 @@
 
 [project-group]: https://github.com/rust-lang/project-ffi-unwind
 
+<!--
+TODO
+
+* Clarify that async exceptions (SEH) are out of scope
+* add `"stdcall unwind"` and `"thiscall unwind"` (noting that these are not
+  available on all platforms)
+* add `extern "system unwind"`
+* add some information to the "alternatives" section discussing letting `"C"`
+  unwind by default (this should be in the RFC already, but I think I may have
+  forgotten to add it, so I'll review)
+
+-->
+
 # Summary
 [summary]: #summary
 
@@ -214,6 +227,9 @@ behavior. `"C"`-like ABIs are `"C"` itself but also related ABIs such as
 | `panic=unwind` | `"C"`-like   | abort                                 | UB                      |
 | `panic=abort`  | `"C unwind"` | `panic!` aborts                       | abort                   |
 | `panic=abort`  | `"C"`-like   | `panic!` aborts (no unwinding occurs) | UB                      |
+
+<!-- XXX TODO mention possibility of catching unwind attempts at `extern "C"`
+boundaries and `abort`ing in debug mode? -->
 
 The interaction of Rust frames with C functions that deallocate frames (i.e.
 functions that may use forced unwinding on specific platforms) is independent
