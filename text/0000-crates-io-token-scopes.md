@@ -36,8 +36,9 @@ to act on.
 The user will be able to choose one or more endpoint scopes. This RFC proposes
 adding the following endpoint scopes:
 
-* **publish**: allows uploading new crates or new versions of existing crates
-  the user owns
+* **publish-new**: allows publishing new crates
+* **publish-update**: allows publishing a new version for existing crates the
+  user owns
 * **yank**: allows yanking and unyanking existing versions of the user's crates
 * **change-owners**: allows inviting new owners or removing existing owners
 
@@ -50,9 +51,9 @@ access to all (documented and undocumented) crates.io API endpoints except for
 adding new tokens.
 
 The crates.io UI will pre-select the scopes needed by the `cargo` CLI, which at
-the time of writing this RFC are `publish`, `yank` and `change-owners`. The
-user will have to explicitly opt into extra scopes or the legacy permission
-model.
+the time of writing this RFC are `publish-new`, `publish-update`, `yank` and
+`change-owners`. The user will have to explicitly opt into extra scopes or the
+legacy permission model.
 
 Tokens created before the implementation of this RFC will use the legacy
 permission model.
@@ -95,7 +96,8 @@ The scopes proposed by this RFC allow access to the following endpoints:
 
 | Endpoint | Required scope |
 | --- | --- |
-| `PUT /crates/new` | **publish** |
+| `PUT /crates/new` (new crates) | **publish-new** |
+| `PUT /crates/new` (existing crates) | **publish-update** |
 | `DELETE /crates/:crate_id/:version/yank` | **yank** |
 | `PUT /crates/:crate_id/:version/unyank` | **yank** |
 | `PUT /crates/:crate_id/owners` | **change-owners** |
@@ -200,8 +202,6 @@ scoping:
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-* Should there be separate scopes for publishing a new crate and a version of
-  an existing crate, instead of the single `publish` scope?
 * Are there more scopes that would be useful to implement from the start?
 * Should crate scopes be allowed on tokens with the legacy endpoint scope?
 * Is the current behavior of crate scopes on endpoints that don't interact with
