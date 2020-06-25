@@ -467,6 +467,12 @@ This is strictly the least restrictive and generic variant, but is a semver
 hazard as changing a const fn's body to suddenly call a method that it did not before can break
 users of the function.
 
+# Unresolved questions
+
+* Is it possible to ensure that we are consistent about opt-in vs opt-out of
+  constness in static trait bounds, function pointers, and `dyn Trait` while
+  remaining backwards compatible? Also see [this discussion][dynamic_dispatch].
+
 # Future work
 
 This design is explicitly forward compatible to all future extensions the author could think
@@ -610,7 +616,45 @@ trait Foo {
 which does not force `impl const Foo for Type` to now require passing a `T` with an `impl const Bar`
 to the `a` method.
 
-## `const` function pointers
+## `const` function pointers and `dyn Trait`
+[dynamic_dispatch]: #const-function-pointers-and-dyn-trait
+
+The RFC discusses const bounds on *static* dispatch. What about *dynamic* dispatch?
+In Rust, that means function pointers and `dyn Trait`.
+
+### `dyn Trait`
+
+Treating `dyn Trait` similar to how this RFC treats static trait bounds, we could allow
+
+```rust
+const fn foo(bar: &dyn Trait) -> SomeType {
+    bar.some_method()
+}
+```
+
+with an opt out via `?const`
+
+```rust
+const fn foo(bar: &dyn ?const Trait) -> SomeType {
+    bar.some_method() // ERROR
+}
+```
+
+However, there is a problem with this. The following code is already allowed on
+stable, without any check that the `Trait` implementation is `const`:
+
+```rust
+const F: &dyn Trait = ...;
+```
+
+We could instead make `dyn Trait` opt-in to constness with `dyn const Trait`,
+but that would be inconsistent with how this RFC defines `const` to work around
+static trait bounds. Or we could treat `dyn Trait` differently in `const` types
+and `const fn` argument/return types.
+
+### Function pointers
+
+This is illegal before and with this RFC:
 
 ```rust
 const fn foo(f: fn() -> i32) -> i32 {
@@ -618,29 +662,21 @@ const fn foo(f: fn() -> i32) -> i32 {
 }
 ```
 
-is illegal before and with this RFC. While we can change the language to allow this feature, two
-questions make themselves known:
+To remain consistent with trait bounds as described in this RFC, it seems
+reasonable to assume that a `fn` pointer passed to a `const fn` would implicitly
+be required to point itself to a `const fn`, and to have an opt-out with
+`?const` for cases where `foo` does not actually want to call `f` (such as
+`RawWakerVTable::new`).
 
-1. fn pointers in constants
+However, we have the same problem as with `dyn Trait`.  The following is already
+legal in Rust today, even though the `F` doesn't need to be a `const` function:
 
-    ```rust
-    const F: fn() -> i32 = ...;
-    ```
+```rust
+const F: fn() -> i32 = ...;
+```
 
-    is already legal in Rust today, even though the `F` doesn't need to be a `const` function.
-    Since we can't reuse this syntax, do we need a different syntax or should we just keep constants
-    as they are and just reuse the syntax in `const fn` arguments?
-
-2. Opt out bounds might seem unintuitive?
-
-    ```rust
-    const fn foo(f: ?const fn() -> i32) -> i32 {
-        // not allowed to call `f` here, because we can't guarantee that it points to a `const fn`
-    }
-    const fn foo(f: fn() -> i32) -> i32 {
-        f()
-    }
-    ```
+Since we can't reuse this syntax, do we need a different syntax or should the
+same syntax mean different things for `const` types and `const fn` types?
 
 Alternatively one can prefix function pointers to `const` functions with `const`:
 
@@ -661,11 +697,13 @@ fn foo(f: const fn() -> i32) -> i32 {
 }
 ```
 
-Which is useless except for ensuring some sense of "purity" of the function pointer ensuring that
+Which could be useful for ensuring some sense of "purity" of the function pointer ensuring that
 subsequent calls will only modify global state if passed in via arguments.
 
+However, as with `dyn Trait` above, this would be inconsistent with what the RFC proposes for traits.
+
 ## explicit `const` bounds
-[explicit_const]: #explicit-const
+[explicit_const]: #explicit-const-bounds
 
 `const` on the bounds (e.g. `T: const Trait`) requires an `impl const Trait` for any types used to
 replace `T`. This allows `const` trait bounds on any (even non-const) functions, e.g. in
@@ -679,24 +717,6 @@ fn foo<T: const Bar>() -> i32 {
 
 Which, once `const` items and array lengths inside of functions can make use of the generics of
 the function, would allow the above function to actually exist.
-
-## `dyn Trait`
-
-A natural extension to this RFC is to allow
-
-```rust
-const fn foo(bar: &dyn Trait) -> SomeType {
-    bar.some_method()
-}
-```
-
-with an opt out via `?const`
-
-```rust
-const fn foo(bar: &dyn ?const Trait) -> SomeType {
-    bar.some_method() // ERROR
-}
-```
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
