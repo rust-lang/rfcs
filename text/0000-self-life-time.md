@@ -1,11 +1,11 @@
-- Feature Name: self life-time
+- Feature Name: Hierarchic anonymous life-time
 - Start Date: 2020-06-24
 - RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 # Summary
 
-New 'self named life-time that implicitly bound to life-time of current structure
+New use of anonymous life-time '_ that implicitly added to current structure
 
 # Motivation
 
@@ -44,10 +44,10 @@ struct Application<'a> {
 ```
 Everywhere in composition hierarchy I need to write 'a ... most of the times it is just boilerplate code ...
 
-What if instead of writing manually we will introduce the 'self life-time:
+What if instead of writing manually we will specify reference fields with anonymous life-time:
 ```rust
 struct CompositeObject {
-    obj: &'self SomeType,
+    obj: &'_ SomeType,
 }
 
 struct BigObject {
@@ -64,17 +64,50 @@ Code much simpler and more maintainable than fighting with named life-times in c
 
 Compiler underhood will generate the following code:
 ```rust
-struct CompositeObject<'self> { // 'self is implicit life-time of CompositeObject
-    obj: &'self SomeType,
+struct CompositeObject<'anon> {             // 'anon is implicitly added life-time
+    obj: &'anon SomeType,
 }
 
-struct BigObject<'self> { // 'self is implicit life-time of BigObject
-    composite_obj: CompositeObject<'self>, // Assign 'self of BigObject to CompositeObject
+struct BigObject<'anon> {                   // 'anon is implicitly added life-time
+    composite_obj: CompositeObject<'anon>,  // 'anon is implicitly used here
     count: i32,
 }
 
-struct Application<'self> { // 'self is implicit life-time of Application
-   big_obj: BigObject<'self>, // Assign 'self of Application to BigObject
+struct Application<'anon> {                 // 'anon is implicitly added life-time
+   big_obj: BigObject<'anon>,               // 'anon is implicitly used here
+}
+```
+
+Take a look at example with multiple anonymose life-times:
+```rust
+struct CompositeObject {
+    obj0: &'_ SomeType,
+    obj1: &'_ SomeType,
+}
+
+struct BigObject {
+    composite_obj: CompositeObject,
+    count: i32,
+}
+
+struct Application {
+   big_obj: BigObject,
+}
+```
+code will be translated to:
+```rust
+struct CompositeObject<'anon0, 'anon1> {              // 'anon0 and 'anon1 are implicitly added life-times
+    obj0: &'anon0 SomeType,
+    obj1: &'anon1 SomeType,
+}
+
+struct BigObject<'anon0, 'anon1> {                    // 'anon is implicitly added life-time
+    composite_obj: CompositeObject<'anon0, 'anon1>,   // 'anon is implicitly used here
+    count: i32,
+}
+
+struct Application<'anon0, 'anon1> {                  // 'anon is implicitly added life-time
+   big_obj: BigObject<'anon0, 'anon1>,                // 'anon is implicitly used here
 }
 ```
 
@@ -90,7 +123,7 @@ fn make_app(config: &Config) -> Application<'_>;
 # Drawbacks
 [drawbacks]: #drawbacks
 
-It could conflict with existing 'self life-time in some crate
+Not known at the current time
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
