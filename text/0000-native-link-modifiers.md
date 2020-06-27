@@ -124,6 +124,13 @@ This modifier translates to `--as-needed` for `ld`-like linkers.
 The default for this modifier is unclear, some targets currently specify it as `+as-needed`,
 some do not. We may want to try making `+as-needed` a default for all targets.
 
+## Stability story
+
+The modifier syntax can be stabilized independently from any specific modifiers.
+
+All the specific modifiers start unstable and can be stabilized independently from each other
+given enough demand.
+
 ## Relative order of `-l` and `-Clink-arg(s)` options
 
 This RFC also proposes to guarantee that the relative order of `-l` and `-Clink-arg(s)`
