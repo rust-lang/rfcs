@@ -221,3 +221,9 @@ to develop services that provide tokens with a short expiration time to CI
 builds. Such tokens would need to have the same set or a subset of the parent
 token's scopes: this RFC should consider that use case and avoid the
 implementation of solutions that would make the check hard.
+
+To increase the security of CI environments even more, we could implement an
+option to require a separate confirmation for the actions executed by tokens.
+For example, we could send a confirmation email with a link the owners have to
+click to actually publish the crate uploaded by CI, preventing any mailicious
+action with stolen tokens.
