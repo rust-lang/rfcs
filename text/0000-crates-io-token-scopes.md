@@ -66,7 +66,7 @@ the legacy endpoint scope.
 
 The crates scope can be left empty to allow the token to act on all the crates
 owned by the user, or it can contain the comma-separated list of crate names
-the token can interact with. Crate names can contain `*` to match one or more
+the token can interact with. Crate names can contain `*` to match zero or more
 characters.
 
 For example, a crates scope of `serde,serde-*` allows the token to act on the
@@ -116,7 +116,7 @@ following these rules:
 
 * **`^`** is added at the start of the pattern, and **`$`** is added at the end of it.
 * **`,`** is desugared into `|`, separating multiple patterns.
-* **`*`** is desugared into `.+`, matching one or more characters greedily.
+* **`*`** is desugared into `.*`, matching zero or more characters greedily.
 * All other characters are quoted to prevent them from having a special meaning.
 
 As an example, the following pattern:
