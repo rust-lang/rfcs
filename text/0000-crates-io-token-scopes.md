@@ -69,9 +69,9 @@ owned by the user, or it can contain the comma-separated list of crate names
 the token can interact with. Crate names can contain `*` to match zero or more
 characters.
 
-For example, a crates scope of `serde,serde-*` allows the token to act on the
-`serde` crate or any present or future crates starting with `serde-`, if the
-user is an owner of those crates.
+For example, a crates scope of `lazy_static,serde*` allows the token to act on
+the `lazy_static` crate or any present or future crates starting with `serde`
+(including `serde` itself), if the user is an owner of those crates.
 
 The crates scope will allow access to all present and future crates matching
 it. When an endpoint that doesn't interact with crates is called by a token
@@ -122,13 +122,13 @@ following these rules:
 As an example, the following pattern:
 
 ```
-foo,foo-*
+foo,bar-*
 ```
 
 ... is desugared into the following regex:
 
 ```
-^foo|foo\-.+$
+^foo|bar\-.*$
 ```
 
 Any combination of those characters is allowed, but crates.io might define a
