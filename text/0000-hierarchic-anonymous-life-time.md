@@ -5,7 +5,7 @@
 
 # Summary
 
-New use of anonymous life-time '_ that implicitly added to current structure
+New use of anonymous life-time `'_` that implicitly added to current structure.
 
 # Motivation
 
