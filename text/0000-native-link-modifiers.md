@@ -83,13 +83,16 @@ but it could be changed later on some future edition boundary.
 
 ### `verbatim`
 
-`+verbatim` means that `rustc` won't add any target-specified library prefixes or suffixes
-(like `lib` or `.a`) to the library name.
+`+verbatim` means that `rustc` itself won't add any target-specified library prefixes or suffixes
+(like `lib` or `.a`) to the library name,
+and will try its best to ask for the same thing from the linker.
 
 For `ld`-like linkers `rustc` will use the `-l:filename` syntax (note the colon)
 when passing the library, so the linker won't add any prefixes or suffixes as well. \
 See [`-l namespec`](https://sourceware.org/binutils/docs/ld/Options.html) in `ld` documentation
-for more details.
+for more details. \
+For linkers not supporting any verbatim modifiers (e.g. `link.exe` or `ld64`)
+the library name will be passed as is.
 
 The default for this modifier is `-verbatim`.
 
@@ -107,22 +110,31 @@ Only compatible with the `static` linking kind.
 without throwing any object files away.
 
 This modifier translates to `--whole-archive` for `ld`-like linkers,
-and to `/WHOLEARCHIVE` for `link.exe`.
+to `/WHOLEARCHIVE` for `link.exe`, and to `-force_load` for `ld64`. \
+The modifier does nothing for linkers that don't support it.
 
 The default for this modifier is `-whole-archive`.
 
+A motivating example for this modifier can be found in
+[issue #56306](https://github.com/rust-lang/rust/issues/56306).
+
 ### `as-needed`
 
-Only compatible with the `dynamic` linking kind.
+Only compatible with the `dynamic` and `framework` linking kinds.
 
 `+as-needed` means that the library will be actually linked only if it satisfies some
 undefined symbols at the point at which it is specified on the command line,
 making it similar to static libraries in this regard.
 
-This modifier translates to `--as-needed` for `ld`-like linkers.
+This modifier translates to `--as-needed` for `ld`-like linkers,
+and to `-dead_strip_dylibs` / `-needed_library` / `-needed_framework` for `ld64`. \
+The modifier does nothing for linkers that don't support it (e.g. `link.exe`).
 
 The default for this modifier is unclear, some targets currently specify it as `+as-needed`,
 some do not. We may want to try making `+as-needed` a default for all targets.
+
+A motivating example for this modifier can be found in
+[issue #57837](https://github.com/rust-lang/rust/issues/57837).
 
 ## Stability story
 
@@ -180,6 +192,14 @@ regarding this, see the `LINKER:` modifier for
 Relying on raw linker options while linking with attributes will requires introducing
 a new attribute, see the paragraph about `#[link(arg = "string")]` in "Future possibilities".
 
+## Alternative: merge modifiers into kind in attributes
+
+`#[link(kind = "static", modifiers = "+foo,-bar")]` -> `#[link(kind = "static:+foo,-bar")]`.
+
+This make attributes closer to command line, but it's unclear whether it's a goal we want to pursue.
+For example, we already write `kind=name` on command line,
+but `kind = "...", name = "..."` in attributes.
+
 # Prior art
 [prior-art]: #prior-art
 
@@ -195,7 +215,7 @@ so it is not as relevant to modifying behavior of specific libraries as with `ld
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-What about the `framework` linking kind? What does it mean? What modifiers is it compatible with?
+None currently.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
