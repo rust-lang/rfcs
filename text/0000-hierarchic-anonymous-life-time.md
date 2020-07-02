@@ -46,17 +46,17 @@ Everywhere in composition hierarchy I need to write 'a ... most of the times it 
 
 What if instead of writing manually we will specify reference fields with anonymous life-time:
 ```rust
-struct CompositeObject {
-    obj: &'_ SomeType,
+struct City {
+    name: &'_ str,
 }
 
-struct BigObject {
-    composite_obj: CompositeObject,
-    count: i32,
+struct State {
+    city: Vec<City>,
+    covid_deaths: u32,
 }
 
-struct Application {
-   big_obj: BigObject,
+struct Country {
+   state: Vec<State>,
 }
 ```
 
