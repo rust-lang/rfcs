@@ -13,17 +13,17 @@ Motivation is to simplify iterative development and improving refactoring of the
 
 Sometimes during refactoring such code:
 ```rust
-struct CompositeObject {
-    obj: SomeType,
+struct City {
+    name: String,
 }
 
-struct BigObject {
-    composite_obj: CompositeObject,
-    count: i32,
+struct State {
+    city: Vec<City>,
+    covid_deaths: u32,
 }
 
-struct Application {
-   big_obj: BigObject,
+struct Country {
+   state: Vec<State>,
 }
 ```
 
