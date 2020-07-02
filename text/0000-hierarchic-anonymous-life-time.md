@@ -27,19 +27,19 @@ struct Country {
 }
 ```
 
-developer decides to make obj of SomeType as reference in CompositeObject type:
+developer decides to make an inner item a reference:
 ```rust
-struct CompositeObject<'a> {
-    obj: &'a SomeType,
+struct City<'a> {
+    name: &'a str,
 }
 
-struct BigObject<'a> {
-    composite_obj: CompositeObject<'a>,
-    count: i32,
+struct State<'a> {
+    city: Vec<City<'a>>,
+    covid_deaths: u32,
 }
 
-struct Application<'a> {
-   big_obj: BigObject<'a>,
+struct Country<'a> {
+   state: Vec<State<'a>>,
 }
 ```
 Everywhere in composition hierarchy I need to write 'a ... most of the times it is just boilerplate code ...
