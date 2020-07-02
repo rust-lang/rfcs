@@ -46,35 +46,50 @@ Everywhere in composition hierarchy I need to write 'a ... most of the times it 
 
 What if instead of writing manually we will specify reference fields with anonymous life-time:
 ```rust
-struct City {
-    name: &'_ str,
+struct City& {
+    name: &str,
 }
 
-struct State {
-    city: Vec<City>,
+struct State& {
+    cities: Vec<City&>,
     covid_deaths: u32,
 }
 
-struct Country {
-   state: Vec<State>,
+struct Country& {
+   state: Vec<State&>,
 }
 ```
 
-Code much simpler and more maintainable than fighting with named life-times in composite hierarchy
+With this solution developer could just declar with `<type_name>["&"]` name that this structure could have used some references, just be attentive
+Developer just could anons that this structure will use references some times without even using references inside:
+```rust
+struct City& {
+    name: String,
+}
+
+struct State& {
+    cities: Vec<City&>,
+    covid_deaths: u32,
+}
+
+struct Country& {
+   state: Vec<State&>,
+}
+```
 
 Compiler underhood will generate the following code:
 ```rust
-struct CompositeObject<'anon> {             // 'anon is implicitly added life-time
-    obj: &'anon SomeType,
+struct City<'anon> {                    // 'anon is implicitly added life-time
+    obj: &'anon str,
 }
 
-struct BigObject<'anon> {                   // 'anon is implicitly added life-time
-    composite_obj: CompositeObject<'anon>,  // 'anon is implicitly used here
-    count: i32,
+struct State<'anon> {                   // 'anon is implicitly added life-time
+    composite_obj: Vec<City<'anon>>,    // 'anon is implicitly used here
+    covid_deaths: i32,
 }
 
-struct Application<'anon> {                 // 'anon is implicitly added life-time
-   big_obj: BigObject<'anon>,               // 'anon is implicitly used here
+struct Country<'anon> {                 // 'anon is implicitly added life-time
+   state: Vec<State&>,                  // 'anon is implicitly used here
 }
 ```
 
