@@ -79,16 +79,16 @@ struct Country& {
 
 Compiler underhood will generate the following code:
 ```rust
-struct City<'anon> {                    // 'anon is implicitly added life-time
+struct City&<'anon> {                    // 'anon is implicitly added life-time
     obj: &'anon str,
 }
 
-struct State<'anon> {                   // 'anon is implicitly added life-time
-    composite_obj: Vec<City<'anon>>,    // 'anon is implicitly used here
+struct State&<'anon> {                   // 'anon is implicitly added life-time
+    composite_obj: Vec<City&<'anon>>,    // 'anon is implicitly used here
     covid_deaths: i32,
 }
 
-struct Country<'anon> {                 // 'anon is implicitly added life-time
+struct Country&<'anon> {                 // 'anon is implicitly added life-time
    state: Vec<State&>,                  // 'anon is implicitly used here
 }
 ```
