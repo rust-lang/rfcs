@@ -15,11 +15,11 @@ Sometimes during refactoring such code:
 ```rust
 struct City {
     name: String,
+    population: u32,
 }
 
 struct State {
     city: Vec<City>,
-    covid_deaths: u32,
 }
 
 struct Country {
@@ -31,11 +31,11 @@ developer decides to make an inner item a reference:
 ```rust
 struct City<'a> {
     name: &'a str,
+    population: u32,
 }
 
 struct State<'a> {
     city: Vec<City<'a>>,
-    covid_deaths: u32,
 }
 
 struct Country<'a> {
@@ -48,11 +48,11 @@ What if instead of writing manually we will specify reference fields with anonym
 ```rust
 struct City& {
     name: &str,
+    population: u32,
 }
 
 struct State& {
     cities: Vec<City&>,
-    covid_deaths: u32,
 }
 
 struct Country& {
@@ -65,11 +65,11 @@ Developer just could anons that this structure will use references some times wi
 ```rust
 struct City& {
     name: String,
+    population: u32,
 }
 
 struct State& {
     cities: Vec<City&>,
-    covid_deaths: u32,
 }
 
 struct Country& {
@@ -81,11 +81,11 @@ Compiler underhood will generate the following code:
 ```rust
 struct City&<'anon> {                    // 'anon is implicitly added life-time
     obj: &'anon str,
+    population: u32,
 }
 
 struct State&<'anon> {                   // 'anon is implicitly added life-time
     composite_obj: Vec<City&<'anon>>,    // 'anon is implicitly used here
-    covid_deaths: i32,
 }
 
 struct Country&<'anon> {                 // 'anon is implicitly added life-time
