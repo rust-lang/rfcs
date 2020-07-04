@@ -6,19 +6,6 @@
 
 [project-group]: https://github.com/rust-lang/project-ffi-unwind
 
-<!--
-TODO
-
-* Clarify that async exceptions (SEH) are out of scope
-* add `"stdcall unwind"` and `"thiscall unwind"` (noting that these are not
-  available on all platforms)
-* add `extern "system unwind"`
-* add some information to the "alternatives" section discussing letting `"C"`
-  unwind by default (this should be in the RFC already, but I think I may have
-  forgotten to add it, so I'll review)
-
--->
-
 # Summary
 [summary]: #summary
 
@@ -146,6 +133,19 @@ may be "sandwiched" between Rust frames, so that Rust `panic`s may safely
 unwind the C++ frames, if the Rust code declares both the C++ entrypoint and
 the Rust entrypoint using `"C unwind"`.
 
+## Other `unwind` ABI strings
+
+Because the `C` ABI is not appropriate for all use cases, we also introduce
+these `unwind` ABI strings, which will only differ from their non-`unwind`
+variants by permitting unwinding, with the same semantics as `"C unwind"`:
+
+* `"system unwind"` - available on all platforms
+* `"stdcall unwind"` and `"thiscall unwind"` - available only on platforms
+  where `"stdcall"` and `"thiscall"` are supported
+
+More `unwind` variants of existing ABI strings may be introduced, with the same
+semantics, without an additional RFC.
+
 ## "Plain Old Frames"
 [POF-definition]: #plain-old-frames
 
@@ -190,7 +190,7 @@ will specify this in [a future RFC][unresolved-questions].
 
 [inside-rust-forced]: https://blog.rust-lang.org/inside-rust/2020/02/27/ffi-unwind-design-meeting.html#forced-unwinding
 
-## Changes to `extern "C"` behavior
+## Changes to the behavior of existing ABI strings
 [extern-c-behavior]: #changes-to-extern-c-behavior
 
 Prior to this RFC, any unwinding operation that crossed an `extern "C"`
@@ -201,6 +201,9 @@ declared with `extern "C"`, caused undefined behavior.
 This RFC retains most of that undefined behavior, with one exception: with the
 `panic=unwind` runtime, `panic!` will cause an `abort` if it would otherwise
 "escape" from a function defined with `extern "C"`.
+
+This change will be applied to all ABI strings other than `"Rust"`, such as
+`"system"`.
 
 ## Interaction with `panic=abort`
 
@@ -216,6 +219,8 @@ undefined behavior, and is not guaranteed to cause the program to abort under
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
+## ABI boundaries and unforced unwinding
+
 This table shows the behavior of an unwinding operation reaching each type of
 ABI boundary (function declaration or definition). "UB" stands for undefined
 behavior. `"C"`-like ABIs are `"C"` itself but also related ABIs such as
@@ -228,8 +233,11 @@ behavior. `"C"`-like ABIs are `"C"` itself but also related ABIs such as
 | `panic=abort`  | `"C unwind"` | `panic!` aborts                       | abort                   |
 | `panic=abort`  | `"C"`-like   | `panic!` aborts (no unwinding occurs) | UB                      |
 
-<!-- XXX TODO mention possibility of catching unwind attempts at `extern "C"`
-boundaries and `abort`ing in debug mode? -->
+In debug mode, the compiler could insert code to catch unwind attempts at
+`extern "C"` boundaries and `abort`; this would provide a safe way to discover
+(and fix) instances of this form of UB.
+
+## Frame deallocation and forced unwinding
 
 The interaction of Rust frames with C functions that deallocate frames (i.e.
 functions that may use forced unwinding on specific platforms) is independent
@@ -241,6 +249,8 @@ of the panic runtime, ABI, or platform.
   specify a safe way to deallocate POFs with `longjmp` or `pthread_exit` in [a
   future RFC][unresolved-questions].
 
+## Additional limitations
+
 No subtype relationship is defined between functions or function pointers using
 different ABIs. This RFC also does not define coercions between `"C"` and
 `"C unwind"`.
@@ -248,6 +258,9 @@ different ABIs. This RFC also does not define coercions between `"C"` and
 As noted in the [summary][summary], if a Rust frame containing a pending
 `catch_unwind` call is unwound by a foreign exception, the behavior is
 undefined for now.
+
+This RFC makes no attempt to define the behavior of asynchronous exceptions,
+such as SEH on Windows, interrupting Rust code.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -262,10 +275,19 @@ This design imposes some burden on existing codebases (mentioned
 
 Having separate ABIs for `"C"` and `"C unwind"` may make interface design more
 difficult, especially since this RFC [postpones][unresolved-questions]
-introducing coercions between function types using different ABIs.
-
-A single ABI that "just works" with C++ (or any other language that may throw
+introducing coercions between function types using different ABIs. Conversely,
+a single ABI that "just works" with C++ (or any other language that may throw
 exceptions) would be simpler to learn and use than two separate ABIs.
+
+This RFC preserves an existing inconsistency between the `"Rust"` ABI (which is
+the default for all functions without an explicit ABI string) and the other
+existing ABIs: no ABI string without the word `unwind` will permit unwinding,
+except the `"Rust"` ABI, which will permit unwinding, but only when compiled
+with `panic=unwind`. Making other ABIs consistent with the `"Rust"` ABI by
+permitting them to unwind by default (and possibly either introducing a new `"C
+unwind"` ABI or an annotation akin to C++'s `noexcept` to explicitly prohibit
+unwinding) would also be a safer default, since it would prevent undefined
+behavior when interfacing with external libraries that may throw exceptions.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
