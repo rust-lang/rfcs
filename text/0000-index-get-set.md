@@ -87,7 +87,7 @@ But the following does not.
 ```rust
 let a = &mut val[3];    // desugars into a call to IndexMut, explained later
                         // one can always do this:
-                        // let a = val[3]; a = &mut a;
+                        // let mut a = val[3]; a = &mut a;
 val[3] ^= true; // compound assignment (of any kind) is not currently supported
                 // there are hidden costs that are out of scope for this RFC
 ```
