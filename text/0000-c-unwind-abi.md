@@ -95,14 +95,8 @@ how well the current design satisfies these constraints.
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-Functions declared with `extern "C"` are generally not permitted to unwind
-(with some very narrow exceptions, described [below][forced-unwinding]).
-This means, for example, that such a function cannot throw an uncaught C++
-exception, and it also cannot invoke Rust code that may panic (unless that
-panic is caught with `catch_unwind`).
-
 When declaring an external function that may unwind, such as an entrypoint to a
-C++ library, use `"C unwind"` instead:
+C++ library, use `extern "C unwind"` instead of `extern "C"`:
 
 ```
 extern "C unwind" {
@@ -211,15 +205,19 @@ If a non-forced foreign unwind would enter a Rust frame via an `extern "C
 unwind"` ABI boundary, but the Rust code is compiled with `panic=abort`, the
 unwind will be caught and the process aborted.
 
-With the exception of the above case, however, unwinding from another language
-into Rust through an FFI entrypoint declared with `extern "C"` is always
-undefined behavior, and is not guaranteed to cause the program to abort under
-`panic=abort`.
+Conversely, non-forced unwinding from another language into Rust through an FFI
+entrypoint declared with `extern "C"` is always undefined behavior, and is not
+guaranteed to cause the program to abort under `panic=abort`. As noted
+[below][abi-boundaries-and-forced-unwinding], however, when compiling in debug
+mode, the compiler may be able to guarantee an abort in this case.
+
+`panic=abort` will have no impact on the behavior of forced unwinding.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 ## ABI boundaries and unforced unwinding
+[abi-boundaries-and-forced-unwinding]: #abi-boundaries-and-forced-unwinding
 
 This table shows the behavior of an unwinding operation reaching each type of
 ABI boundary (function declaration or definition). "UB" stands for undefined
