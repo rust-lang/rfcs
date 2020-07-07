@@ -155,6 +155,8 @@ merged into the RFC repository as a markdown file. At that point the RFC is
   - In most cases, the FCP period is quiet, and the RFC is either merged or
     closed. However, sometimes substantial new arguments or ideas are raised,
     the FCP is canceled, and the RFC goes back into development mode.
+  - It is a this stage that a number is assigned to the RFC file and it is the
+    number of the PR.
 
 ## The RFC life-cycle
 [The RFC life-cycle]: #the-rfc-life-cycle
