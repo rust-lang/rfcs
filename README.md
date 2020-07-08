@@ -105,7 +105,8 @@ merged into the RFC repository as a markdown file. At that point the RFC is
 
   - Fork the RFC repo [RFC repository]
   - Copy `0000-template.md` to `text/0000-my-feature.md` (where "my-feature" is
-    descriptive. don't assign an RFC number yet).
+    descriptive. Don't assign an RFC number yet; This is going to be the PR number
+    and we'll rename the file accordingly if the RFC is accepted).
   - Fill in the RFC. Put care into the details: RFCs that do not present
     convincing motivation, demonstrate lack of understanding of the design's
     impact, or are disingenuous about the drawbacks or alternatives tend to
@@ -155,8 +156,6 @@ merged into the RFC repository as a markdown file. At that point the RFC is
   - In most cases, the FCP period is quiet, and the RFC is either merged or
     closed. However, sometimes substantial new arguments or ideas are raised,
     the FCP is canceled, and the RFC goes back into development mode.
-  - It is a this stage that a number is assigned to the RFC file and it is the
-    number of the PR.
 
 ## The RFC life-cycle
 [The RFC life-cycle]: #the-rfc-life-cycle
