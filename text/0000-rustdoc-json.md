@@ -12,9 +12,9 @@ lean on its data collection and refinement but provide a different front-end.
 # Motivation
 [motivation]: #motivation
 
-The current HTML output of `rustdoc` is often lauded as a key selling point of Rust. Using this
-ubiquitous tool, you can easily find nearly anything you need to know about a crate. However,
-despite its versatility, the use of this specific output has its drawbacks:
+The current HTML output of `rustdoc` is often lauded as a key selling point of Rust. It's a ubiquitous
+tool, that you can use to easily find nearly anything you need to know about a crate. However,
+despite its versatility, its output format has some drawbacks:
 
 - Viewing this output requires a web browser, with (for some features of the output) a JavaScript
   interpreter.
@@ -33,7 +33,7 @@ indicating that it would be a nice feature to have.
 In [the draft RFC from 2018][previous-rfc] there was some discussion of utilizing `save-analysis` to
 provide this information, but with [RLS being replaced by rust-analyzer][RA-RLS] it's possible that
 the feature will be eventually removed from the compiler. In addition `save-analysis` output is just
-as if not more unstable than the current HTML output of `rustdoc`, so a separate feature is preferable.
+as unstable as the current HTML output of `rustdoc`, so a separate format is preferable.
 
 [remove-json]: https://github.com/rust-lang/rust/pull/32773
 [2018-discussion]: https://internals.rust-lang.org/t/design-discussion-json-output-for-rustdoc/8271/6
@@ -71,12 +71,78 @@ pub fn some_fn() {}
 pub struct SomeStruct;
 ```
 
-After running the above command, you should get a `lib.json` file like the following (indented for
-clarity):
+After running the above command, you should get a `lib.json` file like the following:
 
 ```json
 {
-TODO
+  "id": [0, 0],
+  "name": "doctest",
+  "source": {
+    "filename": "src/lib.rs",
+    "begin": [1, 0],
+    "end": [12, 22]
+  },
+  "visibility": "Public",
+  "docs": "Here are some crate-level docs!",
+  "inner": {
+    "ModuleItem": {
+      "is_crate": true,
+      "items": [
+        {
+          "id": [0, 4],
+          "name": "SomeStruct",
+          "source": {
+            "filename": "src/lib.rs",
+            "begin": [12, 0],
+            "end": [12, 22]
+          },
+          "visibility": "Public",
+          "docs": "Here are some docs for `SomeStruct`!",
+          "inner": {
+            "StructItem": {
+              "struct_type": "Unit",
+              "generics": {
+                "params": [],
+                "where_predicates": []
+              },
+              "fields_stripped": false,
+              "fields": []
+            }
+          }
+        },
+        {
+          "id": [0, 3],
+          "name": "some_fn",
+          "source": {
+            "filename": "src/lib.rs",
+            "begin": [8, 0],
+            "end": [8, 19]
+          },
+          "visibility": "Public",
+          "docs": "Here are some docs for `some_fn`!",
+          "inner": {
+            "FunctionItem": {
+              "decl": {
+                "inputs": [],
+                "output": null,
+                "c_variadic": false
+              },
+              "generics": {
+                "params": [],
+                "where_predicates": []
+              },
+              "header": {
+                "is_unsafe": false,
+                "is_const": false,
+                "is_async": false,
+                "abi": "\"Rust\""
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
 }
 ```
 
@@ -84,7 +150,7 @@ TODO
 [reference-level-explanation]: #reference-level-explanation
 
 (*Upon successful implementation/stabilization, this documentation should live in The Rustdoc
-Book.*)
+Book and/or an external crate's Rustdoc.*)
 
 When you request JSON output from `rustdoc`, you're getting a version of the Rust abstract syntax
 tree (AST), so you could see anything that you could export from a valid Rust crate. The following
@@ -97,9 +163,9 @@ trait and vice versa. The structure of those mappings is as follows:
 
 TODO
 
-(*This documentation is deliberately left incomplete; filling it out will happen during the design  process.*)
-
-(*Complete documentation information is deferred to final design and implementation work.*)
+(*Given that the JSON output will be implemented as a set of Rust types with serde serialization,
+the most useful docs for them would be the 40 or so types themselves. It may be helpful to provide
+some sort of [schema](http://json-schema.org/) for use with other languages*)
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -121,12 +187,8 @@ TODO
   remains deprecated and unused.
 - **Alternate data format (XML, Bincode, CapnProto, etc).** JSON was selected for its ubiquity in
   available parsers, but selecting a different data format may provide benefits for file size,
-  compressibility, speed of conversion, etc. If the implementation leans on serde then this may be a
-  non-issue as it would be trivial to switch serialization formats.
-- **Alternate data structure.** Massage the data so that it echoes something closer to user
-  perception, rather than the internal `clean` AST that they're currently modeled after. Such a
-  refinement can be provided in a future RFC, as a potential alternate data format to output, if
-  necessary.
+  compressibility, speed of conversion, etc. Since the implementation will lean on serde then this
+  may be a non-issue as it would be trivial to switch serialization formats.
 
 # Prior art
 [prior-art]: #prior-art
@@ -163,34 +225,40 @@ representation separate from the human-readable outputs:
 - What is the stabilization story? As langauge features are added, this representation will need to
   be extended to accommodate it. As this will change the structure of the data, what does that mean
   for its consumers?
-- How will intra-doc links be handled? Supporting `struct.SomeStruct.html` style links is pretty
-  infeasible since it would tie alternative front-ends to `rustdoc`'s file/folder format. With the
-  nightly intra-rustdoc link syntax it's debatable whether we should resolve those to HTML links or
-  leave that up to whatever consumes the JSON.
-- How do we represent types, and allow people to properly collect type information from places like
-  struct fields, function signatures, etc? `rustdoc`'s own `clean::Type` enum is large and recursive
-  and represents a lot of primitives, in addition to ultimately deferring the lookup to a DefId.
-- The `id` field is basically a copy of DefId from inside the compiler; is there a better way to
-  represent it? How necessary is it to have?
-- Where should we store impls?
-  - In `rustdoc`, trait impls are pooled in the crate root (or placed in the module they're declared
-    in), but before rendering, the information is copied into two maps: one mapping traits to their
-    implementors, and one mapping types to all their impls (inherent or trait).
-  - The HIR copies all trait impls into a map connecting traits to their implementors, though
-    they're also available in the location they're defined if you iterate over the HIR.
-  - However, while trait impls are unburdened by scope rules for visibility, *inherent* impls are.
-    Currently, if `--document-private-items` is passed, the methods defined in an impl are all
-    pooled into a struct, and any `pub(restricted)` scopes link to their respective modules.
-    However, private methods are just shown as private, without any information connecting them to
-    where they're allowed.
-  - This leads to wanting to pool impls on their type (and copying them in to their trait for trait
-    impls), and leaving the visibility fix for a later PR.
+- How will users be able to manipulate the data? Is it a good idea to host a crate outside the
+  compiler that contains the struct definitions for all the types that get serialized so that
+  people could easily hack on the data without the compiler?
+- How will intra-doc links be handled?
+  - Supporting `struct.SomeStruct.html` style links seems infeasible since it would tie alternative
+    front-ends to `rustdoc`'s file/folder format.
+  - With the nightly [intra-rustdoc link syntax](https://github.com/rust-lang/rust/pull/47046) it's
+    debatable whether we should resolve those to HTML links or leave that up to whatever consumes
+    the JSON. Leaving them unresolved seems preferable but it would mean that consumers have to do
+    markdown parsing to replace them with actual links.
+  - In the case of items from external crates should the behavior be different?
+  - If there's an `html_root_url` attribute/argument should the behavior be different?
+- Should we store `Span`s in the output even though we're not exporting the source itself like the
+  HTML output does? If so is there a simple way to sanitize relative links to the files to avoid
+  inconsistent output based on where `rustdoc` is invoked from?
 
+## Output structure
+
+- Should the items be output as one large tree or a flattened map of id's to items? The latter
+  seems like it would have better ergonomics because finding any item is easy as opposed to the
+  tree structure where you'd have to traverse the nested submodules to get to a particular item.
+  It would however introduce another level of indirection when you actually do want to traverse
+  the children of a module because for every item/submodule you'd need to go look it up in the map.
+- Besides the set of language items in the crate, what other information should we output? The
+  mappings of type id's to lists of trait impl id's seems useful as well as the reverse
+  mapping. Are there other mappings/info from the `Cache` or elsewhere in the compiler that would
+  be helpful to users (`paths`, `extern_locations`, `primitive_locations`, etc.)?
+- There are some items such as attributes that defer to compiler internal symbols in their `Clean`
+  representations. Is it OK to simply stringify these and leave their handling up to the user?
+- Should we specially handle `Deref` trait impls to make it easier for a struct to find the methods
+  they can access from their deref target?
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-- Since refactoring has to be done to support both the HTML and JSON backends to `rustdoc`, future
-  work to add other output formats such as pure markdown should be relatively simple after this.
-- Once the JSON output is added, a Rust library for parsing it back into useful structs that lives
-  outside the compiler would be helpful to allow people to easily use this representation.
+- Since refactoring has been done to support multiple backends to `rustdoc`, future work to add
+  other output formats will be more manageable.
