@@ -361,10 +361,12 @@ The `std::mem` module exposes two symmetrical intrinsics that can allow you to a
 
 ### `write_return_with`
 
-    pub unsafe fn write_return_with<T, F: for<'a> FnOnce(*mut u8)>(f: F) -> T {
-        write_unsized_return_with(Layout::new::<T>(), |p| {f(p); &mut *(p as *mut T)})
-    }
-    extern "intrinsic" pub unsafe fn write_unsized_return_with<T: ?Sized, F: for<'a> FnOnce(*mut u8) -> &mut T>(layout: Layout, f: F) -> T;
+```rust
+pub unsafe fn write_return_with<T, F: for<'a> FnOnce(*mut u8)>(f: F) -> T {
+    write_unsized_return_with(Layout::new::<T>(), |p| {f(p); &mut *(p as *mut T)})
+}
+extern "intrinsic" pub unsafe fn write_unsized_return_with<T: ?Sized, F: for<'a> FnOnce(*mut u8) -> &mut T>(layout: Layout, f: F) -> T;
+```
 
 [write_return_with]: #write_return_with
 
@@ -392,9 +394,10 @@ unsafe fn zeroed_array<T>(n: usize) -> [T] {
     write_unsized_return_with(
         array_layout,
         |slot: *mut u8| {
-            for i in 0 .. size_of::<T>() {
+            for i in 0 .. size_of::<T>() * n {
                 *slot.offset(i) = 0;
             }
+            slice::from_raw_parts::<'_, T>(slot, n)
         },
     )
 }
@@ -402,17 +405,19 @@ unsafe fn zeroed_array<T>(n: usize) -> [T] {
 
 ### `read_return_with`
 
-    pub unsafe fn read_return_with<'a, T, F: FnOnce() -> T>(f: F, slot: &mut MaybeUninit<T>) {
-        let finish = read_unsized_return_with(f);
-        debug_assert!(finish.layout() = Layout::new::<T>());
-        finish.finish(slot);
-    }
-    #[lang(read_unsized_return_with_finish)]
-    pub trait ReadUnsizedReturnWithFinish<T: ?Sized> {
-        pub fn finish(self, &mut MaybeUninit<T>);
-        pub fn layout(&self) -> Layout;
-    }
-    extern "intrinsic" pub unsafe fn read_unsized_return_with<'a, T: ?Sized, F: FnOnce() -> T>(f: F) -> impl ReadUnsizedReturnWithFinish<T>;
+```rust
+pub unsafe fn read_return_with<'a, T, F: FnOnce() -> T>(f: F, slot: &mut MaybeUninit<T>) {
+    let finish = read_unsized_return_with(f);
+    debug_assert!(finish.layout() = Layout::new::<T>());
+    finish.finish(slot);
+}
+#[lang(read_unsized_return_with_finish)]
+pub trait ReadUnsizedReturnWithFinish<T: ?Sized> {
+    pub fn finish(self, &mut MaybeUninit<T>);
+    pub fn layout(&self) -> Layout;
+}
+extern "intrinsic" pub unsafe fn read_unsized_return_with<'a, T: ?Sized, F: FnOnce() -> T>(f: F) -> impl ReadUnsizedReturnWithFinish<T>;
+```
 
 [read_return_with]: #read_return_with
 
@@ -439,7 +444,7 @@ impl<T: ?Sized> Box<T> {
         unsafe {
             let mut uninit = BoxUninit { p: None };
             let state = read_unsized_return_with(f);
-            let p = NonNull::from_mut_ptr(GlobalAlloc.alloc(state.layout()));
+            let p = NonNull::from_mut_ptr(GlobalAlloc.alloc(finish.layout()));
             uninit.p = Some(p);
             state.finish(p.as_mut_ptr() as *mut MaybeUninit<T> as &mut MaybeUninit<T>);
             forget(uninit);
