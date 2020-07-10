@@ -7,7 +7,7 @@
 [summary]: #summary
 
 To allow for traits to have a stable fat-pointer layout and a stable vtable layout to allow FFI Compatibility, 
- a new `#[stable_vtable]` attribute is provided to o
+ a new `#[stable_vtable]` attribute is provided to opt-in to the layout as described within this rfc. 
 
 # Motivation
 [motivation]: #motivation
