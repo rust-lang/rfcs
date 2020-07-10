@@ -8,7 +8,7 @@
 
 Implement ["placement"](https://internals.rust-lang.org/t/removal-of-all-unstable-placement-features/7223) with no new syntax, by extending the existing capabilities of ordinary `return`. This involves [copying Guaranteed Copy Elision rules pretty much wholesale from C++17](https://jonasdevlieghere.com/guaranteed-copy-elision/), adding functions like `fn new_with<F: FnOnce() -> T, T: ?Sized>(f: F) -> Self` to Box and `fn push_with<F: FnOnce() -> T>(&mut self, f: F)` to Vec to allow performing the allocation before evaluating F, providing raw access to the return slot for functions as an unsafe feature, and allowing functions to directly return **Dynamically-Sized Types** (DSTs) by compiling such functions into a special kind of "generator".
 
-Starting with the questions given at the end of the [old RFC's mortician's note](https://github.com/rust-lang/rust/issues/27779):
+Starting with the questions given at the end of the [old RFC's mortician's note](https://github.com/rust-lang/rust/issues/27779#issuecomment-378416911):
 
  * **Does the new RFC support DSTs? serde and fallible creation?** Yes on DSTs. On fallible creation, it punts it into the future section.
  * **Does the new RFC have a lot of traits? Is it justified?** It introduces no new traits at all.
@@ -261,7 +261,7 @@ impl __WithBranch__Internal {
 
 More elaborate example:
 
-```
+```rust
 fn with_multiple_exit_points() -> [i32] {
     while keep_going() {
         if got_cancelation() {
@@ -439,7 +439,7 @@ impl<T: ?Sized> Box<T> {
         unsafe {
             let mut uninit = BoxUninit { p: None };
             let state = read_unsized_return_with(f);
-            let p = NonNull::from_mut_ptr(GlobalAlloc.alloc(finish.layout()));
+            let p = NonNull::from_mut_ptr(GlobalAlloc.alloc(state.layout()));
             uninit.p = Some(p);
             state.finish(p.as_mut_ptr() as *mut MaybeUninit<T> as &mut MaybeUninit<T>);
             forget(uninit);
