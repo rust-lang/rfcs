@@ -82,7 +82,7 @@ place minimal requirements on the introduction of targets.
   the standard library on the basis of a tier 3 target not implementing those
   portions.
 - Where possible, tier 3 targets may wish to provide documentation for the Rust
-  community for how to build and run tests for the platform, ideally using
+  community for how to build and run tests for the target, ideally using
   emulation.
 - Tier 3 targets must not impose burden on the authors of pull requests, or
   other developers in the community, to maintain the target. In particular,
@@ -93,7 +93,7 @@ place minimal requirements on the introduction of targets.
 - If a tier 3 target shows no signs of activity and has not built for some
   time, and removing it would improve the quality of the Rust codebase, we may
   post a PR to remove it; any such PR will be CCed to people who have
-  previously worked on the platform, to check potential interest.
+  previously worked on the target, to check potential interest.
 
 ## Tier 2 target policy
 
@@ -117,7 +117,7 @@ the target will not block forward progress of the Rust project.
   every tier 2 target, and are not expected to provide target-specific
   implementations for every tier 2 target.
 - Where possible, tier 2 targets should provide documentation for the Rust
-  community for how to build and run tests for the platform, ideally using
+  community for how to build and run tests for the target, ideally using
   emulation.
 - The target development team should not only fix target-specific issues, but
   should use any such issue as an opportunity to educate the Rust community
@@ -140,12 +140,12 @@ the target will not block forward progress of the Rust project.
   target, and should fix any test failures in a reasonably timely fashion.
 - A tier 2 target may be demoted or removed if it no longer meets these
   requirements. Any proposal for demotion or removal will be CCed to people who
-  have previously worked on the platform, and will be communicated widely to
-  the Rust community before being dropped from a stable release.
+  have previously worked on the target, and will be communicated widely to the
+  Rust community before being dropped from a stable release.
 - All tier 3 requirements apply.
 
-Note: some tier 2 platforms additionally have binaries built to run on them as
-a host (such as `rustc` and `cargo`). Such a platform must meet all the
+Note: some tier 2 targets additionally have binaries built to run on them as a
+host (such as `rustc` and `cargo`). Such a target must meet all the
 requirements above, and must additionally get the compiler and infrastructure
 team to approve the building of host tools. Depending on the target and its
 capabilities, this may include only `rustc` and `cargo`, or may include
@@ -177,8 +177,8 @@ target. We hold tier 1 targets to our highest standard of requirements.
   such resources to the Rust project, to the satisfaction and approval of the
   Rust infrastructure team.
 - Tier 1 targets must provide documentation for the Rust community for how to
-  build and run tests for the platform, using emulation if possible, or
-  dedicated hardware if necessary.
+  build and run tests for the target, using emulation if possible, or dedicated
+  hardware if necessary.
 - A tier 1 target may be demoted or removed if it no longer meets these
   requirements. Any proposal for demotion or removal will be communicated
   widely to the Rust community, both when initially proposed and before being
