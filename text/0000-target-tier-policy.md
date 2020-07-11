@@ -206,6 +206,14 @@ The set of approving teams for each tier arose out of discussion with the
 various teams involved with aspects of the Rust project impacted by new
 targets.
 
+Policies that require the approval of multiple teams could instead require a
+core team approval. This would have the advantage of reducing the number of
+people involved in the final approval, but would put more coordination effort
+on the core team and the various team leads to ensure that the individual teams
+approve. As another alternative, we could separate the individual team
+approvals (into separate issues or separate rfcbot polls), to simplify checking
+for consensus and reduce diffusion of responsibility; however, this could also
+increase the resulting complexity and result in discussions in multiple places.
 
 # Prior art
 [prior-art]: #prior-art
