@@ -122,8 +122,8 @@ the target will not block forward progress of the Rust project.
 - A tier 2 target must have value to people other than its maintainers.
 - Any new tier 2 target must have a designated team of developers on call to
   consult on target-specific build-breaking issues, or if necessary to develop
-  target-specific language or library implementation details. (This team should
-  in almost all cases have at least 2 developers.)
+  target-specific language or library implementation details. This team must
+  have at least 2 developers.
 - The target must not place undue burden on Rust developers not specifically
   concerned with that target. Rust developers may be expected to not
   gratuitously break a tier 2 target, but are not expected to become experts in
