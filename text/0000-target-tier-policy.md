@@ -205,8 +205,20 @@ criteria](https://ftp-master.debian.org/archive-criteria.html).
 [unresolved-questions]: #unresolved-questions
 
 - How should we track the maintainers of a target, so that we can page them if
-  we need an issue addressed involving that target? Can we do so using github
-  teams, so that we can mention them in an issue or PR to get their attention?
+  we need an issue addressed involving that target?
+  - We could use github teams, which could be directly mentioned in an issue or
+    PR to get their attention. However, this would also put a "Member" badge on
+    the members of those teams, which may give an unwarranted appearance of
+    official status.
+  - We could track them in a document posted somewhere, and manually copy-paste
+    the list to ping them.
+  - We could add them as a "marker team" (e.g. `target-xyz`) in the
+    [rust-lang/team](https://github.com/rust-lang/team) repository. For
+    example, see [the icebreakers-llvm
+    team](https://github.com/rust-lang/team/blob/master/teams/icebreakers-llvm.toml).
+    This would allow pinging them with `@rustbot ping target-xyz`.
+    - We could additionally teach rustbot to automatically ping a target team
+      when an issue is labeled with a target-specific label.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
