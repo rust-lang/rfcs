@@ -173,9 +173,10 @@ target. We hold tier 1 targets to our highest standard of requirements.
   target, and the additional work of supporting the target.
 - Tier 1 targets must have substantial, widespread interest within the
   developer community, and must serve the ongoing needs of multiple production
-  users of Rust across multiple organizations or projects. A tier 1 target may
-  be demoted or removed if it becomes obsolete or no longer meets this
-  requirement.
+  users of Rust across multiple organizations or projects. These requirements
+  are subjective, and determined by consensus of the approving teams. A tier 1
+  target may be demoted or removed if it becomes obsolete or no longer meets
+  this requirement.
 - The target must build and pass tests reliably in CI.
 - Building the target and running the testsuite for the target must not take
   substantially longer than other targets.
