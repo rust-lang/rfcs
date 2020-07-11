@@ -27,6 +27,9 @@ don't know who to ask or where to start.
 See <https://forge.rust-lang.org/release/platform-support.html> for more
 information about targets and tiers.
 
+The policy sections of this RFC should be posted on
+<https://forge.rust-lang.org/> in a "Target Tier Policy" section.
+
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
@@ -43,9 +46,6 @@ Tier 2 and tier 1 targets place work on the Rust community as a whole, to avoid
 breaking the target. Thus, these tiers require commensurate efforts from the
 maintainers of the target, to demonstrate value and to minimize any disruptions
 to ongoing Rust development.
-
-The policy sections of this RFC should be posted on
-<https://forge.rust-lang.org/> in a "Target Tier Policy" section.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
