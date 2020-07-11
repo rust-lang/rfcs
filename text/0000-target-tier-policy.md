@@ -142,7 +142,9 @@ the target will not block forward progress of the Rust project.
 - The target must build reliably in CI.
 - Building the target must not take substantially longer than other targets.
 - Tier 2 targets must support building on the existing targets used for CI
-  infrastructure.
+  infrastructure. In particular, new tier 2 targets must support
+  cross-compiling, and must not require using the target as the host for
+  builds.
 - Tier 2 targets must not impose burden on the authors of pull requests, or
   other developers in the community, to ensure that tests pass for the target.
   In particular, do not post comments (automated or manual) on a PR that
