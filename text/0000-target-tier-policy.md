@@ -89,7 +89,14 @@ place minimal requirements on the introduction of targets.
   do not post comments (automated or manual) on a PR that suggests a block on
   the PR based on the target. (A PR author may choose to help with a tier 3
   target but is not required to.)
-- Patches adding or updating tier 3 targets must not break any existing target.
+- Patches adding or updating tier 3 targets must not break any existing tier 2
+  or tier 1 target, and must not break another tier 3 target without approval
+  of either the compiler team or the maintainers of the other tier 3 target.
+  - In particular, this may come up when working on closely related targets,
+    such as variations of the same architecture with different features. Avoid
+    introducing unconditional uses of features that another variation of the
+    target may not have; use conditional compilation or runtime detection, as
+    appropriate, to let each target run code supported by that target.
 - If a tier 3 target shows no signs of activity and has not built for some
   time, and removing it would improve the quality of the Rust codebase, we may
   post a PR to remove it; any such PR will be CCed to people who have
