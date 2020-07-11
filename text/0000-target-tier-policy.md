@@ -157,6 +157,17 @@ the target will not block forward progress of the Rust project.
   requirements. Any proposal for demotion or removal will be CCed to people who
   have previously worked on the target, and will be communicated widely to the
   Rust community before being dropped from a stable release.
+  - In some circumstances, especially if the target maintainer team does not
+    respond in a timely fashion, Rust teams may land pull requests that
+    temporarily disable some targets in the nightly compiler, in order to
+    implement a feature not yet supported by those targets. (As an example,
+    this happened when introducing the 128-bit types `u128` and `i128`.) Such a
+    pull request will include notification and coordination with the
+    maintainers of such targets. The maintainers of such targets will then be
+    expected to implement the corresponding target-specific support in order to
+    re-enable the target. If the maintainers of such targets cannot provide
+    such support in time for the next stable release, this may result in
+    demoting or removing the targets.
 - All tier 3 requirements apply.
 
 Note: some tier 2 targets additionally have binaries built to run on them as a
