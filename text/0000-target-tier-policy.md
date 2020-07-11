@@ -147,7 +147,9 @@ the target will not block forward progress of the Rust project.
 Note: some tier 2 platforms additionally have binaries built to run on them as
 a host (such as `rustc` and `cargo`). Such a platform must meet all the
 requirements above, and must additionally get the compiler and infrastructure
-team to approve the building of host tools.
+team to approve the building of host tools. Depending on the target and its
+capabilities, this may include only `rustc` and `cargo`, or may include
+additional tools such as `clippy` and `rustfmt`.
 
 ## Tier 1 target policy
 
