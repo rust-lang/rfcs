@@ -188,10 +188,10 @@ target. We hold tier 1 targets to our highest standard of requirements.
 - The target must build and pass tests reliably in CI.
 - Building the target and running the testsuite for the target must not take
   substantially longer than other targets.
-- If running the testsuite requires additional infrastructure (such as systems
-  running the target), the target development team shall arrange to provide
-  such resources to the Rust project, to the satisfaction and approval of the
-  Rust infrastructure team.
+- If running the testsuite requires additional infrastructure (such as physical
+  systems running the target), the target development team must arrange to
+  provide such resources to the Rust project, to the satisfaction and approval
+  of the Rust infrastructure team.
 - Tier 1 targets must provide documentation for the Rust community for how to
   build and run tests for the target, using emulation if possible, or dedicated
   hardware if necessary.
