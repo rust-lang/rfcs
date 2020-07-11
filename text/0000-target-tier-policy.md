@@ -7,7 +7,7 @@
 [summary]: #summary
 
 We should have an official, objective policy for adding new (tier 3) targets,
-and for raising targets to tier 2 (with rustup builds) or even tier 1.
+and for raising targets to tier 2 (with `rustup` builds) or even tier 1.
 
 # Motivation
 [motivation]: #motivation
@@ -19,12 +19,12 @@ reviewers do not know what overall policy to apply, and whether to apply solely
 their own judgment or defer to a Rust governance team.
 
 Rust developers regularly ask how they can raise an existing target to tier 2
-(and in particular how they can make it available via rustup), and occasionally
-ask what it would take to add a new tier 1 target. The Rust project has no
-clear policy for target tiers. People not only don't know, they don't know who
-to ask or where to start.
+(and in particular how they can make it available via `rustup`), and
+occasionally ask what it would take to add a new tier 1 target. The Rust
+project has no clear policy for target tiers. People not only don't know, they
+don't know who to ask or where to start.
 
-(See https://forge.rust-lang.org/platform-support.html for more information
+(See <https://forge.rust-lang.org/platform-support.html> for more information
 about targets and tiers.)
 
 # Guide-level explanation
@@ -45,7 +45,7 @@ maintainers of the target, to demonstrate value and to minimize any disruptions
 to ongoing Rust development.
 
 The policy sections of this RFC should be posted on
-https://forge.rust-lang.org/ in a "Target Tier Policy" section.
+<https://forge.rust-lang.org/> in a "Target Tier Policy" section.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -211,7 +211,7 @@ targets.
 [prior-art]: #prior-art
 
 This attempts to formalize and document Rust policy around targets and
-architectures. https://forge.rust-lang.org/release/platform-support.html
+architectures. <https://forge.rust-lang.org/release/platform-support.html>
 documents some of that policy.
 
 Future expansions of such policy may find requirements from other communities
