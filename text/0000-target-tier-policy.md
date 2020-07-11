@@ -220,8 +220,8 @@ increase the resulting complexity and result in discussions in multiple places.
 [prior-art]: #prior-art
 
 This attempts to formalize and document Rust policy around targets and
-architectures. <https://forge.rust-lang.org/release/platform-support.html>
-documents some of that policy.
+architectures. Some requirements of such a policy appear on the [Rust Platform
+Support page](https://forge.rust-lang.org/release/platform-support.html).
 
 Future expansions of such policy may find requirements from other communities
 useful as examples, such as Debian's [arch
