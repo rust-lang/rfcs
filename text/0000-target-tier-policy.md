@@ -75,6 +75,12 @@ place minimal requirements on the introduction of targets.
 - Tier 3 targets may have unusual requirements to build or use, but must not
   create legal issues for the Rust project or for developers who work on those
   targets.
+- Tier 3 targets should attempt to implement as much of the standard library as
+  possible, but may leave some code `unimplemented!()`, whether because the
+  target makes it impossible to implement or challenging to implement. The
+  authors of pull requests are not obligated to avoid calling any portions of
+  the standard library on the basis of a tier 3 target not implementing those
+  portions.
 - Where possible, tier 3 targets may wish to provide documentation for the Rust
   community for how to build and run tests for the platform, ideally using
   emulation.
@@ -117,6 +123,9 @@ the target will not block forward progress of the Rust project.
   should use any such issue as an opportunity to educate the Rust community
   about portability to their target, and enhance their documentation of the
   target.
+- Tier 2 targets must not leave any significant portions of `core` or the
+  standard library `unimplemented!()`, unless they cannot possibly be supported
+  on the target.
 - The target must build reliably in CI.
 - Building the target must not take substantially longer than other targets.
 - Tier 2 targets must support building on the existing targets used for CI
