@@ -70,8 +70,8 @@ place minimal requirements on the introduction of targets.
 - Tier 3 targets must use naming consistent with any existing targets; for
   instance, a target for a similar CPU or OS should not gratuitously use an
   inconsistent name for that CPU or OS. Targets should normally use the same
-  names as used elsewhere in the broader ecosystem (such as in other
-  toolchains), unless they have a very good reason to diverge.
+  names as used elsewhere in the broader ecosystem beyond Rust (such as in
+  other toolchains), unless they have a very good reason to diverge.
 - Tier 3 targets may have unusual requirements to build or use, but must not
   create legal issues for the Rust project or for developers who work on those
   targets.
