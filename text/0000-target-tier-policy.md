@@ -227,8 +227,8 @@ Eventually, as more targets seek tier 1 status, we may want to document more
 criteria used to evaluate requirements such as "long-term viability of the
 target". We should also update these requirements if corner cases arise.
 
-Some of our existing ports may not meet all of these criteria today. We may
-wish to audit existing ports against these criteria, but this RFC does not
+Some of our existing targets may not meet all of these criteria today. We may
+wish to audit existing targets against these criteria, but this RFC does not
 constitute a commitment to do so in a timely fashion.
 
 This RFC should not serve as the canonical home of the most up-to-date version
