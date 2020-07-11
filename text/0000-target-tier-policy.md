@@ -67,7 +67,7 @@ place minimal requirements on the introduction of targets.
   always use their own best judgment regarding the quality of work, and the
   suitability of a target for the Rust project.
 - If a reviewer wishes to consult a broader team for additional guidance, they
-  should contact the compiler team.
+  may contact the compiler team.
 - If a proposed target or target-specific patch substantially changes code
   shared with other targets (not just target-specific code), the reviewer
   should consult the compiler team.
