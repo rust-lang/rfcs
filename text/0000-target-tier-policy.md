@@ -50,7 +50,13 @@ to ongoing Rust development.
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-Requirements for each tier:
+Rust targets fall into three "tiers" of support:
+- Tier 3 targets, which provide no guarantees of support.
+- Tier 2 targets, which will always build but not pass tests.
+- Tier 1 targets, which will always build and pass tests.
+
+This policy defines the requirements for accepting a proposed target at a given
+level of support.
 
 ## Tier 3 target policy
 
