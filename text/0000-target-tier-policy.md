@@ -44,6 +44,9 @@ breaking the target. Thus, these tiers require commensurate efforts from the
 maintainers of the target, to demonstrate value and to minimize any disruptions
 to ongoing Rust development.
 
+The policy sections of this RFC should be posted on
+https://forge.rust-lang.org/ in a "Target Tier Policy" section.
+
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
@@ -201,7 +204,6 @@ criteria](https://ftp-master.debian.org/archive-criteria.html).
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-- Where, precisely, should we post the official policy?
 - How should we track the maintainers of a target, so that we can page them if
   we need an issue addressed involving that target? Can we do so using github
   teams, so that we can mention them in an issue or PR to get their attention?
