@@ -24,8 +24,8 @@ occasionally ask what it would take to add a new tier 1 target. The Rust
 project has no clear policy for target tiers. People not only don't know, they
 don't know who to ask or where to start.
 
-(See <https://forge.rust-lang.org/release/platform-support.html> for more
-information about targets and tiers.)
+See <https://forge.rust-lang.org/release/platform-support.html> for more
+information about targets and tiers.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
