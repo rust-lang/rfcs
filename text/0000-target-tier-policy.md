@@ -28,8 +28,9 @@ don't know who to ask or where to start.
 See <https://forge.rust-lang.org/release/platform-support.html> for more
 information about targets and tiers.
 
-The policy sections of this RFC should be posted on
-<https://forge.rust-lang.org/> in a "Target Tier Policy" section.
+Once accepted, the policy sections of this RFC should be posted on
+<https://forge.rust-lang.org/> in a "Target Tier Policy" section; this RFC will
+not be the canonical home of the up-to-date target tier policy.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -343,7 +344,3 @@ target". We should also update these requirements if corner cases arise.
 Some of our existing targets may not meet all of these criteria today. We may
 wish to audit existing targets against these criteria, but this RFC does not
 constitute a commitment to do so in a timely fashion.
-
-This RFC should not serve as the canonical home of the most up-to-date version
-of this policy; the official policy should live on rust-lang.org and in
-official documentation.
