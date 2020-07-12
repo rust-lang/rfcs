@@ -72,7 +72,10 @@ policy. (Such requirements may subsequently motivate additions of this policy.)
 
 While these criteria attempt to document the policy, that policy still involves
 human judgment. Targets must fulfill the spirit of the requirements as well, as
-determined by the judgment of the approving teams.
+determined by the judgment of the approving teams. Reviewers and team members
+evaluating targets and target-specific patches should always use their own best
+judgment regarding the quality of work, and the suitability of a target for the
+Rust project.
 
 Before filing an issue or pull request (PR) to introduce or promote a target,
 the target should already meet the corresponding tier requirements. (This does
@@ -96,14 +99,13 @@ recommendations. This language is based on [IETF RFC
 At this tier, the Rust project provides no official support for a target, so we
 place minimal requirements on the introduction of targets.
 
-No central decision is required to add a new tier 3 target. Reviewers may
-always use their own best judgment regarding the quality of work, and the
-suitability of a target for the Rust project.
+A proposed new tier 3 target must be reviewed and approved by a member of the
+compiler team based on these requirements. The reviewer may choose to gauge
+broader compiler team consensus via the "Major Change Process" (MCP).
 
-If a reviewer wishes to consult a broader team for additional guidance, they
-may contact the compiler team. A proposed target or target-specific patch that
-substantially changes code shared with other targets (not just target-specific
-code) must be reviewed and approved by the compiler team before acceptance.
+A proposed target or target-specific patch that substantially changes code
+shared with other targets (not just target-specific code) must be reviewed and
+approved by the appropriate team for that shared code before acceptance.
 
 If the proposer of a target wishes to appeal the rejection of a target, they
 may contact the compiler team.
