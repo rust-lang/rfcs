@@ -101,7 +101,7 @@ place minimal requirements on the introduction of targets.
 
 A proposed new tier 3 target must be reviewed and approved by a member of the
 compiler team based on these requirements. The reviewer may choose to gauge
-broader compiler team consensus via the "Major Change Process" (MCP).
+broader compiler team consensus via a Major Change Proposal (MCP).
 
 A proposed target or target-specific patch that substantially changes code
 shared with other targets (not just target-specific code) must be reviewed and
@@ -156,8 +156,9 @@ At this tier, the Rust project guarantees that a target builds, and will reject
 patches that fail to build on a target. Thus, we place requirements that ensure
 the target will not block forward progress of the Rust project.
 
-Any new tier 2 target must be reviewed and approved by the compiler team based
-on these requirements.
+A proposed new tier 2 target must be reviewed and approved by the compiler team
+based on these requirements. Such review and approval may occur via a Major
+Change Proposal (MCP).
 
 In addition, the infrastructure team must approve the integration of the target
 into Continuous Integration (CI), and the tier 2 CI-related requirements. This
