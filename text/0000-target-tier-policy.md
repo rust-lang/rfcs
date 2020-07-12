@@ -279,10 +279,11 @@ target, and the additional work of supporting the target.
   of the Rust infrastructure team.
 - All tier 2 requirements apply.
 
-A tier 1 target may be demoted or removed if it no longer meets these
-requirements. Any proposal for demotion or removal will be communicated widely
-to the Rust community, both when initially proposed and before being dropped
-from a stable release.
+A tier 1 target may be demoted if it no longer meets these requirements. Any
+proposal for demotion or removal will be communicated widely to the Rust
+community, both when initially proposed and before being dropped from a stable
+release. A tier 1 target is highly unlikely to be directly removed without
+first being demoted to tier 2 or tier 3.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
