@@ -130,9 +130,8 @@ the target will not block forward progress of the Rust project.
   gratuitously break a tier 2 target, but are not expected to become experts in
   every tier 2 target, and are not expected to provide target-specific
   implementations for every tier 2 target.
-- Where possible, tier 2 targets should provide documentation for the Rust
-  community for how to build and run tests for the target, ideally using
-  emulation.
+- Tier 2 targets must provide documentation for the Rust community for how to
+  build and run tests for the target (ideally using emulation).
 - The target development team should not only fix target-specific issues, but
   should use any such issue as an opportunity to educate the Rust community
   about portability to their target, and enhance their documentation of the
