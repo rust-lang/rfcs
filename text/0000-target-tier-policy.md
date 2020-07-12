@@ -158,10 +158,10 @@ review and approval may take place in a PR adding the target to CI.
   target-specific language or library implementation details. This team must
   have at least 2 developers.
 - The target must not place undue burden on Rust developers not specifically
-  concerned with that target. Rust developers may be expected to not
-  gratuitously break a tier 2 target, but are not expected to become experts in
-  every tier 2 target, and are not expected to provide target-specific
-  implementations for every tier 2 target.
+  concerned with that target. Rust developers are expected to not gratuitously
+  break a tier 2 target, but are not expected to become experts in every tier 2
+  target, and are not expected to provide target-specific implementations for
+  every tier 2 target.
 - The target must provide documentation for the Rust community explaining how
   to build for the target using cross-compilation, and explaining how to run
   tests for the target, using emulation if possible or dedicated hardware if
