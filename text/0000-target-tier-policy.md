@@ -68,6 +68,15 @@ own judgment. Those teams may apply additional requirements, including
 subjective requirements, such as to deal with issues not foreseen by this
 policy. (Such requirements may subsequently motivate additions of this policy.)
 
+Before filing an issue or pull request (PR) to introduce or promote a target,
+the target should already meet the corresponding tier requirements. (This does
+not preclude a target's development team using issues to track requirements
+that have not yet been met, as appropriate; however, before officially
+proposing the introduction or promotion of a target, it should meet all of the
+necessary requirements.) A target proposal is encouraged to quote the
+corresponding requirements verbatim as part of explaining how the target meets
+those requirements.
+
 ## Tier 3 target policy
 
 At this tier, the Rust project provides no official support for a target, so we
