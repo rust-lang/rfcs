@@ -147,6 +147,29 @@ the target will not block forward progress of the Rust project.
   should use any such issue as an opportunity to educate the Rust community
   about portability to their target, and enhance their documentation of the
   target.
+- The target must document its baseline expectations for CPU features,
+  operating system versions or features, runtime environment versions or
+  features, or similar.
+- If introducing a new tier 2 or higher target that is identical to an existing
+  Rust target except for the baseline expectations for CPU features, operating
+  system versions or features, runtime environment versions or features, or
+  similar, then the proposed target must document to the satisfaction of the
+  approving teams why the specific difference in baseline expectations provides
+  sufficient value to justify a separate target.
+  - Note that in some cases, based on the usage of existing targets within the
+    Rust community, Rust developers or a target development team may wish to
+    modify the baseline expectations of a target, or split an existing target
+    into multiple targets with different baseline expectations. A proposal to
+    do so will be treated similarly to the analogous promotion, demotion, or
+    removal of a target, according to this policy, with the same team approvals
+    required.
+    - For instance, if an OS version has become obsolete and unsupported, a
+      target for that OS may raise its baseline expectations for OS version
+      (treated as though removing a subset of the target), or a target for that
+      OS may split out support for older OS versions into a lower-tier target
+      (treated as though demoting a subset of the target, and requiring
+      justification for a new target at a lower tier for the older OS
+      versions).
 - Tier 2 targets must not leave any significant portions of `core` or the
   standard library `unimplemented!()`, unless they cannot possibly be supported
   on the target.
