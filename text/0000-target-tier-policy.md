@@ -344,3 +344,7 @@ target". We should also update these requirements if corner cases arise.
 Some of our existing targets may not meet all of these criteria today. We may
 wish to audit existing targets against these criteria, but this RFC does not
 constitute a commitment to do so in a timely fashion.
+
+Future enhancements to the target tier policy may introduce more detailed
+requirements for supplying host tools for a target, or for supplying part or
+all of the standard library.
