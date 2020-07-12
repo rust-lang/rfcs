@@ -83,6 +83,14 @@ requirements.) A target proposal is encouraged to quote the corresponding
 requirements verbatim as part of explaining how the target meets those
 requirements.
 
+In this policy, the words "must" and "must not" specify absolute requirements
+that a target must meet to qualify for a tier. The words "should" and "should
+not" specify requirements that apply in almost all cases, but for which the
+approving teams may be willing to grant an exception for good reason.  The word
+"may" indicates something entirely optional, and does not indicate guidance or
+recommendations. This language is based on [IETF RFC
+2119](https://tools.ietf.org/html/rfc2119).
+
 ## Tier 3 target policy
 
 At this tier, the Rust project provides no official support for a target, so we
