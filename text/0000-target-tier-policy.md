@@ -108,6 +108,9 @@ code) must be reviewed and approved by the compiler team before acceptance.
 If the proposer of a target wishes to appeal the rejection of a target, they
 may contact the compiler team.
 
+- Any new tier 3 target must have a designated developer or developers (the
+  "target maintainers") on record to be CCed when issues arise regarding the
+  target.
 - Tier 3 targets must use naming consistent with any existing targets; for
   instance, a target for the same CPU or OS as an existing Rust target should
   use the same name for that CPU or OS. Targets should normally use the same
@@ -141,10 +144,12 @@ may contact the compiler team.
     target may not have; use conditional compilation or runtime detection, as
     appropriate, to let each target run code supported by that target.
 
-If a tier 3 target shows no signs of activity and has not built for some time,
-and removing it would improve the quality of the Rust codebase, we may post a
-PR to remove it; any such PR will be CCed to people who have previously worked
-on the target, to check potential interest.
+If a tier 3 target stops meeting these requirements, or the target maintainers
+no longer have interest or time, or the target shows no signs of activity and
+has not built for some time, or removing the target would improve the quality
+of the Rust codebase, we may post a PR to remove it; any such PR will be CCed
+to the target maintainers (and potentially other people who have previously
+worked on the target), to check potential interest in improving the situation.
 
 ## Tier 2 target policy
 
