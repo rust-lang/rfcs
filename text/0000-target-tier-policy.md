@@ -301,6 +301,9 @@ approvals (into separate issues or separate rfcbot polls), to simplify checking
 for consensus and reduce diffusion of responsibility; however, this could also
 increase the resulting complexity and result in discussions in multiple places.
 
+We could introduce specific time requirements for the amount of time a target
+must spend at a tier before becoming eligible for promotion to a higher tier.
+
 # Prior art
 [prior-art]: #prior-art
 
