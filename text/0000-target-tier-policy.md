@@ -132,10 +132,11 @@ may contact the compiler team.
     introducing unconditional uses of features that another variation of the
     target may not have; use conditional compilation or runtime detection, as
     appropriate, to let each target run code supported by that target.
-- If a tier 3 target shows no signs of activity and has not built for some
-  time, and removing it would improve the quality of the Rust codebase, we may
-  post a PR to remove it; any such PR will be CCed to people who have
-  previously worked on the target, to check potential interest.
+
+If a tier 3 target shows no signs of activity and has not built for some time,
+and removing it would improve the quality of the Rust codebase, we may post a
+PR to remove it; any such PR will be CCed to people who have previously worked
+on the target, to check potential interest.
 
 ## Tier 2 target policy
 
@@ -216,21 +217,6 @@ review and approval may take place in a PR adding the target to CI.
   tests pass for a tier 2 target, even if notified that they fail.)
 - The target development team should regularly run the testsuite for the
   target, and should fix any test failures in a reasonably timely fashion.
-- A tier 2 target may be demoted or removed if it no longer meets these
-  requirements. Any proposal for demotion or removal will be CCed to people who
-  have previously worked on the target, and will be communicated widely to the
-  Rust community before being dropped from a stable release.
-  - In some circumstances, especially if the target maintainer team does not
-    respond in a timely fashion, Rust teams may land pull requests that
-    temporarily disable some targets in the nightly compiler, in order to
-    implement a feature not yet supported by those targets. (As an example,
-    this happened when introducing the 128-bit types `u128` and `i128`.) Such a
-    pull request will include notification and coordination with the
-    maintainers of such targets. The maintainers of such targets will then be
-    expected to implement the corresponding target-specific support in order to
-    re-enable the target. If the maintainers of such targets cannot provide
-    such support in time for the next stable release, this may result in
-    demoting or removing the targets.
 - All tier 3 requirements apply.
 
 Note: some tier 2 targets additionally have binaries built to run on them as a
@@ -239,6 +225,22 @@ requirements above, and must additionally get the compiler and infrastructure
 team to approve the building of host tools. Depending on the target and its
 capabilities, this may include only `rustc` and `cargo`, or may include
 additional tools such as `clippy` and `rustfmt`.
+
+A tier 2 target may be demoted or removed if it no longer meets these
+requirements. Any proposal for demotion or removal will be CCed to people who
+have previously worked on the target, and will be communicated widely to the
+Rust community before being dropped from a stable release.
+
+In some circumstances, especially if the target maintainer team does not
+respond in a timely fashion, Rust teams may land pull requests that temporarily
+disable some targets in the nightly compiler, in order to implement a feature
+not yet supported by those targets. (As an example, this happened when
+introducing the 128-bit types `u128` and `i128`.) Such a pull request will
+include notification and coordination with the maintainers of such targets. The
+maintainers of such targets will then be expected to implement the
+corresponding target-specific support in order to re-enable the target. If the
+maintainers of such targets cannot provide such support in time for the next
+stable release, this may result in demoting or removing the targets.
 
 ## Tier 1 target policy
 
@@ -275,11 +277,12 @@ target, and the additional work of supporting the target.
   systems running the target), the target development team must arrange to
   provide such resources to the Rust project, to the satisfaction and approval
   of the Rust infrastructure team.
-- A tier 1 target may be demoted or removed if it no longer meets these
-  requirements. Any proposal for demotion or removal will be communicated
-  widely to the Rust community, both when initially proposed and before being
-  dropped from a stable release.
 - All tier 2 requirements apply.
+
+A tier 1 target may be demoted or removed if it no longer meets these
+requirements. Any proposal for demotion or removal will be communicated widely
+to the Rust community, both when initially proposed and before being dropped
+from a stable release.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
