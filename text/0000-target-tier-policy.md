@@ -200,10 +200,9 @@ review and approval may take place in a PR adding the target to CI.
   slowest target in CI. This requirement is subjective, to be evaluated by the
   infrastructure team, and will take the community importance of the target
   into account.
-- Tier 2 targets must support building on the existing targets used for CI
-  infrastructure. In particular, new tier 2 targets must support
-  cross-compiling, and must not require using the target as the host for
-  builds.
+- Tier 2 targets must support building on the existing CI infrastructure. In
+  particular, new tier 2 targets must support cross-compiling, and must not
+  require using the target as the host for builds.
 - Tier 2 targets must not impose burden on the authors of pull requests, or
   other developers in the community, to ensure that tests pass for the target.
   In particular, do not post comments (automated or manual) on a PR that
