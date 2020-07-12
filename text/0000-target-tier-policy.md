@@ -183,6 +183,11 @@ the target will not block forward progress of the Rust project.
   standard library `unimplemented!()`, unless they cannot possibly be supported
   on the target.
 - The target must build reliably in CI.
+- The approving teams may additionally require that a subset of tests pass in
+  CI, such as enough to build a functional "hello world" program, or equivalent
+  "smoke tests". In particular, this requirement may apply if the target builds
+  host tools, or if the tests in question provide substantial value via early
+  detection of critical problems.
 - Building the target must not take substantially longer than other targets.
 - Tier 2 targets must support building on the existing targets used for CI
   infrastructure. In particular, new tier 2 targets must support
