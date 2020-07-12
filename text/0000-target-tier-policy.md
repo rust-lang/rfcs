@@ -80,7 +80,7 @@ place minimal requirements on the introduction of targets.
   may contact the compiler team.
 - If a proposed target or target-specific patch substantially changes code
   shared with other targets (not just target-specific code), the reviewer
-  should consult the compiler team.
+  must consult the compiler team.
 - If the proposer of a target wishes to appeal the rejection of a target, they
   may contact the compiler team.
 - Tier 3 targets must use naming consistent with any existing targets; for
