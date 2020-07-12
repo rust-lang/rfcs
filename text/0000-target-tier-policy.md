@@ -120,8 +120,9 @@ the target will not block forward progress of the Rust project.
   target into CI, and the tier 2 CI-related requirements. This review and
   approval will typically take place in the PR adding the target to CI.
 - A tier 2 target must have value to people other than its maintainers.
-- Any new tier 2 target must have a designated team of developers on call to
-  consult on target-specific build-breaking issues, or if necessary to develop
+- Any new tier 2 target must have a designated team of developers (the "target
+  development team" or "target maintainers") on call to consult on
+  target-specific build-breaking issues, or if necessary to develop
   target-specific language or library implementation details. This team must
   have at least 2 developers.
 - The target must not place undue burden on Rust developers not specifically
