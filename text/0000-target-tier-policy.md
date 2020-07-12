@@ -76,12 +76,12 @@ determined by the judgment of the approving teams.
 
 Before filing an issue or pull request (PR) to introduce or promote a target,
 the target should already meet the corresponding tier requirements. (This does
-not preclude a target's development team using issues to track requirements
-that have not yet been met, as appropriate; however, before officially
-proposing the introduction or promotion of a target, it should meet all of the
-necessary requirements.) A target proposal is encouraged to quote the
-corresponding requirements verbatim as part of explaining how the target meets
-those requirements.
+not preclude a target's maintainers using issues to track requirements that
+have not yet been met, as appropriate; however, before officially proposing the
+introduction or promotion of a target, it should meet all of the necessary
+requirements.) A target proposal is encouraged to quote the corresponding
+requirements verbatim as part of explaining how the target meets those
+requirements.
 
 ## Tier 3 target policy
 
@@ -153,11 +153,10 @@ review and approval may take place in a PR adding the target to CI.
 
 - A tier 2 target must have value to people other than its maintainers.
 - Any new tier 2 target must have a designated team of developers (the "target
-  development team" or "target maintainers") available to consult on
-  target-specific build-breaking issues, or if necessary to develop
-  target-specific language or library implementation details. This team must
-  have at least 2 developers.
-  - The target development team should not only fix target-specific issues, but
+  maintainers") available to consult on target-specific build-breaking issues,
+  or if necessary to develop target-specific language or library implementation
+  details. This team must have at least 2 developers.
+  - The target maintainers should not only fix target-specific issues, but
     should use any such issue as an opportunity to educate the Rust community
     about portability to their target, and enhance their documentation of the
     target.
@@ -180,7 +179,7 @@ review and approval may take place in a PR adding the target to CI.
   teams why the specific difference in baseline expectations provides
   sufficient value to justify a separate target.
   - Note that in some cases, based on the usage of existing targets within the
-    Rust community, Rust developers or a target development team may wish to
+    Rust community, Rust developers or a target's maintainers may wish to
     modify the baseline expectations of a target, or split an existing target
     into multiple targets with different baseline expectations. A proposal to
     do so will be treated similarly to the analogous promotion, demotion, or
@@ -215,8 +214,8 @@ review and approval may take place in a PR adding the target to CI.
   suggests a block on the PR based on tests failing for the target. (A PR
   author must not break the build of a tier 2 target, but need not ensure the
   tests pass for a tier 2 target, even if notified that they fail.)
-- The target development team should regularly run the testsuite for the
-  target, and should fix any test failures in a reasonably timely fashion.
+- The target maintainers should regularly run the testsuite for the target, and
+  should fix any test failures in a reasonably timely fashion.
 - All tier 3 requirements apply.
 
 Note: some tier 2 targets additionally have binaries built to run on them as a
@@ -231,16 +230,16 @@ requirements. Any proposal for demotion or removal will be CCed to people who
 have previously worked on the target, and will be communicated widely to the
 Rust community before being dropped from a stable release.
 
-In some circumstances, especially if the target maintainer team does not
-respond in a timely fashion, Rust teams may land pull requests that temporarily
-disable some targets in the nightly compiler, in order to implement a feature
-not yet supported by those targets. (As an example, this happened when
-introducing the 128-bit types `u128` and `i128`.) Such a pull request will
-include notification and coordination with the maintainers of such targets. The
-maintainers of such targets will then be expected to implement the
-corresponding target-specific support in order to re-enable the target. If the
-maintainers of such targets cannot provide such support in time for the next
-stable release, this may result in demoting or removing the targets.
+In some circumstances, especially if the target maintainers do not respond in a
+timely fashion, Rust teams may land pull requests that temporarily disable some
+targets in the nightly compiler, in order to implement a feature not yet
+supported by those targets. (As an example, this happened when introducing the
+128-bit types `u128` and `i128`.) Such a pull request will include notification
+and coordination with the maintainers of such targets. The maintainers of such
+targets will then be expected to implement the corresponding target-specific
+support in order to re-enable the target. If the maintainers of such targets
+cannot provide such support in time for the next stable release, this may
+result in demoting or removing the targets.
 
 ## Tier 1 target policy
 
@@ -274,9 +273,9 @@ target, and the additional work of supporting the target.
 - Building the target and running the testsuite for the target must not take
   substantially longer than other targets.
 - If running the testsuite requires additional infrastructure (such as physical
-  systems running the target), the target development team must arrange to
-  provide such resources to the Rust project, to the satisfaction and approval
-  of the Rust infrastructure team.
+  systems running the target), the target maintainers must arrange to provide
+  such resources to the Rust project, to the satisfaction and approval of the
+  Rust infrastructure team.
 - All tier 2 requirements apply.
 
 A tier 1 target may be demoted if it no longer meets these requirements. Any
