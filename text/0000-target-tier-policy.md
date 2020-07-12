@@ -58,6 +58,9 @@ Rust targets fall into three "tiers" of support:
 This policy defines the requirements for accepting a proposed target at a given
 level of support.
 
+Each tier builds on all the requirements from the previous tier, unless
+overridden by a stronger requirement.
+
 ## Tier 3 target policy
 
 At this tier, the Rust project provides no official support for a target, so we
