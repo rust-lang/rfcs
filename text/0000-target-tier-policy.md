@@ -153,7 +153,7 @@ review and approval may take place in a PR adding the target to CI.
 
 - A tier 2 target must have value to people other than its maintainers.
 - Any new tier 2 target must have a designated team of developers (the "target
-  development team" or "target maintainers") on call to consult on
+  development team" or "target maintainers") available to consult on
   target-specific build-breaking issues, or if necessary to develop
   target-specific language or library implementation details. This team must
   have at least 2 developers.
