@@ -82,16 +82,18 @@ those requirements.
 At this tier, the Rust project provides no official support for a target, so we
 place minimal requirements on the introduction of targets.
 
-- No central decision is required to add a new tier 3 target. Reviewers may
-  always use their own best judgment regarding the quality of work, and the
-  suitability of a target for the Rust project.
-- If a reviewer wishes to consult a broader team for additional guidance, they
-  may contact the compiler team.
-- If a proposed target or target-specific patch substantially changes code
-  shared with other targets (not just target-specific code), the reviewer
-  must consult the compiler team.
-- If the proposer of a target wishes to appeal the rejection of a target, they
-  may contact the compiler team.
+No central decision is required to add a new tier 3 target. Reviewers may
+always use their own best judgment regarding the quality of work, and the
+suitability of a target for the Rust project.
+
+If a reviewer wishes to consult a broader team for additional guidance, they
+may contact the compiler team. A proposed target or target-specific patch that
+substantially changes code shared with other targets (not just target-specific
+code) requires the approval of the compiler team.
+
+If the proposer of a target wishes to appeal the rejection of a target, they
+may contact the compiler team.
+
 - Tier 3 targets must use naming consistent with any existing targets; for
   instance, a target for a similar CPU or OS should not gratuitously use an
   inconsistent name for that CPU or OS. Targets should normally use the same
@@ -133,12 +135,13 @@ At this tier, the Rust project guarantees that a target builds, and will reject
 patches that fail to build on a target. Thus, we place requirements that ensure
 the target will not block forward progress of the Rust project.
 
-- Any new tier 2 target requires compiler team approval based on these
-  requirements.
-- In addition, the infrastructure team must approve the integration of the
-  target into Continuous Integration (CI), and the tier 2 CI-related
-  requirements. This review and approval will typically take place in the PR
-  adding the target to CI.
+Any new tier 2 target requires compiler team approval based on these
+requirements.
+
+In addition, the infrastructure team must approve the integration of the target
+into Continuous Integration (CI), and the tier 2 CI-related requirements. This
+review and approval may take place in a PR adding the target to CI.
+
 - A tier 2 target must have value to people other than its maintainers.
 - Any new tier 2 target must have a designated team of developers (the "target
   development team" or "target maintainers") on call to consult on
@@ -231,14 +234,16 @@ At this tier, the Rust project guarantees that a target builds and passes all
 tests, and will reject patches that fail to build or pass the testsuite on a
 target. We hold tier 1 targets to our highest standard of requirements.
 
-- Any new tier 1 target requires compiler team approval based on these
-  requirements.
-- In addition, the infrastructure team must approve the integration of the
-  target into Continuous Integration (CI), and the tier 1 CI-related
-  requirements. This review and approval will typically take place in the PR
-  adding the target to CI.
-- In addition, the release team must approve the long-term viability of the
-  target, and the additional work of supporting the target.
+Any new tier 1 target requires compiler team approval based on these
+requirements.
+
+In addition, the infrastructure team must approve the integration of the target
+into Continuous Integration (CI), and the tier 1 CI-related requirements. This
+review and approval may take place in a PR adding the target to CI.
+
+In addition, the release team must approve the long-term viability of the
+target, and the additional work of supporting the target.
+
 - Tier 1 targets must have substantial, widespread interest within the
   developer community, and must serve the ongoing needs of multiple production
   users of Rust across multiple organizations or projects. These requirements
