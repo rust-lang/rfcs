@@ -232,6 +232,8 @@ target. We hold tier 1 targets to our highest standard of requirements.
   target may be demoted or removed if it becomes obsolete or no longer meets
   this requirement.
 - The target must build and pass tests reliably in CI.
+  - The target must not disable an excessive number of tests or pieces of tests
+    in the testsuite in order to do so. This is a subjective requirement.
 - Building the target and running the testsuite for the target must not take
   substantially longer than other targets.
 - If running the testsuite requires additional infrastructure (such as physical
