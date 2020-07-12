@@ -196,7 +196,10 @@ review and approval may take place in a PR adding the target to CI.
   "smoke tests". In particular, this requirement may apply if the target builds
   host tools, or if the tests in question provide substantial value via early
   detection of critical problems.
-- Building the target must not take substantially longer than other targets.
+- Building the target in CI must not take substantially longer than the current
+  slowest target in CI. This requirement is subjective, to be evaluated by the
+  infrastructure team, and will take the community importance of the target
+  into account.
 - Tier 2 targets must support building on the existing targets used for CI
   infrastructure. In particular, new tier 2 targets must support
   cross-compiling, and must not require using the target as the host for
