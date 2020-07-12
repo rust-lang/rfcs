@@ -162,7 +162,8 @@ Change Proposal (MCP).
 
 In addition, the infrastructure team must approve the integration of the target
 into Continuous Integration (CI), and the tier 2 CI-related requirements. This
-review and approval may take place in a PR adding the target to CI.
+review and approval may take place in a PR adding the target to CI, or simply
+by an infrastructure team member reporting the outcome of a team discussion.
 
 - A tier 2 target must have value to people other than its maintainers.
 - Any new tier 2 target must have a designated team of developers (the "target
@@ -269,7 +270,8 @@ and release team.
 
 In addition, the infrastructure team must approve the integration of the target
 into Continuous Integration (CI), and the tier 1 CI-related requirements. This
-review and approval may take place in a PR adding the target to CI, or by
+review and approval may take place in a PR adding the target to CI, by an
+infrastructure team member reporting the outcome of a team discussion, or by
 including the infrastructure team in the RFC proposing the target.
 
 - Tier 1 targets must have substantial, widespread interest within the
