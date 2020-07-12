@@ -305,6 +305,13 @@ useful as examples, such as Debian's [arch
 policy](https://release.debian.org/bullseye/arch_policy.html) and [archive
 criteria](https://ftp-master.debian.org/archive-criteria.html).
 
+Other precedents for tiered target support include [Firefox's supported build
+targets](https://firefox-source-docs.mozilla.org/build/buildsystem/supported-configurations.html),
+[node.js supported
+platforms](https://github.com/nodejs/node/blob/master/BUILDING.md#supported-platforms),
+and [GHC's platform
+support](https://gitlab.haskell.org/ghc/ghc/-/wikis/platforms).
+
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
