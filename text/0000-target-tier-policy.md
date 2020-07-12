@@ -234,6 +234,10 @@ target. We hold tier 1 targets to our highest standard of requirements.
 - The target must build and pass tests reliably in CI.
   - The target must not disable an excessive number of tests or pieces of tests
     in the testsuite in order to do so. This is a subjective requirement.
+- The target must provide as much of the Rust standard library as is feasible
+  and appropriate to provide. For instance, if the target has a standard memory
+  allocator, it must provide an implementation of `alloc` and the associated
+  data structures.
 - Building the target and running the testsuite for the target must not take
   substantially longer than other targets.
 - If running the testsuite requires additional infrastructure (such as physical
