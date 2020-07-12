@@ -61,6 +61,13 @@ level of support.
 Each tier builds on all the requirements from the previous tier, unless
 overridden by a stronger requirement.
 
+The policy for each tier also documents the Rust governance teams that must
+approve the addition of any target at that tier. Those teams are responsible
+for reviewing and evaluating the target, based on these requirements and their
+own judgment. Those teams may apply additional requirements, including
+subjective requirements, such as to deal with issues not foreseen by this
+policy. (Such requirements may subsequently motivate additions of this policy.)
+
 ## Tier 3 target policy
 
 At this tier, the Rust project provides no official support for a target, so we
