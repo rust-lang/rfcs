@@ -123,7 +123,7 @@ may contact the compiler team.
   other developers in the community, to maintain the target. In particular,
   do not post comments (automated or manual) on a PR that suggests a block on
   the PR based on the target. (A PR author may choose to help with a tier 3
-  target but is not required to.)
+  target, but is not required to.)
 - Patches adding or updating tier 3 targets must not break any existing tier 2
   or tier 1 target, and must not break another tier 3 target without approval
   of either the compiler team or the maintainers of the other tier 3 target.
