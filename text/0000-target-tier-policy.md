@@ -95,7 +95,7 @@ suitability of a target for the Rust project.
 If a reviewer wishes to consult a broader team for additional guidance, they
 may contact the compiler team. A proposed target or target-specific patch that
 substantially changes code shared with other targets (not just target-specific
-code) requires the approval of the compiler team.
+code) must be reviewed and approved by the compiler team before acceptance.
 
 If the proposer of a target wishes to appeal the rejection of a target, they
 may contact the compiler team.
@@ -144,8 +144,8 @@ At this tier, the Rust project guarantees that a target builds, and will reject
 patches that fail to build on a target. Thus, we place requirements that ensure
 the target will not block forward progress of the Rust project.
 
-Any new tier 2 target requires compiler team approval based on these
-requirements.
+Any new tier 2 target must be reviewed and approved by the compiler team based
+on these requirements.
 
 In addition, the infrastructure team must approve the integration of the target
 into Continuous Integration (CI), and the tier 2 CI-related requirements. This
@@ -247,8 +247,8 @@ At this tier, the Rust project guarantees that a target builds and passes all
 tests, and will reject patches that fail to build or pass the testsuite on a
 target. We hold tier 1 targets to our highest standard of requirements.
 
-Any new tier 1 target requires compiler team approval based on these
-requirements.
+Any new tier 1 target must be reviewed and approved by the compiler team based
+on these requirements.
 
 In addition, the infrastructure team must approve the integration of the target
 into Continuous Integration (CI), and the tier 1 CI-related requirements. This
