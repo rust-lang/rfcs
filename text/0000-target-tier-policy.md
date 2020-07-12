@@ -14,10 +14,10 @@ codifies the requirements for targets at each tier.
 [motivation]: #motivation
 
 Rust developers regularly implement new targets in the Rust compiler, and
-reviewers of pull requests for such new targets would like a clear, consistent
-policy to cite for accepting or rejecting such targets. Currently, individual
-reviewers do not know what overall policy to apply, and whether to apply solely
-their own judgment or defer to a Rust governance team.
+reviewers of Rust pull requests for such new targets would like a clear,
+consistent policy to cite for accepting or rejecting such targets. Currently,
+individual reviewers do not know what overall policy to apply, and whether to
+apply solely their own judgment or defer to a Rust governance team.
 
 Rust developers regularly ask how they can raise an existing target to tier 2
 (and in particular how they can make it available via `rustup`), and
