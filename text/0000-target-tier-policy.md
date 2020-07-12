@@ -114,9 +114,11 @@ may contact the compiler team.
   authors of pull requests are not obligated to avoid calling any portions of
   the standard library on the basis of a tier 3 target not implementing those
   portions.
-- Where possible, tier 3 targets may wish to provide documentation for the Rust
-  community for how to build and run tests for the target, ideally using
-  emulation.
+- The target must provide documentation for the Rust community explaining how
+  to build for the target, using cross-compilation if possible. If the target
+  supports running tests (even if they do not pass), the documentation must
+  explain how to run tests for the target, using emulation if possible or
+  dedicated hardware if necessary.
 - Tier 3 targets must not impose burden on the authors of pull requests, or
   other developers in the community, to maintain the target. In particular,
   do not post comments (automated or manual) on a PR that suggests a block on
@@ -159,8 +161,10 @@ review and approval may take place in a PR adding the target to CI.
   gratuitously break a tier 2 target, but are not expected to become experts in
   every tier 2 target, and are not expected to provide target-specific
   implementations for every tier 2 target.
-- Tier 2 targets must provide documentation for the Rust community for how to
-  build and run tests for the target (ideally using emulation).
+- The target must provide documentation for the Rust community explaining how
+  to build for the target using cross-compilation, and explaining how to run
+  tests for the target, using emulation if possible or dedicated hardware if
+  necessary.
 - The target development team should not only fix target-specific issues, but
   should use any such issue as an opportunity to educate the Rust community
   about portability to their target, and enhance their documentation of the
@@ -271,9 +275,6 @@ target, and the additional work of supporting the target.
   systems running the target), the target development team must arrange to
   provide such resources to the Rust project, to the satisfaction and approval
   of the Rust infrastructure team.
-- Tier 1 targets must provide documentation for the Rust community for how to
-  build and run tests for the target, using emulation if possible, or dedicated
-  hardware if necessary.
 - A tier 1 target may be demoted or removed if it no longer meets these
   requirements. Any proposal for demotion or removal will be communicated
   widely to the Rust community, both when initially proposed and before being
