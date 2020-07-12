@@ -101,8 +101,8 @@ If the proposer of a target wishes to appeal the rejection of a target, they
 may contact the compiler team.
 
 - Tier 3 targets must use naming consistent with any existing targets; for
-  instance, a target for a similar CPU or OS should not gratuitously use an
-  inconsistent name for that CPU or OS. Targets should normally use the same
+  instance, a target for the same CPU or OS as an existing Rust target should
+  use the same name for that CPU or OS. Targets should normally use the same
   names as used elsewhere in the broader ecosystem beyond Rust (such as in
   other toolchains), unless they have a very good reason to diverge.
 - Tier 3 targets may have unusual requirements to build or use, but must not
