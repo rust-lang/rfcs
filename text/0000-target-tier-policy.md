@@ -156,14 +156,14 @@ the target will not block forward progress of the Rust project.
   should use any such issue as an opportunity to educate the Rust community
   about portability to their target, and enhance their documentation of the
   target.
-- The target must document its baseline expectations for CPU features,
-  operating system versions or features, runtime environment versions or
-  features, or similar.
+- The target must document its baseline expectations for the features or
+  versions of CPUs, operating systems, libraries, runtime environments, and
+  similar.
 - If introducing a new tier 2 or higher target that is identical to an existing
-  Rust target except for the baseline expectations for CPU features, operating
-  system versions or features, runtime environment versions or features, or
-  similar, then the proposed target must document to the satisfaction of the
-  approving teams why the specific difference in baseline expectations provides
+  Rust target except for the baseline expectations for the features or versions
+  of CPUs, operating systems, libraries, runtime environments, and similar,
+  then the proposed target must document to the satisfaction of the approving
+  teams why the specific difference in baseline expectations provides
   sufficient value to justify a separate target.
   - Note that in some cases, based on the usage of existing targets within the
     Rust community, Rust developers or a target development team may wish to
@@ -174,11 +174,11 @@ the target will not block forward progress of the Rust project.
     required.
     - For instance, if an OS version has become obsolete and unsupported, a
       target for that OS may raise its baseline expectations for OS version
-      (treated as though removing a subset of the target), or a target for that
-      OS may split out support for older OS versions into a lower-tier target
-      (treated as though demoting a subset of the target, and requiring
-      justification for a new target at a lower tier for the older OS
-      versions).
+      (treated as though removing a target corresponding to the older
+      versions), or a target for that OS may split out support for older OS
+      versions into a lower-tier target (treated as though demoting a target
+      corresponding to the older versions, and requiring justification for a
+      new target at a lower tier for the older OS versions).
 - Tier 2 targets must not leave any significant portions of `core` or the
   standard library `unimplemented!()`, unless they cannot possibly be supported
   on the target.
