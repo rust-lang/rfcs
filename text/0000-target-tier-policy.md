@@ -107,9 +107,6 @@ A proposed target or target-specific patch that substantially changes code
 shared with other targets (not just target-specific code) must be reviewed and
 approved by the appropriate team for that shared code before acceptance.
 
-If the proposer of a target wishes to appeal the rejection of a target, they
-may contact the compiler team.
-
 - Any new tier 3 target must have a designated developer or developers (the
   "target maintainers") on record to be CCed when issues arise regarding the
   target.
