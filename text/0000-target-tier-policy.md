@@ -68,6 +68,10 @@ own judgment. Those teams may apply additional requirements, including
 subjective requirements, such as to deal with issues not foreseen by this
 policy. (Such requirements may subsequently motivate additions of this policy.)
 
+While these criteria attempt to document the policy, that policy still involves
+human judgment. Targets must fulfill the spirit of the requirements as well, as
+determined by the judgment of the approving teams.
+
 Before filing an issue or pull request (PR) to introduce or promote a target,
 the target should already meet the corresponding tier requirements. (This does
 not preclude a target's development team using issues to track requirements
@@ -271,13 +275,6 @@ target, and the additional work of supporting the target.
   widely to the Rust community, both when initially proposed and before being
   dropped from a stable release.
 - All tier 2 requirements apply.
-
-# Drawbacks
-[drawbacks]: #drawbacks
-
-While these criteria attempt to document the policy, that policy still involves
-human judgment. Targets must fulfill the spirit of the requirements as well, as
-determined by the judgment of the approving teams.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
