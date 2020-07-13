@@ -118,6 +118,29 @@ approved by the appropriate team for that shared code before acceptance.
 - Tier 3 targets may have unusual requirements to build or use, but must not
   create legal issues for the Rust project or for developers who work on those
   targets.
+  - The target must not introduce license incompatibilities.
+  - Anything added to the Rust repository must be under the standard Rust
+    license (`MIT OR Apache-2.0`).
+  - The target must not cause the Rust tools or libraries built for any other
+    host (even when supporting cross-compilation to the new target) to depend
+    on any new dependency less permissive than the Rust licensing policy. This
+    applies whether the dependency is a Rust crate that would require adding
+    new license exceptions (as specified by `src/tools/tidy/src/deps.rs` in the
+    rust-lang/rust repository), or whether the dependency is a native library
+    or binary. In other words, the introduction of the target must not cause a
+    user installing or running a version of Rust or the Rust tools to be
+    subject to any new license requirements.
+  - If the target supports building host tools (such as `rustc` or `cargo`),
+    those host tools must not depend on proprietary (non-FOSS) libraries, other
+    than ordinary runtime libraries supplied by the platform and commonly used
+    by other binaries built for the target. For instance, `rustc` built for the
+    target may depend on a common proprietary C runtime library or console
+    output library, but must not depend on a proprietary code generation
+    library or code optimization library. Rust's license permits such
+    combinations, but the Rust project has no interest in maintaining such
+    combinations within the scope of Rust itself, even at tier 3.
+  - New targets should not require proprietary (non-FOSS) components to link a
+    functional binary or library.
 - Tier 3 targets should attempt to implement as much of the standard libraries as
   possible and appropriate (`core` for most targets, `alloc` for any target
   with a standard memory allocator, `std` for targets with an operating
@@ -228,6 +251,22 @@ by an infrastructure team member reporting the outcome of a team discussion.
 - Tier 2 targets must support building on the existing CI infrastructure. In
   particular, new tier 2 targets must support cross-compiling, and must not
   require using the target as the host for builds.
+- In addition to the legal requirements for all targets (specified in the tier
+  3 requirements), because a tier 2 target typically involves the Rust project
+  building and supplying various compiled binaries, incorporating the target
+  and redistributing any resulting compiled binaries (e.g. built libraries,
+  host tools if any) must not impose any onerous license requirements on any
+  members of the Rust project, including infrastructure team members and those
+  operating CI systems. This is a subjective requirement, to be evaluated by
+  the approving teams.
+  - As an exception to this, if the target's primary purpose is to build
+    components for a Free and Open Source Software (FOSS) project licensed
+    under "copyleft" terms (terms which require licensing other code under the
+    compatible FOSS terms), such as kernel modules or plugins, then the
+    standard libraries for the target may potentially be subject to copyleft
+    terms, as long as such terms are satisfied by Rust's existing practices of
+    providing of full corresponding source code. Note that anything added to
+    the Rust repository itself must still use Rust's standard license terms.
 - Tier 2 targets must not impose burden on the authors of pull requests, or
   other developers in the community, to ensure that tests pass for the target.
   In particular, do not post comments (automated or manual) on a PR that
