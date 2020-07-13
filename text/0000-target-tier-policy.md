@@ -35,11 +35,13 @@ not be the canonical home of the up-to-date target tier policy.
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-At a high level, the three tiers break down as follows:
+Rust provides three tiers of target support:
 
-- Tier 3 targets provide no guarantees of support.
-- Tier 2 targets will always build, but may not pass tests.
-- Tier 1 targets will always build and pass tests.
+- Rust provides no guarantees about tier 3 targets.
+- Rust's continuous integration checks that tier 2 targets will always build,
+  but they may not pass tests.
+- Rust's continuous integration checks that tier 1 targets will always build
+  and pass tests.
 
 Adding a new tier 3 target imposes minimal requirements; we focus primarily on
 avoiding disruption to other ongoing Rust development.
@@ -52,10 +54,13 @@ to ongoing Rust development.
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-Rust targets fall into three "tiers" of support:
-- Tier 3 targets, which provide no guarantees of support.
-- Tier 2 targets, which will always build but not pass tests.
-- Tier 1 targets, which will always build and pass tests.
+Rust provides three tiers of target support:
+
+- Rust provides no guarantees about tier 3 targets.
+- Rust's continuous integration checks that tier 2 targets will always build,
+  but they may not pass tests.
+- Rust's continuous integration checks that tier 1 targets will always build
+  and pass tests.
 
 This policy defines the requirements for accepting a proposed target at a given
 level of support.
