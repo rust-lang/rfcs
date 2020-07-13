@@ -118,8 +118,10 @@ approved by the appropriate team for that shared code before acceptance.
 - Tier 3 targets may have unusual requirements to build or use, but must not
   create legal issues for the Rust project or for developers who work on those
   targets.
-- Tier 3 targets should attempt to implement as much of the standard library as
-  possible, but may leave some code `unimplemented!()`, whether because the
+- Tier 3 targets should attempt to implement as much of the standard libraries as
+  possible and appropriate (`core` for most targets, `alloc` for any target
+  with a standard memory allocator, `std` for targets with an operating
+  system), but may leave some code `unimplemented!()`, whether because the
   target makes it impossible to implement or challenging to implement. The
   authors of pull requests are not obligated to avoid calling any portions of
   the standard library on the basis of a tier 3 target not implementing those
