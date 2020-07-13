@@ -211,6 +211,10 @@ by an infrastructure team member reporting the outcome of a team discussion.
 - Tier 2 targets must not leave any significant portions of `core` or the
   standard library `unimplemented!()`, unless they cannot possibly be supported
   on the target.
+- If the target supports C code, the new Rust target should support the C
+  calling convention for the platform via `extern "C"`. The C calling
+  convention does not need to be the default Rust calling convention for the
+  target, however.
 - The target must build reliably in CI.
 - The approving teams may additionally require that a subset of tests pass in
   CI, such as enough to build a functional "hello world" program, or equivalent
