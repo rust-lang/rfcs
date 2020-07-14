@@ -156,9 +156,10 @@ and may be elided as an optimization).
 Rust frames that do contain pending destructors or `catch_unwind` calls are
 called non-POFs.
 
-Note that a non-POF may _become_ a POF during execution of the corresponding function, for instance if all `Drop` objects are
-moved out of scope, or if its only `catch_unwind` call is in a code path that
-will not be executed. The next section provides an example.
+Note that a non-POF may _become_ a POF during execution of the corresponding
+function, for instance if all `Drop` objects are moved out of scope, or if its
+only `catch_unwind` call is in a code path that will not be executed. The next
+section provides an example.
 
 [cpp-POD-definition]: https://en.cppreference.com/w/cpp/named_req/PODType
 
