@@ -248,17 +248,20 @@ of the panic runtime, ABI, or platform.
   future RFC][unresolved-questions].
 
 ## Additional limitations
+[additional-limitations]: #additional-limitations
 
-No subtype relationship is defined between functions or function pointers using
-different ABIs. This RFC also does not define coercions between `"C"` and
-`"C unwind"`.
+In order to limit the scope of this RFC, the following limitations are imposed:
 
-As noted in the [summary][summary], if a Rust frame containing a pending
-`catch_unwind` call is unwound by a foreign exception, the behavior is
-undefined for now.
+* No subtype relationship is defined between functions or function pointers
+  using different ABIs.
+* Coercions are not defined between `"C"` and `"C unwind"`.
+* As noted in the [summary][summary], if a Rust frame containing a pending
+  `catch_unwind` call is unwound by a foreign exception, the behavior is
+  undefined for now.
+* The behavior of asynchronous exceptions, such as SEH on Windows, interrupting
+  Rust code is not defined.
 
-This RFC makes no attempt to define the behavior of asynchronous exceptions,
-such as SEH on Windows, interrupting Rust code.
+These may be addressed in [future RFCs][future-possibilities].
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -495,7 +498,9 @@ behavior".
 [future-possibilities]: #future-possibilities
 
 The [FFI-unwind project group][project-group] intends to remain active at least
-until all ["TBD behavior"][unresolved-questions] is defined.
+until all ["TBD behavior"][unresolved-questions] is defined. We may also
+address some or all of the current proposal's
+[limitations][additional-limitations] in future RFCs.
 
 We may want to provide more means of interaction with foreign exceptions. For
 instance, it may be possible to provide a way for Rust to catch C++ exceptions
