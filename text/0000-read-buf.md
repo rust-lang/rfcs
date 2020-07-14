@@ -215,7 +215,7 @@ impl Read for TcpStream {
     fn read_buf(&mut self, buf: &mut ReadBuf<'_>) -> io::Result<()> {
         unsafe {
             // Get access to the filled part of the buffer, without initializing it. This method is unsafe; we are
-            // responsible for ensuing that we don't "de-initialize" portions of it that have previously been
+            // responsible for ensuring that we don't "de-initialize" portions of it that have previously been
             // initialized.
             let unfilled: &mut [MaybeUninit<u8>] = buf.unfilled_mut();
 
