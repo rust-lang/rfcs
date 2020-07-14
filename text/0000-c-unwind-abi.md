@@ -177,10 +177,12 @@ types). In other words, a forced unwind operation on one platform will simply
 deallocate Rust frames without true unwinding on other platforms.
 
 This RFC specifies that, regardless of the platform or the ABI string (`"C"` or
-`"C unwind"`), any platform features that may rely on forced unwinding are
-undefined behavior if they cross non-[POFs][POF-definition]. For now, however,
-we do not specify the conditions required to use forced unwinding safely; we
-will specify this in [a future RFC][unresolved-questions].
+`"C unwind"`), any platform features that may rely on forced unwinding will
+always be considered undefined behavior if they cross
+non-[POFs][POF-definition]. Crossing only POFs is necessary but not sufficient,
+however, to make forced unwinding safe, and for now we do not specify any safe
+form of forced unwinding; we will specify this in [a future
+RFC][unresolved-questions].
 
 [inside-rust-forced]: https://blog.rust-lang.org/inside-rust/2020/02/27/ffi-unwind-design-meeting.html#forced-unwinding
 
