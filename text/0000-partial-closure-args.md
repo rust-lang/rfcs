@@ -209,6 +209,72 @@ Some(32).unwrap_or_else(|..| 0); // okay
 
 This property is only there for convenience, as it might be useful when writing macro code.
 
+## Variadic functions and arity
+
+Variadic functions currently don’t exist in Rust. However, the
+[RFC-2137](https://github.com/rust-lang/rfcs/pull/2137) introduces them for the FFI (C). The
+syntax that seemed to have been accepted is the triple dot `...` syntax.
+
+In the case of our RFC, we use the “ignore everything else” syntax; the double dot `..`. This
+doesn’t a closure using `..` variadic. When reading this:
+
+```rust
+|a, b, ..|
+```
+
+one could be tempted to think it’s a closure taking two parameters and then is a variadic in the
+rest, but this is not what it means. The arity is well fixed, even though we don’t know it / we
+do not care while writing the closure.
+
+## Errors, warnings
+
+### Resolving ambiguities
+
+Using `..` more than once result in ambiguities and prevent rustc from compiling the closure.
+Example:
+
+```rust
+let f = |.., a, ..| a;
+```
+
+There is no way to know which arguments `a` binds to, so this is ambiguous. The error message
+should include information similar to the error message with tuples:
+
+```
+error: `..` can only be used once per closure argument pattern
+```
+
+### Typing
+
+Using `..` always makes a closure non-type-inferrable via its arguments only — i.e. it is not
+possible to know which type the closure has based only on the arguments and the captured
+environment in this case: it is ambiguous. Consider:
+
+```rust
+let f = |a, b, ..| a + b;
+```
+
+`f` could be a `Fn(u32, u32) -> u32` closure, or even a
+`Fn(u32, u32, String, bool, Option<f32>) -> u32`. This ambiguity should be resolved by inferring the
+type at call site based on explicit type ascriptions:
+
+```rust
+fn call<F>(f: F) where F: Fn(u32, u32, String, bool) -> u32;
+
+let r = call(|a, b, ..| a + b);
+```
+
+In this case, the closure is passed in a place where the constraint is already known.
+
+When using a closure with `..` without the explicit constraints, rustc should error out that
+`..`-based closures cannot infer their types based solely on the arguments and captured
+environment:
+
+```
+error: closures wich argument list contains `..` can only be used at a constrained call-site (
+FnOnce, Fn, FnMut)
+```
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
@@ -257,7 +323,7 @@ the arity of the function and simply adds syntactic sugar.
 # Prior art
 [prior-art]: #prior-art
 
-1. The `..` syntax in the current Rust language for structs and tuples. See
+- The `..` syntax in the current Rust language for structs and tuples. See
   [this section](https://doc.rust-lang.org/book/ch18-03-pattern-syntax.html#ignoring-remaining-parts-of-a-value-with-).
 
 # Unresolved questions
