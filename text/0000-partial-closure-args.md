@@ -216,7 +216,7 @@ Variadic functions currently don’t exist in Rust. However, the
 syntax that seemed to have been accepted is the triple dot `...` syntax.
 
 In the case of our RFC, we use the “ignore everything else” syntax; the double dot `..`. This
-doesn’t a closure using `..` variadic. When reading this:
+doesn’t make a closure using `..` variadic. When reading this:
 
 ```rust
 |a, b, ..|
