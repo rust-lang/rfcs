@@ -88,6 +88,10 @@ It is a minor change to add `#[stable_vtable]` to a trait, but a major change to
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
+_Note - For additional clarity, C++ style standardeese is adopted by this specification so as to make clear where absolute requirements are defined, and where looser implementation requirements are suggested. - End Note_
+
+In this section, the term shall is to be interpreted as an absolute requirement of the program or implementation. The term implementation shall mean `rustc` or any alternative implementation of rust which adopts the features described by this rfc.  
+
 A trait declared with the `#[stable_vtable]` shall have the following properties:
 * A *stable-layout-pointer* to a trait object for which the primary (non-auto) trait is `#[stable_vtable]` shall be layed out as though the same as the following *exposition-only* repr(C) struct:
 ```rust
@@ -108,7 +112,8 @@ struct VTable{
     virtual_fns: [unsafe extern "C" fn(*mut ())->()]
 }
 ```
-* The order of the virtual functions in the vtable shall be the declaration order of the functions in the trait. For example, the StableVtable example above will have this VTable
+* The order of the virtual functions in the vtable shall be the declaration order of the functions in the trait. 
+There shall be exactly one virtual function entry for each function which can be called on a trait object. For example, the StableVtable trait above will have this VTable
 ```rust
 #[repr(C)]
 struct VTable_StableVtable{
@@ -121,7 +126,7 @@ struct VTable_StableVtable{
 }
 ```
 
-(Note that in the above, none of such structs are actually defined by the rust language or standard library, and are provided for *exposition-only*. 
+(_Note - in the above, none such structs are actually defined by the rust language or standard library, and are provided for *exposition-only*. - End Note_)
 
 The fields of the vtable shall be initialized as follows:
 
@@ -130,16 +135,16 @@ The fields of the vtable shall be initialized as follows:
  the entry may be initialized to a null pointer (`None`) _Note - It is unspecified if types with trivial (no-op) destruction have the entry initialized to None,
  or to a function that performs no operation - End Note_ 
 * The `reserved` entry in the vtable shall be set to a null pointer. The value of the reserved entry shall be ignored by the implementation _Note - This entry may be present in some uses of this vtable layout, as a deallocation function. In the present version of this RFC, deallocation of foreign trait objects is not defined. This entry may become used in future revisions - End Note_
-* Each `virtual_fn` shall be initialized to the appropriate function provided by the implementation. If the trait has any supertraits, the `virutal_fn` entries from those supertraits appear first, from Left to Right. 
+* Each `virtual_fn` shall be initialized to the appropriate function provided by the implementation. If the trait has any supertraits, the `virutal_fn` entries from those supertraits appear first, from Left to Right. Trait functions which are not valid to call on a reciever with a trait-object type are omitted from the vtable. _Note - In particular, entries which require Self: Sized are omitted - End Note_
 
 It is an error to apply the `#[stable_vtable]` attribute to a trait which is not object safe, or which has any supertraits that are not `#[stable_vtable]` or `auto` traits.
 
 
-The following types are defined to be *stable-layout-pointers*:
+The following types shall be *stable-layout-pointers*:
 * Both mutable and non-mutable references to trait objects for which the primary trait is declared `#[stable_vtable]` 
 * A NonNull pointer to such a trait object
 * A `Box<T>` of such a trait object, with no specified allocator, the Global allocator specified, or a 1-ZST allocator.
-* A repr(transparent) type of any of the above (except where that `repr(transparent)` type is `core::mem::MaybeUninit`, `core::mem::ManuallyDrop`, or `core::cell::UnsafeCell`)
+* A repr(transparent) type of any of the above (except where that `repr(transparent)` type is `core::mem::MaybeUninit`, `core::mem::ManuallyDrop`, or `core::cell::UnsafeCell`) _Note - It is unspecified whether `ManuallyDrop<T>` of such a type above, when inside an `Option` is considered to be a stable-layout-pointer - End Note_
 * An `Option<T>` of any of the above
 * A raw pointer to a trait object as described above
 * A `MaybeUninit`, `ManuallyDrop`, or `UnsafeCell` of any of these types, or a repr(transparent) wrapper arround such a type
@@ -150,6 +155,7 @@ The following types are defined to be *stable-layout-pointers*:
 Implementing this rfc would require a specific layout for trait objects in a subset of all traits.
  It is possible that crate authors may add `#[stable_vtable]` to even traits not necessarily intended to be used for FFI, which would significantly impact the ability for layout optimizations to be applied. 
 
+The stablization of trait object layout, even for a subset of traits, may impact future implementations which allow for dynamically sized types which require multiple metadata (such a structures containing multiple slices. 
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
