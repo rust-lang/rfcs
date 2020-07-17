@@ -96,9 +96,8 @@ and spent a reasonable amount of time at that tier, before making a proposal
 for promotion to the next higher tier. This policy leaves the precise
 interpretation of "reasonable amount of time" up to the approving teams; those
 teams may scale the amount of time required based on their confidence in the
-target and its demonstrated track record at its current tier. At a minimum, a
-target should normally go through multiple stable releases of Rust before
-seeking promotion to the next tier.
+target and its demonstrated track record at its current tier. At a minimum,
+multiple stable releases of Rust should occur between promotions of a target.
 
 In this policy, the words "must" and "must not" specify absolute requirements
 that a target must meet to qualify for a tier. The words "should" and "should
