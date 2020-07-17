@@ -196,7 +196,7 @@ ensure that async destructors are called:
 before recursively calling `mem::poll_drop_ready` on every field of the value.
 It will logically "AND" all of the return values, so that it will return
 `Poll::Ready` only if all calls return `Poll::Ready`, and otherwise return
-`Poll::Pending`. In psuedo-code:
+`Poll::Pending`. In pseudo-code:
 
 ```rust
 let mut ready = self.poll_drop_ready(cx);
