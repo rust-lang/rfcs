@@ -180,8 +180,15 @@ In non-async contexts, no change is made to destructors. This means that users
 writing low level primitives which may want to run async destructor code on
 values they are destroying (such as inside the poll method of a
 manually-implemented future) will need to call `mem::poll_drop_ready`
-themselves, or this code will be skipped. **Only users dropping values inside of
-poll methods need to take special care to ensure async destructors run.**
+themselves, or this code will be skipped.
+
+Therefore, there are two cases in which users will have to take special care to
+ensure that async destructors are called:
+
+1. If they would already have to call `drop_in_place` to ensure that normal
+   destructors are called (as in data structures like `Vec`).
+2. If they are dropping a value that may have an async destructor inside a
+   poll method.
 
 ## Drop glue in `mem::poll_drop_ready`
 
