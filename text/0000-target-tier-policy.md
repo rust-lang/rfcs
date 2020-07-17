@@ -203,7 +203,9 @@ into Continuous Integration (CI), and the tier 2 CI-related requirements. This
 review and approval may take place in a PR adding the target to CI, or simply
 by an infrastructure team member reporting the outcome of a team discussion.
 
-- A tier 2 target must have value to people other than its maintainers.
+- A tier 2 target must have value to people other than its maintainers. (It may
+  still be a niche target, but it must not be exclusively useful for an
+  inherently closed group.)
 - Any new tier 2 target must have a designated team of developers (the "target
   maintainers") available to consult on target-specific build-breaking issues,
   or if necessary to develop target-specific language or library implementation
