@@ -16,6 +16,11 @@ channel as an unstable feature. See the [unstable feature docs] for
 information on how to test out the new resolver, and the [unstable package
 flags] for information on the new flag behavior.
 
+> *Note*: The new feature resolver does not address all of the enhancement
+> requests for feature resolution. Some of these are listed below in the
+> [Feature resolver enhancements](#feature-resolver-enhancements) section.
+> These are explicitly deferred for future work.
+
 [docs-old-features]: https://doc.rust-lang.org/nightly/cargo/reference/features.html
 [unstable feature docs]: https://doc.rust-lang.org/nightly/cargo/reference/unstable.html#features
 [unstable package flags]: https://doc.rust-lang.org/nightly/cargo/reference/unstable.html#package-features
@@ -159,12 +164,12 @@ time.
 
 ## Resolver opt-in
 
-Testing has been performed on various projects that shows sometimes
-dependencies are written to assume that features from another part of the
-graph are enabled, and fail to compile with the new resolver. Because the new
-resolver results in a backwards-incompatible change in resolver behavior, the
-user must opt-in to use the new resolver. This can be done with the `resolver`
-field in `Cargo.toml`:
+Testing has been performed on various projects. Some were found to fail to
+compile with the new resolver. This is because some dependencies are written
+to assume that features are enabled from another part of the graph. Because
+the new resolver results in a backwards-incompatible change in resolver
+behavior, the user must opt-in to use the new resolver. This can be done with
+the `resolver` field in `Cargo.toml`:
 
 ```toml
 [package]
