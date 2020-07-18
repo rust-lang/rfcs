@@ -159,7 +159,7 @@ and once with `std`.
 Note that a dependency shared between a build-dependency and proc-macro are
 still unified. This is intended to help reduce build times, and is expected to
 be unlikely to cause problems that feature unification usually cause because
-they are both being built for the host compiler, and are only used at build
+they are both being built for the host platform, and are only used at build
 time.
 
 ## Resolver opt-in
