@@ -34,7 +34,7 @@ oneof() with a comma separated list of configuration predicates. It is true if a
 
 ## An Example
 
-Using an existing implementation from [rust-rand-facade](https://github.com/ryankurte/rust-rand-facade/blob/master/src/lib.rs) expressing all possible combinations for a set of three exclusive features (`std`, `cortex_m`, and `os_rng`).
+Using an existing implementation from [rust-rand-facade](https://github.com/ryankurte/rust-rand-facade/blob/master/src/lib.rs) expressing all possible combinations for a set of three exclusive features (`std`, `cortex_m`, and `os_rng`). This is a reasonably small example, it is worth noting that it is common for embedded crates to have [tens of exclusive features](https://github.com/stm32-rs/stm32f4xx-hal/blob/master/Cargo.toml#L67).
 
 Using existing predicates:
 
@@ -77,7 +77,7 @@ N/A
 
 - This provides a useful improvement to the expressiveness of `#[cfg()]` macros and allows crate authors to provide actionable errors rather than depending on compiler failures
 - An alternative to `not(oneof(...))` could be `notoneof(...)` or similar, however, this is less generally useful and less consistent with existing predicates
-- Not implementing this means crate authors must either hand-define all variants or rely on symbol errors to enforce feature exclusivity, and users must continue to infer the _cause_ of these failures rather than being directly signaled.
+- Not implementing this means crate authors must either hand-define all possible variants (which is demonstrably neither commonplace or practicable with larger numbers of exclusive features) or rely on symbol errors to enforce feature exclusivity, and thus users will continue to need to infer the _cause_ of these failures without direct / explicit signals.
 
 # Prior art
 [prior-art]: #prior-art
