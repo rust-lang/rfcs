@@ -12,9 +12,9 @@ Addition of `oneof` to existing `all`, `any`, `not` configuration predicates in 
 [motivation]: #motivation
 
 In a number of situations (particularly involving `no_std` and cross-target applications) it is useful to ensure that only one of a set of features are enabled.
-It is important to enforce this due to the additive behaviour of features (ie. dependencies may include the same sub-dependencie with different features enabled the result is a union of the enabled features), and difficult to specify for larger feature sets using existing predicates as the complexity for this increases exponentially with the number of exclusive features.
+It is important to enforce this due to the additive behaviour of features (i.e. dependencies may include the same sub-dependency with different features enabled. The result is a union of the enabled features), and difficult to specify for larger feature sets using existing predicates as the complexity for this increases exponentially with the number of exclusive features.
 
-The desired outcome of this is the ability to specify `#[cfg(oneof(feature="a", feature="b"))] do_something()` and `#[cfg(not(oneof(feature="a", feature="b")))] compile_error!(...)` to specify exclusive features without manually defining all possible valid/invalid combinations for the exclusive subset of features, and simplify other configurations that benefit from the `oneof` predicate.
+The desired outcome is the ability to specify `#[cfg(oneof(feature = "a", feature = "b"))] do_something()` and `#[cfg(not(oneof(feature = "a", feature = "b")))] compile_error!(...)` to specify exclusive features without manually defining all possible valid/invalid combinations for the exclusive subset of features, and simplify other configurations that benefit from the `oneof` predicate.
 This allows authors of crates with exclusive feature sets to communicate this to consumers without requiring users to infer the feature issue from compiler errors.
 
 
@@ -75,7 +75,7 @@ N/A
 
 - This provides a useful improvement to the expressiveness of `#[cfg()]` macros and allows crate authors to provide actionable errors rather than depending on compiler failures
 - An alternative to `not(oneof(...))` could be `notoneof(...)` or similar, however, this is less generally useful and less consistent with existing predicates
-- Not implementing this means crate authors must either hand-define all variants or rely on symbol errors to enforce feature exclusivity, and users must continue to infer the _cause_ of these failures rather than being directly signalled.
+- Not implementing this means crate authors must either hand-define all variants or rely on symbol errors to enforce feature exclusivity, and users must continue to infer the _cause_ of these failures rather than being directly signaled.
 
 # Prior art
 [prior-art]: #prior-art
@@ -93,4 +93,3 @@ N/A
 [future-possibilities]: #future-possibilities
 
 N/A
-
