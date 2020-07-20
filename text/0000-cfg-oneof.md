@@ -15,7 +15,7 @@ In a number of situations (particularly involving `no_std` and cross-target appl
 It is important to enforce this due to the additive behaviour of features (i.e. dependencies may include the same sub-dependency with different features enabled. The result is a union of the enabled features), and difficult to specify for larger feature sets using existing predicates as the complexity for this increases exponentially with the number of exclusive features.
 
 The desired outcome is the ability to specify `#[cfg(oneof(feature = "a", feature = "b"))] do_something()` and `#[cfg(not(oneof(feature = "a", feature = "b")))] compile_error!(...)` to specify exclusive features without manually defining all possible valid/invalid combinations for the exclusive subset of features, and simplify other configurations that benefit from the `oneof` predicate.
-This allows authors of crates with exclusive feature sets to communicate this to consumers without requiring users to infer the feature issue from compiler errors.
+This allows authors of crates with exclusive feature sets specify this in a maintainable manner, and to communicate this to consumers without requiring users to infer the feature issue from compiler errors.
 
 
 # Guide-level explanation
@@ -29,8 +29,10 @@ ConfigurationOneof
    
 ...
 
-oneof() with a comma separated list of configuration predicates. It is true if at one and only one predicate is true. In all other situations it is false.
+oneof() with a comma separated list of configuration predicates. It is true if at least one and only one predicate is true. In all other situations it is false.
 ```
+
+## An Example
 
 Using an existing implementation from [rust-rand-facade](https://github.com/ryankurte/rust-rand-facade/blob/master/src/lib.rs) expressing all possible combinations for a set of three exclusive features (`std`, `cortex_m`, and `os_rng`).
 
