@@ -409,6 +409,24 @@ pub fn set_size(Size { width, height }: Size) {}
 
 This also improves type safety, since a `Size` can't be passed to a function expecting a `Point`. However, this kind of type safety is often not required and not worth the additional complexity and boilerplate.
 
+### The builder pattern
+
+The builder pattern is a pattern where an intermediate object containing all the required parameters is created using method calls. This object is then passed to the actual function, which is also a method of the intermediate object. For example:
+
+```rust
+SplitBuilder::new("hello world") // positional arguments go here
+    .split_at(' ')               // the following methods emulate named arguments
+    .limit(2)
+    .case_sensitive(true)
+    .finish()                    // the actual function
+```
+
+The obvious downside is that this requires a lot of boilerplate. To reduce boilerplate, there are crates with procedural macros, which allow creating builder types in a declarative way. One problem with this is that it adds dependencies and increases compile times; in debug builds, it also affects runtime performance.
+
+The other problem is that all arguments are optional (it doesn't prevent you from calling `SplitBuilder::new("hello world").finish()` directly), and this is not always desired. It is possible to create more intermediate types and transitions that ensure that all required arguments are specified, but this adds more boilerplate (if implemented manually) and complexity.
+
+For large APIs with a lot of functions, using the builder pattern everywhere is not feasible.
+
 ### Function names
 
 One workaround to make function calls more expressive is to add more information to the function name. For example:
