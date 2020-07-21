@@ -496,8 +496,6 @@ Named arguments are available in a lot of languages, including _C#, Dart, Kotlin
 
 Furthermore, in some languages such as JavaScript, named arguments can be emulated with anonymous objects.
 
-The design of this RFC is conceptually most similar to Swift.
-
 ### Syntax in other languages
 
 The leading dot is similar to struct initialization syntax in C, e.g. `{ .city = "Hamilton", .prov = "Ontario" }`.
