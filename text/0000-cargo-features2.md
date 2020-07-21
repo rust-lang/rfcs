@@ -39,8 +39,9 @@ to solve:
 
 * Unused targets: If a dependency shows up multiple times in the resolve
   graph, and one of those situations is a target-specific dependency, the
-  features it enables are enabled on all platforms. See [target
-  dependencies](#target-dependencies) below for how this problem is solved.
+  features of the target-specific dependency are enabled on all platforms. See
+  [target dependencies](#target-dependencies) below for how this problem is
+  solved.
 
 * Dev-dependencies: If a dependency is shared as a normal dependency and a
   dev-dependency, then any features enabled on the dev-dependency will also
