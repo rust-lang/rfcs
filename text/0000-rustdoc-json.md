@@ -1,7 +1,7 @@
 - Feature Name: `rustdoc_json`
 - Start Date: 2020-06-26
-- RFC PR: (leave this empty)
-- Rust Issue: (leave this empty)
+- RFC PR: [rust-lang/rfcs#2963](https://github.com/rust-lang/rfcs/pull/2963)
+- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 # Summary
 [summary]: #summary
@@ -96,16 +96,14 @@ After running the above command, you should get a `lib.json` file like the follo
       "attrs": [],
       "kind": "function",
       "inner": {
-        "function_item": {
-          "decl": {
-            "inputs": [],
-            "output": null,
-            "c_variadic": false
-          },
-          "generics": {...},
-          "header": "",
-          "abi": "\"Rust\""
-        }
+        "decl": {
+          "inputs": [],
+          "output": null,
+          "c_variadic": false
+        },
+        "generics": {...},
+        "header": "",
+        "abi": "\"Rust\""
       }
     },
     "0:4": {
@@ -121,13 +119,11 @@ After running the above command, you should get a `lib.json` file like the follo
       "attrs": [],
       "kind": "struct",
       "inner": {
-        "struct_item": {
-          "struct_type": "unit",
-          "generics": {...},
-          "fields_stripped": false,
-          "fields": [],
-          "impls": [...]
-        }
+        "struct_type": "unit",
+        "generics": {...},
+        "fields_stripped": false,
+        "fields": [],
+        "impls": [...]
       }
     },
     "0:0": {
@@ -143,13 +139,11 @@ After running the above command, you should get a `lib.json` file like the follo
       "attrs": [],
       "kind": "module",
       "inner": {
-        "module_item": {
-          "is_crate": true,
-          "items": [
-            "0:4",
-            "0:3"
-          ]
-        }
+        "is_crate": true,
+        "items": [
+          "0:4",
+          "0:3"
+        ]
       }
     }
   },
@@ -165,7 +159,7 @@ After running the above command, you should get a `lib.json` file like the follo
       "kind": "struct"
     },
     ...
-  }
+  },
   "extern_crates": {
     "9": {
       "name": "backtrace",
@@ -261,7 +255,8 @@ Name      | Type    | Description
 `span`    | [Span](#Span) | The source location of this Item.
 `visibility` | String | `"default"`, `"public"`, `"crate"`, or `"restricted"` (`pub(path)`). TODO: show how the restricted path info is represented.
 `docs`    | String  | The extracted documentation text from the Item.
-`attrs`   | [String]| The attributes (other than doc comments) on the Item, rendered as strings.
+`attrs`   | [String] | The attributes (other than doc comments) on the Item, rendered as strings.
+`deprecation` | [Deprecation](#Deprecation) | (*Optional*) Information about the Item's deprecation, if present.
 `kind`    | String  | The kind of Item this is. Determines what fields are in `inner`.
 `inner`   | Object  | The type-specific fields describing this Item. Check the `kind` field to determine what's available.
 
@@ -271,16 +266,13 @@ Name     | Type   | Description
 ---------|--------|--------------------------------------------------------------------------------
 `items`  | [[ID](#ID)] | The list of Items contained within this module. The order of definitions is preserved.
 
-### `kind == "function" || "foreign_function"`
-
-Foreign functions are `fn`s from an `extern` block
+### `kind == "function"`
 
 Name       | Type     | Description
 -----------|----------|----------------------------------------------------------------------------
 `decl`     | [FnDecl](#FnDecl) | Information about the function signature, or declaration.
 `generics` | [Generics](#Generics) | Information about the function's type parameters and `where` clauses.
-`header`   | String   | `"const"`, `"async"`, `"unsafe"`, or a space separated combination of those
-modifiers.
+`header`   | String   | `"const"`, `"async"`, `"unsafe"`, or a space separated combination of those modifiers.
 `abi`      | String   | The ABI string on the function. Non-`extern` functions have a `"Rust"` ABI, whereas `extern` functions without an explicit ABI are `"C"`. See [the reference](https://doc.rust-lang.org/reference/items/external-blocks.html#abi) for more details.
 
 ### `kind == "struct" || "union"`
@@ -346,6 +338,24 @@ Name          | Type     | Description
 modifiers.
 `has_body`    | bool     | Whether this is just a method signature (in a trait definition) or a method with an actual body.
 
+### `kind == "assoc_const"`
+
+These items only show up in trait _definitions_. When looking at a trait impl item, the item where the associated constant is defined is a `"constant"` item.
+
+Name          | Type     | Description
+--------------|----------|-------------------------------------------------------------------------
+`type`        | [Type](#Type) | The type of this associated const.
+`default`     | String | (*Optional*) The stringified expression for the default value, if provided.
+
+### `kind == "assoc_type"`
+
+These items only show up in trait _definitions_. When looking at a trait impl item, the item where the associated type is defined is a `"typedef"` item.
+
+Name          | Type     | Description
+--------------|----------|-------------------------------------------------------------------------
+`bounds`      | [[GenericBound](#GenericBound)] | The bounds for this associated type.
+`default`     | [Type](#Type) | (*Optional*) The default for this type, if provided.
+
 ### `kind == "impl"`
 
 Name          | Type     | Description
@@ -384,42 +394,61 @@ Name          | Type     | Description
 `type`        | [Type](#Type) | The type on the right hand side of this definition.
 `generics`    | [Generics](#Generics) | Any generic parameters on the left hand side of this definition.
 
-### `kind == "assoc_const"`
+### `kind == "opaque_ty"`
 
-These items only show up in trait _definitions_. When looking at a trait impl item, the item where the associated constant is defined is a `"constant"` item.
+Represents [trait aliases](https://doc.rust-lang.org/beta/unstable-book/language-features/trait-alias.html)
+of the form:
 
-Name          | Type     | Description
---------------|----------|-------------------------------------------------------------------------
-`type`        | [Type](#Type) | The type of this associated const.
-`default`     | String | (*Optional*) The stringified expression for the default value, if provided.
-
-### `kind == "assoc_type"`
-
-These items only show up in trait _definitions_. When looking at a trait impl item, the item where the associated type is defined is a `"typedef"` item.
+```rust
+type Foo<T> = Clone + std::fmt::Debug + Into<T>;
+```
 
 Name          | Type     | Description
 --------------|----------|-------------------------------------------------------------------------
-`bounds`      | [[GenericBound](#GenericBound)] | The bounds for this associated type.
-`default`     | [Type](#Type) | (*Optional*) The default for this type, if provided.
+`bounds`      | [[GenericBound](#GenericBound)] | The trait bounds on the right hand side.
+`generics`    | [Generics](#Generics) | Any generic parameters on the type itself.
 
 ### `kind == "foreign_type"`
 
-Name          | Type     | Description
---------------|----------|-------------------------------------------------------------------------
-`bounds`      | [[GenericBound](#GenericBound)] | The bounds for this associated type.
-`default`     | [Type](#Type) | (*Optional*) The default for this type, if provided.
+`inner` contains no fields. This item represents a type declaration in an extern block (see [here](https://github.com/rust-lang/rfcs/blob/master/text/1861-extern-types.md)
+for more details):
+
+```rust
+extern {
+    type Foo;
+}
+```
 
 ### `kind == "extern_crate"`
-TODO
+
+Name     | Type     | Description
+---------|----------|-------------------------------------------------------------------------
+`name`   | String   | The name of the extern crate.
+`rename` | String   | (*Optional*) The renaming of this crate with `extern crate foo as bar`.
+
 ### `kind == "import"`
-TODO
-### `kind == "opaque_ty"`
-TODO
+
+Name     | Type     | Description
+---------|----------|-------------------------------------------------------------------------
+`source` | String   | The full path being imported (e.g. `"super::some_mod::other_mod::Struct"`).
+`name`   | String   | The name of the imported item (may be different from the last segment of `source` due to import renaming: `use source as name`).
+`id`     | [ID](#ID) | (*Optional*) The ID of the item being imported.
+`glob`   | bool     | Whether this import ends in a glob: `use source::*`.
+
 ### `kind == "macro"`
-TODO
-### `kind == "proc_attribute"`
-TODO
-### `kind == "proc_derive"`
+
+A `macro_rules!` declarative macro. Contains a single string with the source representation of
+the macro with the patterns stripped, for example:
+
+```rust
+macro_rules! vec {
+    () => { ... };
+    ($elem:expr; $n:expr) => { ... };
+    ($($x:expr),+ $(,)?) => { ... };
+}
+```
+
+TODO: proc macros
 
 ## Span
 
@@ -428,6 +457,13 @@ Name       | Type     | Description
 `filename` | String   | The path to the source file for this span relative to the crate root.
 `begin`    | (int, int) | The zero indexed line and column of the first character in this span.
 `begin`    | (int, int) | The zero indexed line and column of the last character in this span.
+
+## Deprecation
+
+Name       | Type     | Description
+-----------|----------|----------------------------------------------------------------------------
+`since`    | String   | Usually a version number when this Item first became deprecated.
+`note`     | String   | The reason for deprecation and/or what alternatives to use.
 
 ## FnDecl
 
@@ -589,7 +625,7 @@ Name       | Type     | Description
 
 Name       | Type     | Description
 -----------|----------|----------------------------------------------------------------------------
-`bounds`   | [GenericBound](#GenericBound) | The bounds on this parameter.
+`bounds`   | [[GenericBound](#GenericBound)] | The bounds on this parameter.
 `default`  | [Type](#Type) | (*Optional*) The default type for this parameter (e.g `PartialEq<Rhs = Self>`).
 
 ### WherePredicate
@@ -996,7 +1032,7 @@ pub fn generic_args<'a>(x: impl MyTrait<'a, i32, Item = u8, Other = f32>) {
   available parsers, but selecting a different data format may provide benefits for file size,
   compressibility, speed of conversion, etc. Since the implementation will lean on serde then this
   may be a non-issue as it would be trivial to switch serialization formats.
-- **Alternate data structure.** The proposed output very closely mirrors the internal `Clean` AST
+- **Alternate data structure.** The proposed output very closely mirrors the internal `clean` AST
   types in rustdoc. This simplifies the implementation but may not be the optimal structure for
   users. If there are significant improvements then a future RFC could provide the necessary
   refinements, potentially as another alternative output format if necessary.
@@ -1068,9 +1104,9 @@ include spans, but doesn't do any of the other things mentioned here.
   path in the spans, but it's probably preferable to have it just list the filename for single
   files or the path from the crate root for cargo projects.
 - The proposed implementation exposes a strict subset of the information available to the HTML,
-  backend: the `Clean` types for Items and some mappings from the `Cache`. Are there other
+  backend: the `clean` types for Items and some mappings from the `Cache`. Are there other
   mappings/info from elsewhere that would be helpful to expose to users?
-- There are some items such as attributes that defer to compiler internal symbols in their `Clean`
+- There are some items such as attributes that defer to compiler internal symbols in their `clean`
   representations which would make them problematic to represent faithfully. Is it OK to simply
   stringify these and leave their handling up to the user?
 - Should we specially handle `Deref` trait impls to make it easier for a struct to find the methods
