@@ -40,7 +40,7 @@ Please also note, by way of wilful disclosure, that this RFC's author is an empl
 
    c. There must exist a robust and convenient CI integration for the target in question.
 
-2. **In addition, the target tier policy for a Tier-1 target aims to obtain the following stategic assurances:**
+2. **In addition, the target tier policy for a Tier-1 target aims to obtain the following strategic assurances:**
 
    a. The long term viability of the existence of a target specific ecosystem should be clear.
 
