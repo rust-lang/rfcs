@@ -21,7 +21,7 @@ As such, this RFC aims to:
 
 - Evidence what has been done.
 
-- On the basis of that evidence propose that the proceeedings to promote the aarch64-unknown-linux-gnu target to the Tier-1 category may please be kickstarted.
+- On the basis of that evidence propose that the proceedings to promote the aarch64-unknown-linux-gnu target to the Tier-1 category may please be kickstarted.
 
 - Culminate in the actual promotion of the aarch64-unknown-linux-gnu target to Tier-1, including any and all of the relevant processes and actions as appropriate.
 
@@ -118,7 +118,7 @@ Items in point 3 are addressed in the section titled [Unresolved Questions](#Unr
 
  - It is hard to concretely quantify this aspect.
 
- - It is generally fair to state that **there is already substantial and widespread interest for the aarch64-unknown-linux-gnu target in the Rust developer commmunity**.
+ - It is generally fair to state that **there is already substantial and widespread interest for the aarch64-unknown-linux-gnu target in the Rust developer community**.
 
  - It is also generally fair to state that there is a clear upward trend in the use of AArch64 systems as self hosted development environments. 
 
