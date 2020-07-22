@@ -143,7 +143,7 @@ As mentioned in the [summary](#Summary), items in 3 above are **required next st
 
  - It is hard to concretely quantify this aspect.
 
- - Most major Arm software ecosystem partners are either already using Rust extensively, or are building up to extensive use. A few publically known examples are Microsoft and Google. There are many more.
+ - Most major Arm software ecosystem partners are either already using Rust extensively, or are building up to extensive use. A few publically known examples are Microsoft, Google and Amazon. There are many more.
 
  - Arm itself recognises Rust as an important component to consider in a broader horizontal safety and security foundation across multiple processor portfolios. 
 
