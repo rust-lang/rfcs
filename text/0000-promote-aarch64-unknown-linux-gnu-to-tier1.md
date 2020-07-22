@@ -22,7 +22,7 @@ The next section provides a justification for the promotion.
 # Motivation
 [motivation]: #motivation
 
-Arch64-unknown-linux-gnu is [currently a Tier-2 Rust target](https://forge.rust-lang.org/release/platform-support.html#tier-2), in accordance with the target tier policy articulated [here](https://rust-lang.github.io/compiler-team/minutes/design-meeting/2019-09-20-target-tier-policy/).
+The Arm aarch64-unknown-linux-gnu target is [currently a Tier-2 Rust target](https://forge.rust-lang.org/release/platform-support.html#tier-2), in accordance with the target tier policy articulated [here](https://rust-lang.github.io/compiler-team/minutes/design-meeting/2019-09-20-target-tier-policy/).
 
 In the last 2 quarters, very good progress has been made in understanding and filling the gaps that remain in the path to attaining Tier-1 status for this target.
 
