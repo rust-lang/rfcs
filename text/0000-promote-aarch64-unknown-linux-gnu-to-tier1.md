@@ -78,11 +78,7 @@ As mentioned in the [summary](#Summary), items in 3 above are **required next st
 
 **1.a. The Rust compiler and compiler tests must all build and pass reliably for the target in question.**
 
- - As of today, all tests pass reliably barring one test. 
- 
- - A fix addressing the failing test [has been posted for review.](https://github.com/rust-lang/rust/pull/73655)
-
-    The failure will likely be addressed very shortly.
+ - As of today, ***all*** tests pass reliably.
 
  - In addition, as a result of inputs from the core team, engineers from Arm performed an audit of all tests that are currently marked **'only-x86_64'** and **'only-aarch64'** has been done. This was to ascertain whether past viewpoints and/or decisions that led to those markings are still valid. 
      - The audit report is available [here.](https://docs.google.com/spreadsheets/d/1B-Jg1Ml6nAF6Tf9wJGTgqkFUNeJEejC3aMikGl6vXlc/edit?usp=sharing)
