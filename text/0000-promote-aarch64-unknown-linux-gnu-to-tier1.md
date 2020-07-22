@@ -8,6 +8,17 @@
 
 Promote the Arm aarch64-unknown-linux-gnu Rust target to Tier-1.
 
+The next section provides a justification for the promotion.
+
+**Please note that the following are required next steps that should ideally emerge from ensuing discussions:**
+
+   * An approval from the Compiler Team that Tier-1 target requirements have been met.
+
+   * An approval from the Infrastructure Team that the target in question may be integrated into CI.
+
+   * An approval from the Release Team that supporting the target in question is viable in the long term.
+
+
 # Motivation
 [motivation]: #motivation
 
@@ -60,7 +71,7 @@ Please also note, by way of wilful disclosure, that this RFC's author is an empl
 
 The following section details how points 1 and 2 of the above assurances have either already been met or are close to being met. 
 
-Items in point 3 are addressed in the section titled [Unresolved Questions](#Unresolved-questions). That is not to say that they are unresolved per se but more that they are proposed next steps.
+As mentioned in the [summary](#Summary), items in 3 above are **required next steps.**
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -172,15 +183,7 @@ However, as emphasised in the narrative thus far, **the aarch64-unknown-linux-gn
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-The following points are 'unresolved' at present. From the author's PoV, these are next steps, subject to agreement with the RFC reviewers.
-
-**3.a. An approval from the Compiler Team that Tier-1 target requirements have been met.**
-
-**3.b. An approval from the Infrastructure Team that the target in question may be integrated into CI.**
-
-**3.c. An approval from the Release Team that supporting the target in question is viable in the long term.**
-
-The expectation is that these will get resolved as a result of the discussion that ensues with this RFC posting.
+No unresolved questions or issues remain.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
