@@ -125,6 +125,8 @@ As mentioned in the [summary](#Summary), items in 3 above are **required next st
 
  - It is worth calling out, in the same vein as the previous point, that given the increasing prevalance of AArch64 silicon deployments and given Rust's general value proposition, **supporting the Rust aarch64-unknown-linux-gnu target presents very strong viability for the long term.**
 
+ - Note that the core team have created a ['marker team' for Arm](https://github.com/rust-lang/team/blob/master/teams/arm.toml) as well as the [t-compiler/arm Zulip stream](https://zulip-archive.rust-lang.org/242906tcompilerarm/index.html). These form important parts of a support story for aarch64-unknown-linux-gnu (amongst other Arm targets). Arm's Rust team is represented in both.
+
 **2.c. The target must have substantial and widespread interest within the Rust developer community.**
 
  - It is hard to concretely quantify this aspect.
@@ -147,7 +149,7 @@ As mentioned in the [summary](#Summary), items in 3 above are **required next st
 
  - Arm itself recognises Rust as an important component to consider in a broader horizontal safety and security foundation across multiple processor portfolios. 
 
- - Arm has dedicated a small team to help improve Rust for the aarch64-unknown-linux-gnu target.
+ - Arm has dedicated a small team to help improve Rust for the aarch64-unknown-linux-gnu target. This team is included in the ['marker team' for Arm](https://github.com/rust-lang/team/blob/master/teams/arm.toml) as well as the [t-compiler/arm Zulip stream](https://zulip-archive.rust-lang.org/242906tcompilerarm/index.html) created by the core team.
 
  - **It is very likely that support for aarch64-unknown-linux-gnu in these organisations will trend upwards commensurate with the increasing prevalence of AArch64 silicon based systems.**
 
