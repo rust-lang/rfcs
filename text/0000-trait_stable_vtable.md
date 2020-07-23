@@ -130,14 +130,14 @@ struct VTable_StableVtable{
 
 The fields of the vtable shall be initialized as follows:
 
-* `size` and `align` entries shall be initialized to the size and ABI required alignment of the implementing type
+* `size` and `align` entries shall be initialized to the size and ABI required alignment of the implementing type. The size entry shall be a multiple of `align`. 
 * The `drop_in_place` entry shall be initialized to a function which performs the drop operation of the implementing type. If the drop operation is a no-op,
  the entry may be initialized to a null pointer (`None`) _Note - It is unspecified if types with trivial (no-op) destruction have the entry initialized to None,
  or to a function that performs no operation - End Note_ 
 * The `reserved` entry in the vtable shall be set to a null pointer. The value of the reserved entry shall be ignored by the implementation _Note - This entry may be present in some uses of this vtable layout, as a deallocation function. In the present version of this RFC, deallocation of foreign trait objects is not defined. This entry may become used in future revisions - End Note_
 * Each `virtual_fn` shall be initialized to the appropriate function provided by the implementation. If the trait has any supertraits, the `virutal_fn` entries from those supertraits appear first, from Left to Right. Trait functions which are not valid to call on a reciever with a trait-object type are omitted from the vtable. _Note - In particular, entries which require Self: Sized are omitted - End Note_
 
-It is an error to apply the `#[stable_vtable]` attribute to a trait which is not object safe, or which has any supertraits that are not `#[stable_vtable]` or `auto` traits.
+The `#[stable_vtable]` attribute shall not be applied to a trait which is not object safe, or which has any supertraits that are not `#[stable_vtable]` or `auto` traits.
 
 
 The following types shall be *stable-layout-pointers*:
@@ -148,6 +148,17 @@ The following types shall be *stable-layout-pointers*:
 * An `Option<T>` of any of the above
 * A raw pointer to a trait object as described above
 * A `MaybeUninit`, `ManuallyDrop`, or `UnsafeCell` of any of these types, or a repr(transparent) wrapper arround such a type
+
+A call to the function `core::mem::size_of_val` when applied to a reference to which is a *stable-layout-pointer* shall return the value of the `size` entry in the VTable.
+A call to the function `core::mem::align_of_val` when applied to such a reference shall return the value of the `align` entry.
+
+The behaviour is undefined if any of the following is violated for any *stable-layout-pointer*. The implementation shall not cause any of these constraints to be violated:
+* `size` shall be a multiple of `align`.
+* `align` shall be a power of two.
+
+The behaviour is undefined if any of the following is violated for references and instantiations of the type `Box` that are *stable-layout-pointers*. The implementation shall not cause any of these contrainsts to be violated:
+* `data` shall be valid for reading for a number of bytes which is at least `size`
+* `data` shall be have at least `align` alignment
 
 # Drawbacks
 [drawbacks]: #drawbacks
