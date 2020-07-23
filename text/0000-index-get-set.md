@@ -67,7 +67,7 @@ pub struct BitSet {
 }
 
 impl IndexGet<u8> for BitSet {
-    type Output = bool;
+    type Output<'a> = bool;
     fn index_get(&self, index: u8) -> bool {
         if index >= 64 {
             panic!("index must be < 64")
@@ -212,7 +212,7 @@ Prior RFCs include #159 and #1129.
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-None so far.
+Should there be a GAT on IndexGet? When should users use IndexGet over custom DSTs?
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
