@@ -107,7 +107,7 @@ struct TraitObject{
 struct VTable{
     size: usize,
     align: usize,
-    drop_in_place: Option<unsafe extern"C" fn(*mut ())->(),
+    drop_in_place: Option<unsafe extern"C" fn(*mut ())->()>,
     reserved: *mut ()
     virtual_fns: [unsafe extern "C" fn(*mut ())->()]
 }
@@ -119,7 +119,7 @@ There shall be exactly one virtual function entry for each function which can be
 struct VTable_StableVtable{
     size: usize,
     align: usize,
-    drop_in_place: Option<unsafe extern"C" fn(*mut ())->(),
+    drop_in_place: Option<unsafe extern"C" fn(*mut ())->()>,
     reserved: *mut (),
     _vdispatch_example_fn: unsafe extern"C" fn(*const ())->(),
     _vdispatch_example_fn_returning_i32: unsafe extern"C" fn(*const ())->i32
