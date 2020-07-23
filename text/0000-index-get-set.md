@@ -67,7 +67,7 @@ pub struct BitSet {
 }
 
 impl IndexGet<u8> for BitSet {
-    type Output<'a> = bool;
+    type Output = bool;
     fn index_get(&self, index: u8) -> bool {
         if index >= 64 {
             panic!("index must be < 64")
@@ -201,6 +201,7 @@ There is no compelling reason to keep the traits compatible, but making them exc
 Instead of adding `index_set` as a method to `IndexMut`, specialization on `IndexSet` could be used to 
 have a default implementation for `IndexMut`.
 
+
 # Prior art
 [prior-art]: #prior-art
 
@@ -212,7 +213,7 @@ Prior RFCs include #159 and #1129.
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-Should there be a GAT on IndexGet? When should users use IndexGet over custom DSTs?
+None so far.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
