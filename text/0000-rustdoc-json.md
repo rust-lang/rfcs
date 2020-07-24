@@ -197,8 +197,9 @@ types can appear in the output:
 
 To provide various maps/references to items, the JSON output uses unique strings as IDs for each
 item. They happen to be the compiler internal DefId for that item, but in the JSON blob they should
-be treated as opaque as they aren't guaranteed to be stable across compiler invocations. IDs should
-NOT be used to link items from external crates (see [the Resolving IDs section](#resolving-ids)).
+be treated as opaque as they aren't guaranteed to be stable across compiler invocations. IDs are
+only valid/consistent within a single JSON blob. They cannot be used to resolve references between
+the JSON output of different crates (see [the Resolving IDs section](#resolving-ids)).
 
 ## Crate
 
@@ -217,29 +218,30 @@ Name      | Type    | Description
 
 ### Resolving IDs
 
-The `index` field of [Crate](#Crate) contains _almost_ entirely local items, which includes impls
-of external traits on local types or local traits on external types. The exception to this is that
-external trait definitions are also included in the `index` to allow users to access information
-about their methods and associated types/consts.
+The crate's `index` contains mostly local items, which includes impls of external traits on local
+types or local traits on external types. The exception to this is that external trait definitions
+and their associated items are also included in the `index` because this information is useful when
+generating the comprehensive list of methods for a type.
 
-This means that many IDs aren't included in the `index`. In these cases the fallback is to look up
-the ID in `paths` where it should be present regardless of whether it's local. That gives
-[enough information](#ItemSummary) to create cross references or simply provide names without
-copying all of the information about external Items into the local crate's JSON output.
+This means that many IDs aren't included in the `index` (any reference to a struct, macro, etc.
+from a different crate). In these cases the fallback is to look up the ID in the crate's `paths`.
+That gives [enough information](#ItemSummary) about the item to create cross references or simply
+provide a name without copying all of the information about external items into the local
+crate's JSON output.
 
 ### ExternalCrate
 
 Name      | Type    | Description
 ----------|---------|------------------------------------------------------------------------------
 `name`    | String  | The name of the crate.
-`html_root_url` | String  | (*Optional*) The`html_root_url` for that crate if they specify one.
+`html_root_url` | String  | (*Optional*) The `html_root_url` for that crate if they specify one.
 
 ### ItemSummary
 
 Name      | Type    | Description
 ----------|---------|------------------------------------------------------------------------------
 `crate_num` | int   | A number corresponding to the crate this Item is from. Used as an key to the `extern_crates` map in [Crate](#Crate). A value of zero represents an Item from the local crate, any other number means that this Item is external.
-`path`    | [String] | The fully qualified path (e.g. ["std", "io", "lazy", "Lazy"] for `std::io::lazy::Lazy`) this Item.
+`path`    | [String] | The fully qualified path (e.g. `["std", "io", "lazy", "Lazy"]` for `std::io::lazy::Lazy`) of this Item.
 `kind`    | String  | What type of Item this is (see [Item](#Item)).
 
 ## Item
@@ -252,8 +254,9 @@ Name      | Type    | Description
 ----------|---------|------------------------------------------------------------------------------
 `crate_num` | int   | A number corresponding to the crate this Item is from. Used as an key to the `extern_crates` map in [Crate](#Crate). A value of zero represents an Item from the local crate, any other number means that this Item is external.
 `name`    | String  | The name of the Item, if present. Some Items, like impl blocks, do not have names.
-`span`    | [Span](#Span) | The source location of this Item.
-`visibility` | String | `"default"`, `"public"`, `"crate"`, or `"restricted"` (`pub(path)`). TODO: show how the restricted path info is represented.
+`span`    | [Span](#Span) | (*Optional*) The source location of this Item.
+`visibility` | String | `"default"`, `"public"`, `"crate"`, or `"restricted"` (`pub(path)`).
+`restricted_path` | String | (*Optional*) If `visitility == "restricted"`, this field contains the path that it's restricted to.
 `docs`    | String  | The extracted documentation text from the Item.
 `attrs`   | [String] | The attributes (other than doc comments) on the Item, rendered as strings.
 `deprecation` | [Deprecation](#Deprecation) | (*Optional*) Information about the Item's deprecation, if present.
@@ -305,7 +308,8 @@ Name          | Type     | Description
 `inner` can be one of the 3 following objects:
 - `"plain"` (e.g. `Enum::Variant`)
 - `{"tuple": [Type]}` (e.g. `Enum::Variant(u32, String)`)
-- `{"struct": Object}` (e.g. `Enum::Variant{foo: u32, bar: String}`) in which case the `Object` is the same as `inner` when `kind == "struct"`.
+- `{"struct": Object}` (e.g. `Enum::Variant{foo: u32, bar: String}`) in which case the `Object`
+  has a single key `"struct"` with a value that's the same object as `inner` when `kind == "struct"`.
 
 ### `kind == "trait"`
 
@@ -334,8 +338,7 @@ Name          | Type     | Description
 --------------|----------|-------------------------------------------------------------------------
 `decl`        | [FnDecl](#FnDecl) | Information about the method signature, or declaration.
 `generics`    | [Generics](#Generics) | Information about the method's type parameters and `where` clauses.
-`header`   | String   | `"const"`, `"async"`, `"unsafe"`, or a space separated combination of those
-modifiers.
+`header`      | String   | `"const"`, `"async"`, `"unsafe"`, or a space separated combination of those modifiers.
 `has_body`    | bool     | Whether this is just a method signature (in a trait definition) or a method with an actual body.
 
 ### `kind == "assoc_const"`
@@ -368,7 +371,7 @@ Name          | Type     | Description
 `items`       | [[ID](#ID)] | The list of method, constant, and typedef items contained in this impl block.
 `negative`    | bool     | Whether this is a negative impl (e.g. `!Sized` or `!Send`).
 `synthetic`   | bool     | Whether this is an impl that's implied by the compiler (for autotraits).
-`blanket_impl` | [Type](#Type) | TODO
+`blanket_impl` | String | (*Optional*) The name of the generic parameter used for the blanket impl, if this impl was produced by one. For example `impl<T, U> Into<U> for T` would result in `blanket_impl == "T"`.
 
 ### `kind == "constant"`
 
@@ -462,8 +465,8 @@ Name       | Type     | Description
 
 Name       | Type     | Description
 -----------|----------|----------------------------------------------------------------------------
-`since`    | String   | Usually a version number when this Item first became deprecated.
-`note`     | String   | The reason for deprecation and/or what alternatives to use.
+`since`    | String   | (*Optional*) Usually a version number when this Item first became deprecated.
+`note`     | String   | (*Optional*) The reason for deprecation and/or what alternatives to use.
 
 ## FnDecl
 
@@ -477,8 +480,8 @@ Name       | Type     | Description
 
 Name       | Type     | Description
 -----------|----------|----------------------------------------------------------------------------
-`params`   | [[GenericParamDef](#GenericParamDef)] | A list of generic parameter definitions (e.g.  `<T: Clone + Hash, U: Copy>`)
-`where_predicates` | [[WherePredicate](#WherePredicate)] | A list of where predicates (e.g.  `where T: Iterator, T::Item: Copy`)
+`params`   | [[GenericParamDef](#GenericParamDef)] | A list of generic parameter definitions (e.g.  `<T: Clone + Hash, U: Copy>`).
+`where_predicates` | [[WherePredicate](#WherePredicate)] | A list of where predicates (e.g.  `where T: Iterator, T::Item: Copy`).
 
 ### Examples
 
@@ -658,9 +661,9 @@ This is the main kind that represents all user defined types.
 Name       | Type     | Description
 -----------|----------|----------------------------------------------------------------------------
 `name`     | String   | The path of this type as written in the code (`"std::iter::Iterator"`, `"::module::Struct"`, etc.).
-`args`     | [GenericArgs](#GenericArgs) | Any arguments on this type such as `Vec<i32>` or `SomeStruct<'a, 5, u8, B: Copy, C = 'static str>`.
+`args`     | [GenericArgs](#GenericArgs) | (*Optional*) Any arguments on this type such as `Vec<i32>` or `SomeStruct<'a, 5, u8, B: Copy, C = 'static str>`.
 `id`       | [ID](#ID) | The ID of the trait/struct/enum/etc. that this type refers to.
-`param_names` | [GenericBound](#GenericBound) | (*Optional*) If this type is of the form `dyn Foo + Bar + ...` then this field contains the information about those trait bounds.
+`param_names` | [GenericBound](#GenericBound) | If this type is of the form `dyn Foo + Bar + ...` then this field contains those trait bounds.
 
 #### GenericArgs
 
@@ -683,7 +686,8 @@ Name       | Type     | Description
 Can be one of the 3 following objects:
 - `"lifetime": String`
 - `"type": Type`
-- `"const": Object` where the object is the same as the `inner` field of `Item` when `kind == "constant"`
+- `"const": Object` where the object has a single key `"constant"` with value that's the same object as the
+  `inner` field of `Item` when `kind == "constant"`
 
 #### TypeBinding
 
@@ -696,9 +700,6 @@ Name       | Type     | Description
 ### `kind = "generic"`
 
 `"inner"'` is a String which is simply the name of a type parameter.
-
-### `kind = "bare_function_decl"`
-TODO
 
 ### `kind = "tuple"`
 
@@ -727,6 +728,15 @@ Used to represent the `!` type, has no fields.
 
 Used to represent `_` in type parameters, has no fields.
 
+### `kind = "function_pointer"`
+
+Name       | Type     | Description
+-----------|----------|----------------------------------------------------------------------------
+`is_unsafe` | bool    | Whether this is an `unsafe fn`.
+`decl`     | [FnDecl](#FnDecl) | Information about the function signature, or declaration.
+`params`   | [[GenericParamDef](#GenericParamDef)] | A list of generic parameter definitions (e.g.  `<T: Clone + Hash, U: Copy>`).
+`abi`      | String   | The ABI string on the function.
+
 ### `kind = "raw_pointer"`
 
 Name       | Type     | Description
@@ -744,7 +754,8 @@ Name       | Type     | Description
 
 ### `kind = "qualified_path"`
 
-When a type is qualified by a trait (`<Type as Trait>::Name`) or associated type (`T::Item` where `T: Iterator`).
+Used when a type is qualified by a trait (`<Type as Trait>::Name`) or associated type (`T::Item`
+where `T: Iterator`).
 
 Name       | Type     | Description
 -----------|----------|----------------------------------------------------------------------------
@@ -862,8 +873,7 @@ pub fn references<'a>(a: &'a mut str) -> &'static MyType {}
               "bindings": []
             }
           },
-          "param_names": null,
-          "is_generic": false
+          "param_names": null
         }
       }
     }
@@ -913,8 +923,7 @@ pub fn generics<T>(a: T, b: impl Iterator<Item = bool>) -> ! {}
                       ]
                     }
                   },
-                  "param_names": null,
-                  "is_generic": false
+                  "param_names": null
                 }
               },
               "generic_params": [],
@@ -992,8 +1001,7 @@ pub fn generic_args<'a>(x: impl MyTrait<'a, i32, Item = u8, Other = f32>) {
                       ]
                     }
                   },
-                  "param_names": null,
-                  "is_generic": false
+                  "param_names": null
                 }
               },
               "generic_params": [],
