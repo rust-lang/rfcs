@@ -63,6 +63,8 @@ fn identity(.x: i32) -> i32 { x }
 It is also possible to specify a different pattern. This pattern can be used to rename or destructure the argument, for example:
 
 ```rust
+struct Point(i32, i32);
+
 fn scale(.point Point(x, y): Point, .by coeff u64) -> Point {
     Point(coeff * x, coeff * y)
 }
@@ -119,10 +121,12 @@ fn foo(a: i32, .b: i32, .c: i32) {}
 
 foo(.a = 1, .b = 2, .c = 3); // ERROR! 1st argument is not named
 foo(     1, .b = 2, .c = 3); // ok
-foo(     1,      2, .c = 3); // ok
-foo(     1,      2,      3); // ok
+foo(     1,      2, .c = 3); // ok (see note)
+foo(     1,      2,      3); // ok (see note)
 foo(     1, .b = 2,      3); // ERROR! named arguments can't be followed by positional arguments
 ```
+
+_Note:_ The 3rd and 4th function call above will trigger a clippy warning, if [this proposed lint](#remedy-add-a-clippy-lint) is implemented.
 
 Both positional and named arguments must appear in the same order as in the function declaration:
 
@@ -284,6 +288,7 @@ However, this can also be seen as a good thing: If named arguments were mandator
 The main reason why named arguments aren't mandatory is that existing APIs can be converted to use named arguments backwards compatibly. This would not be possible if named arguments were mandatory.
 
 ### Remedy: Add a clippy lint
+[remedy-add-a-clippy-lint]: #remedy-add-a-clippy-lint
 
 Laziness to specify named arguments can be remedied by adding a clippy lint that warns when a named argument is omitted.
 
