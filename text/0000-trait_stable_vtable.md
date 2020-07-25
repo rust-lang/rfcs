@@ -120,7 +120,7 @@ struct VTable_StableVtable{
     size: usize,
     align: usize,
     drop_in_place: Option<unsafe extern"C" fn(*mut ())->()>,
-    reserved: *mut (),
+    dealloc: Option<unsafe extern"C" fn(*mut ())->()>,
     _vdispatch_example_fn: unsafe extern"C" fn(*const ())->(),
     _vdispatch_example_fn_returning_i32: unsafe extern"C" fn(*const ())->i32
 }
@@ -134,7 +134,7 @@ The fields of the vtable shall be initialized as follows:
 * The `drop_in_place` entry shall be initialized to a function which performs the drop operation of the implementing type. If the drop operation is a no-op,
  the entry may be initialized to a null pointer (`None`) _Note - It is unspecified if types with trivial (no-op) destruction have the entry initialized to None,
  or to a function that performs no operation - End Note_ 
-* The `reserved` entry in the vtable shall be set to a null pointer. The value of the reserved entry shall be ignored by the implementation _Note - This entry may be present in some uses of this vtable layout, as a deallocation function. In the present version of this RFC, deallocation of foreign trait objects is not defined. This entry may become used in future revisions - End Note_
+* The `dealloc` entry shall be initialized to a function which is suitable for deallocating the pointer if it was produced by the in-use global-allocator, (including potentially the intrinsic global-allocator provided by the `std` library). If no global-allocator is available, the entry shall be initialized to a null pointer, or a pointer to a function which performs no operation.
 * Each `virtual_fn` shall be initialized to the appropriate function provided by the implementation. If the trait has any supertraits, the `virutal_fn` entries from those supertraits appear first, from Left to Right. Trait functions which are not valid to call on a reciever with a trait-object type are omitted from the vtable. _Note - In particular, entries which require Self: Sized are omitted - End Note_
 
 The `#[stable_vtable]` attribute shall not be applied to a trait which is not object safe, or which has any supertraits that are not `#[stable_vtable]` or `auto` traits.
