@@ -220,6 +220,26 @@ fn foo(.a b: i32) {}
 fn foo(.a _: i32) {}
 ```
 
+Argument names can be added to positional arguments _from right to left_, without breaking backwards compatibility:
+
+```rust
+fn foo(a: i32, b: i32) {}
+fn foo(a: i32, .b: i32) {}
+fn foo(.a: i32, .b: i32) {}
+```
+
+Argument names can also be added to trait functions backwards compatibly:
+
+```rust
+trait Foo {
+    fn foo(a: i32, b: i32);
+}
+// -->
+trait Foo {
+    fn foo(.a: i32, .b: i32);
+}
+```
+
 ## ABI compatibility
 
 Named arguments don't affect the ABI or code generation in any way. For example, you can use named arguments in `extern "C"` functions.
