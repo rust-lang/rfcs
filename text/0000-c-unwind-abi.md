@@ -204,8 +204,8 @@ This change will be applied to all ABI strings other than `"Rust"`, such as
 
 ## Interaction with `panic=abort`
 
-If a non-forced foreign unwind would enter a Rust frame via an `extern "C
-unwind"` ABI boundary, but the Rust code is compiled with `panic=abort`, the
+If a non-forced foreign unwind would enter a Rust frame via an `extern
+"C-unwind"` ABI boundary, but the Rust code is compiled with `panic=abort`, the
 unwind will be caught and the process aborted.
 
 Conversely, non-forced unwinding from another language into Rust through an FFI
@@ -288,10 +288,11 @@ the default for all functions without an explicit ABI string) and the other
 existing ABIs: no ABI string without the word `unwind` will permit unwinding,
 except the `"Rust"` ABI, which will permit unwinding, but only when compiled
 with `panic=unwind`. Making other ABIs consistent with the `"Rust"` ABI by
-permitting them to unwind by default (and possibly either introducing a new `"C
-unwind"` ABI or an annotation akin to C++'s `noexcept` to explicitly prohibit
-unwinding) would also be a safer default, since it would prevent undefined
-behavior when interfacing with external libraries that may throw exceptions.
+permitting them to unwind by default (and possibly either introducing a new
+`"C-unwind"` ABI or an annotation akin to C++'s `noexcept` to explicitly
+prohibit unwinding) would also be a safer default, since it would prevent
+undefined behavior when interfacing with external libraries that may throw
+exceptions.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
