@@ -63,12 +63,14 @@ fn identity(.x: i32) -> i32 { x }
 It is also possible to specify a different pattern. This pattern can be used to rename or destructure the argument, for example:
 
 ```rust
-fn add(.scalar a: i32, .to (b, c): (i32, i32)) -> i32 {
-    a + b + c
+fn scale(.point Point(x, y): Point, .by coeff u64) -> Point {
+    Point(coeff * x, coeff * y)
 }
 
-add(.scalar = 7, .to = (14, 21));
+scale(.point = Point(14, 21), .by = 4);
 ```
+
+This also allows ignoring the argument (e.g. `.arg _: i32`) or making it mutable (e.g. `.arg mut arg: i32`).
 
 If a function has both positional and named arguments, the named arguments must come _after_ the positional arguments:
 
@@ -80,16 +82,33 @@ fn bad(.a: i32, b: i32, .c: i32); // error!
 
 The `self` argument of a method can't be a named argument.
 
-If the function is in a trait implementation, it must have the same argument names as in the trait, but the argument patterns can differ:
+### Trait implementations
+
+If the function is in a trait implementation, each argument must either be positional, or its name must match the argument name in the trait:
 
 ```rust
 trait Trait {
-    fn f(.arg: i32);
+    fn f(.a: i32, .b: i32);
 }
 impl Trait for () {
-    fn f(.arg _: i32) {}
+    fn f(_: i32, .b _: i32) {} // okay, because 1st argument is positional and
+                               // 2nd argument name matches the trait definition
 }
 ```
+
+The following is forbidden, however:
+
+```rust
+trait Trait {
+    fn f(_: i32, .b: i32);
+}
+impl Trait for i32 {
+    fn f(.a: i32, .c: i32) {} // ERROR! 1st argument is not named in the trait definition
+                              // ERROR! 2nd argument `.c` is named `.b` in the trait definition
+}
+```
+
+When calling a trait method, only the argument names in the trait definition are considered. See [this section](#calling-trait-functions) for an example.
 
 ## Function call
 
@@ -115,7 +134,7 @@ foo(1, .c = 2, .b = 3); // ERROR! expected argument name `.b`, found `.c`
                         //  note: argument names must appear in the same order as in the function declaration
 ```
 
-Named arguments can only be specified if the function is called directly and not via a function pointer, e.g.
+Since the argument names [are not part of the type](#interactions-with-the-type-system), named arguments can only be specified if the function is called directly and not via a function pointer, e.g.
 
 ```rust
 fn foo(.a: i32, .b: i32) {}
@@ -137,6 +156,24 @@ fn higher_order(f: impl Fn(i32, i32)) {
 }
 higher_order(foo);       // ok
 higher_order(|_, _| {}); // ok
+```
+
+### Calling trait functions
+[calling-trait-functions]: #calling-trait-functions
+
+When calling a trait function, only the trait definition is considered:
+
+```rust
+trait Trait {
+    fn f(self, .arg: i32);  // named argument
+}
+impl Trait for bool {
+    fn f(self, _: i32) {}   // positional argument
+}
+
+true.f(.arg = 42);                    // works
+Trait::f(true, .arg = 42);            // works
+<bool as Trait>::f(true, .arg = 42);  // works
 ```
 
 # Reference-level explanation
@@ -188,6 +225,7 @@ fn foo(.a _: i32) {}
 Named arguments don't affect the ABI or code generation in any way. For example, you can use named arguments in `extern "C"` functions.
 
 ## Interactions with the type system
+[interactions-with-the-type-system]: #interactions-with-the-type-system
 
 Named arguments don't interact with the type system, since named arguments are _not_ part of the function's type. For example, the following is invalid:
 
@@ -358,9 +396,17 @@ For example:
 
 ```rust
 free_fall(/*z0*/ 100.0, /*v0*/ 0.0, /*g*/ 9.81);
+
+free_fall(100.0, 0.0, 9.81); // z0, v0, g
+
+free_fall(
+    100.0,  // z0
+    0.0,    // v0
+    9.81,   // g
+);
 ```
 
-Since Rust code like this appears virtually nowhere in the wild, it appears that most Rust programmers either aren't aware of this possibility, or don't like writing code like this.
+Since Rust code like this appears very rarely in the wild, it appears that most Rust programmers either aren't aware of this possibility, or don't like writing code like this.
 
 ### Enums for `bool`
 
