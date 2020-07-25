@@ -184,6 +184,8 @@ Additionally, something similar to COM could be used as the stablized vtable lay
 
 As mentioned, both the C++ Itanium ABI and COM are examples of a "stablized" virtual dispatch. Both specify the layout of virtual dispatch tables, and how they interact with virtual calls. COM-like structs have specifically been used for cross-language "virtual" dispatch, and have been used in a variety of applications, including the Java Native Interface.
 
+The [abi\_stable](https://crates.io/crates/abi_stable) crate provides a semi-stablized vtable for Rust-Rust ABI Compatibility. The compatibility of this vtable with the proposed layout is being investigated. 
+
 Beyond prior art, some in-progress work from which this rfc is based:
 The vtable layout here is the one used in the in-progress Mod-It-All framework, which is designed to allow modules written in foreign languages to nicely interact with each other. See <https://github.com/ModItAll/Framework/blob/726957eda4f02cc6c9d2cb3033d438cc2c1115cf/include/Framework.h#L7..17>. This layout is also being used in a concurrent proposed technical specification for the in-development Laser Language <https://github.com/ComLangDevelopment>.
 
@@ -201,10 +203,10 @@ The vtable layout here is the one used in the in-progress Mod-It-All framework, 
 
 As mentioned above, this rfc is submitted concurrently to a proposed technical specification for the in-development Laser Language. It is intended that comments related to the actual semantics of the proposal (beyond the rust-specific syntax) be relayed to the comments on that proposed technical specification, and the reverse. As both proposals evolve, more specific changes may occur (including a resolution of the question reguarding the use of a COM-like layout). 
 
-The `reserved` item is reserved for a deallocation function. In the initial discussion, `Box<dyn Trait>` was used to indicate a (potentially foreign) smart pointer, 
- which would need to be deallocated using that vtable entry. However, this would cause unsoundness in theoretically sound code. 
-As such, it was left out and `reserved` in this rfc required to be set to null, and ignored by rust. 
-A future possibility would be to reintroduce this entry, and possibly introduce a standard smart pointer similar to box that allocates using either the system allocator, 
+The `dealloc` item is used as a deallocation function for allocated pointers of the type. In the initial discussion, `Box<dyn Trait>` was used to indicate a (potentially foreign) smart pointer, 
+ which would need to be deallocated using that vtable entry. However, this would cause unsoundness in theoretically sound code.  
+While the entry was reintroduced, it presently has no use in this rfc A future extension to this could be to introduce a standard smart pointer similar to box that allocates using either the system allocator, 
  or potentially a type-specific allocator, and deallocates the pointer using that entry. (Or alternatively, with the `allocator_api` implementation, a "type-aware" allocator that when used in a Box, calls the deallocation entry if present, otherwise the `System` allocator).
 
+Under this rfc, the `dealloc` item *could* be used with a user-provided smart pointer type to provide that functionality, however the safety/soundness may be predicated on either a user-provided trait implementation, or on a standard library trait for TraitObjects, and specifically trait objects with stable vtable layout. 
 
