@@ -1,4 +1,4 @@
-- Feature Name: `"C unwind" ABI`
+- Feature Name: `"C-unwind" ABI`
 - Start Date: 2019-04-03
 - RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
@@ -9,12 +9,12 @@
 # Summary
 [summary]: #summary
 
-We introduce a new ABI string, `"C unwind"`, to enable unwinding from other
+We introduce a new ABI string, `"C-unwind"`, to enable unwinding from other
 languages (such as C++) into Rust frames and from Rust into other languages.
 
 Additionally, we define the behavior for a limited number of
 previously-undefined cases when an unwind operation reaches a Rust function
-boundary with a non-`"Rust"`, non-`"C unwind"` ABI.
+boundary with a non-`"Rust"`, non-`"C-unwind"` ABI.
 
 As part of this specification, we introduce the term ["Plain Old Frame"
 (POF)][POF-definition]. These are frames that have no pending destructors and
@@ -96,42 +96,42 @@ how well the current design satisfies these constraints.
 [guide-level-explanation]: #guide-level-explanation
 
 When declaring an external function that may unwind, such as an entrypoint to a
-C++ library, use `extern "C unwind"` instead of `extern "C"`:
+C++ library, use `extern "C-unwind"` instead of `extern "C"`:
 
 ```
-extern "C unwind" {
+extern "C-unwind" {
   fn may_throw();
 }
 ```
 
 Rust functions that call a possibly-unwinding external function should either
 use the default Rust ABI (which can be made explicit with `extern "Rust"`) or
-the `"C unwind"` ABI:
+the `"C-unwind"` ABI:
 
 ```
-extern "C unwind" fn can_unwind() {
+extern "C-unwind" fn can_unwind() {
   may_throw();
 }
 ```
 
-Using the `"C unwind"` ABI to "sandwich" Rust frames between frames from
+Using the `"C-unwind"` ABI to "sandwich" Rust frames between frames from
 another language (such as C++) allows an exception initiated in a callee frame
 in the other language to traverse the intermediate Rust frames before being
 caught in the caller frames. I.e., a C++ exception may be thrown,
-cross into Rust via an `extern "C unwind"` function declaration, safely unwind
+cross into Rust via an `extern "C-unwind"` function declaration, safely unwind
 the Rust frames, and cross back into C++ (where it may be caught) via a Rust
-`"C unwind"` function definition.
+`"C-unwind"` function definition.
 
 Conversely, languages that support the native unwinding mechanism, such as C++,
 may be "sandwiched" between Rust frames, so that Rust `panic`s may safely
 unwind the C++ frames, if the Rust code declares both the C++ entrypoint and
-the Rust entrypoint using `"C unwind"`.
+the Rust entrypoint using `"C-unwind"`.
 
 ## Other `unwind` ABI strings
 
 Because the `C` ABI is not appropriate for all use cases, we also introduce
 these `unwind` ABI strings, which will only differ from their non-`unwind`
-variants by permitting unwinding, with the same semantics as `"C unwind"`:
+variants by permitting unwinding, with the same semantics as `"C-unwind"`:
 
 * `"system unwind"` - available on all platforms
 * `"stdcall unwind"` and `"thiscall unwind"` - available only on platforms
@@ -178,7 +178,7 @@ types). In other words, a forced unwind operation on one platform will simply
 deallocate Rust frames without true unwinding on other platforms.
 
 This RFC specifies that, regardless of the platform or the ABI string (`"C"` or
-`"C unwind"`), any platform features that may rely on forced unwinding will
+`"C-unwind"`), any platform features that may rely on forced unwinding will
 always be considered undefined behavior if they cross
 non-[POFs][POF-definition]. Crossing only POFs is necessary but not sufficient,
 however, to make forced unwinding safe, and for now we do not specify any safe
@@ -229,9 +229,9 @@ behavior. `"C"`-like ABIs are `"C"` itself but also related ABIs such as
 
 | panic runtime  | ABI          | `panic`-unwind                        | Unforced foreign unwind |
 | -------------- | ------------ | ------------------------------------- | ----------------------- |
-| `panic=unwind` | `"C unwind"` | unwind                                | unwind                  |
+| `panic=unwind` | `"C-unwind"` | unwind                                | unwind                  |
 | `panic=unwind` | `"C"`-like   | abort                                 | UB                      |
-| `panic=abort`  | `"C unwind"` | `panic!` aborts                       | abort                   |
+| `panic=abort`  | `"C-unwind"` | `panic!` aborts                       | abort                   |
 | `panic=abort`  | `"C"`-like   | `panic!` aborts (no unwinding occurs) | UB                      |
 
 In debug mode, the compiler could insert code to catch unwind attempts at
@@ -257,7 +257,7 @@ In order to limit the scope of this RFC, the following limitations are imposed:
 
 * No subtype relationship is defined between functions or function pointers
   using different ABIs.
-* Coercions are not defined between `"C"` and `"C unwind"`.
+* Coercions are not defined between `"C"` and `"C-unwind"`.
 * As noted in the [summary][summary], if a Rust frame containing a pending
   `catch_unwind` call is unwound by a foreign exception, the behavior is
   undefined for now.
@@ -277,7 +277,7 @@ inconsistent across platforms, which is not desirable.
 This design imposes some burden on existing codebases (mentioned
 [above][motivation]) to change their `extern` annotations to use the new ABI.
 
-Having separate ABIs for `"C"` and `"C unwind"` may make interface design more
+Having separate ABIs for `"C"` and `"C-unwind"` may make interface design more
 difficult, especially since this RFC [postpones][unresolved-questions]
 introducing coercions between function types using different ABIs. Conversely,
 a single ABI that "just works" with C++ (or any other language that may throw
@@ -304,13 +304,13 @@ explained in [this Inside Rust blog post][inside-rust-proposals]. The design in 
 RFC is referred to as "option 2" in that post.
 
 "Option 1" in that blog post only differs from the current proposal in the
-behavior of a forced unwind across a `"C unwind"` boundary under `panic=abort`.
+behavior of a forced unwind across a `"C-unwind"` boundary under `panic=abort`.
 Under the current proposal, this type of unwind is permitted, allowing
 `longjmp` and `pthread_exit` to behave "normally" with both the `"C"` and the
-`"C unwind"` ABI across all platforms regardless of panic runtime. If
+`"C-unwind"` ABI across all platforms regardless of panic runtime. If
 [non-POFs][POF-definition] are unwound, this results in undefined behavior.
 Under "option 1", however, all foreign unwinding, forced or unforced, is caught
-at `"C unwind"` boundaries under `panic=abort`, and the process is aborted.
+at `"C-unwind"` boundaries under `panic=abort`, and the process is aborted.
 This gives `longjmp` and `pthread_exit` surprising behavior on some platforms,
 but avoids that cause of undefined behavior in the current proposal.
 
@@ -327,7 +327,7 @@ Our reasons for preferring the current proposal are:
 
 * Introducing a new ABI makes reliance on cross-language exception handling
   more explicit.
-* `panic=abort` can be safely used with `extern "C unwind"` (there is no
+* `panic=abort` can be safely used with `extern "C-unwind"` (there is no
   undefined behavior except with improperly used forced unwinding), but `extern
   "C"` has more optimization potential (eliding landing pads). Having two ABIs
   puts this choice in the hands of users.
@@ -344,7 +344,7 @@ Our reasons for preferring the current proposal are:
 * This design has simpler forward compatibility with alternate `panic!`
   implementations. Any well-defined cross-language unwinding will require shims
   to translate between the Rust unwinding mechanism and the natively provided
-  mechanism. In this proposal, only `"C unwind"` boundaries would require shims.
+  mechanism. In this proposal, only `"C-unwind"` boundaries would require shims.
 
 ## Analysis of key design goals
 [analysis-of-design-goals]: #analysis-of-design-goals
@@ -358,7 +358,7 @@ This constraint is met:
 
 * Unwinding across a "C" boundary is UB regardless
     of whether one is using `panic=unwind` or `panic=abort`.
-* Unwinding across a "C unwind" boundary is always defined,
+* Unwinding across a "C-unwind" boundary is always defined,
     though it is defined to abort if `panic=abort` is used.
 * Forced exceptions behave the same regardless of panic mode.
 
@@ -366,9 +366,9 @@ This constraint is met:
 
 Using this proposal, the compiler is **almost always** able to reduce
 overhead related to unwinding when using panic=abort. The one
-exception is that invoking a "C unwind" ABI still requires some kind
+exception is that invoking a "C-unwind" ABI still requires some kind
 of minimal landing pad to trigger an abort. The expectation is that
-very few functions will use the "C unwind" boundary unless they truly
+very few functions will use the "C-unwind" boundary unless they truly
 intend to unwind -- and, in that case, those functions are likely
 using panic=unwind anyway, so this is not expected to make much
 difference in practice.
@@ -378,7 +378,7 @@ difference in practice.
 This constraint is met. If we were to change Rust panics to a
 different mechanism from the mechanism used by the native ABI,
 however, there would have to be a conversion step that interconverts
-between Rust panics and foreign exceptions at "C unwind" ABI
+between Rust panics and foreign exceptions at "C-unwind" ABI
 boundaries.
 
 ### Enable Rust panics to traverse through foreign frames
@@ -418,7 +418,7 @@ similar to how Rust's `panic=unwind` and `panic=abort` work for `panic!`
 unwinds, and under the "option 3" proposal, the behavior would be similar for
 foreign exceptions as well. In the current proposal, though, such foreign
 exception support is not enabled by default with `panic=unwind` but requires
-the new `"C unwind"` ABI.
+the new `"C-unwind"` ABI.
 
 ## Attributes on nightly Rust and prior RFCs
 [nightly-attributes]: #attributes-on-nightly-rust-and-prior-rfcs
@@ -511,7 +511,7 @@ and rethrow them from another thread. Such a mechanism may either be
 incorporated into the functionality of `catch_unwind` or provided as a separate
 language or standard library feature.
 
-Coercions between `"C unwind"` function types (such as function pointers) and
+Coercions between `"C-unwind"` function types (such as function pointers) and
 the other ABIs are not part of this RFC. However, they will probably be
 indispensible for API design, so we plan to provide them in a future RFC.
 
