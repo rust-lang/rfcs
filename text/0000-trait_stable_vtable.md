@@ -184,7 +184,7 @@ Additionally, something similar to COM could be used as the stablized vtable lay
 
 As mentioned, both the C++ Itanium ABI and COM are examples of a "stablized" virtual dispatch. Both specify the layout of virtual dispatch tables, and how they interact with virtual calls. COM-like structs have specifically been used for cross-language "virtual" dispatch, and have been used in a variety of applications, including the Java Native Interface.
 
-The [abi\_stable](https://crates.io/crates/abi_stable) crate provides a semi-stablized vtable for Rust-Rust ABI Compatibility. The compatibility of this vtable with the proposed layout is being investigated. 
+The [abi\_stable](https://crates.io/crates/abi_stable) crate provides a semi-stablized vtable for Rust-Rust ABI Compatibility. The VTable used by it is known to be incompatible with this RFC, however it serves as an example of the usefulness of allowing cross-module compatibility in Rust code.  
 
 Beyond prior art, some in-progress work from which this rfc is based:
 The vtable layout here is the one used in the in-progress Mod-It-All framework, which is designed to allow modules written in foreign languages to nicely interact with each other. See <https://github.com/ModItAll/Framework/blob/726957eda4f02cc6c9d2cb3033d438cc2c1115cf/include/Framework.h#L7..17>. This layout is also being used in a concurrent proposed technical specification for the in-development Laser Language <https://github.com/ComLangDevelopment>.
