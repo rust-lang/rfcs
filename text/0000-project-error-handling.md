@@ -40,7 +40,7 @@ Here is a tenative starting point, subject to change:
 - Error kind pattern for associating context with every enum variant without including the member in every enum variant.
 - Convert to a reporting type when the error is no longer expected to be handled beyond reporting e.g. `anyhow::Error` or `eyre::Report` or when trait object + downcast error handling is preferable.
 - Recommend `Box`ing concrete error types when stack size is an issue rather than `Box`ing and converting to `dyn Error`s.
-- What is the concensus on handling `dyn Error`s? Should it be encouraged or discouraged? Should we look into making `Box<dyn Error...>` impl Error?
+- What is the consensus on handling `dyn Error`s? Should it be encouraged or discouraged? Should we look into making `Box<dyn Error...>` impl Error?
 
 
 ### Communicate current best practices
