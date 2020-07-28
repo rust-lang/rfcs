@@ -248,6 +248,7 @@ impl fmt::Debug for ErrorReporter {
         let errors = std::iter::successors(Some(error), |e| e.source());
 
         for (ind, error) in errors.enumerate() {
+            writeln!(fmt, "    {}: {}", ind, error)?;
             if let Some(location) = error.context::<Location>() {
                 writeln!(fmt, "        at {}:{}", location.file, location.line)?;
             }
