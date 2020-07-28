@@ -94,7 +94,16 @@ I'm not sure, my main concern is getting prompt feedback on RFCs.
 
 ### Why should this be a project group over a community effort?
 
-Error handling has historically been handled via community effort which has resulted a great deal of competing and outdated solutions and resources. An officially supported project group has the best chance of writing and maintaining up-to-date resources that would reach a wide audience.
+There isn't anything in this project group that can't be handled as a
+community effort, but centralizing work into a project group should help
+speed things. Error handling is a core aspect of the language and changes in
+error handling have large impacts on the ecosystem. Ensuring that efforts to
+refine error handling within Rust have sufficient resources and don't stall
+out is in the best interests of the community. By organizing efforts as a
+project group we will hopefully have an easier time recruiting new members,
+getting attention on RFCs from members of the libs team, and using the
+established resources and expertise of the rust organization for coordinating
+our efforts.
 
 ### What do you expect the relationship to the team be?
 
