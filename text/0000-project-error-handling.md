@@ -43,6 +43,13 @@ Here is a tenative starting point, subject to change:
 - What is the consensus on handling `dyn Error`s? Should it be encouraged or discouraged? Should we look into making `Box<dyn Error...>` implement `Error`?
 
 
+### Identify pain points in error handling today
+
+- Backtrace capture is expensive, but without one it can be difficult to pinpoint the origin of errors
+- unwrap on errors without first converting to a reporting type will often discard relevant information
+- errors printing from main have to assume a prefixed `Error: `, sub par control of output format when printing during termination.
+- Error trait only exposes 3 forms of context, can only represent singly linked lists for chains of errors
+
 ### Communicate current best practices
 
 - Document the consensus.
