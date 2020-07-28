@@ -244,18 +244,13 @@ struct ErrorReporter(Box<dyn Error + Send + Sync + 'static>);
 
 impl fmt::Debug for ErrorReporter {
     fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let mut current_error = Some(self.0.as_ref());
-        let mut ind = 0;
+        let error: &(dyn Error + 'static) = self.0.as_ref();
+        let errors = std::iter::successors(Some(error), |e| e.source());
 
-        while let Some(error) = current_error {
-            writeln!(fmt, "    {}: {}", ind, error)?;
-
+        for (ind, error) in errors.enumerate() {
             if let Some(location) = error.context::<Location>() {
                 writeln!(fmt, "        at {}:{}", location.file, location.line)?;
             }
-
-            ind += 1;
-            current_error = error.source();
         }
 
         Ok(())
