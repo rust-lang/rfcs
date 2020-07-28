@@ -11,7 +11,7 @@ This RFC establishes a new project group, under the libs team, to drive efforts 
 # Motivation
 [motivation]: #motivation
 
-The error handling project group aims to reduce confusion on how to structure error handling for users in the rust community. This will be accomplished by creating learning resources and pushing effort to upstream widely used crates into std. As a secondary goal this project group will also try to resolve some known issues with the Error trait and reporting errors in panics/termination.
+The error handling project group aims to reduce confusion on how to structure error handling for users in the Rust community. This will be accomplished by creating learning resources and pushing effort to upstream widely used crates into the standard library. As a secondary goal, this project group will also try to resolve some known issues with the `Error` trait and reporting errors in panics/termination.
 
 # Charter
 [charter]: #charter
@@ -22,9 +22,9 @@ The error handling project group aims to reduce confusion on how to structure er
 
 - Recoverable error: An error that can reasonably be expected to be encountered e.g. a missing file.
 - Unrecoverable error: An error that cannot reasonably be expected to happen and which indicates a bug e.g. indexing out of bounds.
-- Error Type: A type that represents a recoverable error. Error types can optionally implement the error trait so that it can be reported to the user or be converted into a trait object.
-- Reporting Type: A type that can store all recoverable errors an application may need to propogate and print them as error reports.
-    - Reporting types can represent the recoverable errors either via concrete types, likely paramaterized, or trait objects.
+- Error Type: A type that represents a recoverable error. Error types can optionally implement the `Error` trait so that it can be reported to the user or be converted into a trait object.
+- Reporting Type: A type that can store all recoverable errors an application may need to propagate and print them as error reports.
+    - Reporting types can represent the recoverable errors either via concrete types, likely parameterized, or trait objects.
     - Reporting types often bundle context with errors when they are constructed, e.g. `Backtrace`.
     - Reporting types often provide helper functions for creating ad hoc errors whose only purpose is to be reported e.g. `anyhow::format_err!` or `eyre::WrapErr`.
 
@@ -34,23 +34,23 @@ Here is a tenative starting point, subject to change:
 
 - Use `Result` and `Error` types for recoverable errors.
 - Use `panic` for unrecoverable errors.
-- Impl `Error` for error types that may need to be reported to a human or be composed with other errors.
+- Implement `Error` for error types that may need to be reported to a human or be composed with other errors.
 - Use enums for types representing multiple failure cases that may need to be handled.
-    - For libraries, oftentimes you want to support both reporting and handling so you impl `Error` on a possibly non-exhaustive enum.
+    - For libraries, oftentimes you want to support both reporting and handling so you implement `Error` on a possibly non-exhaustive enum.
 - Error kind pattern for associating context with every enum variant without including the member in every enum variant.
 - Convert to a reporting type when the error is no longer expected to be handled beyond reporting e.g. `anyhow::Error` or `eyre::Report` or when trait object + downcast error handling is preferable.
 - Recommend `Box`ing concrete error types when stack size is an issue rather than `Box`ing and converting to `dyn Error`s.
-- What is the consensus on handling `dyn Error`s? Should it be encouraged or discouraged? Should we look into making `Box<dyn Error...>` impl Error?
+- What is the consensus on handling `dyn Error`s? Should it be encouraged or discouraged? Should we look into making `Box<dyn Error...>` implement `Error`?
 
 
 ### Communicate current best practices
 
-- Document the concensus.
+- Document the consensus.
 - Communicate plan for future changes to error handling, and the libraries that future changes are being based off of.
 - Produce learning resources related to current best practices.
     - New chapters in the book?
 
-### Evaluate options for error reporting type aka better `Box<dyn Error>`
+### Evaluate options for error reporting type a.k.a. better `Box<dyn Error>`
 
 - Survey the current libraries in the ecosystem:
     - `anyhow`
@@ -58,18 +58,18 @@ Here is a tenative starting point, subject to change:
 - Evaluate value of features including:
     - Single word width on stack
     - Error wrapping with display types and with special downcast support.
-    - report hook + configurable `dyn ReportHandler` type for custom report formats and content, similar to panic handler but for errors.
+    - Report hook and configurable `dyn ReportHandler` type for custom report formats and content, similar to panic handler but for errors.
     - libcore compatibility.
 
 ### Consolidate ecosystem by merging best practice crates into std
 
 - Provide a derive macro for `Error` in std.
-- Stabilize the `Backtrace` type but possibly not `fn backtrace` on the Error trait.
+- Stabilize the `Backtrace` type but possibly not `fn backtrace` on the `Error` trait.
     - Provide necessary API on `Backtrace` to support crates like `color-backtrace`.
-- Move error to core .
+- Move `Error` to core.
     - Depends on generic member access.
     - Requires resolving downcast dependency on `Box` and blocking the stabilization of `fn backtrace`.
-- Potentially stabilize an error Reporting type based on `anyhow` and `eyre` now that they're close to having identical feature sets.
+- Potentially stabilize an error reporting type based on `anyhow` and `eyre` now that they're close to having identical feature sets.
 
 ### Add missing features
 
@@ -84,7 +84,7 @@ Here is a tenative starting point, subject to change:
 
 ## Membership Requirements
 
-- Group membership is open, any interested party can participate in discussions, repeat contributors will be added appropriate teams.
+- Group membership is open, any interested party can participate in discussions, repeat contributors will be added to appropriate teams.
 
 ## Additional Questions
 
