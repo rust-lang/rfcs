@@ -191,4 +191,4 @@ At present, there are two accepted RFCs that would require migrations and which 
 
 [RFC 2795] introduces implicit named arguments in format strings, so that one can write `panic!("error: {error_code}")` in place of `panic!("error: {error_code}", error_code=error_code)`. However, in today's code, the former is accepted and simply panics with a `&str` equal to `error: {error_code}`. A migration can detect this edge case and rewrite the panic to preserve these semantics, [as discussed on the tracking issue](https://github.com/rust-lang/rust/issues/67984#issuecomment-653909850).
 
-[RFC 2975]: https://rust-lang.github.io/rfcs/2795-format-args-implicit-identifiers.html
+[RFC 2795]: https://rust-lang.github.io/rfcs/2795-format-args-implicit-identifiers.html
