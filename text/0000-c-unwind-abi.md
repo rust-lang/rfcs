@@ -133,8 +133,8 @@ Because the `C` ABI is not appropriate for all use cases, we also introduce
 these `unwind` ABI strings, which will only differ from their non-`unwind`
 variants by permitting unwinding, with the same semantics as `"C-unwind"`:
 
-* `"system unwind"` - available on all platforms
-* `"stdcall unwind"` and `"thiscall unwind"` - available only on platforms
+* `"system-unwind"` - available on all platforms
+* `"stdcall-unwind"` and `"thiscall-unwind"` - available only on platforms
   where `"stdcall"` and `"thiscall"` are supported
 
 More `unwind` variants of existing ABI strings may be introduced, with the same
