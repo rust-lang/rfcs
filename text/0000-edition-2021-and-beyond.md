@@ -23,7 +23,7 @@ The plan for editions was laid out in [RFC 2052] and Rust had its first edition 
 
 [RFC 2052]: https://github.com/rust-lang/rfcs/blob/master/text/2052-epochs.md
 
-This RFC proposes a specific answer to those questions:
+This RFC proposes various clarifications to the edition process going forward:
 
 * We will do new Rust editions on a regular, three-year cadence.
     * We will roll out an edition regardless of whether there are breaking changes.
