@@ -72,7 +72,7 @@ The release of a new edition is always a celebratory affair. It gives us a chanc
 
 Upgrading between editions is meant to be easy. The general rule is, if your code compiles without warnings, you should be able to opt into the new edition, and your code will compile.
 
-Along with each edition, we also release support for it in a tool called `rustfix`, which will automatically migate your code from the old edition to the new edition, preserving semantics along the way. You may have to do a bit of cleanup after the tool runs, but it shouldn't be much.
+Along with each edition, we also release support for it in a tool called `rustfix`, which will automatically migrate your code from the old edition to the new edition, preserving semantics along the way. You may have to do a bit of cleanup after the tool runs, but it shouldn't be much.
 
 ## "Migrations" in an edition vs "idiom lints"
 
