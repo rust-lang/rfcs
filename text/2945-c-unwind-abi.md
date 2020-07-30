@@ -1,7 +1,7 @@
 - Feature Name: `"C-unwind" ABI`
 - Start Date: 2019-04-03
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- RFC PR: [rust-lang/rfcs#2945](https://github.com/rust-lang/rfcs/pull/2945)
+- Rust Issue: [rust-lang/rust#74990](https://github.com/rust-lang/rust/issues/74990)
 - Project group: [FFI-unwind][project-group]
 
 [project-group]: https://github.com/rust-lang/project-ffi-unwind
