@@ -208,7 +208,7 @@ local crate, as well as some information about external items that are referred 
 
 Name      | Type    | Description
 ----------|---------|------------------------------------------------------------------------------
-`name`    | String  | The name of the crate. If `--crate-name` is not given, based on the filename.
+`name`    | String  | (*Optional*) The name of the crate. If `--crate-name` is not given, based on the filename.
 `version` | String  | (*Optional*) The version string given to `--crate-version`, if any.
 `includes_private`  | bool  | Whether or not the output includes private items.
 `root`    | [ID](#ID)      | The ID of the root module Item.
@@ -256,9 +256,10 @@ Name      | Type    | Description
 `name`    | String  | The name of the Item, if present. Some Items, like impl blocks, do not have names.
 `span`    | [Span](#Span) | (*Optional*) The source location of this Item.
 `visibility` | String | `"default"`, `"public"`, `"crate"`, or `"restricted"` (`pub(path)`).
-`restricted_path` | String | (*Optional*) If `visitility == "restricted"`, this field contains the path that it's restricted to.
+`restricted_path` | String | (*Optional*) If `visibility == "restricted"`, this field contains the path that it's restricted to.
 `docs`    | String  | The extracted documentation text from the Item.
-`attrs`   | [String] | The attributes (other than doc comments) on the Item, rendered as strings.
+`links`   | [[ID](#ID)] | A list of items corresponding to any intra-doc links in `docs` in order of appearance.
+`attrs`   | [String] | The attributes (other than doc comments) on the Item, rendered as strings (e.g. `["#[inline]", "#[test]"]`).
 `deprecation` | [Deprecation](#Deprecation) | (*Optional*) Information about the Item's deprecation, if present.
 `kind`    | String  | The kind of Item this is. Determines what fields are in `inner`.
 `inner`   | Object  | The type-specific fields describing this Item. Check the `kind` field to determine what's available.
@@ -285,10 +286,10 @@ Name          | Type     | Description
 `struct_type` | String   | Either `"plain"` for braced structs, `"tuple"` for tuple structs, or `"unit"` for unit structs.
 `generics`    | [Generics](#Generics) | Information about the struct's type parameters and `where` clauses.
 `fields_stripped` | bool | Whether any fields have been removed from the result, due to being private or hidden.
-`fields`      | [[ID](#ID)] | The list of fields in the struct. All of the corresponding Items have `kind == "structfield"`.
+`fields`      | [[ID](#ID)] | The list of fields in the struct. All of the corresponding Items have `kind == "struct_field"`.
 `impls`       | [[ID](#ID)] | All impls (both trait and inherent) for this type. All of the corresponding Items have `kind = "impl"`
 
-### `kind == "structfield"`
+### `kind == "struct_field"`
 
 Name          | Type     | Description
 --------------|----------|-------------------------------------------------------------------------
@@ -305,11 +306,12 @@ Name          | Type     | Description
 
 ### `kind == "variant"`
 
-`inner` can be one of the 3 following objects:
-- `"plain"` (e.g. `Enum::Variant`)
-- `{"tuple": [Type]}` (e.g. `Enum::Variant(u32, String)`)
-- `{"struct": Object}` (e.g. `Enum::Variant{foo: u32, bar: String}`) in which case the `Object`
-  has a single key `"struct"` with a value that's the same object as `inner` when `kind == "struct"`.
+Has a `variant_kind` field with 3 possible values and an `variant_inner` field with more info if
+necessary:
+- `"plain"` (e.g. `Enum::Variant`) with no `variant_inner` value.
+- `"tuple"` (e.g. `Enum::Variant(u32, String)`) with `"variant_inner": [Type]`
+- `"struct"` (e.g. `Enum::Variant{foo: u32, bar: String}`) with `"variant_inner": [ID]` which is a
+  list of this variant's "struct_field" items.
 
 ### `kind == "trait"`
 
@@ -317,7 +319,7 @@ Name          | Type     | Description
 --------------|----------|-------------------------------------------------------------------------
 `is_auto`     | bool     | Whether this trait is an autotrait like `Sync`.
 `is_unsafe`   | bool     | Whether this is an `unsafe trait` such as `GlobalAlloc`.
-`items`       | [[ID](#ID)] | The list of method, constant, and typedef items contained in this trait definition.
+`items`       | [[ID](#ID)] | The list of associated items contained in this trait definition.
 `generics`    | [Generics](#Generics) | Information about the trait's type parameters and `where` clauses.
 `bounds`      | [[GenericBound](#GenericBound)] | Trait bounds for this trait definition (e.g.  `trait Foo: Bar<T> + Clone`).
 
@@ -366,9 +368,9 @@ Name          | Type     | Description
 `is_unsafe`   | bool     | Whether this impl is for an unsafe trait.
 `generics`    | [Generics](#Generics) | Information about the impl's type parameters and `where` clauses.
 `provided_trait_methods` | [String] | The list of names for all provided methods in this impl block. This is provided for ease of access if you don't need more information from the `items` field.
-`trait`       | [Type](#Type) | The trait being implemented or `null` if the impl is "inherent".
+`trait`       | [Type](#Type) | (*Optional*) The trait being implemented or `null` if the impl is "inherent".
 `for`         | [Type](#Type) | The type that the impl block is for.
-`items`       | [[ID](#ID)] | The list of method, constant, and typedef items contained in this impl block.
+`items`       | [[ID](#ID)] | The list of associated items contained in this impl block.
 `negative`    | bool     | Whether this is a negative impl (e.g. `!Sized` or `!Send`).
 `synthetic`   | bool     | Whether this is an impl that's implied by the compiler (for autotraits).
 `blanket_impl` | String | (*Optional*) The name of the generic parameter used for the blanket impl, if this impl was produced by one. For example `impl<T, U> Into<U> for T` would result in `blanket_impl == "T"`.
@@ -378,7 +380,7 @@ Name          | Type     | Description
 Name          | Type     | Description
 --------------|----------|-------------------------------------------------------------------------
 `type`        | [Type](#Type) | The type of this constant.
-`expr`        | String   | The stringified expression of this constant.
+`expr`        | String   | The [unstable](#Unstable) stringified expression of this constant.
 `value`       | String   | (*Optional*) The value of the evaluated expression for this constant, which is only computed for numeric types.
 `is_literal`  | bool     | Whether this constant is a bool, numeric, string, or char literal.
 
@@ -387,7 +389,7 @@ Name          | Type     | Description
 Name          | Type     | Description
 --------------|----------|-------------------------------------------------------------------------
 `type`        | [Type](#Type) | The type of this static.
-`expr`        | String   | The stringified expression that this static is assigned to.
+`expr`        | String   | The [unstable](#Unstable) stringified expression that this static is assigned to.
 `mutable`     | bool     | Whether this static is mutable.
 
 ### `kind == "typedef"`
@@ -459,7 +461,7 @@ Name       | Type     | Description
 -----------|----------|----------------------------------------------------------------------------
 `filename` | String   | The path to the source file for this span relative to the crate root.
 `begin`    | (int, int) | The zero indexed line and column of the first character in this span.
-`begin`    | (int, int) | The zero indexed line and column of the last character in this span.
+`end`      | (int, int) | The zero indexed line and column of the last character in this span.
 
 ## Deprecation
 
@@ -472,7 +474,7 @@ Name       | Type     | Description
 
 Name       | Type     | Description
 -----------|----------|----------------------------------------------------------------------------
-`inputs`   | [(String, [Type](#Type))] | A list of parameter names and their types.
+`inputs`   | [(String, [Type](#Type))] | A list of parameter names and their types. The names are [unstable](#Unstable) because arbitrary patterns can be used as parameters, in which case the name is a pretty printed version of it. For example `fn foo((_, x): (u32, u32)){…}` would have an parameter with the name `"(_, x)"` and `fn foo(MyStruct {some_field: u32, ..}: MyStruct){…}`) would have one called `"MyStruct {some_field, ..}"`.
 `output`   | [Type](#Type) | (*Optional*) Output type.
 `c_variadic` | bool   | Whether this function uses [an unstable feature](https://doc.rust-lang.org/beta/unstable-book/language-features/c-variadic.html) for variadic FFI functions.
 
@@ -714,7 +716,7 @@ Name       | Type     | Description
 Name       | Type     | Description
 -----------|----------|----------------------------------------------------------------------------
 `type`     | [Type](#Type) | The Type of the elements in the array
-`len`      | String   | The length of the array as a stringified expression.
+`len`      | String   | The length of the array as an [unstable](#Unstable) stringified expression.
 
 ### `kind = "impl_trait"`
 
@@ -1015,6 +1017,12 @@ pub fn generic_args<'a>(x: impl MyTrait<'a, i32, Item = u8, Other = f32>) {
   "output": null
 }
 ```
+
+## Unstable
+
+Fields marked as unstable have contents that are subject to change. They can be displayed to
+users, but tools shouldn't rely on being able to parse their output or they will be broken by
+internal compiler changes.
 
 # Drawbacks
 [drawbacks]: #drawbacks
