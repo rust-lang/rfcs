@@ -20,8 +20,8 @@ The error handling project group aims to reduce confusion on how to structure er
 
 ### Agree on and define common error handling terminology
 
-- Recoverable error: An error that can reasonably be expected to be encountered e.g. a missing file.
-- Unrecoverable error: An error that cannot reasonably be expected to happen and which indicates a bug e.g. indexing out of bounds.
+- Recoverable error: An error that can be reacted and recovered from when encountered e.g. a missing file.
+- Unrecoverable error: An error that cannot reasonably be reacted to or recovered from and which indicates a bug e.g. indexing out of bounds.
 - Error Type: A type that represents a recoverable error. Error types can optionally implement the `Error` trait so that it can be reported to the user or be converted into a trait object.
 - Reporting Type: A type that can store all recoverable errors an application may need to propagate and print them as error reports.
     - Reporting types can represent the recoverable errors either via concrete types, likely parameterized, or trait objects.
@@ -118,7 +118,7 @@ The project group will create RFCs for various changes to the standard library a
 
 ### Who are the initial shepherds/leaders? (This is preferably 2–3 individuals, but not required.)
 
-Jane Lusby, Andrew Gallant, and Sean Chen.
+Jane Lusby(@yaahc_), Andrew Gallant(@BurntSushi), and Sean Chen(@seanchen1991).
 
 ### Is your group long-running or temporary?
 
