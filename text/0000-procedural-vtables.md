@@ -216,7 +216,9 @@ This RFC differentiates itself from all the other RFCs in that it provides a pro
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
+* This scheme can be used to generate C++-like vtables where the data and vtable are in the same allocation by making the `unsize` function create a heap allocation and write the value and the vtable into this new allocation. It's not clear yet how to handle this kind of "ownership takeover", since all unsizing in Rust currently happens either in a borrowed manner or in `Box`, which is special anyway.
 * We can change slice (`[T]`) types to be backed by a `trait Slice` which uses this scheme to generate just a single `usize` for the metadata
 * We can use this scheme and remove `extern type`s from the language, as they just become a trait with a custom metadata generator that uses `()` for the metadata. So `CStr` doesn't become an extern type, instead it becomes a trait.
 * We can handle traits with parents which are created by a different metadata generator function, we just need to figure out how to communicate this to such a function so it can special case this situation.
 * We can give the vtable pointer of the super traits to the constructor function, so it doesn't have to recompute anything and just grab the info off there. Basically `ImplDescription::parent` would not be a pointer to the parent, but a struct which contains at least the pointer to the parent and the pointer to the `DstInfo`
+* Totally off-topic, but a similar scheme can be used to generate type declarations procedurally with const eval.
