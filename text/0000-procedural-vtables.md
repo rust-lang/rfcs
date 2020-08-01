@@ -357,10 +357,13 @@ This RFC differentiates itself from all the other RFCs in that it provides a pro
 
 - Do we want this kind of flexibility? With power comes responsibility...
 - I believe we can do multiple super traits, including downcasts with this scheme, make sure that's true.
+- This scheme could support downcasting `dyn A` to `dyn B` if `trait A: B` if we make `T: ?Sized` (`T` is the `impl` block type). But that will not allow the sized use-cases anymore. If we have something like `MaybeSized` that has `size_of` and `align_of` methods returning `Option`, then maybe we could do this.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
+* Add a scheme that allows super traits to have different vtable generators and permit a vtable generator to process them. So `trait A: B + C`, where `B` and `C` have different vtable generators and `A` unites them in some manner. This requires the information about the vtable generators to be part of the `ImplDescription` type. We can likely even put a function pointer to the vtable generator into the `ImplDescription`.
+* Add a scheme allowing `dyn A + B`. I have no idea how, but maybe we just need to add a method to `DstInfo` that allows chaining vtable generators. So we first generate `dyn A`, then out of that we generate `dyn A + B`
 * This scheme can be used to generate C++-like vtables where the data and vtable are in the same allocation by making the `unsize` function create a heap allocation and write the value and the vtable into this new allocation. 
 * We can change slice (`[T]`) types to be backed by a `trait Slice` which uses this scheme to generate just a single `usize` for the metadata
 * We can use this scheme and remove `extern type`s from the language, as they just become a trait with a custom metadata generator that uses `()` for the metadata. So `CStr` doesn't become an extern type, instead it becomes a trait.
