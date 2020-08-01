@@ -39,49 +39,51 @@ pub const fn default<
     T,
 >() -> std::vtable::DstInfo {
     let mut info = DstInfo::new();
-    // We generate the metadata and put a pointer to the metadata into 
-    // the field. This looks like it's passing a reference to a temporary
-    // value, but this uses promotion
-    // (https://doc.rust-lang.org/stable/reference/destructors.html?highlight=promotion#constant-promotion),
-    // so the value lives long enough.
-    info.unsize(|ptr, owned| {
-        (
-            ptr,
-            &default_meta::<IMPL>() as *const _ as *const (),
-        )
-    });
-    // We supply a function for invoking trait methods.
-    // This is always inlined and will thus get optimized to a single
-    // deref and offset (strong handwaving happening here).
-    info.method_id_to_fn_ptr(|mut idx, parents, meta| unsafe {
-        let meta = *(meta as *const (*const(), &'static Vtable<IMPL>));
-        let mut table = IMPL;
-        for parent in parents {
-            // we don't support multi-parents yet
-            assert_eq!(parent, 0);
-            idx += table.methods.len();
-            // Never panics, there are always fewer or equal number of
-            // parents given as the argument as there are in reality.
-            table = table.parent.unwrap();
-        }
-        meta.1.methods[idx];
-    });
-    info.size_of(|meta| unsafe {
-        let meta = *(meta as *const (*const(), &'static Vtable<IMPL>));
-        meta.1.size
-    });
-    info.align_of(|meta| unsafe {
-        let meta = *(meta as *const (*const(), &'static Vtable<IMPL>));
-        meta.1.align
-    });
-    info.drop(|meta| unsafe {
-        let meta = *(meta as *const (*const(), &'static Vtable<IMPL>));
-        meta.1.drop
-    });
-    info.self_ptr(|meta| unsafe {
-        let meta = *(meta as *const (*const(), &'static Vtable<IMPL>));
-        meta.0
-    });
+    unsafe {
+        // We generate the metadata and put a pointer to the metadata into 
+        // the field. This looks like it's passing a reference to a temporary
+        // value, but this uses promotion
+        // (https://doc.rust-lang.org/stable/reference/destructors.html?highlight=promotion#constant-promotion),
+        // so the value lives long enough.
+        info.unsize(|ptr, owned| {
+            (
+                ptr,
+                &default_meta::<IMPL>() as *const _ as *const (),
+            )
+        });
+        // We supply a function for invoking trait methods.
+        // This is always inlined and will thus get optimized to a single
+        // deref and offset (strong handwaving happening here).
+        info.method_id_to_fn_ptr(|mut idx, parents, meta| unsafe {
+            let meta = *(meta as *const (*const(), &'static Vtable<IMPL>));
+            let mut table = IMPL;
+            for parent in parents {
+                // we don't support multi-parents yet
+                assert_eq!(parent, 0);
+                idx += table.methods.len();
+                // Never panics, there are always fewer or equal number of
+                // parents given as the argument as there are in reality.
+                table = table.parent.unwrap();
+            }
+            meta.1.methods[idx];
+        });
+        info.size_of(|meta| unsafe {
+            let meta = *(meta as *const (*const(), &'static Vtable<IMPL>));
+            meta.1.size
+        });
+        info.align_of(|meta| unsafe {
+            let meta = *(meta as *const (*const(), &'static Vtable<IMPL>));
+            meta.1.align
+        });
+        info.drop(|meta| unsafe {
+            let meta = *(meta as *const (*const(), &'static Vtable<IMPL>));
+            meta.1.drop
+        });
+        info.self_ptr(|meta| unsafe {
+            let meta = *(meta as *const (*const(), &'static Vtable<IMPL>));
+            meta.0
+        });
+    }
     info
 }
 
@@ -158,21 +160,23 @@ pub const fn default<
     T,
 >() -> std::vtable::DstInfo {
     let mut info = DstInfo::new();
-    info.unsize(|ptr, owned| ptr);
-    info.method_id_to_fn_ptr(|idx, parents, meta| unsafe {
-        panic!("CStr has no trait methods, it's all inherent methods acting on the pointer")
-    });
-    info.size_of(|meta| unsafe {
-        let ptr = *(meta as *const *const u8);
-        strlen(ptr)
-    });
-    info.align_of(|meta| 1);
-    // Nothing to drop (just `u8`s) and we are not in charge of dealloc
-    info.drop(|meta| None);
-    info.self_ptr(|ptr| {
-        let ptr = *(meta as *const *const u8);
-        ptr
-    });
+    unsafe {
+        info.unsize(|ptr, owned| ptr);
+        info.method_id_to_fn_ptr(|idx, parents, meta| {
+            panic!("CStr has no trait methods, it's all inherent methods acting on the pointer")
+        });
+        info.size_of(|meta| unsafe {
+            let ptr = *(meta as *const *const u8);
+            strlen(ptr)
+        });
+        info.align_of(|meta| 1);
+        // Nothing to drop (just `u8`s) and we are not in charge of dealloc
+        info.drop(|meta| None);
+        info.self_ptr(|ptr| {
+            let ptr = *(meta as *const *const u8);
+            ptr
+        });
+    }
     info
 }
 ```
@@ -187,44 +191,46 @@ pub const fn default<
     T,
 >() -> std::vtable::DstInfo {
     let mut info = DstInfo::new();
-    info.unsize(|ptr, owned| {
-        assert!(owned);
-        let size = std::mem::size_of::<T>();
-        let vtable_size = std::mem::size_of::<Vtable<IMPL>>();
-        let layout = Layout::from_size_align(size + vtable_size, std::mem::align_of::<T>()).unwrap();
-        let new_ptr = std::alloc::alloc(layout);
-        // Move the value to the new allocation
-        std::ptr::copy_nonoverlapping(ptr, new_ptr.offset(vtable_size));
-        std::alloc::dealloc(ptr);
-        
-        // Copy the vtable into the shared allocation.
-        // Note that we are reusing the same vtable generation as in
-        // the regular Rust case.
-        std::ptr::write(new_ptr, default_meta::<IMPL>());
-        new_ptr
-    });
-    info.method_id_to_fn_ptr(|idx, parents, meta| unsafe {
-        let meta = *(meta as *const &'static Vtable<IMPL>);
-        // The rest of the function body is the same as with regular
-        // vtables.
-    });
-    info.size_of(|meta| unsafe {
-        let meta = *(meta as *const &'static Vtable<IMPL>);
-        meta.size
-    });
-    info.align_of(|meta| unsafe {
-        let meta = *(meta as *const &'static Vtable<IMPL>);
-        meta.align
-    });
-    info.drop(|meta| unsafe {
-        let meta = *(meta as *const &'static Vtable<IMPL>);
-        meta.drop
-    });
-    info.self_ptr(|meta| unsafe {
-        let meta = *(meta as *const *const Vtable<IMPL>);
-        let vtable_size = std::mem::size_of::<Vtable<IMPL>>();
-        meta.offset(vtable_size)
-    });
+    unsafe {
+        info.unsize(|ptr, owned| unsafe {
+            assert!(owned);
+            let size = std::mem::size_of::<T>();
+            let vtable_size = std::mem::size_of::<Vtable<IMPL>>();
+            let layout = Layout::from_size_align(size + vtable_size, std::mem::align_of::<T>()).unwrap();
+            let new_ptr = std::alloc::alloc(layout);
+            // Move the value to the new allocation
+            std::ptr::copy_nonoverlapping(ptr, new_ptr.offset(vtable_size));
+            std::alloc::dealloc(ptr);
+
+            // Copy the vtable into the shared allocation.
+            // Note that we are reusing the same vtable generation as in
+            // the regular Rust case.
+            std::ptr::write(new_ptr, default_meta::<IMPL>());
+            new_ptr
+        });
+        info.method_id_to_fn_ptr(|idx, parents, meta| unsafe {
+            let meta = *(meta as *const &'static Vtable<IMPL>);
+            // The rest of the function body is the same as with regular
+            // vtables.
+        });
+        info.size_of(|meta| unsafe {
+            let meta = *(meta as *const &'static Vtable<IMPL>);
+            meta.size
+        });
+        info.align_of(|meta| unsafe {
+            let meta = *(meta as *const &'static Vtable<IMPL>);
+            meta.align
+        });
+        info.drop(|meta| unsafe {
+            let meta = *(meta as *const &'static Vtable<IMPL>);
+            meta.drop
+        });
+        info.self_ptr(|meta| unsafe {
+            let meta = *(meta as *const *const Vtable<IMPL>);
+            let vtable_size = std::mem::size_of::<Vtable<IMPL>>();
+            meta.offset(vtable_size)
+        });
+    }
     info
 }
 ```
