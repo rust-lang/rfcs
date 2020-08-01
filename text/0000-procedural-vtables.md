@@ -44,27 +44,43 @@ pub const fn default<
     // value, but this uses promotion
     // (https://doc.rust-lang.org/stable/reference/destructors.html?highlight=promotion#constant-promotion),
     // so the value lives long enough.
-    info.unsize(|ptr| {
+    info.unsize(|ptr, owned| {
         (
             ptr,
             &default_meta::<IMPL>() as *const _ as *const (),
         )
     });
-    // We supply a function for invoking trait methods
-    info.method_id_to_fn_ptr(|idx, parents, meta| unsafe {
-        
+    // We supply a function for invoking trait methods.
+    // This is always inlined and will thus get optimized to a single
+    // deref and offset (strong handwaving happening here).
+    info.method_id_to_fn_ptr(|mut idx, parents, meta| unsafe {
+        let meta = *(meta as *const (*const(), &'static Vtable<IMPL>));
+        let mut table = IMPL;
+        for parent in parents {
+            // we don't support multi-parents yet
+            assert_eq!(parent, 0);
+            idx += table.methods.len();
+            // Never panics, there are always fewer or equal number of
+            // parents given as the argument as there are in reality.
+            table = table.parent.unwrap();
+        }
+        meta.1.methods[idx];
     });
     info.size_of(|meta| unsafe {
-        let meta = *(meta as *&'static Vtable<0>);
-        meta.size
+        let meta = *(meta as *const (*const(), &'static Vtable<IMPL>));
+        meta.1.size
     });
     info.align_of(|meta| unsafe {
-        let meta = *(meta as *&'static Vtable<0>);
-        meta.align
+        let meta = *(meta as *const (*const(), &'static Vtable<IMPL>));
+        meta.1.align
     });
     info.drop(|meta| unsafe {
-        let meta = *(meta as *&'static Vtable<0>);
-        meta.drop
+        let meta = *(meta as *const (*const(), &'static Vtable<IMPL>));
+        meta.1.drop
+    });
+    info.self_ptr(|meta| unsafe {
+        let meta = *(meta as *const (*const(), &'static Vtable<IMPL>));
+        meta.0
     });
     info
 }
@@ -104,16 +120,115 @@ const fn default_vtable<
         methods: [std::ptr::null(); num_methods::<IMPL>()],
     };
     let mut i = 0;
-    while i < num_methods::<IMPL>() {
-        if let Some(method) = IMPL.methods[i] {
-            // The `method` variable is a function pointer, but
-            // cast to `*const ()`.
-            vtable.methods[i] = method;
+    let mut current = IMPL;
+    loop {
+        match IMPL.methods.get(i) {
+            Some(Some(method)) => {
+                // The `method` variable is a function pointer, but
+                // cast to `*const ()`.
+                vtable.methods[i] = method;
+                i += 1;
+            },
+            Some(None) => {
+                // Method that cannot be called on this vtable
+                i += 1;
+            }
+            None => match current.parent {
+                Some(next) => {
+                    current = next;
+                    i = 0;
+                },
+                None => break,
+            }
         }
     }
     vtable
 }
 ```
+
+Now, if you want to implement a fancier vtable, this RFC enables that.
+
+## Null terminated strings (std::ffi::CStr)
+
+This is how I see all extern types being handled
+
+```rust
+pub const fn default<
+    const IMPL: &'static std::vtable::ImplDescription,
+    T,
+>() -> std::vtable::DstInfo {
+    let mut info = DstInfo::new();
+    info.unsize(|ptr, owned| ptr);
+    info.method_id_to_fn_ptr(|idx, parents, meta| unsafe {
+        panic!("CStr has no trait methods, it's all inherent methods acting on the pointer")
+    });
+    info.size_of(|meta| unsafe {
+        let ptr = *(meta as *const *const u8);
+        strlen(ptr)
+    });
+    info.align_of(|meta| 1);
+    // Nothing to drop (just `u8`s) and we are not in charge of dealloc
+    info.drop(|meta| None);
+    info.self_ptr(|ptr| {
+        let ptr = *(meta as *const *const u8);
+        ptr
+    });
+    info
+}
+```
+
+## C++ like vtables
+
+Most of the boilerplate is the same as with regular vtables.
+
+```rust
+pub const fn default<
+    const IMPL: &'static std::vtable::ImplDescription,
+    T,
+>() -> std::vtable::DstInfo {
+    let mut info = DstInfo::new();
+    info.unsize(|ptr, owned| {
+        assert!(owned);
+        let size = std::mem::size_of::<T>();
+        let vtable_size = std::mem::size_of::<Vtable<IMPL>>();
+        let layout = Layout::from_size_align(size + vtable_size, std::mem::align_of::<T>()).unwrap();
+        let new_ptr = std::alloc::alloc(layout);
+        // Move the value to the new allocation
+        std::ptr::copy_nonoverlapping(ptr, new_ptr.offset(vtable_size));
+        std::alloc::dealloc(ptr);
+        
+        // Copy the vtable into the shared allocation.
+        // Note that we are reusing the same vtable generation as in
+        // the regular Rust case.
+        std::ptr::write(new_ptr, default_meta::<IMPL>());
+        new_ptr
+    });
+    info.method_id_to_fn_ptr(|idx, parents, meta| unsafe {
+        let meta = *(meta as *const &'static Vtable<IMPL>);
+        // The rest of the function body is the same as with regular
+        // vtables.
+    });
+    info.size_of(|meta| unsafe {
+        let meta = *(meta as *const &'static Vtable<IMPL>);
+        meta.size
+    });
+    info.align_of(|meta| unsafe {
+        let meta = *(meta as *const &'static Vtable<IMPL>);
+        meta.align
+    });
+    info.drop(|meta| unsafe {
+        let meta = *(meta as *const &'static Vtable<IMPL>);
+        meta.drop
+    });
+    info.self_ptr(|meta| unsafe {
+        let meta = *(meta as *const *const Vtable<IMPL>);
+        let vtable_size = std::mem::size_of::<Vtable<IMPL>>();
+        meta.offset(vtable_size)
+    });
+    info
+}
+```
+
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -135,18 +250,31 @@ struct DstInfo {
     method_id_to_fn_ptr: fn(usize, &'static [usize], *const ()) -> *const (),
     size_of: fn(*const()) -> usize,
     align_of: fn(*const()) -> usize,
-    drop: fn drop(*mut ()),
+    drop: *const (),
+    self_ptr: fn(*const()) -> *const (),
 }
+
 impl DstInfo {
-    fn new() -> Self {
+    const fn new() -> Self {
         Self {
-            meta: &(),
-            method_id_to_fn_ptr: |idx, parents, meta| {
-                panic!("method called on trait object with custom vtable without method_id_to_fn_ptr")
-            },
+            unsize: std::ptr::null(),
+            method_id_to_fn_ptr: None,
+            size_of: None,
+            align_of: None,
+            drop: None,
+            self_ptr: None,
         }
     }
-    unsafe fn unsize<T, WIDE_PTR>(f: fn(*const T)) -> WIDE_PTR) {
+    /// If the `bool` flag is `true`, this is an owned conversion like
+    /// in `Box<T> as Box<dyn Trait>`. This distinction is important, as
+    /// unsizing that creates a vtable in the same allocation as the object
+    /// (like C++ does), cannot work on non-owned conversions. You can't just
+    /// move away the owned object. So you need to just move a pointer into
+    /// the shared vtable+object allocation instead of the entire object.
+    unsafe fn unsize<T, WIDE_PTR>(f: fn(*const T, bool)) -> WIDE_PTR) {
+        // Since we don't know the return type size, the `drop` field
+        // cannot be named. Thus we just use an opaque `*const ()` for the
+        // function pointer.
         self.drop = transmute(f);
     }
     /// The given function returns a function pointer to the method that
@@ -157,16 +285,27 @@ impl DstInfo {
     /// * the thrid argument is a pointer to the metadata (so in case of trait objects, usually it would be `&'static &'static Vtable`).
     ///   This indirection is necessary, because we don't know the size of the metadata.
     unsafe fn method_id_to_fn_ptr(f: fn(usize, &'static [usize], *const ()) -> *const ()) {
-        self.method_id_to_fn_ptr = f;
+        self.method_id_to_fn_ptr = Some(f);
     }
+    /// Set the function that extracts the dynamic size
     unsafe fn size_of(f: fn(*const ()) -> usize) {
-        self.size_of = f;
+        self.size_of = Some(f);
     }
+    /// Set the function that extracts the dynamic alignment
     unsafe fn align_of(f: fn(*const ()) -> usize) {
-        self.align_of = f;
+        self.align_of = Some(f);
     }
-    unsafe fn drop(f: fn(*const ()) -> fn(*mut ())) {
-        self.drop = f;
+    /// Set the function that extracts the drop code.
+    unsafe fn drop<T>(f: fn(*const ()) -> Option<fn(*mut T)>) {
+        self.drop = Some(f);
+    }
+    /// Set the function that extracts the `&self` pointer
+    /// from the wide pointer
+    /// for calling trait methods. This needs a method as
+    /// wide pointer layouts may place their `self` pointer
+    /// anywhere they desire.
+    unsafe fn self_ptr(f: fn(*const ()) -> *const ()) {
+        self.self_ptr = Some(f);
     }
 }
 ```
@@ -216,9 +355,11 @@ This RFC differentiates itself from all the other RFCs in that it provides a pro
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-* This scheme can be used to generate C++-like vtables where the data and vtable are in the same allocation by making the `unsize` function create a heap allocation and write the value and the vtable into this new allocation. It's not clear yet how to handle this kind of "ownership takeover", since all unsizing in Rust currently happens either in a borrowed manner or in `Box`, which is special anyway.
+* This scheme can be used to generate C++-like vtables where the data and vtable are in the same allocation by making the `unsize` function create a heap allocation and write the value and the vtable into this new allocation. 
 * We can change slice (`[T]`) types to be backed by a `trait Slice` which uses this scheme to generate just a single `usize` for the metadata
 * We can use this scheme and remove `extern type`s from the language, as they just become a trait with a custom metadata generator that uses `()` for the metadata. So `CStr` doesn't become an extern type, instead it becomes a trait.
 * We can handle traits with parents which are created by a different metadata generator function, we just need to figure out how to communicate this to such a function so it can special case this situation.
 * We can give the vtable pointer of the super traits to the constructor function, so it doesn't have to recompute anything and just grab the info off there. Basically `ImplDescription::parent` would not be a pointer to the parent, but a struct which contains at least the pointer to the parent and the pointer to the `DstInfo`
-* Totally off-topic, but a similar scheme can be used to generate type declarations procedurally with const eval.
+* Totally off-topic, but a similar scheme (via const eval) can be used to procedurally generate type declarations.
+* We can likely access associated consts and types of the trait directly without causing cycle errors, this should be investigated
+* This scheme is forward compatible to adding associated fields later.
