@@ -6,26 +6,56 @@
 # Summary
 [summary]: #summary
 
-All vtable generation happens outside the compiler by invoking a `const fn` that generates said vtable from a generic description of a trait impl. By default, if no vtable generator function is specified for a specific trait, `std::vtable::default` is invoked.
+Building a wide pointer from a concrete pointer (and thus vtable generation)
+can be controlled by choosing a custom wide pointer type for the trait.
+The custom wide pointer must implement a trait that generates said wide pointer
+by taking a concrete pointer and a generic description of a trait impl.
+By default, if no vtable generator function is specified for a specific trait,
+the unspecified scheme used today keeps getting used.
 
 # Motivation
 [motivation]: #motivation
 
-The only way we're going to satisfy all users' use cases is by allowing users complete freedom in how their wide pointers' metadata is built. Instead of hardcoding certain vtable layouts in the language (https://github.com/rust-lang/rfcs/pull/2955) we can give users the capability to invent their own layouts at their leisure. This should also help with the work on custom DSTs, as this scheme doesn't specify the size of the wide pointer metadata field.
+The only way we're going to satisfy all users' use cases is by allowing users
+complete freedom in how their wide pointers' metadata is built.
+Instead of hardcoding certain vtable layouts in the language
+(https://github.com/rust-lang/rfcs/pull/2955) we can give users the capability
+to invent their own wide pointers (and thus custom dynamically sized types).
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-In order to mark a trait as using a custom vtable layout, you apply the
-`#[custom_wide_pointer = "Foo"]` attribute to the trait declaration.
-`Foo` is a type which implements the `CustomUnsized` trait and optionally the `CustomUnsize` trait.
+In order to mark a trait as using a custom vtable layout, you apply an attribute to
+your trait declaration.
 
-All `impl`s of this trait will now use `Foo` for generating the wide pointer
-metadata (which contains the vtable). The `TraitDescription` struct that
-describes the metadata is a `#[nonexhaustive]` struct.
-You are actually generating the pointer metadata, not a description of it.
+```rust
+#[custom_wide_pointer = "MyWidePointer"]
+trait MyTrait {}
+
+```
+
+`MyWidePointer` is a type which implements the `CustomUnsized` trait and optionally the `CustomUnsize` trait.
+`MyWidePointer` is the type that is going to be used for wide pointers to the given trait, so
+
+* `&dyn MyTrait`
+* `Box<dyn MyTrait>`
+* `Arc<dyn MyTrait>`
+
+and any other container types that can use wide pointers. Normally when unsizing from a concrete
+pointer like `&MyStruct` to `&dyn MyTrait` a wide pointer (that essentially is
+`(&MyStruct, &'static Vtable)`) is produced. This is currently done via compiler magic, but
+further down in this section you can see how it theoretically could be done in user code.
+Likely it will stay compiler magic out of compile-time performance reasons.
+
+All `impl`s of `MyTrait` will now use `MyWidePointer` for generating the wide pointer.
+The `TraitDescription` struct describes the metadata like the list of methods and a tree
+of super traits.
+
+You are actually generating the wide pointer, not a description of it.
 Since your `const impl`'s `from` function is being interpreted in the target's environment, all target specific information will match up.
-Now, you need some information about the `impl` in order to generate your metadata (and your vtable). You get this information partially from the type directly (the `T` parameter), and all the `impl` block specific information is encoded in `TraitDescription`, which you get as a const generic parameter.
+Now, you need some information about the `impl` in order to generate your metadata (and your vtable).
+You get this information partially from the type directly (the `T` parameter),
+and all the `impl` block specific information is encoded in `TraitDescription`, which you get as a const generic parameter.
 
 As an example, consider the function which is what normally generates your metadata. Note that if you have a generic trait,
 the `CustomUnsize` and `CustomUnsized` impls need additional generic parameters, one for each parameter of the trait.
@@ -127,7 +157,7 @@ const fn default_vtable<
         match IMPL.methods.get(i) {
             Some(Some(method)) => {
                 // The `method` variable is a function pointer, but
-                // cast to `*const ()`.
+                // cast to `*const ()` in order to support null pointers.
                 vtable.methods[i] = method;
                 i += 1;
             },
@@ -153,8 +183,10 @@ Now, if you want to implement a fancier vtable, this RFC enables you to do that.
 ## Null terminated strings (std::ffi::CStr)
 
 This is how I see all extern types being handled.
-There can be no impls of `CStr` for any type, because the `unsize`
-function is missing. The `CStr`
+There can be no impls of `CStr` for any type, because the `Unsize`
+trait impl is missing. See the future extension section at the end of this RFC for
+ideas that could support `CString` -> `CStr` unsizing by allowing `CString` to implement
+`CStr` instead of having a `Deref` impl that converts.
 
 ```rust
 #[custom_wide_pointer = "CStrPtr"]
@@ -194,8 +226,8 @@ impl<
 
 ## `[T]` as sugar for a `Slice` trait
 
-We could remove `[T]` from the language and just make it desugar to
-a `std::slice::Slice` trait.
+We could remove `[T]` (and even `str`) from the language and just make it desugar to
+a `std::slice::Slice` (or `StrSlice`) trait.
 
 ```rust
 #[custom_wide_pointer = "SlicePtr"]
@@ -312,16 +344,23 @@ The type `TraitDescription` is `#[nonexhaustive]` in order to allow arbitrary ex
 Instances of the `TraitDescription` struct are created by rustc, basically replacing today's vtable generation, and then outsourcing the actual vtable generation to the const evaluator.
 
 When unsizing, the `const fn` specified
-via `<WidePtrType as CustomUnsize>::from` is invoked. `WidePtrType` refers to the argument of the
+via `<WidePtrType as CustomUnsize>::from` is invoked.
+The `TraitDescription` parameter of `CustomUnsize` contains function pointers to the
+concrete functions of the `impl`. The `TraitDescription` parameter of `CustomUnsized`
+contains function pointers to default impls (if any), or mostly just null pointers.
+The same datastructure is shared here to make implementations easier and because they
+contain mostly the same data anyway.
+`WidePtrType` refers to the argument of the
 `#[custom_wide_ptr = "WidePtrType"]` attribute. The only reason that trait must be
 `impl const WidePtrType` is to restrict what kind of things you can do in there, it's not
 strictly necessary.
 
 For all other operations, the methods on `<WidePtrType as CustomUnsized>` is invoked.
 
-When obtaining function pointers from vtables, instead of computing an offset, the `method_id_to_fn_ptr` function is invoked at runtime and computes a function pointer after being given a method index, the indices of all parents and a pointer to a metadata field. Through the use of MIR optimizations (e.g. inlining), the final LLVM assembly is tuned to be exactly the same as today.
+When obtaining function pointers from vtables, instead of computing an offset, the `method_id_to_fn_ptr` function is invoked at runtime and computes a function pointer after being given a method index, the indices of all parents, and a pointer to a metadata field.
+Through the use of MIR optimizations (e.g. inlining), the final LLVM assembly is tuned to be exactly the same as today.
 
-These types' declarations are provided below:
+These types' and trait's declarations are provided below:
 
 ```rust
 #[nonexhaustive]
@@ -404,7 +443,8 @@ This list is shamelessly taken from [strega-nil's Custom DST RFC](https://github
 - [Pointer Metadata and VTable](https://github.com/rust-lang/rfcs/pull/2580)
 - [Syntax of ?Sized](https://github.com/rust-lang/rfcs/pull/490)
 
-This RFC differentiates itself from all the other RFCs in that it provides a procedural way to generate vtables, thus also permitting arbitrary user-defined compile-time conditions by aborting via `panic!`.
+This RFC differs from all the other RFCs in that it provides a procedural way to generate vtables,
+thus also permitting arbitrary user-defined compile-time conditions by aborting via `panic!`.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
@@ -418,11 +458,20 @@ This RFC differentiates itself from all the other RFCs in that it provides a pro
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-* Add a scheme that allows super traits to have different vtable generators and permit a vtable generator to process them. So `trait A: B + C`, where `B` and `C` have different vtable generators and `A` unites them in some manner. This requires the information about the vtable generators to be part of the `TraitDescription` type. We can likely even put a function pointer to the vtable generator into the `TraitDescription`.
-* Add a scheme allowing `dyn A + B`. I have no idea how, but maybe we just need to add a method to `DstInfo` that allows chaining vtable generators. So we first generate `dyn A`, then out of that we generate `dyn A + B`
-* We can change string slice (`str`) types to be backed by a `trait StrSlice` which uses this scheme to generate just a single `usize` for the metadata (see also the `[T]` demo).
-* We can handle traits with parents which are created by a different metadata generator function, we just need to figure out how to communicate this to such a function so it can special case this situation.
-* We can give the vtable pointer of the super traits to the constructor function, so it doesn't have to recompute anything and just grab the info off there. Basically `TraitDescription::parent` would not be a pointer to the parent, but a struct which contains at least the pointer to the parent and the pointer to the `DstInfo`
+* Add a scheme that allows upcasting to super traits that have different vtable generators.
+  So `trait A: B + C`, where `B` and `C` have different vtable generators and `A` unites them in some manner.
+  This requires the information about the vtable generators to be part of the `TraitDescription` type.
+  We can likely even put a function pointer to the vtable generator into the `TraitDescription`.
+* Add a scheme allowing `dyn A + B`. I have no idea how, but maybe we just need to add a method to `CustomUnsize`
+  that allows chaining vtable generators. So we first generate `dyn A`, then out of that we generate `dyn A + B`
+* We can change string slice (`str`) types to be backed by a `trait StrSlice` which uses this scheme
+  to generate just a single `usize` for the metadata (see also the `[T]` demo).
+* We can handle traits with parents which are created by a different metadata generator function,
+  we just need to figure out how to communicate this to such a function so it can special case this situation.
+* We can give the vtable pointer of the super traits to the constructor function,
+  so it doesn't have to recompute anything and just grab the info off there.
+  Basically `TraitDescription::parent` would not be a pointer to the parent,
+  but a struct which contains at least the pointer to the parent and the pointer to the `CustomUnsize::from` function.
 * Totally off-topic, but a similar scheme (via const eval) can be used to procedurally generate type declarations.
 * We can likely access associated consts and types of the trait directly without causing cycle errors, this should be investigated
 * This scheme is forward compatible to adding associated fields later.
