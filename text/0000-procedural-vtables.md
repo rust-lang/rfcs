@@ -72,7 +72,7 @@ pub const fn custom_vtable<
         // This is always inlined and will thus get optimized to a single
         // deref and offset (strong handwaving happening here).
         info.method_id_to_fn_ptr(|mut idx, parents, meta| unsafe {
-            let meta = *(meta as *const (*const(), &'static Vtable<IMPL>));
+            let meta = *(meta as *const (*const(), &'static Vtable<{num_methods::<IMPL>()}>));
             let mut table = IMPL;
             for parent in parents {
                 // we don't support multi-parents yet
@@ -85,19 +85,19 @@ pub const fn custom_vtable<
             meta.1.methods[idx];
         });
         info.size_of(|meta| unsafe {
-            let meta = *(meta as *const (*const(), &'static Vtable<IMPL>));
+            let meta = *(meta as *const (*const(), &'static Vtable<{num_methods::<IMPL>()}>));
             meta.1.size
         });
         info.align_of(|meta| unsafe {
-            let meta = *(meta as *const (*const(), &'static Vtable<IMPL>));
+            let meta = *(meta as *const (*const(), &'static Vtable<{num_methods::<IMPL>()}>));
             meta.1.align
         });
         info.drop(|meta| unsafe {
-            let meta = *(meta as *const (*const(), &'static Vtable<IMPL>));
+            let meta = *(meta as *const (*const(), &'static Vtable<{num_methods::<IMPL>()}>));
             meta.1.drop
         });
         info.self_ptr(|meta| unsafe {
-            let meta = *(meta as *const (*const(), &'static Vtable<IMPL>));
+            let meta = *(meta as *const (*const(), &'static Vtable<{num_methods::<IMPL>()}>));
             meta.0
         });
     }
@@ -251,7 +251,7 @@ where {
 },
 {
     let size = std::mem::size_of::<T>();
-    let vtable_size = std::mem::size_of::<Vtable<IMPL>>();
+    let vtable_size = std::mem::size_of::<Vtable<{num_methods::<IMPL>()}>>();
     let layout = Layout::from_size_align(size + vtable_size, std::mem::align_of::<T>()).unwrap();
     let new_ptr = std::alloc::alloc(layout);
     // Move the value to the new allocation
@@ -271,24 +271,24 @@ pub const fn cpp<
     let mut info = DstInfo::new();
     unsafe {
         info.method_id_to_fn_ptr(|idx, parents, meta| unsafe {
-            let meta = *(meta as *const *const Vtable<IMPL>);
+            let meta = *(meta as *const *const Vtable<{num_methods::<IMPL>()}>);
             // The rest of the function body is the same as with regular
             // vtables.
         });
         info.size_of(|meta| unsafe {
-            let meta = *(meta as *const *const Vtable<IMPL>);
+            let meta = *(meta as *const *const Vtable<{num_methods::<IMPL>()}>);
             (*meta).size
         });
         info.align_of(|meta| unsafe {
-            let meta = *(meta as *const *const Vtable<IMPL>);
+            let meta = *(meta as *const *const Vtable<{num_methods::<IMPL>()}>);
             (*meta).align
         });
         info.drop(|meta| unsafe {
-            let meta = *(meta as *const *const Vtable<IMPL>);
+            let meta = *(meta as *const *const Vtable<{num_methods::<IMPL>()}>);
             (*meta).drop
         });
         info.self_ptr(|meta| unsafe {
-            let ptr = *(meta as *const *const (Vtable<IMPL>, ()));
+            let ptr = *(meta as *const *const (Vtable<{num_methods::<IMPL>()}>, ()));
             &raw const (*ptr).1;
         });
     }
