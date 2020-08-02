@@ -33,7 +33,8 @@ describes the metadata is a `#[nonexhaustive]` struct. You create instances of i
 You are actually generating the pointer metadata, not a description of it. Since your `const fn` is being interpreted in the target's environment, all target specific information will match up.
 Now, you need some information about the `impl` in order to generate your metadata (and your vtable). You get this information partially from the type directly (the `T` parameter), and all the `impl` block specific information is encoded in `TraitDescription`, which you get as a const generic parameter.
 
-As an example, consider the function which is what normally generates your metadata.
+As an example, consider the function which is what normally generates your metadata. Note that if these methods are used for generic traits, the method needs additional generic parameters, one for each parameter of the trait.
+See the `[T]` demo further down for an example.
 
 ```rust
 /// If the `owned` flag is `true`, this is an owned conversion like
@@ -55,7 +56,7 @@ pub const fn custom_unsize<
     // so the value lives long enough.
     (
         ptr,
-        &default_vtable::<IMPL>() as *const _ as *const (),
+        &default_vtable::<T, IMPL>() as *const _ as *const (),
     )
 }
 
@@ -64,7 +65,6 @@ pub const fn custom_unsize<
 /// thus "vtable" layout that they want.
 pub const fn custom_vtable<
     const IMPL: &'static std::vtable::TraitDescription,
-    T,
 >() -> std::vtable::DstInfo {
     let mut info = DstInfo::new();
     unsafe {
@@ -118,8 +118,8 @@ const fn num_methods<
 }
 
 const fn default_vtable<
-    const IMPL: &'static std::vtable::TraitDescription,
     T,
+    const IMPL: &'static std::vtable::TraitDescription,
 >() -> VTable<{num_methods::<IMPL>()}> {
     // `VTable` is a `#[repr(C)]` type with fields at the appropriate
     // places.
@@ -196,6 +196,43 @@ pub const fn c_str<
 }
 ```
 
+## `[T]` as sugar for a `Slice` trait
+
+We could remove `[T]` from the language and just make it desugar to
+a `std::slice::Slice` trait.
+
+```rust
+#[unsafe_custom_vtable = "slice"]
+pub trait Slice<T> {}
+
+pub const fn slice<
+    T,
+    const IMPL: &'static std::vtable::TraitDescription,
+>() -> std::vtable::DstInfo {
+    let mut info = DstInfo::new();
+    unsafe {
+        info.method_id_to_fn_ptr(|idx, parents, meta| {
+            panic!("CStr has no trait methods, it's all inherent methods acting on the pointer")
+        });
+        info.size_of(|meta| unsafe {
+            let ptr = *(meta as *const (*const T, usize);
+            ptr.1
+        });
+        info.align_of(|meta| std::mem::align_of::<T>());
+        info.drop(|meta| {
+            let ptr = *(meta as *const (*const T, usize);
+            let mut data_ptr = ptr.0;
+            for i in 0..ptr.1 {
+                std::ptr::drop_in_place(data_ptr);
+                data_ptr = data_ptr.offset(1);
+            }
+        });
+        info.self_ptr(|ptr| ptr);
+    }
+    info
+}
+```
+
 ## C++ like vtables
 
 Most of the boilerplate is the same as with regular vtables.
@@ -224,7 +261,7 @@ where {
     // Copy the vtable into the shared allocation.
     // Note that we are reusing the same vtable generation as in
     // the regular Rust case.
-    std::ptr::write(new_ptr, default_vtable::<IMPL>());
+    std::ptr::write(new_ptr, default_vtable::<T, IMPL>());
     new_ptr
 }
 
@@ -281,8 +318,14 @@ These types' declarations are provided below:
 
 ```rust
 #[nonexhaustive]
+struct TraitMethod {
+    fn_ptr: *const (),
+    // may get more fields like `name` or even `body` (the latter being a string of the body to be used with `syn`).
+}
+
+#[nonexhaustive]
 struct TraitDescription {
-    pub methods: &'static [*const ()],
+    pub methods: &'static [TraitMethod],
     pub parent: &'static TraitDescription,
 }
 
@@ -379,20 +422,16 @@ This RFC differentiates itself from all the other RFCs in that it provides a pro
 
 - Do we want this kind of flexibility? With power comes responsibility...
 - I believe we can do multiple super traits, including downcasts with this scheme, make sure that's true.
-- This scheme could support downcasting `dyn A` to `dyn B` if `trait A: B` if we make `T: ?Sized` (`T` is the `impl` block type). But that will not allow the sized use-cases anymore. If we have something like `MaybeSized` that has `size_of` and `align_of` methods returning `Option`, then maybe we could do this.
-* Do we want the generic parameters on generic traits to influence vtable generation?
-* Need to be generic over the allocator, too. This would allow us to remove the `owned` field by just passing dummy allocators (which panic) for un-owned unsizings.
+- This scheme could support downcasting `dyn A` to `dyn B` if `trait A: B` if we make `T: ?Sized` (`T` is the `impl` block type). But that will not allow the sized use-cases anymore (since `size_of::<T>` will fail). If we have something like `MaybeSized` that has `size_of` and `align_of` methods returning `Option`, then maybe we could do this.
+* Need to be generic over the allocator, too, so that reallocs are actually sound.
 * how does this interact with `Pin`?
-* Should we make `DstInfo` generic over the `TraitDescription` in order to use fewer untyped pointers?
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
 * Add a scheme that allows super traits to have different vtable generators and permit a vtable generator to process them. So `trait A: B + C`, where `B` and `C` have different vtable generators and `A` unites them in some manner. This requires the information about the vtable generators to be part of the `TraitDescription` type. We can likely even put a function pointer to the vtable generator into the `TraitDescription`.
 * Add a scheme allowing `dyn A + B`. I have no idea how, but maybe we just need to add a method to `DstInfo` that allows chaining vtable generators. So we first generate `dyn A`, then out of that we generate `dyn A + B`
-* This scheme can be used to generate C++-like vtables where the data and vtable are in the same allocation by making the `unsize` function create a heap allocation and write the value and the vtable into this new allocation. 
-* We can change slice (`[T]`) types to be backed by a `trait Slice` which uses this scheme to generate just a single `usize` for the metadata
-* We can use this scheme and remove `extern type`s from the language, as they just become a trait with a custom metadata generator that uses `()` for the metadata. So `CStr` doesn't become an extern type, instead it becomes a trait.
+* We can change string slice (`str`) types to be backed by a `trait StrSlice` which uses this scheme to generate just a single `usize` for the metadata (see also the `[T]` demo).
 * We can handle traits with parents which are created by a different metadata generator function, we just need to figure out how to communicate this to such a function so it can special case this situation.
 * We can give the vtable pointer of the super traits to the constructor function, so it doesn't have to recompute anything and just grab the info off there. Basically `TraitDescription::parent` would not be a pointer to the parent, but a struct which contains at least the pointer to the parent and the pointer to the `DstInfo`
 * Totally off-topic, but a similar scheme (via const eval) can be used to procedurally generate type declarations.
