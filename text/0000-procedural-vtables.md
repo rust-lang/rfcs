@@ -17,26 +17,27 @@ The only way we're going to satisfy all users' use cases is by allowing users co
 [guide-level-explanation]: #guide-level-explanation
 
 In order to mark a trait as using a custom vtable layout, you apply the
-`#[unsafe_custom_vtable = "foo"]` attribute to the trait declaration.
-This is unsafe, because the `foo` function supplies functionality for accessing the `self` pointers.
-`foo` denotes a `const fn` with the signature
-`const fn<const IMPL: &'static std::vtable::TraitDescription>() -> std::vtable::DstInfo`.
+`#[custom_wide_pointer = "Foo"]` attribute to the trait declaration.
+`Foo` is a type which implements the `CustomUnsized` trait and optionally the `CustomUnsize` trait.
 
-Additionally, if your trait supports automatically unsizing from the types it's implemented for (unlike `CStr`, `str` and `[T]`, which require type-specific logic), you can supply your trait with an `unsizing` function by
-specifying `#[unsafe_custom_unsize = "bar"]`. `bar` denotes a `const fn`
-with the signature
-`const fn<const IMPL: &'static std::vtable::TraitDescription, T>() -> std::vtable::UnsizeInfo`, where `T` is your concrete type.
-
-All `impl`s of this trait will now use `foo` for generating the wide pointer
-metadata (which contains the vtable). The `WidePointerMetadata` struct that
-describes the metadata is a `#[nonexhaustive]` struct. You create instances of it by invoking its `new` method, which gives you a `WidePointerMetadata` that essentially is a `()`. This means you do not have any metadata, similar to `extern type`s. Since the `wide_ptr_metadata` field of the `DstInfo` struct is public, you can now modify it to whatever layout you desire.
-You are actually generating the pointer metadata, not a description of it. Since your `const fn` is being interpreted in the target's environment, all target specific information will match up.
+All `impl`s of this trait will now use `Foo` for generating the wide pointer
+metadata (which contains the vtable). The `TraitDescription` struct that
+describes the metadata is a `#[nonexhaustive]` struct.
+You are actually generating the pointer metadata, not a description of it.
+Since your `const impl`'s `from` function is being interpreted in the target's environment, all target specific information will match up.
 Now, you need some information about the `impl` in order to generate your metadata (and your vtable). You get this information partially from the type directly (the `T` parameter), and all the `impl` block specific information is encoded in `TraitDescription`, which you get as a const generic parameter.
 
-As an example, consider the function which is what normally generates your metadata. Note that if these methods are used for generic traits, the method needs additional generic parameters, one for each parameter of the trait.
+As an example, consider the function which is what normally generates your metadata. Note that if you have a generic trait,
+the `CustomUnsize` and `CustomUnsized` impls need additional generic parameters, one for each parameter of the trait.
 See the `[T]` demo further down for an example.
 
 ```rust
+#[repr(C)]
+struct Pointer<const IMPL: &'static std::vtable::TraitDescription> {
+    ptr: *const (),
+    vtable: &'static VTable<{num_methods::<IMPL>()}>,
+}
+
 /// If the `owned` flag is `true`, this is an owned conversion like
 /// in `Box<T> as Box<dyn Trait>`. This distinction is important, as
 /// unsizing that creates a vtable in the same allocation as the object
@@ -44,64 +45,55 @@ See the `[T]` demo further down for an example.
 /// move away the owned object. The flag allows you to forbid such
 /// unsizings by triggering a compile-time `panic` with an explanation
 /// for the user.
-pub const fn custom_unsize<
-    T,
-    const IMPL: &'static std::vtable::TraitDescription,
-    const _owned: bool,
->(*const T) -> (*const T, &'static VTable<{num_methods::<IMPL>()}>) {
-    // We generate the metadata and put a pointer to the metadata into 
-    // the field. This looks like it's passing a reference to a temporary
-    // value, but this uses promotion
-    // (https://doc.rust-lang.org/stable/reference/destructors.html?highlight=promotion#constant-promotion),
-    // so the value lives long enough.
-    (
-        ptr,
-        &default_vtable::<T, IMPL>() as *const _ as *const (),
-    )
+unsafe impl<const IMPL: &'static std::vtable::TraitDescription> const CustomUnsize for Pointer<IMPL> {
+    fn from<T, const owned: bool>(ptr: *const T) -> Self {
+        // We generate the metadata and put a pointer to the metadata into 
+        // the field. This looks like it's passing a reference to a temporary
+        // value, but this uses promotion
+        // (https://doc.rust-lang.org/stable/reference/destructors.html?highlight=promotion#constant-promotion),
+        // so the value lives long enough.
+        Pointer {
+            ptr,
+            vtable: &default_vtable::<T, IMPL>(),
+        }
+    }
 }
 
 /// DISCLAIMER: this uses a `Vtable` struct which is just a part of the
 /// default trait objects. Your own trait objects can use any metadata and
 /// thus "vtable" layout that they want.
-pub const fn custom_vtable<
-    const IMPL: &'static std::vtable::TraitDescription,
->() -> std::vtable::DstInfo {
-    let mut info = DstInfo::new();
-    unsafe {
-        // We supply a function for invoking trait methods.
-        // This is always inlined and will thus get optimized to a single
-        // deref and offset (strong handwaving happening here).
-        info.method_id_to_fn_ptr(|mut idx, parents, meta| unsafe {
-            let meta = *(meta as *const (*const(), &'static Vtable<{num_methods::<IMPL>()}>));
-            let mut table = IMPL;
-            for parent in parents {
-                // we don't support multi-parents yet
-                assert_eq!(parent, 0);
-                idx += table.methods.len();
-                // Never panics, there are always fewer or equal number of
-                // parents given as the argument as there are in reality.
-                table = table.parent.unwrap();
-            }
-            meta.1.methods[idx];
-        });
-        info.size_of(|meta| unsafe {
-            let meta = *(meta as *const (*const(), &'static Vtable<{num_methods::<IMPL>()}>));
-            meta.1.size
-        });
-        info.align_of(|meta| unsafe {
-            let meta = *(meta as *const (*const(), &'static Vtable<{num_methods::<IMPL>()}>));
-            meta.1.align
-        });
-        info.drop(|meta| unsafe {
-            let meta = *(meta as *const (*const(), &'static Vtable<{num_methods::<IMPL>()}>));
-            meta.1.drop
-        });
-        info.self_ptr(|meta| unsafe {
-            let meta = *(meta as *const (*const(), &'static Vtable<{num_methods::<IMPL>()}>));
-            meta.0
-        });
+unsafe impl<const IMPL: &'static std::vtable::TraitDescription> CustomUnsized for Pointer<IMPL> {
+    fn method_id_to_fn_ptr(
+        self,
+        method_index: usize,
+        super_tree_path: usize,
+    ) -> *const () {
+        let mut table = IMPL;
+        for parent in parents {
+            // we don't support multi-parents yet
+            assert_eq!(parent, 0);
+            idx += table.methods.len();
+            // Never panics, there are always fewer or equal number of
+            // parents given as the argument as there are in reality.
+            table = table.parent.unwrap();
+        }
+        self.vtable.methods[idx]
     }
-    info
+    fn size_of(self) -> usize {
+        self.vtable.size
+    }
+    fn align_of(self) -> usize {
+        self.vtable.align
+    }
+    fn drop(self) {
+        unsafe {
+            let drop = self.vtable.drop;
+            drop(&raw mut self.ptr)
+        }
+    }
+    fn self_ptr(self) -> *const () {
+        self.ptr
+    }
 }
 
 // Compute the total number of methods, including super-traits
@@ -156,7 +148,7 @@ const fn default_vtable<
 }
 ```
 
-Now, if you want to implement a fancier vtable, this RFC enables that.
+Now, if you want to implement a fancier vtable, this RFC enables you to do that.
 
 ## Null terminated strings (std::ffi::CStr)
 
@@ -165,34 +157,38 @@ There can be no impls of `CStr` for any type, because the `unsize`
 function is missing. The `CStr`
 
 ```rust
-
-// Not setting the `unsafe_custom_unsize` function, there's no sized
-// equivalent like with normal traits. See the future
-// extensions section for more details on unsizing.
-#[unsafe_custom_vtable = "c_str"]
+#[custom_wide_pointer = "CStrPtr"]
 pub trait CStr {}
 
-pub const fn c_str<
+
+#[repr(C)]
+struct CStrPtr {
+    ptr: *const u8,
+}
+
+impl<
+    T,
     const IMPL: &'static std::vtable::TraitDescription,
->() -> std::vtable::DstInfo {
-    let mut info = DstInfo::new();
-    unsafe {
-        info.method_id_to_fn_ptr(|idx, parents, meta| {
-            panic!("CStr has no trait methods, it's all inherent methods acting on the pointer")
-        });
-        info.size_of(|meta| unsafe {
-            let ptr = *(meta as *const *const u8);
-            strlen(ptr)
-        });
-        info.align_of(|meta| 1);
-        // Nothing to drop (just `u8`s) and we are not in charge of dealloc
-        info.drop(|meta| None);
-        info.self_ptr(|ptr| {
-            let ptr = *(meta as *const *const u8);
-            ptr
-        });
+> CustomUnsized for CStrPtr {
+    fn method_id_to_fn_ptr(
+        self,
+        method_index: usize,
+        super_tree_path: usize,
+    ) -> *const () {
+        panic!("CStr has no trait methods, it's all inherent methods acting on the pointer")
     }
-    info
+    fn size_of(self) -> usize {
+        unsafe { strlen(self.ptr) }
+    }
+    fn align_of(self) -> usize {
+        1
+    }
+    fn drop(self) {
+        // Nothing to drop (just `u8`s) and we are not in charge of dealloc
+    }
+    fn self_ptr(self) -> *const () {
+        self.ptr
+    }
 }
 ```
 
@@ -202,34 +198,44 @@ We could remove `[T]` from the language and just make it desugar to
 a `std::slice::Slice` trait.
 
 ```rust
-#[unsafe_custom_vtable = "slice"]
+#[custom_wide_pointer = "SlicePtr"]
 pub trait Slice<T> {}
 
-pub const fn slice<
+#[repr(C)]
+struct SlicePtr<T> {
+    ptr: *const T,
+    len: usize,
+}
+
+impl<
     T,
     const IMPL: &'static std::vtable::TraitDescription,
->() -> std::vtable::DstInfo {
-    let mut info = DstInfo::new();
-    unsafe {
-        info.method_id_to_fn_ptr(|idx, parents, meta| {
-            panic!("CStr has no trait methods, it's all inherent methods acting on the pointer")
-        });
-        info.size_of(|meta| unsafe {
-            let ptr = *(meta as *const (*const T, usize);
-            ptr.1
-        });
-        info.align_of(|meta| std::mem::align_of::<T>());
-        info.drop(|meta| {
-            let ptr = *(meta as *const (*const T, usize);
-            let mut data_ptr = ptr.0;
-            for i in 0..ptr.1 {
-                std::ptr::drop_in_place(data_ptr);
-                data_ptr = data_ptr.offset(1);
-            }
-        });
-        info.self_ptr(|ptr| ptr);
+> CustomUnsized for Slice<T> {
+    fn method_id_to_fn_ptr(
+        self,
+        method_index: usize,
+        super_tree_path: usize,
+    ) -> *const () {
+        panic!("CStr has no trait methods, it's all inherent methods acting on the pointer")
     }
-    info
+    fn size_of(self) -> usize {
+        self.len
+    }
+    fn align_of(self) -> usize {
+        st::mem::align_of::<T>()
+    }
+    fn drop(self) {
+        let mut data_ptr = self.ptr;
+        for i in 0..self.len {
+            std::ptr::drop_in_place(data_ptr);
+            data_ptr = data_ptr.offset(1);
+        }
+    }
+    fn self_ptr(self) -> *const () {
+        // Not quite sure what to do here, need to think on this.
+        // Technically I want to return `Self`, but other schemes do not.
+        self.ptr
+    }
 }
 ```
 
@@ -238,61 +244,63 @@ pub const fn slice<
 Most of the boilerplate is the same as with regular vtables.
 
 ```rust
-
-pub const fn cpp_unsize<
-    T,
-    const IMPL: &'static std::vtable::TraitDescription,
-    const owned: bool,
->(
-    ptr: *const T,
-) -> *const (VTable<{num_methods::<IMPL>()}>, T)
-where {
-    assert!(owned, "cannot unsize borrowed object for C++ like trait")
-},
-{
-    let size = std::mem::size_of::<T>();
-    let vtable_size = std::mem::size_of::<Vtable<{num_methods::<IMPL>()}>>();
-    let layout = Layout::from_size_align(size + vtable_size, std::mem::align_of::<T>()).unwrap();
-    let new_ptr = std::alloc::alloc(layout);
-    // Move the value to the new allocation
-    std::ptr::copy_nonoverlapping(ptr, new_ptr.offset(vtable_size), 1);
-    std::alloc::dealloc(ptr);
-
-    // Copy the vtable into the shared allocation.
-    // Note that we are reusing the same vtable generation as in
-    // the regular Rust case.
-    std::ptr::write(new_ptr, default_vtable::<T, IMPL>());
-    new_ptr
+#[repr(C)]
+struct Pointer<const IMPL: &'static std::vtable::TraitDescription> {
+    ptr: *const (VTable<{num_methods::<IMPL>()}>, ())
 }
 
-pub const fn cpp<
-    const IMPL: &'static std::vtable::TraitDescription,
->() -> std::vtable::DstInfo {
-    let mut info = DstInfo::new();
-    unsafe {
-        info.method_id_to_fn_ptr(|idx, parents, meta| unsafe {
-            let meta = *(meta as *const *const Vtable<{num_methods::<IMPL>()}>);
-            // The rest of the function body is the same as with regular
-            // vtables.
-        });
-        info.size_of(|meta| unsafe {
-            let meta = *(meta as *const *const Vtable<{num_methods::<IMPL>()}>);
-            (*meta).size
-        });
-        info.align_of(|meta| unsafe {
-            let meta = *(meta as *const *const Vtable<{num_methods::<IMPL>()}>);
-            (*meta).align
-        });
-        info.drop(|meta| unsafe {
-            let meta = *(meta as *const *const Vtable<{num_methods::<IMPL>()}>);
-            (*meta).drop
-        });
-        info.self_ptr(|meta| unsafe {
-            let ptr = *(meta as *const *const (Vtable<{num_methods::<IMPL>()}>, ()));
-            &raw const (*ptr).1;
-        });
+unsafe impl<const IMPL: &'static std::vtable::TraitDescription> const CustomUnsize for Pointer<IMPL> {
+    fn from<T, const owned: bool>(ptr: *const T) -> Self {
+        unsafe {
+            let size = std::mem::size_of::<T>();
+            let vtable_size = std::mem::size_of::<Vtable<{num_methods::<IMPL>()}>>();
+            let layout = Layout::from_size_align(size + vtable_size, std::mem::align_of::<T>()).unwrap();
+            let new_ptr = std::alloc::alloc(layout);
+            // Move the value to the new allocation
+            std::ptr::copy_nonoverlapping(ptr, new_ptr.offset(vtable_size), 1);
+            std::alloc::dealloc(ptr);
+
+            // Copy the vtable into the shared allocation.
+            // Note that we are reusing the same vtable generation as in
+            // the regular Rust case.
+            std::ptr::write(new_ptr, default_vtable::<T, IMPL>());
+            Self { ptr: new_ptr }
+        }
     }
-    info
+}
+
+
+unsafe impl<const IMPL: &'static std::vtable::TraitDescription> CustomUnsized for Pointer<IMPL> {
+    fn method_id_to_fn_ptr(
+        self,
+        method_index: usize,
+        super_tree_path: usize,
+    ) -> *const () {
+        let meta = unsafe { &*self.ptr };
+        // The rest of the function body is the same as with regular
+        // vtables.
+    }
+    fn size_of(self) -> usize {
+        unsafe {
+            (*self.ptr).0.size
+        }
+    }
+    fn align_of(self) -> usize {
+        unsafe {
+            (*self.ptr).0.align
+        }
+    }
+    fn drop(self) {
+        unsafe {
+            let drop = (*self.ptr).0.drop;
+            drop(&raw mut (*self.ptr).1)
+        }
+    }
+    fn self_ptr(self) -> *const () {
+        unsafe {
+            &raw const (*self.ptr).1
+        }
+    }
 }
 ```
 
@@ -300,17 +308,16 @@ pub const fn cpp<
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-The two types `TraitDescription` and `DstInfo` are `#[nonexhaustive]` in order to allow arbitrary extension in the future.
+The type `TraitDescription` is `#[nonexhaustive]` in order to allow arbitrary extension in the future.
 Instances of the `TraitDescription` struct are created by rustc, basically replacing today's vtable generation, and then outsourcing the actual vtable generation to the const evaluator.
 
 When unsizing, the `const fn` specified
-via `unsafe_custom_unsize` is invoked. The only reason that function is
-`const fn` is to restrict what kind of things you can do in there. We
-can lift this restriction in the future.
+via `<WidePtrType as CustomUnsize>::from` is invoked. `WidePtrType` refers to the argument of the
+`#[custom_wide_ptr = "WidePtrType"]` attribute. The only reason that trait must be
+`impl const WidePtrType` is to restrict what kind of things you can do in there, it's not
+strictly necessary.
 
-For all other operations, the `unsafe_custom_vtable` function is invoked.
-This one must be `const fn`, as it is evaluated at compile-time and the
-compiler then inspects the resulting `DstInfo` at compile-time.
+For all other operations, the methods on `<WidePtrType as CustomUnsized>` is invoked.
 
 When obtaining function pointers from vtables, instead of computing an offset, the `method_id_to_fn_ptr` function is invoked at runtime and computes a function pointer after being given a method index, the indices of all parents and a pointer to a metadata field. Through the use of MIR optimizations (e.g. inlining), the final LLVM assembly is tuned to be exactly the same as today.
 
@@ -329,55 +336,35 @@ struct TraitDescription {
     pub parent: &'static TraitDescription,
 }
 
-#[nonexhaustive]
-struct DstInfo {
-    method_id_to_fn_ptr: fn(usize, &'static [usize], *const ()) -> *const (),
-    size_of: fn(*const()) -> usize,
-    align_of: fn(*const()) -> usize,
-    drop: *const (),
-    self_ptr: fn(*const()) -> *const (),
-}
-
-impl DstInfo {
-    const fn new() -> Self {
-        Self {
-            method_id_to_fn_ptr: None,
-            size_of: None,
-            align_of: None,
-            drop: None,
-            self_ptr: None,
-        }
-    }
-    /// The given function returns a function pointer to the method that
+unsafe trait CustomUnsized: Copy {
+    /// Returns a function pointer to the method that
     /// is being requested.
     /// * The first argument is the method index,
     /// * the second argument is a list of indices used to traverse the
     ///   super-trait tree to find the trait whose method is being invoked, and
     /// * the third argument is a pointer to the wide pointer (so in case of trait objects, usually it would be `*const (*const T, &'static Vtable)`).
     ///   This indirection is necessary, because we don't know the size of the wide pointer.
-    unsafe fn method_id_to_fn_ptr(f: fn(usize, &'static [usize], *const ()) -> *const ()) {
-        self.method_id_to_fn_ptr = Some(f);
-    }
-    /// Set the function that extracts the dynamic size
-    unsafe fn size_of(f: fn(*const ()) -> usize) {
-        self.size_of = Some(f);
-    }
-    /// Set the function that extracts the dynamic alignment
-    unsafe fn align_of(f: fn(*const ()) -> usize) {
-        self.align_of = Some(f);
-    }
-    /// Set the function that extracts the drop code.
-    unsafe fn drop<T>(f: fn(*const ()) -> Option<fn(*mut T)>) {
-        self.drop = Some(f);
-    }
-    /// Set the function that extracts the `&self` pointer
+    fn method_id_to_fn_ptr(
+        self,
+        method_index: usize,
+        super_tree_path: usize,
+    ) -> *const ();
+    fn size_of(self) -> usize;
+    fn align_of(self) -> usize;
+    fn drop(self);
+    /// Extracts the `&self` pointer
     /// from the wide pointer
     /// for calling trait methods. This needs a method as
     /// wide pointer layouts may place their `self` pointer
     /// anywhere they desire.
-    unsafe fn self_ptr(f: fn(*const ()) -> *const ()) {
-        self.self_ptr = Some(f);
-    }
+    fn self_ptr(self) -> *const ();
+}
+
+unsafe trait CustomUnsize: CustomUnsized {
+    fn from<
+        T
+        const owned: bool,
+    >(t: *const T) -> Self;
 }
 ```
 
@@ -389,6 +376,8 @@ impl DstInfo {
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
+
+This is a frequently requested feature and as a side effect obsoletes `extern type`s which have all kinds of problems (like the inability to invoke `size_of_val` on pointers to them).
 
 ## Don't use const generics
 
@@ -421,10 +410,10 @@ This RFC differentiates itself from all the other RFCs in that it provides a pro
 [unresolved-questions]: #unresolved-questions
 
 - Do we want this kind of flexibility? With power comes responsibility...
-- I believe we can do multiple super traits, including downcasts with this scheme, make sure that's true.
+- I believe we can do multiple super traits, including downcasts with this scheme and no additional extensions, but I need to make sure that's true.
 - This scheme could support downcasting `dyn A` to `dyn B` if `trait A: B` if we make `T: ?Sized` (`T` is the `impl` block type). But that will not allow the sized use-cases anymore (since `size_of::<T>` will fail). If we have something like `MaybeSized` that has `size_of` and `align_of` methods returning `Option`, then maybe we could do this.
 * Need to be generic over the allocator, too, so that reallocs are actually sound.
-* how does this interact with `Pin`?
+* how does this RFC (especially the `owned` flag) interact with `Pin`?
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
@@ -437,4 +426,4 @@ This RFC differentiates itself from all the other RFCs in that it provides a pro
 * Totally off-topic, but a similar scheme (via const eval) can be used to procedurally generate type declarations.
 * We can likely access associated consts and types of the trait directly without causing cycle errors, this should be investigated
 * This scheme is forward compatible to adding associated fields later.
-* If/once we expose the `Unsize` traits on stable, we could consider adding a method to the `Unsize` trait that performs the conversion. This way more complex unsizings like `String` -> `str` could be performed without going through the `Deref` trait which does the conversion. This would allow us to essentially write `impl str for String` if we make `str` a `trait`.
+* If/once we expose the `Unsize` (do not confuse with `CustomUnsize`) traits on stable, we could consider adding a method to the `Unsize` trait that performs the conversion. This way more complex unsizings like `String` -> `str` could be performed without going through the `Deref` trait which does the conversion. This would allow us to essentially write `impl str for String` if we make `str` a `trait`. We could also move the `CustomUnsize` trait's `from` method's `T` parameter onto the trait, thus allowing users to manually `impl CustomUnsize<CString> for CStrPtr`.
