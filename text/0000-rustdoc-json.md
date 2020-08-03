@@ -208,13 +208,14 @@ local crate, as well as some information about external items that are referred 
 
 Name      | Type    | Description
 ----------|---------|------------------------------------------------------------------------------
-`name`    | String  | (*Optional*) The name of the crate. If `--crate-name` is not given, based on the filename.
+`name`    | String  | The name of the crate. If `--crate-name` is not given, the filename is used.
 `version` | String  | (*Optional*) The version string given to `--crate-version`, if any.
 `includes_private`  | bool  | Whether or not the output includes private items.
 `root`    | [ID](#ID)      | The ID of the root module Item.
 `index`   | Map<[ID](#ID), [Item](#Item)> | A collection of all Items in the crate[\*](#resolving-ids).
 `paths`   | Map<[ID](#ID), [ItemSummary](#ItemSummary)> | Maps all IDs (even external ones[\*](#resolving-ids)) to a brief description including their name, crate of origin, and kind.
 `extern_crates` | Map<int, [ExternalCrate](#ExternalCrate)> | A map of "crate numbers" to metadata about that crate.
+`format_version` | int | The version of the structure of this blob. The structure described by this RFC will be version `1`, and it will be changed if incompatible changes are ever made.
 
 ### Resolving IDs
 
@@ -258,8 +259,8 @@ Name      | Type    | Description
 `visibility` | String | `"default"`, `"public"`, `"crate"`, or `"restricted"` (`pub(path)`).
 `restricted_path` | String | (*Optional*) If `visibility == "restricted"`, this field contains the path that it's restricted to.
 `docs`    | String  | The extracted documentation text from the Item.
-`links`   | [[ID](#ID)] | A list of items corresponding to any intra-doc links in `docs` in order of appearance.
-`attrs`   | [String] | The attributes (other than doc comments) on the Item, rendered as strings (e.g. `["#[inline]", "#[test]"]`).
+`links`   | Map<String, [ID](#ID)> | A map of intra-doc link names to the IDs of the items they resolve to. For example if the `docs` string contained `"see [HashMap][std::collections::HashMap] for more details"` then `links` would have `"std::collections::HashMap": "<some id>"`.
+`attrs`   | [String] | The [unstable](#Unstable) stringified attributes (other than doc comments) on the Item (e.g. `["#[inline]", "#[test]"]`).
 `deprecation` | [Deprecation](#Deprecation) | (*Optional*) Information about the Item's deprecation, if present.
 `kind`    | String  | The kind of Item this is. Determines what fields are in `inner`.
 `inner`   | Object  | The type-specific fields describing this Item. Check the `kind` field to determine what's available.
@@ -368,11 +369,11 @@ Name          | Type     | Description
 `is_unsafe`   | bool     | Whether this impl is for an unsafe trait.
 `generics`    | [Generics](#Generics) | Information about the impl's type parameters and `where` clauses.
 `provided_trait_methods` | [String] | The list of names for all provided methods in this impl block. This is provided for ease of access if you don't need more information from the `items` field.
-`trait`       | [Type](#Type) | (*Optional*) The trait being implemented or `null` if the impl is "inherent".
+`trait`       | [Type](#Type) | (*Optional*) The trait being implemented or `null` if the impl is "inherent", which means `impl Struct {}` as opposed to `impl Trait for Struct {}`.
 `for`         | [Type](#Type) | The type that the impl block is for.
 `items`       | [[ID](#ID)] | The list of associated items contained in this impl block.
 `negative`    | bool     | Whether this is a negative impl (e.g. `!Sized` or `!Send`).
-`synthetic`   | bool     | Whether this is an impl that's implied by the compiler (for autotraits).
+`synthetic`   | bool     | Whether this is an impl that's implied by the compiler (for autotraits, e.g. `Send` or `Sync`).
 `blanket_impl` | String | (*Optional*) The name of the generic parameter used for the blanket impl, if this impl was produced by one. For example `impl<T, U> Into<U> for T` would result in `blanket_impl == "T"`.
 
 ### `kind == "constant"`
