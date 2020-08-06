@@ -248,7 +248,7 @@ impl<
         method_index: usize,
         super_tree_path: usize,
     ) -> *const () {
-        panic!("CStr has no trait methods, it's all inherent methods acting on the pointer")
+        panic!("Slices have no trait methods, it's all inherent methods acting on the pointer")
     }
     fn size_of(self) -> usize {
         self.len
@@ -266,7 +266,7 @@ impl<
     fn self_ptr(self) -> *const () {
         // Not quite sure what to do here, need to think on this.
         // Technically I want to return `Self`, but other schemes do not.
-        self.ptr
+        panic!("it only makes sense to call this method in order to call a method")
     }
 }
 ```
