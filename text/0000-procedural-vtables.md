@@ -95,8 +95,8 @@ unsafe impl<const IMPL: &'static std::vtable::TraitDescription> const CustomUnsi
 unsafe impl<const IMPL: &'static std::vtable::TraitDescription> CustomUnsized for Pointer<IMPL> {
     fn method_id_to_fn_ptr(
         self,
-        method_index: usize,
-        super_tree_path: usize,
+        mut idx: usize,
+        parents: &[usize],
     ) -> *const () {
         let mut table = IMPL;
         for parent in parents {
