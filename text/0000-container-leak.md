@@ -11,7 +11,7 @@ Describe a standard set of methods for converting container types like `Box<T>`,
 For containers with a single value like `Box<T>`, `Arc<T>`, and `Rc<T>`, any subset of the following method pairs should be added to work with their raw representations:
 
 - `leak`: leak the container and return an arbitrarily long-lived shared or mutable reference to its allocated content.
-- `leak_raw`: leak the container and return a `NonNull<T>` pointer to its content.
+- `leak_raw`: leak the container and return a `NonNull<T>` pointer to its content. The type `T` is the same as `Deref::Target`, so `NonNull::from(&*self)` is the same as `Self::leak_raw(value)`.
 - `unleak_raw`: take a previously leaked `NonNull<T>` pointer and restore the container from it.
 - `into_raw`: leak the container and return a raw pointer to its content.
 - `from_raw`: take a previously leaked raw pointer and restore the container from it.
@@ -19,7 +19,7 @@ For containers with a single value like `Box<T>`, `Arc<T>`, and `Rc<T>`, any sub
 For growable containers like `Vec<T>` and `String`, any subset of the following method pairs should be added to work with their raw representations:
 
 - `leak`: shrink the container to its allocated length, leak it and return an arbitrarily long-lived shared or mutable reference to its allocated content.
-- `leak_raw_parts`: leak the container and return a `NonNull<T>` pointer to its content along with any other state, like the allocated capacity, that would be needed to restore the container.
+- `leak_raw_parts`: leak the container and return a `NonNull<T>` pointer to its content along with any other state, like the allocated capacity, that would be needed to restore the container. The type `T` is the same as `Deref::Target`, so `NonNull::from(&*self)` is the same as `self.leak_raw()`.
 - `unleak_raw_parts`: take a previously leaked `NonNull<T>` pointer and additional state and restore the container from it.
 - `into_raw_parts`: leak the container and return a raw pointer to its content along with any other state that would be needed to restore the container.
 - `from_raw_parts`: take a previously leaked raw pointer and additional state and restore the container from it.
@@ -216,6 +216,8 @@ This isn't preferable to keeping new `into_raw`/`from_raw` pairs consistent with
 
 Another is to just use `leak` methods and the conversion from `&T` and `&mut T` into `NonNull<T>` to work with.
 This isn't preferable to method pairs that return a `NonNull<T>` and look similar to `into_raw`/`from_raw` because they're less discoverable while still being preferable, and require more steps to leak and unleak than would otherwise be needed.
+
+Another is to deprecate `into_raw`/`from_raw` in favor of `leak_raw().as_ptr()` and `NonNull::new_unchecked(ptr)`. This makes it easier to discover the preferred API for working with raw container contents and the expense of more machinery in FFI use-cases.
 
 # Prior art
 [prior-art]: #prior-art
