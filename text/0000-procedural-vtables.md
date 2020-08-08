@@ -229,8 +229,44 @@ unsafe impl CustomUnsized for dyn MyTrait {
 }
 ```
 
+## Slicing into matrices via the `Index` trait
 
-## zero sized references to MMIO
+The `Index` trait's `index` method returns references. Thus,
+when indexing an `ndarray::Array2` in order to obtain a slice
+into part of that array, we cannot use the `Index` trait and
+have to invoke a function. Right now this means `array.index(s![5..8, 3..])`
+in order to obtain a slice that takes indices 5-7 in the first
+dimension and all indices after the 3rd dimension. Instead of
+having our own `ArrayView` type like what is returned by `Array2::index`
+we can create a trait with a custom vtable and reuse the `Index` trait.
+We keep using the `ArrayView` type as the type of the wide pointer.
+
+```rust
+trait Slice2<T> {}
+
+unsafe impl<T> CustomUnsized for dyn Slice2<T> {
+    type WidePointer = ndarray::ArrayView<T, Ix2>;
+    fn size_of(ptr: WidePointer) -> usize {
+        ptr.len()
+    }
+    fn align_of(ptr: WidePointer) -> usize {
+        std::mem::align_of::<T>()
+    }
+}
+
+impl<'a, T, U, V> Index<&'a SliceInfo<U, V>> for Array2<T> {
+    type Output = dyn Slice2<T>;
+    fn index(&self, idx: &'a SliceInfo<U, V>) -> &dyn Slice2<T> {
+        unsafe {
+            // This can get a better impl, but for simplicity we reuse
+            // the existing function.
+            transmute(Array2::index(idx))
+        }
+    }
+}
+```
+
+## Zero sized references to MMIO
 
 Instead of having one type per MMIO register bank, we could have one
 trait per bank and use a zero sized wide pointer format.
@@ -287,11 +323,14 @@ unsafe trait CustomUnsize<DynTrait> where DynTrait: CustomUnsized {
 }
 ```
 
+The 
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
 * This may be a serious case of overengineering. We're basically taking vtables out of the language and making dynamic dispatch on trait objects a user definable thing.
 * This may slow down compilation, likely entirely preventable by keeping a special case in the compiler for regular trait objects.
+* This completely locks us into never adding multiple vtable formats for a single trait. So you can't use a trait both as a C++ like vtable layout in some situations and a Rust wide pointer layout in others.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
