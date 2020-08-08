@@ -103,9 +103,9 @@ unsafe impl Unsized for dyn MyTrait {
 
 impl Drop for dyn MyTrait {
     fn drop(&mut self) {
-        // using a dummy concrete type for `Pointer`
-        let ptr = transmute::<&mut dyn Trait, Pointer<()>>(self);
         unsafe {
+        // using a dummy concrete type for `Pointer`
+            let ptr = transmute::<&mut dyn Trait, Pointer<()>>(self);
             let drop = ptr.vtable.drop;
             drop(&raw mut ptr.ptr)
         }
@@ -117,7 +117,7 @@ const fn default_vtable<T: MyTrait>() -> VTable<T> {
     // places.
     VTable {
         size: std::mem::size_of::<T>(),
-        align: std::mem::size_of::<T>(),
+        align: std::mem::align_of::<T>(),
         drop: <T as Drop>::drop,
         some_fn: fn (&mut T, u32) -> i32,
     }
@@ -176,7 +176,7 @@ impl<T> CustomUnsize<SlicePtr<T>> for Vec<T> {
 impl<T> CustomUnsized for dyn Slice<T> {
     type WidePointer = SlicePtr<T>;
     fn size_of(ptr: SlicePtr<T>) -> usize {
-        ptr.len
+        ptr.len * std::mem::size_of::<T>()
     }
     fn align_of(_: SlicePtr<T>) -> usize {
         std::mem::align_of::<T>()
@@ -185,11 +185,13 @@ impl<T> CustomUnsized for dyn Slice<T> {
 
 impl Drop for dyn Slice<T> {
     fn drop(&mut self) {
-        let wide_ptr = transmute::<&mut dyn Slice<T>, SlicePtr<T>>(self);
-        let mut data_ptr = wide_ptr.ptr;
-        for i in 0..wide_ptr.len {
-            std::ptr::drop_in_place(data_ptr);
-            data_ptr = data_ptr.offset(1);
+        unsafe {
+            let wide_ptr = transmute::<&mut dyn Slice<T>, SlicePtr<T>>(self);
+            let mut data_ptr = wide_ptr.ptr;
+            for i in 0..wide_ptr.len {
+                std::ptr::drop_in_place(data_ptr);
+                data_ptr = data_ptr.offset(1);
+            }
         }
     }
 }
@@ -245,7 +247,7 @@ trait Slice2<T> {}
 unsafe impl<T> CustomUnsized for dyn Slice2<T> {
     type WidePointer = ndarray::ArrayView<T, Ix2>;
     fn size_of(ptr: WidePointer) -> usize {
-        ptr.len()
+        ptr.len() * std::mem::size_of::<T>()
     }
     fn align_of(ptr: WidePointer) -> usize {
         std::mem::align_of::<T>()
