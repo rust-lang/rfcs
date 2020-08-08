@@ -94,11 +94,12 @@ unsafe impl<T: MyTrait> const CustomUnsize<Pointer> for T {
 /// default trait objects. Your own trait objects can use any metadata and
 /// thus "vtable" layout that they want.
 unsafe impl Unsized for dyn MyTrait {
-    fn size_of(self) -> usize {
-        self.vtable.size
+    type WidePointer = Pointer;
+    fn size_of(ptr: Pointer) -> usize {
+        ptr.vtable.size
     }
-    fn align_of(self) -> usize {
-        self.vtable.align
+    fn align_of(ptr: Pointer) -> usize {
+        ptr.vtable.align
     }
 }
 
@@ -138,17 +139,12 @@ ideas that could support `CString` -> `CStr` unsizing by allowing `CString` to i
 ```rust
 pub trait CStr {}
 
-
-#[repr(C)]
-struct CStrPtr {
-    ptr: *mut u8,
-}
-
 impl CustomUnsized<CStrPtr> for dyn CStr {
-    fn size_of(self) -> usize {
-        unsafe { strlen(self.ptr) }
+    type WidePointer = *mut u8;
+    fn size_of(ptr: *mut u8) -> usize {
+        unsafe { strlen(ptr) }
     }
-    fn align_of(self) -> usize {
+    fn align_of(_: *mut u8) -> usize {
         1
     }
 }
@@ -180,11 +176,12 @@ impl<T> CustomUnsize<SlicePtr<T>> for Vec<T> {
 }
 
 impl<T> CustomUnsized for dyn Slice<T> {
-    fn size_of(self) -> usize {
-        self.len
+    type WidePointer = SlicePtr<T>;
+    fn size_of(ptr: SlicePtr<T>) -> usize {
+        ptr.len
     }
-    fn align_of(self) -> usize {
-        st::mem::align_of::<T>()
+    fn align_of(_: SlicePtr<T>) -> usize {
+        std::mem::align_of::<T>()
     }
 }
 
@@ -205,32 +202,28 @@ impl Drop for dyn Slice<T> {
 Most of the boilerplate is the same as with regular vtables.
 
 ```rust
-#[repr(C)]
-struct Pointer<T> {
-    ptr: *mut (VTable, T),
-}
-
-unsafe impl<T: MyTrait> const CustomUnsize<Pointer<T>> for T {
-    fn unsize<const owned: bool>(ptr: *mut T) -> Pointer<T> {
+unsafe impl<T: MyTrait> const CustomUnsize<dyn MyTrait> for T {
+    fn unsize<const owned: bool>(ptr: *mut T) -> *mut (Vtable, ()) {
         unsafe {
             let new = Box::new((default_vtable::<T>(), std::ptr::read(ptr)));
             std::alloc::dealloc(ptr);
 
-            Pointer { ptr: Box::into_ptr(new) }
+            Box::into_ptr(new) as *mut _
         }
     }
 }
 
 
 unsafe impl CustomUnsized for dyn MyTrait {
-    fn size_of(self) -> usize {
+    type WidePointer = *mut (VTable, ());
+    fn size_of(ptr: Self::WidePointer) -> usize {
         unsafe {
-            (*self.ptr).0.size
+            (*ptr).0.size
         }
     }
-    fn align_of(self) -> usize {
+    fn align_of(self: Self::WidePointer) -> usize {
         unsafe {
-            (*self.ptr).0.align
+            (*ptr).0.align
         }
     }
 }
@@ -243,17 +236,16 @@ Instead of having one type per MMIO register bank, we could have one
 trait per bank and use a zero sized wide pointer format.
 
 ```rust
-struct NoPointer;
-
 trait MyRegisterBank {
     fn flip_important_bit(&mut self);
 }
 
 unsafe impl CustomUnsized for dyn MyRegisterBank {
-    fn size_of(self) -> usize {
+    type WidePointer = ();
+    fn size_of(():()) -> usize {
         4
     }
-    fn align_of(self) -> usize {
+    fn align_of(():()) -> usize {
         4
     }
 }
@@ -285,12 +277,13 @@ These types' and trait's declarations are provided below:
 
 ```rust
 unsafe trait CustomUnsized {
-    fn size_of(self) -> usize;
-    fn align_of(self) -> usize;
+    type WidePointer: Copy;
+    fn size_of(ptr: WidePointer) -> usize;
+    fn align_of(ptr: WidePointer) -> usize;
 }
 
-unsafe trait CustomUnsize<WidePtrType> where WidePtrType: CustomUnsized {
-    fn unsize<const owned: bool>(t: *mut Self) -> WidePtrType;
+unsafe trait CustomUnsize<DynTrait> where DynTrait: CustomUnsized {
+    fn unsize<const owned: bool>(t: *mut Self) -> DynTrait::WidePointer;
 }
 ```
 
