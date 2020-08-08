@@ -52,8 +52,6 @@ further down in this section you can see how it theoretically could be done in u
 Likely it will stay compiler magic out of compile-time performance reasons.
 
 All `impl`s of `MyTrait` will now use `MyWidePointer` for generating the wide pointer.
-The `TraitDescription` struct describes the metadata like the list of methods and a tree
-of super traits.
 
 You are actually generating the wide pointer, not a description of it.
 Since your `impl`'s `from` function is being interpreted in the target's environment, all target specific information will match up.
