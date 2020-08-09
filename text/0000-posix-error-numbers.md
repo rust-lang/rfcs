@@ -21,12 +21,12 @@ However, there are two problems with this solution:
 
 * POSIX does not specify the type of these error numbers -- they are defined as
   C macros, which are untyped integer literals. Many traditional UNIX APIs
-	assume that they can use any integer type for returning error numbers, which
-	are unergonomic to compare with a `c_int` const.
+  assume that they can use any integer type for returning error numbers, which
+  are unergonomic to compare with a `c_int` const.
 
 * Binaries that interact with the kernel directly (e.g. via `asm!()` syscalls)
   need to interpret error numbers, and should not require a dependency on libc
-	to do so.
+  to do so.
 
 I propose adding an opaque `ErrorNumber` struct to `std::os::unix`, which would
 provide limited conversion and comparison capabilities. By restricting the API
@@ -225,15 +225,21 @@ error numbers in their standard libraries. For example:
 
 * Should the maximum range of `ErrorNumber` be reduced to `i32`? This would
   allow unfailable conversion to `std::io::Error` via `from_raw_os_error()`,
-	but would require the internal representation of `ErrorNumber` to differ from
-	the native word size on 64-bit platforms (unless the `From` impl contained a
-	masking `i64 -> i32` expression).
+  but would require the internal representation of `ErrorNumber` to differ from
+  the native word size on 64-bit platforms (unless the `From` impl contained a
+  masking `i64 -> i32` expression).
 
 * Should platform-specific extensions to the error number set be constants on
   `ErrorNumber`, like the generic POSIX consts? Or should they be placed in
-	OS-specific modules such as `std::os::linux`?
+  OS-specific modules such as `std::os::linux`?
 
 * Should the `NegErrorNumber` design in the "alternatives" section be used?
+
+* Should `ErrorNumber` be defined for non-UNIX platforms? For example, Windows
+  supports a subset of the XENIX error numbers
+  ([ref](https://docs.microsoft.com/en-us/cpp/c-runtime-library/errno-constants?view=vs-2019)),
+  and it may be useful to allow binaries built for `target_os = "windows"` to
+  access those definitions.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
