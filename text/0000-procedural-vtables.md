@@ -293,6 +293,40 @@ impl MyRegisterBank for dyn MyRegisterBank {
 }
 ```
 
+## Unsized structs
+
+This RFC does not actually affect unsized structs (or tuples for that matter), because the unsizing of aggregates
+with trailing unsized types delegates to the unsizing of the built-in unsized types.
+
+If you have a
+
+```rust
+struct Foo<T: ?Sized + MyTrait> {
+    a: i32,
+    b: T,
+}
+```
+
+and you're using it to convert from a pointer to the sized version to an unsized version (Side note: I'm assuming you are talking about sized vs unsized, even though you mentioned "owned". `Box<dyn Trait>` is also owned, just owning an unsized thing).
+
+```rust
+let x = Foo { a: 42, b: SomeStruct };
+let y: &Foo<SomeStruct> = &x;
+let z: &Foo<dyn MyTrait> = y;
+```
+
+Then two steps happen, the first one is trivial, you get a pointer to `x` and store it in `y`. This is a thin pointer, whose value is the address of `x`.
+Then you do the unsizing, which invokes `<Foo<SomeStruct> as CustomUnsize::<dyn MyTrait>>::unsize::<false>(y)`, giving you essentially
+
+```rust
+Pointer {
+    ptr: &x,
+    vtable,
+}
+```
+
+where `vtable` is the same vtable you'd get for `&SomeStruct as &dyn MyTrait`. Since you can't invoke `MyTrait` methods on `Foo<dyn MyTrait>`, there are no pointer indirection problems or anything. This is also how it works without this RFC. If you want to invoke methods on the `b` field, you have to do `z.b.foo()`, which will give you a `&dyn MyTrait` reference via `&z.b` and then everything works out just like with direct references (well, because now you have a direct reference).
+
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
