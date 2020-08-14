@@ -84,7 +84,7 @@ After running the above command, you should get a `lib.json` file like the follo
   "includes_private": false,
   "index": {
     "0:3": {
-      "crate_num": 0,
+      "crate_id": 0,
       "name": "some_fn",
       "source": {
         "filename": "lib.rs",
@@ -107,7 +107,7 @@ After running the above command, you should get a `lib.json` file like the follo
       }
     },
     "0:4": {
-      "crate_num": 0,
+      "crate_id": 0,
       "name": "SomeStruct",
       "source": {
         "filename": "lib.rs",
@@ -127,7 +127,7 @@ After running the above command, you should get a `lib.json` file like the follo
       }
     },
     "0:0": {
-      "crate_num": 0,
+      "crate_id": 0,
       "name": "lib",
       "source": {
         "filename": "lib.rs",
@@ -149,12 +149,12 @@ After running the above command, you should get a `lib.json` file like the follo
   },
   "paths": {
     "0:3": {
-      "crate_num": 0,
+      "crate_id": 0,
       "path": ["lib", "some_fn"],
       "kind": "function"
     },
     "0:4": {
-      "crate_num": 0,
+      "crate_id": 0,
       "path": ["lib", "SomeStruct"],
       "kind": "struct"
     },
@@ -241,7 +241,7 @@ Name      | Type    | Description
 
 Name      | Type    | Description
 ----------|---------|------------------------------------------------------------------------------
-`crate_num` | int   | A number corresponding to the crate this Item is from. Used as an key to the `extern_crates` map in [Crate](#Crate). A value of zero represents an Item from the local crate, any other number means that this Item is external.
+`crate_id` | int   | A number corresponding to the crate this Item is from. Used as an key to the `extern_crates` map in [Crate](#Crate). A value of zero represents an Item from the local crate, any other number means that this Item is external.
 `path`    | [String] | The fully qualified path (e.g. `["std", "io", "lazy", "Lazy"]` for `std::io::lazy::Lazy`) of this Item.
 `kind`    | String  | What type of Item this is (see [Item](#Item)).
 
@@ -253,17 +253,26 @@ and leaves kind-specific details (like function args or enum variants) to the `i
 
 Name      | Type    | Description
 ----------|---------|------------------------------------------------------------------------------
-`crate_num` | int   | A number corresponding to the crate this Item is from. Used as an key to the `extern_crates` map in [Crate](#Crate). A value of zero represents an Item from the local crate, any other number means that this Item is external.
+`crate_id` | int   | A number corresponding to the crate this Item is from. Used as an key to the `extern_crates` map in [Crate](#Crate). A value of zero represents an Item from the local crate, any other number means that this Item is external.
 `name`    | String  | The name of the Item, if present. Some Items, like impl blocks, do not have names.
 `span`    | [Span](#Span) | (*Optional*) The source location of this Item.
-`visibility` | String | `"default"`, `"public"`, `"crate"`, or `"restricted"` (`pub(path)`).
-`restricted_path` | String | (*Optional*) If `visibility == "restricted"`, this field contains the path that it's restricted to.
+`visibility` | String | `"default"`, `"public"`, or `"crate"`[\*](#restricted-visibility).
 `docs`    | String  | The extracted documentation text from the Item.
 `links`   | Map<String, [ID](#ID)> | A map of intra-doc link names to the IDs of the items they resolve to. For example if the `docs` string contained `"see [HashMap][std::collections::HashMap] for more details"` then `links` would have `"std::collections::HashMap": "<some id>"`.
 `attrs`   | [String] | The [unstable](#Unstable) stringified attributes (other than doc comments) on the Item (e.g. `["#[inline]", "#[test]"]`).
 `deprecation` | [Deprecation](#Deprecation) | (*Optional*) Information about the Item's deprecation, if present.
 `kind`    | String  | The kind of Item this is. Determines what fields are in `inner`.
 `inner`   | Object  | The type-specific fields describing this Item. Check the `kind` field to determine what's available.
+
+### Restricted visibility
+When using `--document-private-items`, `pub(in path)` items can appear in the output in which case
+the visibility field will be an Object instead of a string. It will contain the single key
+`"restricted"` with the following values:
+
+Name      | Type    | Description
+----------|---------|------------------------------------------------------------------------------
+`parent`  | [ID](#ID) | The ID of the module that this items visibility is restricted to.
+`path`    | String | How that module path was referenced in the code (like `"super::super"`, or `"crate::foo"`).
 
 ### `kind == "module"`
 
