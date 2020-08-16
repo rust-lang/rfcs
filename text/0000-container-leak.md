@@ -116,29 +116,19 @@ The `unleak_raw_parts` method is the equivalent of `unleak_raw`.
 The `String::leak_raw_parts` method is a nice representative of the new API for multi-value containers because it produces a more semantic fat-pointer to the string's contents.
 Instead of a `(*mut u8, usize)` pair for the pointer and length, it returns a `NonNull<str>`, which encodes its length and retains the UTF8 invariant together.
 
-```rust
+```diff
 let string = String::from("🗻∈🌏");
 
-let (ptr, cap): (NonNull<str>, usize) = string.leak_raw_parts();
++ let (ptr, cap): (NonNull<str>, usize) = string.leak_raw_parts();
+- let (ptr, len, cap): (*mut u8, usize, usize) = string.into_raw_parts();
 
-// The `ptr` is just a single `as_ref` call away from a `&str`
-assert_eq!(Some("🗻"), unsafe { ptr.as_ref().get(0..4) });
++ assert_eq!(Some("🗻"), unsafe { ptr.as_ref().get(0..4) });
+- assert_eq!(Some("🗻"), unsafe { str::from_utf8_unchecked(slice::from_raw_parts(ptr, len)).get(0..4) });
 
 let string = String::unleak_raw_parts(ptr, cap);
 ```
 
-Using the `into_raw`/`from_raw` API, the above example would require more machinery to re-assert the contents are valid UTF8 before returning a `&str`:
-
-```rust
-let string = String::from("🗻∈🌏");
-
-let (ptr, len, cap): (*mut u8, usize, usize) = string.into_raw_parts();
-
-// The `ptr` needs to be converted back into a `str` through a slice first
-assert_eq!(Some("🗻"), unsafe { str::from_utf8_unchecked(slice::from_raw_parts(ptr, len)).get(0..4) });
-
-let string = String::from_raw_parts(ptr, len, cap);
-```
+Using the `into_raw`/`from_raw` API, the above example would require more machinery to re-assert the contents are valid UTF8 before returning a `&str`.
 
 ## When do I use `into_raw`/`from_raw`?
 
@@ -194,7 +184,7 @@ An FFI over `Vec<u8>` is a nice example of when `into_raw_parts` can be helpful 
 `Vec::leak_raw_parts` returns a fat `NonNull<[u8]>` pointer, but `NonNull<[u8]>` (and consequently `*const [u8]`) is not considered FFI-safe.
 Instead, we can use `Vec::into_raw_parts`, which only uses FFI-safe `*mut u8` and `usize` types:
 
-```rust
+```diff
 #[repr(C)]
 pub struct RawVec {
     ptr: *mut u8,
@@ -206,51 +196,23 @@ pub struct RawVec {
 pub unsafe extern "C" fn vec_create() -> RawVec {
     let v = vec![0u8; 512];
     
-    // Get the pointer to the first element, length and capacity for the buffer
-    let (ptr, len, cap) = v.into_raw_parts();
-    
++    let (ptr, len, cap) = v.into_raw_parts();
+-    let (ptr, cap) = v.leak_raw_parts();
+-    let (ptr, len) = (ptr.cast::<u8>().as_ptr(), ptr.len());
+
     RawVec { ptr, len, cap }
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn vec_destroy(vec: RawVec) {
     if !vec.ptr.is_null() {
-        // Rebuild and drop the previously allocated buffer
-        drop(Vec::from_raw_parts(vec.ptr, vec.len, vec.cap));
++        drop(Vec::from_raw_parts(vec.ptr, vec.len, vec.cap));
+-        drop(Vec::unleak_raw_parts(NonNull::slice_from_raw_parts(NonNull::new_unchecked(vec.ptr), vec.len), vec.cap));
     }
 }
 ```
 
-Using the `leak_raw_parts`/`unleak_raw_parts` API, the above example would require more machinery to convert the `NonNull<[u8]>` into FFI-safe types:
-
-```rust
-#[repr(C)]
-pub struct RawVec {
-    ptr: *mut u8,
-    len: usize,
-    cap: usize
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn vec_create() -> RawVec {
-    let v = vec![0u8; 512];
-    
-    let (ptr, cap) = v.leak_raw_parts();
-    
-    // Cast the pointer to the slice to its first element and get the length
-    let (ptr, len) = (ptr.cast::<u8>().as_ptr(), ptr.len());
-    
-    RawVec { ptr, len, cap }
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn vec_destroy(vec: RawVec) {
-    if !vec.ptr.is_null() {
-        // Rebuild the `NonNull<[u8]>` through a `NonNull<u8>` from the `*mut u8` and length
-        drop(Vec::unleak_raw_parts(NonNull::slice_from_raw_parts(NonNull::new_unchecked(vec.ptr), vec.len), vec.cap));
-    }
-}
-```
+Using the `leak_raw_parts`/`unleak_raw_parts` API, the above example would require more machinery to convert the `NonNull<[u8]>` into FFI-safe types.
 
 [ffi-guide]: https://michael-f-bryan.github.io/rust-ffi-guide/basic_request.html#creating-the-c-interface
 
