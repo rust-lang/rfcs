@@ -605,6 +605,10 @@ trusted and untrusted information can be quite a footgun for unsafe code working
 before calling `set_len` on the `Vec<u8>` that it's reading into. Moving that bit of state into `ReadBuf` avoids the
 issue by allowing `ReadBuf` to guarantee that these two values stay consistent.
 
+The concept of `ReadBuf` is not inherently tied to working with `u8` buffers;  it could alternatively be parameterized
+over the value type and hypothetically used in other contexts. However, the API for such a type can be iterated on
+in an external crate.
+
 # Prior art
 [prior-art]: #prior-art
 
