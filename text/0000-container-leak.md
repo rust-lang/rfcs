@@ -11,7 +11,7 @@ Describe a standard set of methods for converting container types like `Box<T>`,
 For containers with a single value like `Box<T>`, `Arc<T>`, and `Rc<T>`, any subset of the following method pairs should be added to work with their raw representations:
 
 - `leak`: leak the container and return an arbitrarily long-lived shared or mutable reference to its allocated content.
-- `leak_raw`: leak the container and return a `NonNull<T>` pointer to its content. The type `T` is the same as `Deref::Target`, so `NonNull::from(&*self)` is the same as `Self::leak_raw(value)`.
+- `leak_raw`: leak the container and return a `NonNull<T>` pointer to its content. The type `T` is the same as `Deref::Target`, so `NonNull::from(&*self)` is the same as `NonNull::from(Self::leak())` and `Self::leak_raw(value)`.
 - `unleak_raw`: take a previously leaked `NonNull<T>` pointer and restore the container from it.
 - `into_raw`: leak the container and return a raw pointer to its content.
 - `from_raw`: take a previously leaked raw pointer and restore the container from it.
@@ -19,35 +19,43 @@ For containers with a single value like `Box<T>`, `Arc<T>`, and `Rc<T>`, any sub
 For growable containers like `Vec<T>` and `String`, any subset of the following method pairs should be added to work with their raw representations:
 
 - `leak`: shrink the container to its allocated length, leak it and return an arbitrarily long-lived shared or mutable reference to its allocated content.
-- `leak_raw_parts`: leak the container and return a `NonNull<T>` pointer to its content along with any other state, like the allocated capacity, that would be needed to restore the container. The type `T` is the same as `Deref::Target`, so `NonNull::from(&*self)` is the same as `self.leak_raw()`.
+- `leak_raw_parts`: leak the container and return a `NonNull<T>` pointer to its content along with any other state, like the allocated capacity, that would be needed to restore the container. The type `T` is the same as `Deref::Target`, so `NonNull::from(&*self)` is the same as `NonNull::from(self.leak_raw_parts().0)` and `NonNull::from(self.leak())`.
 - `unleak_raw_parts`: take a previously leaked `NonNull<T>` pointer and additional state and restore the container from it.
 - `into_raw_parts`: leak the container and return a raw pointer to its content along with any other state that would be needed to restore the container.
 - `from_raw_parts`: take a previously leaked raw pointer and additional state and restore the container from it.
 
 The `leak_raw`/`unleak_raw` methods are "modern" semantic alternatives to the existing `into_raw`/`from_raw` pair of methods on containers that use `NonNull<T>` as the pointer type instead of `*const T` or `*mut T`.
-Users are encouraged to prefer the `leak_raw`/`unleak_raw` methods over `into_raw`/`from_raw` except for FFI or other niche cases.
+Users are encouraged to prefer the `leak_raw`/`unleak_raw` methods over `into_raw`/`from_raw` except for the important case where they need FFI-safety.
 
 # Motivation
 [motivation]: #motivation
 
-The `NonNull<T>` type is a non-nullable pointer type that's variant over `T`. `NonNull<T>` has stronger invariants than `*mut T`, but weaker than the internal `Unique<T>`. Since `Unique<T>` isn't planned to be stabilized, `NonNull<T>` is the most appropriate pointer type for containers like `Box<T>` and `Vec<T>` to use as pointers to their inner value.
+The `NonNull<T>` type is a non-nullable pointer type that's variant over `T`. `NonNull<T>` has stronger invariants than `*mut T`, but weaker than the internal `Unique<T>`.
+Since `Unique<T>` isn't planned to be stabilized, `NonNull<T>` is the most appropriate pointer type for containers like `Box<T>` and `Vec<T>` to use as pointers to their inner value.
 
-Unfortunately, `NonNull<T>` was stabilized after methods like `Box::into_raw` and `Vec::from_raw_parts`, which are left working with `*mut T`. Now with the proposed API addition of `Vec::into_raw_parts` we're left with a conundrum. The options appear to be:
+Unfortunately, `NonNull<T>` was stabilized after methods like `Box::into_raw` and `Vec::from_raw_parts`, which are left working with `*mut T`.
+Now with the proposed API addition of `Vec::into_raw_parts` we're left with a conundrum. The options appear to be:
 
 - break symmetry with `Vec::from_raw_parts` and diverge from `Box::into_raw` by producing a more semantically accurate `NonNull<T>`.
 - not use a newer and more appropriate type for the purpose it exists for and leave it up to users to convert.
 
-This RFC aims to answer this question by specifying any `into_raw`/`from_raw`-like APIs to stay consistent with the precedent set by `Box<T>` and `Vec<T>` of working with `*const T` and `*mut T`, and introduce a similar new API for `NonNull<T>` that is also more semantically typed with respect to `T`. Instead of `Vec::leak_raw` returning a `(*mut T, usize)` pair for its allocated storage, it returns a `NonNull<[T]>` instead.
+This RFC aims to answer this question by specifying any `into_raw`/`from_raw`-like APIs to stay consistent with the precedent set by `Box<T>` and `Vec<T>` of working with `*const T` and `*mut T`, and introduce a similar new API for `NonNull<T>` that is also more semantically typed with respect to `T`.
+Instead of `Vec::leak_raw` returning a `(*mut T, usize)` pair for its allocated storage, it returns a `NonNull<[T]>` instead.
 
-Keeping the new `leak_raw`/`unleak_raw` API similar to the existing `into_raw`/`from_raw` API is to make them discoverable and avoid new cognitive load for those that are already familiar with `into_raw`/`from_raw`. The semantic names make it clear to a reader what happens to the contents of the container through the conversion into a pointer.
+Keeping the new `leak_raw`/`unleak_raw` API similar to the existing `into_raw`/`from_raw` API is to make them discoverable and avoid new cognitive load for those that are already familiar with `into_raw`/`from_raw`.
+The semantic names make it clear to a reader what happens to the contents of the container through the conversion into a pointer.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
+## When do I use `leak_raw`/`unleak_raw`?
+
+The `leak_raw`/`unleak_raw` and `leak_raw_parts`/`unleak_raw_parts` methods are good for pure Rust datastructures that would probably use references if it was possible to describe their non-trivial access and ownership requirements through them.
+
 The `leak_raw` method can be used to take manual control of the lifetime and access to the contents of a container like `Box<T>`.
 The `unleak_raw` method can then be used to later restore the container from its leaked pointer.
-It's a fundamental pattern used by specialty data-structures like linked lists to manage non-trivial access and ownership models.
-Take the example of `LinkedList<T>`. Internally, it stores `NonNull<T>` pointers to its nodes:
+
+Take the example of `LinkedList<T>` from the standard library. Internally, it stores `NonNull<T>` pointers to its nodes:
 
 ```rust
 pub struct LinkedList<T> {
@@ -58,7 +66,8 @@ pub struct LinkedList<T> {
 }
 ```
 
-The nodes are allocated using `Box<T>`, where they're then leaked into the linked list, then later unleaked back out:
+The nodes are allocated using `Box<T>`, where they're then leaked into the linked list, then later unleaked back out.
+This can be done using `leak_raw`/`unleak_raw`:
 
 ```rust
 impl<T> LinkedList<T> {
@@ -101,33 +110,149 @@ impl<T> LinkedList<T> {
 }
 ```
 
-The `String::leak_raw` method is a nice representative of the new API for multi-value containers because it produces a more semantic fat-pointer to the string's contents.
-Instead of a `(*mut u8, usize)` pair, it returns a `NonNull<str>`, which encodes its length and retains the UTF8 invariant together.
-Working with the underlying string is just a matter of dereferencing it, instead of having to reconstruct it through `slice::from_raw_parts` and then `str::from_utf8_unchecked`.
+The `leak_raw_parts` method is the equivalent of `leak_raw` for multi-value containers like `String` that return extra data beyond the pointer needed to reconstruct the container later.
+The `unleak_raw_parts` method is the equivalent of `unleak_raw`.
 
-The `leak_raw` and `unleak_raw` methods are recommended over `into_raw` and `from_raw` except in special cases like FFI where `*const T` or `*mut T` might be explicitly wanted. With these new methods, the following existing code:
-
-```rust
-let b: Box<T> = Box::new(t);
-
-let ptr: *mut T = Box::into_raw(b);
-
-..
-
-let b: Box<T> = unsafe { Box::from_raw(ptr) };
-```
-
-can be replaced with:
+The `String::leak_raw_parts` method is a nice representative of the new API for multi-value containers because it produces a more semantic fat-pointer to the string's contents.
+Instead of a `(*mut u8, usize)` pair for the pointer and length, it returns a `NonNull<str>`, which encodes its length and retains the UTF8 invariant together.
 
 ```rust
-let b: Box<T> = Box::new(t);
+let string = String::from("🗻∈🌏");
 
-let ptr: NonNull<T> = Box::leak_raw(b);
+let (ptr, cap): (NonNull<str>, usize) = string.leak_raw_parts();
 
-..
+// The `ptr` is just a single `as_ref` call away from a `&str`
+assert_eq!(Some("🗻"), unsafe { ptr.as_ref().get(0..4) });
 
-let b: Box<T> = unsafe { Box::unleak_raw(ptr) };
+let string = String::unleak_raw_parts(ptr, cap);
 ```
+
+Using the `into_raw`/`from_raw` API, the above example would require more machinery to re-assert the contents are valid UTF8 before returning a `&str`:
+
+```rust
+let string = String::from("🗻∈🌏");
+
+let (ptr, len, cap): (*mut u8, usize, usize) = string.into_raw_parts();
+
+// The `ptr` needs to be converted back into a `str` through a slice first
+assert_eq!(Some("🗻"), unsafe { str::from_utf8_unchecked(slice::from_raw_parts(ptr, len)).get(0..4) });
+
+let string = String::from_raw_parts(ptr, len, cap);
+```
+
+## When do I use `into_raw`/`from_raw`?
+
+The `into_raw`/`from_raw` and `into_raw_parts`/`from_raw_parts` methods are good for FFI where a Rust type needs to be used by non-Rust code.
+
+The `*mut T`, `*const T`, and `usize` types returned by these methods typically have a direct counterpart in the target language, so they don't require learning new concepts for users that are familiar with raw pointers.
+
+As an example, it's common to share complex Rust values opaquely by boxing them and passing raw pointers to-and-fro.
+Take this example [from The Rust FFI Guide][ffi-guide] that wraps a web request:
+
+```rust
+#[no_mangle]
+pub unsafe extern "C" fn request_create(url: *const c_char) -> *mut Request {
+    if url.is_null() {
+        return ptr::null_mut();
+    }
+
+    let raw = CStr::from_ptr(url);
+
+    let url_as_str = match raw.to_str() {
+        Ok(s) => s,
+        Err(_) => return ptr::null_mut(),
+    };
+
+    let parsed_url = match Url::parse(url_as_str) {
+        Ok(u) => u,
+        Err(_) => return ptr::null_mut(),
+    };
+
+    let req = Request::new(parsed_url, Method::Get);
+    
+    // Get a stable address for the request
+    Box::into_raw(Box::new(req))
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn request_destroy(req: *mut Request) {
+    if !req.is_null() {
+        // Reinterpret the stable address as a previously allocated box
+        drop(Box::from_raw(req));
+    }
+}
+```
+
+In this example, a reader only needs to consider one kind of pointer type (technically `*const T` and `*mut T` are different types, but one could read them like `T*` from other languages with a sharing annotation).
+This API could use `Option<NonNull<Request>>` instead of `*mut Request` to force null checking in `request_destroy`, but that requires the author to juggle more concepts to write.
+They'd need to understand that while `NonNull<T>` has the same representation as `*const T`, it has the same semantics as `Option<NonNull<T>>`.
+
+The `into_raw_parts` method is the equivalent of `into_raw` for multi-value containers like `Vec<T>` that split the fat pointer into its FFI-safe parts.
+The `from_raw_parts` method is the equivalent of `from_raw`.
+
+An FFI over `Vec<u8>` is a nice example of when `into_raw_parts` can be helpful over `leak_raw_parts`.
+`Vec::leak_raw_parts` returns a fat `NonNull<[u8]>` pointer, but `NonNull<[u8]>` (and consequently `*const [u8]`) is not considered FFI-safe.
+Instead, we can use `Vec::into_raw_parts`, which only uses FFI-safe `*mut u8` and `usize` types:
+
+```rust
+#[repr(C)]
+pub struct RawVec {
+    ptr: *mut u8,
+    len: usize,
+    cap: usize
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn vec_create() -> RawVec {
+    let v = vec![0u8; 512];
+    
+    // Get the pointer to the first element, length and capacity for the buffer
+    let (ptr, len, cap) = v.into_raw_parts();
+    
+    RawVec { ptr, len, cap }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn vec_destroy(vec: RawVec) {
+    if !vec.ptr.is_null() {
+        // Rebuild and drop the previously allocated buffer
+        drop(Vec::from_raw_parts(vec.ptr, vec.len, vec.cap));
+    }
+}
+```
+
+Using the `leak_raw_parts`/`unleak_raw_parts` API, the above example would require more machinery to convert the `NonNull<[u8]>` into FFI-safe types:
+
+```rust
+#[repr(C)]
+pub struct RawVec {
+    ptr: *mut u8,
+    len: usize,
+    cap: usize
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn vec_create() -> RawVec {
+    let v = vec![0u8; 512];
+    
+    let (ptr, cap) = v.leak_raw_parts();
+    
+    // Cast the pointer to the slice to its first element and get the length
+    let (ptr, len) = (ptr.cast::<u8>().as_ptr(), ptr.len());
+    
+    RawVec { ptr, len, cap }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn vec_destroy(vec: RawVec) {
+    if !vec.ptr.is_null() {
+        // Rebuild the `NonNull<[u8]>` through a `NonNull<u8>` from the `*mut u8` and length
+        drop(Vec::unleak_raw_parts(NonNull::slice_from_raw_parts(NonNull::new_unchecked(vec.ptr), vec.len), vec.cap));
+    }
+}
+```
+
+[ffi-guide]: https://michael-f-bryan.github.io/rust-ffi-guide/basic_request.html#creating-the-c-interface
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -169,7 +294,7 @@ impl<T> Arc<T> {
 }
 ```
 
-and the following API for growable containers (some of these methods are already stable or implemented but unstable):
+and the following API for multi-value containers (some of these methods are already stable or implemented but unstable):
 
 ```rust
 impl<T> Vec<T> {
@@ -199,6 +324,8 @@ impl String {
 
 These conversion methods follow the existing semantics of static functions for containers that dereference to their inner value like `Box<T>`, and inherent methods for other containers like `Vec<T>`.
 
+The docs for `into_raw`/`from_raw` methods will point users to `leak_raw`/`unleak_raw` unless they need FFI-safety.
+
 The `NonNull<[T]>` and `NonNull<str>` methods are expected to eventually offer a way to get their length without needing to go through a reference first, but the exact mechanism is left as out-of-scope for this RFC.
 
 # Drawbacks
@@ -217,7 +344,8 @@ This isn't preferable to keeping new `into_raw`/`from_raw` pairs consistent with
 Another is to just use `leak` methods and the conversion from `&T` and `&mut T` into `NonNull<T>` to work with.
 This isn't preferable to method pairs that return a `NonNull<T>` and look similar to `into_raw`/`from_raw` because they're less discoverable while still being preferable, and require more steps to leak and unleak than would otherwise be needed.
 
-Another is to deprecate `into_raw`/`from_raw` in favor of `leak_raw().as_ptr()` and `NonNull::new_unchecked(ptr)`. This makes it easier to discover the preferred API for working with raw container contents and the expense of more machinery in FFI use-cases.
+Another is to deprecate `into_raw`/`from_raw` in favor of `leak_raw().as_ptr()` and `NonNull::new_unchecked(ptr)`.
+This makes it easier to discover the preferred API for working with raw container contents and the expense of more machinery in FFI use-cases.
 
 # Prior art
 [prior-art]: #prior-art
