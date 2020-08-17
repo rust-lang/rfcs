@@ -386,7 +386,7 @@ pub trait Read {
     /// Pull some bytes from this source into the specified buffer.
     ///
     /// This is equivalent to the `read` method, except that it is passed a `ReadBuf` rather than `[u8]` to allow use
-    /// with uninitialized buffers.
+    /// with uninitialized buffers. The new data will be appended to any existing contents of `buf`.
     ///
     /// The default implementation delegates to `read`.
     fn read_buf(&mut self, buf: &mut ReadBuf<'_>) -> io::Result<()> {
@@ -557,6 +557,19 @@ impl<'a> ReadBufs<'a> {
     pub fn uninit(bufs: &'a mut [MaybeUninitIoSliceMut<'a>]) -> ReadBufs<'a> { ... }
 
     ...
+}
+
+pub trait Read {
+    /// Pull some bytes from this source into the specified set of buffers.
+    ///
+    /// This is equivalent to the `read_vectored` method, except that it is passed a `ReadBufs` rather than
+    /// `[IoSliceMut]` to allow use with uninitialized buffers. The new data will be appended to any existing contents
+    /// of `bufs`.
+    ///
+    /// The default implementation delegates to `read_vectored`.
+    fn read_buf_vectored(&mut self, bufs: &mut ReadBufs<'_>) -> io::Result<()> {
+        ...
+    }
 }
 ```
 
