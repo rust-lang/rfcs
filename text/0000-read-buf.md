@@ -519,7 +519,7 @@ where
 
 The existing `std::io::Initializer` type and `Read::initializer` method will be removed.
 
-Vectored writes use a similar API:
+Vectored reads use a similar API:
 
 ```rust
 /// A possibly-uninitialized version of `IoSliceMut`.
