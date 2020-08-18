@@ -354,7 +354,7 @@ impl<'a> ReadBuf<'a> {
     ///
     /// # Panics
     ///
-    /// Panics if the filled region of the buffer would become larger than the intialized region.
+    /// Panics if the filled region of the buffer would become larger than the initialized region.
     #[inline]
     pub fn set_filled(&mut self, n: usize) { ... }
 
@@ -365,7 +365,7 @@ impl<'a> ReadBuf<'a> {
     ///
     /// # Safety
     ///
-    /// The caller must ensure that `n` unfilled bytes of the buffer have already been initialized.
+    /// The caller must ensure that the first `n` unfilled bytes of the buffer have already been initialized.
     #[inline]
     pub unsafe fn assume_init(&mut self, n: usize) { ... }
 
@@ -411,7 +411,7 @@ Thinking back to the `BrokenReader` in the motivation section, the worst an impl
 unsound unsafe code) is to fail to actually write useful data into the buffer. Code using a `BrokenReader` may see bad
 data in the buffer, but the bad data at least has defined contents now!
 
-Note that `read` is still a required method of the `Read` trait. It can be easily written to delegate to read_buf:
+Note that `read` is still a required method of the `Read` trait. It can be easily written to delegate to `read_buf`:
 
 ```rust
 impl Read for SomeReader {
@@ -552,7 +552,7 @@ impl<'a> ReadBufs<'a> {
 
     /// Creates a new `ReadBufs` from a set of fully uninitialized buffers.
     ///
-    /// Use `assume_initialized` if part of the buffers are known to be already initialized.
+    /// Use `assume_init` if part of the buffers are known to be already initialized.
     #[inline]
     pub fn uninit(bufs: &'a mut [MaybeUninitIoSliceMut<'a>]) -> ReadBufs<'a> { ... }
 
