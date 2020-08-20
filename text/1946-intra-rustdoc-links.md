@@ -500,15 +500,6 @@ struct S;`
 
 [ref-ufcs]: https://github.com/rust-lang-nursery/reference/blob/96e976d32a0a6927dd26c2ee805aaf44ef3bef2d/src/expressions.md#disambiguating-function-calls
 
-## Linking to Deref methods
-
-Some deref methods are idiomatically used on the parent type, not the
-`Deref::Target`. To allow linking to these, rustdoc should allow any methods
-of the Deref type to appear in the parent. If a method exists on both the
-parent and the target, the parent method should take precedence. For example,
-`Vec::get` should link to
-<https://doc.rust-lang.org/std/primitive.slice.html#method.get>.
-
 ## Linking to External Documentation
 
 Currently, Rustdoc is able to link to external crates,
