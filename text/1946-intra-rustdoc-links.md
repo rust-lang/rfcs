@@ -354,12 +354,8 @@ Our proposal is this:
   - It is possible that disambiguators for one kind of type-namespace object
     will work for the other (i.e. you can use `static@` to refer to a const),
 
-For disambiguation markers using an `@`, in implied shortcut links
-you can use a space instead of the `@`. In other words, `[struct Foo]`
-is fine (and preferred).
-
 If a disambiguator for a type does not match, rustdoc should issue an error.
-For example, given `struct Foo`, attempting to link to it using `[enum Foo]`
+For example, given `struct@Foo`, attempting to link to it using `[enum@Foo]`
 should not be allowed.
 
 ## Errors
