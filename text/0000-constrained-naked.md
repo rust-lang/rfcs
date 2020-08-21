@@ -4,7 +4,7 @@
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 # Summary
-This document attempts to increase the utility of [naked functions](https://github.com/rust-lang/rfcs/blob/master/text/1201-naked-fns.md) by constraining their use and increasing their defined invariants. This document also defines a new calling convention: `extern "custom"`.
+This document attempts to increase the utility of [naked functions](https://github.com/rust-lang/rfcs/blob/master/text/1201-naked-fns.md) by constraining their use and increasing their defined invariants.
 
 # Motivation
 
@@ -37,19 +37,6 @@ In exchange for the above constraints, the compiler commits to:
 
 As a (weaker) correlary to the last compiler commitment, the initial state of all registers in the `asm!()` statement conform to the specified calling convention.
 
-# Custom Calling Convention
-
-In order to expand the usefulness of naked functions, this document also define a new calling convention, `extern "custom"`, that can be used only with naked functions. Functions with `extern "custom"` are not callable from Rust and must be marked as`unsafe`. The function definition must contain no arguments or return type. For example:
-
-```rust
-#[naked]
-unsafe extern "custom" fn callback() {
-    asm!("mov rbx, rsi")
-}
-```
-
-An `extern "custom"` function can be passed as a function pointer argument or passed to an `asm!()` block via `sym`.
-
 # Explanation
 
 Since a naked function has no prologue, any naive attempt to use the stack can produce invalid code. This certainly includes local variables. But this can also include attempts to reference function arguments which may be placed on the stack. This is why a naked function may only contain a single `asm!()` statement.
@@ -63,8 +50,6 @@ If this were the end of the story, naked functions would not be very useful. In 
 Because naked functions depend upon the calling convention so heavily, inlining of these functions would make code generation extremely difficult. Therefore, we disallow inlining.
 
 Since the `const` and `sym` operands modify neither the stack nor the registers, their use is permitted.
-
-Because the compiler guarantees that no instructions not in the `asm!()` block of a naked function will be emitted to the function body, an `extern "custom"` function can implement whatever custom calling convention it wants. This is useful in a variety of scenarios where the calling convention is custom, such as in interrupt handlers or callbacks from assembly code.
 
 ## Examples
 
@@ -139,5 +124,7 @@ Due to the definition of naked functions, the arguments will always be flagged a
 # Future possibilities
 
 It would be possible to define new calling conventions that can be used with naked functions.
+
+A previous version of this document defined an `extern "custom"` calling convention. It was observed in conversation that calling conventions are really a *type* and that it could be useful to have calling conventions as part of the type system. In the interest of moving forward with constrained naked functions, it is best to limit the scope of this RFC and defer this (very good) conversation to a future RFC.
 
 It may also be possible to loosen the definition of a naked function in a future RFC. For example, it might be possible to allow the use of some additional, possibly new, operands to the `asm!()` block.
