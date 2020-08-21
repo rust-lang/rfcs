@@ -283,8 +283,8 @@ pub use inner_crate::g;
 ### Links to private items
 
 If a public item links to a private one, and `--document-private-items` is not passed,
-rustdoc should give an error. If a private item links to another private
-item, no error should be emitted. If a public item links to another private
+rustdoc should give a warning. If a private item links to another private
+item, no warning should be emitted. If a public item links to another private
 item and `--document-private-items` is passed, rustdoc should emit the link,
 but it is up to the implementation whether to give a warning.
 
@@ -315,7 +315,7 @@ Our proposal is this:
 - In unambiguous cases paths can be written as described earlier,
   with no pre- or suffix, e.g., `Look at the [FOO] trait`. This also
   applies to modules and tuple structs which exist in both namespaces.
-  Rustdoc will throw an error if you use a non-disambiguated path in
+  Rustdoc will throw a warning if you use a non-disambiguated path in
   the case of there being a value in both the type and value namespace.
 - Links to types can be disambiguated by prefixing them with the concrete
   item type:
@@ -354,7 +354,7 @@ Our proposal is this:
   - It is possible that disambiguators for one kind of type-namespace object
     will work for the other (i.e. you can use `static@` to refer to a const),
 
-If a disambiguator for a type does not match, rustdoc should issue an error.
+If a disambiguator for a type does not match, rustdoc should issue a warning.
 For example, given `struct@Foo`, attempting to link to it using `[enum@Foo]`
 should not be allowed.
 
@@ -476,7 +476,7 @@ and what syntax should be used.
 If linking to an associated item that comes from a trait,
 the link should only be resolved in the trait is in scope.
 This prevents ambiguities if multiple traits are available with the associated item.
-For example, this should issue an error:
+For example, this should issue a warning:
 
 ```rust
 #[derive(Debug)]
