@@ -16,11 +16,11 @@ This document seeks to define naked functions in a much more constrained, positi
 
 # Naked function definition
 
-A naked function is a type of FFI function with a defined calling convention and a body which contains only assembly code which can rely upon the defined calling convention.
+A naked function has a defined calling convention and a body which contains only assembly code which can rely upon the defined calling convention.
 
 A naked function is identified by the `#[naked]` attribute and:
-1. must specify a calling convention besides `extern "Rust"`.
-1. must define only FFI-safe arguments and return types.
+1. should specify a calling convention besides `extern "Rust"`.
+1. should define only FFI-safe arguments and return types.
 1. must not specify the `#[inline]` or `#[inline(always)]` attribute.
 1. must have a body which contains only a single `asm!()` statement which:
     1. may be wrapped in an `unsafe` block.
@@ -30,11 +30,12 @@ A naked function is identified by the `#[naked]` attribute and:
     1. must ensure that the requirements of the calling convention are followed.
 
 In exchange for the above constraints, the compiler commits to:
-1. produce a clear error if any of the above rules are violated.
+1. produce a clear error if any of the above requirements are violated.
+1. produce a clear warning if any of the above suggestions are not heeded.
 1. never inline the function (implicit `#[inline(never)]`).
-1. emit no instructions to the function body that are not contained in the `asm!()` statement.
+1. emit no additional instructions to the function body before the `asm!()` statement.
 
-As a (weaker) correlary to the last compiler commitment, since the compiler generates no additional instructions, the initial state of all registers in the `asm!()` statement conform to the specified calling convention.
+As a (weaker) correlary to the last compiler commitment, the initial state of all registers in the `asm!()` statement conform to the specified calling convention.
 
 # Custom Calling Convention
 
@@ -90,7 +91,7 @@ The calling convention is defined as `extern "sysv64"`, therefore we know that t
 
 # Drawbacks
 
-Implementing this will break compatiliby of existing uses of the nightly `#[naked]` attribute. All of these uses likely depend on undefined behavior. If this was a problem, we could simply use a different attribute.
+Implementing this will break compatiliby of existing uses of the nightly `#[naked]` attribute. All of these uses likely depend on undefined behavior. If this is a problem, we could simply use a different attribute.
 
 This definition may be overly strict. There is certainly some code that would work without this. The counter argument is that this code relies on undefined behavior and is probably not worth preserving. It might also be possible to reasonably ease the constraints over time.
 
