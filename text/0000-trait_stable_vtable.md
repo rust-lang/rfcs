@@ -108,7 +108,7 @@ struct VTable{
     size: usize,
     align: usize,
     drop_in_place: Option<unsafe extern"C" fn(*mut ())->()>,
-    reserved: *mut ()
+    dealloc:Option<unsafe extern"C" fn(*mut ())->()>,
     virtual_fns: [unsafe extern "C" fn(*mut ())->()]
 }
 ```
