@@ -32,6 +32,7 @@ A naked function is identified by the `#[naked]` attribute and:
 In exchange for the above constraints, the compiler commits to:
 1. produce a clear error if any of the above requirements are violated.
 1. produce a clear warning if any of the above suggestions are not heeded.
+1. disable the unused argument lint for the function.
 1. never inline the function (implicit `#[inline(never)]`).
 1. emit no additional instructions to the function body before the `asm!()` statement.
 
@@ -119,7 +120,7 @@ All languages represented here follow the weaker definition of naked functions:
 
 # Unresolved questions
 
-Due to the definition of naked functions, the arguments will always be flagged as unused. Should we consider adding `#[used]` implicitly to all arguments?
+All outstanding questions have been resolved.
 
 # Future possibilities
 
