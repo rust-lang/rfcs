@@ -1,6 +1,6 @@
 - Feature Name: NA
 - Start Date: 2020-08-31
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#2979](https://github.com/rust-lang/rfcs/pull/2979)
 - Rust Issue: NA
 
 # Summary
@@ -142,7 +142,7 @@ Some of these project groups have already been proposed as RFCs:
 - [**Error handling**](https://github.com/rust-lang/rfcs/pull/2965): building off several years of ecosystem work on establishing error handling norms.
 - [**Portable SIMD**](https://github.com/rust-lang/rfcs/pull/2977): building off `packed_simd`.
 
-Going forward, [project groups] will be established through the [major change process][major changes] on the [Libs team repository]. Examples of other [project groups] the Libs team may want to establish include:
+Going forward, [project groups] will be established through the [major change process][major changes] on the [Libs team repository]. Examples of other [project groups] the Libs team may want to establish (this isn't a commitment to actually establish these groups) include:
 
 - **Docs and resources**: own the API guidelines, forge docs, any other resources we want to write.
 - **Iterator**: own the `Iterator` API and manage new combinators proposed for it.
