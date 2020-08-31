@@ -167,6 +167,13 @@ This is a burden on the Libs team.
 # Prior art
 [prior-art]: #prior-art
 
+The prior art for this effort comes from the [Compiler team](https://github.com/rust-lang/compiler-team) and [Governance working group](https://internals.rust-lang.org/t/governance-working-group-announcement/9637).
+
+The Compiler team introduced [major change proposals][major changes] as a lightweight tool for communicating units of work in an increasingly complex and asynchronous team environment.
+
+The Governance working group introduced [project groups] as a formalized kind of working group with an explicitly defined scope and lifetime.
+These groups have been in use already by the Compiler and Lang teams.
+
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
