@@ -13,7 +13,7 @@ The Libs team will adopt the Compiler team's process for [major changes] and [pr
 [motivation]: #motivation
 
 The motivation is collected inline in the _Guide-level explanation_ to keep new processes close to the goal they're trying to achieve.
-That way we keep process focused, rather than possible introducing it for its own sake.
+That way we keep process focused, rather than possibly introducing it for its own sake.
 The key goals are:
 
 - To align the team with the rest of the Rust project.
