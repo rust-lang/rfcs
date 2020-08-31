@@ -14,21 +14,28 @@ The Libs team will adopt the Compiler team's process for [major changes] and [pr
 
 The motivation is collected inline in the _Guide-level explanation_ to keep new processes close to the goal they're trying to achieve.
 That way we keep process focused, rather than possible introducing it for its own sake.
+The key goals are:
+
+- To align the team with the rest of the Rust project.
+- To establish points of visibility and collaboration for the Rust community and other teams.
+- To get and keep a clear picture of what the state of unstable APIs are.
+- To create space for pursuing broader strategic things.
+
+Ultimately this RFC is all about building a Libs team that is trusted by the Rust community to maintain the standard library, and is able to support all the enthusiasm that the community brings to libraries work.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 ## What does Libs needs from governance?
 
-This section outlines current state of the Libs team and its work along with some changes to help address some shortcomings.
+This section outlines current state of the Libs team and its work along with some changes to help address some areas that can be improved.
 
-### To create a team that is trusted by the Rust community to maintain the standard library.
+### To align the team with the rest of the Rust project.
 
 There's a lot of work in the Rust project that spans multiple teams, especially between the Libs, Compiler, and Lang teams.
 Aligning the processes of the Libs team with the Compiler and Lang teams should make it easier to share effort and liaise between them.
 
-The Libs team will build trust by aligning the way it works with other teams.
-This involves adopting a process around [major changes] to Libs governance.
+The Libs team will align the way it works with other teams by adopting a process around [major changes] to Libs governance.
 This process will follow the same form already used by the Compiler team.
 Major changes can be proposed through the [Libs team repository].
 
