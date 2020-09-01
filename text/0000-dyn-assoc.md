@@ -51,13 +51,6 @@ fn main() {
 ```
 This can be used to retrieve `'static` state of a trait implementation without the need to immutably borrow the trait object used to locate its underlying type, which becomes a clarity problem if it's already mutably borrowed in the same scope. One good example of this kind of usage is having a backend trait optionally support certain extensions, the support for which would be determined by runtime factors (or in an even more complex case by both compile time and runtime factors). This makes things easier when working with OpenGL or Vulkan, for example (or any other Khronos API, really, they seem to a certain API design style), because these have the concept of hardware extensions, some of which are then included into the core specification and can optionally be used by applications if they are developed for a lower version of the API but still wish to have access to the features on newer hardware.
 
-## Mentions of the implementing type in associated functions
-[mentions-of-the-implementing-type-in-assoc-fn-guide]: #mentions-of-the-implementing-type-in-associated-functions
-
-A much more frequent use case of associated functions is for adding constructors, i.e. returning `Self`. But because `Self` in the case of trait objects is unsized, constructors in traits should return some kind of wrapper which makes these trait objects sized, making it possible to store the result on the stack. The best candidate for this job is `Box`, since it's the simplest way of allocating something on the heap from safe code, which is subject to a zero-cost conversion into a reference counter. `Box` also exposes an interface for casting trait objects down to a concrete type, which can be used to store the object entirely on the stack if the selection of possible types is known at development time (eg. if the trait and its implementors are `pub(crate)`).
-
-To be a valid trait object, the return type of these functions should be `Box<dyn Trait>` instead of `Box<Self>`, since `Self` in trait refers to the **concrete type implementing the trait** instead of the trait as a trait object.
-
 ## Associated constants
 Associated constants work in a similar way:
 ```rust
@@ -80,8 +73,57 @@ fn main() {
 ```
 This can be used by library authors to selectively accept trait objects if certain constants match certain criteria, as well as for introspecting implementation details at runtime, as shown with the floating-point mantissa example.
 
-## Generic contexts
-Using trait objects with associated members in compile-time generics is not allowed, just like before the RFC. The reason is that this would introduce numerous complications related to compile-time checks being inconsistent with concrete type usage in compile-time generics.
+## Object safety rules
+*Object safety* refers to whether a trait may be made into trait objects. There are three levels of object safety:
+- **Fully object-safe**: a trait that can be made into a trait object which also allows the trait objects to be used as a generic type parameter. A trait may belong to this level if it does not have any generic functions and associated types, functions or constants.
+- **Partially object-safe**: a trait that can be made into a trait object, but that trait object then will only be usable with *non-associating* or *value-associating* generic parameters. Trying to use those with *type-associating* generic parameters will fail. A trait can be on this level of object safety if it does not have associated types or functions/methods with generic arguments; unlike full object safety, associated constants and functions are fine.
+- **Not object-safe**: a trait that cannot be made into a trait object at all. This is the level for all traits which do not satisfy the requirements for higher levels.
+
+The partially object-safe trait safety level uses a concept of association kinds for generic parameters. An association kind simply determines the way how a generic parameter's associated members are used. There are three association kinds:
+- **Non-associating**: a generic parameter's associated functions and constants aren't referred to at all.
+- **Value-associating**: a generic paramter's associated functions and constants are referred to using the special syntax for getting the associated members of trait objects (`value.ASSOCIATED_CONSTANT`/`value.associated_function()` where `value` belongs to the generic type), *allowing the type in the generic parameter to be a trait object of a partially object-safe trait*.
+- **Type-associating**: a generic paramter's associated functions and constants are referred to using the usual syntax for associated members (`T::ASSOCIATED_CONSTANT`/`T::associated_function()`), which only allows types which are not trait objects or trait objects of fully object-safe traits to be used as the concrete type of the generic parameter.
+
+Those concepts are much simpler to grasp with a specific example:
+```rust
+trait DoStuff {
+    const FAVORITE_NUMBER: u64;
+    fn do_stuff();
+}
+impl DoStuff for () {
+    const FAVORITE_NUMBER: u64 = 87;
+    fn do_stuff() {
+        println!("Doing stuff...");
+    }
+}
+
+fn consume_stuff_doer_type<T>()
+where T: DoStuff + ?Sized {
+    T::do_stuff();
+    println!("Did stuff with this favorite number: {}", T::FAVORITE_NUBMER);
+}
+fn consume_stuff_doer_value<T>(val: &T)
+where T: DoStuff + ?Sized {
+    val.do_stuff();
+    println!("Did stuff with this favorite number: {}", val.FAVORITE_NUBMER);
+}
+
+fn main() {
+    let stuff_doer = ();
+    // This will compile:
+    consume_stuff_doer_value(&stuff_doer);
+    // But this won't:
+    consume_stuff_doer_type::<()>();
+}
+```
+
+## Mentions of the implementing type in associated functions
+[mentions-of-the-implementing-type-in-assoc-fn-guide]: #mentions-of-the-implementing-type-in-associated-functions
+
+A much more frequent use case of associated functions is for adding constructors, i.e. returning `Self`. But because `Self` in the case of trait objects is unsized, constructors in traits should return some kind of wrapper which makes these trait objects sized, making it possible to store the result on the stack. The best candidate for this job is `Box`, since it's the simplest way of allocating something on the heap from safe code, which is subject to a zero-cost conversion into a reference counter. `Box` also exposes an interface for casting trait objects down to a concrete type, which can be used to store the object entirely on the stack if the selection of possible types is known at development time (eg. if the trait and its implementors are `pub(crate)`).
+
+To be a valid trait object, the return type of these functions should be `Box<dyn Trait>` instead of `Box<Self>`, since `Self` in trait refers to the **concrete type implementing the trait** instead of the trait as a trait object.
+
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -172,6 +214,25 @@ Delphi [seems to have](https://stackoverflow.com/a/248348/7616532 "Answer to a C
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
+
+## How would generic arguments of types work with association kinds?
+Consider this example:
+```rust
+trait ThingDoer {
+    fn do_stuff();
+}
+struct MyThing<T>
+where T: ThingDoer + ?Sized {
+    val: Box<T>,
+}
+impl<T> MyThing<T>
+where T: ThingDoer + ?Sized {
+    fn do_stuff_with_thing_doer() {
+        T::do_stuff()
+    }
+}
+```
+This would make the `T` generic parameter in the struct type-associating. Would it be possible to make it value-associating instead and somehow cleanly add functions which would be type-associating if the generic parameter is not a trait object? This concept also needs thorough explanation in the guide section.
 
 ## What would the syntax look like?
 The only major unresolved question about this feature is the syntax. Currently, this document only mentions the idea chosen by the Rust forum: method/field syntax for associated functions and constants, respectively:
