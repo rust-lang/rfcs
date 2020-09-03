@@ -114,7 +114,8 @@ following these rules:
 * **`^(`** is added at the start of the pattern, and **`)$`** is added at the end of it.
 * **`,`** is desugared into `|`, separating multiple patterns.
 * **`*`** is desugared into `.*`, matching zero or more characters greedily.
-* All other characters are quoted to prevent them from having a special meaning.
+* All other non-alphanumeric characters are quoted to prevent them from having
+  a special meaning.
 
 As an example, the following pattern:
 
