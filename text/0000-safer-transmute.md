@@ -1320,6 +1320,34 @@ We recommend that that implementers of this RFC initially simplify constructabil
 
 If and when the implementation of `TransmuteFrom` encodes our complete definition of constructability, `NeglectStability` shall become a safe transmute option.
 
+### Minimal Useful Stabilization Surface
+
+Stabilizing *only* these three items of the Initial Smart Implementation will cover most use-cases:
+  - `TransmuteFrom`
+  - `#[derive(PromiseTransmutableFrom)]`
+  - `#[derive(PromiseTransmutableInto)]`
+
+(If the [`PromiseTransmutable` shorthand extension](extension-promisetransmutable-shorthand) is accepted, this may be further reduced to just *two* items: `TransmuteFrom` and `#[derive(PromiseTransmutable)]`.)
+
+Stabilizing `TransmuteOptions` and `SafeTransmuteOptions` will additionally allow end-users to build generic abstractions over `TransmuteFrom` (e.g., slice casting abstractions).
+
+Stabilizing `PromiseTransmutableFrom` and `PromiseTransmutableInto` will additionally allow end-users make limited stability promises, and to make stability promises for types where `derive` is too restrictive (namely, types containing `PhantomData`).
+
+Stabilizing `TransmuteInto` and `NeglectStability` will additionally allow end-users to implement `PromiseTransmutableFrom` in cases where the `Archetype`'s trait bounds must be repeated for lack of [implied bounds](https://github.com/rust-lang/rust/issues/44491); e.g.:
+```rust
+impl<T, N> PromiseTransmutableFrom for GenericArray<T, N>
+where
+    T: PromiseTransmutableFrom,
+    N: ArrayLength<T>,
+
+    // for lack of implied bounds, we must repeat the bounds on `Archetype`:
+    GenericArray<T::Archetype, N>
+        : TransmuteInto<Self, NeglectStability>
+        + PromiseTransmutableFrom,
+{
+    type Archetype = GenericArray<T::Archetype, N>;
+}
+```
 
 # Drawbacks
 [drawbacks]: #drawbacks
