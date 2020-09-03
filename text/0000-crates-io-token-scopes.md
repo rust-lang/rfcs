@@ -114,7 +114,7 @@ existing set of endpoints in that scope.
 The pattern for the crate scope is desugared into a regular expression,
 following these rules:
 
-* **`^`** is added at the start of the pattern, and **`$`** is added at the end of it.
+* **`^(`** is added at the start of the pattern, and **`)$`** is added at the end of it.
 * **`,`** is desugared into `|`, separating multiple patterns.
 * **`*`** is desugared into `.*`, matching zero or more characters greedily.
 * All other characters are quoted to prevent them from having a special meaning.
@@ -128,7 +128,7 @@ foo,bar-*
 ... is desugared into the following regex:
 
 ```
-^foo|bar\-.*$
+^(foo|bar\-.*)$
 ```
 
 Any combination of those characters is allowed, but crates.io might define a
