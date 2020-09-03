@@ -41,28 +41,25 @@ adding the following endpoint scopes:
   user owns
 * **yank**: allows yanking and unyanking existing versions of the user's crates
 * **change-owners**: allows inviting new owners or removing existing owners
+* **legacy**: allows accessing all the endpoints on crates.io except for
+  creating new tokens, like tokens created befores the implementation of this
+  RFC.
 
 More endpoint scopes might be added in the future without the need of a
 dedicated RFC.
-
-There will also be an option to opt out of endpoint scopes and retain the
-permission model implemented before this RFC (called "legacy"), which allows
-access to all (documented and undocumented) crates.io API endpoints except for
-adding new tokens.
 
 The crates.io UI will pre-select the scopes needed by the `cargo` CLI, which at
 the time of writing this RFC are `publish-new`, `publish-update`, `yank` and
 `change-owners`. The user will have to explicitly opt into extra scopes or the
 legacy permission model.
 
-Tokens created before the implementation of this RFC will use the legacy
-permission model.
+Tokens created before the implementation of this RFC will default to the legacy
+scope.
 
 ## Crates scope
 
 The user will be able to opt into limiting which crates the token can act on by
-defining a crates scope. It will be possible to set a crates scope even with
-the legacy endpoint scope.
+defining a crates scope.
 
 The crates scope can be left empty to allow the token to act on all the crates
 owned by the user, or it can contain the comma-separated list of crate names
@@ -78,9 +75,8 @@ it. When an endpoint that doesn't interact with crates is called by a token
 with a crates scope, the crates scope will be ignored and the call will be
 authorized.
 
-Tokens created before the implementation of this RFC won't have a crates scope,
-and it will be possible to use a crates scope in a token with the legacy
-endpoint scope.
+Tokens created before the implementation of this RFC will default to an empty
+crate scope filter (equivalent to no restrictions).
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -102,6 +98,7 @@ The scopes proposed by this RFC allow access to the following endpoints:
 | `PUT /crates/:crate_id/:version/unyank` | **yank** |
 | `PUT /crates/:crate_id/owners` | **change-owners** |
 | `DELETE /crates/:crate_id/owners` | **change-owners** |
+| everything except `PUT /me/tokens` | **legacy** |
 
 Removing an endpoint from a scope or adding an existing endpoint to an existing
 scope will be considered a breaking change. Adding newly created endpoints to
@@ -203,7 +200,6 @@ scoping:
 [unresolved-questions]: #unresolved-questions
 
 * Are there more scopes that would be useful to implement from the start?
-* Should crate scopes be allowed on tokens with the legacy endpoint scope?
 * Is the current behavior of crate scopes on endpoints that don't interact with
   crates the best, or should a token with crate scopes prevent access to
   endpoints that don't act on crates?
