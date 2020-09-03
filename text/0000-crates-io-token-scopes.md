@@ -224,3 +224,7 @@ option to require a separate confirmation for the actions executed by tokens.
 For example, we could send a confirmation email with a link the owners have to
 click to actually publish the crate uploaded by CI, preventing any mailicious
 action with stolen tokens.
+
+To remove the need for machine accounts, a future RFC could propose adding API
+tokens owned by teams, granting access to all resources owned by that team and
+allowing any team member to revoke them.
