@@ -1327,7 +1327,7 @@ Stabilizing *only* these three items of the Initial Smart Implementation will co
   - `#[derive(PromiseTransmutableFrom)]`
   - `#[derive(PromiseTransmutableInto)]`
 
-(If the [`PromiseTransmutable` shorthand extension](extension-promisetransmutable-shorthand) is accepted, this may be further reduced to just *two* items: `TransmuteFrom` and `#[derive(PromiseTransmutable)]`.)
+(If the [`PromiseTransmutable` shorthand extension][extension-promisetransmutable-shorthand] is accepted, this may be further reduced to just *two* items: `TransmuteFrom` and `#[derive(PromiseTransmutable)]`.)
 
 Stabilizing `TransmuteOptions` and `SafeTransmuteOptions` will additionally allow end-users to build generic abstractions over `TransmuteFrom` (e.g., slice casting abstractions).
 
