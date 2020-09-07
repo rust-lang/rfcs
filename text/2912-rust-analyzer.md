@@ -21,7 +21,7 @@ As detailed below, one major concern with rust-analyzer as it stands today is th
 
 Currently, Rust users who wish to use an editor that supports Microsoft's Language Server Protocol (LSP) have two choices:
 
-* Use the RLS, the official IDE project of the Rust langauge.
+* Use the RLS, the official IDE project of the Rust language.
 * Use rust-analyzer, a more experimental, unofficial project that has recently been gaining ground.
 
 Ideally, we would like to concentrate our efforts behind a single implementation.
@@ -42,7 +42,7 @@ There are several things that we would like to improve about the current situati
     * Further, the goal for some time has been to adopt a query-based architecture much like the one that rust-analyzer is using.
 * We would like to (eventually) avoid having two implementations of the Rust compiler to support, one in rustc and one in rust-analyzer.
 * We would like to "pay down" technical debt within the compiler itself and to make it approachable.
-    * To that end, we've been pursuing the creation of independent libraries, like miri or chalk. Smaller libraries with stronger API boundaries are easier to reason about but also provide an easier way for people to get involved in compiler development.
+    * To that end, we've been pursuing the creation of independent libraries, like miri or chalk. Smaller libraries with stronger API boundaries are not only easier to reason about but also provide an easier way for people to get involved in compiler development.
 
 However, in making the transition from the existing RLS setup to rust-analyzer, we have to be careful not to introduce user confusion. In particular, we wish to make the experience of "managing one's editor" smooth, both for:
 
