@@ -98,42 +98,42 @@ unsafe fn transmute<Src, Dst>(src: Src) -> Dst
 ```
 
 ### 📖 Safer Transmutation
-By **safer transmutation** we mean: *what `where` bound could we add to `transmute` restricts its type parameters `Src` and `Dst` in ways that statically limit the function's misuse?* Our answer to this question will ensure that transmutations are, by default, *sound*, *safe* and *stable*.
+By **safer transmutation** we mean: *what `where` bound could we add to `transmute` restricts its type parameters `Src` and `Dst` in ways that statically limit the function's misuse?* Our answer to this question will ensure that transmutations are, by default, *well-defined*, *safe* and *stable*.
 
-### 📖 Soundness
-A transmutation is ***sound*** if the mere act of transmuting a value from one type to another is not unspecified or undefined behavior.
+### 📖 Well-Definedness
+A transmutation is ***well-defined*** if the mere act of transmuting a value from one type to another is not unspecified or undefined behavior.
 
 ### 📖 Safety
-A sound transmutation is ***safe*** if *using* the transmuted value cannot violate memory safety.
+A well-defined transmutation is ***safe*** if *using* the transmuted value cannot violate memory safety.
 
 ### 📖 Stability
 A safe transmutation is ***stable*** if the authors of the source type and destination types have indicated that the layouts of those types is part of their libraries' stability guarantees.
 
 ## Concepts in Depth
 
-***Disclaimer:** While the high-level definitions of transmutation soundness, safety and stability are a core component of this RFC, the detailed rules and examples in this section are **not**. We expect that the initial implementation of `TransmuteFrom` may initially be considerably less sophisticated than the examples in this section (and thus forbid valid transmutations). Nonetheless, this section explores nuanced cases of transmutation soundness and safety to demonstrate that the APIs we propose can grow to handle that nuance.*
+***Disclaimer:** While the high-level definitions of transmutation well-definedness, safety and stability are a core component of this RFC, the detailed rules and examples in this section are **not**. We expect that the initial implementation of `TransmuteFrom` may initially be considerably less sophisticated than the examples in this section (and thus forbid valid transmutations). Nonetheless, this section explores nuanced cases of transmutation well-definedness and safety to demonstrate that the APIs we propose can grow to handle that nuance.*
 
 
-### 📖 When is a transmutation sound?
-[sound transmutation]: #-when-is-a-transmutation-sound
-A transmutation is ***sound*** if the mere act of transmuting a value from one type to another is not unspecified or undefined behavior.
+### 📖 When is a transmutation well-defined?
+[sound transmutation]: #-when-is-a-transmutation-well-defined
+A transmutation is ***well-defined*** if the mere act of transmuting a value from one type to another is not unspecified or undefined behavior.
 
 #### Well-Defined Representation
 [`u8`]: core::u8
 [`f32`]: core::f32
 
-Transmutation is *always unsound* if it occurs between types with unspecified representations.
+Transmutation is ill-defined if it occurs between types with unspecified representations.
 
 Most of Rust's primitive types have specified representations. That is, the precise layout characteristics of [`u8`], [`f32`] is a documented and guaranteed aspect of those types.
 
 In contrast, most `struct` and `enum` types defined without an explicit `#[repr(C)]` attribute do ***not*** have well-specified layout characteristics.
 
-To ensure that types you've define are soundly transmutable, you almost always (with very few exceptions) must mark them with the `#[repr(C)]` attribute.
+To ensure that types you've define are transmutable, you almost always (with very few exceptions) must mark them with the `#[repr(C)]` attribute.
 
 #### Requirements on Owned Values
 [transmute-owned]: #requirements-on-owned-values
 
-Transmutations involving owned values must adhere to two rules to be sound. They must:
+Transmutations involving owned values must adhere to two rules to be well-defined. They must:
  * [preserve or broaden the bit validity][owned-validity], and
  * [preserve or shrink the size][owned-size].
 
@@ -193,7 +193,7 @@ let _ : Packed = Padded::default().transmute_into(); // Compile Error!
 ##### Preserve or Shrink Size
 [owned-size]: #Preserve-or-Shrink-Size
 
-It's completely sound to transmute into a type with fewer bytes than the source type; e.g.:
+It's well-defined to transmute into a type with fewer bytes than the source type; e.g.:
 ```rust
 let _ : [u8; 16] = [u8; 32]::default().transmute_into();
 ```
@@ -208,9 +208,9 @@ let _ : [u8; 32] = [u8; 16]::default().transmute_into(); // Compile Error!
 #### Requirements on References
 [transmute-references]: #requirements-on-references
 
-The [restrictions above that apply to transmuting owned values][transmute-owned] also apply to transmuting references. However, references carry a few additional restrictions.
+The [restrictions above that apply to transmuting owned values][transmute-owned] also apply to transmuting references. However, references carry a few *additional* restrictions.
 
-A [sound transmutation] must:
+A [well-defined transmutation] of references must:
  - [preserve or shrink size][reference-size],
  - [preserve or relax alignment][reference-alignment],
  - [preserve or shrink lifetimes][reference-lifetimes],
@@ -301,7 +301,7 @@ If this example did not produce a compile error, the value of `z` would not be a
 
 
 ### 📖 When is a transmutation safe?
-A sound transmutation is ***safe*** if *using* the transmuted value safely cannot violate memory safety. Whereas soundness solely concerns the act of transmutation, *safety* is concerned with what might happen with a value *after* transmutation occurs.
+A well-defined transmutation is ***safe*** if *using* the transmuted value safely cannot violate memory safety. Whereas well-definedness solely concerns the act of transmutation, *safety* is concerned with what might happen with a value *after* transmutation occurs.
 
 #### Implicit Constructability
 A struct or enum variant is *fully implicitly constructable* at a given location only if, at that location, that type can be instantiated via its *implicit constructor*, and its fields are also *implicitly constructable*.
@@ -409,7 +409,7 @@ If this example did not produce a compile error, the value of `z` would not be a
 ### 📖 When is a transmutation stable?
 [stability]: #-when-is-a-transmutation-stable
 
-Since the soundness and safety of a transmutation is affected by the layouts of the source and destination types, changes to those types' layouts may cause code which previously compiled to produce errors. In other words, transmutation causes a type's layout to become part of that type's API for the purposes of SemVer stability.
+Since the well-definedness and safety of a transmutation is affected by the layouts of the source and destination types, changes to those types' layouts may cause code which previously compiled to produce errors. In other words, transmutation causes a type's layout to become part of that type's API for the purposes of SemVer stability.
 
 The question is, then: *how can the author of a type reason about transmutations they did not write, from-or-to types they did not write?* We address this problem by introducing two traits which both allow an author to opt-in to stability guarantees for their types, and allow third-parties to reason at compile-time about what guarantees are provided for such types.
 
@@ -638,7 +638,7 @@ In the above definitions, `Src` represents the source type of the transmutation,
 ### Neglecting Static Checks
 [options]: #Neglecting-Static-Checks
 
-The default value of the `Neglect` parameter, `()`, statically forbids transmutes that are unsafe, unsound, or unstable. However, you may explicitly opt-out of some static checks:
+The default value of the `Neglect` parameter, `()`, statically forbids transmutes that are unsafe, ill-defined, or unstable. However, you may explicitly opt-out of some static checks:
 
 | Transmute Option    | Usable With                                             |
 |---------------------|---------------------------------------------------------|
@@ -682,7 +682,7 @@ where
 }
 ```
 
-Neglecting stability over-eagerly cannot cause unsoundness or unsafety. For this reason, it is the only transmutation option available on the safe methods `transmute_from` and `transmute_into`. However, neglecting stability over-eagerly may cause your code to cease compiling if the authors of the source and destination types make changes that affect their layout.
+Neglecting stability over-eagerly cannot cause ill-definedness or unsafety. For this reason, it is the only transmutation option available on the safe methods `transmute_from` and `transmute_into`. However, neglecting stability over-eagerly may cause your code to cease compiling if the authors of the source and destination types make changes that affect their layout.
 
 By using the `NeglectStability` option to transmute types you do not own, you are committing to ensure that your reliance on these types' layouts is consistent with their documented stability guarantees.
 
@@ -859,7 +859,7 @@ pub mod transmute {
     }
 
     /// `Self: TransmuteInto<Dst, Neglect`, if the compiler accepts the stability,
-    /// safety, and soundness of transmuting `Self` into `Dst`, notwithstanding
+    /// safety, and well-definedness of transmuting `Self` into `Dst`, notwithstanding
     /// a given set of static checks to `Neglect`.
     pub unsafe trait TransmuteInto<Dst: ?Sized, Neglect = ()>
     where
@@ -910,7 +910,7 @@ pub mod transmute {
     }
 
     /// `Self: TransmuteInto<Src, Neglect`, if the compiler accepts the stability,
-    /// safety, and soundness of transmuting `Src` into `Self`, notwithstanding
+    /// safety, and well-definedness of transmuting `Src` into `Self`, notwithstanding
     /// a given set of static checks to `Neglect`.
     pub unsafe trait TransmuteFrom<Src: ?Sized, Neglect = ()>
     where
@@ -1496,7 +1496,7 @@ The development approaches like [typic][crate-typic]'s could, perhaps, be eased 
 
 Regardless of approach, almost all [prior art][prior-art] attempts to reproduce knowledge *already* possessed by `rustc` during the compilation process (i.e., the layout qualities of a concrete type). Emulating the process of layout computation to any degree is an error-prone duplication of effort between `rustc` and the crate, in a domain where correctness is crucial.
 
-Finally, community-led, crate-based approaches are, inescapably, unauthoritative. These approaches are incapable of fulfilling our motivating goal of providing a *standard* mechanism for programmers to statically ensure that a transmutation is safe, sound, or stable.
+Finally, community-led, crate-based approaches are, inescapably, unauthoritative. These approaches are incapable of fulfilling our motivating goal of providing a *standard* mechanism for programmers to statically ensure that a transmutation is safe, well-defined, or stable.
 
 # Prior art
 [prior-art]: #prior-art
@@ -1538,7 +1538,7 @@ We review each of these dimensions in turn, along with this proposal's location 
 ### Conversion Complexity
 Prior work differs in whether it supports complex conversions, or only simple transmutation. [*Pre-RFC FromBits/IntoBits*][2018-03]'s proposed traits include conversion methods that are implemented by type authors. Because end-users provide their own definitions of these methods, they can be defined to do more than just transmutation (e.g., slice casting). (This approach is similar to the [uncon][crate-uncon] crate's [`FromUnchecked`](https://docs.rs/uncon/1.*/uncon/trait.FromUnchecked.html) and [`IntoUnchecked`](https://docs.rs/uncon/1.*/uncon/trait.IntoUnchecked.html) traits, which provide unsafe conversions between types. These traits are safe to implement, but their conversion methods are not.)
 
-In contrast, our RFC focuses only on transmutation. Our `TransmutableFrom` and `TransmutableInto` traits serve as both a marker *and* a mechanism: if `Dst: TransmuteFrom<Src>`, it is sound to transmute from `Dst` into `Src` using `mem::transmute`. However, these traits *also* provide transmutation methods that are guaranteed to compile into nothing more complex than a `memcpy`. These methods cannot be overridden by end-users to implement more complex behavior. 
+In contrast, our RFC focuses only on transmutation. Our `TransmutableFrom` and `TransmutableInto` traits serve as both a marker *and* a mechanism: if `Dst: TransmuteFrom<Src>`, it is safe to transmute from `Dst` into `Src` using `mem::transmute`. However, these traits *also* provide transmutation methods that are guaranteed to compile into nothing more complex than a `memcpy`. These methods cannot be overridden by end-users to implement more complex behavior.
 
 The signal and transmutability and mechanism are, in principle, separable. The [convute][crate-convute] crate's [`Transmute<T>`](https://docs.rs/convute/0.2.0/convute/marker/trait.Transmute.html) trait is an unsafe marker trait representing types that can be transmuted into `T`. This is *just* a marker trait; the actual conversion mechanisms are provided by a [separate suite](https://docs.rs/convute/0.2.0/convute/convert/index.html) of traits and functions. Our RFC combines marker with mechanism because we feel that separating these aspects introduces additional complexity with little added value. 
 
