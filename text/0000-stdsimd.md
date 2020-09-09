@@ -52,6 +52,7 @@ The project group will regularly update libs on how things are going, whether th
 ### Who are the initial shepherds/leaders? (This is preferably 2–3 individuals, but not required.)
 
 - @BurntSushi
+- @calebzulawski
 - @hsivonen
 - @KodrAus
 - @Lokathor
