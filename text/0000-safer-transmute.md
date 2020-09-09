@@ -640,11 +640,11 @@ In the above definitions, `Src` represents the source type of the transmutation,
 
 The default value of the `Neglect` parameter, `()`, statically forbids transmutes that are unsafe, unsound, or unstable. However, you may explicitly opt-out of some static checks:
 
-| Transmute Option    | Compromises | Usable With                                             |
-|---------------------|-------------|---------------------------------------------------------|
-| `NeglectStabilty`   | Stability   | `transmute_{from,into}`, `unsafe_transmute_{from,into}` |
-| `NeglectAlignment`  | Safety      | `unsafe_transmute_{from,into}`                          |
-| `NeglectValidity`   | Soundness   | `unsafe_transmute_{from,into}`                          |
+| Transmute Option    | Usable With                                             |
+|---------------------|---------------------------------------------------------|
+| `NeglectStabilty`   | `transmute_{from,into}`, `unsafe_transmute_{from,into}` |
+| `NeglectAlignment`  | `unsafe_transmute_{from,into}`                          |
+| `NeglectValidity`   | `unsafe_transmute_{from,into}`                          |
 
 `NeglectStabilty` implements the `SafeTransmuteOptions` and `TransmuteOptions` marker traits, as it can be used in both safe and unsafe code. The selection of multiple options is encoded by grouping them as a tuple; e.g., `(NeglectAlignment, NeglectValidity)` is a selection of both the `NeglectAlignment` and `NeglectValidity` options.
 
