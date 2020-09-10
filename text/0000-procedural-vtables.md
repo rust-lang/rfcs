@@ -62,9 +62,26 @@ As an example, consider the function which is what normally generates your metad
 
 ```rust
 #[repr(C)]
-struct Pointer<T> {
-    ptr: *mut T,
-    vtable: &'static VTable<T>,
+struct Pointer {
+    ptr: *mut u8,
+    vtable: &'static VTable,
+}
+
+/// For going from a `&SomeStruct<dyn Trait>` to a field of `SomeStruct`.
+unsafe impl CustomProjection for Pointer {
+    unsafe fn project(ptr: Pointer, offset: usize) -> *mut u8 {
+        ptr.ptr.offset(offset),
+    }
+}
+
+unsafe impl CustomProjectionToUnsized for Pointer {
+    /// For going from `&SomeStruct<dyn Trait>` to the unsized field
+    unsafe fn project_unsized(ptr: Pointer, offset: usize) -> Pointer {
+        Pointer {
+            ptr: ptr.ptr,
+            vtable: ptr.vtable,
+        }
+    }
 }
 
 /// If the `owned` flag is `true`, this is an owned conversion like
@@ -75,14 +92,14 @@ struct Pointer<T> {
 /// unsizings by triggering a compile-time `panic` with an explanation
 /// for the user.
 unsafe impl<T: MyTrait> const CustomUnsize<Pointer> for T {
-    fn unsize<const owned: bool>(ptr: *mut T) -> Pointer<T> {
+    fn unsize<const owned: bool>(ptr: *mut T) -> Pointer {
         // We generate the metadata and put a pointer to the metadata into 
         // the field. This looks like it's passing a reference to a temporary
         // value, but this uses promotion
         // (https://doc.rust-lang.org/stable/reference/destructors.html?highlight=promotion#constant-promotion),
         // so the value lives long enough.
         Pointer {
-            ptr,
+            ptr: ptr as *mut u8,
             vtable: &default_vtable::<T>(),
         }
     }
@@ -92,6 +109,7 @@ unsafe impl<T: MyTrait> const CustomUnsize<Pointer> for T {
 /// default trait objects. Your own trait objects can use any metadata and
 /// thus "vtable" layout that they want.
 unsafe impl Unsized for dyn MyTrait {
+    // Using a dummy type for the vtable 
     type WidePointer = Pointer;
     fn size_of(ptr: Pointer) -> usize {
         ptr.vtable.size
@@ -112,7 +130,7 @@ impl Drop for dyn MyTrait {
     }
 }
 
-const fn default_vtable<T: MyTrait>() -> VTable<T> {
+const fn default_vtable<T: MyTrait>() -> VTable {
     // `VTable` is a `#[repr(C)]` type with fields at the appropriate
     // places.
     VTable {
@@ -157,28 +175,43 @@ a `std::slice::Slice` (or `StrSlice`) trait.
 pub trait Slice<T> {}
 
 #[repr(C)]
-struct SlicePtr<T> {
-    ptr: *mut T,
+struct SlicePtr {
+    ptr: *mut u8,
     len: usize,
+}
+
+unsafe impl CustomProjection for SlicePtr {
+    unsafe fn project(ptr: Pointer, offset: usize) -> *mut u8 {
+        ptr.ptr.offset(offset)
+    }
+}
+
+unsafe impl CustomProjectionToUnsized for SlicePtr {
+    unsafe fn project_unsized(ptr: Pointer, offset: usize) -> Pointer {
+        Pointer {
+            ptr.ptr.offset(offset),
+            ptr.len,
+        }
+    }
 }
 
 // This impl must be in the `vec` module, to give it access to the `vec`
 // internals instead of going through `&mut Vec<T>` or `&Vec<T>`.
-impl<T> CustomUnsize<SlicePtr<T>> for Vec<T> {
-    fn unsize<const owned: bool>(ptr: *mut Vec<T>) -> SlicePtr<T> {
+impl<T> CustomUnsize<SlicePtr> for Vec<T> {
+    fn unsize<const owned: bool>(ptr: *mut Vec<T>) -> SlicePtr {
         SlicePtr {
-            ptr: vec.data,
+            ptr: vec.data as *mut _,
             len: vec.len,
         }
     }
 }
 
 impl<T> CustomUnsized for dyn Slice<T> {
-    type WidePointer = SlicePtr<T>;
-    fn size_of(ptr: SlicePtr<T>) -> usize {
+    type WidePointer = SlicePtr;
+    fn size_of(ptr: SlicePtr) -> usize {
         ptr.len * std::mem::size_of::<T>()
     }
-    fn align_of(_: SlicePtr<T>) -> usize {
+    fn align_of(_: SlicePtr) -> usize {
         std::mem::align_of::<T>()
     }
 }
@@ -203,27 +236,40 @@ Most of the boilerplate is the same as with regular vtables.
 
 ```rust
 unsafe impl<T: MyTrait> const CustomUnsize<dyn MyTrait> for T {
-    fn unsize<const owned: bool>(ptr: *mut T) -> *mut (Vtable, ()) {
+    fn unsize<const owned: bool>(ptr: *mut T) -> CppPtr {
         unsafe {
             let new = Box::new((default_vtable::<T>(), std::ptr::read(ptr)));
             std::alloc::dealloc(ptr);
 
-            Box::into_ptr(new) as *mut _
+            CppPtr(Box::into_ptr(new) as *mut _)
         }
     }
 }
 
+struct CppPtr(*mut (Vtable, ()));
+
+unsafe impl CustomProjection for CppPtr {
+    unsafe fn project(ptr: CppPtr, offset: usize) -> *mut u8 {
+        (&raw mut (*ptr.0).1).offset(offset)
+    }
+}
+
+// No CustomProjectionToUnsized as you can't have
+// `struct Foo(i32, dyn MyTrait);` as that would require
+// us to rewrite the vtable on unsizing. Rust puts the
+// unsized field at the end, while C++ puts the in the front of
+// the class.
 
 unsafe impl CustomUnsized for dyn MyTrait {
-    type WidePointer = *mut (VTable, ());
-    fn size_of(ptr: Self::WidePointer) -> usize {
+    type WidePointer = CppPtr;
+    fn size_of(ptr: CppPtr) -> usize {
         unsafe {
-            (*ptr).0.size
+            (*ptr.0).0.size
         }
     }
-    fn align_of(self: Self::WidePointer) -> usize {
+    fn align_of(self: CppPtr) -> usize {
         unsafe {
-            (*ptr).0.align
+            (*ptr.0).0.align
         }
     }
 }
@@ -269,29 +315,45 @@ impl<'a, T, U, V> Index<&'a SliceInfo<U, V>> for Array2<T> {
 ## Zero sized references to MMIO
 
 Instead of having one type per MMIO register bank, we could have one
-trait per bank and use a zero sized wide pointer format.
+trait per bank and use a zero sized wide pointer format. There's no `Unsize`
+impl as you can't create these pointers except by transmuting a zst to them.
 
 ```rust
+const REG_ADDR: usize = 42;
+
 trait MyRegisterBank {
     fn flip_important_bit(&mut self);
 }
 
-unsafe impl CustomUnsized for dyn MyRegisterBank {
-    type WidePointer = ();
-    fn size_of(():()) -> usize {
-        4
+struct NoPointer;
+
+impl CustomProjection for NoPointer {
+    fn project(NoPointer: NoPointer, offset: usize) -> *mut u8 {
+        (REG_ADDR + offset) as *mut u8
     }
-    fn align_of(():()) -> usize {
+}
+
+// No CustomProjectionToUnsized as there's nothing there to access
+
+unsafe impl CustomUnsized for dyn MyRegisterBank {
+    type WidePointer = NoPointer;
+    fn size_of(NoPointer:NoPointer) -> usize {
+        4 // MMIO registers on our hypothetical systems are 32 bit
+    }
+    fn align_of(NoPointer:NoPointer) -> usize {
         4
     }
 }
 
 impl MyRegisterBank for dyn MyRegisterBank {
     fn flip_important_bit(&mut self) {
-        std::mem::volatile_write::<bool>(42, !std::mem::volatile_read::<bool>(42))
+        std::mem::volatile_write::<bool>(REG_ADDR, !std::mem::volatile_read::<bool>(REG_ADDR))
     }
 }
 ```
+
+# Reference-level explanation
+[reference-level-explanation]: #reference-level-explanation
 
 ## Unsized structs
 
@@ -307,7 +369,7 @@ struct Foo<T: ?Sized + MyTrait> {
 }
 ```
 
-and you're using it to convert from a pointer to the sized version to an unsized version (Side note: I'm assuming you are talking about sized vs unsized, even though you mentioned "owned". `Box<dyn Trait>` is also owned, just owning an unsized thing).
+and you're using it to convert from a pointer to the sized version to an unsized version
 
 ```rust
 let x = Foo { a: 42, b: SomeStruct };
@@ -325,17 +387,22 @@ Pointer {
 }
 ```
 
-where `vtable` is the same vtable you'd get for `&SomeStruct as &dyn MyTrait`. Since you can't invoke `MyTrait` methods on `Foo<dyn MyTrait>`, there are no pointer indirection problems or anything. This is also how it works without this RFC. If you want to invoke methods on the `b` field, you have to do `z.b.foo()`, which will give you a `&dyn MyTrait` reference via `&z.b` and then everything works out just like with direct references (well, because now you have a direct reference).
+where `vtable` is the same vtable you'd get for `&SomeStruct as &dyn MyTrait`. Since you can't invoke `MyTrait` methods on `Foo<dyn MyTrait>`, there are no pointer indirection problems or anything. This is also how it works without this RFC.
 
-# Reference-level explanation
-[reference-level-explanation]: #reference-level-explanation
+If you want to invoke methods on the `b` field, you have to do `z.b.foo()`, which will works by
+invoking `CustomProjectionToUnsized::project_unsized(z, offset!(SomeStruct::b))`. The resulting pointer
+is again a wide pointer `&dyn MyTrait`, but with an adjusted data pointer to allow any trait methods to properly
+work on the type. This data pointer adjustment is wide pointer specific and overridable via the `CustomProjectionToUnsized` trait.
+For regular fields the `CustomProjection` trait handles the extraction of the sized pointer to the field.
+
+## Traits managing the unsizing and projecting
 
 When unsizing, the `<dyn MyTrait as CustomUnsize>::unsize` is invoked.
 The only reason that trait must be
 `impl const CustomUnsize` is to restrict what kind of things you can do in there, it's not
 strictly necessary. This restriction may be lifted in the future.
 
-For all other operations, the methods on `<dyn MyTrait as CustomUnsized>` is invoked.
+For all other operations, the methods on `<dyn MyTrait as CustomUnsized>::WidePointer` are invoked.
 
 When obtaining function pointers from vtables, instead of computing an offset, the `MyTrait for dyn MyTrait` impl's
 methods are invoked, allowing users to insert their own logic for obtaining the runtime function pointer.
@@ -354,6 +421,16 @@ unsafe trait CustomUnsized {
 
 unsafe trait CustomUnsize<DynTrait> where DynTrait: CustomUnsized {
     fn unsize<const owned: bool>(t: *mut Self) -> DynTrait::WidePointer;
+}
+
+unsafe trait CustomProjection: CustomUnsized {
+    /// The offset is in bytes.
+    unsafe fn project(ptr: <Self as CustomUnsized>::WidePointer, offset: usize) -> *mut u8;
+}
+
+unsafe trait CustomProjectionToUnsized: CustomUnsized {
+    /// The offset is in bytes and must be the exact offset from the start of the unsized struct to its unsized field.
+    unsafe fn project_unsized(ptr: <Self as CustomUnsized>::WidePointer, offset: usize) -> <Self as CustomUnsized>::WidePointer;
 }
 ```
 
@@ -391,7 +468,9 @@ This list is shamelessly taken from [strega-nil's Custom DST RFC](https://github
 - [Syntax of ?Sized](https://github.com/rust-lang/rfcs/pull/490)
 
 This RFC differs from all the other RFCs in that it focusses on a procedural way to generate vtables,
-thus also permitting arbitrary user-defined compile-time conditions by aborting via `panic!`.
+thus also permitting arbitrary user-defined compile-time conditions by aborting via `panic!`. Another
+difference is that this RFC allows arbitrary layouts of the wide pointer instead of just allowing custom
+metadata fields of wide pointers.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
@@ -409,3 +488,4 @@ thus also permitting arbitrary user-defined compile-time conditions by aborting 
 * We can change string slice (`str`) types to be backed by a `trait StrSlice` which uses this scheme
   to generate just a single `usize` for the metadata (see also the `[T]` demo).
 * This scheme is forward compatible to adding associated fields later, but it is a breaking change to add such fields to an existing trait.
+* We can add a scheme for safely converting from a wide pointer to its representation struct.
