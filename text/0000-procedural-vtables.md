@@ -78,7 +78,7 @@ unsafe impl CustomProjectionToUnsized for Pointer {
     /// For going from `&SomeStruct<dyn Trait>` to the unsized field
     unsafe fn project_unsized(ptr: Pointer, offset: usize) -> Pointer {
         Pointer {
-            ptr: ptr.ptr,
+            ptr: ptr.ptr.offset(offset),
             vtable: ptr.vtable,
         }
     }
@@ -122,7 +122,7 @@ unsafe impl Unsized for dyn MyTrait {
 impl Drop for dyn MyTrait {
     fn drop(&mut self) {
         unsafe {
-        // using a dummy concrete type for `Pointer`
+            // using a dummy concrete type for `Pointer`
             let ptr = transmute::<&mut dyn Trait, Pointer<()>>(self);
             let drop = ptr.vtable.drop;
             drop(&raw mut ptr.ptr)
@@ -142,7 +142,7 @@ const fn default_vtable<T: MyTrait>() -> VTable {
 }
 ```
 
-Now, if you want to implement a fancier vtable, this RFC enables you to do that.
+If you want to implement a fancier vtable, this RFC enables you to do that.
 
 ## Null terminated strings (std::ffi::CStr)
 
@@ -277,15 +277,14 @@ unsafe impl CustomUnsized for dyn MyTrait {
 
 ## Slicing into matrices via the `Index` trait
 
-The `Index` trait's `index` method returns references. Thus,
-when indexing an `ndarray::Array2` in order to obtain a slice
-into part of that array, we cannot use the `Index` trait and
-have to invoke a function. Right now this means `array.index(s![5..8, 3..])`
-in order to obtain a slice that takes indices 5-7 in the first
-dimension and all indices after the 3rd dimension. Instead of
-having our own `ArrayView` type like what is returned by `Array2::index`
-we can create a trait with a custom vtable and reuse the `Index` trait.
-We keep using the `ArrayView` type as the type of the wide pointer.
+We cannot use the `Index` trait to obtain a slice of an `ndarray::Array2`
+because the `Index` trait's `index` method returns references. As a workaround,
+we have to invoke a function, such as `array.index(s![5..8, 3..])` to obtain 
+a slice that takes indices 5-7 in the first dimension and all indices after
+the 3rd in the second dimension.
+Instead of having our own `ArrayView` type, we can create a trait with a 
+custom vtable and use the `Index` trait. We reuse the `ArrayView` type
+as the type of the wide pointer.
 
 ```rust
 trait Slice2<T> {}
@@ -397,7 +396,7 @@ For regular fields the `CustomProjection` trait handles the extraction of the si
 
 ## Traits managing the unsizing and projecting
 
-When unsizing, the `<dyn MyTrait as CustomUnsize>::unsize` is invoked.
+When unsizing, the `<dyn MyTrait as CustomUnsize>::unsize` method is invoked.
 The only reason that trait must be
 `impl const CustomUnsize` is to restrict what kind of things you can do in there, it's not
 strictly necessary. This restriction may be lifted in the future.
