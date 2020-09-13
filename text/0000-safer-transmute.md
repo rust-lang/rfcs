@@ -460,7 +460,7 @@ pub mod zerocopy {
 
     #[derive(Copy, Clone, PromiseTransmutableInto)]
     #[repr(u8)]
-    pub enum Zero {
+    enum Zero {
         Zero = 0u8
     }
 
