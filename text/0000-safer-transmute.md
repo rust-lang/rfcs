@@ -12,7 +12,7 @@
 We propose traits, namely `TransmuteInto` and `TransmuteFrom`, that are implemented *automatically* for combinations of types that may be safely transmuted. In other words, this RFC makes safe transmutation *as easy as 1..., 2..., `repr(C)`!*
 ```rust
 use core::transmute::{
-    TransmuteInto,
+    transmute,
     stability::{PromiseTransmutableInto, PromiseTransmutableFrom},
 };
 
@@ -22,18 +22,16 @@ pub struct Foo(pub u8, pub u16);
 //                    ^ there's a padding byte here, between these fields
 
 // Transmute fearlessly!
-let _ : Foo = 64u32.transmute_into(); // Alchemy Achieved!
-//                  ^^^^^^^^^^^^^^ provided by the `TransmuteInto` trait
+let _ : Foo = transmute!(64u32); // Alchemy Achieved!
 
-let _ : u32 = Foo(16, 12).transmute_into(); // Compile Error!
+let _ : u32 = transmute!(Foo(16, 12)); // Compile Error!
 
-// error[E0277]: the trait bound `u32: TransmuteFrom<foo::Foo, _>` is not satisfied
-//   --> src/demo.rs:15:27
+// error[E0277]: the trait bound `u32: TransmuteFrom<Foo, _>` is not satisfied
+//   --> src/demo.rs:14:27
 //    |
-// 15 | let _ : u32 = Foo(16, 12).transmute_into(); // Compile Error!
-//    |                           ^^^^^^^^^^^^^^ the trait `TransmuteFrom<foo::Foo, _>` is not implemented for `u32`
+// 14 | let _ : u32 = transmute!(Foo(16, 12)); // Compile Error!
+//    |                          ^^^^^^^^^^^ the trait `TransmuteFrom<Foo, _, _>` is not implemented for `u32`
 //    |
-//   = note: required because of the requirements on the impl of `TransmuteInto<u32, _>` for `foo::Foo`
 //   = note: byte 8 of the source type may be uninitialized; byte 8 of the destination type cannot be uninitialized.
 ```
 
@@ -60,7 +58,7 @@ Given the expressive foundation provided by this RFC, we also envision a range o
 ## Codifying Language Layout Guarantees
 Documentation of Rust's layout guarantees for a type are often spread across countless issues, pull requests, RFCs and various official resources. It can be very difficult to get a straight answer. When transmutation is involved, users must reason about the *combined* layout properties of the source and destination types.
 
-This RFC proposes mechanisms that programmers will use to confidently answer such questions—by checking whether the `TransmuteFrom` and `TransmuteInto` traits are implemented, or (equivalently) by checking whether the `can_transmute` predicate (a `const fn`) is satisfied.
+This RFC proposes mechanisms that programmers will use to confidently answer such questions—by checking whether the `TransmuteFrom` and `TransmuteInto` traits are implemented.
 
 ## Expressing Library Layout Guarantees
 There is no canonical way for crate authors to declare the SemVer layout guarantees of their types. Crate authors currently must state their layout guarantees using prose in their documentation. In contrast to structural stability (e.g., the declared visibility of fields), layout stability is expressed extra-linguistically.
@@ -152,8 +150,8 @@ enum Bool {
     False = 0,
 }
 
-let _ : u8 = Bool::True.transmute_into();
-let _ : u8 = Bool::False.transmute_into();
+let _ : u8 = transmute!(Bool::True);
+let _ : u8 = transmute!(Bool::False);
 ```
 <sup>
 (Note: <code>#[derive(PromiseTransmutableFrom, PromiseTransmutableInto)]</code> annotation connotes that <i>all</i> aspects of <code>Bool</code>'s layout are part of its <a href="#-when-is-a-transmutation-stable">library stability guarantee</a>.)
@@ -162,7 +160,7 @@ let _ : u8 = Bool::False.transmute_into();
 ...because all possible instances of `Bool` are also valid instances of [`u8`]. However, transmuting a [`u8`] into a `Bool` is forbidden:
 ```rust
 /* ⚠️ This example intentionally does not compile. */
-let _ : Bool = u8::default().transmute_into(); // Compile Error!
+let _ : Bool = transmute!(u8::default()); // Compile Error!
 ```
 ...because not all instances of [`u8`] are valid instances of `Bool`.
 
@@ -181,12 +179,12 @@ assert_eq!(mem::size_of::<Packed>(), mem::size_of::<Padded>());
 
 We may safely transmute from `Packed` to `Padded`:
 ```rust
-let _ : Padded = Packed::default().transmute_into();
+let _ : Padded = transmute!(Packed::default());
 ```
 ...but not from `Padded` to `Packed`:
 ```rust
 /* ⚠️ This example intentionally does not compile. */
-let _ : Packed = Padded::default().transmute_into(); // Compile Error!
+let _ : Packed = transmute!(Padded::default()); // Compile Error!
 ```
 ...because doing so would expose two uninitialized padding bytes in `Padded` as if they were initialized bytes in `Packed`.
 
@@ -195,14 +193,14 @@ let _ : Packed = Padded::default().transmute_into(); // Compile Error!
 
 It's well-defined to transmute into a type with fewer bytes than the source type; e.g.:
 ```rust
-let _ : [u8; 16] = [u8; 32]::default().transmute_into();
+let _ : [u8; 16] = transmute!([u8; 32]::default());
 ```
 This transmute truncates away the final sixteen bytes of the `[u8; 32]` value.
 
 A value may ***not*** be transmuted into a type of greater size, if doing so would expose uninitialized bytes as initialized:
 ```rust
 /* ⚠️ This example intentionally does not compile. */
-let _ : [u8; 32] = [u8; 16]::default().transmute_into(); // Compile Error!
+let _ : [u8; 32] = transmute!([u8; 16]::default()); // Compile Error!
 ```
 
 #### Requirements on References
@@ -222,26 +220,26 @@ A [well-defined transmutation] of references must:
 
 You may preserve or decrease the size of the referent type via transmutation:
 ```rust
-let _: &[u8; 3] = (&[0u8; 9]).transmute_into();
+let _: &[u8; 3] = transmute!(&[0u8; 9]);
 ```
 
 However, you may **not**, under any circumstances, *increase* the size of the referent type:
 ```rust
 /* ⚠️ This example intentionally does not compile. */
-let _: &[u8; 9] = (&[0u8; 3]).transmute_into(); // Compile Error! 
+let _: &[u8; 9] = transmute!(&[0u8; 3]); // Compile Error!
 ```
 ##### Preserve or Relax Alignment
 [reference-alignment]: #Preserve-or-Relax-Alignment
 
 Unaligned loads are undefined behavior. You may transmute a reference into reference of more relaxed alignment:
 ```rust
-let _: &[u8; 0] = (&[0u16; 0]).transmute_into();
+let _: &[u8; 0] = transmute!(&[0u16; 0]);
 ```
 
 However, you may **not** transmute a reference into a reference of more-restrictive alignment:
 ```rust
 /* ⚠️ This example intentionally does not compile. */
-let _: &[u16; 0] = (&[0u8; 0]).transmute_into(); // Compile Error! 
+let _: &[u16; 0] = transmute!(&[0u8; 0]); // Compile Error!
 ```
 
 ##### Preserve or Shrink Lifetimes
@@ -251,7 +249,7 @@ You may transmute a reference into a reference of lesser lifetime:
 ```rust
 fn shrink<'a>() -> &'a u8 {
     static long : &'static u8 = &16;
-    long.transmute_into()
+    transmute!(long)
 }
 ```
 
@@ -259,7 +257,7 @@ However, you may **not** transmute a reference into a reference of greater lifet
 ```rust
 /* ⚠️ This example intentionally does not compile. */
 fn extend<'a>(short: &'a u8) -> &'static u8 {
-    short.transmute_into() // Compile Error!
+    transmute!(short) // Compile Error!
 }
 ```
 
@@ -268,14 +266,14 @@ fn extend<'a>(short: &'a u8) -> &'static u8 {
 
 You may preserve or decrease the uniqueness of a reference through transmutation:
 ```rust
-let _: &u8 = (&42u8).transmute_into();
-let _: &u8 = (&mut 42u8).transmute_into();
+let _: &u8 = transmute!(&42u8);
+let _: &u8 = transmute!(&mut 42u8);
 ```
 
 However, you may **not** transmute a shared reference into a unique reference:
 ```rust
 /* ⚠️ This example intentionally does not compile. */
-let _: &mut u8 = (&42u8).transmute_into(); // Compile Error!
+let _: &mut u8 = transmute!(&42u8); // Compile Error!
 ```
 
 ##### Mutate-able References Must Preserve Validity
@@ -290,7 +288,7 @@ Unlike transmutations of owned values, the transmutation of a mutate-able refere
 /* ⚠️ This example intentionally does not compile. */
 let mut x = NonZeroU8::new(42).unwrap();
 {
-    let y : &mut u8 = (&mut x).transmute_into(); // Compile Error!
+    let y : &mut u8 = transmute!(&mut x); // Compile Error!
     *y = 0;
 }
 
@@ -301,7 +299,7 @@ If this example did not produce a compile error, the value of `z` would not be a
 
 
 ### 📖 When is a transmutation safe?
-A well-defined transmutation is ***safe*** if *using* the transmuted value safely cannot violate memory safety. Whereas well-definedness solely concerns the act of transmutation, *safety* is concerned with what might happen with a value *after* transmutation occurs.
+A well-defined transmutation is ***safe*** if *using* the transmuted value safely cannot violate memory safety. Whereas well-definedness solely concerns the act of transmutation, *safety* is concerned with what might happen with a value *after* transmutation occurs. A well-defined transmutation must be safe if the involved types are *implicitly constructable*.
 
 #### Implicit Constructability
 A struct or enum variant is *fully implicitly constructable* at a given location only if, at that location, that type can be instantiated via its *implicit constructor*, and its fields are also *implicitly constructable*.
@@ -388,23 +386,99 @@ pub mod crate_a {
 In the above example, the definitions of both `NonEmptySlice` and its field `NonEmptySliceInner` are marked `pub`, and all fields of these types are marked `pub`. However, `NonEmptySlice` is *not* fully implicitly constructible outside of `crate_a`, because the module containing `NonEmptySliceInner` is not visibile outside of `crate_a`.
 
 #### Constructability and Transmutation
-Transmutation supplies a mechanism for constructing instances of a type *without* invoking its implicit constructor, nor any constructors defined by the type's author.
+Transmutation supplies a mechanism for constructing instances of a type *without* invoking its implicit constructor, nor any constructors defined by the type's author. In the previous examples, it would be *unsafe* to transmute `[usize; 2]` into `NonEmptySlice` outside `crate_a`, because subsequent *safe* use of that value (namely, calling `first`) would violate memory safety:
+```rust
+/* ⚠️ This example intentionally does not compile. */
+// [usize; 2] ⟶ NonEmptySlice
+let _: NonEmptySlice<'static, u8> = transmute!([0usize; 2]); // Compile Error: `NonEmptySlice<_, _>` is not constructible here.
+```
+If a field is private, then instantiating or modifying it via transmutation is not, generally speaking, safe.
 
-In the previous examples, it would be *unsafe* to transmute `0u128` into `NonEmptySlice` outside `crate_a`, because subsequent *safe* use of that value (namely, calling `first`) would violate memory safety. (However, it's completely safe to transmute `NonEmptySlice` into a `u128`.)
-
-For transmutations where the destination type involves mutate-able references, the constructability of the source type is also relevant. Consider:
+For transmutations where the destination type involves mutate-able references, the constructability of the *source* type is also relevant. Consider:
 ```rust
 /* ⚠️ This example intentionally does not compile. */
 let arr = [0u8, 1u8, 2u8];
 let mut x = NonEmptySlice::from_array(&arr, 2);
 {
-    let y : &mut u128 = (&mut x).transmute_into(); // Compile Error!
-    *y = 0u128;
+    // &mut NonEmptySlice ⟶ &mut [usize; 2]
+    let y : &mut u128 = transmute!(&mut x) // Compile Error! `&mut NonEmptySlice` is not constructible here.
+    *y[0] = 0;
+    *y[1] = 0;
 }
 
 let z : NonEmptySlice<u8> = x;
 ```
 If this example did not produce a compile error, the value of `z` would not be a safe instance of its type, `NonEmptySlice`, because `z.first()` would dereference a null pointer.
+
+#### Constructability and Scope
+Whether a type is fully implicitly constructable will depends on the *scope* in which that question is asked. Consider:
+```rust
+pub mod a {
+
+    #[repr(C)] pub struct Foo(private::Bar);
+
+    mod private {
+        #[repr(C)] pub struct Bar;
+    }
+
+    // `Foo` is fully implicitly constructible in this module.
+    const _: Foo = Foo { private::Bar };
+
+    // Thus, `Foo` is transmutable in this module!
+    const _: Foo = transmute!(());
+}
+
+pub mod b {
+    use super::a;
+
+    // `Foo` is NOT fully implicitly constructible in this module.
+    const _: Foo = a::Foo { a::private::Bar }; // Compile Error: the module `a::private` is private.
+
+    // Thus, `Foo` is NOT transmutable in this module:
+    const _: Foo = transmute!(()); // Compile Error: `Foo` is not constructible here.
+}
+```
+
+The `Constructible` marker trait makes the relationship between scope and constructability explicit:
+```rust
+pub unsafe trait Constructible<Scope>
+{}
+```
+A type `T` is `Constructible<Scope>`, if it is fully implicitly constructible in the scope represented by the type `Scope`. These `Scope` types are generated by the `Here!()` macro, which produces a type that uniquely identifies its invocation scope.
+
+The `transmute!` macro provides a shorthand for safely transmuting a value using its invocation scope as its reference frame:
+```rust
+pub macro transmute($expr: expr) {
+    TransmuteFrom::<_, Here!()>::transmute_from($expr)
+    //              ┯  ━━━┯━━━
+    //              │     ┕ check constructability from `transmute!`'s invocation scope
+    //              ┕ the destination type of the transmute (`_` used to infer the type from context)
+}
+```
+
+The explicit `Scope` parameter of `TransmuteFrom` makes possible the creation of generic abstractions over it. For instance, consider a hypothetical `FromBytes` trait that indicates whether `Self` is safely initializable from a a sufficiently large buffer of `u8`s:
+```rust
+pub unsafe trait FromBytes
+{}
+
+unsafe impl<Dst> FromBytes for Dst
+where
+    Dst: TransmuteFrom<[u8; usize::MAX], ??? >,
+{}
+```
+The above definition leaves ambiguous (`???`) the scope in which the constructability of `Dst` is checked: is it the from the perspective of where this trait is defined, or where this trait is *used*? You probably do *not* intend for this trait to *only* be usable with `Dst` types that are defined in the same scope as the `FromBytes` trait!
+
+Adding an explicit `Scope` parameter to `FromBytes` makes this unambiguous; the transmutability of `Dst` should be assessed from where the trait is used, *not* where it is defined:
+```rust
+pub unsafe trait FromBytes<Scope>
+{}
+
+unsafe impl<Dst, Scope> FromBytes<Scope> for Dst
+where
+    Dst: TransmuteFrom<[u8; usize::MAX], Scope>,
+{}
+```
+
 
 ### 📖 When is a transmutation stable?
 [stability]: #-when-is-a-transmutation-stable
@@ -417,18 +491,14 @@ The question is, then: *how can the author of a type reason about transmutations
 
 You may declare the stability guarantees of your type by implementing one or both of two traits:
 ```rust
-pub trait PromiseTransmutableFrom
-where
-    Self::Archetype: PromiseTransmutableFrom
+pub trait PromiseTransmutableFrom<Scope>
 {
-    type Archetype: TransmuteInto<Self, NeglectStability>
+    type Archetype: TransmuteInto<Self, Scope, NeglectStability>;
 }
 
-pub trait PromiseTransmutableInto
-where
-    Self::Archetype: PromiseTransmutableInto,
+pub trait PromiseTransmutableInto<Scope>
 {
-    type Archetype: TransmuteFrom<Self, NeglectStability>
+    type Archetype: TransmuteFrom<Self, Scope, NeglectStability>;
 }
 ```
 
@@ -441,18 +511,18 @@ You are free to change the layout of your type however you like between minor cr
 #### Stability & Transmutation
 Together with the `PromiseTransmutableFrom` and `PromiseTransmutableInto` traits, this impl of `TransmuteFrom` constitutes the formal definition of transmutation stability:
 ```rust
-unsafe impl<Src, Dst> TransmuteFrom<Src> for Dst
+unsafe impl<Src, Dst, Scope> TransmuteFrom<Src, Scope> for Dst
 where
-    Src: PromiseTransmutableInto,
-    Dst: PromiseTransmutableFrom,
+    Src: PromiseTransmutableInto<Scope>,
+    Dst: PromiseTransmutableFrom<Scope>,
 
-    Dst::Archetype: TransmuteFrom<Src::Archetype, NeglectStability>
+    Dst::Archetype: TransmuteFrom<Src::Archetype, Scope, NeglectStability>
 {}
 ```
 Why is this safe? Can we really safely judge whether `Dst` is transmutable from `Src` by assessing the transmutability of two different types? Yes! Transmutability is *transitive*. Concretely, if we can safely transmute:
   - `Src` to `Src::Archetype` (enforced by `Src: PromiseTransmutableInto`), and
   - `Dst::Archetype` to `Dst` (enforced by `Dst: PromiseTransmutableFrom`), and
-  - `Src::Archetype` to `Dst::Archetype` (enforced by `Dst::Archetype: TransmuteFrom<Src::Archetype, NeglectStability>`),
+  - `Src::Archetype` to `Dst::Archetype` (enforced by `Dst::Archetype: TransmuteFrom<Src::Archetype, Scope, NeglectStability>`),
 
 ...then it follows that we can safely transmute `Src` to `Dst` in three steps:
   1. we transmute `Src` to `Src::Archetype`,
@@ -477,17 +547,17 @@ const _: () = {
     use core::transmute::stability::PromiseTransmutableFrom;
 
     #[repr(C)]
-    pub struct TransmutableFromArchetype(
-        pub <Bar as PromiseTransmutableFrom>::Archetype,
-        pub <Baz as PromiseTransmutableFrom>::Archetype,
+    pub struct TransmutableFromArchetype<Scope>(
+        pub <Bar as PromiseTransmutableFrom<Scope>>::Archetype,
+        pub <Baz as PromiseTransmutableFrom<Scope>>::Archetype,
     );
 
-    impl PromiseTransmutableFrom for TransmutableFromArchetype {
+    impl<Scope> PromiseTransmutableFrom<Scope> for TransmutableFromArchetype<Scope> {
         type Archetype = Self;
     }
 
-    impl PromiseTransmutableFrom for Foo {
-        type Archetype = TransmutableFromArchetype;
+    impl<Scope> PromiseTransmutableFrom<Scope> for Foo {
+        type Archetype = TransmutableFromArchetype<Scope>;
     }
 };
 
@@ -496,17 +566,17 @@ const _: () = {
     use core::transmute::stability::PromiseTransmutableInto;
 
     #[repr(C)]
-    pub struct TransmutableIntoArchetype(
-        pub <Bar as PromiseTransmutableInto>::Archetype,
-        pub <Baz as PromiseTransmutableInto>::Archetype,
+    pub struct TransmutableIntoArchetype<Scope>(
+        pub <Bar as PromiseTransmutableInto<Scope>>::Archetype,
+        pub <Baz as PromiseTransmutableInto<Scope>>::Archetype,
     );
 
-    impl PromiseTransmutableFrom for TransmutableIntoArchetype {
+    impl<Scope> PromiseTransmutableInto<Scope> for TransmutableIntoArchetype<Scope> {
         type Archetype = Self;
     }
 
-    impl PromiseTransmutableInto for Foo {
-        type Archetype = TransmutableIntoArchetype;
+    impl<Scope> PromiseTransmutableInto<Scope> for Foo<Scope> {
+        type Archetype = TransmutableIntoArchetype<Scope>;
     }
 };
 ```
@@ -526,18 +596,15 @@ The alignment of `Foo` affects transmutability of `&Foo`. A `&Foo` cannot be saf
 const _: () = {
     use core::transmute::stability::PromiseTransmutableFrom;
 
+    // 2^29 is currently the maximum alignment
     #[repr(C, align(536870912))]
-    pub struct TransmutableFromArchetype(
-        pub <Bar as PromiseTransmutableFrom>::Archetype,
-        pub <Baz as PromiseTransmutableFrom>::Archetype,
+    pub struct TransmutableFromArchetype<Scope>(
+        pub <Bar as PromiseTransmutableFrom<Scope>>::Archetype,
+        pub <Baz as PromiseTransmutableFrom<Scope>>::Archetype,
     );
 
-    impl PromiseTransmutableFrom for TransmutableFromArchetype {
-        type Archetype = Self;
-    }
-
-    impl PromiseTransmutableFrom for Foo {
-        type Archetype = TransmutableFromArchetype;
+    impl<Scope> PromiseTransmutableFrom<Scope> for Foo {
+        type Archetype = TransmutableFromArchetype<Scope>;
     }
 };
 ```
@@ -547,17 +614,13 @@ const _: () = {
     use core::transmute::stability::PromiseTransmutableInto;
 
     #[repr(C, packed(1))]
-    pub struct TransmutableIntoArchetype(
-        pub <Bar as TransmutableIntoArchetype>::Archetype,
-        pub <Baz as TransmutableIntoArchetype>::Archetype,
+    pub struct TransmutableIntoArchetype<Scope>(
+        pub <Bar as TransmutableIntoArchetype<Scope>>::Archetype,
+        pub <Baz as TransmutableIntoArchetype<Scope>>::Archetype,
     );
 
-    impl PromiseTransmutableInto for TransmutableIntoArchetype {
-        type Archetype = Self;
-    }
-
-    impl PromiseTransmutableInto for Foo {
-        type Archetype = TransmutableIntoArchetype;
+    impl<Scope> PromiseTransmutableInto<Scope> for Foo {
+        type Archetype = TransmutableIntoArchetype<Scope>;
     }
 };
 ```
@@ -570,7 +633,7 @@ Two traits provide mechanisms for transmutation between types:
 ```rust
 // this trait is implemented automagically by the compiler
 #[lang = "transmute_from"]
-pub unsafe trait TransmuteFrom<Src: ?Sized, Neglect = ()>
+pub unsafe trait TransmuteFrom<Src: ?Sized, Scope, Neglect = ()>
 where
     Neglect: TransmuteOptions,
 {
@@ -606,7 +669,7 @@ where
 }
 
 // implemented in terms of `TransmuteFrom`
-pub unsafe trait TransmuteInto<Dst: ?Sized, Neglect = ()>
+pub unsafe trait TransmuteInto<Dst: ?Sized, Scope, Neglect = ()>
 where
     Neglect: TransmuteOptions,
 {
@@ -623,10 +686,10 @@ where
         Neglect: TransmuteOptions;
 }
 
-unsafe impl<Src, Dst, Neglect> TransmuteInto<Dst, Neglect> for Src
+unsafe impl<Src, Dst, Scope, Neglect> TransmuteInto<Dst, Scope, Neglect> for Src
 where
     Src: ?Sized,
-    Dst: ?Sized + TransmuteFrom<Src, Neglect>,
+    Dst: ?Sized + TransmuteFrom<Src, Scope, Neglect>,
     Neglect: TransmuteOptions,
 {
     ...
@@ -638,7 +701,7 @@ In the above definitions, `Src` represents the source type of the transmutation,
 ### Neglecting Static Checks
 [options]: #Neglecting-Static-Checks
 
-The default value of the `Neglect` parameter, `()`, statically forbids transmutes that are unsafe, ill-defined, or unstable. However, you may explicitly opt-out of some static checks:
+The default value of the `Neglect` parameter, `()`, statically forbids transmutes that are unsafe, ill-defined, or unstable. However, you may explicitly opt-out of some static checks; e.g.:
 
 | Transmute Option    | Usable With                                             |
 |---------------------|---------------------------------------------------------|
@@ -674,15 +737,15 @@ impl TransmuteOptions for NeglectStability {}
 Prior to the adoption of the [stability declaration traits][stability], crate authors documented the layout guarantees of their types with doc comments. The `TransmuteFrom` and `TransmuteInto` traits and methods may be used with these types by requesting that the stability check is neglected; for instance:
 
 ```rust
-fn serialize<W: Write>(val : LibraryType, dst: W) -> std::io::Result<()>
+fn serialize<W: Write, Scope>(val : LibraryType, dst: W) -> std::io::Result<()>
 where
-    LibraryType: TransmuteInto<[u8; size_of::<LibraryType>()], NeglectStability>
+    LibraryType: TransmuteInto<[u8; size_of::<LibraryType>()], Scope, NeglectStability>
 {
     ...
 }
 ```
 
-Neglecting stability over-eagerly cannot cause ill-definedness or unsafety. For this reason, it is the only transmutation option available on the safe methods `transmute_from` and `transmute_into`. However, neglecting stability over-eagerly may cause your code to cease compiling if the authors of the source and destination types make changes that affect their layout.
+Neglecting stability over-eagerly cannot cause ill-definedness or unsafety. For this reason, it is the only transmutation option available on the safe methods `transmute_from` and `transmute_into`. However, neglecting stability over-eagerly may cause your code to behave incorrectly or cease compiling if the authors of the source and destination types make changes that affect their layout.
 
 By using the `NeglectStability` option to transmute types you do not own, you are committing to ensure that your reliance on these types' layouts is consistent with their documented stability guarantees.
 
@@ -702,9 +765,9 @@ By using the `NeglectAlignment` option, you are committing to ensure that the tr
 ///
 /// This produces `None` if the referent isn't appropriately
 /// aligned, as required by the destination type.
-pub fn try_cast_ref<'t, 'u, T, U>(src: &'t T) -> Option<&'u U>
+pub fn try_cast_ref<'t, 'u, Scope, T, U>(src: &'t T) -> Option<&'u U>
 where
-    &'t T: TransmuteInto<&'u U, NeglectAlignment>,
+    &'t T: TransmuteInto<&'u U, Scope, NeglectAlignment>,
 {
     if (src as *const T as usize) % align_of::<U>() != 0 {
         None
@@ -727,7 +790,7 @@ enum Bool {
 }
 
 /* ⚠️ This example intentionally does not compile. */
-let _ : Bool  = some_u8_value.transmute_into(); // Compile Error!
+let _ : Bool  = transmute!(some_u8_value); // Compile Error!
 ```
 The `NeglectValidity` option disables this check.
 ```rust
@@ -745,15 +808,15 @@ enum Bool {
     False = 0,
 }
 
-pub trait TryIntoBool
+pub trait TryIntoBool<Scope>
 {
     fn try_into_bool(self) -> Option<Bool>;
 }
 
-impl<T> TryIntoBool for T
+impl<T, Scope> TryIntoBool<Scope> for T
 where
     T: TransmuteInto<u8>,
-    u8: TransmuteInto<Bool, NeglectValidity>
+    u8: TransmuteInto<Bool, Scope, NeglectValidity>
 {
     fn try_into_bool(self) -> Option<Bool> {
         let val: u8 = self.transmute_into();
@@ -777,42 +840,114 @@ Even with `NeglectValidity`, the compiler will statically reject transmutations 
 #[derive(PromiseTransmutableFrom)]
 #[repr(C)] enum Bar { Z = 42 }
 
-let _ = <Bar as TransmuteFrom<Foo, NeglectValidity>::unsafe_transmute_from(Foo::N) // Compile error!
+let _ = <Bar as TransmuteFrom<Foo, Here!(), NeglectValidity>::unsafe_transmute_from(Foo::N) // Compile error!
 ```
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-
 ## Implementation Guidance
-The *only* item defined by this RFC requiring special compiler support is `TransmuteFrom`. To realize this RFC's proposal of safe transmutation between different types, this item will require compiler support. However, the *most* minimal acceptable implementation of `TransmuteFrom` can be achieved entirely in-language:
+Three items in this RFC require special compiler support:
+  - `Here!()`
+  - `Constructible`
+  - `TransmuteFrom`
 
+### Implementing `Here!()`
+The `Here!` macro produces a type that uniquely identifies its invocation scope. For instance:
 ```rust
-/// A type is transmutable into itself.
-unsafe impl<T, Neglect> TransmuteFrom<T, Neglect> for T
-where
-    Neglect: TransmuteOptions
-{}
+use static_assertions::*;
 
-/// A transmutation is *stable* if...
-unsafe impl<Src, Dst> TransmuteFrom<Src> for Dst
-where
-    Src: PromiseTransmutableInto,
-    Dst: PromiseTransmutableFrom,
-    <Dst as PromiseTransmutableFrom>::Archetype:
-        TransmuteFrom<
-            <Src as PromiseTransmutableInto>::Archetype,
-            NeglectStability
-        >
-{}
+type A = Here!();
+type B = Here!();
+
+/* Types A and !::B are equal */
+assert_type_eq_all!(A, B);
+
+trait Foo {
+    type C;
+    const CONST: ();
+}
+
+impl Foo for ! {
+    type C = Here!();
+
+    const CONST: () = {
+        type D = Here!();
+
+        /* A, B and !::C are equal */
+        assert_type_eq_all!(A, B, !::C);
+
+        /* C and D are NOT equal; C and D inhabit different scopes */
+        assert_type_ne_all!(C, D);
+    };
+}
 ```
-This [minimal implementation][minimal-impl] is sufficient for convincing the compiler to accept basic stability declarations, such as those of Rust's primitive types. It is *insufficient* for making the compiler accept transmutations between *different* types (and, consequently, complex stability declarations). Implementers should use this as a starting point.
+Scope types should (as much as possible) pretty print in compiler error messages as their definition path.
 
-### Listing for Initial, Minimal Implementation
-[minimal-impl]: #Listing-for-Initial-Minimal-Implementation
-This listing is both a minimal implementation of this RFC (excepting the automatic derives) and the **canonical specification** of this RFC's API surface ([playground](https://play.rust-lang.org/?version=nightly&mode=debug&edition=2018&gist=1ff1700e6dba595f1e600d20da5d6387)):
+### Implementing `Constructible`
+The compiler implements `Constructible<Scope>` for `T` if `T` is fully implicitly constructible in the scope uniquely identified by the type `Scope`.
+
+A type `T` is fully implicitly constructible in a particular scope if:
+  - `T`'s implicit constructor is reachable from the scope, and either:
+    - `T` has no fields, or
+    - `T`'s fields are fully implicitly constructible from the scope.
+
+The `Constructible` trait does not ever need to be made stable, or even visible (à la the virtual `Freeze` trait). It is merely a useful device for implementing `TransmuteFrom`.
+
+### Implementing `TransmuteFrom`
+The implementation of `TransmuteFrom` is completely internal to the compiler (à la [`Sized`](https://doc.rust-lang.org/nightly/nightly-rustc/rustc_middle/ty/struct.TyS.html#method.is_sized) and [`Freeze`](https://doc.rust-lang.org/nightly/nightly-rustc/rustc_middle/ty/struct.TyS.html#method.is_freeze)).
+
+#### Stability and Transmutation
+Unless `NeglectStability` is used as a `Neglect` option, a `Src` is *stably* transmutable into `Dst` in a given `Scope` if:
+  1. `Src: PromiseTransmutableInto`
+  2. `Dst: PromiseTransmutableFrom`
+  3. `Dst::Archetype: TransmuteFrom<Src::Archetype, Scope, Neglect>`
+
+#### Constructability and Transmutation
+Unless `NeglectConstructability` is used as `Neglect` option, a `Src` is *safely* transmutable into `Dst` in a given `Scope` if:
+  1. `Dst: Constructible<Scope>`
+  2. `Dst: TransmuteFrom<Src, Scope, Neglect>`
+
+If `Src` is a mutatable reference, then additionally:
+  1. `Src: Constructible<Scope>`
+
+
+### Minimal Useful Stabilization Surface
+Stabilizing *only* these items of the Initial Smart Implementation will cover many use-cases:
+  - `transmute!()`
+  - `#[derive(PromiseTransmutableFrom, PromiseTransmutableInto)]`
+  - `#[derive(PromiseTransmutableInto)]`
+
+(If the [`PromiseTransmutable` shorthand extension][extension-promisetransmutable-shorthand] is accepted, this may be further reduced to just *two* items: `transmute!()` and `#[derive(PromiseTransmutable)]`.)
+
+To define traits that generically abstract over `TransmuteFrom`, these items must be stabilized:
+  - `Here!()`
+  - `TransmuteFrom`
+  - `TransmuteOptions` and `SafeTransmuteOptions`
+
+Stabilizing `PromiseTransmutableFrom` and `PromiseTransmutableInto` will additionally allow end-users make limited stability promises, and to make stability promises for types where `derive` is too restrictive (namely, types containing `PhantomData`).
+
+Additionally stabilizing `TransmuteInto` and `NeglectStability` will additionally allow end-users to implement `PromiseTransmutableFrom` and `PromiseTransmutableInto` in cases where the `Archetype`'s trait bounds must be repeated for lack of [implied bounds](https://github.com/rust-lang/rust/issues/44491); e.g.:
 ```rust
-#![feature(untagged_unions,const_fn,const_fn_union)] // for the impl of transmute free functions
+impl<T, N, Scope> PromiseTransmutableFrom<Scope> for GenericArray<T, N>
+where
+    T: PromiseTransmutableFrom<Scope>,
+    N: ArrayLength<T>,
+
+    // for lack of implied bounds, we must repeat the bounds on `Archetype`,
+    // which requires naming `NeglectStability`
+    GenericArray<T::Archetype, N>: TransmuteInto<Self, Scope, NeglectStability>
+{
+    type Archetype = GenericArray<T::Archetype, N>;
+}
+```
+
+
+### Complete API Surface
+[minimal-impl]: #Listing-for-Initial-Minimal-Implementation
+This listing is both a **canonical specification** of this RFC's API surface ([playground](https://play.rust-lang.org/?version=nightly&mode=debug&edition=2018&gist=ec5c618d843acd7c40855ebfb386d49a)):
+```rust
+#![feature(untagged_unions,const_fn,const_fn_union)] // for the impl of unsafe_transmute_from
 #![feature(const_generics)] // for stability declarations on `[T; N]`
 #![feature(decl_macro)] // for stub implementations of derives
 #![feature(never_type)] // for stability declarations on `!`
@@ -824,44 +959,15 @@ pub mod transmute {
 
     use {options::*, stability::*};
 
-    /// Reinterprets the bits of a value of one type as another type, safely.
-    ///
-    /// Use `()` for `Neglect` if you do not wish to neglect any static checks.
-    #[inline(always)]
-    pub const fn safe_transmute<Src, Dst, Neglect>(src: Src) -> Dst
-    where
-        Dst: TransmuteFrom<Src, Neglect>,
-        Neglect: SafeTransmuteOptions
-    {
-        unsafe { unsafe_transmute::<Src, Dst, Neglect>(src) }
-    }
-
-    /// Reinterprets the bits of a value of one type as another type, potentially unsafely.
-    ///
-    /// The onus is on you to ensure that calling this method is safe.
-    #[inline(always)]
-    pub const unsafe fn unsafe_transmute<Src, Dst, Neglect>(src: Src) -> Dst
-    where
-        Dst: TransmuteFrom<Src, Neglect>,
-        Neglect: TransmuteOptions
-    {
-        use core::mem::ManuallyDrop;
-
-        #[repr(C)]
-        union Transmute<Src, Dst> {
-            src: ManuallyDrop<Src>,
-            dst: ManuallyDrop<Dst>,
-        }
-
-        unsafe {
-            ManuallyDrop::into_inner(Transmute { src: ManuallyDrop::new(src) }.dst)
-        }
+    /// Safely and stably transmute $expr
+    pub macro transmute($expr: expr) {
+        TransmuteFrom::<_, Here!()>::transmute_from($expr)
     }
 
     /// `Self: TransmuteInto<Dst, Neglect`, if the compiler accepts the stability,
-    /// safety, and well-definedness of transmuting `Self` into `Dst`, notwithstanding
+    /// safety, and soundness of transmuting `Self` into `Dst`, notwithstanding
     /// a given set of static checks to `Neglect`.
-    pub unsafe trait TransmuteInto<Dst: ?Sized, Neglect = ()>
+    pub unsafe trait TransmuteInto<Dst: ?Sized, Scope, Neglect = ()>
     where
         Neglect: TransmuteOptions,
     {
@@ -882,10 +988,10 @@ pub mod transmute {
             Neglect: TransmuteOptions;
     }
 
-    unsafe impl<Src, Dst, Neglect> TransmuteInto<Dst, Neglect> for Src
+    unsafe impl<Src, Dst, Scope, Neglect> TransmuteInto<Dst, Scope, Neglect> for Src
     where
         Src: ?Sized,
-        Dst: ?Sized + TransmuteFrom<Src, Neglect>,
+        Dst: ?Sized + TransmuteFrom<Src, Scope, Neglect>,
         Neglect: TransmuteOptions,
     {
         #[inline(always)]
@@ -910,9 +1016,9 @@ pub mod transmute {
     }
 
     /// `Self: TransmuteInto<Src, Neglect`, if the compiler accepts the stability,
-    /// safety, and well-definedness of transmuting `Src` into `Self`, notwithstanding
+    /// safety, and soundness of transmuting `Src` into `Self`, notwithstanding
     /// a given set of static checks to `Neglect`.
-    pub unsafe trait TransmuteFrom<Src: ?Sized, Neglect = ()>
+    pub unsafe trait TransmuteFrom<Src: ?Sized, Scope, Neglect = ()>
     where
         Neglect: TransmuteOptions,
     {
@@ -937,24 +1043,25 @@ pub mod transmute {
             Self: Sized,
             Neglect: TransmuteOptions,
         {
-            unsafe_transmute::<Src, Self, Neglect>(src)
+            use core::mem::ManuallyDrop;
+
+            #[repr(C)]
+            union Transmute<Src, Dst> {
+                src: ManuallyDrop<Src>,
+                dst: ManuallyDrop<Dst>,
+            }
+
+            unsafe {
+                ManuallyDrop::into_inner(Transmute { src: ManuallyDrop::new(src) }.dst)
+            }
         }
     }
 
     /// A type is always transmutable from itself.
     // This impl will be replaced with a compiler-supported for arbitrary source and destination types.
-    unsafe impl<T> TransmuteFrom<T, NeglectStability> for T {}
-
-    /// A type is *stably* transmutable if...
-    unsafe impl<Src, Dst> TransmuteFrom<Src> for Dst
+    unsafe impl<T: ?Sized, Scope, Neglect> TransmuteFrom<T, Scope, Neglect> for T
     where
-        Src: PromiseTransmutableInto,
-        Dst: PromiseTransmutableFrom,
-        <Dst as PromiseTransmutableFrom>::Archetype:
-            TransmuteFrom<
-                <Src as PromiseTransmutableInto>::Archetype,
-                NeglectStability
-            >
+        Neglect: TransmuteOptions
     {}
 
     /// Traits for declaring the SemVer stability of types.
@@ -963,21 +1070,16 @@ pub mod transmute {
         use super::{TransmuteFrom, TransmuteInto, options::NeglectStability};
 
         /// Declare that transmuting `Self` into `Archetype` is SemVer-stable.
-        pub trait PromiseTransmutableInto
-        where
-            Self::Archetype: PromiseTransmutableInto
-        {
+        pub trait PromiseTransmutableInto<Scope> {
             /// The `Archetype` must be safely transmutable from `Self`.
-            type Archetype: TransmuteFrom<Self, NeglectStability>;
+            type Archetype: TransmuteFrom<Self, Scope, NeglectStability>;
         }
 
         /// Declare that transmuting `Self` from `Archetype` is SemVer-stable.
-        pub trait PromiseTransmutableFrom
-        where
-            Self::Archetype: PromiseTransmutableFrom
+        pub trait PromiseTransmutableFrom<Scope>
         {
             /// The `Archetype` must be safely transmutable into `Self`.
-            type Archetype: TransmuteInto<Self, NeglectStability>;
+            type Archetype: TransmuteInto<Self, Scope, NeglectStability>;
         }
 
 
@@ -994,147 +1096,131 @@ pub mod transmute {
         }
 
 
-        impl PromiseTransmutableInto for     ! {type Archetype = Self;}
-        impl PromiseTransmutableFrom for     ! {type Archetype = Self;}
+        impl<Scope> PromiseTransmutableInto<Scope> for     ! {type Archetype = Self;}
+        impl<Scope> PromiseTransmutableFrom<Scope> for     ! {type Archetype = Self;}
+        impl<Scope> PromiseTransmutableInto<Scope> for    () {type Archetype = Self;}
+        impl<Scope> PromiseTransmutableFrom<Scope> for    () {type Archetype = Self;}
 
-        impl PromiseTransmutableInto for    () {type Archetype = Self;}
-        impl PromiseTransmutableFrom for    () {type Archetype = Self;}
+        impl<Scope> PromiseTransmutableInto<Scope> for   f32 {type Archetype = Self;}
+        impl<Scope> PromiseTransmutableFrom<Scope> for   f32 {type Archetype = Self;}
+        impl<Scope> PromiseTransmutableInto<Scope> for   f64 {type Archetype = Self;}
+        impl<Scope> PromiseTransmutableFrom<Scope> for   f64 {type Archetype = Self;}
 
-        impl PromiseTransmutableInto for   f32 {type Archetype = Self;}
-        impl PromiseTransmutableFrom for   f32 {type Archetype = Self;}
-        impl PromiseTransmutableInto for   f64 {type Archetype = Self;}
-        impl PromiseTransmutableFrom for   f64 {type Archetype = Self;}
+        impl<Scope> PromiseTransmutableInto<Scope> for    i8 {type Archetype = Self;}
+        impl<Scope> PromiseTransmutableFrom<Scope> for    i8 {type Archetype = Self;}
+        impl<Scope> PromiseTransmutableInto<Scope> for   i16 {type Archetype = Self;}
+        impl<Scope> PromiseTransmutableFrom<Scope> for   i16 {type Archetype = Self;}
+        impl<Scope> PromiseTransmutableInto<Scope> for   i32 {type Archetype = Self;}
+        impl<Scope> PromiseTransmutableFrom<Scope> for   i32 {type Archetype = Self;}
+        impl<Scope> PromiseTransmutableInto<Scope> for   i64 {type Archetype = Self;}
+        impl<Scope> PromiseTransmutableFrom<Scope> for   i64 {type Archetype = Self;}
+        impl<Scope> PromiseTransmutableInto<Scope> for  i128 {type Archetype = Self;}
+        impl<Scope> PromiseTransmutableFrom<Scope> for  i128 {type Archetype = Self;}
+        impl<Scope> PromiseTransmutableInto<Scope> for isize {type Archetype = Self;}
+        impl<Scope> PromiseTransmutableFrom<Scope> for isize {type Archetype = Self;}
 
-        impl PromiseTransmutableInto for    i8 {type Archetype = Self;}
-        impl PromiseTransmutableFrom for    i8 {type Archetype = Self;}
-        impl PromiseTransmutableInto for   i16 {type Archetype = Self;}
-        impl PromiseTransmutableFrom for   i16 {type Archetype = Self;}
-        impl PromiseTransmutableInto for   i32 {type Archetype = Self;}
-        impl PromiseTransmutableFrom for   i32 {type Archetype = Self;}
-        impl PromiseTransmutableInto for   i64 {type Archetype = Self;}
-        impl PromiseTransmutableFrom for   i64 {type Archetype = Self;}
-        impl PromiseTransmutableInto for  i128 {type Archetype = Self;}
-        impl PromiseTransmutableFrom for  i128 {type Archetype = Self;}
-        impl PromiseTransmutableInto for isize {type Archetype = Self;}
-        impl PromiseTransmutableFrom for isize {type Archetype = Self;}
-
-        impl PromiseTransmutableInto for    u8 {type Archetype = Self;}
-        impl PromiseTransmutableFrom for    u8 {type Archetype = Self;}
-        impl PromiseTransmutableInto for   u16 {type Archetype = Self;}
-        impl PromiseTransmutableFrom for   u16 {type Archetype = Self;}
-        impl PromiseTransmutableInto for   u32 {type Archetype = Self;}
-        impl PromiseTransmutableFrom for   u32 {type Archetype = Self;}
-        impl PromiseTransmutableInto for   u64 {type Archetype = Self;}
-        impl PromiseTransmutableFrom for   u64 {type Archetype = Self;}
-        impl PromiseTransmutableInto for  u128 {type Archetype = Self;}
-        impl PromiseTransmutableFrom for  u128 {type Archetype = Self;}
-        impl PromiseTransmutableInto for usize {type Archetype = Self;}
-        impl PromiseTransmutableFrom for usize {type Archetype = Self;}
+        impl<Scope> PromiseTransmutableInto<Scope> for    u8 {type Archetype = Self;}
+        impl<Scope> PromiseTransmutableFrom<Scope> for    u8 {type Archetype = Self;}
+        impl<Scope> PromiseTransmutableInto<Scope> for   u16 {type Archetype = Self;}
+        impl<Scope> PromiseTransmutableFrom<Scope> for   u16 {type Archetype = Self;}
+        impl<Scope> PromiseTransmutableInto<Scope> for   u32 {type Archetype = Self;}
+        impl<Scope> PromiseTransmutableFrom<Scope> for   u32 {type Archetype = Self;}
+        impl<Scope> PromiseTransmutableInto<Scope> for   u64 {type Archetype = Self;}
+        impl<Scope> PromiseTransmutableFrom<Scope> for   u64 {type Archetype = Self;}
+        impl<Scope> PromiseTransmutableInto<Scope> for  u128 {type Archetype = Self;}
+        impl<Scope> PromiseTransmutableFrom<Scope> for  u128 {type Archetype = Self;}
+        impl<Scope> PromiseTransmutableInto<Scope> for usize {type Archetype = Self;}
+        impl<Scope> PromiseTransmutableFrom<Scope> for usize {type Archetype = Self;}
 
         use core::marker::PhantomData;
-        impl<T: ?Sized> PromiseTransmutableInto for PhantomData<T> { type Archetype = Self; }
-        impl<T: ?Sized> PromiseTransmutableFrom for PhantomData<T> { type Archetype = Self; }
+        impl<T: ?Sized, Scope> PromiseTransmutableInto<Scope> for PhantomData<T> { type Archetype = Self; }
+        impl<T: ?Sized, Scope> PromiseTransmutableFrom<Scope> for PhantomData<T> { type Archetype = Self; }
 
 
-        impl<T, const N: usize> PromiseTransmutableInto for [T; N]
+        impl<T, Scope, const N: usize> PromiseTransmutableInto<Scope> for [T; N]
         where
-            T: PromiseTransmutableInto,
-            [T::Archetype; N]
-                : TransmuteFrom<Self, NeglectStability>
-                + PromiseTransmutableInto,
+            T: PromiseTransmutableInto<Scope>,
+            [T::Archetype; N]: TransmuteFrom<Self, Scope, NeglectStability>
         {
             type Archetype = [T::Archetype; N];
         }
 
-        impl<T, const N: usize> PromiseTransmutableFrom for [T; N]
+        impl<T, Scope, const N: usize> PromiseTransmutableFrom<Scope> for [T; N]
         where
-            T: PromiseTransmutableFrom,
-            [T::Archetype; N]
-                : TransmuteInto<Self, NeglectStability>
-                + PromiseTransmutableFrom,
+            T: PromiseTransmutableFrom<Scope>,
+            [T::Archetype; N]: TransmuteInto<Self, Scope, NeglectStability>
         {
             type Archetype = [T::Archetype; N];
         }
 
 
-        impl<T: ?Sized> PromiseTransmutableInto for *const T
+        impl<T: ?Sized, Scope> PromiseTransmutableInto<Scope> for *const T
         where
-            T: PromiseTransmutableInto,
-            *const T::Archetype
-                : TransmuteFrom<Self, NeglectStability>
-                + PromiseTransmutableInto,
+            T: PromiseTransmutableInto<Scope>,
+            *const T::Archetype: TransmuteFrom<Self, Scope, NeglectStability>
         {
             type Archetype = *const T::Archetype;
         }
 
-        impl<T: ?Sized> PromiseTransmutableFrom for *const T
+        impl<T: ?Sized, Scope> PromiseTransmutableFrom<Scope> for *const T
         where
-            T: PromiseTransmutableFrom,
-            *const T::Archetype
-                : TransmuteInto<Self, NeglectStability>
-                + PromiseTransmutableFrom,
+            T: PromiseTransmutableFrom<Scope>,
+            *const T::Archetype: TransmuteInto<Self, Scope, NeglectStability>
         {
             type Archetype = *const T::Archetype;
         }
 
 
-        impl<T: ?Sized> PromiseTransmutableInto for *mut T
+        impl<T: ?Sized, Scope> PromiseTransmutableInto<Scope> for *mut T
         where
-            T: PromiseTransmutableInto,
-            *mut T::Archetype
-                : TransmuteFrom<Self, NeglectStability>
-                + PromiseTransmutableInto,
+            T: PromiseTransmutableInto<Scope>,
+            *mut T::Archetype: TransmuteFrom<Self, Scope, NeglectStability>
         {
             type Archetype = *mut T::Archetype;
         }
 
-        impl<T: ?Sized> PromiseTransmutableFrom for *mut T
+        impl<T: ?Sized, Scope> PromiseTransmutableFrom<Scope> for *mut T
         where
-            T: PromiseTransmutableFrom,
-            *mut T::Archetype
-                : TransmuteInto<Self, NeglectStability>
-                + PromiseTransmutableFrom,
+            T: PromiseTransmutableFrom<Scope>,
+            *mut T::Archetype: TransmuteInto<Self, Scope, NeglectStability>,
         {
             type Archetype = *mut T::Archetype;
         }
 
 
-        impl<'a, T: ?Sized> PromiseTransmutableInto for &'a T
+        impl<'a, T: ?Sized, Scope> PromiseTransmutableInto<Scope> for &'a T
         where
-            T: PromiseTransmutableInto,
-            &'a T::Archetype
-                : TransmuteFrom<&'a T, NeglectStability>
-                + PromiseTransmutableInto,
+            T: PromiseTransmutableInto<Scope>,
+            T::Archetype: 'a,
+            &'a T::Archetype: TransmuteFrom<&'a T, Scope, NeglectStability>
         {
             type Archetype = &'a T::Archetype;
         }
 
-        impl<'a, T: ?Sized> PromiseTransmutableFrom for &'a T
+        impl<'a, T: ?Sized, Scope> PromiseTransmutableFrom<Scope> for &'a T
         where
-            T: PromiseTransmutableFrom,
-            &'a T::Archetype
-                : TransmuteInto<&'a T, NeglectStability>
-                + PromiseTransmutableFrom,
+            T: PromiseTransmutableFrom<Scope>,
+            T::Archetype: 'a,
+            &'a T::Archetype: TransmuteInto<&'a T, Scope, NeglectStability>
         {
             type Archetype = &'a T::Archetype;
         }
 
-        impl<'a, T: ?Sized> PromiseTransmutableInto for &'a mut T
+
+        impl<'a, T: ?Sized, Scope> PromiseTransmutableInto<Scope> for &'a mut T
         where
-            T: PromiseTransmutableInto,
-            &'a mut T::Archetype
-                : TransmuteFrom<&'a mut T, NeglectStability>
-                + PromiseTransmutableInto,
+            T: PromiseTransmutableInto<Scope>,
+            T::Archetype: 'a,
+            &'a mut T::Archetype: TransmuteFrom<&'a mut T, Scope, NeglectStability>
         {
             type Archetype = &'a mut T::Archetype;
         }
 
-        impl<'a, T: ?Sized> PromiseTransmutableFrom for &'a mut T
+        impl<'a, T: ?Sized, Scope> PromiseTransmutableFrom<Scope> for &'a mut T
         where
-            T: PromiseTransmutableFrom,
-            &'a mut T::Archetype
-                : TransmuteInto<&'a mut T, NeglectStability>
-                + PromiseTransmutableFrom,
+            T: PromiseTransmutableFrom<Scope>,
+            T::Archetype: 'a,
+            &'a mut T::Archetype: TransmuteInto<&'a mut T, Scope, NeglectStability>
         {
             type Archetype = &'a mut T::Archetype;
         }
@@ -1155,8 +1241,7 @@ pub mod transmute {
         /// Neglect the stability check of `TransmuteFrom`.
         pub struct NeglectStability;
 
-        // Uncomment this if/when constructibility is fully implemented:
-        // impl SafeTransmuteOptions for NeglectStability {}
+        impl SafeTransmuteOptions for NeglectStability {}
         impl TransmuteOptions for NeglectStability {}
 
         // prevent third-party implementations of `TransmuteOptions`
@@ -1172,182 +1257,6 @@ pub mod transmute {
 }
 ```
 
-### Towards an Initial, Smart Implementation
-
-To support transmutations between different types, implementers of this RFC should begin by defining a `transmute_from` lang item to annotate libcore's definition of `TransmuteFrom`. Whether `TransmuteFrom` is implemented for a given type and parameters shall be determined within the implementation of the type system (à la [`Sized`](https://doc.rust-lang.org/nightly/nightly-rustc/rustc_middle/ty/struct.TyS.html#method.is_sized) and [`Freeze`](https://doc.rust-lang.org/nightly/nightly-rustc/rustc_middle/ty/struct.TyS.html#method.is_freeze)).
-
-This initial smart implementation may be made simpler by:
-  - *not* supporting enums
-  - *not* supporting unions
-  - *not* supporting `Neglect` parameters besides `()` and `NeglectStability`
-  - simplifying constructability
-
-#### Simplifying Constructability
-The safety property of constructability defined in the guidance-level explanation of this RFC describes a platonic ideal of the property.
-
-However, we recognize that this definition poses implementation challenges: In our definition of constructability, answering the question of whether a struct or enum variant is constructible depends on *where* that question is being asked. Consequently, answering whether a given type `Src` is `TransmutableInto` a given type `Dst` will depend on *where* that question is posed.
-
-We recommend adopting a simplified definition of *constructability*: a type is *constructible* if its fields are marked `pub`, and those fields are constructible. With this definition, answering the question of whether a type is constructible does *not* depend on where the question is asked: we do not examine the visibility of the involved types.
-
-Unfortunately, with no other actions taken, this simplified definition comes...
-
-##### ...at the Cost of Safety
-This definition is *usually* sufficient for ensuring safety: it is *generally* an error to expose a private type in a public type signature. However, these errors may be circumvented using the public-type-in-private-module trick:
-```rust
-pub mod crate_a {
-
-    #[repr(C)]
-    pub struct NonEmptySlice<'a, T>(pub private::NonEmptySliceInner<'a, T>);
-
-    impl<'a, T> NonEmptySlice<'a, T> {
-        pub fn from_array<const N: usize>(arr: &'a [T; N], len: usize) -> Self {
-            assert!(len <= N && len > 0);
-            Self(
-                private::NonEmptySliceInner {
-                    data: arr as *const T,
-                    len,
-                    lifetime: core::marker::PhantomData,
-                }
-            )
-        }
-
-        pub fn first(&self) -> &'a T {
-            unsafe { &*self.0.data }
-        }
-    }
-
-    // introduce a private module to avoid `private_in_public` error (E0446):
-    pub(crate) mod private {
-        #[repr(C)]
-        pub struct NonEmptySliceInner<'a, T> {
-            pub data: *const T,
-            pub len: usize,
-            pub lifetime: core::marker::PhantomData<&'a ()>,
-        }
-    }
-
-}
-```
-With this simplified definition of constructability, it is possible for a third-party to define a *safe* constructor of `NonEmptySlice` that produces a value which is *unsafe* to use:
-```rust
-pub evil_constructor<T>(src: T) -> NonEmptySlice<'static, u8>
-where
-    T: TransmuteInto<NonEmptySlice<'static, u8>, NeglectStability>,
-{
-    src.transmute_into()
-}
-
-evil_constructor(0u128).first() // muahaha!
-```
-
-The above code is "safe" because our simplified definition of constructability fails to recognize this pattern of encapsulation, and because `NeglectStability` is a `SafeTransmutationOption`.
-
-The intent of `NeglectStability` is to permit the safe transmutation of types that predate the stabilization of the stability declaration traits. It also provides a convenient escape-hatch for type authors to neglect the stability of transmutations of their *own* types, without sacrificing safety. `NeglectStability` is a `SafeTransmutationOption` because, in principle, neglecting stability does not diminish safety. Our simplified definition of constructability violates this principle.
-
-By temporarily sacrificing these goals, we may preserve safety solely...
-
-##### ...at the Cost of `NeglectStability`
-We may preserve safety by demoting `NeglectStability` to `UnsafeTransmutationOption`-status.
-
-In doing so, a third-party is forced to resort to an `unsafe` transmutation to construct `NonEmptySlice`; e.g.:
-
-```rust
-pub evil_constructor<T>(src: T) -> NonEmptySlice<'static, u8>
-where
-    T: TransmuteInto<NonEmptySlice<'static, u8>, NeglectStability>,
-{
-    // unsafe because we `NeglectStability`
-    unsafe { src.unsafe_transmute_into() }
-}
-```
-
-Demoting `NeglectStability` to unsafe-status does not stop type authors from opting-in to stable (and thus safe) transmutations; e.g., with `derive(PromiseTransmutableFrom)`:
-```rust
-pub mod crate_a {
-
-    #[derive(PromiseTransmutableFrom)]
-    #[repr(C)]
-    pub struct NonEmptySlice<'a, T>(pub private::NonEmptySliceInner<'a, T>);
-
-    impl<'a, T> NonEmptySlice<'a, T> {
-        pub fn from_array<const N: usize>(arr: &'a [T; N], len: usize) -> Self {
-            assert!(len <= N && len > 0);
-            Self(
-                private::NonEmptySliceInner {
-                    data: arr as *const T,
-                    len,
-                    lifetime: core::marker::PhantomData,
-                }
-            )
-        }
-
-        pub fn first(&self) -> &'a T {
-            unsafe { &*self.0.data }
-        }
-    }
-
-    // introduce a private module to avoid `private_in_public` error (E0446):
-    pub(crate) mod private {
-        #[derive(PromiseTransmutableFrom)]
-        #[repr(C)]
-        pub struct NonEmptySliceInner<'a, T> {
-            pub data: *const T,
-            pub len: usize,
-            pub lifetime: core::marker::PhantomData<&'a ()>,
-        }
-    }
-
-}
-```
-In the above example, the type author declares `NonEmptySlice` and `NonEmptySliceInner` to be stably instantiatable via transmutation. Given this, a third-party no longer needs to resort to `unsafe` code to violate the the invariants on `inner`:
-```rust
-pub evil_constructor<T>(src: T) -> NonEmptySlice<'static, u8>
-where
-    T: TransmuteInto<NonEmptySlice<'static, u8>>,
-{
-    src.transmute_into()
-}
-
-evil_constructor(0u128).first() // muahaha!
-```
-This safety hazard is not materially different from the one that would be induced if the type author implemented `DerefMut<Target=NonEmptySliceInner>` for `NonEmptySlice`, or made the `private` module `pub`, or otherwise explicitly provided outsiders with unrestricted mutable access to `data`.
-
-##### Recommendation
-We recommend that that implementers of this RFC initially simplify constructability by:
- - adopting our simplified definition of constructability
- - demoting `NeglectStability` to unsafe status (i.e., not implementing `SafeTransmuteOptions` for `NeglectStability`; *only* `TransmuteOptions`)
- - advise users that implementing the stability declaration traits on types that are not fully-implicitly constructable will be a compiler-error will be a compiler error (i.e., these traits must not be implemented on types exploiting the pub-in-priv trick)
-
-If and when the implementation of `TransmuteFrom` encodes our complete definition of constructability, `NeglectStability` shall become a safe transmute option.
-
-### Minimal Useful Stabilization Surface
-
-Stabilizing *only* these three items of the Initial Smart Implementation will cover most use-cases:
-  - `TransmuteFrom`
-  - `#[derive(PromiseTransmutableFrom)]`
-  - `#[derive(PromiseTransmutableInto)]`
-
-(If the [`PromiseTransmutable` shorthand extension][extension-promisetransmutable-shorthand] is accepted, this may be further reduced to just *two* items: `TransmuteFrom` and `#[derive(PromiseTransmutable)]`.)
-
-Stabilizing `TransmuteOptions` and `SafeTransmuteOptions` will additionally allow end-users to build generic abstractions over `TransmuteFrom` (e.g., slice casting abstractions).
-
-Stabilizing `PromiseTransmutableFrom` and `PromiseTransmutableInto` will additionally allow end-users make limited stability promises, and to make stability promises for types where `derive` is too restrictive (namely, types containing `PhantomData`).
-
-Stabilizing `TransmuteInto` and `NeglectStability` will additionally allow end-users to implement `PromiseTransmutableFrom` in cases where the `Archetype`'s trait bounds must be repeated for lack of [implied bounds](https://github.com/rust-lang/rust/issues/44491); e.g.:
-```rust
-impl<T, N> PromiseTransmutableFrom for GenericArray<T, N>
-where
-    T: PromiseTransmutableFrom,
-    N: ArrayLength<T>,
-
-    // for lack of implied bounds, we must repeat the bounds on `Archetype`:
-    GenericArray<T::Archetype, N>
-        : TransmuteInto<Self, NeglectStability>
-        + PromiseTransmutableFrom,
-{
-    type Archetype = GenericArray<T::Archetype, N>;
-}
-```
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -1391,22 +1300,18 @@ The model of stability proposed by this RFC frames stability as a quality of *sa
 
 To accommodate this, we may modify the definitions of `PromiseTransmutableFrom` and `PromiseTransmutableInto` to consume an optional `Neglect` parameter, to allow for stability declarations for unsafe transmutations:
 ```rust
-pub trait PromiseTransmutableFrom<Neglect = ()>
+pub trait PromiseTransmutableFrom<Scope, Neglect = ()>
 where
     Neglect: TransmuteOptions
 {
-    type Archetype
-        : TransmuteInto<Self, Sum<Neglect, NeglectStability>>
-        + PromiseTransmutableInto<Sum<Neglect, NeglectStability>>;
+    type Archetype: TransmuteInto<Self, Scope, Sum<Neglect, NeglectStability>>;
 }
 
-pub trait PromiseTransmutableInto<Neglect = ()>
+pub trait PromiseTransmutableInto<Scope, Neglect = ()>
 where
     Neglect: TransmuteOptions
 {
-    type Archetype
-        : TransmuteFrom<Self, Sum<Neglect, NeglectStability>>
-        + PromiseTransmutableInto<Sum<Neglect, NeglectStability>>;
+    type Archetype: TransmuteFrom<Self, Scope, Sum<Neglect, NeglectStability>>;
 }
 ```
 Implementations of these traits for a given `Neglect` declares that a transmutation which is accepted while neglecting a particular set of checks (namely the set encoded by `Neglect`) will *continue* to be possible.
@@ -1414,12 +1319,12 @@ Implementations of these traits for a given `Neglect` declares that a transmutat
 We omit these definition from this RFC's recommendations because they are not completely satisfying. For instance, `Neglect` is a *logically* unordered set of options, but is encoded as a tuple (which *is* ordered). To declare a transmutation that requires neglecting validity and alignment checks as stable, only *one* of these impls ought to be necessary:
 
 ```rust
-impl PromiseTransmutableFrom<(NeglectAlignment, NeglectValidity)> for Foo
+impl<Scope> PromiseTransmutableFrom<Scope, (NeglectAlignment, NeglectValidity)> for Foo
 {
     ...
 }
 
-impl PromiseTransmutableFrom<(NeglectValidity, NeglectAlignment)> for Foo
+impl<Scope> PromiseTransmutableFrom<Scope, (NeglectValidity, NeglectAlignment)> for Foo
 {
     ...
 }
@@ -1465,21 +1370,12 @@ The compromise made by this RFC is that **`TransmuteFrom` should be stable-by-de
   - `Dst: TransmuteFrom<Src>` follows the usual SemVer rules,
   - `Dst: TransmuteFrom<Src, NeglectStability>` *does not*.
 
-#### Mitigating a Possible Safety Hazard
-The [simplified formulation of constructability](#simplifying-constructability) provides an initially-simpler implementation path at the cost of a soundness hole. There are three possible mitigations:
-  - *Pretend it does not exist.* Intentional soundness holes would not bode well for this RFC's acceptance.
-  - *Only provide unsafe transmutation; not safe transmutation.* This option fails to remove any `unsafe` blocks from end-users' code.
-  - *Allow safe transmutations only when the type authors have promised they will not create a situation that would compromise safety.* **We recommend this option.**
-
-This promise is inherently one of stability—the type author is vowing that they will not change the implementation of their type in a way that violates the no-pub-in-priv safety invariant of safe transmutation.
-
-
 ### Why this *particular* stability system?
 The proposed stability system is both simple, flexible, and extensible. Whereas ensuring the soundness and safety of `TransmuteFrom<Src, NeglectStability>` requires non-trivial compiler support, stability does not—it is realized as merely two normal traits and an `impl`.
 
 This formulation is flexible: by writing custom `Archetype`s, the [stability declaration traits][stability] make possible granular and incomplete promises of layout stability (e.g., guaranteeing the size and validity qualities of a type, but *not* its alignment. Members of the safe-transmute working group have [expressed](https://rust-lang.zulipchat.com/#narrow/stream/216762-project-safe-transmute/topic/Transmutability.20Intrinsic/near/202712834) an interest in granular stability declarations.
 
-Finally, this formulation is extensible. The range of advance use-cases permitted by these traits is constrained only by the set of possible `Archetype`s, which, in turn, is constrained by the completeness of `TransmuteFrom`. As the implementation of `TransmuteFrom` becomes more complete, so too will the range of advance use-cases accommodated by these traits.
+Finally, this formulation is extensible. The range of advance use-cases permitted by these traits is constrained only by the set of possible `Archetype`s, which, in turn, is constrained by the expressiveness of `TransmuteFrom`. As the implementation of `TransmuteFrom` becomes more complete, so too will the range of advance use-cases accommodated by these traits.
 
 
 ### Couldn't `#[repr(C)]` denote stability?
@@ -1692,11 +1588,7 @@ The automatic mechanism proposed by [*Pre-RFC: Safe coercions*][2017-02] exploit
 2. The 'location' where the coercion is made is ill-defined; the presence of the proposed `Coercible` trait may be far-removed from the location of the actual conversion (if any conversion occurs at all).
 3. Field visibility stabilizes the structure of a type, but *not* its layout (e.e., its size).
 
-Our RFC exploits the related concept of *constructability*, which is a property of a struct, or enum variant (rather than solely a property of fields). However, we recognize that it may be difficult to test for constructability within the trait resolution process.
-
-The simplified definition of *constructability* we propose is the same employed by [typic][crate-typic] (which uses the term "visibility"). [Typic][crate-typic] regards the pub-in-priv soundness hole of the simplified definition to be sufficiently niche that `NeglectStability` remains "safe". However, unlike [typic][crate-typic], we believe that this simplified definition imposes a safety hazard substantial enough to warrant making `NeglectStability` initially usable with *only* unsafe transmutes.
-
-Our RFC separates *constructability*, which concerns what aspects of a type's structure are part of its public API, and *stability*, which concerns the aspects of a type's layout that are part of its public API for SemVer purposes. This distinction does not appear in prior work.
+Our RFC, [typic][crate-typic], and Haskell exploit the related concept of *constructability*. Typic uses a simplified, scope-unaware formulation of constructability that suffers from a soundness hole induced by the pub-in-priv trick.
 
 
 ## Prior Art: Haskell
