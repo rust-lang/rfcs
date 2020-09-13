@@ -370,6 +370,12 @@ Except for `DynMetadata`’s methods, this RFC proposes a subset of what that th
 
 * The location of `DynMetadata`. Is another module more appropriate than `std::ptr`?
 
+* Should `DynMetadata` have a type parameter for what trait object type it is a metadata of?
+  Such that `<dyn SomeTrait as Pointee>::Metadata` is `DynMetadata<dyn SomTrait>`.
+  This would allow the memory layout to change based on the trait object type
+  (potentially super-wide pointers with multiple vtable pointers for multi-trait objects?)
+  or to have different methods.
+
 * The name of `Thin`.
   This name is short and sweet but `T: Thin` suggests that `T` itself is thin,
   rather than pointers and references to `T`.
