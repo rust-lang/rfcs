@@ -302,7 +302,7 @@ impl<T: ?Sized> NonNull<T> {
 /// trait object vtables in a single program.
 #[derive(Copy, Clone)]
 pub struct DynMetadata {
-    vtable_ptr: &'static (),
+    vtable_ptr: ptr::NonNull<()>,
 }
 
 impl DynMetadata {
