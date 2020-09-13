@@ -915,7 +915,7 @@ If `Src` is a mutatable reference, then additionally:
 ### Minimal Useful Stabilization Surface
 Stabilizing *only* these items of the Initial Smart Implementation will cover many use-cases:
   - `transmute!()`
-  - `#[derive(PromiseTransmutableFrom, PromiseTransmutableInto)]`
+  - `#[derive(PromiseTransmutableFrom)]`
   - `#[derive(PromiseTransmutableInto)]`
 
 (If the [`PromiseTransmutable` shorthand extension][extension-promisetransmutable-shorthand] is accepted, this may be further reduced to just *two* items: `transmute!()` and `#[derive(PromiseTransmutable)]`.)
