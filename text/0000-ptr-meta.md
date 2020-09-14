@@ -110,7 +110,7 @@ We let `Box` do the memory layout computation and allocation:
 impl<Dyn: ?Sized + DynTrait> ThinBox<Dyn> {
     pub fn new_unsize<S>(value: S) -> Self where S: Unsize<Dyn> {
         let vtable = ptr::metadata(&value as &Dyn);
-        let ptr = Box::into_raw_non_null(Box::new(WithMeta { vtable, value })).cast();
+        let ptr = NonNull::from(Box::leak(Box::new(WithMeta { vtable, value }))).cast();
         ThinBox { ptr, phantom: PhantomData }
     }
 }
@@ -148,14 +148,16 @@ impl<Dyn: ?Sized + DynTrait> DerefMut for ThinBox<Dyn> {
 }
 ```
 
-Finally, in `Drop` we can take advantage of `Box` again,
-but this time
+Finally, in `Drop` we may not be able to take advantage of `Box` again
+since the original `Sized` type `S` is not statically known at this point.
 
 ```rust
 impl<Dyn: ?Sized + DynTrait> Drop for ThinBox<Dyn> {
     fn drop(&mut self) {
         unsafe {
-            Box::<Dyn>::from_raw(&mut **self);
+            let layout = /* left as an exercise for the reader */;
+            ptr::drop_in_place::<Dyn>(&mut **self);
+            alloc::dealloc(self.ptr.cast(), layout);
         }
     }
 }
@@ -176,7 +178,7 @@ are added to `core::ptr` and re-exported in `std::ptr`:
   uses of `Thin` should be replaced with its definition.
 * A `metadata` free function
 * A `DynMetadata` struct
-* A `from_raw_parts` constructor for each of `*const T` and `*mut T`
+* A `from_raw_parts` constructor for each of `*const T`, `*mut T`, and `NonNull<T>`.
 
 The bounds on `null()` and `null_mut()` function in that same module
 as well as the `NonNull::dangling` constructor
