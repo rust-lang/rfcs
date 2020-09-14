@@ -155,7 +155,9 @@ destructured using `..`.
 Patterns must be irrefutable. In particular, only slice patterns whose length is known at compile-
 time, and the trivial slice `[..]` may be used for destructuring assignment.
 
-As expected from the desugaring, the default binding modes of normal `let` destructuring applying.
+Unlike in usual `let` bindings, default binding modes do *not* apply for the desugared destructuring
+assignments, as this leads to counterintuitive behaviour since the desguaring is an implementation
+detail.
 
 ## Diagnostics
 
