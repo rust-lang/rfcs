@@ -474,7 +474,7 @@ pub mod zerocopy {
     }
 }
 ```
-The above definition leaves ambiguous (`???`) the scope in which the constructability of `Dst` is checked: is it the from the perspective of where this trait is defined, or where this trait is *used*? You probably do *not* intend for this trait to *only* be usable with `Dst` types that are defined in the same scope as the `FromZeros` trait!
+The above definition leaves ambiguous (`???`) the scope in which the constructability of `Dst` is checked: is it from the perspective of where this trait is defined, or where this trait is *used*? You probably do *not* intend for this trait to *only* be usable with `Dst` types that are defined in the same scope as the `FromZeros` trait!
 
 Adding an explicit `Scope` parameter to `FromZeros` makes this unambiguous; the transmutability of `Dst` should be assessed from where the trait is used, *not* where it is defined:
 ```rust
