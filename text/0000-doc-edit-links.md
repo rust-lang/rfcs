@@ -47,8 +47,6 @@ For example, `libstd` would be documented with the following arguments:
 --edit-link-format "https://github.com/rust-lang/rust/edit/master/libstd/{file}#L{start_line}-L{end_line}"
 ```
 
-where `1234abc` is the git revision of the repo that the repo is built against.
-
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
