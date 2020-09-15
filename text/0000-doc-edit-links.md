@@ -47,13 +47,6 @@ For example, `libstd` would be documented with the following arguments:
 --edit-link-format "https://github.com/rust-lang/rust/edit/master/libstd/{file}#L{start_line}-L{end_line}"
 ```
 
-# Reference-level explanation
-[reference-level-explanation]: #reference-level-explanation
-
-- Its interaction with other features is clear.
-- It is reasonably clear how the feature would be implemented.
-- Corner cases are dissected by example.
-
 # Drawbacks
 [drawbacks]: #drawbacks
 
