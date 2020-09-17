@@ -38,7 +38,7 @@ You may destructure a value when making an assignment, just as when you declare 
 
 - Tuples.
 - Slices.
-- Structs (inclduing unit and tuple structs).
+- Structs (including unit and tuple structs).
 - Unique variants of enums.
 
 You may use `_` and `..` as in a normal declaration pattern to ignore certain values.
@@ -120,7 +120,7 @@ We support the following classes of expressions:
 
 - Tuples.
 - Slices.
-- Structs (inclduing unit and tuple structs).
+- Structs (including unit and tuple structs).
 - Unique variants of enums.
 
 In the desugaring, we convert the expression `(a, b)` into an analogous pattern `(_a, _b)` (whose
