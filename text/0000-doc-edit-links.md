@@ -66,7 +66,6 @@ Cons:
 
 - Does not support self-hosted non-docs.rs builds
 - `rustdoc` output is unstable and may not be forward-compatible
-- Requires client-side JavaScript support
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
