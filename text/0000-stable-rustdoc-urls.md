@@ -186,6 +186,7 @@ These alternatives are substantial changes to the RFC.
 [unresolved-questions]: #unresolved-questions
 
 - Is there a way to resolve the naming conflicts on Windows? If not, is that worth blocking the RFC, given there are existing conflicts?
+- Are there other semver-incompatibilities in the current pages that haven't been addressed?
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
