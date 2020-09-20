@@ -205,7 +205,7 @@ The lint as described in this RFC would nudge people to instead write
 
 ```rust
 let x: *mut Struct = NonNull::dangling().as_ptr();
-let field: *mut Field = &raw mut (x*).field;
+let field: *mut Field = &raw mut (*x).field;
 ```
 
 which is better, but still UB: we emit a `getelementptr inbounds` for the `.field` offset computation.
