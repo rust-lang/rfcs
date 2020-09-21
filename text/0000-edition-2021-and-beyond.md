@@ -66,8 +66,6 @@ Every three years, we introduce a new Rust Edition. These editions are named aft
 
 When we introduce a new edition, we don't remove support for the older ones, so all crates continue to compile just as they ever did. Moreover, editions are fully interoperable, so there is no possibility of an "ecosystem split". This means that you can upgrade your crates to the new edition on whatever schedule works best for you.
 
-The release of a new edition is always a celebratory affair. It gives us a chance to look back at all the work that has gotten done over the last three years. The "opt-in" changes also allow us to introduce new features or syntax that would otherwise be impossible.
-
 ## How do I upgrade between editions?
 
 Upgrading between editions is meant to be easy. The general rule is, if your code compiles without warnings, you should be able to opt into the new edition, and your code will compile.
