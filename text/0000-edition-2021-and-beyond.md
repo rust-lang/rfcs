@@ -108,10 +108,6 @@ Migrations are the "breaking changes" that we make as part of an edition transit
 
 In some cases, migrations can come with a combination. For example, there may be tooling to port old code that works the vast majority of the time but occasionally fails (this can happen around macros).
 
-## Project group to manage the edition release
-
-For each Edition release, we will create a project group to track the edition changes and decide on what features are to be included.  This group is a subgroup of the release team, and should contain representatives from the compiler, lang, and dev-tools teams. The group is empowered to set a schedule for when changes must be ready in order to be included in the edition, and to enforce that schedule as needed -- this includes removing features from the edition if they are not ready in time or the quality is judged to be insufficient (e.g., if the migration tooling is too buggy). The edition project group is also expected to ensure that the [edition guide](https://doc.rust-lang.org/edition-guide/introduction.html) is updated with accurate information.
-
 ## Idiom lint transitions
 
 "Idiom lints" are issued in a lint group named after the edition year, such as `rust_2018_idioms`. They are warn-by-default in the previous edition, and are deny by default in the new edition.
