@@ -92,9 +92,9 @@ The aim of the edition guide is to help users who are migrating code from one ed
 
 ## Editions and semver
 
-For semver purposes, you should think of editions as being equivalent to any other Rust feature. If Edition N is stabilized in rustc release 1.X, then upgrading your crate to edition N also means that your crate can only be compiled with rustc release 1.X. This is no different than if you added a use of some other new feature that was added in release 1.X but which is not tied to editions.
+For semver purposes, you should think of editions as being equivalent to any other Rust feature. If Edition N is stabilized in rustc release 1.X, then upgrading your crate to edition N also means that your crate can only be compiled with rustc release 1.X or later. This is no different than if you added a use of some other new feature that was added in release 1.X but which is not tied to editions.
 
-Rust does not have an official policy on whether it is a semver breaking change to depend on new features, but most crates do establish a policy that they maintain individually. Therefore, adopting a new edition is a breaking if and only if your crate considers it a breaking change to depend on the Rust compiler release that supports that edition.
+Rust does not have an official policy on whether it is a semver breaking change to change the version of the Rust compiler required to compile your crate. In practice, widely used crates generally adoptand document a "MSRV" (Minimum Supported Rust Version) and have rules about when it can be changed. Upgrading to an edition may then trigger a change to the MSRV and hence could be considered a breaking change, depending on the crate's policy.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
