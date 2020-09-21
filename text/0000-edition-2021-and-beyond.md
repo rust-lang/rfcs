@@ -88,6 +88,8 @@ Like migrations, idiom lints are expected to come with automatic tooling for rew
 
 The [edition guide](https://doc.rust-lang.org/edition-guide/introduction.html) documents each of Rust's editions and the various migrations and idiom lints that were introduced as part of it. It will be updated to use the terminology from this RFC, naturally, and be updated during each edition.
 
+The aim of the edition guide is to help users who are migrating code from one edition to the next. Therefore, it will discuss the migations and lints introduced as part of an edition. It will not discuss features that work across all editions, even if those features were introduced since the previous edition was released. (This marks a change from the current guide, which for example covered the `?` operator as part of Rust 2018, even though that operator can be used in Rust 2015 code.)
+
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
