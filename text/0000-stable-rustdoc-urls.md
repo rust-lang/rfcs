@@ -95,7 +95,7 @@ This means that a name and namespace is [always sufficient][find-name-namespace]
 
 Rustdoc will use the following links, depending on the namespace:
 
-- `Name.html` for values
+- `v.Name.html` for values
 - `t.Name.html` for types
 - `m.Name.html` for macros
 
@@ -155,8 +155,9 @@ There were three main criteria for choosing the URLs (in vauge order of priority
 
 Note that these names are easy to 'bikeshed' and don't substantially change the RFC.
 
-- Rustdoc could add a `v.` prefix for items in the value namespace. This would be more consistent with the other namespaces, at the cost of making the URLs for functions slightly confusing (favoring criteria 2 over criteria 3).
-- Rustdoc could lengthen the prefixes to `type.` and `macro.`. This makes the URLs easier to read, at the cost of making them more confusing for traits (consider `type.Trait.html`).
+- Rustdoc could remove the `v.` prefix for items in the value namespace.
+  This would make the URLs for functions slightly less confusing, but introduce a conflict for functions named `index()`, since rustdoc has to generate `index.html` for modules.
+- Rustdoc could lengthen the prefixes to `value.`, `type.` and `macro.`. This makes the URLs easier to read, at the cost of making them more confusing for traits (consider `type.Trait.html`).
 - Rustdoc could use the existing specific names only when there is no risk of a semver-compatible change being able to change the kind. This would need careful inspection to make sure there is in fact no risk. It would also be slightly inconsistent with other URLs.
 
 [#35236]: https://github.com/rust-lang/rust/pull/35236
