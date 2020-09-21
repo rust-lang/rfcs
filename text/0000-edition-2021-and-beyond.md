@@ -90,6 +90,12 @@ The [edition guide](https://doc.rust-lang.org/edition-guide/introduction.html) d
 
 The aim of the edition guide is to help users who are migrating code from one edition to the next. Therefore, it will discuss the migations and lints introduced as part of an edition. It will not discuss features that work across all editions, even if those features were introduced since the previous edition was released. (This marks a change from the current guide, which for example covered the `?` operator as part of Rust 2018, even though that operator can be used in Rust 2015 code.)
 
+## Editions and semver
+
+For semver purposes, you should think of editions as being equivalent to any other Rust feature. If Edition N is stabilized in rustc release 1.X, then upgrading your crate to edition N also means that your crate can only be compiled with rustc release 1.X. This is no different than if you added a use of some other new feature that was added in release 1.X but which is not tied to editions.
+
+Rust does not have an official policy on whether it is a semver breaking change to depend on new features, but most crates do establish a policy that they maintain individually. Therefore, adopting a new edition is a breaking if and only if your crate considers it a breaking change to depend on the Rust compiler release that supports that edition.
+
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
