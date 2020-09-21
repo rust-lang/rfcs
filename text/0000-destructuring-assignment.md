@@ -156,7 +156,7 @@ Patterns must be irrefutable. In particular, only slice patterns whose length is
 time, and the trivial slice `[..]` may be used for destructuring assignment.
 
 Unlike in usual `let` bindings, default binding modes do *not* apply for the desugared destructuring
-assignments, as this leads to counterintuitive behaviour since the desguaring is an implementation
+assignments, as this leads to counterintuitive behaviour since the desugaring is an implementation
 detail.
 
 ## Diagnostics
