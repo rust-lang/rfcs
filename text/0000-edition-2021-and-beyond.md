@@ -88,13 +88,13 @@ Like migrations, idiom lints are expected to come with automatic tooling for rew
 
 The [edition guide](https://doc.rust-lang.org/edition-guide/introduction.html) documents each of Rust's editions and the various migrations and idiom lints that were introduced as part of it. It will be updated to use the terminology from this RFC, naturally, and be updated during each edition.
 
-The aim of the edition guide is to help users who are migrating code from one edition to the next. Therefore, it will discuss the migations and lints introduced as part of an edition. It will not discuss features that work across all editions, even if those features were introduced since the previous edition was released. (This marks a change from the current guide, which for example covered the `?` operator as part of Rust 2018, even though that operator can be used in Rust 2015 code.)
+The aim of the edition guide is to help users who are migrating code from one edition to the next. Therefore, it will discuss the migrations and lints introduced as part of an edition. It will not discuss features that work across all editions, even if those features were introduced since the previous edition was released. (This marks a change from the current guide, which for example covered the `?` operator as part of Rust 2018, even though that operator can be used in Rust 2015 code.)
 
 ## Editions and semver
 
 For semver purposes, you should think of editions as being equivalent to any other Rust feature. If Edition N is stabilized in rustc release 1.X, then upgrading your crate to edition N also means that your crate can only be compiled with rustc release 1.X or later. This is no different than if you added a use of some other new feature that was added in release 1.X but which is not tied to editions.
 
-Rust does not have an official policy on whether it is a semver breaking change to change the version of the Rust compiler required to compile your crate. In practice, widely used crates generally adoptand document a "MSRV" (Minimum Supported Rust Version) and have rules about when it can be changed. Upgrading to an edition may then trigger a change to the MSRV and hence could be considered a breaking change, depending on the crate's policy.
+Rust does not have an official policy on whether it is a semver breaking change to change the version of the Rust compiler required to compile your crate. In practice, widely used crates generally adopt and document a "MSRV" (Minimum Supported Rust Version) and have rules about when it can be changed. Upgrading to an edition may then trigger a change to the MSRV and hence could be considered a breaking change, depending on the crate's policy.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
