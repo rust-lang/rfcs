@@ -194,34 +194,6 @@ These alternatives are substantial changes to the RFC.
 
 Rustdoc could stabilize page hashes:
 
-- Associated items for traits will use the same hash as for types, unless there is a conflict with the hash for a type.
-
-	A change from
-	```rust
-	struct S;
-	impl S { fn f() {} }
-	```
-	to
-	```rust
-	struct S;
-	trait T { fn f(); }
-	impl T for S { fn f() {} }
-	```
-	is semver compatible, but currently breaks the hash (it changes from `#method.f` to `#tymethod.f`).
-	Rustdoc could change it to use `#method.f` when there is no conflict with other traits or inherent associated items.
-	For example, the second version of the code above would use `#method.f`, but the code below would use `#tymethod.f`
-	for the version in the trait:
-	```rust
-	struct S;
-	impl S { fn f() {} }
-
-	trait T { fn f(); }
-	impl T for S { fn f() {} }
-	```
-
-	This matches Rust semantics: `S::f()` refers to the function for the type if it exists,
-	and the method for a trait it implements if not.
-
 - Associated items for traits will contain the name of the trait if there is a conflict.
 
 	Currently, the `from` function in both of the trait implementations has the same hash:
@@ -248,6 +220,8 @@ Rustdoc could stabilize page hashes:
 	Rustdoc could possibly use percent-encoding for the second issue.
 
 - All other URL fragments would be kept the same:
+	+ `#method.{name}` for inherent methods
+	+ `#tymethod.{name}` for methods from a trait
 	+ `#variant.{name}` for enum variants
 	+ `#structfield.{name}` for struct fields
 	+ `#variant.{parent}.field.{name}` for anonymous structs in enums (`enum Parent { A { field: usize }}`).
