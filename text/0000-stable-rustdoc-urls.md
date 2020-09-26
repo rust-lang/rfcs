@@ -52,7 +52,7 @@ Rustdoc will make the following changes to URL structure:
 
 	Consider the struct `std::process::Command`.
 	Currently, the URL for it looks like `std/process/struct.Command.html`.
-	This RFC proposes to change the URL to `std/process/t.Command.html`.
+	This RFC proposes to change the URL to `std/process/type.Command.html`.
 	Pages named `kind.name.html` would still be generated (to avoid breaking existing links),
 	but would immediately redirect to the new URL.
 
@@ -95,9 +95,9 @@ This means that a name and namespace is [always sufficient][find-name-namespace]
 
 Rustdoc will use the following links, depending on the namespace:
 
-- `v.Name.html` for values
-- `t.Name.html` for types
-- `m.Name.html` for macros
+- `value.Name.html` for values
+- `type.Name.html` for types
+- `macro.Name.html` for macros
 
 Rustdoc will continue to use directories (and `index.html`) for modules.
 
@@ -120,8 +120,8 @@ There will _not_ be a page generated at `kind.name.html` at the level of the re-
   If Rustdoc combines several 'kinds' into one namespace, there will be more conflicts than currently:
 
 ```rust
-struct Command; // page generated at `t.Command.html`
-enum command {} // page generated at `t.command.html`
+struct Command; // page generated at `type.Command.html`
+enum command {} // page generated at `type.command.html`
 ```
 
 **@nemo157** has kindly conducted a survey of the docs.rs documentation and found
@@ -149,16 +149,14 @@ There were three main criteria for choosing the URLs (in vauge order of priority
 2. They should make sense when viewed; for example `a`, `b`, `c` would be bad choices for the names.
 3. They should be fairly short, so they're easy to type; for example `type_namespace.` would not be a great choice.
 
-`t.` and `m.` were partly chosen based on precedent in [#35236] (but see 'Naming alternatives' below for the main reason).
-
 ### Naming alternatives
 
 Note that these names are easy to 'bikeshed' and don't substantially change the RFC.
 
-- Rustdoc could remove the `v.` prefix for items in the value namespace.
+- Rustdoc could remove the `value.` prefix for items in the value namespace.
   This would make the URLs for functions slightly less confusing, but introduce a conflict for functions named `index()`, since rustdoc has to generate `index.html` for modules.
-- Rustdoc could lengthen the prefixes to `value.`, `type.` and `macro.`. This makes the URLs easier to read, at the cost of making them more confusing for traits (consider `type.Trait.html`).
-- Rustdoc could use the existing specific names only when there is no risk of a semver-compatible change being able to change the kind. This would need careful inspection to make sure there is in fact no risk. It would also be slightly inconsistent with other URLs.
+- Rustdoc could shorten the prefixes to `v.`, `t.` and `m.`. This makes the URLs shorter, but also harder to read. It does however remove some possible confusion around `type.Trait.html`. This URL scheme has precedent in in [#35236].
+- Rustdoc could use the existing specific names (`struct.`) only when there is no risk of a semver-compatible change being able to change the kind. This would need careful inspection to make sure there is in fact no risk. It would also be slightly inconsistent with other URLs.
 
 [#35236]: https://github.com/rust-lang/rust/pull/35236
 
