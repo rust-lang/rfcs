@@ -161,10 +161,6 @@ We could simply stop doing editions altogether. However, this would mean that we
 
 An alternative would be to wait and only do an edition when we have a need for one -- i.e., when we have some particular language change in mind. But by making editions less predictable, this would complicate the discussion of new features and changes, as it introduces more variables. Under the "train model" proposed here, the timing of the edition is a known quantity that can be taken into account when designing new features.
 
-## Skipping editions
-
-Similar to the previous, we might have an edition schedule, but simply skip an edition if, in some particular year, there aren't any migrations. This remains an option, but it remains unclear whether this will ever happen, and it also adds an additional variable that complicates RFC discussions ("But if we accept this, that'll be the only reason to have an edition, and it doesn't seem worth it.")
-
 ## Feature-driven editions released when things are ready, but not on a fixed schedule
 
 An alternative to doing editions on a schedule would be to do a **feature-driven** edition. Under this model, editions would be tied to a particular set of features we want to introduce, and they would be released when those features complete. This is what Ember did with [its notion of editions](https://emberjs.com/editions/). As part of this, Ember's editions are given names ("Octane") rather than being tied to years, since it is not known when the edition will be released when planning begins.
@@ -188,7 +184,9 @@ The fact is that, in practice, we don't expect that Rust will contain a large nu
 
 [unresolved-questions]: #unresolved-questions
 
-None.
+## Skipping editions
+
+In the future, it may happen that we have an edition year but we have no migrations or idiom lints planned for use in that edition. In that case, we will have to decide whether to issue a new edition anyway (to preserve consistency) or whether to skip the edition. The advantage of issuing the edition anyway is that it ensures that "every 3 years, there is an edition", making editions predictable. However, it is not clear what purpose (beyond consistency) releasing a new edition which is completely equivalent to the old edition would serve. Since this scenario may never arise in practice, we choose to defer the question.
 
 # Future possibilities
 
