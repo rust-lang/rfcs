@@ -4,36 +4,38 @@
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 # Summary
+
 [summary]: #summary
 
-* Announce plans for a Rust 2021 Edition, and for a regular cadence of editions every 3 years thereafter.
-    * We will roll out an edition regardless of whether there are breaking changes.
-* Unlike Rust 2018, we will avoid using editions as a "deadline" to tie together high-priority projects.
-    * Instead, we embrace the train model, but editions are effectively a "somewhat bigger release", giving us an opportunity to give an overview of all the work that has landed over the previous three years.
-* We specify a cadence for Edition lints.
-    * "Edition idiom" lints for Edition N will warn for editions before N, and become "deny by default" in Edition N.
-    * Since it would be disruptive to introduce deny-by-default lints for Rust 2018 now, the Rust 2018 lints are repurposed into Rust 2021 Edition lints.
-* We specify a policy on reserving keywords and other prospective changes.
-    * In short, reserving keywords is allowed only as part of an active project group.
+- Announce plans for a Rust 2021 Edition, and for a regular cadence of editions every 3 years thereafter.
+  - We will roll out an edition regardless of whether there are breaking changes.
+- Unlike Rust 2018, we will avoid using editions as a "deadline" to tie together high-priority projects.
+  - Instead, we embrace the train model, but editions are effectively a "somewhat bigger release", giving us an opportunity to give an overview of all the work that has landed over the previous three years.
+- We specify a cadence for Edition lints.
+  - "Edition idiom" lints for Edition N will warn for editions before N, and become "deny by default" in Edition N.
+  - Since it would be disruptive to introduce deny-by-default lints for Rust 2018 now, the Rust 2018 lints are repurposed into Rust 2021 Edition lints.
+- We specify a policy on reserving keywords and other prospective changes.
+  - In short, reserving keywords is allowed only as part of an active project group.
 
 # Motivation
+
 [motivation]: #motivation
 
 The plan for editions was laid out in [RFC 2052] and Rust had its first edition in 2018. This effort was in many ways a success but also resulted in some difficult lessons. As part of this year's roadmap, one of the major questions we identified was that we need to decide whether we are going to do more editions and -- if so -- how we are going to manage the process.
 
-[RFC 2052]: https://github.com/rust-lang/rfcs/blob/master/text/2052-epochs.md
+[rfc 2052]: https://github.com/rust-lang/rfcs/blob/master/text/2052-epochs.md
 
 This RFC proposes various clarifications to the edition process going forward:
 
-* We will do new Rust editions on a regular, three-year cadence.
-    * We will roll out an edition regardless of whether there are breaking changes.
-* Unlike Rust 2018, we will avoid using editions as a "deadline" to tie together high-priority projects.
-    * Instead, we embrace the train model, but editions are effectively a "somewhat bigger release", giving us an opportunity to give an overview of all the work that has landed over the previous three years.
-* We specify a cadence for Edition lints.
-    * "Edition idiom" lints for Edition N will warn for editions before N, and become "deny by default" in Edition N.
-    * Since it would be disruptive to introduce deny-by-default lints for Rust 2018 now, the Rust 2018 lints are repurposed into Rust 2021 Edition lints.
-* We specify a policy on reserving keywords and other prospective changes.
-    * In short, reserving keywords is allowed only as part of an active project group.
+- We will do new Rust editions on a regular, three-year cadence.
+  - We will roll out an edition regardless of whether there are breaking changes.
+- Unlike Rust 2018, we will avoid using editions as a "deadline" to tie together high-priority projects.
+  - Instead, we embrace the train model, but editions are effectively a "somewhat bigger release", giving us an opportunity to give an overview of all the work that has landed over the previous three years.
+- We specify a cadence for Edition lints.
+  - "Edition idiom" lints for Edition N will warn for editions before N, and become "deny by default" in Edition N.
+  - Since it would be disruptive to introduce deny-by-default lints for Rust 2018 now, the Rust 2018 lints are repurposed into Rust 2021 Edition lints.
+- We specify a policy on reserving keywords and other prospective changes.
+  - In short, reserving keywords is allowed only as part of an active project group.
 
 ## Expected nature of editions to come
 
@@ -45,17 +47,18 @@ The "size" of changes to expect is important, because they help inform the best 
 
 Just as with Rust 2018, we are firmly committed to the core concepts of an edition:
 
-* Crates using older editions continues to compile in the newer
+- Crates using older editions continues to compile in the newer
   compiler, potentially with warnings.
-* Crates using different editions can interoperate, and people can
+- Crates using different editions can interoperate, and people can
   upgrade to newer editions on their own schedule.
-* Code that compiles without a warning on Edition N should also
+- Code that compiles without a warning on Edition N should also
   compile on Edition N + 1.
-* Migration between editions should generally be automated.
-* Editions make "skin-deep" changes, with all editions ultimately
+- Migration between editions should generally be automated.
+- Editions make "skin-deep" changes, with all editions ultimately
   compiling to a single common representation.
 
 # Guide-level explanation
+
 [guide-level-explanation]: #guide-level-explanation
 
 We use this section to try and convey the story that average users will need to understand.
@@ -97,6 +100,7 @@ For semver purposes, you should think of editions as being equivalent to any oth
 Rust does not have an official policy on whether it is a semver breaking change to change the version of the Rust compiler required to compile your crate. In practice, widely used crates generally adopt and document a "MSRV" (Minimum Supported Rust Version) and have rules about when it can be changed. Upgrading to an edition may then trigger a change to the MSRV and hence could be considered a breaking change, depending on the crate's policy.
 
 # Reference-level explanation
+
 [reference-level-explanation]: #reference-level-explanation
 
 We use this section to answer detailed questions.
@@ -109,8 +113,8 @@ It is expected that the 3-year edition cadence can inform our roadmap and featur
 
 Migrations are the "breaking changes" that we make as part of an edition transition (except of course that they don't break any code). We want to ensure a smooth user experience, so each such change must either:
 
-* Have automated, rustfix-compatible tooling that will ensure that old code continues to work in the new edition with the same semantics as before.
-* Or, be expected to occur *very* rarely, as evidenced by crater runs and experience. In these cases, it is preferable if the migration causes a compilation error, rather than silently changing semantics.
+- Have automated, rustfix-compatible tooling that will ensure that old code continues to work in the new edition with the same semantics as before.
+- Or, be expected to occur _very_ rarely, as evidenced by crater runs and experience. In these cases, it is preferable if the migration causes a compilation error, rather than silently changing semantics.
 
 In some cases, migrations can come with a combination. For example, there may be tooling to port old code that works the vast majority of the time but occasionally fails (this can happen around macros).
 
@@ -122,21 +126,29 @@ Idiom lints are encouraged but not required to produce "rustfix"-compatible sugg
 
 ## Keyword reservation policy
 
-One question that comes up around editions is whether to reserve keywords which we think we *might* want but for which we don't have a particular use in mind yet. For the Rust 2018 edition, we opted not to reserve any such keywords, and in this RFC we re-affirm that policy.
+One question that comes up around editions is whether to reserve keywords which we think we _might_ want but for which we don't have a particular use in mind yet. For the Rust 2018 edition, we opted not to reserve any such keywords, and in this RFC we re-affirm that policy.
 
 The policy is that **new keywords can be introduced in an edition only as part of a design with an accepted RFC**. Note that if there is an accepted RFC for some design that introduces a new keyword, but the design is not yet fully implemented, then the edition might still make that keyword illegal. This way, the way is clear when the time comes to introduce that keyword in the future. As an example, this is what happened with async/await: the async keyword was introduced as part of the 2018 edition, but didn't do anything until later in the release cycle.
 
 The motivation here is that any attempt to figure out a reasonable set of keywords to reserve seems inevitably to turn into "keyword fishing", where we wind up with a long list of potential keywords. This ultimately leads to user confusion and a degraded experience. Given that editions come on a regular basis, it suffices to simply allow the keyword to be reserved in the next edition. If we really want to expose the feature earlier, then a macro or other workaround can be used in the interim (and transitioned automatically as part of the move to the next edition).
 
+## Leveraging editions for phasing in large changes
+
+In some cases, we may leverage editions for phasing in changes which will ultimately be used for all versions of Rust. As an example, consider the introduction of [non-lexical lifetimes][rfc 2094]. Implementing that RFC required introducing an entirely new version of the borrow checker. This new borrow checker included a number of bugfixes that, while valid, had the effect of causing existing code not to compile. Therefore, we didn't want to phase it in all at once. Moreover, since this was new code, we wanted to give it some time to be used in practice to help uncover problems. We solved these issues by first deploying the new borrow checker only for Rust 2018 code. This limited its effects and gave us more time for testing. Once we were more confident in the new code, we were able to start issuing warnings for Rust 2015 code and eventually removing the old borrow checker altogether. There are other upcoming changes, such as further overhauls to the borrowing system, or changes to how we resolve traits, where we may wish to make use of an edition in a similar way.
+
+[rfc 2094]: https://github.com/rust-lang/rfcs/blob/master/text/2094-nll.md
+
 # Drawbacks
+
 [drawbacks]: #drawbacks
 
 The primary drawbacks of doing editions at all are as follows:
 
-* Coordinating an edition release is a stressor on the organization, as we have to coordinate the transition tooling, documentation, and other changes. This was particularly true in the original formulation of the editions, which put a heavy emphasis on the "feature-driven" nature of the 2018 Edition (i.e., the goal was to release new and exciting features, not to look back on work that had already been completed).
-* Transitioning to a new edition, even if optional, is an ask for our users. Some production users expressed frustration at having to spend the time upgrading their crates to the new edition. Even with tooling, the task requires time and effort to coordinate. At this stage in Rust's life, "production use" often implies "commercial use," and time and effort means "money" to them. Asking too much could harm Rust's commercial prospects, with all of the secondary impacts that has on the not-for-profit ecosystem as well. 
+- Coordinating an edition release is a stressor on the organization, as we have to coordinate the transition tooling, documentation, and other changes. This was particularly true in the original formulation of the editions, which put a heavy emphasis on the "feature-driven" nature of the 2018 Edition (i.e., the goal was to release new and exciting features, not to look back on work that had already been completed).
+- Transitioning to a new edition, even if optional, is an ask for our users. Some production users expressed frustration at having to spend the time upgrading their crates to the new edition. Even with tooling, the task requires time and effort to coordinate. At this stage in Rust's life, "production use" often implies "commercial use," and time and effort means "money" to them. Asking too much could harm Rust's commercial prospects, with all of the secondary impacts that has on the not-for-profit ecosystem as well.
 
 # Rationale and alternatives
+
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 There are several alternative designs which we could consider.
@@ -153,34 +165,33 @@ An alternative would be to wait and only do an edition when we have a need for o
 
 Similar to the previous, we might have an edition schedule, but simply skip an edition if, in some particular year, there aren't any migrations. This remains an option, but it remains unclear whether this will ever happen, and it also adds an additional variable that complicates RFC discussions ("But if we accept this, that'll be the only reason to have an edition, and it doesn't seem worth it.")
 
-Furthermore, it's worth noting that many of the most important changes we introduce in Rust are not actually migrations that require an edition, but we still would like to be able to use editions to trumpet them as well as in some cases to help and phase them in. Consider a change such as the introduction of [non-lexical lifetimes][RFC 2094]. If we introduced a change like this today, we would like to be able to use it as a community rallying point in 2021. Furthermore, even though non-lexical lifetimes have ultimately been phased in for all Rust code by now, we began by supporting them only in Rust 2018 code, precisely so as to limit its effects and give us more time for testing and to ensure that all crates were working correctly. There are other upcoming changes, such as further overhauls to the borrowing system, or changes to how we resolve traits, where we may wish to make use of an edition in a similar way.
-
-[RFC 2094]: https://github.com/rust-lang/rfcs/blob/master/text/2094-nll.md
-
 ## Feature-driven editions released when things are ready, but not on a fixed schedule
 
 An alternative to doing editions on a schedule would be to do a **feature-driven** edition. Under this model, editions would be tied to a particular set of features we want to introduce, and they would be released when those features complete. This is what Ember did with [its notion of editions](https://emberjs.com/editions/). As part of this, Ember's editions are given names ("Octane") rather than being tied to years, since it is not known when the edition will be released when planning begins.
 
 This model works well for larger, sweeping changes, such as the changes to module paths in Rust 2018, but it doesn't work as well for smaller, more targeted changes, such as those that are being considered for Rust 2021. To take one example, [RFC 2229] introduced some tweaks to how closure captures work. When that implementation is ready, it will require an edition to phase in. However, it on its own is hardly worthy of a "special edition". It may be that this change, combined with a few others, merits an edition, but that then requires that we consider "sets of changes" rather than judging each change on its own individual merits.
 
-[RFC 2229]: https://github.com/rust-lang/rfcs/blob/master/text/2229-capture-disjoint-fields.md
+[rfc 2229]: https://github.com/rust-lang/rfcs/blob/master/text/2229-capture-disjoint-fields.md
 
 The fact is that, in practice, we don't expect that Rust will contain a large number of "sweeping changes" like the module reform from Rust 2018. That was rather the exception and not the norm. We expect most changes to be more analogous to the introduction of `async fn`, where we simply added a keyword, or to the closure changes from [RFC 2229].
 
 # Prior art
+
 [prior-art]: #prior-art
 
-* [RFC 2052] introduced Rust's editions.
-* Ember's notion of feature-driven editions were introduced in [Ember RFC 364](https://github.com/emberjs/rfcs/blob/master/text/0364-roadmap-2018.md).
-* As noted in [RFC 2052], C/C++ and Java compilers both have ways of specifying which version of the standard the code is expected to conform to.
-* The [XSLT programming language](https://www.w3.org/TR/xslt-30/) had explicit version information embedded in every program that was used to guide transitions. (Author's note: nikomatsakis used to work on an XSLT compiler and cannot resist citing this example. nikomatsakis also discovered that there is apparently an XSLT 3.0 now. 👀)
+- [RFC 2052] introduced Rust's editions.
+- Ember's notion of feature-driven editions were introduced in [Ember RFC 364](https://github.com/emberjs/rfcs/blob/master/text/0364-roadmap-2018.md).
+- As noted in [RFC 2052], C/C++ and Java compilers both have ways of specifying which version of the standard the code is expected to conform to.
+- The [XSLT programming language](https://www.w3.org/TR/xslt-30/) had explicit version information embedded in every program that was used to guide transitions. (Author's note: nikomatsakis used to work on an XSLT compiler and cannot resist citing this example. nikomatsakis also discovered that there is apparently an XSLT 3.0 now. 👀)
 
 # Unresolved questions
+
 [unresolved-questions]: #unresolved-questions
 
 None.
 
 # Future possibilities
+
 [future-possibilities]: #future-possibilities
 
 None. It's perfect. =)
@@ -189,8 +200,8 @@ None. It's perfect. =)
 
 At present, there are two accepted RFCs that would require migrations and which are actively being pursued. Neither represents a "large-scale" change to the compiler.
 
-[RFC 2229] modifies closures so that a closure like `|| ... a.b.c ...` will, in some cases, capture *just* the field `a.b.c` instead of capturing all of `a`. This can affect when values are dropped, since in some cases the older closure might have captured all of `a` and then dropped it when the closure was dropped. Most of the time this doesn't matter (and we can likely detect most of those cases). But in some cases, it might, and hence the migration would introduce a `let a = a;` statement to preserve the existing drop order.
+[RFC 2229] modifies closures so that a closure like `|| ... a.b.c ...` will, in some cases, capture _just_ the field `a.b.c` instead of capturing all of `a`. This can affect when values are dropped, since in some cases the older closure might have captured all of `a` and then dropped it when the closure was dropped. Most of the time this doesn't matter (and we can likely detect most of those cases). But in some cases, it might, and hence the migration would introduce a `let a = a;` statement to preserve the existing drop order.
 
 [RFC 2795] introduces implicit named arguments in format strings, so that one can write `panic!("error: {error_code}")` in place of `panic!("error: {error_code}", error_code=error_code)`. However, in today's code, the former is accepted and simply panics with a `&str` equal to `error: {error_code}`. A migration can detect this edge case and rewrite the panic to preserve these semantics, [as discussed on the tracking issue](https://github.com/rust-lang/rust/issues/67984#issuecomment-653909850).
 
-[RFC 2795]: https://rust-lang.github.io/rfcs/2795-format-args-implicit-identifiers.html
+[rfc 2795]: https://rust-lang.github.io/rfcs/2795-format-args-implicit-identifiers.html
