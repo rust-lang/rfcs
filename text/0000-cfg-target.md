@@ -1,6 +1,6 @@
 - Feature Name: `cfg-target`
 - Start Date: 2020-09-27
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#2991](https://github.com/rust-lang/rfcs/pull/2991)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 # Summary
