@@ -276,7 +276,7 @@ match x {
 }
 
 // Desugared:
-let x = &Some(3);
+let x = &Some((3, 3));
 match x {
   &Some((ref x, 3)) | &Some((ref x, 5)) => { ... }
   None => { ... }
@@ -344,6 +344,7 @@ match y {
 
 Example of new mutable reference behavior:
 ```rust
+let mut x = Some(5);
 match &mut x {
     Some(y) => {
         // `y` is an `&mut` reference here, equivalent to `ref mut` before
