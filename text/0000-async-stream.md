@@ -434,7 +434,7 @@ pub trait FromIterator<A> {
 It should be noted that this trait is rarely used directly, instead used through Iterator's collect method ([source](https://doc.rust-lang.org/std/iter/trait.FromIterator.html)).
 
 ```rust
-pub trait Interator {
+pub trait Iterator {
     fn collect<B>(self) -> B
     where
         B: FromIterator<Self::Item>,
