@@ -252,6 +252,15 @@ by an infrastructure team member reporting the outcome of a team discussion.
 - Tier 2 targets must not leave any significant portions of `core` or the
   standard library `unimplemented!()`, unless they cannot possibly be supported
   on the target.
+- The code generation backend for the target should not have deficiencies that
+  invalidate Rust safety properties, as evaluated by the Rust compiler team.
+  For example, if Rust relies on a specific code generation feature to support
+  a memory safety property, the code generation for the target should support
+  that feature. If this requirement does not hold, the target must clearly and
+  prominently document any such limitations, such as via a failing test in the
+  testsuite and/or a footnote in the target tier list, and the Rust compiler
+  team must be satisfied with the balance between these limitations and the
+  difficulty of implementing the necessary features.
 - If the target supports C code, the new Rust target should support the C
   calling convention for the platform via `extern "C"`. The C calling
   convention does not need to be the default Rust calling convention for the
