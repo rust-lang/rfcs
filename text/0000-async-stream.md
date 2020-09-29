@@ -106,7 +106,7 @@ Since `Stream::poll_next` takes a pinned reference, the next future needs `S` to
 
 An alternative approach we could take would be to have the `next` method take `Pin<&mut S>`, rather than `&mut S`. However, this would require pinning even when the type is `Unpin`. The current approach requires pinning only when the type is not `Unpin`.
 
-At the moment, we do not see many `Unpin!` streams in practice (though there is one in the [futures-intrusive crate](https://github.com/Matthias247/futures-intrusive/blob/master/src/channel/mpmc.rs#L565-L625)). Where they will become important is when we introduce async generators, as discussed in [future-possibilities].
+At the moment, we do not see many `!Unpin` streams in practice (though there is one in the [futures-intrusive crate](https://github.com/Matthias247/futures-intrusive/blob/master/src/channel/mpmc.rs#L565-L625)). Where they will become important is when we introduce async generators, as discussed in [future-possibilities].
 
 In summary, an async stream:
 * has a pinned receiver
