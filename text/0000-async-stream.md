@@ -89,7 +89,7 @@ The arguments to `poll_next` match that of the [`Future::poll`] method:
 [`Future::poll`]: https://doc.rust-lang.org/std/future/trait.Future.html#tymethod.poll
 [pinned]: https://doc.rust-lang.org/std/pin/struct.Pin.html
 [context]: https://doc.rust-lang.org/std/task/struct.Context.html
-[Waker]: https://doc.rust-lang.org/std/task/struct.Waker.html
+[`Waker`]: https://doc.rust-lang.org/std/task/struct.Waker.html
 
 ### Why does next require Self:Unpin?
 
