@@ -221,8 +221,11 @@ by an infrastructure team member reporting the outcome of a team discussion.
   every tier 2 target.
 - The target must provide documentation for the Rust community explaining how
   to build for the target using cross-compilation, and explaining how to run
-  tests for the target, using emulation if possible or dedicated hardware if
-  necessary.
+  tests for the target. If at all possible, this documentation should show how
+  to run Rust programs and tests for the target using emulation, to allow
+  anyone to do so. If the target cannot be feasibly emulated, the documentation
+  should explain how to obtain and work with physical hardware, cloud systems,
+  or equivalent.
 - The target must document its baseline expectations for the features or
   versions of CPUs, operating systems, libraries, runtime environments, and
   similar.
@@ -353,6 +356,16 @@ including the infrastructure team in the RFC proposing the target.
   systems running the target), the target maintainers must arrange to provide
   such resources to the Rust project, to the satisfaction and approval of the
   Rust infrastructure team.
+  - Such resources may be provided via cloud systems, via emulation, or via
+    physical hardware.
+  - If it is not possible to run the target via emulation, these resources must
+    additionally be sufficient for the Rust infrastructure team to make them
+    available for access by Rust team members, for the purposes of development
+    and testing. (Note that the responsibility for doing target-specific
+    development to keep the target well maintained remains with the target
+    maintainers. This requirement ensures that it is possible for other
+    Rust developers to test the target, but does not obligate other Rust
+    developers to make target-specific fixes.)
 - All tier 2 requirements apply.
 
 A tier 1 target may be demoted if it no longer meets these requirements. Any
