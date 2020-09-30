@@ -243,11 +243,14 @@ context:
 - Range patterns.
 - Or patterns.
 
+Therefore, literals, bitwise OR, and range expressions (`..`, `..=`) are not permitted on the
+left-hand side of a destructuring assignment.
+
 ## Compound destructuring assignment
 
 We forbid destructuring compound assignment, i.e. destructuring for operators like `+=`, `*=` and so
-on. This is both for the sake of simplicity and since there are relevant design questions that do not have obvious answers,
-e.g. how this could interact with custom implementations of the operators.
+on. This is both for the sake of simplicity and since there are relevant design questions that do
+not have obvious answers, e.g. how this could interact with custom implementations of the operators.
 
 ## Order-of-assignment
 
