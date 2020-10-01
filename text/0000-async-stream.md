@@ -481,6 +481,14 @@ about whether to implement from_stream for all T where `T: FromIterator` as well
 current function, but doesn't have too. Therefore, many (if not all) existing impls of `FromIterator` would work
 for `FromStream` as well. While this would be a good point for a future discussion, it is not in the scope of this RFC.
 
+## Converting an Iterator to a Stream
+
+If a user wishes to convert an Iterator to a Stream, they may not be able to use IntoStream because a blanked impl for Iterator would conflict with more specific impls they may wish to write. Having a function that takes an `impl Iterator<Item = T>` and returns an `impl Stream<Item = T>` would be quite helpful. 
+
+The [async-std](https://github.com/async-rs/async-std) crate has [stream::from_iter](https://docs.rs/async-std/1.6.5/async_std/stream/fn.from_iter.html). The [futures-rs](https://github.com/rust-lang/futures-rs) crate has [stream::iter](https://docs.rs/futures/0.3.5/futures/stream/fn.iter.html). Either of these approaches could work once we expose `Stream` in the standard library.
+
+Adding this functionality is out of the scope of this RFC, but is something we should revisit once `Stream` is in the standard library.
+
 ## Other Traits
 
 Eventually, we may also want to add some (if not all) of the roster of traits we found useful for `Iterator`.
