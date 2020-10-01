@@ -77,6 +77,8 @@ Rustdoc will make the following changes to URL structure:
 	After this change, rustdoc will generate a page at the top level which redirects
 	to the version nested in the module.
 
+	This does not affect inlining; if `mod foo` is private, the page will stlil be displayed at the top-level without a redirect.
+
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
