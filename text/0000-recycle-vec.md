@@ -44,16 +44,16 @@ Sometimes you find yourself doing performance-sensitive processing where you wan
 new `Vec`s in a loop, but instead reuse a single `Vec` over and over again. If the values you are
 storing in the `Vec` are `'static`, this is easy to achieve:
 
-```
-    let mut objects: Vec<Object> = Vec::new();
+```rust
+let mut objects: Vec<Object> = Vec::new();
 
-    while let Some(byte_chunk) = stream.next() {                      // `byte_chunk` lifetime starts
+while let Some(byte_chunk) = stream.next() {                      // `byte_chunk` lifetime starts
 
-        deserialize(byte_chunk, &mut objects)?;
-        process(&objects)?;
-        objects.truncate(0);
+    deserialize(byte_chunk, &mut objects)?;
+    process(&objects)?;
+    objects.truncate(0);
 
-    }                                                                 // `byte_chunk` lifetime ends
+}                                                                 // `byte_chunk` lifetime ends
 ```
 
 However, in these kinds of performance-sensitive contexts, it's not uncommon to do *zero-copy parsing*;
@@ -61,18 +61,18 @@ that is, reusing parts of the original byte buffer as-is, to save the cost of co
 (and possibly allocating storage for the data) from the original buffer. This means that the `Object`s
 parsed from `byte_chunk` have references to it:
 
-```
-    let mut objects: Vec<Object<'_>> = Vec::new();                    // `objects` lifetime starts
+```rust
+let mut objects: Vec<Object<'_>> = Vec::new();                    // `objects` lifetime starts
 
-    while let Some(byte_chunk) = stream.next() {                      // `byte_chunk` lifetime starts
+while let Some(byte_chunk) = stream.next() {                      // `byte_chunk` lifetime starts
 
-        // Zero-copy parsing; Objects has references to `byte_chunk`
-        deserialize(byte_chunk, &mut objects)?;
-        process(&objects)?;
-        objects.truncate(0);
+    // Zero-copy parsing; Objects has references to `byte_chunk`
+    deserialize(byte_chunk, &mut objects)?;
+    process(&objects)?;
+    objects.truncate(0);
 
-    }                                                                 // `byte_chunk` lifetime ends
-                                                           // `objects` is still alive after the loop
+}                                                                 // `byte_chunk` lifetime ends
+                                                       // `objects` is still alive after the loop
 ```
 
 This proves to be a problem:
@@ -94,21 +94,21 @@ by the lifetime of `byte_chunk`.
 However, `Vec` has an API that allows us to fix the situation. Calling the `recycle` method allows us to
 decouple the type – including the lifetime – of `objects` during each loop from the original type:
 
-```
-                                                // The lifetime here can be anything, including 'static
-    let mut objects: Vec<Object<'static>> = Vec::new();
+```rust
+                                            // The lifetime here can be anything, including 'static
+let mut objects: Vec<Object<'static>> = Vec::new();
 
-    while let Some(byte_chunk) = stream.next() {                      // `byte_chunk` lifetime starts
+while let Some(byte_chunk) = stream.next() {                      // `byte_chunk` lifetime starts
 
-         let mut objects_temp: Vec<Object<'_>> = objects.recycle();   // `objects_temp` lifetime starts
+    let mut objects_temp: Vec<Object<'_>> = objects.recycle();   // `objects_temp` lifetime starts
+
+    // Zero-copy parsing; Objects has references to `byte_chunk`
+    deserialize(byte_chunk, &mut objects_temp)?;
+    process(&objects_temp)?;
  
-        // Zero-copy parsing; Objects has references to `byte_chunk`
-        deserialize(byte_chunk, &mut objects_temp)?;
-        process(&objects_temp)?;
- 
-        objects = objects_temp.recycle();                             // `objects_temp` lifetime ends
+    objects = objects_temp.recycle();                             // `objects_temp` lifetime ends
 
-    }                                                                 // `byte_chunk` lifetime ends
+}                                                                 // `byte_chunk` lifetime ends
 ```
 
 From the viewpoint of the borrow checker, `objects_temp` is a new, separate object that has nothing
@@ -125,7 +125,7 @@ This is to ensure that the backing allocation has compatible memory layout.
 
 The implementation of this RFC is very clear and concise; it's as follows:
 
-```
+```rust
 impl Vec<T> {
     fn recycle<U>(mut self) -> Vec<U> {
         assert_eq!(core::mem::size_of::<T>(), core::mem::size_of::<U>());
