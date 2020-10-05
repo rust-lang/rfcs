@@ -1687,7 +1687,7 @@ the proposed syntax in this RFC to work.
 [Appendix B.2]: #appendix-b2
 
 Many participants in the survey opined that the proposed syntax was consistent
-with current Rust. They though that this was positive.
+with current Rust. They thought that this was positive.
 
 1. > It is the *only* option consistent with what we have today and expect once we learn about `let PATTERN = EXPR`.
 
