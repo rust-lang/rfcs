@@ -35,7 +35,7 @@ fn add_five(x: i32) -> i32 {
 }
 ```
 
-It it a compile time error to specify an instruction set that is not available on the target you're compiling for. Users wishing for their code to be as portable as possible should use `cfg_attr` to only enable the attribute when using the appropriate targets.
+It is a compile time error to specify an instruction set that is not available on the target you're compiling for. Users wishing for their code to be as portable as possible should use `cfg_attr` to only enable the attribute when using the appropriate targets.
 
 ```rust
 // This will fail to build if `arm::a32` isn't available
