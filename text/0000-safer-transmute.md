@@ -203,6 +203,8 @@ A value may ***not*** be transmuted into a type of greater size, if doing so wou
 let _ : [u8; 32] = transmute!([u8; 16]::default()); // Compile Error!
 ```
 
+A `differing_sizes` lint reports warnings for invocations of `transmute!()` where the source and destination types are different sizes.
+
 #### Requirements on References
 [transmute-references]: #requirements-on-references
 
@@ -941,6 +943,8 @@ Unless `NeglectConstructability` is used as `Neglect` option, a `Src` is *safely
 If `Src` is a mutatable reference, then additionally:
   1. `Src: Constructible<Scope>`
 
+### Implementing `differing_sizes`
+The `differing_sizes` lint reports a compiler warning when the source and destination types of a `transmute!()`, `transmute_into` or `transmute_from` invocation differ. This lint shall be warn-by-default.
 
 ### Minimal Useful Stabilization Surface
 Stabilizing *only* these items of the Initial Smart Implementation will cover many use-cases:
