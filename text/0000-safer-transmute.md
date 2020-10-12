@@ -912,6 +912,8 @@ impl Foo for ! {
 ```
 Scope types should (as much as possible) pretty print in compiler error messages as their definition path.
 
+These scope types should generated with `pub(self)` visibility. We are not currently aware of any reason why publicly re-exporting a scope type via a type alias would be a good idea; restricting the visibility of these types will warn users against doing so. If compelling use-cases for re-exported scope types are discovered in the future, a broader visibility could be used instead without breaking backwards compatibility.
+
 ### Implementing `Constructible`
 The compiler implements `Constructible<Scope>` for `T` if `T` is fully implicitly constructible in the scope uniquely identified by the type `Scope`.
 
