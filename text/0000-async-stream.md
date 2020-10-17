@@ -106,7 +106,7 @@ Since `Stream::poll_next` takes a pinned reference, the next future needs `S` to
 
 An alternative approach we could take would be to have the `next` method take `Pin<&mut S>`, rather than `&mut S`. However, this would require pinning even when the type is `Unpin`. The current approach requires pinning only when the type is not `Unpin`.
 
-We currently do see some `!Unpin` streams in practice (including in the [futures-intrusive crate](https://github.com/Matthias247/futures-intrusive/blob/master/src/channel/mpmc.rs#L565-L625)). We also see see `stream.then(|_| async {})` resulting in an `!Unpin` stream. Where `!Unpin` streams will become important is when we introduce async generators, as discussed in [future-possibilities].
+We currently do see some `!Unpin` streams in practice (including in the [futures-intrusive crate](https://github.com/Matthias247/futures-intrusive/blob/master/src/channel/mpmc.rs#L565-L625)). We also see `stream.then(|_| async {})` resulting in an `!Unpin` stream. Where `!Unpin` streams will become important is when we introduce async generators, as discussed in [future-possibilities].
 
 In summary, an async stream:
 * has a pinned receiver
@@ -228,7 +228,7 @@ why they ended up the way they did.
 
 `Stream` will live in the `core::stream` module and be re-exported as `std::stream`.
 
-It is possible that it could live in another area as well, though this followes
+It is possible that it could live in another area as well, though this follows
 the pattern of `core::future`.
 
 ## Why use a `poll` method?
@@ -250,7 +250,7 @@ resolved](https://rust-lang.github.io/wg-async-foundations/design_notes/async_fn
 before they can be added. 
 
 Moreover, it is not clear yet how to make traits that contain async
-functions be `dyn` safe, and it is imporant to be able to pass around `dyn
+functions be `dyn` safe, and it is important to be able to pass around `dyn
 Stream` values without the need to monomorphize the functions that work
 with them.
 
@@ -339,7 +339,7 @@ pub trait IntoIterator where
 }
 ```
 
-Examples taken from the Rust docs on [for loops and into_iter](https://doc.rust-lang.org/std/iter/index.html#for-loops-and-intoiterator)
+Examples are taken from the Rust docs on [for loops and into_iter](https://doc.rust-lang.org/std/iter/index.html#for-loops-and-intoiterator)
 
 * `for x in iter` uses `impl IntoIterator for T`
 
@@ -438,7 +438,7 @@ pub trait Iterator {
 }
 ```
 
-Examples taken from the Rust docs on [iter and collect](https://doc.rust-lang.org/std/iter/trait.Iterator.html#method.collect)
+Examples are taken from the Rust docs on [iter and collect](https://doc.rust-lang.org/std/iter/trait.Iterator.html#method.collect)
 
 
 ```rust
@@ -452,7 +452,7 @@ let doubled: Vec<i32> = a.iter()
 
 **Streams**
 
-We may want a trait similar to this for `Stream`. The `FromStream` trait would provide way to convert a `Stream` into another type.
+We may want a trait similar to this for `Stream`. The `FromStream` trait would provide a way to convert a `Stream` into another type.
 
 This trait could look like this:
 
@@ -747,7 +747,7 @@ impl<I: PinIterator, P: Deref<Target = I> + DerefMut> Iterator for Pin<P> {
 // this would be nice.. but would lead to name resolution ambiguity for our combinators 😬 
 default impl<T: Iterator> PinIterator for T { .. }
 ```
-Pinning also applies to the design of AsyncRead/AsyncWrite, which currently uses Pin even through there is no clear plan to make them implemented with generator type syntax. The asyncification of a signature is current understood as pinned receiver + context arg + return poll.
+Pinning also applies to the design of AsyncRead/AsyncWrite, which currently uses Pin even through there is no clear plan to make them implemented with generator type syntax. The asyncification of a signature is currently understood as pinned receiver + context arg + return poll.
 
 ### Yielding
 
