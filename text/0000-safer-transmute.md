@@ -1103,16 +1103,20 @@ We consider the following unresolved questions to be out-of-scope of *this* RFC 
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
+## Safe Union Access
+
+Given `TransmuteFrom`, the compiler can determine whether an access of a union variant of type `V` from a union `U` is safe by checking `V: TransmuteFrom<U, Here!()>`. In accesses where that bound is satisfied, the compiler can omit the requirement that the access occur in an `unsafe` block.
+
 ## Extension: Layout Property Traits
 [0000-ext-layout-traits.md]: https://github.com/rust-lang/project-safe-transmute/blob/master/rfcs/0000-ext-layout-traits.md
 
-See [here][0000-ext-layout-traits.md].
+Given `TransmuteFrom`, crates can define traits that are implemented only when size and alignment invariants are satisfied, such as `SizeEq` or `AlignLtEq`. For additional details, see [here][0000-ext-layout-traits.md].
 
 ## Extension: Byte Transmutation Traits and Safe Initialization
 [extension-zerocopy]: #extension-byte-transmutation-traits-and-safe-initialization
 [0000-ext-byte-transmutation.md]: https://github.com/rust-lang/project-safe-transmute/blob/master/rfcs/0000-ext-byte-transmutation.md
 
-See [here][0000-ext-byte-transmutation.md].
+Given `TransmuteFrom`, crates can define zerocopy-style traits. For additional details, see [here][0000-ext-byte-transmutation.md].
 
 
 ## Extension: Slice and `Vec` Casting
@@ -1120,18 +1124,18 @@ See [here][0000-ext-byte-transmutation.md].
 [ext-vec-casting]: #extension-slice-and-vec-casting
 [0000-ext-container-casting.md]: https://github.com/rust-lang/project-safe-transmute/blob/master/rfcs/0000-ext-container-casting.md
 
-See [here][0000-ext-container-casting.md].
+Given `TransmuteFrom`, crates can define traits for "transmuting" slices and `Vec`s. For additional details, see [here][0000-ext-container-casting.md].
 
 
 ## Extension: `include_data!`
 [future-possibility-include_data]: #Extension-include_data
 [0000-ext-include-data.md]: https://github.com/rust-lang/project-safe-transmute/blob/master/rfcs/0000-ext-include-data.md
 
-See [here][0000-ext-include-data.md].
+Given `TransmuteFrom`, crates can define a more useful alternative to `include_bytes!`. For additional details, see [here][0000-ext-include-data.md].
 
 
 ## Extension: Generic Atomics
 [future-possibility-generic-atomics]: #extension-generic-atomics
 [0000-ext-generic-atomic.md]: https://github.com/rust-lang/project-safe-transmute/blob/master/rfcs/0000-ext-generic-atomic.md
 
-See [here][0000-ext-generic-atomic.md].
+Given `TransmuteFrom`, crates can define a generic `Atomic<T>` alternative to the various `Atomic*` types. For additional details, see [here][0000-ext-generic-atomic.md].
