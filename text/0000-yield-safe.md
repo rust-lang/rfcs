@@ -81,7 +81,7 @@ compile errors when they cross yield boundaries:
 [reference-level-explanation]: #reference-level-explanation
 
 New `YieldSafe` default auto trait needs to be implemented for all primitive types and follow the same propagation rules
-as other auto traits. Each control yield point would need to check if only `YeldSafe` objects are alive at that point.
+as other auto traits. Each control yield point would need to check if only `YieldSafe` objects are alive at that point.
 Generic, `impl` and `dyn` types need also take yield safety into account, to avoid circumventing the system.
 
 One example usage would be a standard `MutexGuard` which is error-prone to use across `.await` points. We would need to
