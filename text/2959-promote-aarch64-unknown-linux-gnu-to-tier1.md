@@ -1,7 +1,7 @@
 - Feature Name: `promote-aarch64-unknown-linux-gnu-to-tier-1`
 - Start Date: 2020-07-17
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- RFC PR: [rust-lang/rfcs#2959](https://github.com/rust-lang/rfcs/pull/2959)
+- Rust Issue: [rust-lang/rust#78251](https://github.com/rust-lang/rust/issues/78251)
 
 # Summary
 [summary]: #summary
