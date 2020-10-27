@@ -1,6 +1,6 @@
 - Feature Name: `destructuring_assignment`
 - Start Date: 2020-04-17
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#2909](https://github.com/rust-lang/rfcs/pull/2909)
 - Rust Issue: [rust-lang/rust#71126](https://github.com/rust-lang/rust/issues/71126)
 - Proof-of-concept: [rust-lang/rust#71156](https://github.com/rust-lang/rust/pull/71156)
 
