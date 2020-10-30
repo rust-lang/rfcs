@@ -11,6 +11,7 @@
 
 We propose traits, namely `TransmuteFrom`, that are implemented *automatically* for combinations of types that may be safely transmuted. In other words, this RFC makes safe transmutation *as easy as 1..., 2..., `repr(C)`!*
 ```rust
+#[derive(Muckable)]
 #[repr(C)]
 pub struct Foo(pub u8, pub u16);
 //                    ^ there's a padding byte here, between these fields
@@ -90,6 +91,9 @@ A transmutation is ***well-defined*** if the mere act of transmuting a value fro
 ### 📖 Safety
 A well-defined transmutation is ***safe*** if *using* the transmuted value cannot violate memory safety.
 
+### 📖 Stability
+A safe transmutation is ***stable*** if the authors of the source type and destination types have indicated that the layouts of those types is part of their libraries' stability guarantees.
+
 ## Concepts in Depth
 
 ***Disclaimer:** While the high-level definitions of transmutation well-definedness and safety is a core component of this RFC, the detailed rules and examples in this section are **not**. We expect that the initial implementation of `TransmuteFrom` may initially be considerably less sophisticated than the examples in this section (and thus forbid valid transmutations). Nonetheless, this section explores nuanced cases of transmutation well-definedness and safety to demonstrate that the APIs we propose can grow to handle that nuance.*
@@ -126,6 +130,7 @@ The bits of any valid instance of the source type must be a bit-valid instance o
 
 For example, we are permitted to transmute a `Bool` into a [`u8`]:
 ```rust
+#[derive(Muckable)]
 #[repr(u8)]
 enum Bool {
     True = 1,
@@ -146,11 +151,11 @@ let _ : Bool = transmute!(u8::default()); // Compile Error!
 Another example: While laying out certain types, Rust may insert padding bytes between the layouts of fields. In the below example `Padded` has two padding bytes, while `Packed` has none:
 ```rust
 #[repr(C)]
-#[derive(Default)]
+#[derive(Default, Muckable)]
 struct Padded(pub u8, pub u16, pub u8);
 
 #[repr(C)]
-#[derive(Default)]
+#[derive(Default, Muckable)]
 struct Packed(pub u16, pub u16, pub u16);
 
 assert_eq!(mem::size_of::<Packed>(), mem::size_of::<Padded>());
@@ -279,25 +284,13 @@ If this example did not produce a compile error, the value of `z` would not be a
 
 
 
-### 📖 When is a transmutation safe?
-A well-defined transmutation is ***safe*** if *using* the transmuted value safely cannot violate memory safety. Whereas well-definedness solely concerns the act of transmutation, *safety* is concerned with what might happen with a value *after* transmutation occurs. A well-defined transmutation must be safe if the involved types are *implicitly constructable*.
+### 📖 When is a transmutation safe and stable?
+[safe-and-stable transmutation]: #-when-is-a-transmutation-safe-and-stable
 
-#### Implicit Constructability
-A struct or enum variant is *fully implicitly constructable* at a given location only if, at that location, that type can be instantiated via its *implicit constructor*, and its fields are also *implicitly constructable*.
+A well-defined transmutation is ***safe*** if *using* the transmuted value safely cannot violate memory safety. Whereas well-definedness solely concerns the act of transmutation, *safety* is concerned with what might happen with a value *after* transmutation occurs. Since transmutation provides a mechanism for arbitrarily reading and modifying the bytes of a type, a well-defined transmutation is not necessarily safe, nor stable.
 
-The *implicit constructor* of a struct or enum variant is the constructor Rust creates implicitly from its definition; e.g.:
-```rust
-struct Point<T> {
-    x: T,
-    y: T,
-}
-
-let p = Point { x: 4, y: 2 };
-     // ^^^^^^^^^^^^^^^^^^^^ An instance of `Point` is created here, via its implicit constructor.
-```
-
-Limiting implicit constructability is the fundamental mechanism with which type authors build safe abstractions for `unsafe` code, whose soundness is dependent on preserving invariants on fields. Usually, this takes the form of restricting the visibility of fields. For instance, consider the type `NonEmptySlice`, which enforces a validity constraint on its fields via its constructor:
-
+#### Well-Definedness Does Not Imply Safety
+For instance, consider the type `NonEmptySlice`, which enforces a validity constraint on its fields via privacy and its constructor `from_array`:
 ```rust
 pub mod crate_a {
 
@@ -326,63 +319,41 @@ pub mod crate_a {
 
 }
 ```
-It is sound for `first` to be a *safe* method is because the `from_array` constructor ensures that `data` is safe to dereference, and because `from_array` is the *only* way to safely initialize `NonEmptySlice` outside of `crate_a` (note that `NonEmptySlice`'s fields are *not* `pub`). As a rule: any field that is not marked `pub` should be assumed to be private *because* it is subject to safety invariants.
+It is sound for `first` to be a *safe* method is because the `from_array` constructor ensures that `data` is safe to dereference, and because `from_array` is the *only* way to safely initialize `NonEmptySlice` outside of `crate_a` (note that `NonEmptySlice`'s fields are *not* `pub`).
 
-Unfortunately, field visibility modifiers are not a surefire indicator of whether a type is *fully* implicitly constructable. A type author may restrict the implicit constructability of a type even in situations where all fields of that type (*and all fields of those fields*) are `pub`; consider:
-```rust
-pub mod crate_a {
-
-    #[repr(C)]
-    pub struct NonEmptySlice<'a, T>(pub private::NonEmptySliceInner<'a, T>);
-
-    impl<'a, T> NonEmptySlice<'a, T> {
-        pub fn from_array<const N: usize>(arr: &'a [T; N], len: usize) -> Self {
-            assert!(len <= N && len > 0);
-            Self(
-                private::NonEmptySliceInner {
-                    data: arr as *const T,
-                    len,
-                    lifetime: core::marker::PhantomData,
-                }
-            )
-        }
-
-        pub fn first(&self) -> &'a T {
-            unsafe { &*self.0.data }
-        }
-    }
-
-    // introduce a private module to avoid `private_in_public` error (E0446):
-    pub(crate) mod private {
-        #[repr(C)]
-        pub struct NonEmptySliceInner<'a, T> {
-            pub data: *const T,
-            pub len: usize,
-            pub lifetime: core::marker::PhantomData<&'a ()>,
-        }
-    }
-
-}
-```
-In the above example, the definitions of both `NonEmptySlice` and its field `NonEmptySliceInner` are marked `pub`, and all fields of these types are marked `pub`. However, `NonEmptySlice` is *not* fully implicitly constructible outside of `crate_a`, because the module containing `NonEmptySliceInner` is not visibile outside of `crate_a`.
-
-#### Constructability and Transmutation
-Transmutation supplies a mechanism for constructing instances of a type *without* invoking its implicit constructor, nor any constructors defined by the type's author. In the previous examples, it would be *unsafe* to transmute `[usize; 2]` into `NonEmptySlice` outside `crate_a`, because subsequent *safe* use of that value (namely, calling `first`) would violate memory safety:
+However, transmutation supplies a mechanism for constructing instances of a type *without* invoking its implicit constructor, nor any constructors defined by the type's author. In the previous examples, it would be *unsafe* to transmute `[usize; 2]` into `NonEmptySlice` outside `crate_a`, because subsequent *safe* use of that value (namely, calling `first`) would violate memory safety:
 ```rust
 /* ⚠️ This example intentionally does not compile. */
 // [usize; 2] ⟶ NonEmptySlice
-let _: NonEmptySlice<'static, u8> = transmute!([0usize; 2]); // Compile Error: `NonEmptySlice<_, _>` is not constructible here.
+let _: NonEmptySlice<'static, u8> = transmute!([0usize; 2]); // Compile Error: `NonEmptySlice<_, _>` is not safely transmutable from `[usize; 2]`.
 ```
-If a field is private, then instantiating or modifying it via transmutation is not, generally speaking, safe.
 
-For transmutations where the destination type involves mutate-able references, the constructability of the *source* type is also relevant. Consider:
+#### Well-Definedness Does Not Imply Stability
+Since the well-definedness of a transmutation is affected by the layouts of the source and destination types, internal changes to those types' layouts may cause code which previously compiled to produce errors. In other words, transmutation causes a type's layout to become part of that type's API for the purposes of SemVer stability.
+
+
+#### Signaling Safety and Stability with `Muckable`
+To signal that your type may be safely and safely constructed via transmutation, implement the `Muckable` marker trait:
+```rust
+use mem::transmute::Muckable;
+
+#[derive(Muckable)]
+#[repr(C)]
+pub struct Foo(pub u8, pub u16);
+```
+
+The `Muckable` marker trait signals that your type's fields may be safely initialized and modified to *any* value. If you would not be comfortable making your type's fields `pub`, you probably should not implement `Muckable` for your type. By implementing `Muckable`, you promise to treat *any* observable modification to your type's layout as a breaking change. (Unobservable changes, such as renaming a private field, are fine.)
+
+As a rule, the destination type of a transmutation must be `Muckable`.
+
+For transmutations where the destination type involves mutate-able references, the `Muckab`ility of the *source* type is also relevant. Consider:
 ```rust
 /* ⚠️ This example intentionally does not compile. */
 let arr = [0u8, 1u8, 2u8];
 let mut x = NonEmptySlice::from_array(&arr, 2);
 {
     // &mut NonEmptySlice ⟶ &mut [usize; 2]
-    let y : &mut u128 = transmute!(&mut x) // Compile Error! `&mut NonEmptySlice` is not constructible here.
+    let y : &mut u128 = transmute!(&mut x) // Compile Error! `&mut NonEmptySlice` is not safely transmutable from `&mut u128`.
     *y[0] = 0;
     *y[1] = 0;
 }
@@ -391,101 +362,6 @@ let z : NonEmptySlice<u8> = x;
 ```
 If this example did not produce a compile error, the value of `z` would not be a safe instance of its type, `NonEmptySlice`, because `z.first()` would dereference a null pointer.
 
-#### Constructability and Scope
-Whether a type is fully implicitly constructable will depends on the *scope* in which that question is asked. Consider:
-```rust
-pub mod a {
-
-    #[repr(C)] pub struct Foo(private::Bar);
-
-    mod private {
-        #[repr(C)] pub struct Bar;
-    }
-
-    // `Foo` is fully implicitly constructible in this module.
-    const _: Foo = Foo { private::Bar };
-
-    // Thus, `Foo` is transmutable in this module!
-    const _: Foo = transmute!(());
-}
-
-pub mod b {
-    use super::a;
-
-    // `Foo` is NOT fully implicitly constructible in this module.
-    const _: Foo = a::Foo { a::private::Bar }; // Compile Error: the module `a::private` is private.
-
-    // Thus, `Foo` is NOT transmutable in this module:
-    const _: Foo = transmute!(()); // Compile Error: `Foo` is not constructible here.
-}
-```
-
-The `transmute!` macro provides a shorthand for safely transmuting a value using its invocation scope as its reference frame:
-```rust
-pub macro transmute($expr: expr) {
-    TransmuteFrom::<_, Here!()>::transmute_from($expr)
-    //              ┯  ━━━┯━━━
-    //              │     ┕ check constructability from `transmute!`'s invocation scope
-    //              ┕ the destination type of the transmute (`_` used to infer the type from context)
-}
-```
-The `Here!()` macro produces a type that uniquely identifies its invocation scope.
-
-This explicit `Scope` parameter of `TransmuteFrom` makes possible the creation of generic abstractions over it. For instance, consider a hypothetical `FromZeros` trait that indicates whether `Self` is safely initializable from a a sufficiently large buffer of zero-initialized bytes:
-```rust
-pub mod zerocopy {
-    pub unsafe trait FromZeros {
-        /// Safely initialize `Self` from zeroed bytes.
-        fn zeroed() -> Self;
-    }
-
-    #[derive(Copy, Clone)]
-    #[repr(u8)]
-    enum Zero {
-        Zero = 0u8
-    }
-
-    unsafe impl<Dst> FromZeros<Neglect> for Dst
-    where
-        Dst: TransmuteFrom<[Zero; usize::MAX], ??? >,
-    {
-        fn zeroed() -> Self {
-            [Zero; size_of::<Self>].transmute_into()
-        }
-    }
-}
-```
-The above definition leaves ambiguous (`???`) the scope in which the constructability of `Dst` is checked: is it from the perspective of where this trait is defined, or where this trait is *used*? You probably do *not* intend for this trait to *only* be usable with `Dst` types that are defined in the same scope as the `FromZeros` trait!
-
-Adding an explicit `Scope` parameter to `FromZeros` makes this unambiguous; the transmutability of `Dst` should be assessed from where the trait is used, *not* where it is defined:
-```rust
-pub unsafe trait FromZeros<Scope> {
-    /// Safely initialize `Self` from zeroed bytes.
-    fn zeroed() -> Self;
-}
-
-unsafe impl<Dst, Scope> FromZeros<Scope> for Dst
-where
-    Dst: TransmuteFrom<[Zero; usize::MAX], Scope>
-{
-    fn zeroed() -> Self {
-        [Zero; size_of::<Self>].transmute_into()
-    }
-}
-```
-
-A thid-party could then use `FromZeros` like so:
-```rust
-use zerocopy::FromZeros;
-
-#[repr(C)]
-struct Foo {
-    ...
-}
-
-// Initialize `Foo` from zero-initialized bytes.
-let _: Foo = FromZeros::<_, Here!()>::zeroed();
-```
 
 
 ## Mechanisms of Transmutation
@@ -494,7 +370,7 @@ The `TransmuteFrom` trait provides the fundamental mechanism checking the transm
 ```rust
 // this trait is implemented automagically by the compiler
 #[lang = "transmute_from"]
-pub unsafe trait TransmuteFrom<Src: ?Sized, Scope, Neglect = ()>
+pub unsafe trait TransmuteFrom<Src: ?Sized, Neglect = ()>
 where
     Neglect: TransmuteOptions,
 {
@@ -532,15 +408,28 @@ where
 
 In the above definitions, `Src` represents the source type of the transmutation, `Dst` represents the destination type of the transmutation, and `Neglect` is a parameter that [encodes][options] which static checks the compiler ought to neglect when considering if a transmutation is valid. The default value of `Neglect` is `()`, which reflects that, by default, the compiler does not neglect *any* static checks.
 
+The transmute! macro provides a shorthand for safely transmuting a value:
+```rust
+pub macro transmute($expr: expr) {
+    core::convert::transmute::TransmuteFrom::<_>::transmute_from($expr)
+    //              ┯
+    //              ┕ the destination type of the transmute (`_` used to infer the type from context)
+}
+```
+
+A `differing_sizes` lint warns when the source and destination types of a transmutation (conducted via `transmute!` or `transmute_from`) have different sizes.
+
+
 ### Neglecting Static Checks
 [options]: #Neglecting-Static-Checks
 
-The default value of the `Neglect` parameter, `()`, statically forbids transmutes that are ill-defined or unsafe. However, you may explicitly opt-out of some static checks; e.g.:
+The default value of the `Neglect` parameter, `()`, statically forbids transmutes that are ill-defined or unsafe. However, you may explicitly opt-out of some static checks; namely:
 
 | Transmute Option    | Usable With                                             |
 |---------------------|---------------------------------------------------------|
 | `NeglectAlignment`  | `unsafe_transmute_{from,into}`                          |
 | `NeglectValidity`   | `unsafe_transmute_{from,into}`                          |
+| `NeglectSafety`     | `unsafe_transmute_{from,into}`                          |
 
 The selection of multiple options is encoded by grouping them as a tuple; e.g., `(NeglectAlignment, NeglectValidity)` is a selection of both the `NeglectAlignment` and `NeglectValidity` options.
 
@@ -572,9 +461,9 @@ By using the `NeglectAlignment` option, you are committing to ensure that the tr
 ///
 /// This produces `None` if the referent isn't appropriately
 /// aligned, as required by the destination type.
-pub fn try_cast_ref<'t, 'u, T, U, Scope>(src: &'t T) -> Option<&'u U>
+pub fn try_cast_ref<'t, 'u, T, U>(src: &'t T) -> Option<&'u U>
 where
-    &'t T: TransmuteFrom<&'u U, Scope, NeglectAlignment>,
+    &'t T: TransmuteFrom<&'u U, NeglectAlignment>,
 {
     if (src as *const T as usize) % align_of::<U>() != 0 {
         None
@@ -613,15 +502,15 @@ enum Bool {
     False = 0,
 }
 
-pub trait TryIntoBool<Scope>
+pub trait TryIntoBool
 {
     fn try_into_bool(self) -> Option<Bool>;
 }
 
-impl<T, Scope> TryIntoBool<Scope> for T
+impl<T> TryIntoBool for T
 where
-    u8: TransmuteFrom<T, Scope>,
-    Bool: TransmuteFrom<u8, Scope, NeglectValidity>
+    u8: TransmuteFrom<T>,
+    Bool: TransmuteFrom<u8, NeglectValidity>
 {
     fn try_into_bool(self) -> Option<Bool> {
         let val: u8 = TransmuteFrom::transmute_from(self);
@@ -643,93 +532,73 @@ Even with `NeglectValidity`, the compiler will statically reject transmutations 
 
 #[repr(C)] enum Bar { Z = 42 }
 
-let _ = <Bar as TransmuteFrom<Foo, Here!(), NeglectValidity>::unsafe_transmute_from(Foo::N) // Compile error!
+let _ = <Bar as TransmuteFrom<Foo, NeglectValidity>::unsafe_transmute_from(Foo::N) // Compile error!
+```
+
+#### `NeglectSafety`
+By default, `TransmuteFrom`'s methods require that all instantiations of the source type are `Muckable`. If the destination type is a mutate-able reference, the source type must *also* be `Muckable`. This precludes transmutations that are [well-defined][sound transmutation] but not [safe][safe-and-stable transmutation].
+
+Whether the bound `Dst: TransmuteFrom<Src, NeglectSafety>` is implemented depends *solely* on the compiler's analysis of the layouts of `Src` and `Dst` (see [*When is a transmutation well-defined?*][sound transmutation])—and *not* the opt-in of the authors of `Src` and `Dst`. When using this option, the onus is on *you* to ensure that you are adhering to the documented layout and library validity guarantees of the involved types.
+
+You might use this option if the involved types predate the `Muckable` trait (e.g., old versions of `libc`). For instance, checking `libc::in6_addr: TransmuteFrom<Src, NeglectSafety>` is better than nothing; it statically ensures that the transmutation from `Src` to `libc::in6_addr` is [well-defined][sound transmutation].
+
+You might also use this option to signal that a *particular* transmutation is stable *without* implementing `Muckable` (which would signal that *all* transmutations are stable):
+```rust
+impl From<Foo> for Bar
+where
+    Bar: TransmuteFrom<Foo, NeglectSafety>
+{
+    fn from(src: Foo) -> Self {
+        unsafe { Bar::unsafe_transmute_from(src) }
+    }
+}
 ```
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 ## Implementation Guidance
-Three items in this RFC require special compiler support:
-  - `Here!()`
-  - `Constructible` (a private implementation detail of `TransmuteFrom`)
+Two items in this RFC require special compiler support:
+  - `Muckable`
   - `TransmuteFrom`
+  - `differing_sizes` lint
 
-### Implementing `Here!()`
-The `Here!` macro produces a type that uniquely identifies its invocation scope. For instance:
-```rust
-use static_assertions::*;
-
-type A = Here!();
-type B = Here!();
-
-/* Types A and !::B are equal */
-assert_type_eq_all!(A, B);
-
-trait Foo {
-    type C;
-    const CONST: ();
-}
-
-impl Foo for ! {
-    type C = Here!();
-
-    const CONST: () = {
-        type D = Here!();
-
-        /* A, B and !::C are equal */
-        assert_type_eq_all!(A, B, !::C);
-
-        /* C and D are NOT equal; C and D inhabit different scopes */
-        assert_type_ne_all!(C, D);
-    };
-}
-```
-Scope types should (as much as possible) pretty print in compiler error messages as their definition path.
-
-These scope types should generated with `pub(self)` visibility. We are not currently aware of any reason why publicly re-exporting a scope type via a type alias would be a good idea; restricting the visibility of these types will warn users against doing so. If compelling use-cases for re-exported scope types are discovered in the future, a broader visibility could be used instead without breaking backwards compatibility.
-
-### Implementing `Constructible`
-The compiler implements `Constructible<Scope>` for `T` if `T` is fully implicitly constructible in the scope uniquely identified by the type `Scope`.
-
-A type `T` is fully implicitly constructible in a particular scope if:
-  - `T`'s implicit constructor is reachable from the scope, and either:
-    - `T` has no fields, or
-    - `T`'s fields are fully implicitly constructible from the scope.
-
-The `Constructible` trait does not ever need to be made stable, or even visible (à la the virtual `Freeze` trait). It is merely a useful device for implementing `TransmuteFrom`.
+### Implementing `Muckable`
+The `Muckable` marker trait is similar to `Copy` in that all fields of a `Muckable` type must, themselves, be `Muckable`.
 
 ### Implementing `TransmuteFrom`
 The implementation of `TransmuteFrom` is completely internal to the compiler (à la [`Sized`](https://doc.rust-lang.org/nightly/nightly-rustc/rustc_middle/ty/struct.TyS.html#method.is_sized) and [`Freeze`](https://doc.rust-lang.org/nightly/nightly-rustc/rustc_middle/ty/struct.TyS.html#method.is_freeze)).
 
 #### Constructability and Transmutation
-Unless `NeglectConstructability` is used as `Neglect` option, a `Src` is *safely* transmutable into `Dst` in a given `Scope` if:
-  1. `Dst: Constructible<Scope>`
-  2. `Dst: TransmuteFrom<Src, Scope, Neglect>`
+A `Src` is *safely* transmutable into `Dst` in a given if:
+  1. `Dst: Muckable`
+  2. `Dst: TransmuteFrom<Src, Neglect>`
+  3. `NeglectSafety` ∉ `Neglect`
 
 If `Src` is a mutatable reference, then additionally:
-  1. `Src: Constructible<Scope>`
+  1. `Src: Muckable`
 
-### Implementing `differing_sizes`
-The `differing_sizes` lint reports a compiler warning when the source and destination types of a `transmute!()`, `transmute_into` or `transmute_from` invocation differ. This lint shall be warn-by-default.
+### Implementing `differing_sizes` lint
+The `differing_sizes` lint reports a compiler warning when the source and destination types of a `transmute!()`, `transmute_from` or `unsafe_transmute_from` invocation differ. This lint shall be warn-by-default.
 
 ### Minimal Useful Stabilization Surface
 Stabilizing *only* this subset of the Initial Smart Implementation will cover many use-cases:
   - `transmute!()`
 
 To define traits that generically abstract over `TransmuteFrom`, these items must be stabilized:
-  - `Here!()`
   - `TransmuteFrom`
   - `TransmuteOptions` and `SafeTransmuteOptions`
 
 
 ### Complete API Surface
-[minimal-impl]: #Listing-for-Initial-Minimal-Implementation
-This listing is the **canonical specification** of this RFC's API surface ([playground](https://play.rust-lang.org/?version=nightly&mode=debug&edition=2018&gist=0a4dda2760244110bcf829c298c45c34)):
+[minimal-impl]: #complete-api-surface
+This listing is the **canonical specification** of this RFC's API surface ([playground](https://play.rust-lang.org/?version=nightly&mode=debug&edition=2018&gist=65eaff7ba0568fe281f9303c57d56ded)):
 ```rust
 #![feature(untagged_unions,const_fn,const_fn_union)] // for the impl of unsafe_transmute_from
-#![feature(decl_macro)] // for stub implementations of derives
-#![allow(warnings)]
+#![feature(decl_macro)] // for `transmute!` and `#[derive(Muckable)]` macros
+#![feature(const_generics)] // for stability declarations on `[T; N]`
+#![feature(never_type)] // for stability declarations on `!`
+#![allow(unused_unsafe, incomplete_features)]
 
 /// Transmutation conversions.
 // suggested location: `core::convert`
@@ -739,13 +608,13 @@ pub mod transmute {
 
     /// Safely transmute $expr
     pub macro transmute($expr: expr) {
-        TransmuteFrom::<_, Here!()>::transmute_from($expr)
+        core::convert::transmute::TransmuteFrom::<_>::transmute_from($expr)
     }
 
     /// `Self: TransmuteFrom<Src, Neglect`, if the compiler accepts
     /// the safety of transmuting `Src` into `Self`, notwithstanding
     /// a given set of static checks to `Neglect`.
-    pub unsafe trait TransmuteFrom<Src: ?Sized, Scope, Neglect = ()>
+    pub unsafe trait TransmuteFrom<Src: ?Sized, Neglect = ()>
     where
         Neglect: TransmuteOptions,
     {
@@ -777,19 +646,12 @@ pub mod transmute {
                 src: ManuallyDrop<Src>,
                 dst: ManuallyDrop<Dst>,
             }
-    
+
             unsafe {
                 ManuallyDrop::into_inner(Transmute { src: ManuallyDrop::new(src) }.dst)
             }
         }
     }
-
-    /// A type is always transmutable from itself.
-    // This impl will be replaced with a compiler-supported for arbitrary source and destination types.
-    unsafe impl<T: ?Sized, Scope, Neglect> TransmuteFrom<T, Scope, Neglect> for T
-    where
-        Neglect: TransmuteOptions
-    {}
 
     /// Static checks that may be neglected when determining if a type is `TransmuteFrom` some other type.
     pub mod options {
@@ -797,11 +659,11 @@ pub mod transmute {
         /// Options that may be used with safe transmutations.
         pub trait SafeTransmuteOptions: TransmuteOptions {}
 
+        /// `()` denotes that no static checks should be neglected.
+        impl SafeTransmuteOptions for () {}
+
         /// Options that may be used with unsafe transmutations.
         pub trait TransmuteOptions: private::Sealed {}
-
-        impl SafeTransmuteOptions for () {}
-        impl TransmuteOptions for () {}
 
         /// Neglect the alignment check of `TransmuteFrom`.
         pub struct NeglectAlignment;
@@ -809,12 +671,17 @@ pub mod transmute {
         /// Neglect the validity check of `TransmuteFrom`.
         pub struct NeglectValidity;
 
-        /* additional options */
+        /// Neglect the safety check of `TransmuteFrom`.
+        pub struct NeglectSafety;
 
+        impl TransmuteOptions for () {}
         impl TransmuteOptions for NeglectAlignment {}
         impl TransmuteOptions for NeglectValidity {}
-
+        impl TransmuteOptions for NeglectSafety {}
         impl TransmuteOptions for (NeglectAlignment, NeglectValidity) {}
+        impl TransmuteOptions for (NeglectAlignment, NeglectSafety) {}
+        impl TransmuteOptions for (NeglectSafety, NeglectValidity) {}
+        impl TransmuteOptions for (NeglectAlignment, NeglectSafety, NeglectValidity) {}
 
         // prevent third-party implementations of `TransmuteOptions`
         mod private {
@@ -825,8 +692,75 @@ pub mod transmute {
             impl Sealed for () {}
             impl Sealed for NeglectAlignment {}
             impl Sealed for NeglectValidity {}
+            impl Sealed for NeglectSafety {}
             impl Sealed for (NeglectAlignment, NeglectValidity) {}
+            impl Sealed for (NeglectAlignment, NeglectSafety) {}
+            impl Sealed for (NeglectSafety, NeglectValidity) {}
+            impl Sealed for (NeglectAlignment, NeglectSafety, NeglectValidity) {}
         }
+    }
+
+    /// Traits for declaring the SemVer stability of types.
+    pub mod stability {
+
+        /// Denotes that `Self`'s fields may be arbitarily initialized or
+        /// modified, regardless of their visibility. Implementing this trait
+        /// additionally denotes that you will treat any observable changes to
+        /// `Self`'s layout as breaking changes. (Unobservable changes, such as
+        /// renaming a private field, are fine.)
+        pub trait Muckable {}
+
+        /// `#[derive(Muckable)]`
+        pub macro Muckable($expr: expr) {
+            /* stub */
+        }
+
+        impl Muckable for     ! {}
+        impl Muckable for    () {}
+
+        impl Muckable for   f32 {}
+        impl Muckable for   f64 {}
+
+        impl Muckable for    i8 {}
+        impl Muckable for   i16 {}
+        impl Muckable for   i32 {}
+        impl Muckable for   i64 {}
+        impl Muckable for  i128 {}
+        impl Muckable for isize {}
+
+        impl Muckable for    u8 {}
+        impl Muckable for   u16 {}
+        impl Muckable for   u32 {}
+        impl Muckable for   u64 {}
+        impl Muckable for  u128 {}
+        impl Muckable for usize {}
+
+        impl<T: ?Sized> Muckable for core::marker::PhantomData<T> {}
+
+        impl<T, const N: usize> Muckable for [T; N]
+        where
+            T: Muckable,
+        {}
+
+        impl<T: ?Sized> Muckable for *const T
+        where
+            T: Muckable, /* discuss this bound */
+        {}
+
+        impl<T: ?Sized> Muckable for *mut T
+        where
+            T: Muckable, /* discuss this bound */
+        {}
+
+        impl<'a, T: ?Sized> Muckable for &'a T
+        where
+            T: Muckable,
+        {}
+
+        impl<'a, T: ?Sized> Muckable for &'a mut T
+        where
+            T: Muckable,
+        {}
     }
 }
 ```
@@ -920,9 +854,9 @@ While this RFC does not provide a grand, all-encompassing mechanism for fallible
 ///
 /// This produces `None` if the referent isn't appropriately
 /// aligned, as required by the destination type.
-pub fn try_cast_ref<'t, 'u, T, U, Scope>(src: &'t T) -> Option<&'u U>
+pub fn try_cast_ref<'t, 'u, T, U>(src: &'t T) -> Option<&'u U>
 where
-    &'t T: TransmuteFrom<&'u U, Scope, NeglectAlignment>,
+    &'t T: TransmuteFrom<&'u U, NeglectAlignment>,
 {
     if (src as *const T as usize) % align_of::<U>() != 0 {
         None
@@ -1061,7 +995,7 @@ Our RFC, [typic][crate-typic], and Haskell exploit the related concept of *const
 
 Haskell's [`Coercible`](https://hackage.haskell.org/package/base-4.14.0.0/docs/Data-Coerce.html#t:Coercible) typeclass is implemented for all types `A` and `B` when the compiler can infer that they have the same representation. As with our proposal's `TransmuteFrom` trait, instances of this typeclass are created "on-the-fly" by the compiler. `Coercible` primarily provides a safe means to convert to-and-from newtypes, and does not seek to answer, for instance, if two `u8`s are interchangeable with a `u16`.
 
-Haskell takes an algebraic approach to this problem, reasoning at the level of type definitions, not type layouts. However, not all type parameters have an impact on1 a type's layout; for instance:
+Haskell takes an algebraic approach to this problem, reasoning at the level of type definitions, not type layouts. However, not all type parameters have an impact on a type's layout; for instance:
 ```rust
 #[repr(C)]
 struct Bar<U>(PhantomData<U>);
@@ -1097,6 +1031,30 @@ In [*Future Possibilities*][future-possibilities], we propose a number of additi
 ### Questions To Be Resolved Before Feature Stabilization
 The following unresolved questions should be resolved before feature stabilization:
 
+#### When should `Muckable` be automatically implemented?
+
+There is considerable overlap between the effect of `Muckable` and making fields `pub`. A type that is implicitly constructible *already* permits the arbitrary initialization and modification of its fields. While there may be use-cases for implementing `Muckable` on a type with private fields, it is an odd thing to do, as it sends a confusing, mixed-message about visibility. Downstream, forgetting to implement `Muckable` for an implicitly constructible type forces users to needlessly resort to unsafe transmutation.
+
+`Muckable` may be automatically derived for types that are publicly implicitly constructible, without posing a stability or safety hazard. The type `Foo` is effectively `Muckable` here:
+```
+#[repr(C)]
+pub struct Foo(pub u8, pub u16);
+```
+...and here:
+```
+#[repr(C)]
+pub struct Foo(pub Bar, pub u16);
+
+#[repr(C)]
+pub struct Bar;
+```
+...and here:
+```
+#[repr(C)]
+pub struct Foo<T: Muckable, U: Muckable>(pub T, pub U);
+```
+A type is *not* effectively `Muckable` if its fields are not all `pub`, or if it is marked with `#[non_exhaustive]`, or if the fields themselves are not effectively `Muckable`.
+
 ### Questions Out of Scope
 We consider the following unresolved questions to be out-of-scope of *this* RFC process:
 
@@ -1105,7 +1063,19 @@ We consider the following unresolved questions to be out-of-scope of *this* RFC 
 
 ## Safe Union Access
 
-Given `TransmuteFrom`, the compiler can determine whether an access of a union variant of type `V` from a union `U` is safe by checking `V: TransmuteFrom<U, Here!()>`. In accesses where that bound is satisfied, the compiler can omit the requirement that the access occur in an `unsafe` block.
+Given `TransmuteFrom`, the compiler can determine whether an access of a union variant of type `V` from a union `U` is safe by checking `V: TransmuteFrom<U>`. In accesses where that bound is satisfied, the compiler can omit the requirement that the access occur in an `unsafe` block.
+
+## Limited Stability Guarantees
+Implementing `Muckable` for a type allows for safe and stable transmutations *without* requiring the type's author to enumerate all useful transmutations (à la `From`), but at the cost of requiring full layout stability. For some use-cases, the reverse might be preferable: explicitly enumerate the set of stable transmutations *without* promising full layout stability.
+
+To accommodate this use-case, we could permit users to write implementations of `TransmuteFrom` in the form:
+```
+unsafe impl TransmuteFrom<Foo> for Bar
+where
+    Bar: TransmuteFrom<Foo, NeglectSafety>
+{}
+```
+Such implementations would conform to the usual orphan rules and would not permit users to override `TransmuteFrom`'s methods.
 
 ## Extension: Layout Property Traits
 [0000-ext-layout-traits.md]: https://github.com/rust-lang/project-safe-transmute/blob/master/rfcs/0000-ext-layout-traits.md
