@@ -120,7 +120,7 @@ However, that would break too much existing code.
 
 # Proposed solution
 
-Considering we should not break existing code, I propose we gate the breaking changs on the 2021 edition.
+Considering we should not break existing code, I propose we gate the breaking changes on the 2021 edition.
 
 In addition, we add a lint that *warns* about the problems in Rust 2015/2018, while not giving errors or changing the behaviour.
 
