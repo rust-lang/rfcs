@@ -333,7 +333,7 @@ Since the well-definedness of a transmutation is affected by the layouts of the 
 
 
 #### Signaling Safety and Stability with `Muckable`
-To signal that your type may be safely and safely constructed via transmutation, implement the `Muckable` marker trait:
+To signal that your type may be safely and stably constructed via transmutation, implement the `Muckable` marker trait:
 ```rust
 use mem::transmute::Muckable;
 
