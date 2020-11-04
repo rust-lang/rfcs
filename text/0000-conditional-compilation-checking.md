@@ -152,6 +152,87 @@ This maintains compatibility with existing versions of Cargo and other build sys
 invoke `rustc` directly. All of the information for checking conditional compilation uses new
 syntactic forms of the existing `--cfg` option.
 
+Checking condition names is independent of checking condition values, for those conditions that
+use value lists. Examples:
+
+### Example: Checking condition names, but not values
+
+```bash
+# This turns on checking for condition names, but not values, such as 'feature' values.
+rustc --cfg 'valid(is_embedded, has_feathers)' \
+      --cfg has_feathers \
+      --cfg 'feature="zapping"'
+```
+
+```rust
+#[cfg(is_embedded)] // this is valid, and #[cfg] evaluates to disabled
+fn do_embedded() {}
+
+#[cfg(has_feathers)] // this is valid, and #[cfg] evalutes to enabled
+fn do_features() {}
+
+#[cfg(has_mumble_frotz)] // this is INVALID
+fn do_mumble_frotz() {}
+
+#[cfg(feature = "lasers")] // this is valid, because valid_values() was never used
+fn shoot_lasers() {}
+```
+
+### Example: Checking feature values, but not condition names
+
+```bash
+# This turns on checking for feature values, but not for condition names.
+rustc --cfg 'valid_values(feature, "zapping", "lasers")' \
+      --cfg 'feature="zapping"'
+```
+
+```rust
+#[cfg(is_embedded)] // this is valid, because --cfg valid(...) was never used
+fn do_embedded() {}
+
+#[cfg(has_feathers)] // this is valid, because --cfg valid(...) was never used
+fn do_features() {}
+
+#[cfg(has_mumble_frotz)] // this is valid, because --cfg valid(...) was never used
+fn do_mumble_frotz() {}
+
+#[cfg(feature = "lasers")] // this is valid, because "lasers" is in the valid_values(feature) list
+fn shoot_lasers() {}
+
+#[cfg(feature = "monkeys")] // this is INVALID, because "monkeys" is not in
+                            // the valid_values(feature) list
+fn write_shakespear() {}
+```
+
+### Example: Checking both condition names and feature values
+
+```bash
+# This turns on checking for feature values and for condition names.
+rustc --cfg 'valid_values(feature, "zapping", "lasers")' \
+      --cfg 'valid(is_embedded, has_feathers)'
+      --cfg has_feathers \
+      --cfg 'feature="zapping"' \
+```
+
+
+```rust
+#[cfg(is_embedded)] // this is valid, and #[cfg] evaluates to disabled
+fn do_embedded() {}
+
+#[cfg(has_feathers)] // this is valid, and #[cfg] evalutes to enabled
+fn do_features() {}
+
+#[cfg(has_mumble_frotz)] // this is INVALID
+fn do_mumble_frotz() {}
+
+#[cfg(feature = "lasers")] // this is valid, because "lasers" is in the valid_values(feature) list
+fn shoot_lasers() {}
+
+#[cfg(feature = "monkeys")] // this is INVALID, because "monkeys" is not in
+                            // the valid_values(feature) list
+fn write_shakespear() {}
+```
+
 ## Cargo support
 
 Cargo is ideally positioned to enable checking for `feature` flags, since Cargo knows the set of
