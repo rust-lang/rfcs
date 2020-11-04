@@ -14,8 +14,12 @@ fn do_windows_thing() { /* ... */ }
 
 The developer intended to test for the feature named `windows`. This could easily have been detected
 by `rustc` if it had known the set of all valid `feature` flags, not only the ones currently
-enabled. Cargo already has this information, but it does not communicate it to `rustc`. This RFC
-proposes a means for `rustc` to check this information.
+enabled.
+
+This RFC proposes adding new command-line options to `rustc`, which will allow Cargo (and other
+build tools) to inform `rustc` of the set of valid feature flags. Using conditions that are not
+valid will cause a diagnostic warning. This feature is opt-in, for backwards compatibility;
+if no valid configuration options are presented to `rustc` then no warnings are generated.
 
 # Motivation
 
