@@ -157,31 +157,27 @@ names.
 
 ## Command line flags for checking conditional compilation
 
-To use this feature, you must tell `rustc` to check conditional compilation keys and the set of key
-names that are valid. You do this using the `--cfg check(...)` flag. This flag contains a list of
-the allowed key names.
-
-For example:
+To use this feature, you give `rustc` the set of condition names that are valid, by using the
+`--cfg valid(...)` flag. For example:
 
 ```bash
 rustc --cfg 'valid(test, target_os, feature, foo, bar)' ...
 ```
 
-> Note: This example shows test and target_os, but it is not necessary to specify these. All keys
-> that are well-known to Rustc are always permitted.
+> Note: This example shows `test` and `target_os`, but it is not necessary to specify these. All
+> condition names that are well-known to `rustc` are always permitted.
 
-For dictionary keys, it is necessary to specify the set of values that are legal for a specific
-dictionary key. For example:
+For condition values, specify the set of values that are legal for a given condition name. For
+example:
 
 ```bash
- --cfg 'allow_values(feature = values("foo", "bar", ..., "zot")'
+ --cfg 'valid_values(feature, "foo", "bar", ..., "zot")'
  ```
 
 ## What do users need to do to use this?
 
 Most of the time, users will not invoke `rustc` directly. Instead, users run Cargo, which handles
-building command-lines for `rustc`. Cargo handles building the lists of valid conditional
-compilation keys.
+building command-lines for `rustc`. Cargo handles building the lists of valid condition names.
 
 > This reflects the final goal, which is turning on condition checking in Cargo. However, we will
 > need to do a gradual deployment:
@@ -200,14 +196,14 @@ When Cargo builds a `rustc` command line, it knows which features are enabled an
 disabled. Cargo normally specifies the set of enabled features like so:
 
 ```bash
-rustc --cfg 'feature = "lighting"' --cfg 'feature = "bump_maps"' ...
+rustc --cfg 'feature="lighting"' --cfg 'feature="bump_maps"' ...
 ```
 
 When conditional compilation checking is enabled, Cargo will also specify which features are
 valid, so that `rustc` can validate conditional compilation tests. For example:
 
 ```bash
-rustc --cfg 'feature = "lighting"' --cfg 'feature = "bump_maps"' \
+rustc --cfg 'feature="lighting"' --cfg 'feature="bump_maps"' \
       --cfg 'valid(feature, "lighting", "bump_maps", "mip_maps", "vulkan")'
 ```
 
@@ -218,32 +214,32 @@ _enabled_ (`lighting`, `bump_maps`).
 ## Command line arguments reference
 
 All information would be passed to Rustc by enhancing the forms accepted for the existing `--cfg`
-option. To enable checking key names and to specify the set of acceptable key names, use this form:
+option. To enable checking condition names and to specify the set of valid names, use this form:
 
 ```bash
-rustc --cfg 'valid(k1, k2, ..., kN)'
+rustc --cfg 'valid(c1, c2, ..., cN)'
 ```
 
-Where `k1..kN` are key names. These are specified as bare identifiers, not quoted strings. If this
-option is not specified, then key name checking is not performed. If this option is specified, then
-each usage of this option (such as a `#[cfg]` attribute, `#[cfg_attr]` attribute, or `cfg!(...)`
-call) is checked against this list. If a key is not present in this list, then a diagnostic is
-issued. The default diagnostic level for an invalid key is a warning. This can be promoted to an
-error by using `#![deny(invalid_cfg_key)]` or the equivalent command line option.
+Where `c1..cN` are condition names. These are specified as bare identifiers, not quoted strings. If
+this option is not specified, then condition checking is not performed. If this option is specified,
+then each usage of this option (such as a `#[cfg]` attribute, `#[cfg_attr]` attribute, or
+`cfg!(...)` call) is checked against this list. If a name is not present in this list, then a
+diagnostic is issued. The default diagnostic level for an invalid name is a warning. This can be
+promoted to an error by using `#![deny(invalid_cfg_name)]` or the equivalent command line option.
 
-If the `valid(...)` option is repeated, then the set of allowed key names is the union of
+If the `valid(...)` option is repeated, then the set of valid condition names is the union of
 those specified in all options.
 
-To enable checking dictionary values, specify the set of allowable values:
+To enable checking condition values, specify the set of valid values:
 
 ```bash
-rustc --cfg 'valid_values(c, "value1", "value2", ... "valueN")
+rustc --cfg 'valid_values(c,"value1","value2", ... "valueN")
 ```
 
 where `c` is the condition name, such as `feature` or `target_os`, and the `valueN` terms are the
-values that are allowed for that condition. The `valid_values` option can be repeated, both for the
-same key and for different keys. If it is repeated for the same condition name, then the sets of
-values for that condition are merged together.
+values that are valid for that condition. The `valid_values` option can be repeated, both for the
+same condition name and for different names. If it is repeated for the same condition name, then the
+sets of values for that condition are merged together.
 
 > The `valid` and `valid_values` options are independent. The `valid` option controls
 > whether condition names are checked, but it does not require that condition values be checked.
@@ -254,11 +250,11 @@ values for that condition are merged together.
 values are the union of all options specified on the command line. For example, this command line:
 
 ```bash
-rustc --cfg 'valid_values(feature("lion", "zebra"))'
+rustc --cfg 'valid_values(feature,"lion","zebra")'
 
 # is equivalent to:
-rustc --cfg 'valid_values(feature("lion"))' \
-      --cfg 'valid_values(feature("zebra"))'
+rustc --cfg 'valid_values(feature,"lion")' \
+      --cfg 'valid_values(feature,"zebra")'
 ```
 
 This is intended to give tool developers more flexibility when generating Rustc command lines.
@@ -269,10 +265,10 @@ Specifying an enabled condition name implicitly makes it valid. For example, the
 invocations are equivalent:
 
 ```bash
-rustc --cfg 'valid_values(feature, "lion", "zebra")' --cfg 'feature="lion"'
+rustc --cfg 'valid_values(feature,"lion","zebra")' --cfg 'feature="lion"'
 
 # equivalent:
-rustc --cfg 'valid_values(feature, "zebra")' --cfg 'feature="lion"'
+rustc --cfg 'valid_values(feature,"zebra")' --cfg 'feature="lion"'
 ```
 
 Specifying a condition value also implicitly marks that condition _name_ as valid. For example,
@@ -280,10 +276,10 @@ the following invocations are equivalent:
 
 ```bash
 # specifying valid_values(foo, ...) implicitly adds 'foo' to the set of valid condition names
-rustc --cfg 'valid(foo, bar)' --cfg 'valid_values(foo, "lion")' --cfg 'foo="lion"'
+rustc --cfg 'valid(foo,bar)' --cfg 'valid_values(foo,"lion")' --cfg 'foo="lion"'
 
 # so the above can be simplified to:
-rustc --cfg 'valid(bar)' --cfg 'valid_values(foo, "lion")' --cfg 'foo="lion"'
+rustc --cfg 'valid(bar)' --cfg 'valid_values(foo,"lion")' --cfg 'foo="lion"'
 ```
 
 ## Stabilizing
@@ -304,12 +300,12 @@ Conditional checking can report these diagnostics:
 
 * `invalid_cfg_name`: Indicates that a condition name was not in the set of valid names.
   This diagnostic will only be reported if the command line options enable checking condition names
-  (i.e. there is at least one `--cfg 'allowed(...)' option` and an invalid condition name is found
+  (i.e. there is at least one `--cfg 'valid(...)'` option and an invalid condition name is found
   during compilation.
 
 * `invalid_cfg_value`: Indicates that source code contained a condition value that was invalid.
   This diagnostic will only be reported if the command line options enable checking condition values
-  for the specified condition name (i.e. there is a least one `--cfg 'allowed_values(c, ...)'` for
+  for the specified condition name (i.e. there is a least one `--cfg 'valid_values(c, ...)'` for
   a given condition name `c`).
 
 All of the diagnostics defined by this RFC are reported as warnings. They can be upgraded to
@@ -321,8 +317,8 @@ Consider this command line:
 
 ```bash
 rustc --cfg 'valid(feature)' \
-      --cfg 'valid_values(feature, "lion", "zebra")' \
-      --cfg 'feature = "lion"'
+      --cfg 'valid_values(feature,"lion","zebra")' \
+      --cfg 'feature="lion"'
       example.rs
 ```
 
@@ -342,15 +338,15 @@ fn ride_zebra(zebra: Zebra) { ... }
 #[cfg(feature = "platypus")] 
 fn poke_platypus() { ... }
 
-// this is INVALID, because 'feechure' is not a known key,
+// this is INVALID, because 'feechure' is not a known condition name,
 // and will cause a compiler error.
 #[cfg(feechure = "lion")]
 fn tame_lion() { ... }
 ```
 
 > Note: The `--cfg valid(feature)` argument is necessary only to enable checking the condition
-> name, as in the last example. `feature` is a well-known key, and so it is not necessary to
-> specify it in a `--cfg 'valid(...)'` option. That option can be shorted to `--cfg valid()` in
+> name, as in the last example. `feature` is a well-known condition name, and so it is not necessary
+> to specify it in a `--cfg 'valid(...)'` option. That option can be shorted to `--cfg valid()` in
 > order to enable checking condition names.
 
 ## Drawbacks
