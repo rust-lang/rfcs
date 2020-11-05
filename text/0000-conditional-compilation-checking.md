@@ -318,7 +318,7 @@ those specified in all options.
 To enable checking condition values, specify the set of valid values:
 
 ```bash
-rustc --cfg 'valid_values(c,"value1","value2", ... "valueN")
+rustc --cfg 'valid_values(c,"value1","value2", ... "valueN")'
 ```
 
 where `c` is the condition name, such as `feature` or `target_os`, and the `valueN` terms are the
