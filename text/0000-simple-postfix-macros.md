@@ -19,19 +19,23 @@ between the left and right sides of the expression, and carefully match
 parentheses. The equivalent `foo()?.bar()?.baz()?` allows reading from left to
 right.
 
-The introduction of `await!` in RFC 2394 brings back the same issue, in the
-form of expressions like `await!(await!(await!(foo()).bar()).baz())`. This RFC
-would allow creating a postfix form of any such macro, simplifying that
-expression into a more readable `foo().await!().bar().await!().baz().await!()`.
+However, unlike macro syntax, postfix syntax can *only* be used by language
+extensions; it's not possible to experiment with postfix syntax in macro-based
+extensions to the language.  Language changes often start through
+experimentation, and such experimentation can also result in sufficiently good
+alternatives to avoid requiring language extensions. Having a postfix macro
+syntax would serve both goals: enabling the prototyping of new language
+features, and providing compelling syntax without having to extend the
+language.
 
 Previous discussions of method-like macros have stalled in the process of
 attempting to combine properties of macros (such as unevaluated arguments) with
 properties of methods (such as type-based or trait-based dispatch). This RFC
 proposes a minimal change to the macro system that allows defining a simple
-style of postfix macro, designed specifically for `await!` and for future cases
-like `try!` and `await!`, without blocking potential future extensions. In
-particular, this RFC does not in any way preclude a future implementation of
-postfix macros with full type-based or trait-based dispatch.
+style of postfix macro, inspired specifically by `try!(expr)` becoming `expr?`
+and `await!(expr)` becoming `expr.await`, without blocking potential future
+extensions. In particular, this RFC does not in any way preclude a future
+implementation of postfix macros with full type-based or trait-based dispatch.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -74,12 +78,12 @@ to `$self`, and that the `file!` and `line!` macros refer to the locations of
 the invocations of `log_value!`.
 
 A macro that accepts multiple combinations of arguments may accept `$self` in
-some variations and not in others. For instance, `await!` could allow both of
-the following:
+some variations and not in others. For instance, a macro `do_thing` could allow
+both of the following:
 
 ```rust
-await!(some_future());
-some_other_future().await!().further_future_computation().await!();
+do_thing!(some_expression());
+some_other_expression().do_thing!().further_expression().do_thing!();
 ```
 
 This method-like syntax allows macros to cleanly integrate in a left-to-right
@@ -95,20 +99,6 @@ for each expansion of `$self`. This stands in contrast to other macro
 arguments, which get expanded into the macro body without evaluation. This
 change avoids any potential ambiguities regarding the scope of the `$self`
 argument and how much it leaves unevaluated, by evaluating it fully.
-
-The `await!` macro, whether defined in Rust code or built into the compiler,
-would effectively have the following two cases:
-
-```rust
-macro_rules! await {
-    ($e:expr) => ({
-        // ... Current body of await! ...
-    })
-    ($self:self) => (
-        await!($self)
-    )
-}
-```
 
 Note that postfix macros cannot dispatch differently based on the type of the
 expression they're invoked on. This includes whether the expression has type
@@ -188,30 +178,12 @@ in the future; such a future system could use a new designator other than
 `self`, or could easily extend this syntax to add further qualifiers on `self`
 (for instance, `$self:self:another_designator` or `$self:self(argument)`).
 
-We could define a built-in postfix macro version of `await!`, without providing
-a means for developers to define their own postfix macros. This would address
-the specific issue with `await!`, but would not help developers create
-solutions for similar future issues. This would perpetuate the problem of
-requiring changes to the language and compiler to solve such problems, rather
-than allowing developers to experiment with solutions in the broader Rust
-ecosystem.
-
-We could define a new postfix operator for `await!`, analogous to `?`. This
-would require selecting and assigning an appropriate symbol. This RFC allows
-fitting constructs that affect control flow into method chains without
-elevating them to a terse symbolic operator.
-
 Rather than writing `expr.macroname!()`, we could write `expr.!macroname()` or
 similar, placing the `!` closer to the `.` of the method call. This would place
 greater attention on the invocation, but would break the similarity with
 existing macro naming that people have grown accustomed to spotting when
 reading code. This also seems more likely to get confused with the prefix unary
 `!` operator.
-
-We could do nothing at all, and leave `await!` in its current macro form, or
-potentially change it into a language keyword in the future. In this case, the
-problem of integrating `await` and similar constructs with method chains will
-remain.
 
 In the syntax to define a postfix macro, we could use just `$self` rather than
 `$self:self`. `$self` is not currently valid syntax, so we could use it for
@@ -224,10 +196,9 @@ confusion, and would preclude some approaches for future extension.
 # Prior art
 [prior-art]: #prior-art
 
-The evolution of `try!` into `?` serves as prior art for moving an important
-macro-style control-flow mechanism from prefix to postfix. `await!` has similar
-properties, and has already prompted discussions both of how to move it to
-postfix and how to integrate it with error handling using `?`.
+The evolution of `try!(expr)` into `expr?`, and the evolution of `await!(expr)`
+into `expr.await`, both serve as prior art for moving an important macro-style
+control-flow mechanism from prefix to postfix.
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
