@@ -153,7 +153,8 @@ evaluated at a different time, adds complexity to the macro system.
 
 No equivalent means exists to define a postfix proc macro; this RFC
 intentionally leaves specification of such means to future RFCs, for future
-development and experimentation.
+development and experimentation. A postfix macro can trivially forward its
+arguments to a proc macro.
 
 Macros have historically not interacted with the type system, while method
 calls (`expr.method()`) do type-based dispatch based on the type or trait of
