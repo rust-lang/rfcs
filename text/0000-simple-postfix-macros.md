@@ -100,6 +100,46 @@ arguments, which get expanded into the macro body without evaluation. This
 change avoids any potential ambiguities regarding the scope of the `$self`
 argument and how much it leaves unevaluated, by evaluating it fully.
 
+For example, given the following macro definition:
+
+```rust
+macro_rules! log_value {
+    ($self:self, $msg:expr) => ({
+        eprintln!("{}:{}: {}: {:?}", file!(), line!(), $msg, $self);
+        $self
+    })
+}
+
+fn value<T: std::fmt::Debug>(x: T) -> T {
+    println!("evaluated {:?}", x);
+    x
+}
+
+fn main() {
+    value("hello").log_value!("value").len().log_value!("len");
+}
+```
+
+The invocation in `main` will expand to the following:
+
+```rust
+    {
+        let _internal2 = {
+            let _internal1 = value("hello");
+            eprintln!("{}:{}: {}: {:?}", "src/main.rs", 14, "value", _internal1);
+            _internal1
+        }
+        .len();
+        eprintln!("{}:{}: {}: {:?}", "src/main.rs", 14, "len", _internal2);
+        _internal2
+    };
+```
+
+The code within the inner curly braces represents the expansion of the first
+`log_value!`; the code within the outer curly braces represents the expansion
+of the second `log_value!`. The compiler will generate unique symbols for each
+internal variable.
+
 Note that postfix macros cannot dispatch differently based on the type of the
 expression they're invoked on. This includes whether the expression has type
 `T`, `&T`, or `&mut T`. The internal binding the compiler creates for that
