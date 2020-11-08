@@ -105,7 +105,9 @@ expression they're invoked on. This includes whether the expression has type
 `T`, `&T`, or `&mut T`. The internal binding the compiler creates for that
 expression will participate in type inference as normal, including the expanded
 body of the macro. If the compiler cannot unambiguously determine the type of
-the internal binding, it will produce a compile-time error.
+the internal binding, it will produce a compile-time error. If the macro wishes
+to constrain the type of `$self`, it can do so by writing a `let` binding for
+`$self` with the desired type.
 
 Macros defined using this mechanism follow exactly the same namespace and
 scoping rules as any other macro. If a macro accepting a `$self:self` argument
