@@ -95,8 +95,8 @@ While compiling untrusted code should only be done with care (including addition
 
 C++ requires compilers to detect UB in `constexpr`.
 However, the fragment of C++ that is available to `constexpr` excludes pointer casts, pointer arithmetic (beyond array bounds), and union-based type punning, which makes such checks not very complicated and avoids most of the poorly specified parts of UB.
-The corresponding type-punning-free fragment of Rust (no raw pointers, no `union`, no `transmute`) can only cause UB that is defined UB to be definitely detected during CTFE.
-In that sense, rust achieves feature parity with C++ in terms of UB detection during CTFE.
+The corresponding type-punning-free fragment of Rust (no raw pointers, no `union`, no `transmute`) can only cause UB that is defined to be definitely detected during CTFE.
+In that sense, Rust achieves feature parity with C++ in terms of UB detection during CTFE.
 (Indeed, this was the prime motivation for making such strict UB detection requirements in the first place.)
 
 # Unresolved questions
