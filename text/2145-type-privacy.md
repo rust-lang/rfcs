@@ -387,7 +387,7 @@ sufficiently smart type inference.
 mod m {
     struct Priv;
     pub struct Pub<T>(T);
-    pub Trait { type A; }
+    pub trait Trait { type A; }
 
     // This is a private impl because `Pub<Priv>` is a private type
     impl Pub<Priv> {
