@@ -27,7 +27,11 @@ This begs the question, what happens when there is `unsafe` code and it causes [
 The answer depends on the kind of UB: some kinds of UB are guaranteed to be detected,
 while other kinds of UB might either be detected, or else evaluation will continue as if the violated UB condition did not exist (i.e., as if this operation was actually defined).
 This can change from compiler version to compiler version: CTFE code that causes UB could build fine with one compiler and fail to build with another.
-(This is in accordance with the general policy that unsound code is not subject to strict stability guarantees.)
+
+This RFC does not alter the general policy that unsound code is not subject to strict stability guarantees.
+In other words, unsafe code may not rely on all future versions of Rust to implement this RFC.
+The RFC only helps *consumers* of unsafe code to be sure that right now, all UB during CTFE will be detected.
+It does not grant any new possibilities to *authors* of unsafe code.
 
 [UB]: https://doc.rust-lang.org/reference/behavior-considered-undefined.html
 
