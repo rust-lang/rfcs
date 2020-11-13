@@ -458,7 +458,12 @@ fn tame_lion() { ... }
 
 ## Drawbacks
 
-There are no known drawbacks to this proposal.
+* Adds complexity, in the form of additional command-line options.
+* As with all lints, correct code may be trigger lints. Developers will need to take time to
+  examine them and see whether they are legitimate or not.
+* To take full advantage of this, build systems (including but not limited to Cargo) must be
+  updated. However, for those systems that are not updated, there is no penalty or drawback,
+  since `--check-cfg` is opt-in.
 
 ## Rationale and alternatives
 
