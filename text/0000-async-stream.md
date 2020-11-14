@@ -13,18 +13,26 @@ design from `futures`. Redirect the `Stream` trait definition in the
 # Motivation
 [motivation]: #motivation
 
-Streams are a core async abstraction. We want to enable portable libraries that 
-produce/consume streams without being tied to a particular executor.
+Streams are a core async abstraction. These behave similarly to `Iterator`,
+but rather than blocking between each item yield, it allows other
+tasks to run while it waits.
 
 People can do this currently using the `Stream` trait defined in the 
-[futures](https://crates.io/crates/futures) crate. However, the 
-stability guarantee of that trait would be clearer if it were added 
-to the standard library. For example, if [Tokio](https://tokio.rs/) 
+[futures](https://crates.io/crates/futures) crate. However, we would like
+to add `Stream` to the standard library. 
+
+In addition to adding the `Stream` trait to the standard library, we also want to provide basic 
+ergonomic methods required to use streams effectively. These include the
+`next` and `poll_next` methods. Without these methods, `Streams` would feel much more 
+difficult to use. Were we to not include them, users would likely immediately reach out 
+for them either through writing their own version or using an external crate. 
+
+Including `Stream` in the standard library would also clarify the stability guarantees of the trait. For example, if [Tokio](https://tokio.rs/) 
 wishes to declare a [5 year stability period](http://smallcultfollowing.com/babysteps/blog/2020/02/11/async-interview-6-eliza-weisman/#communicating-stability), 
-having the stream trait in the standard library means there are no concerns 
+having the `Stream` trait in the standard library means there are no concerns 
 about the trait changing during that time ([citation](http://smallcultfollowing.com/babysteps/blog/2019/12/23/async-interview-3-carl-lerche/#what-should-we-do-next-stabilize-stream)).
 
-## Examples of crates that are consuming streams
+## Examples of current crates that are consuming streams
 
 ### async-h1
 
@@ -42,19 +50,23 @@ This includes a trait for producing streams and a trait for consuming streams.
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-A "stream" is the async version of an iterator. The `Stream` trait
-matches the definition of an [iterator], except that the `next` method
-is defined to "poll" for the next item. In other words, where the
-`next` method on an iterator simply computes (and returns) the next
-item in the sequence, the `poll_next` method on stream asks if the
-next item is ready. If so, it will be returned, but otherwise
-`poll_next` will return [`Poll::pending`]. Just as with a [`Future`],
-returning [`Poll::pending`] implies that the stream has arranged for
-the current task to be re-awoken when the data is ready.
+A "stream" is the async version of an [iterator]. 
+
+## poll_next method
+
+The `Iterator` trait includes a `next` method, which computes and
+returns the next item in the sequence. 
+
+When implementing a `Stream`, users will define a `poll_next` method. 
+The `poll_next' method asks if the next item is ready. If so, it returns
+the item. Otherwise, `poll_next` will return [`Poll::pending`]. 
+
+Just as with a [`Future`], returning [`Poll::pending`] 
+implies that the stream has arranged for the current task to be re-awoken when the data is ready.
 
 [iterator]: https://doc.rust-lang.org/std/iter/trait.Iterator.html
 [`Future`]: https://doc.rust-lang.org/std/future/trait.Future.html
-[`Poll::pending`]: https://doc.rust-lang.org/std/task/enum.Poll.html#variant.Pending
+[`Poll::pending`]: https://doc.rust-lang.org
 
 ```rust
 // Defined in std::stream module
@@ -69,7 +81,7 @@ pub trait Stream {
         (0, None)
     }
 
-    // Convenience methods (covered later on in the RFC):
+    // Convenience method (covered later on in the RFC):
     fn next(&mut self) -> Next<'_, Self>
     where
         Self: Unpin;
@@ -91,6 +103,24 @@ The arguments to `poll_next` match that of the [`Future::poll`] method:
 [context]: https://doc.rust-lang.org/std/task/struct.Context.html
 [`Waker`]: https://doc.rust-lang.org/std/task/struct.Waker.html
 
+## next method
+
+As @yoshuawuyts states in their [pull request which adds `core::stream::Stream` to the standard library]:
+
+Unlike `Iterator`, `Stream` makes a distinction between the [`poll_next`]
+method which is used when implementing a `Stream`, and the [`next`] method
+which is used when consuming a stream. Consumers of `Stream` only need to
+consider [`next`], which when called, returns a future which yields
+[`Option`]`<Item>`.
+
+The future returned by [`next`] will yield `Some(Item)` as long as there are
+elements, and once they've all been exhausted, will yield `None` to indicate
+that iteration is finished. If we're waiting on something asynchronous to
+resolve, the future will wait until the stream is ready to yield again.
+
+Individual streams may choose to resume iteration, and so calling [`next`]
+again may or may not eventually yield `Some(Item)` again at some point.
+
 ### Why does next require Self:Unpin?
 
 When drafting this RFC, there was a [good deal of discussion](https://github.com/rust-lang/wg-async-foundations/pull/15#discussion_r452482084) around why the `next` method requires `Self:Unpin`.
@@ -107,11 +137,6 @@ Since `Stream::poll_next` takes a pinned reference, the next future needs `S` to
 An alternative approach we could take would be to have the `next` method take `Pin<&mut S>`, rather than `&mut S`. However, this would require pinning even when the type is `Unpin`. The current approach requires pinning only when the type is not `Unpin`.
 
 We currently do see some `!Unpin` streams in practice (including in the [futures-intrusive crate](https://github.com/Matthias247/futures-intrusive/blob/master/src/channel/mpmc.rs#L565-L625)). We also see `stream.then(|_| async {})` resulting in an `!Unpin` stream. Where `!Unpin` streams will become important is when we introduce async generators, as discussed in [future-possibilities].
-
-In summary, an async stream:
-* has a pinned receiver
-* that takes `cx` context
-* and returns a `Poll`
 
 ## Initial impls
 
