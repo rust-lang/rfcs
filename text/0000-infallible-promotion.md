@@ -77,6 +77,8 @@ This RFC proposes to fix all these problems at once, by restricting implicit pro
 This is the last step in a series of changes that have been going on for quite some time, starting with the [introduction](https://github.com/rust-lang/rust/pull/53851) of the `#[rustc_promotable]` attribute to control which function calls may be subject to implicit promotion (the original RFC said that all calls to `const fn` should be promoted, but as user-defined `const fn` got closer and closer, that seemed less and less like a good idea, due to all the ways in which evaluating a `const fn` can fail).
 Together with [some planned changes for evaluation of regular constants](https://github.com/rust-lang/rust/issues/71800), this means that all CTFE failures can be made hard errors, greatly simplifying the parts of the compiler that trigger evaluation of constants and handle the resulting value or error.
 
+For more details, see [the MCP that preceded this RFC](https://github.com/rust-lang/lang-team/issues/58).
+
 [promotion-status]: https://github.com/rust-lang/const-eval/blob/33053bb2c9a0c6a17acd3116dd47bbb360e060db/promotion.md
 
 # Guide-level explanation
@@ -94,7 +96,8 @@ Inside a function body's block:
   it into a static memory location and give the resulting reference a
   `'static` lifetime.
 
-Operations that definitely succeed include literals of any kind, constructors (struct/enum/union/tuple), struct/tuple field accesses, `+`/`-`/`*` (even with overflow checks, the underlying `Checked*` MIR operation will not fail).
+Operations that definitely succeed include literals of any kind, constructors (struct/enum/union/tuple), struct/tuple field accesses, `+`/`-`/`*`.
+(Checked arithmetic is not a problem: an addition in debug mode is compiled to a `CheckedAdd` MIR operation that never fails, which returns an `(<int>, bool)`, and is followed by a check of said `bool` to possibly raise a panic. We only ever promote the `CheckedAdd`, so evaluation of the promoted will never fail, even if the operation overflows.)
 Operations that might fail include `/`/`%`, `panic!` (including the assertion that follows `Checked*` arithmetic to ensure that no overflow happened), array/slice indexing, union field accesses, and `const fn` calls (as they might do any of the above).
 
 Compared to the status quo, this means the following expressions are not implicitly promoted any more:
@@ -125,6 +128,7 @@ The rationale has been described with the motivation.
 
 Unless we want to keep supporting fallible const-evaluation indefinitely, the main alternatives are devising more precise analyses to determine if some operation is infallible.
 For example, we could still perform implicit promotion for division and modulo if the divisor is a non-zero constant.
+We could also have `CheckedDiv` and `CheckedMod` operations that, similar to operations like `CheckedAdd`, always returns a result of the right type together with a `bool` saying if the result is valid.
 We could still perform *array* indexing if the index is a constant and in-bounds.
 For slices, we could have an analysis that predicts the (minimum) length of the slice.
 Notice that promotion happens in generic code and can depend on associated constants, so we cannot, in general, *evaluate* the implicit promotion candidate to check if that causes any errors.
@@ -140,6 +144,10 @@ Note that this is *not* an option for code generation, i.e., for code in `fn` an
 
 If there are some standard library `const fn` that cannot fail to evaluate, and that form the bulk of the function calls being implicitly promoted, we could add the `#[rustc_promotable]` attribute to them to enable implicit promotion.
 This will not help, however, if there is plenty of code relying on implicit promotion of user-defined `const fn`.
+
+Conversely, if this plan all works out, one alternative proposal that goes even further is to restrict implicit promotion to expressions that would be permitted in a pattern.
+This would avoid adding a new class of expression in between "patterns" and "const-evaluable".
+On the other hand, it is much more restrictive (basically allowing only literals and constructors), and does not actually help simplify the compiler.
 
 # Prior art
 [prior-art]: #prior-art
