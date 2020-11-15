@@ -39,7 +39,6 @@ It does not grant any new possibilities to *authors* of unsafe code.
 [reference-level-explanation]: #reference-level-explanation
 
 The following kinds of UB are detected by CTFE, and will cause compilation to stop with an error:
-* Incorrect use of compiler intrinsics (e.g., reaching an `unreachable` or violating the assumptions of `exact_div`).
 * Dereferencing dangling pointers.
 * Using an invalid value in an arithmetic, logical or control-flow operation.
 
@@ -55,11 +54,22 @@ All of this UB has in common that there is an "obvious" way to continue evaluati
 we can just access the underlying memory despite alignment and/or aliasing rules being violated, and we can just ignore the existence of an invalid value as long as it is not used in some arithmetic, logical or control-flow operation.
 There is no guarantee that CTFE detects such UB: evaluation may either fail with an error, or continue with the "obvious" result.
 
+In particular, the RFC does not mandate whether UB caused by implementation-defined compiler intrinsics (insofar as they are supported by CTFE) is detected.
+However, implementations should document for which intrinsics UB is detected, and (if UB is not detected), what the behavior if CTFE will be instead.
+For rustc, all intrinsic-specific UB (e.g., reaching an `unreachable` or violating the assumptions of `exact_div`) will be detected, but if intrinsics perform memory accesses, they are treated like regular accesses for UB detection (e.g., aliasing or alignment violations are not detected, and execution proceeds just ignoring this check).
+
+The RFC also does not mandate detecting any library UB, i.e., UB caused by violating the contract of a (standard) library function.
+The same conditions as for intrinsics apply: implementations should document which UB is detected.
+If library UB is ignored, execution must continue by just following the rules of the Abstract Machine for current implementation of the library function, treating it as if that code had no contract applied to it.
+In rustc, no library UB will be detected.
+
 If the compile-time evaluation uses operations that are specified as non-deterministic,
 and only some of the non-deterministic choices lead to CTFE-detected UB,
 then CTFE may choose any possible execution and thus miss the possible UB.
 For example, if we end up specifying the value of padding after a typed copy to be non-deterministically chosen, then padding will be initialized in some executions and uninitialized in others.
 If the program then performs integer arithmetic on a padding byte, that might or might not be detected as UB, depending on the non-deterministic choice made by CTFE.
+
+This RFC is concerned only with language-UB, not with library-UB, i.e., UB caused by violating the contract of a (standard) library function.
 
 ## Note to implementors
 
