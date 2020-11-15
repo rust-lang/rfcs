@@ -55,7 +55,7 @@ we can just access the underlying memory despite alignment and/or aliasing rules
 There is no guarantee that CTFE detects such UB: evaluation may either fail with an error, or continue with the "obvious" result.
 
 In particular, the RFC does not mandate whether UB caused by implementation-defined compiler intrinsics (insofar as they are supported by CTFE) is detected.
-However, implementations should document for which intrinsics UB is detected, and (if UB is not detected), what the behavior if CTFE will be instead.
+However, implementations should document for each intrinsic whether UB is detected, and (if UB is ignored for an intrinsic), what the behavior of CTFE will be when UB occurs.
 For rustc, all intrinsic-specific UB (e.g., reaching an `unreachable` or violating the assumptions of `exact_div`) will be detected, but if intrinsics perform memory accesses, they are treated like regular accesses for UB detection (e.g., aliasing or alignment violations are not detected, and execution proceeds just ignoring this check).
 
 The RFC also does not mandate detecting any library UB, i.e., UB caused by violating the contract of a (standard) library function.
