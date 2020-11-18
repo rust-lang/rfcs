@@ -58,7 +58,7 @@ The `Iterator` trait includes a `next` method, which computes and returns the ne
 
 
 When implementing a `Stream`, users will define a `poll_next` method. 
-The `poll_next' method asks if the next item is ready. If so, it returns
+The `poll_next` method asks if the next item is ready. If so, it returns
 the item. Otherwise, `poll_next` will return [`Poll::Pending`]. 
 
 Just as with a [`Future`], returning [`Poll::Pending`] 
