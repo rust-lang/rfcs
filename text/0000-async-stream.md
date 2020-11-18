@@ -228,7 +228,7 @@ while let Some(v) = stream.next().await {
 }
 ```
 
-We could also consider adding a try_next? function, allowing
+We could also consider adding a `try_next` method, allowing
 a user to write:
 
 ```rust
