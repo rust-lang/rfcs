@@ -50,12 +50,12 @@ This includes a trait for producing streams and a trait for consuming streams.
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-A "stream" is the async version of an [iterator]. 
+A "stream" is the async version of an [iterator].
+
+The `Iterator` trait includes a `next` method, which computes and returns the next item in the sequence. The `Stream` trait includes two core methods for defining and interacting with streams - `poll_next` and 'next`.
 
 ## poll_next method
 
-The `Iterator` trait includes a `next` method, which computes and
-returns the next item in the sequence. 
 
 When implementing a `Stream`, users will define a `poll_next` method. 
 The `poll_next' method asks if the next item is ready. If so, it returns
@@ -103,6 +103,59 @@ The arguments to `poll_next` match that of the [`Future::poll`] method:
 [context]: https://doc.rust-lang.org/std/task/struct.Context.html
 [`Waker`]: https://doc.rust-lang.org/std/task/struct.Waker.html
 
+### Usage
+
+A user could create a stream as follows (Example taken from @yoshuawuyt's [implementation pull request](https://github.com/rust-lang/rust/pull/79023)).
+
+Creating a stream involves two steps: creating a `struct` to
+ hold the stream's state, and then implementing [`Stream`] for that
+ `struct`.
+
+ Let's make a stream named `Counter` which counts from `1` to `5`:
+
+```rust
+#![feature(async_stream)]
+# use core::stream::Stream;
+# use core::task::{Context, Poll};
+# use core::pin::Pin;
+
+// First, the struct:
+
+/// A stream which counts from one to five
+struct Counter {
+    count: usize,
+}
+
+// we want our count to start at one, so let's add a new() method to help.
+// This isn't strictly necessary, but is convenient. Note that we start
+// `count` at zero, we'll see why in `poll_next()`'s implementation below.
+impl Counter {
+    fn new() -> Counter {
+        Counter { count: 0 }
+    }
+}
+
+// Then, we implement `Stream` for our `Counter`:
+
+impl Stream for Counter {
+    // we will be counting with usize
+    type Item = usize;
+
+    // poll_next() is the only required method
+    fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+        // Increment our count. This is why we started at zero.
+        self.count += 1;
+
+        // Check to see if we've finished counting or not.
+        if self.count < 6 {
+            Poll::Ready(Some(self.count))
+        } else {
+            Poll::Ready(None)
+        }
+    }
+}
+```
+
 ## next method
 
 As @yoshuawuyts states in their [pull request which adds `core::stream::Stream` to the standard library](https://github.com/rust-lang/rust/pull/79023):
@@ -120,6 +173,42 @@ resolve, the future will wait until the stream is ready to yield again.
 
 Individual streams may choose to resume iteration, and so calling [`next`]
 again may or may not eventually yield `Some(Item)` again at some point.
+
+This is similar to the `Future` trait. The `Future::poll_next` method is rarely called 
+directly, it is almost always used to implement other Futures. Interacting
+with futures is done through `async/await`.
+
+A `Stream` by itself is not useful - we need some way to interact with it.
+To interact with it, we need the `next` method - all other interactions
+with `Stream` can be expressed through it. Without the `next` method,
+streams cannot be consumed.
+
+### Usage
+
+Continuing the example of `Stream` implemented on a struct called `Counter`, the user would interact with the stream like so:
+
+```rust
+let mut counter = Counter::new();
+
+let x = counter.next().await.unwrap();
+println!("{}", x);
+
+let x = counter.next().await.unwrap();
+println!("{}", x);
+
+let x = counter.next().await.unwrap();
+println!("{}", x);
+
+let x = counter.next().await.unwrap();
+println!("{}", x);
+
+let x = counter.next().await.unwrap();
+println!("{}", x);
+#
+}
+```
+
+This would print `1` through `5`, each on their own line.
 
 ### Why does next require Self:Unpin?
 
