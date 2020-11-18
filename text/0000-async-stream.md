@@ -214,6 +214,8 @@ This would print `1` through `5`, each on their own line.
 
 When drafting this RFC, there was a [good deal of discussion](https://github.com/rust-lang/wg-async-foundations/pull/15#discussion_r452482084) around why the `next` method requires `Self:Unpin`.
 
+In particular, there was concern around how this would affect the use of generators in the future. Generators are discussed in the [Future possiblilities](future-possibilities) section later in this RFC.
+
 To understand this, it helps to take a closer look at the definition of `Next` (this struct is further discussed later in this RFC) in the [futures-util crate](https://docs.rs/futures-util/0.3.5/src/futures_util/stream/stream/next.rs.html#10-12).
 
 ```rust
@@ -804,7 +806,7 @@ to convert a `LendingStream` into a `Stream` seamlessly.
 
 ### Differences between Iterator generators and Async generators
 
-We want `Stream` and `Iterator` to work as analogously as possible, including when used with generators. However, in the current design, there is a crucial difference between the two. 
+We want `Stream` and `Iterator` to work as analogously as possible, including when used with generators. However, in the current design, there are some crucial differences between the two. 
 
 Consider Iterator's core `next` method:
 
@@ -861,7 +863,12 @@ impl<I: PinIterator, P: Deref<Target = I> + DerefMut> Iterator for Pin<P> {
 // this would be nice.. but would lead to name resolution ambiguity for our combinators 😬 
 default impl<T: Iterator> PinIterator for T { .. }
 ```
+
 Pinning also applies to the design of AsyncRead/AsyncWrite, which currently uses Pin even through there is no clear plan to make them implemented with generator type syntax. The asyncification of a signature is currently understood as pinned receiver + context arg + return poll.
+
+Another key difference between `Iterators` and `Streams` is that that futures are ultimately passed to some executor API like spawn which expects a static future. To achieve that, the futures contain all the state they need and references are internal to that state. Iterators are almost never required to be 'static by the APIs that consume them.
+
+It is, admittedly, somewhat confusing to have Async generators require Pinning and Iterator generators to not require pinning, users may feel they are creating code in an unnatural way when using the Async generators. This will need to be discussed more when generators are proposed in the future.
 
 ### Yielding
 
