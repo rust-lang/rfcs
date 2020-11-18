@@ -105,7 +105,7 @@ The arguments to `poll_next` match that of the [`Future::poll`] method:
 
 ## next method
 
-As @yoshuawuyts states in their [pull request which adds `core::stream::Stream` to the standard library]:
+As @yoshuawuyts states in their [pull request which adds `core::stream::Stream` to the standard library](https://github.com/rust-lang/rust/pull/79023):
 
 Unlike `Iterator`, `Stream` makes a distinction between the [`poll_next`]
 method which is used when implementing a `Stream`, and the [`next`] method
