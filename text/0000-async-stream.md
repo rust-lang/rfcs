@@ -179,7 +179,7 @@ We should also implement a next method, similar to [the implementation in the fu
 
 In general, we have purposefully kept the core trait definition minimal. 
 There are a number of useful extension methods that are available, for example, 
-in the futures-stream crate, but we have not included them because they involve 
+in the `futures-util` crate, but we have not included them because they involve 
 closure arguments, and we have not yet finalized the design of async closures.
 
 However, the core methods alone are extremely unergonomic. You can't even iterate 
