@@ -61,7 +61,7 @@ When implementing a `Stream`, users will define a `poll_next` method.
 The `poll_next' method asks if the next item is ready. If so, it returns
 the item. Otherwise, `poll_next` will return [`Poll::Pending`]. 
 
-Just as with a [`Future`], returning [`Poll::pending`] 
+Just as with a [`Future`], returning [`Poll::Pending`] 
 implies that the stream has arranged for the current task to be re-awoken when the data is ready.
 
 [iterator]: https://doc.rust-lang.org/std/iter/trait.Iterator.html
