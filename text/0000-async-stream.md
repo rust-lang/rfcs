@@ -66,7 +66,7 @@ implies that the stream has arranged for the current task to be re-awoken when t
 
 [iterator]: https://doc.rust-lang.org/std/iter/trait.Iterator.html
 [`Future`]: https://doc.rust-lang.org/std/future/trait.Future.html
-[`Poll::pending`]: https://doc.rust-lang.org
+[`Poll::Pending`]: https://doc.rust-lang.org/std/task/enum.Poll.html#variant.Pending
 
 ```rust
 // Defined in std::stream module
