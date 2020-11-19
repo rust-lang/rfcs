@@ -45,6 +45,8 @@ dyn trait MyTrait { /* */ }
 
 If any conditions in the implementation make it not object safe, a compiler error is emitted with an accurate range. Accurate ranges for the error solves the issue of hard to pinpoint errors as previously pointed out. The addition of this syntax is fairly simple (parsing-wise) as `dyn` is a reserved keyword and the definition does not clash with any other productions.
 
+And finally, this proposal has been proposed to a certain degree before [here](https://github.com/rust-lang/rust/issues/57893#issuecomment-546972824). This RFC would be a way to gradually achieve the goal of this issue comment in the future.
+
 # Guide-level explanation
 
 [guide-level-explanation]: #guide-level-explanation
