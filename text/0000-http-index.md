@@ -68,15 +68,15 @@ Even in the worst case of downloading the entire index file by file, it should s
 To further reduce number requests needed to update the index, the index may maintain an append-only log of changes. For each change (crate version published or yanked), the log would append a line with: epoch number (explained below), last-modified timestamp, and the name of the changed crate, e.g.
 
 ```
-1 2019-10-18 23:51:23 oxigen
-1 2019-10-18 23:51:25 linda
-1 2019-10-18 23:51:29 rv
-1 2019-10-18 23:52:00 anyhow
-1 2019-10-18 23:53:03 build_id
-1 2019-10-18 23:56:16 canonical-form
-1 2019-10-18 23:59:01 cotton
-1 2019-10-19 00:01:44 kg-utils
-1 2019-10-19 00:08:45 serde_traitobject
+1 2019-10-18T23:51:23Z oxigen
+1 2019-10-18T23:51:25Z linda
+1 2019-10-18T23:51:29Z rv
+1 2019-10-18T23:52:00Z anyhow
+1 2019-10-18T23:53:03Z build_id
+1 2019-10-18T23:56:16Z canonical-form
+1 2019-10-18T23:59:01Z cotton
+1 2019-10-19T00:01:44Z kg-utils
+1 2019-10-19T00:08:45Z serde_traitobject
 ```
 
 Because the log is append-only, the client can incrementally update it using a `Range` HTTP request. The client doesn't have to download the full log in order to start using it; it can download only an arbitrary fraction of it, up to the end of the file, which is straightforward with a `Range` request. When a crate is found in the log (searching from the end), and modification date is the same as modification date of crate's cached locally, the client won't have to make an HTTP request for the file.
