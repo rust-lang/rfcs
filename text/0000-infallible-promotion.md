@@ -97,9 +97,25 @@ Inside a function body's block:
   it into a static memory location and give the resulting reference a
   `'static` lifetime.
 
-Operations that definitely succeed include literals of any kind, constructors (struct/enum/union/tuple), struct/tuple field accesses, `+`/`-`/`*`.
-(Checked arithmetic is not a problem: an addition in debug mode is compiled to a `CheckedAdd` MIR operation that never fails, which returns an `(<int>, bool)`, and is followed by a check of said `bool` to possibly raise a panic. We only ever promote the `CheckedAdd`, so evaluation of the promoted will never fail, even if the operation overflows.)
-Operations that might fail include `/`/`%`, `panic!` (including the assertion that follows `Checked*` arithmetic to ensure that no overflow happened), array/slice indexing, any unsafe operation, and `const fn` calls (as they might do any of the above).
+Operations that definitely succeed include:
+- literals of any kind
+- constructors (struct/enum/union/tuple)
+- struct/tuple field accesses
+- arithmetic that does not involve division: `+`/`-`/`*`
+
+Note that arithmetic overflow is not a problem: an addition in debug mode is compiled to a `CheckedAdd` MIR operation that never fails, which returns an `(<int>, bool)`, and is followed by a check of said `bool` to possibly raise a panic. We only ever promote the `CheckedAdd`, so evaluation of the promoted will never fail, even if the operation overflows. For example, `&(1 + u32::MAX)` turns into something like:
+```rust
+const C: (u32, bool) = CheckedAdd(1, u32::MAX); // evaluates to (1, true).
+assert!(C.1 == false);
+&C.0
+```
+
+Operations that might fail include:
+- `/`/`%`
+- `panic!` (including the assertion that follows `Checked*` arithmetic to ensure that no overflow happened)
+- array/slice indexing
+- any unsafe operation
+- `const fn` calls (as they might do any of the above)
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
