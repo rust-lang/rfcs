@@ -88,33 +88,36 @@ For more details, see [the MCP that preceded this RFC](https://github.com/rust-l
 
 Inside a function body's block:
 
-- If a shared reference to a constexpr rvalue is taken. (`&<constexpr>`)
-- And the constexpr does not contain a `UnsafeCell { ... }` constructor.
+- If a shared reference to a constexpr rvalue is taken. (`&<constexpr>`),
+- And the constexpr does not contain a `UnsafeCell { ... }` constructor,
 - And the constexpr only consists of operations that will definitely succeed to
-  evaluate at compile-time
+  evaluate at compile-time,
+- And the resulting value does not need dropping,
 - Then instead of translating the value into a stack slot, translate
   it into a static memory location and give the resulting reference a
   `'static` lifetime.
 
 Operations that definitely succeed include literals of any kind, constructors (struct/enum/union/tuple), struct/tuple field accesses, `+`/`-`/`*`.
 (Checked arithmetic is not a problem: an addition in debug mode is compiled to a `CheckedAdd` MIR operation that never fails, which returns an `(<int>, bool)`, and is followed by a check of said `bool` to possibly raise a panic. We only ever promote the `CheckedAdd`, so evaluation of the promoted will never fail, even if the operation overflows.)
-Operations that might fail include `/`/`%`, `panic!` (including the assertion that follows `Checked*` arithmetic to ensure that no overflow happened), array/slice indexing, union field accesses, and `const fn` calls (as they might do any of the above).
-
-Compared to the status quo, this means the following expressions are not implicitly promoted any more:
-* Division, modulo, array/slice indexing
-* `const fn` calls in `const`/`static` bodies (`const fn` are already not being implicitly promoted in `fn` and `const fn` bodies)
+Operations that might fail include `/`/`%`, `panic!` (including the assertion that follows `Checked*` arithmetic to ensure that no overflow happened), array/slice indexing, any unsafe operation, and `const fn` calls (as they might do any of the above).
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-TODO: repeat everything in the guide-level explanation? That makes little sense; not sure what the template asks from me here.
+See above for (hopefully) all the required details.
+What exactly the rules will end up being for which operations can be promoted will depend on experimentation to avoid breaking too much existing code, as discussed below.
 
 # Drawbacks
 [drawbacks]: #drawbacks
 
-The biggest drawback is that this will break some existing code: if code relies on implicit promotion of potentially fallible operations, it will stop to compile.
+The biggest drawback is that this will break some existing code.
+Compared to the status quo, this means the following expressions are not implicitly promoted any more:
+* Division, modulo, array/slice indexing
+* `const fn` calls in `const`/`static` bodies (`const fn` are already not being implicitly promoted in `fn` and `const fn` bodies)
+
+If code relies on implicit promotion of these operations, it will stop to compile.
 Crater runs should be used all along the way to ensure that the fall-out is acceptable.
-The language team will be involved in each breaking change to make this judgment call.
+The language team will be involved (via FCP) in each breaking change to make this judgment call.
 If too much code is broken, various ways to weaken this proposal (at the expense of more technical debt, sometimes across several parts of the compiler) are [described blow][rationale-and-alternatives].
 
 The long-term plan is that such code can switch to [inline `const` expressions](2920-inline-const.md) instead.
@@ -127,7 +130,7 @@ More complex work-around are possible for this using associated `const`, but the
 The rationale has been described with the motivation.
 
 Unless we want to keep supporting fallible const-evaluation indefinitely, the main alternatives are devising more precise analyses to determine if some operation is infallible.
-For example, we could still perform implicit promotion for division and modulo if the divisor is a non-zero constant.
+For example, we could still perform implicit promotion for division and modulo if the divisor is a non-zero literal.
 We could also have `CheckedDiv` and `CheckedMod` operations that, similar to operations like `CheckedAdd`, always returns a result of the right type together with a `bool` saying if the result is valid.
 We could still perform *array* indexing if the index is a constant and in-bounds.
 For slices, we could have an analysis that predicts the (minimum) length of the slice.
