@@ -181,8 +181,8 @@ resolver = "2"
 
 Setting the resolver to `"2"` switches Cargo to use the new feature resolver.
 It also enables backwards-incompatible behavior detailed in [New command-line
-behavior](#new-command-line-behavior). `"2"` is the only valid option, if
-`resolver` is not specified then the old behavior is used.
+behavior](#new-command-line-behavior). A value of `"1"` uses the previous
+resolver behavior, which is the default if not specified.
 
 The `resolver` field is only honored in the top-level package or workspace, it
 is ignored in dependencies. This is because feature-unification is an
