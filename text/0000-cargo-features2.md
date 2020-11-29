@@ -184,6 +184,9 @@ It also enables backwards-incompatible behavior detailed in [New command-line
 behavior](#new-command-line-behavior). A value of `"1"` uses the previous
 resolver behavior, which is the default if not specified.
 
+The value is a string (instead of an integer) to allow for possible extensions
+in the future.
+
 The `resolver` field is only honored in the top-level package or workspace, it
 is ignored in dependencies. This is because feature-unification is an
 inherently global decision.
