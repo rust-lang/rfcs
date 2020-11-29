@@ -329,6 +329,51 @@ There are a number of drawbacks to this approach:
   problems. It is difficult to get sufficient testing, particularly when only
   available as an unstable feature.
 
+## Subtle behaviors
+
+The following are behaviors that may be confusing or surprising, and are
+highlighted here as potential concerns.
+
+### Optional dependency feature names
+
+* `dep_name/feat_name` will always enable the feature `dep_name`, even if it
+  is an inactive optional dependency (such as a dependency for another
+  platform). The intent here is to be consistent where features are always
+  activated when explicitly written, but the *dependency* is not activated.
+
+* `--all-features` enables features for inactive optional dependencies (but
+  does not activate the *dependency*). This is consistent with `--features
+  foo` enabling `foo`, even if the `foo` dependency is not activated.
+
+Code that needs to have a `cfg` expression for a dependency of this kind
+should use a `cfg` that matches the condition (like `cfg(windows)`) or use
+`cfg(accessible(dep_name))` when that syntax is stabilized.
+
+This is somewhat intertwined with the upcoming [namespaced features]. For an
+optional dependency, the feature is decoupled from the activating of the
+dependency itself.
+
+### Proc-macro unification in a workspace
+
+If there is a proc-macro in a workspace, and the proc-macro is included as a
+"root" package along with other packages in a workspace (for example with
+`cargo build --workspace`), then there can be some potentially surprising
+feature unification between the proc-macro and the other members of the
+workspace. This is because proc-macros *may* have normal targets such as
+binaries or tests, which need feature unification with the rest of the
+workspace.
+
+This issue is detailed in [issue #8312].
+
+At this time, there isn't a clear solution to this problem. If this is an
+issue, projects are encouraged to avoid using `--workspace` or use `--exclude`
+or otherwise avoid building multiple workspace members together. This is also
+related to the [workspace unification issue].
+
+[namespaced features]: https://doc.rust-lang.org/nightly/cargo/reference/unstable.html#namespaced-features
+[issue #8312]: https://github.com/rust-lang/cargo/issues/8312
+[workspace unification issue]: https://github.com/rust-lang/cargo/issues/4463
+
 # Rationale and alternatives
 
 * These changes could be forced on all users without an opt-in. The amount of
