@@ -73,6 +73,10 @@ There are four `type`s available:
 3. `"cdylib"`, a C-compatible dynamic library
 4. `"staticlib"`, a C-compatible static library
 
+`"lib"` corresponds to all crates that can be depended on currently,
+including `lib`, `rlib`, and `proc-macro` libraries.
+See [linkage](https://doc.rust-lang.org/reference/linkage.html) for more information.
+
 Artifact dependencies can appear in any of the three sections of dependencies (or in target-specific versions of these sections):
 - `[build-dependencies]`
 - `[dependencies]`
@@ -137,4 +141,4 @@ Currently, there's no mechanism to obtain an environment variable's value at com
 
 In some cases, a crate may want to depend on a binary without unifying features or dependency versions with that binary. A future extension to this mechanism could allow cargo to build a binary crate in isolation, without attempting to do any unification.
 
-Just as a -sys crate can supply additional artifacts other than the built binary, this mechanism could potentially expand in the future to allow building artifacts other than the built binary, such as C-compatible include files, various types of interface definition or protocol definition files, or arbitrary data files.
+Just as a `-sys` crate can supply additional artifacts other than the built binary, this mechanism could potentially expand in the future to allow building artifacts other than the built binary, such as C-compatible include files, various types of interface definition or protocol definition files, or arbitrary data files.
