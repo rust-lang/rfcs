@@ -174,7 +174,7 @@ resolve, the future will wait until the stream is ready to yield again.
 Individual streams may choose to resume iteration, and so calling [`next`]
 again may or may not eventually yield `Some(Item)` again at some point.
 
-This is similar to the `Future` trait. The `Future::poll_next` method is rarely called 
+This is similar to the `Future` trait. The `Future::poll` method is rarely called 
 directly, it is almost always used to implement other Futures. Interacting
 with futures is done through `async/await`.
 
