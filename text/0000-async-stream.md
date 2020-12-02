@@ -102,6 +102,12 @@ The arguments to `poll_next` match that of the [`Future::poll`] method:
 [context]: https://doc.rust-lang.org/std/task/struct.Context.html
 [`Waker`]: https://doc.rust-lang.org/std/task/struct.Waker.html
 
+As defined in the [`Future` docs](https://doc.rust-lang.org/stable/std/future/trait.Future.html):
+
+Once a future has completed (returned Ready from poll), calling its poll method again may panic, block forever, or cause other kinds of problems; the Future trait places no requirements on the effects of such a call. However, as the poll method is not marked unsafe, Rust's usual rules apply: calls must never cause undefined behavior (memory corruption, incorrect use of unsafe functions, or the like), regardless of the future's state.
+
+This RFC takes a similar approach to Streams. In general, once a Stream returns `None`, clients should not poll it again. However, individual streams may choose to resume iteration if the user wishes them to, in which case the stream may or may not eventually yield `Some(Item)` again at some point.
+
 ### Usage
 
 A user could create a stream as follows (Example taken from @yoshuawuyt's [implementation pull request](https://github.com/rust-lang/rust/pull/79023)).
@@ -181,8 +187,9 @@ elements, and once they've all been exhausted, will yield `None` to indicate
 that iteration is finished. If we're waiting on something asynchronous to
 resolve, the future will wait until the stream is ready to yield again.
 
-Individual streams may choose to resume iteration, and so calling `next`
-again may or may not eventually yield `Some(Item)` again at some point.
+As defined in the [`Future` docs](https://doc.rust-lang.org/stable/std/future/trait.Future.html):
+
+Once a future has completed (returned Ready from poll), calling its poll method again may panic, block forever, or cause other kinds of problems; the Future trait places no requirements on the effects of such a call. However, as the poll method is not marked unsafe, Rust's usual rules apply: calls must never cause undefined behavior (memory corruption, incorrect use of unsafe functions, or the like), regardless of the future's state.
 
 This is similar to the `Future` trait. The `Future::poll` method is rarely called 
 directly, it is almost always used to implement other Futures. Interacting
