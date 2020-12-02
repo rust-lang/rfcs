@@ -22,9 +22,8 @@ People can do this currently using the `Stream` trait defined in the
 to add `Stream` to the standard library. 
 
 In addition to adding the `Stream` trait to the standard library, we also want to provide basic 
-ergonomic methods required to use streams effectively. These include the
-`next` and `poll_next` methods. Without these methods, `Streams` would feel much more 
-difficult to use. Were we to not include them, users would likely immediately reach out 
+ergonomic methods required to use streams effectively. These includes the `next` method. Without this method, `Streams` would feel much more 
+difficult to use. Were we to not include it, users would likely immediately reach out 
 for them either through writing their own version or using an external crate. 
 
 Including `Stream` in the standard library would also clarify the stability guarantees of the trait. For example, if [Tokio](https://tokio.rs/) 
@@ -171,28 +170,25 @@ convenience methods that are not dependent on any unstable features, such as `ne
 
 As @yoshuawuyts states in their [pull request which adds `core::stream::Stream` to the standard library](https://github.com/rust-lang/rust/pull/79023):
 
-Unlike `Iterator`, `Stream` makes a distinction between the [`poll_next`]
-method which is used when implementing a `Stream`, and the [`next`] method
+Unlike `Iterator`, `Stream` makes a distinction between the `poll_next`
+method which is used when implementing a `Stream`, and the `next` method
 which is used when consuming a stream. Consumers of `Stream` only need to
-consider [`next`], which when called, returns a future which yields
-[`Option`]`<Item>`.
+consider `next`, which when called, returns a future which yields
+`Option<Item>`.
 
-The future returned by [`next`] will yield `Some(Item)` as long as there are
+The future returned by `next` will yield `Some(Item)` as long as there are
 elements, and once they've all been exhausted, will yield `None` to indicate
 that iteration is finished. If we're waiting on something asynchronous to
 resolve, the future will wait until the stream is ready to yield again.
 
-Individual streams may choose to resume iteration, and so calling [`next`]
+Individual streams may choose to resume iteration, and so calling `next`
 again may or may not eventually yield `Some(Item)` again at some point.
 
 This is similar to the `Future` trait. The `Future::poll` method is rarely called 
 directly, it is almost always used to implement other Futures. Interacting
 with futures is done through `async/await`.
 
-A `Stream` by itself is not useful - we need some way to interact with it.
-To interact with it, we need the `next` method - all other interactions
-with `Stream` can be expressed through it. Without the `next` method,
-streams cannot be consumed.
+We need something like the `next()` method in order to iterate over the stream directly in an `async` block or function. It is essentially an adapter from `Stream` to `Future`.
 
 ```rust
 /// A future that advances the stream and returns the next value.
