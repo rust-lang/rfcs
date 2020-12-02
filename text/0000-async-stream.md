@@ -83,7 +83,8 @@ pub trait Stream {
     // Convenience method (covered later on in the RFC):
     fn next(&mut self) -> Next<'_, Self>
     where
-        Self: Unpin;
+        Self: Unpin
+    { .. }
 }
 ```
 
