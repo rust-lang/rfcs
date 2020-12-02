@@ -242,6 +242,12 @@ a user to write:
 while let Some(x) = s.try_next().await?
 ```
 
+But this could also be written as:
+
+```rust
+while let Some(x) = s.next().await.transpose()?
+```
+
 One thing to note, if a user is using an older version of `futures-util`,
 they would experience ambiguity when trying to use the `next` method that
 is added to the standard library (and redirected to from `futures-core`).
