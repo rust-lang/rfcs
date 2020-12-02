@@ -164,7 +164,7 @@ There are a number of useful extension methods that are available, for example,
 in the `futures-util` crate, but we have not included them because they involve 
 closure arguments, and we have not yet finalized the design of async closures.
 
-However, the core methods alone are extremely unergonomic. You can't even iterate 
+However, the core `poll_next` method alone is extremely unergonomic. You can't even iterate 
 over the items coming out of the stream. Therefore, we include a few minimal 
 convenience methods that are not dependent on any unstable features, such as `next`.
 
