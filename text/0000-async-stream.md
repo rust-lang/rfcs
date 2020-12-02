@@ -56,7 +56,6 @@ The `Iterator` trait includes a `next` method, which computes and returns the ne
 
 ## poll_next method
 
-
 When implementing a `Stream`, users will define a `poll_next` method. 
 The `poll_next` method asks if the next item is ready. If so, it returns
 the item. Otherwise, `poll_next` will return [`Poll::Pending`]. 
@@ -158,6 +157,17 @@ impl Stream for Counter {
 
 ## next method
 
+We should also implement a next method, similar to [the implementation in the futures-util crate](https://docs.rs/futures-util/0.3.5/src/futures_util/stream/stream/next.rs.html#10-12).
+
+In general, we have purposefully kept the core trait definition minimal. 
+There are a number of useful extension methods that are available, for example, 
+in the `futures-util` crate, but we have not included them because they involve 
+closure arguments, and we have not yet finalized the design of async closures.
+
+However, the core methods alone are extremely unergonomic. You can't even iterate 
+over the items coming out of the stream. Therefore, we include a few minimal 
+convenience methods that are not dependent on any unstable features, such as `next`.
+
 As @yoshuawuyts states in their [pull request which adds `core::stream::Stream` to the standard library](https://github.com/rust-lang/rust/pull/79023):
 
 Unlike `Iterator`, `Stream` makes a distinction between the [`poll_next`]
@@ -182,6 +192,65 @@ A `Stream` by itself is not useful - we need some way to interact with it.
 To interact with it, we need the `next` method - all other interactions
 with `Stream` can be expressed through it. Without the `next` method,
 streams cannot be consumed.
+
+```rust
+/// A future that advances the stream and returns the next value.
+///
+/// This `struct` is created by the [`next`] method on [`Stream`]. See its
+/// documentation for more.
+///
+/// [`next`]: trait.Stream.html#method.next
+/// [`Stream`]: trait.Stream.html
+#[derive(Debug)]
+#[must_use = "futures do nothing unless you `.await` or poll them"]
+pub struct Next<'a, S: ?Sized> {
+    stream: &'a mut S,
+}
+
+impl<St: ?Sized + Unpin> Unpin for Next<'_, St> {}
+
+impl<'a, St: ?Sized + Stream + Unpin> Next<'a, St> {
+    pub(super) fn new(stream: &'a mut St) -> Self {
+        Next { stream }
+    }
+}
+
+impl<St: ?Sized + Stream + Unpin> Future for Next<'_, St> {
+    type Output = Option<St::Item>;
+
+    fn poll(
+        mut self: Pin<&mut Self>,
+        cx: &mut Context<'_>,
+    ) -> Poll<Self::Output> {
+        Pin::new(&mut *self.stream).poll_next(cx)
+    }
+}
+```
+
+This would allow a user to await on a future:
+
+```rust
+while let Some(v) = stream.next().await {
+
+}
+```
+
+We could also consider adding a `try_next` method, allowing
+a user to write:
+
+```rust
+while let Some(x) = s.try_next().await?
+```
+
+One thing to note, if a user is using an older version of `futures-util`,
+they would experience ambiguity when trying to use the `next` method that
+is added to the standard library (and redirected to from `futures-core`).
+
+This can be done as a non-breaking change, but would require everyone to 
+upgrade rustc. We will want to create a transition plan on what this
+means for users and pick the timing carefully.
+
+
 
 ### Usage
 
@@ -263,76 +332,6 @@ where
     type Item = <S as Stream>::Item;
 }
 ```
-
-## Next method/struct
-
-We should also implement a next method, similar to [the implementation in the futures-util crate](https://docs.rs/futures-util/0.3.5/src/futures_util/stream/stream/next.rs.html#10-12).
-
-In general, we have purposefully kept the core trait definition minimal. 
-There are a number of useful extension methods that are available, for example, 
-in the `futures-util` crate, but we have not included them because they involve 
-closure arguments, and we have not yet finalized the design of async closures.
-
-However, the core methods alone are extremely unergonomic. You can't even iterate 
-over the items coming out of the stream. Therefore, we include a few minimal 
-convenience methods that are not dependent on any unstable features, such as `next`.
-
-```rust
-/// A future that advances the stream and returns the next value.
-///
-/// This `struct` is created by the [`next`] method on [`Stream`]. See its
-/// documentation for more.
-///
-/// [`next`]: trait.Stream.html#method.next
-/// [`Stream`]: trait.Stream.html
-#[derive(Debug)]
-#[must_use = "futures do nothing unless you `.await` or poll them"]
-pub struct Next<'a, S: ?Sized> {
-    stream: &'a mut S,
-}
-
-impl<St: ?Sized + Unpin> Unpin for Next<'_, St> {}
-
-impl<'a, St: ?Sized + Stream + Unpin> Next<'a, St> {
-    pub(super) fn new(stream: &'a mut St) -> Self {
-        Next { stream }
-    }
-}
-
-impl<St: ?Sized + Stream + Unpin> Future for Next<'_, St> {
-    type Output = Option<St::Item>;
-
-    fn poll(
-        mut self: Pin<&mut Self>,
-        cx: &mut Context<'_>,
-    ) -> Poll<Self::Output> {
-        Pin::new(&mut *self.stream).poll_next(cx)
-    }
-}
-```
-
-This would allow a user to await on a future:
-
-```rust
-while let Some(v) = stream.next().await {
-
-}
-```
-
-We could also consider adding a `try_next` method, allowing
-a user to write:
-
-```rust
-while let Some(x) = s.try_next().await?
-```
-
-One thing to note, if a user is using an older version of `futures-util`,
-they would experience ambiguity when trying to use the `next` method that
-is added to the standard library (and redirected to from `futures-core`).
-
-This can be done as a non-breaking change, but would require everyone to 
-upgrade rustc. We will want to create a transition plan on what this
-means for users and pick the timing carefully.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
