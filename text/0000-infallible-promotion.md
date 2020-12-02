@@ -8,7 +8,7 @@
 
 Restrict (implicit) [promotion][rfc1414], such as lifetime extension of rvalues, to infallible operations.
 
-[rfc1414]: 1414-rvalue_static_promotion.md
+[rfc1414]: https://github.com/rust-lang/rfcs/blob/master/text/1414-rvalue_static_promotion.md
 
 # Motivation
 [motivation]: #motivation
@@ -97,18 +97,21 @@ Inside a function body's block:
   it into a static memory location and give the resulting reference a
   `'static` lifetime.
 
-Operations that definitely succeed include:
+Operations that definitely succeed at the time of writing the RFC include:
 - literals of any kind
 - constructors (struct/enum/union/tuple)
 - struct/tuple field accesses
-- arithmetic that does not involve division: `+`/`-`/`*`
+- arithmetic and logical operators that do not involve division: `+`/`-`/`*`, all bitwise and shift operators, all unary operators
 
-Note that arithmetic overflow is not a problem: an addition in debug mode is compiled to a `CheckedAdd` MIR operation that never fails, which returns an `(<int>, bool)`, and is followed by a check of said `bool` to possibly raise a panic. We only ever promote the `CheckedAdd`, so evaluation of the promoted will never fail, even if the operation overflows. For example, `&(1 + u32::MAX)` turns into something like:
+Note that arithmetic overflow is not a problem: an addition in debug mode is compiled to a `CheckedAdd` MIR operation that never fails, which returns an `(<int>, bool)`, and is followed by a check of said `bool` to possibly raise a panic.
+We only ever promote the `CheckedAdd`, so evaluation of the promoted will never fail, even if the operation overflows.
+For example, `&(1 + u32::MAX)` turns into something like:
 ```rust
 const C: (u32, bool) = CheckedAdd(1, u32::MAX); // evaluates to (1, true).
 assert!(C.1 == false);
 &C.0
 ```
+See [this prior RFC](https://github.com/rust-lang/rfcs/blob/master/text/1211-mir.md#overflow-checking) for further details.
 
 Operations that might fail include:
 - `/`/`%`
