@@ -52,7 +52,7 @@ This includes a trait for producing streams and a trait for consuming streams.
 
 A "stream" is the async version of an [iterator].
 
-The `Iterator` trait includes a `next` method, which computes and returns the next item in the sequence. The `Stream` trait includes two core methods for defining and interacting with streams - `poll_next` and 'next`.
+The `Iterator` trait includes a `next` method, which computes and returns the next item in the sequence. The `Stream` trait includes two core methods for defining and interacting with streams - `poll_next` and `next`.
 
 ## poll_next method
 
