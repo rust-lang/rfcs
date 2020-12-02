@@ -250,8 +250,6 @@ This can be done as a non-breaking change, but would require everyone to
 upgrade rustc. We will want to create a transition plan on what this
 means for users and pick the timing carefully.
 
-
-
 ### Usage
 
 Continuing the example of `Stream` implemented on a struct called `Counter`, the user would interact with the stream like so:
@@ -285,7 +283,7 @@ When drafting this RFC, there was a [good deal of discussion](https://github.com
 
 In particular, there was concern around how this would affect the use of generators in the future. Generators are discussed in the [Future possiblilities](future-possibilities) section later in this RFC.
 
-To understand this, it helps to take a closer look at the definition of `Next` (this struct is further discussed later in this RFC) in the [futures-util crate](https://docs.rs/futures-util/0.3.5/src/futures_util/stream/stream/next.rs.html#10-12).
+To understand this, it helps to take a closer look at the definition of `Next` in the [futures-util crate](https://docs.rs/futures-util/0.3.5/src/futures_util/stream/stream/next.rs.html#10-12).
 
 ```rust
 pub struct Next<'a, St: ?Sized> {
@@ -297,6 +295,23 @@ Since `Stream::poll_next` takes a pinned reference, the next future needs `S` to
 An alternative approach we could take would be to have the `next` method take `Pin<&mut S>`, rather than `&mut S`. However, this would require pinning even when the type is `Unpin`. The current approach requires pinning only when the type is not `Unpin`.
 
 We currently do see some `!Unpin` streams in practice (including in the [futures-intrusive crate](https://github.com/Matthias247/futures-intrusive/blob/master/src/channel/mpmc.rs#L565-L625)). We also see `stream.then(|_| async {})` resulting in an `!Unpin` stream. Where `!Unpin` streams will become important is when we introduce async generators, as discussed in [future-possibilities].
+
+This could potentially be addressed by using the [pin_mut!](https://rust-lang-nursery.github.io/futures-api-docs/0.3.0-alpha.1/futures/macro.pin_mut.html) macro in the `futures` crate (it is also included in the [pin-utils](https://docs.rs/pin-utils/0.1.0/pin_utils/macro.pin_mut.html) crate) or by using [Box::pin](https://doc.rust-lang.org/std/boxed/struct.Box.html#method.pin) to pin the stream.
+
+```rust
+let stream = non_unpin_stream();
+pin_mut!(stream);
+while let Some(item) = stream.next().await {
+  ...
+}
+```
+
+```rust
+let stream = Box::pin(non_unpin_stream());
+while let Some(item) = stream.next().await {
+  ...
+}
+```
 
 ## Initial impls
 
