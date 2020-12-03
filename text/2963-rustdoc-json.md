@@ -1,7 +1,7 @@
 - Feature Name: `rustdoc_json`
 - Start Date: 2020-06-26
 - RFC PR: [rust-lang/rfcs#2963](https://github.com/rust-lang/rfcs/pull/2963)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/76578)
+- Rust Issue: [rust-lang/rust#76578](https://github.com/rust-lang/rust/issues/76578)
 
 # Summary
 [summary]: #summary
