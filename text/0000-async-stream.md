@@ -618,7 +618,7 @@ pub trait Stream {
 When drafting this RFC, there was [discussion](https://github.com/rust-lang/wg-async-foundations/pull/15#discussion_r451182595) 
 about whether to implement from_stream for all T where `T: FromIterator` as well.
 `FromStream` is perhaps more general than `FromIterator` because the await point is allowed to suspend execution of the 
-current function, but doesn't have too. Therefore, many (if not all) existing impls of `FromIterator` would work
+current function, but doesn't have to. Therefore, many (if not all) existing impls of `FromIterator` would work
 for `FromStream` as well. While this would be a good point for a future discussion, it is not in the scope of this RFC.
 
 ## Converting an Iterator to a Stream
