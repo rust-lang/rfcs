@@ -1,7 +1,7 @@
 - Feature Name: `cargo_token_from_process`
 - Start Date: 2019-07-22
 - RFC PR: [rust-lang/rfcs#2730](https://github.com/rust-lang/rfcs/pull/2730)
-- Cargo Issue: [rust-lang/cargo#0000](https://github.com/rust-lang/cargo/issues/0000)
+- Cargo Issue: [rust-lang/cargo#8933](https://github.com/rust-lang/cargo/issues/8933)
 
 # Summary
 [summary]: #summary
