@@ -87,9 +87,14 @@ fn provide_context<'a>(&'a self, mut request: &mut Request<'a>) {
     request
         .provide_ref::<Backtrace>(&self.backtrace)
         .provide_ref::<SpanTrace>(&self.span_trace)
+        // supports dynamically sized types
         .provide_ref::<dyn Error>(&self.source)
         .provide_ref::<Vec<&'static Location<'static>>>(&self.locations)
-        .provide_ref::<[&'static Location<'static>]>(&self.locations);
+        .provide_ref::<[&'static Location<'static>]>(&self.locations)
+        // can be used to upcast self to other trait objects
+        .provide_ref::<dyn Serialize>(&self)
+        // or to pass owned values
+        .provide_value::<ExitCode>(self.exit_code);
 }
 ```
 
