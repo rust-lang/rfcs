@@ -9,16 +9,12 @@
 This RFC proposes additions to the `Error` trait to support accessing generic
 forms of context from `dyn Error` trait objects. This generalizes the pattern
 used in `backtrace` and `source`. This proposal adds the method
-`Error::provide_context` to the `Error` trait, which offers `TypeId`-based member
-lookup and a new inherent function `<dyn Error>::context` which makes use of an
-implementor's `provide_context` to return a typed reference directly. These
-additions would primarily be useful for error reporting, where we typically no
-longer have type information and may be composing errors from many sources.
-
-_note_: This RFC focuses on the more complicated of it's two proposed
-solutions. The proposed solution provides support accessing dynamically sized
-types. The [alternative proposal] is easier to understand and may be more
-palatable.
+`Error::provide_context` to the `Error` trait, which offers `TypeId`-based
+member lookup and a new inherent function `<dyn Error>::context` and `<dyn
+Error>::context_ref` which makes use of an implementor's `provide_context` to
+return a typed reference directly. These additions would primarily be useful
+for error reporting, where we typically no longer have type information and
+may be composing errors from many sources.
 
 ## TLDR
 
@@ -30,13 +26,12 @@ pub trait Error {
 
     /// Provides type based access to context intended for error reports
     ///
-    /// Used in conjunction with [`context`] to extract references to member variables from `dyn
-    /// Error` trait objects.
+    /// Used in conjunction with [`context`] and [`context_ref`] to extract
+    /// references to member variables from `dyn Error` trait objects.
     ///
     /// # Example
     ///
     /// ```rust
-    /// use core::pin::Pin;
     /// use backtrace::Backtrace;
     /// use core::fmt;
     /// use fakecore::any::Request;
@@ -53,8 +48,8 @@ pub trait Error {
     /// }
     ///
     /// impl fakecore::error::Error for Error {
-    ///     fn provide_context<'a>(&'a self, mut request: Pin<&mut Request<'a>>) {
-    ///         request.provide::<Backtrace>(&self.backtrace);
+    ///     fn provide_context<'a>(&'a self, mut request: &mut Request<'a>) {
+    ///         request.provide_ref::<Backtrace>(&self.backtrace);
     ///     }
     /// }
     ///
@@ -62,36 +57,39 @@ pub trait Error {
     ///     let backtrace = Backtrace::new();
     ///     let error = Error { backtrace };
     ///     let dyn_error = &error as &dyn fakecore::error::Error;
-    ///     let backtrace_ref = dyn_error.context::<Backtrace>().unwrap();
+    ///     let backtrace_ref = dyn_error.context_ref::<Backtrace>().unwrap();
     ///
     ///     assert!(core::ptr::eq(&error.backtrace, backtrace_ref));
     /// }
     /// ```
-    fn provide_context<'a>(&'a self, request: Pin<&mut Request<'a>>) {}
+    fn provide_context<'a>(&'a self, request: &mut Request<'a>) {}
 }
 ```
 
-And this inherent method on `dyn Error` trait objects:
+And these inherent methods on `dyn Error` trait objects:
 
 ```rust
 impl dyn Error {
-    pub fn context<T: ?Sized + 'static>(&self) -> Option<&T> {
-        Request::with::<T, _>(|req| self.provide_context(req))
+    pub fn context_ref<T: ?Sized + 'static>(&self) -> Option<&T> {
+        Request::request_ref(|req| self.provide_context(req))
+    }
+
+    pub fn context<T: 'static>(&self) -> Option<T> {
+        Request::request_value(|req| self.provide_context(req))
     }
 }
 ```
 
-
 Example implementation:
 
 ```rust
-fn provide_context<'a>(&'a self, mut request: Pin<&mut Request<'a>>) {
+fn provide_context<'a>(&'a self, mut request: &mut Request<'a>) {
     request
-        .provide::<Backtrace>(&self.backtrace)
-        .provide::<SpanTrace>(&self.span_trace)
-        .provide::<dyn Error>(&self.source)
-        .provide::<Vec<&'static Location<'static>>>(&self.locations)
-        .provide::<[&'static Location<'static>]>(&self.locations);
+        .provide_ref::<Backtrace>(&self.backtrace)
+        .provide_ref::<SpanTrace>(&self.span_trace)
+        .provide_ref::<dyn Error>(&self.source)
+        .provide_ref::<Vec<&'static Location<'static>>>(&self.locations)
+        .provide_ref::<[&'static Location<'static>]>(&self.locations);
 }
 ```
 
@@ -100,7 +98,7 @@ Example usage:
 ```rust
 let e: &dyn Error = &concrete_error;
 
-if let Some(bt) = e.context::<Backtrace>() {
+if let Some(bt) = e.context_ref::<Backtrace>() {
     println!("{}", bt);
 }
 ```
@@ -135,26 +133,17 @@ many new forms of error reporting.
   when parsing a file TODO reword
 * Help text such as suggestions or warnings attached to an error report
 
-## Moving `Error` into `libcore`
-
-Adding a generic member access function to the `Error` trait and removing the
-currently unstable `backtrace` function would make it possible to move the
-`Error` trait to libcore without losing support for backtraces on std. The only
-difference being that in places where you can currently write
-`error.backtrace()` on nightly you would instead need to write
-`error.context::<Backtrace>()`.
-
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-Error handling in Rust consists of three steps: creation/propagation, handling,
-and reporting. The `std::error::Error` trait exists to bridge the gap between
-creation and reporting. It does so by acting as an interface that all error
-types can implement that defines how to access context intended for error
-reports, such as the error message, source, or location it was created. This
-allows error reporting types to handle errors in a consistent manner when
-constructing reports for end users while still retaining control over the
-format of the full report.
+Error handling in Rust consists of three main steps: creation/propagation,
+handling, and reporting. The `std::error::Error` trait exists to bridge the
+gap between creation and reporting. It does so by acting as an interface that
+all error types can implement that defines how to access context intended for
+error reports, such as the error message, source, or location it was created.
+This allows error reporting types to handle errors in a consistent manner
+when constructing reports for end users while still retaining control over
+the format of the full report.
 
 The `Error` trait accomplishes this by providing a set of methods for accessing
 members of `dyn Error` trait objects. It requires that types implement the
@@ -164,7 +153,7 @@ members, which typically represent the current error's cause. Via
 `#![feature(backtrace)]` it provides the `backtrace` function, for accessing a
 `Backtrace` of the state of the stack when an error was created. For all other
 forms of context relevant to an error report, the `Error` trait provides the
-`context` and `provide_context` functions.
+`context`, context_ref`, and `provide_context` functions.
 
 As an example of how to use this interface to construct an error report, let’s
 explore how one could implement an error reporting type. In this example, our
@@ -230,8 +219,8 @@ impl std::error::Error for ExampleError {
         Some(&self.source)
     }
 
-    fn provide_context<'a>(&'a self, mut request: Pin<&mut Request<'a>>) {
-        request.provide::<Location>(&self.location);
+    fn provide_context<'a>(&'a self, mut request: &mut Request<'a>) {
+        request.provide_ref::<Location>(&self.location);
     }
 }
 ```
@@ -249,7 +238,7 @@ impl fmt::Debug for ErrorReporter {
 
         for (ind, error) in errors.enumerate() {
             writeln!(fmt, "    {}: {}", ind, error)?;
-            if let Some(location) = error.context::<Location>() {
+            if let Some(location) = error.context_ref::<Location>() {
                 writeln!(fmt, "        at {}:{}", location.file, location.line)?;
             }
         }
@@ -303,128 +292,327 @@ A usable version of this is available in the [proof of concept] repo under
 
 ```rust
 use core::any::TypeId;
-use core::fmt;
-use core::marker::{PhantomData, PhantomPinned};
-use core::pin::Pin;
+use core::marker::PhantomData;
+
+mod private {
+    pub trait Response<'a>: 'a {}
+}
+
+/// A response to a ref request.
+struct RefResponse<'a, T: ?Sized + 'static>(Option<&'a T>);
+impl<'a, T: ?Sized + 'static> private::Response<'a> for RefResponse<'a, T> {}
+
+/// A response to a value request.
+struct ValueResponse<T: 'static>(Option<T>);
+impl<'a, T: 'static> private::Response<'a> for ValueResponse<T> {}
 
 /// A dynamic request for an object based on its type.
-#[repr(C)]
-pub struct Request<'a> {
+pub struct Request<'a, R = dyn private::Response<'a>>
+where
+    R: ?Sized + private::Response<'a>,
+{
+    marker: PhantomData<&'a ()>,
+
+    /// A `TypeId` marker for the type stored in `R`.
+    ///
+    /// Will be the TypeId of either `RefResponse<'static, T>` or
+    /// `ValueResponse<T>`.
     type_id: TypeId,
-    _pinned: PhantomPinned,
-    _marker: PhantomData<&'a ()>,
+
+    /// A type erased `RefResponse` or `ValueResponse` containing the response
+    /// value.
+    response: R,
 }
 
 impl<'a> Request<'a> {
-    /// Provides an object of type `T` in response to this request.
+    /// Perform a checked downcast of `response` to `Option<&'a T>`
+    fn downcast_ref_response<'b, T: ?Sized + 'static>(
+        &'b mut self,
+    ) -> Option<&'b mut RefResponse<'a, T>> {
+        if self.is_ref::<T>() {
+            // safety: If `self.is_ref::<T>()` returns true, `response` must be
+            // of the correct type. This is enforced by the private `type_id`
+            // field.
+            Some(unsafe { &mut *(&mut self.response as *mut _ as *mut RefResponse<'a, T>) })
+        } else {
+            None
+        }
+    }
+
+    /// Perform a checked downcast of `response` to `Option<T>`
+    fn downcast_value_response<'b, T: 'static>(&'b mut self) -> Option<&'b mut ValueResponse<T>> {
+        if self.is_value::<T>() {
+            // safety: If `self.is_value::<T>()` returns true, `response` must
+            // be of the correct type. This is enforced by the private `type_id`
+            // field.
+            Some(unsafe { &mut *(&mut self.response as *mut _ as *mut ValueResponse<T>) })
+        } else {
+            None
+        }
+    }
+
+    /// Provides a reference of type `&'a T` in response to this request.
     ///
-    /// If an object of type `T` has already been provided for this request, the
-    /// existing value will be replaced by the newly provided value.
+    /// If a reference of type `&'a T` has already been provided for this
+    /// request, or if the request is for a different type, this call will be
+    /// ignored.
     ///
     /// This method can be chained within `provide` implementations to concisely
     /// provide multiple objects.
-    pub fn provide<T: ?Sized + 'static>(self: Pin<&mut Self>, value: &'a T) -> Pin<&mut Self> {
-        self.provide_with(|| value)
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use object_provider::{ObjectProvider, Request};
+    /// # use std::fmt;
+    /// struct MyProvider {
+    ///     name: String,
+    /// }
+    ///
+    /// impl ObjectProvider for MyProvider {
+    ///     fn provide<'a>(&'a self, request: &mut Request<'a>) {
+    ///         request
+    ///             .provide_ref::<Self>(&self)
+    ///             .provide_ref::<String>(&self.name)
+    ///             .provide_ref::<str>(&self.name)
+    ///             .provide_ref::<dyn fmt::Display>(&self.name);
+    ///     }
+    /// }
+    /// ```
+    pub fn provide_ref<T: ?Sized + 'static>(&mut self, value: &'a T) -> &mut Self {
+        self.provide_ref_with(|| value)
     }
 
-    /// Lazily provides an object of type `T` in response to this request.
+    /// Lazily provides a reference of type `&'a T` in response to this request.
     ///
-    /// If an object of type `T` has already been provided for this request, the
-    /// existing value will be replaced by the newly provided value.
+    /// If a reference of type `&'a T` has already been provided for this
+    /// request, or if the request is for a different type, this call will be
+    /// ignored.
     ///
     /// The passed closure is only called if the value will be successfully
     /// provided.
     ///
     /// This method can be chained within `provide` implementations to concisely
     /// provide multiple objects.
-    pub fn provide_with<T: ?Sized + 'static, F>(mut self: Pin<&mut Self>, cb: F) -> Pin<&mut Self>
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use object_provider::{ObjectProvider, Request};
+    /// # fn expensive_condition() -> bool { true }
+    /// struct MyProvider {
+    ///     a: String,
+    ///     b: String,
+    /// }
+    ///
+    /// impl ObjectProvider for MyProvider {
+    ///     fn provide<'a>(&'a self, request: &mut Request<'a>) {
+    ///         request.provide_ref_with::<String, _>(|| {
+    ///             if expensive_condition() {
+    ///                 &self.a
+    ///             } else {
+    ///                 &self.b
+    ///             }
+    ///         });
+    ///     }
+    /// }
+    /// ```
+    pub fn provide_ref_with<T: ?Sized + 'static, F>(&mut self, cb: F) -> &mut Self
     where
         F: FnOnce() -> &'a T,
     {
-        if let Some(buf) = self.as_mut().downcast_buf::<T>() {
-            // NOTE: We could've already provided a value here of type `T`,
-            // which will be clobbered in this case.
-            *buf = Some(cb());
+        if let Some(RefResponse(response @ None)) = self.downcast_ref_response::<T>() {
+            *response = Some(cb());
         }
         self
     }
 
-    /// Returns `true` if the requested type is the same as `T`
-    pub fn is<T: ?Sized + 'static>(&self) -> bool {
-        self.type_id == TypeId::of::<T>()
-    }
-
-    /// Try to downcast this `Request` into a reference to the typed
-    /// `RequestBuf` object, and access the trailing `Option<&'a T>`.
+    /// Provides an value of type `T` in response to this request.
     ///
-    /// This method will return `None` if `self` is not the prefix of a
-    /// `RequestBuf<'_, T>`.
-    fn downcast_buf<T: ?Sized + 'static>(self: Pin<&mut Self>) -> Option<&mut Option<&'a T>> {
-        if self.is::<T>() {
-            // Safety: `self` is pinned, meaning it exists as the first
-            // field within our `RequestBuf`. As the type matches, and
-            // `RequestBuf` has a known in-memory layout, this downcast is
-            // sound.
-            unsafe {
-                let ptr = self.get_unchecked_mut() as *mut Self as *mut RequestBuf<'a, T>;
-                Some(&mut (*ptr).value)
-            }
-        } else {
-            None
-        }
+    /// If a value of type `T` has already been provided for this request, or if
+    /// the request is for a different type, this call will be ignored.
+    ///
+    /// This method can be chained within `provide` implementations to concisely
+    /// provide multiple objects.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use object_provider::{ObjectProvider, Request};
+    /// struct MyProvider {
+    ///     count: u32,
+    /// }
+    ///
+    /// impl ObjectProvider for MyProvider {
+    ///     fn provide<'a>(&'a self, request: &mut Request<'a>) {
+    ///         request
+    ///             .provide_value::<u32>(self.count)
+    ///             .provide_value::<&'static str>("hello, world!");
+    ///     }
+    /// }
+    /// ```
+    pub fn provide_value<T: 'static>(&mut self, value: T) -> &mut Self {
+        self.provide_value_with(|| value)
     }
 
-    /// Calls the provided closure with a request for the the type `T`, returning
-    /// `Some(&T)` if the request was fulfilled, and `None` otherwise.
-    pub fn with<T: ?Sized + 'static, F>(f: F) -> Option<&'a T>
+    /// Lazily provides a value of type `T` in response to this request.
+    ///
+    /// If a value of type `T` has already been provided for this request, or if
+    /// the request is for a different type, this call will be ignored.
+    ///
+    /// The passed closure is only called if the value will be successfully
+    /// provided.
+    ///
+    /// This method can be chained within `provide` implementations to concisely
+    /// provide multiple objects.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use object_provider::{ObjectProvider, Request};
+    /// struct MyProvider {
+    ///     count: u32,
+    /// }
+    ///
+    /// impl ObjectProvider for MyProvider {
+    ///     fn provide<'a>(&'a self, request: &mut Request<'a>) {
+    ///         request
+    ///             .provide_value_with::<u32, _>(|| self.count / 10)
+    ///             .provide_value_with::<String, _>(|| format!("{}", self.count));
+    ///     }
+    /// }
+    /// ```
+    pub fn provide_value_with<T: 'static, F>(&mut self, cb: F) -> &mut Self
     where
-        F: FnOnce(Pin<&mut Self>),
+        F: FnOnce() -> T,
     {
-        let mut buf = RequestBuf::new();
-        // safety: We never move `buf` after creating `pinned`.
-        let mut pinned = unsafe { Pin::new_unchecked(&mut buf) };
-        f(pinned.as_mut().request());
-        pinned.take()
+        if let Some(ValueResponse(response @ None)) = self.downcast_value_response::<T>() {
+            *response = Some(cb());
+        }
+        self
+    }
+
+    /// Returns `true` if the requested type is `&'a T`
+    pub fn is_ref<T: ?Sized + 'static>(&self) -> bool {
+        self.type_id == TypeId::of::<RefResponse<'static, T>>()
+    }
+
+    /// Returns `true` if the requested type is `T`
+    pub fn is_value<T: 'static>(&self) -> bool {
+        self.type_id == TypeId::of::<ValueResponse<T>>()
+    }
+
+    /// Calls the provided closure with a request for the the type `&'a T`,
+    /// returning `Some(&T)` if the request was fulfilled, and `None` otherwise.
+    ///
+    /// The `ObjectProviderExt` trait provides helper methods specifically for
+    /// types implementing `ObjectProvider`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use object_provider::Request;
+    /// let response: Option<&str> = Request::request_ref(|request| {
+    ///     // ...
+    ///     request.provide_ref::<str>("hello, world");
+    /// });
+    /// assert_eq!(response, Some("hello, world"));
+    /// ```
+    pub fn request_ref<T: ?Sized + 'static, F>(cb: F) -> Option<&'a T>
+    where
+        F: FnOnce(&mut Request<'a>),
+    {
+        let mut request = Request::new_ref();
+        cb(&mut request);
+        request.response.0
+    }
+
+    /// Calls the provided closure with a request for the the type `T`,
+    /// returning `Some(T)` if the request was fulfilled, and `None` otherwise.
+    ///
+    /// The `ObjectProviderExt` trait provides helper methods specifically for
+    /// types implementing `ObjectProvider`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use object_provider::Request;
+    /// let response: Option<i32> = Request::request_value(|request| {
+    ///     // ...
+    ///     request.provide_value::<i32>(5);
+    /// });
+    /// assert_eq!(response, Some(5));
+    /// ```
+    pub fn request_value<T: 'static, F>(cb: F) -> Option<T>
+    where
+        F: FnOnce(&mut Request<'a>),
+    {
+        let mut request = Request::new_value();
+        cb(&mut request);
+        request.response.0
     }
 }
 
-impl<'a> fmt::Debug for Request<'a> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.debug_struct("Request")
-            .field("type_id", &self.type_id)
-            .finish()
-    }
-}
-
-// Needs to have a known layout so we can do unsafe pointer shenanigans.
-#[repr(C)]
-struct RequestBuf<'a, T: ?Sized + 'static> {
-    request: Request<'a>,
-    value: Option<&'a T>,
-}
-
-impl<'a, T: ?Sized + 'static> RequestBuf<'a, T> {
-    fn new() -> Self {
-        RequestBuf {
-            request: Request {
-                type_id: TypeId::of::<T>(),
-                _pinned: PhantomPinned,
-                _marker: PhantomData,
-            },
-            value: None,
+impl<'a, T: ?Sized + 'static> Request<'a, RefResponse<'a, T>> {
+    /// Create a new reference request object.
+    ///
+    /// The returned value will unsize to `Request<'a>`, and can be passed to
+    /// functions accepting it as an argument to request `&'a T` references.
+    fn new_ref() -> Self {
+        // safety: Initializes `type_id` to `RefResponse<'static, T>`, which
+        // corresponds to the response type `RefResponse<'a, T>`.
+        Request {
+            marker: PhantomData,
+            type_id: TypeId::of::<RefResponse<'static, T>>(),
+            response: RefResponse(None),
         }
     }
+}
 
-    fn request(self: Pin<&mut Self>) -> Pin<&mut Request<'a>> {
-        // safety: projecting Pin onto our `request` field.
-        unsafe { self.map_unchecked_mut(|this| &mut this.request) }
-    }
-
-    fn take(self: Pin<&mut Self>) -> Option<&'a T> {
-        // safety: `Option<&'a T>` is `Unpin`
-        unsafe { self.get_unchecked_mut().value.take() }
+impl<T: 'static> Request<'_, ValueResponse<T>> {
+    /// Create a new value request object.
+    ///
+    /// The returned value will unsize to `Request<'a>`, and can be passed to
+    /// functions accepting it as an argument to request `T` values.
+    fn new_value() -> Self {
+        // safety: Initializes `type_id` to `ValueResponse<T>`, which
+        // corresponds to the response type `ValueResponse<T>`.
+        Request {
+            marker: PhantomData,
+            type_id: TypeId::of::<ValueResponse<T>>(),
+            response: ValueResponse(None),
+        }
     }
 }
+
+/// Trait to provide other objects based on a requested type at runtime.
+///
+/// See also the [`ObjectProviderExt`] trait which provides the `request_ref` and
+/// `request_value` methods.
+pub trait ObjectProvider {
+    /// Provide an object in response to `request`.
+    fn provide<'a>(&'a self, request: &mut Request<'a>);
+}
+
+/// Methods supported by all [`ObjectProvider`] implementors.
+pub trait ObjectProviderExt {
+    /// Request a reference of type `&T` from an object provider.
+    fn request_ref<T: ?Sized + 'static>(&self) -> Option<&T>;
+
+    /// Request an owned value of type `T` from an object provider.
+    fn request_value<T: 'static>(&self) -> Option<T>;
+}
+
+impl<O: ?Sized + ObjectProvider> ObjectProviderExt for O {
+    fn request_ref<T: ?Sized + 'static>(&self) -> Option<&T> {
+        Request::request_ref(|request| self.provide(request))
+    }
+
+    fn request_value<T: 'static>(&self) -> Option<T> {
+        Request::request_value(|request| self.provide(request))
+    }
+}
+
 ```
 
 ### Define a generic accessor on the `Error` trait
@@ -433,7 +621,7 @@ impl<'a, T: ?Sized + 'static> RequestBuf<'a, T> {
 pub trait Error {
     // ...
 
-    fn provide_context<'a>(&'a self, _request: Pin<&mut Request<'a>>) {}
+    fn provide_context<'a>(&'a self, _request: &mut Request<'a>) {}
 }
 ```
 
@@ -441,8 +629,12 @@ pub trait Error {
 
 ```rust
 impl dyn Error {
-    pub fn context<T: ?Sized + 'static>(&self) -> Option<&T> {
-        Request::with::<T, _>(|req| self.provide_context(req))
+    pub fn context_ref<T: ?Sized + 'static>(&self) -> Option<&T> {
+        Request::request_ref(|req| self.provide_context(req))
+    }
+
+    pub fn context<T: 'static>(&self) -> Option<T> {
+        Request::request_value(|req| self.provide_context(req))
     }
 }
 ```
@@ -451,8 +643,10 @@ impl dyn Error {
 [drawbacks]: #drawbacks
 
 * The `Request` api is being added purely to help with this function. This will
-  likely need some design work to make it more generally applicable, hopefully
-  as a struct in `core::any`.
+  likely need some design work to make it more generally applicable,
+  hopefully as a struct in `core::any`. **Update**: this API might also be
+  useful for `std::task::Context` to help pass data to executors in a backend
+  agnostic way.
 * The `context` function name is currently widely used throughout the rust
   error handling ecosystem in libraries like `anyhow` and `snafu` as an
   ergonomic version of `map_err`. If we settle on `context` as the final name
@@ -526,12 +720,14 @@ previous additions to the `Error` trait.
     * `context`/`context_ref`/`provide_context`/`provide_context`/`request_context`
     * `member`/`member_ref`
     * `provide`/`request`
-* Should there be a by-value version for accessing temporaries?
-    * We bring this up specifically for the case where you want to use this
+* ~~Should there be a by-value version for accessing temporaries?~~ **Update**:
+  The object provider API in this RFC has been updated to include a by-value
+  variant for passing out owned data.
+    * ~~We bring this up specifically for the case where you want to use this
       function to get an `Option<&[&dyn Error]>` out of an error, in this case,
       it is unlikely that the error behind the trait object is actually storing
       the errors as `dyn Error`s, and theres no easy way to allocate storage to
-      store the trait objects.
+      store the trait objects.~~
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
@@ -543,7 +739,7 @@ return trace could be built up with:
 ```rust
 let mut locations = e
     .chain()
-    .filter_map(|e| e.context::<[&'static Location<'static>]>())
+    .filter_map(|e| e.context_ref::<[&'static Location<'static>]>())
     .flat_map(|locs| locs.iter());
 ```
 
