@@ -72,10 +72,11 @@ If the client is not interested in deleted crate, it won't check it, but chances
 # Drawbacks
 [drawbacks]: #drawbacks
 
-* A basic solution, without the incremental changelog, needs more requests and has higher latency to update the index. With the help of the incremental changelog, this is largely mitigated. For GitHub-hosted indexes Cargo has a fast path that checks in GitHub API whether the master branch has changed. With the changelog file, the same fast path can be implemented by making a conditional HTTP request for the changelog file (i.e. checking `ETag` or `Last-Modified`).
+* crates-io plans to add a cryptographic signatures to the index as an extra layer of protection on top of HTTPS. Cryptographic verification of a git index is straigthforward, but signing of a sparse HTTP index may be challenging.
+* A basic solution, without the incremental changelog, needs many requests update the index. This could have higher latency than a git fetch. However, in preliminary benchmarks it appears to be faster than a git fetch if the CDN supports enough (>60) requests in parallel. For GitHub-hosted indexes Cargo has a fast path that checks in GitHub API whether the master branch has changed. With the incremental changelog file, the same fast path can be implemented by making a conditional HTTP request for the changelog file (i.e. checking `ETag` or `Last-Modified`).
 * Performant implementation of this solution depends on making many small requests in parallel. HTTP/2 support on the server makes checking twice as fast compared to HTTP/1.1, but speed over HTTP/1.1 is still reasonable.
-* If GitHub won't like high-traffic usage of the index via raw.githubusercontent.com, the index may need to be cached/hosted elsewhere.
-* Since alternative registries are stable, the git-based protocol is stable, and can't be removed.
+* `raw.githubusercontent.com` is not suitable as a CDN. The sparse index will have to be cached/hosted elsewhere.
+* Since the alternative registries feature is stable, the git-based index protocol is stable, and can't be removed.
 * Tools that perform fuzzy search of the index (e.g. `cargo add`) may need to make multiple requests or use some other method. URLs are already normalized to lowercase, so case-insensitivity doesn't require extra requests.
 
 # Rationale and alternatives
