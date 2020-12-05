@@ -63,26 +63,6 @@ Dependency files compress well. Currently the largest file of `rustc-ap-rustc_da
 
 Even in the worst case of downloading the entire index file by file, it should still use significantly less bandwidth than git clone (individually compressed files add up to about 39MiB).
 
-## Optionally, a rotated incremental changelog
-
-To further reduce number requests needed to update the index, the index may maintain an append-only log of changes. For each change (crate version published or yanked), the log would append a line with: epoch number (explained below), last-modified timestamp, and the name of the changed crate, e.g.
-
-```
-1 2019-10-18T23:51:23Z oxigen
-1 2019-10-18T23:51:25Z linda
-1 2019-10-18T23:51:29Z rv
-1 2019-10-18T23:52:00Z anyhow
-1 2019-10-18T23:53:03Z build_id
-1 2019-10-18T23:56:16Z canonical-form
-1 2019-10-18T23:59:01Z cotton
-1 2019-10-19T00:01:44Z kg-utils
-1 2019-10-19T00:08:45Z serde_traitobject
-```
-
-Because the log is append-only, the client can incrementally update it using a `Range` HTTP request. The client doesn't have to download the full log in order to start using it; it can download only an arbitrary fraction of it, up to the end of the file, which is straightforward with a `Range` request. When a crate is found in the log (searching from the end), and modification date is the same as modification date of crate's cached locally, the client won't have to make an HTTP request for the file.
-
-When the log grows too big, the epoch number can be incremented, and the log reset back to empty. The epoch number allows clients to detect that the log has been reset, even if the `Range` they requested happened to be valid for the new log file.
-
 ## Handling deleted crates
 
 When a client checks freshness of a crate that has been deleted, it will make a request to the server and notice a 404/410/451 HTTP status. The client can then act accordingly, and clean up local data (even tarball and source checkout).
