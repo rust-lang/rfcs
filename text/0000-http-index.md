@@ -1,4 +1,4 @@
-- Feature Name: http_index
+- Feature Name: sparse_index
 - Start Date: 2019-10-18
 - RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
