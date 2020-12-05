@@ -117,3 +117,25 @@ Bundler used to have a full index fetched ahead of time, similar to Cargo's, unt
 [future-possibilities]: #future-possibilities
 
 Bundler also uses an append-only format for individual dependency files to incrementally download only new versions' information where possible. Cargo's format is almost append-only (except yanking), so if growth of individual dependency files becomes a problem, it should be possible to fix that. However, currently the largest crate `rustc-ap-rustc_data_structures` that publishes versions daily grows by about 44 bytes per version (compressed), so even after 10 years it'll take only 190KB (compressed), which doesn't seem to be terrible enough to require a solution yet.
+
+## Provide an index summary
+
+The scheme as described so far must double-check the contents of every index file with the server to update the index, even if many of the files have not changed. And index update happens on a `cargo update`, but can also happen for other reasons, such as when a project has no lockfile yet, or when a new dependency is added. While HTTP/2 pipelining and conditional GET requests make requesting many unchanged files [fairly efficient](https://github.com/rust-lang/cargo/pull/8890#issuecomment-737472043), it would still be better if we could avoid those extraneous requests, and instead only request index files that have truly changed.
+
+One way to achieve this is for the index to provide a summary that lets the client quickly determine whether a given local index file is out of date. This can either come in the form of a complete "index-of-indexes" file (essentially a snapshot of the index tree), or in the form of a changelog. The former is a "large" item to fetch, since it is proportional in size to the size of the index (barring other optimizations), but may be necessary for other reasons such as whole-registry signing. Alternatively, the index could maintain an append-only log of changes. For each change (crate version published or yanked), the log would append a line with: epoch number (explained below), last-modified timestamp, and the name of the changed crate, e.g.
+
+    1 2019-10-18T23:51:23Z oxigen
+    1 2019-10-18T23:51:25Z linda
+    1 2019-10-18T23:51:29Z rv
+    1 2019-10-18T23:52:00Z anyhow
+    1 2019-10-18T23:53:03Z build_id
+    1 2019-10-18T23:56:16Z canonical-form
+    1 2019-10-18T23:59:01Z cotton
+    1 2019-10-19T00:01:44Z kg-utils
+    1 2019-10-19T00:08:45Z serde_traitobject
+
+Because the log is append-only, the client can incrementally update it using a `Range` HTTP request. The client doesn't have to download the full log in order to start using it; it can download only an arbitrary fraction of it, up to the end of the file, which is straightforward with a `Range` request. When a crate is found in the log (searching from the end), and modification date is the same as modification date of crate's cached locally, the client won't have to make an HTTP request for the file.
+
+When the log grows too big, the epoch number can be incremented, and the log reset back to empty. The epoch number allows clients to detect that the log has been reset, even if the `Range` they requested happened to be valid for the new log file.
+
+Ultimately, this RFC does not recommend such a scheme, as the changelog itself introduces [significant complexity](https://github.com/rust-lang/cargo/commit/bda120ad837e6e71edb334a44e64533119402dee) for relatively [rare gains](https://github.com/rust-lang/rfcs/pull/2789#issuecomment-738194824) that are also [fairly small in absolute value relative to a "naive" fetch](https://github.com/rust-lang/cargo/pull/8890#issuecomment-738316828). If support for index snapshots landed later for something like registry signing, the implementation of this RFC could take advantage of such a snapshot just as it could take advantage of a changelog.
