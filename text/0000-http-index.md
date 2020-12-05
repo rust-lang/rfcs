@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-Selective download of the crates-io index over HTTP, similar to a solution used by Ruby's Bundler. Changes transport from an ahead-of-time Git clone to HTTP fetch as-needed, while keeping existing content and structure of the index. Most importantly, the proposed solution works with static files and doesn't require custom server-side APIs.
+Selective download of the crates-io index over HTTP, similar to a solution used by Ruby's Bundler. Changes transport from an ahead-of-time Git clone to HTTP fetch as-needed. The existing structure and content of the index can remain unchanged. Most importantly, the proposed solution works with static files and doesn't require custom server-side APIs.
 
 # Motivation
 [motivation]: #motivation
@@ -15,12 +15,12 @@ The full crate index is relatively big and slow to download. It will keep growin
 
 The kind of data stored in the index is not a good fit for the git protocol. The index content (as of eb037b4863) takes 176MiB as an uncompressed tarball, 16MiB with `gz -1`, and 10MiB compressed with `xz -6`. Git clone reports downloading 215MiB. That's more than just the uncompressed latest index content, and over **20 times more** than a compressed tarball.
 
-A while ago, GitHub indicated they [don't want to support shallow clones of large repositories](http://blog.cocoapods.org/Master-Spec-Repo-Rate-Limiting-Post-Mortem/). libgit2 doesn't support shallow clones yet. Squashing of the index history adds complexity to management and consumption of the index (which is also used by tools other than Cargo), and still doesn't solve problems of the git protocol inefficiency and overall growth.
+Shallow clones or squashing of git history are only temporary solutions. Besides the fact that GitHub indicated they [don't want to support shallow clones of large repositories](http://blog.cocoapods.org/Master-Spec-Repo-Rate-Limiting-Post-Mortem/), and libgit2 doesn't support shallow clones yet, it still doesn't solve the problem that clients have to download index data for *all* crates.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-Expose the index over HTTP as simple files, keeping the existing content and directory layout unchanged (the existing raw.githubusercontent.com view may even be enough for this). The current format is structured like this:
+Expose the index over HTTP as simple files, keeping the existing content and directory layout unchanged (similar to the existing raw.githubusercontent.com view). The current format is structured like this:
 
 ```
 /config.json
@@ -34,9 +34,9 @@ Expose the index over HTTP as simple files, keeping the existing content and dir
 …
 ```
 
-To learn about crates and resolve dependencies, Cargo (or any other client) would make requests to known URLs for each dependency it needs to learn about, e.g. `https://index.example.com/se/rd/serde`. For each dependency the client would also have to request information about its dependencies, recursively, until all dependencies are fetched (and cached) locally.
+To learn about crates and resolve dependencies, Cargo (or any other client) would make requests to known URLs for each dependency it needs to learn about, e.g. `https://index.example.com/se/rd/serde` (the paths are constructed and normalized the same was as for the git index). For each dependency the client would also have to request information about its dependencies, recursively, until all dependencies are fetched (and cached) locally.
 
-It's possible to request dependency files in parallel, so the worst-case latency of such dependency resolution is limited to the maximum depth of the dependency tree. In practice it's less, because dependencies occur in multiple places in the tree, allowing earlier discovery and increasing parallelization. Additionally, if there's a lock file, all dependencies listed in it can be speculatively checked in parallel. Similarly, cached dependency files can be used to speculatively check known sub-dependencies sooner.
+It's possible to request dependency files in parallel, so the worst-case latency of such dependency resolution is limited to the maximum depth of the dependency tree. In practice it's less, because dependencies occur in multiple places in the tree, allowing earlier discovery and increasing parallelization. Additionally, if there's a lock file, all dependencies listed in it can be speculatively checked in parallel.
 
 ## Greedy fetch
 
@@ -51,7 +51,7 @@ If a dependency requires `foo >=1.0.2`, then Cargo would need to fetch informati
 
 ## Offline support
 
-The proposed solution fully preserves Cargo's ability to work offline. Fetching of crates while online by necessity downloads enough of the index to use them, and all this data remains cached for use offline.
+The proposed solution fully preserves Cargo's ability to work offline. Fetching of crates (while online) by necessity downloads enough of the index to use them, and all this data remains cached for use offline.
 
 ## Bandwidth reduction
 
@@ -61,7 +61,7 @@ All fetched dependency files can be cached, and refreshed using conditional HTTP
 
 Dependency files compress well. Currently the largest file of `rustc-ap-rustc_data_structures` compresses from 1MiB to 26KiB with Brotli. Many servers support transparently serving pre-compressed files (i.e. request for `/rustc-ap-rustc_data_structures` can be served from `rustc-ap-rustc_data_structures.gz` with an appropriate content encoding header), so the index can use high compression levels without increasing CPU cost of serving the files.
 
-Even in the worst case of downloading the entire index file by file, it should still use significantly less bandwidth than git clone (individually compressed files add up to about 39MiB).
+Even in the worst case of downloading the entire index file by file, it should still use significantly less bandwidth than git clone (individually compressed files currently add up to about 39MiB).
 
 ## Handling deleted crates
 
@@ -116,9 +116,11 @@ Bundler used to have a full index fetched ahead of time, similar to Cargo's, unt
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-Bundler also uses an append-only format for individual dependency files to incrementally download only new versions' information where possible. Cargo's format is almost append-only (except yanking), so if growth of individual dependency files becomes a problem, it should be possible to fix that. However, currently the largest crate `rustc-ap-rustc_data_structures` that publishes versions daily grows by about 44 bytes per version (compressed), so even after 10 years it'll take only 190KB (compressed), which doesn't seem to be terrible enough to require a solution yet.
+## Incremental crate files
 
-## Provide an index summary
+Bundler uses an append-only format for individual dependency files to incrementally download only new versions' information where possible. Cargo's format is almost append-only (except yanking), so if growth of individual dependency files becomes a problem, it should be possible to fix that. However, currently the largest crate `rustc-ap-rustc_data_structures` that publishes versions daily grows by about 44 bytes per version (compressed), so even after 10 years it'll take only 190KB (compressed), which doesn't seem to be terrible enough to require a solution yet.
+
+## Incremental changelog
 
 The scheme as described so far must double-check the contents of every index file with the server to update the index, even if many of the files have not changed. And index update happens on a `cargo update`, but can also happen for other reasons, such as when a project has no lockfile yet, or when a new dependency is added. While HTTP/2 pipelining and conditional GET requests make requesting many unchanged files [fairly efficient](https://github.com/rust-lang/cargo/pull/8890#issuecomment-737472043), it would still be better if we could avoid those extraneous requests, and instead only request index files that have truly changed.
 
