@@ -721,7 +721,7 @@ where
 This is a "conversion" trait such that anything which implements `Stream` can also implement 
 `Lending Stream`.
 
-This trait captures the case we re-use internal buffers. This would be less flexible for 
+This trait captures the case where we re-use internal buffers. This would be less flexible for 
 consumers, but potentially more efficient. Types could implement the `LendingStream` 
 where they need to re-use an internal buffer and `Stream` if they do not. There is room for both.
 
