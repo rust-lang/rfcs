@@ -772,7 +772,7 @@ is out of the scope of this particular RFC.
 [generator syntax]: #generator-syntax
 
 In the future, we may wish to introduce a new form of function - 
-`gen fn` in iterators and `async gen` in async code that
+`gen fn` in iterators and `async gen fn` in async code that
 can contain `yield` statements. Calling such a function would
 yield a `impl Iterator` or `impl Stream`, for sync and async 
 respectively. Given an "attached" or "borrowed" stream, the generator
