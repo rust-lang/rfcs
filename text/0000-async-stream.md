@@ -872,7 +872,7 @@ default impl<T: Iterator> PinIterator for T { .. }
 
 Pinning also applies to the design of AsyncRead/AsyncWrite, which currently uses Pin even through there is no clear plan to make them implemented with generator type syntax. The asyncification of a signature is currently understood as pinned receiver + context arg + return poll.
 
-Another key difference between `Iterators` and `Streams` is that that futures are ultimately passed to some executor API like spawn which expects a static future. To achieve that, the futures contain all the state they need and references are internal to that state. Iterators are almost never required to be 'static by the APIs that consume them.
+Another key difference between `Iterators` and `Streams` is that futures are ultimately passed to some executor API like spawn which expects a `'static` future. To achieve that, the futures contain all the state they need and references are internal to that state. Iterators are almost never required to be `'static` by the APIs that consume them.
 
 It is, admittedly, somewhat confusing to have Async generators require Pinning and Iterator generators to not require pinning, users may feel they are creating code in an unnatural way when using the Async generators. This will need to be discussed more when generators are proposed in the future.
 
