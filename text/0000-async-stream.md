@@ -257,7 +257,7 @@ they would experience ambiguity when trying to use the `next` method that
 is added to the standard library (and redirected to from `futures-core`).
 
 This can be done as a non-breaking change, but would require everyone to 
-upgrade rustc. We will want to create a transition plan on what this
+upgrade `futures`. We will want to create a transition plan on what this
 means for users and pick the timing carefully.
 
 ### Usage
