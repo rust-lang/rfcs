@@ -703,6 +703,15 @@ such as the ability to spawn off futures processing each item in parallel.
 ### Potential Lending Stream Trait
 
 ```rust
+trait LendingStream<'s> {
+    type Item<'a> where 's: 'a;
+
+    fn poll_next<'a>(
+        self: Pin<&'a mut Self>,
+        cx: &mut Context<'_>,
+    ) -> Poll<Option<Self::Item<'a>>>;
+}
+
 impl<S> LendingStream for S
 where
     S: Stream,
