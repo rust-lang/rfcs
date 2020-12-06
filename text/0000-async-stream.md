@@ -671,7 +671,7 @@ gets returned by `Stream` is "detached" from self. This means it can be stored
 and moved about independently from `self`.
 
 This RFC does not cover the addition of lending streams (streams as implemented through 
-this RFC are all non-lending streams).
+this RFC are all non-lending streams). Lending streams depend on [Generic Associated Types](https://rust-lang.github.io/rfcs/1598-generic_associated_types.html), which are not (at the time of this RFC) stable.
 
 We can add the `Stream` trait to the standard library now and delay
 adding in this distinction between the two types of streams - lending and
