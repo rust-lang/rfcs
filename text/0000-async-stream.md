@@ -397,11 +397,6 @@ with them.
 Unfortunately, the use of poll does mean that it is harder to write
 stream implementations. The long-term fix for this, discussed in the [Future possiblilities](future-possibilities) section, is dedicated [generator syntax].
 
-# Drawbacks
-[drawbacks]: #drawbacks
-
-Why should we *not* do this?
-
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
@@ -409,20 +404,6 @@ Why should we *not* do this?
 
 As mentioned above, `core::stream` is analogous to `core::future`. But, do we want to find 
 some other naming scheme that can scale up to other future additions, such as io traits or channels?
-
-# Prior art
-[prior-art]: #prior-art
-
-Discuss prior art, both the good and the bad, in relation to this proposal.
-
-This section is intended to encourage you as an author to think about the lessons from other languages, provide readers of your RFC with a fuller picture.
-If there is no prior art, that is fine - your ideas are interesting to us whether they are brand new or if it is an adaptation from other languages.
-
-Note that while precedent set by other languages is some motivation, it does not on its own motivate an RFC.
-Please also take into consideration that rust sometimes intentionally diverges from common language features.
-
-# Unresolved questions
-[unresolved-questions]: #unresolved-questions
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
