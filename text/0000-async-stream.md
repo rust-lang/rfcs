@@ -806,7 +806,7 @@ After desugaring would result in a function like:
 fn foo() -> impl Stream<Item = Value>
 ```
 
-If we introduce `-> Stream` first, we will have to permit `LendingStream` in the future. 
+If we introduce `-> impl Stream` first, we will have to permit `LendingStream` in the future. 
 Additionally, if we introduce `LendingStream` later, we'll have to figure out how
 to convert a `LendingStream` into a `Stream` seamlessly.
 
