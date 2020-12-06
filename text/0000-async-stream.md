@@ -258,7 +258,8 @@ is added to the standard library (and redirected to from `futures-core`).
 
 This can be done as a non-breaking change, but would require everyone to 
 upgrade `futures`. We will want to create a transition plan on what this
-means for users and pick the timing carefully.
+means for users and pick the timing carefully. We may be able to ease this
+somewhat with a custom compiler error message.
 
 ### Usage
 
