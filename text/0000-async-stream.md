@@ -776,9 +776,9 @@ In the future, we may wish to introduce a new form of function -
 can contain `yield` statements. Calling such a function would
 yield a `impl Iterator` or `impl Stream`, for sync and async 
 respectively. Given an "attached" or "borrowed" stream, the generator
-yield could return references to local variables. Given a "detached"
-or "owned" stream, the generator yield could return things
-that you own or things that were borrowed from your caller.
+could yield references to local variables. Given a "detached"
+or "owned" stream, the generator could yield owned values
+or things that were borrowed from its caller.
 
 ### In Iterators
 
