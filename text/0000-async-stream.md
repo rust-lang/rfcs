@@ -719,7 +719,7 @@ where
 ```
 
 This is a "conversion" trait such that anything which implements `Stream` can also implement 
-`Lending Stream`.
+`LendingStream`.
 
 This trait captures the case where we re-use internal buffers. This would be less flexible for 
 consumers, but potentially more efficient. Types could implement the `LendingStream` 
