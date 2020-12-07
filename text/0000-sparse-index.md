@@ -63,25 +63,13 @@ Dependency files compress well. Currently the largest file of `rustc-ap-rustc_da
 
 Even in the worst case of downloading the entire index file by file, it should still use significantly less bandwidth than git clone (individually compressed files currently add up to about 39MiB).
 
-An "incremental changelog" file (described in a later section) can be used to avoid many conditional requests.
+An "incremental changelog" file (described in "Future possibilities") could be used to avoid many conditional requests.
 
 ## Handling deleted crates
 
 When a client checks freshness of a crate that has been deleted, it will make a request to the server and notice a 404/410/451 HTTP status. The client can then act accordingly, and clean up local data (even tarball and source checkout).
 
-If the client is not interested in the deleted crate, it won't check it, but chances are it never did, and didn't download it. If ability to proactively erase caches of deleted crates is important, then the "incremental changelog" feature can be extended to notify about deletions.
-
-## Dealing with inconsistent HTTP caches
-
-The index does not require all files to form one cohesive snapshot. The index is updated one file at a time. Every file is updated in a separate commit, so for every file change there exists an index state that is valid with or without it. The index only needs to preserve a partial order of updates.
-
-From Cargo's perspective dependencies are always allowed to update independently. If crate's dependencies' files are refreshed before the crate itself, it won't be different than if someone had used an older version of the crate.
-
-The only case where stale caches can cause a problem is when a new version of a crate depends on the latest version of a newly-published dependency, and caches expired for the parent crate before expiring for the dependency. Cargo will prevent that from happening, at least for the datacenter it can see. Cargo requires dependencies with sufficient versions to be already visible in the index, and won't publish a "broken" crate.
-
-Ideally, the server should ensure that a previous file change is visible everywhere before making the next change, i.e. make the CDN purge the changed file, and wait for the purge to be executed before updating files that may depend on it. This may be difficult to guarantee in a global CDNs, so Cargo needs a recovery mechanism:
-
-If a crate <var>A</var> is found to depend on a crate <var>B</var> with a version that doesn't appear to exist in the index, Cargo should fetch the crate <var>B</var> again with a cache buster. The cache buster can be a query string appended to the URL with either the current timestamp, or timestamp parsed from the `last-modified` header of the crate <var>A</var>'s response: `?cachebust=12345678`.
+If the client is not interested in the deleted crate, it won't check it, but chances are it never did, and didn't download it. If ability to proactively erase caches of deleted crates is important, then the "incremental changelog" feature could be extended to notify about deletions.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -156,3 +144,17 @@ Because the log is append-only, the client can incrementally update it using a `
 When the log grows too big, the epoch number can be incremented, and the log reset back to empty. The epoch number allows clients to detect that the log has been reset, even if the `Range` they requested happened to be valid for the new log file.
 
 Ultimately, this RFC does not recommend such a scheme, as the changelog itself introduces [significant complexity](https://github.com/rust-lang/cargo/commit/bda120ad837e6e71edb334a44e64533119402dee) for relatively [rare gains](https://github.com/rust-lang/rfcs/pull/2789#issuecomment-738194824) that are also [fairly small in absolute value relative to a "naive" fetch](https://github.com/rust-lang/cargo/pull/8890#issuecomment-738316828). If support for index snapshots landed later for something like registry signing, the implementation of this RFC could take advantage of such a snapshot just as it could take advantage of a changelog.
+
+## Dealing with inconsistent HTTP caches
+
+The index does not require all files to form one cohesive snapshot. The index is updated one file at a time. Every file is updated in a separate commit, so for every file change there exists an index state that is valid with or without it. The index only needs to preserve a partial order of updates.
+
+From Cargo's perspective dependencies are always allowed to update independently. If crate's dependencies' files are refreshed before the crate itself, it won't be different than if someone had used an older version of the crate.
+
+The only case where stale caches can cause a problem is when a new version of a crate depends on the latest version of a newly-published dependency, and caches expired for the parent crate before expiring for the dependency. Cargo will prevent that from happening, at least for the datacenter it can see. Cargo requires dependencies with sufficient versions to be already visible in the index, and won't publish a "broken" crate.
+
+Ideally, the server should ensure that a previous file change is visible everywhere before making the next change, i.e. make the CDN purge the changed file, and wait for the purge to be executed before updating files that may depend on it. This may be difficult to guarantee in a global CDNs, so Cargo needs a recovery mechanism:
+
+If a crate <var>A</var> is found to depend on a crate <var>B</var> with a version that doesn't appear to exist in the index, Cargo should fetch the crate <var>B</var> again with a cache buster. The cache buster can be a query string appended to the URL with either the current timestamp, or timestamp parsed from the `last-modified` header of the crate <var>A</var>'s response: `?cachebust=12345678`.
+
+Cache buster has an advantage over requests with `cache-control: no-cache`: it's more widely supported by CDNs, and allows the "busted" URLs to still be cached by the CDN, limiting excess traffic to the origin to 1 request per second on average.
