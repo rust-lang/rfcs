@@ -123,6 +123,8 @@ We could specify a `target = "host"` value to build for the host even for `[depe
 
 We could make information about artifact dependencies in `[dependencies]` available to the `build.rs` script, which would allow running arbitrary Rust code to work with such dependencies at build time (rather than being limited to `env!`, proc macros, and constant evaluation). However, we can achieve the same effect with an entry in `[build-dependencies]` that has `target = "target"`, and that model seems simpler to explain and to work with.
 
+We could install all binaries into a common binary directory with a well-known path under `$OUT_DIR`, and expect crates to use that directory, rather than passing in paths via environment variables. `npm` takes an approach like this. However, this would not allow dependencies on multiple distinct binaries with the same name, either provided by different crates or provided by the same crate built for different targets. Hardcoded paths would also reduce the flexibility of Cargo to change these paths in the future, such as to accommodate new features or extensions.
+
 # Prior art
 [prior-art]: #prior-art
 
