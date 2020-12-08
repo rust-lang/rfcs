@@ -885,14 +885,19 @@ Another key difference between `Iterators` and `Streams` is that futures are ult
 
 It is, admittedly, somewhat confusing to have Async generators require Pinning and Iterator generators to not require pinning, users may feel they are creating code in an unnatural way when using the Async generators. This will need to be discussed more when generators are proposed in the future.
 
-### Yielding
+### Disallowing self-borrowing generators in `gen fn`
 
-It would be useful to be able to yield from inside a for loop, as long as the for loop is
-over a borrowed input and not something owned by the stack frame.
+Another option is to make the generators returned by `gen fn` always be `Unpin` so that the user doesn't have to think about pinning unless they're already in an async context.
 
-In the spirit of experimentation, boats has written the [propane](https://github.com/withoutboats/propane) 
+In the spirit of experimentation, boats has written the [propane] 
 crate. This crate includes a `#[propane] fn` that changes the function signature
 to return `impl Iterator` and lets you `yield`. The non-async version uses 
-`static generator` that is currently in nightly only.
+(nightly-only) generators which are non-`static`, disallowing self-borrowing.
+In other words, you can't hold a reference to something on the stack across a `yield`.
+
+This should still allow yielding from inside a for loop, as long as the for loop is
+over a borrowed input and not something owned by the stack frame.
+
+[propane]: https://github.com/withoutboats/propane
 
 Further designing generator functions is out of the scope of this RFC.
