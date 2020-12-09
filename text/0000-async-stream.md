@@ -346,7 +346,7 @@ where
 impl<S, T> Stream for Pin<P>
 where
     P: DerefMut<Target=T> + Unpin,
-    T::Target: Stream,
+    T: Stream,
 {
     type Item = <T as Stream>::Item;
 }
