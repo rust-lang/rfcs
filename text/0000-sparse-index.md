@@ -20,27 +20,15 @@ Shallow clones or squashing of git history are only temporary solutions. Besides
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-Expose the index over HTTP as simple files, keeping the existing content and directory layout unchanged (similar to the existing raw.githubusercontent.com view). The current format is structured like this:
+Expose the index over HTTP as plain files. It would be enough to expose the existing index layout (like the raw.githubusercontent.com view), but the URL scheme may also be simplified for the HTTP case.
 
-```
-/config.json
-/ac/ti
-/ac/ti/action
-/ac/ti/actiondb
-/ac/ti/actions
-/ac/ti/actions-toolkit-sys
-/ac/ti/activation
-/ac/ti/activeds-sys
-…
-```
-
-To learn about crates and resolve dependencies, Cargo (or any other client) would make requests to known URLs for each dependency it needs to learn about, e.g. `https://index.example.com/se/rd/serde` (the paths are constructed and normalized the same was as for the git index). For each dependency the client would also have to request information about its dependencies, recursively, until all dependencies are fetched (and cached) locally.
+To learn about crates and resolve dependencies, Cargo (or any other client) would make requests to known URLs for each dependency it needs to learn about, e.g. `https://index.example.com/se/rd/serde`. For each dependency the client would also have to request information about its dependencies, recursively, until all dependencies are fetched (and cached) locally.
 
 It's possible to request dependency files in parallel, so the worst-case latency of such dependency resolution is limited to the maximum depth of the dependency tree. In practice it's less, because dependencies occur in multiple places in the tree, allowing earlier discovery and increasing parallelization. Additionally, if there's a lock file, all dependencies listed in it can be speculatively checked in parallel.
 
 ## Greedy fetch
 
-To simplify the implementation, and parallelize fetches effectively, Cargo will have to fetch all dependency information before performing the actual dependency resolution algorithm. This means it'll have to pessimistically fetch information about all sub dependencies of all dependency versions that *may* match known version requirements. This won't add much overhead, because requests are per create, not per crate version. It causes additional fetches only for dependencies that were used before, but were later dropped. Fetching is still narrowed by required version ranges, so even worst cases can be avoided by bumping version requirements. For example:
+To simplify the implementation, and parallelize fetches effectively, Cargo may fetch all possibly relevant dependency information before performing the actual precise dependency resolution algorithm. This would mean pessimistically fetching information about all sub dependencies of all dependency versions that *may* match known version requirements. This won't add much overhead, because requests are per create, not per crate version. It causes additional fetches only for dependencies that were used before, but were later dropped. Fetching is still narrowed by required version ranges, so even worst cases can be avoided by bumping version requirements. For example:
 
 * foo v1.0.1 depends on old-dep v1.0.0
 * foo v1.0.2 depends on maybe-dep v1.0.2
@@ -67,7 +55,7 @@ An "incremental changelog" file (described in "Future possibilities") could be u
 
 ## Handling deleted crates
 
-When a client checks freshness of a crate that has been deleted, it will make a request to the server and notice a 404/410/451 HTTP status. The client can then act accordingly, and clean up local data (even tarball and source checkout).
+The proposed scheme may support deletion of crates, if necessary. When a client checks freshness of a crate that has been deleted, it will make a request to the server and notice a 404/410/451 HTTP status. The client can then act accordingly, and clean up local data (even tarball and source checkout).
 
 If the client is not interested in the deleted crate, it won't check it, but chances are it never did, and didn't download it. If ability to proactively erase caches of deleted crates is important, then the "incremental changelog" feature could be extended to notify about deletions.
 
@@ -125,19 +113,9 @@ Bundler uses an append-only format for individual dependency files to incrementa
 
 ## Incremental changelog
 
-The scheme as described so far must double-check the contents of every index file with the server to update the index, even if many of the files have not changed. And index update happens on a `cargo update`, but can also happen for other reasons, such as when a project has no lockfile yet, or when a new dependency is added. While HTTP/2 pipelining and conditional GET requests make requesting many unchanged files [fairly efficient](https://github.com/rust-lang/cargo/pull/8890#issuecomment-737472043), it would still be better if we could avoid those extraneous requests, and instead only request index files that have truly changed.
+The scheme as described so far must revalidate freshness of every index file with the server to update the index, even if many of the files have not changed. And index update happens on a `cargo update`, but can also happen for other reasons, such as when a project has no lockfile yet, or when a new dependency is added. While HTTP/2 pipelining and conditional GET requests make requesting many unchanged files [fairly efficient](https://github.com/rust-lang/cargo/pull/8890#issuecomment-737472043), it would still be better if we could avoid those extraneous requests, and instead only request index files that have truly changed.
 
-One way to achieve this is for the index to provide a summary that lets the client quickly determine whether a given local index file is out of date. This can either come in the form of a complete "index-of-indexes" file (essentially a snapshot of the index tree), or in the form of a changelog. The former is a "large" item to fetch, since it is proportional in size to the size of the index (barring other optimizations), but may be necessary for other reasons such as whole-registry signing. Alternatively, the index could maintain an append-only log of changes. For each change (crate version published or yanked), the log would append a line with: epoch number (explained below), last-modified timestamp, and the name of the changed crate, e.g.
-
-    1 2019-10-18T23:51:23Z oxigen
-    1 2019-10-18T23:51:25Z linda
-    1 2019-10-18T23:51:29Z rv
-    1 2019-10-18T23:52:00Z anyhow
-    1 2019-10-18T23:53:03Z build_id
-    1 2019-10-18T23:56:16Z canonical-form
-    1 2019-10-18T23:59:01Z cotton
-    1 2019-10-19T00:01:44Z kg-utils
-    1 2019-10-19T00:08:45Z serde_traitobject
+One way to achieve this is for the index to provide a summary that lets the client quickly determine whether a given local index file is out of date. To spare clients from fetching a snapshot of the entire index tree, the index could maintain an append-only log of changes. For each change (crate version published or yanked), the log would append a record (a line) with: epoch number (explained below), last-modified timestamp, the name of the changed crate, and possibly other metadata if needed in the future.
 
 Because the log is append-only, the client can incrementally update it using a `Range` HTTP request. The client doesn't have to download the full log in order to start using it; it can download only an arbitrary fraction of it, up to the end of the file, which is straightforward with a `Range` request. When a crate is found in the log (searching from the end), and modification date is the same as modification date of crate's cached locally, the client won't have to make an HTTP request for the file.
 
@@ -147,14 +125,9 @@ Ultimately, this RFC does not recommend such a scheme, as the changelog itself i
 
 ## Dealing with inconsistent HTTP caches
 
-The index does not require all files to form one cohesive snapshot. The index is updated one file at a time. Every file is updated in a separate commit, so for every file change there exists an index state that is valid with or without it. The index only needs to preserve a partial order of updates.
+The index does not require all files to form one cohesive snapshot. The index is updated one file at a time, and only needs to preserve a partial order of updates. From Cargo's perspective dependencies are always allowed to update independently.
 
-From Cargo's perspective dependencies are always allowed to update independently. If crate's dependencies' files are refreshed before the crate itself, it won't be different than if someone had used an older version of the crate.
+The only case where stale caches can cause a problem is when a new version of a crate depends on the latest version of a newly-published dependency, and caches expired for the parent crate before expiring for the dependency. Cargo requires dependencies with sufficient versions to be already visible in the index, and won't publish a "broken" crate.
 
-The only case where stale caches can cause a problem is when a new version of a crate depends on the latest version of a newly-published dependency, and caches expired for the parent crate before expiring for the dependency. Cargo will prevent that from happening, at least for the datacenter it can see. Cargo requires dependencies with sufficient versions to be already visible in the index, and won't publish a "broken" crate.
+However, there's always a possiblity that CDN caches will be stale or expire in a "wrong" order. If Cargo detects that its cached copy of the index is stale (i.e. it finds that a crate that depends on a dependency that doesn't appear to be in the index yet) it may recover from such situation by re-requesting files from the index with a "cache buster" (e.g. current timestamp) appended to their URL. This has an effect of reliably bypassing stale caches, even when CDNs don't honor `cache-control: no-cache` in requests.
 
-Ideally, the server should ensure that a previous file change is visible everywhere before making the next change, i.e. make the CDN purge the changed file, and wait for the purge to be executed before updating files that may depend on it. This may be difficult to guarantee in a global CDNs, so Cargo needs a recovery mechanism:
-
-If a crate <var>A</var> is found to depend on a crate <var>B</var> with a version that doesn't appear to exist in the index, Cargo should fetch the crate <var>B</var> again with a cache buster. The cache buster can be a query string appended to the URL with either the current timestamp, or timestamp parsed from the `last-modified` header of the crate <var>A</var>'s response: `?cachebust=12345678`.
-
-Cache buster has an advantage over requests with `cache-control: no-cache`: it's more widely supported by CDNs, and allows the "busted" URLs to still be cached by the CDN, limiting excess traffic to the origin to 1 request per second on average.
