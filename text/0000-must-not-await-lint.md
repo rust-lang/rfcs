@@ -1,6 +1,6 @@
 - Feature Name: `must_not_await_lint`
 - Start Date: 2020-11-09
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#3014](https://github.com/rust-lang/rfcs/pull/3014)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 # Summary
@@ -13,7 +13,7 @@ Introduce a `#[must_not_await]` lint in the compiler that will warn the user whe
 
 Enable users to fearlessly write concurrent async code without the need to understand the internals of runtimes and how their code will be affected. The goal is to provide a best effort warning that will let the user know of a possible side effect that is not visible by reading the code right away.
 
-One example of these side effects is holding a `MutexGuard` across an await bound. This opens up the possibility of causing a deadlock since the future holding onto the lock did not relinquish it back before it yielded control. This is a problem for futures that run on single-threaded runtimes (`!Send`) where holding a local after a yield will result in a deadlock. Even on multi-threaded runtimes, it would be nice to provide a custom error message that explains why the user doesn't want to do this instead of only a generic message about their future not being `Send`. Any other kind of RAII guard which depends on behavior similar to that of a `MutexGuard` will have the same issue.
+One example of these side effects is holding a `MutexGuard` across an await bound. This opens up the possibility of causing a deadlock since the future holding onto the lock did not relinquish it back before it yielded control. This is a problem for futures that run on single-threaded runtimes (`!Send`) where holding a lock after a yield will result in a deadlock. Even on multi-threaded runtimes, it would be nice to provide a custom error message that explains why the user doesn't want to do this instead of only a generic message about their future not being `Send`. Any other kind of RAII guard which depends on behavior similar to that of a `MutexGuard` will have the same issue.
 
 The big reason for including a lint like this is because under the hood the compiler will automatically transform async fn into a state machine which can store locals. This process is invisible to users and will produce code that is different than what is in the actual rust file. Due to this it is important to inform users that their code may not do what they expect.
 
@@ -97,6 +97,26 @@ async fn foo() {
 When used on a [trait declaration], if the value implementing that trait is held across an await point, the lint is violated.
 
 ```rust
+#[must_not_await]
+trait Lock {
+    fn foo(&self) -> i32;
+}
+
+fn get_lock() -> impl Lock {
+    1i32
+}
+
+async fn foo() {
+    // violates the #[must_not_await] lint
+    let bar = get_lock();
+    my_async_op.await;
+    println!("{:?}", bar);
+}
+```
+
+When used on a function in a trait declaration, then the behavior also applies when the call expression is a function from the implementation of the trait.
+
+```rust
 trait Trait {
     #[must_not_await]
     fn foo(&self) -> i32;
@@ -113,6 +133,7 @@ async fn foo() {
 }
 ```
 
+
 When used on a function in a trait implementation, the attribute does nothing.
 
 [`MetaNameValueStr`]: https://doc.rust-lang.org/reference/attributes.html#meta-item-attribute-syntax
@@ -121,7 +142,9 @@ When used on a function in a trait implementation, the attribute does nothing.
 # Drawbacks
 [drawbacks]: #drawbacks
 
-- There is a possibility it can produce a false positive warning and it could get noisy. But using the `allow` attribute would work similar to other `deny-by-default` lints.
+- There is a possibility it can produce a false positive warning and it could get noisy. But using the `allow` attribute would work similar to other [`warn-by-default`] lints. One thing to note, unlike the `#[must_use]` lint, users cannot silence this warning by using `let _ = bar()` where `bar()` returns a type which has a `#[must_use]` attribute. The `#[allow]` attribute will be the only way to silence the warning.
+
+[`warn-by-default`]: https://doc.rust-lang.org/rustc/lints/listing/warn-by-default.html
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -149,4 +172,15 @@ The `#[must_use]` attribute ensures that if a type or the result of a function i
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-- Propagate the lint in nested structs/enums. Similar to the use case for the `must_use` attribute. These likely should be solved together.
+
+# Common behavior with `#[must_use]` lint
+
+Both `#[must_use]` and `#[must_not_await]` are [`warn-by-default`] lints, and are applied to types decorated with the attribute. Currently the `#[must_use]` lint does not automatically propagate the lint in nested structures/enums due to the additional complexity that it adds on top of the possible breaking changes introduced in the wider ecosystem
+
+Automatically propagating the lint for types containing a type marked by one of these attributes would make for a more ergonomic user experience, and would reduce syntactic noise.
+
+While tradeoffs exist for both approaches, in either case, both lints should exhibit the same behavior.
+
+The `#[must_use]` lint is being used in stable rust for a long time now(The earliest reference I could find was in the release notes for [1.27]) with existing behavior.
+
+[1.27]: https://github.com/rust-lang/rust/blob/master/RELEASES.md#version-1270-2018-06-21
