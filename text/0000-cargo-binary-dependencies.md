@@ -87,7 +87,7 @@ By default, `build-dependencies` are built for the host, while  `dependencies` a
 Cargo provides the following environment variables to the crate being built:
 
 - `CARGO_<TYPE>_DIR_<CRATE>`, where `<TYPE>` is the `type` of the artifact (uppercased) and `<CRATE>` is the package of the crate being depended on. (As with other Cargo environment variables, crate names are converted to uppercase, with dashes replaced by underscores.) This is the directory containing all the artifacts from the crate.
-- `CARGO_<TYPE>_FILE_<CRATE>_<ARTIFACT>`, where `<TYPE>` is the `type` of the artifact, `<CRATE>` is the package of the crate being depended on, and `<ARTIFACT>` is the name of the artifact. (Note that `<ARTIFACT>` is *not* modified in any way from the `name` specified in the crate supplying the artifact, or the crate name if not specified; for instance, it may be in lowercase, or contain dashes.) This is the full path to the artifact.
+- `CARGO_<TYPE>_FILE_<CRATE>_<ARTIFACT>`, where `<TYPE>` is the `type` of the artifact (transformed as above), `<CRATE>` is the package of the crate being depended on (transformed as above), and `<ARTIFACT>` is the name of the artifact. (Note that `<ARTIFACT>` is *not* modified in any way from the `name` specified in the crate supplying the artifact, or the crate name if not specified; for instance, it may be in lowercase, or contain dashes.) This is the full path to the artifact.
     - For the crate types `cdylib` and `staticlib` that can (currently) only build one artifact, cargo additionally supplies this variable with the `_<ARTIFACT>` suffix omitted.
 
 For each kind of dependency, these variables are supplied to the same part of the build process that has access to that kind of dependency:
