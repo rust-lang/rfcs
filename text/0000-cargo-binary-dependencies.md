@@ -126,6 +126,11 @@ We could make information about artifact dependencies in `[dependencies]` availa
 
 We could install all binaries into a common binary directory with a well-known path under `$OUT_DIR`, and expect crates to use that directory, rather than passing in paths via environment variables. `npm` takes an approach like this. However, this would not allow dependencies on multiple distinct binaries with the same name, either provided by different crates or provided by the same crate built for different targets. Hardcoded paths would also reduce the flexibility of Cargo to change these paths in the future, such as to accommodate new features or extensions.
 
+We could explicitly tag dependencies as artifact dependencies, rather than just treating dependencies with a `type` of `"cdylib"` or `"staticlib"` as artifact dependencies. This would allow for potential future dependencies of those types with automatic handling, such as automatically linking staticlib libraries. This would have several downsides, however:
+- It reserves shorter syntax for a hypothesized dependency mechanism that doesn't exist yet (and may never be possible, in the case of `"cdylib"`, since Cargo can't guarantee runtime dependencies).
+- Depending on the mechanism used to specify artifact dependencies, this may make it more difficult to have both a standard dependency and an artifact dependency on the same crate. This would be the case if we used `artifact = true`, for instance. We could potentially use syntax like `type = ["artifact:cdylib"]`, but such in-band flags introduce additional complexity.
+This does not preclude adding support in Cargo for more "native" handling of cdylib/staticlib dependencies, if Cargo can provide a reasonable default; such a dependency could use a different syntax (e.g. `somedep = { version = "...", link = ["library-name"] }`).
+
 # Prior art
 [prior-art]: #prior-art
 
