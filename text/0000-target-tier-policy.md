@@ -495,6 +495,10 @@ community, both when initially proposed and before being dropped from a stable
 release. A tier 1 target is highly unlikely to be directly removed without
 first being demoted to tier 2 or tier 3.
 
+Raising the baseline expectations of a tier 1 target (such as the minimum CPU
+features or OS version required) requires the approval of the compiler and
+release teams, but does not necessarily require a full RFC.
+
 ### Tier 1 with host tools
 
 Some tier 1 targets may additionally have binaries built to run on them as a
