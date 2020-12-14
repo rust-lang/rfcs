@@ -131,6 +131,8 @@ We could explicitly tag dependencies as artifact dependencies, rather than just 
 - Depending on the mechanism used to specify artifact dependencies, this may make it more difficult to have both a standard dependency and an artifact dependency on the same crate. This would be the case if we used `artifact = true`, for instance. We could potentially use syntax like `type = ["artifact:cdylib"]`, but such in-band flags introduce additional complexity.
 This does not preclude adding support in Cargo for more "native" handling of cdylib/staticlib dependencies, if Cargo can provide a reasonable default; such a dependency could use a different syntax (e.g. `somedep = { version = "...", link = ["library-name"] }`).
 
+Relatedly, we could omit the `"lib"` value for `type`. This would avoid potential conflation of dependency types (since `type = ["lib", "bin"]` expresses both a normal dependency on a library and an artifact dependency on a binary). This might serve as future-proofing. However, this could imply a future possibility of "artifact dependency" handling for native Rust libraries, which seems undesirable. Furthermore, this would substantially complicate the case of simultaneous dependencies on a crate's Rust library and other artifacts, a case which arises in several common use cases.
+
 # Prior art
 [prior-art]: #prior-art
 
