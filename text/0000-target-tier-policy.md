@@ -173,6 +173,10 @@ approved by the appropriate team for that shared code before acceptance.
   do not post comments (automated or manual) on a PR that suggests a block on
   the PR based on the target. (A PR author may choose to help with a tier 3
   target, but is not required to.)
+  - It is acceptable to manually initiate or link to a discussion about how to
+    make a PR and a tier 3 target compatible, but that discussion must not be
+    implied to block the PR unless either the PR author or PR approver want it
+    to be.
 - Patches adding or updating tier 3 targets must not break any existing tier 2
   or tier 1 target, and must not break another tier 3 target without approval
   of either the compiler team or the maintainers of the other tier 3 target.
