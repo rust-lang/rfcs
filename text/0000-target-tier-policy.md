@@ -352,14 +352,13 @@ requirements for host tools. This review and approval may take place in a PR
 adding the target's host tools to CI, or simply by an infrastructure team
 member reporting the outcome of a team discussion.
 
-- Tier 2 targets with host tools must additionally get the compiler and
-  infrastructure team to approve the building of host tools.
-  - Depending on the target, its capabilities, its performance, and the
-    likelihood of use for any given tool, this may include only `rustc` and
-    `cargo`, or may include additional tools such as `clippy` and `rustfmt`.
-  - Such approval will take into account the additional time required to build
-    the host tools, and the substantial additional storage required for the
-    host tools.
+- Depending on the target, its capabilities, its performance, and the
+  likelihood of use for any given tool, the host tools provided for a tier 2
+  target may include only `rustc` and `cargo`, or may include additional tools
+  such as `clippy` and `rustfmt`.
+- Approval of host tools will take into account the additional time required to
+  build the host tools, and the substantial additional storage required for the
+  host tools.
 - The host tools must have direct value to people other than the target's
   maintainers.  (It may still be a niche target, but the host tools must not be
   exclusively useful for an inherently closed group.) This requirement will be
@@ -489,20 +488,18 @@ adding the target's host tools to CI, by an infrastructure team member
 reporting the outcome of a team discussion, or by including the infrastructure
 team in the RFC proposing the target.
 
-- Tier 1 targets with host tools must additionally get the compiler and
-  infrastructure team to approve the building of host tools.
-  - This should typically include all of the additional tools such as `clippy`
-    and `rustfmt`, unless there is a specific reason why a tool cannot possibly
-    make sense for the target.
-    - Unlike with tier 2, for tier 1 we will not exclude specific tools on the
-      sole basis of them being less likely to be used; rather, we'll take that
-      into account when considering whether the target should be at tier 1 with
-      host tools. In general, on any tier 1 target with host tools, people
-      should be able to expect to find and install all the same components that
-      they would for any other tier 1 target with host tools.
-  - Such approval will take into account the additional time required to build
-    the host tools, and the substantial additional storage required for the
-    host tools.
+- Tier 1 targets with host tools should typically include all of the additional
+  tools such as `clippy` and `rustfmt`, unless there is a target-specific
+  reason why a tool cannot possibly make sense for the target.
+  - Unlike with tier 2, for tier 1 we will not exclude specific tools on the
+    sole basis of them being less likely to be used; rather, we'll take that
+    into account when considering whether the target should be at tier 1 with
+    host tools. In general, on any tier 1 target with host tools, people
+    should be able to expect to find and install all the same components that
+    they would for any other tier 1 target with host tools.
+- Approval of host tools will take into account the additional time required to
+  build the host tools, and the substantial additional storage required for the
+  host tools.
 - Host tools for the target must have substantial, widespread interest within
   the developer community, and must serve the ongoing needs of multiple
   production users of Rust across multiple organizations or projects. These
