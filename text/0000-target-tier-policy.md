@@ -407,11 +407,12 @@ member reporting the outcome of a team discussion.
     the host tools.
 - Providing host tools does not exempt a target from requirements to support
   cross-compilation if at all possible.
-- A target may be promoted directly from tier 3 to tier 2 with host tools if it
-  meets all the necessary requirements, but doing so may introduce substantial
-  additional complexity. If in doubt, the target should qualify for tier 2
-  without host tools first.
 - All tier 2 requirements apply.
+
+A target may be promoted directly from tier 3 to tier 2 with host tools if it
+meets all the necessary requirements, but doing so may introduce substantial
+additional complexity. If in doubt, the target should qualify for tier 2
+without host tools first.
 
 ## Tier 1 target policy
 
@@ -526,11 +527,12 @@ team in the RFC proposing the target.
     limited to an exclusive group or entity.
 - Providing host tools does not exempt a target from requirements to support
   cross-compilation if at all possible.
-- A target seeking promotion to tier 1 with host tools should typically either
-  be tier 2 with host tools or tier 1 without host tools, to reduce the number
-  of requirements to simultaneously review and approve.
 - All requirements for tier 2 targets with host tools apply.
 - All tier 1 requirements apply.
+
+A target seeking promotion to tier 1 with host tools should typically either be
+tier 2 with host tools or tier 1 without host tools, to reduce the number of
+requirements to simultaneously review and approve.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
