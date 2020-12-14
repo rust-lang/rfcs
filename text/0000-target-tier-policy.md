@@ -255,8 +255,8 @@ by an infrastructure team member reporting the outcome of a team discussion.
       corresponding to the older versions, and requiring justification for a
       new target at a lower tier for the older OS versions).
 - Tier 2 targets must not leave any significant portions of `core` or the
-  standard library `unimplemented!()`, unless they cannot possibly be supported
-  on the target.
+  standard library unimplemented or stubbed out, unless they cannot possibly be
+  supported on the target.
 - The code generation backend for the target should not have deficiencies that
   invalidate Rust safety properties, as evaluated by the Rust compiler team.
   For example, if Rust relies on a specific code generation feature to support
