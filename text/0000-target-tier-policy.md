@@ -66,7 +66,10 @@ This policy defines the requirements for accepting a proposed target at a given
 level of support.
 
 Each tier builds on all the requirements from the previous tier, unless
-overridden by a stronger requirement.
+overridden by a stronger requirement. Tier 2 and tier 1 also provide additional
+requirements to be met if supplying host tools for the target; a target at tier
+2 or tier 1 is not required to supply host tools, but if it does, it must meet
+the corresponding additional requirements.
 
 The policy for each tier also documents the Rust governance teams that must
 approve the addition of any target at that tier. Those teams are responsible
@@ -318,13 +321,6 @@ by an infrastructure team member reporting the outcome of a team discussion.
   should fix any test failures in a reasonably timely fashion.
 - All tier 3 requirements apply.
 
-Note: some tier 2 targets additionally have binaries built to run on them as a
-host (such as `rustc` and `cargo`). Such a target must meet all the
-requirements above, and must additionally get the compiler and infrastructure
-team to approve the building of host tools. Depending on the target and its
-capabilities, this may include only `rustc` and `cargo`, or may include
-additional tools such as `clippy` and `rustfmt`.
-
 A tier 2 target may be demoted or removed if it no longer meets these
 requirements. Any proposal for demotion or removal will be CCed to people who
 have previously worked on the target, and will be communicated widely to the
@@ -340,6 +336,82 @@ targets will then be expected to implement the corresponding target-specific
 support in order to re-enable the target. If the maintainers of such targets
 cannot provide such support in time for the next stable release, this may
 result in demoting or removing the targets.
+
+### Tier 2 with host tools
+
+Some tier 2 targets may additionally have binaries built to run on them as a
+host (such as `rustc` and `cargo`).
+
+A proposed new tier 2 target with host tools must be reviewed and approved by
+the compiler team based on these requirements. Such review and approval may
+occur via a Major Change Proposal (MCP).
+
+In addition, the infrastructure team must approve the integration of the
+target's host tools into Continuous Integration (CI), and the CI-related
+requirements for host tools. This review and approval may take place in a PR
+adding the target's host tools to CI, or simply by an infrastructure team
+member reporting the outcome of a team discussion.
+
+- Tier 2 targets with host tools must additionally get the compiler and
+  infrastructure team to approve the building of host tools.
+  - Depending on the target, its capabilities, its performance, and the
+    likelihood of use for any given tool, this may include only `rustc` and
+    `cargo`, or may include additional tools such as `clippy` and `rustfmt`.
+  - Such approval will take into account the additional time required to build
+    the host tools, and the substantial additional storage required for the
+    host tools.
+- The host tools must have direct value to people other than the target's
+  maintainers.  (It may still be a niche target, but the host tools must not be
+  exclusively useful for an inherently closed group.) This requirement will be
+  evaluated independently from the corresponding tier 2 requirement.
+  - The requirement to provide "direct value" means that it does not suffice to
+    argue that having host tools will help the target's maintainers more easily
+    provide the target to others. The tools themselves must provide value to
+    others.
+- There must be a reasonable expectation that the host tools will be used, for
+  purposes other than to prove that they can be used.
+- The host tools must build and run reliably in CI, though they may or may not
+  pass tests.
+- Building host tools for the target must not take substantially longer than
+  building host tools for other targets.
+- The host tools must provide a substantively similar experience as on other
+  targets, subject to reasonable target limitations.
+  - Adding a substantively different interface to an existing tool, or a
+    target-specific interface to the functionality of an existing tool,
+    requires design and implementation approval (e.g. RFC/MCP) from the
+    appropriate approving teams for that tool.
+    - Such an interface should have a design that could potentially work for
+      other targets with similar properties.
+    - This should happen separately from the review and approval of the target,
+      to simplify the target review and approval processes, and to simplify the
+      review and approval processes for the proposed new interface.
+  - By way of example, a target that runs within a sandbox may need to modify
+    the handling of files, tool invocation, and similar to meet the
+    expectations and conventions of the sandbox, but must not introduce a
+    separate "sandboxed compilation" interface separate from the CLI interface
+    without going through the normal approval process for such an interface.
+    Such an interface should take into account potential other targets with
+    similar sandboxes.
+- If the host tools for the platform would normally be expected to be signed or
+  equivalent (e.g. if running unsigned binaries or similar involves a
+  "developer mode" or an additional prompt), it must be possible for the Rust
+  project's automated builds to apply the appropriate signature process,
+  without any manual intervention by either Rust developers, target
+  maintainers, or a third party.  This process must meet the approval of the
+  infrastructure team.
+  - This process may require one-time or semi-regular manual steps by the
+    infrastructure team, such as registration or renewal of a signing key. Any
+    such manual process must meet the approval of the infrastructure team.
+  - This requirement exists to ensure that Rust builds, including nightly
+    builds, can meet the necessary requirements to allow users to smoothly run
+    the host tools.
+- Providing host tools does not exempt a target from requirements to support
+  cross-compilation if at all possible.
+- A target may be promoted directly from tier 3 to tier 2 with host tools if it
+  meets all the necessary requirements, but doing so may introduce substantial
+  additional complexity. If in doubt, the target should qualify for tier 2
+  without host tools first.
+- All tier 2 requirements apply.
 
 ## Tier 1 target policy
 
@@ -396,6 +468,69 @@ proposal for demotion or removal will be communicated widely to the Rust
 community, both when initially proposed and before being dropped from a stable
 release. A tier 1 target is highly unlikely to be directly removed without
 first being demoted to tier 2 or tier 3.
+
+### Tier 1 with host tools
+
+Some tier 1 targets may additionally have binaries built to run on them as a
+host (such as `rustc` and `cargo`).
+
+A proposed new tier 1 target with host tools must be reviewed and approved by
+the compiler team based on these requirements. In addition, the release team
+must approve the long-term viability of host tools for the target, and the
+additional work of supporting host tools on the target. For a tier 1 target,
+this will typically take place via a full RFC proposing the target, to be
+jointly reviewed and approved by the compiler team and release team.
+
+In addition, the infrastructure team must approve the integration of the
+target's host tools into Continuous Integration (CI), and the CI-related
+requirements for host tools. This review and approval may take place in a PR
+adding the target's host tools to CI, by an infrastructure team member
+reporting the outcome of a team discussion, or by including the infrastructure
+team in the RFC proposing the target.
+
+- Tier 1 targets with host tools must additionally get the compiler and
+  infrastructure team to approve the building of host tools.
+  - This should typically include all of the additional tools such as `clippy`
+    and `rustfmt`, unless there is a specific reason why a tool cannot possibly
+    make sense for the target.
+    - Unlike with tier 2, for tier 1 we will not exclude specific tools on the
+      sole basis of them being less likely to be used; rather, we'll take that
+      into account when considering whether the target should be at tier 1 with
+      host tools. In general, on any tier 1 target with host tools, people
+      should be able to expect to find and install all the same components that
+      they would for any other tier 1 target with host tools.
+  - Such approval will take into account the additional time required to build
+    the host tools, and the substantial additional storage required for the
+    host tools.
+- Host tools for the target must have substantial, widespread interest within
+  the developer community, and must serve the ongoing needs of multiple
+  production users of Rust across multiple organizations or projects. These
+  requirements are subjective, and determined by consensus of the approving
+  teams. This requirement will be evaluated independently from the
+  corresponding tier 1 requirement; it is possible for a target to have
+  sufficient interest for cross-compilation, but not have sufficient interest
+  for native compilation. The host tools may be dropped if they no longer meet
+  this requirement, even if the target otherwise qualifies as tier 1.
+- The host tools must build, run, and pass tests reliably in CI.
+  - The target must not disable an excessive number of tests or pieces of tests
+    in the testsuite in order to do so. This is a subjective requirement.
+- New tier 1 targets with host tools must not have a hard requirement for
+  signed, verified, or otherwise "approved" binaries. Developers must be able
+  to build, run, and test binaries for the target on systems they control.
+  (Doing so may require enabling some appropriate "developer mode" on such
+  systems, but must not require the payment of any additional fee or other
+  consideration, or agreement to any onerous legal agreements.)
+  - While the Rust project may supply appropriately signed tools, this
+    requirement exists to ensure that Rust developers can help develop and test
+    Rust for the target, and that development or testing for the target is not
+    limited to an exclusive group or entity.
+- Providing host tools does not exempt a target from requirements to support
+  cross-compilation if at all possible.
+- A target seeking promotion to tier 1 with host tools should typically either
+  be tier 2 with host tools or tier 1 without host tools, to reduce the number
+  of requirements to simultaneously review and approve.
+- All requirements for tier 2 targets with host tools apply.
+- All tier 1 requirements apply.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -464,10 +599,6 @@ target". We should also update these requirements if corner cases arise.
 Some of our existing targets may not meet all of these criteria today. We may
 wish to audit existing targets against these criteria, but this RFC does not
 constitute a commitment to do so in a timely fashion.
-
-Future enhancements to the target tier policy may introduce more detailed
-requirements for supplying host tools for a target, or for supplying part or
-all of the standard library.
 
 In the future, we may have a specified approval body for evaluating legal
 requirements, in consultation with legal professionals.
