@@ -122,7 +122,7 @@ approved by the appropriate team for that shared code before acceptance.
 
 - Any new tier 3 target must have a designated developer or developers (the
   "target maintainers") on record to be CCed when issues arise regarding the
-  target.
+  target. (The mechanism to track and CC such developers may evolve over time.)
 - Tier 3 targets must use naming consistent with any existing targets; for
   instance, a target for the same CPU or OS as an existing Rust target should
   use the same name for that CPU or OS. Targets should normally use the same
