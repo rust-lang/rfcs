@@ -83,7 +83,8 @@ human judgment. Targets must fulfill the spirit of the requirements as well, as
 determined by the judgment of the approving teams. Reviewers and team members
 evaluating targets and target-specific patches should always use their own best
 judgment regarding the quality of work, and the suitability of a target for the
-Rust project.
+Rust project. Neither this policy nor any decisions made regarding targets
+shall create any binding agreement or estoppel by any party.
 
 Before filing an issue or pull request (PR) to introduce or promote a target,
 the target should already meet the corresponding tier requirements. (This does
@@ -180,6 +181,20 @@ approved by the appropriate team for that shared code before acceptance.
     for the Rust project or its developers or users, or any requirements that
     adversely affect the livelihood or prospects of the Rust project or its
     developers or users.
+- Neither this policy nor any decisions made regarding targets shall create any
+  binding agreement or estoppel by any party. If any member of an approving
+  Rust team serves as one of the maintainers of a target, or has any legal or
+  employment requirement (explicit or implicit) that might affect their
+  decisions regarding a target, they must recuse themselves from any approval
+  process regarding the target's tier status, though they may otherwise
+  participate in discussions.
+  - This requirement does not prevent part or all of this policy from being
+    cited in an explicit contract or work agreement (e.g. to implement or
+    maintain support for a target). This requirement exists to ensure that a
+    developer or team responsible for reviewing and approving a target does not
+    face any legal threats or obligations that would prevent them from freely
+    exercising their judgment in such approval, even if such judgment involves
+    subjective matters or goes beyond the letter of these requirements.
 - Tier 3 targets should attempt to implement as much of the standard libraries as
   possible and appropriate (`core` for most targets, `alloc` for any target
   with a standard memory allocator, `std` for targets with an operating
