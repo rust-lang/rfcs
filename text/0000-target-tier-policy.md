@@ -73,7 +73,7 @@ approve the addition of any target at that tier. Those teams are responsible
 for reviewing and evaluating the target, based on these requirements and their
 own judgment. Those teams may apply additional requirements, including
 subjective requirements, such as to deal with issues not foreseen by this
-policy. (Such requirements may subsequently motivate additions of this policy.)
+policy. (Such requirements may subsequently motivate additions to this policy.)
 
 While these criteria attempt to document the policy, that policy still involves
 human judgment. Targets must fulfill the spirit of the requirements as well, as
