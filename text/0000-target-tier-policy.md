@@ -283,9 +283,9 @@ by an infrastructure team member reporting the outcome of a team discussion.
   slowest target in CI. This requirement is subjective, to be evaluated by the
   infrastructure team, and will take the community importance of the target
   into account.
-- Tier 2 targets must support building on the existing CI infrastructure. In
-  particular, new tier 2 targets must support cross-compiling, and must not
-  require using the target as the host for builds.
+- New tier 2 targets should, if at all possible, support cross-compiling. New
+  tier 2 targets should not require using the target as the host for builds,
+  even if the target supports host tools.
 - In addition to the legal requirements for all targets (specified in the tier
   3 requirements), because a tier 2 target typically involves the Rust project
   building and supplying various compiled binaries, incorporating the target
