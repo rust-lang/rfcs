@@ -293,7 +293,7 @@ by an infrastructure team member reporting the outcome of a team discussion.
   the approving teams.
   - As an exception to this, if the target's primary purpose is to build
     components for a Free and Open Source Software (FOSS) project licensed
-    under "copyleft" terms (terms which require licensing other code under the
+    under "copyleft" terms (terms which require licensing other code under
     compatible FOSS terms), such as kernel modules or plugins, then the
     standard libraries for the target may potentially be subject to copyleft
     terms, as long as such terms are satisfied by Rust's existing practices of
