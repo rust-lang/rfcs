@@ -164,6 +164,15 @@ approved by the appropriate team for that shared code before acceptance.
     combinations within the scope of Rust itself, even at tier 3.
   - New targets should not require proprietary (non-FOSS) components to link a
     functional binary or library.
+  - "onerous" here is an intentionally subjective term. At a minimum, "onerous"
+    legal/licensing terms include but are *not* limited to: non-disclosure
+    requirements, non-compete requirements, contributor license agreements
+    (CLAs) or equivalent, "non-commercial"/"research-only"/etc terms,
+    requirements conditional on the employer or employment of any particular
+    Rust developers, revocable terms, any requirements that create liability
+    for the Rust project or its developers or users, or any requirements that
+    adversely affect the livelihood or prospects of the Rust project or its
+    developers or users.
 - Tier 3 targets should attempt to implement as much of the standard libraries as
   possible and appropriate (`core` for most targets, `alloc` for any target
   with a standard memory allocator, `std` for targets with an operating
@@ -300,15 +309,6 @@ by an infrastructure team member reporting the outcome of a team discussion.
   members of the Rust project, including infrastructure team members and those
   operating CI systems. This is a subjective requirement, to be evaluated by
   the approving teams.
-  - "onerous" here is an intentionally subjective term. At a minimum, "onerous"
-    legal/licensing terms include but are *not* limited to: non-disclosure
-    requirements, non-compete requirements, contributor license agreements
-    (CLAs) or equivalent, "non-commercial"/"research-only"/etc terms,
-    requirements conditional on the employer or employment of any particular
-    Rust developers, revocable terms, any requirements that create liability
-    for the Rust project or its developers or users, or any requirements that
-    adversely affect the livelihood or prospects of the Rust project or its
-    developers or users.
   - As an exception to this, if the target's primary purpose is to build
     components for a Free and Open Source Software (FOSS) project licensed
     under "copyleft" terms (terms which require licensing other code under
