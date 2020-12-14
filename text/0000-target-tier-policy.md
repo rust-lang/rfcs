@@ -468,3 +468,6 @@ constitute a commitment to do so in a timely fashion.
 Future enhancements to the target tier policy may introduce more detailed
 requirements for supplying host tools for a target, or for supplying part or
 all of the standard library.
+
+In the future, we may have a specified approval body for evaluating legal
+requirements, in consultation with legal professionals.
