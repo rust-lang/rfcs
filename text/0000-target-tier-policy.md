@@ -158,11 +158,11 @@ approved by the appropriate team for that shared code before acceptance.
 - Tier 3 targets should attempt to implement as much of the standard libraries as
   possible and appropriate (`core` for most targets, `alloc` for any target
   with a standard memory allocator, `std` for targets with an operating
-  system), but may leave some code `unimplemented!()`, whether because the
-  target makes it impossible to implement or challenging to implement. The
-  authors of pull requests are not obligated to avoid calling any portions of
-  the standard library on the basis of a tier 3 target not implementing those
-  portions.
+  system), but may leave some code unimplemented (either unavailable or stubbed
+  out as appropriate), whether because the target makes it impossible to
+  implement or challenging to implement. The authors of pull requests are not
+  obligated to avoid calling any portions of the standard library on the basis
+  of a tier 3 target not implementing those portions.
 - The target must provide documentation for the Rust community explaining how
   to build for the target, using cross-compilation if possible. If the target
   supports running tests (even if they do not pass), the documentation must
