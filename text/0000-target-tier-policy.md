@@ -478,14 +478,21 @@ including the infrastructure team in the RFC proposing the target.
   - The target must not disable an excessive number of tests or pieces of tests
     in the testsuite in order to do so. This is a subjective requirement.
   - If the target does not have host tools support, or if the target has low
-    performance, CI may cross-compile the testsuite from another platform, and
-    then run the compiled tests natively.
+    performance, the infrastructure team may choose to have CI cross-compile
+    the testsuite from another platform, and then run the compiled tests
+    either natively or via accurate emulation. However, the approving teams may
+    take such performance considerations into account when determining the
+    viability of the target or of its host tools.
 - The target must provide as much of the Rust standard library as is feasible
   and appropriate to provide. For instance, if the target has a standard memory
   allocator, it must provide an implementation of `alloc` and the associated
   data structures.
 - Building the target and running the testsuite for the target must not take
   substantially longer than other targets.
+  - In particular, if building the target takes a reasonable amount of time,
+    but the target cannot run the testsuite in a timely fashion due to low
+    performance of either native code or accurate emulation, that alone may
+    prevent the target from qualifying as tier 1.
 - If running the testsuite requires additional infrastructure (such as physical
   systems running the target), the target maintainers must arrange to provide
   such resources to the Rust project, to the satisfaction and approval of the
@@ -564,6 +571,12 @@ team in the RFC proposing the target.
 - The host tools must build, run, and pass tests reliably in CI.
   - The target must not disable an excessive number of tests or pieces of tests
     in the testsuite in order to do so. This is a subjective requirement.
+- Building the host tools and running the testsuite for the host tools must not
+  take substantially longer than other targets.
+  - In particular, if building the target's host tools takes a reasonable
+    amount of time, but the target cannot run the testsuite in a timely fashion
+    due to low performance of either native code or accurate emulation, that
+    alone may prevent the target from qualifying as tier 1 with host tools.
 - New tier 1 targets with host tools must not have a hard requirement for
   signed, verified, or otherwise "approved" binaries. Developers must be able
   to build, run, and test binaries for the target on systems they control.
