@@ -290,10 +290,10 @@ by an infrastructure team member reporting the outcome of a team discussion.
   target, however.
 - The target must build reliably in CI.
 - The approving teams may additionally require that a subset of tests pass in
-  CI, such as enough to build a functional "hello world" program, or equivalent
-  "smoke tests". In particular, this requirement may apply if the target builds
-  host tools, or if the tests in question provide substantial value via early
-  detection of critical problems.
+  CI, such as enough to build a functional "hello world" program, `./x.py test
+  --no-run`, or equivalent "smoke tests". In particular, this requirement may
+  apply if the target builds host tools, or if the tests in question provide
+  substantial value via early detection of critical problems.
 - Building the target in CI must not take substantially longer than the current
   slowest target in CI. This requirement is subjective, to be evaluated by the
   infrastructure team, and will take the community importance of the target
