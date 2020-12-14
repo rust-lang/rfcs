@@ -47,9 +47,9 @@ Adding a new tier 3 target imposes minimal requirements; we focus primarily on
 avoiding disruption to other ongoing Rust development.
 
 Tier 2 and tier 1 targets place work on the Rust community as a whole, to avoid
-breaking the target. Thus, these tiers require commensurate efforts from the
-maintainers of the target, to demonstrate value and to minimize any disruptions
-to ongoing Rust development.
+breaking the target. Thus, these tiers require commensurate and ongoing efforts
+from the maintainers of the target, to demonstrate value and to minimize any
+disruptions to ongoing Rust development.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
