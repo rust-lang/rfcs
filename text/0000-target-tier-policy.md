@@ -131,12 +131,13 @@ approved by the appropriate team for that shared code before acceptance.
 - Any new tier 3 target must have a designated developer or developers (the
   "target maintainers") on record to be CCed when issues arise regarding the
   target. (The mechanism to track and CC such developers may evolve over time.)
-- Tier 3 targets must use naming consistent with any existing targets; for
-  instance, a target for the same CPU or OS as an existing Rust target should
-  use the same name for that CPU or OS. Targets should normally use the same
-  names and naming conventions as used elsewhere in the broader ecosystem
-  beyond Rust (such as in other toolchains), unless they have a very good
-  reason to diverge.
+- Targets must use naming consistent with any existing targets; for instance, a
+  target for the same CPU or OS as an existing Rust target should use the same
+  name for that CPU or OS. Targets should normally use the same names and
+  naming conventions as used elsewhere in the broader ecosystem beyond Rust
+  (such as in other toolchains), unless they have a very good reason to
+  diverge. Changing the name of a target can be highly disruptive, especially
+  once the target reaches a higher tier.
 - Tier 3 targets may have unusual requirements to build or use, but must not
   create legal issues or impose onerous legal terms for the Rust project or for
   Rust developers or users.
