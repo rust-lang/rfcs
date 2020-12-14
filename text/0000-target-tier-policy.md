@@ -344,11 +344,13 @@ timely fashion, Rust teams may land pull requests that temporarily disable some
 targets in the nightly compiler, in order to implement a feature not yet
 supported by those targets. (As an example, this happened when introducing the
 128-bit types `u128` and `i128`.) Such a pull request will include notification
-and coordination with the maintainers of such targets. The maintainers of such
-targets will then be expected to implement the corresponding target-specific
-support in order to re-enable the target. If the maintainers of such targets
-cannot provide such support in time for the next stable release, this may
-result in demoting or removing the targets.
+and coordination with the maintainers of such targets, and will ideally happen
+towards the beginning of a new development cycle to give maintainers time to
+update their targets. The maintainers of such targets will then be expected to
+implement the corresponding target-specific support in order to re-enable the
+target. If the maintainers of such targets cannot provide such support in time
+for the next stable release, this may result in demoting or removing the
+targets.
 
 ### Tier 2 with host tools
 
