@@ -492,6 +492,12 @@ including the infrastructure team in the RFC proposing the target.
   Rust infrastructure team.
   - Such resources may be provided via cloud systems, via emulation, or via
     physical hardware.
+  - If the target requires the use of emulation to meet any of the tier
+    requirements, the approving teams for those requirements must have high
+    confidence in the accuracy of the emulation, such that discrepancies
+    between emulation and native operation that affect test results will
+    constitute a high-priority bug in either the emulation or the
+    implementation of the target.
   - If it is not possible to run the target via emulation, these resources must
     additionally be sufficient for the Rust infrastructure team to make them
     available for access by Rust team members, for the purposes of development
