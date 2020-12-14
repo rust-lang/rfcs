@@ -431,7 +431,7 @@ criteria](https://ftp-master.debian.org/archive-criteria.html).
 Other precedents for tiered target support include [Firefox's supported build
 targets](https://firefox-source-docs.mozilla.org/build/buildsystem/supported-configurations.html),
 [node.js supported
-platforms](https://github.com/nodejs/node/blob/master/BUILDING.md#supported-platforms),
+platforms](https://github.com/nodejs/node/blob/HEAD/BUILDING.md#supported-platforms),
 and [GHC's platform
 support](https://gitlab.haskell.org/ghc/ghc/-/wikis/platforms).
 
@@ -449,7 +449,7 @@ support](https://gitlab.haskell.org/ghc/ghc/-/wikis/platforms).
   - We could add them as a "marker team" (e.g. `target-xyz`) in the
     [rust-lang/team](https://github.com/rust-lang/team) repository. For
     example, see [the icebreakers-llvm
-    team](https://github.com/rust-lang/team/blob/master/teams/icebreakers-llvm.toml).
+    team](https://github.com/rust-lang/team/blob/HEAD/teams/icebreakers-llvm.toml).
     This would allow pinging them with `@rustbot ping target-xyz`.
     - We could additionally teach rustbot to automatically ping a target team
       when an issue is labeled with a target-specific label.
