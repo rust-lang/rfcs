@@ -69,7 +69,7 @@ Each tier builds on all the requirements from the previous tier, unless
 overridden by a stronger requirement. Tier 2 and tier 1 also provide additional
 requirements to be met if supplying host tools for the target; a target at tier
 2 or tier 1 is not required to supply host tools, but if it does, it must meet
-the corresponding additional requirements.
+the corresponding additional requirements for host tools.
 
 The policy for each tier also documents the Rust governance teams that must
 approve the addition of any target at that tier. Those teams are responsible
