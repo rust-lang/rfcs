@@ -36,7 +36,8 @@ not be the canonical home of the up-to-date target tier policy.
 
 Rust provides three tiers of target support:
 
-- Rust provides no guarantees about tier 3 targets.
+- Rust provides no guarantees about tier 3 targets; they exist in the codebase,
+  but may or may not build.
 - Rust's continuous integration checks that tier 2 targets will always build,
   but they may not pass tests.
 - Rust's continuous integration checks that tier 1 targets will always build
