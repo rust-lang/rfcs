@@ -426,7 +426,7 @@ Support page](https://forge.rust-lang.org/release/platform-support.html).
 Future expansions of such policy may find requirements from other communities
 useful as examples, such as Debian's [arch
 policy](https://release.debian.org/bullseye/arch_policy.html) and [archive
-criteria](https://ftp-master.debian.org/archive-criteria.html).
+criteria](https://salsa.debian.org/ftp-team/website/-/blob/HEAD/archive-criteria.html).
 
 Other precedents for tiered target support include [Firefox's supported build
 targets](https://firefox-source-docs.mozilla.org/build/buildsystem/supported-configurations.html),
