@@ -487,12 +487,13 @@ including the infrastructure team in the RFC proposing the target.
     developers to make target-specific fixes.)
 - All tier 2 requirements apply.
 
-A tier 1 target may be demoted if it no longer meets these requirements. Any
-proposal for demotion of a tier 1 target requires a full RFC process, with
-approval by the compiler and release teams. Any such proposal will be
-communicated widely to the Rust community, both when initially proposed and
-before being dropped from a stable release. A tier 1 target is highly unlikely
-to be directly removed without first being demoted to tier 2 or tier 3.
+A tier 1 target may be demoted if it no longer meets these requirements but
+still meets the requirements for a lower tier. Any proposal for demotion of a
+tier 1 target requires a full RFC process, with approval by the compiler and
+release teams. Any such proposal will be communicated widely to the Rust
+community, both when initially proposed and before being dropped from a stable
+release. A tier 1 target is highly unlikely to be directly removed without
+first being demoted to tier 2 or tier 3.
 
 ### Tier 1 with host tools
 
