@@ -360,7 +360,8 @@ targets.
 ### Tier 2 with host tools
 
 Some tier 2 targets may additionally have binaries built to run on them as a
-host (such as `rustc` and `cargo`).
+host (such as `rustc` and `cargo`). This allows the target to be used as a
+development platform, not just a compilation target.
 
 A proposed new tier 2 target with host tools must be reviewed and approved by
 the compiler team based on these requirements. Such review and approval may
@@ -495,7 +496,8 @@ first being demoted to tier 2 or tier 3.
 ### Tier 1 with host tools
 
 Some tier 1 targets may additionally have binaries built to run on them as a
-host (such as `rustc` and `cargo`).
+host (such as `rustc` and `cargo`). This allows the target to be used as a
+development platform, not just a compilation target.
 
 A proposed new tier 1 target with host tools must be reviewed and approved by
 the compiler team based on these requirements. In addition, the release team
