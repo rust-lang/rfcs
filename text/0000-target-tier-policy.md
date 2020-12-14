@@ -282,6 +282,11 @@ by an infrastructure team member reporting the outcome of a team discussion.
 - Tier 2 targets must not leave any significant portions of `core` or the
   standard library unimplemented or stubbed out, unless they cannot possibly be
   supported on the target.
+  - The right approach to handling a missing feature from a target may depend
+    on whether the target seems likely to develop the feature in the future. In
+    some cases, a target may be co-developed along with Rust support, and Rust
+    may gain new features on the target as that target gains the capabilities
+    to support those features.
 - The code generation backend for the target should not have deficiencies that
   invalidate Rust safety properties, as evaluated by the Rust compiler team.
   For example, if Rust relies on a specific code generation feature to support
