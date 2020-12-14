@@ -138,6 +138,11 @@ approved by the appropriate team for that shared code before acceptance.
   (such as in other toolchains), unless they have a very good reason to
   diverge. Changing the name of a target can be highly disruptive, especially
   once the target reaches a higher tier.
+  - Target names should not introduce undue confusion or ambiguity unless
+    absolutely necessary to maintain ecosystem compatibility. For example, if
+    the name of the target makes people extremely likely to form incorrect
+    beliefs about what it targets, the name should be changed or augmented to
+    disambiguate it.
 - Tier 3 targets may have unusual requirements to build or use, but must not
   create legal issues or impose onerous legal terms for the Rust project or for
   Rust developers or users.
