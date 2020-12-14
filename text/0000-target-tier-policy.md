@@ -461,6 +461,9 @@ including the infrastructure team in the RFC proposing the target.
 - The target must build and pass tests reliably in CI.
   - The target must not disable an excessive number of tests or pieces of tests
     in the testsuite in order to do so. This is a subjective requirement.
+  - If the target does not have host tools support, or if the target has low
+    performance, CI may cross-compile the testsuite from another platform, and
+    then run the compiled tests natively.
 - The target must provide as much of the Rust standard library as is feasible
   and appropriate to provide. For instance, if the target has a standard memory
   allocator, it must provide an implementation of `alloc` and the associated
