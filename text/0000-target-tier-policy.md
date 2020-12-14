@@ -94,6 +94,11 @@ requirements.) A target proposal is encouraged to quote the corresponding
 requirements verbatim as part of explaining how the target meets those
 requirements.
 
+All supported targets and their corresponding tiers ("tier 3", "tier 2", "tier
+2 with host tools", "tier 1", or "tier 1 with host tools") will be documented
+on an appropriate official page, such as
+<https://forge.rust-lang.org/release/platform-support.html>.
+
 Note that a target must have already received approval for the next lower tier,
 and spent a reasonable amount of time at that tier, before making a proposal
 for promotion to the next higher tier. This policy leaves the precise
