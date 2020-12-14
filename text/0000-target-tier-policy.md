@@ -133,8 +133,8 @@ approved by the appropriate team for that shared code before acceptance.
   beyond Rust (such as in other toolchains), unless they have a very good
   reason to diverge.
 - Tier 3 targets may have unusual requirements to build or use, but must not
-  create legal issues for the Rust project or for developers who work on those
-  targets.
+  create legal issues or impose onerous legal terms for the Rust project or for
+  Rust developers or users.
   - The target must not introduce license incompatibilities.
   - Anything added to the Rust repository must be under the standard Rust
     license (`MIT OR Apache-2.0`).
