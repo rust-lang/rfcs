@@ -147,7 +147,7 @@ How easily can Cargo handle a dependency with a different target specified? How 
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-Currently, there's no mechanism to obtain an environment variable's value at compile time if that value is not valid UTF-8. In the future, we may want an `env_os!` macro, analogous to `std::env::var_os`, which returns a `&'static OsStr` rather than a `&'static str`. This is already an issue for existing environment variables supplied to the build that contain file paths.
+Currently, there's no mechanism to obtain an environment variable's value at compile time if that value is not valid UTF-8. In the future, we may want macros like `env_os!` or `env_path!`, which return a `&'static OsStr` or `&'static Path` respectively, rather than a `&'static str`. This is already an issue for existing environment variables supplied to the build that contain file paths.
 
 In some cases, a crate may want to depend on a binary without unifying features or dependency versions with that binary. A future extension to this mechanism could allow cargo to build a binary crate in isolation, without attempting to do any unification.
 
