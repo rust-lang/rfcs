@@ -562,6 +562,14 @@ increase the resulting complexity and result in discussions in multiple places.
 We could introduce specific time requirements for the amount of time a target
 must spend at a tier before becoming eligible for promotion to a higher tier.
 
+We could renumber tiers, rather than having "tier 2 with host tools" and "tier
+1 with host tools". However, some targets may by design never reach "tier 1
+with host tools", and this would make such targets seem deficient or
+second-class compared to whatever "tier 1" ended up being called. In addition,
+people already widely use the existing tier 1/2/3 numbering, and anything
+changing that numbering would introduce confusion; such a renumbering seems
+unlikely to provide value commensurate with that confusion.
+
 # Prior art
 [prior-art]: #prior-art
 
