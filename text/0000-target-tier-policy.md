@@ -557,6 +557,15 @@ A target seeking promotion to tier 1 with host tools should typically either be
 tier 2 with host tools or tier 1 without host tools, to reduce the number of
 requirements to simultaneously review and approve.
 
+In addition to the general process for demoting a tier 1 target, a tier 1
+target with host tools may be demoted (including having its host tools dropped,
+or being demoted to tier 2 with host tools) if it no longer meets these
+requirements but still meets the requirements for a lower tier. Any proposal
+for demotion of a tier 1 target (with or without host tools) requires a full
+RFC process, with approval by the compiler and release teams. Any such proposal
+will be communicated widely to the Rust community, both when initially proposed
+and before being dropped from a stable release.
+
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
