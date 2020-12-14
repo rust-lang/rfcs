@@ -6,9 +6,8 @@
 # Summary
 [summary]: #summary
 
-We should have an official policy for adding new tier 3 targets, and for
-raising targets to tier 2 (with `rustup` builds) or even tier 1. This RFC
-codifies the requirements for targets at each tier.
+This RFC codifies the requirements for each target tier, and for moving targets
+to a different tier.
 
 # Motivation
 [motivation]: #motivation
