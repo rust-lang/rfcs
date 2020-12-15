@@ -110,7 +110,7 @@ again may or may not eventually yield `Some(Item)` again at some point.
 A user could create a stream as follows (Example taken from @yoshuawuyt's [implementation pull request](https://github.com/rust-lang/rust/pull/79023)).
 
 Creating a stream involves two steps: creating a `struct` to
- hold the stream's state, and then implementing [`Stream`] for that
+ hold the stream's state, and then implementing `Stream` for that
  `struct`.
 
  Let's make a stream named `Counter` which counts from `1` to `5`:
