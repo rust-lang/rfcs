@@ -26,17 +26,6 @@ To learn about crates and resolve dependencies, Cargo (or any other client) woul
 
 It's possible to request dependency files in parallel, so the worst-case latency of such dependency resolution is limited to the maximum depth of the dependency tree. In practice it's less, because dependencies occur in multiple places in the tree, allowing earlier discovery and increasing parallelization. Additionally, if there's a lock file, all dependencies listed in it can be speculatively checked in parallel.
 
-## Greedy fetch
-
-To simplify the implementation, and parallelize fetches effectively, Cargo may fetch all possibly relevant dependency information before performing the actual precise dependency resolution algorithm. This would mean pessimistically fetching information about all sub dependencies of all dependency versions that *may* match known version requirements. This won't add much overhead, because requests are per create, not per crate version. It causes additional fetches only for dependencies that were used before, but were later dropped. Fetching is still narrowed by required version ranges, so even worst cases can be avoided by bumping version requirements. For example:
-
-* foo v1.0.1 depends on old-dep v1.0.0
-* foo v1.0.2 depends on maybe-dep v1.0.2
-* foo v1.0.3 depends on maybe-dep v1.0.3
-* foo v1.0.4 has no dependencies
-
-If a dependency requires `foo >=1.0.2`, then Cargo would need to fetch information about `maybe-dep` (once), even if `foo v1.0.4` ends up being selected later. However, it would not need to fetch `old-dep`. If the version requirement was upgraded to `foo >=v1.0.4` then there wouldn't be any extra fetches.
-
 ## Offline support
 
 The proposed solution fully preserves Cargo's ability to work offline. Fetching of crates (while online) by necessity downloads enough of the index to use them, and all this data remains cached for use offline.
@@ -98,11 +87,13 @@ Bundler used to have a full index fetched ahead of time, similar to Cargo's, unt
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-* Should the changelog use a more extensible format?
-* Instead of one file that gets reset, maybe the changelog could be split into series of files (e.g. one per day or month, or a previous file ending with a filename of the next one).
-* Can the changelog be compressed on the HTTP level? There are subtle differences between content encoding and transfer encoding, important for `Range` requests.
-* Should freshness of files be checked with an `Etag` or `Last-Modified`? Should these be "statelessly" derived from the hash of the file or modification date in the filesystem, or explicitly stored somewhere?
 * How to configure whether an index (including alternative registries) should be fetched over git or the new HTTP? The current syntax uses `https://` URLs for git-over-HTTP.
+* How do we ensure that the switch to an HTTP registry does not cause a huge diff to all lock files?
+* How can the current resolver be adapted to enable parallel fetching of index files? It currently requires that each index file is available synchronously, which precludes parallelism.
+
+# Implementation feasibility
+
+An implementation of this RFC that uses a simple "greedy" algorithm for fetching index files has been tested in https://github.com/rust-lang/cargo/pull/8890, and demonstrates good performance, especially for fresh builds. The PR for that experimental implementation also suggests a strategy for modifying the resolver to obviate the need for the greedy fetching phase.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
