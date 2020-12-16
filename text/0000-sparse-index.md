@@ -13,7 +13,7 @@ Selective download of the crates-io index over HTTP, similar to a solution used 
 
 The full crate index is relatively big and slow to download. It will keep growing as crates.io grows, making the problem worse. The requirement to download the full index slows down the first use of Cargo. It's especially slow and wasteful in stateless CI environments, which download the full index, use only a tiny fraction of it, and throw it away. Caching of the index in hosted CI environments is difficult (`.cargo` dir is large) and often not effective (e.g. upload and download of large caches in Travis CI is almost as slow as a fresh index download).
 
-The kind of data stored in the index is not a good fit for the git protocol. The index content (as of eb037b4863) takes 176MiB as an uncompressed tarball, 16MiB with `gz -1`, and 10MiB compressed with `xz -6`. Git clone reports downloading 215MiB. That's more than just the uncompressed latest index content, and over **20 times more** than a compressed tarball.
+The kind of data stored in the index is not a good fit for the git protocol. The index content (as of eb037b4863) takes 176MiB as an uncompressed tarball, 16MiB with `gzip -1`, and 10MiB compressed with `xz -6`. Git clone reports downloading 215MiB. That's more than just the uncompressed latest index content, and over **20 times more** than a compressed tarball.
 
 Shallow clones or squashing of git history are only temporary solutions. Besides the fact that GitHub indicated they [don't want to support shallow clones of large repositories](http://blog.cocoapods.org/Master-Spec-Repo-Rate-Limiting-Post-Mortem/), and libgit2 doesn't support shallow clones yet, it still doesn't solve the problem that clients have to download index data for *all* crates.
 
@@ -121,4 +121,3 @@ The index does not require all files to form one cohesive snapshot. The index is
 The only case where stale caches can cause a problem is when a new version of a crate depends on the latest version of a newly-published dependency, and caches expired for the parent crate before expiring for the dependency. Cargo requires dependencies with sufficient versions to be already visible in the index, and won't publish a "broken" crate.
 
 However, there's always a possiblity that CDN caches will be stale or expire in a "wrong" order. If Cargo detects that its cached copy of the index is stale (i.e. it finds that a crate that depends on a dependency that doesn't appear to be in the index yet) it may recover from such situation by re-requesting files from the index with a "cache buster" (e.g. current timestamp) appended to their URL. This has an effect of reliably bypassing stale caches, even when CDNs don't honor `cache-control: no-cache` in requests.
-
