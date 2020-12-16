@@ -137,6 +137,7 @@ Relatedly, we could omit the `"lib"` value for `type`. This would avoid potentia
 [prior-art]: #prior-art
 
 - Cargo already provides something similar to this for C library dependencies of -sys crates. A `-sys` crate can supply arbitrary artifact paths, for libraries, headers, and similar. Crates depending on the `-sys` crate can obtain those paths via environment variables supplied via Cargo, such as to compile other libraries using the same C library. This proposal provides a similar feature for other types of crates and libraries.
+- The Swift package manager has a concept of ["products"](https://docs.swift.org/package-manager/PackageDescription/PackageDescription.html#product), which can be either libraries or executables. Expressing a dependency on a package allows you to make use of either the library or executable products of that package.
 - `make`, `cmake`, and many other build systems allow setting arbitrary goals as the dependencies of others. This allows building a binary and then running that binary in a rule that depends on that binary.
 
 # Unresolved questions
