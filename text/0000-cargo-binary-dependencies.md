@@ -89,7 +89,7 @@ Cargo provides the following environment variables to the crate being built:
 - `CARGO_<TYPE>_DIR_<CRATE>`, where `<TYPE>` is the `type` of the artifact (uppercased) and `<CRATE>` is the package of the crate being depended on. (As with other Cargo environment variables, crate names are converted to uppercase, with dashes replaced by underscores.) This is the directory containing all the artifacts from the crate.
 - `CARGO_<TYPE>_FILE_<CRATE>_<ARTIFACT>`, where `<TYPE>` is the `type` of the artifact (transformed as above), `<CRATE>` is the package of the crate being depended on (transformed as above), and `<ARTIFACT>` is the name of the artifact. This is the full path to the artifact.
     - Note that `<ARTIFACT>` is *not* modified in any way from the `name` specified in the crate supplying the artifact, or the crate name if not specified; for instance, it may be in lowercase, or contain dashes.
-    - For convenience, if the artifact name is the same as the crate name, cargo additionally supplies a copy of this variable with the `_<ARTIFACT>` suffix omitted.
+    - For convenience, if the artifact name is the same as the crate name, cargo additionally supplies a copy of this variable with the `_<ARTIFACT>` suffix omitted. For instance, if the `cmake` crate supplies a binary named `cmake`, Cargo supplies both `CARGO_BIN_FILE_CMAKE` and `CARGO_BIN_FILE_CMAKE_cmake`.
 
 For each kind of dependency, these variables are supplied to the same part of the build process that has access to that kind of dependency:
 - For `build-dependencies`, these variables are supplied to the `build.rs` script, and can be accessed using `std::env::var_os`. (As with any OS file path, these may or may not be valid UTF-8.)
