@@ -26,7 +26,7 @@ Cargo allows you to depend on binary or C ABI artifacts of another package; this
 
 ```toml
 [build-dependencies]
-cmake = { version = "1.0", type = "bin" }
+cmake = { version = "1.0", artifact = "bin" }
 ```
 
 Cargo will build the `cmake` binary, then make it available to your `build.rs` through an environment variable:
@@ -46,7 +46,7 @@ You can optionally specify specific binaries to depend on using `bins`:
 
 ```toml
 [build-dependencies]
-cmake = { version = "1.0", type = "bin", bins = ["cmake"] }
+cmake = { version = "1.0", artifact = "bin", bins = ["cmake"] }
 ```
 
 If no binaries are specified, all the binaries in the package will be built and made available.
@@ -62,16 +62,17 @@ const MY_PRELOAD_LIB: &[u8] = include_bytes!(env!("CARGO_CDYLIB_FILE_MYPRELOAD")
 
 Note that cargo cannot help you ensure these artifacts are available at runtime for an installed version of a binary; cargo can only supply these artifacts at build time. Runtime requirements for installed crates are out of scope for this change.
 
-If you need to depend on multiple variants of a crate, such as both the binary and library of a crate, you can supply an array of strings for `type`: `type = ["bin", "lib"]`.
+If you need to depend on multiple types of artifacts from a crate, such as both a binary and a cdylib from of a crate, you can supply an array of strings for `artifact`: `artifact = ["bin", "cdylib"]`.
+
+By default, a dependency with `artifact` specified will serve only as an artifact dependency, and will not serve as a normal Rust dependency, even if the dependency normally supplies a Rust library. If you need to depend on artifacts from a crate, and also express a normal Rust dependency on the same crate, you can add `lib = true` to the dependency; for instance: `cratename = { version = "1.2.3", lib = true, artifact = "bin" }`. (This applies to Rust `lib`, `rlib`, or `proc-macro` crates, all of which use the same `lib = true` option.)
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-There are four `type`s available:
-1. `"lib"`, the default
-2. `"bin"`, a crate building one or more binaries
-3. `"cdylib"`, a C-compatible dynamic library
-4. `"staticlib"`, a C-compatible static library
+There are three valid values for `artifact` available:
+1. `"bin"`, a compiled binary, corresponding to a `[[bin]]` section in the dependency's manifest.
+2. `"cdylib"`, a C-compatible dynamic library, corresponding to a `[lib]` section with `crate-type = "cdylib"` in the dependency's manifest.
+3. `"staticlib"`, a C-compatible static library, corresponding to a `[lib]` section with `crate-type = "staticlib"` in the dependency's manifest.
 
 `"lib"` corresponds to all crates that can be depended on currently,
 including `lib`, `rlib`, and `proc-macro` libraries.
@@ -86,10 +87,11 @@ By default, `build-dependencies` are built for the host, while  `dependencies` a
 
 Cargo provides the following environment variables to the crate being built:
 
-- `CARGO_<TYPE>_DIR_<CRATE>`, where `<TYPE>` is the `type` of the artifact (uppercased) and `<CRATE>` is the package of the crate being depended on. (As with other Cargo environment variables, crate names are converted to uppercase, with dashes replaced by underscores.) This is the directory containing all the artifacts from the crate.
-- `CARGO_<TYPE>_FILE_<CRATE>_<ARTIFACT>`, where `<TYPE>` is the `type` of the artifact (transformed as above), `<CRATE>` is the package of the crate being depended on (transformed as above), and `<ARTIFACT>` is the name of the artifact. This is the full path to the artifact.
-    - Note that `<ARTIFACT>` is *not* modified in any way from the `name` specified in the crate supplying the artifact, or the crate name if not specified; for instance, it may be in lowercase, or contain dashes.
-    - For convenience, if the artifact name is the same as the crate name, cargo additionally supplies a copy of this variable with the `_<ARTIFACT>` suffix omitted. For instance, if the `cmake` crate supplies a binary named `cmake`, Cargo supplies both `CARGO_BIN_FILE_CMAKE` and `CARGO_BIN_FILE_CMAKE_cmake`.
+- `CARGO_<ARTIFACT-TYPE>_DIR_<DEP>`, where `<ARTIFACT-TYPE>` is the `artifact` specified for the dependency (uppercased) and `<DEP>` is the name of the dependency. (As with other Cargo environment variables, dependency names are converted to uppercase, with dashes replaced by underscores.) This is the directory containing all the artifacts from the dependency.
+    - If your manifest [renames the dependency](https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#renaming-dependencies-in-cargotoml), `<DEP>` corresponds to the name you specify, not the original package name.
+- `CARGO_<ARTIFACT-TYPE>_FILE_<DEP>_<NAME>`, where `<ARTIFACT-TYPE>` is the `artifact` specified for the dependency (uppercased as above), `<CRATE>` is the package of the crate being depended on (transformed as above), and `<NAME>` is the name of the artifact from the dependency. This is the full path to the artifact.
+    - Note that `<NAME>` is *not* modified in any way from the `name` specified in the crate supplying the artifact, or the crate name if not specified; for instance, it may be in lowercase, or contain dashes.
+    - For convenience, if the artifact name matches the original package name, cargo additionally supplies a copy of this variable with the `_<NAME>` suffix omitted. For instance, if the `cmake` crate supplies a binary named `cmake`, Cargo supplies both `CARGO_BIN_FILE_CMAKE` and `CARGO_BIN_FILE_CMAKE_cmake`.
 
 For each kind of dependency, these variables are supplied to the same part of the build process that has access to that kind of dependency:
 - For `build-dependencies`, these variables are supplied to the `build.rs` script, and can be accessed using `std::env::var_os`. (As with any OS file path, these may or may not be valid UTF-8.)
@@ -100,11 +102,11 @@ For each kind of dependency, these variables are supplied to the same part of th
 
 Similar to features, if other crates in your dependencies also depend on the same binary crate, and request different binaries, Cargo will build the union of all binaries requested.
 
-Cargo will unify features and versions across dependencies of all types, just as it does for multiple dependencies on the same crate throughout a dependency tree.
+Cargo will unify features and versions across all kinds of dependencies, including artifact dependencies, just as it does for multiple dependencies on the same crate throughout a dependency tree.
 
-`type` may be a string, or a list of strings; in the latter case, this specifies a dependency on the crate with each of those types, and is equivalent to specifying multiple dependencies with different `type` values. For instance, you may specify a build dependency on both the binary and library of the same crate. You may also specify separate dependencies of different `type`s; for instance, you may have a build dependency on the binary of a crate and a dependency on the library of the same crate.
+`artifact` may be a string, or a list of strings; in the latter case, this specifies a dependency on the crate with each of those artifact types, and is equivalent to specifying multiple dependencies with different `artifact` values. For instance, you may specify a build dependency on both a binary and a cdylib from the same crate. You may also specify separate dependencies with different `artifact` values, as well as dependencies on the same crate without `artifact` specified; for instance, you may have a build dependency on the binary of a crate and a normal dependency on the Rust library of the same crate.
 
-Cargo does not take the specified `type` values into account when resolving a crate's version; it will resolve the version as normal, and then produce an error if that version does not support all the specified `type` values. Similarly, Cargo will produce an error if that version does not build all the binaries required by the `bins` value. Removing a crate type or an artifact is a semver-incompatible change. (Any further semver requirements on the interface provided by a binary or library depend on the nature of the binary or library in question.)
+Cargo does not take the specified `artifact` values into account when resolving a crate's version; it will resolve the version as normal, and then produce an error if that version does not support all the specified `artifact` values. Similarly, Cargo will produce an error if that version does not build all the binaries required by the `bins` value. Removing a crate type or an artifact is a semver-incompatible change. (Any further semver requirements on the interface provided by a binary or library depend on the nature of the binary or library in question.)
 
 Until this feature is stabilized, it will require specifying the nightly-only option `-Z bindeps` to `cargo`. If `cargo` encounters a binary dependency or artifact dependency and does not have this option specified, it will emit an error and immediately stop building.
 
@@ -133,12 +135,9 @@ We could make information about artifact dependencies in `[dependencies]` availa
 
 We could install all binaries into a common binary directory with a well-known path under `$OUT_DIR`, and expect crates to use that directory, rather than passing in paths via environment variables. `npm` takes an approach like this. However, this would not allow dependencies on multiple distinct binaries with the same name, either provided by different crates or provided by the same crate built for different targets. Hardcoded paths would also reduce the flexibility of Cargo to change these paths in the future, such as to accommodate new features or extensions.
 
-We could explicitly tag dependencies as artifact dependencies, rather than just treating dependencies with a `type` of `"cdylib"` or `"staticlib"` as artifact dependencies. This would allow for potential future dependencies of those types with automatic handling, such as automatically linking staticlib libraries. This would have several downsides, however:
-- It reserves shorter syntax for a hypothesized dependency mechanism that doesn't exist yet (and may never be possible, in the case of `"cdylib"`, since Cargo can't guarantee runtime dependencies).
-- Depending on the mechanism used to specify artifact dependencies, this may make it more difficult to have both a standard dependency and an artifact dependency on the same crate. This would be the case if we used `artifact = true`, for instance. We could potentially use syntax like `type = ["artifact:cdylib"]`, but such in-band flags introduce additional complexity.
-This does not preclude adding support in Cargo for more "native" handling of cdylib/staticlib dependencies, if Cargo can provide a reasonable default; such a dependency could use a different syntax (e.g. `somedep = { version = "...", link = ["library-name"] }`).
+This RFC does not preclude future support in Cargo for more "native" handling of cdylib/staticlib dependencies, if Cargo can provide a reasonable default; such a dependency could use a different syntax (e.g. `somedep = { version = "...", link = ["cdylib-name"] }`).
 
-Relatedly, we could omit the `"lib"` value for `type`. This would avoid potential conflation of dependency types (since `type = ["lib", "bin"]` expresses both a normal dependency on a library and an artifact dependency on a binary). This might serve as future-proofing. However, this could imply a future possibility of "artifact dependency" handling for native Rust libraries, which seems undesirable. Furthermore, this would substantially complicate the case of simultaneous dependencies on a crate's Rust library and other artifacts, a case which arises in several common use cases.
+In place of `lib = true`, we could rename `artifact` and have a `"lib"` or similar value for that field. This would provide simpler syntax (with a single list of dependency types), but could potentially conflate different dependency types (since a `"lib"` dependency type would express a normal dependency on a Rust library, while `"bin"` would express an artifact dependency).
 
 # Prior art
 [prior-art]: #prior-art
