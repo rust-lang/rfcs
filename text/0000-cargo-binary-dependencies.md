@@ -118,6 +118,13 @@ Adding this feature will make Cargo usable for many more use cases, which may mo
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
+This RFC teaches Cargo to understand artifact dependencies. As an alternative, people writing crates with artifact dependencies could invoke `cargo` from `build.rs`, or could wrap the entire build in a separate build system that invokes Cargo multiple times. This would have many drawbacks, including:
+- Cargo could not do dependency resolution in a unified way across dependencies, and thus could not help ensure consistency of dependency versions. This would break several use cases, without substantial additional complexity (e.g. vendored crates, or replacement of more of Cargo).
+- Crates that have artifact dependencies would be less usable as dependencies themselves. Crates using a different build system would not work as Cargo dependencies at all. Crates using recursive invocations of cargo would introduce fragility, quirks, and limitations.
+- Encouraging people to use build systems other than Cargo will remove the opportunity for Cargo and its defaults to set norms across the ecosystem.
+- Crates manually implementing this via other build systems or recursive cargo invocations would make crates less uniform, and reduce consistency for users of Rust crates.
+- Multiple/recursive invocations of Cargo will introduce challenges for Linux distributions, enterprises, and others who need to carefully manage/package/vendor dependencies. Crate metadata would not reflect its full dependencies. Manual invocations of cargo may handle dependency versioning inconsistently or not at all. Invocations of cargo may or may not pass through necessary options that were supplied to the top-level cargo invocation. Users may not have as many abilities to limit network access.
+
 This RFC proposes supplying both the root directory and the path to each specific artifact. The path to specific artifacts is useful for accessing that specific artifact, and avoids needing target-specific knowledge about the names of executables (`.exe`) or libraries (`lib*.so`, `*.dll`, ...). The root directory is useful for `$PATH`, `$LD_LIBRARY_PATH`, and similar. Going from one to the other requires making assumptions. We believe there's value in supplying both.
 
 We could specify a `target = "host"` value to build for the host even for `[dependencies]` or `[dev-dependencies]` which would normally default to building for the target. If any use case arises for such a dependency, we can easily add that.
