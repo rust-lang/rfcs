@@ -115,6 +115,8 @@ Cargo does not take the specified `artifact` values into account when resolving 
 
 Until this feature is stabilized, it will require specifying the nightly-only option `-Z bindeps` to `cargo`. If `cargo` encounters an artifact dependency and does not have this option specified, it will emit an error and immediately stop building.
 
+The placement of artifact directories is an implementation detail of Cargo, and subject to change. The proposed implementation will place the artifact directory for each crate in `target/<TARGET>/artifact/<CRATE_NAME>-<METADATA_HASH>/<ARTIFACT_TYPE>`, where `<TARGET>` is the target triple the artifact dependency is built for (which may be the target triple of the host), `<CRATE_NAME>` is the name of the crate, `<METADATA_HASH>` is the usual hash that Cargo appends to crate-related file and directory names to ensure that changing properties (such as features) that affect the build of the crate will build into different paths, and `<ARTIFACT_TYPE>` is the artifact type (`bin`, `cdylib`, or `staticlib`).
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
