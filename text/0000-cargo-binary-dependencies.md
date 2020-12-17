@@ -113,7 +113,7 @@ Until this feature is stabilized, it will require specifying the nightly-only op
 # Drawbacks
 [drawbacks]: #drawbacks
 
-Some of the motivating use cases have alternative solutions, such as extracting a library from a tool written in Rust, and making the tool a thin wrapper around the library. Making this change may potentially reduce the motivation to extract such libraries. However, many of the other use cases do not currently have any solutions, and extracted libraries have additional value even after this feature becomes available, so we don't see this as a reason to avoid introducing this feature.
+Some of the motivating use cases have alternative solutions, such as extracting a library from a tool written in Rust, and making the tool a thin wrapper around the library. Making this change may potentially reduce the motivation to extract such libraries. However, many of the other use cases do not currently have any solutions available (other than using an alternative build system, per the alternatives section), and extracted libraries have additional value even after this feature becomes available, so we don't see this as a reason to avoid introducing this feature.
 
 Adding this feature will make Cargo usable for many more use cases, which may motivate people to use Cargo in more places and stretch it even further; this may, in turn, generate more support and more feature requests.
 
