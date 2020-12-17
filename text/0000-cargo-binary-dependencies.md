@@ -62,7 +62,7 @@ Cargo also allows depending on `cdylib` or `staticlib` artifacts. For example, y
 const MY_PRELOAD_LIB: &[u8] = include_bytes!(env!("CARGO_CDYLIB_FILE_MYPRELOAD"));
 ```
 
-Note that cargo cannot help you ensure these artifacts are available at runtime for an installed version of a binary; cargo can only supply these artifacts at build time. Runtime requirements for installed crates are out of scope for this change.
+Note that cargo only supplies these dependencies when building your crate. If your program or library requires artifacts at runtime, you will still need to handle that yourself by some other means. Runtime requirements for installed crates are out of scope for this change.
 
 By default, a dependency with `artifact` specified will serve only as an artifact dependency, and will not serve as a normal Rust dependency, even if the dependency normally supplies a Rust library. If you need to depend on artifacts from a crate, and also express a normal Rust dependency on the same crate, you can add `lib = true` to the dependency; for instance: `cratename = { version = "1.2.3", lib = true, artifact = "bin" }`. (This applies to Rust `lib`, `rlib`, or `proc-macro` crates, all of which use the same `lib = true` option.)
 
