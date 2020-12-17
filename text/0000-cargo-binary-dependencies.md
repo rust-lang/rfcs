@@ -144,6 +144,10 @@ This RFC does not preclude future support in Cargo for more "native" handling of
 
 In place of `lib = true`, we could rename `artifact` and have a `"lib"` or similar value for that field. This would provide simpler syntax (with a single list of dependency types), but could potentially conflate different dependency types (since a `"lib"` dependency type would express a normal dependency on a Rust library, while `"bin"` would express an artifact dependency).
 
+Instead of `artifact = ["bin:binary-name", "bin:another-binary"]` to specify dependencies on specific binaries, we could use a separate field `bins = ["binary-name", "another-binary"]`. This seems unnecessarily verbose, and separates the indication of an artifact dependency from the list of binaries.
+
+As another alternative to specify dependencies on specific binaries, we could use table-based structures, such as: `artifact = [{bin = ["binary-name", "another-binary"]}, "cdylib"]`. This would avoid parsing values like `bin:binary-name`, but it seems excessively complex and excessively nested. Other variations on this theme seem similarly complex. The proposed syntax feels like the right balance.
+
 # Prior art
 [prior-art]: #prior-art
 
