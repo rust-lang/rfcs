@@ -108,7 +108,7 @@ Cargo will unify features and versions across all kinds of dependencies, includi
 
 Cargo does not take the specified `artifact` values into account when resolving a crate's version; it will resolve the version as normal, and then produce an error if that version does not support all the specified `artifact` values. Similarly, Cargo will produce an error if that version does not build all the binaries required by the `bins` value. Removing a crate type or an artifact is a semver-incompatible change. (Any further semver requirements on the interface provided by a binary or library depend on the nature of the binary or library in question.)
 
-Until this feature is stabilized, it will require specifying the nightly-only option `-Z bindeps` to `cargo`. If `cargo` encounters a binary dependency or artifact dependency and does not have this option specified, it will emit an error and immediately stop building.
+Until this feature is stabilized, it will require specifying the nightly-only option `-Z bindeps` to `cargo`. If `cargo` encounters an artifact dependency and does not have this option specified, it will emit an error and immediately stop building.
 
 # Drawbacks
 [drawbacks]: #drawbacks
