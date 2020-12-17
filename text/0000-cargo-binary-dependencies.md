@@ -57,6 +57,11 @@ You can obtain the directory containing all binaries built by the `cmake` crate 
 
 Cargo also allows depending on `cdylib` or `staticlib` artifacts. For example, you can embed a dynamic library in your binary:
 
+```toml
+[dependencies]
+mypreload = { version = "1.2.3", artifact = "cdylib" }
+```
+
 ```rust
 // main.rs
 const MY_PRELOAD_LIB: &[u8] = include_bytes!(env!("CARGO_CDYLIB_FILE_MYPRELOAD"));
