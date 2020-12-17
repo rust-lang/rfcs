@@ -22,7 +22,7 @@ There are many different possible use cases.
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-Cargo allows you to depend on binary or C ABI artifacts of another package; this is known as a "binary dependency" or "artifact dependency". For example, you can depend on the `cmake` binary in your `build.rs` like so:
+Cargo allows you to depend on binary or C ABI artifacts of another package; this is known as a "binary dependency" or "artifact dependency". For example, you can depend on the `cmake` binary in your `build.rs` like this:
 
 ```toml
 [build-dependencies]
