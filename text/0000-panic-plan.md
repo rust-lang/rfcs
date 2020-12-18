@@ -1,6 +1,6 @@
 - Start Date: 2020-10-25
 - RFC PR: [rust-lang/rfcs#3007](https://github.com/rust-lang/rfcs/pull/3007)
-- Rust Issue: -
+- Rust Issue: [#80162](https://github.com/rust-lang/rust/issues/80162)
 
 # Summary
 
