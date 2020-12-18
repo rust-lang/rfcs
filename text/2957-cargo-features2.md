@@ -1,7 +1,7 @@
 - Feature Name: `cargo-features2`
 - Start Date: 2020-05-09
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- RFC PR: [rust-lang/rfcs#2957](https://github.com/rust-lang/rfcs/pull/2957)
+- Cargo Issue: [rust-lang/cargo#8088](https://github.com/rust-lang/cargo/issues/8088)
 
 # Summary
 
