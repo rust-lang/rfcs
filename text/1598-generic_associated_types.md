@@ -336,7 +336,7 @@ system feature called higher-kindedness.
 # How We Teach This
 [how-we-teach-this]: #how-we-teach-this
 
-This RFC uses the terminology "associated type constructor," which has become
+This RFC uses the terminology "associated type constructor", which has become
 the standard way to talk about this feature in the Rust community. This is not
 a very accessible framing of this concept; in particular the term "type
 constructor" is an obscure piece of jargon from type theory which most users
