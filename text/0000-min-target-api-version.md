@@ -131,7 +131,7 @@ There are still some unresolved questions:
 
 ### Should there be new targets that only differ from existing targets in their default `min_target_api_version`?
 
-In the [future possibilities][#future-possibilities ] section we discuss the possibility of allowing users specialized versions of the std library depending on the specified `min_target_api_version`. In the meantime, should we also create new targets that different from the existing targets in that they have different default `min_target_api_version`s? This would allow users to more directly benefit from this feature. 
+In the [future possibilities](#future-possibilities) section we discuss the possibility of allowing users specialized versions of the std library depending on the specified `min_target_api_version`. In the meantime, should we also create new targets that different from the existing targets in that they have different default `min_target_api_version`s? This would allow users to more directly benefit from this feature. 
 
 ### Should failing to parse the provided `min_target_api_version` produce a warning?
 
