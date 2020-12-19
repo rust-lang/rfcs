@@ -239,6 +239,12 @@ We could lint/warn against `as` usage, without removing support for it. This wou
 
 We could only warn/error, or even only remove language support, for casts from larger to smaller types. This leaves multiple ways to do the same thing, which leaves an increased cognitive space, but could avoid a feeling of churn.
 
+### Provide direct access to the correctly-typed value via a new derivable trait
+
+We could add a new trait, derivable on enums, which allows access to the representation value in its correct type. This would remove the special-casing of `From`/`Into` as being derivable traits with implicit target types, and allow the caller to not need to name the underlying type, at the cost of introducing a new trait, adding cognitive load and inconsistency with other forms of conversion.
+
+This alternative only considers whether to allow deriving `From`/`Into`, and is orthogonal to the decision of how strongly to discourage/deprecate/remove the ability to perform `as` casts.
+
 ### Do nothing
 
 If we do nothing, we leave a footgun for our users. It's probably not the worst footgun, and it's possible to work around.
