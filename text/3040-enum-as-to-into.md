@@ -8,7 +8,7 @@
 
 To improve correctness and predictibility, deprecate converting primitive-repr enums to arbitrary integer primitives using `as`, and instead require that they be converted using `From`/`Into`. Make it trivial to do so without external crates.
 
-This RFC contains multiple incremental steps to making conversions from enums more safe. It proposes that we implement them all, but we could also choose any reasonable subset.
+This RFC contains multiple incremental steps to making conversions from enums more predictable and reliable. It proposes that we implement them all, but we could also choose any reasonable subset.
 
 # Motivation
 [motivation]: #motivation
@@ -94,7 +94,7 @@ We will update [the enum documentation](https://doc.rust-lang.org/reference/item
 +
 +For legacy reasons, these enumerations can also be cast to integer types with
 +the `as` operator by a [numeric cast], but this is not recommended as it can
-+have surprising and unsafe results, and may cease to be supported in a
++have unexpectedly truncating results, and may cease to be supported in a
 +future version of Rust.
 +
 +The enumeration can optionally specify which integer each
@@ -126,7 +126,7 @@ fn main() {
 ```
 
 ```
-warning: unsafe cast
+warning: truncating cast
  --> src/main.rs:8:9
   |
 8 |     let bad = Number::Zero as u8;
@@ -169,7 +169,7 @@ warning: cast used where From::from is preferred
  --> src/main.rs:9:9
   |
 9 |     let ok = Number::Zero as u16;
-  |         ^^ Prefer to use `From` rather than `as` when casting enums. `as` may silently change in behavior if the enum's repr changes, but `From` provides compile-time safety.
+  |         ^^ Prefer to use `From` rather than `as` when casting enums. `as` may silently change in behavior if the enum's repr changes, but `From` provides compile-time guarantees.
   |
   = note: `#[warn(enum_prefer_from_over_as)]` on by default
 
@@ -229,7 +229,7 @@ This also expands `core` and `std`, and introduces a slightly weird corner of `D
 
 ### Leaving the derive macros in external crates
 
-Leaving the derive macros in external crates is worse because it makes the more correct thing (type-checked conversion safety) higher friction than the convenient thing (builtin `as` casts). There is a place for external crates here for doing non-standard things, such as having default enum variants in a `From` implementation (just as the [derivative](https://crates.io/crates/derivative) crate implements custom derives of many traits), but the core infallible conversion feels like it should be within easy reach.
+Leaving the derive macros in external crates is worse because it makes the more correct thing (type-checked non-truncation of conversion) higher friction than the convenient thing (builtin `as` casts). There is a place for external crates here for doing non-standard things, such as having default enum variants in a `From` implementation (just as the [derivative](https://crates.io/crates/derivative) crate implements custom derives of many traits), but the core infallible conversion feels like it should be within easy reach.
 
 ### Not removing `as` support for enums
 
