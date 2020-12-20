@@ -113,12 +113,26 @@ assert!(C.1 == false);
 ```
 See [this prior RFC](https://github.com/rust-lang/rfcs/blob/master/text/1211-mir.md#overflow-checking) for further details.
 
+However, also note that operators being infallible is more subtle than it might seem.
+In particular, it requires that all constants of integer type (and even all integer-typed fields of all constants) be proper integers, not pointers cast to integers.
+The following code shows a problematic example:
+```rust
+const FOO: usize = &42 as *const i32 as usize;
+let x: &usize = &(FOO * 3);
+```
+`FOO*3` cannot be evaluated during CTFE, so to ensure that multiplication is infallible, we need to ensure that all constants used in promotion are proper integers.
+This is currently ensured by the "validity check" that is performed on the final value of each constant: the check recursively traverses the type of the constant and ensures that the data matches that type.
+
 Operations that might fail include:
 - `/`/`%`
 - `panic!` (including the assertion that follows `Checked*` arithmetic to ensure that no overflow happened)
 - array/slice indexing
 - any unsafe operation
 - `const fn` calls (as they might do any of the above)
+
+Notably absent from *both* of the above list is dereferencing a reference.
+This operation is, in principle, infallible---but due to the concern mentioned above about validity of consts, it is only infallible if the validity check in constants traverses through references.
+Currently, the check stops when hitting a reference to a static, so currently, dereferencing a reference can *not* be considered an infallible operation for the purpose of promotion.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
