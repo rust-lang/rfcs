@@ -107,7 +107,7 @@ Note that arithmetic overflow is not a problem: an addition in debug mode is com
 We only ever promote the `CheckedAdd`, so evaluation of the promoted will never fail, even if the operation overflows.
 For example, `&(1 + u32::MAX)` turns into something like:
 ```rust
-const C: (u32, bool) = CheckedAdd(1, u32::MAX); // evaluates to (1, true).
+const C: (u32, bool) = CheckedAdd(1, u32::MAX); // evaluates to (0, true).
 assert!(C.1 == false);
 &C.0
 ```
