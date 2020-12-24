@@ -119,6 +119,8 @@ Until this feature is stabilized, it will require specifying the nightly-only op
 
 The placement of artifact directories is an implementation detail of Cargo, and subject to change. The proposed implementation will place the artifact directory for each crate in `target/<TARGET>/artifact/<CRATE_NAME>-<METADATA_HASH>/<ARTIFACT_TYPE>`, where `<TARGET>` is the target triple the artifact dependency is built for (which may be the target triple of the host), `<CRATE_NAME>` is the name of the crate, `<METADATA_HASH>` is the usual hash that Cargo appends to crate-related file and directory names to ensure that changing properties (such as features) that affect the build of the crate will build into different paths, and `<ARTIFACT_TYPE>` is the artifact type (`bin`, `cdylib`, or `staticlib`).
 
+If Cargo needs to build a crate for multiple targets, and that crate has an artifact dependency with `target="target"`, Cargo will build the artifact dependency for each target and supply it to the corresponding build of the depending crate.
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
