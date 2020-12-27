@@ -43,7 +43,7 @@ pub trait PartialOrd {
         }
     }
 
-    le(&self, other: &Self) -> bool {
+    fn le(&self, other: &Self) -> bool {
         match self.partial_cmp(other) {
             Some(Less) | Some(Equal) => true,
             _ => false,
@@ -57,7 +57,7 @@ pub trait PartialOrd {
         }
     }
 
-    ge(&self, other: &Self) -> bool {
+    fn ge(&self, other: &Self) -> bool {
         match self.partial_cmp(other) {
             Some(Greater) | Some(Equal) => true,
             _ => false,
