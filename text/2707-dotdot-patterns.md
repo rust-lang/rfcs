@@ -17,7 +17,7 @@ In particular, the `pat` macro matcher will now accept `..` and `IDENT @ ..`.
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-`..` becomes a pattern syntacticaly.
+`..` becomes a pattern syntactically.
 The notable consequences of this are listed below.
 
 - `pat` macro matcher will now accept `..` and more complex pattern containing `..`,
