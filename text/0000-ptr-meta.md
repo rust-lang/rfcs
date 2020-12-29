@@ -393,3 +393,8 @@ Except for `DynMetadata`’s methods, this RFC proposes a subset of what that th
 * Should `<*mut _>::from_raw_parts` and friends be `unsafe fn`s?
 
 * API design: free functions v.s. methods/constructors on `*mut _` and `*const _`?
+
+* Add `into_raw_parts` that returns `(*const (), T::Metadata)`?
+  Using the `cast` method to a `Sized` type to extract the address as a thin pointer
+  is less discoverable.
+  Possibly *instead* of the metadata function?
