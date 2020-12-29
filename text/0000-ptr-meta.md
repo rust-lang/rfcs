@@ -83,9 +83,9 @@ First, let’s get some boilerplate out of the way:
 use std::marker::{PhantomData, Unsize};
 use std::ptr::{self, DynMetadata};
 
-trait DynTrait = Pointee<Metadata=DynMetadata>;
+trait DynTrait<Dyn> = Pointee<Metadata=DynMetadata<Dyn>>;
 
-pub struct ThinBox<Dyn: ?Sized + DynTrait> {
+pub struct ThinBox<Dyn: ?Sized + DynTrait<Dyn>> {
     ptr: ptr::NonNull<WithMeta<()>>,
     phantom: PhantomData<Dyn>,
 }
@@ -125,7 +125,7 @@ Accessing the value requires knowing its alignment:
 impl<Dyn: ?Sized + DynTrait> ThinBox<Dyn> {
     fn data_ptr(&self) -> *mut () {
         unsafe {
-            let offset = std::mem::size_of::<DynMetadata>();
+            let offset = std::mem::size_of::<DynMetadata<Dyn>();
             let value_align = self.ptr.as_ref().vtable.align();
             let offset = align_up_to(offset, value_align);
             (self.ptr.as_ptr() as *mut u8).add(offset) as *mut ()
@@ -218,15 +218,17 @@ This similarly includes extern types.
 /// * For structs whose last field is a DST, metadata is the metadata for the last field
 /// * For the `str` type, metadata is the length in bytes as `usize`
 /// * For slice types like `[T]`, metadata is the length in items as `usize`
-/// * For trait objects like `dyn SomeTrait`, metadata is [`DynMetadata`].
+/// * For trait objects like `dyn SomeTrait`, metadata is [`DynMetadata<Self>`][DynMetadata]
+///   (e.g. `DynMetadata<dyn SomeTrait>`).
 ///
 /// In the future, the Rust language may gain new kinds of types
 /// that have different pointer metadata.
 ///
 /// Pointer metadata can be extracted from a pointer or reference with the [`metadata`] function.
 /// The data pointer can be extracted by casting a (fat) pointer
-/// to a (thin) pointer to a `Sized` type the `as` operator,
-/// for example `(x: &dyn SomeTrait) as *const SomeTrait as *const ()`.
+/// to a (thin) pointer to a `Sized` type with the `as` operator,
+/// for example `(x: &dyn SomeTrait) as *const SomeTrait as *const ()`
+/// or `(x: *const dyn SomeTrait).cast::<()>()`.
 ///
 /// [dst]: https://doc.rust-lang.org/nomicon/exotic-sizes.html#dynamically-sized-types-dsts
 #[lang = "pointee"]
@@ -282,7 +284,7 @@ impl<T: ?Sized> NonNull<T> {
     }
 }
 
-/// The metadata for a `dyn SomeTrait` trait object type.
+/// The metadata for a `DynTrait = dyn SomeTrait` trait object type.
 ///
 /// It is a pointer to a vtable (virtual call table)
 /// that represents all the necessary information
@@ -297,17 +299,16 @@ impl<T: ?Sized> NonNull<T> {
 /// Note that the first three are special because they’re necessary to allocate, drop,
 /// and deallocate any trait object.
 ///
-/// The layout of vtables is still unspecified, so this type is a more-type-safe
-/// convenience for accessing those 3 special values. Note however that `DynMetadata` does
-/// not actually know the trait it’s associated with, indicating that, at very least,
-/// the location of `size`, `align`, and `drop_in_place` is identical for all
-/// trait object vtables in a single program.
+/// It is possible to name this struct with a type parameter that is not a `dyn` trait object
+/// (for example `DynMetadata<u64>`) but not to obtain a meaningful value of that struct.
 #[derive(Copy, Clone)]
-pub struct DynMetadata {
+pub struct DynMetadata<DynTrait: ?Sized> {
+    // Private fields
     vtable_ptr: ptr::NonNull<()>,
+    phantom: PhantomData<DynTrait>
 }
 
-impl DynMetadata {
+impl<DynTrait: ?Sized> DynMetadata<DynTrait> {
     /// Returns the size of the type associated with this vtable.
     pub fn size(self) -> usize { ... }
 
@@ -343,12 +344,8 @@ In addition to being more general
 and (hopefully) more compatible with future custom DSTs proposals,
 this RFC resolves the question of what happens
 if trait objects with super-fat pointers with multiple vtable pointers are ever added.
-(Answer: they can use a different metadata type like `[DynMetadata; N]`.)
-
-`DynMetadata` could be made generic with a type parameter for the trait object type that it describes.
-This would avoid forcing that the size, alignment, and destruction pointers
-be in the same location (offset) for every vtable.
-But keeping them in the same location is probaly desirable anyway to keep code size small.
+(Answer: they can use a different metadata type,
+possibly like `(DynMetadata<dyn Trait>, DynMetadata<dyn OtherTrait>)`.)
 
 [2579]: https://github.com/rust-lang/rfcs/pull/2579
 
@@ -372,11 +369,11 @@ Except for `DynMetadata`’s methods, this RFC proposes a subset of what that th
 
 * The location of `DynMetadata`. Is another module more appropriate than `std::ptr`?
 
-* Should `DynMetadata` have a type parameter for what trait object type it is a metadata of?
-  Such that `<dyn SomeTrait as Pointee>::Metadata` is `DynMetadata<dyn SomTrait>`.
-  This would allow the memory layout to change based on the trait object type
-  (potentially super-wide pointers with multiple vtable pointers for multi-trait objects?)
-  or to have different methods.
+* Should `DynMetadata` not have a type parameter?
+  This might reduce monomorphization cost,
+  but would force that the size, alignment, and destruction pointers
+  be in the same location (offset) for every vtable.
+  But keeping them in the same location is probaly desirable anyway to keep code size small.
 
 * The name of `Thin`.
   This name is short and sweet but `T: Thin` suggests that `T` itself is thin,
