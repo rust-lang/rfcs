@@ -232,7 +232,7 @@ This similarly includes extern types.
 #[lang = "pointee"]
 pub trait Pointee {
     /// The type for metadata in pointers and references to `Self`.
-    type Metadata: Copy + Send + Sync + Ord + Hash + Unpin + 'static;
+    type Metadata: Copy + Send + Sync + Ord + Hash + Unpin;
 }
 
 /// Pointers to types implementing this trait alias are “thin”:
