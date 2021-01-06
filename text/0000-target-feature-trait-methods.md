@@ -34,7 +34,7 @@ impl AvxVector for __m256d {
     }
 }
 ```
-The `RustFFT` crate implements a [real-world example of this](https://github.com/ejmahler/RustFFT/blob/simd/src/avx/avx_vector.rs#L16)
+The `RustFFT` crate implements a [real-world example of this](https://github.com/ejmahler/RustFFT/blob/66bb2a9825ad0f6e5583a71f55930706daa26425/src/avx/avx_vector.rs#L18)
 
 Now, users of our library can compute a sum of f32 and f64 vectors with the same code:
 ```rust
