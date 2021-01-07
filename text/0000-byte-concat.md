@@ -6,87 +6,83 @@
 # Summary
 [summary]: #summary
 
-Allow the use of `concat!()` to join byte sequences onto an `u8` array,
-beyond the current support for `str` literals.
+Add a macro `concat_bytes!()` to join byte sequences onto an `u8` array,
+the same way `concat!()` currently supports for `str` literals.
 
 # Motivation
 [motivation]: #motivation
 
 `concat!()` is convenient and useful to create compile time `str` literals
-from `str`, `bool`, numeric and `char` literals in the code. This RFC would
-expand this capability to produce `[u8]` instead of `str` when any of its
-arguments is a byte `str` or a byte `char`.
+from `str`, `bool`, numeric and `char` literals in the code. This RFC adds an
+equivalent capability for `[u8]` instead of `str`.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-Whenever any of the arguments to `concat!()` is a byte literal, its output
-will be a byte literal, and the other arguments will be evaluated on their
-byte contents.
+The `concat_bytes!()` macro concatenates literals into a static byte slice.
+The following literal types are supported:
 
-- `str`s and `char`s are evaluated in the same way as `String::as_bytes`,
-- `bool`s are not accepted, use a numeric literal instead,
-- numeric literals passed to `concat!()` must fit in `u8`, any number
-  larger than `std::u8::MAX` causes a compile time error, like the
-  following:  
-```
-error: cannot concatenate a non-`u8` literal in a byte string literal
-  --> $FILE:XX:YY
-   |
-XX |     concat!(256, b"val");
-   |             ^^^ this value is larger than `255`
-```
-- numeric array literals that can be coerced to `[u8]` are accepted, if the
-literals are outside of `u8` range, it will cause a compile time error:
-```
-error: cannot concatenate a non-`u8` literal in a byte string literal
-  --> $FILE:XX:YY
-   |
-XX |     concat!([300, 1, 2, 256], b"val");
-   |              ^^^        ^^^ this value is larger than `255`
-   |              |
-   |              this value is larger than `255`
-```
+- byte string literals (`b"..."`)
+- byte literals (`b'b'`)
+- numeric literals – must fit in `u8`, any number larger than `u8::MAX` causes
+  a compile time error like the following:
 
-For example, `concat!(42, b"va", b'l', [1, 2])` evaluates to
+  ```
+  error: cannot concatenate a non-`u8` literal in a byte string literal
+    --> $FILE:XX:YY
+     |
+  XX |     concat_bytes!(256, b"val");
+     |                   ^^^ this value is larger than `255`
+  ```
+- numeric array literals – if any literal is outside of `u8` range, it will
+  cause a compile time error:
+
+  ```
+  error: cannot concatenate a non-`u8` literal in a byte string literal
+    --> $FILE:XX:YY
+     |
+  XX |     concat_bytes!([300, 1, 2, 256], b"val");
+     |                    ^^^        ^^^ this value is larger than `255`
+     |                    |
+     |                    this value is larger than `255`
+  ```
+
+For example, `concat_bytes!(42, b"va", b'l', [1, 2])` evaluates to
 `[42, 118, 97, 108, 1, 2]`.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-[PR #52838](https://github.com/rust-lang/rust/pull/52838) lays the
-foundation for the implementation of the full RFC.
-
-This new feature could be surprising when editting existing code, if
-`concat!("foo", `b`, `a`, `r`, 3)` were changed to
-`concat!("foo", `b`, b`a`, `r`, 3)`, as the macro call would change from
-being evaluated as a `str` literal "foobar3" to `[u8]`
-`[102, 111, 111, 98, 97, 114, 3]`.
+<!-- TODO -->
 
 # Drawbacks
 [drawbacks]: #drawbacks
 
-As mentioned in the previous section, this causes `concat!()`'s output to be
-dependant on its input.
+None known.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-A new macro `bconcat!()` could be introduced instead. People in the wild
-have already intended to use `concat!()` for byte literals. A new macro
-could be explained to users through diagnostics, but using the existing
-macro adds support for something that a user could expect to work.
+`concat!` could instead be changed to sometimes produce byte literals instead of
+string literals, like a previous revision of this RFC proposed. This would make
+it hard to ensure the right output type is produced – users would have to use
+hacks like adding a dummy `b""` argument to force a byte literal output.
 
 # Prior art
 [prior-art]: #prior-art
 
-[PR #52838](https://github.com/rust-lang/rust/pull/52838) lays the
-foundation for the implementation of the full RFC, trying to enable a real
-use seen in the wild.
+<!-- TODO -->
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-- What parts of the design do you expect to resolve through the RFC process before this gets merged?
-- What parts of the design do you expect to resolve through the implementation of this feature before stabilization?
-- What related issues do you consider out of scope for this RFC that could be addressed in the future independently of the solution that comes out of this RFC?
+- Should additional literal types be supported? Byte string literals are
+  basically the same thing as byte slice references, so it might make sense to
+  support those as well (support `&[0, 1, 2]` in addition to `[0, 1, 2]`).
+- What to do with string and character literals? They could either be supported
+  with their underlying UTF-8 representation being concatenated, or rejected.
+  - If supported, it would probably make sense to also support boolean literals
+    so `concat_bytes!()` supports all inputs `concat!()` does.
+  - If rejected, it would probably makes sense to also reject boolean literals
+    to avoid any possible confusion about their representation (`b"true"` and
+    `b"false"` vs. `1` and `0`).
