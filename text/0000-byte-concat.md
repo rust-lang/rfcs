@@ -19,8 +19,9 @@ equivalent capability for `[u8]` instead of `str`.
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-The `concat_bytes!()` macro concatenates literals into a static byte slice.
-The following literal types are supported:
+The `concat_bytes!()` macro concatenates literals into a byte string literal
+(an expression of the type `&[u8; N]`). The following literal types are
+supported as inputs:
 
 - byte string literals (`b"..."`)
 - byte literals (`b'b'`)
