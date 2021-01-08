@@ -46,6 +46,13 @@ it will not include the field at all in the default `Cargo.toml`. Crate authors
 will still be able to manually include the field before publishing if they so
 choose, even though Cargo will warn when trying to publish those crates.
 
+Crates that currently rely on the field being present (for example by reading
+the `CARGO_PKG_AUTHORS` environment variable) will have to handle the field
+being missing (for example by switching from the `env!` macro to
+`option_env!`). Eventually they will have to provide a way to inline the
+information in the crate's source code, if the consumer of the crate desires to
+do so.
+
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
