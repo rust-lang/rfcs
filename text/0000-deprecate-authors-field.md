@@ -126,3 +126,8 @@ this issue.
 [future-possibilities]: #future-possibilities
 
 The `package.authors` field could be removed in a future edition.
+
+A future RFC could propose separating metadata fields that could benefit from
+being mutable out of `Cargo.toml` and the crate tarball, allowing them to be
+changed without having to publish a new version. Such RFC should also propose a
+standardized way to update and distribute the extracted metadata.
