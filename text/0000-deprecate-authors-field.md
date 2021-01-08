@@ -44,7 +44,7 @@ owners.
 `cargo init` will stop pre-populating the field when running the command, and
 it will not include the field at all in the default `Cargo.toml`. Crate authors
 will still be able to manually include the field before publishing if they so
-choose, even though Cargo will warn when trying to publish those crates.
+choose. Eventually Cargo will warn when publishing crates with the field set.
 
 Crates that currently rely on the field being present (for example by reading
 the `CARGO_PKG_AUTHORS` environment variable) will have to handle the field
