@@ -7,7 +7,7 @@
 [summary]: #summary
 
 Introduces the `boxed` macro, which allows one to construct data directly on the heap. 
-This provides an alternative method to box syntax that does not use "placement new" syntax. In addition, 
+This provides an alternative method to box syntax that does not rely on magic syntax. In addition, 
 if box syntax is significantly revised in the future, these changes could be applied to the `boxed` macro to 
 prevent ecosystem breakage.
 
@@ -22,7 +22,7 @@ use it.
 however, in certain cases, it may not inline properly, which can cause the value to be instantiated on the
 stack before being copied to the heap. This can blow up the stack.
 
-However, box syntax has attracted criticism in its use of "placement new" syntax. It adds an unneeded level
+However, box syntax has attracted criticism in its use of magic syntax. It adds an unneeded level
 of complexity to the language for something as specific as instantiating a `Box`. The purpose of this macro is
 to "hide" this complexity from stable compiler users by integrating it into a macro, which is already a standard
 part of the Rust language.
