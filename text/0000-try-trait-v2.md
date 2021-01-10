@@ -67,17 +67,17 @@ let y: ControlFlow<i32> = it.try_for_each(|x| {
 ```
 While one could also use `Result` to do this, it can be confusing to use `Err` for what one would mentally consider a _successful_ early exit.  Using a different type without those extra associations can help avoid mental dissonance while reading the code.
 
-You might also use it when exposing similar things yourself, just as a graph traversal or visitor, where you want the user to be able to choose to break early.
+You might also use it when exposing similar things yourself, such as a graph traversal or visitor, where you want the user to be able to choose to break early.
 
-## Definining your own `Result`-like type
+## Defining your own `Result`-like type
 
 We've seen elsewhere in the book that `Result` is just an enum.  Let's define our own to learn more about how `?` works.
 
 To start with, let's use this type:
 ```rust
 enum MyResult<T, U> {
-    Awesome(T),
-    Terrible(U)
+    Terrific(T),
+    Unfortunate(U)
 }
 ```
 
@@ -92,29 +92,29 @@ Here's a full implementation:
 use std::ops::{ControlFlow, Bubble};
 impl<T, U> Bubble for MyResult<T, U> {
     type Continue = T;
-    type Holder = <Result<(), U> as Bubble>::Holder;
+    type Holder = <Result<T, U> as Bubble>::Holder;
     fn branch(self) -> ControlFlow<Self::Holder, T> {
         match self {
-            MyResult::Awesome(v) => ControlFlow::Continue(v),
-            MyResult::Terrible(e) => ControlFlow::Break(Err(e)),
+            MyResult::Terrific(v) => ControlFlow::Continue(v),
+            MyResult::Unfortunate(e) => ControlFlow::Break(Err(e)),
         }
     }
     fn continue_with(v: T) -> Self {
-        MyResult::Awesome(v)
+        MyResult::Terrific(v)
     }
 }
 ```
 
 Taking each of those associated items individually:
 - The `Continue` type is the type that comes out when applying the `?` operator.  For us it's just one of our generic types.  If there was only one value that represented success, though, it might just be `()`.
-- The `Holder` type represents the other possible states.  For now we'll just use `Result`'s holder type, but note that this depends only on `U`, not on `T` -- because anything `Awesome` will be in the `Continue` type, it'll never hold a `T`.
-- The `branch` method tells the `?` operator whether or not we need to early-exit for a value.  Here we've said that `?` should produce the value from the `Awesome` variant and short circuit for `Terrible` values.
+- The `Holder` type represents the other possible states.  For now we'll just use `Result`'s holder type, but will come back to it in a future section.
+- The `branch` method tells the `?` operator whether or not we need to early-exit for a value.  Here we've said that `?` should produce the value from the `Terrific` variant and short circuit for `Unfortunate` values.
 - One can also create an instance of our type from a value of the `Continue` type using the `continue_with` constructor.
 
 Because we used `Result`'s holder type, this is enough to use `?` on our type in a method that returns an appropriate `Result`:
 ```rust
 fn foo() -> Result<(), f32> {
-    let _: () = MyResult::Terrible(1.1)?;
+    let _: () = MyResult::Unfortunate(1.1)?;
     Ok(())
 }
 ```
@@ -127,9 +127,9 @@ error[E0277]: the `?` operator can only be used in a function that returns `Resu
   --> C:\src\rust\src\test\ui\try-operator-custom-bubble-and-try.rs:29:17
    |
 LL | / fn foo() -> MyResult<(), f32> {
-LL | |     let _: () = MyResult::Terrible(1.1)?;
+LL | |     let _: () = MyResult::Unfortunate(1.1)?;
    | |                 ^^^^^^^^^^^^^^^^^^^^^^^^ cannot use the `?` operator in a function that returns `MyResult<(), f32>`
-LL | |     MyResult::Awesome(())
+LL | |     MyResult::Terrific(())
 LL | | }
    | |_- this function should return `Result` or `Option` to accept `?`
    |
@@ -143,25 +143,25 @@ use std::ops::Try;
 impl<T, U> Try for MyResult<T, U> {
     fn from_holder(h: Self::Holder) -> Self {
         match h {
-            Err(e) => MyResult::Terrible(e),
+            Err(e) => MyResult::Unfortunate(e),
             Ok(v) => match v {},
         }
     }
 }
 ```
 
-This is much simpler, with just the one associated function.  Because the holder is always an error, we'll always produce a `Terrible` result.  (The extra `match v {}` is because that's uninhabited, but [`exhaustive_patterns`](https://github.com/rust-lang/rust/issues/51085) is not yet stable, so we can't just omit the `Ok` arm.)
+This is much simpler, with just the one associated function.  Because the holder is always an error, we'll always produce a `Unfortunate` result.  (The extra `match v {}` is because that's uninhabited, but [`exhaustive_patterns`](https://github.com/rust-lang/rust/issues/51085) is not yet stable, so we can't just omit the `Ok` arm.)
 
 With this we can now use `?` on both `MyResult`s and `Result`s in a function returning `MyResult`:
 ```rust
 fn foo() -> MyResult<(), f32> {
-    let _: () = MyResult::Terrible(1.1)?;
-    MyResult::Awesome(())
+    let _: () = MyResult::Unfortunate(1.1)?;
+    MyResult::Terrific(())
 }
 
 fn bar() -> MyResult<(), f32> {
     let _: () = Err(1.1)?;
-    MyResult::Awesome(())
+    MyResult::Terrific(())
 }
 ```
 
@@ -169,7 +169,9 @@ fn bar() -> MyResult<(), f32> {
 
 While interconversion isn't a problem for our custom result-like type, one might not always want it.  For example, you might be making a type that short-circuits on something you think of as success, or just doesn't make sense as pass/fail so there isn't a meaningful "error" to provide.  So let's see how we'd make a custom holder to handle that.
 
-A "holder" type can always be associated back to its canonical `Try` (and `Bubble`) type.  This allows generic code to keep the "result-ness" or "option-ness" of a type while changing the `Continue` type.  So while we only need to store a `U`, we'll need some sort of wrapper around it to keep its "myresult-ness".
+As we saw in the `Bubble::branch` implementation, the holder type preserves the values that weren't returned in the `Continue` type.  Thus for us it'll depend only on `U`, never on `T`.
+
+Also, a holder type can always be associated back to its canonical `Try` (and `Bubble`) type.  This allows generic code to keep the "result-ness" or "option-ness" of a type while changing the `Continue` type.  So while we only need to store a `U`, we'll need some sort of wrapper around it to keep its "myresult-ness".
 
 Conveniently, though, we don't need to define a new type for that: we can use our enum, but with an uninhabited type on one side.  As `!` isn't stable yet, we'll use `std::convert::Infallible` as a canonical uninhabited type.  (You may have seen it before in `TryFrom`, with `u64: TryFrom<u8, Error = Infallible>` since that conversion cannot fail.)
 
@@ -181,8 +183,8 @@ impl<T, U> Bubble for MyResult<T, U> {
     type Holder = MyResult<Infallible, U>;
     fn branch(self) -> ControlFlow<Self::Holder, T> {
         match self {
-            MyResult::Awesome(v) => ControlFlow::Continue(v),
-            MyResult::Terrible(e) => ControlFlow::Break(MyResult::Terrible(e)),
+            MyResult::Terrific(v) => ControlFlow::Continue(v),
+            MyResult::Unfortunate(e) => ControlFlow::Break(MyResult::Unfortunate(e)),
         }
     }
     ... no changes here ...
@@ -194,8 +196,8 @@ As well as update our `Try` implementation for the new holder type:
 impl<T, U> Try for MyResult<T, U> {
     fn from_holder(h: Self::Holder) -> Self {
         match h {
-            MyResult::Terrible(e) => MyResult::Terrible(e),
-            MyResult::Awesome(v) => match v {},
+            MyResult::Unfortunate(e) => MyResult::Unfortunate(e),
+            MyResult::Terrific(v) => match v {},
         }
     }
 }
@@ -228,12 +230,12 @@ With that we can still use `?` in both directions as in `foo` previously.  And i
 ```rust
 let x = [1, 2].iter().try_find(|&&x| {
     if x < 0 {
-        MyResult::Terrible("uhoh")
+        MyResult::Unfortunate("uhoh")
     } else {
-        MyResult::Awesome(x % 2 == 0)
+        MyResult::Terrific(x % 2 == 0)
     }
 });
-assert!(matches!(x, MyResult::Awesome(Some(2))));
+assert!(matches!(x, MyResult::Terrific(Some(2))));
 ```
 
 As expected, the mixing in `bar` no longer compiles:
@@ -246,8 +248,8 @@ help: the trait `Try<std::result::Result<!, {float}>>` is not implemented for `M
 `Result` allows mismatched error types so long as it can convert the source one into the type on the function.  But if we try that with our current type, it won't work:
 ```rust
 fn qux() -> MyResult<(), i64> {
-    let _: () = MyResult::Terrible(3_u8)?;
-    MyResult::Awesome(())
+    let _: () = MyResult::Unfortunate(3_u8)?;
+    MyResult::Terrific(())
 }
 ```
 
@@ -256,8 +258,8 @@ That help message in the error from the previous section gives us a clue, howeve
 impl<T, U, V: From<U>> Try<MyResult<Infallible, U>> for MyResult<T, V> {
     fn from_holder(h: MyResult<Infallible, U>) -> Self {
         match h {
-            MyResult::Terrible(e) => MyResult::Terrible(From::from(e)),
-            MyResult::Awesome(v) => match v {},
+            MyResult::Unfortunate(e) => MyResult::Unfortunate(From::from(e)),
+            MyResult::Terrific(v) => match v {},
         }
     }
 }
@@ -287,10 +289,10 @@ For implementation-oriented RFCs (e.g. for compiler internals), this section sho
 ```rust
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ControlFlow<B, C = ()> {
-    /// Continue in the loop, using the given value for the next iteration
-    Continue(C),
     /// Exit the loop, yielding the given value
     Break(B),
+    /// Continue in the loop, using the given value for the next iteration
+    Continue(C),
 }
 ```
 
@@ -463,6 +465,36 @@ impl<T, E, F: From<E>> ops::Try<Result<!, E>> for Poll<Option<Result<T, F>>> {
 }
 ```
 
+### `ControlFlow`
+
+```rust
+impl<B, C> ops::Bubble for ControlFlow<B, C> {
+    type Continue = C;
+    type Holder = ControlFlow<B, !>;
+    fn continue_with(c: C) -> Self {
+        ControlFlow::Continue(c)
+    }
+    fn branch(self) -> ControlFlow<Self::Holder, C> {
+        match self {
+            ControlFlow::Continue(c) => ControlFlow::Continue(c),
+            ControlFlow::Break(b) => ControlFlow::Break(ControlFlow::Break(b)),
+        }
+    }
+}
+
+impl<B, C> ops::BreakHolder<C> for ControlFlow<B, !> {
+    type Output = ControlFlow<B, C>;
+}
+
+impl<B, C> ops::Try for ControlFlow<B, C> {
+    fn from_holder(x: Self::Holder) -> Self {
+        match x {
+            ControlFlow::Break(b) => ControlFlow::Break(b),
+        }
+    }
+}
+```
+
 ## Making the accidental `Option` interconversion continue to work
 
 This is done with an extra implementation:
@@ -572,9 +604,17 @@ Why should we *not* do this?
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
+## Why `ControlFlow` pulls its weight
+
+The previous RFC discussed having such a type, but ended up deciding that defining a new type for the desugar wasn't worth it, and just used `Result`.
+
+This RFC does use a new type because one already [exists in nightly](https://doc.rust-lang.org/nightly/std/ops/enum.ControlFlow.html) under [the `control_flow_enum` feature gate](https://github.com/rust-lang/rust/issues/75744).
+It's being used in [the library](https://github.com/rust-lang/rust/blob/fd34606ddf02d1e9364e459b373a6ad665c3d8a4/library/core/src/iter/traits/iterator.rs#L2239-L2252) and [the compiler](https://github.com/rust-lang/rust/blob/c609b2eaf323186a1167ec1a9ffa69a7d4a5b1b9/compiler/rustc_middle/src/ty/fold.rs#L184-L206), demonstrating that it's useful beyond just this desugaring, so the desugar might as well use it too for extra clarity.
+There are also [ecosystem changes waiting on something like it](https://github.com/rust-itertools/itertools/issues/469#issuecomment-677729589), so it's not just a compiler-internal need.
+
 ## Methods on `ControlFlow`
 
-On nightly there are are a variety of methods available on `ControlFlow`.  However, none of them are needed for the stabilization of the traits, so they left out of this RFC.  They can be considered by libs at a later point.
+On nightly there are are a [variety of methods](https://doc.rust-lang.org/nightly/std/ops/enum.ControlFlow.html#implementations) available on `ControlFlow`.  However, none of them are needed for the stabilization of the traits, so they left out of this RFC.  They can be considered by libs at a later point.
 
 There's a basic set of simple ones that could be included if desired, though:
 ```rust
