@@ -322,7 +322,7 @@ The previous desugaring of `x?` was
 ```rust
 match Try::into_result(x) {
 	Ok(v) => v,
-	Err(e) => Try::from_error(From::from(e)),
+	Err(e) => return Try::from_error(From::from(e)),
 }
 ```
 
@@ -331,7 +331,7 @@ The new one is very similar:
 ```rust
 match Bubble::branch(x) {
 	ControlFlow::Continue(v) => v,
-	ControlFlow::Break(h) => Try::from_holder(h),
+	ControlFlow::Break(h) => return Try::from_holder(h),
 }
 ```
 
