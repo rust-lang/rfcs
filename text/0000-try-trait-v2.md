@@ -29,7 +29,7 @@ However, new information has come in since the previous RFC, making people wish 
 - An [experience report](https://github.com/rust-lang/rust/issues/42327#issuecomment-366840247) in the tracking issue mentioned that it's annoying to need to make a residual type.
 - The `try {}` conversations have wished for more source information to flow through `?` so that fewer annotations would be required.
 - Similarly, it's no longer clear that `From` should be part of the `?` desugaring for _all_ types.  It's both more flexible -- making inference difficult -- and more restrictive -- especially without specialization -- than is always desired.
-- Various library methods, such as `try_map` for arrays ([PR #79713](https://github.com/rust-lang/rust/pull/79713#issuecomment-739075171)), would like to be able to do HKT-like things to produce their result types.  (For example, `Iterator::try_find` wants to be able to return a `Foo<Item>` from a predicate that returned a `Foo<bool>`.)
+- Various library methods, such as `try_map` for arrays ([PR #79713](https://github.com/rust-lang/rust/pull/79713#issuecomment-739075171)), would like to be able to do HKT-like things to produce their result types.  (For example, `Iterator::try_find` wants to be able to return a `Foo<Option<Item>>` from a predicate that returned a `Foo<bool>`.)
 - Using the "error" terminology is a poor fit for other potential implementations of the trait.
 - It turned out that the current solution accidentally stabilized more interconversion than expected, so a more restricted form may be warranted.
 
@@ -49,9 +49,9 @@ Why are we doing this? What use cases does it support? What is the expected outc
 
 This is a simple enum:
 ```rust
-struct ControlFlow<B, C = ()> {
-	Break(B),
-	Continue(C),
+enum ControlFlow<B, C = ()> {
+    Break(B),
+    Continue(C),
 }
 ```
 
@@ -215,8 +215,8 @@ LL |     type Holder = MyResult<Infallible, U>;
    |
   ::: C:\src\rust\library\core\src\ops\try.rs:102:18
    |
-LL |     type Holder: BreakHolder<Self::Ok>;
-   |                  --------------------- required by this bound in `std::ops::Bubble::Holder`
+LL |     type Holder: BreakHolder<Self::Continue>;
+   |                  --------------------------- required by this bound in `std::ops::Bubble::Holder`
 ```
 
 But that's a simple one:
@@ -309,7 +309,7 @@ trait Bubble {
 }
 
 trait BreakHolder<T> {
-    type Output: Try<Ok = T, Holder = Self>;
+    type Output: Try<Continue = T, Holder = Self>;
 }
 
 trait Try<H = <Self as Bubble>::Holder>: Bubble {
@@ -365,7 +365,7 @@ impl<T, E> ops::BreakHolder<T> for Result<!, E> {
 }
 
 #[unstable(feature = "try_trait_v2", issue = "42327")]
-impl<T, E, F: From<E>> ops::Try2021<Result<!, E>> for Result<T, F> {
+impl<T, E, F: From<E>> ops::Try<Result<!, E>> for Result<T, F> {
     fn from_holder(x: Result<!, E>) -> Self {
         match x {
             Err(e) => Err(From::from(e)),
