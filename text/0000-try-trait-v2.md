@@ -15,7 +15,9 @@ while addressing the discovered shortcomings of the currently-implemented soluti
 as well as enabling new scenarios.
 
 *This is forward-looking to be compatible with other features,
-like `try {}` blocks or `yeet e` expressions or `Iterator::try_find`,
+like [`try {}`](https://doc.rust-lang.org/nightly/unstable-book/language-features/try-blocks.html) blocks
+or [`yeet e`](https://twitter.com/josh_triplett/status/1248658754976927750) expressions
+or [`Iterator::try_find`](https://github.com/rust-lang/rust/issues/63178),
 but the statuses of those features are **not** themselves impacted by this RFC.*
 
 # Motivation
