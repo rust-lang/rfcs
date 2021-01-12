@@ -192,7 +192,7 @@ If the width of the bit-field is `0`, then the name of the field must be `_`.
 
 A field named `_` is called an *unnamed* field. All other fields are called
 *named* fields. Each named field annotated with `bitfield(N)` occupies `N` bits
-of storage.
+of storage. Unnamed fields do not occupy any storage.
 
 When reading and writing a bit-field with type `bool`, `bool` is treated like
 `u1` with `true` corresponding to `1` and `false` corresponding to `0`.
