@@ -382,3 +382,6 @@ fields in the struct.
 
 - Adding some way to perform wrapping assignment.
 - Relaxing the requirement that `N` must be a literal.
+- Bit-fields with types that are enums with integer representation.
+- Bit-fields with types that are transparent wrapper structs around valid
+  bit-field types.
