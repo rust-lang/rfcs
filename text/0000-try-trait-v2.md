@@ -71,7 +71,9 @@ While one could also use `Result` to do this, it can be confusing to use `Err` f
 
 You might also use it when exposing similar things yourself, such as a graph traversal or visitor, where you want the user to be able to choose to break early.
 
-## Defining your own `Result`-like type
+## Using this with your own types
+
+### Defining your own `Result`-like type
 
 We've seen elsewhere in the book that `Result` is just an enum.  Let's define our own to learn more about how `?` works.
 
@@ -85,7 +87,7 @@ enum MyResult<T, U> {
 
 That lets us do all the pattern matching things, but let's implement some more traits to support additional operators.
 
-### Supporting `?` via `Bubble`
+#### Supporting `?` via `Bubble`
 
 `Bubble` lets us define which values of our type let execution go on normally, and which should result in a short circuit.
 
@@ -121,7 +123,7 @@ fn foo() -> Result<(), f32> {
 }
 ```
 
-### Consuming `?` via `Try`
+#### Consuming `?` via `Try`
 
 If we change that function to return `MyResult`, however, we'll get an error:
 ```rust
@@ -167,7 +169,7 @@ fn bar() -> MyResult<(), f32> {
 }
 ```
 
-### Avoiding interconversion with a custom `Holder`
+#### Avoiding interconversion with a custom `Holder`
 
 While interconversion isn't a problem for our custom result-like type, one might not always want it.  For example, you might be making a type that short-circuits on something you think of as success, or just doesn't make sense as pass/fail so there isn't a meaningful "error" to provide.  So let's see how we'd make a custom holder to handle that.
 
@@ -245,7 +247,7 @@ As expected, the mixing in `bar` no longer compiles:
 help: the trait `Try<std::result::Result<!, {float}>>` is not implemented for `MyResult<(), f32>`
 ```
 
-### Enabling `Result`-like error conversion
+#### Enabling `Result`-like error conversion
 
 `Result` allows mismatched error types so long as it can convert the source one into the type on the function.  But if we try that with our current type, it won't work:
 ```rust
@@ -270,6 +272,166 @@ impl<T, U, V: From<U>> Try<MyResult<Infallible, U>> for MyResult<T, V> {
 With that the `qux` example starts compiling successfully.
 
 (This can also be used to allow interconversion with holder types from other type constructors, but that's left as an exercise for the reader.)
+
+### Using `?` with a non-generic type
+
+The type in the previous discussion was very flexible, so let's take the opportunity to look at the other end of the spectrum at a type with no generic parameters.
+
+We'll make a `ResultCode` type that works like is common in C: it's an integer internally, with success represented by zero and any non-zero value being a different error.
+
+The type itself can just a normal newtype, and let's give it a constant for the success value:
+```rust
+#[derive(Copy, Clone, Debug, Hash, Eq, PartialEq)]
+pub struct ResultCode(pub i32);
+impl ResultCode {
+    pub const SUCCESS: Self = ResultCode(0);
+}
+```
+Users are expected to produce, operate on, and consume this type, so it gets the a usual list of traits.  It doesn't need to maintain any invariants in it either, so the field might as well just be public -- no need for accessors.
+
+We decided earlier that zero is the only success value, so there's nothing interesting to provide out of `?` if the result code happens to be the success one.  So we might as well use `()` as our `Continue` type.
+
+Now what should the holder look like?  With no values of generic types, the holder won't need to be generic either.  It needs to represent the non-zero values, so let's make it a newtype around `NonZeroI32`:
+```rust
+use std::num::NonZeroI32;
+pub struct ResultCodeHolder(NonZeroI32);
+```
+This type is really only there to be used transiently inside desugarings.  There's no expectation that a user will ever need to touch one -- they'll be working with `ResultCode`s.  So we don't need to offer any way to produce or consume these directly; it can just be opaque.
+
+*(Aside: it doesn't* have *to be completely opaque, however.  In a real library it might want to be at least `Debug`+`Copy` for politeness, for example.  Or it could be developed out into a "full" type with a `Display` which shows the description from C's `strerror`.  But for the purpose of this RFC, there's no need for all that.)*
+
+With those types decided for the two sides of the control flow, we can go ahead and implement `Bubble`:
+```rust
+impl Bubble for ResultCode {
+    type Continue = ();
+    type Holder = ResultCodeHolder;
+    fn branch(self) -> ControlFlow<Self::Holder, ()> {
+        match NonZeroI32::new(self.0) {
+            Some(e) => ControlFlow::Break(ResultCodeHolder(e)),
+            None => ControlFlow::Continue(()),
+        }
+    }
+    fn continue_with((): ()) -> Self {
+        Self::SUCCESS
+    }
+}
+```
+
+Because `ResultCode` isn't generic, there's no way for `BreakHolder` to give out different types for different "keep going" payloads.  Thus it's only defined for a `()` continue type:
+```rust
+impl BreakHolder<()> for ResultCodeHolder {
+    type Output = ResultCode;
+}
+```
+This means that we won't be able to use `ResultCode` with `Iterator::try_find` -- since there's no way for it to hold a `bool` or an `Option<Item>` -- but that's fine.  Interestingly, it's still usable with `Iterator::try_for_each`, since that only requires `Continue = ()`.
+
+The implementation for `Try` is also simple:
+```rust
+impl Try for ResultCode {
+    fn from_holder(h: ResultCodeHolder) -> Self {
+        Self(h.0.into())
+    }
+}
+```
+
+And with that we have enough to try out our new type:
+```rust
+fn external_one() -> ResultCode;
+fn external_two() -> ResultCode;
+fn demo() -> ResultCode {
+    external_one()?;
+    external_two()?;
+    ResultCode::SUCCESS
+}
+```
+
+*(Aside: As a nice bonus, the use of a `NonZero` type in the holder means that `<ResultCode as Bubble>::branch` [compiles down to a nop](https://rust.godbolt.org/z/GxeYax) on the current nightly.  Thanks, enum layout optimizations!)*
+
+## Using these traits in generic code
+
+### When the generic parameter has the `Continue` type you need
+
+`Iterator::try_fold` has been stable to call (but not to implement) for a while now.  To illustrate the flow through the traits in this RFC, lets implement our own version without using any of the sugar.
+
+As a reminder, an infallible version of a fold looks something like this:
+```rust
+fn simple_fold<A, T>(
+    iter: impl Iterator<Item = T>,
+    mut accum: A,
+    mut f: impl FnMut(A, T) -> A,
+) -> A {
+    for x in iter {
+        accum = f(accum, x);
+    }
+    accum
+}
+```
+
+So instead of `f` returning just an `A`, we'll need it to return some other type that produces an `A` in the "don't short circuit" path.  Conveniently, that's also the type we need to return from the function.
+
+Let's add a new generic parameter `R` for that type, and bound it to the continue type that we want:
+```rust
+fn simple_try_fold_1<A, T, R: Bubble<Continue = A>>(
+    iter: impl Iterator<Item = T>,
+    mut accum: A,
+    mut f: impl FnMut(A, T) -> R,
+) -> R {
+    todo!()
+}
+```
+
+Conveniently, `Bubble` is also the trait we need to get the updated accumulator from `f`'s return value and return the result if we manage to get through the entire iterator:
+```rust
+fn simple_try_fold_2<A, T, R: Bubble<Continue = A>>(
+    iter: impl Iterator<Item = T>,
+    mut accum: A,
+    mut f: impl FnMut(A, T) -> R,
+) -> R {
+    for x in iter {
+        let cf = f(accum, x).branch();
+        match cf {
+            ControlFlow::Continue(a) => accum = a,
+            ControlFlow::Break(_) => todo!(),
+        }
+    }
+    R::continue_with(accum)
+}
+```
+
+Just `Bubble` isn't enough, though.  We also need `Try` here in order to convert the holder inside the `Break` variant back into `R`.  But because `Bubble` is a supertrait of `Try<H>`, we can just change the bound rather than adding a second one:
+```rust
+pub fn simple_try_fold<A, T, R: Try<Continue = A>>(
+    iter: impl Iterator<Item = T>,
+    mut accum: A,
+    mut f: impl FnMut(A, T) -> R,
+) -> R {
+    for x in iter {
+        let cf = f(accum, x).branch();
+        match cf {
+            ControlFlow::Continue(a) => accum = a,
+            ControlFlow::Break(h) => return R::from_holder(h),
+        }
+    }
+    R::continue_with(accum)
+}
+```
+
+### When you need to switch to a different `Continue` type
+
+You might have noticed that even the final `simple_try_fold` didn't need to mention `BreakHolder<C>`.  That's because it's only needed if you want to return a type from the same family, but with a different continue type.
+
+`Option::zip` stabilized a few releases ago, so here's a demonstration of a more-generalized version.  To restrict the two inputs to the same family, it requires that the holder types match. Then it uses `BreakHolder` to get an output type from that same family.
+
+```rust
+fn zip_demo<T, U, H: BreakHolder<(T, U)>>(
+    a: impl Bubble<Continue = T, Holder = H>,
+    b: impl Bubble<Continue = U, Holder = H>,
+) -> <H as BreakHolder<(T, U)>>::Output {
+    Bubble::continue_with((a?, b?))
+}
+```
+
+Here `Try` doesn't need to be mentioned explicitly, as the `BreakHolder::Output` type is always bound by `Try<Self>`.
 
 <!--
 Explain the proposal as if it was already included in the language and you were teaching it to another Rust programmer. That generally means:
