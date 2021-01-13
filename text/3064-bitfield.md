@@ -320,8 +320,8 @@ fields in the struct.
 [prior-art]: #prior-art
 
 - C
-- The author of Zig [proposes] a different syntax that basically boils down to
-  arbitrarily sized integer types:
+- The author of Zig [proposes][zig-proposes] a different syntax that basically
+  boils down to arbitrarily sized integer types:
 
   ```rust
   struct X {
@@ -346,7 +346,7 @@ fields in the struct.
 
   These structs have different layouts on `x86_64-unknown-linux-gnu`.
 
-  [proposes]: (https://andrewkelley.me/post/a-better-way-to-implement-bit-fields.html)
+[zig-proposes]: https://andrewkelley.me/post/a-better-way-to-implement-bit-fields.html
 
 
 # Unresolved questions
