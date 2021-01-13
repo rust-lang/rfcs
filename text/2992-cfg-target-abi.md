@@ -1,7 +1,7 @@
 - Feature Name: `cfg-target-abi`
 - Start Date: 2020-09-27
 - RFC PR: [rust-lang/rfcs#2992](https://github.com/rust-lang/rfcs/pull/2992)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- Rust Issue: [rust-lang/rust#80970](https://github.com/rust-lang/rust/issues/80970)
 
 # Summary
 [summary]: #summary
