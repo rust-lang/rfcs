@@ -1,7 +1,7 @@
 - Feature Name: infallible_lifetime_extension
 - Start Date: 2020-11-08
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- RFC PR: [rust-lang/rfcs#3027](https://github.com/rust-lang/rfcs/pull/3027)
+- Rust Issue: [rust-lang/rust#80619](https://github.com/rust-lang/rust/issues/80619)
 
 # Summary
 [summary]: #summary
