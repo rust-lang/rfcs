@@ -136,10 +136,58 @@ fn f(x: &mut X) {
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-The attribute `bitfield(N)` is added. `N` must be an integer literal. `N` is
-called the *width* of the bit-field. This attribute can only be applied to fields
-of a `repr(C)` struct. Such a field is called a *bit-field*. A bit-field must
-have one of the types
+The struct [grammar][struct-grammar] is modified:
+
+[struct-grammar]: https://doc.rust-lang.org/reference/items/structs.html
+
+```diff
+    | TupleStruct
+ 
+ StructStruct :
+-   struct IDENTIFIER  GenericParams? WhereClause? ( { StructFields? } | ; )
++   struct IDENTIFIER  GenericParams? WhereClause? ( { StructBody? } | ; )
+ 
+ TupleStruct :
+    struct IDENTIFIER  GenericParams? ( TupleFields? ) WhereClause? ;
+ 
+-StructFields :
+-   StructField (, StructField)* ,?
++StructBody :
++   StructBodyElement (, StructBodyElement)* ,?
++
++StructBodyElement :
++     StructField
++   | UnnamedStructElement
+ 
+ StructField :
+    OuterAttribute*
+    Visibility?
+    IDENTIFIER : Type
+ 
++UnnamedStructElement :
++   OuterAttribute*
++   Visibility?
++   `_` : Type
++
+ TupleFields :
+    TupleField (, TupleField)* ,?
+```
+
+UnnamedStructElements look syntactically like StructFields except that their
+names must be `_` which cannot be the name of a StructField. Semantically, they
+are not fields of the struct they are contained in.
+
+UnnamedStructElements are used when determining the layout of the struct but are
+otherwise ignored. Since they are not fields, they cannot be accessed, do not
+appear in the construction of a struct, etc.
+
+In the output of rustdoc, UnnamedStructElements are not distinguished from
+StructFields except that their name is `_`.
+
+The attribute `bitfield(N)` is added.  This attribute can only be applied to
+StructBodyElements of `repr(C)` structs. Such a StructBodyElement is
+called a *bit-field*. `N` must be an integer literal. `N` is called the *width*
+of the bit-field. A bit-field must have one of the types
 
 - `bool`,
 - `u8`, `u16`, `u32`, `u64`, `u128`, `usize`,
@@ -147,55 +195,21 @@ have one of the types
 
 modulo type aliases.
 
-The width of a bit-field with type `T` must be in the range `[0,
-bit_width_of(T)]`. For the integer types, `bit_width_of` is defined as `8 *
-size_of::<T>()`. For `bool`, `bit_width_of` is 1.
+If the type of a bit-field is `bool`, then `N` must be 0 or 1. Otherwise `N`
+must be in the interval `[0, 8 * size_of::<T>()]` where `T` is the type of the
+bit-field.
 
-A bit-field can have the name `_`. Such fields are only used to modify the layout
-of the struct. Consider the example
+The attribute `bitfield(0)` can only be applied to UnnamedStructElements. An
+UnnamedStructElement must be a bit-field.
 
-```rust
-#[repr(C)]
-struct X {
-    a: u32,
-    #[bitfield(6)] _: u32,
-    #[bitfield(1)] b: u32,
-    #[bitfield(5)] _: u32,
-    #[bitfield(1)] c: u32,
-}
-```
+Note that, despite being called a bit-*field*, a bit-field is not necessarily a
+field. To disambiguate, when talking about bit-field fields, we explicitly call
+them "bit-field fields".
 
-This struct behaves like
+Each field annotated with `bitfield(N)` occupies `N` bits of storage.
 
-```rust
-#[repr(C)]
-#[insert_unnamed_bitfield_after(0, 6, u32)]
-#[insert_unnamed_bitfield_after(1, 5, u32)]
-struct X {
-    a: u32,
-    #[bitfield(1)] b: u32,
-    #[bitfield(1)] c: u32,
-}
-```
-
-if the attribute `insert_unnamed_bitfield_after` existed and caused the layout
-to be modified in the same way as by the unnamed bit-field as described below.
-
-In particular, such a field cannot be accessed, need not and cannot appear in
-the construction of such a struct, cannot appear in the deconstruction of such a
-struct.
-
-Nevertheless, such fields appear like regular fields in the rustdoc output if
-they have the `pub` visibility.
-
-If the width of the bit-field is `0`, then the name of the field must be `_`.
-
-A field named `_` is called an *unnamed* field. All other fields are called
-*named* fields. Each named field annotated with `bitfield(N)` occupies `N` bits
-of storage. Unnamed fields do not occupy any storage.
-
-When reading and writing a bit-field with type `bool`, `bool` is treated like
-`u1` with `true` corresponding to `1` and `false` corresponding to `0`.
+When reading and writing a bit-field field with type `bool`, `bool` is treated
+like `u1` with `true` corresponding to `1` and `false` corresponding to `0`.
 
 When a field annotated with `bitfield(N)` is read, the value has the type
 of the field and the behavior is as follows:
@@ -224,7 +238,7 @@ properties:
 
 - The size and alignment of the struct.
 - The offsets of all non-bit-field fields.
-- For each named bit-field, the bits of the object representation used as its
+- For each bit-field field, the bits of the object representation used as its
   storage.
 
 The language reference shall document for each target the layout of structs
@@ -235,20 +249,20 @@ when compiling the corresponding C struct for the same target. The corresponding
 C struct is constructed as follows:
 
 - Translate the struct to the corresponding C struct as if the `bitfield`
-  annotations were not present and as if `_` were a valid identifier for regular
-  fields.
-- For each field that has a `bitfield(N)` annotation in the Rust struct, append
-  `: N` to the declaration in the C struct.
+  annotations were not present and as if `_` were a valid identifier for fields.
+- For each StructBodyElement that has a `bitfield(N)` annotation in the Rust
+  struct, append `: N` to the declaration in the C struct.
 - For each field in the C struct whose name is `_`, delete the field name.
 
 The `&` and `&mut` operators cannot be applied to bit-fields.
 
-This implies that, in order to (mutably) access a bit-field, one must have a
-(mutable) reference to the struct. Therefore, no concurrent accesses of the
-struct are possible unless all accesses are immutable. Therefore, unlike in C,
-the compiler can implement access to bit-fields with any kind of load/write
-instruction, even if such an instruction overlaps the memory locations of other
-fields in the struct.
+When a bit-field field is accessed, the abstract machine may also access
+adjacent bit-field fields but not fields that are separated from the field by a
+StructBodyElement that is not a bit-field field. (Note: This paragraph restricts
+the kinds of loads and stores the compiler can perform when accessing a
+bit-field. This paragraph does not need to be specially advertised to users as
+the inability to take references to bit-field fields makes it impossible to
+access adjacent bit-field fields in otherwise sound code.)
 
 # Drawbacks
 [drawbacks]: #drawbacks
