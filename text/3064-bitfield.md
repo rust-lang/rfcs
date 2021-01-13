@@ -149,7 +149,7 @@ modulo type aliases.
 
 The width of a bit-field with type `T` must be in the range `[0,
 bit_width_of(T)]`. For the integer types, `bit_width_of` is defined as `8 *
-sizeof`. For `bool`, `bit_width_of` is 1.
+size_of::<T>()`. For `bool`, `bit_width_of` is 1.
 
 A bit-field can have the name `_`. Such fields are only used to modify the layout
 of the struct. Consider the example
