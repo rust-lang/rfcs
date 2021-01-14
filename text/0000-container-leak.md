@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-Describe a standard set of methods for converting container types like `Box<T>`, `Arc<T>`, `Vec<T>`, `String` to and from raw pointers.
+Describe a standard set of methods for converting container types like `Box<T>`, `Arc<T>`, `Vec<T>`, `String` to and from raw pointers. This RFC doesn't suggest all of these methods actually exist, only that if they do they follow the standard laid out.
 
 For containers with a single value like `Box<T>`, `Arc<T>`, and `Rc<T>`, any subset of the following method pairs should be added to work with their raw representations:
 
