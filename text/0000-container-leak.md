@@ -18,7 +18,7 @@ For containers with a single value like `Box<T>`, `Arc<T>`, and `Rc<T>`, any sub
 
 For multi-value containers like `Vec<T>` and `String`, any subset of the following method pairs should be added to work with their raw representations:
 
-- `leak`: shrink the container to its initialized length, leak it and return an arbitrarily long-lived shared or mutable reference to its allocated content.
+- `leak`: leak the container and return an arbitrarily long-lived shared or mutable reference to its allocated content. The contents may or may not be shrinked as an implementation detail of the container.
 - `leak_raw_parts`: leak the container and return a `NonNull<T>` pointer to its content along with any other state, like the allocated capacity, that would be needed to restore the container. The type `T` is the same as `Deref::Target`, so `NonNull::from(&*self)` is equivalent to `NonNull::from(self.leak())` and `NonNull::from(self.leak_raw_parts().0)`.
 - `unleak_raw_parts`: take a previously leaked `NonNull<T>` pointer and additional state and restore the container from it.
 - `into_raw_parts`: leak the container and return a raw pointer to its content along with any other state that would be needed to restore the container.
