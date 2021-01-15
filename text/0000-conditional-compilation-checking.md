@@ -273,7 +273,6 @@ Each `--check-cfg` option can take one of two forms:
 
 ### The `names(...)` form
 
-
 This form uses a named metadata list:
 
 ```bash
@@ -302,8 +301,31 @@ form. The parentheses are required.
 rustc --check-cfg 'names()'
 ```
 
+Note that `--check-cfg 'names()'` is _not_ equivalent to omitting the option entirely.
+The first form enables checking condition names, while specifying that there are no valid
+condition names (outside of the set of well-known names defined by `rustc`). Omitting the
+`--check-cfg 'names(...)'` option does not enable checking condition names.
+
 Conditions that are enabled are implicitly valid; it is unnecessary (but legal) to specify a
 condition name as both enabled and valid. For example, the following invocations are equivalent:
+
+```bash
+# condition names will be checked, and 'has_time_travel' is valid
+rustc --cfg 'has_time_travel' --check-cfg 'names()'
+
+# condition names will be checked, and 'has_time_travel' is valid
+rustc --cfg 'has_time_travel' --check-cfg 'names(has_time_travel)'
+```
+
+In contrast, the following two invocations are _not_ equivalent:
+
+```bash
+# condition names will not be checked (because there is no --check-cfg names(...))
+rustc --cfg 'has_time_travel'
+
+# condition names will be checked, and 'has_time_travel' is both valid and enabled.
+rustc --cfg 'has_time_travel' --check-cfg 'names(has_time_travel)'
+```
 
 ### The `values(...)` form
 
@@ -320,7 +342,7 @@ string. `name` specifies the name of the condition, such as `feature` or `target
 When the `values(...)` option is specified, `rustc` will check every `#[cfg(name = "value")]`
 attribute, `#[cfg_attr(name = "value")]` attribute, and `cfg!(name = "value")` call. It will
 check that the `"value"` specified is present in the list of valid values. If `"value"` is not
-valid, then `rustc` will report an `invalid_cfg_name` lint diagnostic. The default diagnostic
+valid, then `rustc` will report an `invalid_cfg_value` lint diagnostic. The default diagnostic
 level for this lint is `Warn`.
 
 The form `values()` is an error, because it does not specify a condition name.
@@ -354,18 +376,20 @@ rustc --check-cfg 'values(animals, "lion", "zebra")'
 
 This is intended to give tool developers more flexibility when generating Rustc command lines.
 
-### Enabled conditions are implicitly valid
+### Enabled condition names are implicitly valid
 
 Specifying an enabled condition name implicitly makes it valid. For example, the following
 invocations are equivalent:
 
 ```bash
 # legal but redundant:
-rustc --check-cfg 'values(animals, "lion", "zebra")' --cfg 'animals = "lion"'
+rustc --check-cfg 'names(animals)' --cfg 'animals = "lion"'
 
 # equivalent:
-rustc --check-cfg 'values(animals, "zebra")' --cfg 'animals = "lion"'
+rustc --check-cfg 'names()' --cfg 'animals = "lion"'
 ```
+
+### Enabled condition values are implicitly valid
 
 Specifying an enabled condition _value_ implicitly makes that _value_ valid. For example, the
 following invocations are equivalent:
@@ -387,6 +411,32 @@ rustc --check-cfg 'names(other, animals)' --check-cfg 'values(animals, "lion")'
 
 # so the above can be simplified to:
 rustc --check-cfg 'names(other)' --check-cfg 'values(animals, "lion")'
+```
+
+### Checking condition names and values is independent
+
+Checking condition names may be enabled independently of checking condition values.
+If checking of condition values is enabled, then it is enabled separately for each condition name.
+
+Examples:
+
+```bash
+
+# no checking is performed
+rustc
+
+# names are checked, but values are not checked
+rustc --check-cfg 'names(has_time_travel)'
+
+# names are not checked, but 'feature' values are checked.
+# note that #[cfg(market = "...")] values are not checked.
+rustc --check-cfg 'values(feature, "lighting", "bump_maps")'
+
+# names are not checked, but 'feature' values _and_ 'market' values are checked.
+rustc --check-cfg 'values(feature, "lighting", "bump_maps")' --check-cfg 'markets(feature = "europe", "asia")'
+
+# names _and_ feature values are checked.
+rustc --check-cfg 'names(has_time_travel)' --check-cfg 'values(feature, "lighting", "bump_maps")'
 ```
 
 ## Stabilizing
@@ -458,7 +508,8 @@ fn tame_lion() { ... }
 
 ## Drawbacks
 
-* Adds complexity, in the form of additional command-line options.
+* Adds complexity, in the form of additional command-line options. Fortunately, this is
+  complexity that will be mainly be exposed to build systems, such as Cargo.
 * As with all lints, correct code may be trigger lints. Developers will need to take time to
   examine them and see whether they are legitimate or not.
 * To take full advantage of this, build systems (including but not limited to Cargo) must be
