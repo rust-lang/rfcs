@@ -11,24 +11,27 @@ This RFC, which depends and takes advantage of the upcoming stabilization of con
 # Motivation
 [motivation]: #motivation
 
-`core::collections::ArrayVec<T>` has several use-cases and should be conveniently added into the standard library due to its importance.
-
-### Unification
-
-There are a lot of different crates about the subject that tries to do roughly the same thing, a centralized implementation would stop the current fragmentation.
+`core::collections::ArrayVec<T>` should be conveniently added into the standard library due to its importance and potential.
 
 ### Optimization
 
 Stack-based allocation is generally faster than heap-based allocation and can be used as an optimization in places that otherwise would have to call an allocator. Some resource-constrained embedded devices can also benefit from it.
 
+### Unstable features and constant functions
+
+By adding `ArrayVec` into the standard library, it will be possible to use internal unstable features to optimize machine code generation and expose public constant functions without the need of a nightly compiler.
+
+### Useful in the real world
+
+`arrayvec` is one of the most downloaded project of `crates.io` and is used by thousand of projects, including Rustc itself. Currently ranks ninth in the "Data structures" category and seventy-fifth in the "All Crate" category.
+
 ### Building block
 
 Just like `Vec`, `ArrayVec` is also a primitive vector where high-level structures can use it as a building block. For example, a stack-based matrix or binary heap.
 
-### Useful in the real world
+### Unification
 
-`arrayvec` is one of the most downloaded project of `crates.io` and is used by thousand of projects, including Rustc itself.
-
+There are a lot of different crates about the subject that tries to do roughly the same thing, a centralized implementation would stop the current fragmentation.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -57,11 +60,24 @@ for element in &v {
 assert_eq!(v, [7, 1, 2, 3]);
 ```
 
-Instead of relying on a heap-allocator, stack-based memory area is added and removed on-demand in a last-in-first-out (LIFO) order according to the calling workflow of a program. `ArrayVec` takes advantage of this predictable behavior to reserve an exactly amount of uninitialized bytes up-front and these bytes form a buffer where elements can be included dynamically.
+Instead of relying on a heap-allocator, stack-based memory is added and removed on-demand in a last-in-first-out (LIFO) order according to the calling workflow of a program. `ArrayVec` takes advantage of this predictable behavior to reserve an exactly amount of uninitialized bytes up-front and these bytes form a buffer where elements can be included dynamically.
 
 ```rust
 // `array_vec` can store up to 64 elements
 let mut array_vec: ArrayVec<i32, 64> = ArrayVec::new();
+```
+
+Another potential use-case is the usage within constant environments:
+
+```rust
+const MY_CONST_ARRAY_VEC: ArrayVec<i32, 10> = {
+    let mut v = ArrayVec::new();
+    let _ = v.try_push(1);
+    let _ = v.try_push(2);
+    let _ = v.try_push(3);
+    let _ = v.try_push(4);
+    v
+};
 ```
 
 Of course, fixed buffers lead to inflexibility because unlike `Vec`, the underlying capacity can not expand at run-time and there will never be more than 64 elements in the above example.
@@ -74,13 +90,13 @@ let push_result = array_vec.push(1);
 assert!(push_result.is_err());
 ```
 
-A good question is: Should I use `core::collections::ArrayVec<T>` or `alloc::collections::Vec<T>`? Well, `Vec` is already good enough for most situations while stack allocation usually shines for small sizes.
+A good question is: Should I use `core::collections::ArrayVec<T>` or `alloc::vec::Vec<T>`? Well, `Vec` is already good enough for most situations while stack allocation usually shines for small sizes.
 
 * Do you have a known upper bound?
 
 * How much memory are you going to allocate for your program? The default values of `RUST_MIN_STACK` or `ulimit -s` might not be enough.
 
-* Are you using nested `Vec`s? `Vec<ArrayVec<T, N>>` might be better than `Vec<Vec<T>>`.
+* Are you using nested `Vec`s? `Vec<ArrayVec<T, N>>` might be better than `Vec<Vec<T>>` because the heap-allocator is only called once instead of the `N` nested calls.
 
 Each use-case is different and should be pondered individually. In case of doubt, stick with `Vec`.
 
@@ -88,13 +104,13 @@ For a more technical overview, take a look at the following operations:
 
 ```rust
 // `array_vec` has a pre-allocated memory of 2048 bits (32 * 64) that can store up
-// to 64 decimals.
+// to 64 signed integers.
 let mut array_vec: ArrayVec<i32, 64> = ArrayVec::new();
 
 // Although reserved, there isn't anything explicitly stored yet
 assert_eq!(array_vec.len(), 0);
 
-// Initializes the first 32 bits with a simple '1' decimal or
+// Initializes the first 32 bits with a simple '1' integer or
 // 00000000 00000000 00000000 00000001 bits
 array_vec.push(1);
 
@@ -108,9 +124,9 @@ assert_eq!(array_vec.len(), 1);
 
 `ArrayVec` is a contiguous memory block where elements can be collected, therefore, a collection by definition and even though `core::collections` doesn't exist, it is the most natural module placement.
 
-The API basically mimics most of the current `Vec` surface with some tweaks to manage capacity.
+The API mimics most of the current `Vec` surface with some additional methods to manage capacity.
 
-Notably, these tweaked methods are checked (out-of-bound inputs or invalid capacity) versions of some well-known functions like `push` that will return `Result` instead of panicking at run-time. Since the upper capacity bound is known at compile-time and the majority of methods are `#[inline]`, the compiler is likely going to remove most of the conditional bounding checking.
+Notably, these additional methods are verifiable (out-of-bound inputs or invalid capacity) versions of some well-known functions like `push` that will return `Result` instead of panicking at run-time. Since the upper capacity bound is known at compile-time and the majority of methods are `#[inline]`, the compiler is likely going to remove most of the conditional bounding checking.
 
 ```rust
 // Please, bare in mind that these methods are simply suggestions. Discussions about the
@@ -123,10 +139,6 @@ pub struct ArrayVec<T, const N: usize> {
 
 impl<T, const N: usize> ArrayVec<T, N> {
     // Constructors
-
-    pub const fn from_array(array: [T; N]) -> Self;
-
-    pub const fn from_array_and_len(array: [T; N], len: usize) -> Self;
 
     pub const fn new() -> Self;
 
@@ -249,7 +261,7 @@ let _: ArrayVec<i32, 64> = array_vec![1; 2];
 
 ### Dynamic array
 
-An hydric approach between heap and stack memory could also be provided natively in the future.
+An hybrid approach between heap and stack memory could also be provided natively in the future.
 
 ```rust
 pub struct DynVec<T, const N: usize> {
