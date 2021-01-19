@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-This RFC, which depends and takes advantage of the upcoming stabilization of constant generics (min_const_generics), tries to propose the creation of a new "growable" vector named `ArrayVec` that manages stack memory and can be seen as an alternative for the built-in structure that handles heap-allocated memory, aka `alloc::vec::Vec<T>`.
+This RFC, which depends and takes advantage of the upcoming stabilization of constant generics (min_const_generics), tries to propose the creation of a new vector named `ArrayVec` that manages stack memory and can be seen as an alternative for the built-in structure that handles heap-allocated memory, aka `alloc::vec::Vec<T>`.
 
 # Motivation
 [motivation]: #motivation
@@ -40,8 +40,8 @@ There are a lot of different crates about the subject that tries to do roughly t
 
 ```rust
 let mut v: ArrayVec<i32, 4> = ArrayVec::new();
-let _ = v.push(1);
-let _ = v.push(2);
+v.push(1);
+v.push(2);
 
 assert_eq!(v.len(), 2);
 assert_eq!(v[0], 1);
@@ -60,7 +60,7 @@ for element in &v {
 assert_eq!(v, [7, 1, 2, 3]);
 ```
 
-Instead of relying on a heap-allocator, stack-based memory is added and removed on-demand in a last-in-first-out (LIFO) order according to the calling workflow of a program. `ArrayVec` takes advantage of this predictable behavior to reserve an exactly amount of uninitialized bytes up-front and these bytes form a buffer where elements can be included dynamically.
+Instead of relying on a heap-allocator, stack-based memory is added and removed on-demand in a last-in-first-out (LIFO) order according to the calling workflow of a program. `ArrayVec` takes advantage of this predictable behavior to reserve an exactly amount of uninitialized bytes up-front to form an internal buffer.
 
 ```rust
 // `array_vec` can store up to 64 elements
@@ -72,10 +72,10 @@ Another potential use-case is the usage within constant environments:
 ```rust
 const MY_CONST_ARRAY_VEC: ArrayVec<i32, 10> = {
     let mut v = ArrayVec::new();
-    let _ = v.try_push(1);
-    let _ = v.try_push(2);
-    let _ = v.try_push(3);
-    let _ = v.try_push(4);
+    v.push(1);
+    v.push(2);
+    v.push(3);
+    v.push(4);
     v
 };
 ```
@@ -85,9 +85,7 @@ Of course, fixed buffers lead to inflexibility because unlike `Vec`, the underly
 ```rust
 // This vector can store up to 0 elements, therefore, nothing at all
 let mut array_vec: ArrayVec<i32, 0> = ArrayVec::new();
-let push_result = array_vec.push(1);
-// Ooppss... Our push operation wasn't successful
-assert!(push_result.is_err());
+array_vec.push(1); // Error!
 ```
 
 A good question is: Should I use `core::collections::ArrayVec<T>` or `alloc::vec::Vec<T>`? Well, `Vec` is already good enough for most situations while stack allocation usually shines for small sizes.
@@ -96,7 +94,50 @@ A good question is: Should I use `core::collections::ArrayVec<T>` or `alloc::vec
 
 * How much memory are you going to allocate for your program? The default values of `RUST_MIN_STACK` or `ulimit -s` might not be enough.
 
-* Are you using nested `Vec`s? `Vec<ArrayVec<T, N>>` might be better than `Vec<Vec<T>>` because the heap-allocator is only called once instead of the `N` nested calls.
+* Are you using nested `Vec`s? `Vec<ArrayVec<T, N>>` might be better than `Vec<Vec<T>>`.
+
+```
+let _: Vec<Vec<i32>> = vec![vec![1, 2, 3], vec![4, 5]];
+
+ +-----+-----+-----+
+ | ptr | len | cap |
+ +--|--+-----+-----+
+    |
+    |   +---------------------+---------------------+----------+
+    |   |       Vec<i32>      |       Vec<i32>      |          |
+    |   | +-----+-----+-----+ | +-----+-----+-----+ |  Unused  |
+    '-> | | ptr | len | cap | | | ptr | len | cap | | capacity |
+        | +--|--+-----+-----+ | +--|--+-----+-----+ |          |
+        +----|----------------+----|----------------+----------+
+             |                     |
+             |                     |   +---+---+--------+
+             |                     '-> | 4 | 5 | Unused |
+             |                         +---+---+--------+
+             |   +---+---+---+--------+
+             '-> | 1 | 2 | 3 | Unused |
+                 +---+---+---+--------+
+
+Illustration credits: @mbartlett21
+```
+
+Can you see the `N`, where `N` is length of the external `Vec`, calls to the heap allocator? In the following illustration, the internal `ArrayVec`s are placed contiguously in the same space.
+
+```txt
+let _: Vec<ArrayVec<i32, 3>> = vec![array_vec![1, 2, 3], array_vec![4, 5]];
+
+ +-----+-----+-----+
+ | ptr | len | cap |
+ +--|--+-----+-----+
+    |
+    |   +------------------------------+--------------------------+----------+
+    |   |       ArrayVec<i32, 4>       |     Arrayvec<i32, 4>     |          |
+    |   | +-----+---+---+---+--------+ | +-----+---+---+--------+ |  Unused  |
+    '-> | | len | 1 | 2 | 3 | Unused | | | len | 4 | 5 | Unused | | capacity |
+        | +-----+---+---+---+--------+ | +-----+---+---+--------+ |          |
+        +------------------------------+--------------------------+----------+
+
+Illustration credits: @mbartlett21
+```
 
 Each use-case is different and should be pondered individually. In case of doubt, stick with `Vec`.
 
@@ -124,9 +165,7 @@ assert_eq!(array_vec.len(), 1);
 
 `ArrayVec` is a contiguous memory block where elements can be collected, therefore, a collection by definition and even though `core::collections` doesn't exist, it is the most natural module placement.
 
-The API mimics most of the current `Vec` surface with some additional methods to manage capacity.
-
-Notably, these additional methods are verifiable (out-of-bound inputs or invalid capacity) versions of some well-known functions like `push` that will return `Result` instead of panicking at run-time. Since the upper capacity bound is known at compile-time and the majority of methods are `#[inline]`, the compiler is likely going to remove most of the conditional bounding checking.
+To avoid length and conflicting conversations, the API will mimic most of the current `Vec` surface, which also means that all methods that depend on valid user input or valid internal capacity will panic at run-time when something goes wrong. For example, removing an element that is out of bounds.
 
 ```rust
 // Please, bare in mind that these methods are simply suggestions. Discussions about the
@@ -142,7 +181,7 @@ impl<T, const N: usize> ArrayVec<T, N> {
 
     pub const fn new() -> Self;
 
-    // Methods
+    // Infallible Methods
 
     pub const fn as_mut_ptr(&mut self) -> *mut T;
 
@@ -156,57 +195,48 @@ impl<T, const N: usize> ArrayVec<T, N> {
 
     pub fn clear(&mut self);
 
-    pub fn dedup(&mut self)
-    where
-        T: PartialEq;
-
-    pub fn dedup_by<F>(&mut self, same_bucket: F)
-    where
-        F: FnMut(&mut T, &mut T) -> bool;
-
-    pub fn dedup_by_key<F, K>(&mut self, mut key: F)
-    where
-        F: FnMut(&mut T) -> K,
-        K: PartialEq<K>;
-
-    pub fn drain<R>(&mut self, range: R) -> Option<Drain<'_, T, N>>
-    where
-        R: RangeBounds<usize>;
-
-    pub fn extend_from_cloneable_slice<'a>(&mut self, other: &'a [T]) -> Result<(), &'a [T]>
-    where
-        T: Clone;
-
-    pub fn extend_from_copyable_slice<'a>(&mut self, other: &'a [T]) -> Result<(), &'a [T]>
-    where
-        T: Copy;
-
-    pub fn insert(&mut self, idx: usize, element: T) -> Result<(), T>;
-
     pub const fn is_empty(&self) -> bool;
 
     pub const fn len(&self) -> usize;
-
-    pub fn pop(&mut self) -> Option<T>;
-
-    pub fn push(&mut self, element: T) -> Result<(), T>;
-
-    pub fn remove(&mut self, idx: usize) -> Option<T>;
 
     pub fn retain<F>(&mut self, mut f: F)
     where
         F: FnMut(&mut T) -> bool;
 
-    pub fn splice<I, R>(&mut self, range: R, replace_with: I) -> Option<Splice<'_, I::IntoIter, N>>
+    pub fn truncate(&mut self, len: usize);
+
+    // Methods that can panic at run-time
+
+    pub fn drain<R>(&mut self, range: R) -> Drain<'_, T, N>
+    where
+        R: RangeBounds<usize>;
+
+    pub fn extend_from_cloneable_slice<'a>(&mut self, other: &'a [T])
+    where
+        T: Clone;
+
+    pub fn extend_from_copyable_slice<'a>(&mut self, other: &'a [T])
+    where
+        T: Copy;
+
+    pub const fn insert(&mut self, idx: usize, element: T);
+
+    pub const fn push(&mut self, element: T);
+
+    pub const fn remove(&mut self, idx: usize) -> T;
+
+    pub fn splice<I, R>(&mut self, range: R, replace_with: I) -> Splice<'_, I::IntoIter, N>
     where
         I: IntoIterator<Item = T>,
         R: RangeBounds<usize>;
 
-    pub fn split_off(&mut self, at: usize) -> Option<Self>;
+    pub fn split_off(&mut self, at: usize) -> Self;
 
-    pub fn swap_remove(&mut self, idx: usize) -> Option<T>;
+    pub fn swap_remove(&mut self, idx: usize) -> T;
 
-    pub fn truncate(&mut self, len: usize);
+    // Verifiable methods
+    
+    pub const fn pop(&mut self) -> Option<T>;
 }
 ```
 
@@ -237,6 +267,47 @@ As seen, there isn't an implementation that stands out among the others because 
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
+
+### Verifiable methods
+
+Unlike methods that will abort the current thread execution, verifiable methods will signal that something has gone wrong or is missing. This approach has two major benefits:
+
+- `Security`: The user is forced to handle possible variants or corner-cases and enables graceful program shutdown by wrapping everything until `fn main() -> Result<(), MyCustomErrors>` is reached.
+
+- `Flexibility`: Gives freedom to users because it is possible to choose between, for example, `my_full_array_vec.push(100)?` (check), `my_full_array_vec.push(100).unwrap()` (panic) or `let _ = my_full_array_vec.push(100);` (ignore).
+
+In regards to performance, since the upper capacity bound is known at compile-time and the majority of methods are `#[inline]`, the compiler will probably have the necessary information to remove most of the conditional bounding checking when producing optimized machine code.
+
+```rust
+pub fn drain<R>(&mut self, range: R) -> Option<Drain<'_, T, N>>
+where
+    R: RangeBounds<usize>;
+
+pub fn extend_from_cloneable_slice<'a>(&mut self, other: &'a [T]) -> Result<(), &'a [T]>
+where
+    T: Clone;
+
+pub fn extend_from_copyable_slice<'a>(&mut self, other: &'a [T]) -> Result<(), &'a [T]>
+where
+    T: Copy;
+
+pub const fn insert(&mut self, idx: usize, element: T) -> Result<(), T>;
+
+pub const fn push(&mut self, element: T) -> Result<(), T>;
+
+pub const fn remove(&mut self, idx: usize) -> Option<T>;
+
+pub fn splice<I, R>(&mut self, range: R, replace_with: I) -> Option<Splice<'_, I::IntoIter, N>>
+where
+    I: IntoIterator<Item = T>,
+    R: RangeBounds<usize>;
+
+pub fn split_off(&mut self, at: usize) -> Option<Self>;
+
+pub fn swap_remove(&mut self, idx: usize) -> Option<T>;
+```
+
+In my opinion, every fallible method should either return `Option` or `Result` instead of panicking at run-time. Although the future addition of `try_*` variants can mitigate this situation, it will also bring additional maintenance burden.
 
 ### Nomenclature
 
