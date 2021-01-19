@@ -85,5 +85,5 @@ hacks like adding a dummy `b""` argument to force a byte literal output.
   - If supported, it would probably make sense to also support boolean literals
     so `concat_bytes!()` supports all inputs `concat!()` does.
   - If rejected, it would probably makes sense to also reject boolean literals
-    to avoid any possible confusion about their representation (`b"true"` and
-    `b"false"` vs. `1` and `0`).
+    to avoid any possible confusion about their representation (`true` and
+    `false` vs. `1` and `0`).
