@@ -1,7 +1,7 @@
 - Feature Name: (`bindeps`)
 - Start Date: 2020-11-30
 - RFC PR: [rust-lang/rfcs#3028](https://github.com/rust-lang/rfcs/pull/3028)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- Tracking Issue: [rust-lang/cargo#9096](https://github.com/rust-lang/cargo/issues/9096)
 
 # Summary
 [summary]: #summary
