@@ -203,7 +203,7 @@ This similarly includes extern types.
 [extern types]: https://github.com/rust-lang/rust/issues/43467
 
 ```rust
-/// This trait is automatically implement for every type.
+/// This trait is automatically implemented for every type.
 ///
 /// Raw pointer types and reference types in Rust can be thought of as made of two parts:
 /// a data pointer that contains the memory address of the value, and some metadata.
