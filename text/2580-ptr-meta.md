@@ -1,7 +1,7 @@
 - Feature Name: `ptr-meta`
 - Start Date: 2018-10-26
-- RFC PR:
-- Rust Issue:
+- RFC PR: https://github.com/rust-lang/rfcs/pull/2580
+- Rust Issue: https://github.com/rust-lang/rust/issues/81513
 
 # Summary
 [summary]: #summary
