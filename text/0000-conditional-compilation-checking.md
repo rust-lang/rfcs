@@ -516,6 +516,25 @@ fn tame_lion() { ... }
   updated. However, for those systems that are not updated, there is no penalty or drawback,
   since `--check-cfg` is opt-in.
 
+* This lint will not be able to detect invalid `#[cfg]` tests that are within modules that
+  are not compiled, presumably because an ancestor `mod` is disabled due to a.  For example:
+
+  File `lib.rs` (root module):
+  ```rust
+  #[cfg(feature = "this_is_disabled_but_valid")]
+  mod foo
+  ```
+
+  File `foo.rs` (nested module):
+  ```rust
+  #[cfg(feature = "oooooops_this_feature_is_misspelled_and_invalid")]
+  mod uh_uh;
+  ```
+
+  The invalid `#[cfg]` attribute in `foo.rs` will not be detected, because `foo.rs` was not
+  read and parsed. This is a minor drawback, and should not prevent users from benefitting
+  from checking in most common situations.
+
 ## Rationale and alternatives
 
 This design enables checking for a class of bugs at compile time, rather than detecting them by 
