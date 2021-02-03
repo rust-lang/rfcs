@@ -1,4 +1,4 @@
-- Feature Name: box_syntax, placement_in_syntax
+- Feature Name: `box_syntax`, `placement_in_syntax`
 - Start Date: 2015-02-04
 - RFC PR: [rust-lang/rfcs#809](https://github.com/rust-lang/rfcs/pull/809)
 - Rust Issue: [rust-lang/rust#22181](https://github.com/rust-lang/rust/issues/22181)

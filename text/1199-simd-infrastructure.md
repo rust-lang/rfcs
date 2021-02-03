@@ -1,4 +1,4 @@
-- Feature Name: repr_simd, platform_intrinsics, cfg_target_feature
+- Feature Name: `repr_simd`, `platform_intrinsics`, `cfg_target_feature`
 - Start Date: 2015-06-02
 - RFC PR: [rust-lang/rfcs#1199](https://github.com/rust-lang/rfcs/pull/1199)
 - Rust Issue: [rust-lang/rust#27731](https://github.com/rust-lang/rust/issues/27731)

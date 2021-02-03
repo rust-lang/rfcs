@@ -1,4 +1,4 @@
-- Feature Name: if_while_or_patterns
+- Feature Name: `if_while_or_patterns`
 - Start Date: 2017-10-16
 - RFC PR: [rust-lang/rfcs#2175](https://github.com/rust-lang/rfcs/pull/2175)
 - Rust Issue: [rust-lang/rust#48215](https://github.com/rust-lang/rust/issues/48215)

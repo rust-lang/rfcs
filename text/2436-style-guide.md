@@ -1,4 +1,4 @@
-- Feature Name: N/A
+- Feature Name: `N/A`
 - Start Date: 2018-05-04
 - RFC PR: #2436
 - Rust Issue: N/A

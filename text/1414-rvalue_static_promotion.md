@@ -1,4 +1,4 @@
-- Feature Name: rvalue_static_promotion
+- Feature Name: `rvalue_static_promotion`
 - Start Date: 2015-12-18
 - RFC PR: [#1414](https://github.com/rust-lang/rfcs/pull/1414)
 - Rust Issue: [#38865](https://github.com/rust-lang/rust/issues/38865)

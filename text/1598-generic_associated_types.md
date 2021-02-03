@@ -1,4 +1,4 @@
-- Feature Name: generic_associated_types
+- Feature Name: `generic_associated_types`
 - Start Date: 2016-04-29
 - RFC PR: [rust-lang/rfcs#1598](https://github.com/rust-lang/rfcs/pull/1598)
 - Rust Issue: [rust-lang/rust#44265](https://github.com/rust-lang/rust/issues/44265)

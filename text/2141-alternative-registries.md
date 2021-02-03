@@ -1,4 +1,4 @@
-- Feature Name: cargo_alternative_registries
+- Feature Name: `cargo_alternative_registries`
 - Start Date: 2017-09-06
 - RFC PR: [rust-lang/rfcs#2141](https://github.com/rust-lang/rfcs/pull/2141)
 - Rust Issue: [rust-lang/rust#44931](https://github.com/rust-lang/rust/issues/44931)

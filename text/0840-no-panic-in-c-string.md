@@ -1,4 +1,4 @@
-- Feature Name: non_panicky_cstring
+- Feature Name: `non_panicky_cstring`
 - Start Date: 2015-02-13
 - RFC PR: [rust-lang/rfcs#840](https://github.com/rust-lang/rfcs/pull/840)
 - Rust Issue: [rust-lang/rust#22470](https://github.com/rust-lang/rust/issues/22470)

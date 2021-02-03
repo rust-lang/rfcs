@@ -1,4 +1,4 @@
-- Feature Name: not applicable
+- Feature Name: `N/A`
 - Start Date: 2015-02-27
 - RFC PR: [rust-lang/rfcs#1068](https://github.com/rust-lang/rfcs/pull/1068)
 - Rust Issue: N/A

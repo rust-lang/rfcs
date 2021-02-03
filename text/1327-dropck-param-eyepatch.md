@@ -1,4 +1,4 @@
-- Feature Name: dropck_eyepatch, generic_param_attrs
+- Feature Name: `dropck_eyepatch`, `generic_param_attrs`
 - Start Date: 2015-10-19
 - RFC PR: [rust-lang/rfcs#1327](https://github.com/rust-lang/rfcs/pull/1327)
 - Rust Issue: [rust-lang/rust#34761](https://github.com/rust-lang/rust/issues/34761)

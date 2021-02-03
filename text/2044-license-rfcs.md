@@ -1,4 +1,4 @@
-- Feature Name: license_rfcs
+- Feature Name: `license_rfcs`
 - Start Date: 2017-06-26
 - RFC PR: [rust-lang/rfcs#2044](https://github.com/rust-lang/rfcs/pull/2044)
 - Rust Issue: [rust-lang/rust#43461](https://github.com/rust-lang/rust/issues/43461)

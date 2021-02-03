@@ -1,4 +1,4 @@
-- Feature Name: main_reexport
+- Feature Name: `main_reexport`
 - Start Date: 2015-08-19
 - RFC PR: [rust-lang/rfcs#1260](https://github.com/rust-lang/rfcs/pull/1260)
 - Rust Issue: [rust-lang/rust#28937](https://github.com/rust-lang/rust/issues/28937)

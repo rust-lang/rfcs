@@ -1,4 +1,4 @@
-- Feature Name: expanded_impl_trait
+- Feature Name: `expanded_impl_trait`
 - Start Date: 2017-03-12
 - RFC PR: [rust-lang/rfcs#1951](https://github.com/rust-lang/rfcs/pull/1951)
 - Rust Issue: [rust-lang/rust#42183](https://github.com/rust-lang/rust/issues/42183)

@@ -1,4 +1,4 @@
-- Feature Name: place_left_arrow_syntax
+- Feature Name: `place_left_arrow_syntax`
 - Start Date: 2015-07-28
 - RFC PR: [rust-lang/rfcs#1228](https://github.com/rust-lang/rfcs/pull/1228)
 - Rust Issue: [rust-lang/rust#27779](https://github.com/rust-lang/rust/issues/27779)

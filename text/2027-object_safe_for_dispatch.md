@@ -1,4 +1,4 @@
-- Feature Name: object_safe_for_dispatch
+- Feature Name: `object_safe_for_dispatch`
 - Start Date: 2017-06-10
 - RFC PR: [rust-lang/rfcs#2027](https://github.com/rust-lang/rfcs/pull/2027)
 - Rust Issue: [rust-lang/rust#43561](https://github.com/rust-lang/rust/issues/43561)

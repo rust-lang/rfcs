@@ -1,4 +1,4 @@
-- Feature Name: read_exact
+- Feature Name: `read_exact`
 - Start Date: 2015-03-15
 - RFC PR: [rust-lang/rfcs#980](https://github.com/rust-lang/rfcs/pull/980)
 - Rust Issue: [rust-lang/rust#27585](https://github.com/rust-lang/rust/issues/27585)

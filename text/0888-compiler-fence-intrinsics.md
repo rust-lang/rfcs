@@ -1,4 +1,4 @@
-- Feature Name: compiler_fence_intrinsics
+- Feature Name: `compiler_fence_intrinsics`
 - Start Date: 2015-02-19
 - RFC PR: [rust-lang/rfcs#888](https://github.com/rust-lang/rfcs/pull/888)
 - Rust Issue: [rust-lang/rust#24118](https://github.com/rust-lang/rust/issues/24118)

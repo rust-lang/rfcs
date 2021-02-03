@@ -1,4 +1,4 @@
-- Feature Name: stdsimd_project_group
+- Feature Name: `stdsimd_project_group`
 - Start Date: 2020-08-28
 - RFC PR: [rust-lang/rfcs#2977](https://github.com/rust-lang/rfcs/pull/2977)
 - Rust Issue: [rust-lang/rust-libs#4](https://github.com/rust-lang/libs-team/issues/4)

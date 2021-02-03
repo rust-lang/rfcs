@@ -1,4 +1,4 @@
-- Feature Name: (`bindeps`)
+- Feature Name: `(`bindeps`)`
 - Start Date: 2020-11-30
 - RFC PR: [rust-lang/rfcs#3028](https://github.com/rust-lang/rfcs/pull/3028)
 - Tracking Issue: [rust-lang/cargo#9096](https://github.com/rust-lang/cargo/issues/9096)

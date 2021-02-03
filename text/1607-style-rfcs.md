@@ -1,4 +1,4 @@
-- Feature Name: N/A
+- Feature Name: `N/A`
 - Start Date: 2016-04-21
 - RFC PR: [rust-lang/rfcs#1607](https://github.com/rust-lang/rfcs/pull/1607)
 - Rust Issue: N/A

@@ -1,4 +1,4 @@
-- Feature Name: error_handling_project_group
+- Feature Name: `error_handling_project_group`
 - Start Date: 2020-07-23
 - RFC PR: [rust-lang/rfcs#2965](https://github.com/rust-lang/rfcs/pull/2965)
 - Rust Issue: [rust-lang/libs-team#3](https://github.com/rust-lang/libs-team/issues/3)

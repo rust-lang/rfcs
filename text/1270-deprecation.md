@@ -1,4 +1,4 @@
-- Feature Name: Public Stability
+- Feature Name: `Public Stability`
 - Start Date: 2015-09-03
 - RFC PR: [rust-lang/rfcs#1270](https://github.com/rust-lang/rfcs/pull/1270)
 - Rust Issue: [rust-lang/rust#29935](https://github.com/rust-lang/rust/issues/29935)

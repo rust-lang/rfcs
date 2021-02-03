@@ -1,4 +1,4 @@
-- Feature Name: nonportable
+- Feature Name: `nonportable`
 - Start Date: 2016-11-15
 - RFC PR: [rust-lang/rfcs#1868](https://github.com/rust-lang/rfcs/pull/1868)
 - Rust Issue: [rust-lang/rust#41619](https://github.com/rust-lang/rust/issues/41619)

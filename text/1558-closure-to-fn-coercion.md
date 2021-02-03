@@ -1,4 +1,4 @@
-- Feature Name: closure_to_fn_coercion
+- Feature Name: `closure_to_fn_coercion`
 - Start Date: 2016-03-25
 - RFC PR: [rust-lang/rfcs#1558](https://github.com/rust-lang/rfcs/pull/1558)
 - Rust Issue: [rust-lang/rust#39817](https://github.com/rust-lang/rust/issues/39817)

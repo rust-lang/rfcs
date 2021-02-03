@@ -1,6 +1,6 @@
 # Major Change Proposal RFC
 
-- Feature Name: N/A
+- Feature Name: `N/A`
 - Start Date: 2020-05-07
 - RFC PR: [rust-lang/rfcs#2904](https://github.com/rust-lang/rfcs/pull/2904)
 - Rust Issue: N/A

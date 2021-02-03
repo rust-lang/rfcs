@@ -1,4 +1,4 @@
-- Feature Name: dst_coercions
+- Feature Name: `dst_coercions`
 - Start Date: 2015-03-16
 - RFC PR: [rust-lang/rfcs#982](https://github.com/rust-lang/rfcs/pull/982)
 - Rust Issue: [rust-lang/rust#18598](https://github.com/rust-lang/rust/issues/18598)

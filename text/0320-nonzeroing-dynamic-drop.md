@@ -1,4 +1,4 @@
-- Feature Name: (none for the bulk of RFC); unsafe_no_drop_flag
+- Feature Name: `(none for the bulk of RFC); unsafe_no_drop_flag`
 - Start Date: 2014-09-24
 - RFC PR: [rust-lang/rfcs#320](https://github.com/rust-lang/rfcs/pull/320)
 - Rust Issue: [rust-lang/rust#5016](https://github.com/rust-lang/rust/issues/5016)

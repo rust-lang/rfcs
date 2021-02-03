@@ -1,4 +1,4 @@
-- Feature Name: dllimport
+- Feature Name: `dllimport`
 - Start Date: 2016-08-13
 - RFC PR: [rust-lang/rfcs#1717](https://github.com/rust-lang/rfcs/pull/1717)
 - Rust Issue: [rust-lang/rust#37403](https://github.com/rust-lang/rust/issues/37403)

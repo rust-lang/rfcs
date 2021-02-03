@@ -1,4 +1,4 @@
-- Feature Name: profile_dependencies
+- Feature Name: `profile_dependencies`
 - Start Date: 2018-01-08
 - RFC PR: [rust-lang/rfcs#2282](https://github.com/rust-lang/rfcs/pull/2282)
 - Rust Issue: [rust-lang/rust#48683](https://github.com/rust-lang/rust/issues/48683)

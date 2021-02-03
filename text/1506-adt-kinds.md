@@ -1,4 +1,4 @@
-- Feature Name: clarified_adt_kinds
+- Feature Name: `clarified_adt_kinds`
 - Start Date: 2016-02-07
 - RFC PR: [rust-lang/rfcs#1506](https://github.com/rust-lang/rfcs/pull/1506)
 - Rust Issue: [rust-lang/rust#35626](https://github.com/rust-lang/rust/issues/35626)
