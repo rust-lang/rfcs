@@ -1,4 +1,4 @@
-- Feature Name: `target_feature` / `cfg_target_feature` / `cfg_feature_enabled`
+- Feature Name: `target_feature`, `cfg_target_feature`, `cfg_feature_enabled`
 - Start Date: 2017-06-26
 - RFC PR: [rust-lang/rfcs#2045](https://github.com/rust-lang/rfcs/pull/2045)
 - Rust Issue: [rust-lang/rust#44839](https://github.com/rust-lang/rust/issues/44839)

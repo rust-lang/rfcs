@@ -1,4 +1,4 @@
-- Feature Name: `Assert Not Equals Macro (`assert_ne`)`
+- Feature Name: `assert_ne` (Assert Not Equals Macro)
 - Start Date: (2016-06-17)
 - RFC PR: [rust-lang/rfcs#1653](https://github.com/rust-lang/rfcs/pull/1653)
 - Rust Issue: [rust-lang/rust#35073](https://github.com/rust-lang/rust/issues/35073)
