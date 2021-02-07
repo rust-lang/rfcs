@@ -1,6 +1,6 @@
 - Feature Name: try_trait_v2
 - Start Date: 2020-12-12
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#3058](https://github.com/rust-lang/rfcs/pull/3058)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 # Summary
@@ -26,12 +26,10 @@ but the statuses of those features are **not** themselves impacted by this RFC.*
 The motivations from the previous RFC still apply (supporting more types, and restricted interconversion).
 However, new information has come in since the previous RFC, making people wish for a different approach.
 
-- An [experience report](https://github.com/rust-lang/rust/issues/42327#issuecomment-366840247) in the tracking issue mentioned that it's annoying to need to make a residual type.
-- The `try {}` conversations have wished for more source information to flow through `?` so that fewer annotations would be required.
-- Similarly, it's no longer clear that `From` should be part of the `?` desugaring for _all_ types.  It's both more flexible -- making inference difficult -- and more restrictive -- especially without specialization -- than is always desired.
-- Various library methods, such as `try_map` for arrays ([PR #79713](https://github.com/rust-lang/rust/pull/79713#issuecomment-739075171)), would like to be able to do HKT-like things to produce their result types.  (For example, `Iterator::try_find` wants to be able to return a `Foo<Option<Item>>` from a predicate that returned a `Foo<bool>`.)
 - Using the "error" terminology is a poor fit for other potential implementations of the trait.
-- It turned out that the current solution accidentally stabilized more interconversion than expected, so a more restricted form may be warranted.
+- The ecosystem has started to see error types which are `From`-convertible from *any* type implementing `Debug`, which makes the previous RFC's method for controlling interconversions ineffective.
+- It's no longer clear that `From` should be part of the `?` desugaring for _all_ types.  It's both more flexible -- making inference difficult -- and more restrictive -- especially without specialization -- than is always desired.
+- An [experience report](https://github.com/rust-lang/rust/issues/42327#issuecomment-366840247) in the tracking issue mentioned that it's annoying to need to make a residual type in common cases.
 
 This RFC proposes a solution that _mixes_ the two major options considered last time.
 
@@ -50,308 +48,200 @@ Why are we doing this? What use cases does it support? What is the expected outc
 This is a simple enum:
 ```rust
 enum ControlFlow<B, C = ()> {
+    /// Exit the operation without running subsequent phases.
     Break(B),
+    /// Move on to the next phase of the operation as normal.
     Continue(C),
 }
 ```
 
-Its purpose is to clearly communicate the desire to either short-circuit what's happening (`Break`), or just to go on as normal (`Continue`).
+It's intended for exposing things (like graph traversals or visitor) where you want the user to be able to choose whether to exit early.  Using an enum is clearer than just using a bool -- what did `false` mean again? -- as well as [allows it to carry a value](https://github.com/rust-lang/rust/pull/78779#pullrequestreview-524885131), if desired.
 
-For example, it can be used to early-exit in `Iterator::try_for_each`:
+For example, you could use it to expose a simple tree traversal in a way that lets the caller exit early if they want:
 ```rust
-let y: ControlFlow<i32> = it.try_for_each(|x| {
-    if x % 100 == 99 {
-        return ControlFlow::Break(x);
-    }
-
-    ControlFlow::Continue(())
-});
-```
-While one could also use `Result` to do this, it can be confusing to use `Err` for what one would mentally consider a _successful_ early exit.  Using a different type without those extra associations can help avoid mental dissonance while reading the code.
-
-You might also use it when exposing similar things yourself, such as a graph traversal or visitor, where you want the user to be able to choose to break early.
-
-## Using this with your own types
-
-### Defining your own `Result`-like type
-
-We've seen elsewhere in the book that `Result` is just an enum.  Let's define our own to learn more about how `?` works.
-
-To start with, let's use this type:
-```rust
-enum MyResult<T, U> {
-    Terrific(T),
-    Unfortunate(U)
-}
-```
-
-That lets us do all the pattern matching things, but let's implement some more traits to support additional operators.
-
-#### Supporting `?` via `Bubble`
-
-`Bubble` lets us define which values of our type let execution go on normally, and which should result in a short circuit.
-
-Here's a full implementation:
-```rust
-use std::ops::{ControlFlow, Bubble};
-impl<T, U> Bubble for MyResult<T, U> {
-    type Continue = T;
-    type Holder = <Result<T, U> as Bubble>::Holder;
-    fn branch(self) -> ControlFlow<Self::Holder, T> {
-        match self {
-            MyResult::Terrific(v) => ControlFlow::Continue(v),
-            MyResult::Unfortunate(e) => ControlFlow::Break(Err(e)),
+impl<T> TreeNode<T> {
+    fn traverse_inorder<B>(&self, mut f: impl FnMut(&T) -> ControlFlow<B>) -> ControlFlow<B> {
+        if let Some(left) = &self.left {
+            left.traverse_inorder(&mut f)?;
         }
-    }
-    fn continue_with(v: T) -> Self {
-        MyResult::Terrific(v)
+        f(&self.value)?;
+        if let Some(right) = &self.right {
+            right.traverse_inorder(&mut f)?;
+        }
+        ControlFlow::Continue(())
     }
 }
 ```
+<!-- https://play.rust-lang.org/?version=nightly&mode=debug&edition=2018&gist=286ac85c43e5bf242b5431b4f6f63386 -->
 
-Taking each of those associated items individually:
-- The `Continue` type is the type that comes out when applying the `?` operator.  For us it's just one of our generic types.  If there was only one value that represented success, though, it might just be `()`.
-- The `Holder` type represents the other possible states.  For now we'll just use `Result`'s holder type, but will come back to it in a future section.
-- The `branch` method tells the `?` operator whether or not we need to early-exit for a value.  Here we've said that `?` should produce the value from the `Terrific` variant and short circuit for `Unfortunate` values.
-- One can also create an instance of our type from a value of the `Continue` type using the `continue_with` constructor.
 
-Because we used `Result`'s holder type, this is enough to use `?` on our type in a method that returns an appropriate `Result`:
+## The `Try` trait
+
+The `ops::Try` trait describes a type's behavior when used with the `?` operator, like how the `ops::Add` trait describes its behavior when used with the `+` operator.
+
+At its core, the `?` operator is about splitting a type into its two parts:
+
+- The *output* that will be returned from the `?` expression, with which the program will continue, and
+- The *residual* that will be returned to the calling code, as an early exit from the normal flow.
+
+(Oxford's definition for a residual is "a quantity remaining after other things have been subtracted or allowed for", thus the use here.)
+
+The `Try` trait also has facilities for rebuilding a type from either of its parts.  This is needed to build the final return value from a function, both in `?` and in methods generic over multiple types implementing `Try`.
+
+Here's a quick overview of a few standard types which implement `Try`, their corresponding output and residual types, and the functions which convert between them.
+(Full details will come later; the goal for now is just to get the general idea.)
+
+```text
++-------------+                             +-------------------+                          +-------------------+
+| Try::Output |                             |      Try Type     |                          |   Try::Residual   |
++-------------+   Try::branch is Continue   +-------------------+   Try::branch is Break   +-------------------+
+|      T      |  <------------------------  |   Result<T, E>    |  --------------------->  |   Result<!, E>    |
+|      T      |                             |     Option<T>     |                          |     Option<!>     |
+|      C      |  ------------------------>  | ControlFlow<B, C> |  <---------------------  | ControlFlow<B, !> |
++-------------+      Try::from_output       +-------------------+    Try::from_residual    +-------------------+
+```
+
+If you've used `?`-on-`Result` before, that output type is likely unsurprising.  Since it's given out directly from the operator, there's not much of a choice.
+
+The residual types, however, are somewhat more interesting.  Code using `?` doesn't see them directly -- their usage is hidden inside the desugaring -- so there are more possibilities available.  So why are we using these ones specifically?
+
+Most importantly, this gives each family of types (`Result`s, `Option`s, `ControlFlow`s) their own *distinct* residual type.  That avoids unrestricted *interconversion* between the different types, the ability to arbitrarily mix them in the same method.  For example, it was mentioned earlier that just because a `ControlFlow::Break` is also an early exit, that doesn't mean that it should be allowed to consider it a `Result::Err` -- it might be a success, conceptually.  So by giving `ControlFlow<X, _>` and `Result<_, X>` different residual types, it becomes a compilation error to use the `?` operator on a `ControlFlow` in a method which returns a `Result`.  (There are also ways to allow interconversion is specific situations where it's desirable.)
+
+> 🏗️ Note for those familiar with the previous RFC 🏗️
+>
+> This is the most critical semantic difference.  Structurally this definition of the trait is very similar to the previous -- there's still a method splitting the type into a discriminated union between two associated types, and constructors to rebuild it from them.  But by keeping the "result-ness" or "option-ness" in the residual type, it gives extra control over interconversion that wasn't possible before.  The changes other than this are comparatively minor, typically either rearrangements to work with that or renamings to change the vocabulary used in the trait.
+
+Using `!` is then just a convenient yet efficient way to create those residual types.  It's nice as a user, too, not to need to understand an additional type.  Just the same "it can't be that one" pattern that's also used in `TryFrom`, where for example `i32::try_from(10_u8)` gives a `Result<i32, !>`, since it's a widening conversion which cannot fail.  Note that there's nothing special going on with `!` here -- any uninhabited `enum` would work fine.
+
+
+## How error conversion works
+
+One thing [The Book mentions](https://doc.rust-lang.org/stable/book/ch09-02-recoverable-errors-with-result.html#a-shortcut-for-propagating-errors-the--operator),
+if you recall, is that error values in `?` have `From::from` called on them, to convert from one error type to another.
+
+The previous section actually lied to you slightly: there are *two* traits involved, not just one.  The `from_residual` method is on `FromTryResidual`, which is generic so that the implementation on `Result` can add that extra conversion.  Specifically, the trait looks like this:
+
 ```rust
-fn foo() -> Result<(), f32> {
-    let _: () = MyResult::Unfortunate(1.1)?;
-    Ok(())
+trait FromTryResidual<Residual = <Self as Try>::Residual> {
+	fn from_residual(r: Residual) -> Self;
 }
 ```
 
-#### Consuming `?` via `Try`
+And while we're showing code, here's the exact definition of the `Try` trait:
 
-If we change that function to return `MyResult`, however, we'll get an error:
 ```rust
-error[E0277]: the `?` operator can only be used in a function that returns `Result` or `Option` (or another type that implements `Try`)
-  --> C:\src\rust\src\test\ui\try-operator-custom-bubble-and-try.rs:29:17
-   |
-LL | / fn foo() -> MyResult<(), f32> {
-LL | |     let _: () = MyResult::Unfortunate(1.1)?;
-   | |                 ^^^^^^^^^^^^^^^^^^^^^^^^ cannot use the `?` operator in a function that returns `MyResult<(), f32>`
-LL | |     MyResult::Terrific(())
-LL | | }
-   | |_- this function should return `Result` or `Option` to accept `?`
-   |
-   = help: the trait `Try<std::result::Result<!, {float}>>` is not implemented for `MyResult<(), f32>`
-   = note: required by `from_holder`
+trait Try: FromTryResidual {
+	type Output;
+	type Residual;
+	fn branch(self) -> ControlFlow<Self::Residual, Self::Output>;
+	fn from_output(o: Self::Output) -> Self;
+}
 ```
 
-So let's implement that one:
+The fact that it's a super-trait like that is why I don't feel bad about the slight lie: Every `T: Try` *always* has a `from_residual` function from `T::Residual` to `T`.  It's just that some types might offer more.
+
+Here's how `Result` implements it to do error-conversions:
 ```rust
-use std::ops::Try;
-impl<T, U> Try for MyResult<T, U> {
-    fn from_holder(h: Self::Holder) -> Self {
-        match h {
-            Err(e) => MyResult::Unfortunate(e),
-            Ok(v) => match v {},
+impl<T, E, F: From<E>> FromTryResidual<Result<!, E>> for Result<T, F> {
+    fn from_residual(x: Result<!, E>) -> Self {
+        match x {
+            Err(e) => Err(From::from(e)),
         }
     }
 }
 ```
 
-This is much simpler, with just the one associated function.  Because the holder is always an error, we'll always produce a `Unfortunate` result.  (The extra `match v {}` is because that's uninhabited, but [`exhaustive_patterns`](https://github.com/rust-lang/rust/issues/51085) is not yet stable, so we can't just omit the `Ok` arm.)
+But `Option` doesn't need to do anything exciting, so just has a simple implementation, taking advantage of the default parameter:
 
-With this we can now use `?` on both `MyResult`s and `Result`s in a function returning `MyResult`:
 ```rust
-fn foo() -> MyResult<(), f32> {
-    let _: () = MyResult::Unfortunate(1.1)?;
-    MyResult::Terrific(())
-}
-
-fn bar() -> MyResult<(), f32> {
-    let _: () = Err(1.1)?;
-    MyResult::Terrific(())
-}
-```
-
-#### Avoiding interconversion with a custom `Holder`
-
-While interconversion isn't a problem for our custom result-like type, one might not always want it.  For example, you might be making a type that short-circuits on something you think of as success, or just doesn't make sense as pass/fail so there isn't a meaningful "error" to provide.  So let's see how we'd make a custom holder to handle that.
-
-As we saw in the `Bubble::branch` implementation, the holder type preserves the values that weren't returned in the `Continue` type.  Thus for us it'll depend only on `U`, never on `T`.
-
-Also, a holder type can always be associated back to its canonical `Try` (and `Bubble`) type.  This allows generic code to keep the "result-ness" or "option-ness" of a type while changing the `Continue` type.  So while we only need to store a `U`, we'll need some sort of wrapper around it to keep its "myresult-ness".
-
-Conveniently, though, we don't need to define a new type for that: we can use our enum, but with an uninhabited type on one side.  As `!` isn't stable yet, we'll use `std::convert::Infallible` as a canonical uninhabited type.  (You may have seen it before in `TryFrom`, with `u64: TryFrom<u8, Error = Infallible>` since that conversion cannot fail.)
-
-First we need to change the `Holder` type in our `Bubble` implementation, and change the body of `branch` accordingly:
-```rust
-use std::convert::Infallible;
-impl<T, U> Bubble for MyResult<T, U> {
-    ... no changes here ...
-    type Holder = MyResult<Infallible, U>;
-    fn branch(self) -> ControlFlow<Self::Holder, T> {
-        match self {
-            MyResult::Terrific(v) => ControlFlow::Continue(v),
-            MyResult::Unfortunate(e) => ControlFlow::Break(MyResult::Unfortunate(e)),
-        }
-    }
-    ... no changes here ...
-}
-```
-
-As well as update our `Try` implementation for the new holder type:
-```rust
-impl<T, U> Try for MyResult<T, U> {
-    fn from_holder(h: Self::Holder) -> Self {
-        match h {
-            MyResult::Unfortunate(e) => MyResult::Unfortunate(e),
-            MyResult::Terrific(v) => match v {},
+impl<T> FromTryResidual for Option<T> {
+    fn from_residual(x: Self::Residual) -> Self {
+        match x {
+            None => None,
         }
     }
 }
 ```
 
-We're not quite done, though; the compiler will let us know that we have more work to do:
+In your own types, it's up to you to decide how much freedom is appropriate.  You can even enable interconversion by defining implementations from the residual types of other families if you'd like.  But just supporting your one residual type is ok too.
+
+> 🏗️ Note for those familiar with the previous RFC 🏗️
+>
+> This is another notable difference: The `From::from` is up to the trait implementation, not part of the desugaring.
+
+
+## Implementing `Try` for a non-generic type
+
+The examples in the standard library are all generic, so serve as good examples of that, but non-generic implementations are also possible.
+
+Suppose we're working on migrating some C code to Rust, and it's still using the common "zero is success; non-zero is an error" pattern.  Maybe we're using a simple type like this to stay ABI-compatible:
 ```rust
-error[E0277]: the trait bound `MyResult<Infallible, U>: BreakHolder<T>` is not satisfied
-  --> C:\src\rust\src\test\ui\try-operator-custom-v2.rs:17:5
-   |
-LL |     type Holder = MyResult<Infallible, U>;
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `BreakHolder<T>` is not implemented for `MyResult<Infallible, U>`
-   |
-  ::: C:\src\rust\library\core\src\ops\try.rs:102:18
-   |
-LL |     type Holder: BreakHolder<Self::Continue>;
-   |                  --------------------------- required by this bound in `std::ops::Bubble::Holder`
-```
-
-But that's a simple one:
-```rust
-impl<T, U> BreakHolder<T> for MyResult<Infallible, U> {
-    type Output = MyResult<T, U>;
-}
-```
-
-You can think of this trait as bringing back together the `T` and the `U` that `Bubble` had split into different associated types.
-
-With that we can still use `?` in both directions as in `foo` previously.  And it means that `Iterator::try_find` will give us back a `MyResult` if we return it in the predicate:
-```rust
-let x = [1, 2].iter().try_find(|&&x| {
-    if x < 0 {
-        MyResult::Unfortunate("uhoh")
-    } else {
-        MyResult::Terrific(x % 2 == 0)
-    }
-});
-assert!(matches!(x, MyResult::Terrific(Some(2))));
-```
-
-As expected, the mixing in `bar` no longer compiles:
-```
-help: the trait `Try<std::result::Result<!, {float}>>` is not implemented for `MyResult<(), f32>`
-```
-
-#### Enabling `Result`-like error conversion
-
-`Result` allows mismatched error types so long as it can convert the source one into the type on the function.  But if we try that with our current type, it won't work:
-```rust
-fn qux() -> MyResult<(), i64> {
-    let _: () = MyResult::Unfortunate(3_u8)?;
-    MyResult::Terrific(())
-}
-```
-
-That help message in the error from the previous section gives us a clue, however.  Thus far we've been using the default generic parameter on `Try<H>` which only allows an exact match to our declared `Bubble::Holder` type.  But we can be more general if we want.  Let's use `From`, like `Result` does:
-```rust
-impl<T, U, V: From<U>> Try<MyResult<Infallible, U>> for MyResult<T, V> {
-    fn from_holder(h: MyResult<Infallible, U>) -> Self {
-        match h {
-            MyResult::Unfortunate(e) => MyResult::Unfortunate(From::from(e)),
-            MyResult::Terrific(v) => match v {},
-        }
-    }
-}
-```
-
-With that the `qux` example starts compiling successfully.
-
-(This can also be used to allow interconversion with holder types from other type constructors, but that's left as an exercise for the reader.)
-
-### Using `?` with a non-generic type
-
-The type in the previous discussion was very flexible, so let's take the opportunity to look at the other end of the spectrum at a type with no generic parameters.
-
-We'll make a `ResultCode` type that works like is common in C: it's an integer internally, with success represented by zero and any non-zero value being a different error.
-
-The type itself can just a normal newtype, and let's give it a constant for the success value:
-```rust
-#[derive(Copy, Clone, Debug, Hash, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[repr(transparent)]
 pub struct ResultCode(pub i32);
 impl ResultCode {
-    pub const SUCCESS: Self = ResultCode(0);
+    const SUCCESS: Self = ResultCode(0);
 }
 ```
-Users are expected to produce, operate on, and consume this type, so it gets the a usual list of traits.  It doesn't need to maintain any invariants in it either, so the field might as well just be public -- no need for accessors.
 
-We decided earlier that zero is the only success value, so there's nothing interesting to provide out of `?` if the result code happens to be the success one.  So we might as well use `()` as our `Continue` type.
+We can implement `Try` for that type to simplify the code without changing the error model.
 
-Now what should the holder look like?  With no values of generic types, the holder won't need to be generic either.  It needs to represent the non-zero values, so let's make it a newtype around `NonZeroI32`:
+First, we'll need a residual type.  We can make this a simple newtype, and conveniently there's a type with a niche for exactly the value that this can't hold.  This is only used inside the desugaring, so we can leave it opaque -- nobody but us will need to create or inspect it.
 ```rust
 use std::num::NonZeroI32;
-pub struct ResultCodeHolder(NonZeroI32);
+pub struct ResultCodeResidual(NonZeroI32);
 ```
-This type is really only there to be used transiently inside desugarings.  There's no expectation that a user will ever need to touch one -- they'll be working with `ResultCode`s.  So we don't need to offer any way to produce or consume these directly; it can just be opaque.
 
-*(Aside: it doesn't* have *to be completely opaque, however.  In a real library it might want to be at least `Debug`+`Copy` for politeness, for example.  Or it could be developed out into a "full" type with a `Display` which shows the description from C's `strerror`.  But for the purpose of this RFC, there's no need for all that.)*
-
-With those types decided for the two sides of the control flow, we can go ahead and implement `Bubble`:
+With that, it's straight-forward to implement the traits.  `NonZeroI32`'s constructor even does exactly the check we need in `Try::branch`:
 ```rust
-impl Bubble for ResultCode {
-    type Continue = ();
-    type Holder = ResultCodeHolder;
-    fn branch(self) -> ControlFlow<Self::Holder, ()> {
+impl Try for ResultCode {
+    type Output = ();
+    type Residual = ResultCodeResidual;
+    fn branch(self) -> ControlFlow<Self::Residual> {
         match NonZeroI32::new(self.0) {
-            Some(e) => ControlFlow::Break(ResultCodeHolder(e)),
+            Some(r) => ControlFlow::Break(ResultCodeResidual(r)),
             None => ControlFlow::Continue(()),
         }
     }
-    fn continue_with((): ()) -> Self {
-        Self::SUCCESS
+    fn from_output((): ()) -> Self {
+        ResultCode::SUCCESS
+    }
+}
+
+impl FromTryResidual for ResultCode {
+    fn from_residual(r: ResultCodeResidual) -> Self {
+        ResultCode(r.0.into())
     }
 }
 ```
 
-Because `ResultCode` isn't generic, there's no way for `BreakHolder` to give out different types for different "keep going" payloads.  Thus it's only defined for a `()` continue type:
-```rust
-impl BreakHolder<()> for ResultCodeHolder {
-    type Output = ResultCode;
-}
-```
-This means that we won't be able to use `ResultCode` with `Iterator::try_find` -- since there's no way for it to hold a `bool` or an `Option<Item>` -- but that's fine.  Interestingly, it's still usable with `Iterator::try_for_each`, since that only requires `Continue = ()`.
+Aside: As a nice bonus, the use of a `NonZero` type in the residual means that `<ResultCode as Try>::branch` [compiles down to a nop](https://rust.godbolt.org/z/GxeYax) on the current nightly.  Thanks, enum layout optimizations!
 
-The implementation for `Try` is also simple:
+Now, this is all great for keeping the interface that the other unmigrated C code expects, and can even work in `no_std` if we want.  But it might also be nice to give other *Rust* code that uses it the option to convert things into a `Result` with a more detailed error.
+
+For expository purposes, we'll use this error type:
 ```rust
-impl Try for ResultCode {
-    fn from_holder(h: ResultCodeHolder) -> Self {
-        Self(h.0.into())
+#[derive(Debug, Clone)]
+pub struct FancyError(String);
+```
+
+(A real one would probably be more complicated and have a better name, but this will work for what we need here -- it's bigger and needs non-core things to work.)
+
+We can allow `?` on a `ResultCode` in a method returning `Result` with an implementation like this:
+```rust
+impl<T, E: From<FancyError>> FromTryResidual<ResultCodeResidual> for Result<T, E> {
+    fn from_residual(r: ResultCodeResidual) -> Self {
+        Err(FancyError(format!("Something fancy about {} at {:?}", r.0, std::time::SystemTime::now())).into())
     }
 }
 ```
 
-And with that we have enough to try out our new type:
-```rust
-fn external_one() -> ResultCode;
-fn external_two() -> ResultCode;
-fn demo() -> ResultCode {
-    external_one()?;
-    external_two()?;
-    ResultCode::SUCCESS
-}
-```
+*The split between different error strategies in this section is inspired by [`windows-rs`](https://github.com/microsoft/windows-rs), which has both [`ErrorCode`](https://microsoft.github.io/windows-docs-rs/doc/bindings/windows/struct.ErrorCode.html) -- a simple newtype over `u32` -- and [`Error`](https://microsoft.github.io/windows-docs-rs/doc/bindings/windows/struct.Error.html) -- a richer type that can capture a stack trace, has an `Error` trait implementation, and can carry additional debugging information -- where the former can be converted into the latter.*
 
-*(Aside: As a nice bonus, the use of a `NonZero` type in the holder means that `<ResultCode as Bubble>::branch` [compiles down to a nop](https://rust.godbolt.org/z/GxeYax) on the current nightly.  Thanks, enum layout optimizations!)*
 
 ## Using these traits in generic code
 
-### When the generic parameter has the `Continue` type you need
-
-`Iterator::try_fold` has been stable to call (but not to implement) for a while now.  To illustrate the flow through the traits in this RFC, lets implement our own version without using any of the sugar.
+`Iterator::try_fold` has been stable to call (but not to implement) for a while now.  To illustrate the flow through the traits in this RFC, lets implement our own version.
 
 As a reminder, an infallible version of a fold looks something like this:
 ```rust
@@ -369,9 +259,9 @@ fn simple_fold<A, T>(
 
 So instead of `f` returning just an `A`, we'll need it to return some other type that produces an `A` in the "don't short circuit" path.  Conveniently, that's also the type we need to return from the function.
 
-Let's add a new generic parameter `R` for that type, and bound it to the continue type that we want:
+Let's add a new generic parameter `R` for that type, and bound it to the output type that we want:
 ```rust
-fn simple_try_fold_1<A, T, R: Bubble<Continue = A>>(
+fn simple_try_fold_1<A, T, R: Try<Output = A>>(
     iter: impl Iterator<Item = T>,
     mut accum: A,
     mut f: impl FnMut(A, T) -> R,
@@ -380,9 +270,9 @@ fn simple_try_fold_1<A, T, R: Bubble<Continue = A>>(
 }
 ```
 
-Conveniently, `Bubble` is also the trait we need to get the updated accumulator from `f`'s return value and return the result if we manage to get through the entire iterator:
+`Try` is also the trait we need to get the updated accumulator from `f`'s return value and return the result if we manage to get through the entire iterator:
 ```rust
-fn simple_try_fold_2<A, T, R: Bubble<Continue = A>>(
+fn simple_try_fold_2<A, T, R: Try<Output = A>>(
     iter: impl Iterator<Item = T>,
     mut accum: A,
     mut f: impl FnMut(A, T) -> R,
@@ -394,13 +284,13 @@ fn simple_try_fold_2<A, T, R: Bubble<Continue = A>>(
             ControlFlow::Break(_) => todo!(),
         }
     }
-    R::continue_with(accum)
+    R::from_output(accum)
 }
 ```
 
-Just `Bubble` isn't enough, though.  We also need `Try` here in order to convert the holder inside the `Break` variant back into `R`.  But because `Bubble` is a supertrait of `Try<H>`, we can just change the bound rather than adding a second one:
+We'll also need `FromTryResidual::from_residual` to turn the residual back into the original type.  But because it's a supertrait of `Try`, we don't need to mention it in the bounds.  All types which implement `Try` can always be recreated from their corresponding residual, so we'll just call it:
 ```rust
-pub fn simple_try_fold<A, T, R: Try<Continue = A>>(
+pub fn simple_try_fold_3<A, T, R: Try<Output = A>>(
     iter: impl Iterator<Item = T>,
     mut accum: A,
     mut f: impl FnMut(A, T) -> R,
@@ -409,29 +299,27 @@ pub fn simple_try_fold<A, T, R: Try<Continue = A>>(
         let cf = f(accum, x).branch();
         match cf {
             ControlFlow::Continue(a) => accum = a,
-            ControlFlow::Break(h) => return R::from_holder(h),
+            ControlFlow::Break(r) => return R::from_residual(r),
         }
     }
-    R::continue_with(accum)
+    R::from_output(accum)
 }
 ```
 
-### When you need to switch to a different `Continue` type
-
-You might have noticed that even the final `simple_try_fold` didn't need to mention `BreakHolder<C>`.  That's because it's only needed if you want to return a type from the same family, but with a different continue type.
-
-`Option::zip` stabilized a few releases ago, so here's a demonstration of a more-generalized version.  To restrict the two inputs to the same family, it requires that the holder types match. Then it uses `BreakHolder` to get an output type from that same family.
-
+But this "call `branch`, then `match` on it, and `return` if it was a `Break`" is exactly what happens inside the `?` operator.  So rather than do all this manually, we can just use `?` instead:
 ```rust
-fn zip_demo<T, U, H: BreakHolder<(T, U)>>(
-    a: impl Bubble<Continue = T, Holder = H>,
-    b: impl Bubble<Continue = U, Holder = H>,
-) -> <H as BreakHolder<(T, U)>>::Output {
-    Bubble::continue_with((a?, b?))
+fn simple_try_fold<A, T, R: Try<Output = A>>(
+    iter: impl Iterator<Item = T>,
+    mut accum: A,
+    mut f: impl FnMut(A, T) -> R,
+) -> R {
+    for x in iter {
+        accum = f(accum, x)?;
+    }
+    R::from_output(accum)
 }
 ```
 
-Here `Try` doesn't need to be mentioned explicitly, as the `BreakHolder::Output` type is always bound by `Try<Self>`.
 
 <!--
 Explain the proposal as if it was already included in the language and you were teaching it to another Rust programmer. That generally means:
@@ -453,9 +341,9 @@ For implementation-oriented RFCs (e.g. for compiler internals), this section sho
 ```rust
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ControlFlow<B, C = ()> {
-    /// Exit the loop, yielding the given value
+    /// Exit the operation without running subsequent phases.
     Break(B),
-    /// Continue in the loop, using the given value for the next iteration
+    /// Move on to the next phase of the operation as normal.
     Continue(C),
 }
 ```
@@ -463,19 +351,25 @@ pub enum ControlFlow<B, C = ()> {
 ## The traits
 
 ```rust
-trait Bubble {
-	type Continue;
-	type Holder: BreakHolder<Self::Continue>;
-	fn continue_with(c: Self::Continue) -> Self;
-	fn branch(self) -> ControlFlow<Self::Holder, Self::Continue>;
+pub trait Try: FromTryResidual {
+    /// The type of the value consumed or produced when not short-circuiting.
+    type Output;
+
+    /// A type that "colours" the short-circuit value so it can stay associated
+    /// with the type constructor from which it came.
+    type Residual;
+
+    /// Used in `try{}` blocks to wrap the result of the block.
+    fn from_output(x: Self::Output) -> Self;
+
+    /// Determine whether to short-circuit (by returning `ControlFlow::Break`)
+    /// or continue executing (by returning `ControlFlow::Continue`).
+    fn branch(self) -> ControlFlow<Self::Residual, Self::Output>;
 }
 
-trait BreakHolder<T> {
-    type Output: Try<Continue = T, Holder = Self>;
-}
-
-trait Try<H = <Self as Bubble>::Holder>: Bubble {
-	fn from_holder(h: H) -> Self;
+pub trait FromTryResidual<Residual = <Self as Try>::Residual> {
+    /// Recreate the type implementing `Try` from a related residual
+    fn from_residual(x: Residual) -> Self;
 }
 ```
 
@@ -493,9 +387,9 @@ match Try::into_result(x) {
 The new one is very similar:
 
 ```rust
-match Bubble::branch(x) {
+match Try::branch(x) {
 	ControlFlow::Continue(v) => v,
-	ControlFlow::Break(h) => return Try::from_holder(h),
+	ControlFlow::Break(r) => return FromTryResidual::from_residual(r),
 }
 ```
 
@@ -506,15 +400,17 @@ It's just left conversion (such as `From::from`) up to the implementation instea
 ### `Result`
 
 ```rust
-impl<T, E> ops::Bubble for Result<T, E> {
-    type Continue = T;
-    type Holder = Result<!, E>;
+impl<T, E> ops::Try for Result<T, E> {
+    type Output = T;
+    type Residual = Result<!, E>;
 
-    fn continue_with(c: T) -> Self {
+    #[inline]
+    fn from_output(c: T) -> Self {
         Ok(c)
     }
 
-    fn branch(self) -> ControlFlow<Self::Holder, T> {
+    #[inline]
+    fn branch(self) -> ControlFlow<Self::Residual, T> {
         match self {
             Ok(c) => ControlFlow::Continue(c),
             Err(e) => ControlFlow::Break(Err(e)),
@@ -522,13 +418,8 @@ impl<T, E> ops::Bubble for Result<T, E> {
     }
 }
 
-impl<T, E> ops::BreakHolder<T> for Result<!, E> {
-    type Output = Result<T, E>;
-}
-
-#[unstable(feature = "try_trait_v2", issue = "42327")]
-impl<T, E, F: From<E>> ops::Try<Result<!, E>> for Result<T, F> {
-    fn from_holder(x: Result<!, E>) -> Self {
+impl<T, E, F: From<E>> ops::FromTryResidual<Result<!, E>> for Result<T, F> {
+    fn from_residual(x: Result<!, E>) -> Self {
         match x {
             Err(e) => Err(From::from(e)),
         }
@@ -539,17 +430,17 @@ impl<T, E, F: From<E>> ops::Try<Result<!, E>> for Result<T, F> {
 ### `Option`
 
 ```rust
-impl<T> ops::Bubble for Option<T> {
-    type Continue = T;
-    type Holder = Option<!>;
+impl<T> ops::Try for Option<T> {
+    type Output = T;
+    type Residual = Option<!>;
 
     #[inline]
-    fn continue_with(c: T) -> Self {
+    fn from_output(c: T) -> Self {
         Some(c)
     }
 
     #[inline]
-    fn branch(self) -> ControlFlow<Self::Holder, T> {
+    fn branch(self) -> ControlFlow<Self::Residual, T> {
         match self {
             Some(c) => ControlFlow::Continue(c),
             None => ControlFlow::Break(None),
@@ -557,12 +448,8 @@ impl<T> ops::Bubble for Option<T> {
     }
 }
 
-impl<T> ops::BreakHolder<T> for Option<!> {
-    type Output = Option<T>;
-}
-
-impl<T> ops::Try for Option<T> {
-    fn from_holder(x: Self::Holder) -> Self {
+impl<T> ops::FromTryResidual for Option<T> {
+    fn from_residual(x: <Self as ops::Try>::Residual) -> Self {
         match x {
             None => None,
         }
@@ -572,18 +459,18 @@ impl<T> ops::Try for Option<T> {
 
 ### `Poll`
 
-These reuse `Result`'s holder type, so don't need `BreakHolder` implementations of their own, nor additional `Try` implementations on `Result`.
+These reuse `Result`'s residual type, and thus interconversion between `Poll` and `Result` is allowed without needing additional `FromTryResidual` implementations on `Result`.
 
 ```rust
-impl<T, E> ops::Bubble for Poll<Result<T, E>> {
-    type Continue = Poll<T>;
-    type Holder = <Result<T, E> as ops::Bubble>::Holder;
+impl<T, E> ops::Try for Poll<Result<T, E>> {
+    type Output = Poll<T>;
+    type Residual = <Result<T, E> as ops::Try>::Residual;
 
-    fn continue_with(c: Self::Continue) -> Self {
+    fn from_output(c: Self::Output) -> Self {
         c.map(Ok)
     }
 
-    fn branch(self) -> ControlFlow<Self::Holder, Self::Continue> {
+    fn branch(self) -> ControlFlow<Self::Residual, Self::Output> {
         match self {
             Poll::Ready(Ok(x)) => ControlFlow::Continue(Poll::Ready(x)),
             Poll::Ready(Err(e)) => ControlFlow::Break(Err(e)),
@@ -592,8 +479,8 @@ impl<T, E> ops::Bubble for Poll<Result<T, E>> {
     }
 }
 
-impl<T, E, F: From<E>> ops::Try<Result<!, E>> for Poll<Result<T, F>> {
-    fn from_holder(x: Result<!, E>) -> Self {
+impl<T, E, F: From<E>> ops::FromTryResidual<Result<!, E>> for Poll<Result<T, F>> {
+    fn from_residual(x: Result<!, E>) -> Self {
         match x {
             Err(e) => Poll::Ready(Err(From::from(e))),
         }
@@ -602,15 +489,15 @@ impl<T, E, F: From<E>> ops::Try<Result<!, E>> for Poll<Result<T, F>> {
 ```
 
 ```rust
-impl<T, E> ops::Bubble for Poll<Option<Result<T, E>>> {
-    type Continue = Poll<Option<T>>;
-    type Holder = <Result<T, E> as ops::Bubble>::Holder;
+impl<T, E> ops::Try for Poll<Option<Result<T, E>>> {
+    type Output = Poll<Option<T>>;
+    type Residual = <Result<T, E> as ops::Try>::Residual;
 
-    fn continue_with(c: Self::Continue) -> Self {
+    fn from_output(c: Self::Output) -> Self {
         c.map(|x| x.map(Ok))
     }
 
-    fn branch(self) -> ControlFlow<Self::Holder, Self::Continue> {
+    fn branch(self) -> ControlFlow<Self::Residual, Self::Output> {
         match self {
             Poll::Ready(Some(Ok(x))) => ControlFlow::Continue(Poll::Ready(Some(x))),
             Poll::Ready(Some(Err(e))) => ControlFlow::Break(Err(e)),
@@ -620,8 +507,8 @@ impl<T, E> ops::Bubble for Poll<Option<Result<T, E>>> {
     }
 }
 
-impl<T, E, F: From<E>> ops::Try<Result<!, E>> for Poll<Option<Result<T, F>>> {
-    fn from_holder(x: Result<!, E>) -> Self {
+impl<T, E, F: From<E>> ops::FromTryResidual<Result<!, E>> for Poll<Option<Result<T, F>>> {
+    fn from_residual(x: Result<!, E>) -> Self {
         match x {
             Err(e) => Poll::Ready(Some(Err(From::from(e)))),
         }
@@ -632,13 +519,15 @@ impl<T, E, F: From<E>> ops::Try<Result<!, E>> for Poll<Option<Result<T, F>>> {
 ### `ControlFlow`
 
 ```rust
-impl<B, C> ops::Bubble for ControlFlow<B, C> {
-    type Continue = C;
-    type Holder = ControlFlow<B, !>;
-    fn continue_with(c: C) -> Self {
+impl<B, C> ops::Try for ControlFlow<B, C> {
+    type Output = C;
+    type Residual = ControlFlow<B, !>;
+
+    fn from_output(c: C) -> Self {
         ControlFlow::Continue(c)
     }
-    fn branch(self) -> ControlFlow<Self::Holder, C> {
+
+    fn branch(self) -> ControlFlow<Self::Residual, C> {
         match self {
             ControlFlow::Continue(c) => ControlFlow::Continue(c),
             ControlFlow::Break(b) => ControlFlow::Break(ControlFlow::Break(b)),
@@ -646,14 +535,10 @@ impl<B, C> ops::Bubble for ControlFlow<B, C> {
     }
 }
 
-impl<B, C> ops::BreakHolder<C> for ControlFlow<B, !> {
-    type Output = ControlFlow<B, C>;
-}
-
-impl<B, C> ops::Try for ControlFlow<B, C> {
-    fn from_holder(x: Self::Holder) -> Self {
+impl<B, C> ops::FromTryResidual for ControlFlow<B, C> {
+    fn from_residual(x: <Self as ops::Try>::Residual) -> Self {
         match x {
-            ControlFlow::Break(b) => ControlFlow::Break(b),
+            ControlFlow::Break(r) => ControlFlow::Break(r),
         }
     }
 }
@@ -666,19 +551,17 @@ This is done with an extra implementation:
 mod sadness {
     use super::*;
 
-    /// This is a remnant of the old `NoneError`, and is never going to be stabilized.
+    /// This is a remnant of the old `NoneError` which is never going to be stabilized.
     /// It's here as a snapshot of an oversight that allowed this to work in the past,
     /// so we're stuck supporting it even though we'd really rather not.
-    #[unstable(feature = "legacy_try_trait", issue = "none")]
     #[derive(Clone, Copy, PartialEq, PartialOrd, Eq, Ord, Debug, Hash)]
     pub struct PleaseCallTheOkOrMethodToUseQuestionMarkOnOptionsInAMethodThatReturnsResult;
 
-    #[unstable(feature = "try_trait_v2", issue = "42327")]
-    impl<T, E> ops::Try<Option<!>> for Result<T, E>
+    impl<T, E> ops::FromTryResidual<Option<!>> for Result<T, E>
     where
         E: From<PleaseCallTheOkOrMethodToUseQuestionMarkOnOptionsInAMethodThatReturnsResult>,
     {
-        fn from_holder(x: Option<!>) -> Self {
+        fn from_residual(x: Option<!>) -> Self {
             match x {
                 None => Err(From::from(
                     PleaseCallTheOkOrMethodToUseQuestionMarkOnOptionsInAMethodThatReturnsResult,
@@ -697,48 +580,13 @@ fn try_fold<B, F, R>(&mut self, init: B, mut f: F) -> R
 where
     Self: Sized,
     F: FnMut(B, Self::Item) -> R,
-    R: Try<Continue = B>,
+    R: Try<Output = B>,
 {
     let mut accum = init;
     while let Some(x) = self.next() {
         accum = f(accum, x)?;
     }
     try { accum }
-}
-```
-
-The current (unstable) `try_find` allows any `Try<Ok = bool>` type as the return type of its predicate, but always returns a `Result`.
-
-One can take advantage of `BreakHolder` to still return `Result` when the predicate returned `Result`, but also to return `Option` when the predicate returned `Option` (and so on):
-```rust
-fn try_find<F, R>(
-    &mut self,
-    f: F,
-) -> <R::Holder as ops::BreakHolder<Option<Self::Item>>>::Output
-where
-    Self: Sized,
-    F: FnMut(&Self::Item) -> R,
-    R: ops::Try<Continue = bool>,
-    R::Holder: ops::BreakHolder<Option<Self::Item>>,
-{
-    #[inline]
-    fn check<F, T, R>(mut f: F) -> impl FnMut((), T) -> ControlFlow<Result<T, R::Holder>>
-    where
-        F: FnMut(&T) -> R,
-        R: Try<Continue = bool>,
-    {
-        move |(), x| match f(&x).branch() {
-            ControlFlow::Continue(false) => ControlFlow::CONTINUE,
-            ControlFlow::Continue(true) => ControlFlow::Break(Ok(x)),
-            ControlFlow::Break(h) => ControlFlow::Break(Err(h)),
-        }
-    }
-
-    match self.try_fold((), check(f)) {
-        ControlFlow::Continue(()) => ops::Bubble::continue_with(None),
-        ControlFlow::Break(Ok(x)) => ops::Bubble::continue_with(Some(x)),
-        ControlFlow::Break(Err(h)) => Try::from_holder(h),
-    }
 }
 ```
 
@@ -760,6 +608,7 @@ The section should return to the examples given in the previous section, and exp
 - This is the fourth attempt at a design in this space, so it might not be the right one either.
 - As with all overloadable operators, users might implement this to do something weird.
 - In situations where extensive interconversion is desired, this requires more implementations.
+- Moving `From::from` from the desugaring to the implementations means that implementations which do want it are more complicated.
 
 <!--
 Why should we *not* do this?
@@ -778,7 +627,7 @@ There are also [ecosystem changes waiting on something like it](https://github.c
 
 ## Methods on `ControlFlow`
 
-On nightly there are are a [variety of methods](https://doc.rust-lang.org/nightly/std/ops/enum.ControlFlow.html#implementations) available on `ControlFlow`.  However, none of them are needed for the stabilization of the traits, so they left out of this RFC.  They can be considered by libs at a later point.
+On nightly there are a [variety of methods](https://doc.rust-lang.org/nightly/std/ops/enum.ControlFlow.html#implementations) available on `ControlFlow`.  However, none of them are needed for the stabilization of the traits, so they left out of this RFC.  They can be considered by libs at a later point.
 
 There's a basic set of simple ones that could be included if desired, though:
 ```rust
@@ -798,6 +647,55 @@ For `Option`s, `None < Some(_)`, but for `Result`s, `Ok(_) < Err(_)`.  So there'
 
 Leaving it out also leaves us free to change the ordering of the variants in the definition in case doing so can allow us to optimize the `?` operator.  (For a similar previous experiment, see [PR #49499](https://github.com/rust-lang/rust/pull/49499).)
 
+## Naming the variants on `ControlFlow`
+
+The variants are given those names as they serve the same purpose as the corresponding keywords when used in `Iterator::try_fold` or `Iterator::try_for_each`.
+
+<!-- https://play.rust-lang.org/?version=nightly&mode=debug&edition=2018&gist=f10bc2eab9db91273601c9e806989f7e -->
+For example, this (admittedly contrived) loop
+```rust
+let mut sum = 0;
+for x in iter {
+    if x % 2 == 0 { continue }
+    sum += x;
+    if sum > 100 { break }
+    continue
+}
+```
+can be written as
+```rust
+let mut sum = 0;
+iter.try_for_each(|x| {
+    if x % 2 == 0 { return ControlFlow::Continue(()) }
+    sum += x;
+    if sum > 100 { return ControlFlow::Break(()) }
+    ControlFlow::Continue(())
+});
+```
+(Of course, one wouldn't normally use the `continue` keyword at the end of a `for` loop like that, but I've included it here to emphasize that even the `ControlFlow::Continue(())` as the final expression of the block it ends up working like the keyword would.)
+
+## Why `ControlFlow` has `C = ()`
+
+The type that eventually became `ControlFlow` was originally added way back in 2017 as [the internal-only type `LoopState`](https://github.com/rust-lang/rust/commit/b32267f2c1344d37c4aa30eccd5a9ab77642b3e6#diff-6f95fa6b66f447d11bb7507f832027237ee240310c159c74495a2363c82e76d7R357-R376) used to make some default implementations in `Iterator` easier to read.  It had no type parameter defaults.
+
+[Issue #75744](https://github.com/rust-lang/rust/issues/75744) in 2020 started the process of exposing it, coming out of the [observation](https://github.com/rust-itertools/itertools/issues/469) that `Iterator::try_fold` isn't a great replacement for the deprecated-at-the-time `Itertools::fold_while` since using `Err` for a conceptual success makes code hard to read.
+
+The compiler actually had [its own version of the type](https://github.com/rust-lang/rust/blob/515c9fa505e18a65d7f61bc3e9eb833b79a68618/src/librustc_data_structures/graph/iterate/mod.rs#L91-L94) in `librustc_data_structures` at the time:
+```rust
+pub enum ControlFlow<T> {
+    Break(T),
+    Continue,
+}
+```
+
+The compiler was moved over to the newly-exposed type, and that inspired the creation of [MCP#374](https://github.com/rust-lang/compiler-team/issues/374), TypeVisitor: use ops::ControlFlow instead of bool.  Experience from that lead to flipping the type arguments in [PR#76614](https://github.com/rust-lang/rust/pull/76614) -- which also helped the original use cases in `Iterator`, where things like default implementation of `find` also want `C = ()`.  And these were so successful that it lead to [MCP#383](https://github.com/rust-lang/compiler-team/issues/383), TypeVisitor: do not hard-code a `ControlFlow<()>` result, having the visitors use `ControlFlow<Self::BreakTy>`.
+
+As an additional anecdote that `C = ()` is particularly common, [Hytak mentioned the following](https://discord.com/channels/530598289813536771/530603542138847242/807920021728264193) on Discord in response to seeing a draft of this RFC:
+
+> i didn't read your proposal in depth, but this reminds me of a recursive search function i experimented with a few days ago. It used a Result type as output, where Err(value) meant that it found the value and Ok(()) meant that it didn't find the value. That way i could use the `?` to exit early
+
+So when thinking about `ControlFlow`, it's often best to think of it not like `Result`, but like an `Option` which short-circuits the other variant.  While it *can* flow a `Continue` value, that seems to be a fairly uncommon use in practice.
+
 ## Was this considered last time?
 
 Interestingly, a [previous version](https://github.com/rust-lang/rfcs/blob/f89568b1fe5db4d01c4668e0d334d4a5abb023d8/text/0000-try-trait.md#using-an-associated-type-for-the-success-value) of RFC #1859 _did_ actually mention a two-trait solution, splitting the "associated type for ok" and "generic type for error" like is done here.  It's no longer  mentioned in the version that was merged.  To speculate, it may have been unpopular due to a thought that an extra traits just for the associated type wasn't worth it.
@@ -806,19 +704,31 @@ Current desires for the solution, however, have more requirements than were incl
 
 Also, ok-wrapping was decided [in #70941](https://github.com/rust-lang/rust/issues/70941), which needs such a constructor, making this ["much more appealing"](https://github.com/rust-lang/rust/issues/42327#issuecomment-379882998).
 
-## Trait naming
+## Why not make the output a generic type?
+
+It's helpful that type information can flow both ways through `?`.
+
+- In the forward direction, not needing a contextual type means that `println!("{}", x?)` works instead of needing a type annotation.  (It's also just less confusing to have `?` on the same type always produce the same type.)
+- In the reverse direction, it allows things like `let x: i32 = s.parse()?;` to infer the requested type from that annotation, rather than requiring it be specified again.
+
+Similar scenarios exist for `try`, though of course they're not yet stable:
+
+- `let y: anyhow::Result<_> = try { x };` doesn't need to repeat the type of `x`.
+- `let x: i16 = { 4 };` works for infallible code, so for consistency it's good for `let x: anyhow::Result<i16> = try { 4 };` to also work (rather than default the literal to `i32` and fail).
+
+## Trait and associated type naming
 
 Bikeshed away!
 
-## Why a "holder" type is better than an "error" type
+## Why a "residual" type is better than an "error" type
 
-Most importantly, for any type generic in its "continue type" it's easy to produce the holder type using an uninhabited type.  That works for `Option` -- no `NoneError` residual type needed -- as well as for the `StrandFail<T>` type from the experience report.  And thanks to enum layout optimizations, there's no space overhead to doing this: `Option<!>` is a ZST, and `Result<!, E>` is no larger than `E` itself.  So most of the time one will not need to define anything additional.
+Most importantly, for any type generic in its "output type" it's easy to produce a residual type using an uninhabited type.  That works for `Option` -- no `NoneError` residual type needed -- as well as for the `StrandFail<T>` type from the experience report.  And thanks to enum layout optimizations, there's no space overhead to doing this: `Option<!>` is a ZST, and `Result<!, E>` is no larger than `E` itself.  So most of the time one will not need to define anything additional.
 
-In those cases where a separate type *is* needed, it's still easier to make a holder type because they're transient and thus can be opaque: there's no point at which a user is expected to *do* anything with a holder type other than convert it back into a known `Try` type.  This is different from the previous design, where less-restrictive interconversion meant that anything could be exposed via a `Result`.  That has lead to requests, [such as for `NoneError` to implement `Error`](https://github.com/rust-lang/rust/issues/46871#issuecomment-618186642), that are perfectly understandable given that the instances are exposed in `Result`s.  As holder types aren't ever exposed like that, it would be fine for them to implement nothing but `BreakHolder` (and probably `Debug`), making them cheap to define and maintain.
+In those cases where a separate type *is* needed, it's still easier to make a residual type because they're transient and thus can be opaque: there's no point at which a user is expected to *do* anything with a residual type other than convert it back into a known `Try` type.  This is different from the previous design, where less-restrictive interconversion meant that anything could be exposed via a `Result`.  That has lead to requests, [such as for `NoneError` to implement `Error`](https://github.com/rust-lang/rust/issues/46871#issuecomment-618186642), that are perfectly understandable given that the instances are exposed in `Result`s.  As residual types aren't ever exposed like that, it would be fine for them to implement nothing but `FromTryResidual` (and probably `Debug`), making them cheap to define and maintain.
 
 ## Use of `!`
 
-This RFC uses `!` to be concise.  It would work fine with `convert::Infallible` instead if `!` has not yet stabilized, though a few more match arms would be needed in the implementations.  (For example, `Option::from_holder` would need `Some(c) => match c {}`.)
+This RFC uses `!` to be concise.  It would work fine with `convert::Infallible` instead if `!` has not yet stabilized, though a few more match arms would be needed in the implementations.  (For example, `Option::from_residual` would need `Some(c) => match c {}`.)
 
 ## Moving away from the `Option`→`Result` interconversion
 
@@ -828,43 +738,24 @@ For example, we could have a different, never-stable `Try`-like trait used in ol
 
 It's unclear that that's worth the effort, however, so this RFC is currently written to continue to support it going forward.  Notably, removing it isn't enough to solve the annotation requirements, so the opportunity cost feels low.
 
-## Bounds on `Bubble::Holder`
+## Why `FromTryResidual` is the supertrait
 
-The bound for this associated type could be tightened as follows:
+It's nicer for `try_fold` implementations to just mention the simpler `Try` name.  It being the subtrait means that code needing only the basic scenario can just bound on `Try` and know that both `from_output` and `from_residual` are available.
+
+## Default `Residual` on `FromTryResidual`
+
+The default here is provided to make the basic case simple.  It means that when implementing the trait, the simple case (like in `Option`) doesn't need to think about it -- similar to how you can `impl Add for Foo` for the homogeneous case even though that trait also has a generic parameter.
+
+## `FromTryResidual::from_residual` vs `Residual::into_try`
+
+Either of these directions could be made to work.  Indeed, an early experiment while drafting this had a method on a required trait for the residual that created the type implementing `Try` (not just the associated type).  However that method was removed as unnecessary once `from_residual` was added, and then the whole trait was moved to future work in order to descope the RFC, as it proved unnecessary for the essential `?`/`try_fold` functionality.
+
+A major advantage of the `FromTryResidual::from_residual` direction is that it's more flexible with coherence when it comes to allowing other things to be converted into a new type being defined.  That does come at the cost of higher restriction on allowing the new type to be converted into other things, but reusing a residual can also be used for that scenario.
+
+Converting a known residual into a generic `Try` type seems impossible (unless it's uninhabited), but consuming arbitrary residuals could work -- imagine something like
 ```rust
-type Holder: BreakHolder<Self::Continue, Output = Self>;
-```
-
-That forces every type to be in bijection with its holder; however it's not clear that such a restriction is valuable.
-
-The implementation for `Poll<Result<T, E>>`, for example, works well with reusing `Result`'s holder type.  The type *wants* to support the interconversion anyway, so forcing it to define a newtype for the holder is extra busywork.  It might not even be possible for types outside `core` due to coherence.
-
-The advantage of the bijection, though, is that methods like `Iterator::try_find` would always return the "same" thing conceptually.  But in generic code that's mostly irrelevant, and even with known types it's not a big deal.  The holder type will be the same, so `?` would still work to go back to the original type if needed.  And of course the type can always define a distinct holder if they're worried about it.
-
-## `BreakHolder<T>` vs using GATs
-
-Generic Associated Types (GATs) may not be stable at the time of writing this RFC, but it's natural to ask if we'd like to use them if available, and thus should wait for them.
-
-Types like `Result` and `Option` support any (sized) type as their continue type, so GATs would be reasonable for them.  However, with other possible types that might not be the case.  For example, imagine supporting `?` on `process::ExitStatus`.  Its holder type would likely only be `BreakHolder<()>`, since it cannot hold a custom payload and for it "success is defined as a zero exit status" (per `ExitStatus::success`).  So requiring that these types support an arbitrary generic continue type may be overly restrictive, and thus the trait approach -- allowing bounding to just the types needed -- seems reasonable.
-
-(Note that RFC #1598 only [included lifetime-GATs, not type-GATs](https://rust-lang.github.io/rfcs/1598-generic_associated_types.html#associated-type-constructors-of-type-arguments).  So it's likely that it would also be a very long wait for type-GATs.)
-
-## Default `H` on `Try`
-
-The default here is provided to make the homogeneous case simple.  Along with its supertrait, that greatly simplifies the bound on `Iterator::try_fold`, for example.  Just requiring `R: Try` is enough to break apart and rebuild a value of that type (as was the case with the previous trait).
-
-It's also convenient when implementing the trait in cases that don't need conversion, as seen with `Option`.
-
-## `Try::from_holder` vs `Holder::into_try`
-
-Either of these directions could be made to work.  Indeed, an early experiment while drafting this had a method on `BreakHolder` that created the `Bubble` type (not just the associated type).  However that was removed as unnecessary once `Try::from_holder` was added.
-
-A major advantage of the `Try::from_holder` direction is that it's more flexible with coherence when it comes to allowing other things to be converted into a new type being defined.  That does come at the cost of higher restriction on allowing the new type to be converted into other things, but reusing a holder can also be used for that scenario.
-
-Converting a known holder into a generic `Bubble` type seems impossible (unless it's uninhabited), but consuming arbitrary holders could work -- imagine something like
-```rust
-impl<H: std::fmt::Debug + BreakHolder<()>> Try<H> for LogAndIgnoreErrors {
-    fn from_holder(h: H) -> Self {
+impl<R: std::fmt::Debug> FromTryResidual<R> for LogAndIgnoreErrors {
+    fn from_residual(h: H) -> Self {
         dbg!(h);
         Self
     }
@@ -872,7 +763,7 @@ impl<H: std::fmt::Debug + BreakHolder<()>> Try<H> for LogAndIgnoreErrors {
 ```
 (Not that that's necessarily a good idea -- it's plausibly *too* generic.  This RFC definitely isn't proposing it for the standard library.)
 
-And, ignoring the coherence implications, a major difference between the two sides is that the target type is typically typed out visibly (in a return type) whereas the source type (going into the `?`) is often the result of some called function.  So it's preferrable for any behaviour extensions to be on the type that can more easily be seen in the code.
+And, ignoring the coherence implications, a major difference between the two sides is that the target type is typically typed out visibly (in a return type) whereas the source type (going into the `?`) is often the result of some called function.  So it's preferable for any behaviour extensions to be on the type that can more easily be seen in the code.
 
 <!--
 - Why is this design the best in the space of possible designs?
@@ -887,7 +778,7 @@ Previous approaches used on nightly
 - The original [`Carrier` trait](https://doc.rust-lang.org/1.16.0/core/ops/trait.Carrier.html)
 - The next design with a [`Try` trait](https://doc.rust-lang.org/1.32.0/core/ops/trait.Try.html) (different from the one here)
 
-Thinking from the perspective of a [monad](https://doc.rust-lang.org/1.32.0/core/ops/trait.Try.html), `Bubble::continue_with` is similar to `return`, and `<H as BreakHolder<T>>::Output` is its type constructor.
+Thinking from the perspective of a [monad](https://doc.rust-lang.org/1.32.0/core/ops/trait.Try.html), `Try::from_output` is similar to `return`.
 
 <!--
 Discuss prior art, both the good and the bad, in relation to this proposal.
@@ -908,14 +799,8 @@ Please also take into consideration that rust sometimes intentionally diverges f
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-Scope:
-- Is `BreakHolder<T>` worth it?  There are a bunch of scenarios that might be interested in it, but they're all either currently-unstable or just future possibilities.
-- Should this bring in anything from the future section, such as more things about `try {}`?
-
-Bikesheds:
-- I've long liked [parasyte's "bubble" suggestion](https://internals.rust-lang.org/t/bikeshed-a-consise-verb-for-the-operator/7289/29?u=scottmcm) as a name, but maybe there's a better option.
-- The "holder" name is really vague, and `BreakHolder` isn't much better.
-- This uses `Try` mostly because that meant not touching all the `try_fold` implementations in the prototype.  It's possible that name fits better on a different trait, or none of them.  That trait as `from_holder`, which is most related to "yeet", so a name related to that might fit better for it.
+- Bikesheds: `Try`/`FromTryResidual`/`Try::Output`/`Try::Residual` all might have better names.  This RFC has left it as `Try` mostly because that meant not touching all the `try_fold` implementations in the prototype.  I've long liked [parasyte's "bubble" suggestion](https://internals.rust-lang.org/t/bikeshed-a-consise-verb-for-the-operator/7289/29?u=scottmcm) as a name, but maybe sticking with the previous one is best.
+- Structure: The three methods could be split up further
 
 <!--
 - What parts of the design do you expect to resolve through the RFC process before this gets merged?
@@ -925,6 +810,87 @@ Bikesheds:
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
+
+While it isn't directly used in this RFC, a particular residual type can be used to define a "family" of types which all share that residual.
+
+For example, one could define a trait like this one:
+```rust
+pub trait GetCorrespondingTryType<TryOutputType>: Sized {
+    /// The type from the original type constructor that also has this residual type,
+    /// but has the specified Output type.
+    type TryType: Try<Output = TryOutputType, Residual = Self>;
+}
+```
+
+With corresponding simple implementations like these:
+```rust
+impl<T> GetCorrespondingTryType<T> for Option<!> {
+    type TryType = Option<T>;
+}
+
+impl<C, B> ops::GetCorrespondingTryType<C> for ControlFlow<B, !> {
+    type TryType = ControlFlow<B, C>;
+}
+```
+
+And thus allow code to put whatever value they want into the appropriate type from the same family.
+
+This can be thought of as the type-level inverse of `Try`'s associated types: It splits them apart, and this puts them back together again.
+
+(Why is this not written using Generic Associated Types (GATs)?  Because it allows implementations to work with only specific types, or with generic-but-bounded types.  Anything using it can bound to just the specific types needed for that method.)
+
+A previous version of this RFC included a trait along these lines, but it wasn't needed for the stable-at-time-of-writing scenarios.  Furthermore, some experiments demonstrated that having a bound in `Try` requiring it (something like `where Self::Residual: GetCorrespondingTryType<Self::Output>`) wasn't actually even helpful for unstable scenarios, so there was no need to include it in normative section of the RFC.
+
+## Possibilities for `try_find`
+
+Various library methods, such as `try_map` for arrays ([PR #79713](https://github.com/rust-lang/rust/pull/79713#issuecomment-739075171)), would like to be able to do HKT-like things to produce their result types.  For example, `Iterator::try_find` wants to be able to return a `Foo<Option<Item>>` from a predicate that returned a `Foo<bool>`.
+
+That could be done with an implementation such as the following:
+```rust
+fn try_find<F, R>(
+    &mut self,
+    f: F,
+) -> <R::Residual as ops::GetCorrespondingTryType<Option<Self::Item>>>::TryType
+where
+    Self: Sized,
+    F: FnMut(&Self::Item) -> R,
+    R: ops::Try<Output = bool>,
+    R::Residual: ops::GetCorrespondingTryType<Option<Self::Item>>,
+{
+    #[inline]
+    fn check<F, T, R>(mut f: F) -> impl FnMut((), T) -> ControlFlow<Result<T, R::Residual>>
+    where
+        F: FnMut(&T) -> R,
+        R: Try<Output = bool>,
+    {
+        move |(), x| match f(&x).branch() {
+            ControlFlow::Continue(false) => ControlFlow::Continue(()),
+            ControlFlow::Continue(true) => ControlFlow::Break(Ok(x)),
+            ControlFlow::Break(r) => ControlFlow::Break(Err(r)),
+        }
+    }
+
+    match self.try_fold((), check(f)) {
+        ControlFlow::Continue(()) => Try::from_output(None),
+        ControlFlow::Break(Ok(x)) => Try::from_output(Some(x)),
+        ControlFlow::Break(Err(r)) => <_>::from_residual(r),
+    }
+}
+```
+
+Similarly, it could allow `Try` to automatically provide an appropriate `map` method:
+```rust
+fn map<T>(self, f: impl FnOnce(Self::Output) -> T) -> <Self::Residual as GetCorrespondingTryType<T>>::TryType
+where
+    Self::Residual: GetCorrespondingTryType<T>,
+{
+    match self.branch() {
+        ControlFlow::Continue(c) => Try::from_output(f(c)),
+        ControlFlow::Break(r) => FromTryResidual::from_residual(r),
+    }
+}
+
+```
 
 ## Possibilities for `try{}`
 
@@ -941,29 +907,32 @@ let _ = try {
 
 This usually isn't a problem on stable, as the `?` usually has a contextual type from its function, but can still happen there in closures.
 
-But with the design in this RFC, an alternative desugaring becomes available which takes advantage of how the holder type preserves the "result-ness" (or whatever-ness) of the original value.  That might turn the block above into something like the following:
+But with something like `GetCorrespondingTryType`, an alternative desugaring becomes available which takes advantage of how the residual type preserves the "result-ness" (or whatever-ness) of the original value.  That might turn the block above into something like the following:
 ```rust
-fn helper<C, H: BreakHolder<C>>(h: H) -> <H as BreakHolder<C>>::Output { Try::from_holder(h) }
+fn helper<C, R: GetCorrespondingTryType<C>>(r: R) -> <R as GetCorrespondingTryType<C>>::TryType
+{
+	FromTryResidual::from_residual(h)
+}
 
 'block: {
-	foo(match Bubble::branch(x) {
+	foo(match Try::branch(x) {
 		ControlFlow::Continue(c) => c,
-		ControlFlow::Break(h) => break 'block helper(h),
+		ControlFlow::Break(r) => break 'block helper(r),
 	});
-	bar(match Bubble::branch(y) {
+	bar(match Try::branch(y) {
 		ControlFlow::Continue(c) => c,
-		ControlFlow::Break(h) => break 'block helper(h),
+		ControlFlow::Break(r) => break 'block helper(r),
 	});
-	Bubble::continue_with(z)
+	Try::from_output(z)
 }
 ```
 (It's untested whether the inference engine is smart enough to pick the appropriate `C` with just that -- the `Output` associated type is constrained to have a `Continue` type matching the generic parameter, and that `Continue` type needs to match that of `z`, so it's possible.  But hopefully this communicates the idea, even if an actual implementation might need to more specifically introduce type variables or something.)
 
-That way it could compile so long as the output types of the holders matched.  For example, [these uses in rustc](https://github.com/rust-lang/rust/blob/7cf205610e1310897f43b35713a42459e8b40c64/compiler/rustc_codegen_ssa/src/back/linker.rs#L529-L573) would work without the extra annotation.
+That way it could compile so long as the `TryType`s of the residuals matched.  For example, [these uses in rustc](https://github.com/rust-lang/rust/blob/7cf205610e1310897f43b35713a42459e8b40c64/compiler/rustc_codegen_ssa/src/back/linker.rs#L529-L573) would work without the extra annotation.
 
 Now, of course that wouldn't cover anything.  It wouldn't work with anything needing error conversion, for example, but annotation is also unavoidable in those cases -- there's no reasonable way for the compiler to pick "the" type into which all the errors are convertible.
 
-So a future RFC could define a way (syntax, code inspection, heuristics, who knows) to pick which of the desugarings would be best.  This RFC declines to even brainstorm possibilities for doing so.
+So a future RFC could define a way (syntax, code inspection, heuristics, who knows) to pick which of the desugarings would be best.  (As a strawman, one could say that `try { ... }` uses the "same family" desugaring whereas `try as anyhow::Result<_> { ... }` uses the contextual desugaring.)  This RFC declines to debate those possibilities, however.
 
 *Note that the `?` desugaring in nightly is already different depending whether it's inside a `try {}` (since it needs to block-break instead of `return`), so making it slightly more different shouldn't have excessive implementation cost.*
 
@@ -971,12 +940,14 @@ So a future RFC could define a way (syntax, code inspection, heuristics, who kno
 
 As previously mentioned, this RFC neither defines nor proposes a `yeet` operator.  However, like the previous design could support one with its `Try::from_error`, it's important that this design would be sufficient to support it.
 
-Because this "holder" design carries along the "result-ness" or "option-ness" or similar, it means there are two possibilities for a desugaring.
+*`yeet` is a [bikeshed-avoidance](https://twitter.com/josh_triplett/status/1248658754976927750) name for `throw`/`fail`/`raise`/etc, used because it definitely won't be the final keyword.*
 
-- It could directly take the holder type, so `yeet e` would desugar directly to `Try::from_holder(e)`.
-- It could put the argument into a special holder type, so `yeet e` would desugar to something like `Try::from_holder(Yeet(e))`.
+Because this "residual" design carries along the "result-ness" or "option-ness" or similar, it means there are two possibilities for a desugaring.
 
-These have various implications -- like `yeet None`/`yeet`, `yeet Err(ErrorKind::NotFound)`/`yeet ErrorKind::NotFound.into()`, etc -- but thankfully this RFC doesn't need to discuss those.  (And please don't do so in the comments either.) 
+- It could directly take the residual type, so `yeet e` would desugar directly to `FromTryResidual::from_residual(e)`.
+- It could put the argument into a special residual type, so `yeet e` would desugar to something like `FromTryResidual::from_residual(Yeeted(e))`.
+
+These have various implications -- like `yeet None`/`yeet`, `yeet Err(ErrorKind::NotFound)`/`yeet ErrorKind::NotFound.into()`, etc -- but thankfully this RFC doesn't need to discuss those.  (And please don't do so in the GitHub comments either, to keep things focused, though feel free to start an IRLO or Zulip thread if you're so inspired.)
 
 <!--
 Think about what the natural extension and evolution of your proposal would
