@@ -433,10 +433,12 @@ rustc --check-cfg 'names(has_time_travel)'
 rustc --check-cfg 'values(feature, "lighting", "bump_maps")'
 
 # names are not checked, but 'feature' values _and_ 'market' values are checked.
-rustc --check-cfg 'values(feature, "lighting", "bump_maps")' --check-cfg 'markets(feature = "europe", "asia")'
+rustc --check-cfg 'values(feature, "lighting", "bump_maps")' \
+      --check-cfg 'values(market, "europe", "asia")'
 
 # names _and_ feature values are checked.
-rustc --check-cfg 'names(has_time_travel)' --check-cfg 'values(feature, "lighting", "bump_maps")'
+rustc --check-cfg 'names(has_time_travel)' \
+      --check-cfg 'values(feature, "lighting", "bump_maps")'
 ```
 
 ## Stabilizing
@@ -563,14 +565,22 @@ systematically verify the correct usage of conditional compilation in these lang
 
 ## Unresolved questions
 
-During the RFC process, I expect to resolve the question of what the exact rustc command-line
-parameters should be, at least enough to enable the feature for nightly builds. We should avoid
-bikeshedding on the exact syntax, but should agree on the semantics. We should agree on what is
-checked, what is not checked, how checking is enabled, and how it is performed. We should agree on
-what information is passed from Cargo to Rustc.
+This RFC specifies the exact syntax of this feature in source code and in the
+command-line options for `rustc`. However, it does not address how these will be used
+by tools, such as Cargo. This is a split between "mechanism" and "policy"; the mechanism
+(what goes in `rustc`) is specified in this RFC, but the policies that control this
+mechanism are intentionally left out of scope.
 
-During the implementation and before stabilization, I expect to resolve the question of how many errors this actually detects. How many crates on crates.io actually have invalid `#[cfg]` usage?
-How valuable is this feature?
+We expect the stabilization process for the mechanism (the support in `rustc`) to stabilize
+relatively quickly. Separately, over a much longer time frame, we expect the polices that
+control those options to stabilize more slowly. For example, it seems uncontroversial for
+Cargo to enable checking for `feature = "..."` values immediately; this could be
+implemented and stabilized quickly.
+
+However, when (if ever) should Cargo enable checking condition _names_? For crates that
+do not have a `build.rs` script, Cargo could enable checking condition names immediately.
+But for crates that do have a `build.rs` script, we may need a way for those scripts to
+control the behavior of checking condition names.
 
 One possible source of problems may come from build scripts (`build.rs` files) that add `--cfg`
 options that Cargo is not aware of. For exaple, if a `Cargo.toml` file did _not_ define a feature
