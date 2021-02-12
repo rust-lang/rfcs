@@ -66,7 +66,7 @@ a non-`Copy` array initializer can be annoying. To improve the situation,
 [RFC 2203] extended the concept of promotion to array initializers.
 As a result, the previous example can be written more concisely.
 
-[RFC 1414]: https://github.com/rust-lang/rfcs/pull/2203
+[RFC 1414]: https://github.com/rust-lang/rfcs/pull/1414
 
 ```rust
 fn foo(x: &i32) -> &i32 {
