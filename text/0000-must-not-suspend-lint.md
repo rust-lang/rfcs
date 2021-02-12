@@ -27,7 +27,7 @@ Provide a lint that can be attached to structs to let the compiler know that thi
 struct MyStruct {}
 ```
 
-This struct if held across an await boundary would cause a deny-by-default warning:
+This struct if held across an await boundary would cause a warn-by-default warning:
 
 ```rust
 async fn foo() {
