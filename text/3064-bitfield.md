@@ -195,9 +195,8 @@ of the bit-field. A bit-field must have one of the types
 
 modulo type aliases.
 
-If the type of a bit-field is `bool`, then `N` must be 0 or 1. Otherwise `N`
-must be in the interval `[0, 8 * size_of::<T>()]` where `T` is the type of the
-bit-field.
+`N` must be in the interval `[0, 8 * size_of::<T>()]` where `T` is the
+type of the bit-field.
 
 The attribute `bitfield(0)` can only be applied to UnnamedStructElements. An
 UnnamedStructElement must be a bit-field.
@@ -209,7 +208,8 @@ them "bit-field fields".
 Each field annotated with `bitfield(N)` occupies `N` bits of storage.
 
 When reading and writing a bit-field field with type `bool`, `bool` is treated
-like `u1` with `true` corresponding to `1` and `false` corresponding to `0`.
+like `uM` where `M = 8 * size_of::<bool>()` with `true` corresponding to `1` and
+`false` corresponding to `0`.
 
 When a field annotated with `bitfield(N)` is read, the value has the type
 of the field and the behavior is as follows:
@@ -220,7 +220,9 @@ of the field and the behavior is as follows:
   that the new bits will have the value of the most significant bit. In
   particular, bit-fields with signed types with width 1 can only store the
   values `0` and `-1`.)
-- The resulting bits are interpreted as a value of the type of the field.
+- The resulting bits are interpreted as a value of the type of the field. If the
+  bits are not a valid object representation of the type, the behavior is
+  undefined. This can only happen for bit-fields of type `bool`.
 
 When a field annotated with `bitfield(N)` is written, the value to be written
 must have the type of the field and the behavior is as follows:
@@ -253,6 +255,9 @@ C struct is constructed as follows:
 - For each StructBodyElement that has a `bitfield(N)` annotation in the Rust
   struct, append `: N` to the declaration in the C struct.
 - For each field in the C struct whose name is `_`, delete the field name.
+
+If the thus created C struct is not a valid C struct on the target, the layout
+of the Rust struct is unspecified.
 
 The `&` and `&mut` operators cannot be applied to bit-fields.
 
