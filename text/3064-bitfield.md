@@ -382,6 +382,10 @@ None right now.
 - Bit-fields with types that are enums with integer representation.
 - Bit-fields with types that are transparent wrapper structs around valid
   bit-field types.
+- Bit-fields in `repr(C)` unions. This is blocked primarily by the current
+  restriction that unions must have at least one field and that one field must
+  be named when the union is constructed. This creates questions around unions
+  that only contain unnamed bit-fields.
 
 # Appendix A
 
