@@ -386,6 +386,8 @@ None right now.
   restriction that unions must have at least one field and that one field must
   be named when the union is constructed. This creates questions around unions
   that only contain unnamed bit-fields.
+- Adding a way to opt into the `MSVC` layout algorithm on `*-windows-gnu`
+  targets on a per-type basis.
 
 # Appendix A
 
