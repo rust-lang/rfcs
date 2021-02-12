@@ -146,6 +146,20 @@ This design was primarily chosen for its simplicity — it adds very
 little to what we have today both in terms of API surface and mechanism.
 But, other approaches exist.
 
+Developers could have their `path` dependencies point to symlinks in the
+current directory, which other developers would then be told to set up
+to point to the appropriate place on their system. This approach has two
+main drawbacks: they are harder to use on Windows as they [require
+special privileges](https://docs.microsoft.com/en-us/windows/security/threat-protection/security-policy-settings/create-symbolic-links),
+and they pollute the user's project directory.
+
+For the build-system case, the build system could place vendored
+dependencies directly into the source directory at well-known locations,
+though this would mean that if the source of those dependencies were to
+change, the user would have to re-run the build system (rather than just
+run `cargo`) to refresh the vendored dependency. And this approach too
+would end up polluting the user's source directory.
+
 An earlier iteration of the design avoided adding a new field to
 dependencies, and instead inlined the base name into the path using
 `path = "base::relative/path"`. This has the advantage of not
