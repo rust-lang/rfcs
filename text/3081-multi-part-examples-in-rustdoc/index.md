@@ -222,7 +222,7 @@ We expect early adoption of this feature.
 
 We expect the release of this feature into stable to improve the overall experience of documenting non-trivial crates.
 
-[current-documented-workaround]: https://doc.rust-lang.org/rustdoc/documentation-tests.html#hiding-Portions-of-the-example
+[current-documented-workaround]: https://doc.rust-lang.org/rustdoc/documentation-tests.html#hiding-portions-of-the-example
 [rfc_2894]: https://github.com/rust-lang/rfcs/pull/2894
 [rfc_comment]: https://github.com/rust-lang/rfcs/pull/2894#issuecomment-773913220
 [literate_programming]: https://en.wikipedia.org/wiki/Literate_programming
