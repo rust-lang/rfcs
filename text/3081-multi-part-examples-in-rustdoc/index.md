@@ -205,7 +205,8 @@ This RFC officialy adopts this style.
 
 One could claim that this RFC allows code examples to be written in [literate programming][literate_programming] style.
 
-We are not familiar with a feature equivalent to the doc-tests in other languages.
+We are not aware of a similar feature in any other language.
+If anyone is, then please let us know.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
