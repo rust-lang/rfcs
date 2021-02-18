@@ -1,5 +1,5 @@
-- Feature Name: `pub_macro_rules`
-- Start Date: 2021-01-25
+- Feature Name: `macro_rules_visibility_v3`
+- Start Date: 2021-01-07
 - RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
@@ -91,6 +91,7 @@ To migrate to a path scoping visibility system the following would need to be up
     * publicly re-export them from the top-level module of the crate where the macro is defined
 * Remove `#[macro_use]` where annotating a module
     * mark all the macros in the previously annotated module as `pub(crate)`
+    * mark the module itself as pub(crate) if not already `pub(crate)` or `pub`
     * annotate the macro invocation with a path to the module where the macro is defined.
 * Remove `#[macro_use]` from from `extern crate` item
     * change all uses of macros to qualified `$EXTERNAL_CRATE::$MACRO_NAME` invocations. 
@@ -98,6 +99,91 @@ To migrate to a path scoping visibility system the following would need to be up
 These steps should be automatable so that rustfix can be used to aid in migration though there are sufficiently complex use cases that a fully automatable transition is likely to not be possible. For example, the "anonymous" helper macros use case discussed in the section on shadowing would not be able to fixed in an automated way.  
 
 Roughly what percentage of use cases will be machine migratable is an open question. 
+
+## Translating Common Patterns 
+
+The following are how common patterns in macros today translate to the next path based scoping system.
+
+### Deeply nested macros
+
+Macro use makes all macros inside a child module available to the parent module.
+
+```rust 
+
+#[macro_use]
+mod m {
+    #[macro_use]
+    mod n {
+        macro_rules! define_foo {  () => { fn foo() {} } }
+    }
+}
+    
+    
+define_foo!();
+```
+
+This would be translated as: 
+
+```rust 
+pub(crate) mod m {
+    pub(crate) mod n {
+        pub(crate) macro_rules! define_foo {  () => { fn foo() {} } }
+    }
+}
+    
+    
+m::n::define_foo!();
+```
+
+### Recursive macros
+
+Recursive macros are macros that call themselves (perhaps with different arguments)
+
+```rust 
+#[macro_use]
+mod m {
+    macro_rules! print_expr {
+        ($e:expr) => {{
+            println!("Going to do {}", stringify!($e));
+            print_expr!(no_print => $e)
+        }};
+        (no_print => $e:expr) => {{
+            $e
+        }};
+    }
+}
+
+fn main() {
+    print_expr!(1 + 1)
+}
+```
+
+Naively changing this to path based scope would not work as it is not guaranteed that the unqualified `print_expr` name is in scope. In the example above, `print_expr!` is used recursively inside the macro, but in a path scoped system the recursive call would not be in scope if the macro was called with a qualified path (e.g., user calls `m::print_expr!` which references unqualified `print_expr!` which is not in scope).
+
+TODO: Describe how we'll handle this
+
+### "Private" macros
+
+Macros can use "private" macros (i.e., macros defined inside of other macros).  
+
+```rust 
+macro_rules! foo {
+    ($o:expr) => {{
+        macro_rules! __helper {
+            ($e:expr) => {{
+                println!("Expression: {}", stringify!($e));
+                $e
+            }};
+        }
+        
+        __helper!($o)
+    }};
+}
+```
+
+Naively changing this 
+
+TODO: Describe how we'll handle this
 
 # Guide-level explanation
 
