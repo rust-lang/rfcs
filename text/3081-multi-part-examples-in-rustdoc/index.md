@@ -44,8 +44,6 @@ A final `split-end` block must be present.
 Between parts, any markdown may appear, including code blocks.
 However, no interleaving or nesting of multi-part examples is allowed.
 
-Not only _rust_ examples may be multi-part.
-
 Example:
 
     //! ```split-start
@@ -66,7 +64,7 @@ Example:
 
 Doc-test related tags, such as `ignore` and `no-run` must be specified on the `split-start` block. Such tags specified on `split-continue` or `split-end` blocks will be ignored.
 
-Language is not automatically inherited from the one in the `split-start` block. If any part has a language tag that is different than the one in the `split-start`, the documentation will fail to build.
+If a language tag is present, it must be the first word in the info-string and must be present in all parts of the multi-part example.
 
 If `split-start` / `split-continue` / `split-end` blocks appear in an erroneous order, the documentation will fail to build.
 
@@ -78,7 +76,6 @@ If `split-start` / `split-continue` / `split-end` blocks appear in an erroneous 
 > - Its interaction with other features is clear.
 
 - Interaction with doc-test related tags seems to be fully explained in the previous section.
-- Interaction with langauge tags seems to be explained, other than the specific error details.
 
 > - It is reasonably clear how the feature would be implemented.
 
@@ -89,6 +86,7 @@ TODO:
 - Doc-tests details such as line numbers and test names
 - Ordering / nesting / interleaving errors details
 - Inconsistent langauge error details
+- Details of interaction with langauge tags
 
 We would like some more feedback before continuing with greater detail.
 
@@ -118,7 +116,7 @@ Both _not permitting_ such nested single-part examples and _additional logic_ fo
 
 From the guide section earlier:
 
-> Language is not automatically inherited from the one in the `split-start` block. If any part has a language tag that is different than the one in the `split-start`, the documentation will fail to build.
+> If a language tag is present, it must be the first word in the info-string and must be present in all parts of the multi-part example.
 
 An alternative to this is that specifying the language in the `split-start` block suffices and rustdoc can understand that all following parts of the multi-part example are of the same language.
 There is a problem with that.
