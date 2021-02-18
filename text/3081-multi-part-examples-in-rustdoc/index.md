@@ -161,6 +161,7 @@ Drawbacks:
   Another layer of nesting would incur mental overhead and increased implementation cost for tooling compared with the suggested approach.
 - For longer nested comments, might be cumbersome.
   Imagine comments that include code blocks. That's another nesting. Imagine long text. You'd have to handle line breaks and comment slashes (`//`).
+- [According to @jyn514](https://github.com/rust-lang/rfcs/pull/3081#discussion_r577914359), this would be very difficult to implement.
 
 Advantages:
 
