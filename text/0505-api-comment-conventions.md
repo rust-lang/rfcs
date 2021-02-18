@@ -51,7 +51,7 @@ nothing else. When using `mod` blocks, prefer `///` outside of the block:
 
 ```rust
 /// This module contains tests
-mod test {
+mod tests {
     // ...
 }
 ```
@@ -59,7 +59,7 @@ mod test {
 over
 
 ```rust
-mod test {
+mod tests {
     //! This module contains tests
 
     // ...
