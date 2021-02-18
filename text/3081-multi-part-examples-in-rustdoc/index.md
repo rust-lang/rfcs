@@ -63,7 +63,7 @@ Example:
     //! dbg!(a);
     //! ```
 
-Doc-test related tags, such as `ignore` and `no-run` must be specified on the `split-start` block. Such tags specified on `split-continue` or `split-end` blocks will be ignored.
+Doc-test related tags, such as `ignore` and `no-run` must be specified only on `split-start` blocks.
 
 If a language tag is present, it must be the first word in the info-string and must be present in all parts of the multi-part example.
 
