@@ -121,7 +121,7 @@ From the guide section earlier:
 An alternative to this is that specifying the language in the `split-start` block suffices and rustdoc can understand that all following parts of the multi-part example are of the same language.
 There is a problem with that.
 Pure markdown doesn't know and will never know anything about this feature.
-Markdown only [acknowledges](commonmark-fenced) the _typical_ use of the first word to specify a language:
+Markdown only [acknowledges][commonmark-fenced] the _typical_ use of the first word to specify a language:
 
 > The first word of the info string is typically used to specify the language of the code sample, and rendered in the class attribute of the code tag. However, this spec does not mandate any particular treatment of the info string.
 
