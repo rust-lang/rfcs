@@ -218,8 +218,6 @@ Otherwise, none that we could think of.
 One future possibility is that code editors would recognize multi-part examples and enable language features such as refactoring across the multiple parts as a whole.
 Assuming, of course, that they would support language features inside of code examples in documentation, at all.
 
-We expect early adoption of this feature.
-
 We expect the release of this feature into stable to improve the overall experience of documenting non-trivial crates.
 
 [current-documented-workaround]: https://doc.rust-lang.org/rustdoc/documentation-tests.html#hiding-portions-of-the-example
