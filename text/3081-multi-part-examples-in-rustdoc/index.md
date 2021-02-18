@@ -25,9 +25,10 @@ Currently, there are three means of achieving this:
   Downsides:
     1. Must disable doc-test-ing the example
     1. Lack of UI indicating that the code blocks are multiple parts of a whole
-1. [The current documented workaround][current-documented-workaround]
+1. Duplicate the example code in each part and hide, using [the `#` feature][hiding-portions], different lines in each example.
+  There's an example of this in the link above.
   Downsides:
-    1. Tedious. Macros may make this more reasonable, but still not nice.
+    1. Tedious. Macros may make this easier, but still not convenient.
 
 This RFC suggests a new feature in rustdoc that supports multi-part examples without any of the downsides listed above.
 
@@ -220,7 +221,7 @@ Assuming, of course, that they would support language features inside of code ex
 
 We expect the release of this feature into stable to improve the overall experience of documenting non-trivial crates.
 
-[current-documented-workaround]: https://doc.rust-lang.org/rustdoc/documentation-tests.html#hiding-portions-of-the-example
+[hiding-portions]: https://doc.rust-lang.org/rustdoc/documentation-tests.html#hiding-portions-of-the-example
 [rfc_2894]: https://github.com/rust-lang/rfcs/pull/2894
 [rfc_comment]: https://github.com/rust-lang/rfcs/pull/2894#issuecomment-773913220
 [literate_programming]: https://en.wikipedia.org/wiki/Literate_programming
