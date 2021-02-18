@@ -215,7 +215,7 @@ Otherwise, none that we could think of.
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-One future possibility is that code editors would support this.
+One future possibility is that code editors would recognize multi-part examples and enable language features such as refactoring across the multiple parts as a whole.
 Assuming, of course, that they would support language features inside of code examples in documentation, at all.
 
 We expect early adoption of this feature.
