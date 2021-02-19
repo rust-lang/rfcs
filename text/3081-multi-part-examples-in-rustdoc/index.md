@@ -72,6 +72,10 @@ If `split-start` / `split-continue` / `split-end` blocks appear in an erroneous 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
+UI Mockup:
+
+![UI mockup](./mockup.png)
+
 > This is the technical portion of the RFC. Explain the design in sufficient detail that:
 >
 > - Its interaction with other features is clear.
@@ -83,7 +87,6 @@ If `split-start` / `split-continue` / `split-end` blocks appear in an erroneous 
 We are not familiar with the code base.
 
 TODO:
-- UI indication mockup
 - Doc-tests details such as line numbers and test names
 - Ordering / nesting / interleaving errors details
 - Inconsistent langauge error details
