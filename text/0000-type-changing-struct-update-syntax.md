@@ -187,8 +187,8 @@ $struct_name:path {
 ```
 
 Struct update syntax is directly equivalent to explicitly listing all of the
-fields, with the exception of type inference and type checking, as described in
-the following section. For example, the listing from the previous section
+fields, with the possible exception of type inference. For example, the listing
+from the previous section
 
 ```rust
 let logged_in = User {
@@ -207,339 +207,21 @@ let logged_in = User {
 };
 ```
 
-except for type inference and type checking.
-
-## Type inference with struct update syntax
-
-Given an instance of struct update syntax:
-
-```rust
-let updated = Struct {
-    field1: expr1,
-    field2: expr2,
-    ..base
-};
-```
-
-it is known that `updated` and `base` must be instances of `Struct`, but the
-generic type parameters and lifetimes of `Struct` may need to be inferred for
-`updated` and `base`. Note that in current Rust, the outer struct type
-(`Struct` in this example) is always known, even if the identifier `Struct` is
-replaced with a type alias or `Self`, but this may change if [RFC 2515] gets
-merged.
-
-Type inference of the generic type parameters and lifetimes will follow these
-rules:
-
-1. If the type of `updated` can be a subtype of the type of `base` without
-   violating any constraints, then the type of `updated` is inferred to be a
-   subtype of the type of `base`. This rule is evaluated simultaneously for all
-   instances of struct update syntax within the inference context, and
-   conflicts between applications of this rule should result in compilation
-   errors.
-
-2. If the type of `updated` cannot be a subtype of the type of `base` without
-   violating any constraints, then the explicitly listed fields (`field1` and
-   `field2` in the example) are inferred independently between `updated` and
-   `base`. In other words, in this case, the example can be equivalently
-   expanded into the following:
-
-   ```rust
-   let updated = Struct {
-       field1: expr1,
-       field2: expr2,
-       kept_field1: (result of base).kept_field1,
-       kept_field2: (result of base).kept_field2,
-       kept_field3: (result of base).kept_field3,
-   };
-   ```
-
-These rules preserve the inferred types of existing Rust code while minimizing
-the assumptions type inference makes for the type-changing case.
-
-For example, the inferred type of `updated` is `Foo<u8>` in the following
-example in both current Rust and with this RFC:
-
-```rust
-struct Foo<A> {
-    a: A,
-    b: &'static str,
-}
-
-let base: Foo<u8> = Foo {
-    a: 1,
-    b: "hello",
-};
-let updated = Foo {
-    a: 2,
-    ..base
-};
-```
-
-Since the type of `updated` can be a subtype of the type of `base` without
-violating any constraints, it is inferred to be so. Note, in particular, that
-this rule takes precedence over the Rust fallback integer type `i32` for the
-`2` literal.
-
-If the type of `updated` cannot be a subtype of the type of `base` without
-violating any constraints, then inference for the explicitly listed fields is
-handled independently between the base and updated instances. For example:
-
-```rust
-struct Foo<A, B> {
-    a: A,
-    b: B,
-    c: i32,
-}
-
-let base = Foo {
-    a: 1u8,
-    b: 2u8,
-    c: 3i32,
-};
-let updated = Foo {
-    a: "hello",
-    b: 2,
-    ..base
-}
-```
-
-In this case `base` has type `Foo<u8, u8>`. Since the type of `updated` cannot
-be a subtype of the type of `base` due to the change in the type of the `a`
-field, the types of `base.b` and `updated.b` are inferred independently. Since
-`updated.b` is an unconstrained integer literal, it has the Rust integer
-fallback type `i32`, and so `updated` is inferred to have type `Foo<&'static
-str, i32>`.
-
-The same behavior can also be caused by a broadening in a lifetime, since if
-`updated` needs a broader lifetime than `base`, its type cannot be a subtype of
-the type of `base. For example:
-
-```rust
-struct Foo<'a, B> {
-    a: &'a (),
-    b: B,
-    c: i32,
-}
-
-let tup_stack = ();
-let base = Foo {
-    a: &tup_stack,
-    b: 2u8,
-    c: 3i32,
-};
-let tup_static: &'static () = &();
-let updated: Foo<'static, _> = Foo {
-    a: tup_static,
-    b: 2,
-    ..base
-};
-```
-
-Since the lifetime of `&tup_stack` is shorter than the `'static` lifetime, the
-type of `updated` cannot be a subtype of the type of `base`. As a result, the
-types of `base.b` and `updated.b` are inferred independently. Since `updated.b`
-is an unconstrained integer literal, it has the Rust integer fallback type
-`i32`, and so `updated` is inferred to have type `Foo<'static, i32>`.
-
-There is an edge case to rule 1 when there are multiple instances of struct
-update syntax within a single inference context. For example:
-
-```rust
-struct Foo<A> {
-    a: A,
-    b: &'static str,
-}
-
-let base_u8: Foo<u8> = Foo {
-    a: 1,
-    b: "hello",
-};
-let base_u16: Foo<u16> = Foo {
-    a: 1,
-    b: "hello",
-};
-
-let a_unknown_int = 2;
-let updated1 = Foo {
-    a: a_unknown_int,
-    ..base_u8
-};
-let updated2 = Foo {
-    a: a_unknown_int,
-    ..base_u16
-};
-```
-
-Individually, the types of `updated1` and `updated2` can be subtypes of the
-types of `base_u8` and `base_u16`, respectively. However, `updated1.a` and
-`updated2.a` must have the same type because they are copies of
-`a_unknown_int`. As a result, there is a conflict with both `updated1` and
-`updated2` being subtypes of `base_u8` and `base_u16`, respectively, so a
-compilation error should be generated.
+except, possibly, for type inference.
 
 # Drawbacks
 [drawbacks]: #drawbacks
 
-If the user does not know the type inference rules described earlier, type
-inference may result in slightly surprising results for struct update syntax
-with numeric literals. For example:
-
-```rust
-struct Foo<A, B> {
-    a: A,
-    b: B,
-    c: i32,
-}
-
-let base = Foo {
-    a: 1u8,
-    b: 2u8,
-    c: 3i32,
-};
-let updated = Foo {
-    a: "hello",
-    b: 2,
-    ..base
-}
-```
-
-In this case `base` has type `Foo<u8, u8>`, while `updated` is inferred to have
-type `Foo<&'static str, i32>`. If users are not aware that changing the type of
-`a` results in inferring `b` independently for `base` and `updated`, they may
-be surprised that the type of `b` has changed from `u8` to `i32`. The same
-behavior can also result from broadening lifetimes between `base` and
-`updated`, which may be especially surprising because lifetimes are usually
-implicit in Rust.
+There are trade-offs to be made when selecting the type inference strategy,
+since the types of fields are no longer necessarily the same between the base
+and updated instances in struct update syntax. See the *Type inference* section
+under [Unresolved questions](#unresolved-questions).
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 This proposal is a relatively small user-facing generalization that
 significantly improves language ergonomics in some cases.
-
-## Alternative type inference rules
-
-A variety of alternative type inference rules are possible.
-
-### Initially assume that individual fields do not change type
-
-The inference rule proposed in this RFC means that if the type of *any* of the
-fields changes, the types of *all* other explicitly listed fields are inferred
-independently between the base and updated instances. Alternatively, type
-inference could treat fields individually, assuming that the type of each
-individual field is the same between the base and updated instances unless it
-violates a constraint, regardless of the types of the other fields. Given this
-example:
-
-```rust
-struct Foo<A, B> {
-    a: A,
-    b: B,
-    c: i32,
-}
-
-let base = Foo {
-    a: 1u8,
-    b: 2u8,
-    c: 3i32,
-};
-let updated = Foo {
-    a: "hello",
-    b: 2,
-    ..base
-}
-```
-
-the approach proposed in the RFC infers the type of `updated` to be
-`Foo<&'static str, i32>`, while this alternative type inference rule infers the
-type of `updated` to be `Foo<&'static str, u8>` because the type of `b` can be
-the same in both `base` and `updated` without violating any constraints.
-
-This alternative rule reduces the need for explicit type annotations in some
-cases, but it may also be surprising to users who expect explicitly listed
-fields to be inferred independently of the base instance.
-
-### Disable `i32`/`f64` fallback for explicitly listed fields
-
-When an integer or floating point literal is unconstrained in Rust, its type is
-inferred to be the fallback of `i32` or `f64`. This could be slightly
-surprising in combination with the type inference rules proposed in this RFC,
-as described in the [Drawbacks][drawbacks] section. One possibility is to
-disable the `i32`/`f64` fallback for explicitly listed fields in struct update
-syntax, and instead throw a compilation error if the specific type of literal
-cannot be inferred. This may avoid confusion caused by the recommended proposal
-or the previously described alternative inference rule by throwing a
-compilation error whenever the type is not clear.
-
-### Always independently infer types of explicitly listed fields
-
-The type inference rules proposed in this RFC assume that the type of the
-updated struct matches the type of the base struct unless this assumption
-violates any constraints. This preserves backwards compatibility with existing
-code but is a special case that the user needs to be aware of. An alternative
-approach that is more consistent with the rest of the language and doesn't
-require any special cases is to always infer the types of explicitly listed
-fields independently between the base and updated instances. This alternative
-approach can break existing code in two ways:
-
-1. It can require additional explicit type annotations in some cases. For
-   example:
-
-   ```rust
-   struct Foo<T> {
-       a: Vec<T>,
-       b: i32,
-   }
-
-   let base: Foo<u8> = Foo {
-       a: Vec::new(),
-       b: 5,
-   };
-   let updated = Foo {
-       a: Vec::new(),
-       ..base
-   };
-   ```
-
-   In current `Rust`, `updated` always has the same type as `base`, so no
-   additional type annotations are necessary. With this alternative inference
-   rule, the type of `a` in `updated` is inferred independently of the type of
-   `a` in `base`, so it is ambiguous and an explicit type annotation is
-   necessary.
-
-2. It can change the inferred type of a struct instance in existing Rust code.
-   For example,
-
-   ```rust
-   struct Foo<A> {
-       a: A,
-       b: i32,
-   }
-
-   let base: Foo<u8> = Foo {
-       a: 1,
-       b: 2,
-   };
-   let updated = Foo {
-       a: 3,
-       ..base
-   };
-   ```
-
-   In current Rust, `updated` has type `Foo<u8>`. With this alternative
-   inference rule, the type of `a` in `updated` is inferred independently of
-   the type of `a` in `base`. Since it is an integer literal without any
-   constraints, the type is inferred to be the Rust integer fallback `i32`. So,
-   with the alternative inference rule, the type of `updated` would be
-   `Foo<i32>` instead of `Foo<u8>` as it is in current Rust.
-
-### Combination of always independently inferring types of explicitly listed fields and disabling `i32`/`f64` fallback
-
-A combination of the previous two alternatives would still be a breaking change
-by requiring additional type annotations in some cases, but it would not
-silently change inferred types in existing code. All breakage would result in
-easy-to-fix compile-time errors.
 
 ## Further generalization
 
@@ -629,23 +311,21 @@ Error: This expression has type foo but an expression was expected of type
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
+## Type inference
+
+What is the best type inference strategy? In today's Rust, the types of the
+explicitly listed fields are always the same in the base and updated instances.
+With this RFC, the types of the explicitly listed fields can be different
+between the base and updated instances. This removes some of the constraints on
+type inference compared to today's Rust. There are choices to make regarding
+backwards compatibility of inferred types, the `i32`/`f64` fallback in type
+inference, and the conceptual simplicity of the chosen strategy.
+
+## Further generalization
+
 Should struct update syntax be further generalized to ignore the struct type
 and just consider field names and field types? This question could be answered
 later after users have experience with the changes this RFC. The further
 generalization could be implemented in a backwards-compatible way.
 
-What is the best inference rule? The proposal tries to strike a balance between
-consistency, simplicity, and backwards compatibility, but one of the
-alternative inference rules may be preferable.
-
-Is the proposed inference rule practical to implement? With this rule, region
-constraints can affect the inferred type, since checking if the type of
-`updated` can be a subtype of the type of `base` requires checking region
-constraints. This may be problematic since type inference is currently
-implemented in separate phases for non-region and region constraints. One
-possible workaround for this is to always infer lifetimes in explicitly listed
-fields independently between `updated` and `base`, but would this be backwards
-compatible?
-
 [RFC 736]: https://github.com/rust-lang/rfcs/blob/master/text/0736-privacy-respecting-fru.md
-[RFC 2515]: https://github.com/rust-lang/rfcs/pull/2515
