@@ -7,7 +7,7 @@
 The high-level idea is to add language features that simultaneously
 achieve three goals:
 
-1. move `Send` and `Share` out of the language entirely and into the
+1. move `Send` and `Sync` out of the language entirely and into the
    standard library, providing mechanisms for end users to easily
    implement and use similar "marker" traits of their own devising;
 2. make "normal" Rust types sendable and sharable by default, without
@@ -21,7 +21,7 @@ These goals are achieved by two changes:
 1. **Unsafe traits:** An *unsafe trait* is a trait that is unsafe to
    implement, because it represents some kind of trusted
    assertion. Note that unsafe traits are perfectly safe to
-   *use*. `Send` and `Share` are examples of unsafe traits:
+   *use*. `Send` and `Sync` are examples of unsafe traits:
    implementing these traits is effectively an assertion that your
    type is safe for threading.
 2. **Default and negative impls:** A *default impl* is one that
@@ -32,7 +32,7 @@ These goals are achieved by two changes:
    To counteract a default impl, one uses a *negative impl* that
    explicitly opts out for a given type `T` and any type that contains
    `T`. For example, this RFC proposes that unsafe pointers `*T` will
-   opt out of `Send` and `Share`. This implies that unsafe pointers
+   opt out of `Send` and `Sync`. This implies that unsafe pointers
    cannot be sent or shared between threads by default. It also
    implies that any structs which contain an unsafe pointer cannot be
    sent. In all examples encountered thus far, the set of negative
@@ -40,14 +40,14 @@ These goals are achieved by two changes:
    itself.
    
    Safe wrappers like `Arc`, `Atomic`, or `Mutex` can opt to implement
-   `Send` and `Share` explicitly. This will then make them be
+   `Send` and `Sync` explicitly. This will then make them be
    considered sendable (or sharable) even though they contain unsafe
    pointers etc.
    
 Based on these two mechanisms, we can remove the notion of `Send` and
-`Share` as builtin concepts. Instead, these would become unsafe traits
+`Sync` as builtin concepts. Instead, these would become unsafe traits
 with default impls (defined purely in the library). The library would
-explicitly *opt out* of `Send`/`Share` for certain types, like unsafe
+explicitly *opt out* of `Send`/`Sync` for certain types, like unsafe
 pointers (`*T`) or interior mutability (`Unsafe<T>`). Any type,
 therefore, which contains an unsafe pointer would be confined (by
 default) to a single thread. Safe wrappers around those types, like
@@ -57,13 +57,13 @@ implementing `Send` (these impls would have to be designed as unsafe).
 # Motivation
 
 Since proposing opt-in builtin traits, I have become increasingly
-concerned about the notion of having `Send` and `Share` be strictly
+concerned about the notion of having `Send` and `Sync` be strictly
 opt-in. There are two main reasons for my concern:
 
 1. Rust is very close to being a language where computations can be
-   parallelized by default. Making `Send`, and *especially* `Share`,
+   parallelized by default. Making `Send`, and *especially* `Sync`,
    opt-in makes that harder to achieve.
-2. The model followed by `Send`/`Share` cannot easily be extended to
+2. The model followed by `Send`/`Sync` cannot easily be extended to
    other traits in the future nor can it be extended by end-users with
    their own similar traits. It is worrisome that I have come across
    several use cases already which might require such extension
@@ -78,17 +78,17 @@ mutability (e.g., `Cell`, `RefCell`) or unsychronized shared ownership
 intra-task parallelism and they will work ubiquitously, so long as
 people avoid `Cell` and `Rc` when not needed. Explicit opt-in
 threatens that future, however, because fewer types will implement
-`Share`, even if they are in fact threadsafe.
+`Sync`, even if they are in fact threadsafe.
    
 With respect to extensibility, it is particularly worrisome that if a
-library forgets to implement `Send` or `Share`, downstream clients are
+library forgets to implement `Send` or `Sync`, downstream clients are
 stuck. They cannot, for example, use a newtype wrapper, because it
 would be illegal to implement `Send` on the newtype. This implies that
-all libraries must be vigilant about implementing `Send` and `Share`
+all libraries must be vigilant about implementing `Send` and `Sync`
 (even more so than with other pervasive traits like `Eq` or `Ord`).
 The current plan is to address this via lints and perhaps some
 convenient deriving syntax, which may be adequate for `Send` and
-`Share`. But if we wish to add new "classification" traits in the
+`Sync`. But if we wish to add new "classification" traits in the
 future, these new traits won't have been around from the start, and
 hence won't be implemented by all existing code.
 
@@ -117,23 +117,23 @@ defined using traits with default impls.
 
 A final, somewhat weaker, motivator is aesthetics. Ownership has allowed
 us to move threading almost entirely into libaries. The one exception
-is that the `Send` and `Share` types remain built-in. Opt-in traits
+is that the `Send` and `Sync` types remain built-in. Opt-in traits
 makes them *less* built-in, but still requires custom logic in the
 "impl matching" code as well as special safety checks when
-`Safe` or `Share` are implemented.
+`Safe` or `Sync` are implemented.
 
 After the changes I propose, the only traits which would be
 specifically understood by the compiler are `Copy` and `Sized`. I
 consider this acceptable, since those two traits are intimately tied
-to the core Rust type system, unlike `Send` and `Share`.
+to the core Rust type system, unlike `Send` and `Sync`.
 
 # Detailed design
 
 ## Unsafe traits
 
-Certain traits like `Send` and `Share` are critical to memory safety.
+Certain traits like `Send` and `Sync` are critical to memory safety.
 Nonetheless, it is not feasible to check the thread-safety of all
-types that implement `Send` and `Share`. Therefore, we introduce a
+types that implement `Send` and `Sync`. Therefore, we introduce a
 notion of an *unsafe trait* -- this is a trait that is unsafe to
 implement, because implementing it carries semantic guarantees that,
 if compromised, threaten memory safety in a deep way.
@@ -216,46 +216,46 @@ The difference between `Foo` and `List` above is that `Foo<A>`
 references `Foo<Vec<A>>`, which will then in turn reference
 `Foo<Vec<Vec<A>>>` and so on.
 
-## Modeling Send and Share using default traits
+## Modeling Send and Sync using default traits
 
-The `Send` and `Share` traits will be modeled entirely in the library
+The `Send` and `Sync` traits will be modeled entirely in the library
 as follows. First, we declare the two traits as follows:
 
     unsafe trait Send { }
     unsafe impl Send for .. { }
     
-    unsafe trait Share { }
-    unsafe impl Share for .. { }
+    unsafe trait Sync { }
+    unsafe impl Sync for .. { }
     
 Both traits are declared as unsafe because declaring that a type if
-`Send` and `Share` has ramifications for memory safety (and data-race
+`Send` and `Sync` has ramifications for memory safety (and data-race
 freedom) that the compiler cannot, itself, check.
 
-Next, we will add *opt out* impls of `Send` and `Share` for the
+Next, we will add *opt out* impls of `Send` and `Sync` for the
 various unsafe types:
 
     impl<T> !Send for *T { }
-    impl<T> !Share for *T { }
+    impl<T> !Sync for *T { }
 
     impl<T> !Send for *mut T { }
-    impl<T> !Share for *mut T { }
+    impl<T> !Sync for *mut T { }
 
-    impl<T> !Share for Unsafe<T> { }
+    impl<T> !Sync for Unsafe<T> { }
     
 Note that it is not necessary to write unsafe to *opt out* of an
 unsafe trait, as that is the default state.
 
-Finally, we will add *opt in* impls of `Send` and `Share` for the
+Finally, we will add *opt in* impls of `Send` and `Sync` for the
 various safe wrapper types as needed. Here I give one example, which
 is `Mutex`. `Mutex` is interesting because it has the property that it
-converts a type `T` from being `Sendable` to something `Sharable`:
+converts a type `T` from being `Sendable` to something `Syncable`:
 
-    unsafe impl<T:Send> Send for Mutex<T> { }
-    unsafe impl<T:Send> Share for Mutex<T> { }
+    unsafe impl<T: Send> Send for Mutex<T> { }
+    unsafe impl<T: Send> Sync for Mutex<T> { }
 
 ## The `Copy` and `Sized` traits
 
-The final two builtin traits are `Copy` and `Share`. This RFC does not
+The final two builtin traits are `Copy` and `Sync`. This RFC does not
 propose any changes to those two traits but rather relies on the
 specification from [the original opt-in RFC](0003-opt-in-builtin-traits.md).
 
@@ -343,7 +343,7 @@ Without unsafe traits, it would be possible to
 create data races without using the `unsafe` keyword:
 
     struct MyStruct { foo: Cell<int> }
-    impl Share for MyStruct { }
+    impl Sync for MyStruct { }
 
 #### Balancing abstraction, safety, and convenience.
 
@@ -359,7 +359,7 @@ clients (often it is said that parallelism is "anti-modular" or
 
 I think this risk must be weighed against the limitations of requiring
 total opt in. Requiring total opt in not only means that some types
-will accidentally fail to implement send or share when they could, but
+will accidentally fail to implement `Send` or `Sync` when they could, but
 it also means that libraries which wish to employ marker traits cannot
 be composed with other libraries that are not aware of those marker
 traits. In effect, opt-in is anti-modular in its own way.
@@ -375,7 +375,7 @@ it doesn't reference any tainted strings. However, `NiftyVector<uint>`
 does not implement `Untainted` (nor can it, without either library A
 or library B knowing about one another). Similar problems arise for any
 trait, of course, due to our coherence rules, but often they can be
-overcome with new types. Not so with `Send` and `Share`.
+overcome with new types. Not so with `Send` and `Sync`.
 
 #### Other use cases
 
@@ -473,7 +473,7 @@ existing opt-in approach seems to be that a type may be "accidentally"
 sendable or sharable. I discuss this above under the heading of
 "balancing abstraction, safety, and convenience". One point I would
 like to add here, as it specifically pertains to API stability, is
-that a library may, if they choose, opt out of `Send` and `Share`
+that a library may, if they choose, opt out of `Send` and `Sync`
 pre-emptively, in order to "reserve the right" to add non-sendable
 things in the future.
 
@@ -483,7 +483,7 @@ things in the future.
 
 - We could also simply add the notion of `unsafe` traits and *not*
   default impls and then allow types to unsafely implement `Send` or
-  `Share`, bypassing the normal safety guidelines. This gives an
+  `Sync`, bypassing the normal safety guidelines. This gives an
   escape valve for a downstream client to assert that something is
   sendable which was not declared as sendable. However, such a
   solution is deeply unsatisfactory, because it rests on the
@@ -498,19 +498,19 @@ Many of the mechanisms described in this RFC are not needed
 immediately.  Therefore, we would like to implement a minimal
 "forwards compatible" set of changes now and then leave the remaining
 work for after the 1.0 release. The builtin rules that the compiler
-currently implements for send and share are quite close to what is
+currently implements for `Send` and `Sync` are quite close to what is
 proposed in this RFC. The major change is that unsafe pointers and the
 `UnsafeCell` type are currently considered sendable.
 
 Therefore, to be forwards compatible in the short term, we can use the
-same hybrid of builtin and explicit impls for `Send` and `Share` that
+same hybrid of builtin and explicit impls for `Send` and `Sync` that
 we use for `Copy`, with the rule that unsafe pointers and `UnsafeCell`
 are not considered sendable. We must also implement the `unsafe trait`
 and `unsafe impl` concept.
 
 What this means in practice is that using `*const T`, `*mut T`, and
 `UnsafeCell` will make a type `T` non-sendable and non-sharable, and
-`T` must then explicitly implement `Send` or `Share`.
+`T` must then explicitly implement `Send` or `Sync`.
 
 # Unresolved questions
 
