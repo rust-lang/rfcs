@@ -160,30 +160,52 @@ fn main() {
 
 Naively changing this to path based scope would not work as it is not guaranteed that the unqualified `print_expr` name is in scope. In the example above, `print_expr!` is used recursively inside the macro, but in a path scoped system the recursive call would not be in scope if the macro was called with a qualified path (e.g., user calls `m::print_expr!` which references unqualified `print_expr!` which is not in scope).
 
-TODO: Describe how we'll handle this
+A possible way to handle this is to introduce a new macro specific keyword `$self` which is directly analogous to `$crate` except that it refers to the module where the macro is defined. This would work in the simple case but quickly breaks down in more complicated module paths. For example:
+
+```rust 
+pub mod m {
+    mod n { // n is private
+        macro_rules! my_macro {
+            () => {
+                $self::my_macro!(@)
+            };
+            (@) => {};
+        }
+    }
+    pub use n::my_macro;
+}
+m::my_macro!()
+```
+
+If `$self` refers to the module where `my_macro!` is defined (i.e., `m::n`) then the call in the top level module would expand to `m::n::my_macro!(@)` and an error would occur due to `n` being private.
+
+`$self` could refer to the current namespace of the top-level macro call, but we are unsure at this time if this would lead to ambiguities.
 
 ### "Private" macros
 
-Macros can use "private" macros (i.e., macros defined inside of other macros).  
+Macros can use "private" macros (i.e., macros defined inside of other macros). This can lead to an issue where a macro is defined twice which would lead to name clashing.
 
 ```rust 
-macro_rules! foo {
-    ($o:expr) => {{
-        macro_rules! __helper {
-            ($e:expr) => {{
-                println!("Expression: {}", stringify!($e));
-                $e
-            }};
+macro_rules! private {
+    () => {
+        private!(@);
+        private!(@);
+    };
+    (@) => {
+        macro_rules! __private {
+            () => {};
         }
-        
-        __helper!($o)
-    }};
+    }
 }
+
+private!()
 ```
 
-Naively changing this 
+Here `__private` is defined twice which leads to an error.
 
-TODO: Describe how we'll handle this
+How this should be overcome is not yet known. Possible ideas are:
+* allowing macros defined inside of other macros to shadow one another. This may lead to ambiguities.
+* Disallow this use case
 
 # Guide-level explanation
 
