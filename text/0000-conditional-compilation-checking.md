@@ -1,3 +1,8 @@
+- Feature Name: N/A
+- Start Date: 2020-11-04
+- RFC PR: [rust-lang/rfcs#3013](https://github.com/rust-lang/rfcs/pull/3013)
+- Rust Issue: [rust-lang/rust#82450](https://github.com/rust-lang/rust/issues/82450)
+
 # Checking conditional compilation at compile time
 
 # Summary
@@ -83,7 +88,7 @@ the option name and its argument joined by `=`, or can be specified in a two-arg
 ### Well-known condition names
 
 `rustc` defines a set of well-known conditions, such as `test`, `target_os`, etc. These conditions
-are always valid; it is not necessary to enable checking for these conditions. If these conditions 
+are always valid; it is not necessary to enable checking for these conditions. If these conditions
 are specified in a `--check-cfg names(...)` option then they will be ignored. This set of well-known
 names is a part of the stable interface of the compiler. New well-known conditions may be added in
 the future, because adding a new name cannot break existing code. However, a name may not be removed
@@ -486,15 +491,15 @@ feature is enabled, while the `zebra` feature is disabled. Consider compiling th
 
 ```rust
 // this is valid, and tame_lion() will be compiled
-#[cfg(feature = "lion")]     
+#[cfg(feature = "lion")]
 fn tame_lion(lion: Lion) { ... }
 
 // this is valid, and ride_zebra() will NOT be compiled
-#[cfg(feature = "zebra")] 
+#[cfg(feature = "zebra")]
 fn ride_zebra(zebra: Zebra) { ... }
 
-// this is INVALID, and will cause a compiler error 
-#[cfg(feature = "platypus")] 
+// this is INVALID, and will cause a compiler error
+#[cfg(feature = "platypus")]
 fn poke_platypus() { ... }
 
 // this is INVALID, because 'feechure' is not a known condition name,
@@ -539,7 +544,7 @@ fn tame_lion() { ... }
 
 ## Rationale and alternatives
 
-This design enables checking for a class of bugs at compile time, rather than detecting them by 
+This design enables checking for a class of bugs at compile time, rather than detecting them by
 running code.
 
 This design does not break any existing usage of Rustc. It does not change the meaning of existing
