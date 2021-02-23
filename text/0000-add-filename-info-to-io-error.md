@@ -129,13 +129,15 @@ In this case, this change would add the file to the `Os` error message. Many cra
 
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-Of course, an alternative to this RFC would to leave OS errors as they are. We should implement this change because it makes is much more helpful to the user with a more useful diagnostic. For example, if a certain crate that a user is using is trying to access an arbitrary file which doesn't exist, currently an error message such as this would be emptied:
+1. Of course, an alternative to this RFC would to leave OS errors as they are. We should implement this change because it makes is much more helpful to the user with a more useful diagnostic. For example, if a certain crate that a user is using is trying to access an arbitrary file which doesn't exist, currently an error message such as this would be emptied:
 
 ```
 Error: Os { code: 2, kind: NotFound, message: "No such file or directory" }
 ```
 
 This doesn't help the user whatsoever. If they were also trying to access files from their own code, they wouldn't know where the error is coming from as their is no filename or information on how to resolve this problem.
+
+2. (@nagisa's idea): To have callers to attach the filename and the operation done to the error by adding context to it (similarly to how the community handles `std::io` errors with error handling crates such as `anyhow`).
 
 # Prior art
 
@@ -146,3 +148,5 @@ This doesn't help the user whatsoever. If they were also trying to access files 
 - This change was [previously implemented](https://github.com/rust-lang/rust/pull/14629) in 2014, but was removed during the [`std::io` reform](https://github.com/rust-lang/rfcs/blob/master/text/0517-io-os-reform.md) due to various different reasons
 
 - [Node's `EACCES` Error](https://man7.org/linux/man-pages/man3/errno.3.html) also contains filename information which include the path of the file
+
+- [fs-err](https://crates.io/crates/fs-err) is a replacement for `std::fs` which keeps adds the filename to the diagnostic
