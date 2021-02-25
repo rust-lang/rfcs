@@ -119,30 +119,30 @@ Using `!` is then just a convenient yet efficient way to create those residual t
 One thing [The Book mentions](https://doc.rust-lang.org/stable/book/ch09-02-recoverable-errors-with-result.html#a-shortcut-for-propagating-errors-the--operator),
 if you recall, is that error values in `?` have `From::from` called on them, to convert from one error type to another.
 
-The previous section actually lied to you slightly: there are *two* traits involved, not just one.  The `from_residual` method is on `FromTryResidual`, which is generic so that the implementation on `Result` can add that extra conversion.  Specifically, the trait looks like this:
+The previous section actually lied to you slightly: there are *two* traits involved, not just one.  The `from_residual` method is on `FromResidual`, which is generic so that the implementation on `Result` can add that extra conversion.  Specifically, the trait looks like this:
 
 ```rust
-trait FromTryResidual<Residual = <Self as Try>::Residual> {
-	fn from_residual(r: Residual) -> Self;
+trait FromResidual<Residual = <Self as Try>::Residual> {
+    fn from_residual(r: Residual) -> Self;
 }
 ```
 
 And while we're showing code, here's the exact definition of the `Try` trait:
 
 ```rust
-trait Try: FromTryResidual {
-	type Output;
-	type Residual;
-	fn branch(self) -> ControlFlow<Self::Residual, Self::Output>;
-	fn from_output(o: Self::Output) -> Self;
+trait Try: FromResidual {
+    type Output;
+    type Residual;
+    fn branch(self) -> ControlFlow<Self::Residual, Self::Output>;
+    fn from_output(o: Self::Output) -> Self;
 }
 ```
 
 The fact that it's a super-trait like that is why I don't feel bad about the slight lie: Every `T: Try` *always* has a `from_residual` function from `T::Residual` to `T`.  It's just that some types might offer more.
 
-Here's how `Result` implements it to do error-conversions:
+Here's how `Result` implements `FromResidual` to do error-conversions:
 ```rust
-impl<T, E, F: From<E>> FromTryResidual<Result<!, E>> for Result<T, F> {
+impl<T, E, F: From<E>> FromResidual<Result<!, E>> for Result<T, F> {
     fn from_residual(x: Result<!, E>) -> Self {
         match x {
             Err(e) => Err(From::from(e)),
@@ -154,7 +154,7 @@ impl<T, E, F: From<E>> FromTryResidual<Result<!, E>> for Result<T, F> {
 But `Option` doesn't need to do anything exciting, so just has a simple implementation, taking advantage of the default parameter:
 
 ```rust
-impl<T> FromTryResidual for Option<T> {
+impl<T> FromResidual for Option<T> {
     fn from_residual(x: Self::Residual) -> Self {
         match x {
             None => None,
@@ -208,7 +208,7 @@ impl Try for ResultCode {
     }
 }
 
-impl FromTryResidual for ResultCode {
+impl FromResidual for ResultCode {
     fn from_residual(r: ResultCodeResidual) -> Self {
         ResultCode(r.0.into())
     }
@@ -229,7 +229,7 @@ pub struct FancyError(String);
 
 We can allow `?` on a `ResultCode` in a method returning `Result` with an implementation like this:
 ```rust
-impl<T, E: From<FancyError>> FromTryResidual<ResultCodeResidual> for Result<T, E> {
+impl<T, E: From<FancyError>> FromResidual<ResultCodeResidual> for Result<T, E> {
     fn from_residual(r: ResultCodeResidual) -> Self {
         Err(FancyError(format!("Something fancy about {} at {:?}", r.0, std::time::SystemTime::now())).into())
     }
@@ -288,7 +288,7 @@ fn simple_try_fold_2<A, T, R: Try<Output = A>>(
 }
 ```
 
-We'll also need `FromTryResidual::from_residual` to turn the residual back into the original type.  But because it's a supertrait of `Try`, we don't need to mention it in the bounds.  All types which implement `Try` can always be recreated from their corresponding residual, so we'll just call it:
+We'll also need `FromResidual::from_residual` to turn the residual back into the original type.  But because it's a supertrait of `Try`, we don't need to mention it in the bounds.  All types which implement `Try` can always be recreated from their corresponding residual, so we'll just call it:
 ```rust
 pub fn simple_try_fold_3<A, T, R: Try<Output = A>>(
     iter: impl Iterator<Item = T>,
@@ -351,7 +351,7 @@ pub enum ControlFlow<B, C = ()> {
 ## The traits
 
 ```rust
-pub trait Try: FromTryResidual {
+pub trait Try: FromResidual {
     /// The type of the value consumed or produced when not short-circuiting.
     type Output;
 
@@ -367,7 +367,7 @@ pub trait Try: FromTryResidual {
     fn branch(self) -> ControlFlow<Self::Residual, Self::Output>;
 }
 
-pub trait FromTryResidual<Residual = <Self as Try>::Residual> {
+pub trait FromResidual<Residual = <Self as Try>::Residual> {
     /// Recreate the type implementing `Try` from a related residual
     fn from_residual(x: Residual) -> Self;
 }
@@ -379,8 +379,8 @@ The previous desugaring of `x?` was
 
 ```rust
 match Try::into_result(x) {
-	Ok(v) => v,
-	Err(e) => return Try::from_error(From::from(e)),
+    Ok(v) => v,
+    Err(e) => return Try::from_error(From::from(e)),
 }
 ```
 
@@ -388,8 +388,8 @@ The new one is very similar:
 
 ```rust
 match Try::branch(x) {
-	ControlFlow::Continue(v) => v,
-	ControlFlow::Break(r) => return FromTryResidual::from_residual(r),
+    ControlFlow::Continue(v) => v,
+    ControlFlow::Break(r) => return FromResidual::from_residual(r),
 }
 ```
 
@@ -418,7 +418,7 @@ impl<T, E> ops::Try for Result<T, E> {
     }
 }
 
-impl<T, E, F: From<E>> ops::FromTryResidual<Result<!, E>> for Result<T, F> {
+impl<T, E, F: From<E>> ops::FromResidual<Result<!, E>> for Result<T, F> {
     fn from_residual(x: Result<!, E>) -> Self {
         match x {
             Err(e) => Err(From::from(e)),
@@ -448,7 +448,7 @@ impl<T> ops::Try for Option<T> {
     }
 }
 
-impl<T> ops::FromTryResidual for Option<T> {
+impl<T> ops::FromResidual for Option<T> {
     fn from_residual(x: <Self as ops::Try>::Residual) -> Self {
         match x {
             None => None,
@@ -459,7 +459,7 @@ impl<T> ops::FromTryResidual for Option<T> {
 
 ### `Poll`
 
-These reuse `Result`'s residual type, and thus interconversion between `Poll` and `Result` is allowed without needing additional `FromTryResidual` implementations on `Result`.
+These reuse `Result`'s residual type, and thus interconversion between `Poll` and `Result` is allowed without needing additional `FromResidual` implementations on `Result`.
 
 ```rust
 impl<T, E> ops::Try for Poll<Result<T, E>> {
@@ -479,7 +479,7 @@ impl<T, E> ops::Try for Poll<Result<T, E>> {
     }
 }
 
-impl<T, E, F: From<E>> ops::FromTryResidual<Result<!, E>> for Poll<Result<T, F>> {
+impl<T, E, F: From<E>> ops::FromResidual<Result<!, E>> for Poll<Result<T, F>> {
     fn from_residual(x: Result<!, E>) -> Self {
         match x {
             Err(e) => Poll::Ready(Err(From::from(e))),
@@ -507,7 +507,7 @@ impl<T, E> ops::Try for Poll<Option<Result<T, E>>> {
     }
 }
 
-impl<T, E, F: From<E>> ops::FromTryResidual<Result<!, E>> for Poll<Option<Result<T, F>>> {
+impl<T, E, F: From<E>> ops::FromResidual<Result<!, E>> for Poll<Option<Result<T, F>>> {
     fn from_residual(x: Result<!, E>) -> Self {
         match x {
             Err(e) => Poll::Ready(Some(Err(From::from(e)))),
@@ -535,7 +535,7 @@ impl<B, C> ops::Try for ControlFlow<B, C> {
     }
 }
 
-impl<B, C> ops::FromTryResidual for ControlFlow<B, C> {
+impl<B, C> ops::FromResidual for ControlFlow<B, C> {
     fn from_residual(x: <Self as ops::Try>::Residual) -> Self {
         match x {
             ControlFlow::Break(r) => ControlFlow::Break(r),
@@ -557,7 +557,7 @@ mod sadness {
     #[derive(Clone, Copy, PartialEq, PartialOrd, Eq, Ord, Debug, Hash)]
     pub struct PleaseCallTheOkOrMethodToUseQuestionMarkOnOptionsInAMethodThatReturnsResult;
 
-    impl<T, E> ops::FromTryResidual<Option<!>> for Result<T, E>
+    impl<T, E> ops::FromResidual<Option<!>> for Result<T, E>
     where
         E: From<PleaseCallTheOkOrMethodToUseQuestionMarkOnOptionsInAMethodThatReturnsResult>,
     {
@@ -632,10 +632,10 @@ On nightly there are a [variety of methods](https://doc.rust-lang.org/nightly/st
 There's a basic set of simple ones that could be included if desired, though:
 ```rust
 impl<B, C> ControlFlow<B, C> {
-	fn is_break(&self) -> bool;
-	fn is_continue(&self) -> bool;
-	fn break_value(self) -> Option<B>;
-	fn continue_value(self) -> Option<C>;
+    fn is_break(&self) -> bool;
+    fn is_continue(&self) -> bool;
+    fn break_value(self) -> Option<B>;
+    fn continue_value(self) -> Option<C>;
 }
 ```
 
@@ -724,7 +724,7 @@ Bikeshed away!
 
 Most importantly, for any type generic in its "output type" it's easy to produce a residual type using an uninhabited type.  That works for `Option` -- no `NoneError` residual type needed -- as well as for the `StrandFail<T>` type from the experience report.  And thanks to enum layout optimizations, there's no space overhead to doing this: `Option<!>` is a ZST, and `Result<!, E>` is no larger than `E` itself.  So most of the time one will not need to define anything additional.
 
-In those cases where a separate type *is* needed, it's still easier to make a residual type because they're transient and thus can be opaque: there's no point at which a user is expected to *do* anything with a residual type other than convert it back into a known `Try` type.  This is different from the previous design, where less-restrictive interconversion meant that anything could be exposed via a `Result`.  That has lead to requests, [such as for `NoneError` to implement `Error`](https://github.com/rust-lang/rust/issues/46871#issuecomment-618186642), that are perfectly understandable given that the instances are exposed in `Result`s.  As residual types aren't ever exposed like that, it would be fine for them to implement nothing but `FromTryResidual` (and probably `Debug`), making them cheap to define and maintain.
+In those cases where a separate type *is* needed, it's still easier to make a residual type because they're transient and thus can be opaque: there's no point at which a user is expected to *do* anything with a residual type other than convert it back into a known `Try` type.  This is different from the previous design, where less-restrictive interconversion meant that anything could be exposed via a `Result`.  That has lead to requests, [such as for `NoneError` to implement `Error`](https://github.com/rust-lang/rust/issues/46871#issuecomment-618186642), that are perfectly understandable given that the instances are exposed in `Result`s.  As residual types aren't ever exposed like that, it would be fine for them to implement nothing but `FromResidual` (and probably `Debug`), making them cheap to define and maintain.
 
 ## Use of `!`
 
@@ -738,23 +738,23 @@ For example, we could have a different, never-stable `Try`-like trait used in ol
 
 It's unclear that that's worth the effort, however, so this RFC is currently written to continue to support it going forward.  Notably, removing it isn't enough to solve the annotation requirements, so the opportunity cost feels low.
 
-## Why `FromTryResidual` is the supertrait
+## Why `FromResidual` is the supertrait
 
 It's nicer for `try_fold` implementations to just mention the simpler `Try` name.  It being the subtrait means that code needing only the basic scenario can just bound on `Try` and know that both `from_output` and `from_residual` are available.
 
-## Default `Residual` on `FromTryResidual`
+## Default `Residual` on `FromResidual`
 
 The default here is provided to make the basic case simple.  It means that when implementing the trait, the simple case (like in `Option`) doesn't need to think about it -- similar to how you can `impl Add for Foo` for the homogeneous case even though that trait also has a generic parameter.
 
-## `FromTryResidual::from_residual` vs `Residual::into_try`
+## `FromResidual::from_residual` vs `Residual::into_try`
 
 Either of these directions could be made to work.  Indeed, an early experiment while drafting this had a method on a required trait for the residual that created the type implementing `Try` (not just the associated type).  However that method was removed as unnecessary once `from_residual` was added, and then the whole trait was moved to future work in order to descope the RFC, as it proved unnecessary for the essential `?`/`try_fold` functionality.
 
-A major advantage of the `FromTryResidual::from_residual` direction is that it's more flexible with coherence when it comes to allowing other things to be converted into a new type being defined.  That does come at the cost of higher restriction on allowing the new type to be converted into other things, but reusing a residual can also be used for that scenario.
+A major advantage of the `FromResidual::from_residual` direction is that it's more flexible with coherence when it comes to allowing other things to be converted into a new type being defined.  That does come at the cost of higher restriction on allowing the new type to be converted into other things, but reusing a residual can also be used for that scenario.
 
 Converting a known residual into a generic `Try` type seems impossible (unless it's uninhabited), but consuming arbitrary residuals could work -- imagine something like
 ```rust
-impl<R: std::fmt::Debug> FromTryResidual<R> for LogAndIgnoreErrors {
+impl<R: std::fmt::Debug> FromResidual<R> for LogAndIgnoreErrors {
     fn from_residual(h: H) -> Self {
         dbg!(h);
         Self
@@ -764,6 +764,8 @@ impl<R: std::fmt::Debug> FromTryResidual<R> for LogAndIgnoreErrors {
 (Not that that's necessarily a good idea -- it's plausibly *too* generic.  This RFC definitely isn't proposing it for the standard library.)
 
 And, ignoring the coherence implications, a major difference between the two sides is that the target type is typically typed out visibly (in a return type) whereas the source type (going into the `?`) is often the result of some called function.  So it's preferable for any behaviour extensions to be on the type that can more easily be seen in the code.
+
+
 
 <!--
 - Why is this design the best in the space of possible designs?
@@ -778,7 +780,28 @@ Previous approaches used on nightly
 - The original [`Carrier` trait](https://doc.rust-lang.org/1.16.0/core/ops/trait.Carrier.html)
 - The next design with a [`Try` trait](https://doc.rust-lang.org/1.32.0/core/ops/trait.Try.html) (different from the one here)
 
-Thinking from the perspective of a [monad](https://doc.rust-lang.org/1.32.0/core/ops/trait.Try.html), `Try::from_output` is similar to `return`.
+This is definitely *monadic*.  One can define the basic monad operations for the `Maybe` monad as
+```rust
+use std::ops::Try;
+
+fn monad_unit<T: Try>(x: <T as Try>::Ok) -> T {
+    T::from_output(x)
+}
+
+fn monad_bind<T1: Try<Residual = R>, T2: Try<Residual = R>, R>(mx: T1, f: impl FnOnce(<T1 as Try>::Ok) -> T2) -> T2 {
+    let x = mx?;
+    f(x)
+}
+
+fn main() {
+    let mx: Option<i32> = monad_unit(1);
+    let my = monad_bind(mx, |x| Some(x + 1));
+    let mz = monad_bind(my, |x| Some(-x));
+    assert_eq!(mz, Some(-2));
+}
+```
+
+However, [like boats described for `async.await`](https://twitter.com/withoutboats/status/1027702535707090944), using monads directly isn't a great fit for rust.  `?` desugaring to a `return` (rather than closures) mixes better with the other control flow constructs, such as `break` and `continue`, that don't work through closures.  And while the definitions above work fine for `Option`, they don't allow the error-conversion that's already stable with `Result`, so any monad-based implementation of `?` wouldn't be able to be the normal monad structure regardless.
 
 <!--
 Discuss prior art, both the good and the bad, in relation to this proposal.
@@ -799,7 +822,7 @@ Please also take into consideration that rust sometimes intentionally diverges f
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-- Bikesheds: `Try`/`FromTryResidual`/`Try::Output`/`Try::Residual` all might have better names.  This RFC has left it as `Try` mostly because that meant not touching all the `try_fold` implementations in the prototype.  I've long liked [parasyte's "bubble" suggestion](https://internals.rust-lang.org/t/bikeshed-a-consise-verb-for-the-operator/7289/29?u=scottmcm) as a name, but maybe sticking with the previous one is best.
+- Bikesheds: `Try`/`FromResidual`/`Try::Output`/`Try::Residual` all might have better names.  This RFC has left it as `Try` mostly because that meant not touching all the `try_fold` implementations in the prototype.  I've long liked [parasyte's "bubble" suggestion](https://internals.rust-lang.org/t/bikeshed-a-consise-verb-for-the-operator/7289/29?u=scottmcm) as a name, but maybe sticking with the previous one is best.
 - Structure: The three methods could be split up further
 
 <!--
@@ -886,7 +909,7 @@ where
 {
     match self.branch() {
         ControlFlow::Continue(c) => Try::from_output(f(c)),
-        ControlFlow::Break(r) => FromTryResidual::from_residual(r),
+        ControlFlow::Break(r) => FromResidual::from_residual(r),
     }
 }
 
@@ -899,9 +922,9 @@ A core problem with [try blocks](https://doc.rust-lang.org/nightly/unstable-book
 That is, the following never compiles, no matter the types of `x` and `y`:
 ```rust
 let _ = try {
-	foo(x?);
-	bar(y?);
-	z
+    foo(x?);
+    bar(y?);
+    z
 };
 ```
 
@@ -911,19 +934,19 @@ But with something like `GetCorrespondingTryType`, an alternative desugaring bec
 ```rust
 fn helper<C, R: GetCorrespondingTryType<C>>(r: R) -> <R as GetCorrespondingTryType<C>>::TryType
 {
-	FromTryResidual::from_residual(h)
+    FromResidual::from_residual(h)
 }
 
 'block: {
-	foo(match Try::branch(x) {
-		ControlFlow::Continue(c) => c,
-		ControlFlow::Break(r) => break 'block helper(r),
-	});
-	bar(match Try::branch(y) {
-		ControlFlow::Continue(c) => c,
-		ControlFlow::Break(r) => break 'block helper(r),
-	});
-	Try::from_output(z)
+    foo(match Try::branch(x) {
+        ControlFlow::Continue(c) => c,
+        ControlFlow::Break(r) => break 'block helper(r),
+    });
+    bar(match Try::branch(y) {
+        ControlFlow::Continue(c) => c,
+        ControlFlow::Break(r) => break 'block helper(r),
+    });
+    Try::from_output(z)
 }
 ```
 (It's untested whether the inference engine is smart enough to pick the appropriate `C` with just that -- the `Output` associated type is constrained to have a `Continue` type matching the generic parameter, and that `Continue` type needs to match that of `z`, so it's possible.  But hopefully this communicates the idea, even if an actual implementation might need to more specifically introduce type variables or something.)
@@ -944,8 +967,8 @@ As previously mentioned, this RFC neither defines nor proposes a `yeet` operator
 
 Because this "residual" design carries along the "result-ness" or "option-ness" or similar, it means there are two possibilities for a desugaring.
 
-- It could directly take the residual type, so `yeet e` would desugar directly to `FromTryResidual::from_residual(e)`.
-- It could put the argument into a special residual type, so `yeet e` would desugar to something like `FromTryResidual::from_residual(Yeeted(e))`.
+- It could directly take the residual type, so `yeet e` would desugar directly to `FromResidual::from_residual(e)`.
+- It could put the argument into a special residual type, so `yeet e` would desugar to something like `FromResidual::from_residual(Yeeted(e))`.
 
 These have various implications -- like `yeet None`/`yeet`, `yeet Err(ErrorKind::NotFound)`/`yeet ErrorKind::NotFound.into()`, etc -- but thankfully this RFC doesn't need to discuss those.  (And please don't do so in the GitHub comments either, to keep things focused, though feel free to start an IRLO or Zulip thread if you're so inspired.)
 
