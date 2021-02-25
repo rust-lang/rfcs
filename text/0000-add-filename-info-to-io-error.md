@@ -54,18 +54,10 @@ fn main() -> std::io::Result<()> {
 With this change, a much more descriptive and helpful error message will be emitted:
 
 ```txt
-error: No such file or directory
- --> src/main.rs:4:46
-  |
-4 |     let hello_file = File::open("hello.txt")?;
-  |                                 ^^^^^^^^^^ `hello.txt` doesn't exist
-  |
-  = help: create a file named `hello.txt` in your current directory
-
-error: aborting due to previous error
+Error: Os { code: 2, kind: NotFound, message: "No such file or directory", file: "/Users/henryboisdequin/hello.txt" }
 ```
 
-This error explains where the error is emitted and the cause of it. Also, this error adds a help message to create a `hello.txt` file in the current directory which would make this program compile successfully. Let's look at another case:
+This error explains where the error is emitted and the cause of it. As you can see, this error is much more helpful. It points to where the problem is and the cause of it. Let's look at another case:
 
 ```rust
 use std::fs::File;
@@ -86,16 +78,7 @@ Error: Os { code: 13, kind: PermissionDenied, message: "Permission denied" }
 This program is not helpful at all, not displaying file information or how to fix this error. With this change, here is the projected error message:
 
 ```
-error: Permission denied
- --> src/main.rs:4:36
-  |
-4 |     let _ = File::create("/etc/protocols")?;
-  |                          ^^^^^^^^^^ permission denied
-  |
-  = help: give write access to this program
-  = help: try running this command: `sudo chown -R $USER /etc/protocols`
-
-error: aborting due to previous error
+Error: Os { code: 13, kind: PermissionDenied, message: "Permission denied", file: "/etc/protocols" }
 ```
 
 In this case, this change would add the file to the `Os` error message. Many crates and Rust applications write their own error messages to improve the experience while working with `std::io`. This is why we should incorporate filename information to `std::io:Error` to reduce the amount of boilerplate crates and Rust applications need to write to ensure a better `std::io` development process.
@@ -112,11 +95,6 @@ In this case, this change would add the file to the `Os` error message. Many cra
 2\.
 
 - Test impact of performance by adding benchmarks and looking at `std`'s and `std::io`'s general difference in performance before and after this implementation
-
-3\.
-
-- Create a diagnostic such as above
-  - Make the lint as helpful as possible, adding `help` messages and pointing to where in the code the error is being caused
 
 # Drawbacks
 
