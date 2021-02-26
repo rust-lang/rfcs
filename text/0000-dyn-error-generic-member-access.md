@@ -198,7 +198,7 @@ struct ExampleError {
 
 impl fmt::Display for ExampleError {
     fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(fmt, "Failed to read instrs from {}", path.display())
+        write!(fmt, "Failed to read instrs from {}", self.path.display())
     }
 }
 
@@ -737,7 +737,7 @@ previous additions to the `Error` trait.
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-This opens the door to supporting `Error Return Traces`, similar to zigs, where
+This opens the door to supporting [`Error Return Traces`](https://ziglang.org/documentation/master/#toc-Error-Return-Traces), similar to zigs, where
 if each return location is stored in a `Vec<&'static Location<'static>>` a full
 return trace could be built up with:
 
