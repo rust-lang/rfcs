@@ -775,7 +775,7 @@ Note that `fn` types do not require that `T0..Tn` be `Sized`.  This is
 intentional. The limitation that only sized values can be passed as
 argument (or returned) is enforced at the time when a fn is actually
 called, as well as in actual fn definitions, but is not considered
-fundamental to fn types thesmelves. There are several reasons for
+fundamental to fn types themselves. There are several reasons for
 this. For one thing, it's forwards compatible with passing DST by
 value. For another, it means that non-defaulted trait methods to do
 not have to show that their argument types are `Sized` (this will be
