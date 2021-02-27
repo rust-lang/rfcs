@@ -20,12 +20,12 @@ Currently, there are three means of achieving this:
 1. Use rust comments inside the long example.
   Downsides:
     1. No markdown
-    1. If a comment overflows the rendered code block horizontally, scrolling is possible, yet cumbersome, especially when the comment is far from the bottom, where the scroll bar happens to be.
-1. Split long examples into multiple code blocks and add the text between them.
+    2. If a comment overflows the rendered code block horizontally, scrolling is possible, yet cumbersome, especially when the comment is far from the bottom, where the scroll bar happens to be.
+2. Split long examples into multiple code blocks and add the text between them.
   Downsides:
     1. Must disable doc-test-ing the example
-    1. Lack of UI indicating that the code blocks are multiple parts of a whole
-1. Duplicate the example code in each part and hide, using [the `#` feature][hiding-portions], different lines in each example.
+    2. Lack of UI indicating that the code blocks are multiple parts of a whole
+3. Duplicate the example code in each part and hide, using [the `#` feature][hiding-portions], different lines in each example.
   There's an example of this in the link above.
   Downsides:
     1. Tedious. Macros may make this easier, but still not convenient.
