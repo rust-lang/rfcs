@@ -7,7 +7,8 @@
 [summary]: #summary
 
 Define how UB during const evaluation is treated:
-some kinds of UB must be detected, the rest leads to an unspecified result for the affected CTFE query (but does not otherwise "taint" the compilation process).
+some kinds of UB must be detected, the remaining UB conditions are ignored and evaluation continues in a well-defined way.
+However, CTFE queries causing UB are not subject to stability guarantees and thus may fail to build in the future (e.g. when more UB is being detected).
 
 # Motivation
 [motivation]: #motivation
@@ -30,7 +31,7 @@ This can change from compiler version to compiler version: CTFE code that causes
 
 This RFC does not alter the general policy that unsound code is not subject to strict stability guarantees.
 In other words, unsafe code may not rely on all future versions of Rust to implement this RFC.
-The RFC only helps *consumers* of unsafe code to be sure that right now, all UB during CTFE will be detected.
+The RFC only helps *consumers* of unsafe code to be sure that right now, all UB during CTFE will be detected or non-consequential.
 It does not grant any new possibilities to *authors* of unsafe code.
 
 [UB]: https://doc.rust-lang.org/reference/behavior-considered-undefined.html
@@ -50,6 +51,10 @@ Other kinds of UB might or might not be detected:
 * Producing an invalid value (but not using it in one of the ways defined above).
 * Any [other UB][UB] not listed here.
 
+In rustc, none of this UB will be detected for now.
+However, code causing any kind of UB is still considered buggy and not subject to stability guarantees.
+Hence, rustc may start detecting more UB in the future.
+
 All of this UB has in common that there is an "obvious" way to continue evaluation even though the program has caused UB:
 we can just access the underlying memory despite alignment and/or aliasing rules being violated, and we can just ignore the existence of an invalid value as long as it is not used in some arithmetic, logical or control-flow operation.
 There is no guarantee that CTFE detects such UB: evaluation may either fail with an error, or continue with the "obvious" result.
@@ -60,7 +65,7 @@ For rustc, all intrinsic-specific UB (e.g., reaching an `unreachable` or violati
 
 The RFC also does not mandate detecting any library UB, i.e., UB caused by violating the contract of a (standard) library function.
 The same conditions as for intrinsics apply: implementations should document which UB is detected.
-If library UB is ignored, execution must continue by just following the rules of the Abstract Machine for current implementation of the library function, treating it as if that code had no contract applied to it.
+If library UB is ignored, execution must continue by just following the rules of the Abstract Machine for the current implementation of the library function, treating it as if that code had no contract applied to it.
 In rustc, no library UB will be detected.
 
 If the compile-time evaluation uses operations that are specified as non-deterministic,
@@ -68,8 +73,6 @@ and only some of the non-deterministic choices lead to CTFE-detected UB,
 then CTFE may choose any possible execution and thus miss the possible UB.
 For example, if we end up specifying the value of padding after a typed copy to be non-deterministically chosen, then padding will be initialized in some executions and uninitialized in others.
 If the program then performs integer arithmetic on a padding byte, that might or might not be detected as UB, depending on the non-deterministic choice made by CTFE.
-
-This RFC is concerned only with language-UB, not with library-UB, i.e., UB caused by violating the contract of a (standard) library function.
 
 ## Note to implementors
 
@@ -127,3 +130,5 @@ If this RFC were accepted, we could declare such operations "definitely detected
 
 If UB checks turn out to be expensive, we could consider adding a flag to let users opt-out of UB checking.
 This will speed up compilation, and not change behavior of correct code.
+
+The RFC clarifies that there is no *guarantee* that code with UB is evaluated in any particular way, so if we want to detect more UB during CTFE in the future, we are free to do so from a stability perspective.
