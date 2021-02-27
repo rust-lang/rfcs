@@ -45,12 +45,13 @@ The following kinds of UB are detected by CTFE, and will cause compilation to st
 
 These kinds of UB have in common that there is nothing sensible evaluation can do besides stopping with an error.
 
-Other kinds of UB might or might not be detected:
+Other kinds of UB might or might not be detected depending on the implementation:
 * Dereferencing unaligned pointers.
 * Violating Rust's aliasing rules.
 * Producing an invalid value (but not using it in one of the ways defined above).
 * Any [other UB][UB] not listed here.
 
+Implementations should document which of these kinds of UB they detect.
 In rustc, none of this UB will be detected for now.
 However, code causing any kind of UB is still considered buggy and not subject to stability guarantees.
 Hence, rustc may start detecting more UB in the future.
