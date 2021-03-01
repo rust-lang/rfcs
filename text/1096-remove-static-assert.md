@@ -33,7 +33,7 @@ error: `#[static_assert]` is an experimental feature, and has a poor API
 
 Throughout its life, `static_assert` has been... weird. Graydon suggested it
 [in May of 2013][suggest], and it was
-[implemented][https://github.com/rust-lang/rust/pull/6670] shortly after.
+[implemented](https://github.com/rust-lang/rust/pull/6670) shortly after.
 [Another issue][issue] was created to give it a ‘better interface’. Here’s why:
 
 > The biggest problem with it is you need a static variable with a name, that
