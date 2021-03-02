@@ -63,7 +63,7 @@ This will be a best effort lint to signal the user about unintended side-effects
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-The `must_not_suspend` attribute is used to issue a diagnostic warning when a value is not "used". It can be applied to user-defined composite types (structs, enums and unions), functions and traits.
+The `must_not_suspend` attribute is used to issue a diagnostic warning when a value is not "used". It can be applied to user-defined composite types (structs, enums and unions), traits.
 
 The `must_not_suspend` attribute may include a message by using the [`MetaNameValueStr`] syntax such as `#[must_not_suspend = "example message"]`.  The message will be given alongside the warning.
 
@@ -78,19 +78,6 @@ async fn foo() {
   let my_struct = MyStruct {};
   my_async_op.await;
   println!("{:?}", my_struct);
-}
-```
-
-When used on a function, if the value returned by a function is held across an await point, this lint is violated.
-
-```rust
-#[must_not_suspend]
-fn foo() -> i32 { 5i32 }
-
-async fn foo() {
-  let bar = foo();
-  my_async_op.await;
-  println!("{:?}", bar);
 }
 ```
 
@@ -114,26 +101,6 @@ async fn foo() {
 }
 ```
 
-When used on a function in a trait declaration, then the behavior also applies when the call expression is a function from the implementation of the trait.
-
-```rust
-trait Trait {
-    #[must_not_suspend]
-    fn foo(&self) -> i32;
-}
-
-impl Trait for i32 {
-    fn foo(&self) -> i32 { 0i32 }
-}
-
-async fn foo() {
-  let bar = 5i32.foo();
-  my_async_op.await;
-  println!("{:?}", bar);
-}
-```
-
-
 When used on a function in a trait implementation, the attribute does nothing.
 
 [`MetaNameValueStr`]: https://doc.rust-lang.org/reference/attributes.html#meta-item-attribute-syntax
@@ -149,7 +116,7 @@ When used on a function in a trait implementation, the attribute does nothing.
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-Going through the prior are we see two systems currently which provide simailar/semantically similar behavior:
+Going through the prior art we see two systems currently which provide similar/semantically similar behavior:
 
 ## Clippy `await_holding_lock` lint
 This lint goes through all types in `generator_interior_types` looking for `MutexGuard`, `RwLockReadGuard` and `RwLockWriteGuard`. While this is a first great step, we think that this can be further extended to handle not only the hardcoded lock guards, but any type which is should not be held across an await point. By marking a type as `#[must_not_suspend]` we can warn when any arbitrary type is being held across an await boundary. An additional benefit to this approach is that this behaviour can be extended to any type which holds a `#[must_not_suspend]` type inside of it.
