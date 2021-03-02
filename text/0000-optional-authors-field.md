@@ -1,6 +1,6 @@
-# RFC: Deprecate the authors field
+# RFC: Make the authors field optional
 
-- Feature Name: `deprecate_authors_field`
+- Feature Name: `optional_authors_field`
 - Start Date: 2021-01-07
 - RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
@@ -8,10 +8,10 @@
 # Summary
 [summary]: #summary
 
-This RFC proposes to deprecate the `package.authors` field of `Cargo.toml`.
-This also implies preventing Cargo from auto-filling it, allowing crates to be
-published to crates.io without the field being present, and avoiding displaying
-its contents on the crates.io and docs.rs UI.
+This RFC proposes to make the `package.authors` field of `Cargo.toml` optional.
+This RFC also proposes preventing Cargo from auto-filling it, allowing crates
+to be published to crates.io without the field being present, and avoiding
+displaying its contents on the crates.io and docs.rs UI.
 
 # Motivation
 [motivation]: #motivation
@@ -44,14 +44,12 @@ owners.
 `cargo init` will stop pre-populating the field when running the command, and
 it will not include the field at all in the default `Cargo.toml`. Crate authors
 will still be able to manually include the field before publishing if they so
-choose. Eventually Cargo will warn when publishing crates with the field set.
+choose.
 
 Crates that currently rely on the field being present (for example by reading
 the `CARGO_PKG_AUTHORS` environment variable) will have to handle the field
 being missing (for example by switching from the `env!` macro to
-`option_env!`). Eventually they will have to provide a way to inline the
-information in the crate's source code, if the consumer of the crate desires to
-do so.
+`option_env!`).
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -62,9 +60,7 @@ The implementation of this RFC spans multiple parts of the Rust project:
 
 Cargo will stop fetching the current user's name and email address when running
 `cargo init`, and it will not include the field in the default template for
-`Cargo.toml`. Cargo will also treat the field as deprecated, eventually
-displaying a deprecation warning when someone tries to publish a crate with the
-field set.
+`Cargo.toml`.
 
 ## crates.io
 
@@ -86,16 +82,17 @@ docs.rs will replace the authors with the current owners in its UI.
 
 Cargo currently provides author information to the crate via
 `CARGO_PKG_AUTHORS`, and some crates (such as `clap`) use this information.
-Deprecating the authors field will require crates currently using it to change,
-such as by inlining the author data.
+Making the authors field optional will require crates to account for a missing
+field if they want to work out of the box in projects without the field.
 
 This RFC will make it harder for third-party tools to query the author
 information of crates published to crates.io.
 
-By design, this RFC removes the ability to know historical crate authors. In
-some cases, crate authors may have wanted that information preserved. After
-this RFC, crate authors who want to display historical authors who are not
-current crate owners will have to present that information in some other way.
+By design, this RFC discourages adding the metadata allowing to know historical
+crate authors and makes it harder to retrieve it. In some cases, crate authors
+may have wanted that information preserved. After this RFC, crate authors who
+want to display historical authors who are not current crate owners will have
+to present that information in some other way.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -132,7 +129,8 @@ this issue.
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-The `package.authors` field could be removed in a future edition.
+The `package.authors` field could be deprecated and removed in a future
+edition.
 
 A future RFC could propose separating metadata fields that could benefit from
 being mutable out of `Cargo.toml` and the crate tarball, allowing them to be
