@@ -1,7 +1,7 @@
 - Feature Name: `native_link_modifiers`
 - Start Date: 2020-06-12
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- RFC PR: [rust-lang/rfcs#2951](https://github.com/rust-lang/rfcs/pull/2951)
+- Rust Issue: [rust-lang/rust#81490](https://github.com/rust-lang/rust/issues/81490)
 
 # Summary
 [summary]: #summary
