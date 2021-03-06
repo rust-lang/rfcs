@@ -14,7 +14,7 @@ The new design supports all the currently-stable conversions (including the acci
 while addressing the discovered shortcomings of the currently-implemented solution,
 as well as enabling new scenarios.
 
-*This is forward-looking to be compatible with other features,
+*This is [forward-looking](#future-possibilities) to be compatible with other features,
 like [`try {}`](https://doc.rust-lang.org/nightly/unstable-book/language-features/try-blocks.html) blocks
 or [`yeet e`](https://twitter.com/josh_triplett/status/1248658754976927750) expressions
 or [`Iterator::try_find`](https://github.com/rust-lang/rust/issues/63178),
@@ -373,6 +373,15 @@ pub trait FromResidual<Residual = <Self as Try>::Residual> {
 }
 ```
 
+## Expected laws
+
+What comes out is what you put in:
+- `<T as Try>::from_output(x).branch()` ⇒ `ControlFlow::Continue(x)` (aka `try { x }?` ⇒ `x`)
+- `<T as Try>::from_residual(x).branch()` ⇒ `ControlFlow::Break(x)` (maybe aka something like `try { yeet e }` ⇒ `Err(e)`, see the future possibilities)
+
+You can recreate what you split up:
+- `match x.branch() { ControlFlow::Break(r) => Try::from_residual(r), ControlFlow::Continue(v) => Try::from_output(v) }` ⇒ `x` (aka `try { x? }` ⇒ `x`)
+
 ## Desugaring `?`
 
 The previous desugaring of `x?` was
@@ -716,9 +725,108 @@ Similar scenarios exist for `try`, though of course they're not yet stable:
 - `let y: anyhow::Result<_> = try { x };` doesn't need to repeat the type of `x`.
 - `let x: i16 = { 4 };` works for infallible code, so for consistency it's good for `let x: anyhow::Result<i16> = try { 4 };` to also work (rather than default the literal to `i32` and fail).
 
-## Trait and associated type naming
+## Why does `FromResidual` take a generic type?
 
-Bikeshed away!
+The simplest case is that the already-stable error conversions require a generic *somewhere* in the error path in the desugaring.  In the RFC #1859 implementation, that generic comes from using `From::from` in the desugaring.
+
+However, more experience with trying to use `Try` for scenarios other than "the early exit is an error" have shown that *forcing* this on everything is inappropriate.  `ControlFlow`, for example, would rather not have it, for the same kinds of reasons that `return` and `break`-from-`loop` don't implicitly call it.  `Option` may not care, as it only ever gets applied for `None`⇒`None`, but that's not really a glowing endorsement.
+
+But even for the error path, forcing `From` causes problems, notably because of its identity impl.  [`anyhow`](https://lib.rs/crates/anyhow)'s `Error` type, for example, doesn't implement `std::error::Error` because that would prevent it from being `From`-convertible from any `E: std::error::Error` type.  The [error handling project group](https://blog.rust-lang.org/inside-rust/2020/09/18/error-handling-wg-announcement.html) under libs has experimented with a prototype toolchain with this RFC implemented, and is [excited](https://rust-lang.zulipchat.com/#narrow/stream/257204-project-error-handling/topic/separating.20From.3CE.3A.20Error.3E.20from.20Box.3Cdyn.20Error.3E) at the possibilities that could come from being free of this restriction:
+
+> my mind is exploding, the possibility of all error types implementing error the way they actually should has such massive implications for the rest of the error reporting stuff we've been working on
+
+As a bonus, moving conversion (if any) into the `FromResidual` implementation may actually speed up the compiler -- the simpler desugar means generating less HIR, and thus less work for everything thereafter (up to LLVM optimizations, at least).  The `serde` crate has [their own macro](https://github.com/serde-rs/serde/blob/b0c99ed761d638f2ca2f0437522e6c35ad254d93/serde_derive/src/try.rs#L3-L6) for error propagation which omits `From`-conversion as they see a "significant improvement" from doing so.
+
+## Naming the `?`-related traits and associated types
+
+This RFC introduces the *residual* concept as it was helpful to have a name to talk about in the guide section.  (A previous version proved unclear, perhaps in part due to it being difficult to discuss something without naming it.)  But the `fn branch(self) -> ControlFlow<Self::Residual, Self::Output>` API is not necessarily obvious.
+
+A different might be clearer for people.  For example, there's some elegance to matching the variant names by using `fn branch(self) -> ControlFlow<Self::Break, Self::Continue>`.  Or perhaps there are more descriptive names, like `KeepGoing`/`ShortCircuit`.
+
+As a sketch, one of those alternatives might look something like this:
+```rust
+trait Try: FromBreak {
+    type Break;
+    type Continue;
+    fn branch(self) -> ControlFlow<Self::Break, Self::Continue>;
+    fn from_continue(c: Self::Continue) -> Self;
+}
+trait FromBreak<B = <Self as Try>::Break> {
+    fn from_break(b: B) -> Self;
+}
+```
+
+However the "boring" `Output` name does have the advantage that one doesn't need to remember a special name, as it's the same as the other operator traits.  (For precedent, it's `Add::Output` and `Div::Output` even if one could argue that `Add::Sum` or `Div::Quotient` would be more "correct", in a sense.)
+
+> ℹ After discussion with T-libs, this is left as an unresolved question for the RFC, to be resolved in nightly.
+
+## Splitting up `Try` more
+
+This RFC encourages one to think of a `Try` type holistically, as something that supports all three of the core operations, with expected rules between them.
+
+That's not necessarily the way it should go.  It could be different, like there's no guarantee that `Add` and `AddAssign` work consistently, nor that `Add` and `Sub` are inverses.
+
+Notably, the this proposal has both an *introduction* rule (`Try::from_output`) and *elimination* rule (`Try::branch`), in the [Gentzian sense](https://en.wikipedia.org/wiki/Natural_deduction#Introduction_and_elimination), on the same trait.  That means that an implementor will need to support both, which could restrict the set of type with which `?` (and `try` and `yeet`) could be used.
+
+One unknown question here is whether this is important for any FFI scenarios.  Often error APIs come in pairs (like Win32's [`GetLastError`](https://docs.microsoft.com/en-us/windows/win32/api/errhandlingapi/nf-errhandlingapi-getlasterror) and [`SetLastError`](https://docs.microsoft.com/en-us/windows/win32/api/errhandlingapi/nf-errhandlingapi-setlasterror)), but some libraries may only give them out without allowing updating them to a custom value.  It's unclear whether such a thing would want to be exposed as `?` on some ZST, and thus would need a trait split to work, or whether it would be sufficient to load such things into a `?`-supporting type where supporting `from_residual` would be simple.
+
+In pure rust, one could also imagine types where it might be interesting to allow *introduction* rules but not *elimination* rules.  With `try` blocks, one could perhaps have something like
+```rust
+let _: IgnoreAllErrors = try {
+    foo()?;
+    bar()?;
+    qux()?;
+};
+```
+which works by allowing `from_residual` from any `Result<_, _>::Residual`, as well as `from_output` from `()`.  On such a type there's no real *use* in allowing `?` on the result, but at the same time it wouldn't be a hardship to offer it.
+
+The split currently in the proposal, though it's there for other reasons, would allow a small version of this: it would be possible to add an implementation like `impl FromResidual<Result<!, !>> for ()`, which would allow code like `u64::try_from(123_u16)?` even in a method that returns unit.  That has a number of issues, however, like only supporting `-> ()` and not other things like `-> i32` where one would probably also expect it to work, and it could not be a generic implementation without some form of specialization, as it would conflict with the desired implementation on `Result`.  And even if it did work, it's not clear that allowing `?` here is the clearest option -- other options [such as an `always_ok` method on `Result<T, !>`](https://github.com/rust-lang/rfcs/issues/1723) might be superior anyway.
+
+Another downside of the flexibility is that the structure of the traits would be somewhat more complicated.
+
+The simplest split would just move each method to its own trait,
+```rust
+trait Branch {
+    type Output;
+    type Residual;
+    fn branch(self) -> ControlFlow<Self::Residual, Self::Output>;
+}
+trait FromOutput {
+    type Output;
+    fn from_output(x: Self::Output) -> Self;
+}
+trait FromResidual<R> {
+    fn from_residual(x: R) -> Self;
+}
+```
+but that loses the desired property that the returned-by-`?` and expected-by-`try` types match for types which *do* implement both.
+
+One way to fix that would be to add another trait for that associated type, perhaps something like
+```rust
+trait TryBase {
+    type Output;
+}
+trait Branch: TryBase {
+    type Residual;
+    fn branch(self) -> ControlFlow<Self::Residual, Self::Output>;
+}
+trait FromOutput: TryBase {
+    fn from_output(x: Self::Output) -> Self;
+}
+trait FromResidual<R> {
+    fn from_residual(x: R) -> Self;
+}
+
+```
+
+But this has still lost the simplicity of the `R: Try` bound for use in simple cases like `try_fold`.  (And, in fact, all designs that allow types to choose them independently have that issue.)  That may mean that it would also be useful to add yet another item, a trait alias to tie everything together in the "usual" way again.  Perhaps it would look something like this:
+```rust
+trait Try = Branch + FromOutput + FromResidual<<Self as Branch>::Residual>;
+```
+
+There are probably also useful intermediary designs here.  Perhaps the `IgnoreAllErrors` example above suggests that *introduction* on its own is reasonable, but *elimination* should require that both be supported.  That's also the direction that would make sense for `?` in infallible functions: it's absolutely undesirable for `()?????` to compile, but it might be fine for all return types to support something like `T: FromResidual<!>` eventually.
+
+> ℹ After discussion with T-libs, this is left as an unresolved question for the RFC, to be resolved in nightly.
 
 ## Why a "residual" type is better than an "error" type
 
@@ -822,14 +930,23 @@ Please also take into consideration that rust sometimes intentionally diverges f
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-- Bikesheds: `Try`/`FromResidual`/`Try::Output`/`Try::Residual` all might have better names.  This RFC has left it as `Try` mostly because that meant not touching all the `try_fold` implementations in the prototype.  I've long liked [parasyte's "bubble" suggestion](https://internals.rust-lang.org/t/bikeshed-a-consise-verb-for-the-operator/7289/29?u=scottmcm) as a name, but maybe sticking with the previous one is best.
-- Structure: The three methods could be split up further
+Questions from T-libs to be resolved in nightly:
+- [ ] What vocabulary should `Try` use in the associated types/traits?  Output+residual, continue+break, or something else entirely?
+- [ ] Is it ok for the two traits to be tied together closely, as outlined here, or should they be split up further to allow types that can be only-created or only-destructured?
+
+## Implementation and Stabilization Sequencing
+
+- `ControlFlow` is implemented in nightly already.
+- The traits and desugaring could go into nightly (assuming with a confirming crater run) immediately, with implementations for the existing `Option`<->`Result` interconversions.
+- That would allow `ControlFlow` to be considered for stabilizating, as the new desugaring would keep from stabilizing any unwanted interconversions.
+- Then the unresolved questions need to be addressed before `Try` could stabilize.
 
 <!--
 - What parts of the design do you expect to resolve through the RFC process before this gets merged?
 - What parts of the design do you expect to resolve through the implementation of this feature before stabilization?
 - What related issues do you consider out of scope for this RFC that could be addressed in the future independently of the solution that comes out of this RFC?
 -->
+
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
