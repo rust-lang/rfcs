@@ -129,7 +129,7 @@ This RFC provides an easy way forward for "unconst" operations, i.e., operations
 Primary examples of such operations are anything involving the integer representation of pointers, which cannot be known at compile-time.
 If this RFC were accepted, we could declare such operations "definitely detected UB" during CTFE (and thus naturally they would only be permitted in an `unsafe` block).
 
-If UB checks turn out to be expensive, we could consider adding a flag to let users opt-out of UB checking.
+If UB checks turn out to be expensive, the RFC leaves the option of adding a flag to let users opt-out of UB checking.
 This will speed up compilation, and not change behavior of correct code.
 
 The RFC clarifies that there is no *guarantee* that code with UB is evaluated in any particular way, so if we want to detect more UB during CTFE in the future, we are free to do so from a stability perspective.
