@@ -74,6 +74,7 @@ impl<T> TreeNode<T> {
 ```
 <!-- https://play.rust-lang.org/?version=nightly&mode=debug&edition=2018&gist=286ac85c43e5bf242b5431b4f6f63386 -->
 
+Now, you *could* write the same thing with `Result<(), B>` instead.  But that would require that the passed-in closure use `Err(value)` to early-exit the traversal, which can cause mental dissonance when that exit is because it successfully found the value for which it was looking.  Using `ControlFlow::Break(value)` instead avoids that prejudice, the same way that `break val` in a `loop` doesn't inherently mean success nor failure.
 
 ## The `Try` trait
 
@@ -105,7 +106,7 @@ If you've used `?`-on-`Result` before, that output type is likely unsurprising. 
 
 The residual types, however, are somewhat more interesting.  Code using `?` doesn't see them directly -- their usage is hidden inside the desugaring -- so there are more possibilities available.  So why are we using these ones specifically?
 
-Most importantly, this gives each family of types (`Result`s, `Option`s, `ControlFlow`s) their own *distinct* residual type.  That avoids unrestricted *interconversion* between the different types, the ability to arbitrarily mix them in the same method.  For example, it was mentioned earlier that just because a `ControlFlow::Break` is also an early exit, that doesn't mean that it should be allowed to consider it a `Result::Err` -- it might be a success, conceptually.  So by giving `ControlFlow<X, _>` and `Result<_, X>` different residual types, it becomes a compilation error to use the `?` operator on a `ControlFlow` in a method which returns a `Result`.  (There are also ways to allow interconversion is specific situations where it's desirable.)
+Most importantly, this gives each family of types (`Result`s, `Option`s, `ControlFlow`s) their own *distinct* residual type.  That avoids unrestricted *interconversion* between the different types, the ability to arbitrarily mix them in the same method.  For example, like in the traversal example earlier, just because a `ControlFlow::Break` is also an early exit, that doesn't mean that it should be allowed to consider it a `Result::Err` -- it might be a success, conceptually.  So by giving `ControlFlow<X, _>` and `Result<_, X>` different residual types, it becomes a compilation error to use the `?` operator on a `ControlFlow` in a method which returns a `Result`, and vice versa.  (There are also ways to allow interconversion where it's desirable between a particular pair of types.)
 
 > 🏗️ Note for those familiar with the previous RFC 🏗️
 >
@@ -402,7 +403,7 @@ match Try::branch(x) {
 }
 ```
 
-It's just left conversion (such as `From::from`) up to the implementation instead of forcing it in the desugar.
+The critical difference is that conversion (such as `From::from`) is left up to the implementation instead of forcing it in the desugar.
 
 ## Standard implementations
 
@@ -737,11 +738,27 @@ But even for the error path, forcing `From` causes problems, notably because of 
 
 As a bonus, moving conversion (if any) into the `FromResidual` implementation may actually speed up the compiler -- the simpler desugar means generating less HIR, and thus less work for everything thereafter (up to LLVM optimizations, at least).  The `serde` crate has [their own macro](https://github.com/serde-rs/serde/blob/b0c99ed761d638f2ca2f0437522e6c35ad254d93/serde_derive/src/try.rs#L3-L6) for error propagation which omits `From`-conversion as they see a "significant improvement" from doing so.
 
+## Why not merge `Try` and `FromResidual`?
+
+This RFC treats them as conceptually the same trait -- there are no types proposed here to implement `FromResidual<_>` which don't also implement `Try` -- so one might wonder why they're not merged into one `Try<R>`.  After all, that would seem to remove the duplication between the associated type and the generic type, as something like
+```rust
+trait Try<Residual> {
+    type Output;
+    fn branch(self) -> ControlFlow<Residual, Self::Output>;
+    fn from_residual(r: Residual) -> Self;
+    fn from_output(x: Self::Output) -> Self;
+}
+```
+
+This, however, is technically too much freedom.  Looking at the error propagation case, it would end up calling both `Try<?R1>::branch` and `Try<?R2>::from_residual`.  With the implementation for `Result`, where those inference variables go through `From`, there's no way to pick what they should be, similar to how `.into().into()` doesn't compile.  And even outside the desugaring, this would make `Try::from_output(x)` no longer work, since the compiler would (correctly) insist that the desired residual type be specified.
+
+And even for a human, it's not clear that this freedom is helpful.  While any trait can be implemented weirdly, one good part of RFC #1859 that this one hopes to retain is that one doesn't need to know contextual information to understand what comes out of `?`.  Whereas any design that puts `branch` on a generic trait would mean it'd be possible for `?` to return different things depending on that generic type parameter -- unless the associated type were split out into a separate trait, but that just reopens the "why are they different traits" conversation again, without solving the other issues.
+
 ## Naming the `?`-related traits and associated types
 
 This RFC introduces the *residual* concept as it was helpful to have a name to talk about in the guide section.  (A previous version proved unclear, perhaps in part due to it being difficult to discuss something without naming it.)  But the `fn branch(self) -> ControlFlow<Self::Residual, Self::Output>` API is not necessarily obvious.
 
-A different might be clearer for people.  For example, there's some elegance to matching the variant names by using `fn branch(self) -> ControlFlow<Self::Break, Self::Continue>`.  Or perhaps there are more descriptive names, like `KeepGoing`/`ShortCircuit`.
+A different scheme might be clearer for people.  For example, there's some elegance to matching the variant names by using `fn branch(self) -> ControlFlow<Self::Break, Self::Continue>`.  Or perhaps there are more descriptive names, like `KeepGoing`/`ShortCircuit`.
 
 As a sketch, one of those alternatives might look something like this:
 ```rust
@@ -758,7 +775,7 @@ trait FromBreak<B = <Self as Try>::Break> {
 
 However the "boring" `Output` name does have the advantage that one doesn't need to remember a special name, as it's the same as the other operator traits.  (For precedent, it's `Add::Output` and `Div::Output` even if one could argue that `Add::Sum` or `Div::Quotient` would be more "correct", in a sense.)
 
-> ℹ After discussion with T-libs, this is left as an unresolved question for the RFC, to be resolved in nightly.
+> ℹ Per feedback from T-libs, this is left as an unresolved question for the RFC, to be resolved in nightly.
 
 ## Splitting up `Try` more
 
@@ -826,7 +843,7 @@ trait Try = Branch + FromOutput + FromResidual<<Self as Branch>::Residual>;
 
 There are probably also useful intermediary designs here.  Perhaps the `IgnoreAllErrors` example above suggests that *introduction* on its own is reasonable, but *elimination* should require that both be supported.  That's also the direction that would make sense for `?` in infallible functions: it's absolutely undesirable for `()?????` to compile, but it might be fine for all return types to support something like `T: FromResidual<!>` eventually.
 
-> ℹ After discussion with T-libs, this is left as an unresolved question for the RFC, to be resolved in nightly.
+> ℹ Per feedback from T-libs, this is left as an unresolved question for the RFC, to be resolved in nightly.
 
 ## Why a "residual" type is better than an "error" type
 
@@ -929,6 +946,9 @@ Please also take into consideration that rust sometimes intentionally diverges f
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
+
+Waiting on crater:
+- [ ] Find out more about how widespread the accidental interconversions are, and change the RFC to propose whether to bless/lint/remove them, and how.
 
 Questions from T-libs to be resolved in nightly:
 - [ ] What vocabulary should `Try` use in the associated types/traits?  Output+residual, continue+break, or something else entirely?
