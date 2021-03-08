@@ -195,14 +195,14 @@ approved by the appropriate team for that shared code before acceptance.
     face any legal threats or obligations that would prevent them from freely
     exercising their judgment in such approval, even if such judgment involves
     subjective matters or goes beyond the letter of these requirements.
-- Tier 3 targets should attempt to implement as much of the standard libraries as
-  possible and appropriate (`core` for most targets, `alloc` for any target
-  with a standard memory allocator, `std` for targets with an operating
-  system), but may leave some code unimplemented (either unavailable or stubbed
-  out as appropriate), whether because the target makes it impossible to
-  implement or challenging to implement. The authors of pull requests are not
-  obligated to avoid calling any portions of the standard library on the basis
-  of a tier 3 target not implementing those portions.
+- Tier 3 targets should attempt to implement as much of the standard libraries
+  as possible and appropriate (`core` for most targets, `alloc` for targets
+  that can support dynamic memory allocation, `std` for targets with an
+  operating system), but may leave some code unimplemented (either unavailable
+  or stubbed out as appropriate), whether because the target makes it
+  impossible to implement or challenging to implement. The authors of pull
+  requests are not obligated to avoid calling any portions of the standard
+  library on the basis of a tier 3 target not implementing those portions.
 - The target must provide documentation for the Rust community explaining how
   to build for the target, using cross-compilation if possible. If the target
   supports running tests (even if they do not pass), the documentation must
@@ -484,9 +484,9 @@ including the infrastructure team in the RFC proposing the target.
     take such performance considerations into account when determining the
     viability of the target or of its host tools.
 - The target must provide as much of the Rust standard library as is feasible
-  and appropriate to provide. For instance, if the target has a standard memory
-  allocator, it must provide an implementation of `alloc` and the associated
-  data structures.
+  and appropriate to provide. For instance, if the target can support dynamic
+  memory allocation, it must provide an implementation of `alloc` and the
+  associated data structures.
 - Building the target and running the testsuite for the target must not take
   substantially longer than other targets.
   - In particular, if building the target takes a reasonable amount of time,
