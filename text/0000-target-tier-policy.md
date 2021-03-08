@@ -651,24 +651,10 @@ platforms](https://github.com/nodejs/node/blob/HEAD/BUILDING.md#supported-platfo
 and [GHC's platform
 support](https://gitlab.haskell.org/ghc/ghc/-/wikis/platforms).
 
-# Unresolved questions
-[unresolved-questions]: #unresolved-questions
-
-- How should we track the maintainers of a target, so that we can page them if
-  we need an issue addressed involving that target?
-  - We could use github teams, which could be directly mentioned in an issue or
-    PR to get their attention. However, this would also put a "Member" badge on
-    the members of those teams, which may give an unwarranted appearance of
-    official status.
-  - We could track them in a document posted somewhere, and manually copy-paste
-    the list to ping them.
-  - We could add them as a "marker team" (e.g. `target-xyz`) in the
-    [rust-lang/team](https://github.com/rust-lang/team) repository. For
-    example, see [the icebreakers-llvm
-    team](https://github.com/rust-lang/team/blob/HEAD/teams/icebreakers-llvm.toml).
-    This would allow pinging them with `@rustbot ping target-xyz`.
-    - We could additionally teach rustbot to automatically ping a target team
-      when an issue is labeled with a target-specific label.
+This RFC doesn't specify how to track and contact the maintainers of a target.
+Some existing Rust targets use "marker teams" that support pinging via rustbot.
+We could additionally teach rustbot to automatically ping a target team when an
+issue is labeled with a target-specific label.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
