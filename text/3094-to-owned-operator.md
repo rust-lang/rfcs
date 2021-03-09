@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-We want to add the `@` unary prefix operator to function as an alias to `std::borrow::ToOwned`, along with an associated new trait in `std::ops::ToOwned` that is implemented for all types implementing `std::borrow::ToOwned`.
+We want to add the `@` unary prefix operator to function as an alias to `std::borrow::ToOwned::to_owned`, along with an associated new trait in `std::ops::ToOwned` that is implemented for all types implementing `std::borrow::ToOwned`.
 
 # Motivation
 [motivation]: #motivation
