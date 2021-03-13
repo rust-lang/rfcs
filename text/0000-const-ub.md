@@ -23,7 +23,7 @@ There are some values that Rust needs to compute at compile-time.
 This includes the initial value of a `const`/`static`, and array lengths (and more general, const generics).
 Computing these initial values is called compile-time function evaluation (CTFE).
 CTFE in Rust is very powerful and permits running almost arbitrary Rust code.
-This begs the question, what happens when there is `unsafe` code and it causes [Undefined Behavior (UB)][UB]?
+This raises the question, what happens when there is `unsafe` code and it causes [Undefined Behavior (UB)][UB]?
 
 The answer depends on the kind of UB: some kinds of UB are guaranteed to be detected,
 while other kinds of UB might either be detected, or else evaluation will continue as if the violated UB condition did not exist (i.e., as if this operation was actually defined).
@@ -31,8 +31,8 @@ This can change from compiler version to compiler version: CTFE code that causes
 
 This RFC does not alter the general policy that unsound code is not subject to strict stability guarantees.
 In other words, unsafe code may not rely on all future versions of Rust to implement this RFC.
-The RFC only helps *consumers* of unsafe code to be sure that right now, all UB during CTFE will be detected or non-consequential.
-It does not grant any new possibilities to *authors* of unsafe code.
+The RFC only helps *consumers* of unsafe code to be sure that right now, all UB during CTFE will be detected or non-consequential (i.e., evaluation will proceed as if there was no UB).
+It does not grant any new possibilities to *authors* of unsafe code; in particular, it is still considered a critical bug for CTFE code to raise UB, and no stability guarantees are made for such code (as is the case with regular runtime code raising UB).
 
 [UB]: https://doc.rust-lang.org/reference/behavior-considered-undefined.html
 
