@@ -302,6 +302,15 @@ counted inwards from the outer-most nesting.  This was changed to count
 outwards from the inner-most nesting so that expressions can be copied
 to a different nesting depth without needing to change them.
 
+This RFC proposes using `${ ... }` as the delimiter for metavariable
+expressions.  Available alternatives are:
+* `$[ ...  ]`, e.g.: `$[count(value)]`
+* `$:`, e.g. `$:count(value)`
+* `$@`, e.g. `$@count(value)`
+* `$!`, e.g. `$!count(value)`
+* Another sigil, although `#` should be avoided to avoid clashes with the
+  `quote!` macro.
+
 # Prior art
 [prior-art]: #prior-art
 
@@ -345,4 +354,5 @@ expander to produce.
 
 The syntax `$[...]` is still invalid, and so remains available for any other
 extensions which may come in the future and don't fit in with metavariable
-expression syntax.
+expression syntax.  Additionally, any symbol after `$` is also invalid, so
+other sequences, such as `$@`, are available.
