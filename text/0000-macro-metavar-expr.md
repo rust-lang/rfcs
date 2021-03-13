@@ -311,6 +311,49 @@ expressions.  Available alternatives are:
 * Another sigil, although `#` should be avoided to avoid clashes with the
   `quote!` macro.
 
+## Why not a proc macro or built-in macro?
+
+To avoid extending the language with new syntax, we could consider writing
+something that looks like a macro invocation, such as `count!(value)`, which
+would be implemented as a procedural macro or built-in to the compiler.
+
+While this is compelling from a language simplicity perspective, it creates
+some problems due to the way macro expansions are processed.  During macro
+transcription, other macro invocations are not evaluated, so in the macro:
+
+```
+macro_rules! example {
+    ($($x:ident),*) => count!(x)
+}
+```
+
+During transcription, `example!(a, b, c)` would expand to `count!(x)`.  At this
+point, the knowledge of the metavariable `x` and its repetition is lost, and
+no procedural macro or built-in macro would be able to work out the count.
+
+To workaround this we would need to re-expand the repetition
+(`count!($($x),*)`, forcing the `count!` macro to re-parse and count the
+repetitions.  This is additional unnecessary work that this RFC seeks to
+address.
+
+Another way to think of metavariable expressions is as "macro transcriber
+directives". You can think of the macro transcriber as performing the
+following operations:
+
+* `$var` => the value of `var`
+* `$( ... ) ...` => a repetition
+
+This RFC adds two more:
+
+* `${ directive(args) }` => a special transcriber directive
+* `$$` => `$`
+
+We could special-case certain macro invocations like `count!` during
+transcription, but that feels like a worse solution. It would make it harder
+to understand what the macro transcriber is going to do with arbitrary code
+without remembering all of the special macros that don't work like other
+macros.
+
 # Prior art
 [prior-art]: #prior-art
 
