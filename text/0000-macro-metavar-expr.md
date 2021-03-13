@@ -315,6 +315,20 @@ similar `${...}` syntax for values based on variables: for example `${#var}`
 is used for the length of `$var`.  This means `${...}` expressions should not
 seem too weird to developers familiar with these scripting languages.
 
+A proposal for counting sequence repetitions was made in [RFC 88].  That RFC
+proposed several options for additional syntax, however the issue was
+postponed to after the 1.0 release.  This RFC addresses the needs of RFC 88,
+and also goes further, as it proposes a more general syntax useful for more
+than just counting repetitions, such as obtaing the index of the current
+repetition.  Since the generated values are integer literals, it also
+addresses the ability to index tuples in repetitions (using `tup.${index()}`),
+which was noted as an omission in RFC 88.  It's also not possible to implement
+efficiently as a procedural macro, as the procedural macro would not have
+access to the repetition counts without generating a sequence and then
+counting it again.
+
+[RFC 88]: https://github.com/rust-lang/rfcs/pull/88
+
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
