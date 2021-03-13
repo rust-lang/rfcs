@@ -105,8 +105,10 @@ expansion like:
     ${count(x)} $( $x )*
 ```
 
-the expression `${count(x)}` will expand to the number of times the `$( $x )*`
-repetition will repeat.
+the expression `${count(x)}` will expand to an integer literal equal to the
+number of times the `$( $x )*` repetition will repeat.  For example, if
+the metavariable `$x` repeats four times then it will expand to the integer
+literal `4`.
 
 If repetitions are nested, then an optional depth parameter can be used to
 limit the number of nested repetitions that are counted.  For example, a macro
@@ -126,7 +128,7 @@ of repetitions of `$x`.
 Within a repetition, the `${index()}` and `${length()}` metavariable
 expressions give the index of the current repetition and the length of the
 repetition (i.e., the number of times it will repeat). The index value ranges
-from `0` to `length - 1`.
+from `0` to `length - 1`, and the expanded values are integer literals.
 
 For nested repetitions, the `${index()}` and `${length()}` metavariable
 expressions expand to the inner-most index and length respectively.
