@@ -513,6 +513,20 @@ including the infrastructure team in the RFC proposing the target.
     maintainers. This requirement ensures that it is possible for other
     Rust developers to test the target, but does not obligate other Rust
     developers to make target-specific fixes.)
+- New tier 1 targets must not have a hard requirement for signed, verified, or
+  otherwise "approved" binaries. Developers must be able to build, run, and
+  test binaries for the target on systems they control.  (Doing so may require
+  enabling some appropriate "developer mode" on such systems, but must not
+  require the payment of any additional fee or other consideration, or
+  agreement to any onerous legal agreements.)
+  - The Rust project may decide to supply appropriately signed binaries if
+    doing so provides a smoother experience for developers using the target,
+    and a tier 2 target with host tools already requires providing appropriate
+    mechanisms that enable our infrastructure to provide such signed binaries.
+    However, this additional tier 1 requirement ensures that Rust developers
+    can help develop and test Rust software for the target (including Rust
+    itself), and that development or testing for the target is not limited to
+    an exclusive group or entity.
 - All tier 2 requirements apply.
 
 A tier 1 target may be demoted if it no longer meets these requirements but
@@ -577,16 +591,6 @@ team in the RFC proposing the target.
     amount of time, but the target cannot run the testsuite in a timely fashion
     due to low performance of either native code or accurate emulation, that
     alone may prevent the target from qualifying as tier 1 with host tools.
-- New tier 1 targets with host tools must not have a hard requirement for
-  signed, verified, or otherwise "approved" binaries. Developers must be able
-  to build, run, and test binaries for the target on systems they control.
-  (Doing so may require enabling some appropriate "developer mode" on such
-  systems, but must not require the payment of any additional fee or other
-  consideration, or agreement to any onerous legal agreements.)
-  - While the Rust project may supply appropriately signed tools, this
-    requirement exists to ensure that Rust developers can help develop and test
-    Rust for the target, and that development or testing for the target is not
-    limited to an exclusive group or entity.
 - Providing host tools does not exempt a target from requirements to support
   cross-compilation if at all possible.
 - All requirements for tier 2 targets with host tools apply.
