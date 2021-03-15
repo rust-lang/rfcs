@@ -64,17 +64,6 @@ if let Some([x1, x2]) = x.get_mut_refs([0, 4]) {
 dgb!{x}; // [4, 1, 2, 3, 0]
 ```
 
-### Ranges:
-
-```rust
-let mut x = [0, 1, 2, 3, 4];
-
-if let Some([l, r]) = x.get_mut_refs([..2, 2..]) {
-  dbg!{l}; // &mut [0, 1]
-  dbg!{r}; // &mut [2, 3, 4]
-}
-```
-
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
@@ -154,7 +143,7 @@ trait GetMutRefs<Key, Value> {
 
 - The default implementation is present to make this feature easier for implementors to use.
 - Because of the default implementation there is an `unsafe trait` to abstract over the type used for `RawEntry`.
-- This allows for the easy adding of new impls. Such as both `usize` and `Range<usize>` for slices.
+- This allows for the easy adding of new impls.
 - `RawEntry` is also required to correctly handle ZSTs, because two different ZSTs of the same type can exist at the same memory address.
 So it is necessary to have some way of differentiating between them.
 
@@ -199,13 +188,13 @@ impl<T, const LENGTH: usize> GetMutRefs<usize, T> for [T; LENGTH] {
 }
 ```
 
-
 # Drawbacks
 [drawbacks]: #drawbacks
 
 1. This adds another trait to the standard library which could be a crate.
 1. This adds another trait to the prelude (for visibility reasons)
 1. This could in theory be implemented in some form by the borrow checker in the future and having these traits might lead some to question if that is needed.
+1. Doesn't support ranges currently because each range is a different type and the return type would have to be between individual items (`&mut T`) and multiple items (`&mut [T]`).
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -214,6 +203,9 @@ impl<T, const LENGTH: usize> GetMutRefs<usize, T> for [T; LENGTH] {
 If this was the case then it might also be a good idea to have a `try_get_mut_refs` which returns `None` instead of panicking.
 - Add some form of multiple disjoint (and arbitrary) child place borrowing in the language instead of on top of it.
 - Add more specific array patterns into the language (specifying indices).
+Though this has been noted as not being something that is currently desired (non-`RangeFull` in patterns).
+- Implement such functionality separately for all types with no trait backing.
+This might be a good idea because the trait doesn't seem very helpful to begin with (it is rather complicated) and might not be useful to be able to abstract over types that can `get_mut_refs`.
 
 # Prior art
 [prior-art]: #prior-art
@@ -227,11 +219,31 @@ This is not in fact a solution at all to the problems set out in that paper, but
 This is because that paper points to a possible future where types can define what sort of deferred borrows they support.
 Whereas in this feature types can define what sort of multiple child place borrows they support.
 
+HashBrown has recently added a similar sort of API ([currently unstable](https://github.com/rust-lang/hashbrown/pull/239)).
+Its API is slightly different as each element is returned as `Result<&mut T, UnavailableMutError>`.
+This means that each element has to be checked by the caller as well.
+That is a possible alternative to the API but makes the simple general case (all or nothing) much more difficult to use.
+Perhaps supporting both would be useful as it doesn't add too much complexity.
+
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 - The names of the traits
 - The names of the functions
+- Individual impls or a trait
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
+
+Either individual impls or a trait backing, it seems reasonable to add support for range based child place slice borrowing.
+However, because this involves at least 6 distinct types:
+- [`Range`](https://doc.rust-lang.org/std/ops/struct.Range.html)
+- [`RangeFrom`](https://doc.rust-lang.org/std/ops/struct.RangeFrom.html)
+- [`RangeInclusive`](https://doc.rust-lang.org/std/ops/struct.RangeInclusive.html)
+- [`RangeTo`](https://doc.rust-lang.org/std/ops/struct.RangeTo.html)
+- [`RangeToInclusive`](https://doc.rust-lang.org/std/ops/struct.RangeToInclusive.html)
+- [`usize`](https://doc.rust-lang.org/std/primitive.usize.html)
+
+It does't seem likely that this would be `trait` backed.
+Instead would probably be macro implemented like the old array impls.
+Until such time as Rust gains a variadic generics support (at the very least).
