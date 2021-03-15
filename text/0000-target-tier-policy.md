@@ -352,7 +352,7 @@ by an infrastructure team member reporting the outcome of a team discussion.
   tests pass for a tier 2 target, even if notified that they fail.)
 - The target maintainers should regularly run the testsuite for the target, and
   should fix any test failures in a reasonably timely fashion.
-- All tier 3 requirements apply.
+- All requirements for tier 3 apply.
 
 A tier 2 target may be demoted or removed if it no longer meets these
 requirements. Any proposal for demotion or removal will be CCed to people who
@@ -442,7 +442,7 @@ member reporting the outcome of a team discussion.
     the host tools.
 - Providing host tools does not exempt a target from requirements to support
   cross-compilation if at all possible.
-- All tier 2 requirements apply.
+- All requirements for tier 2 apply.
 
 A target may be promoted directly from tier 3 to tier 2 with host tools if it
 meets all the necessary requirements, but doing so may introduce substantial
@@ -527,7 +527,7 @@ including the infrastructure team in the RFC proposing the target.
     can help develop and test Rust software for the target (including Rust
     itself), and that development or testing for the target is not limited to
     an exclusive group or entity.
-- All tier 2 requirements apply.
+- All requirements for tier 2 apply.
 
 A tier 1 target may be demoted if it no longer meets these requirements but
 still meets the requirements for a lower tier. Any proposal for demotion of a
@@ -594,7 +594,7 @@ team in the RFC proposing the target.
 - Providing host tools does not exempt a target from requirements to support
   cross-compilation if at all possible.
 - All requirements for tier 2 targets with host tools apply.
-- All tier 1 requirements apply.
+- All requirements for tier 1 apply.
 
 A target seeking promotion to tier 1 with host tools should typically either be
 tier 2 with host tools or tier 1 without host tools, to reduce the number of
