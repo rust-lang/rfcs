@@ -56,9 +56,10 @@ In rustc, none of this UB will be detected for now.
 However, code causing any kind of UB is still considered buggy and not subject to stability guarantees.
 Hence, rustc may start detecting more UB in the future.
 
-All of this UB has in common that there is an "obvious" way to continue evaluation even though the program has caused UB:
+All of this UB has in common that there is an easy way to continue evaluation even though the program has caused UB:
 we can just access the underlying memory despite alignment and/or aliasing rules being violated, and we can just ignore the existence of an invalid value as long as it is not used in some arithmetic, logical or control-flow operation.
-There is no guarantee that CTFE detects such UB: evaluation may either fail with an error, or continue with the "obvious" result.
+There is no guarantee that CTFE detects such UB: evaluation may either fail with an error, or continue with the some well-defined result.
+In the latter case, implementations should document how evaluation will proceed, i.e., how the result is computed.
 
 In particular, the RFC does not mandate whether UB caused by implementation-defined compiler intrinsics (insofar as they are supported by CTFE) is detected.
 However, implementations should document for each intrinsic whether UB is detected, and (if UB is ignored for an intrinsic), what the behavior of CTFE will be when UB occurs.
