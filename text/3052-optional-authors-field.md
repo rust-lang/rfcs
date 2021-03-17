@@ -2,8 +2,8 @@
 
 - Feature Name: `optional_authors_field`
 - Start Date: 2021-01-07
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- RFC PR: [rust-lang/rfcs#3052](https://github.com/rust-lang/rfcs/pull/3052)
+- Rust Issue: [rust-lang/rust#83227](https://github.com/rust-lang/rust/issues/83227)
 
 # Summary
 [summary]: #summary
