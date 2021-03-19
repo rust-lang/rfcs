@@ -1,7 +1,7 @@
 - Feature Name: `async_stream`
 - Start Date: 2020-09-29
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- RFC PR: [rust-lang/rfcs#2996](https://github.com/rust-lang/rfcs/pull/2996)
+- Rust Issue: [rust-lang/rust#79024](https://github.com/rust-lang/rust/issues/79024)
 
 # Summary
 [summary]: #summary
