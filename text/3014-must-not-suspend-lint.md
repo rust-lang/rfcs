@@ -1,7 +1,7 @@
 - Feature Name: `must_not_suspend_lint`
 - Start Date: 2020-11-09
 - RFC PR: [rust-lang/rfcs#3014](https://github.com/rust-lang/rfcs/pull/3014)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- Rust Issue: [rust-lang/rust#83310](https://github.com/rust-lang/rust/issues/83310)
 
 # Summary
 [summary]: #summary
