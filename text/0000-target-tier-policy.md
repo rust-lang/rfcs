@@ -66,10 +66,12 @@ This policy defines the requirements for accepting a proposed target at a given
 level of support.
 
 Each tier builds on all the requirements from the previous tier, unless
-overridden by a stronger requirement. Tier 2 and tier 1 also provide additional
-requirements to be met if supplying host tools for the target; a target at tier
-2 or tier 1 is not required to supply host tools, but if it does, it must meet
-the corresponding additional requirements for host tools.
+overridden by a stronger requirement. Targets at tier 2 and tier 1 may also
+provide *host tools* (such as `rustc` and `cargo`); each of those tiers
+includes a set of supplementary requirements that must be met if supplying host
+tools for the target. A target at tier 2 or tier 1 is not required to supply
+host tools, but if it does, it must meet the corresponding additional
+requirements for host tools.
 
 The policy for each tier also documents the Rust governance teams that must
 approve the addition of any target at that tier. Those teams are responsible
