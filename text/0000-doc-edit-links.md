@@ -70,5 +70,4 @@ Cons:
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-This requires close integration with corresponding commands in `cargo doc`
-and adoption in docs.rs builder to support this.
+docs.rs could use the new flags in all new generated documentation.
