@@ -93,7 +93,7 @@ config:   AppData\Roaming\Cargo
 binaries: AppData\Local\Programs\Cargo
 ```
 
-## Unixy systems (macOS, Linux, BSDs)
+## Unixy systems (Linux, BSDs)
 
 Here, we're following the [XDG specification](https://specifications.freedesktop.org/basedir-spec/basedir-spec-0.7.html).
 By default, if no further variables are set, this means that we'll be using the
@@ -103,6 +103,18 @@ following subdirectories of the home directory.
 cache:    .cache/cargo
 config    .config/cargo
 binaries: .local/bin
+```
+
+
+## MacOS
+
+On macOS we follow the standard paths as specified in the [Library Directories](https://developer.apple.com/library/archive/documentation/FileManagement/Conceptual/FileSystemProgrammingGuide/MacOSXDirectories/MacOSXDirectories.html)
+and will retrieve these from the [API](https://developer.apple.com/documentation/foundation/1414224-nssearchpathfordirectoriesindoma?language=objc).
+
+```
+cache:    Library/Caches/org.rust-lang.Cargo
+config    Library/Application Support/org.rust-lang.Cargo
+binaries: /usr/local/bin
 ```
 
 **There is currently an on-going discussion about standardizing the location of
