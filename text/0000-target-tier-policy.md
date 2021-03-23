@@ -345,8 +345,8 @@ by an infrastructure team member reporting the outcome of a team discussion.
     compatible FOSS terms), such as kernel modules or plugins, then the
     standard libraries for the target may potentially be subject to copyleft
     terms, as long as such terms are satisfied by Rust's existing practices of
-    providing of full corresponding source code. Note that anything added to
-    the Rust repository itself must still use Rust's standard license terms.
+    providing full corresponding source code. Note that anything added to the
+    Rust repository itself must still use Rust's standard license terms.
 - Tier 2 targets must not impose burden on the authors of pull requests, or
   other developers in the community, to ensure that tests pass for the target.
   In particular, do not post comments (automated or manual) on a PR that
