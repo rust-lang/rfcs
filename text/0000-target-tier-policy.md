@@ -366,6 +366,10 @@ by an infrastructure team member reporting the outcome of a team discussion.
   suggests a block on the PR based on tests failing for the target. (A PR
   author must not break the build of a tier 2 target, but need not ensure the
   tests pass for a tier 2 target, even if notified that they fail.)
+  - It is acceptable to manually initiate or link to a discussion about how to
+    make a PR and a tier 2 target compatible, but that discussion must not be
+    implied to block the PR unless either the PR author or PR approver want it
+    to be.
 - The target maintainers should regularly run the testsuite for the target, and
   should fix any test failures in a reasonably timely fashion.
 - All requirements for tier 3 apply.
