@@ -51,11 +51,6 @@ supported as inputs:
 For example, `concat_bytes!(42, b"va", b'l', [1, 2])` evaluates to
 `[42, 118, 97, 108, 1, 2]`.
 
-# Reference-level explanation
-[reference-level-explanation]: #reference-level-explanation
-
-<!-- TODO -->
-
 # Drawbacks
 [drawbacks]: #drawbacks
 
@@ -68,11 +63,6 @@ None known.
 string literals, like a previous revision of this RFC proposed. This would make
 it hard to ensure the right output type is produced – users would have to use
 hacks like adding a dummy `b""` argument to force a byte literal output.
-
-# Prior art
-[prior-art]: #prior-art
-
-<!-- TODO -->
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
