@@ -337,9 +337,10 @@ by an infrastructure team member reporting the outcome of a team discussion.
   apply if the target builds host tools, or if the tests in question provide
   substantial value via early detection of critical problems.
 - Building the target in CI must not take substantially longer than the current
-  slowest target in CI. This requirement is subjective, to be evaluated by the
-  infrastructure team, and will take the community importance of the target
-  into account.
+  slowest target in CI, and should not substantially raise the maintenance
+  burden of the CI infrastructure. This requirement is subjective, to be
+  evaluated by the infrastructure team, and will take the community importance
+  of the target into account.
 - New tier 2 targets should, if at all possible, support cross-compiling. New
   tier 2 targets should not require using the target as the host for builds,
   even if the target supports host tools.
@@ -423,7 +424,8 @@ member reporting the outcome of a team discussion.
 - The host tools must build and run reliably in CI, though they may or may not
   pass tests.
 - Building host tools for the target must not take substantially longer than
-  building host tools for other targets.
+  building host tools for other targets, and should not substantially raise the
+  maintenance burden of the CI infrastructure.
 - The host tools must provide a substantively similar experience as on other
   targets, subject to reasonable target limitations.
   - Adding a substantively different interface to an existing tool, or a
@@ -503,7 +505,8 @@ including the infrastructure team in the RFC proposing the target.
   memory allocation, it must provide an implementation of `alloc` and the
   associated data structures.
 - Building the target and running the testsuite for the target must not take
-  substantially longer than other targets.
+  substantially longer than other targets, and should not substantially raise
+  the maintenance burden of the CI infrastructure.
   - In particular, if building the target takes a reasonable amount of time,
     but the target cannot run the testsuite in a timely fashion due to low
     performance of either native code or accurate emulation, that alone may
@@ -601,7 +604,8 @@ team in the RFC proposing the target.
   - The target must not disable an excessive number of tests or pieces of tests
     in the testsuite in order to do so. This is a subjective requirement.
 - Building the host tools and running the testsuite for the host tools must not
-  take substantially longer than other targets.
+  take substantially longer than other targets, and should not substantially raise
+  the maintenance burden of the CI infrastructure.
   - In particular, if building the target's host tools takes a reasonable
     amount of time, but the target cannot run the testsuite in a timely fashion
     due to low performance of either native code or accurate emulation, that
