@@ -110,7 +110,8 @@ requirements for several tiers at once. This policy leaves the precise
 interpretation of "reasonable amount of time" up to the approving teams; those
 teams may scale the amount of time required based on their confidence in the
 target and its demonstrated track record at its current tier. At a minimum,
-multiple stable releases of Rust should occur between promotions of a target.
+multiple stable releases of Rust should typically occur between promotions of a
+target.
 
 In this policy, the words "must" and "must not" specify absolute requirements
 that a target must meet to qualify for a tier. The words "should" and "should
