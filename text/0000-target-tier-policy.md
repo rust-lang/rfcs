@@ -382,7 +382,10 @@ by an infrastructure team member reporting the outcome of a team discussion.
 A tier 2 target may be demoted or removed if it no longer meets these
 requirements. Any proposal for demotion or removal will be CCed to the target
 maintainers, and will be communicated widely to the Rust community before being
-dropped from a stable release.
+dropped from a stable release. (The amount of time between such communication
+and the next stable release may depend on the nature and severity of the failed
+requirement, the timing of its discovery, and whether the demotion or removal
+can be a planned and scheduled action.)
 
 In some circumstances, especially if the target maintainers do not respond in a
 timely fashion, Rust teams may land pull requests that temporarily disable some
@@ -562,7 +565,10 @@ tier 1 target requires a full RFC process, with approval by the compiler and
 release teams. Any such proposal will be communicated widely to the Rust
 community, both when initially proposed and before being dropped from a stable
 release. A tier 1 target is highly unlikely to be directly removed without
-first being demoted to tier 2 or tier 3.
+first being demoted to tier 2 or tier 3. (The amount of time between such
+communication and the next stable release may depend on the nature and severity
+of the failed requirement, the timing of its discovery, and whether the
+demotion or removal can be a planned and scheduled action.)
 
 Raising the baseline expectations of a tier 1 target (such as the minimum CPU
 features or OS version required) requires the approval of the compiler and
