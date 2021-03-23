@@ -568,9 +568,9 @@ development platform, not just a compilation target.
 A proposed new tier 1 target with host tools must be reviewed and approved by
 the compiler team based on these requirements. In addition, the release team
 must approve the long-term viability of host tools for the target, and the
-additional work of supporting host tools on the target. For a tier 1 target,
-this will typically take place via a full RFC proposing the target, to be
-jointly reviewed and approved by the compiler team and release team.
+value of supporting host tools on the target. For a tier 1 target, this will
+typically take place via a full RFC proposing the target, to be jointly
+reviewed and approved by the compiler team and release team.
 
 In addition, the infrastructure team must approve the integration of the
 target's host tools into Continuous Integration (CI), and the CI-related
