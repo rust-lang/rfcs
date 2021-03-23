@@ -226,8 +226,9 @@ approved by the appropriate team for that shared code before acceptance.
     generate notifications to anyone involved with a PR who has not requested
     such notifications.
 - Patches adding or updating tier 3 targets must not break any existing tier 2
-  or tier 1 target, and must not break another tier 3 target without approval
-  of either the compiler team or the maintainers of the other tier 3 target.
+  or tier 1 target, and must not knowingly break another tier 3 target without
+  approval of either the compiler team or the maintainers of the other tier 3
+  target.
   - In particular, this may come up when working on closely related targets,
     such as variations of the same architecture with different features. Avoid
     introducing unconditional uses of features that another variation of the
