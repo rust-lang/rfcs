@@ -310,10 +310,10 @@ by an infrastructure team member reporting the outcome of a team discussion.
   For example, if Rust relies on a specific code generation feature to support
   a memory safety property, the code generation for the target should support
   that feature. If this requirement does not hold, the target must clearly and
-  prominently document any such limitations, such as via a failing test in the
-  testsuite and/or a footnote in the target tier list, and the Rust compiler
-  team must be satisfied with the balance between these limitations and the
-  difficulty of implementing the necessary features.
+  prominently document any such limitations as part of the target's entry in
+  the target tier list, and ideally also via a via a failing test in the
+  testsuite. The Rust compiler team must be satisfied with the balance between
+  these limitations and the difficulty of implementing the necessary features.
 - If the target supports C code, the new Rust target should support the C
   calling convention for the platform via `extern "C"`. The C calling
   convention does not need to be the default Rust calling convention for the
