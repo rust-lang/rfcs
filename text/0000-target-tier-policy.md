@@ -312,7 +312,7 @@ by an infrastructure team member reporting the outcome of a team discussion.
   a memory safety property, the code generation for the target should support
   that feature. If this requirement does not hold, the target must clearly and
   prominently document any such limitations as part of the target's entry in
-  the target tier list, and ideally also via a via a failing test in the
+  the target tier list, and ideally also via a failing test in the
   testsuite. The Rust compiler team must be satisfied with the balance between
   these limitations and the difficulty of implementing the necessary features.
   - If the Rust compiler introduces new safety properties (such as via new
