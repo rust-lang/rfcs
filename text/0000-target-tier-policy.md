@@ -308,13 +308,17 @@ by an infrastructure team member reporting the outcome of a team discussion.
     to support those features.
 - The code generation backend for the target should not have deficiencies that
   invalidate Rust safety properties, as evaluated by the Rust compiler team.
-  For example, if Rust relies on a specific code generation feature to support
-  a memory safety property, the code generation for the target should support
-  that feature. If this requirement does not hold, the target must clearly and
+  (This requirement does not apply to arbitrary security enhancements or
+  mitigations provided by code generation backends, only to those properties
+  needed to ensure safe Rust code cannot cause undefined behavior or other
+  unsoundness.) If this requirement does not hold, the target must clearly and
   prominently document any such limitations as part of the target's entry in
-  the target tier list, and ideally also via a failing test in the
-  testsuite. The Rust compiler team must be satisfied with the balance between
-  these limitations and the difficulty of implementing the necessary features.
+  the target tier list, and ideally also via a failing test in the testsuite.
+  The Rust compiler team must be satisfied with the balance between these
+  limitations and the difficulty of implementing the necessary features.
+  - For example, if Rust relies on a specific code generation feature to ensure
+    that safe code cannot overflow the stack, the code generation for the
+    target should support that feature.
   - If the Rust compiler introduces new safety properties (such as via new
     capabilities of a compiler backend), the Rust compiler team will determine
     if they consider those new safety properties a best-effort improvement for
