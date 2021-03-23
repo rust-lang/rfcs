@@ -366,9 +366,9 @@ by an infrastructure team member reporting the outcome of a team discussion.
 - All requirements for tier 3 apply.
 
 A tier 2 target may be demoted or removed if it no longer meets these
-requirements. Any proposal for demotion or removal will be CCed to people who
-have previously worked on the target, and will be communicated widely to the
-Rust community before being dropped from a stable release.
+requirements. Any proposal for demotion or removal will be CCed to the target
+maintainers, and will be communicated widely to the Rust community before being
+dropped from a stable release.
 
 In some circumstances, especially if the target maintainers do not respond in a
 timely fashion, Rust teams may land pull requests that temporarily disable some
