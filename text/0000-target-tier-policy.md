@@ -315,6 +315,13 @@ by an infrastructure team member reporting the outcome of a team discussion.
   the target tier list, and ideally also via a via a failing test in the
   testsuite. The Rust compiler team must be satisfied with the balance between
   these limitations and the difficulty of implementing the necessary features.
+  - If the Rust compiler introduces new safety properties (such as via new
+    capabilities of a compiler backend), the Rust compiler team will determine
+    if they consider those new safety properties a best-effort improvement for
+    specific targets, or a required property for all Rust targets. In the
+    latter case, the compiler team may require the maintainers of existing
+    targets to either implement and confirm support for the property or update
+    the target tier list with documentation of the missing property.
 - If the target supports C code, the new Rust target should support the C
   calling convention for the platform via `extern "C"`. The C calling
   convention does not need to be the default Rust calling convention for the
