@@ -134,9 +134,9 @@ A proposed target or target-specific patch that substantially changes code
 shared with other targets (not just target-specific code) must be reviewed and
 approved by the appropriate team for that shared code before acceptance.
 
-- Any new tier 3 target must have a designated developer or developers (the
-  "target maintainers") on record to be CCed when issues arise regarding the
-  target. (The mechanism to track and CC such developers may evolve over time.)
+- A tier 3 target must have a designated developer or developers (the "target
+  maintainers") on record to be CCed when issues arise regarding the target.
+  (The mechanism to track and CC such developers may evolve over time.)
 - Targets must use naming consistent with any existing targets; for instance, a
   target for the same CPU or OS as an existing Rust target should use the same
   name for that CPU or OS. Targets should normally use the same names and
@@ -157,7 +157,7 @@ approved by the appropriate team for that shared code before acceptance.
   - Anything added to the Rust repository must be under the standard Rust
     license (`MIT OR Apache-2.0`).
   - The target must not cause the Rust tools or libraries built for any other
-    host (even when supporting cross-compilation to the new target) to depend
+    host (even when supporting cross-compilation to the target) to depend
     on any new dependency less permissive than the Rust licensing policy. This
     applies whether the dependency is a Rust crate that would require adding
     new license exceptions (as specified by `src/tools/tidy/src/deps.rs` in the
@@ -174,7 +174,7 @@ approved by the appropriate team for that shared code before acceptance.
     library or code optimization library. Rust's license permits such
     combinations, but the Rust project has no interest in maintaining such
     combinations within the scope of Rust itself, even at tier 3.
-  - New targets should not require proprietary (non-FOSS) components to link a
+  - Targets should not require proprietary (non-FOSS) components to link a
     functional binary or library.
   - "onerous" here is an intentionally subjective term. At a minimum, "onerous"
     legal/licensing terms include but are *not* limited to: non-disclosure
@@ -260,7 +260,7 @@ by an infrastructure team member reporting the outcome of a team discussion.
 - A tier 2 target must have value to people other than its maintainers. (It may
   still be a niche target, but it must not be exclusively useful for an
   inherently closed group.)
-- Any new tier 2 target must have a designated team of developers (the "target
+- A tier 2 target must have a designated team of developers (the "target
   maintainers") available to consult on target-specific build-breaking issues,
   or if necessary to develop target-specific language or library implementation
   details. This team must have at least 2 developers.
@@ -331,10 +331,9 @@ by an infrastructure team member reporting the outcome of a team discussion.
     latter case, the compiler team may require the maintainers of existing
     targets to either implement and confirm support for the property or update
     the target tier list with documentation of the missing property.
-- If the target supports C code, the new Rust target should support the C
-  calling convention for the platform via `extern "C"`. The C calling
-  convention does not need to be the default Rust calling convention for the
-  target, however.
+- If the target supports C code, the Rust target should support the C calling
+  convention for the platform via `extern "C"`. The C calling convention does
+  not need to be the default Rust calling convention for the target, however.
 - The target must build reliably in CI.
 - The approving teams may additionally require that a subset of tests pass in
   CI, such as enough to build a functional "hello world" program, `./x.py test
@@ -346,9 +345,9 @@ by an infrastructure team member reporting the outcome of a team discussion.
   burden of the CI infrastructure. This requirement is subjective, to be
   evaluated by the infrastructure team, and will take the community importance
   of the target into account.
-- New tier 2 targets should, if at all possible, support cross-compiling. New
-  tier 2 targets should not require using the target as the host for builds,
-  even if the target supports host tools.
+- Tier 2 targets should, if at all possible, support cross-compiling. Tier 2
+  targets should not require using the target as the host for builds, even if
+  the target supports host tools.
 - In addition to the legal requirements for all targets (specified in the tier
   3 requirements), because a tier 2 target typically involves the Rust project
   building and supplying various compiled binaries, incorporating the target
