@@ -712,8 +712,10 @@ issue is labeled with a target-specific label.
 [future-possibilities]: #future-possibilities
 
 Eventually, as more targets seek tier 1 status, we may want to document more
-criteria used to evaluate requirements such as "long-term viability of the
-target". We should also update these requirements whenever corner cases arise.
+criteria used to evaluate subjective requirements such as "viability and value
+of supporting the target". We should also update these requirements whenever
+corner cases arise. However, the subjective requirements should remain, to
+provide ample room for human judgment.
 
 These requirements intentionally don't address the problem of scaling Rust to a
 huge volume of targets, where no one target causes a burden but all of them
