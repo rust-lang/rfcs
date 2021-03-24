@@ -553,6 +553,11 @@ including the infrastructure team in the RFC proposing the target.
     maintainers. This requirement ensures that it is possible for other
     Rust developers to test the target, but does not obligate other Rust
     developers to make target-specific fixes.)
+  - Resources provided for CI and similar infrastructure must be available for
+    continuous exclusive use by the Rust project. Resources provided
+    for access by Rust team members for development and testing must be
+    available on an exclusive basis when in use, but need not be available on a
+    continuous basis when not in use.
 - Tier 1 targets must not have a hard requirement for signed, verified, or
   otherwise "approved" binaries. Developers must be able to build, run, and
   test binaries for the target on systems they control, or provide such
