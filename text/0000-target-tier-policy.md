@@ -116,7 +116,7 @@ target.
 In this policy, the words "must" and "must not" specify absolute requirements
 that a target must meet to qualify for a tier. The words "should" and "should
 not" specify requirements that apply in almost all cases, but for which the
-approving teams may grant an exception for good reason.  The word "may"
+approving teams may grant an exception for good reason. The word "may"
 indicates something entirely optional, and does not indicate guidance or
 recommendations. This language is based on [IETF RFC
 2119](https://tools.ietf.org/html/rfc2119).
@@ -425,7 +425,7 @@ member reporting the outcome of a team discussion.
   build the host tools, and the substantial additional storage required for the
   host tools.
 - The host tools must have direct value to people other than the target's
-  maintainers.  (It may still be a niche target, but the host tools must not be
+  maintainers. (It may still be a niche target, but the host tools must not be
   exclusively useful for an inherently closed group.) This requirement will be
   evaluated independently from the corresponding tier 2 requirement.
   - The requirement to provide "direct value" means that it does not suffice to
@@ -462,7 +462,7 @@ member reporting the outcome of a team discussion.
   "developer mode" or an additional prompt), it must be possible for the Rust
   project's automated builds to apply the appropriate signature process,
   without any manual intervention by either Rust developers, target
-  maintainers, or a third party.  This process must meet the approval of the
+  maintainers, or a third party. This process must meet the approval of the
   infrastructure team.
   - This process may require one-time or semi-regular manual steps by the
     infrastructure team, such as registration or renewal of a signing key. Any
@@ -546,7 +546,7 @@ including the infrastructure team in the RFC proposing the target.
     developers to make target-specific fixes.)
 - New tier 1 targets must not have a hard requirement for signed, verified, or
   otherwise "approved" binaries. Developers must be able to build, run, and
-  test binaries for the target on systems they control.  (Doing so may require
+  test binaries for the target on systems they control. (Doing so may require
   enabling some appropriate "developer mode" on such systems, but must not
   require the payment of any additional fee or other consideration, or
   agreement to any onerous legal agreements.)
