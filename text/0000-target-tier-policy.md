@@ -702,6 +702,15 @@ Eventually, as more targets seek tier 1 status, we may want to document more
 criteria used to evaluate requirements such as "long-term viability of the
 target". We should also update these requirements whenever corner cases arise.
 
+These requirements intentionally don't address the problem of scaling Rust to a
+huge volume of targets, where no one target causes a burden but all of them
+taken together do, and we may need to adapt and adjust accordingly.
+
+We need to improve our methods of communicating Rust support levels to
+downstream users, especially people who may be relying indirectly on a
+non-tier-1 Rust target and who may have expectations that do not match the
+target tier.
+
 Some of our existing targets may not meet all of these criteria today. We may
 audit existing targets against these criteria, but this RFC does not constitute
 a commitment to do so in a timely fashion.
