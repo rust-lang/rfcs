@@ -700,11 +700,11 @@ issue is labeled with a target-specific label.
 
 Eventually, as more targets seek tier 1 status, we may want to document more
 criteria used to evaluate requirements such as "long-term viability of the
-target". We should also update these requirements if corner cases arise.
+target". We should also update these requirements whenever corner cases arise.
 
 Some of our existing targets may not meet all of these criteria today. We may
-wish to audit existing targets against these criteria, but this RFC does not
-constitute a commitment to do so in a timely fashion.
+audit existing targets against these criteria, but this RFC does not constitute
+a commitment to do so in a timely fashion.
 
 In the future, we may have a specified approval body for evaluating legal
 requirements, in consultation with legal professionals.
