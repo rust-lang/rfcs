@@ -553,7 +553,7 @@ including the infrastructure team in the RFC proposing the target.
     maintainers. This requirement ensures that it is possible for other
     Rust developers to test the target, but does not obligate other Rust
     developers to make target-specific fixes.)
-- New tier 1 targets must not have a hard requirement for signed, verified, or
+- Tier 1 targets must not have a hard requirement for signed, verified, or
   otherwise "approved" binaries. Developers must be able to build, run, and
   test binaries for the target on systems they control. (Doing so may require
   enabling some appropriate "developer mode" on such systems, but must not
