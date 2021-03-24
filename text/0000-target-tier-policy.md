@@ -266,8 +266,7 @@ by an infrastructure team member reporting the outcome of a team discussion.
   details. This team must have at least 2 developers.
   - The target maintainers should not only fix target-specific issues, but
     should use any such issue as an opportunity to educate the Rust community
-    about portability to their target, and enhance their documentation of the
-    target.
+    about portability to their target, and enhance documentation of the target.
 - The target must not place undue burden on Rust developers not specifically
   concerned with that target. Rust developers are expected to not gratuitously
   break a tier 2 target, but are not expected to become experts in every tier 2
