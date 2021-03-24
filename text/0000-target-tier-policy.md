@@ -190,7 +190,7 @@ approved by the appropriate team for that shared code before acceptance.
   Rust team serves as one of the maintainers of a target, or has any legal or
   employment requirement (explicit or implicit) that might affect their
   decisions regarding a target, they must recuse themselves from any approval
-  process regarding the target's tier status, though they may otherwise
+  decisions regarding the target's tier status, though they may otherwise
   participate in discussions.
   - This requirement does not prevent part or all of this policy from being
     cited in an explicit contract or work agreement (e.g. to implement or
