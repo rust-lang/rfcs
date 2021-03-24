@@ -467,6 +467,12 @@ member reporting the outcome of a team discussion.
   - This process may require one-time or semi-regular manual steps by the
     infrastructure team, such as registration or renewal of a signing key. Any
     such manual process must meet the approval of the infrastructure team.
+  - This process may require the execution of a legal agreement with the
+    signature provider. Such a legal agreement may be revocable, but must not
+    be otherwise onerous. Any such legal agreement must meet the approval of
+    the infrastructure team.
+  - Changes to this process, or to any legal agreements involved, may
+    cause a target to stop meeting this requirement.
   - This requirement exists to ensure that Rust builds, including nightly
     builds, can meet the necessary requirements to allow users to smoothly run
     the host tools.
