@@ -726,8 +726,12 @@ non-tier-1 Rust target and who may have expectations that do not match the
 target tier.
 
 Some of our existing targets may not meet all of these criteria today. We
-should audit existing targets against these criteria, but this RFC does not
-constitute a commitment to do so in a timely fashion.
+should audit existing targets against these criteria. This RFC does not
+constitute a commitment to do so in a timely fashion, but there's substantial
+value in formally confirming the eligibility of existing targets, to remove
+uncertainty about the support level of those targets. Once this RFC is
+accepted, targets that have not been evaluated against this criteria should
+have an indication of this on the Rust Platform Support page.
 
 In the future, we may have a specified approval body for evaluating legal
 requirements, in consultation with legal professionals.
