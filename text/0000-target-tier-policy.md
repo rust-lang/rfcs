@@ -513,6 +513,7 @@ including the infrastructure team in the RFC proposing the target.
   are subjective, and determined by consensus of the approving teams. A tier 1
   target may be demoted or removed if it becomes obsolete or no longer meets
   this requirement.
+- The target maintainer team must include at least 3 developers.
 - The target must build and pass tests reliably in CI.
   - The target must not disable an excessive number of tests or pieces of tests
     in the testsuite in order to do so. This is a subjective requirement.
