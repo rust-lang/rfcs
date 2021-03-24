@@ -564,9 +564,8 @@ including the infrastructure team in the RFC proposing the target.
     and a tier 2 target with host tools already requires providing appropriate
     mechanisms that enable our infrastructure to provide such signed binaries.
     However, this additional tier 1 requirement ensures that Rust developers
-    can help develop and test Rust software for the target (including Rust
-    itself), and that development or testing for the target is not limited to
-    an exclusive group or entity.
+    can develop and test Rust software for the target (including Rust itself),
+    and that development or testing for the target is not limited.
 - All requirements for tier 2 apply.
 
 A tier 1 target may be demoted if it no longer meets these requirements but
