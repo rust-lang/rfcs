@@ -473,6 +473,9 @@ member reporting the outcome of a team discussion.
     the infrastructure team.
   - Changes to this process, or to any legal agreements involved, may
     cause a target to stop meeting this requirement.
+  - This process involved must be available under substantially similar
+    non-onerous terms to the general public. Making it available exclusively to
+    the Rust project does not suffice.
   - This requirement exists to ensure that Rust builds, including nightly
     builds, can meet the necessary requirements to allow users to smoothly run
     the host tools.
