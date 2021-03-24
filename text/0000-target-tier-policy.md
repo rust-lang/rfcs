@@ -555,10 +555,11 @@ including the infrastructure team in the RFC proposing the target.
     developers to make target-specific fixes.)
 - Tier 1 targets must not have a hard requirement for signed, verified, or
   otherwise "approved" binaries. Developers must be able to build, run, and
-  test binaries for the target on systems they control. (Doing so may require
-  enabling some appropriate "developer mode" on such systems, but must not
-  require the payment of any additional fee or other consideration, or
-  agreement to any onerous legal agreements.)
+  test binaries for the target on systems they control, or provide such
+  binaries for others to run. (Doing so may require enabling some appropriate
+  "developer mode" on such systems, but must not require the payment of any
+  additional fee or other consideration, or agreement to any onerous legal
+  agreements.)
   - The Rust project may decide to supply appropriately signed binaries if
     doing so provides a smoother experience for developers using the target,
     and a tier 2 target with host tools already requires providing appropriate
