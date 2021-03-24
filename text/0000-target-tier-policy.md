@@ -113,6 +113,13 @@ target and its demonstrated track record at its current tier. At a minimum,
 multiple stable releases of Rust should typically occur between promotions of a
 target.
 
+The availability or tier of a target in stable Rust is not a hard stability
+guarantee about the future availability or tier of that target. Higher-level
+target tiers are an increasing commitment to the support of a target, and we
+will take that commitment and potential disruptions into account when
+evaluating the potential demotion or removal of a target that has been part of
+a stable release.
+
 In this policy, the words "must" and "must not" specify absolute requirements
 that a target must meet to qualify for a tier. The words "should" and "should
 not" specify requirements that apply in almost all cases, but for which the
@@ -727,6 +734,10 @@ We need to improve our methods of communicating Rust support levels to
 downstream users, especially people who may be relying indirectly on a
 non-tier-1 Rust target and who may have expectations that do not match the
 target tier.
+
+This RFC provides some guidance on the degree of stability we provide regarding
+the availability and tier of a target. We should provide additional guidance on
+this in the future.
 
 Some of our existing targets may not meet all of these criteria today. We
 should audit existing targets against these criteria. This RFC does not
