@@ -468,9 +468,9 @@ member reporting the outcome of a team discussion.
     infrastructure team, such as registration or renewal of a signing key. Any
     such manual process must meet the approval of the infrastructure team.
   - This process may require the execution of a legal agreement with the
-    signature provider. Such a legal agreement may be revocable, but must not
-    be otherwise onerous. Any such legal agreement must meet the approval of
-    the infrastructure team.
+    signature provider. Such a legal agreement may be revocable, and may
+    potentially require a nominal fee, but must not be otherwise onerous. Any
+    such legal agreement must meet the approval of the infrastructure team.
   - Changes to this process, or to any legal agreements involved, may
     cause a target to stop meeting this requirement.
   - This process involved must be available under substantially similar
