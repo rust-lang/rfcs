@@ -79,7 +79,7 @@ This means UB during CTFE can silently "corrupt" the build in a way that the fin
 The most obvious alternative is to say that UB during CTFE will definitely be detected.
 However, that is expensive and might even be impossible.
 Even Miri does not currently detect all UB, and Miri is already performing many additional checks that would significantly slow down CTFE.
-Furthermore, since optimizations can "hide" UB (an optimization can turn a program with UB into one without), this means we would have to run CTFE on unoptimized MIR.
+Furthermore, since optimizations can "hide" UB (an optimization can turn a program with UB into one without), this means we have to keep running CTFE on unoptimized MIR.
 And finally, implementing these checks requires a more precise understanding of UB than we currently have; basically, this would block having any potentially-UB operations at const-time on having a spec for Rust that precisely describes their UB in a checkable way.
 In particular, this would mean we need to decide on an aliasing model before permitting raw pointers in CTFE.
 
