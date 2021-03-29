@@ -178,7 +178,18 @@ In concert, these push for a particular tradeoff:
 
 > **It's better for raw keywords to be nice on 2021 than for them to be supported on 2018**
 
-There *is* lexical space available even in 2015 that could be used: `r#$keyword` was brought up, for example.  But the extra noise of that isn't worth it.  (And while it's easy enough to type on a standard US keyboard, that's no longer true on others, such as Linux's UK international keyboard layout.)
+There *is* lexical space available even in 201[58]that could be used: `r#$keyword` was brought up, for example.  But the extra noise of that isn't worth it.  (And while it's easy enough to type on a standard US keyboard, that's no longer true on others, such as Linux's UK international keyboard layout.)
+
+
+## Something for the 2015 and 2018 editions
+
+As mentioned, it would be possible to support `r#$keyword` in 2015 and 2018 (or in 2021+) without it being a breaking change.
+
+This RFC, however, doesn't include that, as it's not urgent for the edition.
+
+It can be added in future, either for those editions only or for all editions, should experience with this change demonstrate that there are important-enough situations where code *needs* to use a new feature despite not having migrated to a modern edition.
+
+This is also a problem that lessens over time.  Once we reach the year 2029, any code still using the 2021 edition will be ancient, but would still be able to use `k#foo` to use new features which will only be true keywords in the 2030 edition.
 
 
 # Prior art
