@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-Define UB during const evaluation to lead to an unspecified result for the affected CTFE query, but not otherwise infect the compilation process.
+Define UB during const evaluation to lead to an unspecified result or hard error for the affected CTFE query, but not otherwise infect the compilation process.
 
 # Motivation
 [motivation]: #motivation
@@ -63,7 +63,7 @@ None of this is *guaranteed*, and `rustc` may relax or otherwise change its UB c
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-When UB arises as part of CTFE, the result of this evaluation is an unspecified constant, i.e., it is arbitrary, and might not even be of the right type.
+When UB arises as part of CTFE, the result of this evaluation is an unspecified constant, i.e., it is arbitrary, and might not even be valid for the expected return type of this evaluation.
 The compiler might be able to detect that UB occurred and raise an error or a warning, but this is not mandated, and absence of lints does not imply absence of UB.
 However, the rest of the compiler will continue to function properly, and compilation *itself* will not raise UB.
 
