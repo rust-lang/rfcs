@@ -237,8 +237,9 @@ Haskell has the [`LANGUAGE` pragma](https://ghc.readthedocs.io/en/8.0.2/glasgow_
 - What related issues do you consider out of scope for this RFC that could be addressed in the future independently of the solution that comes out of this RFC?
 -->
 
-- What I'd put is probably ignorant of compiler implementation realities.
-- I've probably missed something that needs specifying around macros.
+To be decided in nightly:
+- [ ] Is it worth adding `r#$foo` or similar to 2015 and 2018 to allow this on those editions? \
+  (This isn't a breaking change, so can be decided at any point.)
 
 
 # Future possibilities
