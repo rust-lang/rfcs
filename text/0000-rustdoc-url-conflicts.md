@@ -17,13 +17,13 @@ If macOS or Windows users try to access to both URLs, they will always see the s
 [motivation]: #motivation
 
 This is one of the oldest rustdoc issue and has been problematic for years and a lot of users. You can see that a few issues about it were opened:
- * https://github.com/rust-lang/rust/issues/25879
- * https://github.com/rust-lang/rust/issues/39926
- * https://github.com/rust-lang/rust/issues/46105
- * https://github.com/rust-lang/rust/issues/51327
- * https://github.com/rust-lang/rust/issues/76922
- * https://github.com/rust-lang/rust/issues/80504
- * https://github.com/rust-lang/rust/issues/83154 (and https://github.com/rust-lang/rustup/issues/2694)
+ * <https://github.com/rust-lang/rust/issues/25879>
+ * <https://github.com/rust-lang/rust/issues/39926>
+ * <https://github.com/rust-lang/rust/issues/46105>
+ * <https://github.com/rust-lang/rust/issues/51327>
+ * <https://github.com/rust-lang/rust/issues/76922>
+ * <https://github.com/rust-lang/rust/issues/80504>
+ * <https://github.com/rust-lang/rust/issues/83154> (and <https://github.com/rust-lang/rustup/issues/2694>)
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -47,7 +47,7 @@ Other approaches were discussed but their drawbacks were even bigger and more nu
 [drawbacks]: #drawbacks
 
  * It'll make the URL harder to read.
- * It'll change the existing URLs (this drawback has to take into account that rustdoc now has intra-doc links and that old documentation versions with the previous URL scheme will remain available).
+ * It'll change the existing URLs (this is mostly an issue for blogs and external content not using rustdoc or old rust documentation not using intra-doc links)
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -58,10 +58,10 @@ The other alternatives require either JS to be enabled all the time or just don'
 [prior-art]: #prior-art
 
 Like said previously, there were multiple attempts done before:
- * https://github.com/rust-lang/rust/pull/83612
- * https://github.com/rust-lang/rust/pull/64699
- * https://github.com/rust-lang/rust/pull/59785
- * https://github.com/rust-lang/rust/pull/35020
+ * <https://github.com/rust-lang/rust/pull/83612>
+ * <https://github.com/rust-lang/rust/pull/64699>
+ * <https://github.com/rust-lang/rust/pull/59785>
+ * <https://github.com/rust-lang/rust/pull/35020>
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
