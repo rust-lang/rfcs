@@ -135,6 +135,8 @@ raw keywords are always interpreted as keywords and never as plain identifiers, 
 
 For contextual keywords, that mean that a raw keyword is only accepted where it's being used as a keyword, not as an identifier.  For example, `k#union Foo { x: i32, y: u32 }` is valid, but `fn k#union() {}` is not.
 
+In a rust version where `k#pineapple` is not a known keyword, it causes a tokenization error.  (Like using [`r#$pineapple` does today](https://play.rust-lang.org/?version=stable&mode=debug&edition=2018&gist=04f2f8d52487b03c93e2caa00446594e), and like how [`r#pineapple` did before raw identifiers were a thing](https://rust.godbolt.org/z/eeGvzMq8r).)
+
 ## Edition migration support
 
 The pre-migration fix will look for the tokens "`k` `#` ident" in a macro call without whitespace between either pair, and will add a single space on either side of the `#`.
