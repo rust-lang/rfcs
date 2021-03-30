@@ -27,6 +27,7 @@ The answer is that in this case, the final value that is currently being execute
 For example, when UB arises while computing an array length, then the final array length can be any `usize`, or it can be (partially) uninitialized.
 No guarantees are made about this final value, and it can be different depending on host and target architecture, compiler flags, and more.
 However, UB will not otherwise adversely affect the currently running compiler; type-checking and lints and everything else will work correctly given whatever the result of the CTFE computation is.
+In particular, when the same constant is used in two different crates, those crates will still definitely see the same value for that constant -- everything else would break the type system.
 
 Note, however, that this means compile-time UB can later cause runtime UB when the program is actually executed:
 for example, if there is UB while computing the initial value of a `Vec<i32>`, the result might be a completely invalid vector that causes UB at runtime when used in the program.
