@@ -10,9 +10,10 @@ Replace [RFC #1859, `try_trait`](https://rust-lang.github.io/rfcs/1859-try-trait
 with a new design for the currently-unstable [`Try` trait](https://doc.rust-lang.org/nightly/std/ops/trait.Try.html)
 and corresponding desugaring for the `?` operator.
 
-The new design supports all the currently-stable conversions (including the accidental ones),
-while addressing the discovered shortcomings of the currently-implemented solution,
-as well as enabling new scenarios.
+The new design includes support for all *intentional* interconversions.
+It proposes removing the *accidental* interconversions, as a crater run
+demonstrated that would be feasible, however includes an alternative system
+that can support them as a low-support-cost edition mechanism if needed.
 
 *This is [forward-looking](#future-possibilities) to be compatible with other features,
 like [`try {}`](https://doc.rust-lang.org/nightly/unstable-book/language-features/try-blocks.html) blocks
@@ -27,7 +28,7 @@ The motivations from the previous RFC still apply (supporting more types, and re
 However, new information has come in since the previous RFC, making people wish for a different approach.
 
 - Using the "error" terminology is a poor fit for other potential implementations of the trait.
-- The ecosystem has started to see error types which are `From`-convertible from *any* type implementing `Debug`, which makes the previous RFC's method for controlling interconversions ineffective.
+- The previous RFC's mechanism for controlling interconversions proved ineffective, with inference meaning that people did it unintentionally.
 - It's no longer clear that `From` should be part of the `?` desugaring for _all_ types.  It's both more flexible -- making inference difficult -- and more restrictive -- especially without specialization -- than is always desired.
 - An [experience report](https://github.com/rust-lang/rust/issues/42327#issuecomment-366840247) in the tracking issue mentioned that it's annoying to need to make a residual type in common cases.
 
@@ -554,34 +555,6 @@ impl<B, C> ops::FromResidual for ControlFlow<B, C> {
 }
 ```
 
-## Making the accidental `Option` interconversion continue to work
-
-This is done with an extra implementation:
-```rust
-mod sadness {
-    use super::*;
-
-    /// This is a remnant of the old `NoneError` which is never going to be stabilized.
-    /// It's here as a snapshot of an oversight that allowed this to work in the past,
-    /// so we're stuck supporting it even though we'd really rather not.
-    #[derive(Clone, Copy, PartialEq, PartialOrd, Eq, Ord, Debug, Hash)]
-    pub struct PleaseCallTheOkOrMethodToUseQuestionMarkOnOptionsInAMethodThatReturnsResult;
-
-    impl<T, E> ops::FromResidual<Option<!>> for Result<T, E>
-    where
-        E: From<PleaseCallTheOkOrMethodToUseQuestionMarkOnOptionsInAMethodThatReturnsResult>,
-    {
-        fn from_residual(x: Option<!>) -> Self {
-            match x {
-                None => Err(From::from(
-                    PleaseCallTheOkOrMethodToUseQuestionMarkOnOptionsInAMethodThatReturnsResult,
-                )),
-            }
-        }
-    }
-}
-```
-
 ## Use in `Iterator`
 
 The provided implementation of `try_fold` is already just using `?` and `try{}`, so doesn't change.  The only difference is the name of the associated type in the bound:
@@ -855,14 +828,6 @@ In those cases where a separate type *is* needed, it's still easier to make a re
 
 This RFC uses `!` to be concise.  It would work fine with `convert::Infallible` instead if `!` has not yet stabilized, though a few more match arms would be needed in the implementations.  (For example, `Option::from_residual` would need `Some(c) => match c {}`.)
 
-## Moving away from the `Option`→`Result` interconversion
-
-We could consider doing an edition switch to make this no longer allowed.
-
-For example, we could have a different, never-stable `Try`-like trait used in old editions for the `?` desugaring.  It could then have a blanket impl, plus the extra interconversion one.
-
-It's unclear that that's worth the effort, however, so this RFC is currently written to continue to support it going forward.  Notably, removing it isn't enough to solve the annotation requirements, so the opportunity cost feels low.
-
 ## Why `FromResidual` is the supertrait
 
 It's nicer for `try_fold` implementations to just mention the simpler `Try` name.  It being the subtrait means that code needing only the basic scenario can just bound on `Try` and know that both `from_output` and `from_residual` are available.
@@ -890,6 +855,85 @@ impl<R: std::fmt::Debug> FromResidual<R> for LogAndIgnoreErrors {
 
 And, ignoring the coherence implications, a major difference between the two sides is that the target type is typically typed out visibly (in a return type) whereas the source type (going into the `?`) is often the result of some called function.  So it's preferable for any behaviour extensions to be on the type that can more easily be seen in the code.
 
+## Can we just remove the accidental interconversions?
+
+This depends on how we choose to read the rules around breaking changes.
+
+A [crater run on a prototype implementation](https://github.com/rust-lang/rust/pull/82322#issuecomment-792299734) found that some people are doing this.  PRs have been sent to the places that broke, and generally it was agreed that removing the mixing improved the code:
+
+> Definitely a good change.
+
+> Thanks for spotting that, that was indeed a confusing mix
+
+However another instance is in an abandoned project where the repository has been archived, so will not be fixed.  And of course if it happened 3 times, there might be more instances in the wild.
+
+The interesting pattern boils down to this:
+
+```rust
+.map(|v| Ok(something_returning_option(v)?))
+```
+
+That means it's using `?` on an `Option`, but the closure ends up returning `Result<_, NoneError>` without needing to name the type as trait resolution discovers that it's the only possibility.  It seems reasonable that this could happen accidentally while refactoring.  That does mean, however, that the breakage could also be considered "allowed" as an inference change, and hypothetically additional implementations could make it ambiguous in the future.  (It's like the normal `AsRef` breakage, and fits the pattern of "there's a way it could be written that works before and after", though in this case the disambiguated form requires naming an unstable type.)
+
+This RFC thus proposes removing the accidental interconversions.
+
+### Compatibility with accidental interconversions (if needed)
+
+If something happens that turns out they need to be supported, the following approach can work.
+
+This would take a multi-step approach:
+- Add a new never-stable `FromResidualLegacy` trait
+- Have a blanket implementation so that users interact only with `FromResidual`
+- Add implementations for the accidental interconversions
+- Use `FromResidualLegacy` in the desugaring, [perhaps only for old editions](https://github.com/scottmcm/rust/commit/do-or-do-not-edition)
+
+This keeps them from being visible in the trait system on stable, as `FromResidual` (the only form that would ever stabilize, or even be mentionable) would not include them.
+
+```rust
+mod sadness {
+    use super::*;
+
+    /// This includes all of the [`ops::FromResidual`] conversions, but
+    /// also adds the two interconversions that work in 2015 & 2018.
+    /// It will never be stable.
+    pub trait FromResidualLegacy<R> {
+        fn from_residual_legacy(r: R) -> Self;
+    }
+
+    impl<T: ops::FromResidual<R>, R> FromResidualLegacy<R> for T {
+        fn from_residual_legacy(r: R) -> Self {
+            <Self as ops::FromResidual<R>>::from_residual(r)
+        }
+    }
+
+    /// This is a remnant of the old `NoneError` which is never going to be stabilized.
+    /// It's here as a snapshot of an oversight that allowed this to work in the past,
+    /// so we're stuck supporting it even though we'd really rather not.
+    /// This will never be stabilized; use [`Option::ok_or`] to mix `Option` and `Result`.
+    #[derive(Clone, Copy, PartialEq, PartialOrd, Eq, Ord, Debug, Hash)]
+    pub struct LegacyNoneError;
+
+    impl<T, E> ops::FromResidual<Option<!>> for Result<T, E>
+    where
+        E: From<LegacyNoneError>,
+    {
+        fn from_residual(x: Option<!>) -> Self {
+            match x {
+                None => Err(From::from(LegacyNoneError)),
+            }
+        }
+    }
+
+
+    #[unstable(feature = "try_trait_v2", issue = "42327")]
+    impl<T> FromResidualLegacy<Result<!, LegacyNoneError>> for Option<T>
+    {
+        fn from_residual_legacy(_: Result<!, LegacyNoneError>) -> Self {
+            None
+        }
+    }
+}
+```
 
 
 <!--
@@ -947,9 +991,6 @@ Please also take into consideration that rust sometimes intentionally diverges f
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-Waiting on crater:
-- [ ] Find out more about how widespread the accidental interconversions are, and change the RFC to propose whether to bless/lint/remove them, and how.
-
 Questions from T-libs to be resolved in nightly:
 - [ ] What vocabulary should `Try` use in the associated types/traits?  Output+residual, continue+break, or something else entirely?
 - [ ] Is it ok for the two traits to be tied together closely, as outlined here, or should they be split up further to allow types that can be only-created or only-destructured?
@@ -957,9 +998,10 @@ Questions from T-libs to be resolved in nightly:
 ## Implementation and Stabilization Sequencing
 
 - `ControlFlow` is implemented in nightly already.
-- The traits and desugaring could go into nightly (assuming with a confirming crater run) immediately, with implementations for the existing `Option`<->`Result` interconversions.
+- The traits and desugaring could go into nightly immediately.
 - That would allow `ControlFlow` to be considered for stabilizating, as the new desugaring would keep from stabilizing any unwanted interconversions.
-- Then the unresolved questions need to be addressed before `Try` could stabilize.
+- Beta testing might result in reports requiring that the accidental interconversions be added back in old editions, due to crater-invisible code.
+- Then the unresolved naming & structure questions need to be addressed before `Try` could stabilize.
 
 <!--
 - What parts of the design do you expect to resolve through the RFC process before this gets merged?
