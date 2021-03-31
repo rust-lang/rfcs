@@ -101,7 +101,7 @@ where `$PATH_TO_FOO` is either the path specified in `Cargo.toml` or `<sysroot>/
 # Drawbacks
 [drawbacks]: #drawbacks
 
-The slowness of `miri` may increase build times mildly. However, this expense is deemed small in comparison to vast might of safe-build-system-yness that will be unleashed on a UB-impoverished world.
+The slowness of `miri` may increase build times mildly. However, this expense is deemed small in comparison to the vast might of safe-build-system-yness that will be unleashed on a UB-impoverished world.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -120,7 +120,7 @@ Seems obvious, right? `miri`.
 
 > - What is the impact of not doing this?
 
-It is highly likely that the world will end.
+It is highly likely that the world will end due to UB. Or at best my laundry might get eaten.
 
 # Prior art
 [prior-art]: #prior-art
@@ -143,4 +143,4 @@ Ken Thompson's excellent [Reflections on Trusting Trust](https://dl.acm.org/doi/
 The obvious extension would be to get rid of the system call interface of `corgi`, as this represents attack surface and added complexity.
 One way to do so would be to reimplement `Linux` (or really any OS) and run it inside of `corgi` with the rest of the build system.
 
-For added security, one can follow the [Defense in Depth](https://csrc.nist.gov/glossary/term/defense_in_depth) strategy: implement `corgi` inside `vim` on Linux inside `corgi`.
+For added security, one can follow the [Defense in Depth](https://csrc.nist.gov/glossary/term/defense_in_depth) strategy: implement `corgi` inside `vim` on Linux inside `corgi` inside `vim` on Linux inside `corgi` inside `vim` on Linux inside `corgi` ... until it's safe enough.
