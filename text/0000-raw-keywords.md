@@ -141,6 +141,20 @@ In a rust version where `k#pineapple` is not a known keyword, it causes a tokeni
 
 The pre-migration fix will look for the tokens "`k` `#` ident" in a macro call without whitespace between either pair, and will add a single space on either side of the `#`.
 
+## Support for past editions
+
+A new tokenizer rule is introduced:
+
+> RAW_KEYWORD : `r#$` IDENTIFIER_OR_KEYWORD
+
+This is supported for use in 2015 and 2018, as well as in 2021 for edition migration purposes.  In 2024 and beyond, this will no longer be supported.
+
+However, it's strongly recommended that everyone migrate to a current edition rather than use `r#$`.  For example, code wanting to use `async.await` should just move to the 2018 edition, not use `.r#$await`.
+
+Semantically, it will do the same as the equivalent `k#`, just with different syntax.
+
+There is a warn-by-default lint against using `r#$pineapple` in 2021, which will be included as a post-migration `--fix` lint, so that code using `foo.r$#await` in 2018 will be changed to using `foo.k#await` in 2021.
+
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -178,20 +192,9 @@ There are a few fundamental differences between raw keywords and raw identifiers
 
 In concert, these push for a particular tradeoff:
 
-> **It's better for raw keywords to be nice on 2021 than for them to be supported on 2018**
+> **It's better for raw keywords to be nice on 2021 than for them to be consistent with 2015**
 
-There *is* lexical space available even in 201[58]that could be used: `r#$keyword` was brought up, for example.  But the extra noise of that isn't worth it.  (And while it's easy enough to type on a standard US keyboard, that's no longer true on others, such as Linux's UK international keyboard layout.)
-
-
-## Something for the 2015 and 2018 editions
-
-As mentioned, it would be possible to support `r#$keyword` in 2015 and 2018 (or in 2021+) without it being a breaking change.
-
-This RFC, however, doesn't include that, as it's not urgent for the edition.
-
-It can be added in future, either for those editions only or for all editions, should experience with this change demonstrate that there are important-enough situations where code *needs* to use a new feature despite not having migrated to a modern edition.
-
-This is also a problem that lessens over time.  Once we reach the year 2029, any code still using the 2021 edition will be ancient, but would still be able to use `k#foo` to use new features which will only be true keywords in the 2030 edition.
+Arguably they never *should* be used in 2015 (or even in 2018, since there are no features planned to use this before 2021 stabilizes), as it's always better to move to the newest-available edition before adopting new features, but they're available with a worse syntax there for completeness. <!-- Also, the author of this RFC thinks that they shouldn't actually exist in 2015, nor in 2018, but got outvoted :( -->
 
 
 # Prior art
@@ -237,9 +240,7 @@ Haskell has the [`LANGUAGE` pragma](https://ghc.readthedocs.io/en/8.0.2/glasgow_
 - What related issues do you consider out of scope for this RFC that could be addressed in the future independently of the solution that comes out of this RFC?
 -->
 
-To be decided in nightly:
-- [ ] Is it worth adding `r#$foo` or similar to 2015 and 2018 to allow this on those editions? \
-  (This isn't a breaking change, so can be decided at any point.)
+None
 
 
 # Future possibilities
