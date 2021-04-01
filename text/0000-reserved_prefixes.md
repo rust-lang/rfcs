@@ -110,7 +110,7 @@ Any use of a reserved identifier or reserved string literal is a compilation err
 
 The use of "identifier" in this document should be taken to refer to the definition of "identifier" that is in use by Rust as of the 2021 edition. At the time of this writing, the `non_ascii_idents` feature is not yet stabilized, but is on track to be. If `non_ascii_idents` is stabilized before the 2021 edition, then the syntactic reservations that take place in the 2021 edition will include things like `über#foo`. However, if `non_ascii_idents` is *not* stabilized before the 2021 edition, then any subsequent stabilization of `non_ascii_idents` would need to take care to *not* expand the reservations in this RFC, and instead defer that task to the next edition.
 
-An edition migration will be implemented that looks for `ident#ident` or `ident"string"` within macro calls and inserts whitespace to force individual tokenization.
+An edition migration may be implemented that looks for `ident#ident` or `ident"string"` within macro calls and inserts whitespace to force individual tokenization.
 
 # Drawbacks
 [drawbacks]: #drawbacks
