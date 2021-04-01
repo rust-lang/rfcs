@@ -121,7 +121,8 @@ An edition migration may be implemented that looks for `ident#ident` or `ident"s
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 * Reserve only `ident#foo` and not `ident"foo"`. The former has a concrete RFC that would benefit from this, but the latter is currently just aspirational.
-* Instead of `ident`, reserve only `[a-z]+` or `[a-z]`. However, it would probably be even more surprising if `x#foo` were considered one token and `X#foo` or `xx#foo` were considered three.
+* Instead of `ident`, reserve only `[a-z]+` or `[a-z]`. However, it would probably be even more surprising if `x#foo` were considered one token and `X#foo` or `xx#foo` were considered three. In addition, reserving only `[a-z]` would force future language extensions to use exclusively pithy single-letter syntax, even for features that may not be common enough to warrant such abbreviated syntax. Reserving identifiers in this space provides more flexibility for future language design, without impacting Rust programs.
+* Instead of `ident`, reserve only `[a-zA-Z_][a-zA-Z0-9_]*` (ASCII-only identifiers). This would cover the space future Rust language design extensions are likely to use. However, the explanation of the reserved space would require presenting a distinct concept separate from the definition of identifiers. In addition, reserving only ASCII identifiers seems unlikely to provide a benefit to future Rust programs.
 * Instead of `ident`, reserve prefixes that permit any sequence of identifier continuation characters. This would allow things like preceding digits, e.g. `4#foo`.
 * In addition to adding reserved prefixes to string literals, add them to numeric literals as well: `ident#1234`, `ident#56.78`.
 
