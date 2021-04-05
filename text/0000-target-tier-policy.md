@@ -337,9 +337,10 @@ by an infrastructure team member reporting the outcome of a team discussion.
     latter case, the compiler team may require the maintainers of existing
     targets to either implement and confirm support for the property or update
     the target tier list with documentation of the missing property.
-- If the target supports C code, the Rust target should support the C calling
-  convention for the platform via `extern "C"`. The C calling convention does
-  not need to be the default Rust calling convention for the target, however.
+- If the target supports C code, and the target has an interoperable calling
+  convention for C code, the Rust target must support that C calling convention
+  for the platform via `extern "C"`. The C calling convention does not need to
+  be the default Rust calling convention for the target, however.
 - The target must build reliably in CI.
 - The approving teams may additionally require that a subset of tests pass in
   CI, such as enough to build a functional "hello world" program, `./x.py test
