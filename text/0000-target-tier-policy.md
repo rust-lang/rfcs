@@ -317,6 +317,12 @@ by an infrastructure team member reporting the outcome of a team discussion.
     some cases, a target may be co-developed along with Rust support, and Rust
     may gain new features on the target as that target gains the capabilities
     to support those features.
+  - As an exception, a target identical to an existing tier 1 target except for
+    lower baseline expectations for the OS, CPU, or similar, may propose to
+    qualify as tier 2 (but not higher) without support for `std` if the target
+    will primarily be used in `no_std` applications, to reduce the support
+    burden for the standard library. In this case, evaluation of the proposed
+    target's value will take this limitation into account.
 - The code generation backend for the target should not have deficiencies that
   invalidate Rust safety properties, as evaluated by the Rust compiler team.
   (This requirement does not apply to arbitrary security enhancements or
