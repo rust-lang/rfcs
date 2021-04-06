@@ -223,7 +223,7 @@ approved by the appropriate team for that shared code before acceptance.
 - Tier 3 targets must not impose burden on the authors of pull requests, or
   other developers in the community, to maintain the target. In particular,
   do not post comments (automated or manual) on a PR that derail or suggest a
-  block on the PR based on the target. Do not send automated messages or
+  block on the PR based on a tier 3 target. Do not send automated messages or
   notifications (via any medium, including via `@`) to a PR author or others
   involved with a PR regarding a tier 3 target, unless they have opted into
   such messages.
