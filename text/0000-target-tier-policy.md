@@ -485,6 +485,11 @@ member reporting the outcome of a team discussion.
     signature provider. Such a legal agreement may be revocable, and may
     potentially require a nominal fee, but must not be otherwise onerous. Any
     such legal agreement must meet the approval of the infrastructure team.
+    (The infrastructure team is not expected or required to sign binding legal
+    agreements on behalf of the Rust project; this review and approval exists
+    to ensure no terms are onerous or cause problems for infrastructure,
+    especially if such terms may impose requirements or obligations on people
+    who have access to target-specific infrastructure.)
   - Changes to this process, or to any legal agreements involved, may
     cause a target to stop meeting this requirement.
   - This process involved must be available under substantially similar
