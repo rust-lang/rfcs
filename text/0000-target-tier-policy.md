@@ -119,7 +119,8 @@ guarantee about the future availability or tier of that target. Higher-level
 target tiers are an increasing commitment to the support of a target, and we
 will take that commitment and potential disruptions into account when
 evaluating the potential demotion or removal of a target that has been part of
-a stable release.
+a stable release. The promotion or demotion of a target will not generally
+affect existing stable releases, only current development and future releases.
 
 In this policy, the words "must" and "must not" specify absolute requirements
 that a target must meet to qualify for a tier. The words "should" and "should
