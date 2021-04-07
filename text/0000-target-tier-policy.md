@@ -349,7 +349,8 @@ by an infrastructure team member reporting the outcome of a team discussion.
   convention for C code, the Rust target must support that C calling convention
   for the platform via `extern "C"`. The C calling convention does not need to
   be the default Rust calling convention for the target, however.
-- The target must build reliably in CI.
+- The target must build reliably in CI, for all components that Rust's CI
+  considers mandatory.
 - The approving teams may additionally require that a subset of tests pass in
   CI, such as enough to build a functional "hello world" program, `./x.py test
   --no-run`, or equivalent "smoke tests". In particular, this requirement may
@@ -450,8 +451,8 @@ member reporting the outcome of a team discussion.
     others.
 - There must be a reasonable expectation that the host tools will be used, for
   purposes other than to prove that they can be used.
-- The host tools must build and run reliably in CI, though they may or may not
-  pass tests.
+- The host tools must build and run reliably in CI (for all components that
+  Rust's CI considers mandatory), though they may or may not pass tests.
 - Building host tools for the target must not take substantially longer than
   building host tools for other targets, and should not substantially raise the
   maintenance burden of the CI infrastructure.
@@ -534,7 +535,8 @@ including the infrastructure team in the RFC proposing the target.
   target may be demoted or removed if it becomes obsolete or no longer meets
   this requirement.
 - The target maintainer team must include at least 3 developers.
-- The target must build and pass tests reliably in CI.
+- The target must build and pass tests reliably in CI, for all components that
+  Rust's CI considers mandatory.
   - The target must not disable an excessive number of tests or pieces of tests
     in the testsuite in order to do so. This is a subjective requirement.
   - If the target does not have host tools support, or if the target has low
@@ -652,7 +654,8 @@ team in the RFC proposing the target.
   sufficient interest for cross-compilation, but not have sufficient interest
   for native compilation. The host tools may be dropped if they no longer meet
   this requirement, even if the target otherwise qualifies as tier 1.
-- The host tools must build, run, and pass tests reliably in CI.
+- The host tools must build, run, and pass tests reliably in CI, for all
+  components that Rust's CI considers mandatory.
   - The target must not disable an excessive number of tests or pieces of tests
     in the testsuite in order to do so. This is a subjective requirement.
 - Building the host tools and running the testsuite for the host tools must not
