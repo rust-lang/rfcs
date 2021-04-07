@@ -24,12 +24,13 @@ occasionally ask what it would take to add a new tier 1 target. The Rust
 project has no clear policy for target tiers. People not only don't know, they
 don't know who to ask or where to start.
 
-See <https://forge.rust-lang.org/release/platform-support.html> for more
+See <https://doc.rust-lang.org/nightly/rustc/platform-support.html> for more
 information about targets and tiers.
 
-Once accepted, the policy sections of this RFC should be posted on
-<https://forge.rust-lang.org/> in a "Target Tier Policy" section; this RFC will
-not be the canonical home of the up-to-date target tier policy.
+Once accepted, the policy sections of this RFC should be posted alongside
+<https://doc.rust-lang.org/nightly/rustc/platform-support.html> in a "Target
+Tier Policy" section; this RFC will not be the canonical home of the up-to-date
+target tier policy.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -101,7 +102,7 @@ requirements.
 All supported targets and their corresponding tiers ("tier 3", "tier 2", "tier
 2 with host tools", "tier 1", or "tier 1 with host tools") will be documented
 on an appropriate official page, such as
-<https://forge.rust-lang.org/release/platform-support.html>.
+<https://doc.rust-lang.org/nightly/rustc/platform-support.html>.
 
 Note that a target must have already received approval for the next lower tier,
 and spent a reasonable amount of time at that tier, before making a proposal
@@ -710,7 +711,7 @@ unlikely to provide value commensurate with that confusion.
 
 This attempts to formalize and document Rust policy around targets and
 architectures. Some requirements of such a policy appear on the [Rust Platform
-Support page](https://forge.rust-lang.org/release/platform-support.html).
+Support page](https://doc.rust-lang.org/nightly/rustc/platform-support.html).
 
 Future expansions of such policy may find requirements from other communities
 useful as examples, such as Debian's [arch
