@@ -260,6 +260,9 @@ Semantically, `inline fn` is inlined into the call site,
 allowing things like `return`/`break`/`continue`ing from the calling scope.
 Otherwise, `inline fn` behaves semantically like a function call.
 
+[POV-Ray's macros](http://www.povray.org/documentation/3.7.0/r3_3.html#r3_3_2_8_3)
+are also interesting for comparison.
+
 The author knows of no other languages with macro-like functionality
 that isn't just textual or lexical replacement.
 
