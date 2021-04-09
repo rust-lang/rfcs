@@ -12,7 +12,7 @@ Add a new macro_rules matcher, `$name:value`, with identical semantics to that o
 [motivation]: #motivation
 
 Value arguments to function-like macros are tricky to deal with.
-While macro_rules macros don't suffer from the common and most egregious pitfalls of C-style preprocessor macros,
+While macro_rules macros don't suffer from the most common pitfalls of C-style preprocessor macros,
 such as misnested brackets and operator precedence,
 using an `$:expr` capture more than once still evaluates the expression more than once,
 duplicating side effects.
@@ -89,7 +89,7 @@ not any other position
 As such,
 extra information is provided to the compiler that it MAY use for nicer error messages.
 (When expanding an expression-position-only macro in item position,
- the current 1.51 rustc says
+ `rustc` 1.51 says
  "the usage of `mac!` is _likely_ invalid in item context"
  (emphasis mine),
  which could be strengthened if all macro arms capture `$:value`.)
@@ -171,14 +171,14 @@ rather than "however you used it."
 [drawbacks]: #drawbacks
 
 For one, `$:value` is another thing that has to be learned to write effective `macro_rules!` macros.
-However, it replaces the `match` trick, so the author believes this comes out nuetral.
+However, it replaces the `match` trick, so the author believes this comes out neutral.
 
 Of course, it expands the language, where a code solution is sufficient, if not elegant.
 
 Additionally,
 this would be the first `macro_rules!` macro where a capture isn't plain token (tree) substitution.
 If the `match` trick is actually fully equivalent to function argument semantics,
-(the author believes this to be true but hasn't exhaustively shown this,)
+(the author believes this to be true but hasn't exhaustively shown this)
 then tools such as `cargo expand` (`-Z unpretty`) can use it as the macro expansion.
 But still, this moves `macro_rules!` away from just being token (tree) substitution,
 and gives `macro_rules!` a superpower that isn't available to function-like proc macros.
@@ -284,9 +284,9 @@ that isn't just textual or lexical replacement.
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-If `$:value` is accepted now, `$:place` could be accpeted later if deemed necessary.
+If `$:value` is accepted now, `$:place` could be accepeted later if deemed necessary.
 `$:place` is usable in all the places `$:value` would be used
-(and saves a semantic move/copy before optimization,)
+(and saves a semantic move/copy before optimization),
 but is much more complicated for its small additional benefit,
 so `$:value` is preferred by this RFC.
 Matching function semantics,
