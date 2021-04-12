@@ -290,334 +290,286 @@ role as `&dyn Any` except that it supports other trait objects as the requested
 type.
 
 Here is the implementation for the proof of concept, based on Nika Layzell's
-[object-provider crate]:
+[dyno crate]:
 
 A usable version of this is available in the [proof of concept] repo under
 `fakecore/src/any.rs`.
 
 ```rust
 use core::any::TypeId;
-use core::marker::PhantomData;
+
+#[cfg(feature = "alloc")]
+extern crate alloc;
+
+#[cfg(feature = "alloc")]
+use alloc::boxed::Box;
+
+pub mod provider {
+    //! Tag-based value lookup API for trait objects.
+    //!
+    //! This provides a similar API to my `object_provider` crate, built on top of
+    //! `dyno`
+
+    use super::{Tag, Tagged};
+
+    /// An untyped request for a value of a specific type.
+    ///
+    /// This type is generally used as an `&mut Request<'a>` outparameter.
+    #[repr(transparent)]
+    pub struct Request<'a> {
+        tagged: dyn Tagged<'a> + 'a,
+    }
+
+    impl<'a> Request<'a> {
+        /// Helper for performing transmutes as `Request<'a>` has the same layout as
+        /// `dyn Tagged<'a> + 'a`, just with a different type!
+        ///
+        /// This is just to have our own methods on it, and less of the interface
+        /// exposed on the `provide` implementation.
+        fn wrap_tagged<'b>(t: &'b mut (dyn Tagged<'a> + 'a)) -> &'b mut Self {
+            unsafe { &mut *(t as *mut (dyn Tagged<'a> + 'a) as *mut Request<'a>) }
+        }
+
+        pub fn is<I>(&self) -> bool
+        where
+            I: Tag<'a>,
+        {
+            self.tagged.is::<ReqTag<I>>()
+        }
+
+        pub fn provide<I>(&mut self, value: I::Type) -> &mut Self
+        where
+            I: Tag<'a>,
+        {
+            if let Some(res @ None) = self.tagged.downcast_mut::<ReqTag<I>>() {
+                *res = Some(value);
+            }
+            self
+        }
+
+        pub fn provide_ref<I: ?Sized + 'static>(&mut self, value: &'a I) -> &mut Self
+        {
+            use crate::any::tag::Ref;
+            if let Some(res @ None) = self.tagged.downcast_mut::<ReqTag<Ref<I>>>() {
+                *res = Some(value);
+            }
+            self
+        }
+
+        pub fn provide_with<I, F>(&mut self, f: F) -> &mut Self
+        where
+            I: Tag<'a>,
+            F: FnOnce() -> I::Type,
+        {
+            if let Some(res @ None) = self.tagged.downcast_mut::<ReqTag<I>>() {
+                *res = Some(f());
+            }
+            self
+        }
+    }
+
+    pub trait Provider {
+        fn provide<'a>(&'a self, request: &mut Request<'a>);
+    }
+
+    impl dyn Provider {
+        pub fn request<'a, I>(&'a self) -> Option<I::Type>
+        where
+            I: Tag<'a>,
+        {
+            request::<I, _>(|request| self.provide(request))
+        }
+    }
+
+    pub fn request<'a, I, F>(f: F) -> Option<<I as Tag<'a>>::Type>
+    where
+        I: Tag<'a>,
+        F: FnOnce(&mut Request<'a>),
+    {
+        let mut result: Option<<I as Tag<'a>>::Type> = None;
+        f(Request::<'a>::wrap_tagged(<dyn Tagged>::tag_mut::<ReqTag<I>>(
+            &mut result,
+        )));
+        result
+    }
+
+    /// Implementation detail: Specific `Tag` tag used by the `Request` code under
+    /// the hood.
+    ///
+    /// Composition of `Tag` types!
+    struct ReqTag<I>(I);
+    impl<'a, I: Tag<'a>> Tag<'a> for ReqTag<I> {
+        type Type = Option<I::Type>;
+    }
+}
+
+pub mod tag {
+    //! Simple type-based tag values for use in generic code.
+    use super::Tag;
+    use core::marker::PhantomData;
+
+    /// Type-based `Tag` for `&'a T` types.
+    pub struct Ref<T: ?Sized + 'static>(PhantomData<T>);
+
+    impl<'a, T: ?Sized + 'static> Tag<'a> for Ref<T> {
+        type Type = &'a T;
+    }
+
+    /// Type-based `Tag` for `&'a mut T` types.
+    pub struct RefMut<T: ?Sized + 'static>(PhantomData<T>);
+
+    impl<'a, T: ?Sized + 'static> Tag<'a> for RefMut<T> {
+        type Type = &'a mut T;
+    }
+
+    /// Type-based `Tag` for concrete types.
+    pub struct Value<T: 'static>(PhantomData<T>);
+
+    impl<T: 'static> Tag<'_> for Value<T> {
+        type Type = T;
+    }
+}
+
+/// An identifier which may be used to tag a specific
+pub trait Tag<'a>: Sized + 'static {
+    /// The type of values which may be tagged by this `Tag`.
+    type Type: 'a;
+}
 
 mod private {
-    pub trait Response<'a>: 'a {}
+    pub trait Sealed {}
 }
 
-/// A response to a ref request.
-struct RefResponse<'a, T: ?Sized + 'static>(Option<&'a T>);
-impl<'a, T: ?Sized + 'static> private::Response<'a> for RefResponse<'a, T> {}
+/// Sealed trait representing a type-erased tagged object.
+pub unsafe trait Tagged<'a>: private::Sealed + 'a {
+    /// The `TypeId` of the `Tag` this value was tagged with.
+    fn tag_id(&self) -> TypeId;
+}
 
-/// A response to a value request.
-struct ValueResponse<T: 'static>(Option<T>);
-impl<'a, T: 'static> private::Response<'a> for ValueResponse<T> {}
-
-/// A dynamic request for an object based on its type.
-pub struct Request<'a, R = dyn private::Response<'a>>
+/// Internal wrapper type with the same representation as a known external type.
+#[repr(transparent)]
+struct TaggedImpl<'a, I>
 where
-    R: ?Sized + private::Response<'a>,
+    I: Tag<'a>,
 {
-    marker: PhantomData<&'a ()>,
-
-    /// A `TypeId` marker for the type stored in `R`.
-    ///
-    /// Will be the TypeId of either `RefResponse<'static, T>` or
-    /// `ValueResponse<T>`.
-    type_id: TypeId,
-
-    /// A type erased `RefResponse` or `ValueResponse` containing the response
-    /// value.
-    response: R,
+    _value: I::Type,
 }
 
-impl<'a> Request<'a> {
-    /// Perform a checked downcast of `response` to `Option<&'a T>`
-    fn downcast_ref_response<'b, T: ?Sized + 'static>(
-        &'b mut self,
-    ) -> Option<&'b mut RefResponse<'a, T>> {
-        if self.is_ref::<T>() {
-            // safety: If `self.is_ref::<T>()` returns true, `response` must be
-            // of the correct type. This is enforced by the private `type_id`
-            // field.
-            Some(unsafe { &mut *(&mut self.response as *mut _ as *mut RefResponse<'a, T>) })
+impl<'a, I> private::Sealed for TaggedImpl<'a, I> where I: Tag<'a> {}
+
+unsafe impl<'a, I> Tagged<'a> for TaggedImpl<'a, I>
+where
+    I: Tag<'a>,
+{
+    fn tag_id(&self) -> TypeId {
+        TypeId::of::<I>()
+    }
+}
+
+// FIXME: This should also handle the cases for `dyn Tagged<'a> + Send`,
+// `dyn Tagged<'a> + Send + Sync` and `dyn Tagged<'a> + Sync`...
+//
+// Should be easy enough to do it with a macro...
+impl<'a> dyn Tagged<'a> {
+    /// Tag a reference to a concrete type with a given `Tag`.
+    ///
+    /// This is like an unsizing coercion, but must be performed explicitly to
+    /// specify the specific tag.
+    pub fn tag_ref<I>(value: &I::Type) -> &dyn Tagged<'a>
+    where
+        I: Tag<'a>,
+    {
+        // SAFETY: `TaggedImpl<'a, I>` has the same representation as `I::Type`
+        // due to `#[repr(transparent)]`.
+        unsafe { &*(value as *const I::Type as *const TaggedImpl<'a, I>) }
+    }
+
+    /// Tag a reference to a concrete type with a given `Tag`.
+    ///
+    /// This is like an unsizing coercion, but must be performed explicitly to
+    /// specify the specific tag.
+    pub fn tag_mut<I>(value: &mut I::Type) -> &mut dyn Tagged<'a>
+    where
+        I: Tag<'a>,
+    {
+        // SAFETY: `TaggedImpl<'a, I>` has the same representation as `I::Type`
+        // due to `#[repr(transparent)]`.
+        unsafe { &mut *(value as *mut I::Type as *mut TaggedImpl<'a, I>) }
+    }
+
+    /// Tag a Box of a concrete type with a given `Tag`.
+    ///
+    /// This is like an unsizing coercion, but must be performed explicitly to
+    /// specify the specific tag.
+    #[cfg(feature = "alloc")]
+    pub fn tag_box<I>(value: Box<I::Type>) -> Box<dyn Tagged<'a>>
+    where
+        I: Tag<'a>,
+    {
+        // SAFETY: `TaggedImpl<'a, I>` has the same representation as `I::Type`
+        // due to `#[repr(transparent)]`.
+        unsafe { Box::from_raw(Box::into_raw(value) as *mut TaggedImpl<'a, I>) }
+    }
+
+    /// Returns `true` if the dynamic type is tagged with `I`.
+    #[inline]
+    pub fn is<I>(&self) -> bool
+    where
+        I: Tag<'a>,
+    {
+        self.tag_id() == TypeId::of::<I>()
+    }
+
+    /// Returns some reference to the dynamic value if it is tagged with `I`,
+    /// or `None` if it isn't.
+    #[inline]
+    pub fn downcast_ref<I>(&self) -> Option<&I::Type>
+    where
+        I: Tag<'a>,
+    {
+        if self.is::<I>() {
+            // SAFETY: Just checked whether we're pointing to a
+            // `TaggedImpl<'a, I>`, which was cast to from an `I::Type`.
+            unsafe { Some(&*(self as *const dyn Tagged<'a> as *const I::Type)) }
         } else {
             None
         }
     }
 
-    /// Perform a checked downcast of `response` to `Option<T>`
-    fn downcast_value_response<'b, T: 'static>(&'b mut self) -> Option<&'b mut ValueResponse<T>> {
-        if self.is_value::<T>() {
-            // safety: If `self.is_value::<T>()` returns true, `response` must
-            // be of the correct type. This is enforced by the private `type_id`
-            // field.
-            Some(unsafe { &mut *(&mut self.response as *mut _ as *mut ValueResponse<T>) })
+    /// Returns some reference to the dynamic value if it is tagged with `I`,
+    /// or `None` if it isn't.
+    #[inline]
+    pub fn downcast_mut<I>(&mut self) -> Option<&mut I::Type>
+    where
+        I: Tag<'a>,
+    {
+        if self.is::<I>() {
+            // SAFETY: Just checked whether we're pointing to a
+            // `TaggedImpl<'a, I>`, which was cast to from an `I::Type`.
+            unsafe { Some(&mut *(self as *mut dyn Tagged<'a> as *mut I::Type)) }
         } else {
             None
         }
     }
 
-    /// Provides a reference of type `&'a T` in response to this request.
-    ///
-    /// If a reference of type `&'a T` has already been provided for this
-    /// request, or if the request is for a different type, this call will be
-    /// ignored.
-    ///
-    /// This method can be chained within `provide` implementations to concisely
-    /// provide multiple objects.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// # use object_provider::{ObjectProvider, Request};
-    /// # use std::fmt;
-    /// struct MyProvider {
-    ///     name: String,
-    /// }
-    ///
-    /// impl ObjectProvider for MyProvider {
-    ///     fn provide<'a>(&'a self, request: &mut Request<'a>) {
-    ///         request
-    ///             .provide_ref::<Self>(&self)
-    ///             .provide_ref::<String>(&self.name)
-    ///             .provide_ref::<str>(&self.name)
-    ///             .provide_ref::<dyn fmt::Display>(&self.name);
-    ///     }
-    /// }
-    /// ```
-    pub fn provide_ref<T: ?Sized + 'static>(&mut self, value: &'a T) -> &mut Self {
-        self.provide_ref_with(|| value)
-    }
-
-    /// Lazily provides a reference of type `&'a T` in response to this request.
-    ///
-    /// If a reference of type `&'a T` has already been provided for this
-    /// request, or if the request is for a different type, this call will be
-    /// ignored.
-    ///
-    /// The passed closure is only called if the value will be successfully
-    /// provided.
-    ///
-    /// This method can be chained within `provide` implementations to concisely
-    /// provide multiple objects.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// # use object_provider::{ObjectProvider, Request};
-    /// # fn expensive_condition() -> bool { true }
-    /// struct MyProvider {
-    ///     a: String,
-    ///     b: String,
-    /// }
-    ///
-    /// impl ObjectProvider for MyProvider {
-    ///     fn provide<'a>(&'a self, request: &mut Request<'a>) {
-    ///         request.provide_ref_with::<String, _>(|| {
-    ///             if expensive_condition() {
-    ///                 &self.a
-    ///             } else {
-    ///                 &self.b
-    ///             }
-    ///         });
-    ///     }
-    /// }
-    /// ```
-    pub fn provide_ref_with<T: ?Sized + 'static, F>(&mut self, cb: F) -> &mut Self
+    #[inline]
+    #[cfg(feature = "alloc")]
+    pub fn downcast_box<I>(self: Box<Self>) -> Result<Box<I::Type>, Box<Self>>
     where
-        F: FnOnce() -> &'a T,
+        I: Tag<'a>,
     {
-        if let Some(RefResponse(response @ None)) = self.downcast_ref_response::<T>() {
-            *response = Some(cb());
-        }
-        self
-    }
-
-    /// Provides an value of type `T` in response to this request.
-    ///
-    /// If a value of type `T` has already been provided for this request, or if
-    /// the request is for a different type, this call will be ignored.
-    ///
-    /// This method can be chained within `provide` implementations to concisely
-    /// provide multiple objects.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// # use object_provider::{ObjectProvider, Request};
-    /// struct MyProvider {
-    ///     count: u32,
-    /// }
-    ///
-    /// impl ObjectProvider for MyProvider {
-    ///     fn provide<'a>(&'a self, request: &mut Request<'a>) {
-    ///         request
-    ///             .provide_value::<u32>(self.count)
-    ///             .provide_value::<&'static str>("hello, world!");
-    ///     }
-    /// }
-    /// ```
-    pub fn provide_value<T: 'static>(&mut self, value: T) -> &mut Self {
-        self.provide_value_with(|| value)
-    }
-
-    /// Lazily provides a value of type `T` in response to this request.
-    ///
-    /// If a value of type `T` has already been provided for this request, or if
-    /// the request is for a different type, this call will be ignored.
-    ///
-    /// The passed closure is only called if the value will be successfully
-    /// provided.
-    ///
-    /// This method can be chained within `provide` implementations to concisely
-    /// provide multiple objects.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// # use object_provider::{ObjectProvider, Request};
-    /// struct MyProvider {
-    ///     count: u32,
-    /// }
-    ///
-    /// impl ObjectProvider for MyProvider {
-    ///     fn provide<'a>(&'a self, request: &mut Request<'a>) {
-    ///         request
-    ///             .provide_value_with::<u32, _>(|| self.count / 10)
-    ///             .provide_value_with::<String, _>(|| format!("{}", self.count));
-    ///     }
-    /// }
-    /// ```
-    pub fn provide_value_with<T: 'static, F>(&mut self, cb: F) -> &mut Self
-    where
-        F: FnOnce() -> T,
-    {
-        if let Some(ValueResponse(response @ None)) = self.downcast_value_response::<T>() {
-            *response = Some(cb());
-        }
-        self
-    }
-
-    /// Returns `true` if the requested type is `&'a T`
-    pub fn is_ref<T: ?Sized + 'static>(&self) -> bool {
-        self.type_id == TypeId::of::<RefResponse<'static, T>>()
-    }
-
-    /// Returns `true` if the requested type is `T`
-    pub fn is_value<T: 'static>(&self) -> bool {
-        self.type_id == TypeId::of::<ValueResponse<T>>()
-    }
-
-    /// Calls the provided closure with a request for the the type `&'a T`,
-    /// returning `Some(&T)` if the request was fulfilled, and `None` otherwise.
-    ///
-    /// The `ObjectProviderExt` trait provides helper methods specifically for
-    /// types implementing `ObjectProvider`.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// # use object_provider::Request;
-    /// let response: Option<&str> = Request::request_ref(|request| {
-    ///     // ...
-    ///     request.provide_ref::<str>("hello, world");
-    /// });
-    /// assert_eq!(response, Some("hello, world"));
-    /// ```
-    pub fn request_ref<T: ?Sized + 'static, F>(cb: F) -> Option<&'a T>
-    where
-        F: FnOnce(&mut Request<'a>),
-    {
-        let mut request = Request::new_ref();
-        cb(&mut request);
-        request.response.0
-    }
-
-    /// Calls the provided closure with a request for the the type `T`,
-    /// returning `Some(T)` if the request was fulfilled, and `None` otherwise.
-    ///
-    /// The `ObjectProviderExt` trait provides helper methods specifically for
-    /// types implementing `ObjectProvider`.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// # use object_provider::Request;
-    /// let response: Option<i32> = Request::request_value(|request| {
-    ///     // ...
-    ///     request.provide_value::<i32>(5);
-    /// });
-    /// assert_eq!(response, Some(5));
-    /// ```
-    pub fn request_value<T: 'static, F>(cb: F) -> Option<T>
-    where
-        F: FnOnce(&mut Request<'a>),
-    {
-        let mut request = Request::new_value();
-        cb(&mut request);
-        request.response.0
-    }
-}
-
-impl<'a, T: ?Sized + 'static> Request<'a, RefResponse<'a, T>> {
-    /// Create a new reference request object.
-    ///
-    /// The returned value will unsize to `Request<'a>`, and can be passed to
-    /// functions accepting it as an argument to request `&'a T` references.
-    fn new_ref() -> Self {
-        // safety: Initializes `type_id` to `RefResponse<'static, T>`, which
-        // corresponds to the response type `RefResponse<'a, T>`.
-        Request {
-            marker: PhantomData,
-            type_id: TypeId::of::<RefResponse<'static, T>>(),
-            response: RefResponse(None),
+        if self.is::<I>() {
+            unsafe {
+                // SAFETY: Just checked whether we're pointing to a
+                // `TaggedImpl<'a, I>`, which was cast to from an `I::Type`.
+                let raw: *mut dyn Tagged<'a> = Box::into_raw(self);
+                Ok(Box::from_raw(raw as *mut I::Type))
+            }
+        } else {
+            Err(self)
         }
     }
 }
-
-impl<T: 'static> Request<'_, ValueResponse<T>> {
-    /// Create a new value request object.
-    ///
-    /// The returned value will unsize to `Request<'a>`, and can be passed to
-    /// functions accepting it as an argument to request `T` values.
-    fn new_value() -> Self {
-        // safety: Initializes `type_id` to `ValueResponse<T>`, which
-        // corresponds to the response type `ValueResponse<T>`.
-        Request {
-            marker: PhantomData,
-            type_id: TypeId::of::<ValueResponse<T>>(),
-            response: ValueResponse(None),
-        }
-    }
-}
-
-/// Trait to provide other objects based on a requested type at runtime.
-///
-/// See also the [`ObjectProviderExt`] trait which provides the `request_ref` and
-/// `request_value` methods.
-pub trait ObjectProvider {
-    /// Provide an object in response to `request`.
-    fn provide<'a>(&'a self, request: &mut Request<'a>);
-}
-
-/// Methods supported by all [`ObjectProvider`] implementors.
-pub trait ObjectProviderExt {
-    /// Request a reference of type `&T` from an object provider.
-    fn request_ref<T: ?Sized + 'static>(&self) -> Option<&T>;
-
-    /// Request an owned value of type `T` from an object provider.
-    fn request_value<T: 'static>(&self) -> Option<T>;
-}
-
-impl<O: ?Sized + ObjectProvider> ObjectProviderExt for O {
-    fn request_ref<T: ?Sized + 'static>(&self) -> Option<&T> {
-        Request::request_ref(|request| self.provide(request))
-    }
-
-    fn request_value<T: 'static>(&self) -> Option<T> {
-        Request::request_value(|request| self.provide(request))
-    }
-}
-
 ```
 
 ### Define a generic accessor on the `Error` trait
@@ -751,5 +703,5 @@ let mut locations = e
 [`SpanTrace`]: https://docs.rs/tracing-error/0.1.2/tracing_error/struct.SpanTrace.html
 [`Request`]: https://github.com/yaahc/nostd-error-poc/blob/master/fakecore/src/any.rs
 [alternative proposal]: #use-an-alternative-proposal-that-relies-on-the-any-trait-for-downcasting
-[object-provider crate]: https://github.com/mystor/object-provider
+[dyno crate]: https://github.com/mystor/dyno
 [proof of concept]: https://github.com/yaahc/nostd-error-poc
