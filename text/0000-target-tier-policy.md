@@ -613,7 +613,8 @@ planned and scheduled action.)
 
 Raising the baseline expectations of a tier 1 target (such as the minimum CPU
 features or OS version required) requires the approval of the compiler and
-release teams, but does not necessarily require a full RFC.
+release teams, and should be widely communicated as well, but does not
+necessarily require a full RFC.
 
 ### Tier 1 with host tools
 
