@@ -55,18 +55,14 @@ This would be a breaking change, which is why RFC 3098 is currently aiming to be
 
 The notion of reserving "syntactic space" as an aid to backwards-compatibility is an idea that has precedence from other languages. [C reserves large swathes of the identifier space](https://www.gnu.org/software/libc/manual/html_node/Reserved-Names.html) for its own use, most notably identifiers that begin with `_` or `__`. Likewise, Python reserves all identifiers of the form `__foo__` for special use by the language.
 
-In contrast to Python or C, reserving syntax via `#` rather than `_` is much less of an imposition on ordinary users, because `#` is not a valid character in Rust identifiers. The only contexts in which this change would be observable is within macros: `foo!(bar#qux)` would now fail to lex (a.k.a. tokenize). As such, the above code would produce the following compilation error (wording TBD) when upgrading to the 2021 edition:
+In contrast to Python or C, reserving syntax via `#` rather than `_` is much less of an imposition on ordinary users, because `#` is not a valid character in Rust identifiers. The only contexts in which this change would be observable is within macros: `foo!(bar#qux)` would now pass one token to `foo!` rather than three. As such, the above code would produce the following on the 2021 edition:
 ```
-error: unknown prefix on identifier: a#
- --> tokens.rs:7:7
-  |
-7 | demo!(a#foo);
-  |       ^^ help: try using whitespace here: `a # foo`
-  |
-  = note: prefixed identifiers are reserved for future use
+one token
+one token
+one token
 ```
 
-Note that this syntactic reservation is whitespace-sensitive: any whitespace to either side of the intervening `#` will allow this code to compile. This provides a simple migration path for anyone who would be impacted by this change; they would need only change their macro invocations from `foo!(bar#qux)` to any of `foo!(bar # qux)`, `foo!(bar# qux)`, or `foo!(bar #qux)`. It is possible to automate this mechanical migration via rustfix.
+Note that this syntactic reservation is whitespace-sensitive: any whitespace to either side of the intervening `#` will cause three tokens to be produced rather than one. This provides a simple migration path for anyone who would be impacted by this change; they would need only change their macro invocations from `foo!(bar#qux)` to any of `foo!(bar # qux)`, `foo!(bar# qux)`, or `foo!(bar #qux)`. It is possible to automate this mechanical migration via rustfix.
 
 Rather than try to guess what prefixes it might be useful to reserve, this RFC reserves *all* [identifiers](https://doc.rust-lang.org/reference/identifiers.html) directly preceding a `#`. This has the following benefits:
 
@@ -95,28 +91,14 @@ two tokens
 four tokens
 ```
 
-Following the 2021 edition, these would become compiler errors. Once again, whitespace could be (automatically) inserted to mitigate any breakage.
+Following the 2021 edition, these would each be lexed as one token. Once again, whitespace could be (automatically) inserted to mitigate any breakage.
 
 The motivation here, aside from the symmetry with prefixed identifiers and [literal suffixes](https://doc.rust-lang.org/reference/tokens.html#suffixes), would be to leave open the design space for new literal prefixes along the lines of the existing `b"` and `r"` prefixes. Some hypothetical examples (not necessarily planned features or planned syntax): format string literals `f"`, `String` literals `s"`, `CString` literals `c"`,  `OsString` literals `o"`, UTF-16 literals `w"`, user-overloadable string literals `x"`, etc.
 
+There is one subtle note to this reservation: because raw string literals and string literals tokenize differently, any prefix ending in `r` will tokenize as a raw string literal would tokenize, and any prefix not ending in `r` will tokenize as a non-raw string literal would tokenize. This is considered acceptable in that it is assumed that new prefixes on these literals will be "compositional" in nature, in the same sense that `b` and `r` on string literals compose today, and thus it will be natural and intentional to compose any such prefix with `r` in order to achieve raw string semantics when desired. However, any hypothetical *non*-compositional prefix would need to be chosen carefully in order to achieve its desired tokenization
+
 # Guide-level explanation
-When designing DSLs via macros that take token trees as inputs, be aware that certain syntactic productions which have no meaning in Rust are nonetheless forbidden by the grammar, as they represent "reserved space" for future language development. In particular, anything of the form `<identifier>#<identifier>`, `<identifier>"<string contents>"`, `<identifier>'<char contents>'`, and `<identifier>#<numeric literal>` is reserved for exclusive use by the language; these are called *reserved prefixes*. 
-
-Unless a prefix has been assigned a specific meaning by the language (e.g. `r#async`, `b"foo"`), Rust will fail to tokenize when encountering any code that attempts to make use of such prefixes. Note that these prefixes rely on the absence of whitespace, so a macro invocation can use `<identifier> # <identifer>` (note the spaces) as a way to consume individual tokens adjacent to a `#`.
-
-Putting it all together, this means that the following are valid macro invocations:
-
-* `foo!(r#async)`, 
-* `foo!(b'x')`
-* `foo!(bar # qux)`,
-* `foo!(bar #123)`
-* `foo!(bar# "qux")`
-
-...but the following are invalid macro invocations:
-
-* `foo!(bar#async)`
-* `foo!(bar#123)`
-* `foo!(bar"qux")`
+When designing DSLs via macros that take token trees as inputs, be aware that certain syntactic productions which have no defined meaning are nonetheless understood by the Rust grammar, as they represent "reserved space" for potential future language development. In particular, anything of the form `<identifier>#<identifier>`, `<identifier>"<string contents>"`, `<identifier>'<char contents>'`, and `<identifier>#<numeric literal>` is reserved for future use by the language; these are called *reserved prefixes*. Macros that accept token trees may consume such prefixes, although note that all of the aforementioned forms will produce only one token tree rather than the two or three that you might otherwise expect. Note that these prefixes rely on the absence of whitespace, so a macro invocation can use e.g. `<identifier> # <identifer>` (note the spaces) as a way to consume individual tokens adjacent to a `#`.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -125,36 +107,41 @@ New tokenizing rules are introduced:
 
 > RESERVED_IDENTIFIER : IDENTIFIER_OR_KEYWORD<sub>Except `r`</sub> `#` IDENTIFIER_OR_KEYWORD
 >
-> RESERVED_CHAR_LITERAL : IDENTIFIER_OR_KEYWORD BYTE_LITERAL | IDENTIFIER_OR_KEYWORD<sub>Except `b`</sub> CHAR_LITERAL
-> 
-> RESERVED_STRING_LITERAL : IDENTIFIER_OR_KEYWORD RAW_BYTE_STRING_LITERAL | IDENTIFIER_OR_KEYWORD BYTE_STRING_LITERAL | IDENTIFIER_OR_KEYWORD<sub>Except `b`</sub> RAW_STRING_LITERAL | IDENTIFIER_OR_KEYWORD<sub>Except `b`, `r`, `br`</sub> STRING_LITERAL
+> RESERVED_BYTE_LITERAL : IDENTIFIER_OR_KEYWORD BYTE_LITERAL
+>
+> RESERVED_CHAR_LITERAL : IDENTIFIER_OR_KEYWORD<sub>Except `b`</sub> CHAR_LITERAL
+>
+> RESERVED_RAW_BYTE_STRING_LITERAL : IDENTIFIER_OR_KEYWORD RAW_BYTE_STRING_LITERAL
+>
+> RESERVED_BYTE_STRING_LITERAL : IDENTIFIER_OR_KEYWORD BYTE_STRING_LITERAL
+>
+> RESERVED_RAW_STRING_LITERAL : IDENTIFIER_OR_KEYWORD<sub>Except`b`</sub> RAW_STRING_LITERAL
+>
+> RESERVED_STRING_LITERAL : IDENTIFIER_OR_KEYWORD<sub>Except `b`, `r`, `br`</sub> STRING_LITERAL
 >
 > RESERVED_NUMERIC_LITERAL : IDENTIFIER_OR_KEYWORD `#` (INTEGER_LITERAL | FLOAT_LITERAL)
 
-When compiling under the Rust 2021 edition (as determined by the edition of the current crate), any instance of the above produces a tokenization error.
+When compiling under the Rust 2021 edition (as determined by the edition of the current crate), each of the above rules will produce a single token; for earlier editions these rules will be ignored.
 
-The use of "identifier" in this document proactively refers to whatever definition of "identifier" is in use by Rust as of the 2021 edition. At the time of this writing, the `non_ascii_idents` feature is not yet stabilized, but is on track to be. If `non_ascii_idents` is stabilized before the 2021 edition, then the syntactic reservations that take place in the 2021 edition will include things like `über#foo`. However, if `non_ascii_idents` is *not* stabilized before the 2021 edition, then any subsequent stabilization of `non_ascii_idents` would need to take care to *not* expand the reservations in this RFC, and instead defer that task to the next edition.
-
-An edition migration may be implemented that looks for `ident#ident`, `ident"string"`, etc. within macro calls and inserts whitespace to force proper tokenization.
-
-What follows are some examples of suggested error message templates:
+Encountering any of the above tokens will result in an error in the parser. What follows are some examples of suggested error message templates.
 ```
 error: unknown prefix on identifier: bar#
  --> file.rs:x:y
   |
-1 | foo!(bar#qux);
-  |      ^^^^ help: try using whitespace here: `bar # qux`
+1 | bar#qux;
   |
-  = note: prefixed identifiers are reserved for future use
   
 error: unknown prefix on string literal: bar
  --> file.rs:x:y
   |
-1 | foo!(bar"qux");
-  |      ^^^ help: try using whitespace here: `bar "qux"`
+1 | bar"qux";
   |
-  = note: prefixed string literals are reserved for future use
 ```
+
+The use of "identifier" in this document proactively refers to whatever definition of "identifier" is in use by Rust as of the 2021 edition. At the time of this writing, the `non_ascii_idents` feature is not yet stabilized, but is on track to be. If `non_ascii_idents` is stabilized before the 2021 edition, then the syntactic reservations that take place in the 2021 edition will include things like `über#foo`. However, if `non_ascii_idents` is *not* stabilized before the 2021 edition, then any subsequent stabilization of `non_ascii_idents` would need to take care to *not* expand the reservations in this RFC, and instead defer that task to the next edition.
+
+An edition migration may be implemented that looks for `ident#ident`, `ident"string"`, etc. within macro calls and inserts whitespace, in order to allow the invocation tokenize as it previously had.
+
 
 # Drawbacks
 [drawbacks]: #drawbacks
