@@ -93,13 +93,13 @@ Rust project. Neither this policy nor any decisions made regarding targets
 shall create any binding agreement or estoppel by any party.
 
 Before filing an issue or pull request (PR) to introduce or promote a target,
-the target should already meet the corresponding tier requirements. (This does
-not preclude a target's maintainers using issues to track requirements that
-have not yet been met, as appropriate; however, before officially proposing the
-introduction or promotion of a target, it should meet all of the necessary
-requirements.) A target proposal is encouraged to quote the corresponding
-requirements verbatim as part of explaining how the target meets those
-requirements.
+the target should already meet the corresponding tier requirements. This does
+not preclude an existing target's maintainers using issues (on the Rust
+repository or otherwise) to track requirements that have not yet been met, as
+appropriate; however, before officially proposing the introduction or promotion
+of a target, it should meet all of the necessary requirements. A target
+proposal is encouraged to quote the corresponding requirements verbatim as part
+of explaining how the target meets those requirements.
 
 All supported targets and their corresponding tiers ("tier 3", "tier 2", "tier
 2 with host tools", "tier 1", or "tier 1 with host tools") will be documented
