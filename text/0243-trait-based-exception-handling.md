@@ -55,7 +55,9 @@ performs an early exit and propagates the `Err` value further out. (So given
 used for e.g. conveniently chaining method calls which may each "throw an
 exception":
 
-    foo()?.bar()?.baz()
+```rust
+foo()?.bar()?.baz()
+```
 
 Naturally, in this case the types of the "exceptions thrown by" `foo()` and
 `bar()` must unify. Like the current `try!()` macro, the `?` operator will also
@@ -95,14 +97,16 @@ those cases. This is essentially what is achieved by the common Rust practice of
 declaring a custom error `enum` with `From` `impl`s for each of the upstream
 error types which may be propagated:
 
-    enum MyError {
-        IoError(io::Error),
-        JsonError(json::Error),
-        OtherError(...)
-    }
+```rust
+enum MyError {
+    IoError(io::Error),
+    JsonError(json::Error),
+    OtherError(...)
+}
 
-    impl From<io::Error> for MyError { ... }
-    impl From<json::Error> for MyError { ... }
+impl From<io::Error> for MyError { ... }
+impl From<json::Error> for MyError { ... }
+```
 
 Here `io::Error` and `json::Error` can be thought of as subtypes of `MyError`,
 with a clear and direct embedding into the supertype.
@@ -158,15 +162,17 @@ that block). This works for any block, not only loops.
 
 A completely artificial example:
 
-    'a: {
-        let my_thing = if have_thing() {
-            get_thing()
-        } else {
-            break 'a None
-        };
-        println!("found thing: {}", my_thing);
-        Some(my_thing)
-    }
+```rust
+'a: {
+    let my_thing = if have_thing() {
+        get_thing()
+    } else {
+        break 'a None
+    };
+    println!("found thing: {}", my_thing);
+    Some(my_thing)
+}
+```
 
 Here if we don't have a thing, we escape from the block early with `None`.
 
@@ -198,10 +204,12 @@ are merely one way.
 
    Shallow:
 
-        match EXPR {
-            Ok(a)  => a,
-            Err(e) => break 'here Err(e.into())
-        }
+    ```rust
+    match EXPR {
+        Ok(a)  => a,
+        Err(e) => break 'here Err(e.into())
+    }
+    ```
 
    Where `'here` refers to the innermost enclosing `catch` block, or to `'fn` if
    there is none.
@@ -210,24 +218,30 @@ are merely one way.
 
  * Construct:
 
-        catch {
-            foo()?.bar()
-        }
+    ```rust
+    catch {
+        foo()?.bar()
+    }
+    ```
 
    Shallow:
-
-        'here: {
-            Ok(foo()?.bar())
-        }
+   
+    ```rust
+    'here: {
+        Ok(foo()?.bar())
+    }
+    ```
 
    Deep:
 
-        'here: {
-            Ok(match foo() {
-                Ok(a) => a,
-                Err(e) => break 'here Err(e.into())
-            }.bar())
-        }
+    ```rust
+    'here: {
+        Ok(match foo() {
+            Ok(a) => a,
+            Err(e) => break 'here Err(e.into())
+        }.bar())
+    }
+    ```
 
 The fully expanded translations get quite gnarly, but that is why it's good that
 you don't have to write them!
@@ -273,39 +287,45 @@ as follows:
 
  * Construct:
 
-        catch {
-            foo()?.bar()
-        } match {
-            A(a) => baz(a),
-            B(b) => quux(b)
-        }
+    ```rust
+    catch {
+        foo()?.bar()
+    } match {
+        A(a) => baz(a),
+        B(b) => quux(b)
+    }
+    ```
 
   Shallow:
 
-        match (catch {
-            foo()?.bar()
-        }) {
-            Ok(a) => a,
-            Err(e) => match e {
-                A(a) => baz(a),
-                B(b) => quux(b)
-            }
+    ```rust
+    match (catch {
+        foo()?.bar()
+    }) {
+        Ok(a) => a,
+        Err(e) => match e {
+            A(a) => baz(a),
+            B(b) => quux(b)
         }
+    }
+    ```
 
    Deep:
 
-        match ('here: {
-            Ok(match foo() {
-                Ok(a) => a,
-                Err(e) => break 'here Err(e.into())
-            }.bar())
-        }) {
+    ```rust
+    match ('here: {
+        Ok(match foo() {
             Ok(a) => a,
-            Err(e) => match e {
-                A(a) => baz(a),
-                B(b) => quux(b)
-            }
+            Err(e) => break 'here Err(e.into())
+        }.bar())
+    }) {
+        Ok(a) => a,
+        Err(e) => match e {
+            A(a) => baz(a),
+            B(b) => quux(b)
         }
+    }
+    ```
 
 However, it was removed for the following reasons:
 
@@ -476,7 +496,9 @@ It is possible to carry the exception handling analogy further and also add
 
 A `throws` clause on a function:
 
-    fn foo(arg: Foo) -> Bar throws Baz { ... }
+```rust
+fn foo(arg: Foo) -> Bar throws Baz { ... }
+```
 
 would mean that instead of writing `return Ok(foo)` and `return Err(bar)` in the
 body of the function, one would write `return foo` and `throw bar`, and these
@@ -500,14 +522,16 @@ and `Exception` such that `Self` is isomorphic to `Result<Normal, Exception>`.
 
 Here is one way:
 
-    #[lang(result_carrier)]
-    trait ResultCarrier {
-        type Normal;
-        type Exception;
-        fn embed_normal(from: Normal) -> Self;
-        fn embed_exception(from: Exception) -> Self;
-        fn translate<Other: ResultCarrier<Normal=Normal, Exception=Exception>>(from: Self) -> Other;
-    }
+```rust
+#[lang(result_carrier)]
+trait ResultCarrier {
+    type Normal;
+    type Exception;
+    fn embed_normal(from: Normal) -> Self;
+    fn embed_exception(from: Exception) -> Self;
+    fn translate<Other: ResultCarrier<Normal=Normal, Exception=Exception>>(from: Self) -> Other;
+}
+```
 
 For greater clarity on how these methods work, see the section on `impl`s below.
 (For a simpler formulation of the trait using `Result` directly, see further
@@ -538,49 +562,55 @@ translating back should be a no-op.
 
 ## `impl`s of the trait
 
-    impl<T, E> ResultCarrier for Result<T, E> {
-        type Normal = T;
-        type Exception = E;
-        fn embed_normal(a: T) -> Result<T, E> { Ok(a) }
-        fn embed_exception(e: E) -> Result<T, E> { Err(e) }
-        fn translate<Other: ResultCarrier<Normal=T, Exception=E>>(result: Result<T, E>) -> Other {
-            match result {
-                Ok(a)  => Other::embed_normal(a),
-                Err(e) => Other::embed_exception(e)
-            }
+```rust
+impl<T, E> ResultCarrier for Result<T, E> {
+    type Normal = T;
+    type Exception = E;
+    fn embed_normal(a: T) -> Result<T, E> { Ok(a) }
+    fn embed_exception(e: E) -> Result<T, E> { Err(e) }
+    fn translate<Other: ResultCarrier<Normal=T, Exception=E>>(result: Result<T, E>) -> Other {
+        match result {
+            Ok(a)  => Other::embed_normal(a),
+            Err(e) => Other::embed_exception(e)
         }
     }
+}
+```
 
 As we can see, `translate` can be implemented by deconstructing ourself and then
 re-embedding the contained value into the other result-carrying type.
 
-    impl<T> ResultCarrier for Option<T> {
-        type Normal = T;
-        type Exception = ();
-        fn embed_normal(a: T) -> Option<T> { Some(a) }
-        fn embed_exception(e: ()) -> Option<T> { None }
-        fn translate<Other: ResultCarrier<Normal=T, Exception=()>>(option: Option<T>) -> Other {
-            match option {
-                Some(a) => Other::embed_normal(a),
-                None    => Other::embed_exception(())
-            }
+```rust
+impl<T> ResultCarrier for Option<T> {
+    type Normal = T;
+    type Exception = ();
+    fn embed_normal(a: T) -> Option<T> { Some(a) }
+    fn embed_exception(e: ()) -> Option<T> { None }
+    fn translate<Other: ResultCarrier<Normal=T, Exception=()>>(option: Option<T>) -> Other {
+        match option {
+            Some(a) => Other::embed_normal(a),
+            None    => Other::embed_exception(())
         }
     }
+}
+```
 
 Potentially also:
 
-    impl ResultCarrier for bool {
-        type Normal = ();
-        type Exception = ();
-        fn embed_normal(a: ()) -> bool { true }
-        fn embed_exception(e: ()) -> bool { false }
-        fn translate<Other: ResultCarrier<Normal=(), Exception=()>>(b: bool) -> Other {
-            match b {
-                true  => Other::embed_normal(()),
-                false => Other::embed_exception(())
-            }
+```rust
+impl ResultCarrier for bool {
+    type Normal = ();
+    type Exception = ();
+    fn embed_normal(a: ()) -> bool { true }
+    fn embed_exception(e: ()) -> bool { false }
+    fn translate<Other: ResultCarrier<Normal=(), Exception=()>>(b: bool) -> Other {
+        match b {
+            true  => Other::embed_normal(()),
+            false => Other::embed_exception(())
         }
     }
+}
+```
 
 The laws should be sufficient to rule out any "icky" impls. For example, an impl
 for `Vec` where an exception is represented as the empty vector, and a normal
@@ -622,18 +652,22 @@ The `bool` impl may be surprising, or not useful, but it *is* well-behaved:
 
 All of these have the form:
 
-    trait ResultCarrier {
-        type Normal;
-        type Exception;
-        ...methods...
-    }
+```rust
+trait ResultCarrier {
+    type Normal;
+    type Exception;
+    ...methods...
+}
+```
 
 and differ only in the methods, which will be given.
 
 #### Explicit isomorphism with `Result`
 
-    fn from_result(Result<Normal, Exception>) -> Self;
-    fn to_result(Self) -> Result<Normal, Exception>;
+```rust
+fn from_result(Result<Normal, Exception>) -> Self;
+fn to_result(Self) -> Result<Normal, Exception>;
+```
 
 This is, of course, the simplest possible formulation.
 
@@ -653,20 +687,24 @@ reader.
 
 #### Avoid privileging `Result`, most naive version
 
-    fn embed_normal(Normal) -> Self;
-    fn embed_exception(Exception) -> Self;
-    fn is_normal(&Self) -> bool;
-    fn is_exception(&Self) -> bool;
-    fn assert_normal(Self) -> Normal;
-    fn assert_exception(Self) -> Exception;
+```rust
+fn embed_normal(Normal) -> Self;
+fn embed_exception(Exception) -> Self;
+fn is_normal(&Self) -> bool;
+fn is_exception(&Self) -> bool;
+fn assert_normal(Self) -> Normal;
+fn assert_exception(Self) -> Exception;
+```
 
 Of course this is horrible.
 
 #### Destructuring with HOFs (a.k.a. Church/Scott-encoding)
 
-    fn embed_normal(Normal) -> Self;
-    fn embed_exception(Exception) -> Self;
-    fn match_carrier<T>(Self, FnOnce(Normal) -> T, FnOnce(Exception) -> T) -> T;
+```rust
+fn embed_normal(Normal) -> Self;
+fn embed_exception(Exception) -> Self;
+fn match_carrier<T>(Self, FnOnce(Normal) -> T, FnOnce(Exception) -> T) -> T;
+```
 
 This is probably the right approach for Haskell, but not for Rust.
 
@@ -675,21 +713,23 @@ closures may not even close over the same variables!
 
 #### Destructuring with HOFs, round 2
 
-    trait BiOnceFn {
-        type ArgA;
-        type ArgB;
-        type Ret;
-        fn callA(Self, ArgA) -> Ret;
-        fn callB(Self, ArgB) -> Ret;
-    }
+```rust
+trait BiOnceFn {
+    type ArgA;
+    type ArgB;
+    type Ret;
+    fn callA(Self, ArgA) -> Ret;
+    fn callB(Self, ArgB) -> Ret;
+}
 
-    trait ResultCarrier {
-        type Normal;
-        type Exception;
-        fn normal(Normal) -> Self;
-        fn exception(Exception) -> Self;
-        fn match_carrier<T>(Self, BiOnceFn<ArgA=Normal, ArgB=Exception, Ret=T>) -> T;
-    }
+trait ResultCarrier {
+    type Normal;
+    type Exception;
+    fn normal(Normal) -> Self;
+    fn exception(Exception) -> Self;
+    fn match_carrier<T>(Self, BiOnceFn<ArgA=Normal, ArgB=Exception, Ret=T>) -> T;
+}
+```
 
 Here we solve the environment-sharing problem from above: instead of two objects
 with a single method each, we use a single object with two methods! I believe
