@@ -160,6 +160,8 @@ enclosing block specified by `'a`, which then evaluates to the value `EXPR` (of
 course, the type of `EXPR` must unify with the type of the last expression in
 that block). This works for any block, not only loops.
 
+\[Note: This was since added in [RFC 2046](https://github.com/rust-lang/rfcs/blob/master/text/2046-label-break-value.md)]
+
 A completely artificial example:
 
 ```rust
@@ -296,7 +298,7 @@ as follows:
     }
     ```
 
-  Shallow:
+   Shallow:
 
     ```rust
     match (catch {
