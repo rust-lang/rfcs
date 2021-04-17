@@ -1,7 +1,7 @@
 - Feature Name: try_trait_v2
 - Start Date: 2020-12-12
 - RFC PR: [rust-lang/rfcs#3058](https://github.com/rust-lang/rfcs/pull/3058)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- Rust Issue: [rust-lang/rust#84277](https://github.com/rust-lang/rust/issues/84277)
 
 # Summary
 [summary]: #summary
@@ -243,7 +243,7 @@ impl<T, E: From<FancyError>> FromResidual<ResultCodeResidual> for Result<T, E> {
 
 ## Using these traits in generic code
 
-`Iterator::try_fold` has been stable to call (but not to implement) for a while now.  To illustrate the flow through the traits in this RFC, lets implement our own version.
+`Iterator::try_fold` has been stable to call (but not to implement) for a while now.  To illustrate the flow through the traits in this RFC, let's implement our own version.
 
 As a reminder, an infallible version of a fold looks something like this:
 ```rust
