@@ -171,7 +171,7 @@ approved by the appropriate team for that shared code before acceptance.
     host (even when supporting cross-compilation to the target) to depend
     on any new dependency less permissive than the Rust licensing policy. This
     applies whether the dependency is a Rust crate that would require adding
-    new license exceptions (as specified by `src/tools/tidy/src/deps.rs` in the
+    new license exceptions (as specified by the `tidy` tool in the
     rust-lang/rust repository), or whether the dependency is a native library
     or binary. In other words, the introduction of the target must not cause a
     user installing or running a version of Rust or the Rust tools to be
