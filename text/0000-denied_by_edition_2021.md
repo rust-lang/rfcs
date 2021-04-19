@@ -1,3 +1,4 @@
+
 - Feature Name: `denied_by_edition_2021`
 - Start Date: 2021-02-23
 - RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
@@ -12,9 +13,10 @@ This RFC proposes the following:
 
 1. A mechanism by which selected deprecated items in the Rust standard library can have their lint level upgraded from "warn" to "deny"  based on the Rust edition that the user has selected.
 2. A policy of applying this mechanism to items that have previously been deprecated **for at least one full edition cycle**.
-3. A policy of additionally marking such items as `#[doc(hidden)]`, thereby removing them from the generated documentation.
-4. A policy of employing Rustdoc aliases to explicitly redirect users of deprecated items to their replacements in Rustdoc search results.
-5. An exhaustive list of items that have been deprecated since before the Rust 2018 edition that would be subject to these policies for the Rust 2021 edition.
+3. For marked items, a policy of additionally marking such items as `#[doc(hidden)]`, thereby removing them from the generated documentation.
+4. For marked items that have been replaced by other items in the standard library, a policy of employing Rustdoc aliases to explicitly redirect users of deprecated items to their replacements in Rustdoc search results.
+5. For any of the the prior items that are compatible with the `suggestion` field on `#[rustc_deprecated]`, a policy of employing it in order to aid automatic migration from deprecated items to their replacements.
+6. An exhaustive list of items that have been deprecated since before the Rust 2018 edition that would be subject to these policies for the Rust 2021 edition.
 
 # Motivation
 [motivation]: #motivation
@@ -33,7 +35,7 @@ Finally, one of the largest benefits of "removing" an item in this way is its ef
 
 # Guide-level explanation
 
-At the beginning of the planning phase for each new edition, a list will be compiled of all items in the standard library that have been deprecated for the entire lifetime of the current edition. These items will be marked for denial in the upcoming edition, using the mechanisms explained below. When the new edition is set to be released (or shortly after, there is no real urgency), these items will additionally be marked as `#[doc(hidden)]`. For all items that have been superseded by other items in the standard library, the replacement items will be annotated with Rustdoc aliases that refer to the name of the deprecated item.
+At the beginning of the planning phase for each new edition, a list will be compiled of all items in the standard library that have been deprecated for the entire lifetime of the current edition. These items will be marked for denial in the upcoming edition, using the mechanisms explained below. When the new edition is set to be released (or shortly after, there is no real urgency), these items will additionally be marked as `#[doc(hidden)]`. For all items that have been superseded by other items in the standard library, the replacement items will be annotated with Rustdoc aliases that refer to the name of the deprecated item. For any items that have been merely renamed (and not moved), the `suggestion` field on the `#[rustc_deprecated]` attribute will be used to enable automatic migration from one to the other via `rustfix`.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -245,6 +247,8 @@ Instead of only applying this RFC to items that have been denied since Rust 2018
 
 Instead of defining the new lint at the "deny" level, we could instead define it at the "forbid" level. The difference between the two is that the former can be silenced and overridden by an `#[allow]` attribute, whereas the latter cannot. Since other edition-related lints seem content to use "deny" rather than "forbid", this RFC follows suit.
 
+Instead of using `#[doc(hidden)]`, rustdoc could group these items into a pre-collapsed list on their relevant doc page. However, this would not address the problem of deprecated items cluttering up search results.
+
 # Prior art
 [prior-art]: #prior-art
 
@@ -263,3 +267,4 @@ There is perhaps a better name than `denied_by_edition`; at face value it's a bi
 [future-possibilities]: #future-possibilities
 
 If this RFC is accepted, it's reasonable to expect that analogous RFCs will be proposed for denying items in future Rust editions.
+
