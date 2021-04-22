@@ -1,8 +1,8 @@
 - Feature Name: bitfield
 - Start Date: 2021-04-22
 
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- RFC PR: [rust-lang/rfcs#3113](https://github.com/rust-lang/rfcs/pull/3113)
+- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000) 
 
 # Summary
 [summary]: #summary
@@ -11,7 +11,6 @@ This RFC adds support for bit-fields in `repr(C)` structs by
 
 - Introducing a new attribute `bits(N)` that can be applied to integer
   fields.
-
 - Allowing such annotated fields to be unnamed.
 
 # Motivation
@@ -28,7 +27,7 @@ Clang for the `X-unknown-linux-gnu` target:
     ```c
     struct X {
         char a;
-        int :3;
+        int  : 3;
         char c;
     };
     ```
@@ -43,23 +42,23 @@ Clang for the `X-unknown-linux-gnu` target:
     ```c
     struct X {
         char a;
-        char B:3;
-        char c:2;
+        char B: 3;
+        char c: 2;
         char d;
     };
     ```
     
-    | Arch | Bits of the memory layout of `X` |
-    | - | - |
-    | x86_64 | `aaaaaaaaa __cccBBB dddddddd` |
-    | mips64 | `aaaaaaaaa BBBccc__ dddddddd` |
+    | Arch   | Bits of the memory layout of `X` |
+    | -      | -                                |
+    | x86_64 | `aaaaaaaaa __cccBBB dddddddd`    |
+    | mips64 | `aaaaaaaaa BBBccc__ dddddddd`    |
 
 -   Dependence of the correct Rust type on the layout of previous fields:
 
     ```c
     struct X {
         char a[N];
-        int b:9;
+        int b: 9;
         char c;
     };
     ```
@@ -80,20 +79,20 @@ Clang for the `X-unknown-linux-gnu` target:
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-This feature allows you to write C-compatible structs by applying the `bitfield`
+This feature allows you to write C-compatible structs by applying the `bits`
 attribute to fields:
 
 ```rust
 #[repr(C)]
 struct X {
-    #[bitfield(1)] a: u8,
-    #[bitfield(8)] b: u8,
-    #[bitfield(0)] _: u8,
-    #[bitfield(2)] d: u8,
+    #[bits(1)] a: u8,
+    #[bits(8)] b: u8,
+    #[bits(0)] _: u8,
+    #[bits(2)] d: u8,
 }
 ```
 
-corresponds to the C struct
+corresponds to the following C struct
 
 ```c
 struct X {
@@ -110,7 +109,12 @@ bit-field, you cannot access that field. On the other hand, you also do not have
 to define a value for that field when constructing the struct:
 
 ```rust
-let x = X { a: 1, b: 1, d: 1 };
+let x = X { 
+    a: 1, 
+    b: 1,
+    d: 1 
+};
+
 let X { a, b, d } = x;
 ```
 
@@ -118,11 +122,11 @@ Just like in C, you cannot take the address of a bit-field:
 
 ```rust
 fn f(x: &X) -> &u8 {
-    &x.a // !!! does not compile
+    &x.a // Invalid as we cannot take the address of a bit field.
 }
 ```
 
-The value of the `N` in `bitfield(N)` must be a non-negative integer literal.
+The value of the `N` in `bits(N)` must be a non-negative integer literal.
 This literal must not be larger than the bit-size of the type of the field.
 
 In debug builds, when you write to a bit-field, Rust performs overflow checks.
@@ -131,7 +135,7 @@ fails and the operation panics:
 
 ```rust
 fn f(x: &mut X) {
-    x.a = 6; // !!! overflow check fails
+    x.a = 6; // Overflow check fails.
 }
 ```
 
@@ -186,7 +190,7 @@ appear in the construction of a struct, etc.
 In the output of rustdoc, UnnamedStructElements are not distinguished from
 StructFields except that their name is `_`.
 
-The attribute `bitfield(N)` is added.  This attribute can only be applied to
+The attribute `bits(N)` is added.  This attribute can only be applied to
 StructBodyElements of `repr(C)` structs. Such a StructBodyElement is
 called a *bit-field*. `N` must be an integer literal. `N` is called the *width*
 of the bit-field. A bit-field must have one of the types
@@ -207,13 +211,13 @@ Note that, despite being called a bit-*field*, a bit-field is not necessarily a
 field. To disambiguate, when talking about bit-field fields, we explicitly call
 them "bit-field fields".
 
-Each field annotated with `bitfield(N)` occupies `N` bits of storage.
+Each field annotated with `bits(N)` occupies `N` bits of storage.
 
 When reading and writing a bit-field field with type `bool`, `bool` is treated
 like `uM` where `M = 8 * size_of::<bool>()` with `true` corresponding to `1` and
 `false` corresponding to `0`.
 
-When a field annotated with `bitfield(N)` is read, the value has the type
+When a field annotated with `bits(N)` is read, the value has the type
 of the field and the behavior is as follows:
 
 - The `N` bits of storage occupied by the bit-field are read.
@@ -226,7 +230,7 @@ of the field and the behavior is as follows:
   bits are not a valid object representation of the type, the behavior is
   undefined. This can only happen for bit-fields of type `bool`.
 
-When a field annotated with `bitfield(N)` is written, the value to be written
+When a field annotated with `bits(N)` is written, the value to be written
 must have the type of the field and the behavior is as follows:
 
 - If overflow checks are enabled and the value is outside the range of values
@@ -255,7 +259,7 @@ Appendix A.) The corresponding C struct is constructed as follows:
 
 - Translate the struct to the corresponding C struct as if the `bitfield`
   annotations were not present and as if `_` were a valid identifier for fields.
-- For each StructBodyElement that has a `bitfield(N)` annotation in the Rust
+- For each StructBodyElement that has a `bits(N)` annotation in the Rust
   struct, append `: N` to the declaration in the C struct.
 - For each field in the C struct whose name is `_`, delete the field name.
 
@@ -310,8 +314,7 @@ access adjacent bit-field fields in otherwise sound code.)
         ...
     }
 
-    impl<T, const N: usize> AddAssign<T> for BitField<T, N> {
-    }
+    impl<T, const N: usize> AddAssign<T> for BitField<T, N>;
     ```
 
     The layout of `BitField<T, N>` would be the layout of `T` when used outside
@@ -324,6 +327,7 @@ access adjacent bit-field fields in otherwise sound code.)
         x.a.set(1);
         x.a += 1;
         x.a = x.a.wrapping_add(12);
+
         println!("{}", x.a.get());
     }
     ```
