@@ -88,7 +88,7 @@ beforehand, to ascertain that the RFC may be desirable; having a consistent
 impact on the project requires concerted effort toward consensus-building.
 
 The most common preparations for writing and submitting an RFC include talking
-the idea over on our [official Discord server], discussing the topic on our
+the idea over on our [official Zulip server], discussing the topic on our
 [developer discussion forum], and occasionally posting "pre-RFCs" on the
 developer forum. You may file issues on this repo for discussion, but these are
 not actively looked at by the teams.
@@ -270,7 +270,7 @@ at your option. Some parts of the repository are already licensed according to t
 Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in the work by you, as defined in the Apache-2.0 license, shall be dual licensed as above, without any additional terms or conditions.
 
 
-[official Discord server]: https://discord.gg/rust-lang
+[official Zulip server]: https://rust-lang.zulipchat.com/
 [developer discussion forum]: https://internals.rust-lang.org/
 [RFC repository]: https://github.com/rust-lang/rfcs
 [sub-team]: https://www.rust-lang.org/team.html
