@@ -1,7 +1,6 @@
 - Feature Name: `target_tier_policy`
 - Start Date: 2019-09-20
 - RFC PR: [rust-lang/rfcs#2803](https://github.com/rust-lang/rfcs/pull/2803)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 # Summary
 [summary]: #summary
