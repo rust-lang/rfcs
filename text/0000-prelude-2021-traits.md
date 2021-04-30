@@ -21,16 +21,16 @@ The expected outcome is to make the newly added traits more accessible to users,
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-The compiler currently brings all items from `std::prelude::v1` into scope for each module (for code using `std`). Crates that declare usage of the 2021 edition will instead get items from `std::prelude::edition2021` imported into scope. With the implementation of this RFC, we will add `edition2015` and `edition2018` modules in `std::prelude`, and a crate configuring a particular edition will get the prelude appropriate for its edition. The `v1` module will stick around for compatibility reasons, although it might be deprecated in the future.
+The compiler currently brings all items from `std::prelude::v1` into scope for each module (for code using `std`). Crates that declare usage of the 2021 edition will instead get items from `std::prelude::rust_2021` imported into scope. With the implementation of this RFC, we will add `rust_2015` and `rust_2018` modules in `std::prelude`, and a crate configuring a particular edition will get the prelude appropriate for its edition. The `v1` module will stick around for compatibility reasons, although it might be deprecated in the future.
 
 The `core` prelude will parallel the `std` prelude, containing the same structure and the same items as far as they are available in `core`.
 
-This RFC proposes to add the following traits to `std::prelude::edition2021`, but not `std::prelude::v1`:
+This RFC proposes to add the following traits to `std::prelude::rust_2021`, but not `std::prelude::v1`:
 
 - `TryFrom`/`TryInto`
 - `FromIterator`
 
-Except for newly added traits, the `v1` and `edition2021` preludes should be kept in sync. Items that are added to the `edition2021` prelude should also be added to the `v1` prelude if there is negligible risk for compatibility. On the other hand, newer edition preludes may decide not to include items from an older edition's prelude.
+Except for newly added traits, the `v1` and `rust_2021` preludes should be kept in sync. Items that are added to the `rust_2021` prelude should also be added to the `v1` prelude if there is negligible risk for compatibility. On the other hand, newer edition preludes may decide not to include items from an older edition's prelude.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -46,10 +46,13 @@ The migration lint will be implemented as follows:
 * Find method calls matching the name of one of the newly added traits' methods.
   This can be done either by hardcoding these method names or by setting up some
   kind of registry through the use of an attribute on the relevant traits.
-* After method resolution, if the method matches one of the newly added methods'
-  names but the originating trait is not from `core` or `std` (and/or does not
-  match the originating trait), suggest a rewrite to disambiguating syntax
-  (such as `foo.try_into()` to `TryInto::try_into(foo)`).
+* After method resolution, if:
+  * The method matches one of the newly added methods' names, and
+  * The originating trait is not from `core` or `std` (and/or does not
+  match the originating trait), and
+  * The originating trait is also implemented for the receiver's type,
+    * Suggest a rewrite to disambiguating syntax (such as `foo.try_into()` to `TryInto::try_into(foo)`). If necessary, additional levels of (de)referencing
+    might be needed to match the implementing type of the target trait.
 
 Currently, diagnostics for trait methods that are not in scope suggest importing the originating trait. For traits that have become part of the prelude in a newer edition, the diagnostics should be updated such that they suggest upgrading to the latest edition as an alternative to importing the relevant trait.
 
