@@ -37,7 +37,11 @@ Except for newly added traits, the `v1` and `edition2021` preludes should be kep
 
 The new prelude will be named after the edition that introduces it to make the link to the edition more obvious. Each edition will have a separate prelude, whether the contents are actually different or not.
 
-Importantly, we'll need to make the upgrade path to an edition containing new traits in the prelude as smooth as possible. The analysis can be done as follows:
+## Migration Lint
+
+As for all edition changes, we will implement a migration lint to detect cases where code would break in the new edition. It includes a MachineApplicable suggestion for an alternative that will work in both the current and next edition.
+
+The migration lint will be implemented as follows:
 
 * Find method calls matching the name of one of the newly added traits' methods.
   This can be done either by hardcoding these method names or by setting up some
