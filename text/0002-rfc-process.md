@@ -83,7 +83,7 @@ Whomever merges the RFC should do the following:
 * Create a corresponding issue on [Rust repo](https://github.com/rust-lang/rust)
 * Fill in the remaining metadata in the RFC header, including links for
   the original pull request(s) and the newly created Rust issue.
-* Add an entry in the [Active RFC List] of the root `README.md`.
+* Add an entry in the [Active RFC List](https://rfcbot.rs/) of the root `README.md`.
 * Commit everything.
 
 Once an RFC becomes active then authors may implement it and submit the
@@ -94,10 +94,8 @@ have agreed to the feature and are amenable to merging it.
 
 Modifications to active RFC's can be done in followup PR's. An RFC that
 makes it through the entire process to implementation is considered
-'complete' and is removed from the [Active RFC List]; an RFC that fails
+'complete' and is removed from the [Active RFC List](https://rfcbot.rs/); an RFC that fails
 after becoming active is 'inactive' and moves to the 'inactive' folder.
-
-[Active RFC List]: ../README.md#active-rfc-list
 
 # Alternatives
 
