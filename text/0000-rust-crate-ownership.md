@@ -28,13 +28,13 @@ Once accepted, the policy sections of this RFC should be posted on
 
 ## Categories
 
-We propose the following categories of crates:
+We propose the following categories of published crates:
 
 
  - **Intentional artifacts**: These are crates which are intentionally released by some team (usually libs), are actively maintained, are intended to be used by external users, and intentionally have an air of officialness. Example: [libc](https://crates.io/crates/libc)
  - **Internal use**: These are crates which are used by some “internal client”, like rustc, crates.io, docs.rs, etc. Their primary purpose is not to be used by external users, though the teams that maintain them (typically the teams of their internal client) may wish for the crate to have wider adoption. The line can be blurry between these and “intentional artifacts” and ultimately depends on the goals of the team. Example: [conduit](https://crates.io/crates/conduit), [measureme](https://crates.io/crates/measureme). There are two subcategories based on whether they are intended to ever show up as a transitive dependency:
     - **Transitively intentional**: These are dependencies of intentional artifact libraries, and will show up in users' dependency trees, even if they are not intended to be _directly_ used. The Rust Project still needs to handle security issues in these crates _as if_ they are "intentional artifacts".
-    - **Not transitively intentional**: These are dependencies of shipped binaries, CI tooling, or are otherwise not expected to show up in users' dependency trees. The Rust Project may need to handle security issues in these crates _internally_, but does not necessarily need to message the wider public about security issues in these crates. If a security issue in one of these crates affects a published binary (or crates.io, etc), that will still need to be handled as a bug in the binary or website.
+    - **Not transitively intentional**: These are dependencies of shipped binaries, CI tooling, the stdlib, or are otherwise not expected to show up in users' dependency trees. The Rust Project may need to handle security issues in these crates _internally_, but does not necessarily need to message the wider public about security issues in these crates. If a security issue in one of these crates affects a published binary (or crates.io, etc), that will still need to be handled as a bug in the binary or website.
  - **Experiment**: This was an experiment by a team, intended to be picked up by users to better inform API design (or whatever), without a long-term commitment to maintainership. Example: [failure](https://crates.io/crates/failure)
  - **Deprecated**: This used to be an “intentional artifact” (or experiment/internal use) but isn’t anymore. Example: [rustc-serialize](https://crates.io/crates/rustc-serialize)
  - **Placeholder**: Not a functional crate, used for holding on to the name of an official tool, etc. Example: [rustup](https://crates.io/crates/rustup)
@@ -118,7 +118,7 @@ Any transition _away_ from "Intentional Artifact" requires an RFC.
 
 Any transition to "Intentional Artifact" should ideally be accompanied by an RFC, and an update to the team charter if there is one.
 
-Expatriation should basically _never_ occur anymore, but it also requires an RFC and core team approval in case it is really necessary.
+Expatriation should basically _never_ occur anymore, but it also requires an RFC and core team approval in case it is really necessary. If a team wishes to stop working on a crate, they should deprecate it and encourage the community to fork it or build their own thing.
 
 If "transitively intentional" crates are being deprecated care should be taken to ensure security issues will still be handled.
 
