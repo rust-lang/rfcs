@@ -1,6 +1,6 @@
 - Feature Name: `const_ub`
 - Start Date: 2020-10-10
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#3016](https://github.com/rust-lang/rfcs/pull/3016)
 
 # Summary
 [summary]: #summary
