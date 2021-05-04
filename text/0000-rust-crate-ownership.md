@@ -42,7 +42,7 @@ We propose the following categories of crates:
 
 ## Policy
 
-Every crate in the organization must be owned by at least one team on crates.io. Teams should use `rust-lang/foo` teams for this. Non-expatriated crates may not have personal accounts as owners; if a crate needs additional owners that are not part of teams; the team should create a project group. Note that this does not forbid non-team users from having maintainer access to the repository; it simply forbids them from _publishing_.
+Every crate in the organization must be owned by at least one team on crates.io. Teams should use `rust-lang/foo` teams for this. Non-expatriated crates may not have personal accounts as owners; if a crate needs additional owners that are not part of teams; the team should create a project group. Note that this does not forbid non-team (or project group) users from having maintainer access to the repository; it simply forbids them from _publishing_.
 
 Currently it is not possible for a crate to be owned by _only_ a team; the `rust-lang-owner` account (or a similar account to be decided by the infra team) can be used as a stopgap in such cases, but we should try to phase this account out as much as possible. For crates being auto-published, a `rust-lang/publish-bots` team (or individual bot accounts) can be used to allow bot accounts to publish crates.
 
@@ -52,7 +52,7 @@ Each published crate must contain a README. At a minimum, this README must menti
 
 ### Intentional artifact
 
-“Intentional artifact” crates can choose their commitments but should be clear about what they are in their messaging. If and when a team has a charter, the crate should also be mentioned in the charter as an intentional artifact. Deprecating one of these should not be taken lightly and will require an RFC.
+“Intentional artifact” crates can choose their commitments but should be clear about what they are in their messaging. If and when a team has a charter, the crate should also be mentioned in the charter as an intentional artifact. Deprecating an intentional artifact should not be taken lightly and will require an RFC.
 
 An example of such messaging would be text like:
 
@@ -116,7 +116,7 @@ In general, teams should notify core@rust-lang.org when such a transition is bei
 
 Any transition _away_ from "Intentional Artifact" requires an RFC.
 
-Any transition to "Intentional Artifact" should ideally be accompanied by an RFC.
+Any transition to "Intentional Artifact" should ideally be accompanied by an RFC, and an update to the team charter if there is one.
 
 Expatriation should basically _never_ occur anymore, but it also requires an RFC and core team approval in case it is really necessary.
 
