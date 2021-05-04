@@ -1,7 +1,8 @@
 - Feature Name: `preview_features`
 - Start Date: 2021-04-29
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#3120](https://github.com/rust-lang/rfcs/pull/3120)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- Cargo Implementation PR: [rust-lang/cargo#9401](https://github.com/rust-lang/cargo/pull/9401)
 
 # Summary
 [summary]: #summary
