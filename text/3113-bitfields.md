@@ -346,6 +346,11 @@ access adjacent bit-field fields in otherwise sound code.)
 [prior-art]: #prior-art
 
 - C
+- The crates [bitfield] and [modular bitfield][modular-bitfield] in the rust
+  ecosystem tend to provide macros to generate bitfield-like structs. However,
+  support for bitfields in `repr(C)` structs brings in the language a high level of 
+  reliance that the compiler will correctly match the layout of the local C ABI and
+  also adds more syntactic sugar.
 - The author of Zig [proposes][zig-proposes] a different syntax that basically
   boils down to arbitrarily sized integer types:
 
@@ -373,6 +378,8 @@ access adjacent bit-field fields in otherwise sound code.)
   These structs have different layouts on `x86_64-unknown-linux-gnu`.
 
 [zig-proposes]: https://andrewkelley.me/post/a-better-way-to-implement-bit-fields.html
+[bitfield]: https://crates.io/crates/bitfield
+[modular-bitfield]: https://crates.io/crates/modular-bitfield
 
 
 # Unresolved questions
