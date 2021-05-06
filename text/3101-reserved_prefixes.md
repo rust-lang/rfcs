@@ -1,8 +1,8 @@
 
 - Feature Name: reserved_prefixes
 - Start Date: 2021-03-31
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- RFC PR: [rust-lang/rfcs#3101](https://github.com/rust-lang/rfcs/pull/3101)
+- Rust Issue: [rust-lang/rust#84978](https://github.com/rust-lang/rust/issues/84978)
 
 # Summary
 [summary]: #summary
@@ -191,7 +191,7 @@ error: unknown prefix on string literal: bar
 #  Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-* None.
+* How to manage the API `proc_macro::TokenStream::from_str`, which does not take any edition information? ([raised here](https://github.com/rust-lang/rfcs/pull/3101#issuecomment-832686934))
 
 # Prior art
 [prior-art]: #prior-art
