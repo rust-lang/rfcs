@@ -38,7 +38,7 @@ In all methods of these pinned versions a `self: Pin<&Self>` argument is taken, 
 
 In order to initialize a `pinned::Mutex`, for example, one of these can be used:
 
-```
+```rust
 // Directly initialize using ergonomic constructors
 let boxed_mutex: Pin<Box<Mutex<T>>> = Mutex::boxed(...);
 let arc_mutex: Pin<Arc<Mutex<T>>> = Mutex::arc(...);
