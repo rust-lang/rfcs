@@ -728,10 +728,12 @@ Mangled names conform to the following grammar:
         | <type> "p" // placeholder (e.g. for polymorphic constants), shown as _: T
         | <backref>
 
-// The encoding of a constant depends on its type, currently only
-// unsigned integers (mainly usize, for arrays) are supported, and they
-// use their value, in base 16 (0-9a-f), not their memory representation.
-<const-data> = {<hex-digit>} "_"
+// The encoding of a constant depends on its type. Integers use their value,
+// in base 16 (0-9a-f), not their memory representation. Negative integer
+// values are preceded with "n". The bool value false is encoded as `0_`, true
+// value as `1_`. The char constants are encoded using their Unicode scalar
+// value.
+<const-data> = ["n"] {<hex-digit>} "_"
 
 // <base-62-number> uses 0-9-a-z-A-Z as digits, i.e. 'a' is decimal 10 and
 // 'Z' is decimal 61.
@@ -1152,3 +1154,4 @@ pub static QUUX: u32 = {
 - Add a recommended resolution for open question around encoding function parameter types.
 - Allow identifiers to start with a digit.
 - Make `<binder>` optional in `<fn-sig>` and `<dyn-bounds>` productions.
+- Extend `<const-data>` to include `bool` values, `char` values, and negative integer values.
