@@ -675,6 +675,7 @@ Mangled names conform to the following grammar:
 // innermost lifetimes, e.g. in `for<'a, 'b> fn(for<'c> fn(...))`,
 // any <lifetime>s in ... (but not inside more binders) will observe
 // the indices 1, 2, and 3 refer to 'c, 'b, and 'a, respectively.
+// The number of bound lifetimes is value of <base-62-number> + 1.
 <binder> = "G" <base-62-number>
 
 <type> = <basic-type>
@@ -715,12 +716,12 @@ Mangled names conform to the following grammar:
 // If the "U" is present then the function is `unsafe`.
 // The return type is always present, but demanglers can
 // choose to omit the ` -> ()` by special-casing "u".
-<fn-sig> = <binder> ["U"] ["K" <abi>] {<type>} "E" <type>
+<fn-sig> = [<binder>] ["U"] ["K" <abi>] {<type>} "E" <type>
 
 <abi> = "C"
       | <undisambiguated-identifier>
 
-<dyn-bounds> = <binder> {<dyn-trait>} "E"
+<dyn-bounds> = [<binder>] {<dyn-trait>} "E"
 <dyn-trait> = <path> {<dyn-trait-assoc-binding>}
 <dyn-trait-assoc-binding> = "p" <undisambiguated-identifier> <type>
 <const> = <type> <const-data>
@@ -1150,3 +1151,4 @@ pub static QUUX: u32 = {
 - Add a recommended resolution for open question around Punycode identifiers.
 - Add a recommended resolution for open question around encoding function parameter types.
 - Allow identifiers to start with a digit.
+- Make `<binder>` optional in `<fn-sig>` and `<dyn-bounds>` productions.
