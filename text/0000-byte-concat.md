@@ -25,16 +25,6 @@ supported as inputs:
 
 - byte string literals (`b"..."`)
 - byte literals (`b'b'`)
-- numeric literals – must fit in `u8`, any number larger than `u8::MAX` causes
-  a compile time error like the following:
-
-  ```
-  error: cannot concatenate a non-`u8` literal in a byte string literal
-    --> $FILE:XX:YY
-     |
-  XX |     concat_bytes!(256, b"val");
-     |                   ^^^ this value is larger than `255`
-  ```
 - numeric array literals – if any literal is outside of `u8` range, it will
   cause a compile time error:
 
@@ -64,6 +54,11 @@ string literals, like a previous revision of this RFC proposed. This would make
 it hard to ensure the right output type is produced – users would have to use
 hacks like adding a dummy `b""` argument to force a byte literal output.
 
+An earlier version of this RFC proposed to support integer literals outside of
+arrays, but that was rejected since it would make the output of
+`byte_concat!(123, b"\n")` inconsistent with the equivalent `concat!`
+invocation.
+
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
@@ -72,8 +67,3 @@ hacks like adding a dummy `b""` argument to force a byte literal output.
   support those as well (support `&[0, 1, 2]` in addition to `[0, 1, 2]`).
 - What to do with string and character literals? They could either be supported
   with their underlying UTF-8 representation being concatenated, or rejected.
-  - If supported, it would probably make sense to also support boolean literals
-    so `concat_bytes!()` supports all inputs `concat!()` does.
-  - If rejected, it would probably makes sense to also reject boolean literals
-    to avoid any possible confusion about their representation (`true` and
-    `false` vs. `1` and `0`).
