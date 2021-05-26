@@ -44,37 +44,34 @@ impl<T, const N: usize> ArrayBuilder<T, N> {
     pub fn new() -> Self;
 
     /// Adds the value onto the end of the ArrayBuilder
-    ///
-    /// Panics:
-    /// If the ArrayBuilder is full
-    pub fn push(&mut self, t: T);
+    pub fn push(&mut self, t: T); // Panics if array is full
+    pub fn try_push(&mut self, t: T) -> Result<(), T>; // Returns Err(t) if array is full
+    pub unsafe fn push_unchecked(&mut self, t: T); // UB if array is full
 
     /// Complements push, added for consistency
-    ///
-    /// Panics:
-    /// If the ArrayBuilder is empty
-    pub fn pop(&mut self) -> T;
+    pub fn pop(&mut self) -> Option<T>; // Returns None if array is empty
+    pub unsafe fn pop_unchecked(&mut self) -> T; // UB if array is empty
 
     /// Gets the current length of the ArrayBuilder
     pub fn len(&self) -> usize;
-
-    /// Useful compliments to len()
     pub fn is_full(&self) -> bool;
     pub fn is_empty(&self) -> bool;
 
     /// If the ArrayBuilder is full, returns the successfully initialised array
-    /// Otherwise, returns back self
-    pub fn build(self) -> Result<[T; N], Self>;
+    pub fn build(self) -> Result<[T; N], Self>; // returns Err(self) if not full
+    pub unsafe fn build_unchecked(self) -> [T; N]; // UB if not full
 
     /// If the ArrayBuilder is full, returns the successfully initialised array
-    /// and resets the owned data to uninitialised. If not full, returns None and does nothing.
+    /// and resets the owned data to uninitialised.
+    /// returns None if not full and does not reset length
     pub fn pop_array(&mut self) -> Option<[T; N]>;
+    pub fn pop_array_unchecked(&mut self) -> [T; N]; // UB If not full
 }
 
 // Implements AsRef/AsMut for slices. These will return references to
 // any initialised data. Useful if extracting data when the ArrayBuilder is not yet full
-impl<T, const N: usize> AsRef<[T]> for ArrayBuilder<T, N>;
-impl<T, const N: usize> AsMut<[T]> for ArrayBuilder<T, N>;
+impl<T, const N: usize> Deref for ArrayBuilder<T, N> { type Target = [T]; }
+impl<T, const N: usize> DerefMut for ArrayBuilder<T, N>;
 ```
 
 ## Example uses
@@ -133,92 +130,107 @@ impl<I: Iterator, const N: usize> ArrayIterator<I, N> {
 }
 ```
 
-## Possible mis-uses
-
-```rust
-let mut arr = ArrayBuilder::<String, 4>::new();
-
-arr.push("a".to_string());
-arr.push("b".to_string());
-arr.push("c".to_string());
-arr.push("d".to_string());
-arr.push("e".to_string()); // panic. ArrayBuilder is already full
-```
-
-```rust
-let mut arr = ArrayBuilder::<String, 4>::new();
-
-arr.push("a".to_string());
-arr.push("b".to_string());
-arr.push("c".to_string());
-
-let arr: [String; 4] = arr.build().unwrap(); // panic at unwrap. ArrayBuilder is not yet full.
-```
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-This is the technical portion of the RFC. Explain the design in sufficient detail that:
+A pretty clear example could be porting relevant features from [arrayvec::ArrayVec](https://github.com/bluss/arrayvec/blob/master/src/arrayvec.rs).
 
-- Its interaction with other features is clear.
-- It is reasonably clear how the feature would be implemented.
-- Corner cases are dissected by example.
+Example basic implementation (does not cover the entire API suggested):
 
-The section should return to the examples given in the previous section, and explain more fully how the detailed proposal makes those examples work.
+```rust
+pub struct ArrayBuilder<T, const N: usize> {
+    buf: [MaybeUninit<T>; N],
+    len: usize,
+}
+
+impl<T, const N: usize> Drop for ArrayBuilder<T, N> {
+    fn drop(&mut self) {
+        self.clear()
+    }
+}
+
+impl<T, const N: usize> Deref for ArrayBuilder<T, N> {
+    type Target = [T];
+    fn deref(&self) -> &[T] {
+        unsafe { slice::from_raw_parts(self.as_ptr(), self.len) }
+    }
+}
+
+impl<T, const N: usize> DerefMut for ArrayBuilder<T, N> {
+    fn deref_mut(&mut self) -> &mut [T] {
+        unsafe { slice::from_raw_parts_mut(self.as_mut_ptr(), self.len) }
+    }
+}
+
+impl<T, const N: usize> ArrayBuilder<T, N> {
+    pub fn clear(&mut self) {
+        let s: &mut [T] = self;
+        unsafe { ptr::drop_in_place(s); }
+        self.len = 0;
+    }
+
+    fn as_ptr(&self) -> *const T {
+        self.buf.as_ptr() as _
+    }
+
+    fn as_mut_ptr(&mut self) -> *mut T {
+        self.buf.as_mut_ptr() as _
+    }
+
+    pub unsafe fn push_unchecked(&mut self, t: T) {
+        ptr::write(self.as_mut_ptr().add(self.len), t);
+        self.len += 1;
+    }
+
+    pub unsafe fn build_unchecked(self) -> [T; N] {
+        let self_ = ManuallyDrop::new(self);
+        ptr::read(self_.as_ptr() as *const [T; N])
+    }
+}
+```
 
 # Drawbacks
 [drawbacks]: #drawbacks
 
-Why should we *not* do this?
+As suggested above. There already exists several crates that _can_ implement this functionality. [arrayvec](https://crates.io/crates/arrayvec) has over 20 million downloads
+and is moving to version 1.0 soon.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-- Why is this design the best in the space of possible designs?
-- What other designs have been considered and what is the rationale for not choosing them?
-- What is the impact of not doing this?
+Many of the other implementations are focused on this pattern being for 'heapless' Vec.
+This is a reasonable desire, especially in `no_std` use cases and low memory embedded
+systems. This is not the case for this proposal. Instead specifically related to initiating
+arrays dynamically then building them into full arrays.
+
+Another reason to have this in core, is that there are already some PRs for adding new features
+to `core::array`. For example, [`from_fn`](https://github.com/rust-lang/rust/pull/75644) or [`FromIterator`](https://github.com/rust-lang/rust/issues/81615). It would be nice to have a re-usable, safe backing for them. And then it might as well be stablised and exposed to others too.
 
 # Prior art
 [prior-art]: #prior-art
 
-Discuss prior art, both the good and the bad, in relation to this proposal.
-A few examples of what this can include are:
+## [array-init crate](https://crates.io/crates/array-init):
 
-- For language, library, cargo, tools, and compiler proposals: Does this feature exist in other programming languages and what experience have their community had?
-- For community proposals: Is this done by some other community and what were their experiences with it?
-- For other teams: What lessons can we learn from what other communities have done here?
-- Papers: Are there any published papers or great posts that discuss this? If you have some relevant papers to refer to, this can serve as a more detailed theoretical background.
+This is good for basic tasks, but it has only a very minimal API. It only allows
+for creating an array in one big go. There's no way to extract the data out of a partial
+fill.
 
-This section is intended to encourage you as an author to think about the lessons from other languages, provide readers of your RFC with a fuller picture.
-If there is no prior art, that is fine - your ideas are interesting to us whether they are brand new or if it is an adaptation from other languages.
+## [arrayvec crate](https://crates.io/crates/arrayvec):
 
-Note that while precedent set by other languages is some motivation, it does not on its own motivate an RFC.
-Please also take into consideration that rust sometimes intentionally diverges from common language features.
+Discussed above, this crate focuses on the heapless `Vec` aspect. It can be used to implement
+array initialisation, but that doesn't seem to be it's primary intention.
+
+## [ArrayVec/StackVec RFC](https://github.com/rust-lang/rfcs/pull/2990):
+
+Simply put, this appears to be a re-implementation of `arrayvec::ArrayVec` in core.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-- What parts of the design do you expect to resolve through the RFC process before this gets merged?
-- What parts of the design do you expect to resolve through the implementation of this feature before stabilization?
-- What related issues do you consider out of scope for this RFC that could be addressed in the future independently of the solution that comes out of this RFC?
+- What should the exact API be?
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-Think about what the natural extension and evolution of your proposal would
-be and how it would affect the language and project as a whole in a holistic
-way. Try to use this section as a tool to more fully consider all possible
-interactions with the project and language in your proposal.
-Also consider how this all fits into the roadmap for the project
-and of the relevant sub-team.
-
-This is also a good place to "dump ideas", if they are out of scope for the
-RFC you are writing but otherwise related.
-
-If you have tried and cannot think of any future possibilities,
-you may simply state that you cannot think of anything.
-
-Note that having something written down in the future-possibilities section
-is not a reason to accept the current or a future RFC; such notes should be
-in the section on motivation or rationale in this or subsequent RFCs.
-The section merely provides additional information.
+Once implemented in `core`, some current implementations and PRs could be updated to use it.
