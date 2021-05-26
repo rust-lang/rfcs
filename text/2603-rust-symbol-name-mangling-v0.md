@@ -625,12 +625,12 @@ Mangled names conform to the following grammar:
 // The <decimal-number> specifies the encoding version.
 <symbol-name> = "_R" [<decimal-number>] <path> [<instantiating-crate>]
 
-<path> = "C" <identifier>               // crate root
-       | "M" <impl-path> <type>         // <T> (inherent impl)
-       | "X" <impl-path> <type> <path>  // <T as Trait> (trait impl)
-       | "Y" <type> <path>              // <T as Trait> (trait definition)
-       | "N" <ns> <path> <identifier>   // ...::ident (nested path)
-       | "I" <path> {<generic-arg>} "E" // ...<T, U> (generic args)
+<path> = "C" <identifier>                    // crate root
+       | "M" <impl-path> <type>              // <T> (inherent impl)
+       | "X" <impl-path> <type> <path>       // <T as Trait> (trait impl)
+       | "Y" <type> <path>                   // <T as Trait> (trait definition)
+       | "N" <namespace> <path> <identifier> // ...::ident (nested path)
+       | "I" <path> {<generic-arg>} "E"      // ...<T, U> (generic args)
        | <backref>
 
 // Path to an impl (without the Self type or the trait).
@@ -655,10 +655,10 @@ Mangled names conform to the following grammar:
 // A-Z are used for special namespaces (e.g. closures), which the demangler
 // can show in a special way (e.g. `NC...` as `...::{closure}`), or just
 // default to showing the uppercase character.
-<ns> = "C"      // closure
-     | "S"      // shim
-     | <A-Z>    // other special namespaces
-     | <a-z>    // internal namespaces
+<namespace> = "C"      // closure
+            | "S"      // shim
+            | <A-Z>    // other special namespaces
+            | <a-z>    // internal namespaces
 
 <generic-arg> = <lifetime>
               | <type>
@@ -748,7 +748,7 @@ Mangled names conform to the following grammar:
 ### Namespace Tags
 
 Namespaces are identified by an implementation defined single character tag
-(the `<ns>` production). Only closures (`C`) and shims (`S`) have a
+(the `<namespace>` production). Only closures (`C`) and shims (`S`) have a
 specific character assigned to them so that demanglers can reliable
 adjust their output accordingly. Other namespace tags have to be omitted
 or shown verbatim during demangling.
