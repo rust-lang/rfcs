@@ -725,7 +725,7 @@ Mangled names conform to the following grammar:
 <dyn-trait> = <path> {<dyn-trait-assoc-binding>}
 <dyn-trait-assoc-binding> = "p" <undisambiguated-identifier> <type>
 <const> = <type> <const-data>
-        | <type> "p" // placeholder (e.g. for polymorphic constants), shown as _: T
+        | "p" // placeholder, shown as _
         | <backref>
 
 // The encoding of a constant depends on its type. Integers use their value,
@@ -1155,3 +1155,4 @@ pub static QUUX: u32 = {
 - Allow identifiers to start with a digit.
 - Make `<binder>` optional in `<fn-sig>` and `<dyn-bounds>` productions.
 - Extend `<const-data>` to include `bool` values, `char` values, and negative integer values.
+- Remove type from constant placeholders.
