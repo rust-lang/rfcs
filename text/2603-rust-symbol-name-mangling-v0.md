@@ -715,7 +715,7 @@ Mangled names conform to the following grammar:
 // If the "U" is present then the function is `unsafe`.
 // The return type is always present, but demanglers can
 // choose to omit the ` -> ()` by special-casing "u".
-<fn-sig> := <binder> ["U"] ["K" <abi>] {<type>} "E" <type>
+<fn-sig> = <binder> ["U"] ["K" <abi>] {<type>} "E" <type>
 
 <abi> = "C"
       | <undisambiguated-identifier>
