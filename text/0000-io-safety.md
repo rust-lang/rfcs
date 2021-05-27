@@ -169,6 +169,51 @@ pub fn do_some_io<FD: AsRawFd + IoSafe>(input: &FD) -> io::Result<()> {
 }
 ```
 
+Some types have the ability to dynamically drop their resources, and
+these types require special consideration when implementing `IoSafe`. For
+example, a class representing a dynamically reassignable output source might
+have code like this:
+
+```rust
+struct VirtualStdout {
+    current: RefCell<std::fs::File>
+}
+
+impl VirtualStdout {
+    /// Assign a new output destination.
+    ///
+    /// This function ends the lifetime of the resource that `as_raw_fd`
+    /// returns a handle to.
+    pub fn set_output(&self, new: std::fs::File) {
+        *self.current.borrow_mut() = new;
+    }
+}
+
+impl AsRawFd for VirtualStdout {
+    fn as_raw_fd(&self) -> RawFd {
+        self.current.borrow().as_raw_fd()
+    }
+}
+```
+
+If a user of this type were to hold a `RawFd` value over a call to `set_file`,
+the `RawFd` value would become dangling, even though its within the lifetime of
+the `&self` reference passed to `as_raw_fd`:
+
+```rust
+    fn foo(output: &VirtualStdout) -> io::Result<()> {
+        let raw_fd = output.as_raw_fd();
+        output.set_file(File::open("/some/other/file")?);
+        use(raw_fd)?; // Use of dangling file descriptor!
+        Ok(())
+    }
+```
+
+The `IoSafe` trait requires types capable of dynamically dropping their
+resources within the lifetime of the `&self` passed to `as_raw_fd` must
+document the conditions under which this can occur, as the documentation
+comment above does.
+
 ## Gradual adoption
 
 I/O safety and `IoSafe` wouldn't need to be adopted immediately, adoption
