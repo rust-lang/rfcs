@@ -61,11 +61,9 @@ impl<T, const N: usize> ArrayBuilder<T, N> {
     pub fn build(self) -> Result<[T; N], Self>; // returns Err(self) if not full
     pub unsafe fn build_unchecked(self) -> [T; N]; // UB if not full
 
-    /// If the ArrayBuilder is full, returns the successfully initialised array
-    /// and resets the owned data to uninitialised.
-    /// returns None if not full and does not reset length
-    pub fn pop_array(&mut self) -> Option<[T; N]>;
-    pub fn pop_array_unchecked(&mut self) -> [T; N]; // UB If not full
+    /// Returns the ArrayBuilder, leaving behind an empty
+    /// ArrayBuilder in it's place
+    pub fn take(&mut self) -> Self;
 }
 
 // Implements AsRef/AsMut for slices. These will return references to
@@ -119,7 +117,7 @@ impl<I: Iterator, const N: usize> Iterator for ArrayIterator<I, N> {
         }
         // At this point, we must have N elements in the builder
         // So extract the array and reset the builder for the next call
-        self.builder.pop_array()
+        self.builder.take().build()
     }
 }
 
