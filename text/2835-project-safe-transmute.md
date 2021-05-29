@@ -1,6 +1,6 @@
 - Feature Name: `project-safe-transmute`
 - Start Date: 2019-12-06
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#2835](https://github.com/rust-lang/rfcs/pull/2835)
 - Rust Issue: N/A
 
 # Summary
