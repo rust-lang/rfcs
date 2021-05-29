@@ -1,7 +1,7 @@
 - Feature Name: `project-unwind-FFI`
 - Start Date: 2019-10-27
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- RFC PR: [rust-lang/rfcs#2797](https://github.com/rust-lang/rfcs/pull/2797)
+- Rust Issue: N/A
 
 # Summary
 [summary]: #summary
