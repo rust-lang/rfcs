@@ -95,7 +95,7 @@ If using MSVC toolchain, path to the .pdb file containing debug information are 
 information.
 
 With `trim-path` option disabled, the embedding of path to the source files of the standard and core library will depend on if `rust-src` component is present. If it is, then the real path pointing to a copy of the source files on your file system will be embedded; if it isn't, then they will
-show up as `/rustc/[rustc version]/library/...` (just like when `trim-path` is enabled). Path to all other source files will not be affected.
+show up as `/rustc/[rustc version]/library/...` (just like when `trim-path` is enabled). Paths to all other source files will not be affected.
 
 Note that this will not affect any hard-coded paths in the source code.
 
