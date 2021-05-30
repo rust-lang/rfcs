@@ -347,14 +347,6 @@ I/O safety approach will require changes to Rust code in crates such as
 [`RawFd`], though the changes can be made gradually across the ecosystem rather
 than all at once.
 
-## New types for `RawFd`/`RawHandle`/`RawSocket`
-
-Some comments on [rust-lang/rust#76969] suggest introducing new wrappers
-around the raw handles. Completely closing the safety loophole would also
-require designing new traits, since `AsRaw*` doesn't have a way to limit the
-lifetime of its return value. This RFC doesn't rule this out, but it would be a
-bigger change.
-
 ## I/O safety but not `IoSafe`
 
 The I/O safety concept doesn't depend on `IoSafe` being in `std`. Crates could
@@ -373,6 +365,35 @@ it returns raw types, arguably it would be better to make it work more like
 `slice::as_ptr` and other functions which return raw pointers that aren't
 connected to reference lifetimes. If the concept of borrowing is desired, new
 types could be introduced, with better ergonomics, in a separate proposal.
+
+## New types and traits
+
+New types and traits could provide a much cleaner API, along the lines of:
+
+```rust
+pub struct BorrowedFd<'owned> { ... }
+pub struct OwnedFd { ... }
+pub struct OptionFd { ... }
+
+pub trait AsBorrowedFd { ... }
+pub trait IntoOwnedFd { ... }
+pub trait FromOwnedFd { ... }
+```
+
+An initial prototype of this here:
+
+<https://github.com/sunfishcode/io-experiment>
+
+The details are mostly obvious, though one notable aspect of this design is
+the use of `repr(transparent)` to define types that can participate in FFI
+directly, leading to FFI usage patterns that don't interact with raw types
+at all. An example of this is here:
+
+<https://github.com/sunfishcode/io-experiment/blob/main/examples/hello.rs>
+
+This provides a cleaner API than `*Raw*` + `IoSafe`. The main obvious downside
+is that a lot of code will likely need to continue to support `*Raw*` for a
+long time, so this would increase the amount of code they have to maintain.
 
 # Prior art
 [prior-art]: #prior-art
