@@ -373,7 +373,6 @@ New types and traits could provide a much cleaner API, along the lines of:
 ```rust
 pub struct BorrowedFd<'owned> { ... }
 pub struct OwnedFd { ... }
-pub struct OptionFd { ... }
 
 pub trait AsBorrowedFd { ... }
 pub trait IntoOwnedFd { ... }
