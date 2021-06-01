@@ -374,9 +374,9 @@ New types and traits could provide a much cleaner API, along the lines of:
 pub struct BorrowedFd<'owned> { ... }
 pub struct OwnedFd { ... }
 
-pub trait AsBorrowedFd { ... }
-pub trait IntoOwnedFd { ... }
-pub trait FromOwnedFd { ... }
+pub trait AsFd { ... }
+pub trait IntoFd { ... }
+pub trait FromFd { ... }
 ```
 
 An initial prototype of this here:
