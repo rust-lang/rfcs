@@ -1,4 +1,4 @@
-- Feature Name: trim-path
+- Feature Name: trim-paths
 - Start Date: 2021-05-24
 - RFC PR: [rust-lang/rfcs#3127](https://github.com/rust-lang/rfcs/pull/3127)
 - Rust Issue: N/A
@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-Cargo should have a [profile setting](https://doc.rust-lang.org/cargo/reference/profiles.html#profile-settings) named `trim-path`
+Cargo should have a [profile setting](https://doc.rust-lang.org/cargo/reference/profiles.html#profile-settings) named `trim-paths`
 to sanitise absolute paths introduced during compilation that may be embedded in the compilation output. This should be enabled by default for 
 `release` profile.
 
@@ -72,17 +72,17 @@ the local paths to show up in panic messages and backtraces.
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-`trim-path` is a profile setting which can be set to either `true` or `false`. This is enabled by default when you do a release build,
+`trim-paths` is a profile setting which can be set to either `true` or `false`. This is enabled by default when you do a release build,
 such as via `cargo build --release`. You can also manually override it by specifying this option in `Cargo.toml`:
 ```toml
 [profile.dev]
-trim-path = true
+trim-paths = true
 
 [profile.release]
-trim-path = false
+trim-paths = false
 ```
 
-With `trim-path` option enabled, the compilation process will not introduce any absolute paths into the build output. Instead, paths containing
+With `trim-paths` option enabled, the compilation process will not introduce any absolute paths into the build output. Instead, paths containing
 certain prefixes will be replaced with something stable by the following rules:
 
 1. Path to the source files of the standard and core library will begin with `/rustc/[rustc version]`.
@@ -94,18 +94,18 @@ certain prefixes will be replaced with something stable by the following rules:
 If using MSVC toolchain, path to the .pdb file containing debug information are be embedded as the file name of the .pdb file only, wihtout any path
 information.
 
-With `trim-path` option disabled, the embedding of path to the source files of the standard and core library will depend on if `rust-src` component is present. If it is, then the real path pointing to a copy of the source files on your file system will be embedded; if it isn't, then they will
-show up as `/rustc/[rustc version]/library/...` (just like when `trim-path` is enabled). Paths to all other source files will not be affected.
+With `trim-paths` option disabled, the embedding of path to the source files of the standard and core library will depend on if `rust-src` component is present. If it is, then the real path pointing to a copy of the source files on your file system will be embedded; if it isn't, then they will
+show up as `/rustc/[rustc version]/library/...` (just like when `trim-paths` is enabled). Paths to all other source files will not be affected.
 
 Note that this will not affect any hard-coded paths in the source code.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-## `trim-path` implementation in Cargo
+## `trim-paths` implementation in Cargo
 We only need to change the behaviour for `Test` and `Build` compile modes. 
 
-If `trim-path` is enabled, Cargo will emit two `--remap-path-prefix` arguments to `rustc` for each compilation unit. One mapping is from the path of 
+If `trim-paths` is enabled, Cargo will emit two `--remap-path-prefix` arguments to `rustc` for each compilation unit. One mapping is from the path of 
 the local sysroot to `/rustc/[rust version]`. The other mapping depends on if the package containing the compilation unit is under the working
 directory. If it is, then the mapping is from the absolute path to the working directory to `.`. If it's outside the working directory, then the
 mapping is from the absolute path of the package root to `[package name]-[package version]`.
@@ -118,7 +118,7 @@ Some interactions with compiler-intrinstic macros need to be considered, though 
    the current working directory or a dependency package.
 
 If the user further supplies custom `--remap-path-prefix` arguments via `RUSTFLAGS` or similar mechanisms, they will take precedence over the one
-supplied by `trim-path`. This means that the user-defined `--remap-path-prefix`s must be supplied *after* Cargo's own remapping.
+supplied by `trim-paths`. This means that the user-defined `--remap-path-prefix`s must be supplied *after* Cargo's own remapping.
 
 Additionally, when using MSVC linker, Cargo should emit `/PDBALTPATH:%_PDB%` to the linker via `-C link-arg`. This makes the linker embed
 only the file name of the .pdb file without the path to it.
@@ -133,21 +133,21 @@ Only the virtual name is ever emitted for metadata or codegen. We want to change
 discovered, the virtual path is discarded and therefore will be embedded unless being remapped by `--remap-path-prefix` in the usual way. The relevant part of the code is here:
 https://github.com/rust-lang/rust/blob/d8af907491e20339e41d048d6a32b41ddfa91dfe/compiler/rustc_metadata/src/rmeta/decoder.rs#L1637-L1765
 
-We would also like to change the virtualisation of sysroot to `/rustc/[rustc version]/library/...`, instead of the rustc commit hash. This is shorter and more helpful as an identifier, and makes `trim-path` easier to implement: to make the embedded path the same whether or not `rust-src` is installed, we need to emit the same sysroot virutalisation as was done during bootstrapping. Getting the version number is easier than getting the commit hash. The relevant part of the code is here: https://github.com/rust-lang/rust/blob/d8af907491e20339e41d048d6a32b41ddfa91dfe/src/bootstrap/lib.rs#L831-L834 
+We would also like to change the virtualisation of sysroot to `/rustc/[rustc version]/library/...`, instead of the rustc commit hash. This is shorter and more helpful as an identifier, and makes `trim-paths` easier to implement: to make the embedded path the same whether or not `rust-src` is installed, we need to emit the same sysroot virutalisation as was done during bootstrapping. Getting the version number is easier than getting the commit hash. The relevant part of the code is here: https://github.com/rust-lang/rust/blob/d8af907491e20339e41d048d6a32b41ddfa91dfe/src/bootstrap/lib.rs#L831-L834 
 
 # Drawbacks
 [drawbacks]: #drawbacks
 
-With `trim-path` enabled, if the `debug` option is simultaneously not `false` (it is turned off by default under `release` profile), paths in
+With `trim-paths` enabled, if the `debug` option is simultaneously not `false` (it is turned off by default under `release` profile), paths in
 debuginfo will also be remapped. Debuggers will no longer be able to automatically discover and load source files outside of the working directory. 
 This can be remidated by [debugger features](https://lldb.llvm.org/use/map.html#miscellaneous) remapping the path back to a filesystem path.
 
 The user also will not be able to `Ctrl+click` on any paths provided in panic messages or backtraces outside of the working directory. But
 there shouldn't be any confusion as the combination of pacakge name and version can be used to pinpoint the file.
 
-As mentioned above, `trim-path` may break code that relies on `file!()` to evaluate to an accessible path to the file. Hence enabling
+As mentioned above, `trim-paths` may break code that relies on `file!()` to evaluate to an accessible path to the file. Hence enabling
 it by default for release builds may be a technically breaking change. Occurances of such use should be extremely rare but should be investigated
-via a Crater run. In case this breakage is unacceptable, `trim-path` can be made an opt-in option rather than default in any build profile.
+via a Crater run. In case this breakage is unacceptable, `trim-paths` can be made an opt-in option rather than default in any build profile.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -168,7 +168,7 @@ affect sysroot paths at all).
 # Prior art
 [prior-art]: #prior-art
 
-The name `trim-path` came from the [similar feature](https://golang.org/cmd/go/#hdr-Compile_packages_and_dependencies) in Go. An alternative name
+The name `trim-paths` came from the [similar feature](https://golang.org/cmd/go/#hdr-Compile_packages_and_dependencies) in Go. An alternative name
 `sanitize-paths` was first considered but the spelling of "sanitise" differs across the pond and down under. It is also not as short and concise.
 
 Go does not enable this by default. Since Go does not differ between debug and release builds, removing absolute paths for all build would be
@@ -177,8 +177,6 @@ a hassle for debugging. However this is not an issue for Rust as we have separat
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-- Should the option be called `trim-paths` (plural) instead of `trim-path`? Quite a few other option names are plural, such as `debug-assertions`
-  and `overflow-checks`.
 - Should we treat the current working directory the same as other packages? We could have one fewer remapping rule by remapping all
   package roots to `[package name]-[version]`. A minor downside to this is not being able to `Ctrl+click` on paths to files the user is working
   on from panic messages.
