@@ -130,7 +130,7 @@ The virtualisation of sysroot files to `/rustc/[SHA1 hash]/library/...` was done
 At `rustc` runtime (i.e. compiling some code), we try to correlate this virtual path to a real path pointing to the file on the local file system.
 Currently the result is represented internally as if the path was remapped by `--remap-path-prefix`, holding both the virtual name and local path.
 Only the virtual name is ever emitted for metadata or codegen. We want to change this behaviour such that, when `rust-src` source files can be
-discovered, the virutal path is discarded and therefore will be embedded unless being remapped by `--remap-path-prefix` in the usual way. The relevant part of the code is here:
+discovered, the virtual path is discarded and therefore will be embedded unless being remapped by `--remap-path-prefix` in the usual way. The relevant part of the code is here:
 https://github.com/rust-lang/rust/blob/d8af907491e20339e41d048d6a32b41ddfa91dfe/compiler/rustc_metadata/src/rmeta/decoder.rs#L1637-L1765
 
 We would also like to change the virtualisation of sysroot to `/rustc/[rustc version]/library/...`, instead of the rustc commit hash. This is shorter and more helpful as an identifier, and makes `trim-path` easier to implement: to make the embedded path the same whether or not `rust-src` is installed, we need to emit the same sysroot virutalisation as was done during bootstrapping. Getting the version number is easier than getting the commit hash. The relevant part of the code is here: https://github.com/rust-lang/rust/blob/d8af907491e20339e41d048d6a32b41ddfa91dfe/src/bootstrap/lib.rs#L831-L834 
