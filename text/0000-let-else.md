@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-Introduce a new `let PATTERN = EXPRESSION else { /* DIVERGING BLOCK */ };` construct (informally called a
+Introduce a new `let PATTERN = EXPRESSION_WITHOUT_BLOCK else DIVERGING_BLOCK;` construct (informally called a
 **let-else statement**), the counterpart of if-let expressions.
 
 If the pattern match from the assigned expression succeeds, its bindings are introduced *into the
@@ -22,8 +22,8 @@ This RFC is a modernization of a [2015 RFC (pull request 1303)][old-rfc] for an 
 It is the natural counterpart to `if let`, just as `else` is to regular `if`.
 
 [if-let expressions][if-let] offer a succinct syntax for pattern matching single patterns.
-This is particularly useful for unwrapping types like `Option`, particularly those with a clear "success" varient
-for the given context but no specific "failure" varient.
+This is particularly useful for unwrapping types like `Option`, particularly those with a clear "success" variant
+for the given context but no specific "failure" variant.
 However, an if-let expression can only create bindings within its body, which can force 
 rightward drift, introduce excessive nesting, and separate conditionals from error paths.
 
@@ -35,7 +35,7 @@ which require intermediary bindings (usually of the same name).
 
 ## Examples
 
-The following three code examples are possible options with current Rust code.
+The following two code examples are possible options with current Rust code.
 
 ```rust
 if let Some(a) = x {
@@ -73,22 +73,7 @@ do_something_with(a, b, c);
 // ...
 ```
 
-```rust
-let a = if let Some(a) { a } else {
-    return Err("bad x"),
-};
-let b = if let Some(b) { b } else {
-    return Err("bad y"),
-};
-let c = if let Some(c) { c } else {
-    return Err("bad z"),
-};
-// ...
-do_something_with(a, b, c);
-// ...
-```
-
-All three of the above examples would be able to be written as:
+Both of the above examples would be able to be written as:
 
 ```rust
 let Some(a) = x else {
@@ -106,6 +91,49 @@ do_something_with(a, b, c);
 ```
 
 which succinctly avoids bindings of the same name, rightward shift, etc.
+
+let-else is even more useful when dealing with enums which are not `Option`/`Result`, consider how the
+following code would look without let-else (transposed from a real-world project written in part by the author):
+
+```rust
+impl ActionView {
+    pub(crate) fn new(history: &History<Action>) -> Result<Self, eyre::Report> {
+        let mut iter = history.iter();
+        let event = iter
+            .next()
+            .ok_or_else(|| eyre::eyre!("Entity has no history"))?;
+
+        let Action::Register {
+            actor: String,
+            x: Vec<String>
+            y: u32,
+            z: String,
+        } = event.action().clone() else {
+            // RFC Author's note:
+            //   Without if-else this was separated from the conditional 
+            //   by a substantial block of code which now follows below.
+            Err(eyre::eyre!("must begin with a Register action"))
+        };
+
+        let created = *event.created();
+        let mut view = ActionView {
+            registered_by: (actor, created),
+            a: (actor.clone(), x, created),
+            b: (actor.clone(), y, created),
+            c: (z, created),
+            d: Vec::new(),
+
+            e: None,
+            f: None,
+            g: None,
+        };
+        for event in iter {
+            view.update(&event)?;
+        }
+        Ok(view)
+    }
+}
+```
 
 ## Versus `match`
 
@@ -131,7 +159,7 @@ let Some(ref subpage_layer_info) = layer_properties.subpage_layer_info else {
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-A common pattern in non-trivial code where static guarentees can not be fully met (e.g. I/O, network or otherwise) is to check error cases when possible before proceding,
+A common pattern in non-trivial code where static guarantees can not be fully met (e.g. I/O, network or otherwise) is to check error cases when possible before proceeding,
 and "return early", by constructing an error `Result` or an empty `Option`, and returning it before the "happy path" code.
 
 This pattern serves no practical purpose to a computer, but it is helpful for humans interacting with the code.
@@ -155,17 +183,19 @@ let Some(a) = an_option else {
 This is a counterpart to `if let` expressions, and the pattern matching works identically, except that the value from the pattern match
 is assigned to the surrounding scope rather than the block's scope.
 
-# Reference-level explanation
+# Reference-level explanations
 [reference-level-explanation]: #reference-level-explanation
 
 let-else is syntactical sugar for either `if let { assignment } else {}` or `match`, where the non-matched case diverges.
 
 Any expression may be put into the expression position except an `if {} else {}` as explain below in [drawbacks][].
 While `if {} else {}` is technically feasible this RFC proposes it be disallowed for programmer clarity to avoid an `... else {} else {}` situation.
+Rust already provides us with such a restriction, [`ExpressionWithoutBlock`][expressions].
 
 Any pattern that could be put into if-let's pattern position can be put into let-else's pattern position.
 
 The `else` block must diverge. This could be a keyword which diverges (returns `!`), or a panic.
+This likely necessitates a new subtype of `BlockExpression`, something like `BlockExpressionDiverging`.
 Allowed keywords:
 - `return`
 - `break`
@@ -182,34 +212,39 @@ accessible as they would normally be.
 "Must diverge" is an unusual requirement, which doesn't exist elsewhere in the language as of the time of writing, 
 and might be difficult to explain or lead to confusing errors for programmers new to this feature.
 
+This also neccesitates a new block expression subtype, something like `BlockExpressionDiverging`.
+
 ## `let PATTERN = if {} else {} else {};`
 
 One unfortunate combination of this feature with regular if-else expressions is the possibility of `let PATTERN = if { a } else { b } else { c };`.
 This is likely to be unclear if anyone writes it, but does not pose a syntactical issue, as `let PATTERN = if y { a } else { b };` should always be
-interperited as `let Enum(x) = (if y { a } else { b });` (still a compile error as there no diverging block: `error[E0005]: refutable pattern in local binding: ...`)
+interpreted as `let Enum(x) = (if y { a } else { b });` (still a compile error as there no diverging block: `error[E0005]: refutable pattern in local binding: ...`)
 because the compiler won't interpret it as `let PATTERN = (if y { a }) else { b };` since `()` is not an enum.
 
-This can be overcome by making a raw if-else in the expression position a compile error and instead requring that parentheses are inserted to disambiguate:
+This can be overcome by making a raw if-else in the expression position a compile error and instead requiring that parentheses are inserted to disambiguate:
 `let PATTERN = (if { a } else { b }) else { c };`.
+
+Rust already provides us with such a restriction, and so the expression can be restricted to be a [`ExpressionWithoutBlock`][expressions].
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 let-else attempts to be as consistent as possible to similar existing syntax.
 
-Fundimentally it is treated as a `let` statement, necessitating an assignment and the trailing semicolon.
+Fundamentally it is treated as a `let` statement, necessitating an assignment and the trailing semicolon.
 
 Pattern matching works identically to if-let, no new "negation" pattern matching rules are introduced.
 
-The `else` must be followed by a block, as in `if {} else {}`.
+The expression can be any [`ExpressionWithoutBlock`][expressions], in order to prevent `else {} else {}` confusion, as noted in [drawbacks][#drawbacks].
 
-The else block must be diverging as the outer context cannot be guarenteed to continue soundly without assignment, and no alternate assignment syntax is provided.
+The `else` must be followed by a block, as in `if {} else {}`. This else block must be diverging as the outer
+context cannot be guaranteed to continue soundly without assignment, and no alternate assignment syntax is provided.
+
+## Alternatives
 
 While this feature can effectively be covered by functions such `or_or`/`ok_or_else` on the `Option` and `Result` types combined with the Try operator (`?`),
 such functions do not exist automatically on custom enum types and require non-obvious and non-trivial implementation, and may not be map-able
-to `Option`/`Result`-style functions at all (especially for enums where the "success" varient is contextual and there are many varients).
-
-## Alternatives
+to `Option`/`Result`-style functions at all (especially for enums where the "success" variant is contextual and there are many variants).
 
 ### `let PATTERN = EXPR else return EXPR;`
 
@@ -230,7 +265,7 @@ This was originally suggested in the old RFC, comment at https://github.com/rust
 A fall-back assignment alternate to the diverging block has been proposed multiple times in relation to this feature in the [original rfc][] and also in out-of-RFC discussions.
 
 This RFC avoids this proposal, because there is no clear syntax to use for it which would be consistent with other existing features.
-Also use-cases for having a single fall-back are much more rare and ususual, where as use cases for the diverging block are very common.
+Also use-cases for having a single fall-back are much more rare and unusual, where as use cases for the diverging block are very common.
 This RFC proposes that most fallback cases are sufficiently or better covered by using `match`.
 
 An example, using a proposal to have the binding be visible and assignable from the `else`-block.
@@ -238,11 +273,11 @@ Note that this is incompatible with this RFC and could probably not be added as 
 
 ```rust
 enum AnEnum {
-    Varient1(u32),
-    Varient2(String),
+    Variant1(u32),
+    Variant2(String),
 }
 
-let AnEnum::Varient1(a) = x else {
+let AnEnum::Variant1(a) = x else {
     a = 42;
 };
 ```
@@ -251,11 +286,11 @@ Another potential alternative for fall-back which could be added with an additio
 
 ```rust
 enum AnEnum {
-    Varient1(u32),
-    Varient2(String),
+    Variant1(u32),
+    Variant2(String),
 }
 
-let AnEnum::Varient1(a) = x else assign a {
+let AnEnum::Variant1(a) = x else assign a {
     a = 42;
 };
 ```
@@ -265,7 +300,7 @@ let AnEnum::Varient1(a) = x else assign a {
 The [old RFC][old-rfc] originally proposed this general feature via some kind of pattern negation as `if !let PAT = EXPR { BODY }`.
 
 This RFC avoids adding any kind of new or special pattern matching rules. The pattern matching works as it does for if-let.
-The general consensus in the old RFC was also that the negation syntax is much less clear than `if PATTERN = EXPR else { /* diverge */ };`,
+The general consensus in the old RFC was also that the negation syntax is much less clear than `if PATTERN = EXPR_WITHOUT_BLOCK else { /* diverge */ };`,
 and partway through that RFC's lifecycle it was updated to be similar to this RFC's proposed let-else syntax.
 
 ### Complete Alternative
@@ -286,9 +321,9 @@ proposal except for the choice of keywords.
 The `match` alternative in particular is fairly prevalent in rust code on projects which have many possible error conditions.
 
 The Try operator allows for an `ok_or` alternative to be used where the types are only `Option` and `Result`,
-which is considered to be idomatic rust.
+which is considered to be idiomatic rust.
 
-// TODO link to examples, provide internal stistics, gather statistics from the rust compiler itself, etc.
+// TODO link to examples, provide internal statistics, gather statistics from the rust compiler itself, etc.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
@@ -307,11 +342,11 @@ If fall-back assignment as discussed above in [rationale-and-alternatives][] is 
 
 ```rust
 enum AnEnum {
-    Varient1(u32),
-    Varient2(String),
+    Variant1(u32),
+    Variant2(String),
 }
 
-let AnEnum::Varient1(a) = x else assign a {
+let AnEnum::Variant1(a) = x else assign a {
     a = 42;
 };
 ```
@@ -324,6 +359,7 @@ let Ok(a) = x else match {
 }
 ```
 
+[expressions]: https://doc.rust-lang.org/reference/expressions.html#expressions
 [old-rfc]: https://github.com/rust-lang/rfcs/pull/1303
 [if-let]: https://github.com/rust-lang/rfcs/blob/master/text/0160-if-let.md
 [swift]: https://developer.apple.com/library/prerelease/ios/documentation/Swift/Conceptual/Swift_Programming_Language/ControlFlow.html#//apple_ref/doc/uid/TP40014097-CH9-ID525
