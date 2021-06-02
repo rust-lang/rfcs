@@ -220,7 +220,21 @@ is assigned to the surrounding scope rather than the block's scope.
 # Reference-level explanations
 [reference-level-explanation]: #reference-level-explanation
 
-let-else is syntactical sugar for either `if let { assignment } else {}` or `match`, where the non-matched case diverges.
+let-else is syntactical sugar for `match` where the non-matched case diverges.
+```rust
+let pattern = expr else {
+    /* diverging expr */
+};
+```
+desugars to
+```rust
+let (each, binding) = match expr { 
+    pattern => (each, binding),
+    _ => { 
+        /* diverging expr */
+    }
+};
+```
 
 Any expression may be put into the expression position except an `if {} else {}` as explain below in [drawbacks][].
 While `if {} else {}` is technically feasible this RFC proposes it be disallowed for programmer clarity to avoid an `... else {} else {}` situation.
