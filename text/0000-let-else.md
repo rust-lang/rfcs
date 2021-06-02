@@ -137,7 +137,7 @@ impl ActionView {
 
 ## Versus `match`
 
-It is possible to use `match` statements to emulate this today, but at a
+It is possible to use `match` expressions to emulate this today, but at a
 significant cost in length and readability. For example, this real-world code
 from Servo:
 
@@ -154,6 +154,40 @@ is equivalent to this much simpler let-else statement:
 let Some(ref subpage_layer_info) = layer_properties.subpage_layer_info else {
     return
 }
+```
+
+## A practical refactor
+
+A refactor on an http server codebase in part written by the author to move some if-let conditionals to early-return `match` expressions
+yielded 4 changes of large if-let blocks over `Option`s to use `ok_or_else` + `?`, and 5 changed to an early-return `match`.
+The commit of the refactor was +531 −529 lines of code over a codebase of 4111 lines of rust code.
+The largest block was 90 lines of code which was able to be shifted to the left, and have its error case moved up to the conditional,
+showing the value of early-returns for this kind of program.
+
+While that refactor was positive, it should be noted that such alternatives were unclear the authors when they were less experienced rust programmers,
+and also that the resulting `match` code includes syntax boilerplate (e.g. the block) that could theoretically be reduced today but also interferes with rustfmt's rules:
+
+```rust
+let features = match geojson {
+    GeoJson::FeatureCollection(features) => features,
+    _ => {
+        return Err(format_err_status!(
+            422,
+            "GeoJSON was not a Feature Collection",
+        ));
+    }
+};
+```
+
+However, with if-let this could be very succinct:
+
+```rust
+let GeoJson::FeatureCollection(features) = geojson else {
+    return Err(format_err_status!(
+        422,
+        "GeoJSON was not a Feature Collection",
+    ));
+};
 ```
 
 # Guide-level explanation
