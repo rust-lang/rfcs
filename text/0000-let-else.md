@@ -11,7 +11,7 @@ Introduce a new `let PATTERN = EXPRESSION_WITHOUT_BLOCK else DIVERGING_BLOCK;` c
 
 If the pattern match from the assigned expression succeeds, its bindings are introduced *into the
 surrounding scope*. If it does not succeed, it must diverge (e.g. return or break).
-let-else statements are refutable `let` statements.
+Technically speaking, let-else statements are refutable `let` statements.
 
 This RFC is a modernization of a [2015 RFC (pull request 1303)][old-rfc] for an almost identical feature.
 
@@ -112,7 +112,7 @@ impl ActionView {
             // RFC Author's note:
             //   Without if-else this was separated from the conditional 
             //   by a substantial block of code which now follows below.
-            Err(eyre::eyre!("must begin with a Register action"))
+            return Err(eyre::eyre!("must begin with a Register action"));
         };
 
         let created = *event.created();
@@ -212,7 +212,7 @@ accessible as they would normally be.
 "Must diverge" is an unusual requirement, which doesn't exist elsewhere in the language as of the time of writing, 
 and might be difficult to explain or lead to confusing errors for programmers new to this feature.
 
-This also neccesitates a new block expression subtype, something like `BlockExpressionDiverging`.
+This also necessitates a new block expression subtype, something like `BlockExpressionDiverging`.
 
 ## `let PATTERN = if {} else {} else {};`
 
@@ -235,16 +235,41 @@ Fundamentally it is treated as a `let` statement, necessitating an assignment an
 
 Pattern matching works identically to if-let, no new "negation" pattern matching rules are introduced.
 
+Operator precedence with `&&` in made to be like if-let, requiring that a case which is an error prior to this RFC be changed to be a slightly different error.
+This is for a possible extension for let-else similar to the (yet unimplemented) if-else-chains feature, as mentioned in [future-possibilities][] with more detail.
+Specifically, while the following example is an error today, by the default `&&` operator rules it would cause problems with if-let-chains like `&&` chaining:
+
+```rust
+let a = false;
+let b = false;
+
+// The RFC proposes boolean matches like this be either:
+// - Made into a compile error, or
+// - Made to be parsed like if-let-chains: `(true = a) && b`
+let true = a && b else {
+    return;
+};
+```
+
 The expression can be any [`ExpressionWithoutBlock`][expressions], in order to prevent `else {} else {}` confusion, as noted in [drawbacks][#drawbacks].
 
 The `else` must be followed by a block, as in `if {} else {}`. This else block must be diverging as the outer
 context cannot be guaranteed to continue soundly without assignment, and no alternate assignment syntax is provided.
-
 ## Alternatives
 
 While this feature can effectively be covered by functions such `or_or`/`ok_or_else` on the `Option` and `Result` types combined with the Try operator (`?`),
 such functions do not exist automatically on custom enum types and require non-obvious and non-trivial implementation, and may not be map-able
 to `Option`/`Result`-style functions at all (especially for enums where the "success" variant is contextual and there are many variants).
+
+### `unless let ... {}` / `try let ... {}`
+
+An often proposed alternative is to add an extra keyword to the beginning of the let-else statement, to denote that it is different than a regular `let` statement.
+
+One possible benefit of adding a keyword is that it could make a possible future extension for similarity to the (yet unimplemented) [if-let-chains][] feature more straightforward.
+However, as mentioned in the [future-possibilities][] section, this is likely not necessary.
+
+This syntax has prior art in the Swift programming language, which includes a [guard-let-else][swift] statement
+which is roughly equivalent to this proposal except for the choice of keywords.
 
 ### `let PATTERN = EXPR else return EXPR;`
 
@@ -305,7 +330,7 @@ and partway through that RFC's lifecycle it was updated to be similar to this RF
 
 ### Complete Alternative
 
-- Don't make any changes; use existing syntax like `if let` and `match` as shown in the motivating example, or write macros to simplify the code.
+Don't make any changes; use existing syntax like `match` (or `if let`) as shown in the motivating example, or write macros to simplify the code.
 
 # Prior art
 [prior-art]: #prior-art
@@ -315,15 +340,13 @@ This RFC is a modernization of a [2015 RFC (pull request 1303)][old-rfc].
 A lot of this RFC's proposals come from that RFC and its ensuing discussions.
 
 The Swift programming language, which inspired Rust's if-let expression, also
-includes a [guard-let-else][swift] statement which is equivalent to this
+includes a [guard-let-else][swift] statement which is roughly equivalent to this
 proposal except for the choice of keywords.
 
 The `match` alternative in particular is fairly prevalent in rust code on projects which have many possible error conditions.
 
-The Try operator allows for an `ok_or` alternative to be used where the types are only `Option` and `Result`,
+The Try operator allows for an `ok_or_else` alternative to be used where the types are only `Option` and `Result`,
 which is considered to be idiomatic rust.
-
-// TODO link to examples, provide internal statistics, gather statistics from the rust compiler itself, etc.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
@@ -333,6 +356,60 @@ https://rust-lang.zulipchat.com/#narrow/stream/213817-t-lang/topic/.60let.20patt
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
+
+## if-let-chains
+
+An RFC exists for a (unimplemented at time of writing) feature called [if-let-chains][]:
+
+```rust
+if let Some(foo) = expr() && foo.is_baz() && let Ok(yay) = qux(foo) { ... }
+```
+
+While this RFC does not introduce or propose the same thing for let-else it attempts to allow it to be a future possibility for
+potential future consistency with if-let-chains.
+
+The primary obstacle is existing operator order precedence.
+Given the above example, it would likely be parsed as follows with ordinary operator precedence rules for `&&`:
+```rust
+let Some(foo) = (expr() && foo.is_baz() && let Ok(yay) = qux(foo) else { ... })
+```
+
+However, given that all existing occurrences of this behavior before this RFC are type errors anyways,
+a specific boolean-only case can be avoided and thus parsing can be changed to lave the door open to this possible extension.
+This boolean case is always equivalent to a less flexible `if` statement and as such is not useful.
+
+```rust
+let maybe = Some(2);
+let has_thing = true;
+
+// Always an error regardless, because && only operates on booleans.
+let Some(x) = maybe && has_thing else {
+    return;
+};
+```
+
+```rust
+let a = false;
+let b = false;
+
+// The RFC proposes boolean matches like this be either:
+// - Made into a compile error, or
+// - Made to be parsed like if-let-chains: `(true = a) && b`
+let true = a && b else {
+    return;
+};
+```
+
+Note also that this does not work today either, because booleans are refutable patterns:
+```
+error[E0005]: refutable pattern in local binding: `false` not covered
+ --> src/main.rs:5:9
+  |
+5 |     let true = a && b;
+  |         ^^^^ pattern `false` not covered
+  |
+  = note: `let` bindings require an "irrefutable pattern", like a `struct` or an `enum` with only one variant
+```
 
 ## Fall-back assignment
 
@@ -361,5 +438,6 @@ let Ok(a) = x else match {
 
 [expressions]: https://doc.rust-lang.org/reference/expressions.html#expressions
 [old-rfc]: https://github.com/rust-lang/rfcs/pull/1303
-[if-let]: https://github.com/rust-lang/rfcs/blob/master/text/0160-if-let.md
+[if-let]: https://rust-lang.github.io/rfcs/0160-if-let.html
+[if-let-chains]: https://rust-lang.github.io/rfcs/2497-if-let-chains.html
 [swift]: https://developer.apple.com/library/prerelease/ios/documentation/Swift/Conceptual/Swift_Programming_Language/ControlFlow.html#//apple_ref/doc/uid/TP40014097-CH9-ID525
