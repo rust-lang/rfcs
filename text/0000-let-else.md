@@ -293,7 +293,7 @@ let b = false;
 
 // The RFC proposes boolean matches like this be either:
 // - Made into a compile error, or
-// - Made to be parsed like if-let-chains: `(true = a) && b`
+// - Made to be parsed internally like if-let-chains: `(let true = a) && b else { ... };`
 let true = a && b else {
     return;
 };
@@ -442,7 +442,7 @@ let b = false;
 
 // The RFC proposes boolean matches like this be either:
 // - Made into a compile error, or
-// - Made to be parsed like if-let-chains: `(true = a) && b`
+// - Made to be parsed internally like if-let-chains: `(let true = a) && b else { ... };`
 let true = a && b else {
     return;
 };
