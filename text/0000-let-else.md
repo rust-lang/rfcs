@@ -10,7 +10,7 @@ Introduce a new `let PATTERN = EXPRESSION_WITHOUT_BLOCK else DIVERGING_BLOCK;` c
 **let-else statement**), the counterpart of if-let expressions.
 
 If the pattern match from the assigned expression succeeds, its bindings are introduced *into the
-surrounding scope*. If it does not succeed, it must diverge (e.g. return or break).
+surrounding scope*. If it does not succeed, it must diverge (return `!`, e.g. return or break).
 Technically speaking, let-else statements are refutable `let` statements.
 
 This RFC is a modernization of a [2015 RFC (pull request 1303)][old-rfc] for an almost identical feature.
@@ -135,28 +135,10 @@ impl ActionView {
 }
 ```
 
-## Versus `match`
+## A practical refactor with `match`
 
 It is possible to use `match` expressions to emulate this today, but at a
-significant cost in length and readability. For example, this real-world code
-from Servo:
-
-```rust
-let subpage_layer_info = match layer_properties.subpage_layer_info {
-    Some(ref subpage_layer_info) => *subpage_layer_info,
-    None => return,
-};
-```
-
-is equivalent to this much simpler let-else statement:
-
-```rust
-let Some(ref subpage_layer_info) = layer_properties.subpage_layer_info else {
-    return
-}
-```
-
-## A practical refactor
+significant cost in length and readability.
 
 A refactor on an http server codebase in part written by the author to move some if-let conditionals to early-return `match` expressions
 yielded 4 changes of large if-let blocks over `Option`s to use `ok_or_else` + `?`, and 5 changed to an early-return `match`.
@@ -179,7 +161,7 @@ let features = match geojson {
 };
 ```
 
-However, with if-let this could be very succinct:
+However, with if-let this could be more succinct & clear:
 
 ```rust
 let GeoJson::FeatureCollection(features) = geojson else {
