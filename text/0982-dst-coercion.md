@@ -185,4 +185,4 @@ that make some API safe?
 
 Since it was accepted, the RFC has been updated as follows:
 
-1. `CoerceUnsized` was specified to ingore PhantomData fields.
+1. `CoerceUnsized` was specified to ignore PhantomData fields.
