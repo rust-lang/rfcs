@@ -59,15 +59,15 @@ if let Some(a) = x {
 let a = match x {
     Some(a) => a,
     _ => return Err("bad x"),
-}
+};
 let b = match y {
     Some(b) => b,
     _ => return Err("bad y"),
-}
+};
 let c = match z {
     Some(c) => c,
     _ => return Err("bad z"),
-}
+};
 // ...
 do_something_with(a, b, c);
 // ...
@@ -78,13 +78,13 @@ Both of the above examples would be able to be written as:
 ```rust
 let Some(a) = x else {
     return Err("bad x");
-}
+};
 let Some(b) = y else {
     return Err("bad y");
-}
+};
 let Some(c) = z else {
     return Err("bad z");
-}
+};
 // ...
 do_something_with(a, b, c);
 // ...
@@ -275,7 +275,7 @@ let b = false;
 
 // The RFC proposes boolean matches like this be either:
 // - Made into a compile error, or
-// - Made to be parsed internally like if-let-chains: `(let true = a) && b else { ... };`
+// - Made to be parsed internally like if-let-chains: `((let true = a) && b) else { ... };`
 let true = a && b else {
     return;
 };
@@ -285,11 +285,13 @@ The expression can be any [`ExpressionWithoutBlock`][expressions], in order to p
 
 The `else` must be followed by a block, as in `if {} else {}`. This else block must be diverging as the outer
 context cannot be guaranteed to continue soundly without assignment, and no alternate assignment syntax is provided.
+
 ## Alternatives
 
-While this feature can effectively be covered by functions such `or_or`/`ok_or_else` on the `Option` and `Result` types combined with the Try operator (`?`),
+While this feature can partly be covered by functions such `or_or`/`ok_or_else` on the `Option` and `Result` types combined with the Try operator (`?`),
 such functions do not exist automatically on custom enum types and require non-obvious and non-trivial implementation, and may not be map-able
 to `Option`/`Result`-style functions at all (especially for enums where the "success" variant is contextual and there are many variants).
+These functions will also not work for code which wishes to return something other than `Option` or `Result`.
 
 ### `unless let ... {}` / `try let ... {}`
 
@@ -298,8 +300,24 @@ An often proposed alternative is to add an extra keyword to the beginning of the
 One possible benefit of adding a keyword is that it could make a possible future extension for similarity to the (yet unimplemented) [if-let-chains][] feature more straightforward.
 However, as mentioned in the [future-possibilities][] section, this is likely not necessary.
 
+One drawback of this alternative syntax: it would introduce a binding without either starting a new block containing that binding or starting with a `let`.
+Currently, in Rust, only a `let` statement can introduce a binding *in the current block* without starting a new block.
+(Note that `static` and `const` are only available outside of block scope.)
+This alternative syntax would potentially make it more difficult for Rust developers to scan their code for bindings, as they would need to look for both `let` and `unless let`.
+By contrast, a let-else statement begins with `let` and the start of a let-else statement looks exactly like a normal let binding.
+
 This syntax has prior art in the Swift programming language, which includes a [guard-let-else][swift] statement
 which is roughly equivalent to this proposal except for the choice of keywords.
+
+### `if !let PAT = EXPR { BODY }`
+
+The [old RFC][old-rfc] originally proposed this general feature via some kind of pattern negation as `if !let PAT = EXPR { BODY }`.
+
+This RFC avoids adding any kind of new or special pattern matching rules. The pattern matching works as it does for if-let.
+The general consensus in the old RFC was also that the negation syntax is much less clear than `if PATTERN = EXPR_WITHOUT_BLOCK else { /* diverge */ };`,
+and partway through that RFC's lifecycle it was updated to be similar to this RFC's proposed let-else syntax.
+
+The `if !let` alternative syntax would also share the binding drawback of the `unless let` alternative syntax.
 
 ### `let PATTERN = EXPR else return EXPR;`
 
@@ -350,15 +368,7 @@ let AnEnum::Variant1(a) = x else assign a {
 };
 ```
 
-### `if !let PAT = EXPR { BODY }`
-
-The [old RFC][old-rfc] originally proposed this general feature via some kind of pattern negation as `if !let PAT = EXPR { BODY }`.
-
-This RFC avoids adding any kind of new or special pattern matching rules. The pattern matching works as it does for if-let.
-The general consensus in the old RFC was also that the negation syntax is much less clear than `if PATTERN = EXPR_WITHOUT_BLOCK else { /* diverge */ };`,
-and partway through that RFC's lifecycle it was updated to be similar to this RFC's proposed let-else syntax.
-
-### Complete Alternative
+### Null Alternative
 
 Don't make any changes; use existing syntax like `match` (or `if let`) as shown in the motivating example, or write macros to simplify the code.
 
@@ -424,7 +434,7 @@ let b = false;
 
 // The RFC proposes boolean matches like this be either:
 // - Made into a compile error, or
-// - Made to be parsed internally like if-let-chains: `(let true = a) && b else { ... };`
+// - Made to be parsed internally like if-let-chains: `((let true = a) && b) else { ... };`
 let true = a && b else {
     return;
 };
