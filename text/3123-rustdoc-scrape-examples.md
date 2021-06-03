@@ -53,18 +53,18 @@ The goal of this RFC is to bridge the gap between automatically generated docume
 
 The `scrape-examples` feature of Rustdoc finds examples of code where a particular function is called. For example, if we are documenting [`Filter::and`](https://willcrichton.net/example-analyzer/warp/trait.Filter.html#method.and), and a file [`examples/returning.rs`](https://github.com/seanmonstar/warp/tree/bf8bfc4134035dbff882f9b26cb9d1aa57f2c338/examples/returning.rs) contains a call to `and`, then the corresponding Rustdoc documentation looks like this:
 
+
 <kbd>
-<img width="982" alt="Screen Shot 2021-05-11 at 11 31 12 AM" src="https://user-images.githubusercontent.com/663326/117852001-81cebb80-b24c-11eb-88ef-8532a5f012c4.png">
+<img width="982" alt="Screen Shot 2021-05-11 at 11 31 12 AM" src="https://user-images.githubusercontent.com/663326/120575286-a3e3d580-c3d5-11eb-9183-c65aa89f5250.png">
 </kbd>
 <br /><br />
 
-After the user-provided documentation in the doc-comment, `scrape-examples` inserts a code example (if one exists). The code example shows a window into the source file with the function call highlighted in yellow. The icons in the top-right of the code viewer allow the user to expand the code sample to the full file, or to navigate through other calls in the same file. The link above the example goes to the example in the crate's repository.
+After the user-provided documentation in the doc-comment, `scrape-examples` inserts a code example (if one exists). The code example shows a window into the source file with the function call highlighted in yellow. The icons in the top-right of the code viewer allow the user to expand the code sample to the full file, or to navigate through other calls in the same file. The link above the example goes to the full listing in Rustdoc's generated `src/` directory, similar to other `[src]` links.
 
 Additionally, the user can click "More examples" to see every example from the `examples/` directory, like this:
 
 <kbd>
-  <img width="956" alt="Screen Shot 2021-05-11 at 11 31 36 AM" src="https://user-images.githubusercontent.com/663326/117852026-8abf8d00-b24c-11eb-819d-51627798e005.png">
-
+  <img width="956" alt="Screen Shot 2021-05-11 at 11 31 36 AM" src="https://user-images.githubusercontent.com/663326/120575318-ae05d400-c3d5-11eb-9a25-990591c1a075.png">
 </kbd>
 <br /><br />
 
@@ -77,24 +77,24 @@ cargo doc --scrape-examples
 
 # Reference-level explanation
 
-I have implemented a prototype of the `scrape-examples` feature as modifications to rustdoc and cargo. You can check out the diffs: 
-* rustdoc: https://github.com/willcrichton/rust/compare/master...willcrichton:example-analyzer?expand=1
-* cargo: https://github.com/willcrichton/cargo/compare/master...willcrichton:example-analyzer?expand=1
+I have implemented a prototype of the `scrape-examples` feature as modifications to rustdoc and cargo. You can check out the draft PRs: 
+* rustdoc: https://github.com/rust-lang/rust/pull/85833
+* cargo: https://github.com/rust-lang/cargo/pull/9525
 
 The feature uses the following high-level flow, with some added technical details as necessary.
 
 1. The user gives `--scrape-examples` as an argument to `cargo doc`.
-2. Cargo runs the equivalent of `cargo build --examples` ([source](https://github.com/willcrichton/cargo/blob/fd25a0301314a9eba6beb5239891fc5902a9a9a9/src/cargo/ops/cargo_compile.rs#L618-L631)).
-    *  Specifically, for each unit being documented, it copies the Config and CliFeatures from the input CompileOpts. Then it sets the CompileFilter to only match examples.    
-4. Cargo generates build flags for each example. ([source](https://github.com/willcrichton/cargo/blob/fd25a0301314a9eba6beb5239891fc5902a9a9a9/src/cargo/ops/cargo_compile.rs#L633-L646)).
-    * This is implemented by repurposing the `Doctest` target, which also is used to generate build flags to pass to rustdoc.
-6. Cargo identifies a remote repository URL for linking to the examples ([source](https://github.com/willcrichton/cargo/blob/fd25a0301314a9eba6beb5239891fc5902a9a9a9/src/cargo/ops/cargo_compile.rs#L594-L608)).
-    * Currently this is done by retrieving `package.repository` from the manifest and casing on the domain name. If examples were packaged with rustdoc like other source files, then this could instead link to the generated `src` directory.
-7. Cargo invokes rustdoc with added flags: `--repository-url https://github.com/... --scrape-examples "rustc examples/foo.rs --extern ..."`
-9. Rustdoc iterates through each example and uses a visitor to identify spans of calls to functions in the crate being documented ([source](https://github.com/willcrichton/rust/blob/2653c671a4ae89070fdf00f9e149486146e7fc18/src/librustdoc/scrape_examples.rs)).
-    * This means that rustc is invoked multiple times within a single process before the core of rustdoc is actually executed. Care will be needed to avoid issues with global state like the string interner.
-11. Rustdoc adds the scraped examples to the documentation for each function ([source](https://github.com/willcrichton/rust/blob/2653c671a4ae89070fdf00f9e149486146e7fc18/src/librustdoc/html/render/mod.rs#L2394-L2471)).
-12. Rustdoc's Javascript adds interactivity to the examples when loaded ([source](https://github.com/willcrichton/rust/blob/2653c671a4ae89070fdf00f9e149486146e7fc18/src/librustdoc/html/static/main.js#L1415-L1599)).
+2. Cargo runs the equivalent of `cargo rustdoc --examples` ([source](https://github.com/willcrichton/cargo/blob/9c9f86772cbcf49f77119b7471021989e72c9936/src/cargo/ops/cargo_compile.rs#L596-L655)).
+    *  Specifically, when constructing the `BuildContext`, Cargo will now recursively invoke `rustdoc` on all files matching the `--examples` filter. 
+    *  Each invocation includes a flag `--scrape-examples <output path>` which directs rustdoc to output to a file at the specific location.
+3. An instance of rustdoc runs for each example, finding all call-sites and exporting them to a JSON file ([source](https://github.com/willcrichton/rust/blob/20044cd72dc220e787b081ae2139df49c2320471/src/librustdoc/scrape_examples.rs)).
+    * A visitor runs over the HIR to find call sites that resolve to a specific linkable function.
+    * As a part of this pass, rustdoc also generates source files for the examples, e.g. `target/doc/src/example/foo.rs`. These are then linked to during rendering.
+    * The format of the generated JSON is `{function: {file: {locations: [list of spans], other metadata}}}`. See the [`AllCallLocations`](https://github.com/willcrichton/rust/blob/20044cd72dc220e787b081ae2139df49c2320471/src/librustdoc/scrape_examples.rs#L24-L32) type.
+4. Rustdoc is then invoked as normal for the package being documented, except with the added flags `--with-examples <path/to/json>` for each generated JSON file. Rustdoc reads the JSON data from disk and stores them in `RenderOptions`.
+5. Rustdoc renders the call locations into the HTML ([source](https://github.com/willcrichton/rust/blob/20044cd72dc220e787b081ae2139df49c2320471/src/librustdoc/html/render/mod.rs#L2433-L2508)).
+    * This involves reading the source file from disk to embed the example into the page.
+6. Rustdoc's Javascript adds interactivity to the examples when loaded ([source](https://github.com/willcrichton/rust/blob/20044cd72dc220e787b081ae2139df49c2320471/src/librustdoc/html/static/main.js#L965-L1135)).
     * Most of the logic here is to extend the code viewer with additional features like toggling between snippet / full file, navigating between call sites, and highlighting code in-situ.
 
 The primary use case for this will be on docs.rs. My expectation is that docs.rs would use the `--scrape-examples` flag, and all docs hosted there would have the scraped examples.
@@ -122,14 +122,12 @@ I have never seen a documentation generator with this exact feature before. Ther
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-1. **UI design:** What is the best UI to show the examples inline? My prototype represents my best effort at a draft, but I'm open to suggestions. For example:
-    * Is showing 1 example by default the best idea? Or should scraped examples be hidden by default? 
-    * Is the ability to see the full file context worth the increase in page size?
-    * How should the examples be ordered? Is there a way to determine the "best" examples to show first?
-2. **Tooling integration:** Are there better ways to accomplish the tooling sub-tasks? Specifically:
-    * Is there a robust way of generating links to examples based on the Cargo.toml `package.repository` field, especially that generalizes across choice of VCS? Is there a way to reliably get the current commit so as to generate stable links?
-    * Is invoking rustc on each example within rustdoc the best way to analyze the examples for call sites? In my [original prototype](https://github.com/willcrichton/example-analyzer), I wrote a standalone tool that output JSON which was then read in by Rustdoc. One benefit of this approach is that Rustdoc could then integrate with any tool that analyzes call sites. But the downside is requiring yet another tool to be in-tree.
-    * What is the best way to handle Cargo workspaces? For example, some workspaces like [wasmtime](https://github.com/bytecodealliance/wasmtime) have a single examples directory at the root with many crates in a `crates/` subfolder. However, under my current strategy for finding examples, they would only be scraped during documentation of the root crate, not the other crates in the workspace.
+The main unresolved questions are about the UI: what is the best UI to show the examples inline? My prototype represents my best effort at a draft, but I'm open to suggestions. For example:
+
+1. Is showing 1 example by default the best idea? Or should scraped examples be hidden by default? 
+2. Is the ability to see the full file context worth the increase in page size?
+3. How should the examples be ordered? Is there a way to determine the "best" examples to show first?
+
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
