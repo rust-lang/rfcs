@@ -293,9 +293,18 @@ such functions do not exist automatically on custom enum types and require non-o
 to `Option`/`Result`-style functions at all (especially for enums where the "success" variant is contextual and there are many variants).
 These functions will also not work for code which wishes to return something other than `Option` or `Result`.
 
+### Naming of `else` (`let ... unless { ... }`)
+
+One often proposed alternative is to use a different keyword than `else`.
+This is supposed to help disambiguate let-else statements from other code with blocks and `else`.
+
+This RFC avoids this as it would mean loosing symmetry with if-else & if-let-else, 
+and would require adding a new keyword.
+Adding a new keyword could mean more to teach and could promote even more special casing around let-else's semantics.
+
 ### `unless let ... {}` / `try let ... {}`
 
-An often proposed alternative is to add an extra keyword to the beginning of the let-else statement, to denote that it is different than a regular `let` statement.
+Another often proposed alternative is to add an extra keyword to the beginning of the let-else statement, to denote that it is different than a regular `let` statement.
 
 One possible benefit of adding a keyword is that it could make a possible future extension for similarity to the (yet unimplemented) [if-let-chains][] feature more straightforward.
 However, as mentioned in the [future-possibilities][] section, this is likely not necessary.
