@@ -8,8 +8,7 @@
 
 Close a hole in encapsulation boundaries in Rust by providing users of
 `AsRawFd` and related traits guarantees about their raw resource handles, by
-introducing a concept of *I/O safety* and a new `IoSafe` trait. Build on, and
-provide an explanation for, the `from_raw_fd` function being unsafe.
+introducing a concept of *I/O safety* and a new set of types and traits.
 
 # Motivation
 [motivation]: #motivation
@@ -50,7 +49,7 @@ This RFC introduces a path to gradually closing this loophole by introducing:
 
  - A new concept, I/O safety, to be documented in the standard library
    documentation.
- - A new trait, `std::io::IoSafe`.
+ - A new set of types and traits.
  - New documentation for
    [`from_raw_fd`]/[`from_raw_handle`]/[`from_raw_socket`] explaining why
    they're unsafe in terms of I/O safety, addressing a question that has
@@ -129,106 +128,71 @@ lifetime the OS associates with the handle.
 
 I/O safety is new as an explicit concept, but it reflects common practices.
 Rust's `std` will require no changes to stable interfaces, beyond the
-introduction of a new trait and new impls for it. Initially, not all of the
-Rust ecosystem will support I/O safety though; adoption will be gradual.
+introduction of some new types and traits and new impls for them. Initially,
+not all of the Rust ecosystem will support I/O safety though; adoption will
+be gradual.
 
-## The `IoSafe` trait
+## `OwnedFd` and `BorrowedFd<'owned>`
 
-These high-level types also implement the traits [`AsRawFd`]/[`IntoRawFd`] on
-Unix-like platforms and
-[`AsRawHandle`]/[`AsRawSocket`]/[`IntoRawHandle`]/[`IntoRawSocket`] on Windows,
-providing ways to obtain the low-level value contained in a high-level value.
-APIs use these to accept any type containing a raw handle, such as in the
-`do_some_io` example in the [motivation].
+These two types are conceptual replacements for `RawFd`, and represent owned
+and borrowed handle values. `OwnedFd` owns a file descriptor, including closing
+it when it's dropped. `BorrowedFd`'s lifetime parameter ties it to the lifetime
+of something that owns a file descriptor. These types enforce all of their I/O
+safety invariants automatically.
 
-`AsRaw*` and `IntoRaw*` don't make any guarantees, so to add I/O safety, types
-will implement a new trait, `IoSafe`:
+For Windows, similar types, but in `Handle` and `Socket` forms.
 
-```rust
-pub unsafe trait IoSafe {}
-```
+## `AsFd`, `IntoFd`, and `FromFd`
 
-There are no required functions, so implementing it just takes one line, plus
-comments:
+These three traits are conceptual replacements for `AsRawFd`, `IntoRawFd`, and
+`FromRawFd` for most use cases. They work in terms of `OwnedFd` and
+`BorrowedFd`, so they automatically enforce their I/O safety invariants.
 
-```rust
-/// # Safety
-///
-/// `MyType` wraps a `std::fs::File` which handles the low-level details, and
-/// doesn't have a way to reassign or independently drop it.
-unsafe impl IoSafe for MyType {}
-```
-
-It requires `unsafe`, to require the code to explicitly commit to upholding I/O
-safety. With `IoSafe`, the `do_some_io` example should simply add a
-`+ IoSafe` to provide I/O safety:
+Using these traits, the `do_some_io` example in the [motivation] can avoid
+the original problems. Since `AsFd` is only implemented for types which
+properly own their file descriptors, this version of `do_some_io` doesn't
+have to worry about being passed bogus or dangling file descriptors:
 
 ```rust
-pub fn do_some_io<FD: AsRawFd + IoSafe>(input: &FD) -> io::Result<()> {
-    some_syscall(input.as_raw_fd())
+pub fn do_some_io<FD: AsFd>(input: &FD) -> io::Result<()> {
+    some_syscall(input.as_fd())
 }
 ```
 
-Some types have the ability to dynamically drop their resources, and
-these types require special consideration when implementing `IoSafe`. For
-example, a class representing a dynamically reassignable output source might
-have code like this:
+For Windows, similar traits, but in `Handle` and `Socket` forms.
 
-```rust
-struct VirtualStdout {
-    current: RefCell<std::fs::File>
-}
+## Portability for simple use cases
 
-impl VirtualStdout {
-    /// Assign a new output destination.
-    ///
-    /// This function ends the lifetime of the resource that `as_raw_fd`
-    /// returns a handle to.
-    pub fn set_output(&self, new: std::fs::File) {
-        *self.current.borrow_mut() = new;
-    }
-}
+Portability in this space isn't easy, since Windows has two different handle
+types while Unix has one. However, some use cases can treat `AsFd` and
+`AsHandle` similarly, while some other uses can treat `AsFd` and `AsSocket`
+similarly. In these two cases, trivial `Filelike` and `Socketlike` abstractions
+allow code which works in this way to be generic over Unix and Windows.
 
-impl AsRawFd for VirtualStdout {
-    fn as_raw_fd(&self) -> RawFd {
-        self.current.borrow().as_raw_fd()
-    }
-}
-```
+On Unix, `AsFilelike` and `AsSocketlike` have blanket implementations for
+any type that implements `AsFd`. On Windows, `AsFilelike` has a blanket
+implementation for any type that implements `AsHandle`, and `AsSocketlike`
+has a blanket implementation for any type that implements `AsSocket`.
 
-If a user of this type were to hold a `RawFd` value over a call to `set_file`,
-the `RawFd` value would become dangling, even though its within the lifetime of
-the `&self` reference passed to `as_raw_fd`:
-
-```rust
-    fn foo(output: &VirtualStdout) -> io::Result<()> {
-        let raw_fd = output.as_raw_fd();
-        output.set_file(File::open("/some/other/file")?);
-        use(raw_fd)?; // Use of dangling file descriptor!
-        Ok(())
-    }
-```
-
-The `IoSafe` trait requires types capable of dynamically dropping their
-resources within the lifetime of the `&self` passed to `as_raw_fd` must
-document the conditions under which this can occur, as the documentation
-comment above does.
+Similar portability abstractions apply to the `From*` and `Into*` traits.
 
 ## Gradual adoption
 
-I/O safety and `IoSafe` wouldn't need to be adopted immediately, adoption
-could be gradual:
+I/O safety and the new types and traits wouldn't need to be adopted
+immediately; adoption could be gradual:
 
- - First, `std` adds `IoSafe` with impls for all the relevant `std` types.
-   This is a backwards-compatible change.
+ - First, `std` adds the new types and traits with impls for all the relevant
+   `std` types. This is a backwards-compatible change.
 
- - After that, crates could implement `IoSafe` for their own types. These
-   changes would be small and semver-compatible, without special coordination.
+ - After that, crates could begin to use the new types and implement the new
+   traits for their own types. These changes would be small and semver-compatible,
+   without special coordination.
 
- - Once the standard library and enough popular crates utilize `IoSafe`,
-   crates could start to add `+ IoSafe` bounds (or adding `unsafe`), at their
-   own pace. These would be semver-incompatible changes, though most users of
-   APIs adding `+ IoSafe` wouldn't need any changes.
+ - Once the standard library and enough popular crates implement the new
+   traits, crates could start to switch to using the new traits as bounds when
+   accepting generic arguments, at their own pace. These would be
+   semver-incompatible changes, though most users of APIs switching to these
+   new traits wouldn't need any changes.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -250,44 +214,52 @@ Functions accepting arbitrary raw I/O handle values ([`RawFd`], [`RawHandle`],
 or [`RawSocket`]) should be `unsafe` if they can lead to any I/O being
 performed on those handles through safe APIs.
 
-Functions accepting types implementing
-[`AsRawFd`]/[`IntoRawFd`]/[`AsRawHandle`]/[`AsRawSocket`]/[`IntoRawHandle`]/[`IntoRawSocket`]
-should add a `+ IoSafe` bound if they do I/O with the returned raw handle.
+## `OwnedFd` and `BorrowedFd<'owned>`
 
-## The `IoSafe` trait
+`OwnedFd` and `BorrowedFd` are both `repr(transparent)` with a `RawFd` value
+on the inside, and both can use niche optimizations so that `Option<OwnedFd>`
+and `Option<BorrowedFd<'_>>` are the same size, and can be used in FFI
+declarations for functions like `open`, `read`, `write`, `close`, and so on.
+When used this way, they ensure I/O safety all the way out to the FFI boundary.
 
-Types implementing `IoSafe` guarantee that they uphold I/O safety. They must
-not make it possible to write a safe function which can perform invalid I/O
-operations, and:
+These types also implement the existing `AsRawFd`, `IntoRawFd`, and `FromRawFd`
+traits, so they can interoperate with existing code that works with `RawFd`
+types.
 
- - A type implementing `AsRaw* + IoSafe` means its `as_raw_*` function returns
-   a handle which is valid to use for the duration of the `&self` reference.
-   If such types have methods to close or reassign the handle without
-   dropping the whole object, they must document the conditions under which
-   existing raw handle values remain valid to use.
+## `AsFd`, `IntoFd`, and `FromFd`
 
- - A type implementing `IntoRaw* + IoSafe` means its `into_raw_*` function
-   returns a handle which is valid to use at the point of the return from
-   the call.
+These types provide `as_fd`, `into_fd`, and `from_fd` functions similar to
+their `Raw` counterparts, but with the benefit of a safe interface, it's safe
+to provide a few simple conveniences which make the API much more flexible:
 
-All standard library types implementing `AsRawFd` implement `IoSafe`, except
-`RawFd`.
+ - A `from_into_fd` function which takes a `IntoFd` and converts it into a
+   `FromFd`, allowing users to perform this common sequence in a single
+   step, and without having to use `unsafe`.
 
-Note that, despite the naming similarity, the `IoSafe` trait's requirements are not
-identical to the I/O safety requirements. The return value of `as_raw_*` is
-valid only for the duration of the `&self` argument passed in.
+ - A `as_filelike_view::<T>()` function returns a `View`, which contains a
+   temporary `ManuallyDrop` instance of T constructed from the contained
+   file descriptor, allowing users to "view" a raw file descriptor as a
+   `File`, `TcpStream`, and so on.
+
+## Prototype implementation
+
+All of the above is prototyped here:
+
+<https://github.com/sunfishcode/io-experiment>
+
+The README.md has links to documentation, examples, and a survey of existing
+crates providing similar features.
 
 # Drawbacks
 [drawbacks]: #drawbacks
 
 Crates with APIs that use file descriptors, such as [`nix`] and [`mio`], would
-need to migrate to types implementing `AsRawFd + IoSafe`, use crates providing
-equivalent mechanisms such as [`unsafe-io`], or change such functions to be
+need to migrate to types implementing `AsFd`, or change such functions to be
 unsafe.
 
 Crates using `AsRawFd` or `IntoRawFd` to accept "any file-like type" or "any
 socket-like type", such as [`socket2`]'s [`SockRef::from`], would need to
-either add a `+ IoSafe` bound or make these functions unsafe.
+either switch to `AsFd` or `IntoFd`, or make these functions unsafe.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -347,52 +319,19 @@ I/O safety approach will require changes to Rust code in crates such as
 [`RawFd`], though the changes can be made gradually across the ecosystem rather
 than all at once.
 
-## I/O safety but not `IoSafe`
+## The `IoSafe` trait (and `OwnsRaw` before it)
 
-The I/O safety concept doesn't depend on `IoSafe` being in `std`. Crates could
-continue to use [`unsafe_io::OwnsRaw`], though that does involve adding a
-dependency.
+Earlier versions of this RFC proposed an `IoSafe` trait, which was meant as a
+minimally intrusive fix. Feedback from the RFC process led to the development
+of a new set of types and traits. This has a much larger API surface area,
+which will take more work to design and review. And it and will require more
+extensive changes in the crates ecosystem over time. However, early indications
+are that the new types and traits are easier to understand, and easier and
+safer to use, and so are a better foundation for the long term.
 
-## Define `IoSafe` in terms of the object, not the reference
-
-The [reference-level-explanation] explains `IoSafe + AsRawFd` as returning a
-handle valid to use for "the duration of the `&self` reference". This makes it
-similar to borrowing a reference to the handle, though it still uses a raw
-type which doesn't enforce the borrowing rules.
-
-An alternative would be to define it in terms of the underlying object. Since
-it returns raw types, arguably it would be better to make it work more like
-`slice::as_ptr` and other functions which return raw pointers that aren't
-connected to reference lifetimes. If the concept of borrowing is desired, new
-types could be introduced, with better ergonomics, in a separate proposal.
-
-## New types and traits
-
-New types and traits could provide a much cleaner API, along the lines of:
-
-```rust
-pub struct BorrowedFd<'owned> { ... }
-pub struct OwnedFd { ... }
-
-pub trait AsFd { ... }
-pub trait IntoFd { ... }
-pub trait FromFd { ... }
-```
-
-An initial prototype of this here:
-
-<https://github.com/sunfishcode/io-experiment>
-
-The details are mostly obvious, though one notable aspect of this design is
-the use of `repr(transparent)` to define types that can participate in FFI
-directly, leading to FFI usage patterns that don't interact with raw types
-at all. An example of this is here:
-
-<https://github.com/sunfishcode/io-experiment/blob/main/examples/hello.rs>
-
-This provides a cleaner API than `*Raw*` + `IoSafe`. The main obvious downside
-is that a lot of code will likely need to continue to support `*Raw*` for a
-long time, so this would increase the amount of code they have to maintain.
+Earlier versions of `IoSafe` were called `OwnsRaw`. It was difficult to find a
+name for this trait which described exactly what it does, and arguably this is
+one of the signs that it wasn't the right trait.
 
 # Prior art
 [prior-art]: #prior-art
@@ -403,9 +342,15 @@ such as in [C#], [Java], and others. Making it `unsafe` to perform I/O through
 a given raw handle would let safe Rust have the same guarantees as those
 effectively provided by such languages.
 
-The `std::io::IoSafe` trait comes from [`unsafe_io::OwnsRaw`], and experience
-with this trait, including in some production use cases, has shaped this RFC.
+There are several crates on crates.io providing owning and borrowing file
+descriptor wrappers. The [io-experiment README.md's Prior Art section]
+describes these and details how io-experiment's similarities and differences
+with these existing crates in detail. At a high level, these existing crates
+share the same basic concepts that io-experiment uses. All are built around
+Rust's lifetime and ownership concepts, and confirm that these concepts
+are a good fit for this problem.
 
+[io-experiment README.md's Prior Art section]: https://github.com/sunfishcode/io-experiment#prior-art
 [C#]: https://docs.microsoft.com/en-us/dotnet/api/system.io.file?view=net-5.0
 [Java]: https://docs.oracle.com/javase/7/docs/api/java/io/File.html?is-external=true
 
@@ -431,17 +376,6 @@ needs, but it could be explored in the future.
 [future-possibilities]: #future-possibilities
 
 Some possible future ideas that could build on this RFC include:
-
- - New wrapper types around `RawFd`/`RawHandle`/`RawSocket`, to improve the
-   ergonomics of some common use cases. Such types may also provide portability
-   features as well, abstracting over some of the `Fd`/`Handle`/`Socket`
-   differences between platforms.
-
- - Higher-level abstractions built on `IoSafe`. Features like
-   [`from_filelike`] and others in [`unsafe-io`] eliminate the need for
-   `unsafe` in user code in some common use cases. [`posish`] uses this to
-   provide safe interfaces for POSIX-like functionality without having `unsafe`
-   in user code, such as in [this wrapper around `posix_fadvise`].
 
  - Clippy lints warning about common I/O-unsafe patterns.
 
