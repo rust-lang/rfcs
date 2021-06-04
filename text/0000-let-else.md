@@ -293,9 +293,9 @@ such functions do not exist automatically on custom enum types and require non-o
 to `Option`/`Result`-style functions at all (especially for enums where the "success" variant is contextual and there are many variants).
 These functions will also not work for code which wishes to return something other than `Option` or `Result`.
 
-### Naming of `else` (`let ... unless { ... }`)
+### Naming of `else` (`let ... otherwise { ... }`)
 
-One often proposed alternative is to use a different keyword than `else`.
+One often proposed alternative is to use a different keyword than `else`, such as `otherwise`.
 This is supposed to help disambiguate let-else statements from other code with blocks and `else`.
 
 This RFC avoids this as it would mean loosing symmetry with if-else & if-let-else, 
