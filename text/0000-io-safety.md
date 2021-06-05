@@ -136,9 +136,9 @@ be gradual.
 
 These two types are conceptual replacements for `RawFd`, and represent owned
 and borrowed handle values. `OwnedFd` owns a file descriptor, including closing
-it when it's dropped. `BorrowedFd`'s lifetime parameter ties it to the lifetime
-of something that owns a file descriptor. These types enforce all of their I/O
-safety invariants automatically.
+it when it's dropped. `BorrowedFd`'s lifetime parameter says for how long
+access to this file descriptor has been borrowed. These types enforce all of
+their I/O safety invariants automatically.
 
 For Windows, similar types, but in `Handle` and `Socket` forms.
 
