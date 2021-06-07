@@ -97,7 +97,7 @@ Ideally, experimental crates that are published for feedback purposes will have 
 
 > This crate is a functionally empty crate that exists to reserve the crate name of \[tool\]. It should not be used. 
 
-In general it is better to have an empty placeholder crate published instead of reserving the crate via yanking, so that there is a readme that helps
+In general it is better to have an empty placeholder crate published instead of reserving the crate via yanking, so that there is a readme that helps people understand why the crate is unavailable.
 
 
 ### Expatriated
