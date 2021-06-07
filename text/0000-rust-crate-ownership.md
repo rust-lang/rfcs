@@ -82,7 +82,7 @@ An example of such messaging would be text like:
 
 or, for experiments that are not intended to be used at all:
 
-> This crate is maintained by \[team\] and is an internal experiment. We do not guarantee stability or long term maintenance, please use at your own risk.
+> This crate is maintained by \[team\] and is an internal experiment. We do not guarantee stability or long term maintenance, use at your own risk.
 
 Ideally, experimental crates that are published for feedback purposes will have a document to link to that lists out the purpose, rough duration, and processes of the experiment.
 
