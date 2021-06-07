@@ -148,7 +148,9 @@ This is a lot of work, but as we move towards a more deliberately structured pro
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-The alternative here is mostly to continue as is. This will become increasingly untenable as we add more and more crates; with the constant danger of internal crates becoming accidental artifacts that the ecosystem depends on.
+An alternative here is mostly to continue as is. This will become increasingly untenable as we add more and more crates; with the constant danger of internal crates becoming accidental artifacts that the ecosystem depends on.
+
+Another alternative is to ask teams to be clear about the level of support offered in their crates without standardizing the process. This could work, but could lead to less cross-team legibility and would be harder to track.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
