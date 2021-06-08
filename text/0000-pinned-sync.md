@@ -34,7 +34,7 @@ For the following types:
 
 Pinned versions are available at the module `std::sync::pinned`. These versions are all `!Unpin`.
 
-In all methods of these pinned versions a `self: Pin<&Self>` argument is taken, therefore the type must be constructed with, for example, `Arc::pin` or `Box::pin`.
+In all methods of these pinned versions a `self: Pin<&Self>` argument is taken.
 
 In order to initialize a `pinned::Mutex`, for example, one of these can be used:
 
@@ -45,8 +45,8 @@ let arc_mutex: Pin<Arc<Mutex<T>>> = Mutex::arc(...);
 
 // Explicitly initialize after creation with a custom constructor
 // Nothing here is unsafe, the library checks for initialization
-let mut mutex: Pin<Box<Mutex<T>>> = Box::pin(Mutex::uninit(...));
-mutex.as_mut().init();
+let mutex: Pin<Box<Mutex<T>>> = Box::pin(Mutex::uninit(...));
+mutex.as_ref().init();
 ```
 
 # Reference-level explanation
@@ -55,21 +55,53 @@ mutex.as_mut().init();
 
 The std `sys_common` already has a pretty good infrastructure for implementing this.
 
-- The explicit initialization is done by first creating the structure using `uninit(value: T) -> Self`, then calling `init(self: Pin<&mut Self>)`.
-- The library adds the necessary assertions to make this pattern safe. Using before `init` causes a `panic!`. In particular, the implementation can use an `Option` to wrap the OS primitive. The assertions can be placed such that they are inlined, so if one method is used after another, the assertion can be optimized away for the second method.
+- The explicit initialization is done by first creating the structure using `uninit(value: T) -> Self`, then calling `init(self: Pin<&Self>)`.
+- `init(self: Pin<&Self>)` is atomic and safe.
+    - Implementation-wise, an atomic flag can be used. The states for the flag are `UNINIT`, `LOCK` and `INIT`. When `init(self: Pin<&Self>)` is called, the flag is asserted to be `UNINIT` and is changed to `LOCK`, then the initialization is performed and then the flag is changed to `INIT`. For all other operations, the flag is asserted to be `INIT`.
+    - This pattern is completely safe and will panic on race conditions,double initialization and use-before-initialize.
+    - If we are on release mode and the primitive can be created in the`const uninit()`, the `init(self: Pin<&Self>)` is a no-op.
 
 # Drawbacks
 
 [drawbacks]: #drawbacks
 
 - Adds further complexity to the `std` library.
+- The assertions for initialization add some overhead on every call.
 
 # Rationale and alternatives
 
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-- Alternative for the explicit initialization: have unsafe `uninit()`. This can remove assertion overhead but can lead to some hard to detect undefined behaviour, as in POSIX - for example - this would cause mutexes to work as normal until a double lock happens, which would cause undefined behaviour.
-- [Replace the primitives with `parking_lot`](https://github.com/rust-lang/rust/pull/56410). This has been proposed in the past and has its fair share of drawbacks, such as non-trivial space overhead which can be a deal breaker for some applications.
+- `unsafe uninit()`
+    - Causes UB if a method is used before `init` is called.
+    - Pros:
+        - No assertions on most methods.
+    - Cons:
+        - Unsafety.
+        - UB can be very hard to debug, as many platforms can initialize the structure in `unsafe uninit()`, making the code work when it shouldn't.
+- `init(self: Pin<&mut Self>)`
+    - This was the initial proposal for the initialization pattern.
+    - Pros:
+        - No need for atomicity on the initialization flag.
+        - As the flag isn't atomic hopefully the compiler could optimize it away (in the moment it doesn't).
+    - Cons:
+        - It isn't possible to initialize, for example, `Pin<Arc<(Mutex<T>, Condvar)>>` safely. This a major dealbreaker as it puts one of the major advantages of this change behing unsafety.
+        - Initialization can not be done via a shared reference, so `static` also needs to be wrapped with `UnsafeCell` or made `mut`, both alternatives being `unsafe` as well.
+- [Replace the primitives with `parking_lot`](https://github.com/rust-lang/rust/pull/56410).
+    - Pros:
+        - Completely constant initialization, so no `init` needed.
+        - No boxing either, so the whole `Pin` pattern is not necessary.
+        - It can be faster than system library high level primitives.
+    - Cons:
+        - The hash table introduces overhead which can be a dealbreaker when in very memory constrained environments.
+        - We lose the benefit of using system libraries which can be updated independently of the program to reflect the introduction of new system calls.
+- Implement the primitives from the ground up using the lowest level primitives available (futexes for example).
+    - Pros:
+        - It can be faster than system library high level primitives.
+        - Most platforms support implementations which need no boxing or intialization.
+    - Cons:
+        - There can be some platforms which still require usage of primitives which need to be boxed and initialized. For example, POSIX-compliant platforms which do not expose lower level primitives.
+        - We lose the benefit of using system libraries which can be updated independently of the program to reflect the introduction of new system calls.
 
 # Prior art
 
