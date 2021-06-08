@@ -38,55 +38,70 @@ which require intermediary bindings (usually of the same name).
 The following two code examples are possible options with current Rust code.
 
 ```rust
-if let Some(a) = x {
-    if let Some(b) = y {
-        if let Some(c) = z {
+if let Some(x) = xyz {
+    if let Some(y) = x.thing() {
+        if let Some(z) = y.thing() {
             // ...
-            do_something_with(a, b, c);
+            do_something_with(z);
             // ...
         } else {
+            info!("z was bad");
             return Err("bad z");
         }
     } else {
+        info!("y was bad");
         return Err("bad y");
     }
 } else {
+    info!("x was bad");
     return Err("bad x");
 }
 ```
 
 ```rust
-let a = match x {
-    Some(a) => a,
-    _ => return Err("bad x"),
+let x = match xyz {
+    Some(x) => x,
+    _ => {
+        info!("x was bad");
+        return Err("bad x")
+    },
 };
-let b = match y {
-    Some(b) => b,
-    _ => return Err("bad y"),
+let y = match x.thing() {
+    Some(y) => y,
+    _ => {
+        info!("y was bad");
+        return Err("bad y")
+    },
 };
-let c = match z {
-    Some(c) => c,
-    _ => return Err("bad z"),
+let z = match y.thing() {
+    Some(z) => z,
+    _ => return {
+        info!("z was bad");
+        Err("bad z")
+    },
 };
 // ...
-do_something_with(a, b, c);
+do_something_with(z);
 // ...
 ```
 
 Both of the above examples would be able to be written as:
 
 ```rust
-let Some(a) = x else {
+let Some(x) = xyz else {
+    info!("x was bad");
     return Err("bad x");
 };
-let Some(b) = y else {
+let Some(y) = x.thing() else {
+    info!("y was bad");
     return Err("bad y");
 };
-let Some(c) = z else {
+let Some(z) = y.thing() else {
+    info!("z was bad");
     return Err("bad z");
 };
 // ...
-do_something_with(a, b, c);
+do_something_with(z);
 // ...
 ```
 
@@ -222,7 +237,10 @@ Any expression may be put into the expression position except an `if {} else {}`
 While `if {} else {}` is technically feasible this RFC proposes it be disallowed for programmer clarity to avoid an `... else {} else {}` situation.
 Rust already provides us with such a restriction, [`ExpressionWithoutBlock`][expressions].
 
-Any pattern that could be put into if-let's pattern position can be put into let-else's pattern position.
+Any pattern that could be put into if-let's pattern position can be put into let-else's pattern position, except a match to a boolean when
+a lazy boolean operator is present (`&&` or `||`), for reasons noted in [future-possibilities][].
+
+If the pattern is irrefutable, rustc will emit the `irrefutable_let_patterns` warning lint, as it does with an irrefutable pattern in an `if let`.
 
 The `else` block must diverge. This could be a keyword which diverges (returns `!`), or a panic.
 This likely necessitates a new subtype of `BlockExpression`, something like `BlockExpressionDiverging`.
@@ -273,9 +291,8 @@ Specifically, while the following example is an error today, by the default `&&`
 let a = false;
 let b = false;
 
-// The RFC proposes boolean matches like this be either:
-// - Made into a compile error, or
-// - Made to be parsed internally like if-let-chains: `((let true = a) && b) else { ... };`
+// The RFC proposes boolean patterns with a lazy boolean operator (&& or ||)
+//  be made into a compile error, for potential future compatibility with if-let-chains.
 let true = a && b else {
     return;
 };
@@ -311,7 +328,7 @@ However, as mentioned in the [future-possibilities][] section, this is likely no
 
 One drawback of this alternative syntax: it would introduce a binding without either starting a new block containing that binding or starting with a `let`.
 Currently, in Rust, only a `let` statement can introduce a binding *in the current block* without starting a new block.
-(Note that `static` and `const` are only available outside of block scope.)
+(Note that [`static`][] and [`const`][] are _items_, which can be forward-referenced.)
 This alternative syntax would potentially make it more difficult for Rust developers to scan their code for bindings, as they would need to look for both `let` and `unless let`.
 By contrast, a let-else statement begins with `let` and the start of a let-else statement looks exactly like a normal let binding.
 
@@ -441,9 +458,8 @@ let Some(x) = maybe && has_thing else {
 let a = false;
 let b = false;
 
-// The RFC proposes boolean matches like this be either:
-// - Made into a compile error, or
-// - Made to be parsed internally like if-let-chains: `((let true = a) && b) else { ... };`
+// The RFC proposes boolean patterns with a lazy boolean operator (&& or ||)
+//  be made into a compile error, for potential future compatibility with if-let-chains.
 let true = a && b else {
     return;
 };
@@ -485,6 +501,18 @@ let Ok(a) = x else match {
 }
 ```
 
+## let-else within if-let
+
+Conceivable. This RFC makes no judgement, even if the author does.
+
+```rust
+if let Some(x) = y else { return; } {
+    // I guess this RFC had it coming for it
+}
+```
+
+[`const`]: https://doc.rust-lang.org/reference/items/constant-items.html
+[`static`]: https://doc.rust-lang.org/reference/items/static-items.html
 [expressions]: https://doc.rust-lang.org/reference/expressions.html#expressions
 [old-rfc]: https://github.com/rust-lang/rfcs/pull/1303
 [if-let]: https://rust-lang.github.io/rfcs/0160-if-let.html
