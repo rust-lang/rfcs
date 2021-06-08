@@ -85,7 +85,7 @@ The std `sys_common` already has a pretty good infrastructure for implementing t
         - No need for atomicity on the initialization flag.
         - As the flag isn't atomic hopefully the compiler could optimize it away (in the moment it doesn't).
     - Cons:
-        - It isn't possible to initialize, for example, `Pin<Arc<(Mutex<T>, Condvar)>>` safely. This a major dealbreaker as it puts one of the major advantages of this change behing unsafety.
+        - It isn't possible to initialize, for example, `Pin<Arc<(Mutex<T>, Condvar)>>` safely. This a major dealbreaker as it puts one of the major advantages of this change behind unsafety.
         - Initialization can not be done via a shared reference, so `static` also needs to be wrapped with `UnsafeCell` or made `mut`, both alternatives being `unsafe` as well.
 - [Replace the primitives with `parking_lot`](https://github.com/rust-lang/rust/pull/56410).
     - Pros:
