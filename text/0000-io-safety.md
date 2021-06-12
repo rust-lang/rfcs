@@ -132,7 +132,7 @@ introduction of some new types and traits and new impls for them. Initially,
 not all of the Rust ecosystem will support I/O safety though; adoption will
 be gradual.
 
-## `OwnedFd` and `BorrowedFd<'owned>`
+## `OwnedFd` and `BorrowedFd<'fd>`
 
 These two types are conceptual replacements for `RawFd`, and represent owned
 and borrowed handle values. `OwnedFd` owns a file descriptor, including closing
@@ -214,7 +214,7 @@ Functions accepting arbitrary raw I/O handle values ([`RawFd`], [`RawHandle`],
 or [`RawSocket`]) should be `unsafe` if they can lead to any I/O being
 performed on those handles through safe APIs.
 
-## `OwnedFd` and `BorrowedFd<'owned>`
+## `OwnedFd` and `BorrowedFd<'fd>`
 
 `OwnedFd` and `BorrowedFd` are both `repr(transparent)` with a `RawFd` value
 on the inside, and both can use niche optimizations so that `Option<OwnedFd>`
