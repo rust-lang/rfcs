@@ -10,7 +10,7 @@ Place functionality in `alloc` and `std` which may call a global OOM handler und
 `std` with `infallible_allocation` enabled will depend on `alloc` with `infallible_allocation` enabled.
 
 This proposal specifically does *not* require the creation of any new APIs.
-Having these features will likely lead to creation of new fallible APIs in the future, but those APIs can be discussed and reviewed individually.
+Having these features will likely lead to the creation of new fallible APIs in the future, but those APIs can be discussed and reviewed individually.
 
 # Motivation
 [motivation]: #motivation
@@ -21,7 +21,7 @@ Concrete examples include:
 
 * [Linux](https://lore.kernel.org/lkml/CAHk-=wh_sNLoz84AUUzuqXEsYH35u=8HV3vK-jbRbJ_B-JjGrg@mail.gmail.com/) and other OS Kernel environments.
 * Mid-range embedded environments (e.g. CPU firmware, bootloaders, etc.)
-* High reliability processes (e.g. init)
+* High-reliability processes (e.g. init)
 * Services which allocate in response to untrusted user input
 
 # Guide-level explanation
@@ -29,12 +29,12 @@ Concrete examples include:
 
 When a developer is writing code in an environment where `abort()`ing (or calling a dedicated OOM handler) is not an appropriate strategy for dealing with allocation failure scenarios, they should consider disabling the `infallible_allocation` feature.
 If the developer is writing in a hosted environment, they will disable the feature on the `std` crate.
-If the developer is writing in a bare metal environment, they will instead disable the feature on the `alloc` crate.
+If the developer is writing in a bare-metal environment, they will instead disable the feature on the `alloc` crate.
 This should be presented as an exceptional situation - the vast majority of developers will want the default here.
 
 This will remove a large number of functions - many standard library functions implicitly allocate and do not handle OOM scenarios.
 
-Note also that this will either require the developer to download an additional sysroot via `rustup` or perform a local build, depending on developer's target.
+Note also that this will either require the developer to download an additional sysroot via `rustup` or perform a local build, depending on the developer's target.
 
 ## Kernel Example
 For example, those writing a kernel likely do not want to `abort()` just because memory allocation failed.
@@ -66,7 +66,7 @@ If the developer is using other default features of `alloc`, they may need to ad
 After this, the first example will fail to compile, but the second will succeed.
 
 ## Hosted Example
-If developer is authoring a high-reliability process which absolutely cannot crash (e.g. `init`), they will want the hosted equivalent.
+If the developer is authoring a high-reliability process that absolutely cannot crash (e.g. `init`), they will want the hosted equivalent.
 For the same code examples in the Kernel section above, they would instead add
 
 ```
@@ -80,7 +80,7 @@ Adding any additional features they wish to depend on explicitly.
 
 ## Moving infallible allocation behind a feature
 All functions in `alloc` directly depending on the global OOM handler will be gated on the crate feature `infallible_allocation`.
-Any functions directly calling allocation APIs in either `alloc` or `std` will either propagate that error to its caller in a handleable way, or be moved behind the crate feature `infallible_allocation`.
+Any functions directly calling allocation APIs in either `alloc` or `std` will either propagate that error to its caller in a handleable way or be moved behind the crate feature `infallible_allocation`.
 
 ## Suppressing annotations in `rustdoc`
 As the vast bulk of `std` and `alloc` will be initially moved behind the `infallible_allocation` feature, it would be low-signal to display to users the `This is supported on crate feature infallible_allocation only.` for nearly every item.
@@ -89,7 +89,7 @@ To combat this, `rustdoc` would need a new flag `-Z hide-cfg-doc feature_name` w
 ## Testing
 In CI, `std` and `alloc`'s ability to build without the `infallible_allocation` feature only needs to be tested on a single platform (likely `x86_64-unknown-linux-gnu`) in order to prevent developers accidentally forgetting to tag new functions with the appropriate feature gate.
 
-When cutting release, all Tier-2 platforms should perform a build with `infallible_allocation` disabled to ensure nothing architecture specific slipped through (though this should be rare).
+When cutting release, all Tier-2 platforms should perform a build with `infallible_allocation` disabled to ensure nothing architecture-specific slipped through (though this should be rare).
 
 ## Making this feature accessible to Cargo
 If sysroot crates (`std`, `core`, `compiler_builtins`, `alloc`) are specified as a dependency in the manifest, Cargo will attempt to locate a variant of that crate which has the minimum set of requested features to build the package.
@@ -114,7 +114,7 @@ This will allow crates to build even in environments which do not have the alter
 [drawbacks]: #drawbacks
 
 - Adds annotations on a large number of functions.
-  There's no notion of a feature which is "required by default" for all items, so even though `infallible_allocation` may be the common case, it will still be the annotated case rather than the other way around.
+  There's no notion of a feature that is "required by default" for all items, so even though `infallible_allocation` may be the common case, it will still be the annotated case rather than the other way around.
   This can be partially mitigated by using feature annotations on entire modules until those modules contain some fallible allocation supporting functions.
 
 # Rationale and alternatives
@@ -125,7 +125,7 @@ When considering the alternatives, it is important to remember a few things:
 
 * This is not a one-off issue - we have already added `panic_immediate_abort`, and we will likely need to do something similar for `nofp` on platforms which technically support it in the near future.
 * Many of the environments which want to handle OOM care deeply about overhead.
-* There is an important distinction between providing APIs which make it *possible* to write OOM-safe code, and providing APIs which allow build time checks that the code *is* OOM-safe.
+* There is an important distinction between providing APIs which make it *possible* to write OOM-safe code and providing APIs which allow build-time checks that the code *is* OOM-safe.
 
 ### Unwinding OOM
 Transform OOM into a `panic!`-like event which can be unwound up the stack, calling appropriate drops and releasing memory as it unwinds.
@@ -137,25 +137,25 @@ We could also provide this functionality in the standard library.
 
 #### Issues
 - Requires `panic=unwind` as a prerequisite for handling OOMs.
-  Frequently, `panic=abort` is chosen in resource restricted scenarios where handling OOMs is more important.
+  Frequently, `panic=abort` is chosen in resource-restricted scenarios where handling OOMs is more important.
 - Depends on programmer placement of `catch_alloc_error` barriers for OOM safety.
 
 ### Split crates rather than adding a feature
-Rather than adding a feature to control availability of these functions, create a `fallible_alloc` crate which contains only those functions which handle OOM or cannot OOM.
+Rather than adding a feature to control the availability of these functions, create a `fallible_alloc` crate that contains only those functions which handle OOM or cannot OOM.
 `alloc` would depend on `fallible_alloc` and re-export it in its entirety.
 
 In this model we would likely not want to split `std` (see the subsequent alternative for details), preventing authoring robust hosted programs.
-If we chose to do this regardless, there would be a `fallible_alloc_std` which links against `fallible_alloc`, and a `std` that links against `alloc`.
+If we chose to do this regardless, there would be a `fallible_alloc_std` that links against `fallible_alloc`, and a `std` that links against `alloc`.
 
 User code would select the correct crate to link against in order to write their code, likely using crate renaming for ergonomics.
 
 #### Issues
 - If we do not split `std`, Rust will remain inappropriate for high-reliability hosted processes.
 - If we do split `std`, we run into composability issues.
-  When further customizations of `std` become necessary which would remove functions (e.g. removing floating point on a platform which supports it), it will multiply the number of crates, not add to it.
-  In the short term we would end up with `fallible_alloc_nofp_std`, `fallible_alloc_std`, `nofp_std`, and `std`, with the problem only getting worse from there.
+  When further customizations of `std` become necessary which would remove functions (e.g. removing floating point on a platform that supports it), it will multiply the number of crates, not add to it.
+  In the short term, we would end up with `fallible_alloc_nofp_std`, `fallible_alloc_std`, `nofp_std`, and `std`, with the problem only getting worse from there.
   If we split only `alloc`, I do not anticipate similar issues due to the narrower scope of `alloc`, but it is not impossible.
-- Users need to write extra boilerplate in code, not just the build system, when choosing to use this.
+- Users need to write extra boilerplate in code, not just the build system when choosing to use this.
 
 ### Only add the feature to `alloc`, not `std`
 As a more conservative approach, we could apply this feature (or crate split) to `alloc` *only*.
@@ -178,7 +178,7 @@ Placing features which a *user* may require behind a `cfg` flag in our standard 
 It would be easy to end up with multiple features for sysroot crates which are mutually contradictory due to using `cfg` tunables instead of features.
 
 Additionally, this sets a bad example for ecosystem crates.
-If ecosystem crates look at sysroot provided code and sees use of `cfg` to guard features, they are more likely to do the same.
+If ecosystem crates look at sysroot provided code and see the use of `cfg` to guard features, they are more likely to do the same.
 
 ### Cargo Exclusion
 While many embedded/kernel projects will choose to use their own build system for a variety of reasons, supporting this use case has been a [goal](https://www.ncameron.org/blog/cargos-next-few-years/) of Cargo for a while.
@@ -188,7 +188,7 @@ Setting `rustflags` is (intentionally) only possible through a Cargo config, not
 [prior-art]: #prior-art
 
 ## [`no_global_oom_handler`](https://github.com/rust-lang/rust/pull/84266)
-The `no_global_oom_handler` cfg flag already implements this division for the `alloc` crate, but intentionally does so in a way which is only accessible at the `rustc` level in order to avoid stabilization.
+The `no_global_oom_handler` cfg flag already implements this division for the `alloc` crate, but intentionally does so in a way that is only accessible at the `rustc` level in order to avoid stabilization.
 
 A major goal of this proposal is to stabilize and expose this separation.
 
@@ -206,7 +206,7 @@ Apple [disables](https://developer.apple.com/library/archive/documentation/Devic
 In embedded circles, common wisdom is that C++ exceptions and associated unwinding add too much overhead and uncertainty about how the program will execute.
 As a result, developers are often told to avoid the STL entirely in those environments.
 
-The inability to use many of C++'s STL features is one of the contributing factors to C's continued dominance in the embedded and kernel space despite C++'s interoperability and near source compatibility.
+The inability to use many of C++'s STL features is one of the contributing factors to C's continued dominance in the embedded and kernel space despite C++'s interoperability and near-source compatibility.
 This history indicates that an unwinding-based OOM system is likely insufficient for many real users.
 If Rust is to be considered a competitor to C in the embedded space, ensuring `alloc` is useful to developers is an important step.
 
@@ -229,7 +229,7 @@ This proposal suggests initially masking off nearly all of `std` behind this fea
 As a result, if this proposal were accepted it would likely be followed by a number of smaller discussions about creating fallible APIs for functionality developers want.
 
 ## Default dependencies for workspaces
-If this proposal goes through, workspaces for the use cases listed in the motivation section will likely need to explicitly annotate *every* crate in their environment as using restricted features.
+If this proposal goes through, workspaces for the use-cases listed in the motivation section will likely need to explicitly annotate *every* crate in their environment as using restricted features.
 We could add a way to select at a workspace level an environment with a restricted set of feature flags enabled for sysroot crates.
 
 ## Negated `rustdoc` Features
