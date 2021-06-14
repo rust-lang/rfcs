@@ -242,15 +242,29 @@ a lazy boolean operator is present (`&&` or `||`), for reasons noted in [future-
 
 If the pattern is irrefutable, rustc will emit the `irrefutable_let_patterns` warning lint, as it does with an irrefutable pattern in an `if let`.
 
-The `else` block must diverge. This could be a keyword which diverges (returns `!`), or a panic.
-This likely necessitates a new subtype of `BlockExpression`, something like `BlockExpressionDiverging`.
-Allowed keywords:
-- `return`
-- `break`
-- `continue`
+The `else` block must _diverge_, meaning the `else` block must return the [never type (`!`)][never type]).
+This could be a keyword which diverges (returns `!`), or a panic.
 
 If the pattern does not match, the expression is not consumed, and so any existing variables from the surrounding scope are
 accessible as they would normally be.
+
+## Desugaring example
+
+```rust
+let Some(x) = y else { return; };
+```
+
+Desugars to
+
+```rust
+let x = match y {
+    Some(x) => y,
+    _ => {
+        let nope: ! = { return; };
+        match nope {}
+    }
+}
+```
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -260,7 +274,8 @@ accessible as they would normally be.
 "Must diverge" is an unusual requirement, which doesn't exist elsewhere in the language as of the time of writing, 
 and might be difficult to explain or lead to confusing errors for programmers new to this feature.
 
-This also necessitates a new block expression subtype, something like `BlockExpressionDiverging`.
+However, rustc does have support for representing the divergence through the type-checker via `!` or any other uninhabitable type,
+so the implementation is not a problem.
 
 ## `let PATTERN = if {} else {} else {};`
 
@@ -315,8 +330,7 @@ These functions will also not work for code which wishes to return something oth
 One often proposed alternative is to use a different keyword than `else`, such as `otherwise`.
 This is supposed to help disambiguate let-else statements from other code with blocks and `else`.
 
-This RFC avoids this as it would mean loosing symmetry with if-else & if-let-else, 
-and would require adding a new keyword.
+This RFC avoids this as it would mean losing symmetry with if-else and if-let-else, and would require adding a new keyword.
 Adding a new keyword could mean more to teach and could promote even more special casing around let-else's semantics.
 
 ### `unless let ... {}` / `try let ... {}`
@@ -394,6 +408,67 @@ let AnEnum::Variant1(a) = x else assign a {
 };
 ```
 
+### Assign to outer scope from `match`
+
+Another alternative is to allow assigning to the outer scope from within a `match`.
+
+```rust
+match thing {
+  Happy(x) => let x, // Assigns x to outer scope.
+  Sad(y) => return Err(format!("We were sad because of {}", y)),
+  Tragic(z) => return Err(format!("We cried hard because of {}", z)),
+}
+```
+
+However this is not an obvious opposite io if-let, and would introduce an entirely new positional meaning of `let`.
+
+### `||` in pattern-matching
+
+A more complex, more flexible, but less obvious alternative is to allow `||` in any pattern matches as a fall-through match case fallback.
+Such a feature would likely interact more directly with [if-let-chains][], but could also be use to allow refutable patterns in let statements
+by covering every possible variant of an enum (possibly by use of a diverging fallback block similar to `_` in `match`).
+
+For example, covering the use-case of let-else:
+```rust
+let Some(x) = a || { return; };
+```
+
+With a fallback:
+```rust
+let Some(x) = a || b || { return; };
+```
+
+Combined with `&&` as proposed in if-let-chains, constructs such as the following are conceivable:
+
+```rust
+let Enum::Var1(x) = a || b || { return anyhow!("Bad x"); } && let Some(z) = x || y;
+// Complex. Both x and z are now in scope.
+```
+
+This is not a simple construct, and could be quite confusing to newcomers
+
+That being said, such a thing would be very non-trivial to write today, and might be just as confusing to read:
+```rust
+let x = match a {
+    Enum::Var1(x) => x,
+    _ => {
+        match b {
+            Enum::Var1(x) => x,
+            _ => { 
+                return anyhow!("Bad x"); 
+            },
+        }
+    }
+};
+let z = match x {
+    Some(z) => z,
+    _ => y,
+};
+// Complex. Both x and z are now in scope.
+```
+
+This is, as stated, a much more complex alternative interacting with much more of the language, and is also not an obvious opposite of if-let expressions.
+
 ### Null Alternative
 
 Don't make any changes; use existing syntax like `match` (or `if let`) as shown in the motivating example, or write macros to simplify the code.
@@ -408,6 +483,10 @@ A lot of this RFC's proposals come from that RFC and its ensuing discussions.
 The Swift programming language, which inspired Rust's if-let expression, also
 includes a [guard-let-else][swift] statement which is roughly equivalent to this
 proposal except for the choice of keywords.
+
+A `guard!` macro implementing something very similar to this RFC has been available on crates.io since 2015 (the time of the old RFC).
+- [Crate for `guard!`][guard-crate]
+- [GitHub repo for `guard!`][guard-repo]
 
 The `match` alternative in particular is fairly prevalent in rust code on projects which have many possible error conditions.
 
@@ -441,7 +520,7 @@ let Some(foo) = (expr() && foo.is_baz() && let Ok(yay) = qux(foo) else { ... })
 ```
 
 However, given that all existing occurrences of this behavior before this RFC are type errors anyways,
-a specific boolean-only case can be avoided and thus parsing can be changed to lave the door open to this possible extension.
+a specific boolean-only case can be avoided and thus parsing can be changed to leave the door open to this possible extension.
 This boolean case is always equivalent to a less flexible `if` statement and as such is not useful.
 
 ```rust
@@ -514,7 +593,10 @@ if let Some(x) = y else { return; } {
 [`const`]: https://doc.rust-lang.org/reference/items/constant-items.html
 [`static`]: https://doc.rust-lang.org/reference/items/static-items.html
 [expressions]: https://doc.rust-lang.org/reference/expressions.html#expressions
-[old-rfc]: https://github.com/rust-lang/rfcs/pull/1303
+[guard-crate]: https://crates.io/crates/guard
+[guard-repo]: https://github.com/durka/guard
 [if-let]: https://rust-lang.github.io/rfcs/0160-if-let.html
 [if-let-chains]: https://rust-lang.github.io/rfcs/2497-if-let-chains.html
+[never-type]: https://doc.rust-lang.org/std/primitive.never.html
+[old-rfc]: https://github.com/rust-lang/rfcs/pull/1303
 [swift]: https://developer.apple.com/library/prerelease/ios/documentation/Swift/Conceptual/Swift_Programming_Language/ControlFlow.html#//apple_ref/doc/uid/TP40014097-CH9-ID525
