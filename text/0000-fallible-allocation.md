@@ -83,8 +83,7 @@ All functions in `alloc` directly depending on the global OOM handler will be ga
 Any functions directly calling allocation APIs in either `alloc` or `std` will either propagate that error to its caller in a handleable way or be moved behind the crate feature `infallible_allocation`.
 
 ## Suppressing annotations in `rustdoc`
-As the vast bulk of `std` and `alloc` will be initially moved behind the `infallible_allocation` feature, it would be low-signal to display to users the `This is supported on crate feature infallible_allocation only.` for nearly every item.
-To combat this, `rustdoc` would need a new flag `-Z hide-cfg-doc feature_name` which will suppress mentions of a feature in the output.
+Functions behind `infallible_allocation` should not have a corresponding `#[doc(cfg())]` attribute.
 
 ## Testing
 In CI, `std` and `alloc`'s ability to build without the `infallible_allocation` feature only needs to be tested on a single platform (likely `x86_64-unknown-linux-gnu`) in order to prevent developers accidentally forgetting to tag new functions with the appropriate feature gate.
@@ -231,7 +230,3 @@ As a result, if this proposal were accepted it would likely be followed by a num
 ## Default dependencies for workspaces
 If this proposal goes through, workspaces for the use-cases listed in the motivation section will likely need to explicitly annotate *every* crate in their environment as using restricted features.
 We could add a way to select at a workspace level an environment with a restricted set of feature flags enabled for sysroot crates.
-
-## Negated `rustdoc` Features
-Similar to the default required features concept, we could mark some features in `rustdoc` as being so commonly required that annotating their *absence* is more meaningful.
-In the place of traditional `This is supported on crate feature feature_name only.` message, `rustdoc` could produce `This is supported even without crate default feature feature_name.`
