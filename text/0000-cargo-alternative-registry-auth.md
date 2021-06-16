@@ -1,6 +1,6 @@
 - Feature Name: cargo_alternative_registry_auth
 - Start Date: 2021-03-31
-- RFC PR: rust-lang/rfcs#0000
+- RFC PR: rust-lang/rfcs#3139
 - Tracking Issue: rust-lang/rust#0000
 
 # Summary
@@ -40,13 +40,13 @@ To avoid the overhead of an extra HTTP request when fetching `config.json`, the 
 
 ```toml
 [registries]
-my-registry = { index = "https://example.com/index", auth-required = true }
+my-registry = { index = "sparse+https://example.com/index", auth-required = true }
 ```
 
-## Security considerations
-If the server responds with an HTTP redirect, the redirect would be followed, but the Authorization header would not be sent to the redirect target.
+## Security
+If the server responds with an HTTP redirect, the redirect would be followed, but the Authorization header would *not* be sent to the redirect target.
 
-The authorization header would only be included for requests using `https` or requests targeting `localhost`. If cargo detected an alternative registry was configured to send the authorization token over an insecure channel, it would exit with an error informing the user.
+The authorization header would only be included for requests using `https://`. Under no circumstances would cargo pass an authorization header over an unencrypted `http://` connection. If cargo detected an alternative registry was configured to send the authorization token over an insecure channel, it would exit with an error.
 
 ## Interaction with `credential-process`
 The unstable [credential-process](https://doc.rust-lang.org/nightly/cargo/reference/unstable.html#credential-process) feature stores credentials keyed on the registry api url, which is only available in after fetching `config.json` from the index. If access to the index is secured using the authorization token, then Cargo will be unable to fetch the `config.json` file before calling the credential process.
@@ -57,6 +57,7 @@ For example, the following command would need to download `config.json` from the
 To resolve this issue, the credential process feature would use the registry *index url* as the key instead of the *api url*.
 
 Since the token may be used multiple times in a single cargo session (such as updating the index + downloading crates), Cargo should cache the token if it is provided by a `credential-process` to avoid repeatedly calling the credential process.
+
 
 ## Command line options
 Cargo commands such as `install` or `search` that support an `--index <INDEX>` command line option to use a registry other than what is available in the configuration file would gain a `--token <TOKEN>` command line option (similar to `publish` today). If a `--token <TOKEN>` command line option is given, the provided authorization token would be sent along with the request.
@@ -97,4 +98,10 @@ Alternatives:
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
+## Credential Process
 The `credential-process` system could be extended to support generating tokens rather than only storing them. This would further improve security and allow additional features such as 2FA prompts.
+
+## Authentication for Git-based registries
+Private registries may want to use the same Authorization header for controlling access to a git-based index over `https`, rather than letting git handle the authentication separately.
+
+This could be enabled by the same local configuration key `auth-required = true` in the `[registries]` table. Both `libgit2` and the `git` command line have a mechanism for specifying an additional header that could be used to pass the Authorization header.
