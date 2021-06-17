@@ -404,7 +404,7 @@ let AnEnum::Variant1(a) = x else {
 };
 ```
 
-Another potential alternative for fall-back which could be added with an additional keyword as a future extension:
+Another potential alternative for fall-back:
 
 ```rust
 enum AnEnum {
@@ -412,9 +412,9 @@ enum AnEnum {
     Variant2(String),
 }
 
-let AnEnum::Variant1(a) = x else assign a {
-    a = 42;
-};
+let Ok(a) = x else match {
+    Err(e) => return Err(e.into()),
+}
 ```
 
 ### Assign to outer scope from `match`
@@ -568,20 +568,31 @@ error[E0005]: refutable pattern in local binding: `false` not covered
 
 This RFC does not suggest that we do any of these, but notes that they would be future possibilities.
 
-If fall-back assignment as discussed above in [rationale-and-alternatives][] is desirable, it could be added with an additional keyword as a future extension:
+If fall-back assignment as discussed above in [rationale-and-alternatives][] is desirable, it could be added a few different ways,
+not all potential ways are covered here, but the ones which seem most popular at time of writing are:
+
+### let-else-else-chains
+
+Where the pattern is sequentially matched against each expression following an else, up until a required diverging block if the pattern did not match on any value.
+Similar to the above-mentioned alternative of `||` in pattern-matching, but restricted to only be used with let-else.
 
 ```rust
-enum AnEnum {
-    Variant1(u32),
-    Variant2(String),
-}
-
-let AnEnum::Variant1(a) = x else assign a {
-    a = 42;
-};
+let Some(x) = a else b else c else { return; };
 ```
 
-Another potential form of the fall-back extension:
+Another way to look at let-else-else-chains: a `match` statement takes one expression and applies multiple patterns to it until one matches,
+while let-else-else-chains would take one pattern and apply it to multiple expressions until one matches.
+
+This has a complexity issue with or-patterns, where expressions can _easily_ become exponential.
+(This is already possible with or-patterns with guards but this would make it much easier to encounter.)
+
+```rust
+let A(x) | B(x) = foo() else bar() else { return; };
+```
+
+### let-else-match
+
+Where the `match` must cover all patters which are not the let assignment pattern.
 
 ```rust
 let Ok(a) = x else match {
