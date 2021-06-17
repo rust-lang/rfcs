@@ -248,6 +248,9 @@ This could be a keyword which diverges (returns `!`), or a panic.
 If the pattern does not match, the expression is not consumed, and so any existing variables from the surrounding scope are
 accessible as they would normally be.
 
+let-else does not combine with the `let` from if-let, as if-let is not actually a _let statement_.
+If you ever try to write something like `if let p = e else { } { }`, instead use a regular if-else by writing `if let p = e { } else { }`.
+
 ## Desugaring example
 
 ```rust
@@ -582,13 +585,18 @@ let Ok(a) = x else match {
 
 ## let-else within if-let
 
-Conceivable. This RFC makes no judgement, even if the author does.
+This RFC naturally brings with it the question of if let-else should be allowable in the `let` position within if-let,
+creating a potentially confusing and poorly reading construct:
 
 ```rust
 if let Some(x) = y else { return; } {
     // I guess this RFC had it coming for it
 }
 ```
+
+However, since the `let` within if-let is part of the if-let expression and is not an actual `let` statement, this would have to be
+explicitly allowed. This RFC does not propose we allow this. Rather, rust should avoid ever allowing this,
+because it is confusing to read syntactically, and it is functionally similar to `if let p = e { } else { }` but with more drawbacks.
 
 [`const`]: https://doc.rust-lang.org/reference/items/constant-items.html
 [`static`]: https://doc.rust-lang.org/reference/items/static-items.html
