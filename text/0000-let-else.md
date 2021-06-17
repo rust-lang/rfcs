@@ -600,6 +600,15 @@ let Ok(a) = x else match {
 }
 ```
 
+## `||` in pattern-matching
+
+A variant of `||` in pattern-matching could still be a non-conflicting addition if it was allowed to be refutable, ending up with constructs similar to the
+above mentioned let-else-else-chains. In this way it would add to let-else rather than replace it.
+
+```rust
+let Some(x) = a || b else { return; };
+```
+
 ## let-else within if-let
 
 This RFC naturally brings with it the question of if let-else should be allowable in the `let` position within if-let,
