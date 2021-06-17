@@ -248,6 +248,12 @@ This could be a keyword which diverges (returns `!`), or a panic.
 If the pattern does not match, the expression is not consumed, and so any existing variables from the surrounding scope are
 accessible as they would normally be.
 
+For patterns which match multiple variants, such as through the `|` (or) syntax, all variants must produce the same bindings (ignoring additional bindings in uneven patterns),
+and those bindings must all be names the same. Valid example:
+```rust
+let Some(x) | MyEnum::VarientA(_, _, x) | MyEnum::VarientB { x, .. } = a else { return; };
+```
+
 let-else does not combine with the `let` from if-let, as if-let is not actually a _let statement_.
 If you ever try to write something like `if let p = e else { } { }`, instead use a regular if-else by writing `if let p = e { } else { }`.
 
