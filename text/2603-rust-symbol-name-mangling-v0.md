@@ -625,12 +625,12 @@ Mangled names conform to the following grammar:
 // The <decimal-number> specifies the encoding version.
 <symbol-name> = "_R" [<decimal-number>] <path> [<instantiating-crate>]
 
-<path> = "C" <identifier>               // crate root
-       | "M" <impl-path> <type>         // <T> (inherent impl)
-       | "X" <impl-path> <type> <path>  // <T as Trait> (trait impl)
-       | "Y" <type> <path>              // <T as Trait> (trait definition)
-       | "N" <ns> <path> <identifier>   // ...::ident (nested path)
-       | "I" <path> {<generic-arg>} "E" // ...<T, U> (generic args)
+<path> = "C" <identifier>                    // crate root
+       | "M" <impl-path> <type>              // <T> (inherent impl)
+       | "X" <impl-path> <type> <path>       // <T as Trait> (trait impl)
+       | "Y" <type> <path>                   // <T as Trait> (trait definition)
+       | "N" <namespace> <path> <identifier> // ...::ident (nested path)
+       | "I" <path> {<generic-arg>} "E"      // ...<T, U> (generic args)
        | <backref>
 
 // Path to an impl (without the Self type or the trait).
@@ -655,10 +655,10 @@ Mangled names conform to the following grammar:
 // A-Z are used for special namespaces (e.g. closures), which the demangler
 // can show in a special way (e.g. `NC...` as `...::{closure}`), or just
 // default to showing the uppercase character.
-<ns> = "C"      // closure
-     | "S"      // shim
-     | <A-Z>    // other special namespaces
-     | <a-z>    // internal namespaces
+<namespace> = "C"      // closure
+            | "S"      // shim
+            | <A-Z>    // other special namespaces
+            | <a-z>    // internal namespaces
 
 <generic-arg> = <lifetime>
               | <type>
@@ -675,6 +675,7 @@ Mangled names conform to the following grammar:
 // innermost lifetimes, e.g. in `for<'a, 'b> fn(for<'c> fn(...))`,
 // any <lifetime>s in ... (but not inside more binders) will observe
 // the indices 1, 2, and 3 refer to 'c, 'b, and 'a, respectively.
+// The number of bound lifetimes is value of <base-62-number> + 1.
 <binder> = "G" <base-62-number>
 
 <type> = <basic-type>
@@ -715,22 +716,24 @@ Mangled names conform to the following grammar:
 // If the "U" is present then the function is `unsafe`.
 // The return type is always present, but demanglers can
 // choose to omit the ` -> ()` by special-casing "u".
-<fn-sig> := <binder> ["U"] ["K" <abi>] {<type>} "E" <type>
+<fn-sig> = [<binder>] ["U"] ["K" <abi>] {<type>} "E" <type>
 
 <abi> = "C"
       | <undisambiguated-identifier>
 
-<dyn-bounds> = <binder> {<dyn-trait>} "E"
+<dyn-bounds> = [<binder>] {<dyn-trait>} "E"
 <dyn-trait> = <path> {<dyn-trait-assoc-binding>}
 <dyn-trait-assoc-binding> = "p" <undisambiguated-identifier> <type>
 <const> = <type> <const-data>
-        | <type> "p" // placeholder (e.g. for polymorphic constants), shown as _: T
+        | "p" // placeholder, shown as _
         | <backref>
 
-// The encoding of a constant depends on its type, currently only
-// unsigned integers (mainly usize, for arrays) are supported, and they
-// use their value, in base 16 (0-9a-f), not their memory representation.
-<const-data> = {<hex-digit>} "_"
+// The encoding of a constant depends on its type. Integers use their value,
+// in base 16 (0-9a-f), not their memory representation. Negative integer
+// values are preceded with "n". The bool value false is encoded as `0_`, true
+// value as `1_`. The char constants are encoded using their Unicode scalar
+// value.
+<const-data> = ["n"] {<hex-digit>} "_"
 
 // <base-62-number> uses 0-9-a-z-A-Z as digits, i.e. 'a' is decimal 10 and
 // 'Z' is decimal 61.
@@ -748,7 +751,7 @@ Mangled names conform to the following grammar:
 ### Namespace Tags
 
 Namespaces are identified by an implementation defined single character tag
-(the `<ns>` production). Only closures (`C`) and shims (`S`) have a
+(the `<namespace>` production). Only closures (`C`) and shims (`S`) have a
 specific character assigned to them so that demanglers can reliable
 adjust their output accordingly. Other namespace tags have to be omitted
 or shown verbatim during demangling.
@@ -1150,3 +1153,6 @@ pub static QUUX: u32 = {
 - Add a recommended resolution for open question around Punycode identifiers.
 - Add a recommended resolution for open question around encoding function parameter types.
 - Allow identifiers to start with a digit.
+- Make `<binder>` optional in `<fn-sig>` and `<dyn-bounds>` productions.
+- Extend `<const-data>` to include `bool` values, `char` values, and negative integer values.
+- Remove type from constant placeholders.
