@@ -456,18 +456,14 @@ let Enum::Var1(x) = a || b || { return anyhow!("Bad x"); } && let Some(z) = x ||
 
 This is not a simple construct, and could be quite confusing to newcomers
 
-That being said, such a thing would be very non-trivial to write today, and might be just as confusing to read:
+That being said, such a thing is not perfectly obvious to write today, and might be just as confusing to read:
 ```rust
-let x = match a {
-    Enum::Var1(x) => x,
-    _ => {
-        match b {
-            Enum::Var1(x) => x,
-            _ => { 
-                return anyhow!("Bad x"); 
-            },
-        }
-    }
+let x = if let Enum::Var1(v) = a {
+    v
+} else if let Enum::Var1(v) = b {
+    v
+} else {
+    anyhow!("Bad x")
 };
 let z = match x {
     Some(z) => z,
