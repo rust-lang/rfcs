@@ -251,7 +251,7 @@ accessible as they would normally be.
 For patterns which match multiple variants, such as through the `|` (or) syntax, all variants must produce the same bindings (ignoring additional bindings in uneven patterns),
 and those bindings must all be names the same. Valid example:
 ```rust
-let Some(x) | MyEnum::VarientA(_, _, x) | MyEnum::VarientB { x, .. } = a else { return; };
+let Some(x) | MyEnum::VariantA(_, _, x) | MyEnum::VariantB { x, .. } = a else { return; };
 ```
 
 let-else does not combine with the `let` from if-let, as if-let is not actually a _let statement_.
