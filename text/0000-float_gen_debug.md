@@ -194,8 +194,8 @@ Value | `{:?}` | `{:e}` | `{:g?}` | Notes
 ...        | ...        | ... | ... |
 `100000`  | `100000`  | `1e5` | **`100000.0`** |
 `1000000` | `1000000` | `1e6` | **`1e6`** | Suggested default high cutoff
-`0.0001`  | `0.0001`  | `1e-4` | **`0.0001`** |
-`0.00001` | `0.00001` | `1e-5` | **`1e-5`** | Suggested low cutoff
+`0.0001`  | `0.0001`  | `1e-4` | **`0.0001`** | Suggested low cutoff
+`0.00009` | `0.00009` | `9e-5` | **`9e-5`** |
 `(1.0f32 + EPSILON)` |  `0.10000001` | `1.0000001e-1` | **`0.10000001`** |
 `1e-7 * (1.0f32 + EPSILON)`  | `0.000000100`<br>`00001` | `1.0000001e-7` |  **`1.0000001e-7`** |
 
@@ -294,7 +294,11 @@ Like some other alternatives, this is a breaking change.  Unfortunately, this wo
 
 A variety of popular languages were sampled by the author.  Without exception, *every single one* was found to provide a general number formatting facility that dynamically switches to exponential based on value; though the exact output varies from language to language.
 
-* [C's `printf`](https://en.cppreference.com/w/c/io/fprintf) is obviously a seminal example, and supports `%g`/`%G`. It also has `#`, with the behavior documented above.
+* [C's `printf`](https://en.cppreference.com/w/c/io/fprintf) is obviously a seminal example, and supports `%g`/`%G`.  In summary:
+    * Precision indicates max significant figures, rather than digits after the decimal point.  Default precision is 6, and cannot go below 1.
+    * The upper threshold is tied to precision; it is `10 ** PREC`.
+    * AFAICT, the lower threshold is `1e-4`, independent of precision. (cppreference states it confusingly...)
+    * By default, trailing zeros are truncated. The `#` flag disables this, causing it to always display `PREC` significant figures.
 * [Perl's formatting options](https://perldoc.perl.org/functions/sprintf.html) are just like C.
 * [Lua](http://pgl.yoyo.org/luai/i/string.format) is documented as being like C.
 * [Go](https://golang.org/pkg/fmt/)'s `%g`/`%G` appears to be like C. (including `#`).
