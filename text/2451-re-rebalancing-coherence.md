@@ -153,7 +153,7 @@ following:
 > type parameter.
 >
 > Rust requires that for any given trait and any given type, there is at most one
-> implmentation of that trait. An important piece of this is that we disallow
+> implementation of that trait. An important piece of this is that we disallow
 > implementing a trait from another crate for a type parameter.
 >
 > Rust's orphan rule always permits an impl if either the trait or the type being
