@@ -138,6 +138,7 @@ We could also provide this functionality in the standard library.
 - Requires `panic=unwind` as a prerequisite for handling OOMs.
   Frequently, `panic=abort` is chosen in resource-restricted scenarios where handling OOMs is more important.
 - Depends on programmer placement of `catch_alloc_error` barriers for OOM safety.
+- This is currently blocked on figuring out how to remove `#[rustc_allocator_nounwind]` from `alloc::handle_alloc_error` without [blowing up binary sizes](https://github.com/rust-lang/rust/issues/42808).
 
 ### Split crates rather than adding a feature
 Rather than adding a feature to control the availability of these functions, create a `fallible_alloc` crate that contains only those functions which handle OOM or cannot OOM.
