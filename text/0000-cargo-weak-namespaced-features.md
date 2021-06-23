@@ -225,7 +225,7 @@ This should not be perceptible to the user, but is a major architectural change 
   This was pursued in [PR #9111](https://github.com/rust-lang/cargo/pull/9111), but it was considered not necessary.
   [crates.io] is the only registry that can support older versions of Cargo.
   Other registries that don't support the new syntax may reject publishing with the new syntax (if they perform validation), or they may accept it (if the don't validate), in which case it should just work.
-  The `"v"` field addition is only necessary for Cargo's older than 1.51, and most use cases of other registries are generally expected to have stricter control over which versions of Cargo are in use.
+  The `"v"` field addition is only necessary for Cargo versions between 1.51 and whenever this is stabilized, and most use cases of other registries are generally expected to have stricter control over which versions of Cargo are in use.
 
 # Prior art
 
