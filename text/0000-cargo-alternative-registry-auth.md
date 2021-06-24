@@ -36,7 +36,9 @@ Authorization: <token>
 ## Interaction with HTTP registries
 The approved (but currently unimplemeneted) [RFC2789](https://github.com/rust-lang/rfcs/pull/2789) enables Cargo to fetch the index over HTTP. When fetching `config.json` from an HTTP index, if Cargo receives an `HTTP 401` response, the request will be re-attempted with the Authorization header included. If no authorization token is available, Cargo will suggest that the user run `cargo login` to add one.
 
-To avoid the overhead of an extra HTTP request when fetching `config.json`, the user can optionally configure Cargo locally by setting `auth-required = true` in the `[registries]` table. If the local `auth-required` flag is `true` then Cargo will always include the Authorization token fetching `config.json` over HTTP -- skipping the initial unauthorized requiest and `HTTP 401`. The local configuration option does not impact other operations, such as API requests or downloads. It also does not impact git-based registries.
+To avoid the overhead of an extra HTTP request when fetching `config.json`, the user can optionally configure Cargo locally by setting `auth-required` in the `[registries]` table. If the local `auth-required` flag is `true` then Cargo will include the Authorization token when initially fetching `config.json` over HTTP. If it is `false`, Cargo will never include the Authorization token when fetching `config.json`. If it is unset, Cargo performs the auto-detection described above.
+
+This local configuration option does not impact other registry operations, such as API requests or downloads (which are controlled by the flag in `config.json`). It also does not impact git-based registries.
 
 ```toml
 [registries]
