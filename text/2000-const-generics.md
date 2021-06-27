@@ -1,4 +1,4 @@
-- Feature Name: const_generics
+- Feature Name: `const_generics`
 - Start Date: 2017-05-01
 - RFC PR: [rust-lang/rfcs#2000](https://github.com/rust-lang/rfcs/pull/2000)
 - Rust Issue: [rust-lang/rust#44580](https://github.com/rust-lang/rust/issues/44580)

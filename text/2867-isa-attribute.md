@@ -1,4 +1,4 @@
-- Feature Name: isa_attribute
+- Feature Name: `isa_attribute`
 - Start Date: 2020-02-16
 - RFC PR: [rust-lang/rfcs#2867](https://github.com/rust-lang/rfcs/pull/2867)
 - Rust Issue: [rust-lang/rust#74727](https://github.com/rust-lang/rust/issues/74727)

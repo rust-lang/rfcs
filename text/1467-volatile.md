@@ -1,4 +1,4 @@
-- Feature Name: volatile
+- Feature Name: `volatile`
 - Start Date: 2016-01-18
 - RFC PR: [rust-lang/rfcs#1467](https://github.com/rust-lang/rfcs/pull/1467)
 - Rust Issue: [rust-lang/rust#31756](https://github.com/rust-lang/rust/issues/31756)

@@ -1,4 +1,4 @@
-- Feature Name: str-words
+- Feature Name: `str-words`
 - Start Date: 2015-04-10
 - RFC PR: [rust-lang/rfcs#1054](https://github.com/rust-lang/rfcs/pull/1054)
 - Rust Issue: [rust-lang/rust#24543](https://github.com/rust-lang/rust/issues/24543)

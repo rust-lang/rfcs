@@ -1,4 +1,4 @@
-- Feature Name: entry_v3
+- Feature Name: `entry_v3`
 - Start Date: 2015-03-01
 - RFC PR: [rust-lang/rfcs#921](https://github.com/rust-lang/rfcs/pull/921)
 - Rust Issue: [rust-lang/rust#23508](https://github.com/rust-lang/rust/issues/23508)

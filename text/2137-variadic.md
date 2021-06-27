@@ -1,4 +1,4 @@
-- Feature Name: variadic
+- Feature Name: `variadic`
 - Start Date: 2017-08-21
 - RFC PR: [rust-lang/rfcs#2137](https://github.com/rust-lang/rfcs/pull/2137)
 - Rust Issue: [rust-lang/rust#44930](https://github.com/rust-lang/rust/issues/44930)

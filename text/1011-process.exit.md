@@ -1,4 +1,4 @@
-- Feature Name: exit
+- Feature Name: `exit`
 - Start Date: 2015-03-24
 - RFC PR: [rust-lang/rfcs#1011](https://github.com/rust-lang/rfcs/pull/1011)
 - Rust Issue: (leave this empty)

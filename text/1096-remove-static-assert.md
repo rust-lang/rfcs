@@ -1,4 +1,4 @@
-- Feature Name: remove-static-assert
+- Feature Name: `remove-static-assert`
 - Start Date: 2015-04-28        
 - RFC PR: [rust-lang/rfcs#1096](https://github.com/rust-lang/rfcs/pull/1096)
 - Rust Issue: https://github.com/rust-lang/rust/pull/24910

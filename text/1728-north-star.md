@@ -1,4 +1,4 @@
-- Feature Name: north_star
+- Feature Name: `north_star`
 - Start Date: 2016-08-07
 - RFC PR: #1728
 - Rust Issue: N/A

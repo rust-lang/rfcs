@@ -1,4 +1,4 @@
-- Feature Name: direct to stable, because it modifies a stable macro
+- Feature Name: `direct to stable`, `because it modifies a stable macro`
 - Start Date: 2015-02-11
 - RFC PR: [rust-lang/rfcs#832](https://github.com/rust-lang/rfcs/pull/832)
 - Rust Issue: [rust-lang/rust#22414](https://github.com/rust-lang/rust/issues/22414)

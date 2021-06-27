@@ -1,4 +1,4 @@
-- Feature Name: option_filter
+- Feature Name: `option_filter`
 - Start Date: 2017-08-21
 - RFC PR: [rust-lang/rfcs#2124](https://github.com/rust-lang/rfcs/pull/2124)
 - Rust Issue: [rust-lang/rust#45860](https://github.com/rust-lang/rust/issues/45860)

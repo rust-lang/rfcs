@@ -1,4 +1,4 @@
-- Feature Name: field-init-shorthand
+- Feature Name: `field-init-shorthand`
 - Start Date: 2016-07-18
 - RFC PR: [rust-lang/rfcs#1682](https://github.com/rust-lang/rfcs/pull/1682)
 - Rust Issue: [rust-lang/rust#37340](https://github.com/rust-lang/rust/issues/37340)

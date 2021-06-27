@@ -1,4 +1,4 @@
-- Feature Name: pub_restricted
+- Feature Name: `pub_restricted`
 - Start Date: 2015-12-18
 - RFC PR: [rust-lang/rfcs#1422](https://github.com/rust-lang/rfcs/pull/1422)
 - Rust Issue: [rust-lang/rust#32409](https://github.com/rust-lang/rust/issues/32409)

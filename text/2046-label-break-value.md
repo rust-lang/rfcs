@@ -1,4 +1,4 @@
-- Feature Name: label_break_value
+- Feature Name: `label_break_value`
 - Start Date: 2017-06-26
 - RFC PR: [rust-lang/rfcs#2046](https://github.com/rust-lang/rfcs/pull/2046)
 - Rust Issue: [rust-lang/rust#48594](https://github.com/rust-lang/rust/issues/48594)

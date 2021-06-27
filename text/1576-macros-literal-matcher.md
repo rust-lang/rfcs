@@ -1,4 +1,4 @@
-- Feature Name: macros-literal-match
+- Feature Name: `macros-literal-match`
 - Start Date: 2016-04-08
 - RFC PR: [rust-lang/rfcs#1576](https://github.com/rust-lang/rfcs/pull/1576)
 - Rust Issue: [rust-lang/rust#35625](https://github.com/rust-lang/rust/issues/35625)

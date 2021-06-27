@@ -1,4 +1,4 @@
-- Feature Name: splice
+- Feature Name: `splice`
 - Start Date: 2015-12-28
 - RFC PR: [rust-lang/rfcs#1432](https://github.com/rust-lang/rfcs/pull/1432)
 - Rust Issue: [rust-lang/rust#32310](https://github.com/rust-lang/rust/issues/32310)

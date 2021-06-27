@@ -1,4 +1,4 @@
-- Feature Name: drain-range
+- Feature Name: `drain-range`
 - Start Date: 2015-08-14
 - RFC PR: [rust-lang/rfcs#1257](https://github.com/rust-lang/rfcs/pull/1257)
 - Rust Issue: [rust-lang/rust#27711](https://github.com/rust-lang/rust/issues/27711)

@@ -1,4 +1,4 @@
-- Feature Name: optional_error_description
+- Feature Name: `optional_error_description`
 - Start Date: 2017-11-29
 - RFC PR: [rust-lang/rfcs#2230](https://github.com/rust-lang/rfcs/pull/2230)
 - Rust Issue: (leave this empty)

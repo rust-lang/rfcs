@@ -1,4 +1,4 @@
-- Feature Name: unsized_locals
+- Feature Name: `unsized_locals`
 - Start Date: 2017-02-11
 - RFC PR: [rust-lang/rfcs#1909](https://github.com/rust-lang/rfcs/pull/1909)
 - Rust Issue: [rust-lang/rust#48055](https://github.com/rust-lang/rust/issues/48055)

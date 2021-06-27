@@ -1,4 +1,4 @@
-- Feature Name: use_group_as
+- Feature Name: `use_group_as`
 - Start Date: 2015-02-15
 - RFC PR: [rust-lang/rfcs#1219](https://github.com/rust-lang/rfcs/pull/1219)
 - Rust Issue: [rust-lang/rust#27578](https://github.com/rust-lang/rust/issues/27578)

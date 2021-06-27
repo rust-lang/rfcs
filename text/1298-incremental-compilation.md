@@ -1,4 +1,4 @@
-- Feature Name: incremental-compilation
+- Feature Name: `incremental-compilation`
 - Start Date: 2015-08-04
 - RFC PR: (leave this empty)
 - Rust Issue: (leave this empty)
