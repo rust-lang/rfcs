@@ -6,12 +6,13 @@
 # Summary
 [summary]: #summary
 
-Introduce a new `let PATTERN = EXPRESSION_WITHOUT_BLOCK else DIVERGING_BLOCK;` construct (informally called a
+Introduce a new `let PATTERN: TYPE = EXPRESSION else DIVERGING_BLOCK;` construct (informally called a
 **let-else statement**), the counterpart of if-let expressions.
 
 If the pattern match from the assigned expression succeeds, its bindings are introduced *into the
 surrounding scope*. If it does not succeed, it must diverge (return `!`, e.g. return or break).
 Technically speaking, let-else statements are refutable `let` statements.
+The expression has some restrictions, notably it may not be an `ExpressionWithBlock` or `LazyBooleanExpression`.
 
 This RFC is a modernization of a [2015 RFC (pull request 1303)][old-rfc] for an almost identical feature.
 
@@ -35,87 +36,60 @@ which require intermediary bindings (usually of the same name).
 
 ## Examples
 
-The following two code examples are possible options with current Rust code.
+let-else is particularly useful when dealing with enums which are not `Option`/`Result`, and as such do not have access to e.g. `ok_or()`.
+Consider the following example transposed from a real-world project written in part by the author:
 
-```rust
-if let Some(x) = xyz {
-    if let Some(y) = x.thing() {
-        if let Some(z) = y.thing() {
-            // ...
-            do_something_with(z);
-            // ...
-        } else {
-            info!("z was bad");
-            return Err("bad z");
-        }
-    } else {
-        info!("y was bad");
-        return Err("bad y");
-    }
-} else {
-    info!("x was bad");
-    return Err("bad x");
-}
-```
-
-```rust
-let x = match xyz {
-    Some(x) => x,
-    _ => {
-        info!("x was bad");
-        return Err("bad x")
-    },
-};
-let y = match x.thing() {
-    Some(y) => y,
-    _ => {
-        info!("y was bad");
-        return Err("bad y")
-    },
-};
-let z = match y.thing() {
-    Some(z) => z,
-    _ => return {
-        info!("z was bad");
-        Err("bad z")
-    },
-};
-// ...
-do_something_with(z);
-// ...
-```
-
-Both of the above examples would be able to be written as:
-
-```rust
-let Some(x) = xyz else {
-    info!("x was bad");
-    return Err("bad x");
-};
-let Some(y) = x.thing() else {
-    info!("y was bad");
-    return Err("bad y");
-};
-let Some(z) = y.thing() else {
-    info!("z was bad");
-    return Err("bad z");
-};
-// ...
-do_something_with(z);
-// ...
-```
-
-which succinctly avoids bindings of the same name, rightward shift, etc.
-
-let-else is even more useful when dealing with enums which are not `Option`/`Result`, consider how the
-following code would look without let-else (transposed from a real-world project written in part by the author):
-
+Without let-else, as this code was originally written:
 ```rust
 impl ActionView {
     pub(crate) fn new(history: &History<Action>) -> Result<Self, eyre::Report> {
         let mut iter = history.iter();
         let event = iter
             .next()
+            // RFC comment: ok_or_else works fine to early return when working with `Option`.
+            .ok_or_else(|| eyre::eyre!("Entity has no history"))?;
+
+        if let Action::Register {
+            actor: String,
+            x: Vec<String>
+            y: u32,
+            z: String,
+        } = event.action().clone() {
+            let created = *event.created();
+            let mut view = ActionView {
+                registered_by: (actor, created),
+                a: (actor.clone(), x, created),
+                b: (actor.clone(), y, created),
+                c: (z, created),
+                d: Vec::new(),
+
+                e: None,
+                f: None,
+                g: None,
+            };
+            for event in iter {
+                view.update(&event)?;
+            }
+
+            // more lines omitted
+
+            Ok(view)
+        } else {
+            // RFC comment: Far away from the associated conditional.
+            Err(eyre::eyre!("must begin with a Register action"));
+        }
+    }
+}
+```
+
+With let-else:
+```rust
+impl ActionView {
+    pub(crate) fn new(history: &History<Action>) -> Result<Self, eyre::Report> {
+        let mut iter = history.iter();
+        let event = iter
+            .next()
+            // RFC comment: ok_or_else works fine to early return when working with `Option`.
             .ok_or_else(|| eyre::eyre!("Entity has no history"))?;
 
         let Action::Register {
@@ -124,9 +98,7 @@ impl ActionView {
             y: u32,
             z: String,
         } = event.action().clone() else {
-            // RFC Author's note:
-            //   Without if-else this was separated from the conditional 
-            //   by a substantial block of code which now follows below.
+            // RFC comment: Directly located next to the associated conditional.
             return Err(eyre::eyre!("must begin with a Register action"));
         };
 
@@ -145,6 +117,9 @@ impl ActionView {
         for event in iter {
             view.update(&event)?;
         }
+
+        // more lines omitted
+
         Ok(view)
     }
 }
@@ -233,12 +208,17 @@ let (each, binding) = match expr {
 };
 ```
 
-Any expression may be put into the expression position except an `if {} else {}` as explain below in [drawbacks][].
-While `if {} else {}` is technically feasible this RFC proposes it be disallowed for programmer clarity to avoid an `... else {} else {}` situation.
-Rust already provides us with such a restriction, [`ExpressionWithoutBlock`][expressions].
+Most expressions may be put into the expression position with two restrictions:
+1. May not include a block outside of parenthesis. (Must be an [`ExpressionWithoutBlock`][expressions].)
+2. May not be just a lazy boolean expression (`&&` or `||`). (Must not be a [`LazyBooleanExpression`][lazy-boolean-operators].)
 
-Any pattern that could be put into if-let's pattern position can be put into let-else's pattern position, except a match to a boolean when
-a lazy boolean operator is present (`&&` or `||`), for reasons noted in [future-possibilities][].
+While allowing e.g. `if {} else {}` directly in the expression position is technically feasible this RFC proposes it be
+disallowed for programmer clarity so as to avoid `... else {} else {}` situations as discussed in the [drawbacks][] section.
+Boolean matches are not useful with let-else and so lazy boolean expressions are disallowed for reasons noted in [future-possibilities][].
+These types of expressions can still be used when combined in a less ambiguous manner with parenthesis, thus forming a [`GroupedExpression`][grouped-expr],
+which is allowed under the two expression restrictions.
+
+Any refutable pattern that could be put into if-let's pattern position can be put into let-else's pattern position.
 
 If the pattern is irrefutable, rustc will emit the `irrefutable_let_patterns` warning lint, as it does with an irrefutable pattern in an `if let`.
 
@@ -474,6 +454,13 @@ let z = match x {
 
 This is, as stated, a much more complex alternative interacting with much more of the language, and is also not an obvious opposite of if-let expressions.
 
+### Macro
+
+Another suggested solution is to create a macro which handles this.
+A crate containing such a macro is mentioned in the [Prior art](prior-art) section of this RFC.
+
+This crate has not been widely used in the rust crate ecosystem with only 47k downloads over the ~6 years it has existed at the time of writing.
+
 ### Null Alternative
 
 Don't make any changes; use existing syntax like `match` (or `if let`) as shown in the motivating example, or write macros to simplify the code.
@@ -623,10 +610,12 @@ because it is confusing to read syntactically, and it is functionally similar to
 [`const`]: https://doc.rust-lang.org/reference/items/constant-items.html
 [`static`]: https://doc.rust-lang.org/reference/items/static-items.html
 [expressions]: https://doc.rust-lang.org/reference/expressions.html#expressions
+[grouped-expr]: https://doc.rust-lang.org/reference/expressions/grouped-expr.html
 [guard-crate]: https://crates.io/crates/guard
 [guard-repo]: https://github.com/durka/guard
 [if-let]: https://rust-lang.github.io/rfcs/0160-if-let.html
 [if-let-chains]: https://rust-lang.github.io/rfcs/2497-if-let-chains.html
+[lazy-boolean-operators]: https://doc.rust-lang.org/reference/expressions/operator-expr.html#lazy-boolean-operators
 [never-type]: https://doc.rust-lang.org/std/primitive.never.html
 [old-rfc]: https://github.com/rust-lang/rfcs/pull/1303
 [swift]: https://developer.apple.com/library/prerelease/ios/documentation/Swift/Conceptual/Swift_Programming_Language/ControlFlow.html#//apple_ref/doc/uid/TP40014097-CH9-ID525
