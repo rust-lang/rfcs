@@ -229,17 +229,7 @@ types.
 ## `AsFd`, `IntoFd`, and `FromFd`
 
 These types provide `as_fd`, `into_fd`, and `from_fd` functions similar to
-their `Raw` counterparts, but with the benefit of a safe interface, it's safe
-to provide a few simple conveniences which make the API much more flexible:
-
- - A `from_into_fd` function which takes a `IntoFd` and converts it into a
-   `FromFd`, allowing users to perform this common sequence in a single
-   step, and without having to use `unsafe`.
-
- - A `as_filelike_view::<T>()` function returns a `View`, which contains a
-   temporary `ManuallyDrop` instance of T constructed from the contained
-   file descriptor, allowing users to "view" a raw file descriptor as a
-   `File`, `TcpStream`, and so on.
+their `Raw` counterparts.
 
 ## Prototype implementation
 
@@ -387,8 +377,15 @@ Some possible future ideas that could build on this RFC include:
    that, with this new guarantee, the high-level wrappers around raw handles
    are unforgeable in safe Rust.
 
-[`from_filelike`]: https://docs.rs/unsafe-io/0.6.2/unsafe_io/trait.FromUnsafeFile.html#method.from_filelike
-[this wrapper around `posix_fadvise`]: https://docs.rs/posish/0.6.1/posish/fs/fn.fadvise.html
+ - There are a few convenience features which can be implemented on top
+   of the basic `As`/`Into`/`From` traits:
+     - A `from_into_fd` function which takes a `IntoFd` and converts it into a
+       `FromFd`, allowing users to perform this common sequence in a single
+       step.
+     - A `as_filelike_view::<T>()` function returns a `View`, which contains a
+       temporary instance of T constructed from the contained file descriptor,
+       allowing users to "view" a raw file descriptor as a `File`, `TcpStream`,
+       and so on.
 
 # Thanks
 [thanks]: #thanks
