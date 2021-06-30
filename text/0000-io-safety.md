@@ -161,21 +161,6 @@ pub fn do_some_io<FD: AsFd>(input: &FD) -> io::Result<()> {
 
 For Windows, similar traits, but in `Handle` and `Socket` forms.
 
-## Portability for simple use cases
-
-Portability in this space isn't easy, since Windows has two different handle
-types while Unix has one. However, some use cases can treat `AsFd` and
-`AsHandle` similarly, while some other uses can treat `AsFd` and `AsSocket`
-similarly. In these two cases, trivial `Filelike` and `Socketlike` abstractions
-allow code which works in this way to be generic over Unix and Windows.
-
-On Unix, `AsFilelike` and `AsSocketlike` have blanket implementations for
-any type that implements `AsFd`. On Windows, `AsFilelike` has a blanket
-implementation for any type that implements `AsHandle`, and `AsSocketlike`
-has a blanket implementation for any type that implements `AsSocket`.
-
-Similar portability abstractions apply to the `From*` and `Into*` traits.
-
 ## Gradual adoption
 
 I/O safety and the new types and traits wouldn't need to be adopted
@@ -386,6 +371,15 @@ Some possible future ideas that could build on this RFC include:
        temporary instance of T constructed from the contained file descriptor,
        allowing users to "view" a raw file descriptor as a `File`, `TcpStream`,
        and so on.
+
+ - Portability for simple use cases. Portability in this space isn't easy,
+   since Windows has two different handle types while Unix has one. However,
+   some use cases can treat `AsFd` and `AsHandle` similarly, while some other
+   uses can treat `AsFd` and `AsSocket` similarly. In these two cases, trivial
+   `Filelike` and `Socketlike` abstractions could allow code which works in
+   this way to be generic over Unix and Windows.
+
+   Similar portability abstractions could apply to the `From*` and `Into*` traits.
 
 # Thanks
 [thanks]: #thanks
