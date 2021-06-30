@@ -245,7 +245,7 @@ to provide a few simple conveniences which make the API much more flexible:
 
 All of the above is prototyped here:
 
-<https://github.com/sunfishcode/io-experiment>
+<https://github.com/sunfishcode/io-lifetimes>
 
 The README.md has links to documentation, examples, and a survey of existing
 crates providing similar features.
@@ -343,14 +343,14 @@ a given raw handle would let safe Rust have the same guarantees as those
 effectively provided by such languages.
 
 There are several crates on crates.io providing owning and borrowing file
-descriptor wrappers. The [io-experiment README.md's Prior Art section]
-describes these and details how io-experiment's similarities and differences
+descriptor wrappers. The [io-lifetimes README.md's Prior Art section]
+describes these and details how io-lifetimes' similarities and differences
 with these existing crates in detail. At a high level, these existing crates
-share the same basic concepts that io-experiment uses. All are built around
+share the same basic concepts that io-lifetimes uses. All are built around
 Rust's lifetime and ownership concepts, and confirm that these concepts
 are a good fit for this problem.
 
-[io-experiment README.md's Prior Art section]: https://github.com/sunfishcode/io-experiment#prior-art
+[io-lifetimes README.md's Prior Art section]: https://github.com/sunfishcode/io-lifetimes#prior-art
 [C#]: https://docs.microsoft.com/en-us/dotnet/api/system.io.file?view=net-5.0
 [Java]: https://docs.oracle.com/javase/7/docs/api/java/io/File.html?is-external=true
 
