@@ -6,15 +6,57 @@
 # Summary
 [summary]: #summary
 
-One paragraph explanation of the feature.
+Extend Cargo to allow some limited forms of migrations of feature sets to be expressed.
+This will allow adding new features to make existing functionality optional without causing needless breakage.
 
 # Motivation
 [motivation]: #motivation
 
-Why are we doing this? What use cases does it support? What is the expected outcome?
+## Problem
+
+Today, Cargo's features most easily support workflow where features added in a new versions of a crate gate new functionality.
+For example, in a new version of a crate, someone crates a new function, and adds it behind a new feature; neither the function nor feature existed in the old version of the crate.
+The problem is there is another quite different use case of features: making previously mandatory functionality optional.
+For example, in a new version of a create, some creates a new feature for a function that *already* exists, so that it can be disabled.
+The workflow isn't supported so well, the only avoidance Cargo supports for it is the "default features" set, which isn't sufficient for reasons that will be provided below.
+
+This second use-case is really important --- in fact, perhaps more important.
+The important thing to realize about features is that the ultimate *reason* they are used is not controlling a creates interface (outputs), but it's *dependencies* (inputs).
+No one minds if a crate provides harmless functionality they don't need.
+They do, however, mind if it depends on another crate they cannot provide, e.g. because of platform considerations (bare metal, etc.).
+That means if someone adds new functionality that doesn't require new deps (common for case 1), there's little reason to bother adding features.
+Conversely, if someone wants to make a dep like `std` optional, there is a lot of benefit to add `std` feature to do so.
+
+Let's return to "default features".
+What is it for, and why is it not sufficient?
+Simple enough, if we create a new feature gating existing functionality, existing consumers of the functionality won't know about the new feature, so we need to provide some avoidance so they continue to receive the functionality without changing their "request".
+Default features allow a new feature to be on by default, so the old functionality continues to work.
+New consumers that don't want to use the now-optional feature (and moreover incur the now-optional dependencies obligations), can opt out of default features and then provide a feature list that isn't embellished.
+
+The problem is, what happens if we later have *another* feature making existing functionality optional?
+Concretely, let's say 1.0 has no features with functions `foo` and `bar`, 1.1 has a default feature `foo-feature` gating `foo`, and 1.2 has default features `foo-feature` and `bar-feature` gating `foo` and `bar`.
+When we introduced 1.1, there were no default features to opt out of.
+But when we introduce 1.2, there could be consumers *already* opting out of default features to skip `foo-feature` / `foo`?
+How can we ensure those consumers nonetheless still get access to `bar`, while still allowing new consumers to take advantage of `bar-feature` to opt out of `bar`?
+Too bad, we cannot.
+
+## New motivation
+
+This gap in Cargo's functionality has taken on new urgency with https://github.com/rust-lang/rfcs/pull/3140, which would propose a feature for the `alloc` crate of the latter sort, making existing functionality optional.
+This would be the first example of a Cargo feature on a standard library crate slates for user consumption (as opposed to being some artifact of the current build system with no plans for stabilization).
+It's very important we have a good design so that we don't end up accidentally introduction breaking changes in the standard library, because there is no way for users to opt out of the latest version!
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
+
+I recommend first reading the [rationale-and-alternatives] section.
+I don't think this design is overwrought, but it does represent a new way of thinking about these sorts of issues that might feel unfamiliar.
+I fully acknowledge "migrations" is a scary word for many people due to their experiences with databases.
+
+> Some might find the whole premise funny, because two versions of anything being "compatible" ought to be that no "migrations" are needed by definitions!
+> To avoid going on a tangent, that is not my definition of "compatible".
+
+Moreover, I am going with this design because I do think it is our best option.
 
 Explain the proposal as if it was already included in the language and you were teaching it to another Rust programmer. That generally means:
 
