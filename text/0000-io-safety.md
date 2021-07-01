@@ -150,8 +150,8 @@ These three traits are conceptual replacements for `AsRawFd`, `IntoRawFd`, and
 
 Using these traits, the `do_some_io` example in the [motivation] can avoid
 the original problems. Since `AsFd` is only implemented for types which
-properly own their file descriptors, this version of `do_some_io` doesn't
-have to worry about being passed bogus or dangling file descriptors:
+properly own or borrow their file descriptors, this version of `do_some_io`
+doesn't have to worry about being passed bogus or dangling file descriptors:
 
 ```rust
 pub fn do_some_io<FD: AsFd>(input: &FD) -> io::Result<()> {
