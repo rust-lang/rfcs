@@ -53,11 +53,6 @@ I recommend first reading the [rationale-and-alternatives] section.
 I don't think this design is overwrought, but it does represent a new way of thinking about these sorts of issues that might feel unfamiliar.
 I fully acknowledge "migrations" is a scary word for many people due to their experiences with databases.
 
-> Some might find the whole premise funny, because two versions of anything being "compatible" ought to be that no "migrations" are needed by definitions!
-> To avoid going on a tangent, that is not my definition of "compatible".
-
-Moreover, I am going with this design because I do think it is our best option.
-
 Explain the proposal as if it was already included in the language and you were teaching it to another Rust programmer. That generally means:
 
 - Introducing new named concepts.
@@ -87,9 +82,80 @@ Why should we *not* do this?
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-- Why is this design the best in the space of possible designs?
-- What other designs have been considered and what is the rationale for not choosing them?
-- What is the impact of not doing this?
+A few ideas came up in the https://github.com/rust-lang/rfcs/pull/3140 thread that should be discussed here.
+
+## Feature opt-outs
+
+The most popular feature was some way to opt out of features, i.e. to say "give me the default features" *without* necessarily features 'x' or 'y'".
+This does solve the problem: without users opting out of all features, just the ones they can name, there is no risk new features they will need being disabled.
+However, it causes other problems.
+
+First of all, this complicates the "additive" features mental model.
+We've worked very hard to teach people how features are additive: it should always be safe to add more features.
+We can't give that up across the board without destroying feature resolution, so it's important that "without necessarily features 'x' or 'y'" doesn't mean the crate will for sure not get "x" or "y", but just that they are not requesting them.
+I worry this will be very subtle and hard to teach.
+
+Second of all, there is an especially unintuitive case of the former where a non-opted-out default feature depends on an opted-out feature.
+E.g. the consumer depends on "default features without 'foo'", but "bar" is another default feature that depends on "foo".
+In this case, the not mentioned feature still drags in the opted out feature.
+This might happen because the user forgot to include both features.
+It might also happen because only in the new version, and in not the one the user was using when they wrote the spec, did the feature gain the problematic dep on the excluded feature.
+Finally, it might be that that other feature and its dependency are both newer.
+In any case, this means that *all* build plans (with the given version of the package) have the opted-out feature, not just some, which is liable to make things more confusing.
+
+One might think there is a fix making the out-out a hard rejection, so such that no plan is allowed to have those features.
+But that creates other problems, namely that those same sneaky new deps would disallow all plans entirely.
+Moreover, this sort of "negative reasoning" undermines the entire "additive" comparability story Cargo features are supposed to have.
+This will make everything brittle, and make it impossible to express when you *are* in fact, agnostic to whether some unneeded feature is enabled due to something else.
+
+> I do think is useful to assert some features aren't enabled, but that should be done in the workspace root, not dependency crates, for sake of modularity.
+
+Finally, and is a matter of taste, I find writing down features that I *don't* need poor UX.
+We say "pay for what you use" in Rust, but writing down features that we, by definition, don't care about means cluttering our minds and `Cargo.toml`s.
+I would only want to propose negative reasoning as an absolute last resort.
+
+## Always at least one feature
+
+In https://github.com/rust-lang/rfcs/pull/3140#issuecomment-862109208, @Nemo157 wrote:
+
+> The way this is solved in other crates is to move everything behind a feature and make that default on.
+> You can then in the future subset that feature as necessary, and make it activate those new sub-features.
+
+To expound on that bit, the idea is that the empty feature set should always correspond to the empty crate.
+Realistic consumers, will always opt-into at least one feature.
+
+This has a lot of nice properties.
+First of all, we don't even need any notion of "default features" anymore for compatability's sake.
+Since there was at least one feature from the get-go, we simply prevent breaking changes by not removing old features.
+When we want to make existing functionality more optional, we just split existing features up:
+the old "everything else" feature gets a dependency on the new optional feature, and the new "everything else" feature, which is correspondingly narrower.
+For example, `everything-else-0` in the old version becomes `std`, `everything-else-1`, and `everything-else-0 = ["std", "everything-else-1"]`.
+Importantly, there is no negative reasoning, or opting out, which avoids all the pitfalls of the previous solution.
+
+Of course, this method also has some serious ergonomic drawbacks.
+It would be easily to forget to create the "everything else" feature, and users who aren't familiar with the problem would see it as more pointless boilerplate.
+Naming the "everything else" features is also a bit tedious.
+
+Finally, a single minimal "everything else" feature isn't even enough to prepare oneself for all possible future split features.
+As in the motivation, assume we have functions `foo` and `bar` gated on `foo-feature` and `bar-feature`, respectively.
+Assume also we have a `baz` that requires `foo-feature` and `bar-feature`.
+Now, later, we want to make a `baz-feature` that depends on the other two, and gates `baz` itself.
+When the user migrates to the new versions, uses of `foo-feature` and `bar-feature` *alone* should still be fine;
+neither of them were using `baz` and so there is no issue.
+It's only the consumers of the *combination* of `foo-feature` and `bar-feature` that might be using `baz`, so only they should we conservatively insure also depend on `everything-else-0`.
+But there is no way to express that:
+Yes, `baz` was feature gated, but it being "more" than just the `foo-feature` and `bar-feature` bare minimum hits the same issue as ungated functionality being "more" than the empty crate.
+The only way to be "future proof" is to ensure everything is gated on exactly one feature, but that could mean up to 2 ^ n "defensive" "everything-else"-like features!
+
+Our actual plan for "migrations" works remarkably the same as this plan "underneath the hood".
+It simply tries to increase the ergonomics by freeing the user from needing to preemptively and defensively create these extra features and name them.
+
+## Migrations and compatibility don't mix!
+
+A final short note.
+Some might find the whole premise funny, because two versions of anything being "compatible" ought to be that no "migrations" are needed by definitions!
+To avoid going on a tangent, my definition of "compatible" says anytime there is a single, canonical way to replace one component with another, they are compatible.
+The single, canonical way doesn't need to be some notion of "do nothing".
 
 # Prior art
 [prior-art]: #prior-art
