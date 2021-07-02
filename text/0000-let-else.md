@@ -222,7 +222,7 @@ Any refutable pattern that could be put into if-let's pattern position can be pu
 
 If the pattern is irrefutable, rustc will emit the `irrefutable_let_patterns` warning lint, as it does with an irrefutable pattern in an `if let`.
 
-The `else` block must _diverge_, meaning the `else` block must return the [never type (`!`)][never type]).
+The `else` block must _diverge_, meaning the `else` block must return the [never type (`!`)][never-type]).
 This could be a keyword which diverges (returns `!`), or a panic.
 
 If the pattern does not match, the expression is not consumed, and so any existing variables from the surrounding scope are
