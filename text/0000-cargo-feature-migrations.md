@@ -53,31 +53,107 @@ I recommend first reading the [rationale-and-alternatives] section.
 I don't think this design is overwrought, but it does represent a new way of thinking about these sorts of issues that might feel unfamiliar.
 I fully acknowledge "migrations" is a scary word for many people due to their experiences with databases.
 
-Explain the proposal as if it was already included in the language and you were teaching it to another Rust programmer. That generally means:
+## Main feature
 
-- Introducing new named concepts.
-- Explaining the feature largely in terms of examples.
-- Explaining how Rust programmers should *think* about the feature, and how it should impact the way they use Rust. It should explain the impact as concretely as possible.
-- If applicable, provide sample error messages, deprecation warnings, or migration guidance.
-- If applicable, describe the differences between teaching this to existing Rust programmers and new Rust programmers.
+The basic insight were going for is that users, when writing down their dependencies, don't want to think about all possible future (compatible) versions of a crate.
+In fact, they probably don't want to think about any past versions either!
+As a first approximation, most deps specs mean "give me the version I used during development or something compatible with it!"
 
-For implementation-oriented RFCs (e.g. for compiler internals), this section should focus on how compiler contributors should think about the change, and give examples of its concrete impact. For policy RFCs, this section should provide an example-driven introduction to the policy, and explain its impact in concrete terms.
+We want to embrace that, and interpret all feature "requests" in terms of the base version being requested.
+So when you write
+```toml
+[dependencies.other-crate]
+version = "1.1"
+features = []
+```
+you mean "I don't need any of the features that exist *as of version '1.1'*".
+For users, that should be it!
+
+For crate authors, yes, now the work of migrations comes in.
+If in version 1.2 a `std` feature is added, then we need to say that users coming from 1.1 should have it enabled.
+We can do it like this
+```
+[feature-migrations."1.1"]
+"all()" = [ "std" ]
+```
+Yes, that `all()` is pretty obscure.
+It means the "empty union"; no bad I cannot use feature lists as keys.
+It is supposed to match syntax I proposed in https://github.com/rust-lang/rfcs/pull/3143#issuecomment-868829430.
+I am fine if we have some sugar for this common case.
+
+For the more common case from the discussion of alternatives, where we formerly had:
+```rust
+// 1.1
+#[cfg(feature = "foo-feature")]
+fn foo();
+#[cfg(feature = "bar-feature")]
+fn bar();
+#[cfg(all(feature = "foo-feature", feature = "bar-feature"))]
+fn baz();
+```
+but now have
+```rust
+// 1.2
+#[cfg(feature = "foo-feature")]
+fn foo();
+#[cfg(feature = "bar-feature")]
+fn bar();
+// baz-feature depends on other two
+#[cfg(feature = "baz-feature")]
+fn baz();
+```
+we can have migration
+```
+[feature-migrations."1.1"]
+"all(foo, bar)" = [ "baz" ]
+```
+And that's it!
+Any migration that matches is applied, they all only "add" features to the requested set.
+
+## Wither default features?
+
+Finally, note that we handled creating a `std` feature without breakage or using `default-features`.
+I suspect most uses of default-features today are also to preserve comparability more than they are a value judgment on what features "ought" to be the default.
+Given the issues with the default features, and that that new migrations solve the compatabilty problem alone, I would be happy to see default features deprecated.
+
+The biggest beneficiary of this would be the "no std" and other exotic platforms ecosystems.
+It can be hard to track down myriad crates and get them to use quixotic `default-features = false` if they were happily working without.
+Conversely if crates had to use `features = [ "std" ];"` from the get-go, I don't think it would be that annoying.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-This is the technical portion of the RFC. Explain the design in sufficient detail that:
+1. `Cargo.toml` has a new section in the form `feature-migrations`
+   The format is
+   ```
+   [feature-migrations.<version>]
+   <feature-union> = <feature-list>
+   ```
+   where
 
-- Its interaction with other features is clear.
-- It is reasonably clear how the feature would be implemented.
-- Corner cases are dissected by example.
+    - `<version>` is a string containing a prior crate version
+    - ```
+      <feature-union> ::= <feature-name>
+                       |  all(<possbily-empty-comma-separated-list-of-feature-names>)
+      ```
+2. When resolving features, use the migrations to extend the requested feature set.
 
-The section should return to the examples given in the previous section, and explain more fully how the detailed proposal makes those examples work.
+   If the unions on the left match the current set, *including feature's* dependencies,
+   Also depend on the features on the right.
+   Features on the right are "already migrated", and shouldn't be fed back into the algorithm.
+   Any match on the left *within a version* is fair game, that means both `all(foo,bar)` and `all(foo,bar,baz)` would apply if the feature set was `[ "foo", "bar", and "baz" ]`.
+
+   As to which version block to use, start with the base version of the dependency spec, and then work backwards among compatible versions (e.g 1.2, 1.1, 1.0, but not 0.9).
+   As long as some feature hasn't been migrated, keep on going backwards,
+   but features that have already been matched in a later migration *won't* fire this time.
+   That means if we already matched `all(foo,bar,baz)` in a later version, and now see `all(foo,bar)` in an earlier version, we *won't* apply the migration.
 
 # Drawbacks
 [drawbacks]: #drawbacks
 
-Why should we *not* do this?
+I am a little wary of putting migrations *in* `Cargo.toml`s, especially as crates can be published out of order (new 1.x after 2.0 for example).
+Migrations represent a relationship between versions, so ideally would be stored separately.
+But this creates numerous engineering challenges, including out-of-band "meta-versioning" issues as the solver works from migration data which itself changes over time.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -160,26 +236,41 @@ The single, canonical way doesn't need to be some notion of "do nothing".
 # Prior art
 [prior-art]: #prior-art
 
-Discuss prior art, both the good and the bad, in relation to this proposal.
-A few examples of what this can include are:
+Database migrations is the obvious prior art.
 
-- For language, library, cargo, tools, and compiler proposals: Does this feature exist in other programming languages and what experience have their community had?
-- For community proposals: Is this done by some other community and what were their experiences with it?
-- For other teams: What lessons can we learn from what other communities have done here?
-- Papers: Are there any published papers or great posts that discuss this? If you have some relevant papers to refer to, this can serve as a more detailed theoretical background.
+Otherwise, I will reuse this section to talk about the underlyingmath.
 
-This section is intended to encourage you as an author to think about the lessons from other languages, provide readers of your RFC with a fuller picture.
-If there is no prior art, that is fine - your ideas are interesting to us whether they are brand new or if it is an adaptation from other languages.
+Features depend on other features, and also we have sets of features but sets that respect those dependecies.
+That means if `bar` depends on `foo`, it makes no sense to distinguish `[ "bar" ]` from `[ "foo" ]`.
+What that means is that we have a ["free *join-semilattice* over a partial order"](https://ncatlab.org/nlab/show/semilattice#the_free_joinsemilattice_on_a_poset).
+These lattices are actually bounded and distributive, which isn't structure we need to care about, but does make for a nicer "extruded hypercube" mental imagery as depicted in the images in https://en.wikipedia.org/wiki/Birkhoff%27s_representation_theorem, for anyone that rather imagine geometric shapes than algebraic machinations.
 
-Note that while precedent set by other languages is some motivation, it does not on its own motivate an RFC.
-Please also take into consideration that rust sometimes intentionally diverges from common language features.
+Mathematically, it's best to look at every crate's features as an independent mathematical construct.
+When we say "don't remove features, keep the same names", what we are really doing is defining the "base migration" between each versions' features.
+Mathematically, it that is a *homomorphism* between them.
+What sort of homomorphism?
+Because we are frequently mapping the empty feature set to something else, e.g. `[]` to `["std"]`,
+We also don't care whether joins are mapped to joins, per the "foo bar baz" example where `["foo-feature", "bar-feature"]` became `["foo-feature", "bar-feature", "baz-feature"]`.
+I think that means we just care about preserving the underling partial order (including unions, not the standalone feature dependency partial order we generated it the lattice from).
+The type of "matching rules" system that is proposed does do that by being monotonic.
+
+Note it is OK if the migration homomorphisms are not injective.
+That would mean that some features are collapsed together, and we loose distinctions.
+This violates the spirit of the feature distinction, but need not violate the letter of compatibility rules as long as everything from before in the crate interface is still available.
+
+It's of a different, but related, sort than mentioned here, but https://arxiv.org/abs/2004.05688 also discusses the mathematical formalism of package management.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-- What parts of the design do you expect to resolve through the RFC process before this gets merged?
-- What parts of the design do you expect to resolve through the implementation of this feature before stabilization?
-- What related issues do you consider out of scope for this RFC that could be addressed in the future independently of the solution that comes out of this RFC?
+- Syntax bikeshed, `all()` could be regular `cfg` syntax or something else.
+
+- Maybe we just worry about migrating the no-feature case for now.
+
+- Does it matter how the migrations from old versions change over time?
+  E.g. how the migrations from 1.1 -> 1.2 -> 1.3 might not match the migrations from 1.1 -> 1.3 directly?
+  (Note that multi-step migrations might be possible if Cargo combines depenency specs to avoid duplicate crates / public dep violations mid-solving.)
+  The "path dependency" of migrating different ways could make for unexpected behavior as the solver tries different versions.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
