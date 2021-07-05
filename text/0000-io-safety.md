@@ -142,6 +142,21 @@ their I/O safety invariants automatically.
 
 For Windows, similar types, but in `Handle` and `Socket` forms.
 
+These types play a role for I/O which is analogous to what existing types
+in Rust play for memory:
+
+| Type             | Analogous to |
+| ---------------- | ------------ |
+| `OwnedFd`        | `Box<_>`     |
+| `BorrowedFd<'a>` | `&'a _`      |
+| `RawFd`          | `*const _`   |
+
+One difference is that I/O types don't make a distinction between mutable
+and immutable. OS resources can be shared in a variety of ways outside of
+Rust's control, so I/O can be thought of as using [interior mutability].
+
+[interior mutability]: https://doc.rust-lang.org/reference/interior-mutability.html
+
 ## `AsFd`, `IntoFd`, and `FromFd`
 
 These three traits are conceptual replacements for `AsRawFd`, `IntoRawFd`, and
