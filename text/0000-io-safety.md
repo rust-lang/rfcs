@@ -325,6 +325,14 @@ share the same basic concepts that io-lifetimes uses. All are built around
 Rust's lifetime and ownership concepts, and confirm that these concepts
 are a good fit for this problem.
 
+Android has special APIs for detecting improper `close`s; see
+rust-lang/rust#74860 for details. The motivation for these APIs also applies
+to I/O safety here. Android's special APIs use dynamic checks, which enable
+them to enforce rules across source language boundaries. The I/O safety
+types and traits proposed here are only aiming to enforce rules within Rust
+code, so they're able to use Rust's type system to enforce rules at
+compile time rather than run time.
+
 [io-lifetimes README.md's Prior Art section]: https://github.com/sunfishcode/io-lifetimes#prior-art
 [C#]: https://docs.microsoft.com/en-us/dotnet/api/system.io.file?view=net-5.0
 [Java]: https://docs.oracle.com/javase/7/docs/api/java/io/File.html?is-external=true
