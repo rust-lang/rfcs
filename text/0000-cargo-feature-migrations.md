@@ -15,7 +15,7 @@ This will allow adding new features to make existing functionality optional with
 ## Problem
 
 Today, Cargo's features most easily support workflow where features added in a new versions of a crate gate new functionality.
-For example, in a new version of a crate, someone crates a new function, and adds it behind a new feature; neither the function nor feature existed in the old version of the crate.
+For example, in a new version of a crate, someone creates a new function, and adds it behind a new feature; neither the function nor feature existed in the old version of the crate.
 The problem is there is another quite different use case of features: making previously mandatory functionality optional.
 For example, in a new version of a create, some creates a new feature for a function that *already* exists, so that it can be disabled.
 The workflow isn't supported so well, the only avoidance Cargo supports for it is the "default features" set, which isn't sufficient for reasons that will be provided below.
@@ -49,7 +49,7 @@ It's very important we have a good design so that we don't end up accidentally i
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-I recommend first reading the [rationale-and-alternatives] section.
+I recommend first reading the [Rationale and alternatives](rationale-and-alternatives) section.
 I don't think this design is overwrought, but it does represent a new way of thinking about these sorts of issues that might feel unfamiliar.
 I fully acknowledge "migrations" is a scary word for many people due to their experiences with databases.
 
