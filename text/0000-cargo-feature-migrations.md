@@ -59,7 +59,7 @@ It's very important we have a good design so that we don't end up accidentally i
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-I recommend first reading the [Rationale and alternatives](rationale-and-alternatives) section.
+I recommend first reading the [Rationale and alternatives](#rationale-and-alternatives) section.
 I don't think this design is overwrought, but it does represent a new way of thinking about these sorts of issues that might feel unfamiliar.
 I fully acknowledge "migrations" is a scary word for many people due to their experiences with databases.
 
@@ -201,13 +201,13 @@ In any case, this means that *all* build plans (with the given version of the pa
 One might think there is a fix making the out-out a hard rejection, so such that no plan is allowed to have those features.
 But that creates other problems, namely that those same sneaky new deps would disallow all plans entirely.
 Moreover, this sort of "negative reasoning" undermines the entire "additive" comparability story Cargo features are supposed to have.
-This will make everything brittle, and make it impossible to express when you *are* in fact, agnostic to whether some unneeded feature is enabled due to something else.
-
-> I do think is useful to assert some features aren't enabled, but that should be done in the workspace root, not dependency crates, for sake of modularity.
+This will make everything brittle, and make it impossible to express when you *are* in fact, agnostic to whether some unneeded feature is enabled due to something else.<sup>[1](#assert-disabled)</sup>
 
 Finally, and is a matter of taste, I find writing down features that I *don't* need poor UX.
 We say "pay for what you use" in Rust, but writing down features that we, by definition, don't care about means cluttering our minds and `Cargo.toml`s.
 I would only want to propose negative reasoning as an absolute last resort.
+
+<a name="assert-disabled">1:</a> N.B. I do think is useful to assert some features aren't enabled, but that should be done in the workspace root, not dependency crates, for sake of modularity.
 
 ## Always at least one feature
 
