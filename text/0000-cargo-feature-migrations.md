@@ -82,7 +82,7 @@ For users, that should be it!
 For crate authors, yes, now the work of migrations comes in.
 If in version 1.2 a `std` feature is added, then we need to say that users coming from 1.1 should have it enabled.
 We can do it like this
-```
+```toml
 [feature-migrations."1.1"]
 "all()" = [ "std" ]
 ```
@@ -113,7 +113,7 @@ fn bar();
 fn baz();
 ```
 we can have migration
-```
+```toml
 [feature-migrations."1.1"]
 "all(foo, bar)" = [ "baz" ]
 ```
@@ -135,14 +135,14 @@ Conversely if crates had to use `features = [ "std" ];"` from the get-go, I don'
 
 1. `Cargo.toml` has a new section in the form `feature-migrations`
    The format is
-   ```
-   [feature-migrations.<version>]
-   <feature-pseudo-cfg> = <feature-list>
+   ```toml
+   [feature-migrations."<version>"]
+   "<feature-pseudo-cfg>" = "<feature-list>"
    ```
    where
 
     - `<version>` is a string containing a prior crate version
-    - ```
+    - ```bnf
       <feature-pseudo-cfg> ::= <feature-name>
                             |  all(<possbily-empty-comma-separated-list-of-feature-names>)
       ```
