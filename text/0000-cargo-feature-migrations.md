@@ -87,7 +87,7 @@ We can do it like this
 "all()" = [ "std" ]
 ```
 Yes, that `all()` is pretty obscure.
-It means the "empty union"; too bad I cannot use lists (of features) as TOML object keys.
+It means the "empty intersection"; too bad I cannot use lists (of features) as TOML object keys.
 It is supposed to match syntax I proposed in https://github.com/rust-lang/rfcs/pull/3143#issuecomment-868829430.
 I am fine if we have some sugar for this common case.
 
@@ -137,18 +137,18 @@ Conversely if crates had to use `features = [ "std" ];"` from the get-go, I don'
    The format is
    ```
    [feature-migrations.<version>]
-   <feature-union> = <feature-list>
+   <feature-pseudo-cfg> = <feature-list>
    ```
    where
 
     - `<version>` is a string containing a prior crate version
     - ```
-      <feature-union> ::= <feature-name>
-                       |  all(<possbily-empty-comma-separated-list-of-feature-names>)
+      <feature-pseudo-cfg> ::= <feature-name>
+                            |  all(<possbily-empty-comma-separated-list-of-feature-names>)
       ```
 2. When resolving features, use the migrations to extend the requested feature set.
 
-   If the unions on the left match the current set, *including feature's* dependencies,
+   If the set of features on the left match the current set, *including feature's* dependencies,
    Also depend on the features on the right.
    Features on the right are "already migrated", and shouldn't be fed back into the algorithm.
    Any match on the left *within a version* is fair game, that means both `all(foo,bar)` and `all(foo,bar,baz)` would apply if the feature set was `[ "foo", "bar", and "baz" ]`.
@@ -263,7 +263,7 @@ Otherwise, I will reuse this section to talk about the underlyingmath.
 
 Features depend on other features, and also we have sets of features but sets that respect those dependecies.
 That means if `bar` depends on `foo`, it makes no sense to distinguish `[ "bar" ]` from `[ "foo" ]`.
-What that means is that we have a ["free *join-semilattice* over a partial order"](https://ncatlab.org/nlab/show/semilattice#the_free_joinsemilattice_on_a_poset).
+What that means is that we have a ["free *meet-semilattice* over a partial order"](https://ncatlab.org/nlab/show/semilattice#the_free_joinsemilattice_on_a_poset).
 These lattices are actually bounded and distributive, which isn't structure we need to care about, but does make for a nicer "extruded hypercube" mental imagery as depicted in the images in https://en.wikipedia.org/wiki/Birkhoff%27s_representation_theorem, for anyone that rather imagine geometric shapes than algebraic machinations.
 
 Mathematically, it's best to look at every crate's features as an independent mathematical construct.
@@ -271,8 +271,8 @@ When we say "don't remove features, keep the same names", what we are really doi
 Mathematically, it that is a *homomorphism* between them.
 What sort of homomorphism?
 Because we are frequently mapping the empty feature set to something else, e.g. `[]` to `["std"]`,
-We also don't care whether joins are mapped to joins, per the "foo bar baz" example where `["foo-feature", "bar-feature"]` became `["foo-feature", "bar-feature", "baz-feature"]`.
-I think that means we just care about preserving the underling partial order (including unions, not the standalone feature dependency partial order we generated it the lattice from).
+We also don't care whether meets are mapped to meets, per the "foo bar baz" example where `["foo-feature", "bar-feature"]` became `["foo-feature", "bar-feature", "baz-feature"]`.
+I think that means we just care about preserving the underling partial order (i.e. merely forgetting the lattice structure and still including the generated meets, not going back to the standalone feature dependency partial order we generated the lattice from).
 The type of "matching rules" system that is proposed does do that by being monotonic.
 
 Note it is OK if the migration homomorphisms are not injective.
