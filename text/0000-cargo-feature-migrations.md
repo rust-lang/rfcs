@@ -296,20 +296,17 @@ It's of a different, but related, sort than mentioned here, but https://arxiv.or
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-Think about what the natural extension and evolution of your proposal would
-be and how it would affect the language and project as a whole in a holistic
-way. Try to use this section as a tool to more fully consider all possible
-interactions with the project and language in your proposal.
-Also consider how this all fits into the roadmap for the project
-and of the relevant sub-team.
+In https://github.com/rust-lang/rfcs/pull/3143#issuecomment-868829430 I gave another use-case for `"and(...)"` TOML keys that represent conjunctions of features.
 
-This is also a good place to "dump ideas", if they are out of scope for the
-RFC you are writing but otherwise related.
+Moreover, I think the mathematical framework based around order theory I used when designing this feature will be useful when considering the design of other parts of Cargo and it's interaction with Rust.
+Longstanding unimplemented features like:
 
-If you have tried and cannot think of any future possibilities,
-you may simply state that you cannot think of anything.
+- Compatibility testing (https://github.com/rust-lang/cargo/issues/5500)
 
-Note that having something written down in the future-possibilities section
-is not a reason to accept the current or a future RFC; such notes should be
-in the section on motivation or rationale in this or subsequent RFCs.
-The section merely provides additional information.
+- The portability lint (https://github.com/rust-lang/rfcs/blob/master/text/1868-portability-lint.md)
+
+- Public and private dependencies (https://github.com/rust-lang/rfcs/blob/master/text/1977-public-private-dependencies.md)
+
+are all challenging problems that are amendable to this sort of analysis.
+I am less concerned with whatever "bells and whistles" Cargo has, than that there is some sort of holistic approach for both deciding on a fundamental level what we want from Cargo, and what core functionality should exist in service of that goal.
+I think this sort of theory can help, and this is a far less costly and more urgent problem than those other three with which to evaluate it.
