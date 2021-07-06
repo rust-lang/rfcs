@@ -15,9 +15,19 @@ This will allow adding new features to make existing functionality optional with
 ## Problem
 
 Today, Cargo's features most easily support workflow where features added in a new versions of a crate gate new functionality.
-For example, in a new version of a crate, someone creates a new function, and adds it behind a new feature; neither the function nor feature existed in the old version of the crate.
+
+> Example:
+>
+> In a new version of a crate, someone creates a new function, and adds it behind a new feature.
+>
+> Neither the function nor feature existed in the old version of the crate.
+
 The problem is there is another quite different use case of features: making previously mandatory functionality optional.
-For example, in a new version of a create, some creates a new feature for a function that *already* exists, so that it can be disabled.
+
+> Example:
+>
+> In a new version of a create, some creates a new feature for a function that *already* exists, so that it can be disabled.
+
 The workflow isn't supported so well, the only avoidance Cargo supports for it is the "default features" set, which isn't sufficient for reasons that will be provided below.
 
 This second use-case is really important --- in fact, perhaps more important.
@@ -162,7 +172,10 @@ A few ideas came up in the https://github.com/rust-lang/rfcs/pull/3140 thread th
 
 ## Feature opt-outs
 
-The most popular feature was some way to opt out of features, i.e. to say "give me the default features" *without* necessarily features 'x' or 'y'".
+The most popular proposal was some way to opt out of features, i.e. to say:
+
+> Give me the default features" *without* necessarily features 'x' or 'y'.
+
 This does solve the problem: without users opting out of all features, just the ones they can name, there is no risk new features they will need being disabled.
 However, it causes other problems.
 
@@ -172,7 +185,13 @@ We can't give that up across the board without destroying feature resolution, so
 I worry this will be very subtle and hard to teach.
 
 Second of all, there is an especially unintuitive case of the former where a non-opted-out default feature depends on an opted-out feature.
-E.g. the consumer depends on "default features without 'foo'", but "bar" is another default feature that depends on "foo".
+
+> Example:
+>
+> - Consumer depends on "default features without 'foo'"
+>
+> - "bar" is another default feature that depends on "foo".
+
 In this case, the not mentioned feature still drags in the opted out feature.
 This might happen because the user forgot to include both features.
 It might also happen because only in the new version, and in not the one the user was using when they wrote the spec, did the feature gain the problematic dep on the excluded feature.
@@ -205,7 +224,9 @@ First of all, we don't even need any notion of "default features" anymore for co
 Since there was at least one feature from the get-go, we simply prevent breaking changes by not removing old features.
 When we want to make existing functionality more optional, we just split existing features up:
 the old "everything else" feature gets a dependency on the new optional feature, and the new "everything else" feature, which is correspondingly narrower.
-For example, `everything-else-0` in the old version becomes `std`, `everything-else-1`, and `everything-else-0 = ["std", "everything-else-1"]`.
+
+> Example, `everything-else-0` in the old version becomes `std`, `everything-else-1`, and `everything-else-0 = ["std", "everything-else-1"]`.
+
 Importantly, there is no negative reasoning, or opting out, which avoids all the pitfalls of the previous solution.
 
 Of course, this method also has some serious ergonomic drawbacks.
