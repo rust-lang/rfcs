@@ -87,7 +87,7 @@ We can do it like this
 "all()" = [ "std" ]
 ```
 Yes, that `all()` is pretty obscure.
-It means the "empty union"; no bad I cannot use feature lists as keys.
+It means the "empty union"; too bad I cannot use lists (of features) as TOML object keys.
 It is supposed to match syntax I proposed in https://github.com/rust-lang/rfcs/pull/3143#issuecomment-868829430.
 I am fine if we have some sugar for this common case.
 
