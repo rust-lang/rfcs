@@ -14,54 +14,57 @@ This will allow adding new features to make existing functionality optional with
 
 ## Problem
 
-Today, Cargo's features most easily support workflow where features added in a new versions of a crate gate new functionality.
+Today, Cargo's features most easily support a workflow where features added in new versions of a crate gate new functionality.
 
-> Example:
->
-> In a new version of a crate, someone creates a new function, and adds it behind a new feature.
->
+> Example: In a new version of a crate, someone creates a new function, and adds it behind a new feature.
 > Neither the function nor feature existed in the old version of the crate.
 
 The problem is there is another quite different use case of features: making previously mandatory functionality optional.
 
-> Example:
->
-> In a new version of a create, some creates a new feature for a function that *already* exists, so that it can be disabled.
+> Example: In a new version of a create, some creates a new feature for a function that *already* existed.
+> Before, the export of that function was mandatory, but now it is optional because it can be disabled.
 
-The workflow isn't supported so well, the only avoidance Cargo supports for it is the "default features" set, which isn't sufficient for reasons that will be provided below.
+The workflow isn't supported so well: all Cargo offers for it is the notion of "default features", which isn't sufficient for reasons that will be elaborated below.
 
-This second use-case is really important --- in fact, perhaps more important.
-The important thing to realize about features is that the ultimate *reason* they are used is not controlling a creates interface (outputs), but it's *dependencies* (inputs).
-No one minds if a crate provides harmless functionality they don't need.
-They do, however, mind if it depends on another crate they cannot provide, e.g. because of platform considerations (bare metal, etc.).
-That means if someone adds new functionality that doesn't require new deps (common for case 1), there's little reason to bother adding features.
-Conversely, if someone wants to make a dep like `std` optional, there is a lot of benefit to add `std` feature to do so.
+This second use-case is really important — in fact, perhaps more important.
+The key thing aspect about features to realize is that the ultimate *reason* they are used is not to control a crate's interface (exports), but its *dependencies* (imports).
+All things equal, no one minds if a crate provides some extra functionality they don't need.
+That's harmless.
+They do, however, mind if that extra functionality depends on another crate they cannot provide, e.g. because of platform considerations (running bare metal, etc.).
+That means if someone adds new functionality that doesn't require new deps (case 1), there's little reason to bother gating it under new features.
+Conversely, if someone wants to make a dep like `std` optional (case 2), there is a lot of benefit to add `std` feature to do so.
 
-Let's return to "default features".
+Let's return to Cargo's notion of "default features".
 What is it for, and why is it not sufficient?
-Simple enough, if we create a new feature gating existing functionality, existing consumers of the functionality won't know about the new feature, so we need to provide some avoidance so they continue to receive the functionality without changing their "request".
+It's purpose is simple enough: if we create a new feature that gates existing functionality (again, case 2), existing consumers of the crate won't know about the new feature, so we need to provide them some avoidance to continue to receive that existing functionality without changing their "request".
 Default features allow a new feature to be on by default, so the old functionality continues to work.
-New consumers that don't want to use the now-optional feature (and moreover incur the now-optional dependencies obligations), can opt out of default features and then provide a feature list that isn't embellished.
+New consumers that do, in fact, want to avoid the new feature (and, moreover, avoid the newly-optional dependency obligations), can opt out of the default features so their feature list isn't embellished.
 
 The problem is, what happens if we later have *another* feature making existing functionality optional?
-Concretely, let's say 1.0 has no features with functions `foo` and `bar`, 1.1 has a default feature `foo-feature` gating `foo`, and 1.2 has default features `foo-feature` and `bar-feature` gating `foo` and `bar`.
+Concretely, let's say:
+
+- 1.0 has no features, and functions `foo` and `bar`
+- 1.1 has a default feature `foo-feature` gating `foo`
+- 1.2 has default features `foo-feature` and `bar-feature` gating `foo` and `bar`, respectively.
+
 When we introduced 1.1, there were no default features to opt out of.
-But when we introduce 1.2, there could be consumers *already* opting out of default features to skip `foo-feature` / `foo`?
+But when we introduce 1.2, there could be consumers *already* opting out of default features to skip `foo-feature` / `foo`.
 How can we ensure those consumers nonetheless still get access to `bar`, while still allowing new consumers to take advantage of `bar-feature` to opt out of `bar`?
 Too bad, we cannot.
 
 ## New motivation
 
-This gap in Cargo's functionality has taken on new urgency with https://github.com/rust-lang/rfcs/pull/3140, which would propose a feature for the `alloc` crate of the latter sort, making existing functionality optional.
-This would be the first example of a Cargo feature on a standard library crate slates for user consumption (as opposed to being some artifact of the current build system with no plans for stabilization).
-It's very important we have a good design so that we don't end up accidentally introduction breaking changes in the standard library, because there is no way for users to opt out of the latest version!
+This gap in Cargo's functionality has taken on new urgency with [RFC #3140](https://github.com/rust-lang/rfcs/pull/3140), which would propose a feature for the `alloc` crate of the latter sort, making existing functionality optional.
+This would be the first example of a Cargo feature on a standard library crate slated for user consumption (as opposed to being some artifact of the current build system with no plans for stabilization).
+If we want to eventually have stable user-facing features in library libraries, it's very important we have a good design so that we don't end up accidentally introduction breaking changes in the standard library.
+If we fail and have an accidental breaking change, the damage will be immense because there is no way for users to opt out of the latest version!
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 I recommend first reading the [Rationale and alternatives](#rationale-and-alternatives) section.
 I don't think this design is overwrought, but it does represent a new way of thinking about these sorts of issues that might feel unfamiliar.
-I fully acknowledge "migrations" is a scary word for many people due to their experiences with databases.
+I'm quite aware "migrations" has negative connotations to many people stemming from their experiences with databases.
 
 ## Main feature
 
@@ -91,7 +94,7 @@ It means the "empty intersection"; too bad I cannot use lists (of features) as T
 It is supposed to match syntax I proposed in https://github.com/rust-lang/rfcs/pull/3143#issuecomment-868829430.
 I am fine if we have some sugar for this common case.
 
-For the more common case from the discussion of alternatives, where we formerly had:
+For the more involved case from the discussion of alternatives, where we formerly had:
 ```rust
 // 1.1
 #[cfg(feature = "foo-feature")]
@@ -174,40 +177,40 @@ A few ideas came up in the https://github.com/rust-lang/rfcs/pull/3140 thread th
 
 The most popular proposal was some way to opt out of features, i.e. to say:
 
-> Give me the default features" *without* necessarily features 'x' or 'y'.
+> Give me the default features *without* necessarily features `x` or `y`.
 
 This does solve the problem: without users opting out of all features, just the ones they can name, there is no risk new features they will need being disabled.
 However, it causes other problems.
 
 First of all, this complicates the "additive" features mental model.
 We've worked very hard to teach people how features are additive: it should always be safe to add more features.
-We can't give that up across the board without destroying feature resolution, so it's important that "without necessarily features 'x' or 'y'" doesn't mean the crate will for sure not get "x" or "y", but just that they are not requesting them.
+We can't give that up across-the-board without destroying feature resolution, so it's important that "without necessarily features `x` or `y`" doesn't mean the crate will for sure not get `x` or `y`, but just that they are not requesting them.
 I worry this will be very subtle and hard to teach.
 
 Second of all, there is an especially unintuitive case of the former where a non-opted-out default feature depends on an opted-out feature.
 
 > Example:
 >
-> - Consumer depends on "default features without 'foo'"
+> - Consumer depends on "default features without `foo`"
 >
-> - "bar" is another default feature that depends on "foo".
+> - `bar` is another default feature that depends on `foo`.
 
-In this case, the not mentioned feature still drags in the opted out feature.
-This might happen because the user forgot to include both features.
-It might also happen because only in the new version, and in not the one the user was using when they wrote the spec, did the feature gain the problematic dep on the excluded feature.
-Finally, it might be that that other feature and its dependency are both newer.
-In any case, this means that *all* build plans (with the given version of the package) have the opted-out feature, not just some, which is liable to make things more confusing.
+In this case, the not-mentioned feature still drags in the opted-out feature.
+This might happen because the user simply forgot to include both features.
+It might also happen because the problematic `bar -> foo` dependency only exists in a newer version, and not the one the user was using when they wrote the dependency spec.
+Finally, it might be that that `bar` itself, and thus necessarily also the `bar -> foo` dependency, is newer than the dependency spec.
+In any case, the result is that *all* build plans using a problematic version of the package have the explicitly opted-out feature `foo`, which is liable to confuse the user even more.
 
 One might think there is a fix making the out-out a hard rejection, so such that no plan is allowed to have those features.
-But that creates other problems, namely that those same sneaky new deps would disallow all plans entirely.
+But that creates other problems, namely that those same sneaky new deps would rule out all plans causing solving to fail.
 Moreover, this sort of "negative reasoning" undermines the entire "additive" comparability story Cargo features are supposed to have.
-This will make everything brittle, and make it impossible to express when you *are* in fact, agnostic to whether some unneeded feature is enabled due to something else.<sup>[1](#assert-disabled)</sup>
+This will make the overall Cargo solving brittle, and also make it impossible to express the situation where one *is* in fact, agnostic to whether some unneeded feature is enabled for some other consumer's sake.<sup>[1](#assert-disabled)</sup>
 
 Finally, and is a matter of taste, I find writing down features that I *don't* need poor UX.
 We say "pay for what you use" in Rust, but writing down features that we, by definition, don't care about means cluttering our minds and `Cargo.toml`s.
 I would only want to propose negative reasoning as an absolute last resort.
 
-<a name="assert-disabled">1:</a> N.B. I do think is useful to assert some features aren't enabled, but that should be done in the workspace root, not dependency crates, for sake of modularity.
+<a name="assert-disabled">1:</a> N.B. I do think is useful to be able assert some features aren't enabled. but I that such "global reasoning" should just be allowed in the workspace root, and not dependency crates, for sake of modularity / compositionality.
 
 ## Always at least one feature
 
@@ -217,11 +220,11 @@ In https://github.com/rust-lang/rfcs/pull/3140#issuecomment-862109208, @Nemo157 
 > You can then in the future subset that feature as necessary, and make it activate those new sub-features.
 
 To expound on that bit, the idea is that the empty feature set should always correspond to the empty crate.
-Realistic consumers, will always opt-into at least one feature.
+A consequence of this is that "realistic" consumers will always opt into at least one feature.
 
 This has a lot of nice properties.
-First of all, we don't even need any notion of "default features" anymore for compatability's sake.
-Since there was at least one feature from the get-go, we simply prevent breaking changes by not removing old features.
+First of all, we don't even need any notion of "default features" anymore for sake of compatability.
+Since there is at least one feature in every prior release of a crate (that's non-empty), we simply prevent breaking changes by never removing old features.
 When we want to make existing functionality more optional, we just split existing features up:
 
 > Example: The old "everything else" feature gets a dependency on the new optional feature, and the new "everything else" feature, which is correspondingly narrower:
@@ -239,22 +242,62 @@ When we want to make existing functionality more optional, we just split existin
 Importantly, there is no negative reasoning, or opting out, which avoids all the pitfalls of the previous solution.
 
 Of course, this method also has some serious ergonomic drawbacks.
-It would be easily to forget to create the "everything else" feature, and users who aren't familiar with the problem would see it as more pointless boilerplate.
-Naming the "everything else" features is also a bit tedious.
+It would be easily to forget to create the "everything else" feature, and users who aren't familiar with the problem will scoff at what appears to be pointless boilerplate.
+Naming these "everything else" features is also a bit tedious, whether one is familiar with the issue or not.
 
-Finally, a single minimal "everything else" feature isn't even enough to prepare oneself for all possible future split features.
-As in the motivation, assume we have functions `foo` and `bar` gated on `foo-feature` and `bar-feature`, respectively.
-Assume also we have a `baz` that requires `foo-feature` and `bar-feature`.
-Now, later, we want to make a `baz-feature` that depends on the other two, and gates `baz` itself.
+Finally, a single minimal "everything else" feature isn't even enough to prepare oneself for all possible futures where features could be partitioned.
+
+> Example:
+>
+> Start as in the motivation
+>
+> - `Cargo.toml`:
+>   ```toml
+>   [features]
+>   foo-feature = []
+>   bar-feature = []
+>   ```
+>
+> - Code:
+>   ```rust
+>   #[cfg(feature = "foo-feature")]
+>   fn foo() { .. }
+>   #[cfg(feature = "bar-feature")]
+>   fn bar() { .. }
+>   #[cfg(all(feature = "foo-feature", feature = "bar-feature"))]
+>   fn baz() { .. }
+>   ```
+> Since all items are already non-trivially gated, we don't need any "everything else" feature.
+>
+> Now, later, we want to make a `baz-feature` that depends on the other two, and gates `baz` itself:
+>
+> - `Cargo.toml`:
+>   ```toml
+>   [features]
+>   foo-feature = []
+>   bar-feature = []
+>   baz-feature = ["foo-feature", "bar-feature"]
+>   ```
+>
+> - Code:
+>   ```rust
+>   #[cfg(feature = "foo-feature")]
+>   fn foo() { .. }
+>   #[cfg(feature = "bar-feature")]
+>   fn bar() { .. }
+>   #[cfg(feature = "baz-feature")]
+>   fn baz() { .. }
+>   ```
+
 When the user migrates to the new versions, uses of `foo-feature` and `bar-feature` *alone* should still be fine;
-neither of them were using `baz` and so there is no issue.
-It's only the consumers of the *combination* of `foo-feature` and `bar-feature` that might be using `baz`, so only they should we conservatively insure also depend on `everything-else-0`.
+neither of them were using the `baz` function so nothing goes wrong.
+It's only the consumers of the *combination* of `foo-feature` and `bar-feature` that might be using `baz`, so only they need continue to depend additionally on `baz-feature`.
 But there is no way to express that:
-Yes, `baz` was feature gated, but it being "more" than just the `foo-feature` and `bar-feature` bare minimum hits the same issue as ungated functionality being "more" than the empty crate.
-The only way to be "future proof" is to ensure everything is gated on exactly one feature, but that could mean up to 2 ^ n "defensive" "everything-else"-like features!
+Yes, `baz` was feature gated all along, but it being "more" than the combination what either `foo-feature` or `bar-feature` each individually provide hits the same issue as ungated functionality being "more" than the empty crate interface.
+The only way to be "future-proof" is to ensure everything is gated on exactly one feature---so making features like `foo-feature` "defensively" in advanced---but that could mean up to 2 ^ n "defensive" "everything-else"-like features!
 
-Our actual plan for "migrations" works remarkably the same as this plan "underneath the hood".
-It simply tries to increase the ergonomics by freeing the user from needing to preemptively and defensively create these extra features and name them.
+Our actual plan for "feature migrations" works remarkably the same as this plan "underneath the hood".
+The difference is just about ergonomics, which is addresses by freeing the user from needing to preemptively and defensively create (and name) these extra features.
 
 ## Migrations and compatibility don't mix!
 
