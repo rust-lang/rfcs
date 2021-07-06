@@ -223,9 +223,18 @@ This has a lot of nice properties.
 First of all, we don't even need any notion of "default features" anymore for compatability's sake.
 Since there was at least one feature from the get-go, we simply prevent breaking changes by not removing old features.
 When we want to make existing functionality more optional, we just split existing features up:
-the old "everything else" feature gets a dependency on the new optional feature, and the new "everything else" feature, which is correspondingly narrower.
 
-> Example, `everything-else-0` in the old version becomes `std`, `everything-else-1`, and `everything-else-0 = ["std", "everything-else-1"]`.
+> Example: The old "everything else" feature gets a dependency on the new optional feature, and the new "everything else" feature, which is correspondingly narrower:
+>
+> - In code: `#![cfg(everything-else-0)]` attributes become either `#![cfg(std)]` or else `#![cfg(everything-else-1)]`
+>
+> - In `Cargo.toml`:
+>   ```toml
+>   [features]
+>   std = []
+>   everything-else-1 = []
+>   everything-else-0 = ["std", "everything-else-1"]
+>   ```
 
 Importantly, there is no negative reasoning, or opting out, which avoids all the pitfalls of the previous solution.
 
