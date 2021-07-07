@@ -21,14 +21,14 @@ Today, Cargo's features most easily support a workflow where features added in n
 
 The problem is there is another quite different use case of features: making previously mandatory functionality optional.
 
-> Example: In a new version of a create, some creates a new feature for a function that *already* existed.
+> Example: In a new version of a create, some crates a new feature for a function that *already* existed.
 > Before, the export of that function was mandatory, but now it is optional because it can be disabled.
 
 The workflow isn't supported so well: all Cargo offers for it is the notion of "default features", which isn't sufficient for reasons that will be elaborated below.
 
 This second use-case is really important — in fact, perhaps more important.
 The key thing aspect about features to realize is that the ultimate *reason* they are used is not to control a crate's interface (exports), but its *dependencies* (imports).
-All things equal, no one minds if a crate provides some extra functionality they don't need.
+All else equal, no one minds if a crate provides a little extra functionality they don't need.
 That's harmless.
 They do, however, mind if that extra functionality depends on another crate they cannot provide, e.g. because of platform considerations (running bare metal, etc.).
 That means if someone adds new functionality that doesn't require new deps (case 1), there's little reason to bother gating it under new features.
@@ -135,7 +135,7 @@ Given the issues with the default features, and that that new migrations solve t
 The biggest beneficiary of this would be the "no std" and other exotic platforms ecosystems.
 It can be hard to track down myriad crates and compel them to use quixotic `default-features = false` if they were happily working without.
 Crate authors often might not appreciate the nagging either. 
-Conversely if crates where compelled by build errors rather than humans to use `features = [ "std" ];"`, and compelled immediately rather than some time after they had shared create, I don't think they would find that nearly as annoying.
+Conversely if crates where compelled by build errors rather than humans to use `features = [ "std" ];"`, and compelled immediately rather than some time after they had shared the crate, I don't think they would find that nearly as annoying.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
