@@ -7,7 +7,7 @@
 [summary]: #summary
 
 Extend Cargo to allow some limited forms of migrations of feature sets to be expressed.
-This will allow adding new features to make existing functionality optional without causing needless breakage.
+This will allow new features to be added that make existing functionality optional without causing needless breakage.
 
 # Motivation
 [motivation]: #motivation
