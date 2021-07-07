@@ -372,7 +372,7 @@ The formalism it uses is not the same as this one, but it is related.
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-In https://github.com/rust-lang/rfcs/pull/3143#issuecomment-868829430 I gave another use-case for `"and(...)"` TOML keys that represent conjunctions of features.
+In https://github.com/rust-lang/rfcs/pull/3143#issuecomment-868829430 I gave another use-case for `"all(...)"` TOML keys that represent conjunctions of features.
 
 Moreover, I think the mathematical framework based around order theory I used when designing this feature will be useful when considering the design of other parts of Cargo and it's interaction with Rust.
 Longstanding unimplemented features like:
