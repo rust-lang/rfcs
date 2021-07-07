@@ -356,6 +356,8 @@ The formalism it uses is not the same as this one, but it is related.
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
+- Whether to in fact deprecate `default-features`.
+
 - Syntax bikeshed, `all()` could be regular `cfg` syntax or something else.
 
 - Maybe we just worry about migrating the no-feature case for now.
