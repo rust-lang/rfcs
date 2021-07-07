@@ -234,7 +234,7 @@ When we want to make existing functionality more optional, we just split existin
 
 > Example: The old "everything else" feature gets a dependency on the new optional feature, and the new "everything else" feature, which is correspondingly narrower:
 >
-> - In code: `#![cfg(everything-else-0)]` attributes become either `#![cfg(std)]` or else `#![cfg(everything-else-1)]`
+> - In code: `#[cfg(everything-else-0)]` attributes become either `#[cfg(std)]` or else `#[cfg(everything-else-1)]`
 >
 > - In `Cargo.toml`:
 >   ```toml
@@ -345,7 +345,7 @@ Our migrations are monotonic because they only map feature sets to equal or larg
 Back to the `["foo-feature", "bar-feature"]` to `["foo-feature", "bar-feature", "baz-feature"]` problem.
 Recall for "at least one feature" alternative, we said that every item had to gated on not just at least one but exactly one feature
 (though those features could have dependencies on one another).
-What that meant mathematically was that the `cfg` for each item had to be [*meet-irreducible*](https://en.wikipedia.org/wiki/Birkhoff%27s_representation_theorem#The_partial_order_of_join-irreducible).
+What that meant mathematically was that the `#[cfg(..)]` for each item had to be [*meet-irreducible*](https://en.wikipedia.org/wiki/Birkhoff%27s_representation_theorem#The_partial_order_of_join-irreducible).
 That is the precise criterion for when a crate is truly "future proof" today, absent the proposed new functionality.
 
 Note it is OK if the migration homomorphisms are not injective.
