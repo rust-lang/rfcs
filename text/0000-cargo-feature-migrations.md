@@ -316,6 +316,8 @@ The single, canonical way doesn't need to be some notion of "do nothing".
 
 Database migrations are the obvious prior art.
 
+## The Math
+
 Otherwise, I will reuse this section to talk about the underlying math.
 It is "prior" in a Platonic sense, at least :).
 
