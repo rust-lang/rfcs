@@ -64,7 +64,7 @@ If we fail and have an accidental breaking change, the damage will be immense be
 
 I recommend first reading the [Rationale and alternatives](#rationale-and-alternatives) section.
 I don't think this design is overwrought, but it does represent a new way of thinking about these sorts of issues that might feel unfamiliar.
-I'm quite aware "migrations" has negative connotations to many people stemming from their experiences with databases.
+I'm quite aware that "migrations" has negative connotations to many people stemming from their experiences with databases.
 
 ## Main feature
 
@@ -79,17 +79,20 @@ So when you write
 version = "1.1"
 features = []
 ```
-you mean "I don't need any of the features that exist *as of version '1.1'*".
+you mean
+
+>I don't need any of the features that exist *as of version '1.1'*.
+
 For users, that should be it!
 
 For crate authors, yes, now the work of migrations comes in.
 If in version 1.2 a `std` feature is added, then we need to say that users coming from 1.1 should have it enabled.
-We can do it like this
+We can do it like this:
 ```toml
 [feature-migrations."1.1"]
 "all()" = [ "std" ]
 ```
-Yes, that `all()` is pretty obscure.
+Yes, that `all()` is a pretty obscure syntax.
 It means the "empty intersection"; too bad I cannot use lists (of features) as TOML object keys.
 It is supposed to match syntax I proposed in https://github.com/rust-lang/rfcs/pull/3143#issuecomment-868829430.
 I am fine if we have some sugar for this common case.
@@ -130,8 +133,9 @@ I suspect most uses of default-features today are also to preserve comparability
 Given the issues with the default features, and that that new migrations solve the compatabilty problem alone, I would be happy to see default features deprecated.
 
 The biggest beneficiary of this would be the "no std" and other exotic platforms ecosystems.
-It can be hard to track down myriad crates and get them to use quixotic `default-features = false` if they were happily working without.
-Conversely if crates had to use `features = [ "std" ];"` from the get-go, I don't think it would be that annoying.
+It can be hard to track down myriad crates and compel them to use quixotic `default-features = false` if they were happily working without.
+Crate authors often might not appreciate the nagging either. 
+Conversely if crates where compelled by build errors rather than humans to use `features = [ "std" ];"`, and compelled immediately rather than some time after they had shared create, I don't think they would find that nearly as annoying.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -188,12 +192,13 @@ We can't give that up across-the-board without destroying feature resolution, so
 I worry this will be very subtle and hard to teach.
 
 Second of all, there is an especially unintuitive case of the former where a non-opted-out default feature depends on an opted-out feature.
+Consider this example:
 
-> Example:
->
-> - Consumer depends on "default features without `foo`"
->
-> - `bar` is another default feature that depends on `foo`.
+ - Consumer depends on "default features without `foo`".
+
+ - `bar` is another default
+
+ - `bar` depends on `foo`.
 
 In this case, the not-mentioned feature still drags in the opted-out feature.
 This might happen because the user simply forgot to include both features.
@@ -294,7 +299,7 @@ neither of them were using the `baz` function so nothing goes wrong.
 It's only the consumers of the *combination* of `foo-feature` and `bar-feature` that might be using `baz`, so only they need continue to depend additionally on `baz-feature`.
 But there is no way to express that:
 Yes, `baz` was feature gated all along, but it being "more" than the combination what either `foo-feature` or `bar-feature` each individually provide hits the same issue as ungated functionality being "more" than the empty crate interface.
-The only way to be "future-proof" is to ensure everything is gated on exactly one feature---so making features like `foo-feature` "defensively" in advanced---but that could mean up to 2 ^ n "defensive" "everything-else"-like features!
+The only way to be "future-proof" is to ensure everything is gated on exactly one feature---so making features like `foo-feature` "defensively" in advanced---but that could mean `O(2^n)` "defensive" "everything-else"-like features!
 
 Our actual plan for "feature migrations" works remarkably the same as this plan "underneath the hood".
 The difference is just about ergonomics, which is addresses by freeing the user from needing to preemptively and defensively create (and name) these extra features.
@@ -309,14 +314,19 @@ The single, canonical way doesn't need to be some notion of "do nothing".
 # Prior art
 [prior-art]: #prior-art
 
-Database migrations is the obvious prior art.
+Database migrations are the obvious prior art.
 
-Otherwise, I will reuse this section to talk about the underlyingmath.
+Otherwise, I will reuse this section to talk about the underlying math.
+It is "prior" in a Platonic sense, at least :).
 
-Features depend on other features, and also we have sets of features but sets that respect those dependecies.
-That means if `bar` depends on `foo`, it makes no sense to distinguish `[ "bar" ]` from `[ "foo" ]`.
+First, let us characterize basic features as they exist today.
+We have individual features that depend on other features, and also sets of features.
+Importantly, the features sets exist in a way that respects those dependecies.
+Concretely, that means if `bar` depends on `foo`, it makes no sense to distinguish `[ "bar" ]` from `[ "bar" "foo" ]`.
 What that means is that we have a ["free *meet-semilattice* over a partial order"](https://ncatlab.org/nlab/show/semilattice#the_free_joinsemilattice_on_a_poset).
-These lattices are actually bounded and distributive, which isn't structure we need to care about, but does make for a nicer "extruded hypercube" mental imagery as depicted in the images in https://en.wikipedia.org/wiki/Birkhoff%27s_representation_theorem, for anyone that rather imagine geometric shapes than algebraic machinations.
+(Nevermind the link saying "join" not "meet", the concepts are exactly symmetrical.)
+These lattices are actually bounded and distributive, which isn't structure we need to care about, but does make for a nicer "extruded hypercube" mental imagery as depicted in the images in https://en.wikipedia.org/wiki/Birkhoff%27s_representation_theorem.
+I mention this for sake anyone (like myself :)) that rather imagine geometric shapes than algebraic machinations.
 
 Mathematically, it's best to look at every crate's features as an independent mathematical construct.
 When we say "don't remove features, keep the same names", what we are really doing is defining the "base migration" between each versions' features.
@@ -324,14 +334,24 @@ Mathematically, it that is a *homomorphism* between them.
 What sort of homomorphism?
 Because we are frequently mapping the empty feature set to something else, e.g. `[]` to `["std"]`,
 We also don't care whether meets are mapped to meets, per the "foo bar baz" example where `["foo-feature", "bar-feature"]` became `["foo-feature", "bar-feature", "baz-feature"]`.
-I think that means we just care about preserving the underling partial order (i.e. merely forgetting the lattice structure and still including the generated meets, not going back to the standalone feature dependency partial order we generated the lattice from).
-The type of "matching rules" system that is proposed does do that by being monotonic.
+Indeed it's rather important we allow that, because in some sense our migration is claiming the old crate version had the "wrong" meet.
+I think that means we just care about preserving the underling partial order --- that is the partial order gotten by merely forgetting the lattice structure and still including the generated meets, and not the original standalone feature dependency partial order we generated the lattice from.
+The type of "matching rules" system that is proposed preserve the partial order.
+Preserving an order is otherwise known as being "monotonic".
+Our migrations are monotonic because they only map feature sets to equal or larger sets that contain the old sets.
+
+Back to the `["foo-feature", "bar-feature"]` to `["foo-feature", "bar-feature", "baz-feature"]` problem.
+Recall for "at least one feature" alternative, we said that every item had to gated on not just at least one but exactly one feature
+(though those features could have dependencies on one another).
+What that meant mathematically was that the `cfg` for each item had to be [*meet-irreducible*](https://en.wikipedia.org/wiki/Birkhoff%27s_representation_theorem#The_partial_order_of_join-irreducible).
+That is the precise criterion for when a crate is truly "future proof" today, absent the proposed new functionality.
 
 Note it is OK if the migration homomorphisms are not injective.
 That would mean that some features are collapsed together, and we loose distinctions.
 This violates the spirit of the feature distinction, but need not violate the letter of compatibility rules as long as everything from before in the crate interface is still available.
 
-It's of a different, but related, sort than mentioned here, but https://arxiv.org/abs/2004.05688 also discusses the mathematical formalism of package management.
+For further reading, https://arxiv.org/abs/2004.05688 also discusses the mathematical formalization of package management.
+The formalism it uses is not the same as this one, but it is related.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
