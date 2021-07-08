@@ -157,16 +157,17 @@ Rust's control, so I/O can be thought of as using [interior mutability].
 
 [interior mutability]: https://doc.rust-lang.org/reference/interior-mutability.html
 
-## `AsFd`, `IntoFd`, and `FromFd`
+## `AsFd`, `Into<OwnedFd>`, and `From<OwnedFd>`
 
-These three traits are conceptual replacements for `AsRawFd`, `IntoRawFd`, and
-`FromRawFd` for most use cases. They work in terms of `OwnedFd` and
-`BorrowedFd`, so they automatically enforce their I/O safety invariants.
+These three are conceptual replacements for `AsRawFd::as_raw_fd`,
+`IntoRawFd::into_raw_fd`, and `FromRawFd::from_raw_fd`, respectively,
+for most use cases. They work in terms of `OwnedFd` and `BorrowedFd`, so
+they automatically enforce their I/O safety invariants.
 
-Using these traits, the `do_some_io` example in the [motivation] can avoid
-the original problems. Since `AsFd` is only implemented for types which
-properly own or borrow their file descriptors, this version of `do_some_io`
-doesn't have to worry about being passed bogus or dangling file descriptors:
+Using these, the `do_some_io` example in the [motivation] can avoid the
+original problems. Since `AsFd` is only implemented for types which properly
+own or borrow their file descriptors, this version of `do_some_io` doesn't
+have to worry about being passed bogus or dangling file descriptors:
 
 ```rust
 pub fn do_some_io<FD: AsFd>(input: &FD) -> io::Result<()> {
@@ -226,10 +227,11 @@ These types also implement the existing `AsRawFd`, `IntoRawFd`, and `FromRawFd`
 traits, so they can interoperate with existing code that works with `RawFd`
 types.
 
-## `AsFd`, `IntoFd`, and `FromFd`
+## `AsFd`, `Into<OwnedFd>`, and `From<OwnedFd>`
 
-These types provide `as_fd`, `into_fd`, and `from_fd` functions similar to
-their `Raw` counterparts.
+These types provide `as_fd`, `into`, and `from` functions similar to
+`AsRawFd::as_raw_fd`, `IntoRawFd::into_raw_fd`, and `FromRawFd::from_raw_fd`,
+respectively.
 
 ## Prototype implementation
 
@@ -249,7 +251,7 @@ unsafe.
 
 Crates using `AsRawFd` or `IntoRawFd` to accept "any file-like type" or "any
 socket-like type", such as [`socket2`]'s [`SockRef::from`], would need to
-either switch to `AsFd` or `IntoFd`, or make these functions unsafe.
+either switch to `AsFd` or `Into<OwnedFd>`, or make these functions unsafe.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -385,11 +387,11 @@ Some possible future ideas that could build on this RFC include:
    that, with this new guarantee, the high-level wrappers around raw handles
    are unforgeable in safe Rust.
 
- - There are a few convenience features which can be implemented on top
-   of the basic `As`/`Into`/`From` traits:
-     - A `from_into_fd` function which takes a `IntoFd` and converts it into a
-       `FromFd`, allowing users to perform this common sequence in a single
-       step.
+ - There are a few convenience features which can be implemented for types
+   that implement `AsFd`, `Into<OwnedFd>`, and/or `From<OwnedFd>`:
+     - A `from_into_fd` function which takes a `Into<OwnedFd>` and converts it
+       into a `From<OwnedFd>`, allowing users to perform this common sequence
+       in a single step.
      - A `as_filelike_view::<T>()` function returns a `View`, which contains a
        temporary instance of T constructed from the contained file descriptor,
        allowing users to "view" a raw file descriptor as a `File`, `TcpStream`,
@@ -402,7 +404,8 @@ Some possible future ideas that could build on this RFC include:
    `Filelike` and `Socketlike` abstractions could allow code which works in
    this way to be generic over Unix and Windows.
 
-   Similar portability abstractions could apply to the `From*` and `Into*` traits.
+   Similar portability abstractions could apply to `From<OwnedFd>` and
+   `Into<OwnedFd>`.
 
 # Thanks
 [thanks]: #thanks
