@@ -36,15 +36,6 @@ Authorization: <token>
 ## Interaction with HTTP registries
 The approved (but currently unimplemeneted) [RFC2789](https://github.com/rust-lang/rfcs/pull/2789) enables Cargo to fetch the index over HTTP. When fetching `config.json` from an HTTP index, if Cargo receives an `HTTP 401` response, the request will be re-attempted with the Authorization header included. If no authorization token is available, Cargo will suggest that the user run `cargo login` to add one.
 
-To avoid the overhead of an extra HTTP request when fetching `config.json`, the user can optionally configure Cargo locally by setting `auth-required` in the `[registries]` table. If the local `auth-required` flag is `true` then Cargo will include the Authorization token when initially fetching `config.json` over HTTP. If it is `false`, Cargo will never include the Authorization token when fetching `config.json`. If it is unset, Cargo performs the auto-detection described above.
-
-This local configuration option does not impact other registry operations, such as API requests or downloads (which are controlled by the flag in `config.json`). It also does not impact git-based registries.
-
-```toml
-[registries]
-my-registry = { index = "sparse+https://example.com/index", auth-required = true }
-```
-
 ## Security
 If the server responds with an HTTP redirect, the redirect would be followed, but the Authorization header would *not* be sent to the redirect target.
 
@@ -102,6 +93,16 @@ Alternatives:
 
 ## Credential Process
 The `credential-process` system could be extended to support generating tokens rather than only storing them. This would further improve security and allow additional features such as 2FA prompts.
+
+## Local configuration option
+To avoid the overhead of an extra HTTP request when fetching `config.json`, the user could optionally configure Cargo locally by setting `auth-required` in the `[registries]` table. If the local `auth-required` flag is `true`, then Cargo could include the Authorization token when initially fetching `config.json` over HTTP. If it is `false`, Cargo would not include the Authorization token when fetching `config.json`. If it is unset, Cargo would perform the auto-detection described above.
+
+This local configuration option would not impact other registry operations, such as API requests or downloads (which are controlled by the flag in `config.json`). It also would not impact git-based registries.
+
+```toml
+[registries]
+my-registry = { index = "sparse+https://example.com/index", auth-required = true }
+```
 
 ## Authentication for Git-based registries
 Private registries may want to use the same Authorization header for controlling access to a git-based index over `https`, rather than letting git handle the authentication separately.
