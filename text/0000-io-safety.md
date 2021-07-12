@@ -1,7 +1,7 @@
 - Feature Name: `io_safety`
 - Start Date: 2021-05-24
 - RFC PR: [rust-lang/rfcs#3128](https://github.com/rust-lang/rfcs/pull/3128)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- Rust Issue: [rust-lang/rust#87074](https://github.com/rust-lang/rust/issues/87074)
 
 # Summary
 [summary]: #summary
