@@ -55,14 +55,11 @@ more quickly and experiment more quickly as well.
 
 Without keywords the intention is that async/await will be implemented with
 macros, both procedural and `macro_rules!` style. We should be able to leverage
-[procedural macros][pmac] to give a near-native experience. Note that procedural
-macros are only available on the nightly channel today, so this means that
-"stable async/await" will have to wait for procedural macros (or at least a
-small slice) to stabilize.
+[procedural macros][pmac] to give a near-native experience.
 
-[pmac]: https://github.com/rust-lang/rfcs/blob/master/text/1566-proc-macros.md
+[pmac]: https://doc.rust-lang.org/reference/procedural-macros.html#procedural-macros
 
-With that in mind, the expected syntax for async/await is:
+The expected syntax for async/await is:
 
 ```rust
 #[async]
