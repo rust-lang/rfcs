@@ -21,7 +21,7 @@ Today, Cargo's features most easily support a workflow where features added in n
 
 The problem is there is another quite different use case of features: making previously mandatory functionality optional.
 
-> Example: In a new version of a create, some crates a new feature for a function that *already* existed.
+> Example: In a new version of a crate, someone creates a new feature for a function that *already* existed.
 > Before, the export of that function was mandatory, but now it is optional because it can be disabled.
 
 The workflow isn't supported so well: all Cargo offers for it is the notion of "default features", which isn't sufficient for reasons that will be elaborated below.
