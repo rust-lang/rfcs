@@ -429,10 +429,12 @@ patiently answering my many questions!
 [`RawFd`]: https://doc.rust-lang.org/stable/std/os/unix/io/type.RawFd.html
 [`RawHandle`]: https://doc.rust-lang.org/stable/std/os/windows/io/type.RawHandle.html
 [`RawSocket`]: https://doc.rust-lang.org/stable/std/os/windows/io/type.RawSocket.html
+[`AsRawFd::as_raw_fd`]: https://doc.rust-lang.org/stable/std/os/unix/io/trait.AsRawFd.html#tymethod.as_raw_fd
 [`FromRawFd::from_raw_fd`]: https://doc.rust-lang.org/stable/std/os/unix/io/trait.FromRawFd.html#tymethod.from_raw_fd
 [`from_raw_fd`]: https://doc.rust-lang.org/stable/std/os/unix/io/trait.FromRawFd.html#tymethod.from_raw_fd
 [`from_raw_handle`]: https://doc.rust-lang.org/stable/std/os/windows/io/trait.FromRawHandle.html#tymethod.from_raw_handle
 [`from_raw_socket`]: https://doc.rust-lang.org/stable/std/os/windows/io/trait.FromRawSocket.html#tymethod.from_raw_socket
+[`std::mem::forget`]: https://doc.rust-lang.org/stable/std/mem/fn.forget.html
 [`SockRef::from`]: https://docs.rs/socket2/0.4.0/socket2/struct.SockRef.html#method.from
 [`unsafe_io::OwnsRaw`]: https://docs.rs/unsafe-io/0.6.2/unsafe_io/trait.OwnsRaw.html
 [LLVM's pointer aliasing rules]: http://llvm.org/docs/LangRef.html#pointer-aliasing-rules
