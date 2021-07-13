@@ -12,7 +12,7 @@ Introduce a new `let PATTERN: TYPE = EXPRESSION else DIVERGING_BLOCK;` construct
 If the pattern match from the assigned expression succeeds, its bindings are introduced *into the
 surrounding scope*. If it does not succeed, it must diverge (return `!`, e.g. return or break).
 Technically speaking, let-else statements are refutable `let` statements.
-The expression has some restrictions, notably it may not be an `ExpressionWithBlock` or `LazyBooleanExpression`.
+The expression has some restrictions, notably it may not end with an `}` or be just a `LazyBooleanExpression`.
 
 This RFC is a modernization of a [2015 RFC (pull request 1303)][old-rfc] for an almost identical feature.
 
@@ -151,7 +151,7 @@ let features = match geojson {
 };
 ```
 
-However, with if-let this could be more succinct & clear:
+However, with let-else this could be more succinct & clear:
 
 ```rust
 let GeoJson::FeatureCollection(features) = geojson else {
@@ -209,7 +209,9 @@ let (each, binding) = match expr {
 ```
 
 Most expressions may be put into the expression position with two restrictions:
-1. May not include a block outside of parenthesis. (Must be an [`ExpressionWithoutBlock`][expressions].)
+1. May not include a block outside of parenthesis.
+    - Must be an [`ExpressionWithoutBlock`][expressions].
+    - [`GroupedExpression`][grouped-expr]-s ending with a `}` are additionally not allowed and must be put in parenthesis.
 2. May not be just a lazy boolean expression (`&&` or `||`). (Must not be a [`LazyBooleanExpression`][lazy-boolean-operators].)
 
 While allowing e.g. `if {} else {}` directly in the expression position is technically feasible this RFC proposes it be
@@ -231,7 +233,7 @@ accessible as they would normally be.
 For patterns which match multiple variants, such as through the `|` (or) syntax, all variants must produce the same bindings (ignoring additional bindings in uneven patterns),
 and those bindings must all be names the same. Valid example:
 ```rust
-let Some(x) | MyEnum::VariantA(_, _, x) | MyEnum::VariantB { x, .. } = a else { return; };
+let MyEnum::VariantA(_, _, x) | MyEnum::VariantB { x, .. } = a else { return; };
 ```
 
 let-else does not combine with the `let` from if-let, as if-let is not actually a _let statement_.
@@ -247,7 +249,7 @@ Desugars to
 
 ```rust
 let x = match y {
-    Some(x) => y,
+    Some(x) => x,
     _ => {
         let nope: ! = { return; };
         match nope {}
@@ -263,7 +265,7 @@ let x = match y {
 "Must diverge" is an unusual requirement, which doesn't exist elsewhere in the language as of the time of writing, 
 and might be difficult to explain or lead to confusing errors for programmers new to this feature.
 
-However, rustc does have support for representing the divergence through the type-checker via `!` or any other uninhabitable type,
+However, rustc does have support for representing the divergence through the type-checker via `!` or any other uninhabited type,
 so the implementation is not a problem.
 
 ## `let PATTERN = if {} else {} else {};`
@@ -322,9 +324,17 @@ This is supposed to help disambiguate let-else statements from other code with b
 This RFC avoids this as it would mean losing symmetry with if-else and if-let-else, and would require adding a new keyword.
 Adding a new keyword could mean more to teach and could promote even more special casing around let-else's semantics.
 
-### `unless let ... {}` / `try let ... {}`
+### Comma-before-else (`, else { ... }`)
 
-Another often proposed alternative is to add an extra keyword to the beginning of the let-else statement, to denote that it is different than a regular `let` statement.
+Another proposal very similar to renaming `else` it to have it be proceeded by some character such as a comma.
+
+It is possible that adding such additional separating syntax would make combinations with expressions which have blocks
+easier to read and less ambiguous, but is also generally inconsistent with the rest of the rust language at time of writing.
+
+### Introducer syntax (`guard let ... {}`)
+
+Another often proposed alternative is to add some introducer syntax (usually an extra keyword) to the beginning of the let-else statement,
+to denote that it is different than a regular `let` statement.
 
 One possible benefit of adding a keyword is that it could make a possible future extension for similarity to the (yet unimplemented) [if-let-chains][] feature more straightforward.
 However, as mentioned in the [future-possibilities][] section, this is likely not necessary.
@@ -348,17 +358,18 @@ and partway through that RFC's lifecycle it was updated to be similar to this RF
 
 The `if !let` alternative syntax would also share the binding drawback of the `unless let` alternative syntax.
 
-### `let PATTERN = EXPR else return EXPR;`
+### `let PATTERN = EXPR else DIVERGING_EXPR;`
 
-A potential alternative to requiring parentheses in `let PATTERN = (if { a } else { b }) else { c };` is to change the syntax of the `else` to no longer be a block
-but instead an expression which starts with a diverging keyword, such as `return` or `break`.
+A potential alternative to requiring parentheses in `let PATTERN = (if { a } else { b }) else { c };`
+is to change the syntax of the `else` to no longer be a block but instead _any_ expression which diverges,
+such as a `return`, `break`, or any block which diverges.
 
 Example:
-```
+```rust
 let Some(foo) = some_option else return None;
 ```
 
-This RFC avoids this because it is overall less consistent with `else` from if-else, which require blocks.
+This RFC avoids this because it is overall less consistent with `else` from if-else, which requires block expressions.
 
 This was originally suggested in the old RFC, comment at https://github.com/rust-lang/rfcs/pull/1303#issuecomment-188526691
 
@@ -409,7 +420,7 @@ match thing {
 }
 ```
 
-However this is not an obvious opposite io if-let, and would introduce an entirely new positional meaning of `let`.
+However this is not an obvious opposite to if-let, and would introduce an entirely new positional meaning of `let`.
 
 ### `||` in pattern-matching
 
@@ -430,13 +441,13 @@ let Some(x) = a || b || { return; };
 Combined with `&&` as proposed in if-let-chains, constructs such as the following are conceivable:
 
 ```rust
-let Enum::Var1(x) = a || b || { return anyhow!("Bad x"); } && let Some(z) = x || y;
+let Enum::Var1(x) = a || b || { return anyhow!("Bad x"); } && let Some(z) = x || y || { break; };
 // Complex. Both x and z are now in scope.
 ```
 
 This is not a simple construct, and could be quite confusing to newcomers
 
-That being said, such a thing is not perfectly obvious to write today, and might be just as confusing to read:
+That said, such a thing is not perfectly obvious to write today, and might be just as confusing to read:
 ```rust
 let x = if let Enum::Var1(v) = a {
     v
@@ -445,9 +456,12 @@ let x = if let Enum::Var1(v) = a {
 } else {
     anyhow!("Bad x")
 };
-let z = match x {
-    Some(z) => z,
-    _ => y,
+let z = if let Some(v) = x {
+    v
+} else if let Some(v) = y {
+    v
+} else {
+    break;
 };
 // Complex. Both x and z are now in scope.
 ```
@@ -488,8 +502,25 @@ which is considered to be idiomatic rust.
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-None known at time of writing due to extensive pre-discussion in Zulip:
-https://rust-lang.zulipchat.com/#narrow/stream/213817-t-lang/topic/.60let.20pattern.20.3D.20expr.20else.20.7B.20.2E.2E.2E.20.7D.60.20statements
+## Readability in practice
+
+Will `let ... else { ... };` be clear enough to humans in practical code, or will some introducer syntax be desirable?
+
+## Conflicts with if-let-chains
+
+Does this conflict too much with the if-let-chains RFC or vice-versa?
+
+Neither this feature nor that feature should be stabilized without considering the other.
+
+## Amount of special cases
+
+Are there too many special-case interactions with other features?
+
+## Grammar clarity
+
+Does the grammar need to be clarified?
+
+This RFC has some slightly unusual grammar requirements.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
