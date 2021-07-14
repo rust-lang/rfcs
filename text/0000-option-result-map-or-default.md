@@ -65,7 +65,7 @@ It adds another method to `Option` and `Result`, which may be considered as clut
 [rationale-and-alternatives]: #rationale-and-alternatives
 
  - `.map_or_else(Default::default, ...)` can be written, although it is significantly longer.
- - In case `feature(default_free_fn)`, stabilized a user can write `.map_or_else(default, ...)`
+ - In case `feature(default_free_fn)` stabilizes a user can write `.map_or_else(default, ...)`
    after `std::default::default`, which is a bit shorter.
    
 However, neither alternative solves the discrepancy between `unwrap_or_default` existing but 
