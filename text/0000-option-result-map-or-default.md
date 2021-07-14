@@ -50,7 +50,7 @@ impl<T, E> Result<T, E> {
     pub fn map_or_default<U: Default, F: FnOnce(T) -> U>(self, f: F) -> U {
         match self {
             Ok(t) => f(t),
-            Err(e) => Default::Default(),
+            Err(e) => Default::default(),
         }
     }
 }
