@@ -129,7 +129,7 @@ Any migration that matches is applied, they all only "add" features to the reque
 ## Wither default features?
 
 Finally, note that we handled creating a `std` feature without breakage or using `default-features`.
-I suspect most uses of default-features today are also to preserve comparability more than they are a value judgment on what features "ought" to be the default.
+I suspect most uses of default-features today are also to preserve compatibility more than they are a value judgment on what features "ought" to be the default.
 Given the issues with the default features, and that that new migrations solve the compatabilty problem alone, I would be happy to see default features deprecated.
 
 The biggest beneficiary of this would be the "no std" and other exotic platforms ecosystems.
