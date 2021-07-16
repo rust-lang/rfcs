@@ -259,7 +259,8 @@ Finally, an example of compiling for MSVC and linking statically to the C
 runtime would look like:
 
 ```
-RUSTFLAGS='-C target-feature=+crt-static' cargo build --target x86_64-pc-windows-msvc
+set RUSTFLAGS=-C target-feature=+crt-static
+cargo build --target x86_64-pc-windows-msvc
 ```
 
 and similarly, compiling for musl but linking dynamically to the C runtime would
