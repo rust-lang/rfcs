@@ -225,7 +225,7 @@ Any refutable pattern that could be put into if-let's pattern position can be pu
 If the pattern is irrefutable, rustc will emit the `irrefutable_let_patterns` warning lint, as it does with an irrefutable pattern in an `if let`.
 
 The `else` block must _diverge_, meaning the `else` block must return the [never type (`!`)][never-type]).
-This could be a keyword which diverges (returns `!`), or a panic.
+This could be a keyword which diverges (returns `!`), such as `return`, `break`, `continue` or `loop { ... }`, a diverging function like `std::process::abort` or `std::process::exit`, or a panic.
 
 If the pattern does not match, the expression is not consumed, and so any existing variables from the surrounding scope are
 accessible as they would normally be.
@@ -315,6 +315,8 @@ While this feature can partly be covered by functions such `or_or`/`ok_or_else` 
 such functions do not exist automatically on custom enum types and require non-obvious and non-trivial implementation, and may not be map-able
 to `Option`/`Result`-style functions at all (especially for enums where the "success" variant is contextual and there are many variants).
 These functions will also not work for code which wishes to return something other than `Option` or `Result`.
+Moreover, this does not cover diverging blocks that do something other than return with an error or target an enclosing `try` block,
+for example if the diverging expression is `continue e` or `break 'outer_loop e`.
 
 ### Naming of `else` (`let ... otherwise { ... }`)
 
@@ -445,7 +447,7 @@ let Enum::Var1(x) = a || b || { return anyhow!("Bad x"); } && let Some(z) = x ||
 // Complex. Both x and z are now in scope.
 ```
 
-This is not a simple construct, and could be quite confusing to newcomers
+This is not a simple construct, and could be quite confusing to newcomers.
 
 That said, such a thing is not perfectly obvious to write today, and might be just as confusing to read:
 ```rust
