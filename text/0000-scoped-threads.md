@@ -17,8 +17,7 @@ let var = String::from("foo");
 thread::scope(|s| {
     s.spawn(|_| println!("borrowed from thread #1: {}", var));
     s.spawn(|_| println!("borrowed from thread #2: {}", var));
-})
-.unwrap();
+});
 ```
 
 # Motivation
@@ -81,7 +80,7 @@ handle1.join().unwrap();
 handle2.join().unwrap();
 ```
 
-Scoped threads coming to the rescue! By opening a new `thread::scope()` block,
+Scoped threads to the rescue! By opening a new `thread::scope()` block,
 we can prove to the compiler that all threads spawned within this scope will
 also die inside the scope:
 
@@ -99,8 +98,7 @@ thread::scope(|s| {
 
     handle1.join().unwrap();
     handle2.join().unwrap();
-})
-.unwrap();
+});
 ```
 
 That means variables living outside the scope can be borrowed without any
@@ -120,13 +118,11 @@ thread::scope(|s| {
     s.spawn(|_| {
         println!("thread #2 says: {}", greeting);
     });
-})
-.unwrap();
+});
 ```
 
-Note that `thread::scope()` returns a `Result` that will be `Ok` if all
-automatically joined threads have successfully completed, i.e. they haven't
-panicked.
+When taking advantage of automatic joining in this way, note that `thread::scope()`
+will panic if any of the automatically joined threads has panicked.
 
 You might've noticed that scoped threads now take a single argument, which is
 just another reference to `s`. Since `s` lives inside the scope, we cannot borrow
@@ -139,8 +135,7 @@ thread::scope(|s| {
             println!("I belong to the same `thread::scope()` as my parent thread")
         });
     });
-})
-.unwrap();
+});
 ```
 
 # Reference-level explanation
@@ -165,7 +160,7 @@ inside the scope. The lifetime relations are:
 Next, we need the `scope()` and `spawn()` functions:
 
 ```rust
-fn scope<'env, F, T>(f: F) -> Result<T>
+fn scope<'env, F, T>(f: F) -> T
 where
     F: FnOnce(&Scope<'env>) -> T;
 
@@ -201,28 +196,6 @@ impl Builder {
         T: Send + 'env;
 }
 ```
-
-It's also worth pointing out what exactly happens at the scope end when all
-unjoined threads get automatically joined. If all joins succeed, we take
-the result of the main closure passed to `scope()` and wrap it inside `Ok`.
-
-If any thread panics (and in fact multiple threads can panic), we collect
-all those panics into a `Vec`, box it, and finally wrap it inside `Err`.
-The error type is then erased because `thread::Result<T>` is just an
-alias for:
-
-```rust
-Result<T, Box<dyn Any + Send + 'static>>
-```
-
-This way we can do `thread::scope(...).unwrap()` to propagate all panics
-in child threads into the main parent thread.
-
-If the main `scope()` closure has panicked after spawning threads, we
-just resume unwinding after joining child threads.
-
-Crossbeam's logic for error handling can be found
-[here](https://github.com/crossbeam-rs/crossbeam/blob/79210d6ae34a3e84b23546d8abc5c4b81b206019/crossbeam-utils/src/thread.rs#L167-L193).
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -276,9 +249,9 @@ Rust 1.0 era. The new one is from the last year's big revamp:
 
 There are several differences between old and new scoped threads:
 
-1. `scope()` now returns a `thread::Result<T>` rather than `T`. This is because
-   panics in the old design were just silently ignored, which is not good.
-   By returning a `Result`, the user can handle panics in whatever way they want.
+1. `scope()` now propagates unhandled panics from child threads.
+    In the old design, panics were silently ignored.
+    Users can still handle panics by manually working with `ScopedJoinHandle`s.
 
 2. The closure passed to `Scope::spawn()` now takes a `&Scope<'env>` argument that
    allows one to spawn nested threads, which was not possible with the old design.
@@ -292,14 +265,12 @@ There are several differences between old and new scoped threads:
 
 Rayon also has [scopes](https://docs.rs/rayon/1.0.3/rayon/struct.Scope.html),
 but they work on a different abstraction level - Rayon spawns tasks rather than
-threads. Its API is almost the same as proposed in this RFC, the only
-difference being that `scope()` propagates panics instead of returning `Result`.
-This behavior makes more sense for tasks than threads.
+threads. Its API is the same as the one proposed in this RFC.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-None.
+Can this concept be extended to async? Would there be any behavioral or API differences?
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
