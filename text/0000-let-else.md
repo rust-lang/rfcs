@@ -217,6 +217,8 @@ disallowed for programmer clarity so as to avoid `... else {} else {}` situation
 Boolean matches are not useful with let-else and so lazy boolean expressions are disallowed for reasons noted in [future-possibilities][].
 These types of expressions can still be used when combined in a less ambiguous manner with parenthesis,
 which is allowed under the two expression restrictions.
+Invisible groupings from macros expansions are also allowed, however macro expansion representations to humans should include parenthesis
+around the expression output in this position if it ends in a `}` where possible (or otherwise show the invisible grouping).
 
 Any refutable pattern that could be put into if-let's pattern position can be put into let-else's pattern position.
 
