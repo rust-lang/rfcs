@@ -209,15 +209,13 @@ let (each, binding) = match expr {
 ```
 
 Most expressions may be put into the expression position with two restrictions:
-1. May not include a block outside of parenthesis.
-    - Must be an [`ExpressionWithoutBlock`][expressions].
-    - [`GroupedExpression`][grouped-expr]-s ending with a `}` are additionally not allowed and must be put in parenthesis.
+1. May not end with a `}` (before macro expansion). (Such things must be put in parenthesis.)
 2. May not be just a lazy boolean expression (`&&` or `||`). (Must not be a [`LazyBooleanExpression`][lazy-boolean-operators].)
 
 While allowing e.g. `if {} else {}` directly in the expression position is technically feasible this RFC proposes it be
 disallowed for programmer clarity so as to avoid `... else {} else {}` situations as discussed in the [drawbacks][] section.
 Boolean matches are not useful with let-else and so lazy boolean expressions are disallowed for reasons noted in [future-possibilities][].
-These types of expressions can still be used when combined in a less ambiguous manner with parenthesis, thus forming a [`GroupedExpression`][grouped-expr],
+These types of expressions can still be used when combined in a less ambiguous manner with parenthesis,
 which is allowed under the two expression restrictions.
 
 Any refutable pattern that could be put into if-let's pattern position can be put into let-else's pattern position.
@@ -278,7 +276,7 @@ because the compiler won't interpret it as `let PATTERN = (if y { a }) else { b 
 This can be overcome by making a raw if-else in the expression position a compile error and instead requiring that parentheses are inserted to disambiguate:
 `let PATTERN = (if { a } else { b }) else { c };`.
 
-Rust already provides us with such a restriction, and so the expression can be restricted to be a [`ExpressionWithoutBlock`][expressions].
+This restriction can be made by checking if the expression ends in `}` after parsing but _before_ macro expansion.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -304,7 +302,7 @@ let true = a && b else {
 };
 ```
 
-The expression can be any [`ExpressionWithoutBlock`][expressions], in order to prevent `else {} else {}` confusion, as noted in [drawbacks][#drawbacks].
+The expression must not end with a `}`, in order to prevent `else {} else {}` (and similar) confusion, as noted in [drawbacks][#drawbacks].
 
 The `else` must be followed by a block, as in `if {} else {}`. This else block must be diverging as the outer
 context cannot be guaranteed to continue soundly without assignment, and no alternate assignment syntax is provided.
@@ -643,7 +641,6 @@ because it is confusing to read syntactically, and it is functionally similar to
 [`const`]: https://doc.rust-lang.org/reference/items/constant-items.html
 [`static`]: https://doc.rust-lang.org/reference/items/static-items.html
 [expressions]: https://doc.rust-lang.org/reference/expressions.html#expressions
-[grouped-expr]: https://doc.rust-lang.org/reference/expressions/grouped-expr.html
 [guard-crate]: https://crates.io/crates/guard
 [guard-repo]: https://github.com/durka/guard
 [if-let]: https://rust-lang.github.io/rfcs/0160-if-let.html
