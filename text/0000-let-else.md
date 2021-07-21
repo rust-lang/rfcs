@@ -209,15 +209,15 @@ let (each, binding) = match expr {
 ```
 
 Most expressions may be put into the expression position with two restrictions:
-1. May not end with a `}` (before macro expansion). (Such things must be put in parenthesis.)
+1. May not end with a `}` (before macro expansion). (Such things must be put in parentheses.)
 2. May not be just a lazy boolean expression (`&&` or `||`). (Must not be a [`LazyBooleanExpression`][lazy-boolean-operators].)
 
 While allowing e.g. `if {} else {}` directly in the expression position is technically feasible this RFC proposes it be
 disallowed for programmer clarity so as to avoid `... else {} else {}` situations as discussed in the [drawbacks][] section.
 Boolean matches are not useful with let-else and so lazy boolean expressions are disallowed for reasons noted in [future-possibilities][].
-These types of expressions can still be used when combined in a less ambiguous manner with parenthesis,
+These types of expressions can still be used when combined in a less ambiguous manner with parentheses,
 which is allowed under the two expression restrictions.
-Invisible groupings from macros expansions are also allowed, however macro expansion representations to humans should include parenthesis
+Invisible groupings from macros expansions are also allowed, however macro expansion representations to humans should include parentheses
 around the expression output in this position if it ends in a `}` where possible (or otherwise show the invisible grouping).
 
 Any refutable pattern that could be put into if-let's pattern position can be put into let-else's pattern position.
