@@ -1,7 +1,7 @@
 - Feature Name: `let-else`
 - Start Date: 2021-05-31
 - RFC PR: [rust-lang/rfcs#3137](https://github.com/rust-lang/rfcs/pull/3137)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- Rust Issue: [rust-lang/rust#87335](https://github.com/rust-lang/rust/issues/87335)
 
 # Summary
 [summary]: #summary
