@@ -25,7 +25,7 @@ It is the natural counterpart to `if let`, just as `else` is to regular `if`.
 [if-let expressions][if-let] offer a succinct syntax for pattern matching single patterns.
 This is particularly useful for unwrapping types like `Option`, particularly those with a clear "success" variant
 for the given context but no specific "failure" variant.
-However, an if-let expression can only create bindings within its body, which can force 
+However, an if-let expression can only create bindings within its body, which can force
 rightward drift, introduce excessive nesting, and separate conditionals from error paths.
 
 let-else statements move the "failure" case into the body block, while allowing
@@ -200,9 +200,9 @@ let pattern = expr else {
 ```
 desugars to
 ```rust
-let (each, binding) = match expr { 
+let (each, binding) = match expr {
     pattern => (each, binding),
-    _ => { 
+    _ => {
         /* diverging expr */
     }
 };
@@ -262,7 +262,7 @@ let x = match y {
 
 ## The diverging block
 
-"Must diverge" is an unusual requirement, which doesn't exist elsewhere in the language as of the time of writing, 
+"Must diverge" is an unusual requirement, which doesn't exist elsewhere in the language as of the time of writing,
 and might be difficult to explain or lead to confusing errors for programmers new to this feature.
 
 However, rustc does have support for representing the divergence through the type-checker via `!` or any other uninhabited type,
