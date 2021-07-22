@@ -228,7 +228,7 @@ comment for more detail.
 There are numerous possible suffixes for a `Result`-producing variant:
 
 * `_catch`, as proposed above. As
-  [@kballard points out](https://github.com/rust-lang/rfcs/pull/236#issuecomment-55344336),
+  [@lilyball points out](https://github.com/rust-lang/rfcs/pull/236#issuecomment-55344336),
   this name connotes exception handling, which could be considered
   misleading. However, since it effectively prevents further unwinding, catching
   an exception may indeed be the right analogy.
