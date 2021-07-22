@@ -11,7 +11,7 @@ Allow users to load custom lints into `rustc`, similar to loadable syntax extens
 There are many possibilities for user-defined static checking:
 
 * Enforcing correct usage of Servo's [JS-managed pointers](https://github.com/mozilla/servo/blob/master/src/components/script/dom/bindings/js.rs)
-* kballard's use case: checking that `rust-lua` functions which call `longjmp` never have destructors on stack variables
+* lilyball's use case: checking that `rust-lua` functions which call `longjmp` never have destructors on stack variables
 * Enforcing a company or project style guide
 * Detecting common misuses of a library, e.g. expensive or non-idiomatic constructs
 * In cryptographic code, annotating which variables contain secrets and then forbidding their use in variable-time operations or memory addressing

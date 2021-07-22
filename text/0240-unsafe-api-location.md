@@ -88,7 +88,7 @@ and methods:
 
 The unsafe methods and static functions for a given type should be placed in
 their own `impl` block, at the end of the module defining the type; this will
-ensure that they are grouped together in rustdoc. (Thanks @kballard for the
+ensure that they are grouped together in rustdoc. (Thanks @lilyball for the
 suggestion.)
 
 # Drawbacks
@@ -125,7 +125,7 @@ There are a few alternatives:
   them `unsafe`), and given that rustdoc could easily provide API grouping, it's
   unclear exactly what the benefit is.
 
-* ([Suggested by @kballard](https://github.com/rust-lang/rfcs/pull/240#issuecomment-55635468)):
+* ([Suggested by @lilyball](https://github.com/rust-lang/rfcs/pull/240#issuecomment-55635468)):
 
   > Use `raw` for functions that construct a value of the type without checking
   > for one or more invariants.
@@ -140,7 +140,7 @@ There are a few alternatives:
   some_string.slice_unchecked(start, end)
   ```
 
-* Another suggestion by @kballard is to keep the basic structure of `raw`
+* Another suggestion by @lilyball is to keep the basic structure of `raw`
   submodules, but use associated types to improve the ergonomics. Details (and
   discussions of pros/cons) are in
   [this comment](https://github.com/rust-lang/rfcs/pull/240/files#r17572875).
