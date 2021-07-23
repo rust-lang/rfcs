@@ -67,7 +67,7 @@ macro_rules! min {
 ```
 
 This time,
-`$a` and `$b` are evaluated a single time upon invoking the macro,
+`$a` and `$b` are evaluated a single time when control flow enters the expanded macro,
 and each expansion of the capture refers to the same value,
 just like function arguments.
 
