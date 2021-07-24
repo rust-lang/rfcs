@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#1228](https://github.com/rust-lang/rfcs/pull/1228)
 - Rust Issue: [rust-lang/rust#27779](https://github.com/rust-lang/rust/issues/27779)
 
-# This RFC has been **unapproved**
+# This RFC was previously approved, but later **withdrawn**
 
 For details see the [summary comment].
 
