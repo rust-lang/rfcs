@@ -1,7 +1,7 @@
 - Feature Name: `derive_enum_default`
 - Start Date: 2021-04-07
 - RFC PR: [rust-lang/rfcs#3107](https://github.com/rust-lang/rfcs/pull/3107)
-- Rust Issue: TODO
+- Rust Issue: [rust-lang/rust#87517](https://github.com/rust-lang/rust/issues/87517)
 
 # Summary
 [summary]: #summary
