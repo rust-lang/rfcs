@@ -1,7 +1,7 @@
-- Feature Name: byte_concat
+- Feature Name: concat_bytes
 - Start Date: 2018-07-31
-- RFC PR: (leave this empty)
-- Rust Issue: (leave this empty)
+- RFC PR: [#2509](https://github.com/rust-lang/rfcs/pull/2509)
+- Rust Issue: [#87555](https://github.com/rust-lang/rust/issues/87555)
 
 # Summary
 [summary]: #summary
