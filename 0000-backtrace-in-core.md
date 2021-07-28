@@ -6,46 +6,101 @@
 # Summary
 [summary]: #summary
 
-This RFC will move the `Backtrace` type to `core`, making it available for usage in `no_std` contexts. This is a stepping stone for the `Error` type in `core` and eventually both types will end there.
+This RFC will move the `Backtrace` type to `core`, making it available for usage in `no_std` contexts. This is a stepping stone for the `Error` type in `core` and eventually both types will end there. 
+
+It is still unclear whether `Backtrace` itself does need to be moved to `core` and in time this RFC will be unanimous in this matter.
 
 # Motivation
 [motivation]: #motivation
 
-The main reason behind moving `Backtrace` to `core` is to have essential types available for wider usage without the need to import `std`. While `Error` has a valid reason for not being in `core` (it relies on `Box` type - TODO: am I right though?), `Backtrace` does not have similar blockers.
+The main reason behind moving `Backtrace` to `core` is to have essential types available for wider usage without the need to import `std`. While `Error` had a valid reason for not being in `core` (it relies on `Box` type - TODO: am I right though?), `Backtrace` does not have similar blockers. 
 
-Additionally, having this type in `core` will allow for???
+Additionally, having this type in `core` will allow its users to provide their own implementations of the backtrace collection and reporting and not rely on the `std`-provided one if they don't want to.
 
-The outcome of this RFC will be a `Backtrace` type in `core` with implementation defined in `std` and compiler-generated implementation when `std` is not linked.
-
-Why are we doing this? What use cases does it support? What is the expected outcome?
+The outcome of this RFC will be a `Backtrace` type in `core` with implementation defined in `std` and compiler-generated implementation when `std` is not linked and user did not provide their own implementation for the reporting functions.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
+
+Backtraces are an essential part of the Rust ecosystem, being close coupled with error handling and reporting, be it to the user or the developer. They are usually of a common form:
+```rust
+   Compiling playground v0.0.1 (/playground)
+    Finished dev [unoptimized + debuginfo] target(s) in 1.66s
+     Running `target/debug/playground`
+thread 'main' panicked at 'index out of bounds: the len is 4 but the index is 4', src/main.rs:5:5
+stack backtrace:
+   0: rust_begin_unwind
+             at /rustc/53cb7b09b00cbea8754ffb78e7e3cb521cb8af4b/library/std/src/panicking.rs:493:5
+   1: core::panicking::panic_fmt
+             at /rustc/53cb7b09b00cbea8754ffb78e7e3cb521cb8af4b/library/core/src/panicking.rs:92:14
+   2: core::panicking::panic_bounds_check
+             at /rustc/53cb7b09b00cbea8754ffb78e7e3cb521cb8af4b/library/core/src/panicking.rs:69:5
+   3: <usize as core::slice::index::SliceIndex<[T]>>::index_mut
+             at /rustc/53cb7b09b00cbea8754ffb78e7e3cb521cb8af4b/library/core/src/slice/index.rs:190:14
+   4: core::slice::index::<impl core::ops::index::IndexMut<I> for [T]>::index_mut
+             at /rustc/53cb7b09b00cbea8754ffb78e7e3cb521cb8af4b/library/core/src/slice/index.rs:26:9
+   5: <alloc::vec::Vec<T,A> as core::ops::index::IndexMut<I>>::index_mut
+             at /rustc/53cb7b09b00cbea8754ffb78e7e3cb521cb8af4b/library/alloc/src/vec/mod.rs:2396:9
+   6: playground::main
+             at ./src/main.rs:5:5
+   7: core::ops::function::FnOnce::call_once
+             at /rustc/53cb7b09b00cbea8754ffb78e7e3cb521cb8af4b/library/core/src/ops/function.rs:227:5
+note: Some details are omitted, run with `RUST_BACKTRACE=full` for a verbose backtrace.
+```
+
+They allow for a detailed inspection of what crashed at runtime and which libraries and functions were involved in the process. Obviously reporting and formatting it is also of a big importance, so `Error` allows for backtrace printing with help of a `backtrace()` method.
+
+Currently, `Backtrace` is an essential part of the `std` library and user can control whether the backtrace is enabled or disabled using the environmental variable: `RUST_BACKTRACE`.
 
 In terms of Guide-level changes, there is not much to be discussed - only that it is moved to `core` and if `std` is not linked, automatic backtrace handlers will be generated. Otherwise, the regular implementation of `Backtrace` is present.
 
 TODO: what else should be here?
 
-Explain the proposal as if it was already included in the language and you were teaching it to another Rust programmer. That generally means:
-
-- Introducing new named concepts.
-- Explaining the feature largely in terms of examples.
-- Explaining how Rust programmers should *think* about the feature, and how it should impact the way they use Rust. It should explain the impact as concretely as possible.
-- If applicable, provide sample error messages, deprecation warnings, or migration guidance.
-- If applicable, describe the differences between teaching this to existing Rust programmers and new Rust programmers.
-
-For implementation-oriented RFCs (e.g. for compiler internals), this section should focus on how compiler contributors should think about the change, and give examples of its concrete impact. For policy RFCs, this section should provide an example-driven introduction to the policy, and explain its impact in concrete terms.
-
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-This is the technical portion of the RFC. Explain the design in sufficient detail that:
+The following changes need to be made to implement this proposal:
 
-- Its interaction with other features is clear.
-- It is reasonably clear how the feature would be implemented.
-- Corner cases are dissected by example.
+## Move the `Backtrace` to `core` and add a thin wrapper in `std`
 
-The section should return to the examples given in the previous section, and explain more fully how the detailed proposal makes those examples work.
+This way, a `StdBacktrace` struct is introduced in `std` that allows for `Debug` and `Display` formatting. 
+
+The regular API of `Backtrace` comprising `enabled()`, `create()` and `status()` would be left in the `std` as free-standing functions. Since, they are lang items they need to have a default implementation in case `std` is not linked, so they will be provided in such a form in the `core` library (and overwritten once `std` is linked):
+
+```rust
+/// Global implementation of backtrace functionality. Called to create
+/// `RawBacktrace` trait objects.
+#[cfg(not(bootstrap))]
+extern "Rust" {
+    #[lang = "backtrace_create"]
+    fn backtrace_create(ip: usize) -> *mut dyn RawBacktrace;
+
+    #[lang = "backtrace_enabled"]
+    fn backtrace_enabled() -> bool;
+
+    #[lang = "backtrace_status"]
+    fn backtrace_status(raw: *mut dyn RawBacktrace) -> BacktraceStatus;
+}
+
+#[cfg(bootstrap)]
+unsafe fn backtrace_create(_ip: usize) -> *mut dyn RawBacktrace {
+    UnsupportedBacktrace::create().inner
+}
+
+#[cfg(bootstrap)]
+unsafe fn backtrace_enabled() -> bool {
+    false
+}
+
+#[cfg(bootstrap)]
+unsafe fn backtrace_status(_raw: *mut dyn RawBacktrace) -> BacktraceStatus {
+    BacktraceStatus::Unsupported
+}
+
+```
+
+This change will make the `Backtrace` an optional part of the library and 
+This way, if the `Backtrace` is not enabled (on the library level) there is no need for it to report 
 
 Implementation-wise, `Backtrace` is **declared** in the `core` module and **defined** in `std` via *lang_items* which act as function hooks which are resolved during link-time. Special type `StdBacktrace` is introduced for the `std` part of implementation which acts as a proxy for `Debug` and `Display` trait impls.
 
@@ -55,7 +110,10 @@ Implementation-wise, `Backtrace` is **declared** in the `core` module and **defi
 # Drawbacks
 [drawbacks]: #drawbacks
 
-Why should we *not* do this?
+There are actually many drawbacks, most important of them being `Backtrace` using a lot of `std` for the actual backtrace capturing. 
+
+The other one is a potential code bloat in `no_std` contexts, so a possible alternative may be only enabling the `Backtrace` conditionally via `cfg` settings. (not so sure about this though)
+
 
 `no_std` code bloat - Mara mentioned out
 `Error:backtrace` also seems to be blocking??
@@ -63,51 +121,22 @@ Why should we *not* do this?
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-- Why is this design the best in the space of possible designs?
-- What other designs have been considered and what is the rationale for not choosing them?
-- What is the impact of not doing this?
+The proposed solution is the one which is currently implementable. However, if the Generic Member Access RFC was implemented (link!) we would not have to move the `Backtrace` to `core` at all. In the alternative solution, we would leave the `Backtrace` as it is and instead the `Error` trait will provide a `backtrace()` method which will use the Generic Access to extract the concrete `Backtrace` out of the propagated error.
+
+Alternatively, since the actual implementation of `Backtrace` uses allocating structures like `Box` for backtrace creation, it would be prudent to move it to where this type resides. This will in turn allow users of `alloc` module in embedded and `no_std` contexts to use this functionality without `std`. _should we go for this though instead of the core when we introduce such big changes?_
 
 # Prior art
 [prior-art]: #prior-art
 
-Discuss prior art, both the good and the bad, in relation to this proposal.
-A few examples of what this can include are:
+This type is already implemented, but it seems like no type was moved from `std` to `core` previously so we have no point of reference on this one.
 
-- For language, library, cargo, tools, and compiler proposals: Does this feature exist in other programming languages and what experience have their community had?
-- For community proposals: Is this done by some other community and what were their experiences with it?
-- For other teams: What lessons can we learn from what other communities have done here?
-- Papers: Are there any published papers or great posts that discuss this? If you have some relevant papers to refer to, this can serve as a more detailed theoretical background.
-
-This section is intended to encourage you as an author to think about the lessons from other languages, provide readers of your RFC with a fuller picture.
-If there is no prior art, that is fine - your ideas are interesting to us whether they are brand new or if it is an adaptation from other languages.
-
-Note that while precedent set by other languages is some motivation, it does not on its own motivate an RFC.
-Please also take into consideration that rust sometimes intentionally diverges from common language features.
+As for `no_std` and embedded contexts, there exists the [mini-backtrace](https://github.com/amanieu/mini-backtrace) library that provides backtrace support via LLVM's libunwind.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-- What parts of the design do you expect to resolve through the RFC process before this gets merged?
-- What parts of the design do you expect to resolve through the implementation of this feature before stabilization?
-- What related issues do you consider out of scope for this RFC that could be addressed in the future independently of the solution that comes out of this RFC?
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-Think about what the natural extension and evolution of your proposal would
-be and how it would affect the language and project as a whole in a holistic
-way. Try to use this section as a tool to more fully consider all possible
-interactions with the project and language in your proposal.
-Also consider how this all fits into the roadmap for the project
-and of the relevant sub-team.
 
-This is also a good place to "dump ideas", if they are out of scope for the
-RFC you are writing but otherwise related.
-
-If you have tried and cannot think of any future possibilities,
-you may simply state that you cannot think of anything.
-
-Note that having something written down in the future-possibilities section
-is not a reason to accept the current or a future RFC; such notes should be
-in the section on motivation or rationale in this or subsequent RFCs.
-The section merely provides additional information.
