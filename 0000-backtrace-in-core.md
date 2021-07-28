@@ -104,7 +104,8 @@ This way, if the `Backtrace` is not enabled (on the library level) there is no n
 
 Implementation-wise, `Backtrace` is **declared** in the `core` module and **defined** in `std` via *lang_items* which act as function hooks which are resolved during link-time. Special type `StdBacktrace` is introduced for the `std` part of implementation which acts as a proxy for `Debug` and `Display` trait impls.
 
-// TODO: add examples
+// TODO: add examples of how would one implement these functions themselves like panic hooks
+
 
 
 # Drawbacks
@@ -124,6 +125,8 @@ The other one is a potential code bloat in `no_std` contexts, so a possible alte
 The proposed solution is the one which is currently implementable. However, if the Generic Member Access RFC was implemented (link!) we would not have to move the `Backtrace` to `core` at all. In the alternative solution, we would leave the `Backtrace` as it is and instead the `Error` trait will provide a `backtrace()` method which will use the Generic Access to extract the concrete `Backtrace` out of the propagated error.
 
 Alternatively, since the actual implementation of `Backtrace` uses allocating structures like `Box` for backtrace creation, it would be prudent to move it to where this type resides. This will in turn allow users of `alloc` module in embedded and `no_std` contexts to use this functionality without `std`. _should we go for this though instead of the core when we introduce such big changes?_
+
+A viable solution to allocating functions of `Backtrace` might be adding an API where the users could provide themselves the memory in which the backtrace should reside and truncate/report a failure in case the backtrace does not fit this preallocated space. 
 
 # Prior art
 [prior-art]: #prior-art
