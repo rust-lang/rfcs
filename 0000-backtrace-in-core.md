@@ -13,7 +13,7 @@ It is still unclear whether `Backtrace` itself does need to be moved to `core` a
 # Motivation
 [motivation]: #motivation
 
-The main reason behind moving `Backtrace` to `core` is to have essential types available for wider usage without the need to import `std`. While `Error` had a valid reason for not being in `core` (it relies on `Box` type - TODO: am I right though?), `Backtrace` does not have similar blockers. 
+The main reason behind moving `Backtrace` to `core` is to have essential types available for wider usage without the need to import `std`. While `Error` had a valid reason for not being in `core` (it relies on `Box` type for different conversions), `Backtrace` does not have similar blockers apart from its frame-allocating API
 
 Additionally, having this type in `core` will allow its users to provide their own implementations of the backtrace collection and reporting and not rely on the `std`-provided one if they don't want to.
 
