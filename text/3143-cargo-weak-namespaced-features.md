@@ -1,7 +1,7 @@
 - Feature Name: `weak-dep-features` and `namespaced-features`
 - Start Date: 2021-06-10
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- RFC PR: [rust-lang/rfcs#3143](https://github.com/rust-lang/rfcs/pull/3143)
+- Tracking Issues: [rust-lang/cargo#5565](https://github.com/rust-lang/cargo/issues/5565) and [rust-lang/cargo#8832](https://github.com/rust-lang/cargo/issues/8832)
 
 # Summary
 
