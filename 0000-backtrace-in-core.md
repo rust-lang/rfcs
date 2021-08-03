@@ -15,7 +15,12 @@ This RFC does not cover eventually expanding the `Backtrace` API to include more
 # Motivation
 [motivation]: #motivation
 
-The main reason behind moving `Backtrace` to `core` is to have essential types available for wider usage without the need to import `std`. While `Error` had a valid reason for not being in `core` (it relies on `Box` type for different conversions), `Backtrace` does not have similar blockers apart from its frame-allocating API
+The main reason behind moving `Backtrace` to `core` is to have essential types available for wider usage without the need to import `std`. [Error Handling Group Post](https://blog.rust-lang.org/inside-rust/2021/07/01/What-the-error-handling-project-group-is-working-towards.html#1-error-trait--panic-runtime-integration) goes into details on why one would want the `Error` type (and consequently `Backtrace`) in `core`. The end goal is to have a `panic_error` function which would allow for generating panic errors with detailed error informations.
+
+The [original PR](https://github.com/rust-lang/rust/pull/72981) which aims to stabilize the `Backtrace` already described that it is desirable to have this type in `core`.
+
+
+While `Error` had a valid reason for not being in `core` (it relies on `Box` type for different conversions), `Backtrace` does not have similar blockers apart from its frame-allocating API
 
 Additionally, having this type in `core` will allow its users to provide their own implementations of the backtrace collection and reporting and not rely on the `std`-provided one if they don't want to.
 
@@ -57,6 +62,9 @@ Currently, `Backtrace` is an essential part of the `std` library and user can co
 In terms of Guide-level changes, there is not much to be discussed - only that it is moved to `core` and if `std` is not linked, automatic backtrace handlers will be generated. Otherwise, the regular implementation of `Backtrace` is present.
 
 TODO: what else should be here?
+
+## Trade-offs in this solution
+
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -103,8 +111,6 @@ unsafe fn backtrace_status(_raw: *mut dyn RawBacktrace) -> BacktraceStatus {
 
 This change will make the `Backtrace` an optional part of the library and 
 This way, if the `Backtrace` is not enabled (on the library level) there is no need for it to report 
-
-Implementation-wise, `Backtrace` is **declared** in the `core` module and **defined** in `std` via *lang_items* which act as function hooks which are resolved during link-time. Special type `StdBacktrace` is introduced for the `std` part of implementation which acts as a proxy for `Debug` and `Display` trait impls.
 
 // TODO: add examples of how would one implement these functions themselves like panic hooks
 
