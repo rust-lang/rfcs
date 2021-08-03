@@ -8,7 +8,9 @@
 
 This RFC proposes moving the `Backtrace` type from `std` to `core` (and some changes to `Backtrace` to facilitate this). The change is motivated by the desire to move `Error` from `std` to `core`, which requires either moving `Backtrace` or abstracting it out of `Error`.
 
-It is still unclear whether `Backtrace` itself does need to be moved to `core` and in time this RFC will be unanimous in this matter.
+Backtrace is a (often specifically formatted) list of function calls which program was in at the moment of its generation. Backtraces in Rust are generated when a program reaches an unrecoverable error and panics. In the other case (recoverable errors) they are handled by choosing a "fail path" which informs the user that an error ocurred and the program proceeds.
+
+This RFC does not cover eventually expanding the `Backtrace` API to include more functions and it does not solve the way backtraces are collected (although it proposes different takes on the matter).
 
 # Motivation
 [motivation]: #motivation
@@ -23,7 +25,7 @@ The outcome of this RFC will be a `Backtrace` type in `core` with implementation
 [guide-level-explanation]: #guide-level-explanation
 
 Backtraces are an essential part of the Rust ecosystem, being close coupled with error handling and reporting, be it to the user or the developer. They are usually of a common form:
-```rust
+```
    Compiling playground v0.0.1 (/playground)
     Finished dev [unoptimized + debuginfo] target(s) in 1.66s
      Running `target/debug/playground`
@@ -63,7 +65,7 @@ The following changes need to be made to implement this proposal:
 
 ## Move the `Backtrace` to `core` and add a thin wrapper in `std`
 
-This way, a `StdBacktrace` struct is introduced in `std` that allows for `Debug` and `Display` formatting. 
+This wrapper is used to do the actual backtrace capturing from the `std` in the three functions described below.
 
 The regular API of `Backtrace` comprising `enabled()`, `create()` and `status()` would be left in the `std` as free-standing functions. Since, they are lang items they need to have a default implementation in case `std` is not linked, so they will be provided in such a form in the `core` library (and overwritten once `std` is linked):
 
