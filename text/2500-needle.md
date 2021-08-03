@@ -3,6 +3,12 @@
 - RFC PR: [rust-lang/rfcs#2500](https://github.com/rust-lang/rfcs/pull/2500)
 - Rust Issue: [rust-lang/rust#56345](https://github.com/rust-lang/rust/issues/56345)
 
+# This RFC was previously approved, but later **withdrawn**
+
+For details see the [summary comment].
+
+[summary comment]: https://github.com/rust-lang/rust/pull/76901#issuecomment-880169952
+
 # Summary
 [summary]: #summary
 
