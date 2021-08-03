@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-This RFC will move the `Backtrace` type to `core`, making it available for usage in `no_std` contexts. This is a stepping stone for the `Error` type in `core` and eventually both types will end there. 
+This RFC proposes moving the `Backtrace` type from `std` to `core` (and some changes to `Backtrace` to facilitate this). The change is motivated by the desire to move `Error` from `std` to `core`, which requires either moving `Backtrace` or abstracting it out of `Error`.
 
 It is still unclear whether `Backtrace` itself does need to be moved to `core` and in time this RFC will be unanimous in this matter.
 
@@ -141,5 +141,4 @@ As for `no_std` and embedded contexts, there exists the [mini-backtrace](https:/
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
-
 
