@@ -77,7 +77,7 @@ The calling convention is defined as `extern "sysv64"`, therefore we know that t
 
 # Drawbacks
 
-Implementing this will break compatiliby of existing uses of the nightly `#[naked]` attribute. All of these uses likely depend on undefined behavior. If this is a problem, we could simply use a different attribute.
+Implementing this will break compatibility of existing uses of the nightly `#[naked]` attribute. All of these uses likely depend on undefined behavior. If this is a problem, we could simply use a different attribute.
 
 This definition may be overly strict. There is certainly some code that would work without this. The counter argument is that this code relies on undefined behavior and is probably not worth preserving. It might also be possible to reasonably ease the constraints over time.
 
