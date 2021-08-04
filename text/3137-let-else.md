@@ -311,7 +311,7 @@ context cannot be guaranteed to continue soundly without assignment, and no alte
 
 ## Alternatives
 
-While this feature can partly be covered by functions such `or_or`/`ok_or_else` on the `Option` and `Result` types combined with the Try operator (`?`),
+While this feature can partly be covered by functions such `ok_or`/`ok_or_else` on the `Option` and `Result` types combined with the Try operator (`?`),
 such functions do not exist automatically on custom enum types and require non-obvious and non-trivial implementation, and may not be map-able
 to `Option`/`Result`-style functions at all (especially for enums where the "success" variant is contextual and there are many variants).
 These functions will also not work for code which wishes to return something other than `Option` or `Result`.
