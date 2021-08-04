@@ -21,7 +21,7 @@ A naked function has a defined calling convention and a body which contains only
 A naked function is identified by the `#[naked]` attribute and:
 1. should specify a calling convention besides `extern "Rust"`.
 1. should define only FFI-safe arguments and return types.
-1. must not specify the `#[inline]` or `#[inline(always)]` attribute.
+1. must not specify the `#[inline]` or `#[inline(*)]` attribute.
 1. must have a body which contains only a single `asm!()` statement which:
     1. may be wrapped in an `unsafe` block.
     1. must not contain any operands except `const` or `sym`.
