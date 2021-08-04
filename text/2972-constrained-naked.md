@@ -27,7 +27,7 @@ A naked function is identified by the `#[naked]` attribute and:
     1. must not contain any operands except `const` or `sym`.
     1. must contain the `noreturn` option.
     1. must not contain any other options except `att_syntax`.
-    1. must ensure that the requirements of the calling convention are followed.
+    1. must ensure that the calling convention is followed or the function is `unsafe`.
 
 In exchange for the above constraints, the compiler commits to:
 1. produce a clear error if any of the above requirements are violated.
@@ -126,6 +126,6 @@ All outstanding questions have been resolved.
 
 It would be possible to define new calling conventions that can be used with naked functions.
 
-A previous version of this document defined an `extern "custom"` calling convention. It was observed in conversation that calling conventions are really a *type* and that it could be useful to have calling conventions as part of the type system. In the interest of moving forward with constrained naked functions, it is best to limit the scope of this RFC and defer this (very good) conversation to a future RFC.
+A previous version of this document defined an `extern "custom"` calling convention. It was observed in conversation that calling conventions are really a *type* and that it could be useful to have calling conventions as part of the type system. In the interest of moving forward with constrained naked functions, it is best to limit the scope of this RFC and defer this (very good) conversation to a future RFC. As a simple workaround, naked functions which do not conform to their specified calling convention should be marked as unsafe and the caller requirements should be documented in the safety section of the documentation per standard convention.
 
 It may also be possible to loosen the definition of a naked function in a future RFC. For example, it might be possible to allow the use of some additional, possibly new, operands to the `asm!()` block.
