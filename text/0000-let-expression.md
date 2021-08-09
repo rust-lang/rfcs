@@ -103,13 +103,15 @@ assert!(if let Some(x) = a && let Some(y) = b(x) && x == y { true } else { false
 ```
 
 ## Why now?
-This RFC exists thanks to people who choose `if let` for syntax we know today. If those
-people had chosen anything else, for example `iflet`, `if match`, `let if` or another `keyword`, this
-RFC would have been killed in the womb (Or it came in a completely different form and with
-other capabilities) But they randomly chosen `if let` and we are here. Similarly people
+This RFC exists thanks to people who choose `if let` for syntax we know today.
+That syntax wasn't the only choice and there was other options like `iflet`, `if match`, `let if`, `if is` or another `keyword`. 
+If they chose one of the alternatives, no one would have even imagined the let expressions in form of this RFC
+and this RFC either did not come into being at all or came in a completely different
+form and with different capabilities.
+But they chosen `if let` among other options (with good reasons) and we are here. Similarly people
 who choose `&&` for `if let chain` could kill this. They didn't choose `&&` as randomly as
 choosing `if let` and had let expression in their mind, but they had other options like `,` on
-the table.
+the table, which wasn't compatible with let expressions.
 
 But luck is not always with us. We can't expect each new RFC to randomly add another
 piece of the let expression puzzle to the language. For example `matches!` and `let-else` are
