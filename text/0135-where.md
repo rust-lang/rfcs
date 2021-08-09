@@ -405,13 +405,12 @@ self-type does not refer to any of the type parameters, such as the
 following:
 
     fn foo()
-        where int : Eq
+        where i32 : Eq
     { ... }
 
-Where clauses like these are considered an error. They have no
-particular meaning, since the callee knows all types involved. This is
-a conservative choice: if we find that we do desire a particular
-interpretation for them, we can always make them legal later.
+Although atypical, where clauses like this are not an error:
+all bounds can be proven by the callers, even when the
+substitution of parameter types is not necessary.
 
 # Drawbacks
 
