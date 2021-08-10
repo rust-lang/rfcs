@@ -1,7 +1,7 @@
 - Feature Name: safe_unsafe_trait_methods
 - Start Date: 2018-01-30
-- RFC PR: (leave this empty)
-- Rust Issue: (leave this empty)
+- RFC PR: [rust-lang/rfcs#2316](https://github.com/rust-lang/rfcs/pull/2316)
+- Rust Issue: [rust-lang/rust#87919](https://github.com/rust-lang/rust/issues/87919)
 
 # Summary
 [summary]: #summary
