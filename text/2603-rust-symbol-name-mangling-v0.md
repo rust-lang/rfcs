@@ -691,27 +691,29 @@ Mangled names conform to the following grammar:
        | "D" <dyn-bounds> <lifetime> // dyn Trait<Assoc = X> + Send + 'a
        | <backref>
 
-<basic-type> = "a"      // i8
+<basic-type> = <int-type>
              | "b"      // bool
              | "c"      // char
              | "d"      // f64
              | "e"      // str
              | "f"      // f32
-             | "h"      // u8
-             | "i"      // isize
-             | "j"      // usize
-             | "l"      // i32
-             | "m"      // u32
-             | "n"      // i128
-             | "o"      // u128
-             | "s"      // i16
-             | "t"      // u16
              | "u"      // ()
              | "v"      // ...
-             | "x"      // i64
-             | "y"      // u64
              | "z"      // !
              | "p"      // placeholder (e.g. for generic params), shown as _
+
+<int-type> = "a"  // i8
+           | "h"  // u8
+           | "i"  // isize
+           | "j"  // usize
+           | "l"  // i32
+           | "m"  // u32
+           | "n"  // i128
+           | "o"  // u128
+           | "s"  // i16
+           | "t"  // u16
+           | "x"  // i64
+           | "y"  // u64
 
 // If the "U" is present then the function is `unsafe`.
 // The return type is always present, but demanglers can
@@ -724,16 +726,40 @@ Mangled names conform to the following grammar:
 <dyn-bounds> = [<binder>] {<dyn-trait>} "E"
 <dyn-trait> = <path> {<dyn-trait-assoc-binding>}
 <dyn-trait-assoc-binding> = "p" <undisambiguated-identifier> <type>
-<const> = <type> <const-data>
-        | "p" // placeholder, shown as _
+
+// Constants are encoded structurally, as a tree of array/tuple/ADT constructors,
+// with integer(-like) leaves, not using the constant's memory representation.
+// See the comments on <const-int> & <const-str> for more details on leaf encoding.
+<const> = <int-type> <const-int>
+        | "b" <const-int>           // false, true
+        | "c" <const-int>           // '...'
+        | "e" <const-str>           // "..."
+        | "R" <const>               // &value
+        | "Q" <const>               // &mut value
+        | "A" {<const>} "E"         // [a, b, c, ...]
+        | "T" {<const>} "E"         // (a, b, c, ...)
+        | "V" <path> <const-fields> // named struct/variant
+        | "p"                       // placeholder, shown as _
         | <backref>
 
-// The encoding of a constant depends on its type. Integers use their value,
-// in base 16 (0-9a-f), not their memory representation. Negative integer
-// values are preceded with "n". The bool value false is encoded as `0_`, true
-// value as `1_`. The char constants are encoded using their Unicode scalar
-// value.
-<const-data> = ["n"] {<hex-digit>} "_"
+<const-fields> = "U"                            // X
+               | "T" {<const>} "E"              // X(a, b, c, ...)
+               | "S" {<identifier> <const>} "E" // X { field: value, ... }
+
+// An integer(-like) constant's numeric value is encoded in base 16 (0-9a-f),
+// with negative integer values being preceded with "n".
+// For other types, the numeric value is the same one used for `as` casts, i.e.:
+// * `bool`: 0 for `false` (encoded as `0_`), 1 for `true` (encoded as `1_`)
+// * `char`: the Unicode scalar value
+<const-int> = ["n"] {<hex-digit>} "_"
+
+// `str` constants are encoded as their (UTF-8) byte sequence, where each byte
+// always uses two hex nibbles.
+// Because the constant has `str` type, and not `&str`, demangling should make
+// that clear by e.g. demangling `616263_` as `*"abc"` (instead of `"abc"`).
+// In order to have constants of type `&str` demangle as a plain string literal
+// (i.e. without `&*`), demanglers can special-case `Re...` constants.
+<const-str> = {<hex-digit> <hex-digit>} "_"
 
 // <base-62-number> uses 0-9-a-z-A-Z as digits, i.e. 'a' is decimal 10 and
 // 'Z' is decimal 61.
@@ -1158,3 +1184,5 @@ pub static QUUX: u32 = {
   - Make `<binder>` optional in `<fn-sig>` and `<dyn-bounds>` productions.
   - Extend `<const-data>` to include `bool` values, `char` values, and negative integer values.
   - Remove type from constant placeholders.
+- In amendment PR [#3161](https://github.com/rust-lang/rfcs/pull/3161):
+  - Extend `<const>` to include `str` and structural constants
