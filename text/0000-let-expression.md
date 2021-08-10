@@ -543,6 +543,8 @@ implement the same behavior in a desired way.
 # Drawbacks
 [drawbacks]: #drawbacks
 
+## Big change in language
+
 This RFC is big and the language specification
 is possibly made more complex by it. While this complexity will be used by some
 and therefore, the RFC argues, motivates the added complexity, it will not be
@@ -551,6 +553,59 @@ by unifying constructs in the language conceptually,
 we may also say that complexity is *reduced*. Specially when we think about
 macros and RFCs that this RFC will prevent. Macros and special constructs are
 simple patterns with this RFC.
+
+## Hard to read let expressions
+
+Aggressive use of let expressions can lead to complex and hard to read results:
+```rust
+(
+    ((
+        (let Some(x) = a)
+        && (let Some(y) = x.transform())
+    ) || { panic!("failed to get y") })
+    && (
+        (let Some(a) = y.transform1())
+        || (let Ok(a) = y.transform2())
+        || (let Some(a) = if let either = y.transform3() && let Either::Left(left) = either {
+            Some(transform_left(left))
+        } else {
+            None
+        })
+    )
+)
+|| panic("fun just ended!");
+```
+it can be written on one line, but hopefully rustfmt will prevent that. Also rules of bindings will prevent
+people to write arbitary let expressions. For example:
+```rust
+(let Some(a) = y.transform1())
+|| ((let result = y.transform2()) && ((let Ok(a) = result) || { return result; }));
+println!("{}", a);
+```
+won't compile because PB set of `(let Some(a) = y.transform1())` doesn't contains `result`.
+
+This problem is not limited to let expressions and all powerful structures have it. In
+particular, regular expressions correspond to patterns: `let a = b && let c = d` is roughly
+equivalent to `let (a, c) = (b, d)` and `let a = b || let c = d` is roughly equivalent to `let ((a, _) | (_, c)) = (b, d)` so
+every complex let expression has a dual complex expression with patterns (with different behaviour and capabilities), example for above one:
+```rust
+let (Some(x), Some(y), (Some(a), _, _) | (_, Ok(a), _) | (_, _, Some(a))) = (
+    a,
+    x.transform(),
+    (
+        y.transform1(),
+        y.transform2(),
+        if let (either, Either::Left(left)) = (y.transform3(), either) {
+            Some(transform_left(left))
+        } else {
+            None
+        },
+    ),
+);
+```
+This doesn't have divergents and doesn't behave as intended, but shows that same complexity is possible in patterns,
+And since this complexity in the patterns did not cause a serious problem, we can hope that
+it does not cause a problem in let expressions either.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -574,6 +629,22 @@ we can add more later.
 But macros are complex and everyone should learn every of them separately. A consistent
 language feature that make couple of macros unnecessary is better. Also, `let-else` and
 similar proposals shows that macros aren't enough.
+
+## let-else RFC
+A large part of the this RFC interferes with the let-else RFC, and in fact one of the purposes of this is
+to replace the let-else. Although let-else do its job well, the expressive power of let expressions is much greater
+and they are more consistent with the rest of the language (especially if-let-chain). If we need language
+changes for this feature, why make a change just for this particular application? With let expression, this
+RFC and similar RFCs in the future won't be happen and their task will be taken with this consistent syntax.
+
+Some people argue that `else` is a better choice and `||` doesn't read very well. But in fact using
+short circuit operators in this way is a wellknown pattern in general, and it is popular in bash scripting. In
+standard ML, short circuit operators are called `OrElse` and `AndAlso` which shows that this similarity is known
+and `else` in let-else is more like `OrElse` rather than `else` in if-else, so `||` is a good choice.
+
+Another benefit is that grammar changes of this RFC are done in if-let-chain and grammar rules of
+`||` and `&&` is simple and wellknown but there are some concerns and special cases
+about let-else grammar when mixing it with if-else and if-let.
 
 ## A subset of this RFC
 Not all things introduced here are useful and some of them are because consistency and completeness. We can make
