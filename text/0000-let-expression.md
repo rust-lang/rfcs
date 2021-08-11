@@ -591,7 +591,7 @@ appear in a top-level let (not let expressions inside blocks or function calls) 
 final expression. so first example will bound `x`, `y` and `a` and we will get it with a quick look.
 
 This problem is not limited to let expressions and all powerful structures have it. In
-particular, regular expressions correspond to patterns: `let a = b && let c = d` is roughly
+particular, let expressions correspond to patterns: `let a = b && let c = d` is roughly
 equivalent to `let (a, c) = (b, d)` and `let a = b || let c = d` is roughly equivalent to `let ((a, _) | (_, c)) = (b, d)` so
 every complex let expression has a dual complex expression with patterns (with different behaviour and capabilities), example of a complex
 pattern matching:
