@@ -115,7 +115,8 @@ the table, which wasn't compatible with let expressions.
 
 But luck is not always with us. We can't expect each new RFC to randomly add another
 piece of the let expression puzzle to the language. For example `matches!` and `let-else` are
-against this and `let-else` is the possible killer for this RFC. Fortunately, people have
+potentially against this, `matches!` can [coexist with let expression][future-of-matches] but
+let-else is not compatible with let expression and they can hardly be together in one place. Fortunately, people have
 felt that `let-else` is not compatible with `if let chain`, and this is one of the unresolved questions. The
 answer to this question is: they are not compatible! This RFC with less addition to language grammar and
 more expressive power is superior.
@@ -389,15 +390,16 @@ that believes it is ok (and it isn't a wrong assumption) there is no point in re
 is contrary to binding rules in which we use strong static rules. If we rely on smartness of compiler,
 it can allow us:
 ```rust
-if !let Some(x) = foo {
-    return;
-}
+if let Some(x) = foo { } else { return; }
 // compiler can figure out that accessing x here is ok
 // but we don't allow this because it is unclear for humans
 // and can create problem in combination with shadowing
 // so changing it can be breaking
+println!("{}", x); // compile error!
 ```
-But this is harmful and we don't allow this. But for checking binding statements even surprising ones like:
+This is harmful and we don't allow this.
+
+But for checking binding statements, even surprising ones like:
 ```rust
 if let None = foo {
     return;
@@ -630,6 +632,16 @@ we can add more later.
 But macros are complex and everyone should learn every of them separately. A consistent
 language feature that make couple of macros unnecessary is better. Also, `let-else` and
 similar proposals shows that macros aren't enough.
+
+### Future of matches
+[future-of-matches]: #future-of-matches
+
+Note that this RFC is not intended to deprecate `matches!`. `matches!` and let expressions can co-exist
+together like `match` and `if let` because each has its own application. Specially for patterns that
+doesn't have bindings, matches macro is superior and even a linter can suggest changing things like
+`let 'a'..'z' = foo` to `matches!(foo, 'a'..'z')`. But when there are bindings, let expressions are
+better, for example `let Some(x) = foo && let Some(y) = parse(x) && is_good(y)` is more clear than
+`matches!(foo, Some(x) if let Some(y) = parse(x) && is_good(y))`.
 
 ## let-else RFC
 A large part of the this RFC interferes with the let-else RFC, and in fact one of the purposes of this is
