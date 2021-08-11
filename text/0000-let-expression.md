@@ -150,9 +150,9 @@ assert!(let 'A'..='Z' | 'a'..='z' = foo);
 ## Binding statements
 
 Every `let` expression have some (maybe zero) free variable in it's pattern that
-we call them PBs (positive bindings) of a let expression. If a bool expression
+we call them bindings of a let expression. If a bool expression
 comes with a `;` (as a statement) and compiler can prove it is always `true` (for simple
-let expressions it means pattern is irrefutable) it will bind all PBs to the local scope
+let expressions it means pattern is irrefutable) it will bind all bindings to the local scope
 after `;` and init them with result of pattern matching. So we have this:
 ```rust
 let a = 2;
@@ -161,8 +161,8 @@ let Point { x, y, z } = p;
 ```
 
 ## Combining with `||`
-If we combine two let expressions via `||`, their PBs should be equal, otherwise
-we will get a compile error. PBs of result expression is equal to PB of it's operands. So
+If we combine two let expressions via `||`, their bindings should be equal, otherwise
+we will get a compile error. Bindings of result expression is equal to bindings of it's operands. So
 from previous part we have:
 
 ```rust
@@ -173,9 +173,9 @@ How it will be run? We will reach first line, then:
 * If foo matches Some(x), we fill `x` based of foo, `(let Some(x) = foo)` will be evaluated to true, and short circuit the `||` so go to next line.
 * Otherwise we will go to next operand, assign default to x, evaluate `(let x = default)` to true and go to next line.
 
-Why their PBs should be equal? Because from knowing that the expression is true, we
+Why their bindings should be equal? Because from knowing that the expression is true, we
 know one side of the `||` is true, but we don't know which side is true. If their
-PBs is equal (name-vise and type-vise) we can sure that they can be filled in
+bindings is equal (name-vise and type-vise) we can sure that they can be filled in
 run-time, either from first operand or second operand. So they must be equal.
 
 This limit isn't new. We already have it in `|` pattern bindings. Today, `let (Some(y) | None) = x;` doesn't compile
@@ -190,13 +190,13 @@ we can write this:
 println("{}", x);
 ```
 
-But what about rule of equal PBs? What is PB set of `panic!("foo is none");`? As `!` can cast
-to all types, their PBs can cast to any set of PB and wouldn't make an error. This make
+But what about rule of equal bindings? What is binding set of `panic!("foo is none");`? As `!` can cast
+to all types, their bindings can cast to any set of bindings and wouldn't make an error. This make
 sense because we don't care about after a return or a panic.
 
 ## Combining with `&&`
-If we combine two let expressions via `&&`, PBs of whole expression would be the
-merged set of both PBs. So we will have:
+If we combine two let expressions via `&&`, bindings of whole expression would be the
+merged set of both bindings. So we will have:
 ```
 (let a = 2) && (let Point { x, y, z } = p);
 // we have a, x, y, z here
@@ -205,7 +205,7 @@ These are useless alone (equal to separating with `;`) but can become useful wit
 ```
 (let Some(x) = foo) && (let Some(y) = bar(x)) || (let x = default) && (let y = default2(x));
 ```
-Also, in `EXP1 && EXP2` you can use and shadow PBs of `EXP1` inside `EXP2`. This
+Also, in `EXP1 && EXP2` you can use and shadow bindings of `EXP1` inside `EXP2`. This
 is because if we are in `EXP2` we can be sure that `EXP1` was true because
 otherwise `&&` would be short circuited and `EXP2` won't run. Example:
 
@@ -217,7 +217,7 @@ let a = Some(y);
 println!("{}", (let Some(b) = a) && b > 3); // true
 ```
 
-And you can mix this with normal bool expressions. They have zero PB but act like
+And you can mix this with normal bool expressions. They have no binding but act like
 any other bool expression. So we can have this:
 ```rust
 is_good(x) && (let y = Some(x)) || (let y = None);
@@ -225,13 +225,13 @@ is_good(x) && (let y = Some(x)) || (let y = None);
 ```
 
 ## Combining with `!`
-If we negate a bool expression, all of its PBs become NB (Negative binding) and
+If we negate a bool expression, all of its normal bindings (which we now call positive binding or PB) become NB (Negative binding) and
 its NBs become PB. NBs behavior in `&&` and `||` is reversed. In `&&` they should
 be equal and in `||` they will be merged.
 
 ## Consuming bool expressions
 If we consume a bool expression in anything other than bool operators (such as
-function calls or assignments or match expressions) it would lose its PBs and NBs.
+function calls or assignments or match expressions) it would lose its bindings.
 ```rust
 let bar = Some(Foo(4));
 assert!((let Some(x) = bar) && (let Foo(y) = x) && y > 2);
@@ -243,24 +243,24 @@ Some more complex examples:
 ```rust
 let is_some = let Some(x) = opt;
 ```
-In this example, `is_some: bool` is binded, but `x` isn't and compiler will say it is `unused_variable`.
+In this example, `is_some: bool` is bound, but `x` isn't and compiler will say it is `unused_variable`.
 
 Another example:
 ```rust
 let is_foo = (let Some(x) = opt) && foo(x);
 ```
-And here `is_foo: bool` is binded, `x` isn't and there is no warning because `x` is used in `foo(x)`. Note that if we
+And here `is_foo: bool` is bound, `x` isn't and there is no warning because `x` is used in `foo(x)`. Note that if we
 remove `()` from `(let Some(x) = opt)` it will becomes `opt && foo(x)` so doesn't compile.
 
 ## `()` vs `{}`
 
-Specially, `{}` expressions will consume bools and lose its PBs and NBs. This behavior is
+Specially, `{}` expressions will consume bools and lose its bindings. This behavior is
 consistent with our expectation from `{}` that have bindings only local to itself. So for example:
-```
+```rust
 assert!((let Some(x) = foo) && (x.is_bar()) || baz == 2);
 ```
-Doesn't compile because of different PBs in `||` (`baz == 2` has no PB but `(let Some(x) = foo) && (x.is_bar())` has `x`) but
-```
+Doesn't compile because of different bindings in `||` (`baz == 2` has no binding but `(let Some(x) = foo) && (x.is_bar())` has `x`) but
+```rust
 assert!({ (let Some(x) = foo) && (x.is_bar()) } || baz == 2);
 ```
 will compile, because `{}` would discard all of bindings. With `()` instead of `{}` we will get same error
@@ -277,7 +277,7 @@ if b {
 }
 ```
 
-So compiler can (and will) allow us to access PBs inside of then block and NBs inside of else block.
+So compiler can (and will) allow us to access bindings inside of then block of if, or body block of while.
 
 ## Anything else?
 
@@ -293,7 +293,7 @@ the `if-let-chains` RFC.
 Previously, `if let` and `if let chains` implementations was via desugaring to match expression. This
 is useful because it doesn't create new rules for borrow checker and scoping. We can do the same
 with this proposal and do just some desugaring, as explained below. In addition to desugaring, we
-need to implement PB and NB concept in the compiler as explained in guide-level explanation. Also
+need to implement rules of bindings in the compiler as explained in guide-level explanation. Also
 it has some problems that we explain later.
 
 ## Desugar rules
@@ -372,11 +372,11 @@ if b { true } else { false }
 ```
 
 Binding statements that contains just a simple `let` work today.
-For desugaring complex binding statements we need to compute PBs of the binding statement, then
+For desugaring complex binding statements we need to compute bindings of the statement, then
 we can convert it to:
 ```rust
-let (PB1, PB2, PB3, ...) = if BINDING_STMT {
-    (PB1, PB2, PB3, ...)
+let (B1, B2, B3, ...) = if BINDING_STMT {
+    (B1, B2, B3, ...)
 } else {
     unreachable!()
     //compiler should prove this or return a compile error.
@@ -413,7 +413,7 @@ For start, we can allow trivial cases, e.g. `let <irrefutable> = expr`, `diverge
 `x || true`, ... . In next steps things like `(let Foo(x) = y) || (let Bar(x) = y)` can be allowed. And
 allowing something like above example seems infeasible in near future.
 
-## Rules of PB and NB
+## Rules of bindings
 What would be happen if we don't check those rules? For example look at desugar of `||`:
 ```rust
 if a {
@@ -426,9 +426,9 @@ if a {
     }
 }
 ```
-When this will compiles? It will compiles when bindings of `EXPR_if` is subset of PBs of both `a` and `b` so
-a generalized and natural rule for PBs and NBs for `||` would be union of NBs and intersection of PBs. This
-doesn't need any more check for PBs and NBs. But
+When this will compiles? It will compiles when bindings of `EXPR_if` is subset of bindings of both `a` and `b` so
+a generalized and natural rule for bindings of `||` would be intersection of bindings in both sides. This
+doesn't need any more check for bindings. But
 this can confuse humans, especially in combination with shadowing:
 ```rust
 let x = 2;
@@ -443,7 +443,7 @@ if { let Some(x) = foo } || is_happy(bar) {
     // x is 2, even if foo is Some(_)
 }
 ```
-which explicitly shows that x is local to that block. 
+which explicitly shows that `x` is local to that block. 
 
 This extra limit is also consistent with other parts of the language. We could take a similar approach
 in `|` pattern and silently don't bind `y` in a pattern like `Some(y) | None` so there wouldn't be
@@ -480,8 +480,9 @@ let x = if let Some(x) = foo {
 };
 println!("{}", x);
 ```
-If we don't do this, PB set of divergent expressions would become empty set like other bools. But
-it limit use-cases of let expression. So we handle divergent case in this way.
+If we don't do this, binding set of divergent expressions would become empty set like other bools. But
+it limit use-cases of let expression and we need them to be able to cast to every possible
+set. So we handle divergent case in this way.
 
 ## Code duplication
 As you see, code is duplicated in desugaring, and this can be exponential. This is unacceptable
@@ -533,7 +534,7 @@ if a {
 ```
 
 This is not valid rust syntax so we can't call it desugaring. but if we check that context
-in those positions are equal (rules of PBs and NBs) we can do that jump safely.
+in those positions are equal (rules of bindings) we can do that jump safely.
 
 ## Implementing without sugar
 Implementors are free to implement it another way, for example implement let expressions directly.
@@ -582,7 +583,7 @@ people to write arbitary let expressions. For example:
 || ((let result = y.transform2()) && ((let Ok(a) = result) || { return result; }));
 println!("{}", a);
 ```
-won't compile because PB set of `(let Some(a) = y.transform1())` doesn't contains `result`.
+won't compile because binding set of `(let Some(a) = y.transform1())` doesn't contain `result`.
 
 This problem is not limited to let expressions and all powerful structures have it. In
 particular, regular expressions correspond to patterns: `let a = b && let c = d` is roughly
