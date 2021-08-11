@@ -38,7 +38,7 @@ We propose the following categories of published crates:
  - **Experiment**: This was an experiment by a team, intended to be picked up by users to better inform API design (or whatever), without a long-term commitment to maintainership. Example: [failure](https://crates.io/crates/failure)
  - **Deprecated**: This used to be an “intentional artifact” (or experiment/internal use) but isn’t anymore. Example: [rustc-serialize](https://crates.io/crates/rustc-serialize)
  - **Placeholder**: Not a functional crate, used for holding on to the name of an official tool, etc. Example: [rustup](https://crates.io/crates/rustup)
- - **Expatriated**: This may have been an “intentional artifact”, and still is intended to be used by external users, but is no longer intended to be official. Example: [rand](https://crates.io/crates/rand)
+ - **Expatriated**: This may have been an “intentional artifact”, and still is intended to be used by external users, but is no longer intended to be official. In such cases the crate is no longer owned/managed by the Rust project. Example: [rand](https://crates.io/crates/rand)
 
 ## Policy
 
@@ -118,7 +118,7 @@ Any transition _away_ from "Intentional Artifact" requires an RFC.
 
 Any transition to "Intentional Artifact" should ideally be accompanied by an RFC, and an update to the team charter if there is one.
 
-Expatriation should basically _never_ occur anymore, but it also requires an RFC and core team approval in case it is really necessary. If a team wishes to stop working on a crate, they should deprecate it and encourage the community to fork it or build their own thing.
+Expatriation should basically _never_ occur anymore, but it also requires an RFC and core team approval in case it is really necessary. If a team wishes to stop working on a crate, they should deprecate it and encourage the community to fork it or build their own thing. The repository may be transfered out, however the `crates.io` name is kept by the Rust project and the new group of maintainers will need to pick a new crate name.
 
 If "transitively intentional" crates are being deprecated care should be taken to ensure security issues will still be handled.
 
