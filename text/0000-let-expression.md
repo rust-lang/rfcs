@@ -557,6 +557,27 @@ we may also say that complexity is *reduced*. Specially when we think about
 macros and RFCs that this RFC will prevent. Macros and special constructs are
 simple patterns with this RFC.
 
+## Let expression type isn't bool in other languages
+
+`let` as a bool expression can become surprising for people coming from other languages. People
+see `let` equal to their variable declaring statements, and let expression with `bool` type are
+very different from them.
+
+In C family and Java, `int x = y` is equivalent of `let` in rust which isn't
+expression, but `x = y` is a expression equal to `{ x = y; x }` in rust. So, people from those
+language may expect `let x = y` returns `y` instead of `true`. Using these expressions is considered
+an anti-pattern and therefore the rust does not have them. Due to its similarity to let expressions, it
+may be thought that let expressions are also a anti-pattern, but they are different conceptually. In
+python `x = y` also does declaration, and in JS `let`, `const` and `var` are in place of `int` in declaration, and
+this assignment behaviour is wellknown and exists in many of imperative languages.
+
+In functional languages like Haskell and OCaml, there is `let x = y in f(x)` expression which returns `f(x)`. This is closer
+to what we have in rust, it does irrefutable pattern matching, and `let a || let b in c` can be considered as a valid
+extension to their syntax. But this isn't a thing in current state of those languages and may look strange a bit at first.
+
+There are many things that rust is unique in them, specially `if let`, which is the root of let expressions with `bool` type.
+Let expression replaces if-let and if-let-chain in list of things that rust is unique in them.
+
 ## Hard to read let expressions
 
 Aggressive use of let expressions can lead to complex and hard to read results:
