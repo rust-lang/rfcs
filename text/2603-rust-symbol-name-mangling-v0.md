@@ -1136,7 +1136,7 @@ pub static QUUX: u32 = {
 - mangled: `_RINxC3std3fooTNyB4_3BarBe_EBd_E`
 
 
-# Appendix C - Change LOG
+# Appendix C - Changelog
 - Removed mention of Itanium mangling in introduction.
 - Weakened "predictability" goal.
 - Removed non-goal of not providing a mangling for lifetimes.
@@ -1152,7 +1152,9 @@ pub static QUUX: u32 = {
 - Resolve question of complex constant data.
 - Add a recommended resolution for open question around Punycode identifiers.
 - Add a recommended resolution for open question around encoding function parameter types.
-- Allow identifiers to start with a digit.
-- Make `<binder>` optional in `<fn-sig>` and `<dyn-bounds>` productions.
-- Extend `<const-data>` to include `bool` values, `char` values, and negative integer values.
-- Remove type from constant placeholders.
+- In amendment PR [#2705](https://github.com/rust-lang/rfcs/pull/2705):
+  - Allow identifiers to start with a digit.
+- In amendment PR [#3130](https://github.com/rust-lang/rfcs/pull/3130):
+  - Make `<binder>` optional in `<fn-sig>` and `<dyn-bounds>` productions.
+  - Extend `<const-data>` to include `bool` values, `char` values, and negative integer values.
+  - Remove type from constant placeholders.
