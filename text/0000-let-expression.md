@@ -585,29 +585,23 @@ people to write arbitary let expressions. For example:
 || ((let result = y.transform2()) && ((let Ok(a) = result) || { return result; }));
 println!("{}", a);
 ```
-won't compile because binding set of `(let Some(a) = y.transform1())` doesn't contain `result`.
+won't compile because binding set of `(let Some(a) = y.transform1())` doesn't contain `result`. This rule also
+make it possible to find which variables will bound with a quick look, that is, every binding variable that
+appear in a top-level let (not let expressions inside blocks or function calls) will be in the binding set of
+final expression. so first example will bound `x`, `y` and `a` and we will get it with a quick look.
 
 This problem is not limited to let expressions and all powerful structures have it. In
 particular, regular expressions correspond to patterns: `let a = b && let c = d` is roughly
 equivalent to `let (a, c) = (b, d)` and `let a = b || let c = d` is roughly equivalent to `let ((a, _) | (_, c)) = (b, d)` so
-every complex let expression has a dual complex expression with patterns (with different behaviour and capabilities), example for above one:
+every complex let expression has a dual complex expression with patterns (with different behaviour and capabilities), example of a complex
+pattern matching:
 ```rust
-let (Some(x), Some(y), (Some(a), _, _) | (_, Ok(a), _) | (_, _, Some(a))) = (
-    a,
-    x.transform(),
-    (
-        y.transform1(),
-        y.transform2(),
-        if let (either, Either::Left(left)) = (y.transform3(), either) {
-            Some(transform_left(left))
-        } else {
-            None
-        },
-    ),
-);
+let ((Foo(x), Some(y), (Some(z), _, _) | (_, Ok(z), _) | (_, _, Some(z)))
+    | (Bar(z), x @ None, (Some(y), _, _) | (_, Err(y), _) | (_, _, Some(y)))) =
+        (a, b, (c.transform1(), c.transform2(), c.transform3()));
 ```
-This doesn't have divergents and doesn't behave as intended, but shows that same complexity is possible in patterns,
-And since this complexity in the patterns did not cause a serious problem, we can hope that
+This shows that same complexity is possible in patterns, and in both cases the complexity can be scaled to infinity.
+Since this complexity in the patterns did not cause a serious problem, we can hope that
 it does not cause a problem in let expressions either.
 
 # Rationale and alternatives
