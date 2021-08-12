@@ -102,6 +102,46 @@ assert!(matches!(a, Some(x) if let Some(y) = b(x) && x == y));
 assert!(if let Some(x) = a && let Some(y) = b(x) && x == y { true } else { false });
 ```
 
+### Practical usage of this features
+
+People find let expressions theoretical at first look, and only traditional cases (if-let-chain and let-else)
+Can become useful. In this section there are some usages for new features of this RFC in real codes.
+
+This is an example from rust-clippy repository:
+```rust
+for w in block.stmts.windows(2) {
+    if_chain! {
+        if let StmtKind::Semi(first) = w[0].kind;
+        if let StmtKind::Semi(second) = w[1].kind;
+        if !differing_macro_contexts(first.span, second.span);
+        if let ExprKind::Assign(lhs0, rhs0, _) = first.kind;
+        if let ExprKind::Assign(lhs1, rhs1, _) = second.kind;
+        if eq_expr_value(cx, lhs0, rhs1);
+        if eq_expr_value(cx, lhs1, rhs0);
+        then {
+            // 30 lines of code with massive rightward drift
+        }
+    }
+}
+```
+
+Which by a generalized let-else can become:
+```rust
+for w in block.stmts.windows(2) {
+    (let StmtKind::Semi(first) = w[0].kind)
+    && (let StmtKind::Semi(second) = w[1].kind)
+    && !differing_macro_contexts(first.span, second.span)
+    && (let ExprKind::Assign(lhs0, rhs0, _) = first.kind)
+    && (let ExprKind::Assign(lhs1, rhs1, _) = second.kind)
+    && eq_expr_value(cx, lhs0, rhs1)
+    && eq_expr_value(cx, lhs1, rhs0)
+    || continue;
+    // 30 lines of code with two less tab
+}
+```
+Every `if let` or `if_chain!` that fill body of a loop or function can refactored in this way. You can easily find
+dozens of them just in rust-clippy.
+
 ## Why now?
 This RFC exists thanks to people who choose `if let` for syntax we know today.
 That syntax wasn't the only choice and there was other options like `iflet`, `if match`, `let if`, `if is` or another `keyword`. 
