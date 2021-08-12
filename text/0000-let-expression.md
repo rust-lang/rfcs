@@ -43,10 +43,17 @@ This situation is worse with `if let chain` that mix let expressions with `&&` a
 other bools. In fact the compiler will understand it via interpreting let as an
 expression, so why we force humans to understand it another way?
 
+Also, this RFC support use case of a new feature, approved but not stablized, called let-else. let-else is not
+consistent with if-let-chains and it has taken a completely different path. This RFC can replace let-else
+and so remove this inconsistency, without loss in expressive power.
+
 This proposal is also in-line with "everything is an expression" that we have
 in rust.
 
 ## Ergonomics
+
+*Note: This section use new syntax which you may not understand at this point. You
+can read [Guide-level explanation][guide-level-explanation] first.*
 
 It also available many super powers for us that can
 help decreasing rightward drift without adding to implementation and understanding complexity, and
@@ -140,7 +147,40 @@ for w in block.stmts.windows(2) {
 }
 ```
 Every `if let` or `if_chain!` that fill body of a loop or function can refactored in this way. You can easily find
-dozens of them just in rust-clippy.
+dozens of them just in rust-clippy. Note that if-let-chain alone can't solve this problem, because you have access to
+variables of if-let inside of block, but you have access to variables of a binding statement under it, thus you can
+save one indentation.
+
+A different class of practical usages of this RFC is let expression usage as a bool. People
+wrap their let expressions with `if expr { true } else { false }` manually. This need is almost met
+with `matches!` macro, but `if let true else false` is still a thing in rust code bases. Again from rust-clippy:
+```rust
+fn is_repeat_zero(&self, expr: &Expr<'_>) -> bool {
+    if_chain! {
+        if let ExprKind::Call(fn_expr, [repeat_arg]) = expr.kind;
+        if is_expr_path_def_path(self.cx, fn_expr, &paths::ITER_REPEAT);
+        if let ExprKind::Lit(ref lit) = repeat_arg.kind;
+        if let LitKind::Int(0, _) = lit.node;
+
+        then {
+            true
+        } else {
+            false
+        }
+    }
+}
+```
+After this RFC, we can write this:
+```rust
+fn is_repeat_zero(&self, expr: &Expr<'_>) -> bool {
+    (let ExprKind::Call(fn_expr, [repeat_arg]) = expr.kind)
+    && is_expr_path_def_path(self.cx, fn_expr, &paths::ITER_REPEAT)
+    && (let ExprKind::Lit(ref lit) = repeat_arg.kind)
+    && matches!(lit.node, LitKind::Int(0, _)) // you can use let expression here as well
+}
+```
+Some people may argue that current state is more readable, but [this lint](https://rust-lang.github.io/rust-clippy/master/index.html#needless_bool)
+is not agree with them.
 
 ## Why now?
 This RFC exists thanks to people who choose `if let` for syntax we know today.
