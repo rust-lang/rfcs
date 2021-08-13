@@ -151,6 +151,40 @@ dozens of them just in rust-clippy. Note that if-let-chain alone can't solve thi
 variables of if-let inside of block, but you have access to variables of a binding statement under it, thus you can
 save one indentation.
 
+`||` is not only useful for let-else style things. This is a real example from [deno](https://github.com/denoland/deno):
+
+```rust
+let nread = if let Some(s) = resource.downcast_rc::<ChildStdoutResource>() {
+    s.read(buf).await?
+} else if let Some(s) = resource.downcast_rc::<ChildStderrResource>() {
+    s.read(buf).await?
+} else if let Some(s) = resource.downcast_rc::<TcpStreamResource>() {
+    s.read(buf).await?
+} else if let Some(s) = resource.downcast_rc::<TlsStreamResource>() {
+    s.read(buf).await?
+} else if let Some(s) = resource.downcast_rc::<UnixStreamResource>() {
+    s.read(buf).await?
+} else if let Some(s) = resource.downcast_rc::<StdFileResource>() {
+    s.read(buf).await?
+} else {
+    return Err(not_supported());
+};
+```
+Which by `||` counterpart of if-let-chain can become:
+```rust
+let nread = if let Some(s) = resource.downcast_rc::<ChildStdoutResource>()
+    || let Some(s) = resource.downcast_rc::<ChildStderrResource>()
+    || let Some(s) = resource.downcast_rc::<TcpStreamResource>()
+    || let Some(s) = resource.downcast_rc::<TlsStreamResource>()
+    || let Some(s) = resource.downcast_rc::<UnixStreamResource>()
+    || let Some(s) = resource.downcast_rc::<StdFileResource>() {
+    s.read(buf).await?
+} else {
+    return Err(not_supported());
+};
+```
+This is smaller and doesn't repeat a code.
+
 A different class of practical usages of this RFC is let expression usage as a bool. People
 wrap their let expressions with `if expr { true } else { false }` manually. This need is almost met
 with `matches!` macro, but `if let true else false` is still a thing in rust code bases. Again from rust-clippy:
