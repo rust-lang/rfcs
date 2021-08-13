@@ -61,6 +61,11 @@ actually decreasing it by removing `let-else` and preventing from future similar
 
 ### Compare to `let-else`
 
+*This RFC extensively use short circuit operators `&&`, `||`. This operators are called
+`andalso`, `orelse` in standard ML and some other languages, reading them in this way
+instead of traditional `and`, `or` remind you the short circuit nature of them and help
+understanding them better.*
+
 ```rust
 // simple let else
 let Some(x) = y else {
@@ -79,7 +84,23 @@ let Some(x) = y else {
 let Some(x) = a else b else c else { return; };
 
 // with let expression
-(let Some(x) = a) || (let Some(x) = b) || (let Foo(x) = bar) || { return; };
+(let Some(x) = a)
+|| (let Some(x) = b)
+|| (let Foo(x) = bar)
+|| return;
+
+// duplicate else block of consecutive let-else
+let Some(Foo(x)) = bar else {
+    panic!("a very long message which needs to change every day");
+};
+let Some((y, z)) = baz(x) else {
+    panic!("a very long message which needs to change every day");
+};
+
+// with let expression
+(let Some(Foo(x)) = bar)
+&& (let Some((y, z)) = baz(x))
+|| panic!("a very long message which needs to change every day");
 ```
 
 ### New constructs
@@ -96,10 +117,18 @@ if let Some(x) = a || let Some(x) = b || Ok(x) = c {
 if let ((Some(x), _, _) | (_, Some(x), _) | (_, _, Ok(x)) = (a, b, c) {
 
 // assignment with default
-(let Foo(x) = a) || (let Bar(x) = b) || (let x = default);
+(let Foo(x) = a)
+|| (let Bar(x) = b)
+|| (let x = default);
 
 // today alternative:
-let x = if let Foo(x) = a { x } else if let Bar(x) = b { x } else { default };
+let x = if let Foo(x) = a {
+    x
+} else if let Bar(x) = b {
+    x
+} else {
+    default
+};
 
 // simple let expression
 assert!((let Some(x) = a) && (let Some(y) = b(x)) && x == y);
@@ -318,7 +347,8 @@ merged set of both bindings. So we will have:
 ```
 These are useless alone (equal to separating with `;`) but can become useful with `||`:
 ```
-(let Some(x) = foo) && (let Some(y) = bar(x)) || (let x = default) && (let y = default2(x));
+(let Some(x) = foo) && (let Some(y) = bar(x))
+|| (let x = default) && (let y = default2(x));
 ```
 Also, in `EXP1 && EXP2` you can use and shadow bindings of `EXP1` inside `EXP2`. This
 is because if we are in `EXP2` we can be sure that `EXP1` was true because
@@ -326,7 +356,8 @@ otherwise `&&` would be short circuited and `EXP2` won't run. Example:
 
 ```rust
 let foo = Some(2);
-((let Some(x) = foo) || panic!("paniiiiiiic")) && (let y = x + 3);
+((let Some(x) = foo) || panic!("paniiiiiiic"))
+&& (let y = x + 3);
 println!("{}, {}", x, y); // 2, 5
 let a = Some(y);
 println!("{}", (let Some(b) = a) && b > 3); // true
@@ -335,7 +366,9 @@ println!("{}", (let Some(b) = a) && b > 3); // true
 And you can mix this with normal bool expressions. They have no binding but act like
 any other bool expression. So we can have this:
 ```rust
-is_good(x) && (let y = Some(x)) || (let y = None);
+is_good(x)
+&& (let y = Some(x))
+|| (let y = None);
 // we have y: Option<type of x> here
 ```
 
@@ -353,7 +386,7 @@ assert!((let Some(x) = bar) && (let Foo(y) = x) && y > 2);
 // no x and y here
 ```
 
-Some more complex examples:
+Specially, assignments discard bindings of let expressions:
 
 ```rust
 let is_some = let Some(x) = opt;
