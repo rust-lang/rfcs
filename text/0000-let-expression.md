@@ -52,56 +52,14 @@ in rust.
 
 ## Ergonomics
 
-*Note: This section use new syntax which you may not understand at this point. You
-can read [Guide-level explanation][guide-level-explanation] first.*
-
-It also available many super powers for us that can
-help decreasing rightward drift without adding to implementation and understanding complexity, and
-actually decreasing it by removing `let-else` and preventing from future similar constructs.
-
-### Compare to `let-else`
-
 *This RFC extensively use short circuit operators `&&`, `||`. This operators are called
 `andalso`, `orelse` in standard ML and some other languages, reading them in this way
 instead of traditional `and`, `or` remind you the short circuit nature of them and help
 understanding them better.*
 
-```rust
-// simple let else
-let Some(x) = y else {
-    return Err("fail");
-};
-
-// with let expression
-(let Some(x) = y) || {
-    return Err("fail");
-};
-
-// or even better
-(let Some(x) = y) || return Err("fail");
-
-// let else else future possiblity
-let Some(x) = a else b else c else { return; };
-
-// with let expression
-(let Some(x) = a)
-|| (let Some(x) = b)
-|| (let Foo(x) = bar)
-|| return;
-
-// duplicate else block of consecutive let-else
-let Some(Foo(x)) = bar else {
-    panic!("a very long message which needs to change every day");
-};
-let Some((y, z)) = baz(x) else {
-    panic!("a very long message which needs to change every day");
-};
-
-// with let expression
-(let Some(Foo(x)) = bar)
-&& (let Some((y, z)) = baz(x))
-|| panic!("a very long message which needs to change every day");
-```
+It also available many super powers for us that can
+help decreasing rightward drift without adding to implementation and understanding complexity, and
+actually decreasing it by removing `let-else` and preventing from future similar constructs.
 
 ### New constructs
 
@@ -140,8 +98,8 @@ assert!(if let Some(x) = a && let Some(y) = b(x) && x == y { true } else { false
 
 ### Practical usage of this features
 
-People find let expressions theoretical at first look, and only traditional cases (if-let-chain and let-else)
-Can become useful. In this section there are some usages for new features of this RFC in real codes.
+People find let expressions theoretical at first look, and think only traditional cases (if-let-chain and let-else)
+can become useful. In this section there are some usages for new features of this RFC in real codes.
 
 This is an example from rust-clippy repository:
 ```rust
@@ -812,12 +770,57 @@ and they are more consistent with the rest of the language (especially if-let-ch
 changes for this feature, why make a change just for this particular application? With let expression, this
 RFC and similar RFCs in the future won't be happen and their task will be taken with this consistent syntax.
 
+
+### Compare expressive power of this RFC with let-else
+
+```rust
+// simple let else
+let Some(x) = y else {
+    return Err("fail");
+};
+
+// with let expression
+(let Some(x) = y) || {
+    return Err("fail");
+};
+
+// or even better
+(let Some(x) = y) || return Err("fail");
+
+// let else else future possiblity
+let Some(x) = a else b else c else { return; };
+
+// with let expression
+(let Some(x) = a)
+|| (let Some(x) = b)
+|| (let Foo(x) = bar)
+|| return;
+
+// duplicate else block of consecutive let-else
+let Some(Foo(x)) = bar else {
+    panic!("a very long message which needs to change every day");
+};
+let Some((y, z)) = baz(x) else {
+    panic!("a very long message which needs to change every day");
+};
+
+// with let expression
+(let Some(Foo(x)) = bar)
+&& (let Some((y, z)) = baz(x))
+|| panic!("a very long message which needs to change every day");
+```
+
+### `else` vs `||`
+
 Some people argue that `else` is a better choice and `||` doesn't read very well. But in fact using
 short circuit operators in this way is a wellknown pattern in general, and it is popular in bash scripting. In
 standard ML, short circuit operators are called `OrElse` and `AndAlso` which shows that this similarity is known
 and `else` in let-else is more like `OrElse` rather than `else` in if-else, so `||` is a good choice.
 
-Another benefit is that grammar changes of this RFC are done in if-let-chain and grammar rules of
+As a benefit for `||` over `else`, `||` is already in the language and working for
+normal bools ([playground](https://play.rust-lang.org/?version=stable&mode=debug&edition=2018&gist=13b6c01bca742a083b0f48fee07b21d3)).
+but `is_prime(x) else { continue };` isn't and won't be valid syntax in rust. So this RFC need much less changes
+in the language. In fact, grammar changes of this RFC are done in if-let-chain and grammar rules of
 `||` and `&&` is simple and wellknown but there are some concerns and special cases
 about let-else grammar when mixing it with if-else and if-let.
 
