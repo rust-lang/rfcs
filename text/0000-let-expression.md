@@ -12,16 +12,24 @@ a bunch of magic constructs that are useful. After this RFC, you'll be able to w
 
 ```rust
 // generalized matches! macro:
-assert!((let Some(x) = y) && x > 2);
+assert!(let Some(x) = y && x > 2);
+
+// || counterpart of if-let-chain 
+
+if let Some(x) = foo || let Some(x) = bar {
+    println!("{}", x);
+}
 
 // generalized let-else construct
-(let Some(a) = b) && (let Some(c) = f(&a)) || {
-    return Err("failed");
-};
+let Some(a) = b
+&& let Some(c) = f(&a)
+|| return Err("failed");
 println!("{}, {}", a, c);
 
 // generalized assignment with default
-(let Some(x) = y) || (let Foo(x) = bar) || (let x = default);
+let Some(x) = y
+|| let Foo(x) = bar
+|| let x = default;
 println!("{}", x);
 ```
 
@@ -122,11 +130,11 @@ for w in block.stmts.windows(2) {
 Which by a generalized let-else can become:
 ```rust
 for w in block.stmts.windows(2) {
-    (let StmtKind::Semi(first) = w[0].kind)
-    && (let StmtKind::Semi(second) = w[1].kind)
+    let StmtKind::Semi(first) = w[0].kind
+    && let StmtKind::Semi(second) = w[1].kind
     && !differing_macro_contexts(first.span, second.span)
-    && (let ExprKind::Assign(lhs0, rhs0, _) = first.kind)
-    && (let ExprKind::Assign(lhs1, rhs1, _) = second.kind)
+    && let ExprKind::Assign(lhs0, rhs0, _) = first.kind
+    && let ExprKind::Assign(lhs1, rhs1, _) = second.kind
     && eq_expr_value(cx, lhs0, rhs1)
     && eq_expr_value(cx, lhs1, rhs0)
     || continue;
@@ -194,9 +202,9 @@ fn is_repeat_zero(&self, expr: &Expr<'_>) -> bool {
 After this RFC, we can write this:
 ```rust
 fn is_repeat_zero(&self, expr: &Expr<'_>) -> bool {
-    (let ExprKind::Call(fn_expr, [repeat_arg]) = expr.kind)
+    let ExprKind::Call(fn_expr, [repeat_arg]) = expr.kind
     && is_expr_path_def_path(self.cx, fn_expr, &paths::ITER_REPEAT)
-    && (let ExprKind::Lit(ref lit) = repeat_arg.kind)
+    && let ExprKind::Lit(ref lit) = repeat_arg.kind
     && matches!(lit.node, LitKind::Int(0, _)) // you can use let expression here as well
 }
 ```
@@ -234,6 +242,9 @@ is late!
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
+*Note: Examples in this section are here for showing the corner cases of let expression, not code encouraged or intended to use in real codebases.*
+
+
 This section examines the features proposed by this RFC.
 
 ## `let` as a bool expression
@@ -268,12 +279,12 @@ we will get a compile error. Bindings of result expression is equal to bindings 
 from previous part we have:
 
 ```rust
-(let Some(x) = foo) || (let x = default);
+let Some(x) = foo || let x = default;
 // we have x here
 ```
 How it will be run? We will reach first line, then:
-* If foo matches Some(x), we fill `x` based of foo, `(let Some(x) = foo)` will be evaluated to true, and short circuit the `||` so go to next line.
-* Otherwise we will go to next operand, assign default to x, evaluate `(let x = default)` to true and go to next line.
+* If foo matches Some(x), we fill `x` based of foo, `let Some(x) = foo` will be evaluated to true, and short circuit the `||` so go to next line.
+* Otherwise we will go to next operand, assign default to x, evaluate `let x = default` to true and go to next line.
 
 Why their bindings should be equal? Because from knowing that the expression is true, we
 know one side of the `||` is true, but we don't know which side is true. If their
@@ -288,7 +299,7 @@ In addition to `true`, binding statements are allowed to diverge (have type of `
 we can write this:
 
 ```rust
-(let Some(x) = foo) || panic!("foo is none");
+let Some(x) = foo || panic!("foo is none");
 println("{}", x);
 ```
 
@@ -300,13 +311,13 @@ sense because we don't care about after a return or a panic.
 If we combine two let expressions via `&&`, bindings of whole expression would be the
 merged set of both bindings. So we will have:
 ```
-(let a = 2) && (let Point { x, y, z } = p);
+let Point { x, y, z } = p && let a = 2;
 // we have a, x, y, z here
 ```
-These are useless alone (equal to separating with `;`) but can become useful with `||`:
+These are useless alone (equal to separating with `;`) but can become useful inside if scrutinee (which we don't know yet) or with `||`:
 ```
-(let Some(x) = foo) && (let Some(y) = bar(x))
-|| (let x = default) && (let y = default2(x));
+let Some(x) = foo && let Some(y) = bar(x)
+|| let (x, y) = (default_x, default_y);
 ```
 Also, in `EXP1 && EXP2` you can use and shadow bindings of `EXP1` inside `EXP2`. This
 is because if we are in `EXP2` we can be sure that `EXP1` was true because
@@ -314,9 +325,10 @@ otherwise `&&` would be short circuited and `EXP2` won't run. Example:
 
 ```rust
 let foo = Some(2);
-((let Some(x) = foo) || panic!("paniiiiiiic"))
-&& (let y = x + 3);
-println!("{}, {}", x, y); // 2, 5
+let shadow = 5;
+(let Some(x) = foo || panic!("paniiiiiiic"))
+&& let x = shadow;
+println!("{}, {}", x); // 5
 let a = Some(y);
 println!("{}", (let Some(b) = a) && b > 3); // true
 ```
@@ -557,6 +569,27 @@ in `|` pattern and silently don't bind `y` in a pattern like `Some(y) | None` so
 an error until `y` used. But people decided against this (with good reason) and this RFC follow them
 in this decision.
 
+## Precedence of `||` and `&&` operator
+
+Currently, precedence of assignment operator `=` is lower than `||` and `&&`, so `let pat = x || y` parse
+as `let pat = (x || y)` so parenthesis around `(let pat = x)` is mandatory. Changing this precedence break existing codes
+so this RFC doesn't change it in all places.
+
+`let pat = (x || y)` is only useful when type of `x` and `y` and `pat` are `bool`, because `||`, `&&` can not
+be overloaded. detecting type of `x` is not easy in parse level, but few patterns can possibly get bool variables:
+* Idents and wildcards
+* Bool literals
+* `pat1 | pat2`, `ident @ pat`, `& pat`, `(pat)` when inner patterns are bool-possible
+* Constants, which are equivalent to idents in parser level.
+
+If pattern of a let expression isn't bool-possible, parser looks for an expression with precedence
+higher than `&&`. It will solve the need for `()` in majority of cases, but not always:
+* Constants and enum variants like `let None = opt || x` will need a parenthesis, but they can written via `==` in most of cases.
+* Idents, they can be in terminals, but in the middle of expression they need `()`. It shouldn't be popular because `let i = x` is always true.
+
+It isn't the only corner case of `||`, `&&` and let expressions. Another corner case which is added in
+if-let-chain RFC, is that in context of if scrutinee, precedence of this operators is reversed.
+
 ## Divergent case
 
 It should be noted that divergent expressions are specially handled. If they happen in top-level
@@ -780,20 +813,20 @@ let Some(x) = y else {
 };
 
 // with let expression
-(let Some(x) = y) || {
+let Some(x) = y || {
     return Err("fail");
 };
 
 // or even better
-(let Some(x) = y) || return Err("fail");
+let Some(x) = y || return Err("fail");
 
 // let else else future possiblity
 let Some(x) = a else b else c else { return; };
 
 // with let expression
-(let Some(x) = a)
-|| (let Some(x) = b)
-|| (let Foo(x) = bar)
+let Some(x) = a
+|| let Some(x) = b
+|| let Foo(x) = bar
 || return;
 
 // duplicate else block of consecutive let-else
@@ -805,8 +838,8 @@ let Some((y, z)) = baz(x) else {
 };
 
 // with let expression
-(let Some(Foo(x)) = bar)
-&& (let Some((y, z)) = baz(x))
+let Some(Foo(x)) = bar
+&& let Some((y, z)) = baz(x)
 || panic!("a very long message which needs to change every day");
 ```
 
@@ -820,9 +853,14 @@ and `else` in let-else is more like `OrElse` rather than `else` in if-else, so `
 As a benefit for `||` over `else`, `||` is already in the language and working for
 normal bools ([playground](https://play.rust-lang.org/?version=stable&mode=debug&edition=2018&gist=13b6c01bca742a083b0f48fee07b21d3)).
 but `is_prime(x) else { continue };` isn't and won't be valid syntax in rust. So this RFC need much less changes
-in the language. In fact, grammar changes of this RFC are done in if-let-chain and grammar rules of
-`||` and `&&` is simple and wellknown but there are some concerns and special cases
-about let-else grammar when mixing it with if-else and if-let.
+in the language.
+
+For consistency with bool expressions, we should allow something like `let Some(x) = y || panic!("fail")`. For
+normal bools it is considered a bad practice, (though [not everyone is agree](https://github.com/rust-lang/rust/issues/69466#issuecomment-591097014)
+with it) and explicit `if` is preferred. In let expressions, explicit `if` is not an option due to difference in bindings,
+and demand for such construct is real (The presence of let-else is a sign of this), so why we should consider a
+pattern that exists in current rust and many other languages a bad practice, and then invent a new construct
+that do exactly the same work and read almost the same (let-else vs let-orelse) and consider it a good practice?
 
 ## A subset of this RFC
 Not all things introduced here are useful and some of them are because consistency and completeness. We can make
@@ -862,13 +900,6 @@ To be determined.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
-
-## Changing precedence of `&&` and `||`
-Today, as you see in examples, `()` around `let` is mandatory because assignment has lower precedence
-than `||` and `&&`. Assigning bools to variables is rare so asking them to put a parenthesis around them
-isn't so bad. This is already changed in if scrutinee in `if let chain` RFC as edition `2018`. A future
-RFC in edition `2024` or `2027` can change it in other places and make language consistent and remove
-unnecessary parenthesis from a then-popular pattern.
 
 ## Convert assignment to a bool expression
 In [RFC 2909](https://github.com/rust-lang/rfcs/blob/master/text/2909-destructuring-assignment.md) we
