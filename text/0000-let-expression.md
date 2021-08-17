@@ -342,47 +342,43 @@ is_good(x)
 // we have y: Option<type of x> here
 ```
 
-## Combining with `!`
-If we negate a bool expression, all of its normal bindings (which we now call positive binding or PB) become NB (Negative binding) and
-its NBs become PB. NBs behavior in `&&` and `||` is reversed. In `&&` they should
-be equal and in `||` they will be merged.
-
-## Consuming bool expressions
+## Consuming bool expressions outside of bool operators
 If we consume a bool expression in anything other than bool operators (such as
-function calls or assignments or match expressions) it would lose its bindings.
+function calls or match expressions) it would lose its bindings.
 ```rust
 let bar = Some(Foo(4));
-assert!((let Some(x) = bar) && (let Foo(y) = x) && y > 2);
+assert!(let Some(x) = bar && let Foo(y) = x && y > 2);
 // no x and y here
 ```
-
-Specially, assignments discard bindings of let expressions:
-
-```rust
-let is_some = let Some(x) = opt;
-```
-In this example, `is_some: bool` is bound, but `x` isn't and compiler will say it is `unused_variable`.
-
-Another example:
-```rust
-let is_foo = (let Some(x) = opt) && foo(x);
-```
-And here `is_foo: bool` is bound, `x` isn't and there is no warning because `x` is used in `foo(x)`. Note that if we
-remove `()` from `(let Some(x) = opt)` it will becomes `opt && foo(x)` so doesn't compile.
-
-## `()` vs `{}`
 
 Specially, `{}` expressions will consume bools and lose its bindings. This behavior is
 consistent with our expectation from `{}` that have bindings only local to itself. So for example:
 ```rust
-assert!((let Some(x) = foo) && (x.is_bar()) || baz == 2);
+assert!(let Some(x) = foo && x.is_bar() || baz == 2);
 ```
-Doesn't compile because of different bindings in `||` (`baz == 2` has no binding but `(let Some(x) = foo) && (x.is_bar())` has `x`) but
+Doesn't compile because of different bindings in `||` (`baz == 2` has no binding but `let Some(x) = foo && x.is_bar()` has `x`) but
 ```rust
-assert!({ (let Some(x) = foo) && (x.is_bar()) } || baz == 2);
+assert!({ let Some(x) = foo && x.is_bar() } || baz == 2);
 ```
 will compile, because `{}` would discard all of bindings. With `()` instead of `{}` we will get same error
 of first example.
+
+## Bool operators `!`, `^`, `&`, `|`, `==`, `=` and others
+
+This RFC reserve usage of bool operators for binding expressions. Originaly, binding rules for `!` operator
+was in this RFC. This reservation means expressions like `!x` or `x^y` when `x`, `y` have some binding variables, like
+`!(let Some(x) = foo || let Some(x) = bar)` will be rejected by compiler. If you just need bool value of these
+expressions and don't expect some bound variable, you can discard binding of expressions with `{}` and use
+them like normal bool expressions: `!{ let Some(x) = foo || let Some(x) = bar }`.
+
+Specially, assignment is an operator so in something like this:
+
+```rust
+let is_foo = { let Some(x) = opt && foo(x) };
+```
+The `{}` are mandatory. Unlike `!` and `^` motivation for `=` isn't reserving for future possiblities, but
+for making it consistent with other operators, and more importantly make the fact that assignment
+will discard bindings visually clear and reduce confusion.
 
 ## `if` and `while`
 
@@ -721,18 +717,19 @@ Let expression replaces if-let and if-let-chain in list of things that rust is u
 Aggressive use of let expressions can lead to complex and hard to read results:
 ```rust
 (
-    ((
-        (let Some(x) = a)
-        && (let Some(y) = x.transform())
-    ) || { panic!("failed to get y") })
+    (
+        let Some(x) = a
+        && let Some(y) = x.transform()
+        || panic!("failed to get y")
+    )
     && (
-        (let Some(a) = y.transform1())
-        || (let Ok(a) = y.transform2())
-        || (let Some(a) = if let either = y.transform3() && let Either::Left(left) = either {
+        let Some(a) = y.transform1()
+        || let Ok(a) = y.transform2()
+        || let Some(a) = if let either = y.transform3() && let Either::Left(left) = either {
             Some(transform_left(left))
         } else {
             None
-        })
+        }
     )
 )
 || panic("fun just ended!");
@@ -740,11 +737,11 @@ Aggressive use of let expressions can lead to complex and hard to read results:
 it can be written on one line, but hopefully rustfmt will prevent that. Also rules of bindings will prevent
 people to write arbitary let expressions. For example:
 ```rust
-(let Some(a) = y.transform1())
-|| ((let result = y.transform2()) && ((let Ok(a) = result) || { return result; }));
+let Some(a) = y.transform1()
+|| ((let result = y.transform2()) && (let Ok(a) = result || return result));
 println!("{}", a);
 ```
-won't compile because binding set of `(let Some(a) = y.transform1())` doesn't contain `result`. This rule also
+won't compile because binding set of `let Some(a) = y.transform1()` doesn't contain `result`. This rule also
 make it possible to find which variables will bound with a quick look, that is, every binding variable that
 appear in a top-level let (not let expressions inside blocks or function calls) will be in the binding set of
 final expression. so first example will bound `x`, `y` and `a` and we will get it with a quick look.
@@ -900,6 +897,18 @@ To be determined.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
+
+## Binding rules for `!` and other operators
+`!` operator was originaly part of this RFC, but because its binding rules was confusing and it wasn't useful in
+practical codes, so doesn't pay for its costs, has been removed.
+
+One possible idea for binding rules of `!` operator is this:
+If we negate a bool expression, all of its normal bindings (which we now call positive binding or PB) become NB (Negative binding) and
+its NBs become PB. NBs behavior in `&&` and `||` is reversed. In `&&` they should
+be equal and in `||` they will be merged. But it is not the only possible idea.
+
+Similar ideas exist for `^` and other boolean operators. And for operators like `=` need for
+unneccesary `{}` can be lifted in a future RFC.
 
 ## Convert assignment to a bool expression
 In [RFC 2909](https://github.com/rust-lang/rfcs/blob/master/text/2909-destructuring-assignment.md) we
