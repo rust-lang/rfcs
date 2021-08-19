@@ -291,32 +291,25 @@ Which can become:
 this doesn't redefine logic operators. `if x { y } else { false }` is definition of `x && y`.
 
 ## Why now?
-This RFC exists thanks to people who choose `if let` for syntax we know today.
+This RFC exists because of the `if let` syntax we know today.
 That syntax wasn't the only choice and there was other options like `iflet`, `if match`, `let if`, `if is` or another `keyword`. 
-If they chose one of the alternatives, no one would have even imagined the let expressions in form of this RFC
-and this RFC either did not come into being at all or came in a completely different
-form and with different capabilities.
-But they chose `if let` among other options (with good reasons) and we are here. Similarly people
-who choose `&&` for `if let chain` could kill this. They didn't choose `&&` as randomly as
-choosing `if let` and had let expression in their mind, but they had other options like `,` on
-the table, which wasn't compatible with let expressions.
+If one of those had been picked this RFC would not have been necessary or would have been very different.
+Similary, If the `,` symbol is used instead of `&&` for the if-let-chain RFC, this RFC would not be necessary since it would not be compatible.
 
-But luck is not always with us. We can't expect each new RFC to randomly add another
-piece of the let expression puzzle to the language. For example `matches!` and `let-else` are
-potentially against this, `matches!` can [coexist with let expression][future-of-matches] but
-let-else is not compatible with let expression and they can hardly be together in one place. Fortunately, people have
-felt that `let-else` is not compatible with `if let chain`, and this is one of the unresolved questions. The
-answer to this question is: they are not compatible! This RFC with less addition to language grammar and
-more expressive power is superior.
+But luck is not always with us. We can't expect each new RFC to add another piece of the let expression puzzle to
+the language. For example, `matches!` and `let-else` are potentially not compatible with
+this RFC, `matches!` can [coexist with let expression][future-of-matches] but let-else is not compatible with
+let expression and therefore can't coexist. Some people have felt that `let-else` is not compatible with `if let chain`, and this is one of the unresolved questions in that RFC. The answer to this question is: they are not compatible! This RFC
+has more compatiblity with if-let-chain and less additions to the language grammar.
 
-So goal of proposing this now is to prevent `let-else` and future similar RFCs to be stabilized. Originally
-authors of `if let chain` had an incremental plan toward let expression.
-But the implementation of the first part took a long time (which is not over yet) so we are here. If authors
-of `if let chain` had submitted a complete proposal from the beginning and it had been accepted, we 
-would not have seen things like `let-else` at all.
+The goal of proposing this now is to prevent `let-else` and future similar RFCs to be stabilized. Originally, authors
+of the if-let-chain RFC had an incremental plan toward let expression.
+The implementation of the first part took a long time and is still not done. Since the if-let-chain RFC is
+still not completed we didn't see next steps toward let expressions. So RFCs like `let-else` came to solve problems in their own way, without
+compatibility with let expressions and therefore, if-let-chains.
 
 Even if it doesn't fit in this year road-map, we should decide if we want it or not today. Even today
-is late!
+is too late!
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -942,10 +935,7 @@ that do exactly the same work and read almost the same (let-else vs let-orelse) 
 Not all things introduced here are useful and some of them are because consistency and completeness. We can make
 some subsets of this RFC hard errors and make them future possiblity. Subsets that are candidate of removing
 are:
-* The `!` operator:
-we can remove `!` operator so there would be no NB and whole thing becomes simpler to understand. But there may
-be some patterns that `!` make sense for them and we don't know today. Also we can lint and warn against unnecessary
-usages of `!` operator. But making this hard error can become surprising because we allow negation of simple bools.
+* ~~The `!` operator:~~ It has been removed and it is now just a future possiblity.
 * Consuming let expressions outside of if and binding statements:
 Some people argue that let expressions in arbitary places can be confusing because the scope of bindings in not clear,
 and they are useless for common cases (simple matching) in presence of `matches!` macro.
