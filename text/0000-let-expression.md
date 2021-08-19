@@ -146,7 +146,59 @@ dozens of them just in rust-clippy. Note that if-let-chain alone can't solve thi
 variables of if-let inside of block, but you have access to variables of a binding statement under it, thus you can
 save one indentation.
 
-`||` is not only useful for let-else style things. This is a real example from [deno](https://github.com/denoland/deno):
+This pattern which we can call let-chain-else, can also be obtained with the simple let-else:
+```rust
+let StmtKind::Semi(first) = w[0].kind else { continue; }
+let StmtKind::Semi(second) = w[1].kind else { continue; }
+if differing_macro_contexts(first.span, second.span) { continue; }
+let ExprKind::Assign(lhs0, rhs0, _) = first.kind else { continue; }
+let ExprKind::Assign(lhs1, rhs1, _) = second.kind else { continue; }
+if !eq_expr_value(cx, lhs0, rhs1) { continue; }
+if !eq_expr_value(cx, lhs1, rhs0) { continue; }
+```
+And let-else with flavor of this RFC:
+```rust
+let StmtKind::Semi(first) = w[0].kind || continue;
+let StmtKind::Semi(second) = w[1].kind || continue;
+!differing_macro_contexts(first.span, second.span) || continue;
+let ExprKind::Assign(lhs0, rhs0, _) = first.kind || continue;
+let ExprKind::Assign(lhs1, rhs1, _) = second.kind || continue;
+eq_expr_value(cx, lhs0, rhs1) || continue;
+eq_expr_value(cx, lhs1, rhs0) || continue;
+```
+*Do you see boolean algebra here?* This RFC enables reusing code in let-else with equal else block, similar
+to merging ifs with equal body or else body via logic operators. This can be specially more useful when
+there is something more complex than `continue` like:
+```rust
+{
+    do_something1();
+    do_something2();
+    continue;
+}
+```
+You should copy paste it or make it a function (without continue) in let-else example, but let-chain-else has no problem.
+
+`||` is not only useful for let-else style things. This is a real example from [sentry-cli](https://github.com/getsentry/sentry-cli/):
+
+```rust
+if let Ok(val) = env::var("SENTRY_DSN") {
+    Ok(val.parse()?)
+} else if let Some(val) = self.ini.get_from(Some("auth"), "dsn") {
+    Ok(val.parse()?)
+} else {
+    bail!("No DSN provided");
+}
+```
+Which contains duplicate code `Ok(val.parse()?)`. With this RFC we can write:
+```rust
+if let Ok(val) = env::var("SENTRY_DSN") || let Some(val) = self.ini.get_from(Some("auth"), "dsn") {
+    Ok(val.parse()?)
+} else {
+    bail!("No DSN provided");
+}
+```
+
+Originaly, this code from deno was the example for if-let-or-chain:
 
 ```rust
 let nread = if let Some(s) = resource.downcast_rc::<ChildStdoutResource>() {
@@ -178,7 +230,19 @@ let nread = if let Some(s) = resource.downcast_rc::<ChildStdoutResource>()
     return Err(not_supported());
 };
 ```
-This is smaller and doesn't repeat a code.
+Unfortunately, it doesn't compile because types of `s` are not equal. Downcasting in this way is a
+popular pattern, and in some cases anonating some `dyn` type can solve the problem. Anyway, if-let-or-chain
+with even equal types has many usecases.
+
+`||` is also useful for assignment with default, specially when `unwrap_or_else` isn't available:
+```rust
+let size = if let Some(Size(size)) = $v.size { size } else { expand_size };
+```
+Can become:
+```rust
+let Some(Size(size)) = $v.size || let size = expand_size;
+```
+Which is smaller and can better show the intent of operation.
 
 A different class of practical usages of this RFC is let expression usage as a bool. People
 wrap their let expressions with `if expr { true } else { false }` manually. This need is almost met
@@ -209,7 +273,22 @@ fn is_repeat_zero(&self, expr: &Expr<'_>) -> bool {
 }
 ```
 Some people may argue that current state is more readable, but [this lint](https://rust-lang.github.io/rust-clippy/master/index.html#needless_bool)
-is not agree with them.
+is not agree with them. A more complex example in this category from sentry-cli:
+```rust
+if let Ok(var) = env::var("SENTRY_DISABLE_UPDATE_CHECK") {
+    &var == "1" || &var == "true"
+} else if let Some(val) = self.ini.get_from(Some("update"), "disable_check") {
+    val == "true"
+} else {
+    false
+}
+```
+Which can become:
+```rust
+{ let Ok(var) = env::var("SENTRY_DISABLE_UPDATE_CHECK") && (&var == "1" || &var == "true") }
+|| { let Some(val) = self.ini.get_from(Some("update"), "disable_check") && val == "true" }
+```
+this doesn't redefine logic operators. `if x { y } else { false }` is definition of `x && y`.
 
 ## Why now?
 This RFC exists thanks to people who choose `if let` for syntax we know today.
