@@ -296,7 +296,7 @@ That syntax wasn't the only choice and there was other options like `iflet`, `if
 If they chose one of the alternatives, no one would have even imagined the let expressions in form of this RFC
 and this RFC either did not come into being at all or came in a completely different
 form and with different capabilities.
-But they chosen `if let` among other options (with good reasons) and we are here. Similarly people
+But they chose `if let` among other options (with good reasons) and we are here. Similarly people
 who choose `&&` for `if let chain` could kill this. They didn't choose `&&` as randomly as
 choosing `if let` and had let expression in their mind, but they had other options like `,` on
 the table, which wasn't compatible with let expressions.
