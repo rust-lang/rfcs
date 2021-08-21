@@ -1,5 +1,5 @@
 - Feature Name: N/A
-- Start Date: (fill me in with today's date, YYYY-MM-DD)
+- Start Date: 2015-07-17
 - RFC PR: [rust-lang/rfcs#1214](https://github.com/rust-lang/rfcs/pull/1214)
 - Rust Issue: [rust-lang/rust#27579](https://github.com/rust-lang/rust/issues/27579)
 
