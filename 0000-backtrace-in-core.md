@@ -329,7 +329,20 @@ unsafe fn backtrace_status(_raw: *mut dyn RawBacktrace) -> BacktraceStatus {
 # Drawbacks
 [drawbacks]: #drawbacks
 
-The solution proposed by this RFC needs to integrate `Backtrace` implementation tightly with the Rust compiler machinery via usage of `lang_items`. This adds maintenance cost and mental overhead required to remember why this functionality is implemented in such special way. Ideally we would add functionality to the language without edge cases and cutting corners, but it is not always possible (refer to panic hooks implementation). Also, moving `Backtrace` to core was met with moderate reluctance by the [#rust-embedded community on Matrix](https://github.com/rust-embedded/wg) because of how the capturing API uses allocating functions ([logs here](https://libera.irclog.whitequark.org/rust-embedded/2021-08-17)).
+The solution proposed by this RFC needs to integrate `Backtrace` implementation tightly with the Rust compiler machinery via usage of `lang_items`. This adds maintenance cost and mental overhead required to remember why this functionality is implemented in such special way. Ideally we would add functionality to the language without edge cases and cutting corners, but it is not always possible (refer to panic hooks implementation). 
+
+Also, moving `Backtrace` to core was met with moderate reluctance by the [#rust-embedded community on Matrix](https://github.com/rust-embedded/wg) because of how the capturing API uses allocating functions ([logs here](https://libera.irclog.whitequark.org/rust-embedded/2021-08-17)).
+
+Current implementation uses a fat pointer for storing the `RawBacktrace` inside the `Backtrace`:
+```rust
+#[unstable(feature = "backtrace", issue = "53487")]
+///
+pub struct Backtrace {
+    ///
+    inner: *mut dyn RawBacktrace,
+}
+``` 
+and this may induce some code bloat which we do not want.
 
 /*
 The other one is a potential code bloat in `no_std` contexts, so a possible alternative may be only enabling the `Backtrace` conditionally via `cfg` settings. (not so sure about this though)
