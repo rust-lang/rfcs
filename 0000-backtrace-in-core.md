@@ -59,12 +59,91 @@ note: Some details are omitted, run with `RUST_BACKTRACE=full` for a verbose bac
 
 They allow for a detailed inspection of what crashed at runtime and which libraries and functions were involved in the process. Obviously reporting and formatting it is also of a big importance, so `Error` allows for backtrace printing with help of a `backtrace()` method.
 
-Currently, `Backtrace` is an essential part of the std library and user can control whether the backtrace is enabled or disabled using the environmental variable: `RUST_BACKTRACE`.
+Currently, `Backtrace` is an essential part of the std library and user can control whether the backtrace is enabled or disabled using the environmental variable: `RUST_BACKTRACE` and `RUST_LIB_BACKTRACE` - see the [documentation](https://doc.rust-lang.org/std/backtrace/index.html) for differences between them.
 
-In terms of Guide-level changes, there is not much to be discussed - only that it is moved to core and if std is not linked, automatic backtrace handlers will be generated. Otherwise, the regular implementation of `Backtrace` is present.
+More specifically, Rust's `Backtrace` is a struct which is a wrapper over a stack backtrace:
+```rust
+pub struct Backtrace {
+    inner: Inner,
+}
+```
+It can be captured or not, depending on the environment settings:
+```rust
+/// The current status of a backtrace, indicating whether it was captured or
+/// whether it is empty for some other reason.
+#[non_exhaustive]
+#[derive(Debug, PartialEq, Eq)]
+pub enum BacktraceStatus {
+    /// Capturing a backtrace is not supported, likely because it's not
+    /// implemented for the current platform.
+    Unsupported,
+    /// Capturing a backtrace has been disabled through either the
+    /// `RUST_LIB_BACKTRACE` or `RUST_BACKTRACE` environment variables.
+    Disabled,
+    /// A backtrace has been captured and the `Backtrace` should print
+    /// reasonable information when rendered.
+    Captured,
+}
 
-TODO: what else should be here?
+enum Inner {
+    Unsupported,
+    Disabled,
+    Captured(LazilyResolvedCapture),
+}
+```
+The `Capture` option of our `Backtrace` looks like this, and contains stack frames:
+```rust
+struct Capture {
+    actual_start: usize,
+    resolved: bool,
+    frames: Vec<BacktraceFrame>,
+}
+```
+Once captured, it is filled with `BacktraceFrame`s which contain the actual frame and symbols relevant to this frame:
+```rust
+/// A single frame of a backtrace.
+#[unstable(feature = "backtrace_frames", issue = "79676")]
+pub struct BacktraceFrame {
+    frame: RawFrame,
+    symbols: Vec<BacktraceSymbol>,
+}
+```
 
+
+Users are interested in utilizing `Backtrace` for several reasons, primarily to inspect or reformat the frames at the point of `Backtrace` generation or to present the frames in some different way to the user. While most for most Rust programmers this type is transparent, people who use it recently even got a new API which returns an [iterator over the captured frames](https://doc.rust-lang.org/src/std/backtrace.rs.html#367). 
+
+Two main groups of users can be distinguished: regular and `no_std`. While former don't care whether this type is in core or in std (it gets re-exported by std), the latter do not have the possibility to use this functionality right now and would be interested in having it available. On the other hand, the consumers of the type are satisfied with simply having the `Backtrace` printed upon panicking and seeing where exactly the program failed.
+
+We use `Backtrace` right now as follows:
+```rust
+#![feature(backtrace)]
+
+fn main() {
+    let backtrace = std::backtrace::Backtrace::capture();
+    println!("{}", backtrace);
+}
+```
+
+For inspecting frames one-by-one, we can use this API:
+```rust
+#![feature(backtrace)]
+#![feature(backtrace_frames)]
+
+fn main() {
+    let backtrace = std::backtrace::Backtrace::capture();
+    for frame in backtrace.frames() {
+        println!("{:?}", frame);
+    }
+}
+```
+
+After the `Backtrace` is moved to core not much has to be changed:
+```rust
+fn main() {
+    let backtrace = core::backtrace::Backtrace::capture();
+    println!("{}", backtrace);
+}
+```
 ## Trade-offs in this solution
 
 
@@ -208,7 +287,8 @@ struct StdBacktrace {
 
 This wrapper is used to do the actual backtrace capturing from the std in the three functions described below.
 
-The regular API of `Backtrace` comprising `enabled()`, `create()` and `status()` would be left in the std as free-standing functions. Since, they are lang items they need to have a default implementation in case std is not linked, so they will be provided in such a form in the core library (and overwritten once std is linked):
+## Add the 3 free-standing functions to std
+The regular API of `Backtrace` comprising `enabled()`, `create()` and `status()` would be left in the std as free-standing functions.:
 
 ```rust
 pub use core::backtrace::Backtrace;
@@ -246,37 +326,36 @@ unsafe fn backtrace_status(_raw: *mut dyn RawBacktrace) -> BacktraceStatus {
 
 ```
 
-This change will make the `Backtrace` an optional part of the library and 
-This way, if the `Backtrace` is not enabled (on the library level) there is no need for it to report 
-
-// TODO: add examples of how would one implement these functions themselves like panic hooks
-
-
-
 # Drawbacks
 [drawbacks]: #drawbacks
 
-There are actually many drawbacks, most important of them being `Backtrace` using a lot of std for the actual backtrace capturing. 
+The solution proposed by this RFC needs to integrate `Backtrace` implementation tightly with the Rust compiler machinery via usage of `lang_items`. This adds maintenance cost and mental overhead required to remember why this functionality is implemented in such special way. Ideally we would add functionality to the language without edge cases and cutting corners, but it is not always possible (refer to panic hooks implementation). Also, moving `Backtrace` to core was met with moderate reluctance by the [#rust-embedded community on Matrix](https://github.com/rust-embedded/wg) because of how the capturing API uses allocating functions ([logs here](https://libera.irclog.whitequark.org/rust-embedded/2021-08-17)).
 
+/*
 The other one is a potential code bloat in `no_std` contexts, so a possible alternative may be only enabling the `Backtrace` conditionally via `cfg` settings. (not so sure about this though)
-
-
 `no_std` code bloat - Mara mentioned out
 `Error:backtrace` also seems to be blocking??
+*/
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-The proposed solution is the one which is currently implementable. However, if the Generic Member Access RFC was implemented (link!) we would not have to move the `Backtrace` to core at all. In the alternative solution, we would leave the `Backtrace` as it is and instead the `Error` trait will provide a `backtrace()` method which will use the Generic Access to extract the concrete `Backtrace` out of the propagated error.
+The proposed solution is the one which is currently implementable. However, if the Generic Member Access RFC was implemented as discussed in the Motivation section, we would not have to move the `Backtrace` to core at all. In the alternative solution, we would leave the `Backtrace` as it is and instead the `Error` trait will provide a `backtrace()` method which will use the Generic Access to extract the concrete `Backtrace` out of the propagated error. This has the obvious drawback - if we just wait for its stabilization, we might have to wait for a long time and remain without viable `Backtrace` to be used in `no_std` contexts. 
 
-Alternatively, since the actual implementation of `Backtrace` uses allocating structures like `Box` for backtrace creation, it would be prudent to move it to where this type resides. This will in turn allow users of alloc module in embedded and `no_std` contexts to use this functionality without std. _should we go for this though instead of the core when we introduce such big changes?_
+Alternatively, since the actual implementation of `Backtrace` uses allocating structures like `Box` for backtrace creation, it would be prudent to move it to where this type resides. This will in turn allow users of alloc module in embedded and `no_std` contexts to use this functionality without std. Similarly to the Generic Member Access solution, it is a time-costly solution. 
 
-A viable solution to allocating functions of `Backtrace` might be adding an API where the users could provide themselves the memory in which the backtrace should reside and truncate/report a failure in case the backtrace does not fit this preallocated space. 
+During the [conversation on #rust-embedded IRC](https://libera.irclog.whitequark.org/rust-embedded/2021-08-17), various takes on the matter from the embedded contexts were given. What was most threatening for people engaged in the discussion is the allocating capabilities of `Backtrace`. 
+
+A viable solution to this concern might be adding an API where the users could provide themselves the memory in which the backtrace should reside and truncate/report a failure in case the backtrace does not fit this preallocated space. In case the user did not provide providing their `capture()` implementation, there should be a no-op provided by the language. 
+
+There was also an idea of providing general backtrace capturing functions for each family of embedded devices, but that would be too difficult to implement cohesively due to differences in implementations between them. Thus, what is proposed above seems like a valid alternative. 
 
 # Prior art
 [prior-art]: #prior-art
 
 This type is already implemented, but it seems like no type was moved from std to core previously so we have no point of reference on this one.
+
+There exists a [`backtrace-rs` crate](https://github.com/rust-lang/backtrace-rs) which supports acquiring backtraces at runtime.
 
 As for `no_std` and embedded contexts, there exists the [mini-backtrace](https://github.com/amanieu/mini-backtrace) library that provides backtrace support via LLVM's libunwind.
 
@@ -286,4 +365,8 @@ As for `no_std` and embedded contexts, there exists the [mini-backtrace](https:/
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
+Since the RFC proposes a solution based on `lang_items`, one could wish to implement these functions themselves. We could support such endeavours and provide dummy implementations if the compiler does not see the overrides. This would be implemented via weak linkage (though, unfortunately not all platforms support it).
 
+// TODO: add examples of how would one implement these functions themselves like panic hooks
+
+ //Since, they are lang items they need to have a default implementation in case std is not linked, so they will be provided in such a form in the core library (and overwritten once std is linked)
