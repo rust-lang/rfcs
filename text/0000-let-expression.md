@@ -285,8 +285,11 @@ if let Ok(var) = env::var("SENTRY_DISABLE_UPDATE_CHECK") {
 ```
 Which can become:
 ```rust
-{ let Ok(var) = env::var("SENTRY_DISABLE_UPDATE_CHECK") && (&var == "1" || &var == "true") }
-|| { let Some(val) = self.ini.get_from(Some("update"), "disable_check") && val == "true" }
+if let Ok(var) = env::var("SENTRY_DISABLE_UPDATE_CHECK") {
+    &var == "1" || &var == "true"
+} else {
+    let Some(val) = self.ini.get_from(Some("update"), "disable_check") && val == "true"
+}
 ```
 this doesn't redefine logic operators. `if x { y } else { false }` is definition of `x && y`.
 
