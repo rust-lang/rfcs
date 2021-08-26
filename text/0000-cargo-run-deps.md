@@ -66,16 +66,18 @@ This will take care of (re)building the `mdbook` binary if needed, at the versio
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-The scope of this RFC is to alter the behavior of `cargo run` so that in addition to binaries part of the workspace, it will allow also to run binaries from dependencies which are listed inside the locked manifest for the workspace.
+The scope of this RFC is to alter the behavior of `cargo run` so that in addition to binaries part of the workspace, it will allow also to run binaries from direct dependencies which are listed inside the locked manifest for the workspace.
 
 In order to do that, we would relax the constraints of `cargo run` to accept a package id describing any package part of `Cargo.lock` (by virtue of the `--package=<pkgid>` command line parameter). The required steps would be:
 
-- if the specified `pkgid` does not match a the package id for any workspace member, use the resolver against the locked manifest to determine matching dependency versions. Only development and build dependencies should be taken into account, as the main program would not be able to use `cargo run` anyway once installed.
-- if the resulting package set:
-    - is empty, then we fail with an error.
-    - if it has a size of more than one, fail with an error alerting the user that there is ambiguity and that they need to specify an exact version.
+- if the specified `pkgid` does not match a the package id for any workspace member:
+    - use the resolver against the locked manifest to determine direct matching dependency versions. Note that transitional dependencies are excluded.
+    - restrict the resulting set to development and build dependencies only, as the main program would not be able to use `cargo run` anyway once installed.
+- with the resulting package set:
+    - if it is empty, then we fail with an error.
+    - if it has a size of more than one, fail with an error alerting the user that there is ambiguity and that they need to specify an exact version as part of the package id. Providing a list of alternatives would be a nice touch.
     - if it has a size of exactly one, then proceed.
-- from the resulting package, select either the target specified by the `--bin` option, or the default binary target if none is specified. If we get no match, we fail.
+- from the resulting package, select either the target specified by the `--bin` option, or the default binary target if none is specified. If we get no match, we fail while alerting the user.
 - trigger compilation of the corresponding target with the host system as the target system. This is important when cross-compiling.
 - execute the resulting compiled binary, passing the trailing arguments of `cargo run` to it.
 
@@ -112,7 +114,7 @@ Many other package managers from other languages provide the same functionality:
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-- Decide whether binaries from transitive dependencies should also be allowed to be run, or if it should be disallowed. Disallowing transitive dependencies would be more robust in terms of version stability, and would remove the second condition above (where the package set can have cardinality greater than one).
+All open issues were resolved as part of the RFC process.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
