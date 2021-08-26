@@ -70,7 +70,7 @@ The scope of this RFC is to alter the behavior of `cargo run` so that in additio
 
 In order to do that, we would relax the constraints of `cargo run` to accept a package id describing any package part of `Cargo.lock` (by virtue of the `--package=<pkgid>` command line parameter). The required steps would be:
 
-- if the specified `pkgid` does not match a the package id for any workspace member:
+- if the specified `pkgid` does not match the package id for any workspace member:
     - use the resolver against the locked manifest to determine direct matching dependency versions. Note that transitional dependencies are excluded.
     - restrict the resulting set to development and build dependencies only, as the main program would not be able to use `cargo run` anyway once installed.
 - with the resulting package set:
