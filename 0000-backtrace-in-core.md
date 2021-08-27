@@ -21,7 +21,11 @@ The [original PR](https://github.com/rust-lang/rust/pull/72981) which aims to st
 
 While `Error` had a valid reason for not being in core (it relies on `Box` type for different conversions), `Backtrace` does not have similar blockers apart from its frame-allocating API.
 
-There are several approaches we can take, each of them having their own drawbacks and advantages. [Current solution](https://github.com/rust-lang/rust/pull/77384) backing this RFC uses `lang_items` which require tight integration with the Rust compiler. Also, this introduces additional requirement on `no_std` users who have to implement additional functions to have a compiling binary. Another solution would be to leave the `Backtrace` as it is and instead just wait until the[Generic Member Access RFC](https://github.com/rust-lang/rfcs/pull/2895) gets accepted and merged. This way `Error` could be moved to core on its own and `Backtrace` would be [provided to it only when desired](https://github.com/rust-lang/rfcs/pull/2895/files#diff-bb91f37510dc7a6369183c40dbdcfb52164335efa7a04f005a906d0006754d27R88).
+There are several approaches we can take, each of them having their own drawbacks and advantages. [Current solution](https://github.com/rust-lang/rust/pull/77384) backing this RFC uses `lang_items` which require tight integration with the Rust compiler. Also, this introduces additional requirement on `no_std` users who have to implement additional functions to have a compiling binary. 
+
+Another solution would be to leave the `Backtrace` as it is and instead just wait until the[Generic Member Access RFC](https://github.com/rust-lang/rfcs/pull/2895) gets accepted and merged. This way `Error` could be moved to core on its own and `Backtrace` would be [provided to it only when desired](https://github.com/rust-lang/rfcs/pull/2895/files#diff-bb91f37510dc7a6369183c40dbdcfb52164335efa7a04f005a906d0006754d27R88).
+
+Yet another take on the subject is to store and capture the backtrace in core and do the actual generation in std. This way users could implement their own backtrace generation if they do not wish to use std. This would, however, require some bigger changes in the current implementation, but would not require the lang items.
 
 Additionally, having this type in core will allow its users to provide their own implementations of the backtrace capture and reporting and not rely on the std-provided one if they don't want to.
 
@@ -136,8 +140,6 @@ fn main() {
     }
 }
 ```
-## Trade-offs in this solution
-
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
