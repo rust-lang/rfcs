@@ -8,7 +8,7 @@
 
 This RFC proposes moving the `Backtrace` type from std to core (and some changes to `Backtrace` to facilitate this). The change is motivated by the desire to move `Error` from std to core, which requires either moving `Backtrace` or abstracting it out of `Error`.
 
-Backtrace is a (often specifically formatted) list of function calls which program was in at the moment of its generation. Backtraces in Rust are generated when a program reaches an unrecoverable error and panics. In the other case (recoverable errors) they are handled by choosing a "fail path" which informs the user that an error ocurred and the program proceeds.
+Backtrace is a (often specifically formatted) list of function calls which the program was in at the moment of its generation. Backtraces in Rust are generated when a program reaches an unrecoverable error and panics or they can be captured and stored when constructing recoverable errors by manually calling `Backtrace::capture()`.
 
 This RFC does not cover eventually expanding the `Backtrace` API to include more functions and it does not solve the way backtraces are collected (although it proposes different takes on the matter).
 
@@ -21,9 +21,9 @@ The [original PR](https://github.com/rust-lang/rust/pull/72981) which aims to st
 
 While `Error` had a valid reason for not being in core (it relies on `Box` type for different conversions), `Backtrace` does not have similar blockers apart from its frame-allocating API.
 
-There are several approaches we can take, each of them having their own drawbacks and advantages. [Current solution](https://github.com/rust-lang/rust/pull/77384) backing this RFC uses `lang_items` which require tight integration with the Rust compiler. Also, this introduces additional requirement on `no_std` users who have to implement additional functions to have a compiling binary. Another solution would be to leave the `Backtrace` as it is and instead just wait until the[Generic Member Access RFC](https://github.com/rust-lang/rfcs/pull/2895) gets accepted and merged. This way `Error` could be moved to core on its own and `Backtrace` would be [provided to it only when desired](https://github.com/rust-lang/rfcs/pull/2895/files#diff-bb91f37510dc7a6369183c40dbdcfb52164335efa7a04f005a906d0006754d27R88). Third alternative is moving `Backtrace` to alloc which would be an intermediate step, since it will be merged with core eventually (TODO: source?).
+There are several approaches we can take, each of them having their own drawbacks and advantages. [Current solution](https://github.com/rust-lang/rust/pull/77384) backing this RFC uses `lang_items` which require tight integration with the Rust compiler. Also, this introduces additional requirement on `no_std` users who have to implement additional functions to have a compiling binary. Another solution would be to leave the `Backtrace` as it is and instead just wait until the[Generic Member Access RFC](https://github.com/rust-lang/rfcs/pull/2895) gets accepted and merged. This way `Error` could be moved to core on its own and `Backtrace` would be [provided to it only when desired](https://github.com/rust-lang/rfcs/pull/2895/files#diff-bb91f37510dc7a6369183c40dbdcfb52164335efa7a04f005a906d0006754d27R88).
 
-Additionally, having this type in core will allow its users to provide their own implementations of the backtrace collection and reporting and not rely on the std-provided one if they don't want to.
+Additionally, having this type in core will allow its users to provide their own implementations of the backtrace capture and reporting and not rely on the std-provided one if they don't want to.
 
 The outcome of this RFC will be a `Backtrace` type in core with implementation defined in std and compiler-generated implementation when std is not linked and user did not provide their own implementation for the reporting functions.
 
@@ -57,9 +57,9 @@ stack backtrace:
 note: Some details are omitted, run with `RUST_BACKTRACE=full` for a verbose backtrace.
 ```
 
-They allow for a detailed inspection of what crashed at runtime and which libraries and functions were involved in the process. Obviously reporting and formatting it is also of a big importance, so `Error` allows for backtrace printing with help of a `backtrace()` method.
+They allow for a detailed inspection of what crashed at runtime and which libraries and functions were involved in the process. Backtraces act like a map describing the origin of an error within a program's source code. This is useful information when debugging errors but does not itself describe the reason for an error, and so it does not belong in the error message itself. To model this the `Error` trait provides separate methods for retrieving backtraces (`fn backtrace()`) and error messages (`Display`) to provide flexibility when constructing error reports.
 
-Currently, `Backtrace` is an essential part of the std library and user can control whether the backtrace is enabled or disabled using the environmental variable: `RUST_BACKTRACE` and `RUST_LIB_BACKTRACE` - see the [documentation](https://doc.rust-lang.org/std/backtrace/index.html) for differences between them.
+Currently, `Backtrace` is part of the std library and users can control whether the backtrace is enabled or disabled using the environmental variable: `RUST_BACKTRACE` and `RUST_LIB_BACKTRACE` - see the [documentation](https://doc.rust-lang.org/std/backtrace/index.html) for differences between them.
 
 More specifically, Rust's `Backtrace` is a struct which is a wrapper over a stack backtrace:
 ```rust
@@ -287,8 +287,9 @@ struct StdBacktrace {
 
 This wrapper is used to do the actual backtrace capturing from the std in the three functions described below.
 
-## Add the 3 free-standing functions to std
-The regular API of `Backtrace` comprising `enabled()`, `create()` and `status()` would be left in the std as free-standing functions.:
+## Add the 3 new lang-items
+
+The `std` and `core` sides of the `Backtrace` API would be connected via three new lang items: `enabled()`, `create()` and `status()`. These functions are declared and called from `core` and defined in `std`. `no_std` binaries would need to provide their own implementations of these lang items or conditionally compile `core` to not include `Backtrace` support.
 
 ```rust
 pub use core::backtrace::Backtrace;
@@ -353,9 +354,8 @@ The other one is a potential code bloat in `no_std` contexts, so a possible alte
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-The proposed solution is the one which is currently implementable. However, if the Generic Member Access RFC was implemented as discussed in the Motivation section, we would not have to move the `Backtrace` to core at all. In the alternative solution, we would leave the `Backtrace` as it is and instead the `Error` trait will provide a `backtrace()` method which will use the Generic Access to extract the concrete `Backtrace` out of the propagated error. This has the obvious drawback - if we just wait for its stabilization, we might have to wait for a long time and remain without viable `Backtrace` to be used in `no_std` contexts. 
+The proposed solution is the one which is currently implementable. However, if the Generic Member Access RFC was implemented as discussed in the Motivation section, we would not have to move the `Backtrace` to core at all. In the alternative solution, we would leave the `Backtrace` as it is and instead the `Error` trait will provide a `backtrace()` method which will use the Generic Access to extract the concrete `Backtrace` out of the propagated error.
 
-Alternatively, since the actual implementation of `Backtrace` uses allocating structures like `Box` for backtrace creation, it would be prudent to move it to where this type resides. This will in turn allow users of alloc module in embedded and `no_std` contexts to use this functionality without std. Similarly to the Generic Member Access solution, it is a time-costly solution. 
 
 During the [conversation on #rust-embedded IRC](https://libera.irclog.whitequark.org/rust-embedded/2021-08-17), various takes on the matter from the embedded contexts were given. What was most threatening for people engaged in the discussion is the allocating capabilities of `Backtrace`. 
 
