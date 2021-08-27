@@ -110,11 +110,11 @@ pub struct BacktraceFrame {
 ```
 
 
-Users are interested in utilizing `Backtrace` for several reasons, primarily to inspect or reformat the frames at the point of `Backtrace` generation or to present the frames in some different way to the user. While most for most Rust programmers this type is transparent, people who use it recently even got a new API which returns an [iterator over the captured frames](https://doc.rust-lang.org/src/std/backtrace.rs.html#367). 
+Users are interested in utilizing `Backtrace` for several reasons, primarily to inspect or reformat the frames at the point of `Backtrace` generation or to present the frames in some different way to the user. While most for most Rust programmers this type is transparent, people who use the recent versions of nightly even got a new API which returns an [iterator over the captured frames](https://doc.rust-lang.org/src/std/backtrace.rs.html#367). 
 
 Two main groups of users can be distinguished: regular and `no_std`. While former don't care whether this type is in core or in std (it gets re-exported by std), the latter do not have the possibility to use this functionality right now and would be interested in having it available. On the other hand, the consumers of the type are satisfied with simply having the `Backtrace` printed upon panicking and seeing where exactly the program failed.
 
-We use `Backtrace` right now as follows:
+One uses this API like this:
 ```rust
 #![feature(backtrace)]
 
@@ -136,23 +136,15 @@ fn main() {
     }
 }
 ```
-
-After the `Backtrace` is moved to core not much has to be changed:
-```rust
-fn main() {
-    let backtrace = core::backtrace::Backtrace::capture();
-    println!("{}", backtrace);
-}
-```
 ## Trade-offs in this solution
 
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-The following changes need to be made to implement this proposal:
+After this RFC is merged the `Backtrace` type will reside in core and the interfacing lang items will be in std.
 
-## Move the `Backtrace` to core and add a thin wrapper in std
+## The `Backtrace` implementation in core
 
 The core part of `Backtrace` looks as follows:
 ```rust
@@ -278,16 +270,16 @@ impl Backtrace {
 }
 ```
 
-The wrapper part of `Backtrace` in std: 
+The part of `Backtrace` in std: 
 ```rust
 struct StdBacktrace {
     inner: Inner,
 }
 ```
 
-This wrapper is used to do the actual backtrace capturing from the std in the three functions described below.
+This struct is used to interface the actual backtraces from the std in the three functions described below.
 
-## Add the 3 new lang-items
+## The 3 new lang-items
 
 The `std` and `core` sides of the `Backtrace` API would be connected via three new lang items: `enabled()`, `create()` and `status()`. These functions are declared and called from `core` and defined in `std`. `no_std` binaries would need to provide their own implementations of these lang items or conditionally compile `core` to not include `Backtrace` support.
 
@@ -347,8 +339,6 @@ and this may induce some code bloat which we do not want.
 
 /*
 The other one is a potential code bloat in `no_std` contexts, so a possible alternative may be only enabling the `Backtrace` conditionally via `cfg` settings. (not so sure about this though)
-`no_std` code bloat - Mara mentioned out
-`Error:backtrace` also seems to be blocking??
 */
 
 # Rationale and alternatives
@@ -368,13 +358,16 @@ There was also an idea of providing general backtrace capturing functions for ea
 
 This type is already implemented, but it seems like no type was moved from std to core previously so we have no point of reference on this one.
 
-There exists a [`backtrace-rs` crate](https://github.com/rust-lang/backtrace-rs) which supports acquiring backtraces at runtime.
+The [`backtrace-rs` crate](https://github.com/rust-lang/backtrace-rs) is a cornerstone of the `Backtrace` type in the std library. It contains all the nitty-gritty details of obtaining the actual backtraces.
 
 As for `no_std` and embedded contexts, there exists the [mini-backtrace](https://github.com/amanieu/mini-backtrace) library that provides backtrace support via LLVM's libunwind.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
+Will introducing this implementation be worth in the long term? - `no_std` users can implement their own backtrace capturing mechanisms either way and not care about `Backtrace` in core.
+
+Is this better than Generic Member Access? - This will be answered with either implementing this RFC or dropping it.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
