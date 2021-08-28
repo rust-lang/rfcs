@@ -349,9 +349,9 @@ The other one is a potential code bloat in `no_std` contexts, so a possible alte
 The proposed solution is the one which is currently implementable. However, if the Generic Member Access RFC was implemented as discussed in the Motivation section, we would not have to move the `Backtrace` to core at all. In the alternative solution, we would leave the `Backtrace` as it is and instead the `Error` trait will provide a `backtrace()` method which will use the Generic Access to extract the concrete `Backtrace` out of the propagated error.
 
 
-During the [conversation on #rust-embedded IRC](https://libera.irclog.whitequark.org/rust-embedded/2021-08-17), various takes on the matter from the embedded contexts were given. What was most threatening for people engaged in the discussion is the allocating capabilities of `Backtrace`. 
+During the [conversation on #rust-embedded IRC](https://libera.irclog.whitequark.org/rust-embedded/2021-08-17), various takes on the matter from the embedded contexts were given. What was most threatening for people engaged in the discussion is the allocating capabilities of `Backtrace`. Though the implementation in std uses `Vec` for allocating backtrace frames, the API declaration in core leaves the implementation to the user (if no std is supplied).
 
-A viable solution to this concern might be adding an API where the users could provide themselves the memory in which the backtrace should reside and truncate/report a failure in case the backtrace does not fit this preallocated space. In case the user did not provide providing their `capture()` implementation, there should be a no-op provided by the language. 
+This implementation may look like this: provide the memory in which the backtrace should reside and truncate/report a failure in case the backtrace does not fit this preallocated space. In case the user did not provide providing their `capture()` implementation, there should be a no-op provided by the language. 
 
 There was also an idea of providing general backtrace capturing functions for each family of embedded devices, but that would be too difficult to implement cohesively due to differences in implementations between them. Thus, what is proposed above seems like a valid alternative. 
 
