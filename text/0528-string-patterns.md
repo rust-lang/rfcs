@@ -1,6 +1,7 @@
+- Feature Name: `pattern`
 - Start Date: 2015-02-17
 - RFC PR: [rust-lang/rfcs#528](https://github.com/rust-lang/rfcs/pull/528)
-- Rust Issue: [rust-lang/rust#22477](https://github.com/rust-lang/rust/issues/22477)
+- Rust Issue: [rust-lang/rust#27721](https://github.com/rust-lang/rust/issues/27721)
 
 # Summary
 
