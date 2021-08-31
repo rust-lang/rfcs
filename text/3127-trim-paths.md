@@ -7,8 +7,15 @@
 [summary]: #summary
 
 Cargo should have a [profile setting](https://doc.rust-lang.org/cargo/reference/profiles.html#profile-settings) named `trim-paths`
-to sanitise absolute paths introduced during compilation that may be embedded in the compilation output. This should be enabled by default for 
-`release` profile.
+to sanitise absolute paths introduced during compilation that may be embedded in the compiled binary executable or library, and optionally in
+the separate debug symbols file (depending on `split-debuginfo` settings).
+
+`cargo build` with the default `release` profile should not produce any host filesystem dependent paths into binary executable or library. But
+it will retain the paths in separate debug symbols file, if one exists, to help debuggers and profilers locate the source files.
+
+To facilitate this, a new flag named `--remap-scope` should be added to `rustc` controlling the behaviour of `--remap-path-prefix`, allowing us to fine
+tune the scope of remapping, speicifying paths under which context (in marco expansion, in debuginfo or in diagnostics)
+should or shouldn't be remapped. 
 
 # Motivation
 [motivation]: #motivation
@@ -66,86 +73,119 @@ This is undesirable for the following reasons:
 ## Handling sysroot paths
 At the moment, paths to the source files of standard and core libraries, even when they are present, always begin with a virtual prefix in the form
 of `/rustc/[SHA1 hash]/library`. This is not an issue when the source files are not present (i.e. when `rust-src` component is not installed), but
-when a user installs `rust-src` they expect the path to their local copy of source files to be visible. Hence the user should be given an option for
-the local paths to show up in panic messages and backtraces.
+when a user installs `rust-src` they may want the path to their local copy of source files to be visible. Hence the default behaviour when `rust-src`
+is installed should be to embed the local path. These local paths should be then affected by path remappings in the usual way.
+
+## Preserving debuginfo to help debuggers
+At the moment, `--remap-path-prefix` will cause paths to source files in debuginfo to be remapped. On platforms where the debuginfo resides in a
+separate file from the distributable binary, this may be unnecessary and it prevents debuggers from being able to find the source. Hence `rustc`
+should support finer grained control over paths in which contexts should be remapped.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-`trim-paths` is a profile setting which can be set to either `true` or `false`. This is enabled by default when you do a release build,
-such as via `cargo build --release`. You can also manually override it by specifying this option in `Cargo.toml`:
+## The rustc book: Command-line arguments
+
+### `--remap-scope`: configure the scope of path remapping
+
+When the `--remap-path-prefix` option is passed to rustc then source path prefixes in all output will be affected.
+The `--remap-scope` argument can be used in conjunction with `--remap-path-prefix` to determine paths in which output context should be affected.
+This flag accepts a comma-separated list of values and may be specified multiple times. The valid scopes are:
+
+- `macro` - apply remappings to the expansion of `std::file!()` macro. This is where paths in embedded panic messages come from
+- `debuginfo` - apply remappings to debug information
+- `diagnostics` - apply remappings to printed compiler diagnostics
+
+## Cargo
+
+`trim-paths` is a profile setting which controls the sanitisation of file paths in compilation outputs. It has three valid options:
+- `0` or `false`: no sanitisation at all
+- `1`: sanitise only the paths in emitted executable or library binaries. It always affects paths from macros such as panic messages, and in debug information
+  only if they will be embedded together with the binary (the default on platforms with ELF binaries, such as Linux and windows-gnu),
+  but will not touch them if they are in a separate symbols file (the default on Windows MSVC and macOS)
+- `2` or `ture`: sanitise paths in all compilation outputs, including compiled executable/library, separate symbols file (if one exists), and compiler diagnostics.
+
+The default release profile uses option `1`. You can also manually override it by specifying this option in `Cargo.toml`:
 ```toml
 [profile.dev]
-trim-paths = true
+trim-paths = 2
 
 [profile.release]
-trim-paths = false
+trim-paths = 0
 ```
 
-With `trim-paths` option enabled, the compilation process will not introduce any absolute paths into the build output. Instead, paths containing
-certain prefixes will be replaced with something stable by the following rules:
+When a path is in scope for sanitisation, it is replaced with the following rules:
 
-1. Path to the source files of the standard and core library will begin with `/rustc/[rustc version]`.
+1. Path to the source files of the standard and core library (sysroot) will begin with `/rustc/[rustc commit hash]`.
    E.g. `/home/username/.rustup/toolchains/nightly-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/result.rs` -> 
-   `/rustc/1.52.1/library/core/src/result.rs`
+   `/rustc/fe72845f7bb6a77b9e671e6a4f32fe714962cec4/library/core/src/result.rs`
 2. Path to the working directory will be replaced with `.`. E.g. `/home/username/crate/src/lib.rs` -> `./src/lib.rs`.
 3. Path to packages outside of the working directory will be replaced with `[package name]-[version]`. E.g. `/home/username/deps/foo/src/lib.rs` -> `foo-0.1.0/src/lib.rs`
 
-If using MSVC toolchain, path to the .pdb file containing debug information are be embedded as the file name of the .pdb file only, wihtout any path
-information.
+When a path to the source files of the standard and core library is *not* in scope for sanitisation, the emitted path will depend on if `rust-src` component
+is present. If it is, then the real path pointing to a copy of the source files on your file system will be emitted; if it isn't, then they will
+show up as `/rustc/[rustc commit hash]/library/...` (just like when it is selected for sanitisation). Paths to all other source files will not be affected.
 
-With `trim-paths` option disabled, the embedding of path to the source files of the standard and core library will depend on if `rust-src` component is present. If it is, then the real path pointing to a copy of the source files on your file system will be embedded; if it isn't, then they will
-show up as `/rustc/[rustc version]/library/...` (just like when `trim-paths` is enabled). Paths to all other source files will not be affected.
-
-Note that this will not affect any hard-coded paths in the source code.
+This will not affect any hard-coded paths in the source code.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 ## `trim-paths` implementation in Cargo
+
 We only need to change the behaviour for `Test` and `Build` compile modes. 
 
-If `trim-paths` is enabled, Cargo will emit two `--remap-path-prefix` arguments to `rustc` for each compilation unit. One mapping is from the path of 
-the local sysroot to `/rustc/[rust version]`. The other mapping depends on if the package containing the compilation unit is under the working
-directory. If it is, then the mapping is from the absolute path to the working directory to `.`. If it's outside the working directory, then the
-mapping is from the absolute path of the package root to `[package name]-[package version]`.
+If `trim-paths` is `0` (`false`), no extra flag is supplied to `rustc`.
 
-Some interactions with compiler-intrinstic macros need to be considered, though these are entirely down to `rustc`'s implementation of
-`--remap-path-prefix`:
+If `trip-paths` is `1` or `2` (`true`), then two `--remap-path-prefix` arguments are supplied to `rustc`:
+- From the path of the local sysroot to `/rustc/[commit hash]`. 
+- If the compilation unit is under the working directory, from the absolute path to the working directory to `.`.
+  If it's outside the working directory, from the absolute path of the package root to `[package name]-[package version]`.
+
+A further `--remap-scope` is also supplied for options `1` and `2`:
+
+If `trim-path` is `1`, then it depends on the setting of `split-debuginfo` (whether the setting is explicitly supplied or from the default)
+- If `split-debuginfo` is `off`, then `--remap-scope=macro,debuginfo`.
+- If `split-debuginfo` is `packed` or `unpacked`, then `--remap-scope=macro`
+This is because we always want to remap panic messages as they will always be embedded in executable/library, but we don't need to touch the separate
+symbols file
+
+If `trim-path` is `2` (`true`), all paths will be affected, equivalent to `--remap-scope=macro,debuginfo,diagnostics`
+
+
+Some interactions with compiler-intrinstic macros need to be considered:
 1. Path (of the current file) introduced by [`file!()`](https://doc.rust-lang.org/std/macro.file.html) *will* be remapped. **Things may break** if
    the code interacts with its own source file at runtime by using this macro.
 2. Path introduced by [`include!()`](https://doc.rust-lang.org/std/macro.include.html) *will* be remapped, given that the included file is under
    the current working directory or a dependency package.
 
-If the user further supplies custom `--remap-path-prefix` arguments via `RUSTFLAGS` or similar mechanisms, they will take precedence over the one
-supplied by `trim-paths`. This means that the user-defined `--remap-path-prefix`s must be supplied *after* Cargo's own remapping.
+If the user further supplies custom `--remap-path-prefix` arguments via `RUSTFLAGS`
+or similar mechanisms, they will take precedence over the one supplied by `trim-paths`. This means that the user-defined remapping arguments must be
+supplied *after* Cargo's own remapping.
+
 
 Additionally, when using MSVC linker, Cargo should emit `/PDBALTPATH:%_PDB%` to the linker via `-C link-arg`. This makes the linker embed
 only the file name of the .pdb file without the path to it.
 
-## Changing handling of sysroot path
-The virtualisation of sysroot files to `/rustc/[SHA1 hash]/library/...` was done at compiler bootstraping, specifically when 
+## Changing handling of sysroot path in `rustc`
+
+The virtualisation of sysroot files to `/rustc/[commit hash]/library/...` was done at compiler bootstraping, specifically when 
 `remap-debuginfo = true` in `config.toml`. This is done for Rust distribution on all channels.
 
-At `rustc` runtime (i.e. compiling some code), we try to correlate this virtual path to a real path pointing to the file on the local file system.
-Currently the result is represented internally as if the path was remapped by `--remap-path-prefix`, holding both the virtual name and local path.
+At `rustc` runtime (i.e. compiling some code), we try to correlate this virtual path to a real path pointing to the file on the local file system
+Currently the result is represented internally as if the path was remapped by a `--remap-path-prefix`, from local `rust-src` path to the virtual path.
 Only the virtual name is ever emitted for metadata or codegen. We want to change this behaviour such that, when `rust-src` source files can be
-discovered, the virtual path is discarded and therefore will be embedded unless being remapped by `--remap-path-prefix` in the usual way. The relevant part of the code is here:
-https://github.com/rust-lang/rust/blob/d8af907491e20339e41d048d6a32b41ddfa91dfe/compiler/rustc_metadata/src/rmeta/decoder.rs#L1637-L1765
+discovered, the virtual path is discarded and therefore the local path will be embedded, unless there is a `--remap-path-prefix` that causes this
+local path to be remapped in the usual way.
 
-We would also like to change the virtualisation of sysroot to `/rustc/[rustc version]/library/...`, instead of the rustc commit hash. This is shorter and more helpful as an identifier, and makes `trim-paths` easier to implement: to make the embedded path the same whether or not `rust-src` is installed, we need to emit the same sysroot virutalisation as was done during bootstrapping. Getting the version number is easier than getting the commit hash. The relevant part of the code is here: https://github.com/rust-lang/rust/blob/d8af907491e20339e41d048d6a32b41ddfa91dfe/src/bootstrap/lib.rs#L831-L834 
 
 # Drawbacks
 [drawbacks]: #drawbacks
 
-With `trim-paths` enabled, if the `debug` option is simultaneously not `false` (it is turned off by default under `release` profile), paths in
-debuginfo will also be remapped. Debuggers will no longer be able to automatically discover and load source files outside of the working directory. 
-This can be remidated by [debugger features](https://lldb.llvm.org/use/map.html#miscellaneous) remapping the path back to a filesystem path.
-
-The user also will not be able to `Ctrl+click` on any paths provided in panic messages or backtraces outside of the working directory. But
+The user will not be able to `Ctrl+click` on any paths provided in panic messages or backtraces outside of the working directory. But
 there shouldn't be any confusion as the combination of pacakge name and version can be used to pinpoint the file.
 
-As mentioned above, `trim-paths` may break code that relies on `file!()` to evaluate to an accessible path to the file. Hence enabling
+As mentioned above, `trim-paths` may break code that relies on `std::file!()` to evaluate to an accessible path to the file. Hence enabling
 it by default for release builds may be a technically breaking change. Occurances of such use should be extremely rare but should be investigated
 via a Crater run. In case this breakage is unacceptable, `trim-paths` can be made an opt-in option rather than default in any build profile.
 
@@ -160,10 +200,10 @@ Path to sysroot crates are specially handled by `rustc`. Due to this, the behavi
 Although good for privacy and reproducibility, some people find it a hinderance for debugging: https://github.com/rust-lang/rust/issues/85463.
 Hence the user should be given control on if they want the virtual or local path.
 
-One alternative for the sysroot handling is to keep the logic in `rustc` largely the same, always emitting the virutalised path by default, and
-then introduce an extra option named `--embed-local-sysroot` to embed the local paths if the source files can be found. This inovles adding an extra
-option to `rustc` and prevents any uniformity in `--remap-path-prefix`'s handling over sysroot paths, compared to other paths (it currently doesn't
-affect sysroot paths at all).
+An alternative to `--remap-scope` is to have individual `--remap-path-prefxi`-like flags, one each for macro, debuginfo and diagnostics, requiring
+the full mapping to be given for each context. This is similar to what GCC and Clang does as described below, but we have added a third context
+for diagnostics. This technically enables for even finer grained control, allowing different paths in different
+contexts to be remapped differently. However it will cause the command line to be very verbose under most normal use cases.
 
 # Prior art
 [prior-art]: #prior-art
@@ -174,13 +214,17 @@ The name `trim-paths` came from the [similar feature](https://golang.org/cmd/go/
 Go does not enable this by default. Since Go does not differ between debug and release builds, removing absolute paths for all build would be
 a hassle for debugging. However this is not an issue for Rust as we have separate debug build profile.
 
+GCC and Clang both have a flag equivalent to `--remap-path-prefix`, but they also both have two separate flags one for only macro expansion and
+the other for only debuginfo: https://reproducible-builds.org/docs/build-path/. This is the origin of the `--remap-scope` idea.
+
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 - Should we treat the current working directory the same as other packages? We could have one fewer remapping rule by remapping all
   package roots to `[package name]-[version]`. A minor downside to this is not being able to `Ctrl+click` on paths to files the user is working
   on from panic messages.
-- Should we use a slightly more complex remapping rule, like distinguishing packages from registry, git and path, as mentioned in https://github.com/rust-lang/rust/issues/40552?
+- Should we use a slightly more complex remapping rule, like distinguishing packages from registry, git and path, as mentioned in
+  https://github.com/rust-lang/rust/issues/40552?
 - Will these cover all potentially embedded paths? Have we missed anything?
 - Should we make this affect more `CompileMode`s, such as `Check`, where the emitted `rmeta` file will also contain absolute paths?
 
