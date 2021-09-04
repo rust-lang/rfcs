@@ -17,19 +17,12 @@ Code examples are an important tool for programmers to understand how a library 
 
 As a parable of the value of examples, I recently did a small user study where I observed two Rust programmers learning to use the [warp](https://github.com/seanmonstar/warp) library for a basic task. Warp is designed around a generic [`Filter`](https://docs.rs/warp/0.3.1/warp/trait.Filter.html) abstraction. Both participants found the documentation for `Filter` methods to be both imposing and too generic to be useful. For instance, [`Filter::and`](https://docs.rs/warp/0.3.1/warp/trait.Filter.html#method.and):
 
-<kbd>
-<img width="600" alt="Screen Shot 2021-05-09 at 7 49 35 PM" src="https://user-images.githubusercontent.com/663326/117592915-fe07b880-b0ff-11eb-97e9-43197fbcb2a7.png">
-</kbd>
-<br /><br />
 
+<img width="600" alt="Rustdoc documentation for Filter::and in the warp crate" src="https://user-images.githubusercontent.com/663326/117592915-fe07b880-b0ff-11eb-97e9-43197fbcb2a7.png">
 
 The repo authors also included a code example. But neither participant could understand the example because it lacked context.
 
-<kbd>
-<img width="450" alt="Screen Shot 2021-05-09 at 7 56 03 PM" src="https://user-images.githubusercontent.com/663326/117593130-a87fdb80-b100-11eb-9a11-ef57ec0d4872.png">
-</kbd>
-<br /><br />
-
+<img width="450" alt="Example code for Filter::and" src="https://user-images.githubusercontent.com/663326/117593130-a87fdb80-b100-11eb-9a11-ef57ec0d4872.png">
 
 The participant who was less familiar with Rust struggled to read the documentation and failed to accomplish the task. By contrast, the participant who was more familiar with Rust knew to look in the `examples/` directory, where they found a wealth of examples for each function that complemented the documentation. For instance, [`rejection.rs`](https://github.com/seanmonstar/warp/blob/bf8bfc4134035dbff882f9b26cb9d1aa57f2c338/examples/rejections.rs) shows the usage of `and` in combination with `map`:
 
@@ -54,19 +47,14 @@ The goal of this RFC is to bridge the gap between automatically generated docume
 The `scrape-examples` feature of Rustdoc finds examples of code where a particular function is called. For example, if we are documenting [`Filter::and`](https://willcrichton.net/example-analyzer/warp/trait.Filter.html#method.and), and a file [`examples/returning.rs`](https://github.com/seanmonstar/warp/tree/bf8bfc4134035dbff882f9b26cb9d1aa57f2c338/examples/returning.rs) contains a call to `and`, then the corresponding Rustdoc documentation looks like this:
 
 
-<kbd>
-<img width="982" alt="Screen Shot 2021-05-11 at 11 31 12 AM" src="https://user-images.githubusercontent.com/663326/120575286-a3e3d580-c3d5-11eb-9183-c65aa89f5250.png">
-</kbd>
-<br /><br />
+
+<img width="982" alt="UI for scraped examples shown with Filter::and" src="https://user-images.githubusercontent.com/663326/120575286-a3e3d580-c3d5-11eb-9183-c65aa89f5250.png">
 
 After the user-provided documentation in the doc-comment, `scrape-examples` inserts a code example (if one exists). The code example shows a window into the source file with the function call highlighted in yellow. The icons in the top-right of the code viewer allow the user to expand the code sample to the full file, or to navigate through other calls in the same file. The link above the example goes to the full listing in Rustdoc's generated `src/` directory, similar to other `[src]` links.
 
 Additionally, the user can click "More examples" to see every example from the `examples/` directory, like this:
 
-<kbd>
-  <img width="956" alt="Screen Shot 2021-05-11 at 11 31 36 AM" src="https://user-images.githubusercontent.com/663326/120575318-ae05d400-c3d5-11eb-9a25-990591c1a075.png">
-</kbd>
-<br /><br />
+<img width="956" alt="Additional examples are shown indented under the main example" src="https://user-images.githubusercontent.com/663326/120575318-ae05d400-c3d5-11eb-9a25-990591c1a075.png">
 
 To use the `scrape-examples` feature, simply add the `--scrape-examples` flag like so:
 
