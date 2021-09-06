@@ -29,7 +29,7 @@ Answering this question has multiple uses:
    range, you need to be able to enumerate them. One might also want to check if
    and how your function fails just outside its supported range.
 
- - Exlusive ranges. If you want to ensure a variable lies within an exclusive
+ - Exclusive ranges. If you want to ensure a variable lies within an exclusive
    range, these functions can help. E.g. to ensure that `x` lies within [0, 1)
    one can write `x.clamp(0.0, 1.0.next_down())`.
 
@@ -178,7 +178,7 @@ pub const fn next_down(self) -> Self {
 [drawbacks]: #drawbacks
 
 Two more functions get added to `f32` and `f64`, which may be considered
-cluttered by some.
+already cluttered by some.
 
 Additionally, there is a minor pitfall regarding signed zero. Repeatedly calling
 `next_up` on a negative number will iterate over all values above it, with the
