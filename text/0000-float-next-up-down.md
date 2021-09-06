@@ -296,9 +296,6 @@ extensive:
  - C++ follows in C's footsteps:  
    https://en.cppreference.com/w/cpp/numeric/math/nextafter
 
- - C# has `NextAfter`, `NextDown` and `NextUp`:  
-   https://docs.microsoft.com/en-us/dotnet/api/java.lang.math.nextafter
- 
  - Python has `nextafter`:  
    https://docs.python.org/3/library/math.html#math.nextafter
 
