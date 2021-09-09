@@ -1,7 +1,7 @@
 - Feature Name: `rustdoc_scrape_examples`
 - Start Date: 2021-05-09
 - RFC PR: [rust-lang/rfcs#3123](https://github.com/rust-lang/rfcs/pull/3123)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- Rust Issue: [rust-lang/rust#88791](https://github.com/rust-lang/rust/issues/88791)
 
 # Summary
 [summary]: #summary
