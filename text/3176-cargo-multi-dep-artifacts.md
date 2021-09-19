@@ -1,6 +1,6 @@
 - Feature Name: (`multidep`)
 - Start Date: 2021-09-14
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#3176](https://github.com/rust-lang/rfcs/pull/3176)
 - Tracking Issue: [rust-lang/cargo#0000](https://github.com/rust-lang/cargo/issues/0000)
 
 # Summary
