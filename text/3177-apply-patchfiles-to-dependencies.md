@@ -1,7 +1,7 @@
 - Feature Name: Apply patchfiles to dependencies
 - Start Date: 2021-09-16
-- RFC PR: [rust-lang/rfcs#3119](https://github.com/rust-lang/rfcs/pull/3119)
-- Rust Issue: [rust-lang/rust#88867](https://github.com/rust-lang/rust/issues/88867)
+- RFC PR: [rust-lang/rfcs#3177](https://github.com/rust-lang/rfcs/pull/3177)
+- Rust Issue: [rust-lang/rust#4648](https://github.com/rust-lang/cargo/issues/4648)
 
 # Summary
 [summary]: #summary
@@ -34,11 +34,15 @@ a dependency that also is a dependency of other crates, for example:
 
 Patching libraryA sometimes mean that libraryA_feature1 and libraryA_feature2 also need to be
 updated to point to the modified code of LibraryA, especially if sharing traits or structures. By
-providing a way to apply a patchfile that only changes the libraryA dependency of the features crates.
+providing a way to apply a patchfile that only changes the libraryA dependency of the features crates, 
+the amount of "private" forks can be reduced.
 
 The expected outcome of this example is that the user need not copy the sources of the feature crates
 to fix an issue in libraryA, as well as preventing users of the library to simply vendor the selected
-libraries and fix this issue locally.
+libraries and fix this issue locally. 
+
+It is not expected that crates are allowed to be published to crates.io with patchfiles, 
+but to be used while doing development. 
 
 
 # Guide-level explanation
@@ -53,6 +57,14 @@ libraries and fix this issue locally.
 > - If applicable, describe the differences between teaching this to existing Rust programmers and new Rust programmers.
 
 > For implementation-oriented RFCs (e.g. for compiler internals), this section should focus on how compiler contributors should think about the change, and give examples of its concrete impact. For policy RFCs, this section should provide an example-driven introduction to the policy, and explain its impact in concrete terms.
+
+The idea behind this is to centralize software belonging to a specific crate more, instead of requiring the user to create multiple git repositories for the
+changes to libraries, those changes can in the cases where it makes sense, be kept to within the project itself in the form of unidiff patchfiles, providing an 
+easier way to get an overview of what a specific project changes.
+
+One example where multiple uneccesarry git-repositories ( git repositories whose changes is never useful for anyone else ) is illustrated below. 
+
+## Patch dependencies of dependencies
 
 You are using a library called `foo` while developing a Rust software, while doing so you find a bug. You decide to
 try and fix it, first you obtain the source code by cloning the repository. After fixing the bug you want
@@ -69,7 +81,7 @@ foo = "1.0"
 foo = { path = "../path/to/foo" }
 ```
 It works flawlessly! You continue to develop and come upon a nice library called bar that contains a
-feature you want. You add this to your Carg.toml file like this:
+feature addition to foo that you want. You add this to your Cargo.toml file like this:
 
 
 ``` toml
@@ -84,7 +96,7 @@ foo = { path = "../path/to/foo" }
 But `bar` itself depends on the library `foo`, and even re-exports some of the `foo` components! Suddenly
 you have two structs that are identical, but come from different versions of `foo`, your locally patched
 one, and the one that `bar` depends on. To fix this, you decide to download `bar` and change so that `bar`
-now patches its version of `foo`, and that is the only change.
+now depends on your fixed version of `foo`, and that is the only change.
 
 ``` toml
 # bar
@@ -133,12 +145,15 @@ bar = { version =  "2.0", patches = ["patches/bar-update-foo-dependency.patch"] 
 foo = { path = "../path/to/foo" }
 ```
 
-Voila! You no longer need to keep that source of `bar` that you barely even touched. Upon running
+Voila! You no longer need to keep that cloned source of `bar` that you barely even touched. Upon running
 `cargo build` the bar dependency will be downloaded, the patch will be applied to the source of `bar` and
-it will utilize your changed library in this case.
+it will utilize your changed `foo` library in this case.
+
+## Backport bugfixes into project
 
 This same method can also be used to backport important bugfixes to old versions of dependencies that you do not have the time
-to upgrade to, since they include way to many breaking changes. Where you would fetch the source, use something similar to:
+to upgrade to, since they include way to many breaking changes and additional features, just updating the software to the newest version is 
+not a priority right now. You can now instead just get the specific bugfix included in your software for what you are maintaining. 
 
 ``` bash
 git clone <sourcecode>
@@ -148,7 +163,17 @@ git diff HEAD~1 > fix-foobarize-bug.patch
 ```
 
 And then update your dependency to apply the patch you just created onto that old version of the
-dependency
+dependency.
+
+``` toml
+# your crate
+[dependencies]
+# apply the created patchfile to the legacy version of foo, that the maintainer do not wish to fix.
+foo = { version =  "1.0", patches = ["patches/fix-foobarize-bug.patch"] }
+
+[patch.crates-io]
+foo = { path = "../path/to/foo" }
+```
 
 It could also be used to change the behavior of a dependency in a way that is only useful for
 your application and you know would never be merged into the original software.
@@ -164,6 +189,8 @@ your application and you know would never be merged into the original software.
 
 > The section should return to the examples given in the previous section, and explain more fully how the detailed proposal makes those examples work.
 
+There was initial work created in PR: 
+
 1. The feature would add an extra step to the build process, right after the download of the crate from
 crates.io
 
@@ -171,9 +198,11 @@ crates.io
 the dependency declaration, if a patch does not apply cleanly, it would result in an compilation error
 that shows which patch that did not apply cleanly
 
+3. Check if the dependency graphs need to be rebuilt ( Should be possible by checking for modified Cargo.toml files in the input )
+
 3. The resulting crate after patches would be evaluated and new dependencies would be downloaded if needed
 
-4. the software is built
+4. The software is built
 
 
 # Drawbacks
@@ -195,20 +224,23 @@ that shows which patch that did not apply cleanly
 > - What other designs have been considered and what is the rationale for not choosing them?
 > - What is the impact of not doing this?
 
-Currently, the copying of sources to apply changes can lead to sources being copied, and to not maintain the
-multitudes of sources trivially modified, sometimes the entire software trees are just vendored, similar to
-how old-school C projects would do it.
+Currently, the copying of sources to apply miniscule changes, that is not very useful for anyone else, can lead to sources being copied, 
+and to not maintain the multitudes of sources trivially modified, sometimes the entire software trees are just vendored to save time and 
+allow the local-development to continue, similar to how old-school C projects would do it.
 
-Patchfiles have a standardised formatting, with a lot of tools and developers knowing both how to use
+Patchfiles have a standardised formatting called unidiff, with a lot of tools and developers knowing both how to use
 and read them, and could easily apply patches from multiple merge requests without having to create a
-new repository that combines all of those merge requests.
+new repository that combines all of those merge requests. Those changes are also commonly shared in mailing lists, and can also be used to 
+try out multiple different changes at the same time without creating a git branch, and the quite advanced merging that can occur in such cases.
 
 The need for forking a library where the developer has been unreachable for a long time is reduced, since the
-patches can be shared until the original developer has time to merge them into the original code.
+patches can be shared until the original developer has time to merge them into the original code. There are a few examples of this happening in the
+rust ecosystem, where the divergence of the fork and the original means that both libraries suffer in the end.
 
 Not allowing patchfiles leads to copying of sources codes, and this practice sometimes creates forks that
 might get out of touch with the ecosystem version, either by falling behind, or by implementing features on a copy
-of the source code that does not contain the git history, and thus would be problematic to merge back into the upstream
+of the source code that does not contain the git history, and thus would be problematic to integrate into the ecosystem again. 
+Maintaining a set of patchfiles locally in the project repository would reduce the friction of getting them into the community.
 
 # Prior art
 [prior-art]: #prior-art
@@ -227,9 +259,12 @@ of the source code that does not contain the git history, and thus would be prob
 > Note that while precedent set by other languages is some motivation, it does not on its own motivate an RFC.
 > Please also take into consideration that rust sometimes intentionally diverges from common language features.
 
-This would automate a lot of the process that has been used in mailing lists, instead of sharing the entire modified code, only share the modifications, so that anyone can implement them.
+This would automate a lot of the process that has been used in mailing lists, instead of sharing the entire modified code, only share the modifications, 
+so that anyone can try them, and mix and match them locally when revieving a multitude of different patches together.
 
-It is also a common process of other major software projects such as Yocto, Buildroot and OpenWrt, where patches can be used to make software play nice with each other
+It is also a common process of other major software projects such as Yocto, Buildroot and OpenWrt, where patches can be used to make software 
+play nice with each other for specific usecases or projects. However, as a first step in this way, cargofiles that contain patchfiles should not be allowed
+onto crates.io, until the ramifications of such a feature addition has been more tested, and more understood in the rust community setting.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
@@ -238,8 +273,11 @@ It is also a common process of other major software projects such as Yocto, Buil
 > - What parts of the design do you expect to resolve through the implementation of this feature before stabilization?
 > - What related issues do you consider out of scope for this RFC that could be addressed in the future independently of the solution that comes out of this RFC?
 
+This RFC is to discuss how the implementation should look like, and how to resolve dependency graph updates that would happen as a consequence of the Cargo.toml 
+dependency tree changing dynamically through the patching sequence. 
 
-* TODO *
+However, it is considered out of scope for this RFC to solve all of those edge-cases, since not allowing these patchfiles to be included in crates that are 
+published to crates.io would place these issues locally, and not affect users.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
@@ -263,4 +301,9 @@ It is also a common process of other major software projects such as Yocto, Buil
 > The section merely provides additional information.
 
 
-* TODO *
+Future possibilites related to this are mostly tooling, such as Cargo addon softwares that automates the patchfile creation and Cargo project file manipulations.
+
+There could even be something similar to github gists, where users could share common patches and workflows to popular crates, that help them in their software 
+development.
+
+Other than that, I cannot think of anything.
