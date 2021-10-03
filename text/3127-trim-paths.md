@@ -14,14 +14,14 @@ the separate debug symbols file (depending on `split-debuginfo` settings).
 it will retain the paths in separate debug symbols file, if one exists, to help debuggers and profilers locate the source files.
 
 To facilitate this, a new flag named `--remap-scope` should be added to `rustc` controlling the behaviour of `--remap-path-prefix`, allowing us to fine
-tune the scope of remapping, speicifying paths under which context (in marco expansion, in debuginfo or in diagnostics)
+tune the scope of remapping, speicifying paths under which context (in macro expansion, in debuginfo or in diagnostics)
 should or shouldn't be remapped. 
 
 # Motivation
 [motivation]: #motivation
 
 ## Sanitising local paths that are currently embedded
-Currently, executables and libraies built by Cargo have a lot of embedded absolute paths. They most frequently appear in debug information and
+Currently, executables and libraries built by Cargo have a lot of embedded absolute paths. They most frequently appear in debug information and
 panic messages (pointing to the panic location source file). As an example, consider the following package:
 
 `Cargo.toml`:
@@ -103,7 +103,7 @@ This flag accepts a comma-separated list of values and may be specified multiple
 - `1`: sanitise only the paths in emitted executable or library binaries. It always affects paths from macros such as panic messages, and in debug information
   only if they will be embedded together with the binary (the default on platforms with ELF binaries, such as Linux and windows-gnu),
   but will not touch them if they are in a separate symbols file (the default on Windows MSVC and macOS)
-- `2` or `ture`: sanitise paths in all compilation outputs, including compiled executable/library, separate symbols file (if one exists), and compiler diagnostics.
+- `2` or `true`: sanitise paths in all compilation outputs, including compiled executable/library, separate symbols file (if one exists), and compiler diagnostics.
 
 The default release profile uses option `1`. You can also manually override it by specifying this option in `Cargo.toml`:
 ```toml
@@ -186,7 +186,7 @@ The user will not be able to `Ctrl+click` on any paths provided in panic message
 there shouldn't be any confusion as the combination of pacakge name and version can be used to pinpoint the file.
 
 As mentioned above, `trim-paths` may break code that relies on `std::file!()` to evaluate to an accessible path to the file. Hence enabling
-it by default for release builds may be a technically breaking change. Occurances of such use should be extremely rare but should be investigated
+it by default for release builds may be a technically breaking change. Occurrences of such use should be extremely rare but should be investigated
 via a Crater run. In case this breakage is unacceptable, `trim-paths` can be made an opt-in option rather than default in any build profile.
 
 # Rationale and alternatives
@@ -200,7 +200,7 @@ Path to sysroot crates are specially handled by `rustc`. Due to this, the behavi
 Although good for privacy and reproducibility, some people find it a hinderance for debugging: https://github.com/rust-lang/rust/issues/85463.
 Hence the user should be given control on if they want the virtual or local path.
 
-An alternative to `--remap-scope` is to have individual `--remap-path-prefxi`-like flags, one each for macro, debuginfo and diagnostics, requiring
+An alternative to `--remap-scope` is to have individual `--remap-path-prefix`-like flags, one each for macro, debuginfo and diagnostics, requiring
 the full mapping to be given for each context. This is similar to what GCC and Clang does as described below, but we have added a third context
 for diagnostics. This technically enables for even finer grained control, allowing different paths in different
 contexts to be remapped differently. However it will cause the command line to be very verbose under most normal use cases.
