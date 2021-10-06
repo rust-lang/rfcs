@@ -1,9 +1,9 @@
 # Rust crate ownership policy
 
-- Feature Name: (fill me in with a unique ident, `my_awesome_feature`)
-- Start Date: (fill me in with today's date, 2021-05-04)
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- Feature Name: none
+- Start Date: 2021-05-04
+- RFC PR: [rust-lang/rfcs#3119](https://github.com/rust-lang/rfcs/pull/3119)
+- Rust Issue: [rust-lang/rust#88867](https://github.com/rust-lang/rust/issues/88867)
 
 
 # Summary
