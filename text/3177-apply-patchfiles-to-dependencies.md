@@ -139,15 +139,19 @@ In your Cargo.toml you now enter:
 # your crate
 [dependencies]
 foo = "1.0"
-bar = { version =  "2.0", patches = ["patches/bar-update-foo-dependency.patch"] }
+bar = "2.0"
 
 [patch.crates-io]
 foo = { path = "../path/to/foo" }
+bar = { version = "2.0", patchfiles = ["patches/bar-update-foo-dependency.patch"] }
 ```
 
 Voila! You no longer need to keep that cloned source of `bar` that you barely even touched. Upon running
 `cargo build` the bar dependency will be downloaded, the patch will be applied to the source of `bar` and
 it will utilize your changed `foo` library in this case.
+
+The `version` field would specify which versions of `bar` to try and apply the patch to, and each patchfile will be applied in the order they are 
+defined upon that original version. If no `version` is defined, it will default to what is in the the git or path supplied, and if none is supplied it will default to "*"
 
 ## Backport bugfixes into project
 
@@ -169,14 +173,16 @@ dependency.
 # your crate
 [dependencies]
 # apply the created patchfile to the legacy version of foo, that the maintainer do not wish to fix.
-foo = { version =  "1.0", patches = ["patches/fix-foobarize-bug.patch"] }
+foo = "1.0"
 
 [patch.crates-io]
-foo = { path = "../path/to/foo" }
+foo = { path = "../path/to/foo", patchfiles = ["patches/fix-foobarize-bug.patch"]  }
 ```
 
 It could also be used to change the behavior of a dependency in a way that is only useful for
-your application and you know would never be merged into the original software.
+your application and you know would never be merged into the original software. The patchfiles will be applied
+after `git` or `path` has been resolved if there are any present. Otherwise since patchfiles do not contain any version information, the `version` tag needs
+to be present. 
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -191,16 +197,30 @@ your application and you know would never be merged into the original software.
 
 There was initial work created in PR: 
 
-1. The feature would add an extra step to the build process, right after the download of the crate from
-crates.io
+The Cargo `[patch]` section gets information about which source to patch from the Cargo.toml inside the `path` or `git` tags. Since a patchfile can change this information, 
+and do not contain this information in itself, then either the version to patch needs to be gathered from a `path` or `git` tag, but if none of those are supplied, the 
+`version` tag _must_ be specified. The 'version' tag will in this RFC will not interfere with the workings of how versions were previously handled. But is suggested in 
+future work. 
 
-2. It would apply the patch from the patchfiles in the order they are defined in the patches section of
+To maintain compatibility with how patches applied previously and to limit the scope of this RFC, the added `version` key in the `[patch]` section will only be allowed 
+and required when no `path` or `git` exists.
+
+The feature would add an extra step to the build process, right after the download of the crate from
+crates.io, path or git. 
+
+It would apply the patch from the patchfiles in the order they are defined in the patches section of
 the dependency declaration, if a patch does not apply cleanly, it would result in an compilation error
-that shows which patch that did not apply cleanly
+that shows which patch that did not apply cleanly to which library. This would make sure that patchfiles are not to dangerous. 
 
-3. Check if the dependency graphs need to be rebuilt ( Should be possible by checking for modified Cargo.toml files in the input )
+The patch apply logic should be written as a rust code specifically for this, either as a library or as part of the code. This to make sure that 
+the patch apply logic is not to lenient or tries to smart things. The reason for this is to ensure and control how much patchfiles can affect. As well as to implement
+logic that makes sure that Cargo is not trying to patch files outside of the working directory since the unidiff format specifies which files to diff. 
 
-3. The resulting crate after patches would be evaluated and new dependencies would be downloaded if needed
+Once patched Cargo would check if the dependency graphs need to be rebuilt ( Should be possible by checking for modified Cargo.toml files from the previous run )
+
+The resulting crate after patches would be evaluated and new dependencies would be downloaded if needed, if the new dependency tree contains dependencies that should be 
+patched, but was not previously, we would have to rerun the patch apply on top of those new dependencies, and again refresh the dependency trees. Since this would be a 
+recursive function, a maximum amount of recursion is needed here to not end in an infinite patchloop.
 
 4. The software is built
 
@@ -300,10 +320,9 @@ published to crates.io would place these issues locally, and not affect users.
 > in the section on motivation or rationale in this or subsequent RFCs.
 > The section merely provides additional information.
 
+With the addition of the `version` key in the patches section, one can more clearly specify on which the version something should be patched, a future RFC could allow that 
+key on top of the `path` or `git` keys in the patch section, and that would override what is found when resolving the `path` or `git` sources. It would make the process 
+more intuitive for users trying to use the patch section in general.
 
-Future possibilites related to this are mostly tooling, such as Cargo addon softwares that automates the patchfile creation and Cargo project file manipulations.
-
-There could even be something similar to github gists, where users could share common patches and workflows to popular crates, that help them in their software 
-development.
-
-Other than that, I cannot think of anything.
+Future possibilites related to this are mostly tooling, such as Cargo addon softwares that automates the patchfile creation and Cargo project file manipulations would help
+users to utilize this featur. 
