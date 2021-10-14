@@ -78,9 +78,9 @@ specified by `CARGO_BIN_DIR_EXAMPLE_ARM`.
 [reference-level-explanation]: #reference-level-explanation
 
 Cargo allows specifying multiple dependencies on the same crate, as long as all
-such dependencies resolve to the same version with the same features, and have
-different dependency names specified. Cargo will make the dependency available
-under each specified name.
+such dependencies resolve to the same version, and have different dependency
+names specified. Cargo will make the dependency available under each specified
+name.
 
 Multiple artifact dependencies on the same crate may have different `target`
 fields. In this case, cargo will build the dependency for each specified
@@ -94,13 +94,17 @@ containing the artifacts (e.g.  `CARGO_BIN_DIR_EXAMPLE`) and
 determines the `<DEP>`, but does not affect the `<NAME>` of each artifact
 within that dependency.
 
-Cargo will unify features and versions across all kinds of dependencies,
-including multiple artifact dependencies, just as it does for multiple
-dependencies on the same crate throughout a dependency tree. A dependency tree
-may only include one semver-compatible version of a given crate, but may
-include multiple semver-incompatible versions of a given crate. Dependency
-versions need not be textually identical, as long as they resolve to the same
-version.
+Cargo will unify versions across all kinds of dependencies, including multiple
+artifact dependencies, just as it does for multiple dependencies on the same
+crate throughout a dependency tree. A dependency tree may only include one
+semver-compatible version of a given crate, but may include multiple
+semver-incompatible versions of a given crate. Dependency versions need not be
+textually identical, as long as they resolve to the same version.
+
+Cargo will not unify features across dependencies for different targets. One
+dependency tree may have both ordinary dependencies and multiple artifact
+dependencies on the same crate, with different features for the ordinary
+dependency and for artifact depenencies for different targets.
 
 Building an artifact dependency for multiple targets may entail building
 multiple copies of other dependencies, which must similarly unify within a
@@ -164,12 +168,6 @@ harm to the primary use case.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
-
-In some cases, a crate may want to depend on a binary without unifying features
-or dependency versions with that binary. A future extension to this mechanism
-could allow cargo to build multiple copies of a binary crate for different
-targets without attempting to do any unification. This would allow enabling
-different sets of features for different targets.
 
 This RFC does not provide a means of specifying different profile overrides for
 different dependencies on the same crate. A future extension to this mechanism
