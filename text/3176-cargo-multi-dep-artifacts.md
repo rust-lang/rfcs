@@ -43,9 +43,8 @@ error.
 However, Cargo allows [renaming
 dependencies](https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#renaming-dependencies-in-cargotoml),
 to refer to a crate by a different name than the one it was published under. If
-you use this feature, you may have multiple dependencies on exactly the same
-version of the same crate, as long as the dependencies have different names.
-For example:
+you use this feature, you may have multiple dependencies on the same version of
+the same crate, as long as the dependencies have different names.  For example:
 
 ```toml
 [dependencies]
@@ -79,7 +78,7 @@ specified by `CARGO_BIN_DIR_EXAMPLE_ARM`.
 [reference-level-explanation]: #reference-level-explanation
 
 Cargo allows specifying multiple dependencies on the same crate, as long as all
-such dependencies unify to the same version with the same features, and have
+such dependencies resolve to the same version with the same features, and have
 different dependency names specified. Cargo will make the dependency available
 under each specified name.
 
@@ -99,7 +98,9 @@ Cargo will unify features and versions across all kinds of dependencies,
 including multiple artifact dependencies, just as it does for multiple
 dependencies on the same crate throughout a dependency tree. A dependency tree
 may only include one semver-compatible version of a given crate, but may
-include multiple semver-incompatible versions of a given crate.
+include multiple semver-incompatible versions of a given crate. Dependency
+versions need not be textually identical, as long as they resolve to the same
+version.
 
 Building an artifact dependency for multiple targets may entail building
 multiple copies of other dependencies, which must similarly unify within a
