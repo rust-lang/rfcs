@@ -15,16 +15,16 @@ Some of the collection types do not allocate any memory when constructed empty (
 is no longer required to be a hard error (as it is safe and accepted that these destructors may never run).
 
 Allowing types with destructors to be directly used in `const` functions and stored in `static`s or `const`s will remove the need to have
-runtime-initialisation for global variables.
+runtime-initialization for global variables.
 
 # Detailed design
 [design]: #detailed-design
 
 - Lift the restriction on types with destructors being used in `static` or `const` items.
- - `static`s containing Drop-types will not run the destructor upon program/thread exit.
- - `const`s containing Drop-types _will_ run the destructor at the appropriate point in the program.
- - (Optionally adding a lint that warn about the possibility of resource leak)
-- Alloc instantiating structures with destructors in constant expressions,
+  - `static`s containing Drop-types will not run the destructor upon program/thread exit.
+  - `const`s containing Drop-types _will_ run the destructor at the appropriate point in the program.
+  - (Optionally adding a lint that warn about the possibility of resource leak)
+- Allow instantiating structures with destructors in constant expressions.
 - Allow `const fn` to return types with destructors.
 - Disallow constant expressions that require destructors to run during compile-time constant evaluation (i.e: a `drop(foo)` in a `const fn`).
 
@@ -62,11 +62,11 @@ A `const` item's destructor _will_ run at each point where the `const` item is u
 # Alternatives
 [alternatives]: #alternatives
 
-- Runtime initialisation of a raw pointer can be used instead (as the `lazy_static` crate currently does on stable)
+- Runtime initialization of a raw pointer can be used instead (as the `lazy_static` crate currently does on stable).
 - On nightly, a bug related to `static` and `UnsafeCell<Option<T>>` can be used to remove the dynamic allocation.
- - Both of these alternatives require runtime initialisation, and incur a checking overhead on subsequent accesses.
+  - Both of these alternatives require runtime initialization, and incur a checking overhead on subsequent accesses.
 - Leaking of objects could be addressed by using C++-style `.dtors` support
- - This is undesirable, as it introduces confusion around destructor execution order.
+  - This is undesirable, as it introduces confusion around destructor execution order.
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
