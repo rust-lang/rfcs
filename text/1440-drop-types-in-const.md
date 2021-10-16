@@ -21,10 +21,10 @@ runtime-initialisation for global variables.
 [design]: #detailed-design
 
 - Lift the restriction on types with destructors being used in `static` or `const` items.
- - `static`s containing Drop-types will not run the destructor upon program/thread exit.
- - `const`s containing Drop-types _will_ run the destructor at the appropriate point in the program.
- - (Optionally adding a lint that warn about the possibility of resource leak)
-- Alloc instantiating structures with destructors in constant expressions,
+  - `static`s containing Drop-types will not run the destructor upon program/thread exit.
+  - `const`s containing Drop-types _will_ run the destructor at the appropriate point in the program.
+  - (Optionally adding a lint that warn about the possibility of resource leak)
+- Allow instantiating structures with destructors in constant expressions.
 - Allow `const fn` to return types with destructors.
 - Disallow constant expressions that require destructors to run during compile-time constant evaluation (i.e: a `drop(foo)` in a `const fn`).
 
