@@ -362,11 +362,19 @@ Alternatives for avoiding the initializer:
 
 - Add a `LocalKey<T>::try_initialize` method.
 
-  This will be bit more complicated to implement efficiently.
-  (A `LocalKey` just contains a single function pointer to the thread-local-address-getter, which is often optimized out.
-  This doesn't play nice with being generic over the initialization function.)
+  - This will be bit more complicated to implement efficiently.
+    (A `LocalKey` just contains a single function pointer to the thread-local-address-getter, which is often optimized out.
+    This doesn't play nice with being generic over the initialization function.)
 
-  Even if this function existed, it would still be nice to have a simple `THREAD_LOCAL.set(..)`.
+  - Thread locals with a `const` initializer (currently unstable, but likely stabilized soon) do not have the concept of being 'uninitialized' and do not run any lazy initialization.
+    With `.set()` for `LocalKey<Cell<T>>`, that doesn't make a difference, as overwriting the const-initialized value has the same effect.
+    However, for the generic `LocalKey<T>` we cannot allow changes without internal mutability,
+    meaning that we can allow initialization (like `.try_initialize()`),
+    but not changing it later (like `.set()`).
+    Since a `const` initialized thread local does not know whether its value has been observed yet,
+    we can't do anything other than implement `.try_initialize()` by always failing or panicking.
+
+  - Even if this function existed, it would still be nice to have a simple `THREAD_LOCAL.set(..)`.
 
 # Prior art
 [prior-art]: #prior-art
