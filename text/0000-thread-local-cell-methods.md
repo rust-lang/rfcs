@@ -358,7 +358,7 @@ Alternatives for making it easier to work with thread local cells:
 
 - Don't do anything, and keep wrapping everything in `.with(|x| ..)`.
 
-- Somehow invent and implement the `'thread` lifetime, removing the need for `.with(|x| ..)`.
+- Somehow invent and implement the `'thread` or `'caller` lifetime, removing the need for `.with(|x| ..)`.
 
 - Add `THREAD_LOCAL.borrow()` and `THREAD_LOCAL.borrow_mut()`, just like `RefCell` has.
 
