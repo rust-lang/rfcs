@@ -358,6 +358,8 @@ Alternatives for making it easier to work with thread local cells:
 
 - Don't do anything, and keep wrapping everything in `.with(|x| ..)`.
 
+- Somehow invent and implement the `'thread` lifetime, removing the need for `.with(|x| ..)`.
+
 Alternatives for avoiding the initializer:
 
 - Add a `LocalKey<T>::try_initialize` method.
