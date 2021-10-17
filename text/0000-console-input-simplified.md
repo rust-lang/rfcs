@@ -1,7 +1,6 @@
 - Feature Name: `console_input_simplified`
 - Start Date: 2021-10-16
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/3183)
 
 # Summary
 
