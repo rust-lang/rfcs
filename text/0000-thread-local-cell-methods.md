@@ -360,6 +360,12 @@ Alternatives for making it easier to work with thread local cells:
 
 - Somehow invent and implement the `'thread` lifetime, removing the need for `.with(|x| ..)`.
 
+- Add `THREAD_LOCAL.borrow()` and `THREAD_LOCAL.borrow_mut()`, just like `RefCell` has.
+
+  This wouldn't be sound.
+  One could move the returned proxy object into a thread local that outlives this thread local.
+  (Or just `Box::leak()` it.)
+
 Alternatives for avoiding the initializer:
 
 - Add a `LocalKey<T>::try_initialize` method.
