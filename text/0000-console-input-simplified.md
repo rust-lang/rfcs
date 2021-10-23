@@ -59,15 +59,26 @@ I have written a simple example implementation for these macros, and I would gre
 
 // Implementation
 
-fn input<T: std::str::FromStr>() -> Result<T, ()> {
-    let mut input = String::new();
+use std::io::Read;
 
-    match std::io::stdin().read_line(&mut input) {
-        Ok(_) => {}
-        Err(_) => return Err(()),
+fn input<T: std::str::FromStr>(stopper: u8) -> Result<T, ()> {
+    let mut input = Vec::<u8>::new();
+
+    let mut data: [u8; 1] = [0];
+    loop {
+        match std::io::stdin().read_exact(&mut data) {
+            Ok(_) => {}
+            Err(_) => return Err(()),
+        }
+
+        if data[0] != stopper && data[0] != '\n' as u8 {
+            input.push(data[0]);
+        } else {
+            break;
+        }
     }
 
-    match input.trim().parse::<T>() {
+    match std::str::from_utf8(&input).unwrap().trim().parse::<T>() {
         Ok(x) => Ok(x),
         Err(_) => Err(()),
     }
@@ -75,13 +86,13 @@ fn input<T: std::str::FromStr>() -> Result<T, ()> {
 
 macro_rules! input {
     ($name:ty) => {
-        input::<$name>();
+        input::<$name>(' ' as u8)
     };
 }
 
 macro_rules! inputln {
     () => {
-        input::<String>();
+        input::<String>('\n' as u8)
     };
 }
 
@@ -92,12 +103,17 @@ fn main() {
     let age = input!(i32).expect("Invalid age!");
     
     println!("Hello {}! I see you are {} years old!", name, age);
+    
+    let a = input!(i32).expect("Invalid value!");
+    let b = input!(i32).expect("Invalid value!");
+
+    let sum = a + b;
+
+    println!("Sum: {}", sum);
 }
 ```
 
-For my implementation, I am simply wrapping over the std::io::stdin() function calls and simplifying this into a single function, and then providing simple macros to simplify that even further.
-
-One thing I would probably do differently in this implementation is, for the `input!(TYPE);` macro, make it so it only reads from `stdin` until it hits a ` ` (space), similar to how C++'s `std::cin` works. That way if someone typed in `10 10` into their console, we could read both by calling `input!(i32);` twice.
+For my implementation, I am simply reading `std::io::stdin()` until I hit either the specified EOF token or a `\n` (newline) into a `Vec::<u8>`. I then convert that vector into a string, and attempt to parse it into the intented return value, returning `Ok(VALUE)` if it succeeds or `Err(())` if it fails at any point.
 
 # Drawbacks
 
