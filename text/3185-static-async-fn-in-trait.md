@@ -2,7 +2,7 @@
 
 - Feature Name: `async_fn_in_traits`
 - Start Date: 2021-10-13
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#3185](https://github.com/rust-lang/rfcs/pull/3185)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 # Summary
