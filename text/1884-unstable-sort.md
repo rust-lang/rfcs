@@ -45,7 +45,7 @@ first click on column Y and then click on column X. This is a use case where sta
 is important.
 
 **Q: Can stable sort be performed using unstable sort?**<br>
-A: Yes. If we transform `[T]` into `[(T, usize)]` by pairing every element with it's
+A: Yes. If we transform `[T]` into `[(T, usize)]` by pairing every element with its
 index, then perform unstable sort, and finally remove indices, the result will be
 equivalent to stable sort.
 
