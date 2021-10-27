@@ -133,7 +133,7 @@ trait Example {
         WC0..WCn, // Explicit where clauses
         Self: 'me; // Implied bound from `&self` parameter
 
-    fn method(&self) -> Self::$<'_>
+    fn method(&self) -> Self::$<'_, P0..Pn>
     where
         WC0..WCn;
 }
