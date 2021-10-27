@@ -46,7 +46,7 @@ This includes a trait for producing streams and a trait for consuming streams.
 
 A "stream" is the async version of an [iterator].
 
-The `Iterator` trait includes a `next` method, which computes and returns the next item in the sequence. The `Stream` trait includes the `poll_next` method to assist with defining a stream. In the future, we should add a `next` method for use when consuming and interacting with a stream (see the [Future possiblilities](future-possibilities) section later in this RFC).
+The `Iterator` trait includes a `next` method, which computes and returns the next item in the sequence. The `Stream` trait includes the `poll_next` method to assist with defining a stream. In the future, we should add a `next` method for use when consuming and interacting with a stream (see the [Future possiblilities][future-possibilities] section later in this RFC).
 
 ## poll_next method
 
@@ -216,7 +216,7 @@ Stream` values without the need to monomorphize the functions that work
 with them.
 
 Unfortunately, the use of poll does mean that it is harder to write
-stream implementations. The long-term fix for this, discussed in the [Future possiblilities](future-possibilities) section, is dedicated [generator syntax].
+stream implementations. The long-term fix for this, discussed in the [Future possiblilities][future-possibilities] section, is dedicated [generator syntax].
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -329,7 +329,7 @@ design issues] to be resolved before they are added. Therefore, we've
 decided to enable progress on the stream trait by stabilizing a core,
 and to come back to the problem of extending it with combinators.
 
-[outstanding design issues]: https://rust-lang.github.io/wg-async-foundations/design_notes/async_closures.html
+[outstanding design issues]: https://rust-lang.github.io/wg-async-foundations/design_docs/async_closures.html
 
 This path does carry some risk. Adding combinator methods can cause
 existing code to stop compiling due to the ambiguities in method
