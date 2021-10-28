@@ -89,7 +89,7 @@ This functionality could instead be provided by a crate (e.g. boolinator), but t
 
 # Prior art
 
-None.
+None, as far as I know.
 
 # Unresolved questions
 
