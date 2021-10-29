@@ -107,7 +107,7 @@ There are two other possible implementations of the method:
 
 In practice, the proposed implementation produces identical code using Godbolt to #2, and the proposed implementation and #2 seem to always produce better code than the #1 alternative above (specifically, they tend to elide jumps more easily). However, in more complex code, these all seem to resolve to more or less the same code, so it's a fairly bike-sheddable difference.
 
-Alternatives to this metohd entirely for users are, of course, just writing the code out themselves. Sometimes they may even be preferable for simplicity.
+Alternatives to this method entirely for users are, of course, just writing the code out themselves. Sometimes that may even be preferable for simplicity.
 
 Users can also use `Option::<()>` instead of `bool` to get this functionality now, for free. Additionally, they could simply wrap `bool` and Deref into it, with the added `.take`.
 
