@@ -81,7 +81,33 @@ Save the usual drawbacks of adding a new method to the standard library, there a
 
 # Rationale and alternatives
 
-There is also a possible implementation that only conditionally resets `self` if self is `true` -- in practice, the above implementation, and that implementation, will make the same machine code for users (ie, the user is probably doing an `if` check themselves). I think the above is more readable.
+There are two other possible implementations of the method:
+
+1. Conditionally branching:
+
+   ```rs
+   pub fn take(&mut self) -> bool {
+       if *self {
+           *self = false;
+           true
+       } else {
+           false
+       }
+   }
+   ```
+
+2. Using `mem::replace` or `mem::take`:
+
+   ```rs
+   pub fn take(&mut self) -> bool {
+       // or core::mem::take(self)
+       core::mem::replace(self, false)
+   }
+   ```
+
+In practice, the proposed implementation produces identical code using Godbolt to #2, and the proposed implementation and #2 seem to always produce better code than the #1 alternative above (specifically, they tend to elide jumps more easily). However, in more complex code, these all seem to resolve to more or less the same code, so it's a fairly bike-sheddable difference.
+
+Alternatives to this metohd entirely for users are, of course, just writing the code out themselves. Sometimes they may even be preferable for simplicity.
 
 Users can also use `Option::<()>` instead of `bool` to get this functionality now, for free. Additionally, they could simply wrap `bool` and Deref into it, with the added `.take`.
 
