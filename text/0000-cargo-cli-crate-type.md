@@ -39,7 +39,7 @@ cargo build --crate-type cdylib --features ffi
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-A new command-line argument, `--crate-type`, will be added to Cargo. It must be provided a list of 1 or more crate types, of which the allowed values are the same as can be [provided in the manifest](https://doc.rust-lang.org/cargo/reference/cargo-targets.html#the-crate-type-field).
+A new command-line argument, `--crate-type`, will be added to Cargo. It must be provided a comma-separated list of 1 or more crate types, of which the allowed values are the same as can be [provided in the manifest](https://doc.rust-lang.org/cargo/reference/cargo-targets.html#the-crate-type-field).
 
 The argument will be added for `cargo build` and `cargo rustc`.
 
