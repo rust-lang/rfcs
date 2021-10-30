@@ -370,4 +370,4 @@ Is this better than Generic Member Access? - This will be answered with either i
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
-Since the RFC proposes a solution based on `lang_items`, one could wish to implement these functions themselves. We could support such endeavours and provide dummy implementations if the compiler does not see the overrides. This would be implemented via weak linkage (though, unfortunately not all platforms support it).
+Since the RFC proposes a solution based on `lang_items`, one could wish to implement these functions themselves. We could support such endeavours and provide dummy implementations if the compiler does not see the overrides. This would be implemented via weak linkage (though, unfortunately not all platforms support it). It would be a breaking change, since we would require the linker to be run in `no_std` contexts and currently it is run only on several occasions, therefore this seems like a dead end or at least not worth the effort and overhead.
