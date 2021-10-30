@@ -337,17 +337,14 @@ pub struct Backtrace {
     inner: *mut dyn RawBacktrace,
 }
 ``` 
-and this may induce some code bloat which we do not want.
-
-/*
-The other one is a potential code bloat in `no_std` contexts, so a possible alternative may be only enabling the `Backtrace` conditionally via `cfg` settings. (not so sure about this though)
-*/
+and this may induce some code bloat that is suboptimal but livable-with. It could be changed via some vtable sheaningans but we will leave it as it is for simplicity's sake.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 The proposed solution is the one which is currently implementable. However, if the Generic Member Access RFC was implemented as discussed in the Motivation section, we would not have to move the `Backtrace` to core at all. In the alternative solution, we would leave the `Backtrace` as it is and instead the `Error` trait will provide a `backtrace()` method which will use the Generic Access to extract the concrete `Backtrace` out of the propagated error.
 
+The `Backtrace` functionality could be implemented as a trait in order to be extensible in the future and would allow for backwards compatibility. However, since in the long goal we want to deprecate `Backtrace` in the `Error` trait we do not pursue that idea.
 
 During the [conversation on #rust-embedded IRC](https://libera.irclog.whitequark.org/rust-embedded/2021-08-17), various takes on the matter from the embedded contexts were given. What was most threatening for people engaged in the discussion is the allocating capabilities of `Backtrace`. Though the implementation in std uses `Vec` for allocating backtrace frames, the API declaration in core leaves the implementation to the user (if no std is supplied).
 
@@ -374,7 +371,3 @@ Is this better than Generic Member Access? - This will be answered with either i
 # Future possibilities
 [future-possibilities]: #future-possibilities
 Since the RFC proposes a solution based on `lang_items`, one could wish to implement these functions themselves. We could support such endeavours and provide dummy implementations if the compiler does not see the overrides. This would be implemented via weak linkage (though, unfortunately not all platforms support it).
-
-// TODO: add examples of how would one implement these functions themselves like panic hooks
-
- //Since, they are lang items they need to have a default implementation in case std is not linked, so they will be provided in such a form in the core library (and overwritten once std is linked)
