@@ -107,7 +107,9 @@ For each kind of dependency, these variables are supplied to the same part of th
 
 Similar to features, if other crates in your dependencies also depend on the same binary crate, and request different binaries, Cargo will build the union of all binaries requested.
 
-Cargo will unify features and versions across all kinds of dependencies, including artifact dependencies, just as it does for multiple dependencies on the same crate throughout a dependency tree.
+Cargo will unify versions across all kinds of dependencies, including artifact dependencies, just as it does for multiple dependencies on the same crate throughout a dependency tree.
+
+Cargo will not unify features across dependencies for different targets. One dependency tree may have both ordinary dependencies and artifact dependencies on the same crate, with different features for the ordinary dependency and for artifact depenencies for different targets.
 
 `artifact` may be a string, or a list of strings; in the latter case, this specifies a dependency on the crate with each of those artifact types, and is equivalent to specifying multiple dependencies with different `artifact` values. For instance, you may specify a build dependency on both a binary and a cdylib from the same crate. You may also specify separate dependencies with different `artifact` values, as well as dependencies on the same crate without `artifact` specified; for instance, you may have a build dependency on the binary of a crate and a normal dependency on the Rust library of the same crate.
 
@@ -171,7 +173,7 @@ How easily can Cargo handle a dependency with a different target specified? How 
 
 Currently, there's no mechanism to obtain an environment variable's value at compile time if that value is not valid UTF-8. In the future, we may want macros like `env_os!` or `env_path!`, which return a `&'static OsStr` or `&'static Path` respectively, rather than a `&'static str`. This is already an issue for existing environment variables supplied to the build that contain file paths.
 
-In some cases, a crate may want to depend on a binary without unifying features or dependency versions with that binary. A future extension to this mechanism could allow cargo to build a binary crate in isolation, without attempting to do any unification.
+In some cases, a crate may want to depend on a binary without unifying dependency versions with that binary. A future extension to this mechanism could allow cargo to build a binary crate in isolation, without attempting to unify versions.
 
 Just as a `-sys` crate can supply additional artifacts other than the built binary, this mechanism could potentially expand in the future to allow building artifacts other than the built binary, such as C-compatible include files, various types of interface definition or protocol definition files, or arbitrary data files.
 
