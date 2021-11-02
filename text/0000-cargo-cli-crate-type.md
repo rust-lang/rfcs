@@ -8,7 +8,7 @@
 # Summary
 [summary]: #summary
 
-Add the ability to provide `--crate-type <crate-type>` as an argument to `cargo build`. This would have the same affect of adding `crate-type` in the `Cargo.toml`, while taking higher priority than any value specified there.
+Add the ability to provide `--crate-type <crate-type>` as an argument to `cargo rustc`. This would have the same affect of adding `crate-type` in the `Cargo.toml`, while taking higher priority than any value specified there.
 
 [Previous implementation PR](https://github.com/rust-lang/cargo/pull/8789)
 
@@ -26,14 +26,14 @@ Lastly, being able to pick a specific crate type also decreases build times when
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-When a user builds a library, using `cargo build`, they can provide a `--crate-type` argument to adjust the crate type that is compiled. The argument can be any that can also be listed in the `Cargo.toml`.
+When a user builds a library, using `cargo rustc`, they can provide a `--crate-type` argument to adjust the crate type that is compiled. The argument can be any that can also be listed in the `Cargo.toml`.
 
 Some examples:
 
 ```shell
-cargo build --crate-type staticlib
+cargo rustc --crate-type staticlib
 
-cargo build --crate-type cdylib --features ffi
+cargo rustc --crate-type cdylib --features ffi
 ```
 
 # Reference-level explanation
@@ -41,7 +41,7 @@ cargo build --crate-type cdylib --features ffi
 
 A new command-line argument, `--crate-type`, will be added to Cargo. It must be provided a comma-separated list of 1 or more crate types, of which the allowed values are the same as can be [provided in the manifest](https://doc.rust-lang.org/cargo/reference/cargo-targets.html#the-crate-type-field).
 
-The argument will be added for `cargo build` and `cargo rustc`.
+The argument will be added for `cargo rustc`.
 
 As with the existing `crate-type` manifest property, this will only work when building a `lib` or `example`.
 
@@ -53,7 +53,7 @@ crate-type = ["lib", "staticlib", "cdylib"]
 ```
 
 ```shell
-cargo build --crate-type staticlib
+cargo rustc --crate-type staticlib
 ```
 
 This will produce output only as a `staticlib`, ignoring the other values in the manifest.
