@@ -59,8 +59,8 @@ The scenario that we want to enable is:
   he comes across an instance of `cool_stuff::CoolType` in the debugger.
   Because Rust and the debugger know about the visualizations that Alice wrote,
   the `CoolType` value is displayed using its defined debugger view in the debugger.
-  Bob did not   need any knowledge, a priori, of how debugger visualizations
-  worked or that   Alice had written any debugger visualizations. From Bob's
+  Bob did not need any knowledge, a priori, of how debugger visualizations
+  worked or that Alice had written any debugger visualizations. From Bob's
   point of view, debugging `CoolType` "just worked".
 
 ## An example: The `regex` crate
@@ -77,7 +77,6 @@ fn find_c_defines(input: &str) {
     for captures in rx.captures_iter(input) {
         let my_match: Match = captures.get(1).unwrap();
         do_some_work(my_match.as_str());
-
     }
 }
 ```
@@ -310,7 +309,7 @@ takes a single argument, the string to be displayed in the debugger.
 Text within a pair of braces (`{``}`) is evaluated as a field, property, or method.
 
 If a class has an overridden `ToString()` method, then the debugger displays the
-results of the `ToString()` and a `[DebuggerDisplay]` attribute is not required.
+results of the `ToString()` method and a `[DebuggerDisplay]` attribute is not required.
 One setback here is that the debugger is unable to display the result of the
 `ToString()` when viewing a crash dump.
 
