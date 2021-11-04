@@ -232,6 +232,24 @@ It is not a breaking change for traits to become dyn safe. We expect to make tra
 
 The [impl trait initiative] is expecting to propose "impl trait in traits" (see the [explainer](https://rust-lang.github.io/impl-trait-initiative/explainer/rpit_trait.html) for a brief summary). This RFC is compatible with the proposed design.
 
+## Allowing sugared and desugared forms
+
+In the current proposal, `async fn`s in traits must be implemented using `async fn`. Using a desugared form is not allowed, which can preclude implementations from doing things like doing some work at call time before returning a future. It would also be backwards-incompatible for library authors to move between the sugared and desugared form.
+
+Once impl trait in traits is supported, we can redefine the desugaring of `async fn` in traits in terms of that feature (similar to how `async fn` is desugared for free functions). That provides a clear path to allowing the desugared form to be used interchangeably with the `async fn` form. In other words, you should be able to write the following:
+
+```rust
+trait Example {
+    async fn method(&self);
+}
+
+impl Example for ExampleType {
+    fn method(&self) -> impl Future<Output = ()> + '_ {}
+}
+```
+
+It could also be made backward-compatible for the trait to change between the sugared and desugared form.
+
 ## Ability to name the type of the returned future
 
 This RFC does not propose any means to name the future that results from an `async fn`. That is expected to be covered in a future RFC from the [impl trait initiative]; you can read more about the [proposed design](https://rust-lang.github.io/impl-trait-initiative/explainer/rpit_names.html) in the explainer.
