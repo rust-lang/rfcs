@@ -13,7 +13,7 @@ In many applications, deferred execution of routines is preferable, especially a
 
 # Guide-level explanation
 
-All `.take` does is return the value of a boolean while also setting that value internally to `false`. It is exactly similar to `Option::take`, except that, of course, it only returns `true/false` instead of some inner value. (In this sense, this `.take` is effectively the same as `Option::take().is_some()`). In any example where flags are commonly read while also being reset, this method is useful.
+All .take() does is return the value of a boolean while also setting that value internally to false. It is just like `mem::take`, except it is called as a method instead of a free function. In places where booleans are commonly read and then reset, like dirty flags, this method is useful.
 
 For example, imagine a common game structure:
 
@@ -36,7 +36,7 @@ impl SceneNode {
     }
 
     /// we magically have the parent in this example.
-    pub fn calculuate_world_position(&mut self, parent: &SceneNode) {
+    pub fn calculate_world_position(&mut self, parent: &SceneNode) {
         // we can take the flag and also unset it in one method call
         if self.dirty.take() {
             self.world_position = [
@@ -115,7 +115,7 @@ This functionality could instead be provided by a crate (e.g. boolinator), but t
 
 # Prior art
 
-None, as far as I know.
+Prior art: `AtomicBool::compare_exchange`, which is used for similar purposes. It is a more complex operation, because it allows specifying memory orderings (irrelevant here) and because it can set the boolean to either true or false, or act effectively as a read without modifying. But, it is closely related in that, for example, code being migrated towards or away from Sync support might replace one with the other.
 
 # Unresolved questions
 
