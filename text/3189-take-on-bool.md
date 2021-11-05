@@ -11,6 +11,10 @@ This RFC proposes adding a method to `bool` called `take`, which will save the v
 
 In many applications, deferred execution of routines is preferable, especially around long standing state. Using flags, or booleans which indicate a condition, is a good way to raise those routines. Taking that flag, while also resetting it, makes this pattern more elegant, without complexifying the `std` inordinately.
 
+The current one liner to get this same effect is `mem::take`. Adding `mem` into a project often implies a more complex operation than `.take` on a `Copy` tends to be, since `mem::take` (and `mem::replace` in general) is most useful when the type isn't Copy like `bool` is, which allows users to trivially do operations which otherwise require some non-trivial unsafe code. Moreover, in general, the `mem` module has a collection of relatively low-level operations on memory patterns. This makes it a more intimidating toolbox to reach for than a simple method on `bool` could be.
+
+There are two places where a "Take" pattern is used that is more about API usability, rather than memory handling, but where `mem::take` could be used: `Option` and `bool`. For the former, we already have the `.take` method (and in my Rust experience, anecdotally, is used often). We don't have anything for the latter. This PR's motivation is adding such a method for `bool`.
+
 # Guide-level explanation
 
 All .take() does is return the value of a boolean while also setting that value internally to false. It is just like `mem::take`, except it is called as a method instead of a free function. In places where booleans are commonly read and then reset, like dirty flags, this method is useful.
