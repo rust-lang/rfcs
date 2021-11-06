@@ -152,9 +152,8 @@ how to package the Natvis file into the debug data (the PDB file) for the
 project, and the debugger knows how to find the Natvis XML in each PDB file.
 
 Developers can add one or more standalone Natvis XML files to their crate.
-The `Cargo.toml` file specifies the name of these Natvis files or the Natvis
-files can be specified via a command line option. This is the easiest way to
-add Natvis support to a project.
+The `Cargo.toml` file specifies the name of these Natvis files. This is the
+easiest way to add Natvis support to a project.
 
 The advantage of a standalone XML document is that this process is already
 well-understood by many developers. This will help C++ developers move from
@@ -167,8 +166,7 @@ types.
 
 To provide standalone Natvis XML files, developers create a file with the
 `.natvis` file extension. These Natvis files are then specified in the 
-`Cargo.toml` file via a new key or via the command line using the `-Z natvis`
-option.
+`Cargo.toml` file via a new manifest key.
 
 As an example, consider a crate with this directory structure:
 
@@ -219,22 +217,38 @@ and `main.natvis` contains:
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-Cargo would add a `-Z natvis={comma-separated list of .natvis files}` flag,
-and forward this flag to rustc.
+In rustc, a new `-Z natvis={comma-separated list of .natvis files}` flag
+will be added which instructs the compiler to take the set of .natvis
+files for a given crate and store them in the crate metadata. When running the
+linker, using the `MSVC` toolchain, a `/NATVIS` linker option would be set
+for each .natvis file. This includes .natvis files from all crate dependencies,
+if any exist, as well as the current crate and embed them into the pdb.
+Since the `MSVC` linker is the only one that supports embedding natvis files
+into a pdb, this feature would be specific to the `MSVC` toolchain only.
 
-`Cargo.toml` would add a new syntax for specifying the list of Natvis files to
-be added to the crate. The new manifest key, `natvis` would be added to the
-`[package]` section. This would be in control of setting the `-Z natvis` flag
-that would be passed on to rustc. 
+Cargo would add new syntax in `Cargo.toml` for specifying the list of Natvis
+files to be added to the crate. The new manifest key, `natvis` would be added
+to the `[package]` section. This would be in control of setting the `-Z natvis`
+flag in rustc.
 
-We would also add a `-Z natvis={comma-separated list of .natvis files}` flag
-to rustc, which instructs the compiler to take the set of .natvis files for
-a given crate and store them in the metadata. When running the linker, using
-the `MSVC` toolchain, the `/NATVIS` linker option would be set and passed the
-total set of .natvis files from all crate dependencies, if any exist, as well
-as the current crate and embed them into the pdb. Since the `MSVC` linker is
-the only one that supports embedding natvis files into a pdb, this feature
-would be specific to the `MSVC` toolchain only.
+For example:
+
+`Cargo.toml`:
+
+```toml
+cargo-features = ["natvis"]
+
+[package]
+name = "natvis"
+version = "0.1.0"
+edition = "2018"
+natvis = ["src/a.natvis", "src/b.natvis"]
+```
+
+This would generate a call to rustc similar to the following,
+(for simplicity purposes, most of the rustc command line has been removed):
+
+`rustc -Z natvis=path/to/file/a.natvis,path/to/file/b.natvis`
 
 # Drawbacks
 [drawbacks]: #drawbacks
