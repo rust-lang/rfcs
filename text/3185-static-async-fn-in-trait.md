@@ -133,7 +133,7 @@ trait Example {
         WC0..WCn, // Explicit where clauses
         Self: 'me; // Implied bound from `&self` parameter
 
-    fn method(&self) -> Self::$<'_, P0..Pn>
+    fn method<P0..Pn>(&self) -> Self::$<'_, P0..Pn>
     where
         WC0..WCn;
 }
@@ -148,7 +148,7 @@ Otherwise, the desugaring is the same. The body of the function becomes an `asyn
 
 ```rust
 impl Example for ExampleType {
-    async fn method(&self) {
+    async fn method<P0..Pn>(&self) {
         ...
     }
 }
@@ -159,7 +159,7 @@ impl Example for ExampleType {
         WC0..WCn, // Explicit where clauses
         Self: 'me; // Implied bound from `&self` parameter
 
-    fn method(&self) -> Self::$<'_, P0..Pn> {
+    fn method<P0..Pn>(&self) -> Self::$<'_, P0..Pn> {
         async move { ... }
     }
 }
