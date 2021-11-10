@@ -142,7 +142,7 @@ trait Example {
 `async fn` that appear in impls are desugared in the same general way as an [existing async function](https://doc.rust-lang.org/reference/items/functions.html#async-functions), but with some slight differences:
 
 * The value of the associated type `$` is equal to an `impl Future` type, rather than the `impl Future` being the return type of the function
-* The function returns a reference to `Self::$<...>` with all the appropriate generic parameters
+* The function returns `Self::$<...>` with all the appropriate generic parameters
 
 Otherwise, the desugaring is the same. The body of the function becomes an `async move { ... }` block that both (a) captures all parameters and (b) contains the body expression.
 
