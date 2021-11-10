@@ -36,7 +36,7 @@ In exchange for the above constraints, the compiler commits to:
 1. never inline the function (implicit `#[inline(never)]`).
 1. emit no additional instructions to the function body before the `asm!()` statement.
 
-As a (weaker) correlary to the last compiler commitment, the initial state of all registers in the `asm!()` statement conform to the specified calling convention.
+As a (weaker) corollary to the last compiler commitment, the initial state of all registers in the `asm!()` statement conform to the specified calling convention.
 
 # Explanation
 
