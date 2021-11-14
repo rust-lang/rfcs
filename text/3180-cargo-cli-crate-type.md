@@ -1,9 +1,9 @@
 # RFC: Cargo `--crate-type` CLI Argument
 
 - Feature Name: `cargo_cli_crate_type`
-- Start Date: (fill me in with today's date, YYYY-MM-DD)
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- Start Date: 2021-10-07
+- RFC PR: [rust-lang/rfcs#3180](https://github.com/rust-lang/rfcs/pull/3180)
+- Tracking Issue: [rust-lang/cargo#10083](https://github.com/rust-lang/cargo/issues/10083)
 
 # Summary
 [summary]: #summary
