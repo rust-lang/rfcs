@@ -5,8 +5,8 @@
 # Summary
 [summary]: #summary
 
-Add an `inputln` function to `std` to read a line from standard input and return
-a `std::io::Result<String>`.
+Add an `inputln` function to `std::io` to read a line from standard input and
+return a `std::io::Result<String>`.
 
 # Motivation
 [motivation]: #motivation
@@ -37,11 +37,11 @@ in Python you can just do `guess = input()`.  Is Rust always this cumbersome?
 Maybe they should rather stick with their current favorite programming language
 instead.
 
-This RFC therefore proposes the introduction of a `std::inputln` function so
-that the above example could be simplified to just:
+This RFC therefore proposes the introduction of a `std::io::inputln` function
+so that the above example could be simplified to just:
 
 ```rs
-let guess = inputln().expect("Failed to read line");
+let guess = io::inputln().expect("Failed to read line");
 ```
 
 This would allow for a more graceful introduction to Rust. Letting beginners
@@ -54,7 +54,7 @@ complete beginners should reflect that.
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-`std::inputln()` is a convenience wrapper around `std::io::Stdin::read_line`,
+`std::io::inputln()` is a convenience wrapper around `std::io::Stdin::read_line`,
 introduced so that Rust beginners can create interactive programs without having
 to worry about mutability or borrowing.  The function allocates a new String
 buffer for you, and reads a line from standard input.  The result is returned as
@@ -83,10 +83,10 @@ pub fn inputln() -> std::io::Result<String> {
   don't realize that they could reuse a buffer instead. This could potentially
   be remedied by a new Clippy lint.
 
-* There is no precedent for a function residing directly in the `std` module
-  (currently it only contains macros). So Rust programmers might out of habit
-  try to call `inputln!()`. This should however not pose a big hurdle because
-  `rustc` already provides a helpful error message:
+* `println!` and `writeln!` are both macros, so Rust programmers might out of
+  habit try to call `inputln!()`. This should however not pose a big hurdle if
+  `std::io::inputln` is added to `std::prelude` because in that case `rustc`
+  already provides a helpful error message:
 
   ```
     error: cannot find macro `inputln` in this scope
@@ -157,10 +157,8 @@ The name of the function is up to debate. `read_line()` would also be a
 reasonable choice, that does however potentially beg the question: Read from
 where? `inputln()` hints that the line comes from standard input.
 
-The location of the function is also up to debate. It could also reside in
-`std::io`, which would however come with the drawback that beginners need to
-either import it or prefix `std::io`, both of which seem like unnecessary
-hurdles.
+Should the function additionally be added to `std::prelude`, so that beginners
+can use it without needing to import `std::io`?
 
 > What related issues do you consider out of scope for this RFC that could be
 > addressed in the future independently of the solution that comes out of this RFC?
