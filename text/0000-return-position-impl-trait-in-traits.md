@@ -197,6 +197,75 @@ trait RefIterator for Vec<u32> {
 
 To start, traits that use `-> impl Trait` will not be considered dyn safe, *even if the method has a `where Self: Sized` bound*. This is because dyn types currently require that all associated types are named, and the `$` type cannot be named. The other reason is that the value of `impl Trait` is often a type that is unique to a specific impl, so even if the `$` type *could* be named, specifying its value would defeat the purpose of the `dyn` type, since it would effectively identify the dynamic type.
 
+# Drawbacks
+[drawbacks]: #drawbacks
+
+This section discusses known drawbacks of the proposal as presently designed and (where applicable) plans for mitigating them in the future.
+
+## Cannot migrate off of impl Trait
+
+In this RFC, if you use `-> impl Trait` in a trait definition, you cannot "migrate away" from that. In other words, we cannot evolve:
+
+```rust
+trait NewIntoIterator {
+    type Item;
+    fn into_iter(self) -> impl Iterator<Item = Self::Item>;
+}
+```
+
+into 
+
+```rust
+trait NewIntoIterator {
+    type Item;
+    type IntoIter: Iterator<Item = Self::Item>;
+    fn into_iter(self) -> Self::IntoIter;
+}
+```
+
+without breaking semver compatibility. The [future possibilities](#future-possibilities) section discusses one way to resolve this, by permitting impls to elide the definition of associated types whose values can be inferred from a function return type.
+
+## Clients of the trait cannot name the resulting associated type, limiting extensibility
+
+[As @Gankra highlighted in a comment on this RFC][gankra], the traditional `IntoIterator` trait permits clients of the trait to name the resulting iterator type and apply additional bounds:
+
+[gankra]: https://github.com/rust-lang/rfcs/pull/3193#issuecomment-965505149
+
+```rust
+fn is_palindrome<Iter, T>(iterable: Iter) -> bool
+where
+    Iter: IntoIterator<Item = T>,
+    Iter::IntoIter: DoubleEndedIterator,
+    T: Eq;
+```
+
+The `NewIntoIterator` trait used as an example in this RFC, however, doesn't support this kind of usage, because there is no way for users to name the `IntoIter` type (and, as discussed in the previous section, there is no way for users to migrate to a named associated type, either!). The same problem applies to async functions in traits, which sometimes wish to be able to [add `Send` bounds to the resulting futures](https://rust-lang.github.io/async-fundamentals-initiative/evaluation/challenges/bounding_futures.html).
+
+The [future possibilities](#future-possibilities) section discusses a planned extension to support naming the type returned by an impl trait, which could work to overcome this limitation for clients.
+
+## Impls cannot add new methods to the resulting types
+
+Similarly to the previous point, [@Gankra also pointed out][gankra] that impls which employ `-> impl Trait` are not able to add methods or implement traits on the resulting types. With `IntoIterator`, one has the option of adding inherent (or trait) methods to the resulting type:
+
+```rust
+struct MyIterator {
+    ...
+}
+
+impl IntoIterator for MyType {
+    type IntoIter = MyIterator;
+    ...
+}
+
+impl MyIterator {
+    fn extra_method(&self) {
+
+    }
+}
+```
+
+Using `-> impl Trait` tends to make that not work. One way to address this would be to permit impls to specify the return types of `-> impl Trait` as concrete types.
+
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
@@ -230,57 +299,6 @@ As a backwards compatibility note, named associated types could likely be introd
 Yes, so long as the compiler has enough type information to figure out which impl you are using. In other words, given a trait function `SomeTrait::foo`, if you invoke a function `<T as SomeTrait>::foo()` where the self type is some generic parameter `T`, then the compiler doesn't really know what impl is being used, so no auto trait leakage can occur. But if you were to invoke `<u32 as SomeTrait>::foo()`, then the compiler could resolve to a specific impl, and hence a specific [impl trait type alias][tait], and auto trait leakage would occur as normal.
 
 [tait]: https://rust-lang.github.io/impl-trait-initiative/explainer/tait.html
-
-## Would introducing a named associated type be a breaking change for a trait?
-
-Converting from returning impl trait to an explicit associated type is a breaking change for impls of the trait. Given this code:
-
-```rust
-trait Foo {
-    fn bar() -> impl Display;
-}
-
-impl Foo for u32 {
-    fn bar() -> impl Display {
-        self
-    }
-}
-```
-
-transforming it to the following:
-
-```rust
-trait Foo {
-    type Bar: Display;
-    fn bar() -> Self::Bar;
-}
-
-impl Foo for u32 {
-    fn bar() -> impl Display {
-        self
-    }
-}
-```
-
-Results in an impl in the `impl Foo for u32`. The [Future possibilities section](#future-possibilities) discusses some possible ways we could mitigate this in the future by other language extensions.
-
-## Does using `-> impl Trait` in a trait limit users of that trait?
-
-If you only consider the mechanisms specified in this trait, then using `-> impl Trait` in a trait definition means that consumers of the trait cannot name the resulting return type. [As @Gankra highlighted in a comment on this RFC](https://github.com/rust-lang/rfcs/pull/3193#issuecomment-965505149), this limits reuse. For example, this RFC discusses a `NewIntoIterator` trait. Using this trait, one cannot write a signature like the following, because there is no `IntoIter` associated type:
-
-```rust
-fn is_palindrome<Iter, T>(iterable: Iter) -> bool
-where
-    Iter: IntoIterator<Item = T>,
-    Iter::IntoIter: DoubleEndedIterator,
-    T: Eq;
-```
-
-The same problem applies to async functions in traits, which sometimes wish to be able to [add `Send` bounds to the resulting futures](https://rust-lang.github.io/async-fundamentals-initiative/evaluation/challenges/bounding_futures.html).
-
-## Do you have plans to make it possible to name the return types, then, and lift that limitation?
-
-Funny you should ask! If you check out the [future possibilities](#future-possibilities) section, you will see discussion of adding a mechanism to support naming the type returned by an impl trait. We believe that one could use this mechanism to overcome the limitations described in the previous question.
 
 ## Can we make 
 
