@@ -791,7 +791,7 @@ unsafe fn foo(mut a: i32, b: i32) -> (i32, i32)
 ```
 
 ## Rules for inline assembly
-[rules]: #rules
+[rules]: #rules-for-inline-assembly
 
 - Any registers not specified as inputs will contain an undefined value on entry to the asm block.
   - An "undefined value" in the context of this RFC means that the register can (non-deterministically) have any one of the possible values allowed by the architecture. Notably it is not the same as an LLVM `undef` which can have a different value every time you read it (since such a concept does not exist in assembly code).
