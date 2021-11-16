@@ -5,8 +5,8 @@
 # Summary
 [summary]: #summary
 
-Add an `inputln` function to `std::io` to read a line from standard input and
-return a `std::io::Result<String>`.
+Add an `inputln` convenience function to `std::io` to read a line from standard
+input and return a `std::io::Result<String>`.
 
 # Motivation
 [motivation]: #motivation
@@ -54,11 +54,10 @@ complete beginners should reflect that.
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-`std::io::inputln()` is a convenience wrapper around `std::io::Stdin::read_line`,
-introduced so that Rust beginners can create interactive programs without having
-to worry about mutability or borrowing.  The function allocates a new String
-buffer for you, and reads a line from standard input.  The result is returned as
-a `std::io::Result<String>`.
+`std::io::inputln()` is a convenience wrapper around `std::io::Stdin::read_line`.
+The function allocates a new String buffer for you, reads a line from standard
+input and strips the newline (`\n` or `\r\n`).  The result is returned as a
+`std::io::Result<String>`.
 
 If you are repeatedly reading lines from standard input and don't need to
 allocate a new String for each of them you should be using
@@ -72,6 +71,13 @@ buffer.
 pub fn inputln() -> std::io::Result<String> {
     let mut input = String::new();
     std::io::stdin().read_line(&mut input)?;
+
+    if input.ends_with('\n') {
+        input.pop();
+        if input.ends_with('\r') {
+            input.pop();
+        }
+    }
     Ok(input)
 }
 ```
@@ -104,6 +110,8 @@ pub fn inputln() -> std::io::Result<String> {
 > Why is this design the best in the space of possible designs?
 
 It is the simplest solution to the explained problem.
+
+The newline stripping behavior is the same as of `std::io::BufRead::lines`.
 
 > What other designs have been considered and what is the rationale for not
 > choosing them?
