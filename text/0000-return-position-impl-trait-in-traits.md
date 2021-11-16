@@ -1,8 +1,8 @@
-- Feature Name: (fill me in with a unique ident, `my_awesome_feature`)
-- Start Date: (fill me in with today's date, YYYY-MM-DD)
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- Feature Name: return_position_impl_trait_in_traits
+- Start Date: 2021-11-16
+- RFC PR: [rust-lang/rfcs#3193](https://github.com/rust-lang/rfcs/pull/0000)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
-- Developed as part of the [impl traits lang team initiative](https://github.com/rust-lang/impl-trait-initiative)
+- Initiative: [impl trait initiative](https://github.com/rust-lang/impl-trait-initiative)
 
 # Summary
 [summary]: #summary
@@ -18,7 +18,6 @@ The `impl Trait` syntax is currently accepted in a variety of places within the 
 [explainer]: https://rust-lang.github.io/impl-trait-initiative/explainer.html
 [apit]: https://rust-lang.github.io/impl-trait-initiative/explainer/apit.html
 [rpit]: https://rust-lang.github.io/impl-trait-initiative/explainer/rpit.html
-[rpit_trait]: https://rust-lang.github.io/impl-trait-initiative/explainer/rpit_trait.html
 
 ## Example use case
 
@@ -69,11 +68,11 @@ impl IntoIntIterator for Vec<u32> {
 }
 ```
 
-This is equivalent to specify the value of the associated type as an `impl Trait`:
+This is equivalent to the following "desugared" impl (except that the associated type is anonymous):
 
 ```rust
 impl IntoIntIterator for Vec<u32> {
-    type IntoIntIter = impl Iterator<Item = u32>
+    type IntoIntIter = impl Iterator<Item = u32>;
     fn into_int_iter(self) -> Self::IntoIntIter {
         self.into_iter()
     }
@@ -134,7 +133,7 @@ impl NewIntoIterator for Vec<u32> {
 
 ## Impl trait must be used in both trait and trait impls
 
-Using `-> impl Trait` notation in a trait requires that all trait impls also use `-> impl Trait` notation in their retrn types. Similarly, using `-> impl Trait` notation in an impl is only legal if the trait also uses that notation:
+Using `-> impl Trait` notation in a trait requires that all trait impls also use `-> impl Trait` notation in their return types. Similarly, using `-> impl Trait` notation in an impl is only legal if the trait also uses that notation:
 
 ```rust
 trait NewIntoIterator {
@@ -165,9 +164,9 @@ impl NewIntoIterator for Vec<u32> {
 
 As with `-> impl Trait` in other kinds of functions, the hidden type for `-> impl Trait` in a trait may reference any of the type or const parameters declared on the impl or the method; it may also reference any lifetime parameters that explicitly appear in the trait bounds ([details](https://rust-lang.github.io/impl-trait-initiative/explainer/rpit_capture.html)). We say that a generic parameter is *captured* if it may appear in the hidden type.
 
-When desugaring, captured parameters from the method are reflected as generic parameters on the `$` associated type. Furthermore, the `$` associated type has the required brings whatever where clauses are declared on the method into scope (excepting those which reference other parameters that are not captured). This transformation is precisely the same as the one which is applied to other forms of `-> impl Trait`, except that it applies to an associated type and not a top-level type alias.
+When desugaring, captured parameters from the method are reflected as generic parameters on the `$` associated type. Furthermore, the `$` associated type brings whatever where clauses are declared on the method into scope, excepting those which reference parameters that are not captured. This transformation is precisely the same as the one which is applied to other forms of `-> impl Trait`, except that it applies to an associated type and not a top-level type alias.
 
-Exaample:
+Example:
 
 ```rust
 trait RefIterator for Vec<u32> {
@@ -265,6 +264,26 @@ impl Foo for u32 {
 
 Results in an impl in the `impl Foo for u32`. The [Future possibilities section](#future-possibilities) discusses some possible ways we could mitigate this in the future by other language extensions.
 
+## Does using `-> impl Trait` in a trait limit users of that trait?
+
+If you only consider the mechanisms specified in this trait, then using `-> impl Trait` in a trait definition means that consumers of the trait cannot name the resulting return type. [As @Gankra highlighted in a comment on this RFC](https://github.com/rust-lang/rfcs/pull/3193#issuecomment-965505149), this limits reuse. For example, this RFC discusses a `NewIntoIterator` trait. Using this trait, one cannot write a signature like the following, because there is no `IntoIter` associated type:
+
+```rust
+fn is_palindrome<Iter, T>(iterable: Iter) -> bool
+where
+    Iter: IntoIterator<Item = T>,
+    Iter::IntoIter: DoubleEndedIterator,
+    T: Eq;
+```
+
+The same problem applies to async functions in traits, which sometimes wish to be able to [add `Send` bounds to the resulting futures](https://rust-lang.github.io/async-fundamentals-initiative/evaluation/challenges/bounding_futures.html).
+
+## Do you have plans to make it possible to name the return types, then, and lift that limitation?
+
+Funny you should ask! If you check out the [future possibilities](#future-possibilities) section, you will see discussion of adding a mechanism to support naming the type returned by an impl trait. We believe that one could use this mechanism to overcome the limitations described in the previous question.
+
+## Can we make 
+
 # Prior art
 [prior-art]: #prior-art
 
@@ -282,4 +301,4 @@ We expect to introduce a mechanism for naming the result of `-> impl Trait` retu
 
 Similarly, we expect to be introducing language extensions to address the inability to use `-> impl Trait` types with dynamic dispatch. These mechanisms are needed for async fn as well. A good writeup of the challenges can be found on the "challenges" page of the [async fundamentals initiative](https://rust-lang.github.io/async-fundamentals-initiative/evaluation/challenges/dyn_traits.html).
 
-Finally, it would be possible to introduce a mechanism that allows users to give a name to the associated type that is returned by impl trait. One proposed mechanim is to support an inference mechanism, so that one if you have a function `fn foo() -> Self::Foo` that returns an associated type, the impl only needs to implement the function, and the compiler infers the value of `Foo` from the return type. Another options would be to extend the impl trait syntax generally to let uses give a name to the type alias or parameter that is introduced.
+Finally, it would be possible to introduce a mechanism that allows users to give a name to the associated type that is returned by impl trait. One proposed mechanism is to support an inference mechanism, so that one if you have a function `fn foo() -> Self::Foo` that returns an associated type, the impl only needs to implement the function, and the compiler infers the value of `Foo` from the return type. Another options would be to extend the impl trait syntax generally to let uses give a name to the type alias or parameter that is introduced.
