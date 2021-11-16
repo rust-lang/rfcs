@@ -1,7 +1,7 @@
 - Feature Name: `constrained_naked`
 - Start Date: 2020-08-06
 - RFC PR: [rust-lang/rfcs#2972](https://github.com/rust-lang/rfcs/pull/2972)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- Rust Issue: [rust-lang/rust#90957](https://github.com/rust-lang/rust/issues/90957)
 
 # Summary
 This document attempts to increase the utility of [naked functions](https://github.com/rust-lang/rfcs/blob/master/text/1201-naked-fns.md) by constraining their use and increasing their defined invariants.
