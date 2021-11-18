@@ -281,8 +281,8 @@ into a PDB, this feature would be specific to the `MSVC` toolchain only.
 
 Cargo would add new syntax in `Cargo.toml` for specifying the list of Natvis
 files to be added to the crate. The new manifest key, `natvis` would be added
-to a new `[dbgvis]` section. This would be in control of setting the `-Z natvis`
-flag in rustc.
+to a new `[debug-visualizations]` section. This would be in control of setting
+the `-Z natvis` flag in rustc.
 
 For example:
 
@@ -296,7 +296,7 @@ name = "natvis"
 version = "0.1.0"
 edition = "2018"
 
-[dbgvis]
+[debug-visualizations]
 natvis = ["a.natvis", "b.natvis"]
 ```
 
