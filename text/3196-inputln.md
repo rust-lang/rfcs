@@ -115,6 +115,26 @@ The newline trimming behavior is the same as of `std::io::BufRead::lines`.
      = note: `inputln` is in scope, but it is a function, not a macro
    ```
 
+* Might lead to confusion when users attempt the following:
+
+  ```rs
+  print!("enter your name: ");
+  let name = io::inputln()?;
+  ```
+
+  Because the `print!` macro does not flush stdout the prompt will only ever be
+  displayed after the user has input their name.  The correct way to implement
+  the above would be:
+
+  ```rs
+  print!("enter your name: ");
+  io::stdout().flush()?;
+  let name = io::inputln()?;
+  ```
+
+  This can be somewhat remedied by adding the above example to the `inputln()`
+  documentation.
+
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
@@ -184,13 +204,11 @@ Other standard libraries additionally:
 * provide some functions to parse multiple values of specific data types
   into ovariables (e.g. C's `scanf`, C++, Java's `Scanner`)
 
-Python's `input()` function accepts a `prompt` argument because Python's output
-is line buffered by default, meaning a `print()` without a newline would only be
-output after a manual flush. Node.js accepts a prompt because its
-[readline](https://nodejs.org/api/readline.html) interface is very high level.
-Both reasonings don't apply to Rust. With Rust a simple `print!()` call before
-invoking `inputln()` suffices to display an input prompt and more high-level
-interfaces are better provided by crates.
+Python's `input()` function can additionally make use of the GNU readline
+library and Node.js' [readline](https://nodejs.org/api/readline.html) interface
+provides a history and TTY keybindings as well.  The function suggested in this
+RFC does not include such high-level features, these are better left to crates,
+such as [`rustyline`](https://crates.io/crates/rustyline).
 
 While scanning utilities could also be added to the Rust standard library, how
 these should be designed is less clear, as well as whether or not they should be
