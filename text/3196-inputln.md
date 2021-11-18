@@ -56,8 +56,9 @@ complete beginners should reflect that.
 
 `std::io::inputln()` is a convenience wrapper around `std::io::Stdin::read_line`.
 The function allocates a new String buffer for you, reads a line from standard
-input and strips the newline (`\n` or `\r\n`).  The result is returned as a
-`std::io::Result<String>`.
+input and trims the newline (`\n` or `\r\n`).  The result is returned as a
+`std::io::Result<String>`. When the input stream has reached EOF a
+`std::io::Error` of kind `ErrorKind::UnexpectedEof` is returned.
 
 If you are repeatedly reading lines from standard input and don't need to
 allocate a new String for each of them you should be using
@@ -68,9 +69,17 @@ buffer.
 [reference-level-explanation]: #reference-level-explanation
 
 ```rs
+use std::io::{Error, ErrorKind};
+
 pub fn inputln() -> std::io::Result<String> {
     let mut input = String::new();
-    std::io::stdin().read_line(&mut input)?;
+
+    if std::io::stdin().read_line(&mut input)? == 0 {
+        return Err(Error::new(
+            ErrorKind::UnexpectedEof,
+            "EOF while reading a line",
+        ));
+    }
 
     if input.ends_with('\n') {
         input.pop();
@@ -124,6 +133,30 @@ newline. Newline trimming is therefore included for better ergonomics, so that
 programmers don't have to remember to add a `trim()` call whenever they want to
 parse the returned string. In cases where newlines have to be preserved the
 underlying `std::io::Stdin::read_line` can be used directly instead.
+
+> Why should the function handle EOF?
+
+If the function performs newline trimming, it also has to return an error when
+the input stream reaches EOF because otherwise users had no chance of detecting
+EOF. Handling EOF allows for example a program that attempts to parse each line
+as a number and prints their sum on EOF to be implemented as follows:
+
+```rs
+fn main() -> std::io::Result<()> {
+    let mut sum = 0;
+    loop {
+        match inputln() {
+            Ok(line) => sum += line.parse::<i32>().expect("not a number"),
+            Err(e) if e.kind() == ErrorKind::UnexpectedEof => break,
+            Err(other_error) => {
+                return Err(other_error);
+            }
+        }
+    }
+    println!("{}", sum);
+    Ok(())
+}
+```
 
 > What other designs have been considered and what is the rationale for not
 > choosing them?
