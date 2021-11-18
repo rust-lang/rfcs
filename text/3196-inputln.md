@@ -82,6 +82,8 @@ pub fn inputln() -> std::io::Result<String> {
 }
 ```
 
+The newline trimming behavior is the same as of `std::io::BufRead::lines`.
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
@@ -107,11 +109,21 @@ pub fn inputln() -> std::io::Result<String> {
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-> Why is this design the best in the space of possible designs?
+> Why should the function trim newlines?
 
-It is the simplest solution to the explained problem.
+We assume that the returned string will often be processed with `String::parse`,
+for example it is likely that developers will attempt the following:
 
-The newline stripping behavior is the same as of `std::io::BufRead::lines`.
+```rs
+let age: i32 = io::inputln()?.parse()?;
+```
+
+If `inputln()` didn't trim newlines the above would however always fail since
+the `FromStr` implementations in the standard library don't expect a trailing
+newline. Newline trimming is therefore included for better ergonomics, so that
+programmers don't have to remember to add a `trim()` call whenever they want to
+parse the returned string. In cases where newlines have to be preserved the
+underlying `std::io::Stdin::read_line` can be used directly instead.
 
 > What other designs have been considered and what is the rationale for not
 > choosing them?
