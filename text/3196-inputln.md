@@ -178,10 +178,30 @@ fn main() -> std::io::Result<()> {
 }
 ```
 
-> What other designs have been considered and what is the rationale for not
-> choosing them?
+> Why should the function be implemented as a function instead of a macro?
 
-The function could also be implemented as a macro but there is really no need for that.
+If the function were implemented as a macro it could take an optional `prompt`
+argument and take care of flushing stdout between printing the prompt and
+reading from stdin.
+
+Since the function is however meant to facilitate teaching Rust to complete
+beginners it should be as beginner-friendly as possible, which also entails
+implementing it as an actual function because then it has a clear signature:
+
+```rs
+pub fn inputln() -> std::io::Result<String>
+```
+
+As opposed to a macro for which `rustdoc` would show something like:
+
+```rs
+macro_rules! prompt {
+    () => { ... };
+    ($($args : tt) +) => { ... };
+}
+```
+
+which is not at all helpful for a beginner trying to understand what's going on.
 
 > What is the impact of not doing this?
 
