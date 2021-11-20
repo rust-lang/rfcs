@@ -244,9 +244,16 @@ mutability, borrowing or having to install a third-party library.
 > What parts of the design do you expect to resolve through the RFC process
 > before this gets merged?
 
-The name of the function is up to debate. `read_line()` would also be a
-reasonable choice, that does however potentially beg the question: Read from
-where? `inputln()` hints that the line comes from standard input.
+The name of the function is up to debate. `read_line` would also be an obvious
+choice because the function wraps `std::io::Stdin::read_line`. Since the
+function however additionally performs newline trimming and yields an error for
+EOF (as opposed to returning an `Ok` variant), naming it the same might mislead
+users into thinking that the function does not have these subtle differences.
+In particular because there is precedent for convenience functions that share
+the name of their underlying function to also behave the same
+(`std::io::read_to_string` and `std::fs::read_to_string` both wrap
+`Read::read_to_string` without processing the string or introducing additional
+error sources).
 
 Should the function additionally be added to `std::prelude`, so that beginners
 can use it without needing to import `std::io`?
