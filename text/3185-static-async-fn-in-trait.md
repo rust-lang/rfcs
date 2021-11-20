@@ -1,4 +1,4 @@
-# Draft RFC: Static async fn in traits
+# Static async fn in traits
 
 - Feature Name: `async_fn_in_traits`
 - Start Date: 2021-10-13
