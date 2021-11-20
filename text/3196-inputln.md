@@ -132,8 +132,8 @@ The newline trimming behavior is the same as of `std::io::BufRead::lines`.
   let name = io::inputln()?;
   ```
 
-  This can be somewhat remedied by adding the above example to the `inputln()`
-  documentation.
+  This source of confusion could be mitigated by explaining the issue in the
+  documentation of `inputln()` and introducing a respective Clippy lint.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -240,10 +240,17 @@ standard library to be out of the scope of this RFC.
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-Once this RFC is implemented the Chapter 2 of the Rust book could be simplified
-to introduce mutability and borrowing in a more gentle manner. Clippy could gain
-a lint to tell users to avoid unnecessary allocations due to repeated
-`inputln()` calls and suggest `std::io::Stdin::read_line` instead.
+Once this RFC is implemented:
+
+* The Chapter 2 of the Rust book could be simplified
+  to introduce mutability and borrowing in a more gentle manner.
+
+* Clippy should gain a lint that detects `print!(...); let x = io::inputln();`
+  and suggests you to insert a `io::stdout().flush();` between the statements.
+
+* Clippy might also introduce a lint to tell users to avoid unnecessary
+  allocations due to repeated `inputln()` calls and suggest
+  `std::io::Stdin::read_line` instead.
 
 With this addition Rust might lend itself more towards being the first
 programming language for students.
