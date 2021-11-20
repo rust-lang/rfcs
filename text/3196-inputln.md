@@ -28,17 +28,11 @@ io::stdin()
 ```
 
 While the above code is perfectly clear to everybody who already knows Rust, it
-can be quite overwhelming for a beginner. What is `mut`? What is `&mut`?  The
-2nd chapter gives only basic explanations and assures that mutability and
-borrowing will be explained in detail in later chapters. Don't worry about that
-for now, everything will make sense later.  But the beginner might worry about
-something else: Why is something so simple so complicated with Rust? For example
-in Python you can just do `guess = input()`.  Is Rust always this cumbersome?
-Maybe they should rather stick with their current favorite programming language
-instead.
-
-This RFC therefore proposes the introduction of a `std::io::inputln` function
-so that the above example could be simplified to just:
+can be quite overwhelming for a beginner because it confronts them with three
+new concepts at once: mutability, borrowing and the `Result` type. Didactically
+it would be better if these concepts could be introduced one at a time.  This
+RFC therefore proposes the introduction of a `std::io::inputln` function so
+that the above example could be simplified to just:
 
 ```rs
 let guess = io::inputln().expect("Failed to read line");
