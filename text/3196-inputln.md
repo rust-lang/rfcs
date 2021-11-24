@@ -63,9 +63,11 @@ buffer.
 [reference-level-explanation]: #reference-level-explanation
 
 ```rs
-use std::io::{Error, ErrorKind};
+use std::io::{Error, ErrorKind, Write};
 
 pub fn inputln() -> std::io::Result<String> {
+    std::io::stdout().flush()?; // because print! doesn't flush
+
     let mut input = String::new();
 
     if std::io::stdin().read_line(&mut input)? == 0 {
@@ -108,26 +110,6 @@ The newline trimming behavior is the same as of `std::io::BufRead::lines`.
      |
      = note: `inputln` is in scope, but it is a function, not a macro
    ```
-
-* Might lead to confusion when users attempt the following:
-
-  ```rs
-  print!("enter your name: ");
-  let name = io::inputln()?;
-  ```
-
-  Because the `print!` macro does not flush stdout the prompt will only ever be
-  displayed after the user has input their name.  The correct way to implement
-  the above would be:
-
-  ```rs
-  print!("enter your name: ");
-  io::stdout().flush()?;
-  let name = io::inputln()?;
-  ```
-
-  This source of confusion could be mitigated by explaining the issue in the
-  documentation of `inputln()` and introducing a respective Clippy lint.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -172,15 +154,42 @@ fn main() -> std::io::Result<()> {
 }
 ```
 
+> Why should the function flush standard output before reading?
+
+Users are bound to display prompts with the `print!` macro, for example they
+might do:
+
+```rs
+print!("enter your name: ");
+let name = io::inputln()?;
+```
+
+The `print!` macro however does not flush standard output, meaning if `inputln`
+wouldn't flush standard output, the above code would read from standard input
+without printing anything. `inputln` should therefore flush stdout to spare
+users from walking into this pitfall.
+
+The overhead this poses is negligible. Flushing standard output is effectively
+a no-op if there's no buffered data. While flushing standard output can fail if
+the file descriptor has been closed, the assumption in Rust programs generally
+is that standard output is always both open and writable. For example the
+`print!` and `println!` macros panic when their writing to standard output
+fails, and [since 1.48.0 Rust reopens the standard file
+descriptors](https://github.com/rust-lang/rust/pull/75295) with `/dev/null`
+when they are closed on startup. While it has been suggested to [add a method
+that closes standard output to the standard
+library](https://github.com/rust-lang/rust/issues/40032), the proposal also
+elaborated that standard output would immediately be reopend with `/dev/null`
+to uphold that very assumption.
+
 > Why should the function be implemented as a function instead of a macro?
 
 If the function were implemented as a macro it could take an optional `prompt`
-argument and take care of flushing stdout between printing the prompt and
-reading from stdin.
+argument and only flush standard output when it is actually needed.
 
-Since the function is however meant to facilitate teaching Rust to complete
-beginners it should be as beginner-friendly as possible, which also entails
-implementing it as an actual function because then it has a clear signature:
+This function might however very well be the first time a Rust beginner
+encounters the `Result` type, so it should really be impemented as an actual
+function, so that it has a clear signature:
 
 ```rs
 pub fn inputln() -> std::io::Result<String>
@@ -265,9 +274,6 @@ Once this RFC is implemented:
 
 * The Chapter 2 of the Rust book could be simplified
   to introduce mutability and borrowing in a more gentle manner.
-
-* Clippy should gain a lint that detects `print!(...); let x = io::inputln();`
-  and suggests you to insert a `io::stdout().flush();` between the statements.
 
 * Clippy might also introduce a lint to tell users to avoid unnecessary
   allocations due to repeated `inputln()` calls and suggest
