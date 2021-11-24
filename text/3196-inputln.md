@@ -114,7 +114,7 @@ The newline trimming behavior is the same as of `std::io::BufRead::lines`.
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-> Why should the function trim newlines?
+## Why should the function trim newlines?
 
 We assume that the returned string will often be processed with `String::parse`,
 for example it is likely that developers will attempt the following:
@@ -130,7 +130,7 @@ programmers don't have to remember to add a `trim()` call whenever they want to
 parse the returned string. In cases where newlines have to be preserved the
 underlying `std::io::Stdin::read_line` can be used directly instead.
 
-> Why should the function handle EOF?
+## Why should the function handle EOF?
 
 If the function performs newline trimming, it also has to return an error when
 the input stream reaches EOF because otherwise users had no chance of detecting
@@ -154,7 +154,7 @@ fn main() -> std::io::Result<()> {
 }
 ```
 
-> Why should the function flush standard output before reading?
+## Why should the function flush standard output before reading?
 
 Users are bound to display prompts with the `print!` macro, for example they
 might do:
@@ -182,7 +182,7 @@ library](https://github.com/rust-lang/rust/issues/40032), the proposal also
 elaborated that standard output would immediately be reopend with `/dev/null`
 to uphold that very assumption.
 
-> Why should the function be implemented as a function instead of a macro?
+## Why should the function be implemented as a function instead of a macro?
 
 If the function were implemented as a macro it could take an optional `prompt`
 argument and only flush standard output when it is actually needed.
@@ -206,7 +206,7 @@ macro_rules! prompt {
 
 which is not at all helpful for a beginner trying to understand what's going on.
 
-> What is the impact of not doing this?
+## What is the impact of not doing this?
 
 A higher chance of Rust beginners getting overwhelmed by mutability and borrowing.
 
