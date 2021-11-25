@@ -80,8 +80,8 @@ annotations.
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-Return types of `fn` definitions may have attributes attached to them. Thereby,
-additional information may be provided.
+Return types of `fn` definitions as well as closures may have attributes
+attached to them. Thereby, additional information may be provided.
 
 For the purposes of illustration, let's assume we have the attribute
 `#[apple]` available to us.
@@ -104,6 +104,11 @@ impl Beta for Alpha { // Also works in trait implementations.
     fn bar() -> #[apple] u8 { .. }
 
     ..
+}
+
+fn foo() {
+    // Closures:
+    let bar = |x| -> #[apple] u8 { .. };
 }
 ```
 
