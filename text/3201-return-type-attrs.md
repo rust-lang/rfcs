@@ -31,44 +31,42 @@ As well as individual function parameters (introduced in [RFC2565]):
 fn example(#[attr] input: String, #[attr] x: u8) { .. }
 ```
 
-However function return types currently cannot be annotated, which forces DSLs
-to resort to function attributes, for example:
+However function return types currently cannot be annotated, which forces
+domain-specific languages (DSLs) to resort to function attributes, for example:
 
 ```rust
-#[return_format = "json"]
-fn example(#[param = "q"] query: String, #[page = "p"] page: u64) -> Vec<Page> {
-    ..
+#[wasm_bindgen]
+impl RustLayoutEngine {
+    #[return_type = "MapNode[]"]
+    pub fn layout(
+        &self,
+        #[type = "MapNode[]"] nodes: Vec<JsValue>,
+        #[type = "MapEdge[]"] edges: Vec<JsValue>
+    ) -> Vec<JsValue> {
+        ..
+    }
 }
 ```
 
-Especially for functions with many parameters this can result in the annotation
-that is meant for the return type to be several lines apart from the return
-type that it actually describes:
+Return type attributes would allow the above example to be changed to:
 
 ```rs
-#[return_format = "json"]
-fn example(
-    #[param = "q"] query: String,
-    #[param = "p"] page: u64,
-    #[param = "c"] count: u64,
-    #[param = "o"] order_by: Column,
-) -> Vec<Page> {
-    ..
+#[wasm_bindgen]
+impl RustLayoutEngine {
+    pub fn layout(
+        &self,
+        #[type = "MapNode[]"] nodes: Vec<JsValue>,
+        #[type = "MapEdge[]"] edges: Vec<JsValue>
+    ) -> #[type = "MapNode[]"] Vec<JsValue> {
+        ..
+    }
 }
 ```
 
-For such cases return type attributes could provide more clarity:
-
-```rs
-fn example(
-    #[param = "q"] query: String,
-    #[param = "p"] page: u64,
-    #[param = "c"] count: u64,
-    #[param = "o"] order_by: Column,
-) -> #[json] Vec<Page> {
-    ..
-}
-```
+The resulting DSL is clearer to read ... in particular in functions with many
+parameters where the function attribute would be several lines apart from the
+return type (because `rustfmt` by default puts each parameter on its own line
+when the function signature gets too long).
 
 Since function parameters already can be annotated this can be regarded as the
 next logical step towards more expressive and intuitive DSLs.  The motivation
