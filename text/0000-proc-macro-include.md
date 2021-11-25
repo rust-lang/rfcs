@@ -72,7 +72,7 @@ fn include_str<P: AsRef<str>>(path: P) -> Result<String, std::io::Error>;
 ///
 /// NOTE: some errors may cause panics instead of returning `io::Error`.
 /// We reserve the right to change these errors into `io::Error`s later.
-fn include_str<P: AsRef<str>>(path: P) -> Result<Vec<u8>, std::io::Error>;
+fn include_bytes<P: AsRef<str>>(path: P) -> Result<Vec<u8>, std::io::Error>;
 ```
 
 As an example, consider a potential implementation of [`core::include`](https://doc.rust-lang.org/stable/core/macro.include.html):
