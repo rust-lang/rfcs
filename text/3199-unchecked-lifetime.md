@@ -103,12 +103,12 @@ struct A {
 }
 
 impl A {
-    fn store(&self, some_ref: &usize) {
+    fn store(&mut self, some_ref: &usize) {
         self.val = some_ref; // assigning to val, not through val.
     }
 }
 ```
-An important but subtle point here is that it is only legal to have `&self` because of rule 2. Without it all references to A would outlive their borrowed content.
+An important but subtle point here is that it is only legal to have `&mut self` because of rule 2. Without it all references to A would outlive their borrowed content.
 
 The only way to use a type that has been stored with `&'?` is to use unsafe, or transmute it to a normal lifetime, which of course requires unsafe.
 ```rust
