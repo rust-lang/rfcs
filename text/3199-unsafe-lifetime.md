@@ -157,7 +157,11 @@ impl A {
 # Prior art
 [prior-art]: #prior-art
 
-
+previous rfc:
+[unsafe lifetime by jpernst](https://github.com/rust-lang/rfcs/pull/1918/)
+Many things are similar between these two RFCs, but there are a couple important differences that solve the problems with the first unsafe lifetime attempt:
+- Instead of `'unsafe` satisfying *all* constraints, it satisfies *no* constraints. This makes it so existing functions cannot be called with unsafe lifetimes.
+- operations which create values whose types contain `'unsafe` are generally all safe. These values are mostly unusable unless they are transmuted back to a useful lifetime, which is unsafe.
 
 Some crates for dealing with self reference:
 - [owning_ref](https://crates.io/crates/owning_ref) is an early attempt to make self references ergonomic but is slightly clunky and not generic enough for some use cases.
