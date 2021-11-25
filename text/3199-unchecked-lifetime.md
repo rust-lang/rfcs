@@ -15,7 +15,7 @@ When creating self referential structs it is often preferred to use pointers ove
 ```rust
 struct A<T> {
     item: T
-    borrower: B<???> // we want the ref inside this to refer to item
+    borrower: B<???, T> // we want the ref inside this to refer to item
 }
 
 struct B<'a, T> {
@@ -108,18 +108,35 @@ impl A {
     }
 }
 ```
+An important but subtle point here is that it is only legal to have `&self` because of rule 2. Without it all references to A would outlive their borrowed content.
 
-The only way to use a type that has been stored with `&'?` is to transmute it to a normal lifetime, which of course requires unsafe.
+The only way to use a type that has been stored with `&'?` is to use unsafe, or transmute it to a normal lifetime, which of course requires unsafe.
 ```rust
 impl A {
     // illegal
-    fn read(&self) -> usize {
+    fn read_illegal(&self) -> usize {
         *self.val // throws error due to rule 4
     }
 
     // legal, requiring unsafe.
-    fn read(&self) -> usize {
+    fn read_deref(&self) -> usize {
         unsafe { *self.val }
+    }
+
+    // legal, requiring unsafe.
+    fn read_transmute(&self) -> usize {
+        *(unsafe { core::mem::transmute::<&'? usize, &usize>(self.val) })
+    }
+}
+```
+note that read_transmute works for any type which is generic over a lifetime.
+
+Additionally, an important result of rule 3 is that methods defined on a reference to a type cannot be called on an unchecked reference unless they were specifically written to accept an unchecked reference, as unchecked references do not live long enough to be used where a normal reference would, like the method signature.
+```rust
+impl A {
+    // errors
+    fn get(&self) -> usize {
+        self.val.clone() // clone expects &self, so this errors as val does not live long enough.
     }
 }
 ```
@@ -145,6 +162,7 @@ impl A {
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
+- The choice for what to use as the lifetime is up in the air. Another idea I had for it was `'*` to imply the relationship to raw pointers, but then it gets a little insane with `&'* T` vs `&T` vs `*T`.
 - While this RFC does aim to make self referential structs more possible, it does not aim to make them common or even easy. Pinning is not addressed at all, and must be well understood for any self referential struct, and this RFC aims to be compatable with and separate from the pinning API.
 
 # Future possibilities
