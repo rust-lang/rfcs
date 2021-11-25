@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-Introduce a new special lifetime representing an "unchecked" lifetime. calling a method whose signature is generic over any "unchecked" lifetime would require an unsafe operation.
+Introduce a new special lifetime `'?` representing an "unchecked" lifetime. calling a method whose signature is generic over any "unchecked" lifetime would require an unsafe operation.
 
 # Motivation
 [motivation]: #motivation
@@ -82,6 +82,7 @@ In general using replacing a real lifetime with `'?` should be thought of as a s
 
 If you try to call a method whose arguments or return value include `'?`, that call will need to be wrapped in unsafe, because you are asserting that you know those references are valid despite the borrow checker not knowing.
 
+The addition of the `'?` lifetime also means the addition of two new reference types, `&'? T` and `&'? mut T`. These are in a sense halfway in between references and pointers. Static references can be coerced into mortal references, which can be coerced into unchecked-lifetime references, which can be coerced into raw pointers. The crucial difference between `&'? T` and `*const T` is that it is considered unsound for `&'? T` to be unaligned at any time, instead of only at the time of dereference for raw pointers.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -97,14 +98,14 @@ The section should return to the examples given in the previous section, and exp
 # Drawbacks
 [drawbacks]: #drawbacks
 
-Why should we *not* do this?
+- One more pointer type is potentially confusing.
+- Potentially a trap for newer rust developers to just declare structs with unchecked lifetimes without realizing this is just as dangerous as throwing raw pointers around.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-- Why is this design the best in the space of possible designs?
-- What other designs have been considered and what is the rationale for not choosing them?
-- What is the impact of not doing this?
+- There isn't any analogue in the higher type system to the lifetime erasure that occurs when coalescing from reference to pointer.
+- An alternative could be a macro-based library. This approach seems unlikely to check all the boxes though
 
 # Prior art
 [prior-art]: #prior-art
@@ -112,16 +113,8 @@ Why should we *not* do this?
 Discuss prior art, both the good and the bad, in relation to this proposal.
 A few examples of what this can include are:
 
-- For language, library, cargo, tools, and compiler proposals: Does this feature exist in other programming languages and what experience have their community had?
-- For community proposals: Is this done by some other community and what were their experiences with it?
-- For other teams: What lessons can we learn from what other communities have done here?
-- Papers: Are there any published papers or great posts that discuss this? If you have some relevant papers to refer to, this can serve as a more detailed theoretical background.
-
-This section is intended to encourage you as an author to think about the lessons from other languages, provide readers of your RFC with a fuller picture.
-If there is no prior art, that is fine - your ideas are interesting to us whether they are brand new or if it is an adaptation from other languages.
-
-Note that while precedent set by other languages is some motivation, it does not on its own motivate an RFC.
-Please also take into consideration that rust sometimes intentionally diverges from common language features.
+- [Oroboros](https://docs.rs/ouroboros/0.13.0/ouroboros/attr.self_referencing.html) is a crate designed to facilitate self referential struct construction via macros. It is limited to references, and attempts to avoid unsafe.
+- [rental](https://docs.rs/rental/0.5.6/rental/), another macro based approach, is limited in a few ways and is somewhat clunky to use.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
