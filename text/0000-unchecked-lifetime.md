@@ -1,6 +1,6 @@
-- Feature Name: (fill me in with a unique ident, `my_awesome_feature`)
-- Start Date: (fill me in with today's date, YYYY-MM-DD)
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- Feature Name: `unchecked_lifetime`
+- Start Date: 2021-11-24
+- RFC PR: [rust-lang/rfcs#3199](https://github.com/rust-lang/rfcs/pull/3199)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 # Summary
