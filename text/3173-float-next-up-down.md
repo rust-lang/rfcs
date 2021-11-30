@@ -1,7 +1,7 @@
 - Feature Name: `float_next_up_down`
 - Start Date: 2021-09-06
 - RFC PR: [rust-lang/rfcs#3173](https://github.com/rust-lang/rfcs/pull/3173)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- Rust Issue: [rust-lang/rust#91399](https://github.com/rust-lang/rust/issues/91399)
 
 # Summary
 [summary]: #summary
