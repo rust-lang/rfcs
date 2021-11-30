@@ -1,6 +1,6 @@
 - Feature Name: `simple_postfix_macros`
 - Start Date: 2018-05-12
-- RFC PR: (leave this empty)
+- RFC PR: [rust-lang/rfcs#2442](https://github.com/rust-lang/rfcs/pull/2442)
 - Rust Issue: (leave this empty)
 
 # Summary
