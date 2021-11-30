@@ -153,6 +153,10 @@ Macros defined using this mechanism follow exactly the same namespace and
 scoping rules as any other macro. If a macro accepting a `$self:self` argument
 is in scope, Rust code may call it on any object.
 
+A macro may only be called postfix if it is directly in scope and can be called
+unqualified. A macro available via a qualified path does not support postfix
+calls.
+
 Since `$self` represents an internal temporary location created by the
 compiler, calling `stringify!` on `$self` will just return `"$self"`. If passed
 to another macro, `$self` will only match a macro argument using a designator
