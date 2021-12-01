@@ -94,11 +94,12 @@ only a macro can provide.
 [reference-level-explanation]: #reference-level-explanation
 
 When expanding a postfix macro, the compiler will effectively create a
-temporary binding for the value of `$self`, and substitute that binding
-for each expansion of `$self`. This stands in contrast to other macro
-arguments, which get expanded into the macro body without evaluation. This
-change avoids any potential ambiguities regarding the scope of the `$self`
-argument and how much it leaves unevaluated, by evaluating it fully.
+temporary binding (as though with `match`) for the value of `$self`, and
+substitute that binding for each expansion of `$self`. This stands in contrast
+to other macro arguments, which get expanded into the macro body without
+evaluation. This change avoids any potential ambiguities regarding the scope of
+the `$self` argument and how much it leaves unevaluated, by evaluating it
+fully.
 
 For example, given the following macro definition:
 
@@ -123,22 +124,28 @@ fn main() {
 The invocation in `main` will expand to the following:
 
 ```rust
-    {
-        let _internal2 = {
-            let _internal1 = value("hello");
+    match value("hello") {
+        _internal1 => match ({
             eprintln!("{}:{}: {}: {:?}", "src/main.rs", 14, "value", _internal1);
             _internal1
         }
-        .len();
-        eprintln!("{}:{}: {}: {:?}", "src/main.rs", 14, "len", _internal2);
-        _internal2
+        .len())
+        {
+            _internal2 => {
+                eprintln!("{}:{}: {}: {:?}", "src/main.rs", 14, "len", _internal2);
+                _internal2
+            }
+        },
     };
 ```
 
-The code within the inner curly braces represents the expansion of the first
-`log_value!`; the code within the outer curly braces represents the expansion
-of the second `log_value!`. The compiler will generate unique symbols for each
-internal variable.
+The first `match` represents the expansion of the first `log_value!`; the
+second `match` represents the expansion of the second `log_value!`. The
+compiler will generate unique symbols for each internal variable.
+
+The use of `match` in the desugaring ensures that temporary lifetimes last
+until the end of the expression; a desugaring based on `let` would end
+temporary lifetimes before calling the postfix macro.
 
 Note that postfix macros cannot dispatch differently based on the type of the
 expression they're invoked on. This includes whether the expression has type
