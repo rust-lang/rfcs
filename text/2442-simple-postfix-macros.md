@@ -90,6 +90,9 @@ This method-like syntax allows macros to cleanly integrate in a left-to-right
 method chain, while still making use of control flow and other features that
 only a macro can provide.
 
+A postfix macro may accept `self` by reference or mutable reference, by using a
+designator of `&self` or `&mut self` in place of `self`.
+
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
@@ -147,18 +150,20 @@ The use of `match` in the desugaring ensures that temporary lifetimes last
 until the end of the expression; a desugaring based on `let` would end
 temporary lifetimes before calling the postfix macro.
 
+A designator of `&self` becomes a match binding of `ref _internal`; a
+designator of `&mut self` becomes a match binding of `ref mut _internal`.
+
 Note that postfix macros cannot dispatch differently based on the type of the
-expression they're invoked on. This includes whether the expression has type
-`T`, `&T`, or `&mut T`. The internal binding the compiler creates for that
-expression will participate in type inference as normal, including the expanded
-body of the macro. If the compiler cannot unambiguously determine the type of
-the internal binding, it will produce a compile-time error. If the macro wishes
-to constrain the type of `$self`, it can do so by writing a `let` binding for
-`$self` with the desired type.
+expression they're invoked on. The internal binding the compiler creates for
+that expression will participate in type inference as normal, including the
+expanded body of the macro. If the compiler cannot unambiguously determine the
+type of the internal binding, it will produce a compile-time error. If the
+macro wishes to constrain the type of `$self`, it can do so by writing a `let`
+binding for `$self` with the desired type.
 
 Macros defined using this mechanism follow exactly the same namespace and
-scoping rules as any other macro. If a macro accepting a `$self:self` argument
-is in scope, Rust code may call it on any object.
+scoping rules as any other macro. If a postfix macro is in scope, Rust code may
+call it on any object.
 
 A macro may only be called postfix if it is directly in scope and can be called
 unqualified. A macro available via a qualified path does not support postfix
@@ -169,8 +174,8 @@ compiler, calling `stringify!` on `$self` will just return `"$self"`. If passed
 to another macro, `$self` will only match a macro argument using a designator
 of `:expr`, `:tt`, or `:self`.
 
-Using the `self` designator on any macro argument other than the first will
-produce a compile-time error.
+Using the `self` or `&self` or `&mut self` designator on any macro argument
+other than the first will produce a compile-time error.
 
 Wrapping any form of repetition around the `self` argument will produce a
 compile-time error.
@@ -181,8 +186,9 @@ list (`($self:self)`, with the closing parenthesis as the next token after
 other tokens. Any subsequent tokens after the `,` will match what appears
 between the delimiters after the macro name in its invocation.
 
-A macro may attach the designator `self` to a parameter not named `$self`, such
-as `$x:self`. Using `$self:self` is a convention, not a requirement.
+A macro may attach the designator `self` (or `&self` or `&mut self`) to a
+parameter not named `$self`, such as `$x:self`. Using `$self:self` is a
+convention, not a requirement.
 
 A postfix macro invocation, like any other macro invocation, may use any form
 of delimiters around the subsequent arguments: parentheses (`expr.m!()`),
@@ -246,6 +252,10 @@ type. However, macros do currently allow `self` as the name of a macro argument
 when used with a designator, such as `$self:expr`; this could lead to potential
 confusion, and would preclude some approaches for future extension.
 
+We could omit support for `&self` and `&mut self` and only support `self`.
+However, this would make `some_struct.field.postfix!()` move out of `field`,
+which would make it much less usable.
+
 # Prior art
 [prior-art]: #prior-art
 
@@ -258,3 +268,6 @@ control-flow mechanism from prefix to postfix.
 
 - Should we define a means of creating postfix proc macros, or can we defer that?
 - Does evaluating `$self` create any other corner cases besides `stringify!`?
+- Is the desugaring of `&self` and `&mut self` correct? Is there another
+  desugaring that would work better? What happens if the type is already a
+  reference?
