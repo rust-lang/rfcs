@@ -78,11 +78,13 @@ struct ArrayIter<T> {
 
 Note that, like `'static`, `'unsafe` is allowed to appear in struct definitions without being declared. This is because the unsafe lifetime, like`'static`, is a specific lifetime and not a generic parameter.`'unsafe` can be thought of as "a lifetime which is outlived by all possible lifetimes. Dereferencing a reference with the unsafe lifetime is unsafe. Additionally, `'unsafe` is not acceptable when `'a` is expected because for any lifetime`'a`, `'unsafe` does not live long enough to satisfy its requirements.
 
-In general using replacing a real lifetime with `'unsafe` should be thought of as a similar transformation to replacing a reference with a pointer. If you are doing it, you are doing it because safe rust does not allow for the type of code you are trying to write, and you're trying to encapsulate the unsafe into a compact part of your code.
+In general replacing a real lifetime with `'unsafe` should be thought of as a similar transformation to replacing a reference with a pointer. If you are doing it, you are doing it because safe rust does not allow for the type of code you are trying to write, and you're trying to encapsulate the unsafe into a compact part of your code.
 
-If you try to call a function which has a lifetime specifier (whether or not it has been elided in the signature) using a `'unsafe` lifetime you will get an error, because any lifetime that the borrow checker could possibly choose for this call to your function would outlive a `'unsafe` reference.
+If you try to call a function which has a lifetime specifier (whether or not it has been elided in the signature) using a `'unsafe` lifetime you will get a compilation error, because any lifetime that the borrow checker could possibly choose for this call to your function would outlive a `'unsafe` reference.
 
 The addition of the `'unsafe` lifetime also means the addition of two new reference types, `&'unsafe T` and `&'unsafe mut T`. These are in a sense halfway in between references and pointers. Dereferencing them is unsafe. `'static` references can be coerced into `'a` references, which can be coerced into `'unsafe` references, which can be coerced into raw pointers.
+
+Now we also need to be able to actually produce a value to assign to our `std::slice::Iter<'unsafe, T>` field, which can be done by assigning to a value of the same type, except with a normal lifetime in place of unsafe, though there's an important catch. Any assignment to a "place" (whether to a variable, through a mutable reference, or setting a field of a struct) is unsafe if the type of the "place" uses 'unsafe instead of a generic lifetime specifier. The user must guarantee that the lifetime replaced by 'unsafe is valid when the value contained in place is dropped.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -90,7 +92,11 @@ The addition of the `'unsafe` lifetime also means the addition of two new refere
 The unsafe lifetime is unique in a few ways:
 1. It is outlived by all other lifetimes (in the same way that `'static` outlives all other lifetimes).
 2. The check that a reference does not outlive borrowed content is skipped when the borrowed content has `'unsafe` lifetime.
-3. assigning to or reading from `&'? T` and `&'? mut T` is unsafe
+3. Assigning to or reading from `&'unsafe T` and `&'unsafe mut T` is unsafe.
+    - The programmer must ensure the references must be valid, or this is UB. 
+4. Assigning to a variable whose type is instantiated with `'unsafe` in place of at least one of its lifetimes is unsafe.
+    - The programmer must ensure the `'unsafe` is valid when the variable is dropped (because step 5).
+5. Dropping a value whose type is instantiated with `'unsafe` first transmutes the value to the same type with `'unsafe` replaced with `'_`.
 
 One important consequence of rule 1, which we will call rule 1.5: `'unsafe` references cannot be used where normal references are expected, because the borrow checker must negotiate a lifetime between the two, but any lifetime that can be assigned to `'a` necessarily outlives `'unsafe`.
 
@@ -105,7 +111,9 @@ struct A {
 
 impl A {
     fn store(&mut self, some_ref: &usize) {
-        self.val = some_ref; // assigning to val, not through val.
+        // assigning to val, not through val.
+        // unsafe due to rule 4. If we were assigning through it would be rule 3.
+        unsafe { self.val = some_ref; }
     }
 }
 ```
@@ -126,12 +134,10 @@ impl A {
 
     // legal, requiring unsafe.
     fn read_transmute(&self) -> usize {
-        *(unsafe { core::mem::transmute::<&'? usize, &usize>(self.val) })
+        *(unsafe { core::mem::transmute::<&'unsafe usize, &usize>(self.val) })
     }
 }
 ```
-note that read_transmute works for any type which is generic over a lifetime.
-
 Additionally, an important result of rule 1.5 is that methods defined on a reference to a type cannot be called on an unsafe reference unless they were specifically written to accept an unsafe reference, as unsafe references do not live long enough to be used where a normal reference would, like the method signature.
 ```rust
 impl A {
@@ -171,14 +177,9 @@ Some crates for dealing with self reference:
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-- What about Drop? it is clearly problematic to call drop on a type like this, as the mutable reference taken in the drop impl outlives the `'unsafe` lifetime. I have a couple possible approaches on this front:
-  1. Any type which explicitly contains a `'unsafe` lifetime specifier *must* impl Drop.
-    - If a type implements drop for the `'unsafe` lifetime instead of simply a declared lifetime, uses of it can be exempt from the above requirement.
-  2. Call drop on downgrade from a `'a` to `'unsafe` unless some special unsafe downgrade function is called, or drop is implemented for `'unsafe` of that type. This may be clunky but I think it is the cleanest in terms of maintaining the boundary between safe and unsafe.
-- The choice for what to use as the lifetime is up in the air. Another idea I had for it was `'*` to imply the relationship to raw pointers, but then it gets a little insane with `&'* T` vs `&T` vs `*T`.
 - While this RFC does aim to make self-referential structs more possible, it does not aim to make them common or even easy. Pinning is not addressed at all, and must be well understood for any self-referential struct, and this RFC aims to be compatable with and separate from the pinning API.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-This may be valuable to ffi if you know that a pointer is aligned, as then using `&'?` may be more appropriate in this scenario
+This may be valuable to ffi if you know that a pointer is aligned, as then using `&'unsafe` may be more appropriate in this scenario
