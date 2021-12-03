@@ -44,8 +44,8 @@ First, let's explain why none of these really work, then show the fourth option,
 Introducing a new lifetime parameter has some problems:
 ```rust
 struct ArrayIter<'a, T> {
-    buffer: [T; 32]
     iter: std::slice::Iter<'a, T>
+    buffer: [T; 32]
 }
 ```
 while this can work to set your iter up and potentially implement methods on ArrayIter, 'a has no meaning to someone consuming this struct. what do they instantiate this lifetime as? there is not a scope to which this lifetime has any meaningful connection, so it really pollutes your type.
@@ -53,8 +53,8 @@ while this can work to set your iter up and potentially implement methods on Arr
 Replacing all self-references with pointers works, but not when you are not the implementor of the type which uses the lifetime.
 ```rust
 struct ArrayIter<T> {
-    buffer: [T; 32]
     iter: MyPointerBasedReimplementationOfIter
+    buffer: [T; 32]
 }
 ```
 This approach is unreasonable for all but the simplest borrowing types, as it requires you to fully re-implement anything intended for use with references to work in terms of pointers.
@@ -62,8 +62,8 @@ This approach is unreasonable for all but the simplest borrowing types, as it re
 Using the `'static` lifetime almost works, but has one important failing:
 ```rust
 struct ArrayIter<T> {
-    buffer: [T; 32]
     iter: std::slice::Iter<'static, T>
+    buffer: [T; 32]
 }
 ```
 What if T is not `'static`? using the static lifetime here restricts our generic parameter T to being 'static, which is a concession we may not be ok with making.
@@ -71,12 +71,19 @@ What if T is not `'static`? using the static lifetime here restricts our generic
 So how do we get all of the above? We use the unsafe lifetime `'unsafe`
 ```rust
 struct ArrayIter<T> {
+    iter: ManuallyDrop<std::slice::Iter<'unsafe, T>>
     buffer: [T; 32]
-    iter: std::slice::Iter<'unsafe, T>
+}
+
+impl Drop for ArrayIter<T> {
+    fn drop(&mut self) {
+        let iter: &mut ManuallyDrop<Y<'_>> = unsafe { core::mem::transmute(&mut self.iter) };
+        iter.drop();
+    }
 }
 ```
 
-Note that, like `'static`, `'unsafe` is allowed to appear in struct definitions without being declared. This is because the unsafe lifetime, like`'static`, is a specific lifetime and not a generic parameter.`'unsafe` can be thought of as "a lifetime which is outlived by all possible lifetimes. Dereferencing a reference with the unsafe lifetime is unsafe. Additionally, `'unsafe` is not acceptable when `'a` is expected because for any lifetime`'a`, `'unsafe` does not live long enough to satisfy its requirements.
+Note that, like `'static`, `'unsafe` is allowed to appear in struct definitions without being declared. This is because the unsafe lifetime, like`'static`, is a specific lifetime and not a generic parameter.`'unsafe` can be thought of as "a lifetime which is outlived by all possible lifetimes. Dereferencing a reference with the unsafe lifetime is unsafe. Additionally, `'unsafe` is not acceptable when `'a` is expected because it never lives long enough.
 
 In general replacing a real lifetime with `'unsafe` should be thought of as a similar transformation to replacing a reference with a pointer. If you are doing it, you are doing it because safe rust does not allow for the type of code you are trying to write, and you're trying to encapsulate the unsafe into a compact part of your code.
 
@@ -84,26 +91,67 @@ If you try to call a function which has a lifetime specifier (whether or not it 
 
 The addition of the `'unsafe` lifetime also means the addition of two new reference types, `&'unsafe T` and `&'unsafe mut T`. These are in a sense halfway in between references and pointers. Dereferencing them is unsafe. `'static` references can be coerced into `'a` references, which can be coerced into `'unsafe` references, which can be coerced into raw pointers.
 
-Now we also need to be able to actually produce a value to assign to our `std::slice::Iter<'unsafe, T>` field, which can be done by assigning to a value of the same type, except with a normal lifetime in place of unsafe, though there's an important catch. Any assignment to a "place" (whether to a variable, through a mutable reference, or setting a field of a struct) is unsafe if the type of the "place" uses 'unsafe instead of a generic lifetime specifier. The user must guarantee that the lifetime replaced by 'unsafe is valid when the value contained in place is dropped.
+Now we also need to be able to actually produce a value to assign to our `std::slice::Iter<'unsafe, T>` field, which can be done by assigning to a value of the same type, except with a normal lifetime in place of unsafe.
+
+Wrapping in `ManuallyDrop` is required when using a type with `'unsafe` substituted for a lifetime parameter, and so to drop the iter we need a drop impl
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-The unsafe lifetime is unique in a few ways:
+The unsafe lifetime is unique in a few ways, which we will refer to as the "rules":
 1. It is outlived by all other lifetimes (in the same way that `'static` outlives all other lifetimes).
+    - `'a: 'unsafe` for *all* `'a`
+    - `'unsafe: 'a` for *no* `'a`
 2. The check that a reference does not outlive borrowed content is skipped when the borrowed content has `'unsafe` lifetime.
 3. Assigning to or reading from `&'unsafe T` and `&'unsafe mut T` is unsafe.
     - The programmer must ensure the references must be valid, or this is UB. 
-4. Assigning to a variable whose type is instantiated with `'unsafe` in place of at least one of its lifetimes is unsafe.
-    - The programmer must ensure the `'unsafe` is valid when the variable is dropped (because step 5).
-5. Dropping a value whose type is instantiated with `'unsafe` first transmutes the value to the same type with `'unsafe` replaced with `'_`.
-
-One important consequence of rule 1, which we will call rule 1.5: `'unsafe` references cannot be used where normal references are expected, because the borrow checker must negotiate a lifetime between the two, but any lifetime that can be assigned to `'a` necessarily outlives `'unsafe`.
+4. Similar union fields, the types of owned values, which have a generic lifetime parameter instantiated to `'unsafe` must either:
+    - be of the shape `ManuallyDrop<_>`
+    - have a Drop impl specifically compatible with `'unsafe` for that lifetime parameter.
 
 Let's examine some of the implications of these features.
 
-It is safe in general to store into a value expecting `'unsafe`, just like with raw pointers
+## Rule 1
+### Coercion
+If we want to get a type `T<'unsafe, 'b>` amd we have a type `T<'a, 'b>`, we can simply coerce `T<'a, 'b>` into `T<'unsafe, 'b>`
 
+in this example our coercion target is simply a `&'unsafe usize`
+```rust
+struct A {
+    // references are COPY, so rule 4 is satisfied
+    val: &'unsafe usize
+}
+
+impl A {
+    fn store(&mut self, some_ref: &usize) {
+        // assigning to val, not through val.
+        // note that '_: 'unsafe by rule 1a, so this is allowed.
+        self.val = some_ref;
+    }
+}
+```
+
+### Unusability
+`'unsafe` references cannot be used where normal references are expected, because the borrow checker must negotiate a lifetime between the two, but any lifetime that can be assigned to `'a` necessarily outlives `'unsafe`. This is very important for preventing `'unsafe` from making its way into old functions without clearly using unsafe code for that purpose.
+
+```rust
+fn my_existing_function(&usize) { ... }
+
+fn main() {
+    let a = 17;
+    let b: &usize = &a;
+    let c: &'unsafe usize = &a;
+
+    // this is fine of course
+    my_existing_function(b)
+    // this fails because the lifetime of c ('unsafe) does not satisfy '_ by rule 1b
+    my_existing_function(c)
+}
+```
+
+## Rule 2
+
+lets examine the first example from rule 1 again:
 ```rust
 struct A {
     val: &'unsafe usize
@@ -111,15 +159,15 @@ struct A {
 
 impl A {
     fn store(&mut self, some_ref: &usize) {
-        // assigning to val, not through val.
-        // unsafe due to rule 4. If we were assigning through it would be rule 3.
-        unsafe { self.val = some_ref; }
+        self.val = some_ref;
     }
 }
 ```
-An important but subtle point here is that it is only legal to have `&mut self` because of rule 2. Without it all references to A would outlive their borrowed content.
+An important but subtle point here is that it is only legal to have `&mut self` at all because of rule 2. Without it all references to A would outlive their borrowed content.
 
-The only way to use a type that has been stored with `&'unsafe` is to use unsafe, or transmute it to a normal lifetime, which of course requires unsafe.
+## Rule 3
+This is clearly required as we've thrown away the lifetime information, so we need to assure the compiler that the type is still valid. This is the same idea as casting a ref to a pointer, then needing to use unsafe to dereference.
+
 ```rust
 impl A {
     // illegal
@@ -128,25 +176,72 @@ impl A {
     }
 
     // legal, requiring unsafe.
-    fn read_deref(&self) -> usize {
+    fn read_legal(&self) -> usize {
         unsafe { *self.val }
     }
+}
+```
 
-    // legal, requiring unsafe.
-    fn read_transmute(&self) -> usize {
-        *(unsafe { core::mem::transmute::<&'unsafe usize, &usize>(self.val) })
-    }
-}
-```
-Additionally, an important result of rule 1.5 is that methods defined on a reference to a type cannot be called on an unsafe reference unless they were specifically written to accept an unsafe reference, as unsafe references do not live long enough to be used where a normal reference would, like the method signature.
+## Rule 4
+Drop poses a problem for types which have had lifetimes replaced with `'unsafe`. Consider the following:
+
 ```rust
-impl A {
-    // errors
-    fn get(&self) -> usize {
-        self.val.clone() // clone expects &self, so this errors as val does not live long enough.
-    }
+struct X {
+    y: Y<'unsafe>
+}
+
+struct Y<'a> {
+    some_val: &'a usize
+}
+
+impl<'a> Drop for Y<'a> {
+    fn drop(&mut self) { ... }
 }
 ```
+
+What should happen when an `X` is dropped? we need to drop `y`, but we have a problem because in order to drop `y`, we need to call `drop`, but drop is implemented for `Y<'a>`, which means `Y<'unsafe>` doesn't satisfy the impl block, even though it may still need to run it. There are two approaches we can use:
+
+### ManuallyDrop
+if we want all the special logic to be contained in X, which is often the case when writing self referential code, we use the `ManuallyDrop` approach:
+```rust
+struct X {
+    y: ManuallyDrop<Y<'unsafe>>
+}
+
+impl Drop for X {
+    fn drop(&mut self) { 
+        // we need to be sure that our lifetime is valid here.
+        let y: &mut ManuallyDrop<Y<'_>> = unsafe { core::mem::transmute(&mut self.y) };
+        y.drop();
+    }
+}
+
+struct Y<'a> {
+    some_val: &'a usize
+}
+
+impl<'a> Drop for Y<'a> {
+    fn drop(&mut self) { ... }
+}
+```
+note that y is now of the shape `ManuallyDrop<_>`, and that we had to use unsafe to properly call the drop, because we needed a `ManuallyDrop<Y<'_>>`, not a `ManuallyDrop<Y<'unsafe>>`
+
+### Impl Drop
+If we want the type `Y` to be especially convenient for use with the unsafe lifetime, we can use the second approach:
+```rust
+struct X {
+    y: Y<'unsafe>
+}
+
+struct Y<'a> {
+    some_val: &'a usize
+}
+
+impl Drop for Y<'unsafe> {
+    fn drop(&mut self) { ... }
+}
+```
+If Y doesn't need to dereference some_val in its drop implementation then `'unsafe` is all it needs, and the default drop behavior on `X` is fine.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -182,4 +277,17 @@ Some crates for dealing with self reference:
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-This may be valuable to ffi if you know that a pointer is aligned, as then using `&'unsafe` may be more appropriate in this scenario
+This example may solve some of the problems that are currently solved by `#[may_dangle]`:
+```rust
+struct Y<'a> {
+    some_val: &'a usize
+}
+
+impl Drop for Y<'unsafe> {
+    fn drop(&mut self) { ... }
+}
+```
+
+Adding more permissive `Drop` impls throughout the standard library may make these types more ergonomic with no effect to code which does not use the `'unsafe` lifetime.
+
+This may be valuable to ffi if you know that a pointer is aligned, as using `&'unsafe` may be more appropriate in this scenario
