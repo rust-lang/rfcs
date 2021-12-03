@@ -11,7 +11,7 @@ Introduce a new special lifetime `'unsafe` which is outlived by all other lifeti
 # Motivation
 [motivation]: #motivation
 
-When creating self-referential structs it is often preferred to use pointers over references because the conditions under which the pointer/reference is valid are not evaluated by the borrow checker. The problem with this general approach is that it does not scale well to more complex types. If we have a the following:
+When creating self-referential structs it is often preferred to use pointers over references because the conditions under which the pointer/reference is valid are not evaluated by the borrow checker. The problem with this general approach is that it does not scale well to more complex types. If we have the following:
 ```rust
 struct A<T> {
     item: T
