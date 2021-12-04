@@ -66,7 +66,16 @@ struct ArrayIter<T> {
     buffer: [T; 32]
 }
 ```
-What if T is not `'static`? using the static lifetime here restricts our generic parameter T to being 'static, which is a concession we may not be ok with making.
+What if T is not `'static`? using the static lifetime here restricts our generic parameter T to being 'static, which is a concession we may not be ok with making. It turns out this is extremely pervasive. Even if we went with the nuclear approach:
+```rust
+#![feature(generic_const_exprs)]
+
+struct ArrayIter<T> {
+    iter: [u8; std::mem::size_of::<std::slice::Iter<'static, T>>()]
+    buffer: [T; 32]
+}
+```
+and just transmuted whenever needed, this still requires T to be `'static.`
 
 So how do we get all of the above? We use the unsafe lifetime `'unsafe`
 ```rust
@@ -253,7 +262,75 @@ If Y doesn't need to dereference some_val in its drop implementation then `'unsa
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 - There isn't any analogue in the higher type system to the lifetime erasure that occurs when coalescing from reference to pointer.
-- An alternative could be a macro-based library. This approach seems unlikely to check all the boxes though
+
+## Alternatives
+### Do nothing
+It is not technically possible to have self reference to non `'static` types unless you reimplement with pointers, but this is also a niche thing to want to do. adding language complexity may not be worth it for this niche.
+
+### Add special size_of operator syntax
+Add a way to perform `std::mem::size_of::<SomeType<'?, T>>()` as a const fn. If there is a way to get the size of a type regardless of its lifetime specifiers in a const context, then everything here is possible (with use of the `generic_const_exprs` feature). The following would work:
+```rust
+#![feature(generic_const_exprs)]
+
+use core::pin::Pin;
+use core::slice::Iter;
+
+// the only reason we need this 'static bound is because there is no way to ask rust
+// what the size of Iter<'anything, T> is, which doesn't change depending on the lifetime.
+// if we could do core::mem::size_of::<Iter<'whatever, T>>(), we would not need the bound on T.
+struct Test<T>
+where [u8; core::mem::size_of::<Iter<'?, T>>()]: Sized
+{
+    // this is an Iter<'self, T> with the type fully erased.
+    // this is absurdly unsafe.
+    my_iter: [u8; core::mem::size_of::<Iter<'?, T>>()],
+
+    // this must be treated as immutably borrowed.
+    my_vec: Vec<T>,
+}
+
+impl<T> Test<T>
+where [u8; core::mem::size_of::<Iter<'?, T>>()]: Sized
+{
+    // using this function is UB if init is not called before any other methods, or before dropping.
+    pub unsafe fn new(my_vec: Vec<T>) -> Self {
+        Self {
+            my_iter: [0; core::mem::size_of::<Iter<'?, T>>()],
+            my_vec,
+        }
+    }
+    
+    pub fn init(self: Pin<&mut Self>) {
+        let this = unsafe { self.get_unchecked_mut() };
+        let iter = this.my_vec.iter();
+        this.my_iter = unsafe {core::mem::transmute(iter) };;
+    }
+    
+    fn get_my_iter(&mut self) -> &mut Iter<'_, T> {
+        unsafe { core::mem::transmute(&mut self.my_iter) }
+    }
+    
+    pub fn next(self: Pin<&mut Self>) -> Option<&T> {
+        let this = unsafe { self.get_unchecked_mut() };
+        this.get_my_iter().next()
+    }
+}
+
+impl<T> Drop for Test<T>
+
+where [u8; core::mem::size_of::<Iter<'?, T>>()]: Sized{
+    fn drop(&mut self) {
+        unsafe {
+            let iter: &mut core::mem::ManuallyDrop<Iter<'_, T>> = core::mem::transmute(&mut self.my_iter);
+            core::mem::ManuallyDrop::drop(iter);
+        }
+    }
+}
+```
+
+### Add some sort of `'self` lifetime
+
+As the primary use case this is trying to support is self reference, maybe it should just be made explicit. I suspect this would work similarly to `'unsafe` as it has been layed out here, just with a more restricted domain.
 
 # Prior art
 [prior-art]: #prior-art
