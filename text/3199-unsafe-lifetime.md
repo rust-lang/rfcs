@@ -105,7 +105,7 @@ The unsafe lifetime is unique in a few ways, which we will refer to as the "rule
 2. The check that a reference does not outlive borrowed content is skipped when the borrowed content has `'unsafe` lifetime.
 3. Assigning to or reading from `&'unsafe T` and `&'unsafe mut T` is unsafe.
     - The programmer must ensure the references must be valid, or this is UB. 
-4. Similar union fields, the types of owned values, which have a generic lifetime parameter instantiated to `'unsafe` must either:
+4. Similar to union fields, the types of owned values which have a generic lifetime parameter instantiated to `'unsafe` must either:
     - be of the shape `ManuallyDrop<_>`
     - have a Drop impl specifically compatible with `'unsafe` for that lifetime parameter.
 
