@@ -202,10 +202,9 @@ Path to sysroot crates are specially handled by `rustc`. Due to this, the behavi
 Although good for privacy and reproducibility, some people find it a hinderance for debugging: https://github.com/rust-lang/rust/issues/85463.
 Hence the user should be given control on if they want the virtual or local path.
 
-An alternative to `--remap-path-scope` is to have individual `--remap-path-prefix`-like flags, one each for macro, debuginfo and diagnostics, requiring
-the full mapping to be given for each context. This is similar to what GCC and Clang does as described below, but we have added a third context
-for diagnostics. This technically enables for even finer grained control, allowing different paths in different
-contexts to be remapped differently. However it will cause the command line to be very verbose under most normal use cases.
+An alternative is to extend the syntax accepted by `--remap-path-prefix` or add a new option called `--remap-path-prefix-scoped` which allows
+scoping rules to be explicitly applied to each remapping. This can co-exist with `--remap-path-scope` so it will be discussed further in
+[Future possibilities](#future-possibilities) section.
 
 # Prior art
 [prior-art]: #prior-art
@@ -233,4 +232,13 @@ the other for only debuginfo: https://reproducible-builds.org/docs/build-path/. 
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-N/A
+If it turns out that we want to enable finer grained scoping control on each individual remapping, we could use a `scopes:from=to` syntax.
+E.g. `debuginfo,diagnostics:/path/to/src=src` will remove all references to `/path/to/src` from compiler diagnostics and debug information, but
+they are retained panic messages. This syntax can be used with either a brand new `--remap-path-prefix-scoped` option, or we could extend the
+existing `--remap-path-prefix` option to take in this new syntax.
+
+If we were to extend the existing `--remap-path-prefix`, there may be an ambiguity to whether `:` means a separator between scope list and mapping,
+or is it a part of the path; if the first `:` supplied belongs to the path then it would have to be escaped. This coudl be technically breaking.
+
+In any case, future inclusion of this new syntax will not affect `--remap-path-scope` introduced in this RFC. Scopes specified in `--remap-path-scope`
+will be used as default for all mappings, and explicit scopes for an individual mapping will take precedence on that mapping.
