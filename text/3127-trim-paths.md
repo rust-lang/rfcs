@@ -13,9 +13,9 @@ the separate debug symbols file (depending on `split-debuginfo` settings).
 `cargo build` with the default `release` profile should not produce any host filesystem dependent paths into binary executable or library. But
 it will retain the paths in separate debug symbols file, if one exists, to help debuggers and profilers locate the source files.
 
-To facilitate this, a new flag named `--remap-scope` should be added to `rustc` controlling the behaviour of `--remap-path-prefix`, allowing us to fine
-tune the scope of remapping, speicifying paths under which context (in macro expansion, in debuginfo or in diagnostics)
-should or shouldn't be remapped. 
+To facilitate this, a new flag named `--remap-path-scope` should be added to `rustc` controlling the behaviour of `--remap-path-prefix`, allowing us to fine
+tune the scope of remapping, specifying paths under which context (in macro expansion, in debuginfo or in diagnostics)
+should or shouldn't be remapped.
 
 # Motivation
 [motivation]: #motivation
@@ -65,10 +65,11 @@ This is undesirable for the following reasons:
 
 1. **Privacy**. `release` binaries may be distributed, and anyone could then see the builder's local OS account username.
    Additionally, some CI (such as [GitLab CI](https://docs.gitlab.com/runner/best_practice/#build-directory)) checks out the repo under a path where
-   it may include things that really aren't meant to be public. Without sanitising the path by default, this may be inadvertently leaked.
+   non-public information is included. Without sanitising the path by default, this may be inadvertently leaked.
 2. **Build reproducibility**. We would like to make it easier to reproduce binary equivalent builds. While it is not required to maintain
-   reproducibility across different environments, removing environment-sensitive information from the build will increase tolerance on the inevitable
-   environment differences when trying to verify builds.
+   reproducibility across different environments, removing environment-sensitive information from the build will increase the tolerance on the
+   inevitable environment differences. This helps with build verification, as well as producing deterministic builds when using a distributed build
+   system.
 
 ## Handling sysroot paths
 At the moment, paths to the source files of standard and core libraries, even when they are present, always begin with a virtual prefix in the form
@@ -86,10 +87,10 @@ should support finer grained control over paths in which contexts should be rema
 
 ## The rustc book: Command-line arguments
 
-### `--remap-scope`: configure the scope of path remapping
+### `--remap-path-scope`: configure the scope of path remapping
 
 When the `--remap-path-prefix` option is passed to rustc then source path prefixes in all output will be affected.
-The `--remap-scope` argument can be used in conjunction with `--remap-path-prefix` to determine paths in which output context should be affected.
+The `--remap-path-scope` argument can be used in conjunction with `--remap-path-prefix` to determine paths in which output context should be affected.
 This flag accepts a comma-separated list of values and may be specified multiple times. The valid scopes are:
 
 - `macro` - apply remappings to the expansion of `std::file!()` macro. This is where paths in embedded panic messages come from
@@ -119,7 +120,7 @@ When a path is in scope for sanitisation, it is replaced with the following rule
 1. Path to the source files of the standard and core library (sysroot) will begin with `/rustc/[rustc commit hash]`.
    E.g. `/home/username/.rustup/toolchains/nightly-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/result.rs` -> 
    `/rustc/fe72845f7bb6a77b9e671e6a4f32fe714962cec4/library/core/src/result.rs`
-2. Path to the working directory will be replaced with `.`. E.g. `/home/username/crate/src/lib.rs` -> `./src/lib.rs`.
+2. Path to the working directory will be stripped. E.g. `/home/username/crate/src/lib.rs` -> `src/lib.rs`.
 3. Path to packages outside of the working directory will be replaced with `[package name]-[version]`. E.g. `/home/username/deps/foo/src/lib.rs` -> `foo-0.1.0/src/lib.rs`
 
 When a path to the source files of the standard and core library is *not* in scope for sanitisation, the emitted path will depend on if `rust-src` component
@@ -137,23 +138,23 @@ We only need to change the behaviour for `Test` and `Build` compile modes.
 
 If `trim-paths` is `0` (`false`), no extra flag is supplied to `rustc`.
 
-If `trip-paths` is `1` or `2` (`true`), then two `--remap-path-prefix` arguments are supplied to `rustc`:
+If `trim-paths` is `1` or `2` (`true`), then two `--remap-path-prefix` arguments are supplied to `rustc`:
 - From the path of the local sysroot to `/rustc/[commit hash]`. 
-- If the compilation unit is under the working directory, from the absolute path to the working directory to `.`.
+- If the compilation unit is under the working directory, from the the working directory absolute path to empty string.
   If it's outside the working directory, from the absolute path of the package root to `[package name]-[package version]`.
 
-A further `--remap-scope` is also supplied for options `1` and `2`:
+A further `--remap-path-scope` is also supplied for options `1` and `2`:
 
 If `trim-path` is `1`, then it depends on the setting of `split-debuginfo` (whether the setting is explicitly supplied or from the default)
-- If `split-debuginfo` is `off`, then `--remap-scope=macro,debuginfo`.
-- If `split-debuginfo` is `packed` or `unpacked`, then `--remap-scope=macro`
+- If `split-debuginfo` is `off`, then `--remap-path-scope=macro,debuginfo`.
+- If `split-debuginfo` is `packed` or `unpacked`, then `--remap-path-scope=macro`
 This is because we always want to remap panic messages as they will always be embedded in executable/library, but we don't need to touch the separate
 symbols file
 
-If `trim-path` is `2` (`true`), all paths will be affected, equivalent to `--remap-scope=macro,debuginfo,diagnostics`
+If `trim-path` is `2` (`true`), all paths will be affected, equivalent to `--remap-path-scope=macro,debuginfo,diagnostics`
 
 
-Some interactions with compiler-intrinstic macros need to be considered:
+Some interactions with compiler-intrinsic macros need to be considered:
 1. Path (of the current file) introduced by [`file!()`](https://doc.rust-lang.org/std/macro.file.html) *will* be remapped. **Things may break** if
    the code interacts with its own source file at runtime by using this macro.
 2. Path introduced by [`include!()`](https://doc.rust-lang.org/std/macro.include.html) *will* be remapped, given that the included file is under
@@ -172,8 +173,9 @@ only the file name of the .pdb file without the path to it.
 The virtualisation of sysroot files to `/rustc/[commit hash]/library/...` was done at compiler bootstraping, specifically when 
 `remap-debuginfo = true` in `config.toml`. This is done for Rust distribution on all channels.
 
-At `rustc` runtime (i.e. compiling some code), we try to correlate this virtual path to a real path pointing to the file on the local file system
-Currently the result is represented internally as if the path was remapped by a `--remap-path-prefix`, from local `rust-src` path to the virtual path.
+At `rustc` runtime (i.e. compiling some code), we try to correlate this virtual path to a real path pointing to the file on the local file system.
+Currently the result is represented internally as if the path was remapped by a `--remap-path-prefix`, from local `rust-src` path to the virtual 
+path.
 Only the virtual name is ever emitted for metadata or codegen. We want to change this behaviour such that, when `rust-src` source files can be
 discovered, the virtual path is discarded and therefore the local path will be embedded, unless there is a `--remap-path-prefix` that causes this
 local path to be remapped in the usual way.
@@ -183,7 +185,7 @@ local path to be remapped in the usual way.
 [drawbacks]: #drawbacks
 
 The user will not be able to `Ctrl+click` on any paths provided in panic messages or backtraces outside of the working directory. But
-there shouldn't be any confusion as the combination of pacakge name and version can be used to pinpoint the file.
+there shouldn't be any confusion as the combination of package name and version can be used to pinpoint the file.
 
 As mentioned above, `trim-paths` may break code that relies on `std::file!()` to evaluate to an accessible path to the file. Hence enabling
 it by default for release builds may be a technically breaking change. Occurrences of such use should be extremely rare but should be investigated
@@ -200,7 +202,7 @@ Path to sysroot crates are specially handled by `rustc`. Due to this, the behavi
 Although good for privacy and reproducibility, some people find it a hinderance for debugging: https://github.com/rust-lang/rust/issues/85463.
 Hence the user should be given control on if they want the virtual or local path.
 
-An alternative to `--remap-scope` is to have individual `--remap-path-prefix`-like flags, one each for macro, debuginfo and diagnostics, requiring
+An alternative to `--remap-path-scope` is to have individual `--remap-path-prefix`-like flags, one each for macro, debuginfo and diagnostics, requiring
 the full mapping to be given for each context. This is similar to what GCC and Clang does as described below, but we have added a third context
 for diagnostics. This technically enables for even finer grained control, allowing different paths in different
 contexts to be remapped differently. However it will cause the command line to be very verbose under most normal use cases.
@@ -215,7 +217,7 @@ Go does not enable this by default. Since Go does not differ between debug and r
 a hassle for debugging. However this is not an issue for Rust as we have separate debug build profile.
 
 GCC and Clang both have a flag equivalent to `--remap-path-prefix`, but they also both have two separate flags one for only macro expansion and
-the other for only debuginfo: https://reproducible-builds.org/docs/build-path/. This is the origin of the `--remap-scope` idea.
+the other for only debuginfo: https://reproducible-builds.org/docs/build-path/. This is the origin of the `--remap-path-scope` idea.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
