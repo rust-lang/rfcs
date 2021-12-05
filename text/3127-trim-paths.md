@@ -7,11 +7,10 @@
 [summary]: #summary
 
 Cargo should have a [profile setting](https://doc.rust-lang.org/cargo/reference/profiles.html#profile-settings) named `trim-paths`
-to sanitise absolute paths introduced during compilation that may be embedded in the compiled binary executable or library, and optionally in
-the separate debug symbols file (depending on `split-debuginfo` settings).
+to sanitise absolute paths introduced during compilation that may be embedded in the compiled binary executable or library.
 
 `cargo build` with the default `release` profile should not produce any host filesystem dependent paths into binary executable or library. But
-it will retain the paths in separate debug symbols file, if one exists, to help debuggers and profilers locate the source files.
+it will retain the paths inside separate debug symbols file, if one exists, to help debuggers and profilers locate the source files.
 
 To facilitate this, a new flag named `--remap-path-scope` should be added to `rustc` controlling the behaviour of `--remap-path-prefix`, allowing us to fine
 tune the scope of remapping, specifying paths under which context (in macro expansion, in debuginfo or in diagnostics)
@@ -21,7 +20,7 @@ should or shouldn't be remapped.
 [motivation]: #motivation
 
 ## Sanitising local paths that are currently embedded
-Currently, executables and libraries built by Cargo have a lot of embedded absolute paths. They most frequently appear in debug information and
+Currently, executables and libraries built by Rust and Cargo have a lot of embedded absolute paths. They most frequently appear in debug information and
 panic messages (pointing to the panic location source file). As an example, consider the following package:
 
 `Cargo.toml`:
@@ -75,7 +74,7 @@ This is undesirable for the following reasons:
 At the moment, paths to the source files of standard and core libraries, even when they are present, always begin with a virtual prefix in the form
 of `/rustc/[SHA1 hash]/library`. This is not an issue when the source files are not present (i.e. when `rust-src` component is not installed), but
 when a user installs `rust-src` they may want the path to their local copy of source files to be visible. Hence the default behaviour when `rust-src`
-is installed should be to embed the local path. These local paths should be then affected by path remappings in the usual way.
+is installed should be to use the local path. These local paths should be then affected by path remappings in the usual way.
 
 ## Preserving debuginfo to help debuggers
 At the moment, `--remap-path-prefix` will cause paths to source files in debuginfo to be remapped. On platforms where the debuginfo resides in a
@@ -94,7 +93,8 @@ The `--remap-path-scope` argument can be used in conjunction with `--remap-path-
 This flag accepts a comma-separated list of values and may be specified multiple times. The valid scopes are:
 
 - `macro` - apply remappings to the expansion of `std::file!()` macro. This is where paths in embedded panic messages come from
-- `debuginfo` - apply remappings to debug information
+- `debuginfo` - apply remappings to debug information, wherever they may be written to
+- `split-debuginfo-path` - when `split-debuginfo=packed` or `unpacked`, apply remappings to the paths pointing to these split debug information files
 - `diagnostics` - apply remappings to printed compiler diagnostics
 
 ## Cargo
@@ -103,8 +103,8 @@ This flag accepts a comma-separated list of values and may be specified multiple
 - `0` or `false`: no sanitisation at all
 - `1`: sanitise only the paths in emitted executable or library binaries. It always affects paths from macros such as panic messages, and in debug information
   only if they will be embedded together with the binary (the default on platforms with ELF binaries, such as Linux and windows-gnu),
-  but will not touch them if they are in a separate symbols file (the default on Windows MSVC and macOS)
-- `2` or `true`: sanitise paths in all compilation outputs, including compiled executable/library, separate symbols file (if one exists), and compiler diagnostics.
+  but will not touch them if they are in separate files (the default on Windows MSVC and macOS). But the path to these separate files are sanitised.
+- `2` or `true`: sanitise paths in all compilation outputs, including compiled executable/library, debug information, and compiler diagnostics.
 
 The default release profile uses option `1`. You can also manually override it by specifying this option in `Cargo.toml`:
 ```toml
@@ -115,7 +115,7 @@ trim-paths = 2
 trim-paths = 0
 ```
 
-When a path is in scope for sanitisation, it is replaced with the following rules:
+When a path is in scope for sanitisation, it is handled by the following rules:
 
 1. Path to the source files of the standard and core library (sysroot) will begin with `/rustc/[rustc commit hash]`.
    E.g. `/home/username/.rustup/toolchains/nightly-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/result.rs` -> 
@@ -147,11 +147,11 @@ A further `--remap-path-scope` is also supplied for options `1` and `2`:
 
 If `trim-path` is `1`, then it depends on the setting of `split-debuginfo` (whether the setting is explicitly supplied or from the default)
 - If `split-debuginfo` is `off`, then `--remap-path-scope=macro,debuginfo`.
-- If `split-debuginfo` is `packed` or `unpacked`, then `--remap-path-scope=macro`
-This is because we always want to remap panic messages as they will always be embedded in executable/library, but we don't need to touch the separate
-symbols file
+- If `split-debuginfo` is `packed` or `unpacked`, then `--remap-path-scope=macro,split-debuginfo-path`
+This is because we always want to remap panic messages as they will always be embedded in executable/library. We need to sanitise debug information
+if they are embedded, but don't need to touch them if they are split. However in case they are split we need to sanitise the paths to these split files 
 
-If `trim-path` is `2` (`true`), all paths will be affected, equivalent to `--remap-path-scope=macro,debuginfo,diagnostics`
+If `trim-path` is `2` (`true`), all paths will be affected, equivalent to `--remap-path-scope=macro,debuginfo,diagnostics,split-debuginfo-path`
 
 
 Some interactions with compiler-intrinsic macros need to be considered:
@@ -176,20 +176,15 @@ Only the virtual name is ever emitted for metadata or codegen. We want to change
 discovered, the virtual path is discarded and therefore the local path will be embedded, unless there is a `--remap-path-prefix` that causes this
 local path to be remapped in the usual way.
 
-## Linker arguments
+## Split Debuginfo
 
-If a separate debuginfo file is to be generated (which can be determined by `split-debuginfo` codegen option), the linker may include an absolute
-path to the object into the binary. If the user wants debug information to be remapped, then the inclusion of this absolute path is
-undesirable. `rustc` cannot exhaustively control the behaviour of an external program (the linker) specified by the user, but we should
-supply appropriate linker options to mitigate this as much as we could.
+When debug information are not embedded in the binary (i.e. `split-debuginfo` is not `off`), absolute paths to various files containing debug
+information are embedded into the binary instead. Such as the absolute path to `.pdb` file (MSVC, `packed`), `.dwo` files (ELF, `unpacked`), 
+and `.o` files (ELF, `packed`). This can be undesirable. As such, `split-debuginfo-path` is made specifically for these embedded paths.
 
-The linker in use can be determined by the [`linker-flavor`](https://doc.rust-lang.org/rustc/codegen-options/index.html#linker-flavor) flag, itself
-generally being inferred by `rustc`. If `debuginfo` is in `--remap-path-scope` and `split-debuginfo` is not `off`, the following linker-specific
-options should be emitted:
-
-- When using MSVC linker, `/PDBALTPATH:%_PDB%` should be emitted. This makes the linker embed only the file name of the .pdb file without the path
-  to it. 
-
+On macOS and ELF platforms, these paths are introduced by `rustc` during codegen. With MSVC, however, the path to `.pdb` fil is generated and
+embedded into the binary by the linker `link.exe`. The linker has a `/PDBALTPATH` option allows us to change the embedded path written to the
+binary, which could be supplied by `rustc`
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -235,11 +230,9 @@ the other for only debuginfo: https://reproducible-builds.org/docs/build-path/. 
   [Issue #40552](https://github.com/rust-lang/rust/issues/40552)?
 - With debug information in separate files, debuggers and Rust's own backtrace rely on the path embedded in the binary to find these files to display
   source code lines, columns and symbols etc. If we sanitise these paths to relative paths, then debuggers and backtrace must be invoked
-  in specific directories for these paths to work. [For instance](https://github.com/rust-lang/rust/issues/87825#issuecomment-920693005), `cargo run`
-  invoked under crate root will fail to print meaningful backtrace symbols because the binary and `.pdb` file are under `target/release`, but
-  the backtrace library will attempt to find the `.pdb` file from the working directory (crate root), where it doesn't exist. 
-- At the time of writing, `rustc` recognises 10 [`linker-flavor`s](https://doc.rust-lang.org/rustc/codegen-options/index.html#linker-flavor).
-  We need to find the right option for each to change the embedded path to debug information.
+  in specific directories for these paths to work. [For instance](https://github.com/rust-lang/rust/issues/87825#issuecomment-920693005), if the
+  absolute path to the `.pdb` file is sanitised to the relative `target/release/foo.pdb`, then the binary must be invoked under the crate root as
+  `target/release/foo` to allow the correct backtrace to be displayed.
 - Should we treat the current working directory the same as other packages? We could have one fewer remapping rule by remapping all
   package roots to `[package name]-[version]`. A minor downside to this is not being able to `Ctrl+click` on paths to files the user is working
   on from panic messages.
