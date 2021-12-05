@@ -164,10 +164,6 @@ If the user further supplies custom `--remap-path-prefix` arguments via `RUSTFLA
 or similar mechanisms, they will take precedence over the one supplied by `trim-paths`. This means that the user-defined remapping arguments must be
 supplied *after* Cargo's own remapping.
 
-
-Additionally, when using MSVC linker, Cargo should emit `/PDBALTPATH:%_PDB%` to the linker via `-C link-arg`. This makes the linker embed
-only the file name of the .pdb file without the path to it.
-
 ## Changing handling of sysroot path in `rustc`
 
 The virtualisation of sysroot files to `/rustc/[commit hash]/library/...` was done at compiler bootstraping, specifically when 
@@ -179,6 +175,20 @@ path.
 Only the virtual name is ever emitted for metadata or codegen. We want to change this behaviour such that, when `rust-src` source files can be
 discovered, the virtual path is discarded and therefore the local path will be embedded, unless there is a `--remap-path-prefix` that causes this
 local path to be remapped in the usual way.
+
+## Linker arguments
+
+If a separate debuginfo file is to be generated (which can be determined by `split-debuginfo` codegen option), the linker may include an absolute
+path to the object into the binary. If the user wants debug information to be remapped, then the inclusion of this absolute path is
+undesirable. `rustc` cannot exhaustively control the behaviour of an external program (the linker) specified by the user, but we should
+supply appropriate linker options to mitigate this as much as we could.
+
+The linker in use can be determined by the [`linker-flavor`](https://doc.rust-lang.org/rustc/codegen-options/index.html#linker-flavor) flag, itself
+generally being inferred by `rustc`. If `debuginfo` is in `--remap-path-scope` and `split-debuginfo` is not `off`, the following linker-specific
+options should be emitted:
+
+- When using MSVC linker, `/PDBALTPATH:%_PDB%` should be emitted. This makes the linker embed only the file name of the .pdb file without the path
+  to it. 
 
 
 # Drawbacks
@@ -221,11 +231,18 @@ the other for only debuginfo: https://reproducible-builds.org/docs/build-path/. 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
+- Should we use a slightly more complex remapping rule, like distinguishing packages from registry, git and path, as proposed in
+  [Issue #40552](https://github.com/rust-lang/rust/issues/40552)?
+- With debug information in separate files, debuggers and Rust's own backtrace rely on the path embedded in the binary to find these files to display
+  source code lines, columns and symbols etc. If we sanitise these paths to relative paths, then debuggers and backtrace must be invoked
+  in specific directories for these paths to work. [For instance](https://github.com/rust-lang/rust/issues/87825#issuecomment-920693005), `cargo run`
+  invoked under crate root will fail to print meaningful backtrace symbols because the binary and `.pdb` file are under `target/release`, but
+  the backtrace library will attempt to find the `.pdb` file from the working directory (crate root), where it doesn't exist. 
+- At the time of writing, `rustc` recognises 10 [`linker-flavor`s](https://doc.rust-lang.org/rustc/codegen-options/index.html#linker-flavor).
+  We need to find the right option for each to change the embedded path to debug information.
 - Should we treat the current working directory the same as other packages? We could have one fewer remapping rule by remapping all
   package roots to `[package name]-[version]`. A minor downside to this is not being able to `Ctrl+click` on paths to files the user is working
   on from panic messages.
-- Should we use a slightly more complex remapping rule, like distinguishing packages from registry, git and path, as mentioned in
-  https://github.com/rust-lang/rust/issues/40552?
 - Will these cover all potentially embedded paths? Have we missed anything?
 - Should we make this affect more `CompileMode`s, such as `Check`, where the emitted `rmeta` file will also contain absolute paths?
 
