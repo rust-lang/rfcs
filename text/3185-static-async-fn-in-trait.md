@@ -3,7 +3,7 @@
 - Feature Name: `async_fn_in_traits`
 - Start Date: 2021-10-13
 - RFC PR: [rust-lang/rfcs#3185](https://github.com/rust-lang/rfcs/pull/3185)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- Rust Issue: [rust-lang/rust#91611](https://github.com/rust-lang/rust/issues/91611)
 
 # Summary
 [summary]: #summary
@@ -217,9 +217,7 @@ The [`real-async-trait`] lowers `async fn` to use GATs and impl Trait, roughly a
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-- What parts of the design do you expect to resolve through the RFC process before this gets merged?
-- What parts of the design do you expect to resolve through the implementation of this feature before stabilization?
-- What related issues do you consider out of scope for this RFC that could be addressed in the future independently of the solution that comes out of this RFC?
+- None.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
