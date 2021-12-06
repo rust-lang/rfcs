@@ -1,6 +1,6 @@
 - Feature Name: `references_alignment_niches`
 - Start Date: 2021-12-06
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#3204](https://github.com/rust-lang/rfcs/pull/3204)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 # Summary
