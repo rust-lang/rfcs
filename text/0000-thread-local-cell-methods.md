@@ -395,3 +395,4 @@ Alternatives for avoiding the initializer:
 
 - Do we also want anything for `UnsafeCell`? Maybe `LocalKey<UnsafeCell<T>>::get()` to get the `*mut T`, just like `UnsafeCell<T>::get()`.
 - Are there any other types commonly used as thread locals for which we should do something similar?
+- Should `.set` skip the initializer, or not? We should consider this question again at stabilization time, and we should listen for anyone reporting concerns here (especially if it caused semantically unexpected behavior).
