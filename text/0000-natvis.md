@@ -286,8 +286,10 @@ into a PDB, this feature would be specific to the `MSVC` toolchain only.
 
 Cargo would add new syntax in `Cargo.toml` for specifying the list of Natvis
 files to be added to the crate. The new manifest key, `natvis` would be added
-to a new `[debugger-visualizations]` section. This would be in control of setting
-the `-C natvis` flag in rustc as well as `-Z unstable-options` to enable it.
+to a new `[debugger-visualizations]` section. Cargo would emit a warning if
+any of the specified Natvis files do not have the `.natvis` extension. This
+would be in control of setting the `-C natvis` flag in rustc as well as
+`-Z unstable-options` to enable it.
 
 For example:
 
@@ -317,11 +319,11 @@ for a Natvis file.
 
 The `CrateRoot` type would also need to be updated to account for `.natvis`
 files for crates within the dependency graph. To reflect this a new field,
-`natvis_files: Lazy<[String]>,` would be added. This will store the list of
+`natvis_files: Lazy<[PathBuf]>,` would be added. This will store the list of
 `.natvis` files that were passed to the invocation of rustc for the specific crate.
 
 Another change that would need to be made here is to add a new field to the
-`CrateInfo` type, `pub natvis_files: Vec<String>`. This will allow the `MsvcLinker`
+`CrateInfo` type, `pub natvis_files: Option<Vec<PathBuf>>`. This will allow the `MsvcLinker`
 type to query the list of Natvis files that exist within the crate dependency graph
 and add the `/NATVIS` linker arg for each `.natvis` file.
 
