@@ -13,8 +13,9 @@ add_badge() {
   sed -ibak -E "s|$FIND|$SUBS|g" src/*-*.md
 }
 
-rm -rf book/ src/
-mkdir src
+if [ ! -d src ]; then
+    mkdir src
+fi
 
 printf '[Introduction](introduction.md)\n\n' > src/SUMMARY.md
 
