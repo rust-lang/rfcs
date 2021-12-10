@@ -6,11 +6,9 @@ add_badge() {
   TITLE=${1:-PR}
   TYPE=${2:-pull}
   SHIELD_IO_TYPE=${3:-$TYPE}
-  
-  echo "$TITLE - $TYPE - $SHIELD_IO_TYPE"
 
-  FIND="\(https://github.com/(.*)/(.*)/$TYPE/(.*)\)"
-  SUBS="(https:\/\/github.com\/\1\/\2\/$TYPE\/\3) ![$TITLE \3 badge](https:\/\/shields.io\/github\/$SHIELD_IO_TYPE\/detail\/state\/\1\/\2\/\3)"
+  FIND="\(https://github.com/([^/]*)/([^/]*)/$TYPE/([^)]*)\)"
+  SUBS="(https:\/\/github.com\/\1\/\2\/$TYPE\/\3) ![$TITLE #\3 badge](https:\/\/shields.io\/github\/$SHIELD_IO_TYPE\/detail\/state\/\1\/\2\/\3)"
 
   sed -ibak -E "s|$FIND|$SUBS|g" src/*-*.md
 }
