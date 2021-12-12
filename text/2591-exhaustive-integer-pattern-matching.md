@@ -82,7 +82,7 @@ This is a straightforward extension of the existing exhaustiveness checks. This 
 # Prior art
 [prior-art]: #prior-art
 
-As far as the author is unaware, Rust is the first language to support exhaustive integer pattern matching. At the time of writing, Swift and OCaml, two languages for which this feature could also make sense, do not implement this extension. This is likely because the feature is not simple to implement and the usefulness of this feature appears in specific domains.
+As far as the author is aware, Rust is the first language to support exhaustive integer pattern matching. At the time of writing, Swift and OCaml, two languages for which this feature could also make sense, do not implement this extension. This is likely because the feature is not simple to implement and the usefulness of this feature appears in specific domains.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
