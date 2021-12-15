@@ -227,6 +227,56 @@ async iterator implementations. The long-term fix for this, discussed in the [Fu
 As mentioned above, `core::async_iter` is analogous to `core::future`. But, do we want to find 
 some other naming scheme that can scale up to other future additions, such as io traits or channels?
 
+## Naming
+
+When considering what to name the trait and concepts, there were two options:
+
+- __`Stream`:__ with prior art in `futures-rs`, runtimes, and much of the
+  of the async ecosystem.
+- __`AsyncIterator`:__ which follows the pattern established of prefixing
+  the async version of another trait with `Async` in the ecosystem. For example
+  [`AsyncRead`](https://docs.rs/futures-io/latest/futures_io/trait.AsyncRead.html)
+  is an async version of [`Read`](https://doc.rust-lang.org/std/io/trait.Read.html).
+
+We ended up choosing `AsyncIterator` over `Stream` for a number of reasons:
+
+1. It provides consistency between async and non-async Rust. Prefixing the async
+   version of an existing trait with `Async` helps with discoverability, and teaching
+   how APIs relate to each other. For example in this RFC we describe
+   `AsyncIterator` as "an async version of `Iterator`".
+2. The word "stream" is fairly established terminology within computing: it
+   commonly refers to a type which yields data repeatedly. Traits such as
+   `Iterator`, `Read`, and `Write` are often referred to as "streams" or
+   "streaming".  Naming a single trait `Stream` can lead to confusion, as it is not
+   the only trait which streams.
+3. `std::net::TcpStream` does not in fact implement `Stream`, despite the name
+   suggesting it might. In the ecosystem async versions of `TcpStream` don't either: 
+   `Async{Read,Write}` are used instead. This can be confusing.
+
+Additionally, there is prior art in other languages for using an
+"iterator"/"async iterator" naming scheme:
+
+- JavaScript: [`Symbol.Iterator`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Symbol/iterator)
+  and [`Symbol.AsyncIterator`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Symbol/asyncIterator)
+- C#: [`IEnumerable`](https://docs.microsoft.com/en-us/dotnet/api/system.collections.generic.ienumerable-1?view=net-5.0)
+  and [`IAsyncEnumerable`](https://docs.microsoft.com/en-us/archive/msdn-magazine/2019/november/csharp-iterating-with-async-enumerables-in-csharp-8)
+- Python: [`__iter__`](https://wiki.python.org/moin/Iterator)
+  and [`__aiter__`](https://www.python.org/dev/peps/pep-0525/)
+- Swift: [`Sequence`](https://developer.apple.com/documentation/swift/sequence)
+  and [`AsyncSequence`](https://github.com/apple/swift-evolution/blob/main/proposals/0298-asyncsequence.md)
+
+Despite being a clearer in many regards, the name `AsyncIterator` loses to
+`Stream` in terms of brevity. `AsyncIterator` / `async_iter` / "async iterator"
+is longer to write than `stream` in every instance.
+
+Additionally the Rust ecosystem has a multi-year history of using `Stream` to
+describe the concept of "async iterators". But we expect that as
+`AsyncIterator` becomes the agreed upon terminology to refer to "async iterators",
+the historical benefit of using "stream" terminology will lessen over time.
+
+Overall we found that despite having some downsides, the name `AsyncIterator`
+is strongly preferable over `Stream`.
+
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
