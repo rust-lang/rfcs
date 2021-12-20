@@ -1,7 +1,7 @@
 - Feature Name: thread_local_cell_methods
 - Start Date: 2021-10-17
 - RFC PR: [rust-lang/rfcs#3184](https://github.com/rust-lang/rfcs/pull/3184)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- Rust Issue: [rust-lang/rust#92122](https://github.com/rust-lang/rust/issues/92122)
 
 # Summary
 [summary]: #summary
@@ -393,6 +393,7 @@ Alternatives for avoiding the initializer:
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
+- Should we use the names `with_borrow` and `with_borrow_mut` instead of `with_ref` and `with_mut`, to match `RefCell`'s method names?
 - Do we also want anything for `UnsafeCell`? Maybe `LocalKey<UnsafeCell<T>>::get()` to get the `*mut T`, just like `UnsafeCell<T>::get()`.
 - Are there any other types commonly used as thread locals for which we should do something similar?
 - Should `.set` skip the initializer, or not? We should consider this question again at stabilization time, and we should listen for anyone reporting concerns here (especially if it caused semantically unexpected behavior).
