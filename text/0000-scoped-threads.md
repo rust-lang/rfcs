@@ -205,33 +205,48 @@ The main drawback is that scoped threads make the standard library a little bit 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-The alternative is to keep scoped threads in external crates. However, there are
-several advantages to having them in the standard library:
+* Keep scoped threads in external crates.
 
-* This is a very common and useful utility and is great for learning, testing, and exploratory
-  programming. Every person learning Rust will at some point encounter interaction
-  of borrowing and threads. There's a very important lesson to be taught that threads
-  *can* in fact borrow local variables, but the standard library doesn't reflect this.
+  There are several advantages to having them in the standard library:
 
-* Some might argue we should discourage using threads altogether and point people to
-  executors like Rayon and Tokio instead. But still,
-  the fact that `thread::spawn()` requires `F: 'static` and there's no way around it
-  feels like a missing piece in the standard library.
+  * This is a very common and useful utility and is great for learning, testing, and exploratory
+    programming. Every person learning Rust will at some point encounter interaction
+    of borrowing and threads. There's a very important lesson to be taught that threads
+    *can* in fact borrow local variables, but the standard library doesn't reflect this.
 
-* Implementing scoped threads is very tricky to get right so it's good to have a
-  reliable solution provided by the standard library.
+  * Some might argue we should discourage using threads altogether and point people to
+    executors like Rayon and Tokio instead. But still,
+    the fact that `thread::spawn()` requires `F: 'static` and there's no way around it
+    feels like a missing piece in the standard library.
 
-* There are many examples in the official documentation and books that could be
-  simplified by scoped threads.
+  * Implementing scoped threads is very tricky to get right so it's good to have a
+    reliable solution provided by the standard library.
 
-* Scoped threads are typically a better default than `thread::spawn()` because
-  they make sure spawned threads are joined and don't get accidentally "leaked".
-  This is sometimes a problem in unit tests, where "dangling" threads can accumulate
-  if unit tests spawn threads and forget to join them.
+  * There are many examples in the official documentation and books that could be
+    simplified by scoped threads.
 
-* Users keep asking for scoped threads on IRC and forums
-  all the time. Having them as a "blessed" pattern in `std::thread` would be beneficial
-  to everyone.
+  * Scoped threads are typically a better default than `thread::spawn()` because
+    they make sure spawned threads are joined and don't get accidentally "leaked".
+    This is sometimes a problem in unit tests, where "dangling" threads can accumulate
+    if unit tests spawn threads and forget to join them.
+
+  * Users keep asking for scoped threads on IRC and forums
+    all the time. Having them as a "blessed" pattern in `std::thread` would be beneficial
+    to everyone.
+
+* Return a `Result` from `scope` with all the captured panics.
+
+  * This quickly gets complicated, as multiple threads might have panicked.
+    Returning a `Vec` or other collection of panics isn't always the most useful interface,
+    and often unnecessary. Explicitly using `.join()` on the `ScopedJoinHandle`s to
+    handle panics is the most flexible and efficient way to handle panics, if the user wants
+    to handle them.
+
+* Don't pass a `&Scope` argument to the threads.
+
+  * `scope.spawn(|| ..)` rather than `scope.spawn(|scope| ..)` would require the `move` keyword
+    (`scope.spawn(move || ..)`) if you want to use the scope inside that closure, which gets unergonomic.
+
 
 # Prior art
 [prior-art]: #prior-art
