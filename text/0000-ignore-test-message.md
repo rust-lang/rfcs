@@ -16,7 +16,7 @@ There may be meta value as a message for ignoring attributes on a test case.
 
 
 Consider following test
-```
+```rust
 #[test]
 #[ignore = "not yet implemented"]
 fn test_ignored() {
@@ -54,7 +54,7 @@ This RFC aims to easier use for large system.
 [guide-level-explanation]: #guide-level-explanation
 
 
-Currently the TestDesc only store ignore flag, when the test case built, we can only know the case is ignore or not.
+Currently the `TestDesc` only store ignore flag, when the test case built, we can only know the case is ignore or not.
 
 [https://github.com/rust-lang/rust/blob/master/library/test/src/types.rs#L121-L130](https://github.com/rust-lang/rust/blob/master/library/test/src/types.rs#L121-L130)
 
@@ -85,7 +85,7 @@ enum Ignoring {
 
 ```
 
-The message meta value is parsed here.
+The message meta value can be parsed here.
 
 [https://github.com/rust-lang/rust/blob/master/src/tools/compiletest/src/header.rs#L879-L882](https://github.com/rust-lang/rust/blob/master/src/tools/compiletest/src/header.rs#L879-L882)
 
