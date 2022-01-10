@@ -135,7 +135,8 @@ we need to store this some way.
 # Prior art
 [prior-art]: #prior-art
 
-None known.
+Ignore test case with message in other language
+- [JUnit](http://junit.sourceforge.net/javadoc/org/junit/Ignore.html)
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
