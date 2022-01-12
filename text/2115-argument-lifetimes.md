@@ -3,6 +3,13 @@
 - RFC PR: [rust-lang/rfcs#2115](https://github.com/rust-lang/rfcs/pull/2115)
 - Rust Issue: [rust-lang/rust#44524](https://github.com/rust-lang/rust/issues/44524)
 
+> ⚠ Update 4 years later ⚠
+>
+> Much of this RFC was stabilized, including the wildcard lifetime and elision in `impl`s.
+> 
+> However, [the team decided to un-accept](https://github.com/rust-lang/rust/issues/44524#issuecomment-988260463)
+> the parts of this RFC related to using lifetimes without a separate definition.
+
 # Summary
 [summary]: #summary
 
