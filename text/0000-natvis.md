@@ -1,6 +1,6 @@
 - Feature Name: `natvis`
 - Start Date: 2021-11-01
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#3191](https://github.com/rust-lang/rfcs/pull/3191)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 # Summary
@@ -268,15 +268,18 @@ When viewed under WinDbg, the `fancy_rect` variable would be shown as follows:
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-In rustc, a new `-C natvis={comma-separated list of .natvis files}` flag
-will be added which instructs the compiler to take the set of .natvis
-files for a given crate and store them in the crate metadata. Rustc will not
+In rustc, a new `-C natvis={path to single .natvis file}` flag will be added
+which instructs the compiler to take a `.natvis` file for a given crate, serialize
+the contents of this file and store it in the crate metadata. Rustc will not
 have any enforcement that the files specified via the new flag have the `.natvis`
 extension, but this is required in order for the Natvis to be loaded by both
-the VS debugger and WinDbg. This will be gated by the existing `-Z unstable-options`
-flag to ensure it is only used in unstable Rust. When running the linker,
-using the `MSVC` toolchain, a `/NATVIS` linker option would be set for each
-`.natvis` file. This includes `.natvis` files from all crate dependencies,
+the VS debugger and WinDbg. This flag can be used multiple times to allow for
+multiple `.natvis` files to be embedded for each crate. This new flag will be gated
+by the existing `-Z unstable-options` flag to ensure it is only used in unstable
+Rust. When running the linker, using the `MSVC` toolchain, the contents of the
+`.natvis` file will be extracted from the crate metadata and store them in the target
+directory under a new `natvis` directory. A `/NATVIS` linker option would be set
+for each `.natvis` file which includes `.natvis` files from all crate dependencies,
 if any exist, as well as the current crate and embed them into the PDB.
 
 The MSVC linker supports embedding debugger visualizations defined in a Natvis file
@@ -310,22 +313,22 @@ natvis = ["a.natvis", "b.natvis"]
 This would generate a call to rustc similar to the following,
 (for simplicity purposes, most of the rustc command line has been removed):
 
-`rustc -C natvis=path/to/file/a.natvis,path/to/file/b.natvis -Z unstable-options`
+`rustc -C natvis=path/to/file/a.natvis -C natvis=path/to/file/b.natvis -Z unstable-options`
 
-`.natvis` files that contain spaces within the path will be quoted to ensure
-the path remains valid when passing command line options to rustc. Since the `-Z`
-option is a comma-separated list, a comma would not be valid within the path
-for a Natvis file.
+`.natvis` files that contain spaces or commas within the path will be quoted to ensure
+the path remains valid when passing command line options to rustc.
 
 The `CrateRoot` type would also need to be updated to account for `.natvis`
-files for crates within the dependency graph. To reflect this a new field,
-`natvis_files: Lazy<[PathBuf]>,` would be added. This will store the list of
-`.natvis` files that were passed to the invocation of rustc for the specific crate.
+files for crates within the dependency graph. To reflect this a new type
+`pub struct NatvisFile` will be created to ensure the contents of a `.natvis`
+file can be serialized and stored in the crate metadata. The `CrateRoot` would
+contian the field, `natvis_files: Lazy<[NatvisFile]>`.
 
 Another change that would need to be made here is to add a new field to the
-`CrateInfo` type, `pub natvis_files: Option<Vec<PathBuf>>`. This will allow the `MsvcLinker`
-type to query the list of Natvis files that exist within the crate dependency graph
-and add the `/NATVIS` linker arg for each `.natvis` file.
+`CrateInfo` type, `pub used_crates_natvis: Option<Vec<PathBuf>>`. This will
+allow the `MsvcLinker` type to query the list of Natvis files that exist within
+the crate dependency graph and add the `/NATVIS` linker argument for each
+`.natvis` file.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -341,7 +344,7 @@ is not possible and so a manual definition would be required to have a debugger 
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 This design provides a simple mechanism for cargo to collect the list of
-.natvis files specified for a given crate and embed them in the resulting
+`.natvis` files specified for a given crate and embed them in the resulting
 pdb. It does not need any manual intervention by a Rust developer who is
 consuming such a crate to get the debugging experience to work when it is
 viewed under a debugger that supports the Natvis Framework.
@@ -477,7 +480,7 @@ of each type.
 ## Auto-discover Natvis XML files
 
 We may want to auto-discover Natvis files by searching specific directories
-for .natvis files. For example, developers create a file with the
+for `.natvis` files. For example, developers create a file with the
 `.natvis` file extension, and place it within the `dbgvis/natvis` subdirectory
 of their crate. The `dbgvis` directory is reserved for debugger visualizations,
 and the `natvis` subdirectory is reserved for Natvis visualizations. (The
