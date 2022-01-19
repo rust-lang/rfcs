@@ -3,6 +3,8 @@
 - RFC PR: [rust-lang/rfcs#1201](https://github.com/rust-lang/rfcs/pull/1201)
 - Rust Issue: [rust-lang/rust#32408](https://github.com/rust-lang/rust/issues/32408)
 
+> ⚠ This RFC has been superseded by RFC 2972, constrained naked functions. ⚠
+
 # Summary
 
 Add support for generating naked (prologue/epilogue-free) functions via a new
