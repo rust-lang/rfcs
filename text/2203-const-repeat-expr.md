@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#2203](https://github.com/rust-lang/rfcs/pull/2203)
 - Rust Issue: [rust-lang/rust#49147](https://github.com/rust-lang/rust/issues/49147)
 
-> ⚠ This RFC has mostly been superceeded ⚠
+> ⚠ This RFC has mostly been superseded ⚠
 >
 > This turned out to be more complicated than expected to detect while being intuitive to the programmer.  As such, it's expected that this problem space will be addressed with the *inline consts* from [RFC 2920] instead, which have syntax to opt-in to the behaviour.
 >
