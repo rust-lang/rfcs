@@ -1,7 +1,7 @@
 - Feature Name: scoped_threads
 - Start Date: 2019-02-26
-- RFC PR: (leave this empty)
-- Rust Issue: (leave this empty)
+- RFC PR: [rust-lang/rfcs#3151](https://github.com/rust-lang/rfcs/pull/3151)
+- Rust Issue: [rust-lang/rust#93203](https://github.com/rust-lang/rust/issues/93203)
 
 # Summary
 [summary]: #summary
