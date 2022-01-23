@@ -566,6 +566,33 @@ test_example.py s                                               [100%]
 ========================= 1 skipped in 0.00s =========================
 ```
 
+## Prior art for the attribute syntax
+
+While not related to testing itself, it’s worth to look at precedent
+in the syntax proposed by this RFC.  [Serde](https://serde.rs/),
+a popular serialising library, supports customisation with [`serde`
+annotation](https://serde.rs/field-attrs.html).  The annotation takes
+named parameters some of which accept further value.  Most notably,
+the [`skip_serializing_if`
+argument](https://serde.rs/attr-skip-serializing.html) takes
+a predicate function as value, for example:
+
+```rust
+#[serde(deny_unknown_fields)]
+pub struct Notification {
+    jsonrpc: Version,
+    pub method: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub params: Option<Value>,
+}
+```
+
+The method is passed as a string rather than plain path because the
+parameter was introduced before [`unrestricted_attribute_tokens`
+feature](https://github.com/rust-lang/rust/pull/57367) was stabilised
+and it was simply not possible to pass a path to an annotation.
+
+
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
