@@ -331,12 +331,11 @@ modified to return `Ok(())`.
 ## Panicking
 
 Rather than returning a value, the test could exit by panicking with
-some special message (`[1]` in example below).  Since having a magic
-panic message might not feel ‘right’ a better option could be
-panicking with a custom object (`[2]` in example below).  To make
-things more convenient a custom function (`[3]` in example below) or
-macro (`[4]` in example below) could be added as well.
-
+a special message (`[1]` in example below).  To avoid having a magic
+string pattern, a better option would be panicking with a special
+object (`[2]` below).  Or finally, to make things more convenient
+a custom function (`[3]` below) or macro (`[4]` and `[5]` below) could
+be defined instead.
 
 ```rust
 #[test]
@@ -344,24 +343,26 @@ fn test_memcpy_avx() {
     if !std::is_x86_feature_detected!("avx") {
         /* [1] */ panic!("IGNORE: missing AVX support");
         /* [2] */ std::panic::panic_any(
-                      std::test::IgnoreTest("missing AVX support"));
+                      std::test::IgnoreTest::new("missing AVX support"));
         /* [3] */ std::test::ignore("missing AVX support");
         /* [4] */ ignore!("missing AVX support");
     }
+    /* [5] */ ignore_if!(!std::is_x86_feature_detected!("avx"),
+                         "missing AVX support");
     // ...
 }
 ```
 
 Like before, this approach does not integrate with `--ignored` option.
-The `std::test::ignore` function and `ignore!` macro could be made to
-respect `--include-ignored` by not interrupting the test though that
-could be surprising to the test authors as well as users since
-`--ignored` would remain unsupported.
+The `std::test::ignore` function, `ignore!` and `ignore_if!` macros
+could be made to respect `--include-ignored` by not interrupting the
+test.  However, that would be surprising to the test authors (who
+would expect test to terminate if condition isn’t met) as well as
+users (who would observe inconsistent behaviour with `--ignored`
+flag).
 
-In addition, the third variant (the `ignore` function) would require
-test module to be stabilised which might not be feasible.  In this
-regard, the fourth variant (the `ignore!` macro) would work especially
-if it was defined only if `cfg(test)`.
+In addition, the second and third variants would require test module
+to be stabilised which might not be feasible.
 
 ## Passing an argument
 
