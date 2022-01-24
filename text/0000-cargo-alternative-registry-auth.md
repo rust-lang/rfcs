@@ -40,7 +40,7 @@ The approved (but currently unimplemented) [RFC2789](https://github.com/rust-lan
 If the server responds with an HTTP redirect, the redirect would be followed, but the Authorization header would *not* be sent to the redirect target.
 
 ## Interaction with `credential-process`
-The unstable [credential-process](https://doc.rust-lang.org/nightly/cargo/reference/unstable.html#credential-process) feature stores credentials keyed on the registry api url, which is only available in after fetching `config.json` from the index. If access to the index is secured using the authorization token, then Cargo will be unable to fetch the `config.json` file before calling the credential process.
+The unstable [credential-process](https://doc.rust-lang.org/nightly/cargo/reference/unstable.html#credential-process) feature stores credentials keyed on the registry api url, which is only available after fetching `config.json` from the index. If access to the index is secured using the authorization token, then Cargo will be unable to fetch the `config.json` file before calling the credential process.
 
 For example, the following command would need to download `config.json` from the index before storing the credential.
 `cargo login --registry my-registry -Z http-registry -Z credential-process`
