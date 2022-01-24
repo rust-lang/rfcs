@@ -324,13 +324,14 @@ The `CrateRoot` type would also need to be updated to account for `.natvis`
 files for crates within the dependency graph. To reflect this a new type
 `pub struct NatvisFile` will be created to ensure the contents of a `.natvis`
 file can be serialized and stored in the crate metadata. The `CrateRoot` would
-contian the field, `natvis_files: Lazy<[NatvisFile]>`.
+contain the field, `natvis_files: Lazy<[NatvisFile]>`.
 
 Another change that would need to be made here is to add a new field to the
-`CrateInfo` type, `pub used_crates_natvis: Option<Vec<PathBuf>>`. This will
+`CrateInfo` type, `pub natvis_files: Option<Vec<NatvisFile>>`. This will
 allow the `MsvcLinker` type to query the list of Natvis files that exist within
 the crate dependency graph and add the `/NATVIS` linker argument for each
-`.natvis` file.
+`.natvis` file. This will also be the stage at which the Natvis files for each
+crate are copied to the target directory which they will be linked from.
 
 # Drawbacks
 [drawbacks]: #drawbacks
