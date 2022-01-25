@@ -289,12 +289,26 @@ The MSVC linker supports embedding debugger visualizations defined in a Natvis f
 Since the `MSVC` linker is the only one that supports embedding Natvis files
 into a PDB, this feature would be specific to the `MSVC` toolchain only.
 
-Cargo would add new syntax in `Cargo.toml` for specifying the list of Natvis
-files to be added to the crate. The new manifest key, `natvis` would be added
-to a new `[debugger-visualizations]` section. Cargo would emit a warning if
-any of the specified Natvis files do not have the `.natvis` extension. This
-would be in control of setting the `-C natvis` flag in rustc as well as
-`-Z unstable-options` to enable it.
+Cargo would add a new feature to auto-discover Natvis files by searching a specific
+directory, `dbgvis/natvis/` for `.natvis` files. For example, developers create a
+file with the `.natvis` file extension, and place it within the `dbgvis/natvis/`
+subdirectory of their crate. The `dbgvis` directory is reserved for debugger
+visualizations, and the `natvis` subdirectory is reserved for Natvis visualizations.
+(The name `dbgvis` was chosen to avoid conflicts with `Debug` directories created
+by build systems or IDEs; often, `.gitignore` files ignore `Debug` directories.)
+
+Cargo automatically scans for `dbgvis/natvis/*.natvis` files. This behavior
+can be overridden by specifying a new manifest key.
+
+Cargo would also add new syntax in `Cargo.toml` for specifying the list of Natvis
+files to be added to the crate directly. The new manifest key, `natvis` would be
+added to a new `[debugger-visualizations]` section. Cargo would emit a warning if
+any of the specified Natvis files do not have the `.natvis` extension.
+
+As with the auto-discover feature, this would be in control of setting the
+`-C natvis` flag in rustc as well as `-Z unstable-options` to enable it. Using
+the new toml syntax to specify `.natvis` files would override Cargo from
+auto-discovering Natvis files in the `dbgvis/natvis/` directory.
 
 For example:
 
@@ -479,19 +493,6 @@ The `natvis!` call would specify the name of the type the visualization applies
 to, along with the XML fragment. This would give developers the freedom to
 place visualizations anywhere in their crate, rather than at the definition
 of each type.
-
-## Auto-discover Natvis XML files
-
-We may want to auto-discover Natvis files by searching specific directories
-for `.natvis` files. For example, developers create a file with the
-`.natvis` file extension, and place it within the `dbgvis/natvis` subdirectory
-of their crate. The `dbgvis` directory is reserved for debugger visualizations,
-and the `natvis` subdirectory is reserved for Natvis visualizations. (The
-name `dbgvis` was chosen to avoid conflicts with `Debug` directories created
-by build systems or IDEs; often, `.gitignore` files ignore `Debug` directories.)
-
-Cargo automatically scans for `dbgvis/natvis/*.natvis` files. This behavior
-can be overridden by specifying manifest keys.
 
 # References
 
