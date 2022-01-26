@@ -341,11 +341,15 @@ file can be serialized and stored in the crate metadata. The `CrateRoot` would
 contain the field, `natvis_files: Lazy<[NatvisFile]>`.
 
 Another change that would need to be made here is to add a new field to the
-`CrateInfo` type, `pub natvis_files: Option<Vec<NatvisFile>>`. This will
-allow the `MsvcLinker` type to query the list of Natvis files that exist within
-the crate dependency graph and add the `/NATVIS` linker argument for each
+`CrateInfo` type, `pub natvis_files: FxHashMap<StableCrateId, Vec<NatvisFile>>`.
+This will allow the `MsvcLinker` type to query the list of Natvis files that exist
+within the crate dependency graph and add the `/NATVIS` linker argument for each
 `.natvis` file. This will also be the stage at which the Natvis files for each
-crate are copied to the target directory which they will be linked from.
+crate are copied to the target directory which they will be linked from. For example,
+in a debug build, the `.natvis` files will be copied to `target/debug/deps/natvis`.
+Each `.natvis` file that is copied over to the new directory will have a new name to
+ensure it is unique across `.natvis` files for all crates. The naming scheme will be
+`<crate_name>-<stable_crate_id>-<file_name>-<count>.natvis`.
 
 # Drawbacks
 [drawbacks]: #drawbacks
