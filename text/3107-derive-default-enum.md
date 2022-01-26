@@ -1,4 +1,4 @@
-- Feature Name: `derive_enum_default`
+- Feature Name: `derive_default_enum`
 - Start Date: 2021-04-07
 - RFC PR: [rust-lang/rfcs#3107](https://github.com/rust-lang/rfcs/pull/3107)
 - Rust Issue: [rust-lang/rust#87517](https://github.com/rust-lang/rust/issues/87517)
@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-An attribute `#[default]`, usable on `enum` unit variants, is also introduced, thereby allowing some
+An attribute `#[default]`, usable on `enum` unit variants, is introduced thereby allowing some
 enums to work with `#[derive(Default)]`.
 
 ```rust
