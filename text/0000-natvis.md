@@ -192,15 +192,21 @@ limited support for generic types.
 
 Rust developers can add one or more `.natvis` files to their crate. The
 `Cargo.toml` file specifies the path of these Natvis files via a new
-manifest key. Cargo would then pass the set of `.natvis` files that were
-specified in `Cargo.toml` and pass it to the rustc invocation for the crate
-via a new `-C` flag and enabling unstable options in Rust via the
-`-Z unstable-options`. See the below example for how rustc would embed these
-Natvis files in the debuginfo for a binary as well as new compiler options
-to be added to rustc.
+manifest key or by automatically finding `.natvis` files in a predetermined
+directory, `dbgvis/natvis/` and its subdirectories. Cargo would then take the
+set of `.natvis` files collected and pass it to the invocation of rustc
+for the crate. This would be done via a new `-C` flag and will also enable
+unstable options in Rust via the existing `-Z unstable-options` flag. Rustc
+would be responsible for either passing encoding the contents of the
+`.natvis` files in the crate metadata if the target is an `rlib` or passing
+the `/NATVIS` flag to MSVC linker to embed the Natvis visualizations into the PDB.
+
+See the below example for how rustc would embed these Natvis files in the
+debuginfo for a binary as well as new compiler options to be added to rustc.
 
 To provide Natvis files, developers create a file with the `.natvis` file
-extension and specify this Natvis file in the `Cargo.toml` under a new section
+extension and either place it in the predetermined directory for Cargo to
+find it automatically or specify it in the `Cargo.toml` under a new section
 that will be added as part of this RFC.
 
 As an example, consider a crate `foo` with this directory structure:
@@ -289,16 +295,14 @@ The MSVC linker supports embedding debugger visualizations defined in a Natvis f
 Since the `MSVC` linker is the only one that supports embedding Natvis files
 into a PDB, this feature would be specific to the `MSVC` toolchain only.
 
-Cargo would add a new feature to auto-discover Natvis files by searching a specific
-directory, `dbgvis/natvis/` for `.natvis` files. For example, developers create a
-file with the `.natvis` file extension, and place it within the `dbgvis/natvis/`
-subdirectory of their crate. The `dbgvis` directory is reserved for debugger
-visualizations, and the `natvis` subdirectory is reserved for Natvis visualizations.
-(The name `dbgvis` was chosen to avoid conflicts with `Debug` directories created
-by build systems or IDEs; often, `.gitignore` files ignore `Debug` directories.)
-
-Cargo automatically scans for `dbgvis/natvis/*.natvis` files. This behavior
-can be overridden by specifying a new manifest key.
+Cargo would add a new feature to auto-discover Natvis files by searching a
+specific directory, `dbgvis/natvis/`, including subdirectories for `.natvis`
+files. For example, developers create a file with the `.natvis` file extension,
+and place it anywhere within the `dbgvis/natvis/` subdirectory of their crate.
+The `dbgvis` directory is reserved for debugger visualizations, and the `natvis`
+subdirectory is reserved for Natvis visualizations. (The name `dbgvis` was chosen
+to avoid conflicts with `Debug` directories created by build systems or IDEs;
+often, `.gitignore` files ignore `Debug` directories.)
 
 Cargo would also add new syntax in `Cargo.toml` for specifying the list of Natvis
 files to be added to the crate directly. The new manifest key, `natvis` would be
@@ -331,25 +335,50 @@ This would generate a call to rustc similar to the following,
 
 `rustc -C natvis=path/to/file/a.natvis -C natvis=path/to/file/b.natvis -Z unstable-options`
 
-`.natvis` files that contain spaces or commas within the path will be quoted to ensure
-the path remains valid when passing command line options to rustc.
+`.natvis` files that contain spaces or commas within the path will be
+quoted to ensure the path remains valid when passing command line options
+to rustc.
 
 The `CrateRoot` type would also need to be updated to account for `.natvis`
-files for crates within the dependency graph. To reflect this a new type
-`pub struct NatvisFile` will be created to ensure the contents of a `.natvis`
-file can be serialized and stored in the crate metadata. The `CrateRoot` would
-contain the field, `natvis_files: Lazy<[NatvisFile]>`.
+files for crates within the dependency graph. The `CrateRoot` would contain
+the field, `natvis_files: Lazy<[NatvisFile]>`. The new type `pub struct NatvisFile`
+will be created to ensure the contents of a `.natvis` file can be serialized
+and stored in the crate metadata.
+
+There are a couple of reasons why the contents of a `.natvis` file passed into
+rustc will be serialized and encoded in the crate metadata.
+
+First, Cargo is not the only build system used with Rust. There are others
+such as Bazel and Meson that support directly driving Rust. That might be
+a minor issue to the wider community but for the people that are working
+on those systems it is beneficial to pass this information through crate
+metadata. That way, the information enters the dependency graph only at
+the leaf nodes, and the code building the dependency graph doesn't need to
+know how or why it flows through the dependency graph.
+
+Secondly, there's also been interest within the community of supporting
+binary crate packages. That is, compiling crates to rlibs, and then passing
+around rlibs directly and not rebuilding the entire library. Having to
+ensure that `.natvis` files are always passed along with rlibs as well
+could become very difficult especially when other debugger visualizations
+also become supported such as GDB's debugger scripts and WinDbg's JavaScript
+debugger scripts. Packaging these sorts of things in the `rmeta` for an `rlib`
+is simple, reliable and seems like the "right" thing to do here.
 
 Another change that would need to be made here is to add a new field to the
-`CrateInfo` type, `pub natvis_files: FxHashMap<StableCrateId, Vec<NatvisFile>>`.
-This will allow the `MsvcLinker` type to query the list of Natvis files that exist
-within the crate dependency graph and add the `/NATVIS` linker argument for each
-`.natvis` file. This will also be the stage at which the Natvis files for each
-crate are copied to the target directory which they will be linked from. For example,
-in a debug build, the `.natvis` files will be copied to `target/debug/deps/natvis`.
-Each `.natvis` file that is copied over to the new directory will have a new name to
-ensure it is unique across `.natvis` files for all crates. The naming scheme will be
-`<crate_name>-<stable_crate_id>-<file_name>-<count>.natvis`.
+`CrateInfo` type, `pub natvis_files: FxHashSet<NatvisFile>`. This will
+allow the `MsvcLinker` type to query the list of Natvis files that exist
+within the crate dependency graph. This will be the stage at which the
+`.natvis` files that were previously encoded and stored in the `CrateMetadata`
+for a given crate dependency, will be decoded and have the contents written
+to a new file in the `target` directory. The path of this new file will be
+what is passed to the `/NATVIS` linker flag. For example, in a debug build,
+the contents of the `.natvis` files that were encoded in the crate metadata
+will be written to new files in the directory `target/debug/deps/natvis`.
+Each `.natvis` file that is written will have a new name to ensure it is
+unique across `.natvis` files for all crates. The naming scheme will be
+`<crate_name>-<hash>.natvis`. The `<hash>` value will be the hash of the
+contents of the Natvis file.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -364,6 +393,8 @@ is not possible and so a manual definition would be required to have a debugger 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
+## Rationale
+
 This design provides a simple mechanism for cargo to collect the list of
 `.natvis` files specified for a given crate and embed them in the resulting
 pdb. It does not need any manual intervention by a Rust developer who is
@@ -376,10 +407,77 @@ developers which may lead to a period of learning the syntax. Since this feature
 would be optional, a consumer of a crate that has natvis definitions for types
 would not need to go through this learning curve. 
 
-Not doing this would keep the existing debugging experience for external Rust crates.
-Most Rust types, outside of the standard library, do not have any debugger views
-defined for them by default which makes them difficult to interpret when viewed
-under a debugger.
+## Alternatives
+
+### Alternative 1: existing -C link-arg flag
+
+Supporting this option would mean that changes to rustc are not necessary.
+The changes would be limited to Cargo, which would be responsible for collecting
+the set of Natvis files and passing `-Clink-arg=/NATVIS:{file-path}` for each
+Natvis file.
+
+The drawbacks for this option is that it will only collect Natvis files for the
+top-most manifest. This will not walk the dependency graph and find all relevant
+Natvis files so this will only work for targets that produce a `DLL` or `EXE` and
+not an `.rlib`.
+
+### Alternative 2: custom build script to set /NATVIS linker flag
+
+Supporting this option would mean that changes to cargo and rustc are not necessary.
+Each individual crate would be able to create a custom build script that would set
+the rustc `link-arg` flag `cargo:rustc-link-arg=/NATVIS:{file-path}` for each Natvis
+file.
+
+The drawbacks for this option is that it would force all Rust developers to manually
+create a build script and ensure it is kept up-to-date whenever the set of Natvis files
+are updated. This also would set the linker argument regardless of the linker being used.
+This could lead to potential build errors if the linker being used returns an error for
+an invalid argument.
+
+### Alternative 3: inline Natvis XML fragments via attributes only
+
+Supporting this option would mean that changes to cargo are not necessary.
+This option could be implemented via an attribute and/or proc-macro which
+would live outside of the compiler and could be ingested in via an outside crate.
+Rustc would need some changes in order to collect all of the attribute usage from the
+source code and create temporary files that could be passed to the MSVC linker via
+the `/NATVIS` linker arg. For crate dependencies, the Natvis fragments can be combined
+and embedded in the crate metadata so the Natvis can still be embedded in the final
+PDB generated.
+
+The drawbacks for this option is that it would add a lot of bloat to the Rust source
+code directly if only the attribute syntax was supported. For types with many fields
+or types that need extensive amounts of Natvis to appropriately visualize them in a
+meaninngful way, this could distract from the contents of the code. Without being able
+to pull some of the more intricate Natvis descriptions into a separate standalone
+`.natvis` file, there may become an issue with the visibility of the source code.
+Also, if/when other debugger visualization formats are supported, it could become
+very obscure to read the source with large amounts of visualization scripts from
+multiple schemas all being directly embedded in source code.
+
+### Alternative 4: miri executes the MIR of a Debug impl within a debugger
+
+Supporting this option would mean that changes to cargo and rustc are not necessary.
+This would have the added benefit of taking full advantage of existing implementations
+of the `Debug` trait. Many Rust developers already implement the `Debug` trait which is
+used to format how types should be viewed, this would only ease the debugging quality of
+Rust when viewed under any debugger. This option also has the added benefit of not
+requiring any changes to a crate from a Rust developer by leveraging existing `Debug` impls.
+
+The drawbacks for this option is that this has not been fully investigated to
+determine its viability. This could be a great potential feature to ease
+debugging Rust but without concrete data to push this towards a potential RFC,
+I would assume supporting debugging in the systems that are already heavily used
+by the Rust community to be a higher priority. If/when this option becomes a bit
+more viable, there would be nothing stopping it from becoming a true feature.
+
+## Impact
+
+By not implementing the feature described by this RFC, the debugging quality of Rust,
+especially on Windows, will be continue to be a difficult experience. The only
+visualizations that exist today are for parts of the standard library. External crates
+being consumed will not have debugging visualizations available and would make it
+difficult to understand what is being debugged.
 
 # Prior art
 [prior-art]: #prior-art
