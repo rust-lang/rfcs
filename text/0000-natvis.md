@@ -430,9 +430,12 @@ file.
 
 The drawbacks for this option is that it would force all Rust developers to manually
 create a build script and ensure it is kept up-to-date whenever the set of Natvis files
-are updated. This also would set the linker argument regardless of the linker being used.
-This could lead to potential build errors if the linker being used returns an error for
-an invalid argument.
+are updated. This option would also have the same drawback as above, using a build
+script would be able to set the linker argument for adding Natvis but only for the top
+level crate. Any dependencies or transitive dependencies would not be able to set that
+linker argument in order to embed Natvis into the generated PDB. Also, for crates that
+generate an `rlib`, this would also run into an issue since a PDB isn't generated for
+an `rlib`.
 
 ### Alternative 3: inline Natvis XML fragments via attributes only
 
