@@ -33,7 +33,7 @@ unsafe {
 This approach forces the slow path because of the usage of `pre_exec`.
 
 However, `posix_spawn` supports setting the process group
-(`posix_spawnattr_setpgroup`), this RFC proposes exposing that functionality,
+(`posix_spawnattr_setpgroup`). This RFC proposes exposing that functionality,
 which allows users to set the process group id without forcing the slow path.
 
 # Guide-level explanation
