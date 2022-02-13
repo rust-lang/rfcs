@@ -2,10 +2,11 @@
 - Start Date: 2022-02-12
 - RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
-- **Status:** Rough first draft
+- **Status:** Rough first draft, comments welcome
   - Summary, Reference-level explanation, Unresolved questions, Future possibilities sections: pretty good
   - Motivation, Guide-level explanation: need revision
-  - Drawbacks, Rationale, Prior Art sections need to be filled in
+  - Drawbacks, Rationale sections need to be filled in
+  - Prior art is bare-bones, but I don't have more information to add
 
 # Summary
 [summary]: #summary
@@ -135,7 +136,7 @@ This should not need to be a lang item.
 
 ### Copy requires ScopeDrop
 
-Add bound `Copy: ScopeDrop` [discussion][#copy-scopedrop]
+Add bound `Copy: ScopeDrop` [discussion][copy-scopedrop]
 ```
 // core/marker.rs
 pub trait Copy: Clone + ScopeDrop {}
@@ -143,7 +144,7 @@ pub trait Copy: Clone + ScopeDrop {}
 
 ### Allow forgetting `!ScopeDrop` values.
 
-We weaken the bounds on `mem::forget` and `ManuallyDrop`: [discussion][#memforget]
+We weaken the bounds on `mem::forget` and `ManuallyDrop`: [discussion][memforget]
 ```rust
 // core/mem/mod.rs
 pub const fn forget<T: ?ScopeDrop>(t: T) {
@@ -177,8 +178,9 @@ unsafe impl<T: ?ScopeDrop> ScopeDrop for ManuallyDrop<T> {}
 - What other designs have been considered and what is the rationale for not choosing them?
 - What is the impact of not doing this?
 
+The blog post that inspired this RFC: http://aidancully.blogspot.com/2021/12/less-painful-linear-types.html
+
 Miscelaneous, non-exhaustive collection of similar prior proposals:
-* http://aidancully.blogspot.com/2021/12/less-painful-linear-types.html This is a description of almost exactly the same proposal.
 * https://github.com/rust-lang/rfcs/issues/814
 * https://github.com/rust-lang/rfcs/issues/523 (this feature request would seem to be resolved by this proposal)
 * https://github.com/rust-lang/rfcs/issues/2642 (an approach with a variation on `#[must_use]`)
@@ -197,6 +199,7 @@ I would be excited to learn about examples of prior art in other languages.
 [unresolved-questions]: #unresolved-questions
 
 ## `mem::forget`
+[memforget]: #memforget
 
 to resolve: during RFC discussion
 
@@ -206,6 +209,7 @@ If the bound `ScopeDrop` is added to all type parameters and associated types in
 `mem::forget` without using `unsafe`. However, I do not think that this is a promise we want to make.
 
 ## Default Bound Self Type
+[copy-scopedrop]: #copy-scopedrop
 
 to resolve: after implementation
 
