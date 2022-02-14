@@ -2,40 +2,31 @@
 - Start Date: 2022-02-12
 - RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
-- **Status:** Rough first draft, comments welcome
-  - Summary, Reference-level explanation, Unresolved questions, Future possibilities sections: pretty good
-  - Motivation, Guide-level explanation: need revision
-  - Drawbacks, Rationale sections need to be filled in
-  - Prior art is bare-bones, but I don't have more information to add
+- **Status:** First draft, looking for comments/indication of interest before opening PR to formally submit this as an RFC
 
 # Summary
 [summary]: #summary
 
 Another stab at almost-linear types. Draws heavily from http://aidancully.blogspot.com/2021/12/less-painful-linear-types.html
 
-Add a trait `ScopeDrop` that can be used to determine which types can be dropped implicitly. On an unwinding panic, these types are dropped the same way as today (with `Drop::drop` and recursively dropping subvalues). However, during unexceptional control flow, the compiler will give an error if a value of a type which does not implement `ScopeDrop` exits scope without being consumed. Include in the core library a zero-sized struct `PhantomLinear` which has the negative impl `!ScopeDrop`. Automatically implement `ScopeDrop` when all component types implement it. Make `ScopeDrop` assumed by default on type parameters and associated types, with `?ScopeDrop` syntax to explicitly declare support for these types.
+Add a trait `ScopeDrop` that can be used to determine which types can be dropped implicitly. On an unwinding panic, these types are dropped the same way as today (with `Drop::drop` and recursively dropping subvalues). However, during unexceptional control flow, the compiler will give an error if a value of a type which does not implement `ScopeDrop` exits scope without being consumed.
+
+`mem::forget` is still valid for any type: unsafe code can not assume that destructors of any kind are run for safety.
+
+Include in the core library a zero-sized struct `PhantomLinear` which has the negative impl `!ScopeDrop`. Automatically implement `ScopeDrop` when all component types implement it. Make `ScopeDrop` assumed by default on type parameters and associated types, with `?ScopeDrop` syntax to explicitly declare support for these types.
 
 # Motivation
 [motivation]: #motivation
 
-Scope based implicit drop is a user-friendly way to make cleaning up resources properly easy, and leaking resources hard. For most cases, this works exceedingly well. However, the interface of `Drop` is quite limited.
+Scope based implicit drop is a user-friendly way to make cleaning up resources properly easy, and leaking resources hard. For most cases, this works exceedingly well. However, in some APIs it would be nice to force the API user to call some method rather than allowing the implicit drop to clean up (For example, to force the user to think about errors on cleanup, or to recieve extra data needed for cleanup).
 
-* From the library's perspective, `Drop::drop` takes `&mut self`, and thus must leave self in a valid state after running. For related reasons, you cannot partially move out of a type which implements `Drop`, making it difficult to implement other functions which consume a `T: Drop` by breaking it up into pieces. This proposal gives library writers a way to *guarantee* that their types are consumed (and thus closed, finalized, or otherwise cleaned up) in normal control flow, with the flexibility to move away from `fn(self) -> ()` to `fn close(self) -> Result<Ok, Err>` (close which may produce data/error), `fn complete(self, return_value) -> ()` (complete a request with a value), or even `fn try_cleanup(self) -> Option<(Self, Error)>` (cleanup may fail, and you need to try again).
+A workaround used today is panicking on drop, but this is a runtime check for what could be checked at compile time. Having a strong type system that catches many errors at compile time is one of Rust's strengths; it makes sense to allow types to opt out of implicit drop when they decide that implicit drop is wrong.
 
-* From the user's perspective, `mem::drop<T>` has type `fn(T) -> ()`, which leaves no room for falliable cleanup, nor for providing extra information (such as a return value) on completion. Furthermore, `mem::drop` may get called implicitly whenever a variable goes out of scope. When the action we want to take when we are done using a value fits the simple pattern `fn(self) -> ()`, this is extremely convenient. We use the value when we need it, and trust it to go away on it's own once we don't. But for some types, it is extremely unlikely that forgetting about them before calling some completion API is correct behavior. This is sometimes handled by implementing `drop` as `panic!`, or slightly less agressivly implementing `drop` as closing with status ``Well, I forgot what I was doing with this, sorry!''. This proposal turns those runtime checks into compile time checks.
+Unwinding complicates this picture: for an unwinding panic, the compiler needs to clean up everything on the stack without a chance for the user to provide or recieve data. `Drop::drop` is a reasonably good fit for this case: it lets types specify custom cleanup behavior and reduces the amount of boilerplate by recursively dropping the subvalues.
 
-I am aware of two relevant factors influencing the design of `Drop::drop` today.
+In many cases, is also convenient to have cleanup code that is automatically called when a value goes out of scope, and we want to do the same thing on unwinding and end of scope often enough that it makes sense to combine those two facilities. But while every type needs to handle cleanup on unwind, it is reasonable to declare that, for some types, we don't want the convenience of implicit drop on end of scope.
 
-1. In case of an unwinding panic, values may need to be cleaned up at almost any point. I believe this is why `Drop` has no interface for providing extra data to or returning data from the destructor: it doesn't have a place in the exceptional flow case. This proposal adresses panic by essentially giving up. We acknowledge that at almost any time in the program, there may be a need to unwind the stack due to a `panic!`, and in this case we may have to settle for ``best-effort'' cleanup. This might mean leaking memory, it might mean ignoring errors on file close, it might mean aborting the process. We must only preserve the safety guarantees of Rust, and ensure that the value is left in a valid, though perhaps nonsensical, state. The `Drop` trait is very well suited to these scenarios, and this proposal keeps the behavior during unwinding panics exactly the same. As an added bonus, for people working in an environment where `panic = "abort"`, they can be sure that `drop` is *never* called.
-
-2. Writing drop glue code (the stuff that recursively drops all your fields) manually is a lot of busywork. I believe this is part of the reason that `Drop::drop` takes `&mut self`: so that the compiler-generated drop glue can safely run afterwards. This proposal adresses drop glue by having most types implement `ScopeDrop`. If you have a `struct T { a: A, b: B, c: C }`, and `A` is the only type that doesn't implement `ScopeDrop`, then a consumer for `T` can be as simple as
-```rust
-fn foo(t: T, x: X) {
-    let {a, b, c} = t;
-    A::close(a, x);
-}
-```
-This lets you write only the essential glue code: if `A` doesn't have a consumer `fn(A) -> ()`, then we don't want the compiler to try and write one for us. But the fields `b` and `c` can be implicitly dropped, if you don't have a use for them. (Caution: this may change the drop order of struct fields)
+Unwinding panics are an exceptional case. It is important to handle them without breaking Rust's memory safety guarantees, and useful to allow types to customize their behavior when dropped because of unwinding. But silently and implicitly making every variable which is not consumed before the end of its scope to do the same thing (you can check `thread::panicking`, but still) as when handling an unwinding panic is frustrating when the best-effort cleanup can you can do leaks memory, silently ignores errors, or sends a placeholder value. The current use of `drop` combines the exceptional case of unwinding with the extremely common case of ending a scope: we don't necessarily want to do the same thing for both, and don't need to use the API forced by the limitations of unwinding panic in the case of normal control flow.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -70,19 +61,23 @@ impl File {
 
 Then to use it, you would need to call `close_catch_errors` or `close_ignore_errors` to close the file: it won't happen automatically when the file goes out of scope. This makes it easy to do the correct thing (handle the errors), and makes it so that ignoring errors on file close is intentional, not an accident.
 ```rust
-fn main() -> Result<(), IoError> {
-    let mut file = File::create("foo.txt")?;
-    file.write("Hello")?;
-    file.close_catch_errors()?;
-    // Omitting this last line causes a compiler error:
-    // file cannot be implicitly dropped; type File does not implement ScopeDrop.
-    // Using instead file.close_ignore_errors(), we cannot use the ? to propagate errors up to the main result.
-}
+1:  fn main() -> Result<(), IoError> {
+2:      let mut file = File::create("foo.txt")?;
+3:      file.write("Hello")?;
+4:      file.close_catch_errors()?;
+        // Omitting this last line causes a compiler error:
+        // value file cannot be implicitly dropped; type File does not implement ScopeDrop.
+        // value defined on line 2, scope ends on line 5
+        // value is not consumed by last use on line 4.
+        // Using instead file.close_ignore_errors(), we cannot use the ? to propagate errors up to the main result.
+5:  }
 ```
 
 When you see an error saying that type `T` does not implement `ScopeDrop`, it is a signal that the API expects an explicit action to clean up the referenced variable. Like `Sized`, by default type parameters and associated types are assumed to implement `ScopeDrop`. If you are implementing a generic API and don't need to drop values, consider adding the `?ScopeDrop` bound.
 
-Note that you can still use `mem::forget` to leak an object, so unsafe code still can't rely on destructors being called for safety.
+Note that you can still use `mem::forget` to leak an object, so unsafe code still can't rely on destructors being called for safety. ([discussion][memforget]). However, unsafe code can rely on the invariant that if `T: !ScopeDrop` then `Drop::drop::<T>` will only be called while the stack is unwinding. If you are working in an environment where `panic = "abort"`, as is common in some bare-metal or embedded Rust applications, this means you are guaranteed that your type is never dropped! (Though again, it can be forgotten about.)
+
+If there is a `panic!` before the file is closed, `Drop::drop` will be called as normal: in this case you don't have an opportunity to catch any errors reported by file close because you are already panicking.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -169,8 +164,9 @@ unsafe impl<T: ?ScopeDrop> ScopeDrop for ManuallyDrop<T> {}
 # Drawbacks
 [drawbacks]: #drawbacks
 
-* Adds another `?Trait` like `Sized` that is assumed by default.
-* Adds another auto trait.
+* This does not eliminate the use of `mem::forget`, so APIs like scoped thread guards are still broken: unsafe code cannot rely on destructors of any kind to be run for safety.
+* Adds another `?Trait` like `Sized` that is assumed by default. Because `?ScopeDrop` expands the class of possible types, people writing generic code are faced with the extra task of determining whether or not to allow `?ScopDrop` types. This increases the burden on the ecosystem.
+* Adds another auto trait, which adds another piece of magic that happens without the user explicitly requesting it.
 
 # Rationale and alternatives
 
@@ -186,6 +182,42 @@ Miscelaneous, non-exhaustive collection of similar prior proposals:
 * https://github.com/rust-lang/rfcs/issues/2642 (an approach with a variation on `#[must_use]`)
 * https://internals.rust-lang.org/t/pre-pre-rfc-nodrop-marker-trait/15682
 
+## Unwinding
+
+How to deal with unwinding is one of the issues that has complicated previous proposals for linear types in Rust. When unwinding is possible, at almost any point the stack could need to be cleaned up: what is to be done with linear types in this case? In postponed RFC https://github.com/rust-lang/rfcs/issues/814, a `Finalize` trait was proposed that behaves identically to `Drop` but is only called in the unwinding case. Here we propose simply reusing the `Drop` trait for custom cleanup in both the unwinding and scope drop cases: If you need different behavior you can check `thread::panicking`.
+
+This is a bit of a "punt": we still allow linear types to be scooped up and disposed of by panic at any point. I argue that doing so makes integrating `ScopeDrop` into Rust much less difficult than trying to forbid their use in contexts where panic is possible.
+
+Types can individually decide whether they want to abort, to leak, or to attempt a best-effort cleanup in the exceptional case of unwinding while being confident that users will not accidentally default to this suboptimal behavior.
+
+## `mem::forget`
+[memforget]: #memforget
+
+Should `mem::forget::<T>` require `T: ScopeDrop`? I don't believe so.
+
+If the bound `ScopeDrop` is added to all type parameters and associated types in the standard library, I do not see a way to write
+`mem::forget` without using `unsafe`. However, I do not think that this is a promise we want to make.
+
+There are many APIs for which obvious generalization to `!ScopeDrop` types allows writing `mem::forget` in safe code. For example, while `Rc` needs to destroy the value it is holding at an unpredictable time, as long as we provide a method `fn destroy(self) -> ()` this is a seemingly sound system. But in the case of a reference cycle, `destroy` never gets called, so choosing `fn destroy(self) { panic!() }` will allow writing `mem::forget` in safe code.
+
+As another example, it seems eminently reasonable to pass `!ScopeDrop` values to a separate thread: the new thread takes ownership which entails responsibility for cleaning up. But if the new thread goes into an infinite loop, then the value never gets cleaned up and we can again safely forget values.
+
+For these reasons, I argue that `mem::forget` should not require `T: ScopeDrop`.
+
+## Why a trait?
+
+Rather than changing the type system, we could consider using a lint to discover when a type we annotate as linear gets implicitly dropped. However, to do this in a compositional way requires computing for generic functions which types they may implicitly drop, and we would want to propagate this information across crates. At this point, it seems clear that adding a lint for unused linear values would require computing and communicating much the same data as using a trait, and using a trait gives a systematic way of integrating the feature into the language.
+
+## Branded completion tokens
+
+Branding with unique lifetimes offers some of the benefits of linear types. (https://plv.mpi-sws.org/rustbelt/ghostcell/paper.pdf) By requiring the production of branded completion tokens we can require a callback to consume a passed in value rather than dropping it. But this also has limitations: it requires use to be confined to a callback with a higher-order lifetime parameter, and they cannot be stored in collections. Branded types do not seem sufficient to replace all potential uses of linear types.
+
+## What are the consequences of not doing this?
+
+If we do not adopt this proposal, types for which implicitly drop is a footgun will remain reliient on runtime checking. The case of accidental async future cancellation by drop has been brought up. Another example of an API that would benefit from `?ScopeDrop` is when you are expected to eventually complete every recieved request with a completion status (the example I am familiar with is Windows Driver Framework requests: https://docs.microsoft.com/en-us/windows-hardware/drivers/wdf/completing-i-o-requests).
+
+The issue of disabling implicit drops seems to come up frequently enough to demonstrate some level of desire for this feature in the Rust community. I believe that this feature does require language support: I do not believe it is possible to faithfully emulate compile-time checked `?ScopeDrop` without compiler support.
+
 # Prior art
 [prior-art]: #prior-art
 
@@ -197,16 +229,6 @@ I would be excited to learn about examples of prior art in other languages.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
-
-## `mem::forget`
-[memforget]: #memforget
-
-to resolve: during RFC discussion
-
-Should `mem::forget::<T>` require `T: ScopeDrop`? I don't believe so.
-
-If the bound `ScopeDrop` is added to all type parameters and associated types in the standard library, I do not see a way to write
-`mem::forget` without using `unsafe`. However, I do not think that this is a promise we want to make.
 
 ## Default Bound Self Type
 [copy-scopedrop]: #copy-scopedrop
@@ -238,9 +260,9 @@ In the case that negative implementations are stablized for use outside of the s
 
 ## Audit standard library
 
-Go through the standard library and find type parameters and associated types that can be generalized to `?ScopeDrop`. Need to be careful to preserve backwards compatibility, but should be profitable. It may be possible to define lints that detect when the `ScopeDrop` bound is unnecessary, and list those out or even automatically add the `?SizedDrop` bounds.
+Go through the standard library and find type parameters and associated types that can be generalized to `?ScopeDrop`. Need to be careful to preserve backwards compatibility, but should be profitable. It may be possible to define lints that detect when the `ScopeDrop` bound is unnecessary, and list those out or even automatically add the `?ScopeDrop` bounds.
 
-However, I believe that the `SizedDrop` feature is useful even without generalizing the standard library or the ecosystem. Right now, we don't have experience with using this feature, and cannot be expected to know the right abstractions. Adding this feature to the language allows users to start experimenting.
+However, I believe that the `ScopeDrop` feature is useful even without generalizing the standard library or the ecosystem. Right now, we don't have experience with using this feature, and cannot be expected to know the right abstractions. Adding this feature to the language allows users to start experimenting.
 
 ## Making generic types `?ScopeDrop`
 
