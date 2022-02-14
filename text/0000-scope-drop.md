@@ -266,7 +266,7 @@ However, I believe that the `ScopeDrop` feature is useful even without generaliz
 
 ## Making generic types `?ScopeDrop`
 
-All current Rust types implement `?ScopeDrop` automatically, and `mem::drop<T>` works without bounds on `T`. For backwards compatibility, it is necessary for type parameters and associated types to be `ScopeDrop` by default, the same as how `Sized` works. However, we could consider a future edition where users are expected to add explicit `ScopeDrop` bounds on type parameters and associated types if they need to implicitly drop values of such type. This would make `ScopeDrop` a bit less magical, and a bit more explicit, as well as bringing it in line with the auto traits `Send`, `Sync`, and `Unpin`. This would be an intrusive change in codebases which drop generic types with any frequency, but might be easy to automate.
+All current Rust types implement `ScopeDrop` automatically, and `mem::drop<T>` works without bounds on `T`. For backwards compatibility, it is necessary for type parameters and associated types to be `ScopeDrop` by default, the same as how `Sized` works. However, we could consider a future edition where users are expected to add explicit `ScopeDrop` bounds on type parameters and associated types if they need to implicitly drop values of such type. This would make `ScopeDrop` a bit less magical, and a bit more explicit, as well as bringing it in line with the auto traits `Send`, `Sync`, and `Unpin`. This would be an intrusive change in codebases which drop generic types with any frequency, but might be easy to automate.
 
 ## Potential additions to standard library
 
