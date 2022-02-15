@@ -43,14 +43,20 @@ In order for crates.io to support asymmetric tokens these questions will need to
 
 Private registries that require authentication use asymmetric cryptography as a more secure way for cargo to log in. Each registry works a little different, but the most common workflow is:
 1. Generate a key pair. (For many registries, you can generate the key pair using the cargo command `cargo login --generate-keypair`, which will print the public key for use in the next step.)
-2. Go to the registries log in page, upload your public key and get the user ID for that key pair.
-3. On the command line run `cargo login --registry=name --private-key-path=path userId`
+2. Log into the registries website
+3. Go to the "register a key pair" page, upload your public key and get the user ID for that key pair.
+4. On the command line run `cargo login --registry=name --private-key-path=path userId`
 
 There are credential processes for using key pairs stored on hardware tokens. Check crates.io to see if there's one available for your hardware. Each one is a little different, but the general workflow is:
 1. `cargo install credential-process-for-your-hardware-token`
 2. run `cargo credential-process-for-your-hardware-token setup registryURL` to get your public key.
 3. Go to the registries log in page, upload your public key and get your user ID.
 4. Edit `credentials.toml` to have a `credential-process` field as described by `credential-process-for-your-hardware-token` docs. (The credential process command may help do this for you.)
+
+Some registries prioritize user experience over strictest security. They can simplify the process by providing key generation on the server. If your registry works this way the workflow will be:
+1. Log into the registries website
+2. Go to the "register generate a key pair" page, and copy the command it generated for you. It will disappear when you leave the page, the server will not keep a copy of the public key!
+3. Run it on the command line. It will look like  `cargo login --registry=name --private-key="key" "userId"`
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -63,7 +69,8 @@ A keypair can be generated with `cargo login --generate-keypair` which will:
 - print the public key and the path to the file.
   (See unresolved questions section.)
 
-There is also a field called `user-id` which is a string chosen by the registry, which is intended to be non-secret and used for identifying the user. Cargo requires it to be non-whitespace printable ASCII, registries should base64 encode non-ASCII data. Cargo may broaden the allowed set of characters to some other subset of UTF-8 in the future.
+There is also a field called `user-id` which is a string chosen by the registry, which is intended to be non-secret and used for identifying the user. Cargo requires it to be non-whitespace printable ASCII, registries that need non-ASCII data should base64 encode it.
+A registry could use something human-readable like the name of the user or the name of the role. It could also use something arbitrary like the GUID associated with the row in the permissions table.
 
 Both fields can be set with `cargo login --registry=name --private-key-path=path userId`.
 
@@ -71,7 +78,7 @@ A registry can have at most one of `private-key-path`, `token`, or `credential-p
 
 When authenticating to a registry, Cargo will generate a PASETO in the [v3.public format](https://github.com/paseto-standard/paseto-spec/blob/master/docs/01-Protocol-Versions/Version3.md). This format uses P-384 and 384-bit ECDSA secret keys, and is compatible with keys stored in contemporary hardware tokens. The generated PASETO will have specific "claims" (key-value pairs in the PASETO's JSON payload). The claims within the PASETO will include at least:
 - The current time.
-- The challenge, if cargo has received a challenge from a 401 from this server this session. A server that issues challenges should have some stateful way of knowing which challenges have been used and which ones are still available.
+- The challenge, if cargo has received a challenge from a 401/403 from this server this session. A server that issues challenges should have some stateful way of knowing which challenges have been used and which ones are still available.
 - If this is a mutation: which one (publish or yank or unyank), the package, the version, the SHA256 checksum of the `.crate` file as stored in the `cksum` in the index.
 
 The "footer" will include the user ID and the registry base URL. (The footer is part of the signature.) The registry server will validate the PASETO, and check the footer and claims:
@@ -145,7 +152,8 @@ If we use Biscuit all the controls anyone could ask for are just part of the sys
 However:
 - Introducing it here for authentication means that all registries need to use the biscuit language for their authorization. For some small registries this will be a lot more controls than they need. For large registries they will need to build compatibility between whatever existing authorization system they have and their biscuit implementation.
 - The biscuit language has some pretty complicated primitives, including regular expressions. Registries that require thorough correctness audits for all code related to Auth may find this prohibitively expensive.
-- The current biscuit specification (2.0) does not have a rich model of authentication. If you have a token that was authorized to do the action you are attempting to do then you must be someone who is allowed to do that action. Which has a lot of the same limitations of the existing secret token system as outlined in the motivation section of this RFC. 
+- The current biscuit specification (2.0) does not have a rich model of authentication. If you have a token that was authorized to do the action you are attempting to do then you must be someone who is allowed to do that action. Which has a lot of the same limitations of the existing secret token system as outlined in the motivation section of this RFC.
+- It is still possible to do scopes for tokens without using biscuits. A user ID can be created for each authorized role, and then the server can make sure that the used user ID is authorized to do the intended action.
 
 # Prior art
 [prior-art]: #prior-art
@@ -167,7 +175,9 @@ How aggressively to push people off secret tokens? This RFC does not remove the 
 
 What default settings should `cargo login --generate-keypair` use? What process should be used for changing these defaults as best practice changes? Where should it put the private keys?
 
-What format can Cargo read for private keys? The RFC suggests that cargo takes a path to `PKCS#12`. This gives the possibility for a user to reuse a preexisting key that they have for another use. The chance that the file will happen to be in the correct type may be too small to be worth the complexity of `PKCS#12`. We could use the secret [subset of `PASERK`](https://github.com/paseto-standard/paserk/blob/master/types/secret.md) witch is much simpler, but it is unlikely to be compatible with any other tools. If it is not going to be compatible we can store them in `credentials.toml` and not have paths involved. Whatever decision we make a credential process can always be set up to read other files in other formats.
+More generally, is all the user experience exactly correct for all the new flags? The expectation is that these will need to be changed and tweaked as we try using them after implementation.
+
+What format can Cargo read for private keys? The RFC suggests that cargo takes a path to `PKCS#12`. This gives the possibility for a user to reuse a preexisting key that they have for another use. The chance that the file will happen to be in the correct type may be too small to be worth the complexity of `PKCS#12`. We could use the secret [subset of `PASERK`](https://github.com/paseto-standard/paserk/blob/master/types/secret.md) witch is much simpler, but it is unlikely to be compatible with any other tools. If it is not going to be compatible we can store them in `credentials.toml` and not have paths involved. Whatever decision we make a credential process can always be set up to read other files in other formats. Also, we should think about how this works for CI use cases.
 
 What subset of UTF-8 is appropriate for use as `user-ID`? Whitespace, bidirectional overrides, invisible codepoints are clearly asking for trouble. But what about characters that have different canonicalization.
 
