@@ -2,18 +2,9 @@
 
 [Rust RFCs]: #rust-rfcs
 
-Many changes, including bug fixes and documentation improvements can be
-implemented and reviewed via the normal GitHub pull request workflow.
-
-Some changes though are "substantial", and we ask that these be put through a
-bit of a design process and produce a consensus among the Rust community and
-the [sub-team]s.
-
 The "RFC" (request for comments) process is intended to provide a consistent
-and controlled path for new features to enter the language and standard
-libraries, so that all stakeholders can be confident about the direction the
-language is evolving in.
-
+and controlled path for changes to Rust (such as new features) so that all 
+stakeholders can be confident about the direction the language is evolving in.
 
 ## Table of Contents
 [Table of Contents]: #table-of-contents
@@ -193,6 +184,13 @@ as a "very minor change" is up to the sub-team to decide; check
 
 ## Reviewing RFCs
 [Reviewing RFCs]: #reviewing-rfcs
+
+Many changes, including bug fixes and documentation improvements can be
+implemented and reviewed via the normal GitHub pull request workflow.
+
+Larger changes that substantially alter an RFC should be put through a
+bit of a design process to produce a consensus among the Rust community and
+the [sub-team]s.
 
 While the RFC pull request is up, the sub-team may schedule meetings with the
 author and/or relevant stakeholders to discuss the issues in greater detail,
