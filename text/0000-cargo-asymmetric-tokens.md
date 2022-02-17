@@ -32,7 +32,7 @@ After the time window has expired, the data sent over the network can be made pu
 Different registries will have different users in mind and have different use cases. Therefore, they will need to have different behaviors. So, there are many decisions a registry has to make that this RFC has no opinion on. Some examples:
 
 - Bootstrapping trust: how does the registry decide to trust a new user?
-- Key generation: where and how the key pair is made?
+- Key generation: where and how is the key pair made?
 - Key rotation: how often do existing users need to make a new key pair?
 - Revocation: how does the registry decide to stop trusting an existing key pair?
 
@@ -49,7 +49,7 @@ Private registries that require authentication use asymmetric cryptography as a 
 
 There are credential processes for using key pairs stored on hardware tokens. Check crates.io to see if there's one available for your hardware. Each one is a little different, but the general workflow is:
 1. `cargo install credential-process-for-your-hardware-token`
-2. run `cargo credential-process-for-your-hardware-token setup registryURL` to get your public key.
+2. Run `cargo credential-process-for-your-hardware-token setup registryURL` to get your public key.
 3. Go to the registries log in page, upload your public key and get your user ID.
 4. Edit `credentials.toml` to have a `credential-process` field as described by `credential-process-for-your-hardware-token` docs. (The credential process command may help do this for you.)
 
@@ -69,7 +69,7 @@ A keypair can be generated with `cargo login --generate-keypair` which will:
 - print the public key and the path to the file.
   (See unresolved questions section.)
 
-There is also a field called `user-id` which is a string chosen by the registry, which is intended to be non-secret and used for identifying the user. Cargo requires it to be non-whitespace printable ASCII, registries that need non-ASCII data should base64 encode it.
+There is also a field called `user-id` which is a string chosen by the registry, which is intended to be non-secret and used for identifying the user. Cargo requires it to be non-whitespace printable ASCII. Registries that need non-ASCII data should base64 encode it.
 A registry could use something human-readable like the name of the user or the name of the role. It could also use something arbitrary like the GUID associated with the row in the permissions table.
 
 Both fields can be set with `cargo login --registry=name --private-key-path=path userId`.
@@ -86,13 +86,13 @@ The "footer" will include the user ID and the registry base URL. (The footer is 
 - The PASETO is in v3.public format.
 - The PASETO validates using a public key for that user ID.
 - The URL matches the registry base URL (to make sure a PASETO sent to one registry can't be used to authenticate to another, and to prevent typosquatting/homoglyph attacks)
-- The PASETO is still within its valid time period (to limit replay attacks) 15 minutes will be recommended. but a shorter time can be used by a registry to further decrease replayability. Or a longer one can be used to better accommodate clock skew.
+- The PASETO is still within its valid time period (to limit replay attacks). We recommend a 15 minute limit, but a shorter time can be used by a registry to further decrease replayability. Or a longer one can be used to better accommodate clock skew.
 - If the server issues challenges, that the challenge has not yet been answered.
 - If the operation is a mutation, that the package, version, and hash match the request.
 
 ## Credential Processes
 
-Credential Processes as defined in [RFC 2730](https://github.com/rust-lang/rfcs/pull/2730) are outside programs cargo can call on to change where and how secrets are stored. That RFC defines `special strings` which go in the `credential-process` field to describe what data the process needs from cargo. This RFC adds `{claims}`. If used Cargo will replace it with a json encoded set of key value pairs that should be in the generated token. Cargo will check that the output of such a process looks like a valid PASETO v3.public token that Cargo would have generated, and that the PASETO token includes all the claims Cargo provided. The credential process may add additional claims (e.g. 2fa, TOTP), as long as they are nested in `custom`.
+Credential Processes as defined in [RFC 2730](https://github.com/rust-lang/rfcs/pull/2730) are outside programs cargo can call on to change where and how secrets are stored. That RFC defines `special strings` which go in the `credential-process` field to describe what data the process needs from cargo. This RFC adds `{claims}`. If used Cargo will replace it with a JSON encoded set of key value pairs that should be in the generated token. Cargo will check that the output of such a process looks like a valid PASETO v3.public token that Cargo would have generated, and that the PASETO token includes all the claims Cargo provided. The credential process may add additional claims (e.g. 2fa, TOTP), as long as they are nested in `custom`.
 
 ## Note on stability
 
@@ -133,7 +133,7 @@ Without the private key an asymmetric cryptography token can only be used for th
 
 This gets Cargo involved in the cryptographic standards used by registries, which puts a lot of complexity on ourselves. Now rust teams need to be involved in conversations about what cryptographic standards alternative registries choose to use.
 
-Furthermore this RFC attempts to make a start on solving several problems at the same time. It may be that in time we discover these problems need to be solved separately. If we end up with a separate system for code signing and a separate system for authorization, then a simpler more direct method of authentication might have been a better choice.
+Furthermore, this RFC attempts to make a start on solving several problems at the same time. It may be that in time we discover these problems need to be solved separately. If we end up with a separate system for code signing and a separate system for authorization, then a simpler more direct method of authentication might have been a better choice.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
