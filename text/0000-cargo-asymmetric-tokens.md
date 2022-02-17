@@ -44,26 +44,29 @@ In order for crates.io to support asymmetric tokens these questions will need to
 [guide-level-explanation]: #guide-level-explanation
 
 Private registries that require authentication use asymmetric cryptography as a more secure way for cargo to log in. Each registry works a little different, but the most common workflow is:
-1. Generate a key pair. (For many registries, you can generate the key pair using the cargo command `cargo login --generate-keypair`, which will print the public key for use in the next step.)
+1. Generate a key pair. (For many registries, you can generate the key pair using the cargo command `cargo login --registry=name --generate-keypair`, which will print the public key for use in the next step.)
 2. Log into the registries website
-3. Go to the "register a key pair" page, upload your public key and get the user ID for that key pair.
-4. On the command line run `cargo login --registry=name --private-key-path=path userId`
+3. Go to the "register a key pair" page, upload your public key. and get the user ID for that key pair.
+
+Most do not, but some registries require one more step:
+4. if the registry gave you a `key-subject` then on the command line run `cargo login --registry=name --key-subject="the provided data"`
 
 There are credential processes for using key pairs stored on hardware tokens. Check crates.io to see if there's one available for your hardware. Each one is a little different, but the general workflow is:
 1. `cargo install credential-process-for-your-hardware-token`
 2. Run `cargo credential-process-for-your-hardware-token setup registryURL` to get your public key.
-3. Go to the registries log in page, upload your public key and get your user ID.
-4. Edit `credentials.toml` to have a `credential-process` field as described by `credential-process-for-your-hardware-token` docs. (The credential process command may help do this for you.)
+3. Edit `credentials.toml` to have a `credential-process` field as described by `credential-process-for-your-hardware-token` docs. (The credential process command may help do this for you.)
+4. Log into the registries website
+5. Go to the "register a key pair" page, upload your public key.
 
 Some registries prioritize user experience over strictest security. They can simplify the process by providing key generation on the server. If your registry works this way the workflow will be:
 1. Log into the registries website
 2. Go to the "register generate a key pair" page, and copy the command it generated for you. It will disappear when you leave the page, the server will not keep a copy of the public key!
-3. Run it on the command line. It will look like  `cargo login --registry=name --private-key="key" "userId"`
+3. Run it on the command line. It will look like  `cargo login --registry=name --private-key="key"`
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-In [`config.toml`](https://doc.rust-lang.org/cargo/reference/config.html) and `credentials.toml` files there is a field called `private-key-path`, which provides a path to a `PKCS#12` formatted file containing a private key.
+In [`config.toml`](https://doc.rust-lang.org/cargo/reference/config.html) and `credentials.toml` files there is a field called `private-key-path`, which provides a path to a `PKCS#12` formatted file containing a private key and is used to sign asymmetric tokens.
 
 A keypair can be generated with `cargo login --generate-keypair` which will:
 - generate a public/private keypair in the currently recommended fashion.
@@ -71,22 +74,27 @@ A keypair can be generated with `cargo login --generate-keypair` which will:
 - print the public key and the path to the file.
   (See unresolved questions section.)
 
-There is also a field called `user-id` which is a string chosen by the registry, which is intended to be non-secret and used for identifying the user. Cargo requires it to be non-whitespace printable ASCII. Registries that need non-ASCII data should base64 encode it.
-A registry could use something human-readable like the name of the user or the name of the role. It could also use something arbitrary like the GUID associated with the row in the permissions table.
+There is also an optional field called `private-key-subject` which is a string chosen by the registry.
+This string will be included as part of an asymmetric token and should not be secret.
+It is intended for the rare use cases like "cryptographic proof that the central CA server authorized this action". Cargo requires it to be non-whitespace printable ASCII. Registries that need non-ASCII data should base64 encode it.
 
-Both fields can be set with `cargo login --registry=name --private-key-path=path userId`.
+Both fields can be set with `cargo login --registry=name --private-key-path=path --private-key-subject="subject"`.
 
 A registry can have at most one of `private-key-path`, `token`, or `credential-process` set.
 
 When authenticating to a registry, Cargo will generate a PASETO in the [v3.public format](https://github.com/paseto-standard/paseto-spec/blob/master/docs/01-Protocol-Versions/Version3.md). This format uses P-384 and 384-bit ECDSA secret keys, and is compatible with keys stored in contemporary hardware tokens. The generated PASETO will have specific "claims" (key-value pairs in the PASETO's JSON payload). The claims within the PASETO will include at least:
 - The current time.
 - The challenge, if cargo has received a challenge from a 401/403 from this server this session. A server that issues challenges should have some stateful way of knowing which challenges have been used and which ones are still available.
+- The `private-key-subject` if it was set.
 - If this is a mutation: which one (publish or yank or unyank), the package, the version, the SHA256 checksum of the `.crate` file as stored in the `cksum` in the index.
 
-The "footer" will include the user ID and the registry base URL. (The footer is part of the signature.) The registry server will validate the PASETO, and check the footer and claims:
+The "footer" will include the registry base URL and the `key ID`. (The footer is part of the signature.)
+The `key ID` can be obtained from the public key using the "SPKI key fingerprints" standard.
+
+The registry server will validate the PASETO, and check the footer and claims:
 
 - The PASETO is in v3.public format.
-- The PASETO validates using a public key for that user ID.
+- The PASETO validates using the public key it looked up based on the `key ID`.
 - The URL matches the registry base URL (to make sure a PASETO sent to one registry can't be used to authenticate to another, and to prevent typosquatting/homoglyph attacks)
 - The PASETO is still within its valid time period (to limit replay attacks). We recommend a 15 minute limit, but a shorter time can be used by a registry to further decrease replayability. Or a longer one can be used to better accommodate clock skew.
 - If the server issues challenges, that the challenge has not yet been answered.
@@ -125,6 +133,10 @@ The asymmetric token includes the URL so the signature is only valid for that UR
 > If a registry does not adequately protect its copy of the tokens then a database disclosure can leak all the users' tokens. ([cc: crates.io security advisory](https://blog.rust-lang.org/2020/07/14/crates-io-security-advisory.html))
 
 There is no reason for the registry to even see the private key. Even if the registry wants to generate keys for its users there is no need to store private keys. Disclosure of public keys is not a security risk, as they can not be used to sign new asymmetric tokens.
+
+To be fair, there's no reason for a registry based on secret tokens to store them in a recoverable format. The registry can store secret token hashes instead, and avoid this problem without inconveniencing the user. Since secret tokens are already random, you can avoid a lot of the complexities of storing passwords.
+
+Storing plain text secret tokens is only a problem in practice not in theory. However, the link is to an example of crates.io getting this wrong. I can only assume if we have seen one registry get this wrong, then there are others and there will be more in the future.
 
 > Fundamentally these are all problems only because once an attacker has seen a secret token they have all that is needed to act on that user's behalf.
 
@@ -184,8 +196,6 @@ More generally, is all the user experience exactly correct for all the new flags
 
 What format can Cargo read for private keys? The RFC suggests that cargo takes a path to `PKCS#12`. This gives the possibility for a user to reuse a preexisting key that they have for another use. The chance that the file will happen to be in the correct type may be too small to be worth the complexity of `PKCS#12`. We could use the secret [subset of `PASERK`](https://github.com/paseto-standard/paserk/blob/master/types/secret.md) witch is much simpler, but it is unlikely to be compatible with any other tools. If it is not going to be compatible we can store them in `credentials.toml` and not have paths involved. Whatever decision we make a credential process can always be set up to read other files in other formats. Also, we should think about how this works for CI use cases.
 
-What subset of UTF-8 is appropriate for use as `user-ID`? Whitespace, bidirectional overrides, invisible codepoints are clearly asking for trouble. But what about characters that have different canonicalization.
-
 The `private-key-path` field in Cargo configuration contains a path to a private key file; how this field handles relative paths vs absolute paths is subject to decision currently being made regarding the handling of other relative vs absolute paths in Cargo configuration.
 
 # Future possibilities
@@ -196,3 +206,5 @@ Figuring out how and when crates.io should support these kinds of tokens is left
 Only after crates.io is not using secret tokens should we remove the support for them in private registries (and the code in cargo to support it).
 
 After that an audit log of what tokens were used to publish on crates.io and why that token was trusted, would probably be a rich data source for identifying compromised accounts. As well as making it possible to do end to end signature verification. The crate file I downloaded matches the `cksum` in the index; the index matches the `cksum` in the audit log; the public key used in the audit log is the one I expected.
+
+This scheme could be augmented to allow the use of several signing technologies. We would need to add a way for a registry to express what formats it will accept. We would need to add code for cargo to check that the credential provider was following one of the accepted formats. We would need to add code for cargo to generate the additional formats. But none of this is out of the question, so there is a clear path forward when algorithm agility is required.
