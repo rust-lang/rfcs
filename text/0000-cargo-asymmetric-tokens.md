@@ -66,21 +66,23 @@ Some registries prioritize user experience over strictest security. They can sim
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-In [`config.toml`](https://doc.rust-lang.org/cargo/reference/config.html) and `credentials.toml` files there is a field called `private-key-path`, which provides a path to a `PKCS#12` formatted file containing a private key and is used to sign asymmetric tokens.
+In [`config.toml`](https://doc.rust-lang.org/cargo/reference/config.html) and `credentials.toml` files there is a field called `private-key`, witch is a private key formatted in the secret [subset of `PASERK`](https://github.com/paseto-standard/paserk/blob/master/types/secret.md) and is used to sign asymmetric tokens
 
 A keypair can be generated with `cargo login --generate-keypair` which will:
 - generate a public/private keypair in the currently recommended fashion.
-- save the private key in the default location.
+- save the private key in `credentials.toml`.
 - print the public key and the path to the file.
   (See unresolved questions section.)
+
+It is recommended that the `private-key` be saved in `credentials.toml`. It is also supported in `config.toml`, primarily so that it can be set using the associated environment variable. Witch is the recommended way to provide it in CI contexts. This set up is what we have for the `token` field for setting a secret token.
 
 There is also an optional field called `private-key-subject` which is a string chosen by the registry.
 This string will be included as part of an asymmetric token and should not be secret.
 It is intended for the rare use cases like "cryptographic proof that the central CA server authorized this action". Cargo requires it to be non-whitespace printable ASCII. Registries that need non-ASCII data should base64 encode it.
 
-Both fields can be set with `cargo login --registry=name --private-key-path=path --private-key-subject="subject"`.
+Both fields can be set with `cargo login --registry=name --private-key="key" --private-key-subject="subject"`.
 
-A registry can have at most one of `private-key-path`, `token`, or `credential-process` set.
+A registry can have at most one of `private-key`, `token`, or `credential-process` set.
 
 When authenticating to a registry, Cargo will generate a PASETO in the [v3.public format](https://github.com/paseto-standard/paseto-spec/blob/master/docs/01-Protocol-Versions/Version3.md). This format uses P-384 and 384-bit ECDSA secret keys, and is compatible with keys stored in contemporary hardware tokens. The generated PASETO will have specific "claims" (key-value pairs in the PASETO's JSON payload). The claims within the PASETO will include at least:
 - The current time.
@@ -104,6 +106,11 @@ The registry server will validate the PASETO, and check the footer and claims:
 
 Credential Processes as defined in [RFC 2730](https://github.com/rust-lang/rfcs/pull/2730) are outside programs cargo can call on to change where and how secrets are stored. That RFC defines `special strings` which go in the `credential-process` field to describe what data the process needs from cargo. This RFC adds `{claims}`. If used Cargo will replace it with a JSON encoded set of key value pairs that should be in the generated token. Cargo will check that the output of such a process looks like a valid PASETO v3.public token that Cargo would have generated, and that the PASETO token includes all the claims Cargo provided. The credential process may add additional claims (e.g. 2fa, TOTP), as long as they are nested in `custom`.
 
+Some credential processes that might be useful for people to develop include:
+- The ability to store keys in operating systems specific secure enclaves.
+- the ability to use keys embedded in common hardware tokens.
+- The ability to read keys in formats used by other tools (GPG, SSH, PKCS#12, ect.)
+
 ## Note on stability
 
 This is just a reminder to check if there are newer RFCs that have had to deprecate, remove, or replace parts of this one. RFCs can always be adjusted by new RFCs. In general the Rust community takes backwards compatibility very seriously, so if an RFC says you can do something no future RFC is likely to say that you cannot do that thing. It has happened, RFCs have been amended or changed by subsequent RFCs. The content of this RFC is full of details with security implications. It is not unlikely that in the course of human events changes will need to be made to it. Hopefully, they can be made by loosening restrictions or supporting new formats. But, because security is involved the Rust community may be more likely to break backward compatibility than is our norm.
@@ -116,7 +123,7 @@ If a registry were set up to exclusively use the new asymmetric tokens, how well
 
 > The user can unintentionally share the file containing the token. This was unfortunately common when it was stored in `.cargo/config`, which is why it is now stored in `credentials.toml` by default.
 
-The private keys are kept in separate files, in a location that clearly identifies in the name that it contains private keys. While the user could still choose to share these key files, it will be more obvious that they should keep this location secret, than that `.cargo/credentials.toml` should be kept secret.
+`credentials.toml` name identifies that it should not be shared. Unfortunately, this RFC does not make things better.
 
 > The file containing the token can be read at rest. File permissions are used to protect it, but can only go so far. [Credential processes](https://github.com/rust-lang/rfcs/blob/161ce8a26e70226a88e0d4d43c7914a714050330/text/2730-cargo-token-from-process.md) can do better *if* they are used.
 
@@ -193,10 +200,6 @@ How aggressively to push people off secret tokens? This RFC does not remove the 
 What default settings should `cargo login --generate-keypair` use? What process should be used for changing these defaults as best practice changes? Where should it put the private keys?
 
 More generally, is all the user experience exactly correct for all the new flags? The expectation is that these will need to be changed and tweaked as we try using them after implementation.
-
-What format can Cargo read for private keys? The RFC suggests that cargo takes a path to `PKCS#12`. This gives the possibility for a user to reuse a preexisting key that they have for another use. The chance that the file will happen to be in the correct type may be too small to be worth the complexity of `PKCS#12`. We could use the secret [subset of `PASERK`](https://github.com/paseto-standard/paserk/blob/master/types/secret.md) witch is much simpler, but it is unlikely to be compatible with any other tools. If it is not going to be compatible we can store them in `credentials.toml` and not have paths involved. Whatever decision we make a credential process can always be set up to read other files in other formats. Also, we should think about how this works for CI use cases.
-
-The `private-key-path` field in Cargo configuration contains a path to a private key file; how this field handles relative paths vs absolute paths is subject to decision currently being made regarding the handling of other relative vs absolute paths in Cargo configuration.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
