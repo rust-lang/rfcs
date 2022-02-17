@@ -11,8 +11,10 @@ Add support for Cargo to authenticate the user to registries without sending sec
 # Motivation
 [motivation]: #motivation
 
-When Cargo authenticates to a registry it passes along a secret token.
-This token is both shared over the network and sufficient to do authentication.
+The word "token" is going to be used a lot in this document. For clarity the tokens created for the way things work before this RFC will be referred to as "secret tokens" and tokens created for the scheme described in this RFC are referred to as "asymmetric tokens". A "hardware token" on the other hand, refers to a physical device that stores key pairs and provides an API to interact with them without providing any way to get at the raw private key.
+
+When Cargo authenticates to a registry it passes along a token.
+This secret token is both shared over the network and sufficient to do authentication.
 Persistent shared secrets are rife with opportunities for things to go wrong.
 For some examples:
 - The user can unintentionally share the file containing the token. This was unfortunately common when it was stored in `.cargo/config`, which is why it is now stored in `credentials.toml` by default.
@@ -27,7 +29,7 @@ Fundamentally these are all problems only because once an attacker has seen a se
 When using asymmetric cryptography the important secret (the private key) never leaves the user's computer.
 With a credential provider, the secret material can even stay on a hardware token.
 Furthermore, an asymmetric token can only be used for the intended action, and only for a short time window. The opportunity for replay is smaller, and can be tightened by the registry to meet its threat model.
-After the time window has expired, the data sent over the network can be made public, without risking the private material. A registry can keep or publish an audit log of asymmetric tokens without risk of them being reused, in case a security auditor would like to look for abnormal or unusual behavior.
+After the asymmetric token has expired, the data sent over the network can be made public, without risking the private material. A registry can keep or publish an audit log of asymmetric tokens without risk of them being reused, in case a security auditor would like to look for abnormal or unusual behavior.
 
 Different registries will have different users in mind and have different use cases. Therefore, they will need to have different behaviors. So, there are many decisions a registry has to make that this RFC has no opinion on. Some examples:
 
@@ -102,7 +104,7 @@ This is just a reminder to check if there are newer RFCs that have had to deprec
 
 ## Threat Model
 
-If a registry were set up to exclusively use the new kind of token, how well would it handle the issues in the motivation?
+If a registry were set up to exclusively use the new asymmetric tokens, how well would it handle the issues in the motivation?
 
 > The user can unintentionally share the file containing the token. This was unfortunately common when it was stored in `.cargo/config`, which is why it is now stored in `credentials.toml` by default.
 
@@ -118,15 +120,15 @@ Content shared over the network is not secret. The opportunity for replay attack
 
 > If a user misconfigures a token to go to the wrong registry (typosquatting, homoglyph, or copy-paste error), then the recipient has the token.
 
-The token includes the URL so the signature is only valid for that URL, the token is not valid for the real registry.
+The asymmetric token includes the URL so the signature is only valid for that URL, the token is not valid for the real registry.
 
 > If a registry does not adequately protect its copy of the tokens then a database disclosure can leak all the users' tokens. ([cc: crates.io security advisory](https://blog.rust-lang.org/2020/07/14/crates-io-security-advisory.html))
 
-There is no reason for the registry to even see the private key. Even if the registry wants to generate keys for its users there is no need to store private keys. Disclosure of public keys is not a security risk, as they can not be used to sign new tokens.
+There is no reason for the registry to even see the private key. Even if the registry wants to generate keys for its users there is no need to store private keys. Disclosure of public keys is not a security risk, as they can not be used to sign new asymmetric tokens.
 
 > Fundamentally these are all problems only because once an attacker has seen a secret token they have all that is needed to act on that user's behalf.
 
-Without the private key an asymmetric cryptography token can only be used for the intended registry, for the intended action, and for a limited amount of time. This mitigates the risk of disclosure.
+Without the private key an asymmetric token can only be used for the intended registry, for the intended action, and for a limited amount of time. This mitigates the risk of disclosure.
 
 # Drawbacks
 [drawbacks]: #drawbacks
