@@ -19,6 +19,7 @@ Persistent shared secrets are rife with opportunities for things to go wrong.
 For some examples:
 - The user can unintentionally share the file containing the token. This was unfortunately common when it was stored in `.cargo/config`, which is why it is now stored in `credentials.toml` by default.
 - The file containing the token can be read at rest. File permissions are used to protect it, but can only go so far. [Credential processes](https://github.com/rust-lang/rfcs/blob/161ce8a26e70226a88e0d4d43c7914a714050330/text/2730-cargo-token-from-process.md) can do better *if* they are used.
+- If the token is ever logged and the logs are public, then the token is public. This is fairly easy to do accidentally in CI contexts. Cargo now redacts the token in its own logging, but if network traffic is logged there is still an issue.
 - If a user configures a custom registry to use `http` instead of `https`, then anyone on the network can see the token go by.
 - If a user misconfigures a token to go to the wrong registry (typosquatting, homoglyph, or copy-paste error), then the recipient has the token.
 - If a registry does not adequately protect its copy of the tokens then a database disclosure can leak all the users' tokens. ([cc: crates.io security advisory](https://blog.rust-lang.org/2020/07/14/crates-io-security-advisory.html))
@@ -128,6 +129,10 @@ If a registry were set up to exclusively use the new asymmetric tokens, how well
 > The file containing the token can be read at rest. File permissions are used to protect it, but can only go so far. [Credential processes](https://github.com/rust-lang/rfcs/blob/161ce8a26e70226a88e0d4d43c7914a714050330/text/2730-cargo-token-from-process.md) can do better *if* they are used.
 
 Many more kinds of security hardware devices can protect a private key then can protect an arbitrary secret token. Hardware devices can store a private key and only perform operations using that key, without making the key itself available.
+
+> If the token is ever logged and the logs are public, then the token is public. This is fairly easy to do accidentally in CI contexts. Cargo now redacts the token in its own logging, but if network traffic is logged there is still an issue.
+
+It is still possible for someone to log the private key. However, the signed asymmetric token is not secret. So all other things (like network traffic) can be logged safely. 
 
 > If a user configures a custom registry to use `http` instead of `https`, then anyone on the network can see the token go by.
 
