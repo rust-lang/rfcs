@@ -6,7 +6,9 @@
 # Summary
 [summary]: #summary
 
-Add new "alignment niches" to references (`&'a T`, `&'a mut T`), `Vec<T>`, and all smart pointer types, allowing better packing for `enum`s containing these types.
+Add new "alignment niches" and "size niches" to references (`&'a T`, `&'a mut T`), all smart pointer types, and most collections types, allowing better packing for `enum`s containing these types.  
+
+Add a new `core::ptr::WellFormed<T>` pointer type so that data-structures from third-party libraries can benefit from these niches.
 
 # Motivation
 [motivation]: #motivation
@@ -36,71 +38,202 @@ This RFC aims to introduces new niches to references types and smart pointer typ
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-"Pointer-like" containers (`&T`, `&mut T`, etc) gain new niches, corresponding to the scalar values strictly below `align(T)` and strictly above `align(T).wrapping_neg()`. For 1-aligned types, this is equivalent to the existing null niche.
+"Pointer-like" containers (`&T`, `&mut T`, etc) gain new niches, corresponding to following scalar ranges:
 
-The full list of affected types is: `&T, &mut T, Box<T>, Arc<T>, Rc<T>, {sync, rc}::Weak<T>, Vec<T>`.
+-  `..align_of::<T>()`; this includes the already-existing null niche.
+-  `size_of::<T>().wrapping_neg()..`.
 
+Special cases apply to dynamically-sized and zero-sized types, see the reference-level section for more details.
 
-This has the consequence that `enum`s of the form:
-```rs
-enum E {
-  A(&T or &mut T or ...),
-  B,
-  C,
-  // ...
+The full list of affected types is: `&T, &mut T, Box<T>, Arc<T>, Rc<T>, {sync, rc}::Weak<T>, Vec<T>, VecDeque<T>, BTreeMap<K, V>, HashMap<K, V>`.
+
+Note that unlike null pointer optimization for `Option<&T>`-like types, this optimization is best-effort only, and isn't guaranteed by the Rust language.
+
+## `WellFormed<T>`
+
+To allow `std` and third-party crates to exploit these new niches, a new pointer-like type is added: `core::ptr::WellFormed<T>`. It is the preferred type to represent references to objects with unmanaged lifetimes.
+
+A `WellFormed<T>` has the same layout as a reference (including all niches), but doesn't carry any lifetime information; it provides the following (unstable) API:
+
+``` rust
+// Covariant in T, like NonNull<T>
+pub struct WellFormed<T>(...);
+
+impl<T: ?Sized> WellFormed<T> {
+    // SAFETY: ptr must point to some (possibly deallocated)
+    // region of memory that is valid for an instance of T.
+    pub const unsafe fn new_unchecked(ptr: *mut T) -> Self { ... }
+    pub const fn as_ptr(self) -> *mut T { ... }
+    // SAFETY: self must point to an initialized T, valid for the chosen lifetime.
+    pub unsafe fn as_ref<'a>(&self) -> &'a T { ... }
+    // SAFETY: self must point to an initialized T, valid for the chosen lifetime.
+    pub unsafe fn as_mut<'a>(&self) -> &'a mut T { ... }
+    // Equivalent to std::mem::size_of_val_raw, but *always safe*.
+    pub fn size_of_val(self) -> usize { ... }
 }
+
+// Not Send or Sync
+impl<T: ?Sized> !Send for WellFormed<T> {}
+impl<T: ?Sized> !Sync for WellFormed<T> {}
+
+// Safe conversion from references
+impl<'a, T: ?Sized> From<&'a T> for WellFormed<T> { ... }
+impl<'a, T: ?Sized> From<&'a mut T> for WellFormed<T> { ... }
+
+// Safe conversion to NonNull
+impl<T: ?Sized> From<WellFormed<T>> for NonNull<T> { ... }
+
+// Elided - implementations of standard traits:
+// Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash,
+// UnwindSafe, CoerceUnsized, DispatchFromDyn, Pointer
 ```
-where the total number of variants is less than or equal to `2*align(T)` may be optimized by the compiler to fit in the space of a single reference.
-
-## Stability guarantees
-
-Unlike null pointer optimization for `Option<&T>`-like types, this optimization isn't guaranteed by the Rust language. 
 
 # Reference-level explanation
+
 [reference-level-explanation]: #reference-level-explanation
 
-## `&T` and `&mut T`
+## New niches for references
 
-References must always be valid, non-null and well-aligned. This means that a reference's scalar value must lie in `align(T)..=align(T).wrapping_neg()`; values outside this range can be used as niches by the compiler.
+References (to a type `T`) must always be valid, non-null and well-aligned. This means that a reference's scalar value is restricted, and has the following properties:
 
-## `Unique<T>`
+- for any type `T`, `&T` is always non-null;
 
-To enable this optimization on `Box<T>` and `Vec<T>`, the validity invariant of the `std`-internal type `std::ptr::Unique<T>` is modified.
+- for any `T`, `&T` and `&[T]` are always well aligned (as given by `align_of_val::<T>`);
 
-Introduce two special values `align` and `align_high` for the attributes `#[rustc_layout_scalar_valid_range_start/end]` (bikesheddable syntax). These values are only applicable to types with a single generic parameter `T`.
-- `align` stands for `mem::align_of::<T>()`;
-- `align_high` stands for `mem::align_of::<T>().wrapping_neg()`.
+- for any `T`, offsetting a `&T` by `size_of_val::<T>` bytes doesn't wrap around the address space.
 
-Then, tighten the invariant on `std::ptr::Unique<T>` to require that the wrapped pointer is correctly aligned, and add the following attributes, enabling the alignment niches:
-```rs
-#[rustc_layout_scalar_valid_range_start(align)]
-#[rustc_layout_scalar_valid_range_end(align_high)]
+This implies that the scalar values of references always lie in the following ranges, and that values outside these ranges can be used as niches by the compiler:
+
+|         Type         | Lower bound (inclusive) | Upper bound (inclusive) |
+| :------------------: | :---------------------: | :---------------------: |
+|   sized types `T`    |    `align_of::<T>()`    |  `-size_of::<T>() - 1`  |
+| zero-sized types `T` |    `align_of::<T>()`    |   `-align_of::<T>()`    |
+|     slices `[T]`     |    `align_of::<T>()`    |   `-align_of::<T>()`    |
+|    trait objects     |           `1`           |          None           |
+
+For "compound" unsized types with a sized prefix, the valid range is the intersection of the ranges of the sized part and the unsized prefix.
+
+Additionally, fat pointer metadata is always treated as having no niches, even if invalid values exist that could be exploited (e.g. for `&dyn Trait`, the metadata must be a valid reference to some trait vtable).
+
+These niches are applied to `&T` and `&mut T`, and also to `WellFormed<T>` and `Unique<T>` via a new perma-unstable attribute `#[rustc_layout_reference]`.
+
+## Invariants of `WellFormed<T>`
+
+A `WellFormed<T>`, having the same niches as a plain reference `&T`, should have a safety invariant compatible with these niches.
+
+### Safety invariant
+
+To shield the programmer from the exact bit-level niches of `WellFormed<T>` (which may evolve in the future, or become platform-specific), we require that every `WellFormed<T>` point to some (maybe deallocated) memory region. More precisely, users calling `WellFormed::<T>::new` must ensure the following:
+
+- The pointer is non-null.
+- For fat pointers, the metadata is valid (as described in `mem::{size, align}_of_val_raw`).
+- The pointer points to a region of memory that has suitable size and alignment (it must fit the layout returned by `Layout::from_value_raw`). There is no constraint placed upon the "liveness" of this memory; it may be deallocated while the `WellFormed<T>` exists, or already deallocated when the `WellFormed` is created.
+
+## Layout algorithm changes
+
+Directly making the layout of references types dependent on the layout of the referenced type is impossible, as this would cause cycles when layouting recursive types.
+
+**Example:**  
+
+```rust
+enum List {
+    Cons(i32, Box<List>),
+    Nil,
+}
 ```
 
-## `Aligned<T>`
+Computing the layout of `List` causes the following cycle:
 
-To handle other smart pointers (`Arc<T>`, `Rc<T>`, `Weak<T>`), a new `std`-internal type `std::ptr::Aligned<T>` is introduced.
+- `layout_of(List)`
+- requires `layout_of(Box<List>)`
+- requires `size_of(List)` and `align_of(List)`, for determining niches
+- requires `layout_of(List)`, completing the cycle.
 
-This type behaves mostly like `NonNull<T>`, but also requires that the wrapped pointer is well-aligned, enabling the use of the attributes presented in the previous section.
+To break this cyclic dependency, we introduce a new `min_layout_of` query that computes an underestimate of the size and alignment of a type, without having to recurse on reference types. Reference types can then use this new query to determine available alignment niches.
 
-`std` implementors can then replace their use of `NonNull<T>` with this type to enable alignment niches.
+### The `min_layout_of` algorithm 
 
-**Note:** `std::{rc, sync}::Weak<T>` uses a non-aligned pointer as a sentinel, this would need to be changed to use `min(2, align(T)).wrapping_neg()` instead.
+At a high-level, this is the "full" layout algorithm, with the following simplifications:
+
+- We don't care about layout details (field order, ABI, etc), only about the total size and alignment.
+- We treat any non-empty niche, regardless of its size, as being able to fit an arbitrary number of discriminants.
+
+```rust
+struct MinLayout {
+    min_size: usize,	// Size lower-bound
+    min_align: usize,	// Alignment lower-bound
+    has_niches: bool,	// Does the layout contains exploitable niches?
+}
+
+fn min_layout_of(ty: &Ty) -> MinLayout {
+    // This doesn't actually correspond to the structures used in rustc,
+    // but let's keep this simple.
+    match ty {
+        Primitive(_) => /*
+        	Returns the layout for each primitive; note that
+        	bool and char have `has_niches: true`.
+        */,
+        Reference(_) | RawPointer(_) => /*
+        	Return the layout for a reference:
+        	- One or two usizes, depending on pointee Sized-ness
+        	- Always has at least one niche (null, at minimum)
+        */,
+        Struct(_) | Tuple(_) => /*
+        	- Concatenate (summing sizes, max'ing alignments)
+        	    the MinLayout of each field
+        		- If repr(C), add padding between fields.
+        	- If repr(packed) or repr(align), set the correct alignment
+        	- Pad the final size to the next multiple of the alignment
+        */,
+        Enum(_) => /*
+        	- Merge (max'ing sizes and alignments) the MinLayout of each variant
+        	- If repr(i/uN) or if no variant has niches, the enum has an
+        	  explicit discriminant field; concatenate its MinLayout
+        	- Set has_niches to true
+        	
+        	The underestimation happens here: if the available non-empty niches
+        	end up not big enough to fit the discriminant, the enum will be
+        	bigger than predicted.
+        */,
+        Union(_) => /*
+			- Merge (max'ing sizes and alignments) the MinLayout of each variant
+        	- Set has_niches to false
+        */
+    }
+}
+```
 
 
 # Drawbacks
 [drawbacks]: #drawbacks
 
-None known.
+This introduces a slighy increase in layout calculation due to the `min_layout_of` step; additionally, rustc must guarantee that `min_layout_of` always returns a `MinLayout` compatible with the full layout.
 
-# Rationale and alternatives
-[rationale-and-alternatives]: #rationale-and-alternatives
+This also introduces a new pointer type, `WellAligned<T>`, with somewhat extensive API duplication between it and other pointer types.
 
-An alternative would be to fully exploit the unused bit patterns in well-aligned references, and say that *all* unaligned bit patterns can be used as a niche: e.g. this would mean that `&'a u16` has a niche for `0`, and for every odd integer value.
+# Alternatives
+[alternatives]: #alternatives
+
+## Non-contiguous niches
+
+An alternative would be to fully exploit the unused bit patterns in well-aligned references, and say that *all* unaligned bit patterns can be used as a niche: e.g. this would mean that `&'a u16` has a niche for `0`, `-2`, and every odd integer value.
 
 While this massively increases the number of niches, and thus the maximum number of enum variants that can be optimized, this would require adding support for non-contiguous scalar value ranges to the compiler, a difficult task.
 
-In comparison, this RFC builds upon existing support for contiguous scalar value ranges in the compiler, and requires only minimal changes to the compiler logic.
+In comparison, this RFC builds upon existing support for contiguous scalar value ranges in the compiler, and requires less changes to the compiler logic.
+
+## `Aligned<T>`
+
+As an alternative to `WellFormed<T>`,  an `Aligned<T>` type (representing a non-null aligned pointer) could be used instead, with the following safety invariant:
+
+- Must always be non-null;
+- For fat pointers, metadata must always be valid;
+- Must be aligned to the alignment given by `std::mem::align_of_val_raw`.
+
+This makes for a simpler invariant (no need to talk about deallocated memory regions) and slightly simpler layout computation (we only need to compute `min_align`, not the full `MinLayout`), but comes with several disadvantages:
+
+- Loss of "size niches" (e.g. `-2` for `u16`) and future "restricted ranges niches".
+- This fixes the exact niche layout of `WellFormed<T>`, preventing the addition of more niches in the future.
 
 # Prior art
 [prior-art]: #prior-art
@@ -110,16 +243,21 @@ None known.
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-- Should the `Aligned<T>` type be part of `stdlib`'s public API? This would allow library authors (like `hashbrown`) to also exploit these niches.
-- "size niches" could also be introduced: e.g. `&[u8; 100]` has no alignment niches, but has size niches above `100.wrapping_neg()` (thanks scottmcm for the idea!)
-  - This somewhat complicates the validity invariant of `Aligned<T>`, is it acceptable?
-  - This forces `Weak<T>` to drop back to using a `NonNull<T>`, because the sentinel value is no longer a valid `Aligned<T>`.
+- Bikeshedding the name of `WellFormed<T>`; possible alternatives are `ValidPtr<T>`, `UnsafeRef<T>`, `&'unsafe T` (see RFC [#3199]([3199](https://github.com/rust-lang/rfcs/pull/3199)))
+- What is the best validity invariant for `WellFormed<T>`?
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-Combined with smarter `enum` packing optimizations, this RFC (in the "all unaligned values are niches" form) could allow for automatic tagged-pointer-like `enum` layouts in some restricted cases, e.g.
-```rs
+More niches could potentially be added to references:
+
+- Add a niche for every unaligned address. As noted in the *Alternatives* section, this requires support for non-contiguous scalar ranges in the compiler.
+- Add niches corresponding to restricted address ranges (which would be, by necessity, platform-specific). For example, on 64-bit linux, the upper-half of the address space is unavailable to userspace and could be exploited.
+  - Note that because any constant address is valid for zero-sized values, references to zero-sized values can't have these niches.
+
+Combined with smarter `enum` packing optimizations, unaligned niches could allow for automatic tagged-pointer-like `enum` layouts in some restricted cases, e.g.
+
+```rust
 enum E<'a> {
   A(&'a u32),
   B(u16),
