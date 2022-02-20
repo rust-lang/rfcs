@@ -89,61 +89,67 @@ By using these ABIs, it is possible to implement interrupt handlers directly in 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-- lowered to llvm
-- functions should not be called by software
-- functions are safe, but not fool-proof
-- some calling conventions are only available for certain platforms
-  - e.g.: `x86-interrupt`: no red-zone, no SSE?
+The exact requirements and properties of the different interrupt calling conventions must be defined and documented before stabilizing them. However, there are some properties and requirements that apply to all interrupt calling conventions.
 
-<!--
-This is the technical portion of the RFC. Explain the design in sufficient detail that:
+## Compiler Checks
+Interrupt calling conventions have strict requirements that are checked by the Rust compiler:
 
-- Its interaction with other features is clear.
-- It is reasonably clear how the feature would be implemented.
-- Corner cases are dissected by example.
+- They must not be called by Rust code.
+- The function signature must satisfy the requirements.
+- They are only available on specific targets and might require specific target settings.
+- All other requirements imposed by the implementation of the calling convention in LLVM.
 
-The section should return to the examples given in the previous section, and explain more fully how the detailed proposal makes those examples work.
--->
+If any of these conditions are violated, the compiler throws an error. It should not be possible to cause LLVM errors using interrupt calling conventions.
+
+## Stability
+Since interrupt calling conventions are closely tied to a target architecture, they are only as stable as the corresponding target triple, even if the interrupt calling convention is stabilized. If support for a target triple is removed from Rust, removing support for corresponding interrupt calling conventions is _not_ considered a breaking change.
+
+Apart from this limitation, interrupt calling conventions fall under Rust's normal stability guarantees. For this reason, special care must be taken before stabilizing interrupt calling conventions that are implemented outside of `rustc` (e.g. in LLVM).
+
+## Safety
+Functions with interrupt calling conventions are considered normal Rust functions. No `unsafe` annotations are required to declare them and thera are no restrictions on their implementation. However, it is not allowed to call such functions from (Rust) code since the custom prelude and epilogue of the functions could lead to memory safety violations. For this reason, the attempt to call a function defined with an interrupt calling convention must result in an hard error that cannot be circumvented through `unsafe` blocks or by allowing some lints.
+
+The only valid way to invoke a function with an interrupt calling convention is to register them as an interrupt handler directly on the hardware, for example by placing their address in an _interrupt descriptor table_ on `x86_64`. There is no way for the compiler to verify that this operation is correct, so special care needs to be taken by the programmer to ensure that no violation of memory safety can occur.
 
 # Drawbacks
 [drawbacks]: #drawbacks
 
-<!-- Why should we *not* do this? -->
+Interrupt calling conventions can be quite complex. So even though they are a very isolated feature, they still **add a considerable amount of complexity to the Rust language**. This added complexity could lead to considerable work for alternative Rust compilers/code generators that don't build on top of LLVM. Examples are [`cranelift`](https://github.com/bytecodealliance/wasmtime/tree/main/cranelift), [`gccrs`](https://github.com/Rust-GCC/gccrs), or [`mrustc`](https://github.com/thepowersgang/mrustc).
 
-- more work for alternative Rust compilers/code generators such as [`cranelift`](https://github.com/bytecodealliance/wasmtime/tree/main/cranelift), [`gccrs`](https://github.com/Rust-GCC/gccrs), or [`mrustc`](https://github.com/thepowersgang/mrustc)
-- the implemenations in LLVM have been quite fragile in the past, i.e. there was repeated breakage
-  - this might make it more difficult to update `rustc` to newer LLVM versions
-  - leads to higher maintenance overhead
+Most interrupt calling conventions are still unstable/undocumented features of LLVM, so we need to be cautious about stabilizing them in Rust. Stabilizing them too early could lead to maintenance problems and **might make LLVM updates more difficult**, e.g. when some barely maintained calling convention is accidentally broken in the latest LLVM release. There is also the danger that LLVM drops support for an interrupt calling convention at some point. If the calling convention is already stabilized in Rust, we would need to find an alternative way to provide that functionality.
+
+The proposed feature is **only needed for applications in a specific niche**, namely embedded programs and operating system kernel.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-- use a single `interrupt` ABI whose meaning changes depending on the target platform
-  - pro: less ABI variants in the list
-  - con: some targets have multiple interrupt calling conventions (e.g. avr and avr-non-blocking)
-  - con: different targets often require different function signatures -> functions are not cross platform
-  - con: interrupt handler implementations are often highly target specific -> there is not much value in cross-platform handlers anyway
+As described in the [_Motivation_](#motivation), the main alternative to interrupt calling conventions are wrapper functions written in assembly, e.g. in a naked function. This reduces the maintenance burden for the Rust compiler, but makes interrupt handlers unconvienent to write, more dangerous, and less performant.
 
-## Use the `PreserveAll` Calling Convention
+## Alternative: Calling Convention that Preserves all Registers
 
-Many of the advantages of compiler-supported interrupt calling conventions come from the automated register handling, i.e. that all registers are restored to their previous state before returning. We might also be able achieve this by using LLVM's [`preserve_all`](https://llvm.org/docs/LangRef.html#calling-conventions) calling convention. While this calling convention is also marked as experimental, it is at least mentioned in the reference and is probably more stable. It is also relatively platform-independent and might have use cases outside of interrupt handling.
+Many of the advantages of compiler-supported interrupt calling conventions come from the automated register handling, i.e. that all registers are restored to their previous state before returning. We might also be able achieve this using a calling convention that preserves all registers, for example LLVM's [`preserve_all`](https://llvm.org/docs/LangRef.html#calling-conventions) calling convention.
 
-The remaining parts of interrupt calling conventions could then be implemented in small [naked](https://github.com/rust-lang/rust/issues/90957) wrapper function. These wrapper functions could also be provided by libraries using macros. Depending on the architecture, the wrapper functions would need to implement the following steps:
+Such a calling convention could be platform independent and should be much easier to maintain. It could also be called normally from Rust code and might thus have use cases outside of interrupt handling, e.g. similar to functions annotated as [`#[cold]`](https://doc.rust-lang.org/reference/attributes/codegen.html#the-cold-attribute).
 
-- stack alignment
-- argument preprocessing
-- calling the `extern "preserve_all" fn`
-- stack cleanup
-- interrupt return
+Using such a calling convention, it should be able to create interrupt handler wrappers in assembly with comparable performance. These wrapper function would handle the platform-specific steps of interrupt handling, such as stack alignment, argument preprocessing, and the interrupt epilogue. Since they don't require language support for this, they don't impact the maintainability of the compiler and can evolve independently in libraries. Using proc macros, they could even provide a similar level of usability to users.
 
-**Open question:** Would it work as described?
+While this approach could be considered a good middle ground, full compiler support for interrupt calling convetions is still be the better solution from a usability and performance perspective.
 
-<!--
-- Why is this design the best in the space of possible designs?
-- What other designs have been considered and what is the rationale for not choosing them?
-- What is the impact of not doing this?
--->
+## Alternative: Implementation in `rustc`
 
+Instead of relying on LLVM (or alternative code generators) to implement the interrupt calling conventions, we could also try to implement support for the calling conventions in `rustc` directly. This way, LLVM upgrades would not be affected by this feature and we would be less dependent on LLVM in general. One possible implementation approach for this could be to build upon a calling convention that preserves all registers (see the previous section).
+
+The drawback of this approach is inreased complexity and maintenance cost for `rustc` this way.
+
+## Alternative: Single `interrupt` ABI that depends on the target
+
+Instead of adding multiple target-specific interrupt calling conventions under different names, we could add support for a single cross-platform `interrupt` calling convention. This calling convention would be an alias for the interrupt calling convention of the target system, e.g. `x86-interrupt` when compiling for an `x86` target.
+
+The main advantage of this approach would be that we keep the list of supported ABI variants short, which might make the documentation clearer. However, there are also several drawbacks:
+
+- Some targets have multiple interrupt calling conventions (e.g. avr and avr-non-blocking). This would be difficult to represent with a single `interrupt` calling convention.
+- Interrupt handlers on targets require different function signatures. It would be difficult to abstract this cleanly.
+- Interrupt handler implementations are often highly target-specific, so that there is not much value in cross-platform handlers. In fact, it could even lead to bugs when an interrupt handler is accidentally reused on a different platform.
 
 # Prior art
 [prior-art]: #prior-art
