@@ -154,58 +154,18 @@ The main advantage of this approach would be that we keep the list of supported 
 # Prior art
 [prior-art]: #prior-art
 
-- some interrupt calling conventions are already implemented (see above)
-- old RFC
-- naked functions
-- interrupt attribute in C
-<!--
-Discuss prior art, both the good and the bad, in relation to this proposal.
-A few examples of what this can include are:
+The three interrupt calling conventions that are mentioned in this RFC are already implemented as experimental features in `rustc` since multiple years (`msp430-interrupt` and `x86-interrupt` since 2017, `avr-interrupt` since 2020). They are already in use in several projects and were deemed useful enough that the Rust language team [decided](https://github.com/rust-lang/rust/issues/40180#issuecomment-1022507941) to consider this feature for proper inclusion.
 
-- For language, library, cargo, tools, and compiler proposals: Does this feature exist in other programming languages and what experience have their community had?
-- For community proposals: Is this done by some other community and what were their experiences with it?
-- For other teams: What lessons can we learn from what other communities have done here?
-- Papers: Are there any published papers or great posts that discuss this? If you have some relevant papers to refer to, this can serve as a more detailed theoretical background.
+There was already a [prior RFC](https://github.com/rust-lang/rfcs/pull/1275) for interrupt calling conventions in 2015. The RFC was [closed](https://github.com/rust-lang/rfcs/pull/1275#issuecomment-154494283) for the time being to explore naked functions as a potential alternative first. Naked functions are now on the [path to stabilization](https://github.com/rust-lang/rust/issues/90957#issuecomment-1028297041).
 
-This section is intended to encourage you as an author to think about the lessons from other languages, provide readers of your RFC with a fuller picture.
-If there is no prior art, that is fine - your ideas are interesting to us whether they are brand new or if it is an adaptation from other languages.
-
-Note that while precedent set by other languages is some motivation, it does not on its own motivate an RFC.
-Please also take into consideration that rust sometimes intentionally diverges from common language features.
--->
+GCC supports a cross-platform [`__interrupt__` attribute](https://gcc.gnu.org/onlinedocs/gcc/Function-Attributes.html) for creating interrupt handlers. The behavior is target-specific and very similar to the proposal of this RFC. The LLVM-based Clang compiler also supports this attribute for a [subset of targets](https://clang.llvm.org/docs/AttributeReference.html#interrupt-arm).
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 - What are the requirements for stabilizing an interrupt calling convention?
 
-<!--
-- What parts of the design do you expect to resolve through the RFC process before this gets merged?
-- What parts of the design do you expect to resolve through the implementation of this feature before stabilization?
-- What related issues do you consider out of scope for this RFC that could be addressed in the future independently of the solution that comes out of this RFC?
--->
-
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-- support for more platforms
-
-<!--
-Think about what the natural extension and evolution of your proposal would
-be and how it would affect the language and project as a whole in a holistic
-way. Try to use this section as a tool to more fully consider all possible
-interactions with the project and language in your proposal.
-Also consider how this all fits into the roadmap for the project
-and of the relevant sub-team.
-
-This is also a good place to "dump ideas", if they are out of scope for the
-RFC you are writing but otherwise related.
-
-If you have tried and cannot think of any future possibilities,
-you may simply state that you cannot think of anything.
-
-Note that having something written down in the future-possibilities section
-is not a reason to accept the current or a future RFC; such notes should be
-in the section on motivation or rationale in this or subsequent RFCs.
-The section merely provides additional information.
--->
+This feature is relatively isolated in limited in scope, so it is not expected that this feature will be extended in the future.
