@@ -27,7 +27,7 @@ Calling conventions are a large part of a function's ABI ([application binary in
 ## Current Support
 By default, Rust uses an internal `"Rust"` calling convention, which is not standardized and might change in the future. For interoperating with external code, Rust allows to set the calling convention of a function explicitly through an `extern "calling_conv" fn foo() {}` function qualifier. The calling convention of external functions can be specified through `extern "calling_conv" { fn bar(); }`.
 
-The most common alternative calling convention supported by Rust is `extern "C"`, which can be used to interface with most code written in C. In addition, Rust supports various [other calling conventions](https://doc.rust-lang.org/stable/reference/items/external-blocks.html#abi), which are required in more specific cases. Most alternative calling conventions are only supported on a single architecture, for example the `"aapcs"` ABI that is only supported on ARM systems.
+The most common alternative calling convention supported by Rust is `extern "C"`, which can be used to interface with most code written in C. In addition, Rust supports various [other calling conventions](https://doc.rust-lang.org/stable/reference/items/external-blocks.html#abi), which are required in more specific cases. Most alternative calling conventions are only supported on a single architecture, for example the `"aapcs"` ABI is only supported on ARM systems.
 
 ## Interrupt Handlers
 While most functions are invoked by other software, there are some cases where the hardware (or its firmware) invokes a function directly. The most common example are [interrupt handler](https://en.wikipedia.org/wiki/Interrupt_handler) functions defined in embedded systems or operating system kernels. These functions are set up to be called directly by the hardware when a specific interrupt fires (e.g. when a network packet arrives). Interrupt handlers are also called _interrupt service routines_ (ISRs).
@@ -41,7 +41,7 @@ Since the hardware platform requires a special calling convention for interrupt 
 
 - Backup all registers on the stack that are not preserved by the C calling convention
   - This includes all registers except `RBX`, `RSP`, `RBP`, and `R12`–`R15` (these are restored by `extern "C"` functions)
-  - This also includes floating point and SSE state, which can be huge (unless we are sure that the interrupt handler does not use them)
+  - This also includes floating point and SSE state, which can be huge (unless we are sure that the interrupt handler does not use the corresponding registers)
 - Align the stack on a 16-byte boundary (required by the C calling convention)
 - Copy the arguments (passed on the stack) into registers (where the C calling convention expects them)
 - Call the Rust function
@@ -64,7 +64,7 @@ In addition to ABIs for interfacing with external code, Rust also supports so-ca
 
 The following interrupt ABIs are currently supported:
 
-- _(unstable)_ `extern "msp430-interrupt"`: Allows to create interrupt handlers MSP430 microcontrollers. Functions must have the signature `unsafe extern "msp430-interrupt" fn()`. To add a function to the interrupt table, use the following snippet:
+- _(unstable)_ `extern "msp430-interrupt"`: Allows to create interrupt handlers on MSP430 microcontrollers. Functions must have the signature `unsafe extern "msp430-interrupt" fn()`. To add a function to the interrupt table, use the following snippet:
 
   ```rust
   #[no_mangle]
@@ -73,29 +73,31 @@ The following interrupt ABIs are currently supported:
 
   unsafe extern "msp430-interrupt" fn tim0() {...}
   ```
+
+  Then place the `__interrupt_vector_10` section in the interrupt handler table using a linker script.
 - _(unstable)_ `extern "x86-interrupt"`: This calling convention can be used for defining interrupt handlers on 32-bit and 64-bit `x86` targets. Functions must have one of the following two signatures, depending on the interrupt vector:
 
   ```rust
   extern "x86-interrupt" fn(stack_frame: &ExceptionStackFrame);
   extern "x86-interrupt" fn(stack_frame: &ExceptionStackFrame, error_code: u64);
   ```
-  The `error_code` argument is _not_ an optional argument. It set by the hardware for some interrupt vector, but not for others. The programmer must make sure to always use the correct signature for each interrupt vector.
+  The `error_code` argument is _not_ an optional argument. It is set by the hardware for some interrupt vector, but not for others. The programmer must make sure to always use the correct signature for each interrupt vector, otherwise undefined behavior occurs.
 - _(unstable)_ `extern "avr-interrupt"` and `extern "avr-non-blocking-interrupt"`
 
 _(The above calling conventions are just listed as an example. They are **not** part of this RFC.)_
 
-By using these ABIs, it is possible to implement interrupt handlers directly in Rust, without writing any custom assembly code. This is not only safer and more convenient, it also often results in better performance. The reason for this is that the compiler can employ (cross-function) optimization techniques this way, for example to only backup the CPU registers that are actually used.
+By using these ABIs, it is possible to implement interrupt handlers directly in Rust, without writing any custom assembly code. This is not only safer and more convenient, it also often results in better performance. The reason for this is that the compiler can employ (cross-function) optimization techniques this way, for example to only backup the CPU registers that are actually overwritten by the interrupt handler.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-The exact requirements and properties of the different interrupt calling conventions must be defined and documented before stabilizing them. However, there are some properties and requirements that apply to all interrupt calling conventions.
+The exact requirements and properties of the individual interrupt calling conventions must be defined and documented before stabilizing them. However, there are some properties and requirements that apply to all interrupt calling conventions.
 
 ## Compiler Checks
 Interrupt calling conventions have strict requirements that are checked by the Rust compiler:
 
 - They must not be called by Rust code.
-- The function signature must satisfy the requirements.
+- The function signature must match a specific template.
 - They are only available on specific targets and might require specific target settings.
 - All other requirements imposed by the implementation of the calling convention in LLVM.
 
@@ -131,7 +133,7 @@ Many of the advantages of compiler-supported interrupt calling conventions come 
 
 Such a calling convention could be platform independent and should be much easier to maintain. It could also be called normally from Rust code and might thus have use cases outside of interrupt handling, e.g. similar to functions annotated as [`#[cold]`](https://doc.rust-lang.org/reference/attributes/codegen.html#the-cold-attribute).
 
-Using such a calling convention, it should be able to create interrupt handler wrappers in assembly with comparable performance. These wrapper function would handle the platform-specific steps of interrupt handling, such as stack alignment, argument preprocessing, and the interrupt epilogue. Since they don't require language support for this, they don't impact the maintainability of the compiler and can evolve independently in libraries. Using proc macros, they could even provide a similar level of usability to users.
+Using such a calling convention, it should be possible to create interrupt handler wrappers in assembly with comparable performance. These wrapper functions would handle the platform-specific steps of interrupt handling, such as stack alignment, argument preprocessing, and the interrupt epilogue. Since no language support is required for these wrapper functions, they don't impact the maintainability of the compiler and can evolve independently in libraries. Using proc macros, they could even provide a similar level of usability to users.
 
 While this approach could be considered a good middle ground, full compiler support for interrupt calling conventions is still be the better solution from a usability and performance perspective.
 
@@ -139,16 +141,16 @@ While this approach could be considered a good middle ground, full compiler supp
 
 Instead of relying on LLVM (or alternative code generators) to implement the interrupt calling conventions, we could also try to implement support for the calling conventions in `rustc` directly. This way, LLVM upgrades would not be affected by this feature and we would be less dependent on LLVM in general. One possible implementation approach for this could be to build upon a calling convention that preserves all registers (see the previous section).
 
-The drawback of this approach is increased complexity and maintenance cost for `rustc` this way.
+The drawback of this approach is increased complexity and maintenance cost for `rustc`.
 
 ## Alternative: Single `interrupt` ABI that depends on the target
 
-Instead of adding multiple target-specific interrupt calling conventions under different names, we could add support for a single cross-platform `interrupt` calling convention. This calling convention would be an alias for the interrupt calling convention of the target system, e.g. `x86-interrupt` when compiling for an `x86` target.
+Instead of adding multiple target-specific interrupt calling conventions under different names, we could add support for a single cross-platform `extern "interrupt"` calling convention. This calling convention would be an alias for the interrupt calling convention of the target system, e.g. `x86-interrupt` when compiling for an `x86` target.
 
 The main advantage of this approach would be that we keep the list of supported ABI variants short, which might make the documentation clearer. However, there are also several drawbacks:
 
-- Some targets have multiple interrupt calling conventions (e.g. avr and avr-non-blocking). This would be difficult to represent with a single `interrupt` calling convention.
-- Interrupt handlers on targets require different function signatures. It would be difficult to abstract this cleanly.
+- Some targets have multiple interrupt calling conventions (e.g. `avr` and `avr-non-blocking`). This would be difficult to represent with a single `extern "interrupt"` calling convention.
+- Interrupt handlers on different targets require different function signatures. It would be difficult to abstract this cleanly.
 - Interrupt handler implementations are often highly target-specific, so that there is not much value in cross-platform handlers. In fact, it could even lead to bugs when an interrupt handler is accidentally reused on a different platform.
 
 # Prior art
@@ -156,14 +158,15 @@ The main advantage of this approach would be that we keep the list of supported 
 
 The three interrupt calling conventions that are mentioned in this RFC are already implemented as experimental features in `rustc` since multiple years (`msp430-interrupt` and `x86-interrupt` since 2017, `avr-interrupt` since 2020). They are already in use in several projects and were deemed useful enough that the Rust language team [decided](https://github.com/rust-lang/rust/issues/40180#issuecomment-1022507941) to consider this feature for proper inclusion.
 
-There was already a [prior RFC](https://github.com/rust-lang/rfcs/pull/1275) for interrupt calling conventions in 2015. The RFC was [closed](https://github.com/rust-lang/rfcs/pull/1275#issuecomment-154494283) for the time being to explore naked functions as a potential alternative first. Naked functions are now on the [path to stabilization](https://github.com/rust-lang/rust/issues/90957#issuecomment-1028297041).
+There was already a [prior RFC](https://github.com/rust-lang/rfcs/pull/1275) for interrupt calling conventions in 2015. The RFC was [closed](https://github.com/rust-lang/rfcs/pull/1275#issuecomment-154494283) for the time being to explore naked functions as a potential alternative first. Naked functions are now on the [path to stabilization](https://github.com/rust-lang/rust/issues/90957#issuecomment-1028297041), but there is still value in support for interrupt calling conventions, as described in this RFC.
 
 GCC supports a cross-platform [`__interrupt__` attribute](https://gcc.gnu.org/onlinedocs/gcc/Function-Attributes.html) for creating interrupt handlers. The behavior is target-specific and very similar to the proposal of this RFC. The LLVM-based Clang compiler also supports this attribute for a [subset of targets](https://clang.llvm.org/docs/AttributeReference.html#interrupt-arm).
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-- What are the requirements for stabilizing an interrupt calling convention?
+- What are the exact requirements for stabilizing an interrupt calling convention? What level of stability of the LLVM implementation is required?
+- Is there a way to implement interrupt calling conventions directly in `rustc` without LLVM support?
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
