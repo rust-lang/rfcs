@@ -26,12 +26,14 @@ If the index is hosted via HTTP using [RFC2789](https://github.com/rust-lang/rfc
 
 
 # Reference-level explanation
-A new key, `auth-required`, will be allowed in the [`config.json`](https://doc.rust-lang.org/cargo/reference/registries.html#index-format) file stored in the registry index. When this key is set to `true`, the authorization token will be sent with any HTTP requests made to the registry API, crate downloads, and index (if using http). If a token is not available when Cargo is attempting to make a request, the user would be prompted to run `cargo login --registry NAME` to save a token.
+A new optional key, `auth-required`, will be allowed in the [`config.json`](https://doc.rust-lang.org/cargo/reference/registries.html#index-format) file stored in the registry index. When this key is set to `true`, the authorization token will be sent with any HTTP requests made to the registry API, crate downloads, and index (if using http). If a token is not available when Cargo is attempting to make a request, the user would be prompted to run `cargo login --registry NAME` to save a token.
 
 The authorization token would be sent as an HTTP header, exactly how it is currently sent for operations such as `publish` or `yank`:
 ```
 Authorization: <token>
 ```
+
+This RFC does not specify or change the format of the Authorization Token. For the purposes of this RFC, tokens are opaque; no particular format or protocol is specified, and third-party registry authentication should not assume support for any particular format. This includes shared-secret tokens, even though crates.io and the existing publish support for third-party registries currently supports such bearer tokens. Future RFCs (such as [RFC2789](https://github.com/rust-lang/rfcs/pull/3231)) may update the format and protocol used for tokens.
 
 ## Interaction with HTTP registries
 The approved (but currently unimplemented) [RFC2789](https://github.com/rust-lang/rfcs/pull/2789) enables Cargo to fetch the index over HTTP. When fetching `config.json` from an HTTP index, if Cargo receives an `HTTP 401` response, the request will be re-attempted with the Authorization header included. If no authorization token is available, Cargo will suggest that the user run `cargo login` to add one. The `HTTP 401` response from the registry server may also include an `X-Cargo-Token-Url: ` header to specify where the user should go to get a token. In that case, `cargo` can display a more helpful message such as "please paste the Token found on https://example.com/token-url-from-header below"
