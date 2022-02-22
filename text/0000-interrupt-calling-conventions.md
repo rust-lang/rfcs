@@ -106,7 +106,9 @@ If any of these conditions are violated, the compiler throws an error. It should
 ## Stability
 Since interrupt calling conventions are closely tied to a target architecture, they are only as stable as the corresponding target triple, even if the interrupt calling convention is stabilized. If support for a target triple is removed from Rust, removing support for corresponding interrupt calling conventions is _not_ considered a breaking change.
 
-Apart from this limitation, interrupt calling conventions fall under Rust's normal stability guarantees. For this reason, special care must be taken before stabilizing interrupt calling conventions that are implemented outside of `rustc` (e.g. in LLVM).
+Apart from this limitation, interrupt calling conventions fall under Rust's normal stability guarantees. As soon as a calling convention is stabilized, breaking changes are longer allowed. For this reason, special care must be taken before stabilizing interrupt calling conventions that are implemented outside of `rustc` (e.g. in LLVM).
+
+It is also worth noting that special caution must be taken before stabilizing interrupt calling conventions for _tier 3_ targets, as these targets might still evolve.
 
 ## Safety
 Functions with interrupt calling conventions are considered normal Rust functions. No `unsafe` annotations are required to declare them and there are no restrictions on their implementation. However, it is not allowed to call such functions from (Rust) code since the custom prelude and epilogue of the functions could lead to memory safety violations. For this reason, the attempt to call a function defined with an interrupt calling convention must result in an hard error that cannot be circumvented through `unsafe` blocks or by allowing some lints.
