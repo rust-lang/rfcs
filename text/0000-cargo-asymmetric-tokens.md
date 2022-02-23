@@ -59,9 +59,9 @@ There are credential processes for using key pairs stored on hardware tokens. Ch
 4. Log into the registries website
 5. Go to the "register a key pair" page, upload your public key.
 
-Some registries prioritize user experience over strictest security. They can simplify the process by providing key generation on the server. If your registry works this way the workflow will be:
+Some registries prioritize user experience over strictest security. They can simplify the process by providing key generation in the browser. If your registry works this way the workflow will be:
 1. Log into the registries website
-2. Go to the "register generate a key pair" page, and copy the command it generated for you. It will disappear when you leave the page, the server will not keep a copy of the private key!
+2. Go to the "generate a key pair" page, and copy the command it generated for you. It will disappear when you leave the page, the server will not have a copy of the private key!
 3. Run it on the command line. It will look like  `cargo login --registry=name --private-key="key"`
 
 # Reference-level explanation
