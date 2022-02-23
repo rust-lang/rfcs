@@ -70,6 +70,8 @@ impl<T: ?Sized> WellFormed<T> {
     pub unsafe fn as_mut<'a>(&self) -> &'a mut T { ... }
     // Equivalent to std::mem::size_of_val_raw, but *always safe*.
     pub fn size_of_val(self) -> usize { ... }
+    // Equivalent to std::mem::align_of_val_raw, but *always safe*.
+    pub fn align_of_val(self) -> usize { ... }
 }
 
 // Not Send or Sync
@@ -109,7 +111,7 @@ This implies that the scalar values of references always lie in the following ra
 |   sized types `T`    |    `align_of::<T>()`    |  `-size_of::<T>() - 1`  |
 | zero-sized types `T` |    `align_of::<T>()`    |   `-align_of::<T>()`    |
 |     slices `[T]`     |    `align_of::<T>()`    |   `-align_of::<T>()`    |
-|    trait objects     |           `1`           |          None           |
+|      other DSTs      |           `1`           |          None           |
 
 For "compound" unsized types with a sized prefix, the valid range is the intersection of the ranges of the sized part and the unsized prefix.
 
@@ -128,6 +130,16 @@ To shield the programmer from the exact bit-level niches of `WellFormed<T>` (whi
 - The pointer is non-null.
 - For fat pointers, the metadata is valid (as described in `mem::{size, align}_of_val_raw`).
 - The pointer points to a region of memory that has suitable size and alignment (it must fit the layout returned by `Layout::from_value_raw`). There is no constraint placed upon the "liveness" of this memory; it may be deallocated while the `WellFormed<T>` exists, or already deallocated when the `WellFormed` is created.
+
+### Thin DSTs
+
+The safety invariant outlined in the previous section implicitly assumes that calling `mem::{size, align}_of_val_raw` isn't UB (this is witnessed by the present of the corresponding safe methods on `WellFormed`). This is true of all dynamically-sized types in current Rust, however it is incompatible with hypothetical thin DSTs which would have to store layout information in the pointed-to value.
+
+There are three ways to resolve this:
+
+- Say that  `mem::size_of_val_raw() == 0` and `mem::align_of_val_raw() == 1` for thin DSTs (like extern types currently behave).
+- Make `WellFormed::{size, align}_of_val` unsafe, and treat thin DSTs as having `size: 0, align: 1` for the purposes of the `WellFormed` invariant.
+- Never add thin DSTs to the language.
 
 ## Layout algorithm changes
 
@@ -209,7 +221,9 @@ fn min_layout_of(ty: &Ty) -> MinLayout {
 
 This introduces a slighy increase in layout calculation due to the `min_layout_of` step; additionally, rustc must guarantee that `min_layout_of` always returns a `MinLayout` compatible with the full layout.
 
-This also introduces a new pointer type, `WellAligned<T>`, with somewhat extensive API duplication between it and other pointer types.
+This also introduces a new pointer type, `WellFormed<T>`, with somewhat extensive API duplication between it and other pointer types.
+
+Depending on the chosen invariant for `WellFormed<T>`, this also precludes the addition of thin DSTs with "correct" `{size, align}_of_val`; however, such thin DSTs already have other issues regardless of this RFC (for example, their interaction with `UnsafeCell`).
 
 # Alternatives
 [alternatives]: #alternatives
@@ -245,6 +259,7 @@ None known.
 
 - Bikeshedding the name of `WellFormed<T>`; possible alternatives are `ValidPtr<T>`, `UnsafeRef<T>`, `&'unsafe T` (see RFC [#3199]([3199](https://github.com/rust-lang/rfcs/pull/3199)))
 - What is the best validity invariant for `WellFormed<T>`?
+- Should `WellFormed::{size, align}_of_val` be unsafe, and how to handle hypothetical thin DSTs?
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
