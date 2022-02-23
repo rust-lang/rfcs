@@ -61,7 +61,7 @@ There are credential processes for using key pairs stored on hardware tokens. Ch
 
 Some registries prioritize user experience over strictest security. They can simplify the process by providing key generation on the server. If your registry works this way the workflow will be:
 1. Log into the registries website
-2. Go to the "register generate a key pair" page, and copy the command it generated for you. It will disappear when you leave the page, the server will not keep a copy of the public key!
+2. Go to the "register generate a key pair" page, and copy the command it generated for you. It will disappear when you leave the page, the server will not keep a copy of the private key!
 3. Run it on the command line. It will look like  `cargo login --registry=name --private-key="key"`
 
 # Reference-level explanation
@@ -193,7 +193,7 @@ However, in order to participate the author must have a "code signing certificat
 Maven Central [requires](https://maven.apache.org/repository/guide-central-repository-upload.html#pgp-signature) all uploads to be [signed by PGP](https://central.sonatype.org/publish/requirements/gpg/) and that the keys are registered with a public key server. Following the UNIX philosophy, they leave the actual act of signing up to independent implementations of PGP.
 It takes a lot of documentation to explain how to hook up all of these different parts to work together correctly. Furthermore, no assurance is made that the GPG signature and the Maven Central token used for upload represent the same identity.
 
-The npm client can pass along a `otp` option on the command line to act as [proof of 2FA](https://docs.npmjs.com/configuring-two-factor-authentication#sending-a-one-time-password-from-the-command-line). This provides a lot of the "over the wire" benefits of this RFC for the npm registry, but cannot be used by a third party after the fact to verify the uploaded identity nor is it easy for alternative registries to set up.
+The npm client can pass along a `otp` option on the command line to act as [proof of 2FA](https://docs.npmjs.com/configuring-two-factor-authentication#sending-a-one-time-password-from-the-command-line). This provides a lot of the "over the wire" benefits of this RFC for the npm registry, but cannot be used by a third party after the fact to verify the uploaded identity.
 
 [TUF](https://theupdateframework.io/) exclusively deals with how a client downloading packages through a mirror can be assured they came from a non-compromised copy of the registry. Which is not the problem this RFC is addressing.
 
@@ -204,14 +204,14 @@ How aggressively to push people off secret tokens? This RFC does not remove the 
 
 What default settings should `cargo login --generate-keypair` use? What process should be used for changing these defaults as best practice changes? Where should it put the private keys?
 
-More generally, is all the user experience exactly correct for all the new flags? The expectation is that these will need to be changed and tweaked as we try using them after implementation.
+More generally, is all the user experience exactly correct for all the new CLI flags? The expectation is that these will need to be changed and tweaked as we try using them after implementation.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
 Figuring out how and when crates.io should support these kinds of tokens is left to a follow-up discussion/RFC. The motivation section describes some of the things that will need to be figured out.
 
-Only after crates.io is not using secret tokens should we remove the support for them in private registries (and the code in cargo to support it).
+Only after crates.io is not using secret tokens should we consider removing the support for them in private registries (and the code in cargo to support it).
 
 After that an audit log of what tokens were used to publish on crates.io and why that token was trusted, would probably be a rich data source for identifying compromised accounts. As well as making it possible to do end to end signature verification. The crate file I downloaded matches the `cksum` in the index; the index matches the `cksum` in the audit log; the public key used in the audit log is the one I expected.
 
