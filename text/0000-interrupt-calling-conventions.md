@@ -103,12 +103,15 @@ Interrupt calling conventions have strict requirements that are checked by the R
 
 If any of these conditions are violated, the compiler throws an error. It should not be possible to cause LLVM errors using interrupt calling conventions.
 
+## Platform Support
+Since interrupt calling conventions are closely tied to a target and only available on that specific target, they are treated as a platform feature and fall under Rust's [target tier policy](https://doc.rust-lang.org/nightly/rustc/target-tier-policy.html).
+
+This means that calling conventions are only as well supported as the corresponding target. So on _tier 3_ targets, there are no guarantees that corresponding interrupt calling conventions will build, even if they're stabilized. On _tier 2_ targets, interrupt calling coventions are guaranteed to build, but no automated tests are run. Only on _tier 1_ targets, there is a guarantee that interrupt calling conventions will work.
+
 ## Stability
-Since interrupt calling conventions are closely tied to a target architecture, they are only as stable as the corresponding target triple, even if the interrupt calling convention is stabilized. If support for a target triple is removed from Rust, removing support for corresponding interrupt calling conventions is _not_ considered a breaking change.
+Interrupt calling conventions are a language feature, so they fall under Rust's normal stability guarantees, with one exception: If official support for a target is dropped, the corresponding interrupt calling convention can be removed from the Rust language, even if it is stabilized. This is not considered a breaking change because no code on other targets is broken by this, since it was never possible to use the calling convention on other targets.
 
-Apart from this limitation, interrupt calling conventions fall under Rust's normal stability guarantees. As soon as a calling convention is stabilized, breaking changes are longer allowed. For this reason, special care must be taken before stabilizing interrupt calling conventions that are implemented outside of `rustc` (e.g. in LLVM).
-
-It is also worth noting that special caution must be taken before stabilizing interrupt calling conventions for _tier 3_ targets, as these targets might still evolve.
+As soon as a calling convention is stabilized, breaking changes are longer allowed, independent of the target tier. For this reason, special caution must be taken before stabilizing interrupt calling conventions for _tier 3_ targets, as these targets might still evolve. Special care must also be taken before stabilizing interrupt calling conventions that are implemented outside of `rustc` (e.g. in LLVM).
 
 ## Safety
 Functions with interrupt calling conventions are considered normal Rust functions. No `unsafe` annotations are required to declare them and there are no restrictions on their implementation. However, it is not allowed to call such functions from (Rust) code since the custom prelude and epilogue of the functions could lead to memory safety violations. For this reason, the attempt to call a function defined with an interrupt calling convention must result in an hard error that cannot be circumvented through `unsafe` blocks or by allowing some lints.
