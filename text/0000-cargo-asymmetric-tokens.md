@@ -89,14 +89,18 @@ A registry can have at most one of `private-key`, `token`, or `credential-proces
 
 ## The authentication process
 
-When authenticating to a registry, Cargo will generate a PASETO in the [v3.public format](https://github.com/paseto-standard/paseto-spec/blob/master/docs/01-Protocol-Versions/Version3.md). This format uses P-384 and 384-bit ECDSA secret keys, and is compatible with keys stored in contemporary hardware tokens. The generated PASETO will have specific "claims" (key-value pairs in the PASETO's JSON payload). The claims within the PASETO will include at least:
-- The current time.
-- The challenge, if cargo has received a challenge from a 401/403 from this server this session. A server that issues challenges should have some stateful way of knowing which challenges have been used and which ones are still available.
-- The `private-key-subject` if it was set.
-- If this is a mutation: which one (publish or yank or unyank), the package, the version, the SHA256 checksum of the `.crate` file as stored in the `cksum` in the index.
+When authenticating to a registry, Cargo will generate a PASETO in the [v3.public format](https://github.com/paseto-standard/paseto-spec/blob/master/docs/01-Protocol-Versions/Version3.md). This format uses P-384 and 384-bit ECDSA secret keys, and is compatible with keys stored in contemporary hardware tokens. The generated PASETO will have specific "claims" (key-value pairs in the PASETO's JSON payload).
 
-The "footer" will include the registry base URL and the `key ID`. (The footer is part of the signature.)
-The `key ID` can be obtained from the public key using the "SPKI key fingerprints" standard.
+The claims within the PASETO will include at least:
+- The current time. (ISO 8601 compliant DateTime string in the `iat` key.)
+- The challenge, if cargo has received a challenge from a 401/403 from this server this session. A server that issues challenges should have some stateful way of knowing which challenges have been used and which ones are still available. (The string exactly as received in the `challenge` key.)
+- The `private-key-subject` if it was set. (The string exactly as set in the `sub` key.)
+- If this is a mutation: which one (publish or yank or unyank), the package, the version, the SHA256 checksum of the `.crate` file as stored in the `cksum` in the index. (`mutation`, `name`, `vers`, `cksum` keys respectively.)
+
+The "footer" (which is part of the signature) will be a JSON string in UTF-8 and include the registry base URL (in the `aud` key) and the `key ID` (in the `kid` key).
+The `key ID` can be obtained from the public key using the [PASERK IDs](https://github.com/paseto-standard/paserk/blob/master/operations/ID.md) standard.
+
+PASETO includes the message that was signed, so the server does not have to reconstruct the exact string from the request in order to check the signature. The server does need to check that the signature is valid for the string in the PASETO and that the contents of that string matches the request.
 
 The registry server will validate the PASETO, and check the footer and claims:
 
