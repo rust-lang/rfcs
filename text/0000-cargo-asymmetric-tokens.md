@@ -50,6 +50,7 @@ Private registries that require authentication use asymmetric cryptography as a 
 3. Go to the "register a key pair" page, upload your public key. and get the user ID for that key pair.
 
 Most do not, but some registries require one more step:
+
 4. if the registry gave you a `key-subject` then on the command line run `cargo login --registry=name --key-subject="the provided data"`
 
 There are credential processes for using key pairs stored on hardware tokens. Check crates.io to see if there's one available for your hardware. Each one is a little different, but the general workflow is:
@@ -67,13 +68,14 @@ Some registries prioritize user experience over strictest security. They can sim
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
+## Setting and storing login information
+
 In [`config.toml`](https://doc.rust-lang.org/cargo/reference/config.html) and `credentials.toml` files there is a field called `private-key`, witch is a private key formatted in the secret [subset of `PASERK`](https://github.com/paseto-standard/paserk/blob/master/types/secret.md) and is used to sign asymmetric tokens
 
 A keypair can be generated with `cargo login --generate-keypair` which will:
 - generate a public/private keypair in the currently recommended fashion.
 - save the private key in `credentials.toml`.
-- print the public key and the path to the file.
-  (See unresolved questions section.)
+- print the public key in [PASERK public](https://github.com/paseto-standard/paserk/blob/master/types/public.md) format.
 
 It is recommended that the `private-key` be saved in `credentials.toml`. It is also supported in `config.toml`, primarily so that it can be set using the associated environment variable. Witch is the recommended way to provide it in CI contexts. This set up is what we have for the `token` field for setting a secret token.
 
@@ -84,6 +86,8 @@ It is intended for the rare use cases like "cryptographic proof that the central
 Both fields can be set with `cargo login --registry=name --private-key="key" --private-key-subject="subject"`.
 
 A registry can have at most one of `private-key`, `token`, or `credential-process` set.
+
+## The authentication process
 
 When authenticating to a registry, Cargo will generate a PASETO in the [v3.public format](https://github.com/paseto-standard/paseto-spec/blob/master/docs/01-Protocol-Versions/Version3.md). This format uses P-384 and 384-bit ECDSA secret keys, and is compatible with keys stored in contemporary hardware tokens. The generated PASETO will have specific "claims" (key-value pairs in the PASETO's JSON payload). The claims within the PASETO will include at least:
 - The current time.
