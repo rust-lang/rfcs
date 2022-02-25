@@ -97,8 +97,11 @@ The claims within the PASETO will include at least:
 - The `private-key-subject` if it was set. (The string exactly as set in the `sub` key.)
 - If this is a mutation: which one (publish or yank or unyank), the package, the version, the SHA256 checksum of the `.crate` file as stored in the `cksum` in the index. (`mutation`, `name`, `vers`, `cksum` keys respectively.)
 
-The "footer" (which is part of the signature) will be a JSON string in UTF-8 and include the registry base URL (in the `aud` key) and the `key ID` (in the `kid` key).
-The `key ID` can be obtained from the public key using the [PASERK IDs](https://github.com/paseto-standard/paserk/blob/master/operations/ID.md) standard.
+The "footer" (which is part of the signature) will be a JSON string in UTF-8 and include:
+- The URL where cargo got the config.json file (in the `aud` key).
+  - If this is a registry with an HTTP index, then this is the base URL that all index queries are relative to.
+  - If this is a registry with a GIT index, it is the URL Cargo used to clone the index.
+- The `key ID` (in the `kid` key). Which can be obtained from the public key using the [PASERK IDs](https://github.com/paseto-standard/paserk/blob/master/operations/ID.md) standard.
 
 PASETO includes the message that was signed, so the server does not have to reconstruct the exact string from the request in order to check the signature. The server does need to check that the signature is valid for the string in the PASETO and that the contents of that string matches the request.
 
