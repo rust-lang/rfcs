@@ -29,7 +29,7 @@ Fundamentally these are all problems only because once an attacker has seen a se
 
 When using asymmetric cryptography the important secret (the private key) never leaves the user's computer.
 With a credential provider, the secret material can even stay on a hardware token.
-Furthermore, an asymmetric token can only be used for the intended action, and only for a short time window. The opportunity for replay is smaller, and can be tightened by the registry to meet its threat model.
+Furthermore, an asymmetric token can only be used for the intended action, and only for a short time window. The opportunity for replay is smaller, and can be tightened by the registry to meet its threat model. (See the [Appendix: Threat Model](#threat-model) for a detailed comparison of how asymmetric tokens helps with each problem.)
 After the asymmetric token has expired, the data sent over the network can be made public, without risking the private material. A registry can keep or publish an audit log of asymmetric tokens without risk of them being reused, in case a security auditor would like to look for abnormal or unusual behavior.
 
 Different registries will have different users in mind and have different use cases. Therefore, they will need to have different behaviors. So, there are many decisions a registry has to make that this RFC has no opinion on. Some examples:
@@ -124,44 +124,6 @@ Some credential processes that might be useful for people to develop include:
 
 This is just a reminder to check if there are newer RFCs that have had to deprecate, remove, or replace parts of this one. RFCs can always be adjusted by new RFCs. In general the Rust community takes backwards compatibility very seriously, so if an RFC says you can do something no future RFC is likely to say that you cannot do that thing. It has happened, RFCs have been amended or changed by subsequent RFCs. The content of this RFC is full of details with security implications. It is not unlikely that in the course of human events changes will need to be made to it. Hopefully, they can be made by loosening restrictions or supporting new formats. But, because security is involved the Rust community may be more likely to break backward compatibility than is our norm.
 
-
-
-## Threat Model
-
-If a registry were set up to exclusively use the new asymmetric tokens, how well would it handle the issues in the motivation?
-
-> The user can unintentionally share the file containing the token. This was unfortunately common when it was stored in `.cargo/config`, which is why it is now stored in `credentials.toml` by default.
-
-`credentials.toml` name identifies that it should not be shared. Unfortunately, this RFC does not make things better.
-
-> The file containing the token can be read at rest. File permissions are used to protect it, but can only go so far. [Credential processes](https://github.com/rust-lang/rfcs/blob/161ce8a26e70226a88e0d4d43c7914a714050330/text/2730-cargo-token-from-process.md) can do better *if* they are used.
-
-Many more kinds of security hardware devices can protect a private key then can protect an arbitrary secret token. Hardware devices can store a private key and only perform operations using that key, without making the key itself available.
-
-> If the token is ever logged and the logs are public, then the token is public. This is fairly easy to do accidentally in CI contexts. Cargo now redacts the token in its own logging, but if network traffic is logged there is still an issue.
-
-It is still possible for someone to log the private key. However, the signed asymmetric token is not secret. So all other things (like network traffic) can be logged safely. 
-
-> If a user configures a custom registry to use `http` instead of `https`, then anyone on the network can see the token go by.
-
-Content shared over the network is not secret. The opportunity for replay attacks is significantly limited. If the operation is mutating then the token can only be used for the intended operation. If it is a read operation, if the request returns meaningful results then the attacker can already see it without reusing the token. But, as the token includes the URL it can not be used on the `https` address.
-
-> If a user misconfigures a token to go to the wrong registry (typosquatting, homoglyph, or copy-paste error), then the recipient has the token.
-
-The asymmetric token includes the URL so the signature is only valid for that URL, the token is not valid for the real registry.
-
-> If a registry does not adequately protect its copy of the tokens then a database disclosure can leak all the users' tokens. ([cc: crates.io security advisory](https://blog.rust-lang.org/2020/07/14/crates-io-security-advisory.html))
-
-There is no reason for the registry to even see the private key. Even if the registry wants to generate keys for its users there is no need to store private keys. Disclosure of public keys is not a security risk, as they can not be used to sign new asymmetric tokens.
-
-To be fair, there's no reason for a registry based on secret tokens to store them in a recoverable format. The registry can store secret token hashes instead, and avoid this problem without inconveniencing the user. Since secret tokens are already random, you can avoid a lot of the complexities of storing passwords.
-
-Storing plain text secret tokens is only a problem in practice not in theory. However, the link is to an example of crates.io getting this wrong. I can only assume if we have seen one registry get this wrong, then there are others and there will be more in the future.
-
-> Fundamentally these are all problems only because once an attacker has seen a secret token they have all that is needed to act on that user's behalf.
-
-Without the private key an asymmetric token can only be used for the intended registry, for the intended action, and for a limited amount of time. This mitigates the risk of disclosure.
-
 # Drawbacks
 [drawbacks]: #drawbacks
 
@@ -224,3 +186,41 @@ Only after crates.io is not using secret tokens should we consider removing the 
 After that an audit log of what tokens were used to publish on crates.io and why that token was trusted, would probably be a rich data source for identifying compromised accounts. As well as making it possible to do end to end signature verification. The crate file I downloaded matches the `cksum` in the index; the index matches the `cksum` in the audit log; the public key used in the audit log is the one I expected.
 
 This scheme could be augmented to allow the use of several signing technologies. We would need to add a way for a registry to express what formats it will accept. We would need to add code for cargo to check that the credential provider was following one of the accepted formats. We would need to add code for cargo to generate the additional formats. But none of this is out of the question, so there is a clear path forward when algorithm agility is required.
+
+# Appendix
+
+## Threat Model
+
+If a registry were set up to exclusively use the new asymmetric tokens, how well would it handle the issues in the motivation?
+
+> The user can unintentionally share the file containing the token. This was unfortunately common when it was stored in `.cargo/config`, which is why it is now stored in `credentials.toml` by default.
+
+`credentials.toml` name identifies that it should not be shared. Unfortunately, this RFC does not make things better.
+
+> The file containing the token can be read at rest. File permissions are used to protect it, but can only go so far. [Credential processes](https://github.com/rust-lang/rfcs/blob/161ce8a26e70226a88e0d4d43c7914a714050330/text/2730-cargo-token-from-process.md) can do better *if* they are used.
+
+Many more kinds of security hardware devices can protect a private key then can protect an arbitrary secret token. Hardware devices can store a private key and only perform operations using that key, without making the key itself available.
+
+> If the token is ever logged and the logs are public, then the token is public. This is fairly easy to do accidentally in CI contexts. Cargo now redacts the token in its own logging, but if network traffic is logged there is still an issue.
+
+It is still possible for someone to log the private key. However, the signed asymmetric token is not secret. So all other things (like network traffic) can be logged safely.
+
+> If a user configures a custom registry to use `http` instead of `https`, then anyone on the network can see the token go by.
+
+Content shared over the network is not secret. The opportunity for replay attacks is significantly limited. If the operation is mutating then the token can only be used for the intended operation. If it is a read operation, if the request returns meaningful results then the attacker can already see it without reusing the token. But, as the token includes the URL it can not be used on the `https` address.
+
+> If a user misconfigures a token to go to the wrong registry (typosquatting, homoglyph, or copy-paste error), then the recipient has the token.
+
+The asymmetric token includes the URL so the signature is only valid for that URL, the token is not valid for the real registry.
+
+> If a registry does not adequately protect its copy of the tokens then a database disclosure can leak all the users' tokens. ([cc: crates.io security advisory](https://blog.rust-lang.org/2020/07/14/crates-io-security-advisory.html))
+
+There is no reason for the registry to even see the private key. Even if the registry wants to generate keys for its users there is no need to store private keys. Disclosure of public keys is not a security risk, as they can not be used to sign new asymmetric tokens.
+
+To be fair, there's no reason for a registry based on secret tokens to store them in a recoverable format. The registry can store secret token hashes instead, and avoid this problem without inconveniencing the user. Since secret tokens are already random, you can avoid a lot of the complexities of storing passwords.
+
+Storing plain text secret tokens is only a problem in practice not in theory. However, the link is to an example of crates.io getting this wrong. I can only assume if we have seen one registry get this wrong, then there are others and there will be more in the future.
+
+> Fundamentally these are all problems only because once an attacker has seen a secret token they have all that is needed to act on that user's behalf.
+
+Without the private key an asymmetric token can only be used for the intended registry, for the intended action, and for a limited amount of time. This mitigates the risk of disclosure.
