@@ -98,7 +98,7 @@ The claims within the PASETO will include at least:
 - If this is a mutation: which one (publish or yank or unyank), the package, the version, the SHA256 checksum of the `.crate` file as stored in the `cksum` in the index. (`mutation`, `name`, `vers`, `cksum` keys respectively.)
 
 The "footer" (which is part of the signature) will be a JSON string in UTF-8 and include:
-- The URL where cargo got the config.json file (in the `aud` key).
+- The URL where cargo got the config.json file (in the `url` key).
   - If this is a registry with an HTTP index, then this is the base URL that all index queries are relative to.
   - If this is a registry with a GIT index, it is the URL Cargo used to clone the index.
 - The `key ID` (in the `kid` key). Which can be obtained from the public key using the [PASERK IDs](https://github.com/paseto-standard/paserk/blob/master/operations/ID.md) standard.
@@ -113,6 +113,8 @@ The registry server will validate the PASETO, and check the footer and claims:
 - The PASETO is still within its valid time period (to limit replay attacks). We recommend a 15 minute limit, but a shorter time can be used by a registry to further decrease replayability. Or a longer one can be used to better accommodate clock skew.
 - If the server issues challenges, that the challenge has not yet been answered.
 - If the operation is a mutation, that the package, version, and hash match the request.
+
+See the [Appendix: Token Examples](#token-examples) for a walk through of constructing some tokens.
 
 ## Credential Processes
 
@@ -227,3 +229,90 @@ Storing plain text secret tokens is only a problem in practice not in theory. Ho
 > Fundamentally these are all problems only because once an attacker has seen a secret token they have all that is needed to act on that user's behalf.
 
 Without the private key an asymmetric token can only be used for the intended registry, for the intended action, and for a limited amount of time. This mitigates the risk of disclosure.
+
+## Token Examples
+
+### A Simple Read Operation
+
+For example: If cargo needs to construct an asymmetric token for a simple read operation it will gather some basic information:
+- The private key ([`PASERK` secret format](https://github.com/paseto-standard/paserk/blob/master/types/secret.md)): `"k3.secret.fNYVuMvBgOlljt9TDohnaYLblghqaHoQquVZwgR6X12cBFHZLFsaU3q7X3k1Zn36"`
+- The current time: `"2022-02-28T18:33:24+00:00"`
+- The url to the root of the index: `"https://registry.com/crate-index"`
+
+It will then derive:
+- The public key for the private key ([`PASERK` public format](https://github.com/paseto-standard/paserk/blob/master/types/public.md)): `"k3.public.AmDwjlyf8jAV3gm5Z7Kz9xAOcsKslt_Vwp5v-emjFzBHLCtcANzTaVEghTNEMj9PkQ"`
+- The [`PASERK ID`](https://github.com/paseto-standard/paserk/blob/master/operations/ID.md) for the public key: `"k3.pid.QB3WNBP-5j-0XQV2MOuvuOcLlJ8uz-pmqtIZus1x3YTu"`
+
+It will then construct a PASETO in the [v3.public format](https://github.com/paseto-standard/paseto-spec/blob/master/docs/01-Protocol-Versions/Version3.md). In this case:
+```
+v3.public.eyJpYXQiOiAiMjAyMi0wMi0yOFQxODozMzoyNCswMDowMCJ99q655qLlH5HYwCh86OGvPvY26X0rrd7Ibci3fmHz6MgAKK3RugUQ1rvNRjBEJZvfWqqq2WxEOrjMujkuk8jpmJ2B_i3BTIzYYZZRhjZeWAi0erCNqmtFZMeC3_2oqSka.eyJ1cmwiOiAiaHR0cHM6Ly9yZWdpc3RyeS5jb20vY3JhdGUtaW5kZXgiLCAia2lkIjogImszLnBpZC5RQjNXTkJQLTVqLTBYUVYyTU91dnVPY0xsSjh1ei1wbXF0SVp1czF4M1lUdSJ9
+```
+
+The server will validate that this looks like a properly formatted `v3.public` PASETO.
+It will decode the footer and get:
+```
+{"url": "https://registry.com/crate-index", "kid": "k3.pid.QB3WNBP-5j-0XQV2MOuvuOcLlJ8uz-pmqtIZus1x3YTu"}
+```
+It will check that:
+- The `url` is for the index of the registry that the request is for.
+- The `kid` is for a public key it has on file.
+- The PASETO signature can be validated using the public key related to `kid`.
+
+It can then decode the payload and get:
+```
+{"iat": "2022-02-28T18:33:24+00:00"}
+```
+It will check that the `iat` is within the valid time period picked by the server.
+Given that there is no mutation claim, it will check that the request is a read.
+(A read token can be used for multiple requests. See [Rationale and alternatives](#rationale-and-alternatives) for why.) 
+At this point the server has validated the PASETO, it should now go on to determining if the user associated with this public key should be allowed to read this object.
+
+### A Complicated Publish Operation
+
+For example: If cargo needs to construct an asymmetric token for a complicated publish operation it will gather some basic information:
+- The private key ([`PASERK` secret format](https://github.com/paseto-standard/paserk/blob/master/types/secret.md)): `"k3.secret.fNYVuMvBgOlljt9TDohnaYLblghqaHoQquVZwgR6X12cBFHZLFsaU3q7X3k1Zn36"`
+- The `private-key-subject` for that key: `"private-key-subject"`
+- The current time: `"2022-02-28T18:33:24+00:00"`
+- The url to the root of the index: `"https://registry-challenge-subject.com/crate-index"`
+- The challenge received from the most recent 401/403: `"challenge"`
+
+Because it's a published operation cargo will also gather:
+- The crate name: `"foo"`
+- The crate version: `"0.0.0"`
+- The hash of the `.crate` file: `"f7dbb6acfeff1d490fba693a402456f76b344fea77a5e7cae43b5970c3332b8f"`
+
+It will then derive:
+- The public key for the private key ([`PASERK` public format](https://github.com/paseto-standard/paserk/blob/master/types/public.md)): `"k3.public.AmDwjlyf8jAV3gm5Z7Kz9xAOcsKslt_Vwp5v-emjFzBHLCtcANzTaVEghTNEMj9PkQ"`
+- The [`PASERK ID`](https://github.com/paseto-standard/paserk/blob/master/operations/ID.md) for the public key: `"k3.pid.QB3WNBP-5j-0XQV2MOuvuOcLlJ8uz-pmqtIZus1x3YTu"`
+
+It will then construct a PASETO in the [v3.public format](https://github.com/paseto-standard/paseto-spec/blob/master/docs/01-Protocol-Versions/Version3.md). In this case:
+```
+v3.public.eyJjaGFsbGVuZ2UiOiAiY2hhbGxlbmdlIiwgIm11dGF0aW9uIjogInB1Ymxpc2giLCAibmFtZSI6ICJmb28iLCAidmVycyI6ICIwLjAuMCIsICJja3N1bSI6ICJmN2RiYjZhY2ZlZmYxZDQ5MGZiYTY5M2E0MDI0NTZmNzZiMzQ0ZmVhNzdhNWU3Y2FlNDNiNTk3MGMzMzMyYjhmIiwgInN1YiI6ICJwcml2YXRlLWtleS1zdWJqZWN0IiwgImlhdCI6ICIyMDIyLTAyLTI4VDE4OjMzOjI0KzAwOjAwIn36ifmVYCSBYcjHVjQ_JD6R16dcWPEjHYVFOR7QRx3riOLiH7o-m236uNs2NEu-NzOCDZZbsVXvxhop-aUKRc9D-jphV5KFuC8y6mNLklfg1PpH37QeDsyzJDZy604gZ5c.eyJ1cmwiOiAiaHR0cHM6Ly9yZWdpc3RyeS1jaGFsbGVuZ2Utc3ViamVjdC5jb20vY3JhdGUtaW5kZXgiLCAia2lkIjogImszLnBpZC5RQjNXTkJQLTVqLTBYUVYyTU91dnVPY0xsSjh1ei1wbXF0SVp1czF4M1lUdSJ9
+```
+
+The server will validate that this looks like a properly formatted `v3.public` PASETO.
+It will decode the footer and get:
+```
+{"url": "https://registry-challenge-subject.com/crate-index", "kid": "k3.pid.QB3WNBP-5j-0XQV2MOuvuOcLlJ8uz-pmqtIZus1x3YTu"}
+```
+It will check that:
+- The `url` is for the index of the registry that the request is for.
+
+It can then decode the payload and get:
+```
+{"challenge": "challenge", "mutation": "publish", "name": "foo", "vers": "0.0.0", "cksum": "f7dbb6acfeff1d490fba693a402456f76b344fea77a5e7cae43b5970c3332b8f", "sub": "private-key-subject", "iat": "2022-02-28T18:33:24+00:00"}
+```
+
+It will check that:
+- The `iat` is within the valid time period picked by the server.
+- The `sub` and `kid` is for a public key it has on file.
+- The PASETO signature can be validated using that public key.
+- The `challenge` was issued by this server and has not been revoked.
+
+Given that there is a mutation claim it will check that:
+- The request is for a `publish`.
+- The request is to publish a crate with the same name as `name`.
+- The request is to publish a crate with the same version as `vers`.
+- The request is to publish a crate with the same hash as `cksum`.
+
+At this point the server has validated the PASETO, it should now go on to determining if the user associated with this public key should be allowed to publish this object.
