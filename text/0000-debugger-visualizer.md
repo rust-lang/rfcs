@@ -569,11 +569,11 @@ None.
 
 ## Inline Natvis XML fragments via an attribute
 
-Natvis support for Rust could be improved upon by adding support for natvis in source via an attribute. Example:
+Debugger visualizer support for Rust could be improved upon by adding support for in-source visualizer definitions via an attribute. Example:
 
 ```rust
 /// A rectangle in first quadrant
-#[dbgvis(
+#[debugger-visualizer(
     natvis(r#"
         <DisplayString>({x},{y}) + ({dx}, {dy})</DisplayString>
         <Item Name="LowerLeft">({x}, {y})</Item>
