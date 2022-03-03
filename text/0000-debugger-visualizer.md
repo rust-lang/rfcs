@@ -221,6 +221,8 @@ As an example, consider a crate `foo` with this directory structure:
 Where `main.rs` contains:
 
 ```rust
+#[debugger_visualizer(natvis_file = "../Foo.natvis")]
+
 /// A rectangle in first quadrant
 struct FancyRect {
     pub x: f32,
@@ -287,7 +289,11 @@ the crate metadata if the target is an `rlib`. If the target is an executable, t
 `.debug_gdb_scripts` section will include a reference to the pretty printer specified.
 
 To provide pretty printers, developers create a file with the `.py` file
-extension.
+extension and reference it via the `#[debugger_visualizer]` attribute as follows:
+
+```rust
+#[debugger_visualizer(gdb_script_file = "../foo.py")]
+```
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -311,13 +317,13 @@ For example, to specify that a `.natvis` file should be included in the binary
 being built, the following attribute should be added to the Rust source:
 
 ```rust
-#![debugger_visualizer(natvis_file = "../foo.natvis")]
+#[debugger_visualizer(natvis_file = "../foo.natvis")]
 ```
 
 The same can be done to specify a GDB python debugger script:
 
 ```rust
-#![debugger_visualizer(gdb_script_file = "../foo.py")]
+#[debugger_visualizer(gdb_script_file = "../foo.py")]
 ```
 
 Depending on the Rust target, the correct debugger visualizer will be selected and embedded
@@ -330,14 +336,14 @@ embedded for each crate. When generating the final binary, the contents of the
 visualizer file will be extracted from the crate metadata and written to a new file
 in the target directory under a new `visualizer` directory.
 
-In the case of a Natvis file, `#![debugger_visualizer(natvis_file = "../foo.natvis")]`
+In the case of a Natvis file, `#[debugger_visualizer(natvis_file = "../foo.natvis")]`
 the compiler will set the `/NATVIS:{.natvis file}` MSVC linker flag for each of the
 Natvis files specified for the current crate as well as transitive dependencies if
 using the MSVC toolchain. This linker flag ensures that the specified Natvis files
 be embedded in the PDB generated for the binary being built. Any crate type that
 would generate a PDB would have all applicable `.natvis` files embedded.
 
-In the case of GDB pretty printer, `#![debugger_visualizer(gdb_script_file = "../foo.py")]`
+In the case of GDB pretty printer, `#[debugger_visualizer(gdb_script_file = "../foo.py")]`
 the compiler will ensure that the set of pretty printers specified will be added to the
 `.debug_gdb_scripts` section of the `ELF` generated. The `.debug_gdb_scripts` section
 takes a list of null-terminated entries which specify scripts to load within GDB. The
