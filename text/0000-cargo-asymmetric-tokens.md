@@ -63,7 +63,7 @@ There are credential processes for using key pairs stored on hardware tokens. Ch
 Some registries prioritize user experience over strictest security. They can simplify the process by providing key generation in the browser. If your registry works this way the workflow will be:
 1. Log into the registries website
 2. Go to the "generate a key pair" page, and copy the command it generated for you. It will disappear when you leave the page, the server will not have a copy of the private key!
-3. Run it on the command line. It will look like  `cargo login --registry=name --private-key="key"`
+3. Run it on the command line. It will look like  `cargo login --registry=name --private-key` witch will prompt you to put in the key value.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -83,7 +83,7 @@ There is also an optional field called `private-key-subject` which is a string c
 This string will be included as part of an asymmetric token and should not be secret.
 It is intended for the rare use cases like "cryptographic proof that the central CA server authorized this action". Cargo requires it to be non-whitespace printable ASCII. Registries that need non-ASCII data should base64 encode it.
 
-Both fields can be set with `cargo login --registry=name --private-key="key" --private-key-subject="subject"`.
+Both fields can be set with `cargo login --registry=name --private-key --private-key-subject="subject"` witch will prompt you to put in the key value.
 
 A registry can have at most one of `private-key`, `token`, or `credential-process` set.
 
