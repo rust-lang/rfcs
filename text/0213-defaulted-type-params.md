@@ -555,7 +555,7 @@ way (mechanical default outside of fn body, inference within).
 An alternative design is to use the `K=V` notation proposed in the
 associated items RFC for specify the values of default type
 parameters. However, this is somewhat odd, because default type
-parameters appear in a positional list, and thus it is suprising that
+parameters appear in a positional list, and thus it is surprising that
 values for the non-defaulted parameters are given positionally, but
 values for the defaulted type parameters are given with labels.
 

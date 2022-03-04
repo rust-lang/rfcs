@@ -290,7 +290,7 @@ is added in addition to the existing `staged_stable` attribute, as
 well recording the version in which the deprecation was performed with
 the `since` parameter.
 
-(Occassionally unstable APIs may be deprecated for the sake of easing
+(Occasionally unstable APIs may be deprecated for the sake of easing
 user transitions, in which case they receive both the `staged_stable`
 and `staged_deprecated` attributes at once.)
 

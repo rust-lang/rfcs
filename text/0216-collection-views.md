@@ -123,7 +123,7 @@ is when you're *not sure* if you need to insert, in which case you should be pre
 Otherwise, `find_mut` is likely sufficient.
 
 The result is actually an enum, that will either be Occupied or Vacant. These two variants correspond
-to concrete types for when the key matched something in the map, and when the key didn't, repsectively.
+to concrete types for when the key matched something in the map, and when the key didn't, respectively.
 
 If there isn't a match, the user has exactly one option: insert a value using `set`, which will also insert
 the guarantor, and destroy the Entry. This is to avoid the costs of maintaining the structure, which

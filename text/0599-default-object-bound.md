@@ -111,7 +111,7 @@ expressions, they only include cover those cases where an explicit
 lifetime bound was required today. In function signatures, lifetime
 bounds can always be omitted, and it is impossible to distinguish
 `&SomeTrait` from `&SomeStruct` using only a regular
-expression. However, we belive that the proposed rule would be
+expression. However, we believe that the proposed rule would be
 compatible with the existing defaults for function signatures in all
 or virtually all cases.
 
