@@ -1,6 +1,6 @@
 - Feature Name: `cfg-target`
 - Start Date: 2020-09-27
-- RFC PR: [rust-lang/rfcs#2991](https://github.com/rust-lang/rfcs/pull/2991)
+- RFC PR: [rust-lang/rfcs#3239](https://github.com/rust-lang/rfcs/pull/3239)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 # Summary
@@ -19,9 +19,10 @@ increases compile time and makes a crate incompatible with certain build
 systems.
 
 Otherwise, all available components would need to be specified separately:
-`target_arch`, `target_vendor`, `target_os`, and `target_env`. This can be very
-cumbersome. Note that the target ABI cannot currently be `#[cfg]`-ed against, so
-a `build.rs` is still necessary to match all target components.
+`target_arch`, `target_vendor`, `target_os`, `target_env` and `target_abi`.
+This can be very cumbersome. Note that the target ABI cannot currently be
+`#[cfg]`-ed against, so a `build.rs` is still necessary to match all target
+components.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -35,6 +36,16 @@ mod mac_catalyst;
 ```
 
 This includes `#[cfg_attr(target = "...", attr)]`.
+
+It would also support to specify each `target_*` inside a new `target`
+attribute as follows:
+
+```rust
+// So we can for example rewrite:
+#[cfg(all(target_os = "linux", target_arch = "arm"))]
+// as:
+#[cfg(target(os = "linux", arch = "arm"))]
+```
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
