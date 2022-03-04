@@ -183,7 +183,7 @@ ensures that a legal macro definition will continue to assign the same
 determination as to where `... tt` ends and `uu ...` begins, even as
 new syntactic forms are added to the language.
 
-The second part says that a separated complex NT must use a seperator
+The second part says that a separated complex NT must use a separator
 token that is part of the predetermined follow set for the internal
 contents of the NT. This ensures that a legal macro definition will
 continue to parse an input fragment into the same delimited sequence
@@ -318,9 +318,9 @@ NT could be empty (i.e. ε ∈ FIRST(interior)). (I overlooked this fact
 in my first round of prototyping.)
 
 NOTE: The above definition for LAST assumes that we keep our
-pre-existing rule that the seperator token in a complex NT is *solely* for
+pre-existing rule that the separator token in a complex NT is *solely* for
 separating elements; i.e. that such NT's do not match fragments that
-*end with* the seperator token. If we choose to lift this restriction
+*end with* the separator token. If we choose to lift this restriction
 in the future, the above definition will need to be revised
 accordingly.
 

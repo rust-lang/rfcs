@@ -146,14 +146,14 @@ The following are motivations why this RFC argues this case:
       4 |     println!(concat!("hello {person}"));
         |              ^^^^^^^^^^^^^^^^^^^^^^^^^ not found in this scope
 
-* The expression may expand to a format string which contains new identifiers not written by the users, bypassing macro hygiene in suprising ways. For example, if the `concat!` macro did not have the hygiene issue described above, it could be to "splice together" an implicit named argument like so:
+* The expression may expand to a format string which contains new identifiers not written by the users, bypassing macro hygiene in surprising ways. For example, if the `concat!` macro did not have the hygiene issue described above, it could be to "splice together" an implicit named argument like so:
 
        let person = "Charlie";
        println!(concat!("hello {p", "er", "son", "}"));
 
    The RFC author argues that it appears highly undesirable that implicit capture of the `person` identifier should occur in this example given above.
 
-* Using the hygienic context of the format string for implicit named arguments can have potentially suprising results even just with `macro_rules!` macros.
+* Using the hygienic context of the format string for implicit named arguments can have potentially surprising results even just with `macro_rules!` macros.
 
   For example, the RFC author found that with a proof-of-concept implementation of implicit named arguments the invocation below would print `"Snoopy"`:
 

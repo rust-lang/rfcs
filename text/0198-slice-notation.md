@@ -222,6 +222,6 @@ There are at least two downsides to doing so, however:
 * The idea of `Vec` as a smart pointer around a slice, and the use of `&*v` as
   above, is somewhat counterintuitive, especially for such a basic type.
 
-Ultimately, notation for slicing seems desireable on its own merits anyway, and
+Ultimately, notation for slicing seems desirable on its own merits anyway, and
 if it can eliminate the need to implement `Deref` for `Vec` and `String`, all
 the better.

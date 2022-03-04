@@ -315,7 +315,7 @@ without a lifetime parameter by making use of higher kinded types in order to si
 string APIs. Eg, instead of `fn starts_with<'a, P>(&'a self, pat: P) -> bool where P: Pattern<'a>;`
 you'd have `fn starts_with<P>(&self, pat: P) -> bool where P: Pattern;`.
 
-In order to not break backwards-compability, these can use the same generic-impl trick to
+In order to not break backwards-compatibility, these can use the same generic-impl trick to
 forward to the old traits, which would roughly look like this:
 
 ```rust

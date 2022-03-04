@@ -219,7 +219,7 @@ wait till the end then we will have more type information available.
 
 In my proposed solution, we eliminate the phase distinction. Instead,
 we simply track *pending constraints*. We are free to attempt to
-resolve pending constraints whenever desired. In paricular, whenever
+resolve pending constraints whenever desired. In particular, whenever
 we find we need more type information to proceed with some
 type-overloaded operation, rather than reporting an error we can try
 and resolve pending constraints. If that helps give more information,
