@@ -179,7 +179,11 @@ Unfortunately, Rust does not currently allow the signature of such a closure to 
 
 # Reference-level explanation
 
-We now allow closures to be written as `for<'a .. 'z>`, where `'a .. 'z` is a comma-separated sequence of zero or more lifetimes. The syntax is parsed identically to the `for<'a .. 'z>` in the function pointer type `for<'a .. 'z> fn(&'a u8, &'b u8) -> &'a u8`
+We now allow closures to be written with a `for<'a .. 'z>` prefix, where `'a .. 'z` is a comma-separated sequence of zero or more lifetimes. The syntax is parsed identically to the `for<'a .. 'z>` in the function pointer type `for<'a .. 'z> fn(&'a u8, &'b u8) -> &'a u8`.
+This can be use with or without the `move` keyword:
+
+`for<'a .. 'z> |arg1, arg2, ..., argN| { ... }`
+`for<'a .. 'z> move |arg1, arg2, ..., argN| { ... }`
 
 When this syntax is used, any lifetimes specified with the `for<>` binder are always treated as higher-ranked, regardless of any other hints we discover during type inference. That is, a closure of the form `for<'a, 'b> |first: &'a u8, second: &'b bool| -> &'b bool`  will have a compiler-generated impl of the form:
 
@@ -197,6 +201,15 @@ for<> || {}; // Compiler error: return type not specified
 ```
 
 This restriction allows us to avoid specifying how elided lifetime should be treated inside a closure with an explicit `for<>`. We may decide to lift this restriction in the future.
+
+Additionally, this syntax is currently incompatible with async closures:
+
+```rust
+for<'a> async |arg: &'a u8| -> () {}; // Compare error: `for<>` syntax cannot be used with async closures
+for<'a> async move |arg: &'a u8| -> () {}; // Compare error: `for<>` syntax cannot be used with async closures
+```
+
+This restriction may be lifted in the future, but the interactions between this feature and the `async` desugaring will need to be considered.
 
 # Drawbacks
 
