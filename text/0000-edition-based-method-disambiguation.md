@@ -115,10 +115,12 @@ field.
 
 During method resolution, when we detect an ambiguity we should then check if
 one of the methods in question is a standard libary method with an `edition`
-field. When it exists and the edition field of that method matches the current
-edition we ignore that method and select the other method that conflicted with
-it and generate a warning. If the edition is a previous edition we continue as
-normal and emit an error for the ambiguity.
+field. When the edition field exists in the stability attribute and the edition
+field of that method matches the current crate's edition we ignore that method
+and select the pre-edition method that conflicted with it and generate a
+warning. If the edition field in the stability attribute is an earlier edition
+than the crate's edition we continue as normal and emit an error for the
+ambiguity.
 
 This flag should be usable to resolve the following forms of breakage:
 
