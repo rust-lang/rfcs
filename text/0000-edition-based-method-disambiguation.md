@@ -197,6 +197,12 @@ breaks[^2] if the auto deref for one requires one more level of indirection
 than the other. We should be careful to consider how autoderef behavior can
 affect edition based method disambiguation.
 
+As a prior example, the addition of `into_iter` for arrays was done via special
+case treatment in the compiler because of this exact sort of breakage in
+autoderef precidence. If we can make this edition based disambiguation properly
+handle autoderef precidence we maybe able to remove that special case handling
+for array's `into_iter` impl and replace it with an `edition = "2018"` field in
+its stability attribute.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
