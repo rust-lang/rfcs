@@ -212,6 +212,6 @@ syntax for unambiguous method calls for a specific trait would significantly
 improve the experience of resolving these warnings.
 
 [^1]: Definition: Pre-edition methods are methods that could legally have been
-  introduced during the current edition which do not conflict with any methods
-  that existed during the initial release of the current edition.
+  introduced during the current crate's edition which do not conflict with any
+  methods that existed during the initial release of that edition.
 [^2]: https://github.com/rust-lang/rust/issues/86682
