@@ -109,9 +109,8 @@ In the example above this would replace the ambiguous code with
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-This feature will be implemented by modifying the `rustc_stable` and
-`rustc_const_stable` attributes to support an additional optional `edition`
-field.
+This feature will be implemented by modifying the `rustc_stable` attribute to
+support an additional optional `edition` field.
 
 During method resolution, when we detect an ambiguity we should then check if
 one of the methods in question is a standard libary method with an `edition`
