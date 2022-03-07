@@ -182,6 +182,13 @@ would only solve the problem for crates uploaded to crates.io, and the latter
 would only solve the problem for traits where the ambiguity is introduced by a
 supertrait.
 
+**Note**: While the "Supertrait item shadowing" rfc is listed here as an
+alternative it should not necessarily be seen as mutually exclusive, and could
+absolutely be used as a complement to this feature. Many of these warnings
+could be ambiguity warnings could be resolved by trait precidence and edition
+based fallback would only be encountered for the rarer cases of unrelated name
+collisions.
+
 # Prior art
 [prior-art]: #prior-art
 
