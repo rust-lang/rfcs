@@ -1,12 +1,15 @@
-# Pre-RFC: Packages as Optional Namespaces
+- Feature Name: `packages_as_namespaces`
+- Start Date: (fill me in with today's date, 2022-03-09)
+- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
-## Summary
+# Summary
 
 Grant exclusive access to publishing crates `parent/foo` for owners of crate `parent`.
 
 Namespaced crates can be named in Rust code using underscores (e.g. `parent_foo`)
 
-## Motivation
+# Motivation
 
 While Rust crates are practically unlimited in size, it is a common pattern for organizations to split their projects into many crates, especially if they expect users to only need a fraction of their crates.
 
@@ -16,7 +19,7 @@ Regardless, it is nice to have a way to signify "these are all crates belonging 
 
 This is distinct from the general problem of squatting -- with general squatting, someone else might come up with a cool crate name before you do. However, with `projectname-foo` crates, it's more of a case of third parties "muscling in" on a name you have already chosen and are using.
 
-## Guide-level explanation
+# Guide-level explanation
 
 If you own a crate `foo`, you may create a crate namespaced under it as `foo/bar`. Only people who are owners of `foo` may _create_ a crate `foo/bar` (and all owners of `foo` are implicitly owners of `foo/bar`). After such a crate is created, additional per-crate publishers may be added who will be able to publish subsequent versions as usual.
 
@@ -34,7 +37,7 @@ In Rust code, the slash gets converted to an underscore, the same way we do this
 use foo_bar::Baz;
 ```
 
-## Reference-level explanation
+# Reference-level explanation
 
 `/` is now considered a valid identifier inside a crate name Crates.io. For now, we will restrict crate names to having a single `/` in them, not at the beginning or end of the name, but this can be changed in the future.
 
@@ -53,9 +56,9 @@ No changes are made to `rustc`. When compiling a crate `foo/bar`, Cargo will aut
 
 If you end up in a situation where you have both `foo/bar` and `foo-bar` as active dependencies of your crate, your code will not compile and you must [rename](https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#renaming-dependencies-in-cargotoml) one of them.
 
-## Drawbacks
+# Drawbacks
 
-### Slashes
+## Slashes
 So far slashes as a "separator" have not existed in Rust. There may be dissonance with having another identifier character allowed on crates.io but not in Rust code. Dashes are already confusing for new users. Some of this can be remediated with appropriate diagnostics on when `/` is encountered at the head of a path.
 
 
@@ -71,11 +74,11 @@ Furthermore, slashes are ambiguous in feature specifiers:
 default = ["foo/std"]
 ```
 
-### Namespace root taken
+## Namespace root taken
 Not all existing projects can transition to using namespaces here. For example, the `unicode` crate is reserved, so `unicode-rs` cannot use it as a namespace despite owning most of the `unicode-foo` crates. In other cases, the "namespace root" `foo` may be owned by a different set of people than the `foo-bar` crates, and folks may need to negotiate (`async-std` has this problem, it manages `async-foo` crates but the root `async` crate is taken by someone else). Nobody is forced to switch to namespaces, of course, so the damage here is limited, but it would be _nice_ for everyone to be able to transition.
 
 
-### Dash typosquatting
+## Dash typosquatting
 
 This proposal does not prevent anyone from taking `foo-bar` after you publish `foo/bar`. Given that the Rust crate import syntax for `foo/bar` is `foo_bar`, same as `foo-bar`, it's totally possible for a user to accidentally type `foo-bar` in `Cargo.toml` instead of `foo/bar`, and pull in the wrong, squatted, crate.
 
@@ -84,17 +87,17 @@ We currently prevent `foo-bar` and `foo_bar` from existing at the same time. We 
 One thing that could mitigate `foo/bar` mapping to the potentially ambiguous `foo_bar` is using something like `foo::crate::bar` or `~foo::bar` or `foo::/bar` in the import syntax.
 
 
-### Slow migration
+## Slow migration
 
 Existing projects wishing to use this may need to manually migrate. For example, `unic-langid` may become `unic/langid`, with the `unic` project maintaining `unic-langid` as a reexport crate with the same version number. Getting people to migrate might be a bit of work, and furthermore maintaining a reexport crate during the (potentially long) transition period will also be some work. Of course, there is no obligation to maintain a transition crate, but users will stop getting updates if you don't.
 
 A possible path forward is to enable people to register aliases, i.e. `unic/langid` is an alias for `unic-langid`.
 
-## Rationale and alternatives
+# Rationale and alternatives
 
 This change solves the ownership problem in a way that can be slowly transitioned to for most projects.
 
-### `foo::bar` on crates.io and in Rust
+## `foo::bar` on crates.io and in Rust
 
 While I cover a bunch of different separator choices below, I want to call out `foo::bar` in particular. If we went with `foo::bar`, we could have the same crate name in the Rust source and Cargo manifest. This would be _amazing_.
 
@@ -102,7 +105,7 @@ Except, of course, crate `foo::bar` is ambiguous with module `bar` in crate `foo
 
 This can still be made to work, e.g. we could use `foo::crate::bar` to disambiguate, and encourage namespace-using crates to ensure that `mod bar` in crate `foo` either doesn't exist or is a reexport of crate `foo::bar`. I definitely want to see this discussed a bit more.
 
-### Separator choice
+## Separator choice
 
 A different separator might make more sense.
 
@@ -118,7 +121,7 @@ We could use dots (`foo.bar`). This does evoke some similarity with Rust syntax,
 
 Note that unquoted dots have semantic meaning in TOML, and allowing for unquoted dots would freeze the list of dependency subfields allowed (to `version`, `git`, `branch`, `features`, etc).
 
-### Separator mapping
+## Separator mapping
 
 The proposal suggests mapping `foo/bar` to `foo_bar`, but as mentioned in the typosquatting section, this has problems. There may be other mappings that work out better:
 
@@ -130,24 +133,24 @@ The proposal suggests mapping `foo/bar` to `foo_bar`, but as mentioned in the ty
 and the like.
 
 
-### User / org namespaces
+## User / org namespaces
 
 Another way to handle namespacing is to rely on usernames and GitHub orgs as namespace roots. This ties `crates.io` strongly to Github -- currently while GitHub is the only login method, there is nothing preventing others from being added.
 
 Furthermore, usernames are not immutable, and that can lead to a whole host of issues.
 
-### Registry trie format
+## Registry trie format
 
 Instead of placing `foo/bar` in `foo@/bar`, it can be placed in `foo@bar` or something else. 
 
-## Prior art
+# Prior art
 
 This proposal is basically the same as https://internals.rust-lang.org/t/pre-rfc-packages-as-namespaces/8628 and https://internals.rust-lang.org/t/pre-rfc-idea-cratespaces-crates-as-namespace-take-2-or-3/11320 .
 
 Namespacing has been discussed in https://internals.rust-lang.org/t/namespacing-on-crates-io/8571 , https://internals.rust-lang.org/t/pre-rfc-domains-as-namespaces/8688, https://internals.rust-lang.org/t/pre-rfc-user-namespaces-on-crates-io/12851 , https://internals.rust-lang.org/t/pre-rfc-hyper-minimalist-namespaces-on-crates-io/13041 , https://internals.rust-lang.org/t/blog-post-no-namespaces-in-rust-is-a-feature/13040/4 , https://internals.rust-lang.org/t/crates-io-package-policies/1041/37, https://internals.rust-lang.org/t/crates-io-squatting/8031, and many others.
  
 
-## Unresolved questions
+# Unresolved questions
 
  - Is `/` really the separator we wish to use?
  - How do we avoid ambiguity in feature syntax
@@ -155,6 +158,6 @@ Namespacing has been discussed in https://internals.rust-lang.org/t/namespacing-
  - Can we mitigate some of typosquatting?
  - How can we represent namespaced crates in the registry trie?
 
-## Future possibilities
+# Future possibilities
 
 We can allow multiple layers of nesting if people want it.
