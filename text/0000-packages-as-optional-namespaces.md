@@ -7,7 +7,7 @@
 
 Grant exclusive access to publishing crates `parent/foo` for owners of crate `parent`.
 
-Namespaced crates can be named in Rust code using underscores (e.g. `parent_foo`)
+Namespaced crates can be named in Rust code using underscores (e.g. `parent_foo`).
 
 # Motivation
 
@@ -15,7 +15,7 @@ While Rust crates are practically unlimited in size, it is a common pattern for 
 
 For example, [unic](https://crates.io/search?page=1&per_page=10&q=unic-), [tokio](https://crates.io/search?page=1&per_page=10&q=tokio-), [async-std](https://crates.io/search?page=1&per_page=10&q=async-), [rusoto](https://crates.io/search?q=rusoto) all do something like this, with lots of `projectname-foo` crates. At the moment, it is not necessarily true that a crate named `projectname-foo` is maintained by `projectname`, and in some cases that is even desired! E.g. `serde` has many third party "plugin" crates like [serde-xml-rs](https://github.com/RReverser/serde-xml-rs). Similarly, [async-tls](https://crates.io/crates/async-tls) is a general crate not specific to the async-std ecosystem.
 
-Regardless, it is nice to have a way to signify "these are all crates belonging to a single organization, and you may trust them the same". Recently, when starting up [ICU4X](https://github.com/unicode-org/icu4x/), we came up against this problem: We wanted to be able to publish ICU4X as an extremely modular system of `icu-foo` or `icu4x-foo` crates, but it would be confusing to users if third-party crates could also exist there (or take names we wanted to use).
+Regardless, it is nice to have a way to signify "these are all crates belonging to a single organization, and you may trust them the same". When starting up [ICU4X](https://github.com/unicode-org/icu4x/), we came up against this problem: We wanted to be able to publish ICU4X as an extremely modular system of `icu-foo` or `icu4x-foo` crates, but it would be confusing to users if third-party crates could also exist there (or take names we wanted to use).
 
 This is distinct from the general problem of squatting -- with general squatting, someone else might come up with a cool crate name before you do. However, with `projectname-foo` crates, it's more of a case of third parties "muscling in" on a name you have already chosen and are using.
 
@@ -56,13 +56,15 @@ No changes are made to `rustc`. When compiling a crate `foo/bar`, Cargo will aut
 
 If you end up in a situation where you have both `foo/bar` and `foo-bar` as active dependencies of your crate, your code will not compile and you must [rename](https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#renaming-dependencies-in-cargotoml) one of them.
 
+The `features = ` key in Cargo.toml continues parsing `foo/bar` as "the feature `bar` on dependency `foo`", however it now will unambiguously parse strings ending with a slash (`foo/` and `foo/bar/`) as referring to a dependency, as opposed to feature on a dependency. Cargo may potentially automatically handle the ambiguity or error about it.
+
 # Drawbacks
 
 ## Slashes
-So far slashes as a "separator" have not existed in Rust. There may be dissonance with having another identifier character allowed on crates.io but not in Rust code. Dashes are already confusing for new users. Some of this can be remediated with appropriate diagnostics on when `/` is encountered at the head of a path.
+So far slashes as a "separator" have not existed in Rust. There may be dissonance with having another non-identifier character allowed on crates.io but not in Rust code. Dashes are already confusing for new users. Some of this can be remediated with appropriate diagnostics on when `/` is encountered at the head of a path.
 
 
-Furthermore, slashes are ambiguous in feature specifiers:
+Furthermore, slashes are ambiguous in feature specifiers (though a solution has been proposed above for this):
 
 ```toml
 [dependencies]
@@ -74,8 +76,9 @@ Furthermore, slashes are ambiguous in feature specifiers:
 default = ["foo/std"]
 ```
 
+
 ## Namespace root taken
-Not all existing projects can transition to using namespaces here. For example, the `unicode` crate is reserved, so `unicode-rs` cannot use it as a namespace despite owning most of the `unicode-foo` crates. In other cases, the "namespace root" `foo` may be owned by a different set of people than the `foo-bar` crates, and folks may need to negotiate (`async-std` has this problem, it manages `async-foo` crates but the root `async` crate is taken by someone else). Nobody is forced to switch to namespaces, of course, so the damage here is limited, but it would be _nice_ for everyone to be able to transition.
+Not all existing projects can transition to using namespaces here. For example, the `unicode` crate is reserved, so `unicode-rs` cannot use it as a namespace despite owning most of the `unicode-foo` crates. In other cases, the "namespace root" `foo` may be owned by a different set of people than the `foo-bar` crates, and folks may need to negotiate (`async-std` has this problem, it manages `async-foo` crates but the root `async` crate is taken by someone else). Nobody is forced to switch to using namespaces, of course, so the damage here is limited, but it would be _nice_ for everyone to be able to transition.
 
 
 ## Dash typosquatting
@@ -91,7 +94,7 @@ One thing that could mitigate `foo/bar` mapping to the potentially ambiguous `fo
 
 Existing projects wishing to use this may need to manually migrate. For example, `unic-langid` may become `unic/langid`, with the `unic` project maintaining `unic-langid` as a reexport crate with the same version number. Getting people to migrate might be a bit of work, and furthermore maintaining a reexport crate during the (potentially long) transition period will also be some work. Of course, there is no obligation to maintain a transition crate, but users will stop getting updates if you don't.
 
-A possible path forward is to enable people to register aliases, i.e. `unic/langid` is an alias for `unic-langid`.
+A possible path forward is to enable people to register aliases, i.e. `unic-langid` is an alias for `unic/langid`.
 
 # Rationale and alternatives
 
@@ -148,7 +151,6 @@ Instead of placing `foo/bar` in `foo@/bar`, it can be placed in `foo@bar` or som
 This proposal is basically the same as https://internals.rust-lang.org/t/pre-rfc-packages-as-namespaces/8628 and https://internals.rust-lang.org/t/pre-rfc-idea-cratespaces-crates-as-namespace-take-2-or-3/11320 .
 
 Namespacing has been discussed in https://internals.rust-lang.org/t/namespacing-on-crates-io/8571 , https://internals.rust-lang.org/t/pre-rfc-domains-as-namespaces/8688, https://internals.rust-lang.org/t/pre-rfc-user-namespaces-on-crates-io/12851 , https://internals.rust-lang.org/t/pre-rfc-hyper-minimalist-namespaces-on-crates-io/13041 , https://internals.rust-lang.org/t/blog-post-no-namespaces-in-rust-is-a-feature/13040/4 , https://internals.rust-lang.org/t/crates-io-package-policies/1041/37, https://internals.rust-lang.org/t/crates-io-squatting/8031, and many others.
- 
 
 # Unresolved questions
 
@@ -161,3 +163,13 @@ Namespacing has been discussed in https://internals.rust-lang.org/t/namespacing-
 # Future possibilities
 
 We can allow multiple layers of nesting if people want it.
+
+# FAQ
+
+## What if I don't want to publish my crate under a namespace?
+
+You don't have to, namespaces are completely optional when publishing.
+
+## Does this stop people from squatting on `coolcratename`?
+
+No, this proposal does not intend to address the general problem of squatting (See [crates.io's policy](https://crates.io/policies#squatting), a lot of this has been discussed many times before). Instead, it allows people who own an existing crate to publish sub-crates under the same namespace. In other words, if you own `coolcratename`, it stops people from squatting `coolcratename/derive`.
