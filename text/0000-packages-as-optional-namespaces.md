@@ -112,6 +112,8 @@ This can still be made to work, e.g. we could use `foo::crate::bar` to disambigu
 
 A different separator might make more sense.
 
+We could continue to use `/` but also use `@`, i.e. have crates named `@foo/bar`. This is roughly what npm does and it seems to work. The `@` would not show up in source code, but would adequately disambiguate crates and features in Cargo.toml and in URLs.
+
 We could perhaps have `foo-*` get autoreserved if you publish `foo`, as outlined in https://internals.rust-lang.org/t/pre-rfc-hyper-minimalist-namespaces-on-crates-io/13041 . I find that this can lead to unfortunate situations where a namespace traditionally used by one project (e.g. `async-*`) is suddenly given over to a different project (the `async` crate). Furthermore, users cannot trust `foo-bar` to be owned by `foo` because the vast number of grandfathered crates we will have.
 
 Another separator idea would be to use `::`, e.g. `foo::bar`. This looks _great_ in Rust code, provided that the parent crate is empty and does not also have a `bar` module. See the section above for more info.
@@ -123,6 +125,10 @@ We could use `~` which enables Rust code to directly name namespaced packages (a
 We could use dots (`foo.bar`). This does evoke some similarity with Rust syntax, however there are ambiguities: `foo.bar` in Rust code could either mean "the field `bar` of local/static `foo`" or it may mean "the crate `foo.bar`".
 
 Note that unquoted dots have semantic meaning in TOML, and allowing for unquoted dots would freeze the list of dependency subfields allowed (to `version`, `git`, `branch`, `features`, etc).
+
+
+We could reverse the order and use `@`, i.e. `foo/bar` becomes `bar@foo`. This might be a tad confusing, and it's unclear how best to surface this in the source.
+
 
 ## Separator mapping
 
@@ -159,6 +165,7 @@ Namespacing has been discussed in https://internals.rust-lang.org/t/namespacing-
  - Is there a way to avoid `foo/bar` turning in to the potentially ambiguous `foo_bar`?
  - Can we mitigate some of typosquatting?
  - How can we represent namespaced crates in the registry trie?
+ - How do we represent namespaced crates in the URLs of crates.io and docs.rs?
 
 # Future possibilities
 
