@@ -102,7 +102,6 @@ A possible path forward is to enable people to register aliases, i.e. `unic-lang
 
 This change solves the ownership problem in a way that can be slowly transitioned to for most projects.
 
-
 ## Using identical syntax in Cargo.toml and Rust source
 
 This RFC in its current form does not propose changes to the Rust compiler to allow slash syntax (or whatever) to parse as a Rust path. Such changes could be made (though not with slash syntax due to parsing ambiguity, see [below](#Separator choice) for more options); this RFC is attempting to be minimal in its effects on rustc.
@@ -110,6 +109,9 @@ This RFC in its current form does not propose changes to the Rust compiler to al
 However, the divergence between Cargo.toml and rustc syntax does indeed have a complexity cost, and may be confusing to some users. Furthermore, it increases the chances of [Dash typosquatting](#Dash typosquatting) being effective.
 
 ## `foo::bar` on crates.io and in Rust
+
+
+**For discussions about separator choice, please discuss them in [this issue](https://github.com/Manishearth/namespacing-rfc/issues/1) to avoid overwhelming the main RFC thread.**
 
 While I cover a bunch of different separator choices below, I want to call out `foo::bar` in particular. If we went with `foo::bar`, we could have the same crate name in the Rust source and Cargo manifest. This would be _amazing_.
 
@@ -120,11 +122,17 @@ This can still be made to work, e.g. we could use `foo::crate::bar` to disambigu
 
 ## Whole crate name vs leaf crate name in Rust source
 
+
+**For discussions about separator choice, please discuss them in [this issue](https://github.com/Manishearth/namespacing-rfc/issues/1) to avoid overwhelming the main RFC thread.**
+
 It may be potentially better to use just the leaf crate name in Rust source. For example, when using crate `foo/bar` from Cargo.toml, the Rust code would simply use `bar::`. Cargo already supports [renaming dependencies](https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#renaming-dependencies-in-cargotoml) which can be used to deal with any potential ambiguities here. This also has the added benefit of not having to worry about the separator not parsing as valid Rust.
 
 A major drawback to this approach is that while it addresses the "the namespace is an organization" use case quite well (e.g. `unicode/segmentation` vs `unicode/line-break` and `rust-lang/libc` vs `rust-lang/lazy-static`, etc), this is rather less amenable to the "the namespace is a _project_" case (e.g. `serde` vs `serde/derive`, `icu/datetime` vs `icu/provider`, etc), where the crates are related not just by provenance. In such cases, users may wish to rename the crates to avoid confusion in the code. This may be an acceptable cost.
 
 ## Separator choice
+
+
+**For discussions about separator choice, please discuss them in [this issue](https://github.com/Manishearth/namespacing-rfc/issues/1) to avoid overwhelming the main RFC thread.**
 
 A different separator might make more sense.
 
