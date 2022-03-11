@@ -1,7 +1,7 @@
 - Feature Name: cargo_alternative_registry_auth
 - Start Date: 2021-03-31
-- RFC PR: rust-lang/rfcs#3139
-- Tracking Issue: rust-lang/rust#0000
+- RFC PR: [rust-lang/rfcs#3139](https://github.com/rust-lang/rfcs/pull/3139)
+- Tracking Issue: [rust-lang/cargo#10474](https://github.com/rust-lang/cargo/issues/10474)
 
 # Summary
 Enables Cargo to include the authorization token for all API requests, crate downloads and index updates (when using HTTP) by adding a configuration option to `config.json` in the registry index.
