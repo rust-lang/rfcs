@@ -89,6 +89,8 @@ A registry can have at most one of `private-key`, `token`, or `credential-proces
 
 ## The authentication process
 
+### How Cargo will generate an asymmetric token
+
 When authenticating to a registry, Cargo will generate a PASETO in the [v3.public format](https://github.com/paseto-standard/paseto-spec/blob/master/docs/01-Protocol-Versions/Version3.md). This format uses P-384 and 384-bit ECDSA secret keys, and is compatible with keys stored in contemporary hardware tokens. The generated PASETO will have specific "claims" (key-value pairs in the PASETO's JSON payload).
 
 The claims within the PASETO will include at least:
@@ -104,6 +106,8 @@ The "footer" (which is part of the signature) will be a JSON string in UTF-8 and
 - The `key ID` (in the `kid` key). Which can be obtained from the public key using the [PASERK IDs](https://github.com/paseto-standard/paserk/blob/master/operations/ID.md) standard.
 
 PASETO includes the message that was signed, so the server does not have to reconstruct the exact string from the request in order to check the signature. The server does need to check that the signature is valid for the string in the PASETO and that the contents of that string matches the request.
+
+### How the Registry Server will validate an asymmetric token
 
 The registry server will validate the PASETO, and check the footer and claims:
 
