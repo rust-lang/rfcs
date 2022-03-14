@@ -123,6 +123,8 @@ The registry server will validate the PASETO, and check the footer and claims:
 
 See the [Appendix: Token Examples](#token-examples) for a walk through of constructing some tokens.
 
+We recommend the use of challenges to prevent some replay attacks. For example, if I accidentally `unyank` a version and then realize my mistake and `yank` that version again, an attacker with a copy of the traffic could replay the `unyank` request, reverting my `yank`. This replay attack should be prevented by using single-use challenges that registries must invalidate when they are used.
+
 ## Credential Processes
 
 Credential Processes as defined in [RFC 2730](https://github.com/rust-lang/rfcs/pull/2730) are outside programs cargo can call on to change where and how secrets are stored. That RFC defines `special strings` which go in the `credential-process` field to describe what data the process needs from cargo. This RFC adds `{claims}`. If used Cargo will replace it with a JSON encoded set of key value pairs that should be in the generated token. Cargo will check that the output of such a process looks like a valid PASETO v3.public token that Cargo would have generated, and that the PASETO token includes all the claims Cargo provided. The credential process may add additional claims (e.g. 2fa, TOTP), as long as they are nested in `custom`.
