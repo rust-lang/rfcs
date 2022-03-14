@@ -35,8 +35,8 @@ RFC).
 
 This is only sound if the trait is object-safe. We say a method `m` on trait
 `T` is object-safe if it is legal (in current Rust) to call `x.m(...)` where `x`
-has type `&T`, i.e., `x` is a trait object. If all methods in `T` are object-
-safe, then we say `T` is object-safe.
+has type `&T`, i.e., `x` is a trait object. If all methods in `T` are object-safe,
+then we say `T` is object-safe.
 
 If we ignore this restriction we could allow code such as the following:
 
