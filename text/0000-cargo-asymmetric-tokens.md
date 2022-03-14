@@ -116,7 +116,10 @@ The registry server will validate the PASETO, and check the footer and claims:
 - The URL matches the registry base URL (to make sure a PASETO sent to one registry can't be used to authenticate to another, and to prevent typosquatting/homoglyph attacks)
 - The PASETO is still within its valid time period (to limit replay attacks). We recommend a 15 minute limit, but a shorter time can be used by a registry to further decrease replayability. Or a longer one can be used to better accommodate clock skew.
 - If the server issues challenges, that the challenge has not yet been answered.
-- If the operation is a mutation, that the package, version, and hash match the request.
+- If the operation is a mutation:
+  - That the operation matches the `mutation` field an is one of `publish`, `yank`, or `unyank`.
+  - That the package, version, and hash match the request.
+  - If the mutation is `publish`, that the version has not already been published.
 
 See the [Appendix: Token Examples](#token-examples) for a walk through of constructing some tokens.
 
