@@ -63,7 +63,7 @@ There are credential processes for using key pairs stored on hardware tokens. Ch
 Some registries prioritize user experience over strictest security. They can simplify the process by providing key generation in the browser. If your registry works this way the workflow will be:
 1. Log into the registries website
 2. Go to the "generate a key pair" page, and copy the command it generated for you. It will disappear when you leave the page, the server will not have a copy of the private key!
-3. Run it on the command line. It will look like  `cargo login --registry=name --private-key` witch will prompt you to put in the key value.
+3. Run it on the command line. It will look like  `cargo login --registry=name --private-key` which will prompt you to put in the key value.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -83,7 +83,7 @@ There is also an optional field called `private-key-subject` which is a string c
 This string will be included as part of an asymmetric token and should not be secret.
 It is intended for the rare use cases like "cryptographic proof that the central CA server authorized this action". Cargo requires it to be non-whitespace printable ASCII. Registries that need non-ASCII data should base64 encode it.
 
-Both fields can be set with `cargo login --registry=name --private-key --private-key-subject="subject"` witch will prompt you to put in the key value.
+Both fields can be set with `cargo login --registry=name --private-key --private-key-subject="subject"` which will prompt you to put in the key value.
 
 A registry can have at most one of `private-key`, `token`, or `credential-process` set.
 
@@ -93,19 +93,22 @@ A registry can have at most one of `private-key`, `token`, or `credential-proces
 
 When authenticating to a registry, Cargo will generate a PASETO in the [v3.public format](https://github.com/paseto-standard/paseto-spec/blob/master/docs/01-Protocol-Versions/Version3.md). This format uses P-384 and 384-bit ECDSA secret keys, and is compatible with keys stored in contemporary hardware tokens. The generated PASETO will have specific "claims" (key-value pairs in the PASETO's JSON payload).
 
-The claims within the PASETO will include at least:
-- The current time. (ISO 8601 compliant DateTime string in the `iat` key.)
-- The challenge, if cargo has received a challenge from a 401/403 from this server this session. A server that issues challenges should have some stateful way of knowing which challenges have been used and which ones are still available. (The string exactly as received in the `challenge` key.)
-- The `private-key-subject` if it was set. (The string exactly as set in the `sub` key.)
-- If this is a mutation: which one (publish or yank or unyank), the package, the version, the SHA256 checksum of the `.crate` file as stored in the `cksum` in the index. (`mutation`, `name`, `vers`, `cksum` keys respectively.)
+All PASETOs will include `iat`, the current time in ISO 8601 format. Cargo will include the following where appropriate:
+- `sub` an optional, non-secret string chosen by the registry that is expected to be claimed with every request. The value will be the `private-key-subject` from the `config.toml` file.
+- `mutation` if present, indicates that this request is a mutating operation (or a read-only operation if not present), must be one of the strings `publish`, `yank`, or `unyank`.
+  - `name` name of the crate related to this request.
+  - `vers` version string of the crate related to this request.
+  - `cksum` the SHA256 hash of the crate contents, as a string of 64 lowercase hexadecimal digits, must be present only when `mutation` is equal to `publish`
+- `challenge` the challenge string received from a 401/403 from this server this session. Registries that issue challenges must track which challenges have been issued/used and never accept a given challenge more than once within the same validity period (avoiding the need to track every challenge ever issued).
 
 The "footer" (which is part of the signature) will be a JSON string in UTF-8 and include:
-- The URL where cargo got the config.json file (in the `url` key).
+- `url` the RFC 3986 compliant URL where cargo got the config.json file,
   - If this is a registry with an HTTP index, then this is the base URL that all index queries are relative to.
   - If this is a registry with a GIT index, it is the URL Cargo used to clone the index.
-- The `key ID` (in the `kid` key). Which can be obtained from the public key using the [PASERK IDs](https://github.com/paseto-standard/paserk/blob/master/operations/ID.md) standard.
+- `kid` the identifier of the private key used to sign the request, using the [PASERK IDs](https://github.com/paseto-standard/paserk/blob/master/operations/ID.md) standard.
 
 PASETO includes the message that was signed, so the server does not have to reconstruct the exact string from the request in order to check the signature. The server does need to check that the signature is valid for the string in the PASETO and that the contents of that string matches the request.
+If a claim should be expected for the request but is missing in the PASETO then the request must be rejected.
 
 ### How the Registry Server will validate an asymmetric token
 
@@ -115,11 +118,13 @@ The registry server will validate the PASETO, and check the footer and claims:
 - The PASETO validates using the public key it looked up based on the `key ID`.
 - The URL matches the registry base URL (to make sure a PASETO sent to one registry can't be used to authenticate to another, and to prevent typosquatting/homoglyph attacks)
 - The PASETO is still within its valid time period (to limit replay attacks). We recommend a 15 minute limit, but a shorter time can be used by a registry to further decrease replayability. Or a longer one can be used to better accommodate clock skew.
-- If the server issues challenges, that the challenge has not yet been answered.
+- If the claim `v` is set, that it has the value of `1`. (This future proofs against breaking changes in newer RFCs.)
+- If the server issues challenges, that the challenge has not yet been answered. Registries that issue challenges must track which challenges have been issued/used and never accept a given challenge more than once within the same validity period (avoiding the need to track every challenge ever issued).
 - If the operation is a mutation:
   - That the operation matches the `mutation` field an is one of `publish`, `yank`, or `unyank`.
-  - That the package, version, and hash match the request.
-  - If the mutation is `publish`, that the version has not already been published.
+  - That the package, and version match the request.
+  - If the mutation is `publish`, that the version has not already been published, and that the hash matches the request.
+- If the operation is a read, that the `mutation` field is not set.
 
 See the [Appendix: Token Examples](#token-examples) for a walk through of constructing some tokens.
 
