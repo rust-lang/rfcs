@@ -70,14 +70,14 @@ Some registries prioritize user experience over strictest security. They can sim
 
 ## Setting and storing login information
 
-In [`config.toml`](https://doc.rust-lang.org/cargo/reference/config.html) and `credentials.toml` files there is a field called `private-key`, witch is a private key formatted in the secret [subset of `PASERK`](https://github.com/paseto-standard/paserk/blob/master/types/secret.md) and is used to sign asymmetric tokens
+In [`config.toml`](https://doc.rust-lang.org/cargo/reference/config.html) and `credentials.toml` files there is a field called `private-key`, which is a private key formatted in the secret [subset of `PASERK`](https://github.com/paseto-standard/paserk/blob/master/types/secret.md) and is used to sign asymmetric tokens
 
 A keypair can be generated with `cargo login --generate-keypair` which will:
 - generate a public/private keypair in the currently recommended fashion.
 - save the private key in `credentials.toml`.
 - print the public key in [PASERK public](https://github.com/paseto-standard/paserk/blob/master/types/public.md) format.
 
-It is recommended that the `private-key` be saved in `credentials.toml`. It is also supported in `config.toml`, primarily so that it can be set using the associated environment variable. Witch is the recommended way to provide it in CI contexts. This set up is what we have for the `token` field for setting a secret token.
+It is recommended that the `private-key` be saved in `credentials.toml`. It is also supported in `config.toml`, primarily so that it can be set using the associated environment variable, which is the recommended way to provide it in CI contexts. This setup is what we have for the `token` field for setting a secret token.
 
 There is also an optional field called `private-key-subject` which is a string chosen by the registry.
 This string will be included as part of an asymmetric token and should not be secret.
