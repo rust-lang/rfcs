@@ -623,7 +623,8 @@ Mangled names conform to the following grammar:
 
 ```
 // The <decimal-number> specifies the encoding version.
-<symbol-name> = "_R" [<decimal-number>] <path> [<instantiating-crate>]
+<symbol-name> =
+    "_R" [<decimal-number>] <path> [<instantiating-crate>] [<vendor-specific-suffix>]
 
 <path> = "C" <identifier>                    // crate root
        | "M" <impl-path> <type>              // <T> (inherent impl)
@@ -746,6 +747,10 @@ Mangled names conform to the following grammar:
 // We use <path> here, so that we don't have to add a special rule for
 // compression. In practice, only a crate root is expected.
 <instantiating-crate> = <path>
+
+// There are no restrictions on the characters that may be used
+// in the suffix following the `.` or `$`.
+<vendor-specific-suffix> = ("." | "$") <suffix>
 ```
 
 ### Namespace Tags
@@ -800,6 +805,21 @@ Here are some examples:
 With this post-processing in place the Punycode strings can be treated
 like regular identifiers and need no further special handling.
 
+
+### Vendor-specific suffix
+
+Similarly to the [Itanium C++ ABI mangling scheme][itanium-mangling-structure],
+a symbol name containing a period (`.`) or a dollar sign (`$`) represents a
+vendor-specific version of the symbol. There are no restrictions on the
+characters following the period or dollar sign.
+
+This can happen in practice when locally unique names needed to become globally
+unique. For example, LLVM can append a `.llvm.<numbers>` suffix during LTO to
+ensure a unique name, and `$` can be used for thread-local data on Mach-O. In
+these situations it's generally fine to ignore the suffix: the suffixed name has
+the same semantics as the original.
+
+[itanium-mangling-structure]: https://itanium-cxx-abi.github.io/cxx-abi/abi.html#mangling-structure
 
 ## Compression
 
@@ -1156,3 +1176,4 @@ pub static QUUX: u32 = {
 - Make `<binder>` optional in `<fn-sig>` and `<dyn-bounds>` productions.
 - Extend `<const-data>` to include `bool` values, `char` values, and negative integer values.
 - Remove type from constant placeholders.
+- Allow vendor-specific suffixes.
