@@ -78,10 +78,12 @@ The following interrupt ABIs are currently supported:
 - _(unstable)_ `extern "x86-interrupt"`: This calling convention can be used for defining interrupt handlers on 32-bit and 64-bit `x86` targets. Functions must have one of the following two signatures, depending on the interrupt vector:
 
   ```rust
-  extern "x86-interrupt" fn(stack_frame: &ExceptionStackFrame);
-  extern "x86-interrupt" fn(stack_frame: &ExceptionStackFrame, error_code: u64);
+  extern "x86-interrupt" fn(stack_frame: &StackFrame);
+  extern "x86-interrupt" fn(stack_frame: &StackFrame, error_code: ErrorCode);
   ```
   The `error_code` argument is _not_ an optional argument. It is set by the hardware for some interrupt vector, but not for others. The programmer must make sure to always use the correct signature for each interrupt vector, otherwise undefined behavior occurs.
+
+  The `StackFrame` type must be a struct that matches the stack frame pushed by the CPU. The `ErrorCode` type must be `u64` on 64-bit targets and `u32` on 32-bit targets. These types are currently _not_ checked by `rustc`.
 - _(unstable)_ `extern "avr-interrupt"` and `extern "avr-non-blocking-interrupt"`
 
 _(The above calling conventions are just listed as an example. They are **not** part of this RFC.)_
