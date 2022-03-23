@@ -88,6 +88,8 @@ _(The above calling conventions are just listed as an example. They are **not** 
 
 By using these ABIs, it is possible to implement interrupt handlers directly in Rust, without writing any custom assembly code. This is not only safer and more convenient, it also often results in better performance. The reason for this is that the compiler can employ (cross-function) optimization techniques this way, for example to only backup the CPU registers that are actually overwritten by the interrupt handler.
 
+On some platforms, there might be multiple interrupt calling conventions with different behavior. For example, on AVR there are separate calling conventions that either disable global interrupts while the interrupt handler is running, or keep them enabled. Another example is the ARM architecture, where it might make sense to add multiple interrupt calling conventions to allow switching to a specific CPU mode before invoking the interrupt handler.
+
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
