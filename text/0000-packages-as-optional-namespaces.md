@@ -17,55 +17,86 @@ For example, [unic](https://crates.io/search?page=1&per_page=10&q=unic-), [tokio
 
 Regardless, it is nice to have a way to signify "these are all crates belonging to a single project, and you may trust them the same". When starting up [ICU4X](https://github.com/unicode-org/icu4x/), we came up against this problem: We wanted to be able to publish ICU4X as an extremely modular system of `icu-foo` or `icu4x-foo` crates, but it would be confusing to users if third-party crates could also exist there (or take names we wanted to use).
 
-It's worth spending a bit of time talking about "projects" and "organizations", as nebulous as those terms are. This feature is *primarily* motivated by the needs of "projects". By this I mean a _single_ piece of software developed as multiple crates, for example `serde` and `serde/derive`, or `icu` and `icu/provider`, or `servo/script` and `servo/layout`. One would expect "projects" like this to live under a single Git repository according to the norms of project organization; they are logically a single project even if they are multiple crates.
+It's worth spending a bit of time talking about "projects" and "organizations", as nebulous as those terms are. This feature is *primarily* motivated by the needs of "projects". By this I mean a _single_ piece of software developed as multiple crates, for example `serde` and `serde::derive`, or `icu` and `icu::provider`, or `servo::script` and `servo::layout`. One would expect "projects" like this to live under a single Git repository according to the norms of project organization; they are logically a single project even if they are multiple crates.
 
-The feature suggested here _might_ be used by "organizations" too, by which I mean a group of people who are coming together to build likely related crates, under the same "brand". One would expect "organizations" like this to use multiple repos under a GitHub organization, and the use case on crates.io would be to be able to have a similar "namespace" under which they can name their crates whatever they want, and prevent squatting. Personally I find this use case less compelling; and it is not the primary motivation behind the RFC. In particular, this use case is more prone to wanting to move crates between organizations and dependency management as a space is not in general super amenable to renames (though we can come up with ways to make this more pleasant).
+The feature suggested here _might_ be used by "organizations" too, by which I mean a group of people who are coming together to build likely related crates, under the same "brand". One would expect "organizations" like this to use multiple repos under a GitHub organization, and the use case on crates.io would be to be able to have a similar "namespace" under which they can name their crates whatever they want, and prevent squatting. Personally I find this use case less compelling; and it is not the primary motivation behind the RFC. In particular, this use case is more prone to wanting to move crates between organizations and dependency management as a space is not in general super amenable to renames (though we can come up with ways to make this more pleasant, considered out of scope for this RFC).
 
 
 The motivation here is distinct from the general problem of squatting -- with general squatting, someone else might come up with a cool crate name before you do. However, with `projectname-foo` crates, it's more of a case of third parties "muscling in" on a name you have already chosen and are using.
 
 # Guide-level explanation
 
-If you own a crate `foo`, you may create a crate namespaced under it as `foo/bar`. Only people who are owners of `foo` may _create_ a crate `foo/bar` (and all owners of `foo` are implicitly owners of `foo/bar`). After such a crate is created, additional per-crate publishers may be added who will be able to publish subsequent versions as usual.
+If you own a crate `foo`, you may create a crate namespaced under it as `foo::bar`. Only people who are owners of `foo` may _create_ a crate `foo::bar` (and all owners of `foo` are implicitly owners of `foo/bar`). After such a crate is created, additional per-crate publishers may be added who will be able to publish subsequent versions as usual.
 
 The crate can be imported in Cargo.toml using its name as normal:
 
 ```toml
 [dependencies]
-"foo/bar" = "1.0"
+"foo::bar" = "1.0"
 ```
 
 
-In Rust code, the slash gets converted to an underscore, the same way we do this for dashes.
+In Rust code, the colons still work:
 
 ```rs
-use foo_bar::Baz;
+use foo::bar::Baz;
 ```
+
+In case there is also an in-scope crate `foo` with an exported `bar` item, this will cause an ambiguity error unless both the item `foo::bar` and the crate `foo::bar` are actually resolving to the same item. This is similar to what rustc already does when it encounters in-use clashes in glob imports.
 
 # Reference-level explanation
 
-`/` is now considered a valid identifier inside a crate name Crates.io. For now, we will restrict crate names to having a single `/` in them, not at the beginning or end of the name, but this can be changed in the future.
+`::` is now considered valid inside crate names on Crates.io. For now, we will restrict crate names to having a single `::` in them, not at the beginning or end of the name, but this can be changed in the future.
 
-When publishing a crate `foo/bar`, if the crate does not exist, the following must be true:
+When publishing a crate `foo::bar`, if the crate does not exist, the following must be true:
 
  - `foo` must exist
  - The user publishing the crate must be an owner of `foo`
 
-For the crate `foo/bar`, all owners of `foo` are always considered owners of `foo/bar`, however additional owners may be added. People removed from ownership of `foo` will also lose access to `foo/bar` unless they were explicitly added as owners to `foo/bar`.
+For the crate `foo::bar`, all owners of `foo` are always considered owners of `foo::bar`, however additional owners may be added. People removed from ownership of `foo` will also lose access to `foo::bar` unless they were explicitly added as owners to `foo::bar`.
 
-Crates.io displays `foo/bar` crates with the name `foo/bar`, though it may stylistically make the `foo` part link to the `foo` crate.
+Crates.io displays `foo::bar` crates with the name `foo::bar`, though it may stylistically make the `foo` part link to the `foo` crate.
 
-The [registry index trie](https://doc.rust-lang.org/nightly/cargo/reference/registries.html#index-format) may represent subpackages by placing `foo/bar` in `foo@/bar`, placed next to where `foo` is in the trie (i.e. the full path will be `fo/foo@/bar`).
+The [registry index trie](https://doc.rust-lang.org/nightly/cargo/reference/registries.html#index-format) may represent subpackages by placing `foo::bar` as just `foo::bar`.
 
 No changes are made to `rustc`. When compiling a crate `foo/bar`, Cargo will automatically pass in `--crate-name foo_bar`, and when referring to it as a dependency Cargo will use `--extern foo_bar=....`. This is the same thing we currently do for `foo-bar`.
 
-If you end up in a situation where you have both `foo/bar` and `foo-bar` as active dependencies of your crate, your code will not compile and you must [rename](https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#renaming-dependencies-in-cargotoml) one of them.
+`rustc` will need some changes. When `--extern foo::bar=crate.rlib` is passed in, `rustc` will include this crate during resolution as if it were a module `bar` living under crate `foo`. If crate `foo` is _also_ in scope, this will not automatically trigger any errors unless `foo::bar` is referenced, `foo` has a module `bar`, and that module is not just a reexport of crate `foo::bar`.
 
-The `features = ` key in Cargo.toml continues parsing `foo/bar` as "the feature `bar` on dependency `foo`", however it now will unambiguously parse strings ending with a slash (`foo/` and `foo/bar/`) as referring to a dependency, as opposed to feature on a dependency. Cargo may potentially automatically handle the ambiguity or error about it.
+The autogenerated `lib.name` key for such a crate will just be `bar`, the leaf crate name, and the expectation is that to use such crates one _must_ use `--extern foo::bar=bar.rlib` syntax. There may be some better things possible here, perhaps `foo_bar` can be used here.
+
 
 # Drawbacks
 
-## Slashes
+
+## Namespace root taken
+Not all existing projects can transition to using namespaces here. For example, the `unicode` crate is reserved, so `unicode-rs` cannot use it as a namespace despite owning most of the `unicode-foo` crates. In other cases, the "namespace root" `foo` may be owned by a different set of people than the `foo-bar` crates, and folks may need to negotiate (`async-std` has this problem, it manages `async-foo` crates but the root `async` crate is taken by someone else). Nobody is forced to switch to using namespaces, of course, so the damage here is limited, but it would be _nice_ for everyone to be able to transition.
+
+
+## Slow migration
+
+Existing projects wishing to use this may need to manually migrate. For example, `unic-langid` may become `unic::langid`, with the `unic` project maintaining `unic-langid` as a reexport crate with the same version number. Getting people to migrate might be a bit of work, and furthermore maintaining a reexport crate during the (potentially long) transition period will also be some work. Of course, there is no obligation to maintain a transition crate, but users will stop getting updates if you don't.
+
+A possible path forward is to enable people to register aliases, i.e. `unic-langid` is an alias for `unic::langid`.
+
+
+## Requires rustc changes
+
+There are alternate solutions below that don't require the _language_ getting more complex and can be done purely at the Cargo level. Unfortunately they have other drawbacks.
+
+
+# Rationale and alternatives
+
+This change solves the ownership problem in a way that can be slowly transitioned to for most projects.
+
+## Slash as a separator
+
+**For discussions about separator choice, please discuss them in [this issue](https://github.com/Manishearth/namespacing-rfc/issues/1) to avoid overwhelming the main RFC thread.**
+
+A previous version of the RFC had `/` as a separator. It would translate it to `foo_bar` in source, and disambiguated in feature syntax with `foo/bar/` vs `foo/bar`. It had the following drawbacks:
+
+
+### Slashes
 So far slashes as a "separator" have not existed in Rust. There may be dissonance with having another non-identifier character allowed on crates.io but not in Rust code. Dashes are already confusing for new users. Some of this can be remediated with appropriate diagnostics on when `/` is encountered at the head of a path.
 
 
@@ -81,12 +112,7 @@ Furthermore, slashes are ambiguous in feature specifiers (though a solution has 
 default = ["foo/std"]
 ```
 
-
-## Namespace root taken
-Not all existing projects can transition to using namespaces here. For example, the `unicode` crate is reserved, so `unicode-rs` cannot use it as a namespace despite owning most of the `unicode-foo` crates. In other cases, the "namespace root" `foo` may be owned by a different set of people than the `foo-bar` crates, and folks may need to negotiate (`async-std` has this problem, it manages `async-foo` crates but the root `async` crate is taken by someone else). Nobody is forced to switch to using namespaces, of course, so the damage here is limited, but it would be _nice_ for everyone to be able to transition.
-
-
-## Dash typosquatting
+### Dash typosquatting
 
 This proposal does not prevent anyone from taking `foo-bar` after you publish `foo/bar`. Given that the Rust crate import syntax for `foo/bar` is `foo_bar`, same as `foo-bar`, it's totally possible for a user to accidentally type `foo-bar` in `Cargo.toml` instead of `foo/bar`, and pull in the wrong, squatted, crate.
 
@@ -95,33 +121,21 @@ We currently prevent `foo-bar` and `foo_bar` from existing at the same time. We 
 One thing that could mitigate `foo/bar` mapping to the potentially ambiguous `foo_bar` is using something like `foo::crate::bar` or `~foo::bar` or `foo::/bar` in the import syntax.
 
 
-## Slow migration
 
-Existing projects wishing to use this may need to manually migrate. For example, `unic-langid` may become `unic/langid`, with the `unic` project maintaining `unic-langid` as a reexport crate with the same version number. Getting people to migrate might be a bit of work, and furthermore maintaining a reexport crate during the (potentially long) transition period will also be some work. Of course, there is no obligation to maintain a transition crate, but users will stop getting updates if you don't.
+### Using identical syntax in Cargo.toml and Rust source
 
-A possible path forward is to enable people to register aliases, i.e. `unic-langid` is an alias for `unic/langid`.
-
-# Rationale and alternatives
-
-This change solves the ownership problem in a way that can be slowly transitioned to for most projects.
-
-## Using identical syntax in Cargo.toml and Rust source
-
-This RFC in its current form does not propose changes to the Rust compiler to allow slash syntax (or whatever) to parse as a Rust path. Such changes could be made (though not with slash syntax due to parsing ambiguity, see [below](#Separator choice) for more options); this RFC is attempting to be minimal in its effects on rustc.
+The `/` proposal does not require changes to Rust compiler to allow slash syntax (or whatever) to parse as a Rust path. Such changes could be made (though not with slash syntax due to parsing ambiguity, see [below](#Separator choice) for more options); this RFC is attempting to be minimal in its effects on rustc.
 
 However, the divergence between Cargo.toml and rustc syntax does indeed have a complexity cost, and may be confusing to some users. Furthermore, it increases the chances of [Dash typosquatting](#Dash typosquatting) being effective.
 
-## `foo::bar` on crates.io and in Rust
+Some potential mappings for `foo/bar` could be:
 
+ - `foo::bar` 
+ - `foo::crate::bar`
+ - `foo::/bar`
+ - `~foo::bar`
 
-**For discussions about separator choice, please discuss them in [this issue](https://github.com/Manishearth/namespacing-rfc/issues/1) to avoid overwhelming the main RFC thread.**
-
-While I cover a bunch of different separator choices below, I want to call out `foo::bar` in particular. If we went with `foo::bar`, we could have the same crate name in the Rust source and Cargo manifest. This would be _amazing_.
-
-Except, of course, crate `foo::bar` is ambiguous with module `bar` in crate `foo` (which might actually be a reexport of `foo::bar` in some cases).
-
-This can still be made to work, e.g. we could use `foo::crate::bar` to disambiguate, and encourage namespace-using crates to ensure that `mod bar` in crate `foo` either doesn't exist or is a reexport of crate `foo::bar`. I definitely want to see this discussed a bit more.
-
+and the like.
 
 ## Whole crate name vs leaf crate name in Rust source
 
@@ -137,7 +151,7 @@ A major drawback to this approach is that while it addresses the "the namespace 
 
 **For discussions about separator choice, please discuss them in [this issue](https://github.com/Manishearth/namespacing-rfc/issues/1) to avoid overwhelming the main RFC thread.**
 
-A different separator might make more sense.
+A different separator might make more sense. See the [previous section](#slash-as-a-separator) for more on the original proposal of `/` as a separator.
 
 We could continue to use `/` but also use `@`, i.e. have crates named `@foo/bar`. This is roughly what npm does and it seems to work. The `@` would not show up in source code, but would adequately disambiguate crates and features in Cargo.toml and in URLs.
 
@@ -157,27 +171,13 @@ Note that unquoted dots have semantic meaning in TOML, and allowing for unquoted
 We could reverse the order and use `@`, i.e. `foo/bar` becomes `bar@foo`. This might be a tad confusing, and it's unclear how best to surface this in the source.
 
 
-## Separator mapping
-
-The proposal suggests mapping `foo/bar` to `foo_bar`, but as mentioned in the typosquatting section, this has problems. There may be other mappings that work out better:
-
- - `foo::bar` (see section above)
- - `foo::crate::bar`
- - `foo::/bar`
- - `~foo::bar`
-
-and the like.
-
-
 ## User / org namespaces
 
 Another way to handle namespacing is to rely on usernames and GitHub orgs as namespace roots. This ties `crates.io` strongly to Github -- currently while GitHub is the only login method, there is nothing preventing others from being added.
 
 Furthermore, usernames are not immutable, and that can lead to a whole host of issues.
 
-## Registry trie format
-
-Instead of placing `foo/bar` in `foo@/bar`, it can be placed in `foo@bar` or something else. 
+The primary goal of this RFC is for _project_ ownership, not _org_ ownership, so it doesn't map cleanly anyway.
 
 # Prior art
 
@@ -187,12 +187,8 @@ Namespacing has been discussed in https://internals.rust-lang.org/t/namespacing-
 
 # Unresolved questions
 
- - Is `/` really the separator we wish to use?
- - How do we avoid ambiguity in feature syntax
- - Is there a way to avoid `foo/bar` turning in to the potentially ambiguous `foo_bar`?
- - Can we mitigate some of typosquatting?
  - How can we represent namespaced crates in the registry trie?
- - How do we represent namespaced crates in the URLs of crates.io and docs.rs?
+ - How exactly should the Cargo.toml `lib.name` key work in this world, and how does that integrate with `--extern` and `-L` and sysroots?
 
 # Future possibilities
 
