@@ -21,7 +21,7 @@ but tries to stay compatible with future proposals that do.
 [background]: #background
 
 Typical high-level code doesn’t need to worry about fat pointers,
-a reference `&Foo` “just works” wether or not `Foo` is a DST.
+a reference `&Foo` “just works” whether or not `Foo` is a DST.
 But unsafe code such as a custom collection library may want to access a fat pointer’s
 components separately.
 

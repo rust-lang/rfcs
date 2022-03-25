@@ -383,7 +383,7 @@ pub trait Place<Data: ?Sized> {
 /// intermediate values (e.g. the return value of `Vec::emplace_back`)
 /// or `Copy`, since the `make_place` method takes `self` by value.
 pub trait Placer<Data: ?Sized> {
-    /// `Place` is the intermedate agent guarding the
+    /// `Place` is the intermediate agent guarding the
     /// uninitialized state for `Data`.
     type Place: InPlace<Data>;
 
