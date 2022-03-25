@@ -65,7 +65,7 @@ With Natvis applied, WinDbg results in the following:
 ```
 
 Currently, Rust provides visualizations for a handful of types defined in its
-standard library via `.natvis` files or pretty printers via python scripts.
+standard library via Natvis files or pretty printers via python scripts.
 However, this support is inflexible; updating it requires modifying the Rust
 toolchain itself, and either using a local build of the toolchain or waiting
 for a new upstream build of the toolchain. It is not feasible for developers of
@@ -197,23 +197,20 @@ The Natvis files provide patterns, which match type names, and for matching
 types, a description of how to display those types. This allows for some
 limited support for generic types.
 
-Rust developers can add one or more `.natvis` files to their crate. Through
-the use of a new Rust attribute, `#[debugger_visualizer]`, the compiler will
-encode the contents of the `.natvis` file in the crate metadata if the target
+Rust developers can add one or more Natvis files to their crate. Through
+the use of a new Rust attribute, `#![debugger_visualizer]`, the compiler will
+encode the contents of the Natvis file in the crate metadata if the target
 is an `rlib`. If the target is a `dll` or `exe`, the `/NATVIS` MSVC linker flag is
-set for each `.natvis` file which will embed the Natvis visualizations into the PDB.
+set for each Natvis file which will embed the Natvis visualizations into the PDB.
 
-To provide Natvis files, developers create a file with the `.natvis` file
-extension.
+To provide Natvis files, developers create a file using the Natvis XML syntax
+and reference it via the new `#![debugger_visualizer]` attribute that this RFC proposes.
 
-See the below example for how rustc would embed these Natvis files in the
-debuginfo for a binary.
-
-As an example, consider a crate `foo` with this directory structure:
+As an example for how to use this attribute, consider a crate `foo` with this directory structure:
 
 ```text
 /Cargo.toml
-/Foo.natvis (Note: the .natvis file does not have to match the name of the crate.)
+/Foo.natvis (Note: the Natvis file does not have to match the name of the crate.)
   +-- src
       +-- main.rs
 ```
@@ -283,14 +280,12 @@ The pretty printers provide patterns, which match type names, and for matching
 types, descibe how to display those types. (For writing a pretty printer, see: https://sourceware.org/gdb/onlinedocs/gdb/Writing-a-Pretty_002dPrinter.html#Writing-a-Pretty_002dPrinter).
 
 Rust developers can add one or more pretty printers to their crate. This is done
-in the Rust compiler via `.py` python scripts. Through the use of a new Rust attribute,
-`#[debugger_visualizer]`, the compiler will encode the contents of the `.py` file in
-the crate metadata if the target is an `rlib`. If the target is an executable, the
-`.debug_gdb_scripts` section will include a reference to the pretty printer specified
-by embedding the contents of the pretty printer directly into this section.
+in the Rust compiler via python scripts. Through the use of the new Rust attribute
+this RFC proposes, `#![debugger_visualizer]`, the compiler will encode the contents
+of the pretty printer in the `.debug_gdb_scripts` section of the `ELF` generated.
 
-To provide pretty printers, developers create a file with the `.py` file
-extension and reference it via the `#[debugger_visualizer]` attribute as follows:
+To provide pretty printers, developers create a pretty printer using the syntax provided
+above and reference it via the `#![debugger_visualizer]` attribute as follows:
 
 ```rust
 #![debugger_visualizer(gdb_script_file = "../foo.py")]
@@ -299,38 +294,28 @@ extension and reference it via the `#[debugger_visualizer]` attribute as follows
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-In rustc, a new built-in attribute `#[debugger_visualizer]` will be added which
-instructs the compiler to take the specified file path for a debugger visualizer
-and add it to the current binary being built. The file path specified must be
-relative to the location of the attribute and is resolved in a manner that is
-identical to how paths are resolved in the `include_str!` macro. This attribute
-will directly target modules which means the syntax `#![debugger_visualizer]` is
-also valid when placed at the module level.
+In rustc, a new built-in crate-level attribute `#![debugger_visualizer]` will be
+added which instructs the compiler to take the debugger visualizer specified by the
+attribute and add it to the current binary being built. The file path specified must
+be relative to the location of the attribute and is resolved in a manner that is
+identical to how paths are resolved in the `include_str!` macro.
 
-For example, the following uses of the attribute are valid:
+Since the `#![debugger_visualizer]` is a crate-level attribute, any usage of this
+attribute in a different context (i.e. targeting types, modules, etc) will cause a
+compiler error.
+
+For example, the `#![debugger_visualizer]` attribute may be used in the following:
 
 Where `main.rs` contains:
 
 ```rust
 #![debugger_visualizer(natvis_file = "../main.natvis")]
-
-#[debugger_visualizer(natvis_file = "../foo.natvis")]
-mod foo;
 ```
 
-and `bar.rs` contains:
+The attribute must be placed at the top of `main.rs` where other crate-level
+attributes are placed.
 
-```rust
-#![debugger_visualizer(natvis_file = "../bar.natvis")]
-```
-
-In the first case, the attribute is applied to the crate as a top-level attribute
-using the inner attribute syntax and also added to the module foo using the outer
-attribute syntax. In the second case, the attribute is applied to the module bar
-via a top-level attribute as well which also is valid since it is still targeting
-a module.
-
-The `#[debugger_visualizer]` attribute will reserve multiple keys to be able to
+The `#![debugger_visualizer]` attribute will reserve multiple keys to be able to
 specify which type of visualizer is being applied. The following keys will be
 reserved as part of this RFC:
 
@@ -340,7 +325,7 @@ reserved as part of this RFC:
 As more visualizer schemes arise, more keys may be added in the future to ensure
 a great debugging experience for any debugger that the Rust community sees fit.
 
-For example, to specify that a `.natvis` file should be included in the binary
+For example, to specify that a Natvis file should be included in the binary
 being built, the following attribute should be added to the Rust source:
 
 ```rust
@@ -357,20 +342,20 @@ Depending on the Rust target, the correct debugger visualizer will be selected
 and embedded in the output.
 
 The Rust compiler will serialize the contents of the file specified via the
-`#[debugger_visualizer]` attribute and store it in the crate metadata. This attribute
+`#![debugger_visualizer]` attribute and store it in the crate metadata. This attribute
 can be used multiple times to allow for multiple debugger visualizer files to be
 embedded for each crate. When generating the final binary, the contents of the
-visualizer file will be extracted from the crate metadata and written to a new file
-in the target directory under a new `visualizer` directory.
+visualizer file will be extracted from the crate metadata and written to a temp
+directory.
 
-In the case of a Natvis file, `#[debugger_visualizer(natvis_file = "../foo.natvis")]`
+In the case of a Natvis file, `#![debugger_visualizer(natvis_file = "../foo.natvis")]`
 the compiler will set the `/NATVIS:{.natvis file}` MSVC linker flag for each of the
 Natvis files specified for the current crate as well as transitive dependencies if
 using the MSVC toolchain. This linker flag ensures that the specified Natvis files
 be embedded in the PDB generated for the binary being built. Any crate type that
-would generate a PDB would have all applicable `.natvis` files embedded.
+would generate a PDB would have all applicable Natvis files embedded.
 
-In the case of GDB pretty printer, `#[debugger_visualizer(gdb_script_file = "../foo.py")]`
+In the case of GDB pretty printer, `#![debugger_visualizer(gdb_script_file = "../foo.py")]`
 the compiler will ensure that the set of pretty printers specified will be added to the
 `.debug_gdb_scripts` section of the `ELF` generated. The `.debug_gdb_scripts` section
 takes a list of null-terminated entries which specify scripts to load within GDB. This
@@ -380,12 +365,6 @@ in the standard library via the `.debug_gdb_scripts` section using the former me
 This attribute will embed the contents of the debugger script so that it will not
 need to reference a file in the search path. This has proven to be a more reliable
 route than depending on file paths which can be unstable at times.
-
-The `CrateRoot` type would need to be updated to account for debugger visualizer
-files for crates within the dependency graph. The `CrateRoot` would contain
-the field, `debugger_visualizers: Lazy<[DebuggerVisualizerFile]>`. The new type
-`pub struct DebuggerVisualizerFile` will be created to ensure the contents of a
-debugger visualizer file can be serialized and stored in the crate metadata.
 
 There are a couple of reasons why the contents of a visualizer file passed into
 rustc will be serialized and encoded in the crate metadata.
@@ -401,24 +380,20 @@ know how or why it flows through the dependency graph.
 Secondly, there's also been interest within the community of supporting
 binary crate packages. That is, compiling crates to rlibs, and then passing
 around rlibs directly and not rebuilding the entire library. Having to
-ensure that `.natvis` files are always passed along with rlibs as well
+ensure that Natvis files are always passed along with rlibs as well
 could become very difficult especially when other debugger visualizations
 also become supported such as GDB's debugger scripts and WinDbg's JavaScript
 debugger scripts. Packaging these sorts of things in the `rmeta` for an `rlib`
 is simple, reliable and seems like the "right" thing to do here.
 
-Another change that would need to be made here is to add a new field to the
-`CrateInfo` type, `pub debugger_visualizers: FxHashSet<DebuggerVisualizerFile>`.
-This will allow the Rust compiler to query the list of visualizer files being
-added for a specific crate. The compiler will then be responsible for collecting
-the set of visualizer files that were previously encoded and stored in the
-`CrateMetadata` for a given crate dependency, will be decoded and have the
-contents written to a new file in the `target` directory. In the case of Natvis,
-the path of this new file will be what is passed to the `/NATVIS` linker flag.
-For example, in a debug build, the contents of the `.natvis` files that were encoded
-in the crate metadata will be written to new files in a temp directory where they will
-be included from. Each visualizer file that is written will have a new name to
-ensure it is unique across visualizer files for all crates.
+The Rust compiler will be responsible for collecting the entire set of visualizer
+files that were specified via the `#![debugger_visualizer]` attribute across all
+transitive crate dependencies and embedding them in the `.debug_gdb_scripts`
+section for a pretty printer or passing them to the `/NATVIS` MSVC linker flag.
+For example, in the case of a Natvis file, the contents of the Natvis files that
+were specified will be written to new files in a temp directory where they will
+be included from. The path of these files in the temp directory is what will be
+passed to the `/NATVIS` MSVC linker flag.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -493,7 +468,7 @@ code directly if only the attribute syntax was supported. For types with many fi
 or types that need extensive amounts of Natvis to appropriately visualize them in a
 meaninngful way, this could distract from the contents of the code. Without being able
 to pull some of the more intricate Natvis descriptions into a separate standalone
-`.natvis` file, there may become an issue with the visibility of the source code.
+Natvis file, there may become an issue with the visibility of the source code.
 Also, if/when other debugger visualization formats are supported, it could become
 very obscure to read the source with large amounts of visualization scripts from
 multiple schemas all being directly embedded in source code.
@@ -529,7 +504,7 @@ need be.
 The drawbacks for this option is that it seems a sub-optimal in terms of user
 experience. It requires the author to operate at a lower level of abstraction by
 having to use a more general attribute and annotating it to tackle a specific use
-case. Having a more targeted attribute, i.e. `#[debugger_visualizer]` allows for the
+case. Having a more targeted attribute, i.e. `#![debugger_visualizer]` allows for the
 author to simply specify which debugger visualizer file should be included and allow
 the compiler to select the right one under the covers.
 
@@ -557,7 +532,7 @@ Briefly, we cover some of the known systems for debugger views:
 
 Natvis is a framework that customizes how native types appear when viewed under
 a debugger. The Visual Studio Natvis framework is supported out of the box on
-WinDbg. The debugger has the ability to load `.natvis` files via the `.nvload`
+WinDbg. The debugger has the ability to load Natvis files via the `.nvload`
 command and directly apply them to types within loaded modules. WinDbg is also
 able to load `.natvis` files that have been embedded in the PDB for a binary and
 serve up the resulting views after applying those visualizations as well. This
@@ -604,12 +579,12 @@ None.
 ## Inline Natvis XML fragments via an attribute
 
 Debugger visualizer support for Rust could be improved upon by adding support
-for in-source visualizer definitions via the `#[debugger_visualizer]` attribute
+for in-source visualizer definitions via the `#![debugger_visualizer]` attribute
 or a new attribute. Example:
 
 ```rust
 /// A rectangle in first quadrant
-#[debugger_visualizer(
+#![debugger_visualizer(
     natvis(r#"
         <DisplayString>({x},{y}) + ({dx}, {dy})</DisplayString>
         <Item Name="LowerLeft">({x}, {y})</Item>
@@ -625,9 +600,9 @@ struct FancyRect {
 }
 ```
 
-Currently the `#[debugger_visualizer]` attribute is only allowed to target modules
-but can be updated to allow targeting types as well if the same attribute was to be
-re-used to support this.
+Currently the `#![debugger_visualizer]` attribute is only allowed to be used as a
+crate-level attribute. This can be updated to allow targeting types as well if the
+same attribute was to be re-used to support this.
 
 ## Inline Natvis XML fragments via a macro
 
