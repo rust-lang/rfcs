@@ -294,28 +294,44 @@ above and reference it via the `#![debugger_visualizer]` attribute as follows:
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-In rustc, a new built-in crate-level attribute `#![debugger_visualizer]` will be
-added which instructs the compiler to take the debugger visualizer specified by the
-attribute and add it to the current binary being built. The file path specified must
-be relative to the location of the attribute and is resolved in a manner that is
-identical to how paths are resolved in the `include_str!` macro.
+In rustc, a new built-in attribute `#[debugger_visualizer]` will be added which
+instructs the compiler to take the specified file path for a debugger visualizer
+and add it to the current binary being built. The file path specified must be
+relative to the location of the attribute and is resolved in a manner that is
+identical to how paths are resolved in the `include_str!` macro. This attribute
+will directly target modules which means the syntax `#![debugger_visualizer]` is
+also valid when placed at the module level. This would allow for this attribute to
+be used as a crate-level attribute as well which is different than a typical module item
+when placed at the top-level crate file, `lib.rs` or `main.rs`.
 
-Since the `#![debugger_visualizer]` is a crate-level attribute, any usage of this
-attribute in a different context (i.e. targeting types, modules, etc) will cause a
-compiler error.
-
-For example, the `#![debugger_visualizer]` attribute may be used in the following:
+For example, the following uses of the attribute are valid:
 
 Where `main.rs` contains:
 
 ```rust
 #![debugger_visualizer(natvis_file = "../main.natvis")]
+
+#[debugger_visualizer(natvis_file = "../foo.natvis")]
+mod foo;
 ```
 
-The attribute must be placed at the top of `main.rs` where other crate-level
-attributes are placed.
+and `bar.rs` contains:
 
-The `#![debugger_visualizer]` attribute will reserve multiple keys to be able to
+```rust
+#![debugger_visualizer(natvis_file = "../bar.natvis")]
+```
+
+In the first case, the attribute is applied to the crate as a crate-level attribute
+using the inner attribute syntax on the top-level crate source file. It is also
+added to the module foo using the outer attribute syntax. In the second case,
+the attribute is applied to the module bar using the inner attribute syntax which
+also is valid since it is still targeting a module.
+
+The only valid targets for this attribute are modules or as a crate-level attribute.
+Using this attribute on any other target, for instance a type or a function, will
+cause rustc to raise a compiler error that will need to be resolved.
+
+The `#[debugger_visualizer]` attribute will reserve multiple keys to be able to
 specify which type of visualizer is being applied. The following keys will be
 reserved as part of this RFC:
 
@@ -600,8 +616,9 @@ struct FancyRect {
 }
 ```
 
-Currently the `#![debugger_visualizer]` attribute is only allowed to be used as a
-crate-level attribute. This can be updated to allow targeting types as well if the
+Currently the `#[debugger_visualizer]` attribute is only allowed to target modules
+which includes being used as crate-level attribute when targeting the top-level
+`*.rs` source file. This can be updated to allow targeting types as well if the
 same attribute was to be re-used to support this.
 
 ## Inline Natvis XML fragments via a macro
