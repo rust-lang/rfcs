@@ -215,19 +215,31 @@ This restriction may be lifted in the future, but the interactions between this 
 
 This slightly increases the complexity of the language and the compiler implementation. However, the syntax introduced (`for<'a>`) can already be used in both trait bounds and function pointer types, so we are not introducing any new concepts in the languages.
 
-Previously, we only allowed thw `for<>` syntax in a 'type' position: function pointers (`for<'a> fn(&'a u8)`) and higher-ranked trait bounds (`where for<'a> T: MyTrait<'a>`). This RFC requires supporting the `for<>` syntax in an 'expression' position as well (`for<'a> |&'a u8| { ... }`). While there should be no ambiguity in parsing, crates that handle parsing Rust syntax (e.g. `syn`) will need to be updated to support this.
+Previously, we only allowed the `for<>` syntax in a 'type' position: function pointers (`for<'a> fn(&'a u8)`) and higher-ranked trait bounds (`where for<'a> T: MyTrait<'a>`). This RFC requires supporting the `for<>` syntax in an 'expression' position as well (`for<'a> |&'a u8| { ... }`).
+Crates that handle parsing Rust syntax (e.g. `syn`) will need to be updated to support this.
+
+There is an ambiguity when parsing `for <` in expression position: it can either be:
+1. The start of a `for` loop with a fully qualified path used as a pattern: `for <MyType as MyTrait>::Assoc { field1, field2 } in my_iter { }`
+2. The start of the generics for a higher-ranked closure: `for<'a> |my_arg: &'a u8| { .. }`
+
+However, the same kind of ambiguity exists when parsing `impl <`: it can either be:
+1. A fully-qualified path: `impl <MyType as MyTrait>::Assoc { ... }`
+1. The start of the generics for an `impl` item: `impl<T> MyTrait for T { ... }`
+
+We will handle disambiguation in the same way that we handle disambiguation for `impl <` (performing additional lookahead to determine which case we are in).
 
 In its initial form, this feature may be of limited usefulness - it can only be used with closures that have all higher-ranked lifetimes, prevents type elision from being used, and does not provide a way of explicitly indicating *non*-higher-ranked lifetimes. However, this proposal has been explicitly designed to be forwards-compatible with such additions. It represents a small, (hopefully) uncontroversial step towards better control over closure signatures.
 
 # Rationale and alternatives
 
 * We could use a syntax other than `for<>` for binding lifetimes - however, this syntax is already used, and has the same meaning here as it does in the other positions where it is allowed.
-* We could allow mixing elided and explicit lifetimes in a closure signature - for example, `for<'a> |first: &'a u8, second: &bool|`. However, this would force us to commit to one of two options for the interpretation of `second: &bool`
+* We could allow mixing elided and explicit lifetimes in a closure signature - for example, `for<'a> |first: &'a u8, second: &bool|`. However, this would force us to commit to one of several options for the interpretation of `second: &bool`
 
 1. The lifetime in `&bool` continues to be inferred as it would be without the `for<'a>`, and may or may not end up being higher-ranked.
 2. The lifetime in `&bool` is always *non*-higher-ranked (we create a region inference variable). This would allow for solving the closure inference problem in the opposite direction (a region is inferred to be higher-ranked when it really shouldn't be).
+3. Treat the signature exactly how it would be treated if it appeared in a function definition (e.g. `fn my_fn<'a>(first: &'a u8, second: &bool) { ... }`). This would provide consistently between closure and function signatures, but would inhibit the region inference variable behavior that's unique to closures.
 
-These options are mutually exclusive. By banning this ambiguous case altogether, we can allow users to begin experimenting with the (limited) `for<>` closure syntax, and later reach a decision about how (or not) to explicitly indicate non-higher-ranked regions.
+We can choose at most one of these options. By banning this ambiguous case altogether, we can allow users to begin experimenting with the (limited) `for<>` closure syntax, and later reach a decision about how (or not) to explicitly indicate non-higher-ranked regions.
 
 * We could try to design a 'perfect' or 'ideal' closure region inference algorithm that always correctly chooses between a higher-ranked and non-higher-ranked region, eliminating the need for users to explicitly specify their choice. Even if this is possible and easy to implement, there's still value in allowing closures to be explicitly desugared for teaching purposes. Currently: function definitions, function pointers, and higher-ranked trait bounds (e.g. `Fn(&u8)`) can all have their lifetimes (mostly) manually desugared - however, closures do not support this.
 * We could do nothing, and accept the status quo for closure region inference. Given the number of users that have run into issues in practice, this would mean keeping a fairly significant wart in the Rust language.
