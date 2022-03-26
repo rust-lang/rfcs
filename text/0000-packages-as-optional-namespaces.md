@@ -175,6 +175,17 @@ Furthermore, usernames are not immutable, and that can lead to a whole host of i
 
 The primary goal of this RFC is for _project_ ownership, not _org_ ownership, so it doesn't map cleanly anyway.
 
+## Feature Flags
+
+This proposal allows for optional subsystems.  This can be created today with feature flags by adding a dependency as optional and re-exporting it.
+
+Draw backs to feature flags
+- Solutions for documenting feature flags are limited
+- Feature flags can be cumbersome to work with for users
+- A semver breakage in the optional-subsystem crate is a semver breakage in the namespace crate
+- The optional-subsystem crate cannot depend on the namespace crate
+- There is limited tooling for crate authors to test feature combinations especially in workspaces with feature unification and its slow (re-running all tests even if they aren't relevant)
+
 # Prior art
 
 This proposal is basically the same as https://internals.rust-lang.org/t/pre-rfc-packages-as-namespaces/8628 and https://internals.rust-lang.org/t/pre-rfc-idea-cratespaces-crates-as-namespace-take-2-or-3/11320 .
