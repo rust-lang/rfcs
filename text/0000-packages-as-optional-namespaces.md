@@ -5,9 +5,9 @@
 
 # Summary
 
-Grant exclusive access to publishing crates `parent/foo` for owners of crate `parent`.
+Grant exclusive access to publishing crates `parent::foo` for owners of crate `parent`.
 
-Namespaced crates can be named in Rust code using underscores (e.g. `parent_foo`).
+Namespaced crates can be named in Rust code with their full name (`parent::foo`).
 
 # Motivation
 
@@ -58,8 +58,6 @@ For the crate `foo::bar`, all owners of `foo` are always considered owners of `f
 Crates.io displays `foo::bar` crates with the name `foo::bar`, though it may stylistically make the `foo` part link to the `foo` crate.
 
 The [registry index trie](https://doc.rust-lang.org/nightly/cargo/reference/registries.html#index-format) may represent subpackages by placing `foo::bar` as just `foo::bar`.
-
-No changes are made to `rustc`. When compiling a crate `foo/bar`, Cargo will automatically pass in `--crate-name foo_bar`, and when referring to it as a dependency Cargo will use `--extern foo_bar=....`. This is the same thing we currently do for `foo-bar`.
 
 `rustc` will need some changes. When `--extern foo::bar=crate.rlib` is passed in, `rustc` will include this crate during resolution as if it were a module `bar` living under crate `foo`. If crate `foo` is _also_ in scope, this will not automatically trigger any errors unless `foo::bar` is referenced, `foo` has a module `bar`, and that module is not just a reexport of crate `foo::bar`.
 
@@ -157,8 +155,6 @@ We could continue to use `/` but also use `@`, i.e. have crates named `@foo/bar`
 
 We could perhaps have `foo-*` get autoreserved if you publish `foo`, as outlined in https://internals.rust-lang.org/t/pre-rfc-hyper-minimalist-namespaces-on-crates-io/13041 . I find that this can lead to unfortunate situations where a namespace traditionally used by one project (e.g. `async-*`) is suddenly given over to a different project (the `async` crate). Furthermore, users cannot trust `foo-bar` to be owned by `foo` because the vast number of grandfathered crates we will have.
 
-Another separator idea would be to use `::`, e.g. `foo::bar`. This looks _great_ in Rust code, provided that the parent crate is empty and does not also have a `bar` module. See the section above for more info.
-
 Triple colons could work. People might find it confusing, but `foo:::bar` evokes Rust paths without being ambiguous.
 
 We could use `~` which enables Rust code to directly name namespaced packages (as `~` is no longer used in any valid Rust syntax). It looks extremely weird, however.
@@ -187,7 +183,6 @@ Namespacing has been discussed in https://internals.rust-lang.org/t/namespacing-
 
 # Unresolved questions
 
- - How can we represent namespaced crates in the registry trie?
  - How exactly should the Cargo.toml `lib.name` key work in this world, and how does that integrate with `--extern` and `-L` and sysroots?
 
 # Future possibilities
