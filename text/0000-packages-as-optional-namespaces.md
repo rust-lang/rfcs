@@ -26,23 +26,37 @@ The motivation here is distinct from the general problem of squatting -- with ge
 
 # Guide-level explanation
 
-If you own a crate `foo`, you may create a crate namespaced under it as `foo::bar`. Only people who are owners of `foo` may _create_ a crate `foo::bar` (and all owners of `foo` are implicitly owners of `foo/bar`). After such a crate is created, additional per-crate publishers may be added who will be able to publish subsequent versions as usual.
+The owners of the `foo` crate may provide other crates under the `foo` namespace, like `foo::bar`.  For users, this makes its official status clearer and makes it easier to discover.
 
-The crate can be imported in Cargo.toml using its name as normal:
+Users import these crates in Cargo.toml as normal:
 
 ```toml
 [dependencies]
-"foo::bar" = "1.0"
+"foo" = "1.0.42"
+"foo::bar" = "3.1"
 ```
 
-
-In Rust code, the colons still work:
+They will then access this through a facade made of `foo` and all `foo::*` crates, for example:
 
 ```rs
-use foo::bar::Baz;
+let baz = foo::bar::Baz::new();
+foo::render(baz);
 ```
 
-In case there is also an in-scope crate `foo` with an exported `bar` item, this will cause an ambiguity error unless both the item `foo::bar` and the crate `foo::bar` are actually resolving to the same item. This is similar to what rustc already does when it encounters in-use clashes in glob imports.
+Some reasons for `foo`s owner to consider using namespaces:
+- Avoid name conflicts with third-party authors (since they are reserved)
+- Improve discoverability of official crates
+- As an alternative to feature flags for optional subsystems
+- When different parts of your API might have different compatibility guarantees
+
+When considering this, keep in mind:
+- Does it makes sense for this new crate to be presented in the `foo` facade?
+- How likely is a crate to move into or out of the namespace?
+  - Moving the crate in or out of a namespace is a breaking change though it can be worked around by having the old crate re-export the new crate but that does add extra friction to the process.
+  - There is not currently a mechanism to raise awareness with users that a crate has migrated into or out of a namespace and you might end up leaving users behind.
+- If users import both `foo` and `foo::bar` but `foo` also has a `bar` item in its API that isn't just `foo::bar` re-exported, then rustc will error.
+
+Only the owners of `foo` may _create_ the `foo::bar` crate (and all owners of `foo` are implicitly owners of `foo/bar`). After the `foo::bar` crate is created, additional per-crate publishers may be added who will be able to publish subsequent versions as usual.
 
 # Reference-level explanation
 
