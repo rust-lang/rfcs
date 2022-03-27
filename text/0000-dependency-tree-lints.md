@@ -62,7 +62,6 @@ Compiling a project that depends on both `mylib:0.3.0` and `mylib:1.0.0` will le
 warning: there are multiple versions of `mylib` in your dependency tree.
 
 mylib v0.3.0
-└── anotherlib v0.6.2
 
 mylib v1.0.0
 └── httpclient v1.3.5
