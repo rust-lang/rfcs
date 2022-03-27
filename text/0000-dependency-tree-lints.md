@@ -20,7 +20,7 @@ Various patterns have emerged to provide support for **implicit arguments**:
 - Thread-local storage (e.g. [retrieving the current runtime in `tokio`](https://github.com/tokio-rs/tokio/blob/a8b75dbdf4360c9fd7fb874022169f0c00d38c4a/tokio/src/runtime/context.rs#L7) or [the current OpenTelemetry context in `opentelemetry`](https://github.com/open-telemetry/opentelemetry-rust/blob/dacd75af209550283d98be9f6f93e91588493032/opentelemetry-api/src/context.rs#L9));
 - Task-local storage (e.g. [retrieving incoming flash messages in `actix-web-flash-messages`](https://github.com/LukeMathWalker/actix-web-flash-messages/blob/a7673e7db14f07cbc3b406581cf47353bfed70a5/actix-web-flash-messages/src/middleware.rs#L13));
 - Request-local storage (e.g. the extensions type map in pretty much every single Rust web framework);
-- Process state (e.g. [the global dispatcher in `tracing`](https://github.com/tokio-rs/tracing/blob/001eefbb423f85ba146c4097bfc4e080bd7b5a77/tracing-core/src/dispatch.rs#L197) or )
+- Process state (e.g. [the global dispatcher in `tracing`](https://github.com/tokio-rs/tracing/blob/001eefbb423f85ba146c4097bfc4e080bd7b5a77/tracing-core/src/dispatch.rs#L197))
 
 There is a clear pattern: the implicit arguments are global values scoped to a context (a thread, a task, a process, an incoming request, etc.).  
 
