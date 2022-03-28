@@ -120,10 +120,6 @@ If there is a `panic!` before the writer is closed, `Drop::drop` will be called 
 
 Note that users can still use `mem::forget` to leak an object, so unsafe code still can't rely on destructors being called for safety. ([discussion][memforget]). However, unsafe code can rely on the invariant that if `T: !ScopeDrop` then `Drop::drop::<T>` will only be called while the stack is unwinding. If you are working in an environment where `panic = "abort"`, as is common in some bare-metal or embedded Rust applications, this means you are guaranteed that your type is never dropped! (Though again, it can be forgotten about.)
 
-## Compatibility
-
-TODO: talk about plans for interaction between crates that do and don't include this feature.
-
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
@@ -158,8 +154,6 @@ A type `T` may only implement `ScopeDrop` if all values `t: T` are correct to sc
 
 When the compiler cannot determine that a non-`ScopeDrop` value is completely consumed before the end of its scope, produce an error.
 
-TODO: compatibility, behavior when feature flag is off.
-
 ## Minimal Standard Library Tweaks
 
 ### PhantomExceptionalDrop
@@ -178,17 +172,13 @@ This should not need to be a lang item.
 
 ### Add `ScopeDrop` bound to type parameters and associated types where needed.
 
-Run the fixup tool to add minimal `ScopeDrop` bounds to functions in the standard library.
+Many places in the standard library will need to include an explicit `ScopeDrop` bound. See [`ScopeDrop` in the Standard Library][scope-drop-in-the-standard-library] for the open question of how frequently this is necessary.
 
 ## Corner cases
 
 ### Types with no drop glue but that do not implement `ScopeDrop`.
 
 Even if no component of the type implements `Drop`, so there is no drop glue for the type, the compiler must still produce an error if a type that does not implement `ScopeDrop` is to be dropped. This impacts [the algorithm for elaborating open drops](https://rustc-dev-guide.rust-lang.org/mir/drop-elaboration.html#open-drops), which says "Fields whose type does not have drop glue are automatically Dead and need not be considered during the recursion." In this proposal, only fields that do not have drop glue but do implement `ScopeDrop` can be automatically dead.
-
-## Compatibility
-
-TODO: talk about how to make crates that do and don't use this feature get along without bugging the user.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -261,7 +251,55 @@ I would be excited to learn about examples of prior art in other languages.
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-## How much of the standard library relys on `ScopeDrop` for generic types?
+## Compatibility
+[compatibility]: #compatibility
+
+This proposal changes the meaning of existing code: today there is effectively an implicit bound `T: ScopeDrop` on type parameters and associated types. This proposal removes that implicit bound. Assuming for this section that the end state of requiring explicit `ScopeDrop` is desired, this raises the question of how get there while causing as little disruption to the ecosystem as possible.
+
+I am not very familiar with Rust's backwards compatibility policies. I hope that the RFC process will be helpful to work out the compatibility story. Here is my attempt at designing the `scope_drop` feature to interact nicely with crates that are not willing to adapt to `ScopeDrop` yet.
+
+### Feature flag
+
+As is usual for new Rust features, only crates that include the `#![feature(scope_drop)]` should have to worry about this new feature. However, we want crates that do use the `scope_drop` feature to be able to both depend on and be depended on by non `scope_drop` crates. In particular, we want to preserve the guarantee that non-`ScopeDrop` types will not be dropped in non-exceptional control flow even if that control flow happens in a crate that does not use the `scope_drop` feature.
+
+This means that we need to perform the same checking that only types which implement `ScopeDrop` are dropped, whether or not the `scope_drop` feature is enabled. How then can we prevent crates that don't use the `scope_drop` feature from getting constant errors complaining about types not implementing `ScopeDrop`?
+
+My proposal is to, in crates that do not use the `scope_drop` feature, to add an implicit `ScopeDrop` bound to type arguments and associated types (excluding the trait `Self` type). Unlike `Sized`, we do not propose adding syntax `?ScopeDrop` to opt out of the implicit `ScopeDrop` bound; the only way to do so is to turn on the `scope_drop` feature and add explicit positive `ScopeDrop` bounds where needed.
+
+By the auto trait rules, every concrete Rust type used today should implement ScopeDrop automatically, and every generic type should implement `ScopeDrop` if all the type parameters implement `ScopeDrop`. Thus by adding the bound implicitly to type parameters, the only way for a crate that doesn't use the `scope_drop` feature to get an error `T` does not implement `ScopeDrop` is if that crate is changed to refer explicitly to a type in a depencency that does not implement `ScopeDrop`. In the standard library, the only such type to begin with will be `PhantomExceptionalDrop`, which is currently unreferenced, and removing `ScopeDrop` from a type in a dependent crate is a semver-breaking change.
+
+### Associated types and ScopeDrop compatibility
+
+Associated types make this a little more complex. While removing a trait from a type parameter does not break semver, removing a trait from an associated type does. (The variance goes the opposite direction.)
+
+This means that when updating a crate to enable the `scope_drop` feature, for the change to be non-breaking, you can choose to leave out the `ScopeDrop` bound from type parameters but must include the `ScopeDrop` bound on all associated types except `Self`.
+
+(`Self` is special because, for example in `fn foo<T: MyTrait>();` we have `<T as MyTrait>::Self = T`, and already `T: ScopeDrop`, while `<T as MyTrait>::Assoc` is effectively a new type parameter that without the bound in `MyTrait::Assoc: ScopeDrop` we do not know to be `ScopeDrop`.)
+
+### Automatic patch tool
+
+While the changes needed to enable the `scope_drop` feature in a crate may be extensive, they should also be very mechanical. The entirety of the changes should be doable by adding `T: ScopeDrop` bounds in various places. This leaves room for an automatic tool that runs on the source code of a crate without the `scope_drop` feature and makes the changes necessary to enable `scope_drop`.
+
+The vision here is to make adopting the `scope_drop` feature as easy as running this tool, maybe selecting a mode, and publishing a new minor crate version.
+
+The simplest but most verbose version, Method A
+1. Add `ScopeDrop` bounds to every associated type for every trait defined in the crate.
+2. Add `ScopeDrop` bounds to every type parameter.
+
+Step 1 is pretty much required, but there is flexibility in how strict step 2 needs to be. On the one hand, after elaboration Method A produces the exact same intermediate representation as before turning the `scope_drop` feature on; every bound implicitly added when the feature is off is made explicit. On the other hand, this is likely to introduce `ScopeDrop` bounds on many type parameters where this is unnecessary, and removing it would be a non-breaking change.
+
+Method B
+2. Add `ScopeDrop` bounds to type parameters only when that type parameter appears in a type that is going to be dropped.
+
+This method is relatively simple, but at least with a naive implementation is likely to miss needed bounds in some cases, such as newly defined types hiding the type parameter. These misses will show up as compiler errors in the patched crate, and require some human intervention to fix. This is also an over-approximation: there can still be unnecessary bounds introduced.
+
+Method C
+3. For every type `T` (possibly a complex type such as `T = Result<(T1, T2), Option<T3>>`) that needs to be dropped, add the where clause `where T: ScopeDrop` to the function item, and to the `impl Trait for T`  block for non-inherent methods.
+
+This method adds the minimal `ScopeDrop` bounds required to compile. A potential problem here is that the `ScopeDrop` bound will be removed if the current implementation does not require `ScopeDrop`, and adding the bound back in the future is a breaking change. In other words, this and Method B can commit the author to a more specific type than they desire.
+
+## `ScopeDrop` in the Standard Library
+[scopedrop-in-the-standard-library]: #scope-drop-in-the-standard-library
 
 Modifying the standard library should give a sense of how intrusive this feature is. The question comes down to how often do functions drop values of generic type? A prototype implementation that ignores the complexity of open drops and just errors on static drops of non-`ScopeDrop` types should give a good sense of this.
 
