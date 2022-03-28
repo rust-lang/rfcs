@@ -244,7 +244,7 @@ The issue of disabling implicit drops seems to come up frequently enough to demo
 # Prior art
 [prior-art]: #prior-art
 
-Vale has [Higher RAII](https://verdagon.dev/blog/higher-raii-7drl), TODO this deserves more investigation and discussion.
+Vale has [Higher RAII](https://verdagon.dev/blog/higher-raii-7drl), which is an extremely similar feature.
 
 TODO: talk about linear-rust
 
