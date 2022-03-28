@@ -101,7 +101,7 @@ impl<W: Write> Drop for BufWriter<W> {
     }
 }
 ```
-(Disclaimer: This RFC does not include changing the API of existing types in the standard library. This proposal gives an external crate the tools needed for good compile checking for such an API.)
+(Disclaimer: This RFC does not include changing the API of existing types in the standard library. This proposal gives an external crate the tools needed for good compile-time checking for such an API.)
 
 Then to use it, you would need to call `close` to close the writer: it won't happen automatically when the writer goes out of scope. This makes it easy to do the correct thing (handle the errors), and makes it so that ignoring errors on close is intentional, not an accident.
 ```rust
