@@ -229,7 +229,7 @@ For these reasons, I argue that `mem::forget` should not require `T: ScopeDrop`.
 
 ## Why a trait?
 
-Rather than changing the type system, we could consider using a lint to discover when a type we annotate as linear gets implicitly dropped. However, to do this in a compositional way requires computing for generic functions which types they may implicitly drop, and we would want to propagate this information across crates. At this point, it seems clear that adding a lint for unused linear values would require computing and communicating much the same data as using a trait, and using a trait gives a systematic way of integrating the feature into the language.
+Rather than changing the type system, we could consider using a lint to discover when a type we annotate gets implicitly dropped. However, to do this in a compositional way requires computing for generic functions which types they may implicitly drop, and we would want to propagate this information across crates. At this point, it seems clear that adding a lint for implicitly dropped values would require computing and communicating much the same data as using a trait, and using a trait gives a systematic way of integrating the feature into the language.
 
 ## Branded types
 
@@ -244,13 +244,9 @@ The issue of disabling implicit drops seems to come up frequently enough to demo
 # Prior art
 [prior-art]: #prior-art
 
+Vale has [Higher RAII](https://verdagon.dev/blog/higher-raii-7drl), TODO this deserves more investigation and discussion.
+
 TODO: talk about linear-rust
-
-I am not aware of other languages with similar features.
-
-This feature seems to rest heavily on having a substructural type system, and Rust is the only such language I am familiar with.
-
-I would be excited to learn about examples of prior art in other languages.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
