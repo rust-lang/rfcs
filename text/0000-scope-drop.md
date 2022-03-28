@@ -244,7 +244,7 @@ The issue of disabling implicit drops seems to come up frequently enough to demo
 # Prior art
 [prior-art]: #prior-art
 
-Vale has [Higher RAII](https://verdagon.dev/blog/higher-raii-7drl), which is an extremely similar feature.
+Vale has `!DeriveStructDrop`, which looks like a similar feature. This blog post [Higher RAII](https://verdagon.dev/blog/higher-raii-7drl), has interesting examples of real-world applications of this feature.
 
 TODO: talk about linear-rust
 
