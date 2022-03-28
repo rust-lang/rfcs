@@ -154,7 +154,12 @@ This causes a compiler error when multiple versions of the symbol are in scope (
 # Prior art
 [prior-art]: #prior-art
 
-N/A
+## `clippy`
+
+`clippy` defines a [`multiple_crate_versions` lint](https://rust-lang.github.io/rust-clippy/master/#multiple_crate_versions), in the `cargo` lint group.  
+`clippy`'s lint [scans the dependency tree](https://github.com/rust-lang/rust-clippy/blob/6206086dd5a83477131094b1f0ef61b10e7ced42/clippy_lints/src/cargo/multiple_crate_versions.rs#L13) and gets triggered as soon as there is at least one crate that appears in the dependency tree with more than one version.
+
+`clippy`'s lint can be useful when working with deployment targets where bloat is a major issue (e.g. embedded). It is impractical for projects with a large dependency tree: there will almost always be at least one crate that violates the constraint and `clippy`'s lint does not provide a mechanism to selectively silence the check (e.g. do not warn me about the `cookie` crate); you must instead `allow` the lint, disabling the check altogether.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
