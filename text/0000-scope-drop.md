@@ -152,7 +152,7 @@ A type `T` may only implement `ScopeDrop` if all values `t: T` are correct to sc
 
 ## Compiler support
 
-When the compiler cannot determine that a non-`ScopeDrop` value is completely consumed before the end of its scope, produce an error.
+When the compiler cannot determine that a non-`ScopeDrop` value is consumed before the end of its scope, produce an error.
 
 ## Minimal Standard Library Tweaks
 
@@ -179,6 +179,10 @@ Many places in the standard library will need to include an explicit `ScopeDrop`
 ### Types with no drop glue but that do not implement `ScopeDrop`.
 
 Even if no component of the type implements `Drop`, so there is no drop glue for the type, the compiler must still produce an error if a type that does not implement `ScopeDrop` is to be dropped. This impacts [the algorithm for elaborating open drops](https://rustc-dev-guide.rust-lang.org/mir/drop-elaboration.html#open-drops), which says "Fields whose type does not have drop glue are automatically Dead and need not be considered during the recursion." In this proposal, only fields that do not have drop glue but do implement `ScopeDrop` can be automatically dead.
+
+### Partial moves
+
+It should be possible to partially move out of a non-`ScopeDrop` type. The semantics are that any fields which are not moved get dropped, and if any of those fields are themselves non-`ScopeDrop` to throw an error. This makes writing destructors easier, because you can `mem::forget(marker)` and the rest will be automatically dropped without needing to list out the other droppable fields.
 
 # Drawbacks
 [drawbacks]: #drawbacks
