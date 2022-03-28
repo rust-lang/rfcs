@@ -56,7 +56,7 @@ When considering this, keep in mind:
   - There is not currently a mechanism to raise awareness with users that a crate has migrated into or out of a namespace and you might end up leaving users behind.
 - If users import both `foo` and `foo::bar` but `foo` also has a `bar` item in its API that isn't just `foo::bar` re-exported, then rustc will error.
 
-Only the owners of `foo` may _create_ the `foo::bar` crate (and all owners of `foo` are implicitly owners of `foo/bar`). After the `foo::bar` crate is created, additional per-crate publishers may be added who will be able to publish subsequent versions as usual.
+Only the owners of `foo` may _create_ the `foo::bar` crate (and all owners of `foo` are implicitly owners of `foo::bar`). After the `foo::bar` crate is created, additional per-crate publishers may be added who will be able to publish subsequent versions as usual.
 
 # Reference-level explanation
 
@@ -206,7 +206,7 @@ This proposal is basically the same as https://internals.rust-lang.org/t/pre-rfc
 
 Namespacing has been discussed in https://internals.rust-lang.org/t/namespacing-on-crates-io/8571 , https://internals.rust-lang.org/t/pre-rfc-domains-as-namespaces/8688, https://internals.rust-lang.org/t/pre-rfc-user-namespaces-on-crates-io/12851 , https://internals.rust-lang.org/t/pre-rfc-hyper-minimalist-namespaces-on-crates-io/13041 , https://internals.rust-lang.org/t/blog-post-no-namespaces-in-rust-is-a-feature/13040/4 , https://internals.rust-lang.org/t/crates-io-package-policies/1041/37, https://internals.rust-lang.org/t/crates-io-squatting/8031, and many others.
 
-Python has a similar coupling of top-level namespaces and modules with the filesystem.  Users coming from other packaging systems, like Perl, wanted to be able to split up a package under a common namespace.  A hook to support this was added in Python 2.3 (see [PEP 402](https://peps.python.org/pep-0402/#the-problem).  In [PEP 420](https://peps.python.org/pep-0420/) they formalized a convention for packages to opt-in to sharing a namespace.  Differences:
+Python has a similar coupling of top-level namespaces and modules with the filesystem.  Users coming from other packaging systems, like Perl, wanted to be able to split up a package under a common namespace.  A hook to support this was added in Python 2.3 (see [PEP 402](https://peps.python.org/pep-0402/#the-problem)).  In [PEP 420](https://peps.python.org/pep-0420/) they formalized a convention for packages to opt-in to sharing a namespace.  Differences:
 - Python does not have a coupling between package names and top-level namespaces so there is no need for extending the package name format or ability to extend their registry for permissions support.
 - In Python, nothing can be in the namespace package while this RFC allows the namespace package to also provide an API.
 
