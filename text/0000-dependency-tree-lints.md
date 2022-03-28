@@ -180,6 +180,16 @@ Is the `lib` section of the manifest the most appropriate location for configuri
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-None at this time.
+Compatibility across versions is not always clear cut due to the [semver trick](https://github.com/dtolnay/semver-trick).  
+This lint could be extended to allow specifying which versions are incompatible:
+
+```toml
+[package]
+name = "mylib"
+version = "1.0.0"
+
+[lib]
+multiple_crate_versions = { level = "warn", conflicts_with = [">=0.2.0,<0.3.0"] }
+```
 
 [^adoption]: An author-driven system, like the one detailed in this RFC, could only be achieved via a third-party tool if there was critical mass (in terms of adoption) behind a single third-party linter. At that point, we would probably be talking of upstreaming this into `cargo` itself anyway.
