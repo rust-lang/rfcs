@@ -294,7 +294,7 @@ Method B
 This method is relatively simple, but at least with a naive implementation is likely to miss needed bounds in some cases, such as newly defined types hiding the type parameter. These misses will show up as compiler errors in the patched crate, and require some human intervention to fix. This is also an over-approximation: there can still be unnecessary bounds introduced.
 
 Method C
-3. For every type `T` (possibly a complex type such as `T = Result<(T1, T2), Option<T3>>`) that needs to be dropped, add the where clause `where T: ScopeDrop` to the function item, and to the `impl Trait for T`  block for non-inherent methods.
+2. For every type `T` (possibly a complex type such as `T = Result<(T1, T2), Option<T3>>`) that needs to be dropped, add the where clause `where T: ScopeDrop` to the function item, and to the `impl Trait for T`  block for non-inherent methods.
 
 This method adds the minimal `ScopeDrop` bounds required to compile. A potential problem here is that the `ScopeDrop` bound will be removed if the current implementation does not require `ScopeDrop`, and adding the bound back in the future is a breaking change. In other words, this and Method B can commit the author to a more specific type than they desire.
 
