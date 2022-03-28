@@ -177,6 +177,8 @@ I am not familiar enough with `cargo`'s and `rustc`'s internals to understand ho
 
 Is the `lib` section of the manifest the most appropriate location for configuring this lint? Should it be a top-level field or would we prefer to have it nested for future extensibility (e.g. inside `[[lib.lints]]`)?
 
+Is it even desirable to have the lint "definition" in the `Cargo.toml` file? Is there an alternative syntax we could use, without being ambiguous, to have it at the top of the `lib.rs` file?
+
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
