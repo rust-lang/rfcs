@@ -5,9 +5,9 @@
 
 # Summary
 
-Grant exclusive access to publishing crates `parent::foo` for owners of crate `parent`.
+Languages like C++ have open namespaces where anyone can write code in any namespace.  In C++'s case, this includes the `std` namespace and is only limited by convention.  In contrast, Rust has closed namespaces which can only include code from the original namespace definition (the crate).
 
-Namespaced crates can be named in Rust code with their full name (`parent::foo`).
+This proposal extends Rust to have partially open namespaces by allowing crate owners to create crates like `parent:foo` that will be available as part of the crate `parent`'s namespace.  To protect the use of open namepsaces, the owners of `parent` has exclusive access to publishing crates in that namespace.
 
 # Motivation
 
