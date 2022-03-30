@@ -1,7 +1,7 @@
 - Feature Name: cargo_asymmetric_tokens
 - Start Date: 2022-02-02
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- RFC PR: [rust-lang/rfcs#3231](https://github.com/rust-lang/rfcs/pull/3231)
+- Cargo Issue: [rust-lang/rust#10519](https://github.com/rust-lang/cargo/issues/10519)
 
 # Summary
 [summary]: #summary
