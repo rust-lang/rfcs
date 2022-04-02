@@ -182,7 +182,7 @@ Is it even desirable to have the lint "definition" in the `Cargo.toml` file? Is 
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-Compatibility across versions is not always clear cut due to the [semver trick](https://github.com/dtolnay/semver-trick).  
+Compatibility across versions is not always clear-cut due to the [semver trick](https://github.com/dtolnay/semver-trick).  
 This lint could be extended to allow specifying which versions are incompatible:
 
 ```toml
