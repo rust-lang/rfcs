@@ -324,6 +324,19 @@ given the pre-evaluation behavior of the `:self` specifier, which seems
 sufficiently different to warrant a different specifier rather than existing
 specifiers like `:expr`.
 
+We could allow postfix macros to omit the delimiters entirely when they have no
+arguments. For instance, instead of `a.b()?.c.mac!()`, we could allow writing
+`a.b()?.c.mac!`. This would work well when using a macro as a substitute for a
+postfix keyword (similar to `.await` or `?`). The `!` would remain, to indicate
+the invocation of a macro. However, some macros may prefer to look like a
+zero-argument method call (`.mac!()`). Allowing *both* `.mac!` and `.mac!()`
+introduces potential ambiguities. If we want to allow `.mac!` in the future, we
+could provide an opt-in syntax for the macro to use, which would allow omitting
+the delimiter; if, in the future, we determine that we can unambiguously allow
+a macro to support *optional* parentheses, we could allow opting into both.
+This RFC proposes that we always require the delimiter for now, for simplicity
+and to avoid ambiguity.
+
 # Prior art
 [prior-art]: #prior-art
 
