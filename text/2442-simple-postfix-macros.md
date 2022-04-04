@@ -271,8 +271,10 @@ control-flow mechanism from prefix to postfix.
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
-- Should we define a means of creating postfix proc macros, or can we defer that?
-- Does evaluating `$self` create any other corner cases besides `stringify!`?
 - Is the desugaring of `&self` and `&mut self` correct? Is there another
   desugaring that would work better? What happens if the type is already a
   reference?
+
+# Future work
+
+- We may also want a means of creating postfix proc macros.
