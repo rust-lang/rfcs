@@ -11,7 +11,7 @@ Better ergonomics for pattern-matching on references.
 Currently, matching on references requires a bit of a dance using
 `ref` and `&` patterns:
 
-```
+```rust
 let x: &Option<_> = &Some(0);
 
 match x {
@@ -29,7 +29,7 @@ match *x {
 
 After this RFC, the above form still works, but now we also allow a simpler form:
 
-```
+```rust
 let x: &Option<_> = &Some(0);
 
 match x {
@@ -62,7 +62,7 @@ instead of helping.
 
 For example, consider the following program:
 
-```
+```rust
 enum E { Foo(...), Bar }
 
 fn f(e: &E) {
@@ -74,7 +74,7 @@ fn f(e: &E) {
 It is clear what we want to do here - we want to check which variant `e` is a
 reference to. Annoyingly, we have two valid choices:
 
-```
+```rust
 match e {
     &E::Foo(...) => { ... }
     &E::Bar => { ... }
@@ -83,7 +83,7 @@ match e {
 
 and
 
-```
+```rust
 match *e {
     E::Foo(...) => { ... }
     E::Bar => { ... }
@@ -99,7 +99,7 @@ duration of the match. It also does not work with nested types, `match (*e,)
 In either case if we further bind variables, we must ensure that we do not
 attempt to move data, e.g.,
 
-```
+```rust
 match *e {
     E::Foo(x) => { ... }
     E::Bar => { ... }
