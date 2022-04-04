@@ -309,6 +309,21 @@ prevent writing macros that can accept either a reference or a value, violating
 user expectations compared to method calls (which can accept `&self` but still
 get called with a non-reference receiver).
 
+Rather than requiring a macro to explicitly declare that it works with postfix
+syntax using a `:self` specifier, we could allow calling existing macros using
+postfix syntax, and automatically pass the receiver as the first argument. This
+would work similarly to [Uniform Function Call
+Syntax](https://en.wikipedia.org/wiki/Uniform_Function_Call_Syntax), as well as
+similarly to the ability to call `Type::method(obj, arg)` rather than
+`obj.method(arg)`. Working with all existing macros would be both an advantage
+and a disadvantage. This RFC proposes to require macros to explicitly opt-in to
+postfix syntax, so that the macro has control over whether it makes sense in
+postfix position, and so that the macro can determine what syntax makes the
+most sense in postfix position. An explicit opt-in also seems appropriate
+given the pre-evaluation behavior of the `:self` specifier, which seems
+sufficiently different to warrant a different specifier rather than existing
+specifiers like `:expr`.
+
 # Prior art
 [prior-art]: #prior-art
 
