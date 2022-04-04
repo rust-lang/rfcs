@@ -264,6 +264,39 @@ type. However, macros do currently allow `self` as the name of a macro argument
 when used with a designator, such as `$self:expr`; this could lead to potential
 confusion, and would preclude some approaches for future extension.
 
+In the syntax to define a postfix macro, rather than using
+```
+($self:self, $arg:expr) => (...)
+```
+we could use
+```
+$self:self.($arg:expr) => (...)
+```
+. This would have the advantage of looking more similar to the invocation, but
+the disadvantage of looking much different than method definition syntax (in
+which `self` appears within the function arguments).
+
+In the syntax to define a postfix macro, rather than using
+```
+($self:self, $arg:expr) => (...)
+```
+we could use
+```
+($self:self. $arg:expr) => (...)
+```
+or
+```
+($self:self $arg:expr) => (...)
+```
+. Using a `.` might be evocative of method syntax, but would be unusual and
+harder to remember. Using no delimiter at all would reflect that the `,` does
+not actually match a literal `,` in syntax, and might be clearer when using
+macros whose arguments use unusual syntax substantially different than method
+arguments (e.g. `expr.mac!(:thwack => boing | :poit <= narf)`) but would be
+confusing and error-prone for macros intended to resemble method calls (e.g.
+`expr.mac!(arg1, arg2, arg3)`). (Making the `,` optional seems even more
+confusing and prone to ambiguity.)
+
 We could omit the `k#autoref` mechanism and only support `self`. However, this
 would make `some_struct.field.postfix!()` move out of `field`, which would make
 it much less usable.
