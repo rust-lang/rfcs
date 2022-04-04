@@ -169,10 +169,15 @@ A macro may only be called postfix if it is directly in scope and can be called
 unqualified. A macro available via a qualified path does not support postfix
 calls.
 
-Since `$self` represents an internal temporary location created by the
-compiler, calling `stringify!` on `$self` will just return `"$self"`. If passed
-to another macro, `$self` will only match a macro argument using a designator
-of `:expr`, `:tt`, or `:self`.
+Even though `$self` represents an internal temporary location provided by the
+compiler, calling `stringify!` on `$self` will return a stringified
+representation of the full receiver expression. For instance, given
+`a.b()?.c.m!()`, `stringify!($self)` will return `"a.b()?.c"`. This allows
+postfix macros to provide functionality such as `dbg!` or `assert!` that wants
+to show the receiver expression.
+
+If passed to another macro, `$self` will only match a macro argument using a
+designator of `:expr`, `:tt`, or `:self`.
 
 Using the `self` or `&self` or `&mut self` designator on any macro argument
 other than the first will produce a compile-time error.
