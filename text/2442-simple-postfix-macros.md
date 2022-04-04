@@ -173,9 +173,11 @@ Macros defined using this mechanism follow exactly the same namespace and
 scoping rules as any other macro. If a postfix macro is in scope, Rust code may
 call it on any object.
 
-A macro may only be called postfix if it is directly in scope and can be called
-unqualified. A macro available via a qualified path does not support postfix
-calls.
+A macro may only be called as a postfix macro if it is directly in scope as an
+unqualified name. A macro available via a qualified path (for instance,
+`path::to::macro`) does not support postfix calls. If an imported macro uses
+`as` to rename it (for instance, `use path::to::macro_name as other_name`), it
+supports postfix calls using the new name, not the original name.
 
 Even though `$self` represents an internal temporary location provided by the
 compiler, calling `stringify!` on `$self` will return a stringified
