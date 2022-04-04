@@ -90,8 +90,9 @@ This method-like syntax allows macros to cleanly integrate in a left-to-right
 method chain, while still making use of control flow and other features that
 only a macro can provide.
 
-A postfix macro may accept `self` by reference or mutable reference, by using a
-designator of `&self` or `&mut self` in place of `self`.
+A postfix macro may accept `self` by value, by reference, or by mutable
+reference; the compiler will automatically use the appropriate type of
+reference, just as it does for closure captures.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -104,7 +105,12 @@ evaluation. This change avoids any potential ambiguities regarding the scope of
 the `$self` argument and how much it leaves unevaluated, by evaluating it
 fully.
 
-For example, given the following macro definition:
+In the following expansion, `k#autoref` represents an internal compiler feature
+within pattern syntax (which this RFC does not propose exposing directly), to
+invoke the same compiler machinery currently used by closure captures to
+determine whether to use `ref`, `ref mut`, or a by-value binding.
+
+Given the following macro definition:
 
 ```rust
 macro_rules! log_value {
@@ -128,13 +134,13 @@ The invocation in `main` will expand to the following:
 
 ```rust
     match value("hello") {
-        _internal1 => match ({
+        k#autoref _internal1 => match ({
             eprintln!("{}:{}: {}: {:?}", "src/main.rs", 14, "value", _internal1);
             _internal1
         }
         .len())
         {
-            _internal2 => {
+            k#autoref _internal2 => {
                 eprintln!("{}:{}: {}: {:?}", "src/main.rs", 14, "len", _internal2);
                 _internal2
             }
@@ -150,8 +156,10 @@ The use of `match` in the desugaring ensures that temporary lifetimes last
 until the end of the expression; a desugaring based on `let` would end
 temporary lifetimes before calling the postfix macro.
 
-A designator of `&self` becomes a match binding of `ref _internal`; a
-designator of `&mut self` becomes a match binding of `ref mut _internal`.
+The use of `k#autoref` in the desugaring allows a postfix macro to work in
+contexts such as `some_struct.field.mac!()` (in which the macro must accept
+`&self` by reference to avoid moving out of the struct field), as well as in
+contexts that must take ownership of the receiver in order to function.
 
 Note that postfix macros cannot dispatch differently based on the type of the
 expression they're invoked on. The internal binding the compiler creates for
@@ -179,8 +187,8 @@ to show the receiver expression.
 If passed to another macro, `$self` will only match a macro argument using a
 designator of `:expr`, `:tt`, or `:self`.
 
-Using the `self` or `&self` or `&mut self` designator on any macro argument
-other than the first will produce a compile-time error.
+Using the `self` designator on any macro argument other than the first will
+produce a compile-time error.
 
 Wrapping any form of repetition around the `self` argument will produce a
 compile-time error.
@@ -191,9 +199,8 @@ list (`($self:self)`, with the closing parenthesis as the next token after
 other tokens. Any subsequent tokens after the `,` will match what appears
 between the delimiters after the macro name in its invocation.
 
-A macro may attach the designator `self` (or `&self` or `&mut self`) to a
-parameter not named `$self`, such as `$x:self`. Using `$self:self` is a
-convention, not a requirement.
+A macro may attach the designator `self` to a parameter not named `$self`, such
+as `$x:self`. Using `$self:self` is a convention, not a requirement.
 
 A postfix macro invocation, like any other macro invocation, may use any form
 of delimiters around the subsequent arguments: parentheses (`expr.m!()`),
@@ -257,9 +264,15 @@ type. However, macros do currently allow `self` as the name of a macro argument
 when used with a designator, such as `$self:expr`; this could lead to potential
 confusion, and would preclude some approaches for future extension.
 
-We could omit support for `&self` and `&mut self` and only support `self`.
-However, this would make `some_struct.field.postfix!()` move out of `field`,
-which would make it much less usable.
+We could omit the `k#autoref` mechanism and only support `self`. However, this
+would make `some_struct.field.postfix!()` move out of `field`, which would make
+it much less usable.
+
+We could omit the `k#autoref` mechanism in favor of requiring the macro to
+specify whether it accepts `self`, `&self`, or `&mut self`. However, this would
+prevent writing macros that can accept either a reference or a value, violating
+user expectations compared to method calls (which can accept `&self` but still
+get called with a non-reference receiver).
 
 # Prior art
 [prior-art]: #prior-art
@@ -268,13 +281,8 @@ The evolution of `try!(expr)` into `expr?`, and the evolution of `await!(expr)`
 into `expr.await`, both serve as prior art for moving an important macro-style
 control-flow mechanism from prefix to postfix.
 
-# Unresolved questions
-[unresolved]: #unresolved-questions
-
-- Is the desugaring of `&self` and `&mut self` correct? Is there another
-  desugaring that would work better? What happens if the type is already a
-  reference?
-
 # Future work
 
 - We may also want a means of creating postfix proc macros.
+- We *may* want to expose `k#autoref` for other purposes. We may also want to
+  use it in the definition of other syntax desugaring in the future.
