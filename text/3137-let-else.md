@@ -473,7 +473,7 @@ This is, as stated, a much more complex alternative interacting with much more o
 ### Macro
 
 Another suggested solution is to create a macro which handles this.
-A crate containing such a macro is mentioned in the [Prior art](prior-art) section of this RFC.
+A crate containing such a macro is mentioned in the [Prior art](#prior-art) section of this RFC.
 
 This crate has not been widely used in the rust crate ecosystem with only 47k downloads over the ~6 years it has existed at the time of writing.
 
