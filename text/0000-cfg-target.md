@@ -10,6 +10,9 @@ This proposes a new `cfg`: `target`, which matches the entire target triple
 string (e.g. `arm-unknown-linux-gnueabihf`). This also adds a `CARGO_CFG_TARGET`
 environment variable for parity with other `CARGO_CFG_*` variables.
 
+In addition, this proposes a shorthand `cfg(target(...))` to match multiple
+components of a target string at once.
+
 # Motivation
 [motivation]: #motivation
 
@@ -27,8 +30,8 @@ components.
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-This would act like existing `target_*` configurations but match against all
-components (except `target_feature`).
+This would act like existing `target_*` configurations (except `target_feature`)
+but match against all components.
 
 ```rust
 #[cfg(target = "x86_64-apple-ios-macabi")]
@@ -60,6 +63,12 @@ Example values:
 - `"x86_64-pc-windows-gnu"`
 - `"x86_64-pc-windows-msvc"`
 - `"x86_64-unknown-linux-gnu"`
+
+## Semantics of target with attributes
+
+The shorthand form of `#[cfg(target(os = "linux))]` is expanded and entirely
+equivalent to `#[cfg(target_os = "linux")]` (and so on for `arch` and the other
+potential attributes).
 
 # Drawbacks
 [drawbacks]: #drawbacks
