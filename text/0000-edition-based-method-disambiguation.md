@@ -113,7 +113,7 @@ This feature will be implemented by modifying the `rustc_stable` attribute to
 support an additional optional `edition` field.
 
 During method resolution, when we detect an ambiguity we should then check if
-one of the methods in question is a standard libary method with an `edition`
+one of the methods in question is a standard library method with an `edition`
 field. When the edition field exists in the stability attribute and the edition
 field of that method matches the current crate's edition we ignore that method
 and select the pre-edition method that conflicted with it and generate a
