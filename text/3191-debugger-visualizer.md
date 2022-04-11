@@ -1,7 +1,7 @@
 - Feature Name: `debugger_visualizer`
 - Start Date: 2021-11-01
 - RFC PR: [rust-lang/rfcs#3191](https://github.com/rust-lang/rfcs/pull/3191)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- Rust Issue: [rust-lang/rust#95939](https://github.com/rust-lang/rust/issues/95939)
 
 # Summary
 [summary]: #summary
