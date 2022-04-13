@@ -37,7 +37,7 @@ The types team is conceptually a subteam of both the lang and compiler teams. Si
 * Stabilizing new features that intersect the type system will require "types team approval".
     * Eventually this is expected to require extending the "formality" models to include the feature.
     * This approval is not meant to be used to make "policy" decisions but to enforce the soundness and implementability of the feature itself.
-* Advising on how to soundness bugs or other subtle questions arise.
+* Advising on how to address soundness bugs or other subtle questions that arise.
 * Assisting with the design of language extensions that extends the core Rust type system capabilities
     * Maintaining the Rust model and extending it to model new proposals that interact with the type checker
 
