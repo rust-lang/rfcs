@@ -6,6 +6,13 @@
 # Summary
 [summary]: #summary
 
+*Note*: **The changes proposed in this RFC do not tie methods to editions**. It
+only turns currently allowed breakages between editions into a breakage at an
+edition boundary, if there is no ambiguity the method is still callable
+immediately upon stabilization as things work today. This RFC only changes
+behavior when there is an ambiguity to make things that are currently errors
+into warnings until the next edition boundary.
+
 This RFC proposes a way to introduce new trait methods that conflict with
 pre-edition[^1] trait methods in downstream crates in a backwards compatible fashion.
 We do so by annotating new methods with the edition they're introduced in. Then
@@ -172,22 +179,29 @@ catch any breakage.
 
 **Longer Term**
 
-* encoding the released std version in crates published to crates.io when
-  uploading and ignore methods introduced in newer releases when building that
-  published dependency.
+* `rust-version` based visibility filtering - make it a hard error to use APIs
+  that were introduced in later versions of Rust than your current Minimum
+  Supported Rust Version (MSRV) as specified in the `rust-version` field.
 * [Supertrait item shadowing](https://github.com/rust-lang/rfcs/pull/2845)
 
-These solutions also do not solve the problem generally. The former solution
-would only solve the problem for crates uploaded to crates.io, and the latter
-would only solve the problem for traits where the ambiguity is introduced by a
-supertrait.
+These proposals are not actually alternatives, but rather complementary
+features that help reduce breakages and which should be persued alongside this
+RFC.
 
-**Note**: While the "Supertrait item shadowing" rfc is listed here as an
-alternative it should not necessarily be seen as mutually exclusive, and could
-absolutely be used as a complement to this feature. Many of these warnings
-could be ambiguity warnings could be resolved by trait precidence and edition
-based fallback would only be encountered for the rarer cases of unrelated name
-collisions.
+The `rust-version` approach would prevent many breakages by not ever resolving
+ambiguous method calls to new methods when those new methods are introduced in
+later versions than your MSRV, but it would not be a complete solution by
+itself since otherwise it would turn bumping MSRV into a breaking change. This
+is counter to our stability policy which promises to only introduce breaking
+changes at edition boundaries.
+
+The Supertrait item shadowing RFC would prevent breakages where traits have a
+supertrait/subtrait relationship such as in the `Iterator`/`Itertools` case and
+would give us a better fallback, where we can immediately resolve methods to
+the supertrait instance within the same edition rather than producing the
+warning, but it does not help with situations like the `Display`/`Debug`
+breakage or with new inherent methods where a supertrait/subtrait relationship
+does not exist.
 
 # Prior art
 [prior-art]: #prior-art
@@ -214,9 +228,21 @@ its stability attribute.
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
+## Unambiguous method call syntax
+
 As this RFC previously pointed out in the drawbacks section, introducing a new
 syntax for unambiguous method calls for a specific trait would significantly
 improve the experience of resolving these warnings.
+
+## Extension to 3rd party crates ecosystem
+
+The lang teams is already persuing the possibility of [stabilizing stability
+attributes](https://github.com/rust-lang/lang-team/blob/master/design-meeting-minutes/2022-02-16-libs-most-wanted.md#make-stable-and-unstable-available-for-third-party-crates)
+to allow 3rd party crates to mark APIs as `#[stable]` or `#[unstable]`. We
+would likely need to consider how this disambiguation functionality would be
+extended along with the stability attributes. How it would interact with semver
+and editions, and whether we could better support crates that take a similar
+perma-1.0 stability policy to that of `std`.
 
 [^1]: Definition: Pre-edition methods are methods that could legally have been
   introduced during the current crate's edition which do not conflict with any
