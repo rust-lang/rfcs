@@ -202,7 +202,7 @@ This is basically the exact feature that this RFC is trying to serve, except for
 - A `macro fn` is (potentially) still a `fn` in that it has one fixed airity, and can't be overloaded like a macro can.
 - `$:value` uses `k#autoref` binding, but `macro fn`, to match function arguments, would likely use by-move binding.
 
-Basically, `macro fn` is asking for "macros 2.0," which is still desirable, but still a _long_ ways off.
+Basically, `macro fn` is asking for "macros 2.0", which is still desirable, but still a _long_ ways off.
 `$:value` offers a small improvement in the status quo without adding a completely new system into the language.
 
 ## `k#autoref`
