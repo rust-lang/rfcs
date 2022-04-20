@@ -32,7 +32,7 @@ from procedural macros which read external files.
 Three new functions are provided in the `proc_macro` interface crate:
 
 ```rust
-/// Read the contents of a file as a `TokenStream` and add it to build dependency info.
+/// Read the contents of a file as a `TokenStream` and add it to build dependency graph.
 ///
 /// The build system executing the compiler will know that the file was accessed during compilation,
 /// and will be able to rerun the build when the contents of the file changes.
@@ -50,7 +50,7 @@ Three new functions are provided in the `proc_macro` interface crate:
 /// We reserve the right to change these errors into `io::Error`s later.
 fn include<P: AsRef<str>>(path: P) -> Result<TokenStream, std::io::Error>;
 
-/// Read the contents of a file as a string and add it to build dependency info.
+/// Read the contents of a file as a string literal and add it to build dependency graph.
 ///
 /// The build system executing the compiler will know that the file was accessed during compilation,
 /// and will be able to rerun the build when the contents of the file changes.
@@ -60,9 +60,9 @@ fn include<P: AsRef<str>>(path: P) -> Result<TokenStream, std::io::Error>;
 ///
 /// NOTE: some errors may cause panics instead of returning `io::Error`.
 /// We reserve the right to change these errors into `io::Error`s later.
-fn include_str<P: AsRef<str>>(path: P) -> Result<String, std::io::Error>;
+fn include_str<P: AsRef<str>>(path: P) -> Result<Literal, std::io::Error>;
 
-/// Read the contents of a file as raw bytes and add it to build dependency info.
+/// Read the contents of a file as raw bytes and add it to build dependency graph.
 ///
 /// The build system executing the compiler will know that the file was accessed during compilation,
 /// and will be able to rerun the build when the contents of the file changes.
@@ -84,7 +84,8 @@ pub fn include(input: TokenStream) -> TokenStream {
 
     let result = 'main: if let Some(tt) = iter.next() {
         let TokenTree::Literal(lit) = tt &&
-        let LiteralValue::Str(path) = lit.value() else {
+        let LiteralValue::Str(path) = lit.value()
+        else {
             Diagnostic::spanned(tt.span(), Level::Error, "argument must be a string literal").emit();
             break 'main TokenStream::new();
         }
@@ -121,15 +122,12 @@ If a file is successfully read but fails to lex, `ErrorKind::Other` is returned.
 None of these three APIs should ever cause compilation to fail.
 It is the responsibility of the proc macro to fail compilation if a failed file read is fatal.
 
-The author is unsure of the technical details required to implement this in the compiler.
-
 # Drawbacks
 [drawbacks]: #drawbacks
 
 This is more API surface for the `proc_macro` crate, and the `proc_macro` bridge is already complicated.
 Additionally, this is likely to lead to more proc macros which read external files.
 Moving the handling of `include!`-like macros later in the compiler pipeline
-(read: dependent on name resolution)
 likely is also significantly more complicated than the current `include!` implementation.
 
 # Alternatives
@@ -143,6 +141,19 @@ but lacks the ability to require the proc macro go through this API, or to provi
 
 Meaningfully, it'd be nice to be able to sandbox proc macros in wasm à la [watt](https://crates.io/crates/watt)
 while still having proc macros capable of reading the filesystem (in a proc_macro driver controlled manner).
+
+- Custom error type
+
+A custom error wrapper would provide a point to attach more specific error information than just an
+`io::Error`, such as the lexer error encountered by `include`. This RFC opts to use `io::Error`
+directly to provide a more minimal API surface.
+
+- Wrapped return types
+
+Returning `Literal::string` from `include_str` and `Vec<u8>` from `include_bytes` implies that
+the entire included file must be read into memory managed by the Rust global allocator.
+Alternatively, a more abstract buffer type could be used which allows more efficiently working
+with very large files that could be instead e.g. memmapped rather than read into a buffer.
 
 - Status quo
 
@@ -159,6 +170,9 @@ No known prior art.
 
 - It would be nice for `include` to allow emitting a useful lexer error directly.
   This is not currently provided for by the proposed API.
+- `include!` sets the "current module path" for the included code.
+  It's unclear how this should behave for `proc_macro::include`,
+  and whether this behavior should be replicated at all.
 - Unknown unknowns.
 
 # Future possibilities
