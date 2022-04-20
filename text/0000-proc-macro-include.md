@@ -155,6 +155,9 @@ the entire included file must be read into memory managed by the Rust global all
 Alternatively, a more abstract buffer type could be used which allows more efficiently working
 with very large files that could be instead e.g. memmapped rather than read into a buffer.
 
+This would likely look like `LiteralString` and `LiteralBytes` types in the `proc_macro` bridge,
+but this RFC opts to use the existing `Literal` and `Vec<u8>` to provide a more minimal API surface.
+
 - Status quo
 
 Proc macros can continue to read files and use `include_str!` to indicate a build dependency.
@@ -173,6 +176,12 @@ No known prior art.
 - `include!` sets the "current module path" for the included code.
   It's unclear how this should behave for `proc_macro::include`,
   and whether this behavior should be replicated at all.
+- Should `include_str` get source code normalization (i.e. `\r\n` to `\n`)?
+  `include_str!` deliberately includes the string exactly as it appears on disk,
+  and the purpose of these APIs is to provide post-processing steps,
+  which could need the file to be reproduced exactly,
+  so the answer is likely *no*,
+  and the produced `Literal` should represent the exact contents of the file.
 - Unknown unknowns.
 
 # Future possibilities
