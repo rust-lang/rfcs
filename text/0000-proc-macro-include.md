@@ -182,6 +182,13 @@ No known prior art.
   which could need the file to be reproduced exactly,
   so the answer is likely *no*,
   and the produced `Literal` should represent the exact contents of the file.
+- What base directory should relative paths be resolved from?
+  The two reasonable answers are
+
+  - That which `include!` is relative to in the source file expanding the macro.
+  - That which `fs` is relative to in the proc macro execution.
+
+  Both have their merits and drawbacks.
 - Unknown unknowns.
 
 # Future possibilities
