@@ -15,9 +15,9 @@
 # Motivation
 [motivation]: #motivation
 
-The types team is meant to build a base of maintainers for the formal side of Rust, both design and implementation. This has traditionally been an area with a very low "[bus factor]", both in terms of the compiler (few maintainers to the code) and the language design (few people who fully understand the entire space). Focusing a team on just Rust's "type system" will allow us to do targeted outreach and to help people to learn the background that is needed to contribute here.
+The types team is meant to build a base of maintainers for the formal side of Rust, both design and implementation. This has traditionally been an area with a very low "[bus factor]", both in terms of the compiler (few maintainers to the code) and the language design (few people who fully understand the entire space). This has led to a general paralysis in which new features (implied bounds, const generics, specialization, etc) are stalled for long periods of time due to a combination of an inflexible implementation, a lack of maintainers, and a general difficulty in reasoning about their interactions. 
 
-Like the compiler team, the team's plays a "supportive" role. Its goal is to ensure both that Rust's type system has an efficient and correct implementation and that the type system (design and implementation) is able to scale to new demands and requirements. At this moment, Rust is suffering from a general paralysis in which new features (implied bounds, const generics, specialization, etc) are stalled for long periods of time due to a combination of an inflexible implementation, a lack of maintainers, and a general difficulty in reasoning about their interactions.
+Focusing a team on just Rust's "type system" will allow us to do targeted outreach and to help people to learn the background that is needed to contribute here.
 
 [bus factor]: https://en.wikipedia.org/wiki/Bus_factor
 
@@ -34,7 +34,7 @@ The types team is conceptually a subteam of both the lang and compiler teams. Si
 
 ### Lang team
 
-* Stabilizing new features that intersect the type system will require "types team approval".
+* Stabilizing new features that intersect the type system will require approval by the types team.
     * Eventually this is expected to require extending the "formality" models to include the feature.
     * This approval is not meant to be used to make "policy" decisions but to enforce the soundness and implementability of the feature itself.
 * Advising on how to address soundness bugs or other subtle questions that arise.
@@ -44,7 +44,7 @@ The types team is conceptually a subteam of both the lang and compiler teams. Si
 ### Compiler team
 
 * Assessing and implementing fixes for soundness bugs that have to do with the type system.
-* Maintaining a shared libraries that implements the Rust type/trait system and the borrow checker.
+* Maintaining shared libraries that implement the Rust type/trait system and the borrow checker.
 
 ### Initiatives
 
@@ -62,7 +62,7 @@ The original RFC for where clauses included equality constraints like `where T =
 
 ### Bug in the type checker
 
-When a soundness bug is found in Rust's type system, the compiler team can contact the types team to request the bug be triaged and to prepare a fix. The types team owns that code and hence is ultimately responsible for reviewing changes to the relevant code.
+When a soundness bug is found in Rust's type system, the compiler team can contact the types team to request the bug be triaged and to prepare a fix. The types team owns that code and hence is ultimately responsible for reviewing changes to the relevant code. Along these lines, if a breaking change must be made to the language to fix unsound code, it is the responsibility of the types team to make the final decision - a responsibility previously held by the lang team.
 
 ### Unsafe code guidelines
 
@@ -88,7 +88,7 @@ Membership in the team is awarded on the basis of experience working on the impl
 
 To become a member you typically have to (a) contribute consistently over a period of multiple months and (b) lead at least one "deep dive" (see below). The second point may be waived.
 
-This section contains "current details" about what the team is up to. These details are expected to change over time.
+Note that, like compiler or lang teams, membership is not generally granted just by asking. Those interested in joining should consider getting involved by attending planning and deep dive meetings, or by getting involved in initiative-specific meetings and work.
 
 ## Initial details
 
@@ -119,8 +119,6 @@ Each initiative is responsible for preparing a short (1-2 paragraph) document in
 
 The meeting begins by reading these documents and asking questions. The goal is to adjust the goals for each initiative so that they are realistic; we should be helping each other to calibrate and set expectations. The final document is then published as a blog post.
 
-**Startup period:** During March, nikomatsakis will meet with the various initiatives to draw up the initial documents for the first planning meeting.
-
 #### Deep dive meeting
 
 A "deep dive" meeting takes the form of reviewing a write-up, a PR, or otherwise diving into some topic together. They are expected to last 90 minutes but perhaps longer. Deep dive meetings for a given month are scheduled during the planning meeting. 
@@ -136,7 +134,7 @@ The types team maintains the following projects:
 * [a-mir-formality](https://github.com/nikomatsakis/a-mir-formality)
     * this may eventually grow to multiple 'formality' models
 
-The team is also responsible for those portions of [rust-lang/rust] that implement the type system (jointly, with the compiler team, since those portions are not cleanly separable).
+The team is also responsible for those portions of [rust-lang/rust] that implement the type system. This will be done jointly, with the compiler team, since those portions are not cleanly separable. Specific details of how this is done, however, are left out of this RFC, as they will likely change over time.
 
 [a-mir-formality]: https://github.com/nikomatsakis/a-mir-formality
 [rust-lang/rust]: https://github.com/rust-lang/rust
