@@ -551,7 +551,7 @@ written `type $NAME = impl $BOUND;`.
 This RFC opted to avoid the `type Foo = impl Trait;` syntax because of its
 potential teaching difficulties.
 As a result of [RFC 1951][1951], `impl Trait` is sometimes
-universal quantiifcation and sometimes existential quantification. By providing
+universal quantification and sometimes existential quantification. By providing
 a separate syntax for "explicit" existential quantification, `impl Trait` can
 be taught as a syntactic sugar for generics and existential types. By "just using
 `impl Trait`" for named existential type declarations,
@@ -561,7 +561,7 @@ This choice has some disadvantages in comparison impl Trait in type aliases:
 
 - We introduce another new syntax on top of `impl Trait`, which inherently has
 some costs.
-- Users can't use it in a nested fashion without creating an addiitonal
+- Users can't use it in a nested fashion without creating an additional
 existential type.
 
 Because of these downsides, we are open to reconsidering this question with
