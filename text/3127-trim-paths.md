@@ -94,7 +94,7 @@ This flag accepts a comma-separated list of values and may be specified multiple
 
 - `macro` - apply remappings to the expansion of `std::file!()` macro. This is where paths in embedded panic messages come from
 - `debuginfo` - apply remappings to debug information, wherever they may be written to
-- `split-debuginfo-path` - when `split-debuginfo=packed` or `unpacked`, apply remappings to the paths pointing to these split debug information files
+- `split-debuginfo-file` - when `split-debuginfo=packed` or `unpacked`, apply remappings to the paths pointing to these split debug information files
 - `diagnostics` - apply remappings to printed compiler diagnostics
 
 ## Cargo
@@ -147,11 +147,12 @@ A further `--remap-path-scope` is also supplied for options `1` and `2`:
 
 If `trim-path` is `1`, then it depends on the setting of `split-debuginfo` (whether the setting is explicitly supplied or from the default)
 - If `split-debuginfo` is `off`, then `--remap-path-scope=macro,debuginfo`.
-- If `split-debuginfo` is `packed` or `unpacked`, then `--remap-path-scope=macro,split-debuginfo-path`
+- If `split-debuginfo` is `packed` or `unpacked`, then `--remap-path-scope=macro,split-debuginfo-file`
+
 This is because we always want to remap panic messages as they will always be embedded in executable/library. We need to sanitise debug information
 if they are embedded, but don't need to touch them if they are split. However in case they are split we need to sanitise the paths to these split files 
 
-If `trim-path` is `2` (`true`), all paths will be affected, equivalent to `--remap-path-scope=macro,debuginfo,diagnostics,split-debuginfo-path`
+If `trim-path` is `2` (`true`), all paths will be affected, equivalent to `--remap-path-scope=macro,debuginfo,diagnostics,split-debuginfo-file`
 
 
 Some interactions with compiler-intrinsic macros need to be considered:
@@ -180,7 +181,7 @@ local path to be remapped in the usual way.
 
 When debug information are not embedded in the binary (i.e. `split-debuginfo` is not `off`), absolute paths to various files containing debug
 information are embedded into the binary instead. Such as the absolute path to `.pdb` file (MSVC, `packed`), `.dwo` files (ELF, `unpacked`), 
-and `.o` files (ELF, `packed`). This can be undesirable. As such, `split-debuginfo-path` is made specifically for these embedded paths.
+and `.o` files (ELF, `packed`). This can be undesirable. As such, `split-debuginfo-file` is made specifically for these embedded paths.
 
 On macOS and ELF platforms, these paths are introduced by `rustc` during codegen. With MSVC, however, the path to `.pdb` fil is generated and
 embedded into the binary by the linker `link.exe`. The linker has a `/PDBALTPATH` option allows us to change the embedded path written to the
