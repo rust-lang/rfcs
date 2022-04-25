@@ -94,7 +94,8 @@ This flag accepts a comma-separated list of values and may be specified multiple
 
 - `macro` - apply remappings to the expansion of `std::file!()` macro. This is where paths in embedded panic messages come from
 - `debuginfo` - apply remappings to debug information, wherever they may be written to
-- `split-debuginfo-file` - when `split-debuginfo=packed` or `unpacked`, apply remappings to the paths pointing to these split debug information files
+- `unsplit-debuginfo` - apply to remappings to debug information only when they are written to compiled executables or libraries, but not when they are in split files
+- `split-debuginfo-file` - apply remappings to the paths pointing to split debug information files when `split-debuginfo=packed` or `unpacked`. Does nothing when debuginfo is embedded with the compiled executables or libraries
 - `diagnostics` - apply remappings to printed compiler diagnostics
 
 ## Cargo
@@ -145,12 +146,9 @@ If `trim-paths` is `1` or `2` (`true`), then two `--remap-path-prefix` arguments
 
 A further `--remap-path-scope` is also supplied for options `1` and `2`:
 
-If `trim-paths` is `1`, then it depends on the setting of `split-debuginfo` (whether the setting is explicitly supplied or from the default)
-- If `split-debuginfo` is `off`, then `--remap-path-scope=macro,debuginfo`.
-- If `split-debuginfo` is `packed` or `unpacked`, then `--remap-path-scope=macro,split-debuginfo-file`
+If `trim-path` is `1`, then `--remap-path-scope=macro,unsplit-debuginfo,split-debuginfo-file`.
 
-This is because we always want to remap panic messages as they will always be embedded in executable/library. We need to sanitise debug information
-if they are embedded, but don't need to touch them if they are split. However in case they are split we need to sanitise the paths to these split files 
+As a result, panic messages (which are always embedded) are sanitised. If debug information is embedded, then they are sanitised; if they are split then they are kept untouched, but the paths to these split files are sanitised.
 
 If `trim-path` is `2` (`true`), all paths will be affected, equivalent to `--remap-path-scope=macro,debuginfo,diagnostics,split-debuginfo-file`
 
@@ -167,7 +165,7 @@ supplied *after* Cargo's own remapping.
 
 ## Changing handling of sysroot path in `rustc`
 
-The virtualisation of sysroot files to `/rustc/[commit hash]/library/...` was done at compiler bootstraping, specifically when 
+The virtualisation of sysroot files to `/rustc/[commit hash]/library/...` was done at compiler bootstrapping, specifically when 
 `remap-debuginfo = true` in `config.toml`. This is done for Rust distribution on all channels.
 
 At `rustc` runtime (i.e. compiling some code), we try to correlate this virtual path to a real path pointing to the file on the local file system.
@@ -205,7 +203,7 @@ release builds. It has, over the past 4 years, gained a decent amount of popular
 implement.
 
 Path to sysroot crates are specially handled by `rustc`. Due to this, the behaviour we currently have is that all such paths are virtualised.
-Although good for privacy and reproducibility, some people find it a hinderance for debugging: https://github.com/rust-lang/rust/issues/85463.
+Although good for privacy and reproducibility, some people find it a hindrance for debugging: https://github.com/rust-lang/rust/issues/85463.
 Hence the user should be given control on if they want the virtual or local path.
 
 An alternative is to extend the syntax accepted by `--remap-path-prefix` or add a new option called `--remap-path-prefix-scoped` which allows
