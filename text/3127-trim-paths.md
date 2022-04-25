@@ -145,7 +145,7 @@ If `trim-paths` is `1` or `2` (`true`), then two `--remap-path-prefix` arguments
 
 A further `--remap-path-scope` is also supplied for options `1` and `2`:
 
-If `trim-path` is `1`, then it depends on the setting of `split-debuginfo` (whether the setting is explicitly supplied or from the default)
+If `trim-paths` is `1`, then it depends on the setting of `split-debuginfo` (whether the setting is explicitly supplied or from the default)
 - If `split-debuginfo` is `off`, then `--remap-path-scope=macro,debuginfo`.
 - If `split-debuginfo` is `packed` or `unpacked`, then `--remap-path-scope=macro,split-debuginfo-file`
 
@@ -249,7 +249,7 @@ they are retained panic messages. This syntax can be used with either a brand ne
 existing `--remap-path-prefix` option to take in this new syntax.
 
 If we were to extend the existing `--remap-path-prefix`, there may be an ambiguity to whether `:` means a separator between scope list and mapping,
-or is it a part of the path; if the first `:` supplied belongs to the path then it would have to be escaped. This coudl be technically breaking.
+or is it a part of the path; if the first `:` supplied belongs to the path then it would have to be escaped. This could be technically breaking.
 
 In any case, future inclusion of this new syntax will not affect `--remap-path-scope` introduced in this RFC. Scopes specified in `--remap-path-scope`
 will be used as default for all mappings, and explicit scopes for an individual mapping will take precedence on that mapping.
