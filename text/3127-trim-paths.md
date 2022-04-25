@@ -101,19 +101,19 @@ This flag accepts a comma-separated list of values and may be specified multiple
 ## Cargo
 
 `trim-paths` is a profile setting which controls the sanitisation of file paths in compilation outputs. It has three valid options:
-- `0` or `false`: no sanitisation at all
-- `1`: sanitise only the paths in emitted executable or library binaries. It always affects paths from macros such as panic messages, and in debug information
+- `none` or `false`: no sanitisation at all
+- `object`: sanitise only the paths in emitted executable or library binaries. It always affects paths from macros such as panic messages, and in debug information
   only if they will be embedded together with the binary (the default on platforms with ELF binaries, such as Linux and windows-gnu),
   but will not touch them if they are in separate files (the default on Windows MSVC and macOS). But the path to these separate files are sanitised.
-- `2` or `true`: sanitise paths in all compilation outputs, including compiled executable/library, debug information, and compiler diagnostics.
+- `all` or `true`: sanitise paths in all compilation outputs, including compiled executable/library, debug information, and compiler diagnostics.
 
-The default release profile uses option `1`. You can also manually override it by specifying this option in `Cargo.toml`:
+The default release profile uses option `object`. You can also manually override it by specifying this option in `Cargo.toml`:
 ```toml
 [profile.dev]
-trim-paths = 2
+trim-paths = all
 
 [profile.release]
-trim-paths = 0
+trim-paths = none
 ```
 
 When a path is in scope for sanitisation, it is handled by the following rules:
@@ -137,20 +137,20 @@ This will not affect any hard-coded paths in the source code.
 
 We only need to change the behaviour for `Test` and `Build` compile modes. 
 
-If `trim-paths` is `0` (`false`), no extra flag is supplied to `rustc`.
+If `trim-paths` is `none` (`false`), no extra flag is supplied to `rustc`.
 
-If `trim-paths` is `1` or `2` (`true`), then two `--remap-path-prefix` arguments are supplied to `rustc`:
+If `trim-paths` is `object` or `all` (`true`), then two `--remap-path-prefix` arguments are supplied to `rustc`:
 - From the path of the local sysroot to `/rustc/[commit hash]`. 
 - If the compilation unit is under the working directory, from the the working directory absolute path to empty string.
   If it's outside the working directory, from the absolute path of the package root to `[package name]-[package version]`.
 
-A further `--remap-path-scope` is also supplied for options `1` and `2`:
+A further `--remap-path-scope` is also supplied for options `object` and `all`:
 
-If `trim-path` is `1`, then `--remap-path-scope=macro,unsplit-debuginfo,split-debuginfo-file`.
+If `trim-path` is `object`, then `--remap-path-scope=macro,unsplit-debuginfo,split-debuginfo-file`.
 
 As a result, panic messages (which are always embedded) are sanitised. If debug information is embedded, then they are sanitised; if they are split then they are kept untouched, but the paths to these split files are sanitised.
 
-If `trim-path` is `2` (`true`), all paths will be affected, equivalent to `--remap-path-scope=macro,debuginfo,diagnostics,split-debuginfo-file`
+If `trim-path` is `all` (`true`), all paths will be affected, equivalent to `--remap-path-scope=macro,debuginfo,diagnostics,split-debuginfo-file`
 
 
 Some interactions with compiler-intrinsic macros need to be considered:
