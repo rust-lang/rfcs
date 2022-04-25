@@ -254,3 +254,8 @@ or is it a part of the path; if the first `:` supplied belongs to the path then 
 
 In any case, future inclusion of this new syntax will not affect `--remap-path-scope` introduced in this RFC. Scopes specified in `--remap-path-scope`
 will be used as default for all mappings, and explicit scopes for an individual mapping will take precedence on that mapping.
+
+## Alias for scope options
+`--remap-path-scope` can be made to accept additional options that act as aliases for one or more of the existing options. For instance, `--remap-path-scope=debuginfo` can be made equivalent to `--remap-path-scope=split-debuginfo,unsplit-debuginfo`.
+
+Additionally, `none`, `object` and `all` can be made aliases of what Cargo's `trim-paths` option is supposed to provide, such that Cargo's `trim-paths` option can be directly used as the value of `--remap-path-scope`. This allows the user to write `object,split-debuginfo` in `trim-paths` to remap paths in binaries/executables and split debuginfo files, but not in diagnostics.
