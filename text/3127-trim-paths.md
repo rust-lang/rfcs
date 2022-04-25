@@ -88,15 +88,17 @@ should support finer grained control over paths in which contexts should be rema
 
 ### `--remap-path-scope`: configure the scope of path remapping
 
-When the `--remap-path-prefix` option is passed to rustc then source path prefixes in all output will be affected.
+When the `--remap-path-prefix` option is passed to rustc, source path prefixes in all output will be affected by default.
 The `--remap-path-scope` argument can be used in conjunction with `--remap-path-prefix` to determine paths in which output context should be affected.
 This flag accepts a comma-separated list of values and may be specified multiple times. The valid scopes are:
 
 - `macro` - apply remappings to the expansion of `std::file!()` macro. This is where paths in embedded panic messages come from
-- `debuginfo` - apply remappings to debug information, wherever they may be written to
-- `unsplit-debuginfo` - apply to remappings to debug information only when they are written to compiled executables or libraries, but not when they are in split files
-- `split-debuginfo-file` - apply remappings to the paths pointing to split debug information files when `split-debuginfo=packed` or `unpacked`. Does nothing when debuginfo is embedded with the compiled executables or libraries
 - `diagnostics` - apply remappings to printed compiler diagnostics
+- `unsplit-debuginfo` - apply to remappings to debug information only when they are written to compiled executables or libraries, but not when they are in split files
+- `split-debuginfo` - apply remappings to debug information only when they are written to split debug information files, but not in compiled executables or libraries 
+- `split-debuginfo-file` - apply remappings to the paths pointing to split debug information files. Does nothing when these files are not generated.
+
+Debug information are written to split files when the separate codegen option `-C split-debuginfo=packed` or `unpacked` (whether by default or explicitly set).
 
 ## Cargo
 
@@ -150,7 +152,7 @@ If `trim-path` is `object`, then `--remap-path-scope=macro,unsplit-debuginfo,spl
 
 As a result, panic messages (which are always embedded) are sanitised. If debug information is embedded, then they are sanitised; if they are split then they are kept untouched, but the paths to these split files are sanitised.
 
-If `trim-path` is `all` (`true`), all paths will be affected, equivalent to `--remap-path-scope=macro,debuginfo,diagnostics,split-debuginfo-file`
+If `trim-path` is `all` (`true`), all paths will be affected, equivalent to `--remap-path-scope=macro,split-debuginfo,unsplit-debuginfo,diagnostics,split-debuginfo-file` (or not supplying `--remap-path-scope` at all).
 
 
 Some interactions with compiler-intrinsic macros need to be considered:
@@ -241,9 +243,10 @@ the other for only debuginfo: https://reproducible-builds.org/docs/build-path/. 
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
+## Per-mapping scope control
 If it turns out that we want to enable finer grained scoping control on each individual remapping, we could use a `scopes:from=to` syntax.
-E.g. `debuginfo,diagnostics:/path/to/src=src` will remove all references to `/path/to/src` from compiler diagnostics and debug information, but
-they are retained panic messages. This syntax can be used with either a brand new `--remap-path-prefix-scoped` option, or we could extend the
+E.g. `split-debuginfo,unsplit-debuginfo,diagnostics:/path/to/src=src` will remove all references to `/path/to/src` from compiler diagnostics and debug information, but
+they are retained in panic messages. This syntax can be used with either a brand new `--remap-path-prefix-scoped` option, or we could extend the
 existing `--remap-path-prefix` option to take in this new syntax.
 
 If we were to extend the existing `--remap-path-prefix`, there may be an ambiguity to whether `:` means a separator between scope list and mapping,
