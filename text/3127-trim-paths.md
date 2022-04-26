@@ -97,19 +97,16 @@ This flag accepts a comma-separated list of values and may be specified multiple
 - `unsplit-debuginfo` - apply to remappings to debug information only when they are written to compiled executables or libraries, but not when they are in split files
 - `split-debuginfo` - apply remappings to debug information only when they are written to split debug information files, but not in compiled executables or libraries 
 - `split-debuginfo-file` - apply remappings to the paths pointing to split debug information files. Does nothing when these files are not generated.
+- `object` - an alias for `macro,unsplit-debuginfo,split-debuginfo-file`. This ensures all paths in compiled executables or libraries are remapped, but not elsewhere.
+- `all` and `true` - an alias for all of the above, also equivalent to supplying `--remap-path-prefix` without this option.
 
 Debug information are written to split files when the separate codegen option `-C split-debuginfo=packed` or `unpacked` (whether by default or explicitly set).
 
 ## Cargo
 
-`trim-paths` is a profile setting which controls the sanitisation of file paths in compilation outputs. It has three valid options:
-- `none` or `false`: no sanitisation at all
-- `object`: sanitise only the paths in emitted executable or library binaries. It always affects paths from macros such as panic messages, and in debug information
-  only if they will be embedded together with the binary (the default on platforms with ELF binaries, such as Linux and windows-gnu),
-  but will not touch them if they are in separate files (the default on Windows MSVC and macOS). But the path to these separate files are sanitised.
-- `all` or `true`: sanitise paths in all compilation outputs, including compiled executable/library, debug information, and compiler diagnostics.
+`trim-paths` is a profile setting which enables and controls the sanitisation of file paths in compilation outputs. It corresponds to the `--remap-path-scope` flag of rustc and accepts all valid scope, or combination of scopes that `--remap-path-scope` accepts, in addition to the `none` or `false` option which disables path sanitisation completely.
 
-The default release profile uses option `object`. You can also manually override it by specifying this option in `Cargo.toml`:
+It is defaulted to `none` for debug profiles, and `object` for release profiles. You can manually override it by specifying this option in `Cargo.toml`:
 ```toml
 [profile.dev]
 trim-paths = all
@@ -118,7 +115,11 @@ trim-paths = all
 trim-paths = none
 ```
 
-When a path is in scope for sanitisation, it is handled by the following rules:
+The default release profile setting (`object`) sanitises only the paths in emitted executable or library files. It always affects paths from macros such as panic messages, and in debug information
+  only if they will be embedded together with the binary (the default on platforms with ELF binaries, such as Linux and windows-gnu),
+  but will not touch them if they are in separate files (the default on Windows MSVC and macOS). But the path to these separate files are sanitised.
+
+The following paths are sanitised, if they appear in a covered scope:
 
 1. Path to the source files of the standard and core library (sysroot) will begin with `/rustc/[rustc commit hash]`.
    E.g. `/home/username/.rustup/toolchains/nightly-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/result.rs` -> 
@@ -130,7 +131,7 @@ When a path to the source files of the standard and core library is *not* in sco
 is present. If it is, then the real path pointing to a copy of the source files on your file system will be emitted; if it isn't, then they will
 show up as `/rustc/[rustc commit hash]/library/...` (just like when it is selected for sanitisation). Paths to all other source files will not be affected.
 
-This will not affect any hard-coded paths in the source code.
+This will not affect any hard-coded paths in the source code, such as in strings.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -141,19 +142,12 @@ We only need to change the behaviour for `Test` and `Build` compile modes.
 
 If `trim-paths` is `none` (`false`), no extra flag is supplied to `rustc`.
 
-If `trim-paths` is `object` or `all` (`true`), then two `--remap-path-prefix` arguments are supplied to `rustc`:
+If `trim-paths` is anything else, then its value is supplied directly to `rustc`'s `--remap-path-scope` option, along with two `--remap-path-prefix` arguments:
 - From the path of the local sysroot to `/rustc/[commit hash]`. 
 - If the compilation unit is under the working directory, from the the working directory absolute path to empty string.
   If it's outside the working directory, from the absolute path of the package root to `[package name]-[package version]`.
 
-A further `--remap-path-scope` is also supplied for options `object` and `all`:
-
-If `trim-path` is `object`, then `--remap-path-scope=macro,unsplit-debuginfo,split-debuginfo-file`.
-
-As a result, panic messages (which are always embedded) are sanitised. If debug information is embedded, then they are sanitised; if they are split then they are kept untouched, but the paths to these split files are sanitised.
-
-If `trim-path` is `all` (`true`), all paths will be affected, equivalent to `--remap-path-scope=macro,split-debuginfo,unsplit-debuginfo,diagnostics,split-debuginfo-file` (or not supplying `--remap-path-scope` at all).
-
+The default value of `trim-paths` is `object` for release profile. As a result, panic messages (which are always embedded) are sanitised. If debug information is embedded, then they are sanitised; if they are split then they are kept untouched, but the paths to these split files are sanitised.
 
 Some interactions with compiler-intrinsic macros need to be considered:
 1. Path (of the current file) introduced by [`file!()`](https://doc.rust-lang.org/std/macro.file.html) *will* be remapped. **Things may break** if
@@ -259,8 +253,3 @@ or is it a part of the path; if the first `:` supplied belongs to the path then 
 
 In any case, future inclusion of this new syntax will not affect `--remap-path-scope` introduced in this RFC. Scopes specified in `--remap-path-scope`
 will be used as default for all mappings, and explicit scopes for an individual mapping will take precedence on that mapping.
-
-## Alias for scope options
-`--remap-path-scope` can be made to accept additional options that act as aliases for one or more of the existing options. For instance, `--remap-path-scope=debuginfo` can be made equivalent to `--remap-path-scope=split-debuginfo,unsplit-debuginfo`.
-
-Additionally, `none`, `object` and `all` can be made aliases of what Cargo's `trim-paths` option is supposed to provide, such that Cargo's `trim-paths` option can be directly used as the value of `--remap-path-scope`. This allows the user to write `object,split-debuginfo` in `trim-paths` to remap paths in binaries/executables and split debuginfo files, but not in diagnostics.
