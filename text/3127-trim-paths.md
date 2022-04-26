@@ -90,7 +90,7 @@ should support finer grained control over paths in which contexts should be rema
 
 When the `--remap-path-prefix` option is passed to rustc, source path prefixes in all output will be affected by default.
 The `--remap-path-scope` argument can be used in conjunction with `--remap-path-prefix` to determine paths in which output context should be affected.
-This flag accepts a comma-separated list of values and may be specified multiple times. The valid scopes are:
+This flag accepts a comma-separated list of values and may be specified multiple times, in which case the scopes are aggregated together. The valid scopes are:
 
 - `macro` - apply remappings to the expansion of `std::file!()` macro. This is where paths in embedded panic messages come from
 - `diagnostics` - apply remappings to printed compiler diagnostics
