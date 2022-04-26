@@ -246,7 +246,12 @@ the other for only debuginfo: https://reproducible-builds.org/docs/build-path/. 
 ## Per-mapping scope control
 If it turns out that we want to enable finer grained scoping control on each individual remapping, we could use a `scopes:from=to` syntax.
 E.g. `split-debuginfo,unsplit-debuginfo,diagnostics:/path/to/src=src` will remove all references to `/path/to/src` from compiler diagnostics and debug information, but
-they are retained in panic messages. This syntax can be used with either a brand new `--remap-path-prefix-scoped` option, or we could extend the
+they are retained in panic messages.
+
+How exactly this new syntax will look like is, of course, up to further discussion. Using comma as a separator for scopes may look ambiguous as `macro,diagnostics:/path/from=to` could be interpreted as `macro`
+and `diagnostics:/path/from=to`.
+
+This syntax can be used with either a brand new `--remap-path-prefix-scoped` option, or we could extend the
 existing `--remap-path-prefix` option to take in this new syntax.
 
 If we were to extend the existing `--remap-path-prefix`, there may be an ambiguity to whether `:` means a separator between scope list and mapping,
