@@ -98,7 +98,7 @@ This flag accepts a comma-separated list of values and may be specified multiple
 - `split-debuginfo` - apply remappings to debug information only when they are written to split debug information files, but not in compiled executables or libraries 
 - `split-debuginfo-file` - apply remappings to the paths pointing to split debug information files. Does nothing when these files are not generated.
 - `object` - an alias for `macro,unsplit-debuginfo,split-debuginfo-file`. This ensures all paths in compiled executables or libraries are remapped, but not elsewhere.
-- `all` and `true` - an alias for all of the above, also equivalent to supplying `--remap-path-prefix` without this option.
+- `all` and `true` - an alias for all of the above, also equivalent to supplying only `--remap-path-prefix` without `--remap-path-scope`.
 
 Debug information are written to split files when the separate codegen option `-C split-debuginfo=packed` or `unpacked` (whether by default or explicitly set).
 
@@ -119,7 +119,7 @@ The default release profile setting (`object`) sanitises only the paths in emitt
   only if they will be embedded together with the binary (the default on platforms with ELF binaries, such as Linux and windows-gnu),
   but will not touch them if they are in separate files (the default on Windows MSVC and macOS). But the path to these separate files are sanitised.
 
-The following paths are sanitised, if they appear in a covered scope:
+If `trim-paths` is not `none` or `false`, then the following paths are sanitised if they appear in a selected scope:
 
 1. Path to the source files of the standard and core library (sysroot) will begin with `/rustc/[rustc commit hash]`.
    E.g. `/home/username/.rustup/toolchains/nightly-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/result.rs` -> 
@@ -128,7 +128,7 @@ The following paths are sanitised, if they appear in a covered scope:
 3. Path to packages outside of the working directory will be replaced with `[package name]-[version]`. E.g. `/home/username/deps/foo/src/lib.rs` -> `foo-0.1.0/src/lib.rs`
 
 When a path to the source files of the standard and core library is *not* in scope for sanitisation, the emitted path will depend on if `rust-src` component
-is present. If it is, then the real path pointing to a copy of the source files on your file system will be emitted; if it isn't, then they will
+is present. If it is, then the real path pointing to the copy of the source files on your file system will be emitted; if it isn't, then they will
 show up as `/rustc/[rustc commit hash]/library/...` (just like when it is selected for sanitisation). Paths to all other source files will not be affected.
 
 This will not affect any hard-coded paths in the source code, such as in strings.
