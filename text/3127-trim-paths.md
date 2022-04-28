@@ -94,7 +94,7 @@ This flag accepts a comma-separated list of values and may be specified multiple
 
 - `macro` - apply remappings to the expansion of `std::file!()` macro. This is where paths in embedded panic messages come from
 - `diagnostics` - apply remappings to printed compiler diagnostics
-- `unsplit-debuginfo` - apply to remappings to debug information only when they are written to compiled executables or libraries, but not when they are in split files
+- `unsplit-debuginfo` - apply remappings to debug information only when they are written to compiled executables or libraries, but not when they are in split debuginfo files
 - `split-debuginfo` - apply remappings to debug information only when they are written to split debug information files, but not in compiled executables or libraries 
 - `split-debuginfo-file` - apply remappings to the paths pointing to split debug information files. Does nothing when these files are not generated.
 - `object` - an alias for `macro,unsplit-debuginfo,split-debuginfo-file`. This ensures all paths in compiled executables or libraries are remapped, but not elsewhere.
@@ -104,7 +104,16 @@ Debug information are written to split files when the separate codegen option `-
 
 ## Cargo
 
-`trim-paths` is a profile setting which enables and controls the sanitisation of file paths in compilation outputs. It corresponds to the `--remap-path-scope` flag of rustc and accepts all valid scope, or combination of scopes that `--remap-path-scope` accepts, in addition to the `none` or `false` option which disables path sanitisation completely.
+`trim-paths` is a profile setting which enables and controls the sanitisation of file paths in compilation outputs. It corresponds to the `--remap-path-scope` flag of rustc and accepts all valid scope, or combination of scopes that `--remap-path-scope` accepts, in addition to the `none` or `false` option which disables path sanitisation completely. Possible values are:
+
+- `none` and `false` - disable path sanitisation
+- `macro` - sanitise paths in the expansion of `std::file!()` macro. This is where paths in embedded panic messages come from
+- `diagnostics` - sanitise paths in printed compiler diagnostics
+- `unsplit-debuginfo` - sanitise paths in debug information in compiled executables or libraries. Does nothing if debug information are in split files
+- `split-debuginfo` - sanitise paths in debug information in split debuginfo files. Does nothing if debug information are in compiled executables or libraries 
+- `split-debuginfo-file` - sanitise paths pointing to split debug information files. Does nothing if these files are not generated.
+- `object` - an alias for `macro,unsplit-debuginfo,split-debuginfo-file`. This ensures all paths in compiled executables or libraries are sanitised, but not elsewhere.
+- `all` and `true` - an alias for all of the above
 
 It is defaulted to `none` for debug profiles, and `object` for release profiles. You can manually override it by specifying this option in `Cargo.toml`:
 ```toml
