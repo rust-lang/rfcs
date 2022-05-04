@@ -30,11 +30,12 @@ The “types team” owns the design, implementation, and maintenance of the Rus
 
 ## Relationship to other teams
 
-The types team is conceptually a subteam of both the lang and compiler teams. Since the team repo can't really model that, we'll put it primarily under the lang team.
+The types team is conceptually a subteam of both the lang and compiler teams. Since the team repo can't really model that, we'll put it primarily under the lang team (but this may be changed in the future if support is added).
 
 ### Lang team
 
 * Stabilizing new features that intersect the type system will require approval by the types team.
+    * There is some parallel work being proposed to better "formalize" multi-team "signoffs" of language features, which would be relevant here
     * Eventually this is expected to require extending the "formality" models to include the feature.
     * This approval is not meant to be used to make "policy" decisions but to enforce the soundness and implementability of the feature itself.
 * Advising on how to address soundness bugs or other subtle questions that arise.
@@ -56,7 +57,7 @@ Here are some examples to illustrate how the types team will interact.
 
 ### Evaluating the implication of equality constraints or negative trait bounds
 
-The original RFC for where clauses included equality constraints like `where T == U` (tracked by [#20041]); similarly, people have regularly considered including the option to have "negated" where clauses like `where T: !Debug`. Both of these features, if led to their full generality, turn out to make the implementation of Rust's trait solver significantly more complicated. Therefore, the types team is within its rights to veto these features or to suggest appropriate modifications to how they work and what they mean. On the other hand, it is up to the lang team to decide the syntax of those where clauses and whether they'd be a useful addition to Rust (presuming they had a semantics the types team was happy with). The types team cannot add a feature to Rust all by itself, but it can either remove one (because it is not feasible to implement) or tweak its formal semantics (to ensure it is sound, feasible etc). In this respect, it is just like the compiler team.
+The original RFC for where clauses included equality constraints like `where T == U` (tracked by [#20041]); similarly, people have regularly considered including the option to have "negated" where clauses like `where T: !Debug`. Both of these features, if led to their full generality, turn out to make the implementation of Rust's trait solver significantly more complicated. Therefore, the types team is within its rights to veto these features or to suggest appropriate modifications to how they work and what they mean. On the other hand, it is up to the lang team to decide the syntax of those where clauses and whether they'd be a useful addition to Rust (presuming they had a semantics the types team was happy with). The types team cannot add a feature to Rust all by itself, but it can either remove one (because it is not feasible to implement) or tweak its formal semantics (to ensure it is sound, feasible etc). In this respect, it is just like the compiler team. Of course, this would and should be done with the full spirit of collaboration between teams that the Rust Project today already employs. Decisions are not made in a vacuum. Ultimately, the types team exists as a chunk of the middle-ground between the lang and compiler teams that involves the Rust type system, and by creating this team, both the lang and compiler teams give the types team the authority to work through that chunk of problems, propose solutions, and ultimately guide the decisions there.
 
 [#20041]: https://github.com/rust-lang/rust/issues/20041
 
@@ -193,7 +194,7 @@ The amount of organization involved in a team or working group is another factor
 
 ### Wait, it has TWO parent teams?? Can you do that???
 
-Why the heck not! The team really has two aspects to its character, and so I think it belongs in both.
+Why the heck not! The team really has two aspects to its character, and so it likely belongs in both. This is further supported that the decisions the types team will make come at the intersection between the design of the language and implementation of that design.
 
 ### OK, so it should be a team, but why the "types" team?
 
