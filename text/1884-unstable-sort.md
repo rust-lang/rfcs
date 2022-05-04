@@ -54,7 +54,7 @@ A: Because stability is a good default. A programmer might call a sort function
 without checking in the documentation whether it is stable or unstable. It is very
 intuitive to assume stability, so having `slice::sort` perform unstable sorting might
 cause unpleasant surprises.
-See this [story](https://medium.com/@cocotutch/a-swift-sorting-problem-e0ebfc4e46d4#.yfvsgjozx)
+See this [story](https://web.archive.org/web/20181006113551/https://medium.com/@topLayoutGuide/a-swift-sorting-problem-e0ebfc4e46d4)
 for an example.
 
 **Q: Why does `slice::sort` allocate?**<br>
