@@ -122,7 +122,7 @@ Organizations will be able to apply by opening an issue in the
 The application process will be public, and the decision will be made by the
 WG: a majority of the WG members needs to be in favor of the organization
 joining, and none of the members needs to be against it. The resulting list
-of notifications receiving advance disclosure will also be public.
+of organizations receiving advance disclosure will also be public.
 
 In addition to individual organizations, industry-standard mailing lists and
 disclosure venues that are frequented mostly by organizations that would
