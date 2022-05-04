@@ -208,7 +208,7 @@ the upcoming security release on the [public security announces mailing
 list][announce-ml], the [Rust blog][blog] and any other venue the WG deems
 appropriate. The announcement should mention:
 
-* The planned date and time for the release.
+* The planned date and time (with the time zone) for the release.
 * The severity of the vulnerability, as determined by the WG.
 * The affected part of the project (e.g., the compiler, the standard library...).
 
