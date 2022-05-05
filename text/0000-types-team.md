@@ -182,6 +182,8 @@ Related, but more technical, it may make sense for type team members to get r+ a
 
 ### Why a team and not a working group? What is the difference between those anyway?
 
+The distinction between a team and working group are ongoing and will likely result in a separate RFC. However, the following explanation gives *one* opinion on how this might look. It's not expected that this RFC be used as reference for future justification of decisions related to this.
+
 A **team** focuses on maintaining and extending some aspect of Rust (e.g., compiler, language, stdlib) so that it works well for all Rust users. As the owners of that area, they have **final decision making power**. Teams are (relatively) **permanent**, as they tend to an area of functionality and need to do maintenance, bug fixes, and the like. (It's possible of course to decomission a team, either because there is no one to do the work, because the work is now being done by another team, or because the product the team was maintaining has gone away.)
 
 A **working group** focuses on improving Rust for a particular purpose or target domain (e.g., async, CLI, but also more abstract purposes like error handling). Typically, they do that work by preparing **recommendations** (e.g., in the form of RFCs) that are then adopted by teams (though in some cases, working groups own and maintain repositories as well, which they have jurisdiction over). Working groups are **temporary** -- at some point, the domain is served "well enough" and the action moves out to the ecosystem at large. (This may, however, take a long time.)
