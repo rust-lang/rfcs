@@ -6,14 +6,14 @@
 # Summary
 [summary]: #summary
 
-This feature add a way to bound universal quantification of HTRBs to allow more APIs.
+This feature add a way to bound universal quantification of higher ranked trait bounds (HRTB) to allow more APIs.
 
 # Motivation
 [motivation]: #motivation
 
 The HRTB construct has allowed us to talk about closures that are generic over lifetimes. However, initially this has not included a way to restrict these generic lifetimes, thus, in practice, it turned out to be useful in only a handful of scenarios.
 
-The goal of the proposal is to allow bounded universal quantification over lifetimes.
+Currently, the existing higher-rank trait bounds functionality allows generalizing bounds that outlive a given lifetime, but do not allow generalizing bounds that are outlived by other lifetimes, the goal of the proposal is to allow such generalizations.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -49,15 +49,15 @@ Instead, with this feature, we add the bound restricting the part "all lifetimes
 
 Syntax:
 ```rust
-for<$list_of_lifetimes where $list_of_bounds>
+for<$list_of_lifetimes where $list_of_lifetime_bounds>
 ```
 
-Sanitization of bound coming after `where` in this form is done by the rule: "all constraints given after `where` must use at least one of the lifetimes introduced before `where`"
+The bounds put inside of `$list_of_lifetime_bounds` have to refer to at least one lifetime introduced within `$list_of_lifetimes`. This way, we keep bounds of parent context from messing with bounds of extended HRTB.
 
 # Drawbacks
 [drawbacks]: #drawbacks
 
-We may not do this if we don't want to add this capability in this form.
+We may not do this if we want another form for this capability.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -85,9 +85,9 @@ They were not chosen because of:
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-- Do we want to forbid the case `for<'a where 'a: 'o >`? - the case where generic lifetime itself outlives some concrete one.
+None
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-I don't believe we want HRTB to carry even more then proposed here, at least for now.
+I don't believe we want HRTB to carry even more than proposed here, at least for now.
