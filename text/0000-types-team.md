@@ -200,7 +200,7 @@ Why the heck not! The team really has two aspects to its character, and so it li
 
 ### OK, so it should be a team, but why the "types" team?
 
-We went back and forth on the name and decided that the "types" (or "type system", in full) hit the "sweet spot" in terms of being short, suggestive, and memorable. The "type system" for Rust in general encompasses all of its static checking, so the name is appropriate in that regard; the team is also responsible for defining Rust's operational semantics (what effect Rust code has when it executes), which is not part of the type system, but that's ok. 
+We went back and forth on the name and decided that "types" (or "type system", in full) hit the "sweet spot" in terms of being short, suggestive, and memorable. The "type system" for Rust in general encompasses all of its static checking, so the name is appropriate in that regard; the team is also responsible for defining Rust's operational semantics (what effect Rust code has when it executes), which is not part of the type system, but that's ok. 
 
 Other names considered:
 
