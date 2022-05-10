@@ -168,6 +168,9 @@ notification will depend on the impact of the vulnerability:
 * For most vulnerabilities, five business days before public disclosure.
 * For actively exploited critical vulnerabilities, one business day before
   public disclosure.
+* For actively exploited critical vulnerabilities that do not require a
+  toolchain update to be effectively mitigated, no advance notification will be
+  sent.
 
 Not all vulnerabilities will result in an advance notification being sent.
 Namely, vulnerabilities in the project infrastructure, crates maintained by the
