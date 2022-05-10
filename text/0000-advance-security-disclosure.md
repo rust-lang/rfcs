@@ -194,7 +194,13 @@ All organizations who received an advance notification must treat all the
 information they received and all fixes they developed as confidential until
 the public disclosure by the WG. The information can only be shared inside the
 organization on a need-to-know basis, and can never be shared with people
-external to the organization without the permission of the WG.
+external to the organization without explicit permission from the WG.
+
+Organizations must take appropriate steps to protect the confidentiality of
+advance notifications and of all comminications and materials associated with
+them. If the organization already has established procedures for dealing with
+confidential information received from partners, those procedures should at
+least apply (in addition to any other procedure deemed necessary).
 
 There will be no formal NDA to sign to start receiving early notifications, but
 any violation of confidentiality will still have consequences (see "Removal
