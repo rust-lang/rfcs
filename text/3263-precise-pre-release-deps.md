@@ -6,14 +6,16 @@
 # Summary
 [summary]: #summary
 
-Cargo will not anymore use the more compatible version for pre-release by default, this mean that `1.0.0-alpha.0` will be interpreted as `=1.0.0-alpha.0` by cargo instead of `^1.0.0-alpha.0`.
+Cargo will not use the more compatible version for pre-release by default, this mean that `1.0.0-alpha.0` will be interpreted as `=1.0.0-alpha.0` by cargo instead of `^1.0.0-alpha.0`.
 
-This doesn't require any change in Cargo.toml.
+This doesn't require any change in `Cargo.toml`.
 
 # Motivation
 [motivation]: #motivation
 
-[Semver 2.0](https://semver.org) rules for pre-release doesn't include breaking change concept between pre-release, it's only about ordering. This mean that any new pre-release would be considerate by cargo as a compatible version. Even worse, [VersionReq for prereleases matches release versions](https://github.com/dtolnay/semver/issues/236). Say otherwise, if an user put `version = "1.0.0-alpha.0"` in their `Cargo.toml` this will be considered by cargo as compatible with any pre-release that follow `1.0.0-alpha.1`, `1.0.0-alpha.2`, `1.0.0-beta.0`, etc... and also `1.0.0`, `1.1.0`, etc... (But not `2.0.0`). 
+[Semver 2.0](https://semver.org) have two concepts, compatible version rules, and precedence. Compatible rules apply when you use `^` in front of the version like `^1.0.0` this mean you ask the resolver to take the biggest compatible version of `1.0.0`. Semver, clearly define breaking change is when MAJOR version increase. Precedence define ordering `1.0.0 < 1.1.0 < 1.1.1 < 2.0.0-alpha < 2.0.0`. Here there is a inconstancy in [Cargo doc](https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#specifying-dependencies-from-cratesio), cause `2.0.0-alpha` is not considerate by `1.0.0 >= X < 2.0.0` for compatibility rules by cargo. But `2.0.0-alpha` is clearly between `1.0.0` and `2.0.0`. That mean that we mix up the precedence concept of Semver and the compatible version rules.
+
+Semver rules for pre-release doesn't include breaking change concept between pre-release, it's only specify precedence. Semver rule 9 say "pre-release version indicates that the version is unstable and might not satisfy the intended compatibility requirements as denoted by its associated normal version.". Cargo consider any higher pre-release as a compatible version. Even worse, [VersionReq for prereleases matches release versions](https://github.com/dtolnay/semver/issues/236). Say otherwise, if an user put `version = "1.0.0-alpha.0"` in their `Cargo.toml` this will be considered by cargo as compatible with any pre-release that follow `1.0.0-alpha.1`, `1.0.0-alpha.2`, `1.0.0-beta.0`, etc... and also `1.0.0`, `1.1.0`, etc... (But not `2.0.0`).
 
 The current behavior break pre-release build, here a no exhaustive list:
 
@@ -77,7 +79,7 @@ Cargo will need to differentiate how they resolve a pre-release and a release ve
 [drawbacks]: #drawbacks
 
  * This could break some build. A code that was using a most recent pre-release version could not compile anymore.
- * It's make Cargo have a different behavior for version field between a pre-release and a release.
+ * It's make Cargo have a different behavior for version field between a pre-release and a release. Making both maintenance of Cargo harder but also could confuse user of Rust.
  * It's a change that affect the whole Rust ecosystem.
 
 # Rationale and alternatives
@@ -87,13 +89,15 @@ In practice, do it transparently should not break any heathy workflow, user that
 
   1. Use the `resolver` value version, bump it to `3`:
    
-     This may be overkill but it's a naturel way to make change in the way semver rule are trated by Cargo.
+     This may be overkill but it's a naturel way to make change in the way semver rule are treated by Cargo.
      
   2. Use a separate value `pre-release-updates = "sticky" # or "default"`:
 
      This is less overkill and can be remove at the next Edition of Rust.
 
-Instead, We could decide that since Semver doesn't specify compatible rule for pre-release and say there is no compatible version for pre-release. `1.0.0-alpha.0` would never match any other requirement that exact same version. That mean that `^1.0.0-alpha.0` could only match `1.0.0-alpha.0` version. This have the major benefit to not introduce inconsistency with pre-release and release in Cargo resolve. This could also be adopted transparently or using opt-in solution.
+Instead of changing resolver cargo behavior, we could decide that there is no compatible version for pre-release as explaining pre-release having compatible version don't make a lot of sense. So `1.0.0-alpha.0` would never match any other requirement that exact same version. That mean that `^1.0.0-alpha.0` could only match `1.0.0-alpha.0` version. This have the major benefit to not introduce inconsistency with pre-release and release in Cargo resolve. This could also be adopted transparently or using opt-in solution.
+
+The latter alternative could be preferred. Cause it doesn't add complex behavior in cargo resolver, It's will make the maintenance of Cargo simpler. It's also follow the rule 9 of Semver that say pre-release don't have any compatibility requirement. And we teach this by simply say that pre-release don't have any compatible version.
 
 # Prior art
 [prior-art]: #prior-art
@@ -107,7 +111,7 @@ Unknown, Cargo behavior to by default use the most compatible version is unique 
 
 If we expect other change in the way Cargo resolver work before the next Rust edition we could prefer ship this feature with a more big `resolver = 3` update.
 
-It's unclear how an opt-in feature interact with dependencies. For example, A depend on a pre-release of B, but B also depend on a pre-release of C. B didn't opt-in to this resolver But A did. Will Cargo use A choice and only use the strictly same version for pre-release of C? This could be done but what if B break cause it was also using the newer pre-release of C without know it? The why I think we should try to introduce this change transparently, we must carefully check for break in the existing ecosystem. There should be very few break if not zero.
+It's unclear how an opt-in feature interact with dependencies. For example, `A` depend on a pre-release of `B`, but `B` also depend on a pre-release of `C`. `B` didn't opt-in to this resolver but `A` did. Will Cargo use `A` choice and only use the strictly same version for pre-release of `C`? This could be done but what if `B` break cause it was also using the newer pre-release of `C` without know it? That why I think we should try to introduce this change transparently, we must carefully check for break in the existing ecosystem. There should be very few break if not zero.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
