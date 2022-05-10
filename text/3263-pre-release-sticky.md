@@ -1,4 +1,4 @@
-- Feature Name: `pre-release-sticky`
+- Feature Name: `precise-pre-release-deps`
 - Start Date: 2022-05-10
 - RFC PR: [rust-lang/rfcs#3263](https://github.com/rust-lang/rfcs/pull/3263)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
@@ -6,26 +6,37 @@
 # Summary
 [summary]: #summary
 
-The following assume:
+Cargo will not anymore use the more compatible version for pre-release by default, this mean that `1.0.0-alpha.0` will be interpreted as `=1.0.0-alpha.0` by cargo instead of `^1.0.0-alpha.0`.
 
- - A release is a version without a "pre-release" tag (like `1.0.0`)
- - A pre-release is a version with a "pre-release" tag (like `1.0.0-alpha`)
-
-Cargo will now apply no precedence rule on pre-release by default, this mean that `1.0.0-alpha.0` will be interpreted as `=1.0.0-alpha.0` by cargo instead of `^1.0.0-alpha.0`.
+This doesn't require any change in Cargo.toml.
 
 # Motivation
 [motivation]: #motivation
 
-The current behavior often break pre-release build, [Semver 2.0](https://semver.org/#spec-item-11) rules for pre-release doesn't include breaking change concept between pre-release. This mean that any new pre-release would be considerate by cargo as a "compatible update". Even worse, final version also match the requierement of any pre-release. Say otherwise, if an user put `version = "1.0.0-alpha.0"` in their `Cargo.toml` this will be considered by cargo as compatible with any pre-release that follow `1.0.0-alpha.1`, `1.0.0-alpha.2`, `1.0.0-beta.0`, etc... and also `1.0.0`, `1.1.0`, etc... (But not `2.0.0`). This can also lead to security problem.
+[Semver 2.0](https://semver.org) rules for pre-release doesn't include breaking change concept between pre-release, it's only about ordering. This mean that any new pre-release would be considerate by cargo as a compatible version. Even worse, [VersionReq for prereleases matches release versions](https://github.com/dtolnay/semver/issues/236). Say otherwise, if an user put `version = "1.0.0-alpha.0"` in their `Cargo.toml` this will be considered by cargo as compatible with any pre-release that follow `1.0.0-alpha.1`, `1.0.0-alpha.2`, `1.0.0-beta.0`, etc... and also `1.0.0`, `1.1.0`, etc... (But not `2.0.0`). 
 
-This is an open problem since some time, [cargo #2222](https://github.com/rust-lang/cargo/issues/2222) but have receive some input in Oct 2021, specially in this [forum post](https://internals.rust-lang.org/t/changing-cargo-semver-compatibility-for-pre-releases/14820) where this proposition have been suggested.
+The current behavior break pre-release build, here a no exhaustive list:
 
-Finally, contrary to release version where most user benefits from having cargo pick the latest compatible version as default, there is little sense to do the same for pre-release version cause there are very likely be breaking change between all pre-release version. This is a trap that most user don't expect to happen (why does my project don't compile anymore ?!?). Pre-release version precedence of `Cargo.toml` should default to something more user friendly. User expect bugs from a pre-release but no one want their build suddenly break when a new pre-release is out.
+ - [0.5.0-rc2 break 0.5.0-rc1](https://github.com/SergioBenitez/Rocket/issues/2166)
+ - [Dependencies in pre-release should always use fixed version](https://github.com/rust-lang/cargo/issues/9999)
+ - [Force cargo to install winit-0.20.0-alpha4](https://github.com/hecrj/wgpu_glyph/pull/31)
+ - [Breaking change 0.6.0-alpha4 to 0.6.0](https://github.com/PyO3/pyo3/issues/430)
+
+Pre-release are often bugged and unstable so using a newer pre-release implicitly could lead to security problem.
+
+This is an open problem since some time, [cargo #2222](https://github.com/rust-lang/cargo/issues/2222) but have receive some input in Jun 2021, specially in this [forum post](https://internals.rust-lang.org/t/changing-cargo-semver-compatibility-for-pre-releases/14820) where this proposition have been suggested.
+
+Finally, contrary to release version where most user benefits from having cargo pick the latest compatible version as default, there is little sense to do the same for pre-release version cause there are very likely be breaking change between all pre-release version. This is a trap that most user don't expect to happen (why does my project don't compile anymore ?) and increase the work of maintainers (who want deal with pre-release issue cause they don't compile anymore when make a new pre-release). `Cargo.toml` should default to something more user friendly and less error prone. User expect bugs from a pre-release but no one want their build suddenly break when a new pre-release is out.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-By default Cargo follow Semver precedence rules for release of a crate but will make no assumption for pre-release.
+The following assumes:
+
+ - A release is a version without a "pre-release" tag (like `1.0.0`)
+ - A pre-release is a version with a "pre-release" tag (like `1.0.0-alpha`)
+
+By default Cargo use the more compatible version for release of a crate but will not for pre-release.
 
 ```toml
 [dependencies.foo]
@@ -58,21 +69,21 @@ The latter doesn't change.
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-Do it transparently
+Do it transparently for the user.
+
+Cargo will need to differentiate how they resolve a pre-release and a release version.
 
 # Drawbacks
 [drawbacks]: #drawbacks
 
- * This could break workflow
- * It's make pre-release semver rules have a different behavior than release for Cargo.
+ * This could break some build. A code that was using a most recent pre-release version could not compile anymore.
+ * It's make Cargo have a different behavior for version field between a pre-release and a release.
  * It's a change that affect the whole Rust ecosystem.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-In practice, do it transparently should not break any heathy workflow, user that put a pre-release version clearly want to use this version and if user have been using a most recent pre-release version not on purpose it's very unlikely their build would break. We could check the impact of implementing this transparently with a [crater](https://github.com/rust-lang/crater) run.
-
-To introduce this change we could also:
+In practice, do it transparently should not break any heathy workflow, user that put a pre-release version clearly want to use this version and if user have been using a most recent pre-release version not on purpose it's very unlikely their build would break (build would have break when new pre release was out). We could check the impact of implementing this transparently with a [crater](https://github.com/rust-lang/crater) run. If we see that there are unacceptable break, This RFC will then say we will use an opt-in option as follow:
 
   1. Use the `resolver` value version, bump it to `3`:
    
@@ -80,26 +91,28 @@ To introduce this change we could also:
      
   2. Use a separate value `pre-release-updates = "sticky" # or "default"`:
 
-     This is less overkill, but have the drawback to include a new value in `Cargo.toml` just for that.
+     This is less overkill and can be remove at the next Edition of Rust.
 
-Both these solutions would need a new Rust edition to be introduce by default.
-
-Instead, We could change the rule of Semver for pre-release and say there is no precedence rule for pre-release. `1.0.0-alpha.0` would never match any other requirement that exact same version. That mean that `^1.0.0-alpha.0` could only match `1.0.0-alpha.0` version. This have the major benefit to not introduce inconsistency with pre-release and release in Cargo resolve but this would not follow Semver. This could also be adopted transparently or using opt-in solution.
+Instead, We could decide that since Semver doesn't specify compatible rule for pre-release and say there is no compatible version for pre-release. `1.0.0-alpha.0` would never match any other requirement that exact same version. That mean that `^1.0.0-alpha.0` could only match `1.0.0-alpha.0` version. This have the major benefit to not introduce inconsistency with pre-release and release in Cargo resolve. This could also be adopted transparently or using opt-in solution.
 
 # Prior art
 [prior-art]: #prior-art
 
 Unknown, Cargo behavior to by default use the most compatible version is unique AFAIK most other tool assume `version = "=1.0.0"` for `version = "1.0.0"`. So this problem may be unique to Cargo.
 
+[Npm rules](https://docs.npmjs.com/cli/v6/using-npm/semver) follow the same than cargo for compatibility version but npm default to `=` for everything while Cargo default to `^`.
+
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 If we expect other change in the way Cargo resolver work before the next Rust edition we could prefer ship this feature with a more big `resolver = 3` update.
 
+It's unclear how an opt-in feature interact with dependencies. For example, A depend on a pre-release of B, but B also depend on a pre-release of C. B didn't opt-in to this resolver But A did. Will Cargo use A choice and only use the strictly same version for pre-release of C? This could be done but what if B break cause it was also using the newer pre-release of C without know it? The why I think we should try to introduce this change transparently, we must carefully check for break in the existing ecosystem. There should be very few break if not zero.
+
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-Introduce a more complex precedence rule for pre-release, for example we could say pre-release tag have its own rule about Semver like:
+Since Semver doesn't clearly specify compatibility rules for pre-release we could introduce a more complex compatible version rules for pre-release, for example we could say pre-release tag have its own rule about Semver like:
 
 ```none
 1.0.0-0.0
@@ -110,6 +123,6 @@ Introduce a more complex precedence rule for pre-release, for example we could s
 1.0.0-2.0 // breaking change
 ```
 
-The problem is this is far than being universal. Should be it more complex? Have a patch version? How do we handle alphabetic tag?
+The biggest problem is that there is no precedent of such rules. Should be it more complex? Have a patch version? How do we handle alphabetic tag?
 
 While such feature could be nice, I believe this is overkill for pre-release. Pre-release are preview release, there are not mean to be bug free, there are not mean to be used in prod (but there are). Keep them simple should be better, treat them as unique snapshot that will never receive compatible update.
