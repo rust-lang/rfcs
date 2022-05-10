@@ -151,11 +151,11 @@ Organizations can be removed from the list in any of these cases:
   there are valid reasons for not acting on the notifications before removing
   the organization. Organizations can re-apply later.
 
-* The organization either accidentally violated confidentiality multiple times
-  without taking appropriate steps to prevent it from happening again, or
-  intentionally/maliciously violated confidentiality one time. Organizations
-  will only be able to re-apply with full consent from the whole Security
-  Response WG and Rust Core Team.
+* The organization either accidentally violated confidentiality more than once
+  without having taken appropriate steps to prevent it from happening again
+  after the first violation, or intentionally/maliciously violated
+  confidentiality one time. Organizations will only be able to re-apply with
+  full consent from the whole Security Response WG and Rust Core Team.
 
 The decision will be made by the WG, and can be appealed to the Rust Core Team.
 
