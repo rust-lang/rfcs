@@ -58,7 +58,7 @@ critical, actively exploited vulnerabilities.
 To ensure all Rust users have access to a fixed toolchain, the Rust Security
 Response WG will send the full vulnerability details ahead of time to
 distributors of the Rust toolchain and maintainers of alternate Rust
-implementation (when applicable), giving them all the information required to
+implementations (when applicable), giving them all the information required to
 prepare a toolchain update for their users or customers.
 
 Organizations (either companies or established open source projects) eligible
