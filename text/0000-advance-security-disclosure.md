@@ -197,7 +197,7 @@ organization on a need-to-know basis, and can never be shared with people
 external to the organization without explicit permission from the WG.
 
 Organizations must take appropriate steps to protect the confidentiality of
-advance notifications and of all comminications and materials associated with
+advance notifications and of all communications and materials associated with
 them. If the organization already has established procedures for dealing with
 confidential information received from partners, those procedures should at
 least apply (in addition to any other procedure deemed necessary).
