@@ -102,9 +102,18 @@ The latter alternative could be preferred. Cause it doesn't add complex behavior
 # Prior art
 [prior-art]: #prior-art
 
-Unknown, Cargo behavior to by default use the most compatible version is unique AFAIK most other tool assume `version = "=1.0.0"` for `version = "1.0.0"`. So this problem may be unique to Cargo.
+Cargo behavior to by default use the most compatible version is unique AFAIK most other tool assume `version = "=1.0.0"` for `version = "1.0.0"`. So this problem may be unique to Cargo.
 
-[Npm rules](https://docs.npmjs.com/cli/v6/using-npm/semver) follow the same than cargo for compatibility version but npm default to `=` for everything while Cargo default to `^`.
+[Npm rules](https://docs.npmjs.com/cli/v6/using-npm/semver#prerelease-tags) follow the same than cargo for compatibility version but npm default to `=` for everything while Cargo default to `^`. Npm clearly state they don't strictly follow semver precedence for pre-release:
+
+> For example, the range >1.2.3-alpha.3 would be allowed to match the version 1.2.3-alpha.7, but it would not be satisfied by 3.4.5-alpha.9, even though 3.4.5-alpha.9 is technically "greater than" 1.2.3-alpha.3 according to the SemVer sort rules. The version range only accepts prerelease tags on the 1.2.3 version. The version 3.4.5 would satisfy the range, because it does not have a prerelease flag, and 3.4.5 is greater than 1.2.3-alpha.7.
+
+They also reach the same conclusion:
+
+> The purpose for this behavior is twofold. First, prerelease versions frequently are updated very quickly, and contain many breaking changes that are (by the author's design) not yet fit for public consumption. Therefore, by default, they are excluded from range matching semantics.
+> Second, a user who has opted into using a prerelease version has clearly indicated the intent to use that specific set of alpha/beta/rc versions. By including a prerelease tag in the range, the user is indicating that they are aware of the risk. However, it is still not appropriate to assume that they have opted into taking a similar risk on the next set of prerelease versions.
+
+Npm default to `=` didn't reveal the real problem of these rules, but at least their user clearly opt-in for these rules by using `^` on a pre-release. Npm behavior with `^` have the same problem than Cargo.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
@@ -129,4 +138,4 @@ Since Semver doesn't clearly specify compatibility rules for pre-release we coul
 
 The biggest problem is that there is no precedent of such rules. Should be it more complex? Have a patch version? How do we handle alphabetic tag?
 
-While such feature could be nice, I believe this is overkill for pre-release. Pre-release are preview release, there are not mean to be bug free, there are not mean to be used in prod (but there are). Keep them simple should be better, treat them as unique snapshot that will never receive compatible update.
+While such feature could be nice, I believe this is overkill for pre-release. Pre-release are preview release, they are not mean to be bug free, they are not mean to be used in prod (but there are). Keep them simple should be better, treat them as unique snapshot that will never receive compatible update.
