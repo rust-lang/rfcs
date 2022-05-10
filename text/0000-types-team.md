@@ -8,7 +8,7 @@
 
 * Introduce a new "type system team" (the "types team" for short) that works to **implement and formally define** the semantics of Rust as decided by the lang team.
 * The type team owns and maintains:
-    * The implementation of the Rust type checker, trait system, borrow checker that is used in rustc.
+    * The implementation of the Rust type checker, trait system, and borrow checker that is used in rustc.
     * Formal definitions of Rust, its type checker, and its semantics, as they are developed.
     * The "unsafe code guidelines" (once decided).
 
@@ -104,7 +104,7 @@ The current team leads are Nicholas Matsakis (nikomatsakis) and Jack Huey (jackh
 In general, each active initiative coordinates its own activity. For team-wide, cross-initiative communication, the team currently has a single weekly meeting which serves two purposes:
 
 * The first meeting of the month is the **planning meeting**, in which we review status updates and schedule the topics to cover in the remaining meetings of that month.
-* Subseqent meetings are **deep dive meetings**, in which we spend 60-90 minutes doing a deep read through a PR, design document, or other material and having team-wide discussion.
+* Subsequent meetings are **deep dive meetings**, in which we spend 60-90 minutes doing a deep read through a PR, design document, or other material and having team-wide discussion.
 
 These meetings are currently held on Zulip.
 
@@ -142,7 +142,7 @@ The team is also responsible for those portions of [rust-lang/rust] that impleme
 
 ### Active initiatives
 
-The currently active initiatives of the trait team are as follows:
+The currently active initiatives of the types team are as follows:
 
 * [Impl trait](https://rust-lang.github.io/impl-trait-initiative/): currently focused on RPITIT and TAIT
     * Membership: oli-obk, nikomatsakis, spastorino
