@@ -295,6 +295,9 @@ response programs in other open source projects. A summary of our findings is:
   disclosure, and notifies distributions, a subset of maintainers and on a
   case-by-case basis a few large Django websites.
 
+* Xen (Hypervisor): notifies distributions, public clouds, vendors of Xen-based
+  systems, and large production users two weeks before public disclosure.
+
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
