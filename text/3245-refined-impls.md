@@ -103,6 +103,7 @@ trait Error {
 }
 
 impl Error for MyError {
+    #[refine]
     fn description(&self) -> &'static str {
         "My Error Message"
     }
@@ -130,6 +131,7 @@ trait Iterable {
 }
 
 impl<T> Iterable for MyVec<T> {
+    #[refine]
     fn iter(&self) -> impl Iterator + ExactSizeIterator { ... }
 }
 ```
@@ -142,6 +144,7 @@ trait Sink {
 }
 
 impl Sink for SimpleSink {
+    #[refine]
     fn consume(&mut self, input: impl Iterator) { ... }
 }
 ```
@@ -187,56 +190,33 @@ Refined APIs are available anywhere knowledge of the impl being used is availabl
 
 ## Transitioning away from the current behavior
 
-Because we allow writing impls that look refined, but are [not usable][not-usable] as such, landing this feature means we are auto-stabilizing new ecosystem API surface. There are two ways of dealing with this:
+Because we allow writing impls that look refined, but are [not usable][not-usable] as such, landing this feature could mean auto-stabilizing new ecosystem API surface. We should probably be conservative and require library authors to opt in to refined APIs with a `#[refine]` attribute. This can be done in two parts.
 
-### Do nothing
-
-Assume that public types want to expose the APIs they actually wrote in their implementations, and allow using those APIs immediately.
-
-### Soft transition
-
-Be conservative and require library authors to opt in to refined APIs. This can be done in two parts.
-
-#### Lint against unmarked refined impls
+### Lint against unmarked refined impls
 
 After this RFC is merged, we should warn when a user writes an impl that looks refined and suggest that they copy the exact API of the trait they are implementing. Once this feature stabilizes, we can should add and suggest using `#[refine]` attribute to mark that an impl is intentionally refined.
 
-#### Automatic migration for the next edition
+### Automatic migration for the next edition
 
-Because refinement will be the default behavior for the next edition, we should rewrite users' code to preserve its semantics over edition migrations. That means we will replace trait implementations that look refined with the original API of the trait items being implemented.
+We may want to upgrade the above lint to an error in 2024 or make refinement the default without any attribute at all. In either of these cases, we should have an automatic edition migration that rewrites users' code to preserve its semantics. That means we will replace trait implementations that look refined with the original API of the trait items being implemented.
 
-#### Documentation
+### Documentation
 
-The following text should be added to document the difference in editions.
+The following can be added to the reference to document the difference in editions.
 
-For historical reasons, not all kinds of refinement are automatically supported in older editions.
+#### `#[refine]` attribute
 
-| Item kind   | Feature                         | Edition        |
-| ----------- | ------------------------------- | -------------- |
-| Type        | -                               | All editions   |
-| Method      | Unsafe                          | All editions   |
-| Method      | Const[^future]                  | All editions|
-| Method      | impl Trait in return position[^future]| All editions|
-| Method      | Lifetimes                       | 2024 and newer |
-| Method      | Where clauses                   | 2024 and newer |
-| Method      | impl Trait in argument position | 2024 and newer |
-| Const       | Lifetimes                       | 2024 and newer |
-| Const       | Where clauses                   | 2024 and newer |
+Refinements of trait items that do not match the API of the trait exactly must be accompanied by a `#[refine]` attribute on the item in Rust 2021 and older editions.[^refine-edition]
 
-[^future]: This feature is not accepted at the time of writing the RFC; it is included here for demonstration purposes.
+For historical reasons, we allow valid refinements on the following features in Rust 2021 and earlier without a `#[refine]` attribute. However, no refinements are available to callers without this attribute; it will be as if the trait API was copied directly.
 
-You can opt in to the new behavior in older editions with a `#[refine]` attribute on the associated item.
+* Lifetimes
+* Where clauses
+* impl Trait in argument position
+* Lifetimes
+* Where clauses
 
-```rust
-impl Error for MyError {
-    #[refine]
-    fn description(&self) -> &'static str {
-        "My Error Message"
-    }
-}
-```
-
-This enables refining all features in the table above.
+[^refine-edition]: Depending on the outcome of the Unresolved Questions in this RFC, this may also be the case for future editions.
 
 ## Preventing future ambiguity
 
@@ -332,23 +312,23 @@ One piece of related prior art here is the [leakage of auto traits][auto-leakage
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-## Do we need a soft transition?
-
-In "Transitioning away from the current behavior" we describe two possible paths: immediate stabilization of any API the compiler accepts that happens to look refined today, and doing a soft transition.
-
-While a soft transition is the more conservative approach, it also isn't obvious that it's necessary.
-
-It would help to do an analysis of how frequently "dormant refinements" occur on crates.io today, and of a sample of those, how many look accidental versus an extended API that a crate author might have meant to expose.
-
 ## Should `#[refine]` be required in future editions?
 
 As discussed in [Drawbacks], this feature could lead to library authors accidentally publishing refined APIs that they did not mean to stabilize. We could prevent that by requiring the `#[refine]` attribute on any refined item inside an implementation.
 
-If we decide to require the `#[refine]` annotation in future editions for all refinements, the only edition change would be that the lint in earlier editions becomes a hard error in future editions.
+There are three main options:
 
-Alternatively, we may even want to require annotations for more subtle features, like lifetimes, while not requiring them for "louder" things like `impl Trait` in return position.
+* `#[refine]` is _always required_ for an impl to commit to a refined interface. In the next edition we could make it a hard error to write a refined interface without the `#[refine]` attribute, to reduce confusion.
+* `#[refine]` is _recommended_ in the next edition. Refined interfaces always work in future editions, but we warn or emit a deny-by-default lint if `#[refine]` is not used.
+* `#[refine]` is _not recommended_ in the next edition. Refined interfaces always work in future editions without any annotation at all.
 
-This question would also benefit from the analysis described in the previous section.
+It would help to do an analysis of how frequently "dormant refinements" occur on crates.io today, and of a sample of those, how many look accidental and how many look like an extended API that a crate author might have meant to expose.
+
+## Do we need a soft transition?
+
+In "Transitioning away from the current behavior" above we describe doing a soft transition. However, the analysis on crates.io just described _could_ reveal that "dormant refinements" are almost never a mistake, and a `#[refine]` attribute is not needed in future editions. In that case we may want to reconsider the soft transition approach for existing editions.
+
+In the absence of compelling data demonstrating this, however, we should take the conservative approach of doing a soft transition.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
