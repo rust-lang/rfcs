@@ -95,7 +95,7 @@ In practice, do it transparently should not break any heathy workflow, user that
 
      This is less overkill and can be remove at the next Edition of Rust.
 
-Instead of changing resolver cargo behavior, we could decide that there is no compatible version for pre-release as explaining pre-release having compatible version don't make a lot of sense. So `1.0.0-alpha.0` would never match any other requirement that exact same version. That mean that `^1.0.0-alpha.0` could only match `1.0.0-alpha.0` version. This have the major benefit to not introduce inconsistency with pre-release and release in Cargo resolve. This could also be adopted transparently or using opt-in solution.
+Instead of changing resolver cargo behavior, we could decide that there is no compatible version for pre-release as explaining pre-release having compatible version don't make a lot of sense. So `1.0.0-alpha.0` would never match any other requirement than that exact same version. That mean that `^1.0.0-alpha.0` could only match `1.0.0-alpha.0` version. This have the major benefit to not introduce inconsistency with pre-release and release in Cargo resolve. This could also be adopted transparently or using opt-in solution.
 
 The latter alternative could be preferred. Cause it doesn't add complex behavior in cargo resolver, It's will make the maintenance of Cargo simpler. It's also follow the rule 9 of Semver that say pre-release don't have any compatibility requirement. And we teach this by simply say that pre-release don't have any compatible version.
 
