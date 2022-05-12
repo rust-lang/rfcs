@@ -177,13 +177,13 @@ Each associated item defined in the implementation meet the following conditions
 * Each where clause must be implied by the where clauses on the trait itself and/or the associated function in the trait definition, where "implied" is limited to supertrait and outlives relations. _This would be expanded to all [implied bounds] when that feature is enabled._
 * Must not be marked `unsafe` unless the trait definition is also marked `unsafe`.
 
-When an item in an impl meets these conditions, we say it is a valid refinement of the trait item.
+When an item in an impl meets these conditions, we say it is a _valid refinement_ of the trait item.
 
 [implied bounds]: https://rust-lang.github.io/rfcs/2089-implied-bounds.html
 
 ### Using refined implementations
 
-Refined APIs are available anywhere knowledge of the impl being used is available. If the compiler can deduce a particular impl is being used, its API is available for use by the caller. This includes UFCS calls like `<MyType as Trait>::foo()`.
+Refined APIs are available anywhere knowledge of the impl being used is available. If the compiler can deduce a particular impl is being used, its API as written is available for use by the caller. This includes UFCS calls like `<MyType as Trait>::foo()`.
 
 ## Transitioning away from the current behavior
 
@@ -277,8 +277,6 @@ Should the `nth` method also be considered `const fn`?
 # Drawbacks
 [drawbacks]: #drawbacks
 
-> Why should we *not* do this?
-
 ## Accidental stabilization
 
 For library authors, it is possible for this feature to create situations where a more refined API is *accidentally* stabilized. Before stabilizing, we will need to gain some experience with the feature to determine if it is a good idea to allow refined impls without annotations.
@@ -316,7 +314,7 @@ While we could postpone the question of whether to allow this indefinitely, we a
 
 We could allow `#[refine]` on individual aspects of a function signature like the return type, where clauses, or argument types. This would allow users to scope refinement more narrowly and make sure that they aren't refining other aspects of that function signature. However, it seems unlikely that API refinement would be such a footgun that such narrowly scoping is needed.
 
-Going in the other direction, we could allow `#[refine]` on the impl itself. This would remove repetition in cases where an impl refines many items at once. It seems unlikely that this would be desired frequently enough to justify it.
+Going in the other direction, we could allow `#[refine]` on the impl itself. This would remove repetition in cases where an impl refines many items at once. It is unclear if this would be desired frequently enough to justify it.
 
 # Prior art
 [prior-art]: #prior-art
