@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-Cargo will not use the more compatible version for pre-release by default, this mean that `1.0.0-alpha.0` will be interpreted as `=1.0.0-alpha.0` by cargo instead of `^1.0.0-alpha.0`. This doesn't require any change in `Cargo.toml`.
+Cargo resolver 3 will not use the caret (`^`) operator for pre-release by default, this mean that `1.0.0-alpha.0` will be interpreted as `=1.0.0-alpha.0` by cargo instead of `^1.0.0-alpha.0`. You can opt in to this resolver with `resolver = "3"` in Cargo.
 
 # Motivation
 [motivation]: #motivation
@@ -36,9 +36,12 @@ The following assumes:
  - A release is a version without a "pre-release" tag (like `1.0.0`)
  - A pre-release is a version with a "pre-release" tag (like `1.0.0-alpha`)
 
-By default, Cargo use the more compatible version for release of a crate but will not for pre-release.
+If `resolver = "3"`, Cargo use the more compatible version for release of a crate but will not for pre-release, this only concern the actual crate where resolver 3 is. We MUST NOT apply the resolver config to other dependencies.
 
 ```toml
+[package]
+resolver = "3"
+
 [dependencies.foo]
 version = "1.0.0-alpha.0"
 ```
@@ -46,6 +49,9 @@ version = "1.0.0-alpha.0"
 Will now be considered by Cargo as:
 
 ```toml
+[package]
+resolver = "3"
+
 [dependencies.foo]
 version = "=1.0.0-alpha.0"
 ```
@@ -53,6 +59,9 @@ version = "=1.0.0-alpha.0"
 while release version like:
 
 ```toml
+[package]
+resolver = "3"
+
 [dependencies.foo]
 version = "1.0.0"
 ```
@@ -60,6 +69,9 @@ version = "1.0.0"
 are considered by Cargo as:
 
 ```toml
+[package]
+resolver = "3"
+
 [dependencies.foo]
 version = "^1.0.0"
 ```
@@ -69,9 +81,7 @@ The latter doesn't change.
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-Do it transparently for the user.
-
-Cargo will need to differentiate how they resolve a pre-release and a release version.
+Implement this RFC in resolver 3. Cargo will need to differentiate a pre-release and a release version and use the appropriate default operator.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -83,9 +93,11 @@ Cargo will need to differentiate how they resolve a pre-release and a release ve
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-In practice, do it transparently should not break any healthy workflow, user that put a pre-release version clearly want to use this version and if user have been using a most recent pre-release version not on purpose it's very unlikely their build would break (build would have break when new pre-release was out). We could check the impact of implementing this transparently with a [crater] run. If we see that there are unacceptable break, This RFC will then say we will use an opt-in option as follows:
+In practice, do it transparently should not break any healthy workflow, user that put a pre-release version clearly want to use this version and if user have been using a most recent pre-release version not on purpose it's very unlikely their build would break (build would have break when new pre-release was out). We could check the impact of implementing this transparently with a [crater] run. But there is a big SECURITY concern.
 
-  1. Use the `resolver` value version, bump it to `3`:
+It's possible that by doing it transparently, we could create security problem. Indeed, a crate could have actually required a pre-release version but in practice use the most patched stable version. This mean that if we implicitly change this rule, a crate could suddenly use a pre-release while before this crate was generally use the later stable release associate with this pre-release, this mean we should use an opt-in option to change the rule of Cargo requirement version:
+
+  1. Use the `resolver` value version, bump it to `"3"`:
    
      This may be overkill, but it's a natural way to make change in the way SemVer rule are treated by Cargo.
      
@@ -93,16 +105,16 @@ In practice, do it transparently should not break any healthy workflow, user tha
 
      This is less overkill and can be removed at the next Edition of Rust.
 
-Instead of changing resolver cargo behavior, we could decide that there is no compatible version for pre-release as explaining pre-release having compatible version don't make a lot of sense. So `1.0.0-alpha.0` would never match any other requirement than that exact same version. That mean that `^1.0.0-alpha.0` could only match `1.0.0-alpha.0` version. This has the major benefit to not introduce inconsistency with pre-release and release in Cargo resolve. This could also be adopted transparently or using opt-in solution.
+Instead of changing resolver cargo behavior, we could decide that there is no compatible version for pre-release as explaining pre-release having compatible version don't make a lot of sense currently. So `1.0.0-alpha.0` would never match any other requirement than that exact same version. That mean that `^1.0.0-alpha.0` could only match `1.0.0-alpha.0` version. This has the major benefit to not introduce inconsistency with pre-release and release in Cargo resolve. This could also be adopted transparently or using opt-in solution.
 
-The latter alternative could be preferred. Because it doesn't add complex behavior in cargo resolver, It will make the maintenance of Cargo simpler. It's also followed the rule 9 of Semver that say pre-release don't have any compatibility requirement. And we teach this by simply say that pre-release don't have any compatible version.
+The latter alternative could be preferred. Because it doesn't add complex behavior in cargo resolver, It will make the maintenance of Cargo simpler. It's also followed the rule 9 of SemVer that say pre-release don't have any compatibility expectation with stable release. And we teach this by simply say that pre-release don't have any compatible version.
 
 # Prior art
 [prior-art]: #prior-art
 
 Cargo behavior to by default use the most compatible version is unique AFAIK most others tool assume `version = "=1.0.0"` for `version = "1.0.0"`. So this problem may be unique to Cargo.
 
-[Npm rules] follow the same as cargo for compatibility version but npm default to `=` for everything while Cargo default to `^`. Npm clearly state they don't strictly follow semver precedence for pre-release:
+[NPM rules] follow the same as cargo for compatibility version but NPM default to `=` for everything while Cargo default to `^`. NPM clearly state they don't strictly follow SemVer precedence for pre-release:
 
 > For example, the range >1.2.3-alpha.3 would be allowed to match the version 1.2.3-alpha.7, but it would not be satisfied by 3.4.5-alpha.9, even though 3.4.5-alpha.9 is technically "greater than" 1.2.3-alpha.3 according to the SemVer sort rules. The version range only accepts pre-release tags on the 1.2.3 version. The version 3.4.5 would satisfy the range, because it does not have a pre-release flag, and 3.4.5 is greater than 1.2.3-alpha.7.
 
@@ -111,14 +123,16 @@ They also reach the same conclusion:
 > The purpose for this behavior is twofold. First, pre-release versions frequently are updated very quickly, and contain many breaking changes that are (by the author's design) not yet fit for public consumption. Therefore, by default, they are excluded from range matching semantics.
 > Second, a user who has opted into using a pre-release version has clearly indicated the intent to use that specific set of alpha/beta/rc versions. By including a pre-release tag in the range, the user is indicating that they are aware of the risk. However, it is still not appropriate to assume that they have opted into taking a similar risk on the next set of pre-release versions.
 
-Npm default to `=` didn't reveal the real problem of these rules, but at least their users clearly opt-in for these rules by using `^` on a pre-release. Npm behavior with `^` have the same problem as Cargo.
+NPM default to `=` didn't reveal the real problem of these rules, but at least their users clearly opt-in for these rules by using `^` on a pre-release. NPM behavior with `^` have the same problem as Cargo.
+
+In 2015, NPM change range rules to exclude pre-release on some case, this lead to a lot of compatibility requirement problem and potential security problem. NPM new rules was not expected by a some use case of range. Thus, they believe it was for the best in the long term and try to make the transition as easy as possible.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-If we expect other change in the way Cargo resolver work before the next Rust edition we could prefer ship this feature with a more big `resolver = 3` update.
+It's unclear how an opt-in feature interact with dependencies. For example, `A` depend on a pre-release of `B`, but `B` also depend on a pre-release of `C`. `B` didn't opt in to this resolver but `A` did. Will Cargo use `A` choice and only use the strictly same version for pre-release of `C`? This could be done but what if `B` break because it was also using the newer pre-release of `C` without know it? In terms of security, a recursive strategy is very dangerous, cause an old dependence could introduce a security problem is suddenly their expectation of requirement change without notice. This must not happen, resolver version should only concern crate `A`.
 
-It's unclear how an opt-in feature interact with dependencies. For example, `A` depend on a pre-release of `B`, but `B` also depend on a pre-release of `C`. `B` didn't opt in to this resolver but `A` did. Will Cargo use `A` choice and only use the strictly same version for pre-release of `C`? This could be done but what if `B` break because it was also using the newer pre-release of `C` without know it? That why I think we should try to introduce this change transparently, we must carefully check for break in the existing ecosystem. There should be very few breaks if not zero.
+Should we use the alternate `pre-release-updates = "sticky" # or "default"` instead of using resolver ?
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
