@@ -259,7 +259,22 @@ doesn't cover non-Linux distributions of Rust.
 
 Restrict our policies even more and don't share vulnerabilities ahead of time
 with anyone. This would put every Rust developer who doesn't use the toolchain
-provided by the project itself at risk whenever a vulnerability is announced.
+provided directly by the Rust project at risk whenever a vulnerability is
+announced.
+
+The use of toolchains not provided directly by the Rust project has use cases
+that are critical for Rust's adoption in areas we care about. Some examples of
+those could be:
+
+* The use of Rust in place of other languages in operating systems,
+  system-level tooling, and C libraries depends on the ability to build such
+  code using toolchains provided by the same source (in order for
+  distributions to remain self-contained).
+
+* Some industry sectors (like qualified environments) require toolchains to be
+  supported for 10 to 20 years, and it'd be unreasonable for the Rust project
+  to provide such long term support on its own, leaving the task to third
+  party toolchain vendors.
 
 ## Additionally notify big players in the ecosystem ahead of time
 
@@ -271,6 +286,11 @@ from the vulnerability is smaller.
 In the WG's opinion, the (small) benefit this would provide to the wider
 ecosystem is not worth it compared to the big increase of the risk of leakage
 (as we'd need to notify a lot of companies under this program).
+
+In addition, such a policy would require defining who a "big players" is, and
+any such definition would either be too broad (disclosing in advance to a set
+of organizations wide enough to make leaks inevitable) or become a kind of
+preferential treatment for a subset of organizations.
 
 # Prior art
 [prior-art]: #prior-art
