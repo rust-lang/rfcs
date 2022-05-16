@@ -52,7 +52,7 @@ notifications sent before public disclosure of security vulnerabilities.
 The Rust Security Response WG will aim to send them 5 business days ahead of
 public disclosure, or 1 business day ahead of public disclosure in case of
 critical, actively exploited vulnerabilities (subject to caveats discussed in
-the reference-level explaination).
+the reference-level explanation).
 
 ## Advance disclosures
 
