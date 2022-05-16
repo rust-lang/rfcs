@@ -1,6 +1,6 @@
 **This RFC is not really mean for RFCS repository of rust yet, it's mean as a real RFC as request for comment. This RFC try to open the debate about current rules of version requirement. It doesn't focus on if it's possible or not to apply it to Cargo yet. This RFC is far from being stable**
 
-- RFC Version: 2.0.0-alpha.0
+- RFC Version: 2.0.0-alpha.1
 - Feature Name: rust-semver-2
 - Start Date: 2022-05-11
 
@@ -9,10 +9,20 @@
 
 This RFC defines the Rust's SemVer 2 rules. It's define version requirement operator that can be used in Cargo to define the version of dependencies that Cargo can choose. The rules use [SemVer 2].
 
+Empirical change from Rust SemVer 1:
+
+* Remove ranges `>=`, `>`, `<=`, `<`
+* Remove logical "and" `,`
+* Add logical "or" `||`
+* `~` can now update MAJOR
+* `^` will never consider a pre-release compatible with any other pre-release or release
+* `0` and `0.0` are not any more valid version requirement
+* Remove sugar `1.*` or `1.0.*`
+
 # Motivation
 [motivation]: #motivation
 
-Cargo never officially state most of current behavior of version requirement resolution. [SemVer 2] have been used as reference to define it with some addition in Cargo doc It's unclear what rules follow Cargo cause there have been no formal decision to clearly decide what Cargo should do. [Cargo Specifying Dependencies] define compatibly rules of `^` for release, there are clear and logic for a release but never mention pre-release existence, [rules for pre-release] are well hidden and doesn't fully describe the current observed behavior of `^1.0.0-alpha`, the current behavior create a lot of problems when a user put a pre-release version like `1.0.0-alpha` in their `Cargo.toml`.
+Cargo never officially state most of current behavior of version requirement resolution. [SemVer 2] have been used as reference to define it with some addition in Cargo doc, It's unclear what rules follow Cargo cause there have been no formal decision to clearly decide what Cargo should do. [Cargo Specifying Dependencies] define compatibly rules of `^` for release, there are clear and logic for a release but never mention pre-release existence, [rules for pre-release] are well hidden and doesn't fully describe the current observed behavior of `^1.0.0-alpha`, the current behavior create a lot of problems when a user put a pre-release version like `1.0.0-alpha` in their `Cargo.toml`.
 
 This lead to [RFC 3263 motivation]. The main proposed solution was to change the default of Cargo that consider `1.0.0-alpha` as `^1.0.0-alpha` to `=1.0.0-alpha`. But while this work to solve a specific problem, this introduces an exception to Cargo behavior for pre-release and this actually reveal the real problem that we never decided compatibility rule for pre-release. SemVer 2.0 said "pre-release version indicates that the version is unstable and might not satisfy the intended compatibility requirements as denoted by its associated normal version." this clearly indicate there is no compatibility obligation between pre-release and final version. Despite that the current behavior of `^` do this assumption and consider higher pre-release version and final version compatible ! This mean currently `^1.0.0-alpha` match `1.0.0-beta` or even `1.0.0` (up to `1.*.*`) this behavior come from NPM rules.
 
@@ -47,7 +57,7 @@ Finally, the real question is, what do we need ? What do we want ? What operator
 What features Rust user need in version requirement ? This RFC is bias toward this:
 
   * We need to be able to trust Cargo default behavior, user want thing that work naturally
-  * We want to trust `^` and `~` to do the right thing
+  * We want to trust `^` to do the right thing, since it's the default behavior of Cargo
   * We need to have rules that SHOULD avoid cargo update break our build (Cargo update or a fresh lock file like in workflow of CI/CD of `gitlab.com` or `github.com` action)
   * We need to avoid implicitly include pre-release version
   * We need a way to use a pre-release version without fear of unexpected breaking change with cargo update, we want stability above all even for pre-release like how we expect `0.5.x` version to not break our build.
@@ -57,111 +67,183 @@ What features Rust user need in version requirement ? This RFC is bias toward th
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-`package.rust_semver = "2"` use Rust's SemVer, these rules are defined on the base of [SemVer 2] plus the following rules:
+### Rust SemVer 2
+[rules]: #rules
 
-  12. When the MAJOR is 0, MINOR number is considered as the MAJOR number and the PATCH number is considered as the MINOR number, there is no number considered as PATCH:
+Rust SemVer 2 rules are defined on the top of [SemVer 2] plus the following rules:
 
-      * `0.5.5` is compatible with `0.5.2`.
-      * `0.5.5` is not compatible with `0.6.0`.
+12. When MAJOR is zero, MINOR is considered as MAJOR, PATCH is considered as MINOR, there is no number considered as PATCH, `0.MAJOR.MINOR`. When MAJOR and MINOR are both zero, PATCH is considered as MAJOR, there is no number considered as MINOR or PATCH, `0.0.MAJOR`.
 
-  13. A VERSION text representation can omit field, when omitted field will default to `0`, MAJOR can't be omitted, if a pre-release is present version need to be complete:
+13. A Requirement Version defines when version is "matched", unless specified requirement version MUST be the combination between an OPERATOR terminated by a REQVERSION, for example `^1.0.0` is a requirement version that have OPERATOR `^` and REQVERSION `1.0.0`, this requirement version will define how Cargo will choose the best suitable version of a crate to use.
 
-      * `0` is invalid. /* this is due to 0.MAJOR.MINOR exception */
-      * `0.5` mean `0.5.0`
-      * `1` mean `1.0.0`
-      * `1.1` mean `1.1.0`
-      * `2-alpha` or `2.0-beta` is not valid
+14. A REQVERSION numbers text representation can omit field, when omitted a REQVERSION number will default to `0`, MAJOR number can't be omitted, if a pre-release is present REQVERSION MUST NOT omit any numbers.
 
-  14. A "Pre-release" version can only be compatible with another pre-release version. The first identifier of a pre-release tag is call PREMAJOR for two pre-release versions to be compatible MAJOR, MINOR, PATCH and PREMAJOR must be equal. In `alpha.0`, `alpha` is the PREMAJOR. The rest of following identifiers is only used to determine order between same PREMAJOR `alpha` < `alpha.0.1` < `alpha.1.0` < `alpha.alpha` as define in rule 11.4. A pre-release compatible version MUST not be breaking change:
+15. A pre-release version can only be compatible with itself, so when MAJOR, MINOR, PATCH and PRE-RELEASE are equals.
 
-      * `1.0.0-alpha.1` is compatible with `1.0.0-alpha.0`
-      * `1.0.0-alpha` is compatible with `1.0.0-alpha.0`
-      * `1.0.0-alpha.0` is not compatible with `1.0.0-alpha`
-      * `1.0.0-beta.0` is not compatible with `1.0.0-alpha.0`
-      * `1.0.0-alpha0` is not compatible with `1.0.0-alpha.0`
-      * `1.0.0` is not compatible with `1.0.0-alpha.0`
+16. The OPERATOR "exact", with `=` REQ-VERSION match only itself, so when MAJOR, MINOR, PATCH and PRE-RELEASE are equals.
 
-  15. A "Requirement Version" defines when version is "matched", unless specified requirement version MUST be the combination between an OPERATOR terminated by a REQVERSION, for example `^1.0.0` is a requirement version that have OPERATOR `^` and REQVERSION `1.0.0`, this requirement version will define how Cargo will choose the best suitable version of a crate to use.
+17. The OPERATOR "caret", with `^` REQ-VERSION match the highest COMPATIBLE VERSION of REQVERSION, `^` operator is the default operator when a version requirement don't have operator.
 
-  16. The OPERATOR "exact", `=` operator match if `VERSION == REQVERSION` that mean when `MAJOR == REQMAJOR` and `MINOR == REQMINOR` and `PATCH == REQPATCH` and `PRERELEASE == REQPRERELEASE`:
+18. The OPERATOR "tilde", with `~` REQ-VERSION operator match the highest VERSION up to the precision of REQVERSION. This operator MAY match INCOMPATIBLE version.
 
-      * `1.0.0` match `=1.0.0`
-      * `1` match `=1.0.0`
-      * `1.0.1` doesn't match `=1.0.0`.
-      * `1.0.0-alpha` match `1.0.0-alpha`
-      * `1.0.0-alpha.0` doesn't match `1.0.0-alpha`
+19. The LOGICAL OPERATOR "or". `||` operator is a union between two requirement versions. `||` MUST be preceded by a requirement version and terminated by another requirement version. `||` matches if any of the two requirement version match. `||` can be chained. It's RECOMMENDED to write text requirement version representation from the smaller REQVERSION on the left to the higher REQVERSION on the right ordering with precedence rules.
 
-  17. The OPERATOR "caret", `^` operator match the highest compatible version with the VERSION associate with the OPERATOR, `^` operator is the default operator when a version requirement don't have operator in Cargo.
+#### OPTIONAL
 
-      * `1.2.3` match `^1.0.0`
-      * `1.0.0-alpha.1` match `^1.0.0-alpha.0`
-      * `1.0.0-alpha.0` match `^1.0.0-alpha`
-      * `1.0.0-alpha` doesn't match `^1.0.0-alpha.0`
-      * `2.0.0` doesn't match `^1.2.3`
-      * `0.5.0` doesn't match `^0.4.0`
-      * `1.0.0` doesn't match `^1.0.0-alpha.0`
-      * `1.0.0-alpha0` doesn't match `^1.0.0-alpha`
-      * `1.0.0-beta` doesn't match `^1.0.0-alpha`
+20. A Wildcard `*` MAY be used as `REQVERSION`, it's a sugar for `~0.0.0 || ~0.0 || ~1`.
 
-  18. The OPERATOR "tilde", `~` operator match the highest compatible version up to the precision of the associate VERSION.
+#### Examples
 
-      * `~1` is equivalent to `~1.y.z` with `y >= 0` and `z >= 0`
-      * `~1.1` is equivalent to `~1.y.z` with `y >= 1` and `z >= 0`
-      * `~1.0.9` is equivalent to `~1.0.z` with `z >= 9`
-      * `~1.0.0-alpha` is equivalent to `~1.0.0-alpha.PREMINOR` with `PREMINOR` being any pre-release tag like `1.0.0-the.turbofish.remains.undefeated` or just empty
-      * `~1.0.0-1.2.3` is equivalent to `~1.0.0-1.2.PREPATCH` with `PREPATCH >= 3` like `1.0.0-1.2.4`.
-      * `~0` is equivalent to `~0.0.z` with `z >= 0` /* this is due to 0.MAJOR.MINOR exception */
-      * `~0.1` is equivalent to `~0.1.z` with `z >= 0` /* this is due to 0.MAJOR.MINOR exception */
-      * `~0.0.2` is equivalent to `~0.0.z` with `z >= 2`
-      * `~0.0.0-0` is equivalent to `~0.0.0-0.PREMINOR` with `PREMINOR` being any pre-release tag.
-      * `~1.2` is equivalent to `~1.y.z` with `y >= 2` and `z >= 0`
+* `0.5.5` is MINOR upgrade of `0.5.2`.
+* `0.5.5` is MAJOR upgrade of `0.6.0`.
+* `0.0.1` is MAJOR upgrade of `0.0.0`.
+* Version requirement `0.5` mean `0.5.0`
+* Version requirement `1` mean `1.0.0`
+* Version requirement `1.1` mean `1.1.0`
+* `0` is invalid. /* this is due to 0.MAJOR.MINOR exception */
+* `0.0` is invalid. /* this is due to 0.0.MAJOR exception */
+* `2-alpha` is not valid
+* `2.0-beta` is not valid
+* `1.0.0-alpha` match `^1.0.0-alpha`
+* `1.0.0-alpha.1` doesn't match `^1.0.0-alpha.0`
+* `1.0.0-beta` doesn't match `^1.0.0-alpha`
+* `1.0.0` match `=1.0.0`
+* `1` match `=1.0.0`
+* `1.0.1` doesn't match `=1.0.0`.
+* `1.0.0-alpha` match `^1.0.0-alpha`
+* `1.0.0-alpha.0` doesn't match `^1.0.0-alpha`
+* `1.2.3` match `^1.0.0`
+* `2.0.0` doesn't match `^1.2.3`
+* `0.4.2` match `^0.4.0`
+* `0.5.0` doesn't match `^0.4.0`
+* `0.0.0` match `^0.0.0`
+* `0.0.1` doesn't match `^0.0.0`
+* `1.0.0` doesn't match `^1.0.0-alpha.0`
+* `1.0.0-alpha0` doesn't match `^1.0.0-alpha`
+* `1.0.0-beta` doesn't match `^1.0.0-alpha`
+* `2.0.0-0.6.6` doesn't `^2.0.0-0.6.0`
+* `1.0.0-alpha.1` doesn't match `^1.0.0-alpha.0`
+* `~1` is equivalent to `~x.y.z` with `x >= 1`, `y >= 0` and `z >= 0`
+* `~1.1` is equivalent to `~1.y.z` with `y >= 1` and `z >= 0`
+* `~1.0.9` is equivalent to `~1.0.z` with `z >= 9`
+* `~1.0.0-alpha` is equivalent to `~1.0.0-IDENTIFIERS` with `IDENTIFIERS >= alpha`
+* `~1.0.0-alpha.0` is equivalent to `~1.0.0-alpha.IDENTIFIERs` with `IDENTIFIERs >= 0` like `1.0.0-alpha.1` or `1.0.0-alpha.the.turbofish.remains.undefeated`.
+* `~0` is equivalent invalid
+* `~0.0` is equivalent invalid
+* `~0.1` is equivalent to `~0.y.z` with `y >= 1` and `z >= 0`
+* `~0.0.9` is equivalent to `~1.0.z` with `z >= 9`
+* `~0.0.0-0` is equivalent to `~0.0.0-0.PREMINOR` with `PREMINOR >= 0` so any pre-release of `0.0.0`
+* `^1.0.0 || ^2.0.0` match all release of either `1` or `2`
+* `~1.7.0 || ~1.8.0 || ~1.9.0` match all releases between `1.7` and `1.9` included. 
+* `~1.2.0 || ^1.3.0` should be written `^1.2.0`
+* `~1.2.0 || ^1.4.0` is valid but SHOULD not be needed if a crate respect SemVer.
+* `1.0.0 || || 2.0.0`, `||1.0.0`, `1.0.0||` `||^1.0.0`, `^1.0.0||` are not a valid
+* `~1.0.0-0 || ^1` match pre-release or release of `1.0.0`. This should be used with care.
+* `~0.0.0 || ~0.0 || ~1` match any release. It's call the wildcard.
+* `=*`, `^*`, `~*`, `* || ~1.0.0-beta.0` are not valid.
 
-      It's RECOMMENDED to use the `^` operator when `~` or `^` would have the same matching behavior. It is the case when only the MAJOR is specified in `~`, `~1` is equivalent to `^1.0.0`, `^1.0` or `^1`. The same apply for pre-release when only PREMAJOR is specified, `~1.2.3-alpha` is equivalent to `^1.2.3-alpha`.
+#### ABNF
 
-  19. The OPERATOR "or". `||` operator requirement is the combination between two requirement versions. `||` MUST be preceded by a requirement version and terminated by another requirement version. `||` matches any of the two requirement version. `||` can be chained. It's RECOMMENDED to write requirement version from the smaller on the left to the higher on the right ordering with precedence rules.
+The following is the [ABNF] rules of Rust SemVer 2
 
-      * `^1.0.0 || ^2.0.0` match all release of either `1` or `2`
-      * `~1.7.0 || ~1.8.0 || ~1.9.0` match all release between `1.7` and `1.9` included. 
-      * `~1.2.0 || ^1.3.0` should be written `^1.2.0`
-      * `~1.2.0 || ^1.4.0` is valid but SHOULD not be needed if a crate respect SemVer.
-      * `1.0.0 || || 2.0.0`, `||1.0.0`, `1.0.0||` `||^1.0.0`, `^1.0.0||` are not a valid syntax
+```abnf
+; Rust SemVer 2
+reqversion = "*" / logical-or
 
-  20. A Wildcard `*` is a special requirement operator, it's not associate with any VERSION, this operator match ANY the release. `1.0.*` is not a valid syntax, `~` operator SHOULD be used instead `~1.0.0`.
+logical-or = req-core *("||" req-core)
 
-      * `*` match `0.4`
-      * `*` match `1`
-      * `*` doesn't match `2.0.0-alpha`
-      * `=*`, `^*` and `~*` are not valid
+req-core = *SP [operator *SP] (version / numbers-partial) *SP
 
-  21. A pre-release wildcard can be written as `*`, this mean you can write `1.0.0-*` this will match anything pre-release tag this EXCLUDING empty release tag:
+operator = "=" / "^" / "~"
 
-      * `1.0.0-*` match `1.0.0-alpha`.
-      * `1.0.0-*` match `1.0.0-alpha-0`.
-      * `1.0.0-*` match `1.0.0-beta`
-      * `1.0.0-*` doesn't match `1.0.0`
-      * `1.0.0-*` doesn't match `1.5.5-alpha`.
-      * `*-*` match any pre-release /* do we allow this ? */
-      * `* || *-*` match anything
-      * `1.0.0-* || ^1.0.0` match any pre-release of `1.0.0` or any compatible version of `1.0.0`
-      * `1.0.0-alpha.*` is not valid
-      * `^1.0.0-*` is not valid
-      * `~1.0.0-*` is not valid
+; 0.0 and 0 are not accepted
+numbers-partial = numbers / (num-ident "." num-ident-non-zero) / num-ident-non-zero
 
-`Cargo.toml` have a new option in package field `package.dep_prerelease` by default it's `warn`. `warn` Cargo will emit a warning if a requirement dep include a pre-release. `deny` Cargo will emit an error. `allow` Cargo will accept pre-release.
+; SemVer 2
+version = numbers ["-" pre-release] ["+" build]
+
+numbers = num-ident "." num-ident "." num-ident
+
+pre-release = pre-ident *("." pre-ident)
+pre-ident = alphanum-ident / num-ident
+
+build = build-ident *("." build-ident)
+build-ident = 1*(ALPHA / DIGIT / word-join)
+
+; need at least one alpha or word-join
+alphanum-ident = *DIGIT (ALPHA / word-join) *(ALPHA / DIGIT / word-join)
+
+; leading zero are not accepted like 01 or 001
+num-ident = num-ident-non-zero / "0"
+num-ident-non-zero = digit-non-zero *DIGIT
+digit-non-zero = "1" / "2" / "3" / "4" / "5" / "6" / "7" / "8" / "9"
+
+word-join = "-"
+```
+
+We thank [`bap`] and [`abnfgen`] to have provided free tool to test this ABNF.
+
+### Cargo
+
+`Cargo.toml` has 2 new fields:
+
+* `package.rust-semver`, define what Rust SemVer version Cargo should use for this `Cargo.toml`, the default is `1` for 2021 edition of Rust.
+
+* `dependencies.foo.allow-advanced-operator`, the default is `warn` for `rust-semver = "1"` and `deny` for `rust-semver = "2"`:
+
+  * `warn` will emit a warning if a requirement version use `~` or `||` operator.
+  * `allow` will accept tilde `~` or `||` operator.
+  * `deny` will emit an error if a requirement version use `~` or `||` operator.
+
+`package.version` will now default to `0.0.0`.
+
+Cargo should emit a warning when `^` should be used instead of `~`. It is the case when only the MAJOR and MINOR are specified in `~` like `~1.2` == `^1.2` or `~0.2.5` == `^0.2.5`.
+
+### Pre-release Guideline
+
+A pre-release tag MAY follow such convention:
+
+* Alpha pre-release are considered very unstable that is similar to `0.0.z`. Alpha version should not have any compatibility expectation. It's recommended for an Alpha pre-release to set version like `1.0.0-alpha.PRE-MAJOR` where `PRE-MAJOR` is a numeric identifier incremented at each Alpha pre-release. `1.0.0-alpha.0` and `1.0.0-alpha.1` don't have any compatibility expectation.
+* Beta pre-release are considered unstable that are similar to `0.y.z` when `y > 0`. Beta version may have compatibility expectation. It's recommended for a Beta pre-release to set version like `1.0.0-beta.PRE-MAJOR.PRE-MINOR` where `PRE-MAJOR` is a numeric identifier incremented at each breaking change and `PRE-MINOR` is a numeric identifier incremented at each non-breaking change. `1.0.0-beta.0.1` MAY be compatible with `1.0.0-beta.0.0` or `1.0.0-beta.2.0` MAY be compatible with `1.0.0-beta.2.4`
+
+OPTIONAL: If a pre-release is considerate to be used as the release version we call them Candidate Release, if you desire hint your user about Candidate Release, it's recommended to use build tag like `1.0.0-beta.4.0+rc`. There is no compatible expectation between a Candidate Release and the final release. They may be any number of Candidate Release.
+
+The following example use spaces to show version that MAY be compatible:
+
+```none
+1.0.0-alpha.0
+1.0.0-alpha.1
+1.0.0-alpha.2
+1.0.0-alpha.3
+1.0.0-alpha.4
+1.0.0-beta.0.0
+  1.0.0-beta.0.1
+  1.0.0-beta.0.2
+1.0.0-beta.1.0+rc
+  1.0.0-beta.1.1
+1.0.0-beta.2.0
+  1.0.0-beta.2.1
+  1.0.0-beta.2.2
+  1.0.0-beta.2.3+rc
+  1.0.0-beta.2.4+rc
+1.0.0
+```
+
+As you can see `1.0.0-beta.1.0+rc` was a release candidate, but we change our mind at `1.0.0-beta.1.1`. If a crate use this pre-release guideline user MAY use `~` operator to receive Beta upgrade, for example `~1.0.0-beta.0.0` would have match `~1.0.0-beta.0.0`, `~1.0.0-beta.1.0`, `~1.0.0-beta.2.0` pre-release. A crate should state its pre-release policy for example at end of a `readme.md` file, it's perfectly allowed to not follow this guideline about pre-release policy. A user should not make any assumption of pre-release policy of a crate if the crate doesn't specify it.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-Cargo should stick to use the same [SemVer crate] version to not change its behavior for crates that doesn't specify `rust_semver = 2`. We call Rust SemVer 1 the actual behavior of Cargo (there is no formal definition yet). [SemVer crate] version should match the evolution of Rust SemVer version. So have a `2` version that implement Rust SemVer 2 rules.
+Cargo should stick to use the same [SemVer crate] version to not change its behavior for crates that doesn't specify `rust-semver = 2`. We call Rust SemVer 1 the actual behavior of Cargo (there is no formal definition yet). [SemVer crate] version should match the evolution of Rust SemVer version. So have a `2` version that implement Rust SemVer 2 rules.
 
-Ideally, when using `rust_semver = 2` Cargo would detect `<`, `<=`, `>=`, `>` and `,` usage to offer a clear error message about their removal in Rust SemVer 2.
+Ideally, when using `rust-semver = 2` Cargo would detect `<`, `<=`, `>=`, `>` and `,` usage to offer a clear error message about their removal in Rust SemVer 2. And explain how to replace then with the new operator.
 
-`crates.io` or any alternate registry SHOULD disallow using any `*`.
+`crates.io` or any alternate registry SHOULD disallow using any `*` in requirement version.
 
 # Drawbacks
 [drawbacks]: #drawbacks
 
-These change make Cargo registry live with mixed rules, it's currently the case some crates are not valid. Cargo would need to differentiate crates that use the new convention since we remove `,` operator. This drawback can be reduced by not removing any existent operator and not remove `1.0.*`. That can clearly be considered, but is still not the focus of this RFC.
+These changes make Cargo registry live with mixed rules, it's currently the case some crates are not valid. Cargo would need to differentiate crates that use the new convention since we remove `,` operator. This drawback can be reduced by not removing any existent operator and not remove `1.0.*`. That can clearly be considered, but is still not the focus of this RFC.
 
 For a user the drawbacks are:
 
@@ -172,38 +254,54 @@ For a user the drawbacks are:
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
+## Rationale
+[rationale]: #rationale
+
 There are 57412 dependence requirements in [`crates.io`] that use range operator this represents 1.50% of the total. And there are 68167 dependence requirements that use tilde operator this represents 1.78% of the total. This excluding yank version this time.
+
+The philosophy of Rust SemVer 2 is to use the opposite mindset of Rust SemVer 1, where `&&` is about [intersection], `||` is about [union]. This is the main difference between the two designs, this RFC try to argue that union is simpler and more flexible than intersection for user. Rust SemVer 2 try to be KISS, quoting a famous French personality:
+
+> Perfection is achieved, not when there is nothing more to add, but when there is nothing left to take away. [Antoine de Saint-Exupéry]
 
 Operator range make our life complicated in Rust, remove them for Rust SemVer 2 mean:
 
-  * No more trap with pre-release, `^` and `~` have a simple behavior that follow compatible versioning rules with clear rules that allow to not be afraid that a pre-release is included implicitly. Or on the contrary that a final version is included implicitly.
+* No more trap with pre-release, `^` have a simple behavior that follow compatible versioning rules with clear rules that allow to not be afraid that a pre-release is included implicitly. Or on the contrary that a final version is included implicitly. `^` alone represent 97% of dependence operator of Rust.
 
-  * No more wrong use of range operator like `version = ">=1"`
+* It's remove the ambiguity of range including pre-release or not.
 
-  * That we need to define compatible rule for pre-release. Without compatibly rule for pre-release and without range operator we could only use exact operator on pre-release. The additional rule that consider the first identifier as PREMAJOR allows ruling out the need of range to handle pre-release opt in. A user who wanted to opt in for alpha release of a crate can now do it with `^`, it will work as expect and the user should not have any breaking change. Previously a user would have done `>= 2.0.0-alpha, < 2.0.0-b` now a user can just write `2.0.0-alpha` it's will naturally work as expected if maintainer follow the Rust SemVer 2 rule. It's a trust contract between users and maintainers. All already existing pre-release will probably not all respect pre-release compatibility rules, but new one will very likely.
+* No more possible unclear use of range operator like:
 
-  * Include `||` operator will cover the case where user want to support several non-compatible version. The only drawback is this could be very explicit if a crate release a hundred of major version; but currently there have never been such case, on the contrary, most crate in Rust try to not break without good reason. There is very low chance that users would ever need more than 2 major releases. Previously a user would have done `>= 0.6, <0.9` now a user can just write `0.6 || 0.7 || 0.8` it's will naturally avoid non-compatible version such as pre-release. It's even better because we can now make a jump that was impossible before we can now do `0.6 || 0.8`. Of course, this operator need to be used with care. It's a very specific use case where two major release are considered compatible by the user.
+  * `>=1` this represents 17.2% of range use of Rust ecosystem, mean that a majority of people probably make a mistake here. Replaceable with `~1` now (use of tilde will at least emit a warning by default).
+  * `>=1, <2.0` instead of `^1`.
+  * `>=1.2, <1.3` instead of `~1.2.0`
 
-    * Instead of writing `>1.0 && <3.0` write `1.0 || 2.0`
-    * Instead of writing `>1.4 && <2.0` write `1.4`
-    * Instead of writing `>1.5 && <1.6` write `~1.5`
-    * Instead of writing `>1.7 && <1.9` write `~1.7 || ~1.8`
-    * Instead of writing `>1.0.0-0 && <2.0.0-0` write `1.0.0-* || ^1` 
-    * Instead of writing `>1.0 && <2.3` write `1.0 || ~2.0 || ~2.1 || ~2.2` (That would be incredibly rare in Rust)
+* That we need to change tilde behavior. Without compatibly rule for pre-release and without range operator, they are no way to opt-in for a range of pre-release identifiers. Change rule of tilde also remove the exception to the tilde operator for MAJOR number. This make `~` more general and more clear, it's allow a user to opt in to potentially breaking change versions of a crate. `allow-advanced-operator` make Cargo to warn a user that it's dangerous to use this operator and link to documentation to help a user to not use tilde operator if this can be avoided. Only advanced user should use it, so there is an opt-in option. It's also nice cause the behavior of tilde slightly change, so we can also warn the user of the change in the same time.
 
-  * Without range operator, the "and" operator (`&&` or `,`) is not needed. All operators only allow to go to higher or equal version. This mean we don't need to have `(` and `)` to handle prevalence of logical operator. `||` is the only logical operator similar to before where that was `&&` the only available logical operator. Also, `,` is quite unclear for new user of Rust, we should probably have used `&&` before.
+* Include `||` operator will cover the case where user want to support several non-compatible version. The only drawback is this could be very explicit if a crate release a hundred of major version; but currently there have never been such case, on the contrary, most crate in Rust try to not break without good reason. There is very low chance that users would ever need more than 2 major releases. Previously a user would have done `>= 0.6, <0.9` now a user can just write `0.6 || 0.7 || 0.8` it's will naturally avoid non-compatible version such as pre-release. It's even better because we can now make a jump that was impossible before we can now do `0.6 || 0.8`. Of course, this operator need to be used with care. It's a very specific use case where two major release are considered compatible by the user.
 
-Rust can remove range operator cause Rust's tool force to respect SemVer. Any small breaking change is often detected instantly in Rust, user will implicitly get the incompatible version and Rust being a strongly typed language user will directly spot the problem. Maintainers will likely just yank the release and the problem will be gone. But NPM needs to deal with the incredible flexibility of JavaScript. JavaScript try as hard as possible to run no matter what. This mean that even if on paper two releases are not compatible in practice a user can hope it will "work". Also, the speed of JavaScript release is also higher, there is a lot of user, a lot of movement, more major release, more quickly. The tool for these two languages are likely to need different approach. It's not rare for a JavaScript project to be able to handle few major releases while in Rust it's very rare. So rare that it's hard to find example of it. The way the two languages use SemVer is very different. NPM need range feature and so try to make them usable despite the pre-release nightmare. This RFC try to argue that we don't need to range feature in Rust, and so we can avoid the complicated rule needed to protect user from range trap.
+  * Instead of writing `>1.0, <3.0` write `1.0 || 2.0`
+  * Instead of writing `>1.4, <2.0` write `1.4`
+  * Instead of writing `>1.5, <1.6` write `~1.5`
+  * Instead of writing `>1.7, <1.9` write `~1.7 || ~1.8`
+  * Instead of writing `>1.0.0-0, <2.0.0-0` write `1.0.0-* || ^1` 
+  * Instead of writing `>1.0, <2.3` write `1.0 || ~2.0 || ~2.1 || ~2.2` (That would be incredibly rare in Rust)
 
-We could want to keep the range operator as optional, the user would opt in (`package.allow_range_reqversion = true`) to be able to use range. 
+* Without range operator, the "and" operator (`&&` or `,`) is not needed. All operators only allow to go to higher or equal version. This mean we don't need to have `(` and `)` to handle prevalence of logical operator. `||` is the only logical operator similar to before where that was `&&` the only available logical operator. Also, `,` is quite unclear for new user of Rust, we should probably have used `&&` before.
 
-To choice how we consider a compatible pre-release with another pre-release is not arbitrary. It's follow the ordering precedence define by SemVer. Take the first identifier as PREMAJOR seem like a natural choice that a lot of maintainers are doing. The problem is that there was no previous advice about this before and even when maintainers use this pattern isn't certain that make pre-release really compatible. That where the `dep_prerelease` come handy, it will allow Cargo to warn user about that and check if the pre-release they want to use follow this pattern, in case of doubt it could probably be better to use the `=` operator to avoid any surprise. This RFC by defining these rules will allow to have more and more case where a user can opt for a pre-release without expecting breaking when running Cargo update or just from a fresh cargo build. If a maintainer doesn't want to have pre-release compatible version or expect a lot of breaking change it's RECOMMENDED to use a numerical identifier for the PREMAJOR like `1.0.0-0`, `1.0.0-1`, `1.0.0-2-rc`.
+Rust can remove range operator cause Rust's tool force to respect SemVer, so we generally never need them. Any small breaking change is often detected instantly in Rust, user will implicitly get the incompatible version and Rust being a strongly typed language user will directly spot the breaking change. Maintainers will likely just yank the release and the problem will be gone. But NPM needs to deal with the incredible flexibility of JavaScript. JavaScript try as hard as possible to run no matter what. This mean that even if on paper two releases are incompatible in practice a user can hope it will "work". Also, the speed of JavaScript release is also higher, there is a lot of user, a lot of movement, more major release, more quickly. The tool for these two languages are likely to need different approach. It's not rare for a JavaScript project to want to handle few major releases while in Rust it's very rare. So rare that it's hard to find example of it. The way the two languages use SemVer is very different. NPM need range feature and so try to make them usable despite the pre-release nightmare. This RFC try to argue that we don't need to range feature in Rust, and so we can avoid the complicated rule needed to protect user from range trap.
 
-`package.dep_prerelease` serve a clear purpose to explicitly know if a crate want to use pre-release. A maintainer can opt in this for its pre-release version than opt-out. Cargo will warn the maintainer of a mistake about having a pre-release dep.
+It's hard to choice how we consider a pre-release compatible with another pre-release. There is a lot of convention existing and there may not be respected since Rust ecosystem has already many pre-release versions. Rust SemVer 2 choices to let this choice to advanced user. Have guideline about RECOMMENDED behavior will allow to have a standard convention about it, but a user will need to explicitly ask Cargo to opt in for pre-release convention using `~` operator. It's RECOMMENDED that user verify twice that a crate clearly state its pre-release compatible convention. In case of doubt, a user should not use advanced operator.
 
-`*` is just a Q&D feature, it would be a very bad practice to not at least choice a major version for a dependence when you make a release and as doc said "Note: [`crates.io`] does not allow bare * versions.". Removing the sugar of `1.*` serve two purposes, first `~` behavior is exactly this, secondly it doesn't follow SemVer ABNF. We don't need to introduce exception when `~` do the job. Specially `1.*.0` case is considered not valid make the rule annoying to implement. The only thing `~` can't do is what wildcard operator define in the rule, "match any release". So you can't express the notion of "any non-pre-release version" with `~` alone. Having `*` handle this special case isolate the feature and cost very little to the ABNF. It's allow to just add a rule `<valid rust semver> = <valid semver> | "*"` it doesn't change `valid semver` rule it's encapsulate it. We could also say that `~` alone do that, but this would contradict the compatible rule and make an expectation on an operator parsing. `~0` should not be currently accepted as it's make no sense.
+Removing the sugar of `1.0.*` serve two purposes, first `~` behavior is exactly this, secondly it doesn't follow SemVer ABNF. We don't need to introduce exception when `~` do the job. Specially `1.*.0` case is considered not valid make the rule annoying to implement, while `~` can't represent `1.*.0` so no need of specially handle of `~` in the code of Cargo.
 
-An alternative to this RFC could be to follow the exact same rule than NPM or similar other tools that manage requirement version. We could think, NPM do it, why shouldn't we too ? Because NPM users have problems and needs very different from Cargo users. NPM handle of SemVer are not necessary good solution for other ecosystem.
+`*` is just a Q&D feature, it's a very bad practice to not at least choice a major version for a dependence, a registry should not accept `*` as doc of Cargo say "Note: [`crates.io`] does not allow bare * versions.". The sugar `*` is acceptable. It's compatible with SemVer 2 BNF.
+
+## Alternatives
+[alternatives]: #alternatives
+
+* We could only change the `^` rules about match all pre-release and release of a version. This let open other problem of current Rust SemVer 1. User can implicitly make mistake, trying to prevent user to make a mistake follow Rust philosophies, Cargo should reflect that.
+
+* We could follow the exact same rule than NPM or similar other tools that manage requirement version. We could think "NPM do it, why shouldn't we too ?". Because NPM (or other tools) users have problems and needs very different from Cargo users. NPM handle of SemVer are not necessary good solution for other ecosystem.
 
 # Prior art
 [prior-art]: #prior-art
@@ -213,14 +311,14 @@ There is a formal RFC in preparation in [SemVer#584]. This proposition try to re
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-  * Should `||` operator be written `or`. `^1 or ^2`, it's mostly equivalent, matter of taste, but `||` have the advantage to not have any character allowed in SemVer ABNF.
-  * Should we keep range operator as optional opt-in feature ? If yes we would probably need `&&`, `(` and `)`.
-  * Should `*` take the highest of either pre-release or release version available instead of just pick release ?
-  * Should we define recommended pre-release convention ? A simple recommendation could be, use `alpha` then `beta` and so on. An alternative recommendation could be use `rc0` then `rc1` and so on. We could also propose to merge them saying to use alpha convention until it's reasonable to think a release is for very soon and here you use release candidate convention, `alpha` then `beta` then `rc` then `x.0.0` release. The majority of the most used crates use these conventions. I think it would be a very idea to define guideline for pre-release convention. This would make these rule more easy to understand, examples are always more simple to understand.
-  * Should we keep the syntax sugar `1.*` ? The problem of this sugar is that while `1.*` is valid `1.*.0` is not, also it's equivalent to tilde operator. It's look there are more cons than pros to this sugar.
-  * What is the percentage of requirement version use range or tilde usages in NPM ecosystem ? This to compare with Rust one.
-  * Should rule 13 allow `0` be `0.0.0` ? This make an exception to an exception.
-  * Do we really need pre-release wildcard rule 21 ? This look complex to use correctly. This only exist for user that want "the last possible pre-release or release", should we advise use git feature of cargo for that ? Even rule 20 do we really need wildcard ?
+* Should `||` operator be written `or`. `^1 or ^2`, it's mostly equivalent, matter of taste, but `||` have the advantage to not have any character allowed in SemVer ABNF.
+* Should we keep range operator as optional opt-in feature ? If yes we would probably need `&&`, `(` and `)`.
+* Do we need a way to say any release or any pre-release `*-*` ?
+* What is the percentage of requirement version use range or tilde usages in NPM ecosystem ? This to compare with Rust one.
+* The BNF of SemVer 2, allow `1.0.0-------------` or even `1.0.0------------+----------`, should we limit this behavior ? `1.0.0-alpha-beta` could be miss leading, SemVer should probably have used `_` instead or just not allowed `-` in identifier. `crates.io` should probably refuse such version and Rust SemVer 2 could force to have alpha between `-`. Or we could not care.
+* Should we define limit to identifier and number of version ?
+* Should the ABNF, use relativity for `||` rule instead of just being a list ? It's not needed for now.
+* Rule 15 is redundant with SemVer 2 but clarify the situation, should we remove it ?
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
@@ -241,3 +339,14 @@ Since, we introduce `||` operator, it would be easy to add `&&` operator later, 
 
 [list of most used pre-release tag]: https://gist.github.com/Stargateur/b7feeeb6b22cfbe2afee5744a4a30326#file-unique-name-list-of-pre-release-tag-dependencies
 [`air-interpreter-wasm`]: https://crates.io/crates/air-interpreter-wasm/versions
+
+[Backus-Naur Form Grammar for Valid SemVer Ranges]: https://github.com/semver/semver/blob/efcff2c838c9945f79bfd21c1df0073271bcc29c/ranges.md#backus-naur-form-grammar-for-valid-semver-ranges
+
+[ABNF]: https://datatracker.ietf.org/doc/html/rfc5234
+[`bap`]: https://tools.ietf.org/tools/bap/
+[`abnfgen`]: http://www.quut.com/abnfgen/
+[intersection]: https://en.wikipedia.org/wiki/Intersection_(set_theory)
+[union]: https://en.wikipedia.org/wiki/Union_(set_theory)
+
+[Antoine de Saint-Exupéry]: https://en.wikipedia.org/wiki/Antoine_de_Saint-Exup%C3%A9ry
+[KISS]: https://en.wikipedia.org/wiki/KISS_principle
