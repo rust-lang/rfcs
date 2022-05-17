@@ -1,5 +1,7 @@
 - Feature Name: rust-semver-2
 - Start Date: 2022-05-11
+- RFC PR: [rust-lang/rfcs#3266](https://github.com/rust-lang/rfcs/pull/3266)
+- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 # Summary
 [summary]: #summary
