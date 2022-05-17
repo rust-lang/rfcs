@@ -288,7 +288,7 @@ The philosophy of Rust SemVer 2 is to use the opposite mindset of Rust SemVer 1,
 
 Operator range make our life complicated in Rust, remove them for Rust SemVer 2 mean:
 
-* No more trap with pre-release, `^` have a simple behavior that follow compatible versioning rules with clear rules that allow to not be afraid that a pre-release is included implicitly. Or on the contrary that a final version is included implicitly. `^` alone represent 97% of dependence operator of Rust.
+* No more trap with pre-release, `^` have a simple behavior that follow compatible versioning rules with clear rules that allow to not be afraid that a pre-release is included implicitly. Or on the contrary that a final version is included implicitly. `^` alone represent 93.2% of dependence operator of Rust.
 
 * It's remove the ambiguity of range including pre-release or not.
 
