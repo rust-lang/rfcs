@@ -52,7 +52,20 @@ Syntax:
 for<$list_of_lifetimes where $list_of_lifetime_bounds>
 ```
 
-The bounds put inside of `$list_of_lifetime_bounds` have to refer to at least one lifetime introduced within `$list_of_lifetimes`. This way, we keep bounds of parent context from messing with bounds of extended HRTB.
+Any bound put inside of `$list_of_lifetime_bounds` have to refer to at least one lifetime introduced within `$list_of_lifetimes`. This way, we keep bounds of parent context separate from bounds of extended HRTB.
+
+### Subtyping
+
+In eHRTB, we have two lifetimes: lesser and greater bounds.
+
+Variance is the following:
+* eHRTB constructs are covariant in greater
+* and contravariant in lesser bounds.
+
+For example:
+
+1. `for<'a: 'l where 'r1: 'a> T` is a sub type of `for<'a: 'l where 'r2: 'a> T` if `'r1: 'r2`;
+2. `for<'a: 'l> T` is a sub type of `for<'a: 'r> T` if `'l: 'r`.
 
 # Drawbacks
 [drawbacks]: #drawbacks
