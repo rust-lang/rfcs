@@ -224,38 +224,6 @@ We thank authors of [`bap`] and [`abnfgen`] to have provided free tool to test t
 
 Cargo should emit a warning when `^` should be used instead of `~`. It is the case when only the MAJOR and MINOR are specified in `~` like `~1.2` == `^1.2` or `~0.2.5` == `^0.2.5`.
 
-### Pre-release Guideline
-[pre-release-guideline]: #pre-release-guideline
-
-A pre-release tag MAY follow such convention:
-
-* Alpha pre-release are considered very unstable that is similar to `0.0.z`. Alpha version should not have any compatibility expectation. It's recommended for an Alpha pre-release to set version like `1.0.0-alpha.PREMAJOR` where `PREMAJOR` is a numeric identifier incremented at each Alpha pre-release. `1.0.0-alpha.0` and `1.0.0-alpha.1` don't have any compatibility expectation.
-* Beta pre-release are considered unstable that are similar to `0.y.z` when `y > 0`. Beta version may have compatibility expectation. It's recommended for a Beta pre-release to set version like `1.0.0-beta.PREMAJOR.PREMINOR` where `PREMAJOR` is a numeric identifier incremented at each breaking change and `PREMINOR` is a numeric identifier incremented at each non-breaking change. `1.0.0-beta.0.1` MAY be compatible with `1.0.0-beta.0.0` or `1.0.0-beta.2.0` MAY be compatible with `1.0.0-beta.2.4`
-* If a pre-release is considerate to be the last pre-release before a release we call them Candidate Release and if a crate desire hint their users about Candidate Release, it's recommended to use build tag like `1.0.0-beta.4.0+rc`. There is no compatible expectation between a Candidate Release and the final release. They may be any number of Candidate Release.
-
-The following example use spaces to show version that MAY be compatible, using `~` to opt in:
-
-```none
-1.0.0-alpha.0
-1.0.0-alpha.1
-1.0.0-alpha.2
-1.0.0-alpha.3
-1.0.0-alpha.4
-1.0.0-beta.0.0 => ~1.0.0-beta.0.0
-  1.0.0-beta.0.1
-  1.0.0-beta.0.2
-1.0.0-beta.1.0+rc => ~1.0.0-beta.1.0
-  1.0.0-beta.1.1
-1.0.0-beta.2.0  => ~1.0.0-beta.2.0
-  1.0.0-beta.2.1
-  1.0.0-beta.2.2
-  1.0.0-beta.2.3+rc
-  1.0.0-beta.2.4+rc
-1.0.0
-```
-
-As you can see `1.0.0-beta.1.0+rc` was a release candidate, but we change our mind at `1.0.0-beta.1.1`. If a crate use this pre-release guideline user MAY use `~` operator to receive Beta upgrade, for example `~1.0.0-beta.0.0` would match `1.0.0-beta.0.0`, `1.0.0-beta.0.1`, `1.0.0-beta.0.2` pre-release. A crate should state its pre-release policy for example at end of a `readme.md` file, it's perfectly allowed to not follow this guideline about pre-release policy. A user should not make any assumption of pre-release policy of a crate if the crate doesn't specify it.
-
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
