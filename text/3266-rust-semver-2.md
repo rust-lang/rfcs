@@ -328,21 +328,21 @@ Since, we introduce `||` operator, it would be easy to add `&&` operator later, 
 
 22. `&&` have higher priority than `||`, you can use parenthesis `(` and `)` to encapsulate a requirement version.
 
-23. The OPERATOR "greater", with `>` REQVERSION operator match any greater VERSION of REQVERSION. This operator MAY match INCOMPATIBLE version.
+23. The OPERATOR "greater release", with `>` REQVERSION operator match any release greater VERSION of REQVERSION. This operator MAY match INCOMPATIBLE version.
 
-24. The OPERATOR "greater or equal", with `>=` REQVERSION operator match any greater or equal VERSION of REQVERSION. This operator MAY match INCOMPATIBLE version.
+24. The OPERATOR "greater or equal release", with `>=` REQVERSION operator match any release greater or equal VERSION of REQVERSION. This operator MAY match INCOMPATIBLE version.
 
-25. The OPERATOR "greater release", with `>>` REQVERSION operator match any greater release VERSION of REQVERSION. This operator MAY match INCOMPATIBLE version.
+25. The OPERATOR "greater", with `>>` REQVERSION operator match any greater VERSION of REQVERSION. This operator MAY match INCOMPATIBLE version.
 
-26. The OPERATOR "greater or equal release", with `>>=` REQVERSION operator match any smaller or equal release VERSION of REQVERSION. This operator MAY match INCOMPATIBLE version.
+26. The OPERATOR "greater or equal", with `>>=` REQVERSION operator match any smaller or equal VERSION of REQVERSION. This operator MAY match INCOMPATIBLE version.
 
-27. The OPERATOR "smaller", with `<` REQVERSION operator match any smaller VERSION of REQVERSION. This operator MAY match INCOMPATIBLE version.
+27. The OPERATOR "smaller release", with `<` REQVERSION operator match any release smaller VERSION of REQVERSION. This operator MAY match INCOMPATIBLE version.
 
-28. The OPERATOR "smaller or equal", with `<=` REQVERSION operator match any smaller or equal VERSION of REQVERSION. This operator MAY match INCOMPATIBLE version.
+28. The OPERATOR "smaller or equal release", with `<=` REQVERSION operator match any release smaller or equal VERSION of REQVERSION. This operator MAY match INCOMPATIBLE version.
 
-29. The OPERATOR "smaller release", with `<<` REQVERSION operator match any smaller release VERSION of REQVERSION. This operator MAY match INCOMPATIBLE version.
+29. The OPERATOR "smaller", with `<<` REQVERSION operator match any smaller VERSION of REQVERSION. This operator MAY match INCOMPATIBLE version.
 
-30. The OPERATOR "smaller or equal release", with `<<=` REQVERSION operator match any smaller or equal release VERSION of REQVERSION. This operator MAY match INCOMPATIBLE version.
+30. The OPERATOR "smaller or equal", with `<<=` REQVERSION operator match any smaller or equal VERSION of REQVERSION. This operator MAY match INCOMPATIBLE version.
 
 31. A REQVERSION numbers text representation last field can be a wildcard `*`, it would be equivalent to any value, if a pre-release or a build tag is present REQVERSION MUST NOT omit any numbers.
 
@@ -388,7 +388,7 @@ ident-join = "-"
 dot = "."
 ```
 
-Thus, it's add a lot of rules and make the grammar more complex, need a form of recursively.
+Thus, it's add a lot of rules and make the grammar more complex, need a form of recursively. This also reintroduce problem that this RFC try to solve.
 
 [SemVer 2]: https://semver.org/spec/v2.0.0.html
 
