@@ -149,6 +149,11 @@ The following example of requirement versions are INVALID:
 ^*
 ~*
 * || ~1.0.0-beta.0
+1.0.0 || || 2.0.0
+||1.0.0
+1.0.0||
+||^1.0.0
+^1.0.0||
 ```
 
 The following show some `~` and `||` usage:
@@ -159,13 +164,12 @@ The following show some `~` and `||` usage:
 * `~1.0.0-alpha` is equivalent to `~1.0.0-IDENTIFIERS` with `IDENTIFIERS >= alpha`
 * `~1.0.0-alpha.0` is equivalent to `~1.0.0-alpha.IDENTIFIERS` with `IDENTIFIERS >= 0` like `1.0.0-alpha.1` or `1.0.0-alpha.the.turbofish.remains.undefeated`.
 * `~0.1` is equivalent to `~0.y.z` with `y >= 1` and `z >= 0`
-* `~0.0.9` is equivalent to `~1.0.z` with `z >= 9`
+* `~0.0.9` is equivalent to `~0.0.z` with `z >= 9`
 * `~0.0.0-0` is equivalent to `~0.0.0-0.PREMINOR` with `PREMINOR >= 0` so any pre-release of `0.0.0`
 * `^1.0.0 || ^2.0.0` match all release of either `1` or `2`
 * `~1.7.0 || ~1.8.0 || ~1.9.0` match all releases between `1.7` and `1.10` excluded. 
 * `~1.2.0 || ^1.3.0` should be written `^1.2.0`
 * `~1.2.0 || ^1.4.0` is valid but SHOULD not be needed if a crate respect SemVer.
-* `1.0.0 || || 2.0.0`, `||1.0.0`, `1.0.0||` `||^1.0.0`, `^1.0.0||` are not a valid
 * `~1.0.0-0 || ^1` match any pre-release or release of `1`. This should be used with care.
 * `~0.0.0 || ~0.0 || ~1` match any release. It's call the wildcard.
 
