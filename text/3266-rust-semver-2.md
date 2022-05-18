@@ -308,6 +308,11 @@ In conclusion, Rust SemVer 2 remove a lot of exception and make much more explic
 
 * We could follow the exact same rule than NPM or similar other tools that manage requirement version. We could think "NPM do it, why shouldn't we too ?". Because NPM (or other tools) users have problems and needs very different from Cargo users. NPM handle of SemVer 2 are not necessary good solution for other ecosystem.
 
+* We could clarify the rules of Rust SemVer 1, this would remove the unclear state of current rule.
+  But the rules are currently hard to understand, `~` behavior is strange, range behavior is conditional to the presence of pre-release and to the precision of the requirement version numbers.
+  This still let user do mistake, even experimented one.
+  Finally, we really need to at least fix `^` behavior with pre-release and this is a breaking change that must be opt-in for [security reason], if we need to make a breaking change we could also take this opportunity to change our rules for version requirement.
+
 # Prior art
 [prior-art]: #prior-art
 
@@ -405,6 +410,7 @@ Thus, it's add a lot of rules and make the grammar more complex, need a form of 
 
 [RFC 3263 motivation]: https://github.com/rust-lang/rfcs/blob/8a020f872763f83834b3a03070e417257cebc8a1/text/3263-precise-pre-release-deps.md#motivation
 [SemVer#584]: https://github.com/semver/semver/pull/584
+[security reason]: https://github.com/semver/semver/pull/584#issuecomment-1125354556
 
 [`crates.io`]: https://crates.io
 
