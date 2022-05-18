@@ -299,6 +299,8 @@ Removing the sugar of `1.0.*` is because `~` behavior is now exactly this. We do
 
 `*` is just a Q&D feature, it's a very bad practice to not at least choice a major version for a dependence, a registry should not accept `*` as doc of Cargo say "Note: [`crates.io`] does not allow bare `*` versions.". The sugar `*` is acceptable since the tilde equivalent is `~0.0.0 || ~0.0 || ~1`, the complexity clearly represent why it's wrong to use `*` in production.
 
+In conclusion, Rust SemVer 2 remove a lot of exception and make much more explicit that a user really want to use advanced operator, it's also made it simpler to use advanced operator.
+
 ## Alternatives
 [alternatives]: #alternatives
 
