@@ -84,6 +84,7 @@ MacroInvocationSemi :
 - Have a separate mechanism for defining custom prefixes or suffixes.
   - E.g. `10.4_cm`, which is possible in C++ through `operator""`.
   - This requires a seprate mechanism, which complicates the language significantly.
+- Require macros to declare when they can be called using this syntax.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
