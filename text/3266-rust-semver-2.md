@@ -13,10 +13,10 @@ Empirical change from Rust SemVer 1:
 * Remove ranges `>=`, `>`, `<=`, `<`
 * Remove logical "and" `,`
 * Add logical "or" `||`
-* `~` can now update MAJOR
-* `^` will never consider a pre-release compatible with any other pre-release or release
-* `~0` or `^0.0` are not any more valid version requirement
 * Remove sugar `1.*` or `1.0.*`
+* `~` behavior is now equivalent to `~1.0.*`, `~1.*` and `~*`
+* `^` will never consider a pre-release compatible with any other pre-release or release
+* `~0` or `0.0` are not any more valid version requirement
 
 # Motivation
 [motivation]: #motivation
