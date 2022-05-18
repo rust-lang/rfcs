@@ -226,7 +226,7 @@ We thank authors of [`bap`] and [`abnfgen`] to have provided free tool to test t
 * `dependencies.foo.allow-advanced-operator`, the default is `warn` for `rust-semver = "1"` and `deny` for `rust-semver = "2"`:
 
   * `warn` will emit a warning if a requirement version use `~` or `||` operator.
-  * `allow` will accept tilde `~` or `||` operator.
+  * `allow` will accept tilde `~` and `||` operator.
   * `deny` will emit an error if a requirement version use `~` or `||` operator.
 
 `package.version` will now default to `0.0.0`.
@@ -263,9 +263,11 @@ The philosophy of Rust SemVer 2 is to use the opposite mindset of Rust SemVer 1,
 
 > Perfection is achieved, not when there is nothing more to add, but when there is nothing left to take away. [Antoine de Saint-Exupéry]
 
-Operator range make our life complicated in Rust, remove them for Rust SemVer 2 mean:
+Clearly state that a pre-release can't be compatible with higher pre-release or release remove the trap of `^`.
+Now `^` have a simple behavior that follow compatible versioning rules with clear rules that allow to not be afraid that a pre-release or release is included implicitly.
+`^` alone represent 93.2% of dependence operator of Rust.
 
-* No more trap with pre-release, `^` have a simple behavior that follow compatible versioning rules with clear rules that allow to not be afraid that a pre-release is included implicitly. Or on the contrary that a final version is included implicitly. `^` alone represent 93.2% of dependence operator of Rust.
+Operator range make our life complicated in Rust, remove them for Rust SemVer 2 mean:
 
 * It's remove the ambiguity of range including pre-release or not.
 
