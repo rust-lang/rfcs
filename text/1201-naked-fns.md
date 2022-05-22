@@ -3,6 +3,12 @@
 - RFC PR: [rust-lang/rfcs#1201](https://github.com/rust-lang/rfcs/pull/1201)
 - Rust Issue: [rust-lang/rust#32408](https://github.com/rust-lang/rust/issues/32408)
 
+# This RFC was previously approved, but later **withdrawn**
+
+In short this RFC was superseded by RFC 2972. For details see the [summary comment].
+
+[summary comment]: https://github.com/rust-lang/rust/issues/32408#issuecomment-1016931986
+
 # Summary
 
 Add support for generating naked (prologue/epilogue-free) functions via a new
