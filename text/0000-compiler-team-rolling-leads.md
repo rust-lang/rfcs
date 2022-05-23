@@ -104,7 +104,7 @@ Let us recall that any compiler team member is allowed to:
 * draft steering meeting proposals, and often write the associated steering meeting document to drive the meetings,
 * solicit individuals to form working groups to address important problems,
 * take on the resolution of unassigned or abandoned P-critical or P-high issues, and
-* drive larger initiatives related to the language.
+* drive larger initiatives related to the compiler.
 
 None of that is exclusively the domain of team leads, though the team leads are
 expected to take part in such activities as time permits.
