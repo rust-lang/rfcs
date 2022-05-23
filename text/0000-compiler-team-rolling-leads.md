@@ -32,7 +32,7 @@ what our expectations are for our leaders, as well as the vision for what
 succession planning looks like.
 
 The expected outcome is that we have healthy team whose leads will expect to
-only serve in that role for a limited time (on the order of 2 to 4 years), and
+only serve in that role for a limited time (on the order of 2 to 5 years), and
 whose members can have opportunities to take on that leadership role themselves.
 
 # Guide-level explanation
@@ -126,7 +126,7 @@ be a lead for the team. (For example, they need to build the compiler and run
 its test suite, bisect the git history, and post pull requests, especially ones
 that revert existing changes.)
 
-A person who leads the team *also* needs enouugh social connection with the
+A person who leads the team *also* needs enough social connection with the
 other T-compiler team members to feel comfortable reaching out for one-on-one
 communication when necessary.
 
@@ -187,7 +187,7 @@ confirmation that the set of nominations is complete.
 
 After nomination is completed, the outgoing senior and junior co-leads discuss
 the set of nominees, and also, if desired, have short discussions with the
-nominnees. Then, the senior and junior co-leads select the new co-lead from the
+nominees. Then, the senior and junior co-leads select the new co-lead from the
 set of nominees. And that’s it! Then current leads just need to publish a blog
 post saying that the leadership is scheduled to roll over, who the new junior
 lead is, and the date that it takes effect.
@@ -223,7 +223,7 @@ alternative would be a pure democracy where the electorate (either the compiler
 team, or some superset thereof) gets to vote for who the new junior lead will
 be.
 
-When it comes to co-leadership is that the two leaders need to be able to work
+When it comes to co-leadership, the two leaders need to be able to work
 together effectively. We do not want to end up with a pair of leaders who cannot
 talk to each other. Therefore, we currently are choosing a system where the
 current leaders have final say on who the next junior lead will be, in order to
