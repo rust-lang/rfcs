@@ -1,7 +1,7 @@
 - Feature Name: `closure_lifetime_binder`
 - Start Date: 2022-01-06
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- RFC PR: [rust-lang/rfcs#3216](https://github.com/rust-lang/rfcs/pull/3216)
+- Rust Issue: [rust-lang/rust#97362](https://github.com/rust-lang/rust/issues/97362)
 
 
 This RFC went through a pre-RFC phase at https://internals.rust-lang.org/t/pre-rfc-allow-for-a-syntax-with-closures-for-explicit-higher-ranked-lifetimes/15888
