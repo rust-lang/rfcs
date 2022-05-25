@@ -6,7 +6,8 @@
 # Summary
 [summary]: #summary
 
-This is a proposal to make `m!123` a short-hand for `m!(123)`.
+This is a proposal for `m!literal` macro invocation syntax,
+for macros that feel like literals:
 
 ```rust
     let num = bignum!12345678901234567890123456789012345678901234567890;
@@ -21,14 +22,14 @@ In the Rust 2021 edition we reserved all prefixes for literals, so we can give t
 However, many ideas for specific literal prefixes (e.g. for wide strings or bignums) are domain- or crate-specific,
 and should arguably not be a builtin part of the language itself.
 
-By making `m!123` a short-hand for `m!(123)`, we get a syntax that's just as convenient and light-weight as built-in prefixes,
+By making `m!literal` a way to invoke a macro, we get a syntax that's just as convenient and light-weight as built-in prefixes,
 but through a mechanism that allows them to be user-defined, without any extra language features necessary to define them.
 
 For example:
 
-- Those who want "f-strings" can then simply do `use std::format as f;` and then use `f!"{a} {b}"`.
 - Windows crates could provide wide strings using `w!"C:\\"`
 - An arbitrary precision number crate could provide `bignum!12345678901234567890123456789012345678901234567890`.
+- Those who want "f-strings" can then simply do `use std::format as f;` and then use `f!"{a} {b}"`.
 
 The difference with `f!("{a} {b}")`, `w!("C:\\")` and `bignum!(123...890)` is small, but significant.
 
