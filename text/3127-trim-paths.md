@@ -96,8 +96,8 @@ This flag accepts a comma-separated list of values and may be specified multiple
 - `diagnostics` - apply remappings to printed compiler diagnostics
 - `unsplit-debuginfo` - apply remappings to debug information only when they are written to compiled executables or libraries, but not when they are in split debuginfo files
 - `split-debuginfo` - apply remappings to debug information only when they are written to split debug information files, but not in compiled executables or libraries 
-- `split-debuginfo-file` - apply remappings to the paths pointing to split debug information files. Does nothing when these files are not generated.
-- `object` - an alias for `macro,unsplit-debuginfo,split-debuginfo-file`. This ensures all paths in compiled executables or libraries are remapped, but not elsewhere.
+- `split-debuginfo-path` - apply remappings to the paths pointing to split debug information files. Does nothing when these files are not generated.
+- `object` - an alias for `macro,unsplit-debuginfo,split-debuginfo-path`. This ensures all paths in compiled executables or libraries are remapped, but not elsewhere.
 - `all` and `true` - an alias for all of the above, also equivalent to supplying only `--remap-path-prefix` without `--remap-path-scope`.
 
 Debug information are written to split files when the separate codegen option `-C split-debuginfo=packed` or `unpacked` (whether by default or explicitly set).
@@ -111,8 +111,8 @@ Debug information are written to split files when the separate codegen option `-
 - `diagnostics` - sanitise paths in printed compiler diagnostics
 - `unsplit-debuginfo` - sanitise paths in debug information in compiled executables or libraries. Does nothing if debug information are in split files
 - `split-debuginfo` - sanitise paths in debug information in split debuginfo files. Does nothing if debug information are in compiled executables or libraries 
-- `split-debuginfo-file` - sanitise paths pointing to split debug information files. Does nothing if these files are not generated.
-- `object` - an alias for `macro,unsplit-debuginfo,split-debuginfo-file`. This ensures all paths in compiled executables or libraries are sanitised, but not elsewhere.
+- `split-debuginfo-path` - sanitise paths pointing to split debug information files. Does nothing if these files are not generated.
+- `object` - an alias for `macro,unsplit-debuginfo,split-debuginfo-path`. This ensures all paths in compiled executables or libraries are sanitised, but not elsewhere.
 - `all` and `true` - an alias for all of the above
 
 It is defaulted to `none` for debug profiles, and `object` for release profiles. You can manually override it by specifying this option in `Cargo.toml`:
@@ -184,9 +184,9 @@ local path to be remapped in the usual way.
 
 When debug information are not embedded in the binary (i.e. `split-debuginfo` is not `off`), absolute paths to various files containing debug
 information are embedded into the binary instead. Such as the absolute path to `.pdb` file (MSVC, `packed`), `.dwo` files (ELF, `unpacked`), 
-and `.o` files (ELF, `packed`). This can be undesirable. As such, `split-debuginfo-file` is made specifically for these embedded paths.
+and `.o` files (ELF, `packed`). This can be undesirable. As such, `split-debuginfo-path` is made specifically for these embedded paths.
 
-On macOS and ELF platforms, these paths are introduced by `rustc` during codegen. With MSVC, however, the path to `.pdb` fil is generated and
+On macOS and ELF platforms, these paths are introduced by `rustc` during codegen. With MSVC, however, the path to `.pdb` file is generated and
 embedded into the binary by the linker `link.exe`. The linker has a `/PDBALTPATH` option allows us to change the embedded path written to the
 binary, which could be supplied by `rustc`
 
