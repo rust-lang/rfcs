@@ -147,8 +147,6 @@ This will not affect any hard-coded paths in the source code, such as in strings
 
 ## `trim-paths` implementation in Cargo
 
-We only need to change the behaviour for `Test` and `Build` compile modes. 
-
 If `trim-paths` is `none` (`false`), no extra flag is supplied to `rustc`.
 
 If `trim-paths` is anything else, then its value is supplied directly to `rustc`'s `--remap-path-scope` option, along with two `--remap-path-prefix` arguments:
@@ -241,7 +239,6 @@ the other for only debuginfo: https://reproducible-builds.org/docs/build-path/. 
   package roots to `[package name]-[version]`. A minor downside to this is not being able to `Ctrl+click` on paths to files the user is working
   on from panic messages.
 - Will these cover all potentially embedded paths? Have we missed anything?
-- Should we make this affect more `CompileMode`s, such as `Check`, where the emitted `rmeta` file will also contain absolute paths?
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
