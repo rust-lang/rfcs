@@ -287,7 +287,7 @@ In the WG's opinion, the (small) benefit this would provide to the wider
 ecosystem is not worth it compared to the big increase of the risk of leakage
 (as we'd need to notify a lot of companies under this program).
 
-In addition, such a policy would require defining who a "big players" is, and
+In addition, such a policy would require defining who a "big player" is, and
 any such definition would either be too broad (disclosing in advance to a set
 of organizations wide enough to make leaks inevitable) or become a kind of
 preferential treatment for a subset of organizations.
