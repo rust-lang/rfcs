@@ -104,7 +104,7 @@ struct `SharedRef`:
 struct SharedRef<'a, T> {
   data: &'a T
 }
-```    
+```
 
 In general, for a struct definition to be valid, its field types must be
 known to be well-formed, based only on the struct's where-clauses. In this case,
@@ -128,7 +128,7 @@ case. For example, the following function is valid as written:
 ```rust
 fn foo<'a, T>(x: &'a T) {
   ..
-}  
+}
 ```
 
 This is due to Rust's support for **implied bounds** -- in particular,
@@ -198,7 +198,7 @@ In turn, if this associated type were used in a struct, where-clauses
 would be required. As we'll see in the reference-level explanation,
 this is a consequence of the fact that we do inference without regard
 for associated type normalization, but it makes for a relatively
-simple rule -- explicit where clauses are needed in the preseence of
+simple rule -- explicit where clauses are needed in the presence of
 impls like the one above:
 
 ```rust
@@ -206,7 +206,7 @@ struct Foo<'a, T>
   where T: 'a // still required, not inferred from `field`
 {
   field: <Vec<T> as MakeRef<'a>>::Type
-}    
+}
 ```
 
 As the algorithm is currently framed, outlives requirements written on
@@ -261,7 +261,7 @@ defaults, since they are typically not needed otherwise.
 
 Initially, we avoided inferring the `T: 'a` annotations on struct
 types in part out of a fear of "long-range" error messages, where it
-becomes hard to see the origin of an outlives requirement.  Consider
+becomes hard to see the origin of an outlives requirement. Consider
 for example a setup like this one:
 
 ```rust
@@ -356,10 +356,10 @@ changed to (e.g.) remove the field `vec`, then it may no longer
 require that `T: 'a` holds, and hence `foo()` would no longer have the
 implied bound that `T: 'a` holds.
 
-This situation is considerd unlikely: typically, if a struct has a
+This situation is considered unlikely: typically, if a struct has a
 lifetime parameter (such as the `Iter` struct), then the fact that
 it contains (or may contain) a borrowed reference is rather
-fundamental to how it works. If that borrowed refernce were to be
+fundamental to how it works. If that borrowed reference were to be
 removed entirely, then the struct's API will likely be changing in
 other incompatible ways, since that implies that the struct is now
 taking ownership of data it used to borrow (or else has access to less
@@ -369,7 +369,7 @@ data than it did before).
 types can cause downstream errors: introducing object types can
 inhibit auto traits like `Send` and `Sync`. What these have in common
 is that they are both entangled with Rust's memory safety checking. It
-is commonly observed that parallelim is anti-encapsulation, in that,
+is commonly observed that parallelism is anti-encapsulation, in that,
 to know if two bits of code can be run in parallel, you must know what
 data they access, but for the strongest encapsulation, you wish to
 hide that fact. Memory safety has a similar property: to guarantee
@@ -535,7 +535,7 @@ constraints for its where-clause set, and hence we will infer an empty
 set. This is because we encounter the field type `<Vec<T> as
 MakeRef<'a>>::Type`, and in such a case we ignore the trait reference
 itself and just require that `Vec<T>` is well-formed, which does not
-result in any outlives requirements as it contains no references. 
+result in any outlives requirements as it contains no references.
 
 Now, when we go to check the full well-formedness rules for `Foo`, we will
 get an error -- this is because, in that context, we will try to normalize
