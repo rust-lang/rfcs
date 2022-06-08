@@ -3,6 +3,13 @@
 - RFC PR: [rust-lang/rfcs#2093](https://github.com/rust-lang/rfcs/pull/2093)
 - Rust Issue: [rust-lang/rust#44493](https://github.com/rust-lang/rust/issues/44493)
 
+# This RFC was previously approved, but part of it later **withdrawn**
+
+To infer `T: 'static` requirements from structs, the `infer_static_outlives_requirements` feature was previously implemented
+as part of this RFC, but later removed. For details see the [summary comment].
+
+[summary comment]: https://github.com/rust-lang/rust/issues/54185#issuecomment-1124097663
+
 # Summary
 [summary]: #summary
 
