@@ -254,6 +254,26 @@ impl Iterator for Foo {
 
 Should the `nth` method also be considered `const fn`?
 
+### Method dispatch
+
+The [method dispatch rules] can be confusing when there are multiple candidates with the same name but that differ in their `self` type. Refinement on `impl Trait` return types can interact with this by adding new candidates for method dispatch. See [this comment][resolution-comment] for an example.
+
+Method dispatch rules can be improved in a future edition, for example by making callers disambiguate the method they want to call in these situations.
+
+[method dispatch rules]: https://doc.rust-lang.org/stable/reference/expressions/method-call-expr.html
+[resolution-comment]: https://github.com/rust-lang/rfcs/pull/3245#issuecomment-1105959958
+
+### Unsatisfiable trait members
+
+Today we [require trait members with unsatisfiable `where` clauses to be implemented][2829]. This leads to dropping the unsatisfiable bounds in the impl (a form of refinement) and, in some cases, relying on the property that the item can never be used. See [this comment][unsat-comment] for an example. This RFC would relax that property.
+
+It should be considered a bug for any code to rely on this unusability property for correctness purposes, though a panic may be necessary in some cases.
+
+We should solve this problem separately and allow implementers to omit items like this, but that is out of the scope of this RFC.
+
+[2829]: https://github.com/rust-lang/rfcs/issues/2829
+[unsat-comment]: https://github.com/rust-lang/rfcs/pull/3245#issuecomment-1120097693
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
