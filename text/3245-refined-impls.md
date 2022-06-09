@@ -194,7 +194,7 @@ Because we allow writing impls that look refined, but are [not usable][not-usabl
 
 ### Lint against unmarked refined impls
 
-After this RFC is merged, we should warn when a user writes an impl that looks refined and suggest that they copy the exact API of the trait they are implementing. Once this feature stabilizes, we can should add and suggest using `#[refine]` attribute to mark that an impl is intentionally refined.
+After this RFC is merged, we should warn when a user writes an impl that looks refined and suggest that they copy the exact API of the trait they are implementing. Once this feature stabilizes, we can suggest using `#[refine]` attribute to mark that an impl is intentionally refined.
 
 ### Automatic migration for the next edition
 
@@ -274,6 +274,17 @@ Part of the reason that text is being added to the reference is that the referen
 It is possible for a user to form an impression of a trait API by seeing its use in one type, then be surprised to find that that usage does not generalize to all implementations of the trait.
 
 It's rarely obvious, however, that a *trait* API is being used at a call site as opposed to an inherent API (which can be completely different from one type to the next). The one place it is obvious is in generic functions, which will typically only have access to the original trait API.
+
+## Refactoring
+[Refactoring]: #refactoring
+
+When a trait API is refined by a type, users of that type may rely on refined details of that API without realizing it. This could come as a surprise when they then try to refactor their code to be generic over that type.
+
+The general form of this problem isn't specific to refined impls. Making code generic always loses type information (which is the point) and often requires you to tweak some details about your implementation to compensate. This feature would add another place where that can happen. Using a const or method that was defined in a trait, even when that trait is in your generic bounds, may not be enough – your non-generic code may have relied on a refined aspect of that item.
+
+In some situations the user may realize they are relying on too many details of the concrete type and either don't want to make their code generic, or need to refactor it to be more general. In other situations, however, they may want to add extra bounds so their code can be generic without significant modifications.
+
+This problem can be solved or mitigated with new ways of adding bounds to the refined items, but those are out of scope for this RFC and not fully designed. They are described below in [Bounding refined items].
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -366,7 +377,84 @@ impl Foo for () {
 let _: String = ().foo();
 ```
 
-With refinement impls, we can say that this desugaring is equivalent because return position impl trait would give the exact same flexibility as associated types.
+With refinement impls, we can say that this desugaring is equivalent because return position impl trait would give the same flexibility to implementers as associated types.
+
+## Bounding refined items
+[Bounding refined items]: #bounding-refined-items
+
+As described in the [Refactoring] drawbacks section, when making existing code generic a user may run into dependence on refined aspects of a concrete type not specified in the trait itself. In this case the user may want to add additional bounds so they can make their code generic without significant modifications.
+
+This problem already exists for associated types, but bounds can be added for those. This implies a couple of ways to solve this problem.
+
+### New kinds of bounds
+
+We can make it possible to add bounds on all refine-able aspects of a trait API.
+
+It is already likely we will want to allow bounding the return type of methods:
+
+```rust
+trait Trait {
+    fn foo() -> impl Clone;
+}
+
+fn take_foo<T: Foo>(_: T) where T::foo: Copy { ... }
+```
+
+The need for this arises both in `async` (e.g. needing to bound a future return type by `Send`) and in cases like `-> impl Iterator` where additional properties are required. A mechanism for supplying these bounds could possibly be extended to bounding what _argument_ types a method accepts.
+
+There is no way to bound the type of a const today. It is possible one could be added, but since consts will only allow subtype refinement (i.e. a type with a longer lifetime than required by the trait) it is unlikely that this situation will come up often in practice.
+
+### Falling back to associated types
+
+As mentioned above, associated types can have bounds, either on their exact value or with other traits:
+
+```rust
+fn foo<T: Iterator<Item = u32>>(_: T) { ... }
+fn bar<T: Iterator>(_: T) where T::Item: Clone { ... }
+```
+
+Because associated types are the most flexible option **we may want to make it possible to add associated types to a trait backward-compatibly**. For example, given the following trait:
+
+```rust
+trait Trait {
+    fn foo() -> impl Clone;
+}
+```
+
+we want to be able to refactor to something like this:
+
+```rust
+trait Trait {
+    type Foo: Clone;
+    fn foo() -> Self::Foo;
+}
+```
+
+There are least a couple of things needed for this:
+
+1. Don't require implementations to specify associated type values when they can be inferred. For example:
+   ```rust
+   trait Trait {
+       type Foo;
+       fn foo() -> Foo;
+   }
+
+   impl Trait for () {
+       fn foo() -> usize;
+       // `type Foo = usize;` is not needed,
+       // since it can be inferred from the above.
+   }
+   ```
+1. Allow adding associated types without breaking existing usages of `dyn`. For example, let's say we had support for return-position `impl Trait` with dynamic dispatch. With [associated type defaults] and type alias `impl Trait`, you could write:
+   ```rust
+   trait Trait {
+       type Foo: Clone = impl Clone;
+       fn foo() -> Foo;
+   }
+   ```
+   and allow `dyn Trait` to mean `dyn Trait<Foo = impl Clone>`.
+
+[associated type defaults]: https://github.com/rust-lang/rust/issues/29661
 
 ## Adding generic parameters
 
