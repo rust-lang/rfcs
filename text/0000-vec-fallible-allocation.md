@@ -179,7 +179,7 @@ Disadvantages:
 
 ### Always return `Result` (with the error based on the allocator), but allow implicit unwrapping for "infallible allocation"
 
-If the `Allocator` trait is updated to indicate what error is return if the allocation fails (with infallible allocation returning `!`), then the allocating
+If the `Allocator` trait is updated to indicate what error is returned if the allocation fails (with infallible allocation returning `!`), then the allocating
 methods on `Vec` can be changed to return a `Result` using that error type. Normally this would be a breaking change, but we could also change the Rust
 compiler to permit an implicit conversion from `Result<T, !>` to `T`, thus any existing code using an infallible allocator will continue to compile.
 
