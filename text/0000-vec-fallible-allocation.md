@@ -52,7 +52,7 @@ Within the Rust standard library, one can identify "fallible allocation" functio
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-Currently any function in `alloc` that may all the global OOM handler (which panics) rather than let its caller handle all allocation failures is marked with `#[cfg(not(no_global_oom_handling))]` (see <https://github.com/rust-lang/rust/pull/84266>),
+Currently any function in `alloc` that may call the global OOM handler (which panics) rather than let its caller handle all allocation failures is marked with `#[cfg(not(no_global_oom_handling))]` (see <https://github.com/rust-lang/rust/pull/84266>),
 which the [fallible_allocation feature](https://github.com/rust-lang/rfcs/pull/3140) proposes to change to a check of the `infallible_allocation` feature
 (i.e., `#[cfg(feature = "infallible_allocation")]`). Any such method in `Vec` will have a corresponding "fallible allocation" method prefixed with `try_` that
 returns a `Result<..., TryReserveError>` and so is usable if `no_global_oom_handling` is enabled (or `infallible_allocation` is disabled).
