@@ -198,7 +198,7 @@ lead is, and the date that it takes effect.
 Why should we *not* do this?
 
 Committing to specific term lengths puts pressure on the leads to identify new
-leaders earlier than they might otherwise. Note that If the leads fail to identify 
+leaders earlier than they might otherwise. Note that if the leads fail to identify 
 any suitable candidates, then we will have hit a (hopefully exceptional) situation 
 where we will need to ask the current leadership to stay on board for longer than
 expected. At that point, the leads' ongoing goals **must** include the proactive 
