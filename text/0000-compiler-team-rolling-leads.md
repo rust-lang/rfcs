@@ -198,7 +198,11 @@ lead is, and the date that it takes effect.
 Why should we *not* do this?
 
 Committing to specific term lengths puts pressure on the leads to identify new
-leaders earlier than they might otherwise.
+leaders earlier than they might otherwise. Note that If the leads fail to identify 
+any suitable candidates, then we will have hit a (hopefully exceptional) situation 
+where we will need to ask the current leadership to stay on board for longer than
+expected. At that point, the leads' ongoing goals **must** include the proactive 
+seeking of the next generation of leaders.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -224,8 +228,9 @@ team, or some superset thereof) gets to vote for who the new junior lead will
 be.
 
 When it comes to co-leadership, the two leaders need to be able to work
-together effectively. We do not want to end up with a pair of leaders who cannot
-talk to each other. Therefore, we currently are choosing a system where the
+together effectively; we believe they need compatible working styles
+and complementary sets of skills. Therefore, we currently are choosing a
+system where the
 current leaders have final say on who the next junior lead will be, in order to
 optimize for healthy intra-leader communications.
 
