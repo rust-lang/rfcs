@@ -1,7 +1,7 @@
 - Feature Name: `process_set_process_group`
 - Start Date: 02-02-2022
 - RFC PR: [rust-lang/rfcs#3228](https://github.com/rust-lang/rfcs/pull/3228)
-- Rust Issue: [rust-lang/rust#3228](https://github.com/rust-lang/rust/issues/3228)
+- Rust Issue: [rust-lang/rust#93857](https://github.com/rust-lang/rust/issues/93857)
 
 # Summary
 [summary]: #summary
