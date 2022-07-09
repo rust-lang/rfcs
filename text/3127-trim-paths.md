@@ -73,8 +73,8 @@ This is undesirable for the following reasons:
 ## Handling sysroot paths
 At the moment, paths to the source files of standard and core libraries, even when they are present, always begin with a virtual prefix in the form
 of `/rustc/[SHA1 hash]/library`. This is not an issue when the source files are not present (i.e. when `rust-src` component is not installed), but
-when a user installs `rust-src` they may want the path to their local copy of source files to be visible. Hence the default behaviour when `rust-src`
-is installed should be to use the local path. These local paths should be then affected by path remappings in the usual way.
+when a user installs `rust-src` they may want the path to their local copy of source files to be visible. Sometimes this is simply impossible as the path originated from the pre-compiled std and core and outside of rustc's control, but the local path should be used where possible.
+Hence the default behaviour when `rust-src` is installed should be to use the local path. These local paths should be then affected by path remappings in the usual way.
 
 ## Preserving debuginfo to help debuggers
 At the moment, `--remap-path-prefix` will cause paths to source files in debuginfo to be remapped. On platforms where the debuginfo resides in a
@@ -168,13 +168,12 @@ supplied *after* Cargo's own remapping.
 
 ## Changing handling of sysroot path in `rustc`
 
-The virtualisation of sysroot files to `/rustc/[commit hash]/library/...` was done at compiler bootstrapping, specifically when 
-`remap-debuginfo = true` in `config.toml`. This is done for Rust distribution on all channels.
+The remapping of sysroot paths to `/rustc/[commit hash]/library/...` was done when std and core libraries are compiled by Rust's release CI. Unless [`build-std`](https://doc.rust-lang.org/cargo/reference/unstable.html#build-std) is specified, these pre-compiled artifacts are used.
 
-At `rustc` runtime (i.e. compiling some code), we try to correlate this virtual path to a real path pointing to the file on the local file system.
+Most of the time, these paths are never handled by `rustc`, since they are in the debuginfo of pre-compiled binaries to be directly copied by the linker. However, sometimes (such as when compiling monomorphised functions), `rustc` does pick up these metadata. When this happens, `rustc` tries to correlate this virtual path to a real path pointing to the file on the local file system.
 Currently the result is represented internally as if the path was remapped by a `--remap-path-prefix`, from local `rust-src` path to the virtual 
-path.
-Only the virtual name is ever emitted for metadata or codegen. We want to change this behaviour such that, when `rust-src` source files can be
+path `/rustc/[commit hash]/library/...`.
+Only the virtual path is ever emitted for metadata or codegen. We want to change this behaviour such that, when `rust-src` source files can be
 discovered, the virtual path is discarded and therefore the local path will be embedded, unless there is a `--remap-path-prefix` that causes this
 local path to be remapped in the usual way.
 
@@ -259,3 +258,18 @@ or is it a part of the path; if the first `:` supplied belongs to the path then 
 
 In any case, future inclusion of this new syntax will not affect `--remap-path-scope` introduced in this RFC. Scopes specified in `--remap-path-scope`
 will be used as default for all mappings, and explicit scopes for an individual mapping will take precedence on that mapping.
+
+## Sysroot paths uniformity
+Since some virtualised sysroot paths are hardcoded in the pre-compiled debuginfo, while the others can be resolved back to a local path with `rust-src`, the user may see them interleaved
+```
+   0: rust_begin_unwind
+             at /rustc/881c1ac408d93bb7adaa3a51dabab9266e82eee8/library/std/src/panicking.rs:493:5
+   1: core::panicking::panic_fmt
+             at /rustc/881c1ac408d93bb7adaa3a51dabab9266e82eee8/library/core/src/panicking.rs:92:14
+   2: core::result::unwrap_failed
+             at /rustc/881c1ac408d93bb7adaa3a51dabab9266e82eee8/library/core/src/result.rs:1355:5
+   3: core::result::Result<T,E>::unwrap
+             at /home/jonas/.rustup/toolchains/nightly-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/result.rs:1037:23
+```
+
+This is not very nice. It is infeasible to fix up the pre-compiled debuginfo before linking to fully remove the virtual paths, so demapping needs to happen when it is displayed (in this case, when the backtrace is printed). This is out of scope of this RFC but it may be something we want to do separately in the future.
