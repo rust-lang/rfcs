@@ -246,9 +246,11 @@ Please also take into consideration that rust sometimes intentionally diverges f
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-- What parts of the design do you expect to resolve through the RFC process before this gets merged?
-- What parts of the design do you expect to resolve through the implementation of this feature before stabilization?
-- What related issues do you consider out of scope for this RFC that could be addressed in the future independently of the solution that comes out of this RFC?
+## Lifetime extension
+
+Method call chains will not lifetime extend their arguments. Match statements, however,
+are notorious for having lifetime extension. It is currently unclear if promoting these
+usecases of match would cause more [subtle bugs](https://fasterthanli.me/articles/a-rust-match-made-in-hell#my-actual-bug), or if it's negligable
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
