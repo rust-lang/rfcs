@@ -331,8 +331,18 @@ This fix assumes that a user can't in any way create a file owned by another use
 (unless they have elevated permissions like root).
 I believe this is the case for all major operating systems and filesystems.
 
-One (major) known exception is if a network-mounted filesystem is configured to map all files to the local user, which is not uncommon.
-In this case, the user will need to trust all users who can write to the mounted filesystem.
+Some exceptions that present risks to this RFC:
+
+* If a network-mounted filesystem is configured to map all files to the local user (which is not uncommon), then other users will be able to create files owned by the current user.
+
+  In this case, the user will need to trust all users who can write to the mounted filesystem.
+
+* UID reuse may allow an attacker to create a file that is later owned by a new, legitimate user.
+  For example, an attacker is able to create a new user (or exploit something that creates a temporary user) and poison the filesystem, and then delete that user.
+  Then, later, a genuine user is created with that same UID, they will unknowingly give privilege to those previously created files.
+
+  On Windows, the SID should be reasonably unique, making this unlikely.
+  For other systems, this is a exploit chain that is possible, though it requires other exploits that likely have easier ways to escalate than through Rustup and Cargo.
 
 ## Check the ownership of every directory while traversing upwards
 
