@@ -316,16 +316,29 @@ but it is not a replacement for ownership checks since it is opt-in.
 
 ## Honor the user of the current directory
 
-The ownership check could also include the owner of the current working directory as "approved" and allow any files owned by that user in any parent directory.
+The ownership check could include the current directory into its rules.
+Some possible examples:
+
+* Don't check the ownership of files in the current directory.
+* Record the owner of the current directory, and treat that owner as "approved" and allow any files owned by that user in any parent directory.
+
 This is under the assumption that the user running the command makes an explicit choice as to which directory they run Cargo or Rustup from.
 This could significantly ease the burden of dealing with this issue,
 as it will avoid needing to set safe directories in almost all use cases where they would be needed.
 
-However, I feel like this approach is too risky.
-For `git`, this would be risky because users often run `git` from the shell prompt.
+However, I feel like this approach has a high risk.
+Some Rust users may execute commands like `rustc -V` to get the version for a shell prompt.
 This means that just changing directory to another user's directory could expose them.
-This may also apply to Rust users.
-For example [Starship](https://starship.rs/) can execute `rustc` to get its version for the shell prompt.
+This was one of the leading concerns that prompted git to implement their fix, and the reasoning behind the risk seems compelling to me.
+
+The risk for Rustup seems high due to something like the shell prompt issue,
+but this exception could be considered for just Cargo which may be less likely to be exposed in a similar way.
+However, that presents several drawbacks:
+
+* If it only honors the current directory, then Cargo's behavior could be inconsistent based on which directory you are in.
+  For example, if the root `Cargo.toml` is owned by a different user, it would work if you run cargo commands from that directory, but not any subdirectory.
+* This behavior would be inconsistent between Cargo and Rustup.
+* Setting the current working directory may not be such an obvious signal of "I trust this location".
 
 ## Filesystem behavior risks
 
