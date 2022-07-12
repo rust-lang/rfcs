@@ -104,24 +104,21 @@ Debug information are written to split files when the separate codegen option `-
 
 ## Cargo
 
-`trim-paths` is a profile setting which enables and controls the sanitisation of file paths in compilation outputs. It corresponds to the `--remap-path-scope` flag of rustc and accepts all valid scope, or combination of scopes that `--remap-path-scope` accepts, in addition to the `none` or `false` option which disables path sanitisation completely. Possible values are:
+`trim-paths` is a profile setting which enables and controls the sanitisation of file paths in build outputs. It is a simplified version of rustc's `--remap-path-scope`. It takes a comma separated list of the following values:
 
 - `none` and `false` - disable path sanitisation
 - `macro` - sanitise paths in the expansion of `std::file!()` macro. This is where paths in embedded panic messages come from
 - `diagnostics` - sanitise paths in printed compiler diagnostics
-- `unsplit-debuginfo` - sanitise paths in debug information in compiled executables or libraries. Does nothing if debug information are in split files
-- `split-debuginfo` - sanitise paths in debug information in split debuginfo files. Does nothing if debug information are in compiled executables or libraries 
-- `split-debuginfo-path` - sanitise paths pointing to split debug information files. Does nothing if these files are not generated.
-- `object` - an alias for `macro,unsplit-debuginfo,split-debuginfo-path`. This ensures all paths in compiled executables or libraries are sanitised, but not elsewhere.
-- `all` and `true` - an alias for all of the above
+- `object` - sanitise paths in compiled executables or libraries
+- `all` and `true` - sanitise paths in all possible locations
 
 It is defaulted to `none` for debug profiles, and `object` for release profiles. You can manually override it by specifying this option in `Cargo.toml`:
 ```toml
 [profile.dev]
-trim-paths = all
+trim-paths = "all"
 
 [profile.release]
-trim-paths = none
+trim-paths = "none"
 ```
 
 The default release profile setting (`object`) sanitises only the paths in emitted executable or library files. It always affects paths from macros such as panic messages, and in debug information
