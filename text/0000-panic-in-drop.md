@@ -277,7 +277,17 @@ Unfortunately this doesn't really fit Rust's safety model: such a type would hav
 
 ## Only address the `catch_unwind` issue
 
-Several solutions have been proposed ([`drop_unwind`](https://github.com/rust-lang/rust/pull/85927), [`catch_unwind_v2`](https://internals.rust-lang.org/t/some-thoughts-on-a-less-slippery-catch-unwind/16902)) have been proposed to specifically address the [issue](https://github.com/rust-lang/rust/issues/86027) with `catch_unwind`. However these increase API complexity and do not address the remaining issues.
+Several solutions have been proposed ([disabling unwinding for unwind payloads](https://github.com/rust-lang/rust/pull/99032), [`drop_unwind`](https://github.com/rust-lang/rust/pull/85927), [`catch_unwind_v2`](https://internals.rust-lang.org/t/some-thoughts-on-a-less-slippery-catch-unwind/16902)) to specifically address the [issue](https://github.com/rust-lang/rust/issues/86027) with `catch_unwind`. However these increase API complexity and do not address the remaining issues.
+
+## Add a lint to warn about implicit drops
+
+As a tool for developers of unsafe code, an allow-by-default lint could be added to warn about implicit drop calls made in a function.
+
+## Add explicit language support for `defer!`
+
+If this RFC is accepted then `defer!` from the `scopeguard` crate (and its variants `defer_on_success!` and `defer_on_unwind!`) could be modified to use new language support instead of `Drop` impls. This has several advantages:
+- These could be allowed to unwind even though normal drops would not.
+- `defer_on_success!` and `defer_on_unwind!` would no longer need to rely on `std::thread::panicking` to determine whether an unwind is in progress. `std::thread::panicking` is quite slow due to a TLS access and does not take unwinding from foreign exceptions into account.
 
 # Prior art
 [prior-art]: #prior-art
