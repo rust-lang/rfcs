@@ -9,7 +9,7 @@
 This RFC aims to improve the process of collecting code coverage data for
 Rust libraries. By including Cargo in the process of instrumenting Rust
 libraries and running the unit tests, the sequence of steps to get coverage
-results will be simplified. This RFC also proposes adding support for cargo
+results will be simplified. This RFC also proposes adding support for Cargo
 to selectivly choose which crates get instrumented for gathering coverage results.
 
 # Motivation
@@ -20,7 +20,7 @@ Why are we doing this? What use cases does it support? What is the expected outc
 The motivation behind this feature is to allow for a simple way for a Rust developer
 to run and obtain code coverage results for a specific set of crates to ensure confidence
 in code quality and correctness. Currently, in order to get instrumentation based code coverage,
-a Rust developer would have to either update the `RUSTFLAGS` environment variable or cargo
+a Rust developer would have to either update the `RUSTFLAGS` environment variable or Cargo
 manifest keys with `-C instrument-coverage`. This would automatically enable instrumentation
 of all Rust crates within the dependency graph, not just the top level crate. Instrumenting
 all crates including transitive dependencies does not help the developer ensure test coverage
@@ -35,10 +35,10 @@ This section examines the features proposed by this RFC:
 
 ## CLI option
 
-A new flag for the `cargo test` command would be added. The new flag `--coverage` would instruct Cargo to
-add the Rust compiler flag `-C instrument-coverage`, for the given crate only. This would mean that only the top-level
-crate would be instrumented and code coverage results would only run against this crate. As an example, lets take the
-following crate `foo`:
+Three new flags will be added for the `cargo test` command, `--coverage`, `--coverage-format` and `--coverage-output-directory`
+The `--coverage` command would instruct Cargo to add the Rust compiler flag `-C instrument-coverage`, for the given
+crate only. This would mean that only the top-level crate would be instrumented and code coverage results would only
+run against this crate. As an example, lets take the following crate `foo`:
 
 ```text
 /Cargo.toml
@@ -85,21 +85,32 @@ mod tests {
 ```
 
 Now running `cargo test --coverage` would build the `foo` crate and instrument all libraries created by this crate.
-Next, the tests for the crate `foo` will be run and produce code coverage results for this crate only and ignore
-all code coverage for any function defined outside of this crate.
+Each test executable run will generate a unique `*.profraw` file. At the end of all test execution, Cargo will be
+responsible for merging the generated `profraw` files, and by default would generate code coverage results in HTML
+format for simple viewing within a browser. The code coverage results produced would be only for the crate `foo`
+and ignore all code coverage for any function defined outside of this crate.
 
-The `cargo test` subcommand also supports the `--package` and `--workspace` flags. This instructs cargo to run the
+LLVM supports exporting code coverage results in a number of formats. `--coverage-format` would be responsible for selecting
+the code coverage results format and `--coverage-output-directory` would allow a Rust developer to select the
+output directory for the code coverage report. The default for `--coverage-format` is `html` and the default for
+`--coverage-output-directory` would be `target/coverage/`
+
+The `cargo test` subcommand also supports the `--package` and `--workspace` flags. This instructs Cargo to run the
 tests for those specific packages. When combined with the new `--coverage` flag, a Rust developer will be able to
 selectively choose which Rust crates will be instrumented and have tests run. Since potentially unit tests from
 multiple crates will be run, the code coverage results will include coverage results for a crate that is being
 covered by a test from another crate.
 
+With this feature, existing custom Cargo commands can leverage Cargo to do all of the heavy work to instrument specific
+crates and generate coverage results in a multitude of formats. This will allow in more flexibilty in generating
+for custom commands that generate code coverage for crates today.
+
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-As mentioned earlier this RFC proposes adding a new flag to the `cargo test` command. This flag, `--coverage`
+As mentioned earlier this RFC proposes adding multiple flags to the `cargo test` command. The flag `--coverage`
 would be responsible for setting the `-C instrument-coverage` flag that Cargo would pass on to the rustc invocation of the
-top-level crate. In the previous example, `foo` would be the top level crate and `regex` would be upstream an dependency.
+top-level crate. In the previous example, `foo` would be the top level crate and `regex` would be an upstream dependency.
 
 Using the `--coverage` flag, Cargo would only set the `-C instrument-coverage` flag for the crate `foo`. If the `RUSTFLAGS`
 environment variable had already been set to include the `-C instrument-coverage` flag, then Cargo would still pass that
@@ -117,15 +128,41 @@ then Cargo would not make any changes and would leave the value as is to use the
 variable is not set, Cargo would set it to ensure a unique naming scheme is used for each `.profraw` file that would be
 generated.
 
-Once the tests have finished running, cargo would leverage LLVM tooling to analyze profraw files and generate
+Once the tests have finished running, Cargo would leverage LLVM tooling to analyze profraw files and generate
 coverage reports for a Rust developer. These tools would be `llvm-profdata` and `llvm-cov` and can be used by
 adding the `llvm-tools-preview` component to the current toolchain, `rustup component add llvm-tools-preview`.
 This would be a requirement to use this new feature since these are the tools necessary to analyze coverage results
-and generate a code coverage report.
+and generate a code coverage report. If the component is not installed for the current toolchain, an error will occur
+with a message stating the the `llvm-tools-preview` component is required to generate a code coverage report.
+
+For example, a Rust developer can invoke the following cargo command to generate an HTML coverage report
+for the top-level crate or all crates in the workspace:
+
+```
+cargo test --coverage
+```
+
+This will generate a code coverage report in HTML format in the `target/coverage/` directory.
+
+To override the default output format and directory, the `--coverage-format` and `--coverage-output-directory`
+can be passed to the cargo CLI:
+
+```
+cargo test --coverage --coverage-format=lcov --coverage-output-directory=src/coverage
+```
+
+This will generate a code coverage report in lcov format in the `src/coverage/` directory.
+
+The supported options for the `--coverage-format` option are:
+
+1. `html`
+2. `lcov`
+3. `json`
 
 These updates to Cargo would be sufficient enough to ensure that a Rust developer would have control over what crates are
-instrumented and code coverage results are generated. This would also allow the Rust developer to no longer have to
-set environment variables manually to ensure crates are instrumented for gathering coverage data.
+instrumented, the format in which code coverage results are generated and where they are stored. This would also allow
+the Rust developer to no longer have to set environment variables manually to ensure crates are instrumented
+for gathering coverage data and can generate code coverage results with a single command.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -146,7 +183,7 @@ would reduce the need for setting environment variables manually. Simply running
 `cargo test --coverage` would automatically run a build setting the `-C instrument-coverage`
 Rust flag only for the top level crate and set the `LLVM_PROFILE_FILE` environment
 variable to ensure each test run produces a unique `profraw` file. Once the tests have
-finished running, cargo would leverage LLVM tooling to analyze profraw files and generate
+finished running, Cargo would leverage LLVM tooling to analyze profraw files and generate
 coverage reports for a Rust developer.
 
 This design does not break any existing usage of Rust or Cargo. This new feature would
@@ -244,6 +281,16 @@ the previous run.
 This would allow for Rust developers to specify each of the crates they want to instrument in
 advance and Cargo would be able to pass on the `-C instrument-coverage` flag for only the
 crates specified. This would allow a more targeted approach of getting code coverage results
-and not for developers to instrument the entire dependency graph. This could either be in the form
+and not instrumenting the entire dependency graph. This could either be in the form
 of a manifest key in the toml file which would take a `,` separated list of crates to include in
 the code coverage analysis or by specifying each crate at the command line using `--coverage:crate_name`.
+
+## A single command to generate coverage results and open in a browser
+
+Running `cargo test --coverage --open` would greatly simplify the experience of viewing coverage results.
+With a simple command, a Rust developer can run all of their tests with source-based instrumentation
+enabled, and view the coverage results in a browser. This would need a new flag `--open` flag to be
+added to the `cargo test` command and would only be valid if the `--coverage` flag was enabled. This
+would produce a very similar experience to how `cargo doc --open` works today. `cargo doc` compiles all
+of the documentation for a crate and the `--open` flag automatically opens a browser showing all of the
+generated documentation. This would be a great feature to have when generating code coverage.
