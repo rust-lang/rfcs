@@ -263,7 +263,7 @@ Trait headers are written according to the following grammar:
 TRAIT_HEADER =
   'trait' IDENT [ '<' INPUT_PARAMS '>' ] [ ':' BOUNDS ] [ WHERE_CLAUSE ]
 
-INPUT_PARAMS = INPUT_TY { ',' INPUT_TY }* [ ',' ]
+INPUT_PARAMS = INPUT_PARAM { ',' INPUT_PARAM }* [ ',' ]
 INPUT_PARAM  = IDENT [ ':' BOUNDS ]
 
 BOUNDS = BOUND { '+' BOUND }* [ '+' ]
