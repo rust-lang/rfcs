@@ -275,6 +275,16 @@ This mirrors the behavior of C++ where a throwing destructor can be opted into u
 
 Unfortunately this doesn't really fit Rust's safety model: such a type would have to be unsafe to create and use since it would be easy to invoke UB by using this type with an API that doesn't support unwinding drops.
 
+## Allow individual `Drop` impls to opt-out of unwinding
+
+This is a reverse of the previous point: the default behavior of drops could stay as it is, but individual `Drop` impls could opt-in to aborting if an unwind escapes it.
+
+However this doesn't help generic code such as collections which still need to be able to handle user-defined types which do abort on drop.
+
+## Only abort for unwinds out of implicit drops
+
+This would still allow unwinds to escape calls to `drop_in_place`. Abort guards would be generated for implicit drops at the end of a scope.
+
 ## Only address the `catch_unwind` issue
 
 Several solutions have been proposed ([disabling unwinding for unwind payloads](https://github.com/rust-lang/rust/pull/99032), [`drop_unwind`](https://github.com/rust-lang/rust/pull/85927), [`catch_unwind_v2`](https://internals.rust-lang.org/t/some-thoughts-on-a-less-slippery-catch-unwind/16902)) to specifically address the [issue](https://github.com/rust-lang/rust/issues/86027) with `catch_unwind`. However these increase API complexity and do not address the remaining issues.
