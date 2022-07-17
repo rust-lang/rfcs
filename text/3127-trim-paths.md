@@ -133,8 +133,12 @@ If `trim-paths` is not `none` or `false`, then the following paths are sanitised
 2. Path to the working directory will be stripped. E.g. `/home/username/crate/src/lib.rs` -> `src/lib.rs`.
 3. Path to packages outside of the working directory will be replaced with `[package name]-[version]`. E.g. `/home/username/deps/foo/src/lib.rs` -> `foo-0.1.0/src/lib.rs`
 
+Paths requiring sanitisation can be retrieved by build scripts at their execution time from the environment variable `CARGO_TRIM_PATHS`, in comma-separated format.
+If a build script does anything that may result in these, or any other absolute paths, to be included in compilation outputs, such as by invoking a C compiler, then the build script should make sure they are trimmed.
+Cargo's mapping scheme (what Cargo will map these paths to) is not provided in `CARGO_TRIM_PATHS`, and build scripts are free to decide as long as they are reproducible and privacy preserving.
+
 When a path to the source files of the standard and core library is *not* in scope for sanitisation, the emitted path will depend on if `rust-src` component
-is present. If it is, then the real path pointing to the copy of the source files on your file system will be emitted; if it isn't, then they will
+is present. If it is, then some paths will point to the copy of the source files on your file system; if it isn't, then they will
 show up as `/rustc/[rustc commit hash]/library/...` (just like when it is selected for sanitisation). Paths to all other source files will not be affected.
 
 This will not affect any hard-coded paths in the source code, such as in strings.
@@ -150,6 +154,9 @@ If `trim-paths` is anything else, then its value is supplied directly to `rustc`
 - From the path of the local sysroot to `/rustc/[commit hash]`. 
 - If the compilation unit is under the working directory, from the the working directory absolute path to empty string.
   If it's outside the working directory, from the absolute path of the package root to `[package name]-[package version]`.
+
+If a package in the dependency tree has build scripts, then the absolute path to the package root is supplied by
+the environment variable `CARGO_TRIM_PATHS` when executing build scripts.
 
 The default value of `trim-paths` is `object` for release profile. As a result, panic messages (which are always embedded) are sanitised. If debug information is embedded, then they are sanitised; if they are split then they are kept untouched, but the paths to these split files are sanitised.
 
