@@ -191,6 +191,74 @@ On macOS and ELF platforms, these paths are introduced by `rustc` during codegen
 embedded into the binary by the linker `link.exe`. The linker has a `/PDBALTPATH` option allows us to change the embedded path written to the
 binary, which could be supplied by `rustc`
 
+# Usage examples
+
+## Alice wants to ship her binaries, but doesn't want others to see her username
+
+It works out of the box!
+
+```console
+Alice$ cargo build --release
+```
+
+## Bob wants to profile his program and see the original function names in the report
+
+He needs the debug information emitted and preserved, so he changes his `Cargo.toml` file
+
+```toml
+[profile.release]
+trim-paths = "none"
+debuginfo = 1
+```
+
+```console
+Bob$ cargo build --release && perf record cargo run --release
+```
+
+## Eve wants to symbolicate her users' crash reports from binaries without debug information
+
+She needs to use the `split-debuginfo` feature to produce a separate file containing debug information
+
+```toml
+[profile.release]
+split-debuginfo = "packed"
+debuginfo = 1
+```
+
+Again, the default works fine.
+
+```console
+Eve$ cargo build --release
+```
+
+She can ship her binary like Alice, without worrying about leaking usernames.
+
+## Hana needs to compile a C program in their build script
+
+They can consult `CARGO_TRIM_PATHS` in their build script to find out which paths need to be sanitised 
+
+```rust
+// in build.rs
+
+let mut gcc = Command::new("gcc");
+
+if let Ok(paths) = std::env::var("CARGO_TRIM_PATHS") {
+   for to_trim in paths.split(','){
+      gcc.arg(format!("-ffile-prefix-map={to_trim}=redacted"));
+   }
+}
+
+gcc.args(["-std=c11", "-O2", "-o=lib.o", "lib.c"]);
+
+let output = gcc.output();
+
+//... do stuff
+```
+
+```console
+Hana$ cargo build --release
+```
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
