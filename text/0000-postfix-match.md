@@ -25,15 +25,17 @@ match foo.bar().baz {
 # Motivation
 [motivation]: #motivation
 
+Method chaining is something rust users do a lot to provide a nice
+flow of data from left-to-right/top-to-bottom which promotes a very natural reading order
+of the code.
+
+Sometimes, these method chains can become quite terse for the sake of composability
+
 Forever we hear the complaints of fresh rustaceans learning about option/result
 method chaining being [very surprised by the ordering](https://github.com/rust-lang/rfcs/issues/1025) of the methods like
 [`map_or_else`](https://doc.rust-lang.org/std/result/enum.Result.html#method.map_or_else).
 
-This RFC proposes deprecating some of these methods for a slightly more verbose but likely
-more readable versions using match statements.
-
-In order to keep the spirit of method chaining, the core of this proposal is allowing
-match to be written in a postfix form.
+This RFC proposes promoting the use of match statements by supporting postfix-match, reducing the use of some of these methods terse and potentially confusing method chains.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -52,7 +54,7 @@ to process some `Option` or `Result` type in a pipeline, rather than continously
 let x = Some(42);
 let magic_number = x.map(|x| x * 5)
     .and_then(NonZeroI32::new)
-    .ok_or_else("5x was zero")
+    .ok_or("5x was zero")
     .unwrap();
 ```
 
@@ -164,16 +166,57 @@ let val = original_value
 
 This avoids the need for a new dedicated pipeline operator or syntax.
 
+### into
+
+Occasionally I've bumped into the difficulty of using `Into` in a postfix setting.
+The tap crate also provides a `Conv` trait to convert in a method chain using turbofish.
+
+```rust
+let upper = "hello, world"
+    .conv::<String>()
+    .tap_mut(|s| s.make_ascii_uppercase());
+```
+
+This can also be emulated with postfix-match
+
+```rust
+let upper = "hello, world"
+    .match { s => String::from(s) }
+    .match { mut s => { s.make_ascii_uppercase(); s } }
+```
+
+## async support
+
+One thing of note is that in option chains you cannot use futures unless you use adapters
+like [`OptionFuture`](https://docs.rs/futures/0.3.21/futures/future/struct.OptionFuture.html).
+
+Using match, you can avoid that by supporting `.await` directly.
+
+```rust
+context.client
+    .post("https://example.com/crabs")
+    .body("favourite crab?")
+    .send()
+    .await
+    .match {
+        Err(_) => Ok("Ferris"),
+        Ok(resp) => resp.json::<Option<String>>().await,
+        //         this works in a postfix-match ^^^^^^
+    }
+```
+
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-This is the technical portion of the RFC. Explain the design in sufficient detail that:
+`X.Y.match {}.Z`
 
-- Its interaction with other features is clear.
-- It is reasonably clear how the feature would be implemented.
-- Corner cases are dissected by example.
+Will be interpreted as
 
-The section should return to the examples given in the previous section, and explain more fully how the detailed proposal makes those examples work.
+```rust
+match X.Y {}.Z`
+```
+
+I believe this would be the same precedence as `await`.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -229,19 +272,14 @@ still not close to agreeing on syntax or behaviour.
 # Prior art
 [prior-art]: #prior-art
 
-Discuss prior art, both the good and the bad, in relation to this proposal.
-A few examples of what this can include are:
+## `await`
 
-- For language, library, cargo, tools, and compiler proposals: Does this feature exist in other programming languages and what experience have their community had?
-- For community proposals: Is this done by some other community and what were their experiences with it?
-- For other teams: What lessons can we learn from what other communities have done here?
-- Papers: Are there any published papers or great posts that discuss this? If you have some relevant papers to refer to, this can serve as a more detailed theoretical background.
+`await` was initially proposed to be a prefix keyword.
 
-This section is intended to encourage you as an author to think about the lessons from other languages, provide readers of your RFC with a fuller picture.
-If there is no prior art, that is fine - your ideas are interesting to us whether they are brand new or if it is an adaptation from other languages.
+There was a [suggestion to make it postfix](https://github.com/rust-lang/rfcs/pull/2394#discussion_r179929778) for very similar reasons (not breaking up method chains).
 
-Note that while precedent set by other languages is some motivation, it does not on its own motivate an RFC.
-Please also take into consideration that rust sometimes intentionally diverges from common language features.
+This eventually became the favourite given the pain that await chains introduces in other languages.
+I've heard many accounts from people that postfix-await is one of their favourite features of the language.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
@@ -255,20 +293,4 @@ usecases of match would cause more [subtle bugs](https://fasterthanli.me/article
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-Think about what the natural extension and evolution of your proposal would
-be and how it would affect the language and project as a whole in a holistic
-way. Try to use this section as a tool to more fully consider all possible
-interactions with the project and language in your proposal.
-Also consider how this all fits into the roadmap for the project
-and of the relevant sub-team.
-
-This is also a good place to "dump ideas", if they are out of scope for the
-RFC you are writing but otherwise related.
-
-If you have tried and cannot think of any future possibilities,
-you may simply state that you cannot think of anything.
-
-Note that having something written down in the future-possibilities section
-is not a reason to accept the current or a future RFC; such notes should be
-in the section on motivation or rationale in this or subsequent RFCs.
-The section merely provides additional information.
+Eventually more operators could become postfix, such as `for_each`
