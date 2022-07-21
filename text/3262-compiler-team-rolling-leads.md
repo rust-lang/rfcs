@@ -1,6 +1,6 @@
 - Feature Name: n/a
 - Start Date: 2022-05-09
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/3262)
+- RFC PR: [rust-lang/rfcs#3262](https://github.com/rust-lang/rfcs/pull/3262)
 - Rust Issue: n/a
 
 # Summary
