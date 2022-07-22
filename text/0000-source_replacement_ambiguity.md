@@ -30,12 +30,12 @@ When replacing a source with a registry, the `replace-with` key can reference th
 ## Example scenarios
 
 ### Local source replacement (vendoring)
-A repository has a local `.cargo/config` that vendors all dependencies from crates.io. Fetching and building within the repository would work as expected with the vendored sources.
+A repository has a local `.cargo/config.toml` that vendors all dependencies from crates.io. Fetching and building within the repository would work as expected with the vendored sources.
 
 If the user decides to publish the crate, `cargo publish --registry crates-io` will ignore the source-replacement and publish to crates.io.
 
 ### `crates-io` mirror registry
-A server has been set up that provides a complete mirror of crates.io. The user has configured a `~/.cargo/config` that points to the mirror registry in the `[registries]` table. The mirror requires authentication to access (based on RFC 3139).
+A server has been set up that provides a complete mirror of crates.io. The user has configured a `~/.cargo/config.toml` that points to the mirror registry in the `[registries]` table. The mirror requires authentication to access (based on RFC 3139).
 
 The user can log in to the mirror using `cargo login --registry mirror`. Fetching and building use the mirror.
 
@@ -76,11 +76,11 @@ For example, the following configuration would be valid:
 [source.crates-io]
 replace-with = "my-registry"
 
-[registry.my-registry]
+[registries.my-registry]
 index = "https://my-registry-index/"
 ```
 
-This is necessary to allow the `--registry <NAME>` command-line argument to work with source-replaced registries. It also allows additional configuration (such as a token) to be specified for a source-replacement registry without duplicating configuration between `[registry]` and `[source]` tables.
+This is necessary to allow the `--registry <NAME>` command-line argument to work with source-replaced registries. It also allows additional configuration (such as a token) to be specified for a source-replacement registry without duplicating configuration between `[registries]` and `[source]` tables.
 
 # Drawbacks
 [drawbacks]: #drawbacks
