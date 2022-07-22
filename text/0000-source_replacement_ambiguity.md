@@ -16,7 +16,7 @@ There are multiple issues that this RFC attempts to resolve around source-replac
 * When Cargo is performing an API operation, source replacement is only respected for `crates-io`, not alternative registries. This is inconsistent.
 * The [error message](https://github.com/rust-lang/cargo/issues/6722) for attempting to publish to a replaced crates-io is confusing, and there is no workaround other than temporarily removing the source replacement configuration.
 * When performing an API operation other than `publish` with a replaced `crates-io` source, the `crates-io` credentials are sent to the replacement registry's API. This is a security risk.
-* It's unclear which credentials should be used when fetching a source-replaced authenticated alternate registry (RFC 3139).
+* It's unclear which credentials should be used when fetching a source-replaced authenticated alternate registry ([RFC 3139][3139]).
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -35,7 +35,7 @@ A repository has a local `.cargo/config.toml` that vendors all dependencies from
 If the user decides to publish the crate, `cargo publish --registry crates-io` will ignore the source-replacement and publish to crates.io.
 
 ### `crates-io` mirror registry
-A server has been set up that provides a complete mirror of crates.io. The user has configured a `~/.cargo/config.toml` that points to the mirror registry in the `[registries]` table. The mirror requires authentication to access (based on RFC 3139).
+A server has been set up that provides a complete mirror of crates.io. The user has configured a `~/.cargo/config.toml` that points to the mirror registry in the `[registries]` table. The mirror requires authentication to access (based on [RFC 3139][3139]).
 
 The user can log in to the mirror using `cargo login --registry mirror`. Fetching and building use the mirror.
 
@@ -124,3 +124,5 @@ Cargo's tests rely on the ability to replace the crates.io source and have the c
 [future-possibilities]: #future-possibilities
 
 Can't think of anything.
+
+[3139]: https://rust-lang.github.io/rfcs/3139-cargo-alternative-registry-auth.html
