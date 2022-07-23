@@ -143,6 +143,7 @@ While I am not at liberty to share the codebase, the former is equivalent to som
 I see on some of our codebases at work.
 
 ## tap (pipelines)
+[guide-level-explanation]: #tap-pipelines
 
 While not the intended use of this proposal, [tap](https://crates.io/crates/tap) is a popular crate to allow more advanced pipeline operations.
 
@@ -251,6 +252,8 @@ make the language more flexible such that match statements aren't a hindrance.
 
 ## Alternatives
 
+### Postfix Macros
+
 [postfix macros](https://github.com/rust-lang/rfcs/pull/2442) have been an idea for many years now. If they were to land, this feature
 could easily be implemented as a macro (bikeshedding on postfix macro syntax):
 
@@ -268,6 +271,19 @@ macro match_! (
 
 However, after years of discussion and hundreds of thumbs-ups, it feels like we're
 still not close to agreeing on syntax or behaviour.
+
+### Pipes
+
+I've already mentioned [tap](#tap-pipelines) for how we can do prefix-in-postfix,
+so we could promote the use of `.pipe` instead. However, using the pipe method makes
+async awkward and control flow impossible.
+
+Alternatively we could have a new builtin pipeline operator
+(e.g. `|>`<sup>[0]</sup> or `.let x {}`><sup>[1]</sup>)
+but this is brand new syntax and requires a whole new set of discussions.
+
+[0]: https://internals.rust-lang.org/t/idea-operator-for-postfix-calls-to-macros-and-free-functions/7634
+[1]: https://internals.rust-lang.org/t/idea-postfix-let-as-basis-for-postfix-macros/12438
 
 # Prior art
 [prior-art]: #prior-art
@@ -293,4 +309,4 @@ usecases of match would cause more [subtle bugs](https://fasterthanli.me/article
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-Eventually more operators could become postfix, such as `for_each`
+I can't think of anything related to match that could be improved in this area
