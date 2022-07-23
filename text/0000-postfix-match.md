@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-An alternative postfix syntax for match expressions that allows for interspercing match statements with function chains
+An alternative postfix syntax for match expressions that allows for interspersing match statements with function chains
 
 ```rust
 foo.bar().baz.match {
@@ -31,11 +31,11 @@ of the code.
 
 Sometimes, these method chains can become quite terse for the sake of composability
 
-Forever we hear the complaints of fresh rustaceans learning about option/result
-method chaining being [very surprised by the ordering](https://github.com/rust-lang/rfcs/issues/1025) of the methods like
+For instance, we have the [surprising ordering](https://github.com/rust-lang/rfcs/issues/1025)
+of the methods like
 [`map_or_else`](https://doc.rust-lang.org/std/result/enum.Result.html#method.map_or_else).
 
-This RFC proposes promoting the use of match statements by supporting postfix-match, reducing the use of some of these methods terse and potentially confusing method chains.
+This RFC proposes promoting the use of match statements by supporting postfix-match, reducing the use of some of these terse methods and potentially confusing method chains.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -46,9 +46,9 @@ variant. Some powerful techniques like pattern binding, nested patterns and or p
 allow for some versatile and concise, but still fairly readable syntax for dealing
 with these types.
 
-Rust often features functional approachs to lots of problems. For instance,
+Rust often features functional approaches to lots of problems. For instance,
 it's very common to have chains of `map`, `and_then`, `ok_or`, `unwrap`
-to process some `Option` or `Result` type in a pipeline, rather than continously reassigning to new variable bindings.
+to process some `Option` or `Result` type in a pipeline, rather than continuously reassigning to new variable bindings.
 
 ```rust
 let x = Some(42);
@@ -59,7 +59,7 @@ let magic_number = x.map(|x| x * 5)
 ```
 
 Some of these provided method chains are fairly readable, like the ones presented above,
-but sometimes the desire to use long method chains is met with unweildy hacks or awkward function arguments.
+but sometimes the desire to use long method chains is met with unwieldy hacks or awkward function arguments.
 
 ```rust
 let x = Some("crustaceans");
@@ -201,7 +201,7 @@ context.client
     .await
     .match {
         Err(_) => Ok("Ferris"),
-        Ok(resp) => resp.json::<Option<String>>().await,
+        Ok(resp) => resp.json::<String>().await,
         //         this works in a postfix-match ^^^^^^
     }
 ```
@@ -254,12 +254,12 @@ make the language more flexible such that match statements aren't a hindrance.
 
 ### Postfix Macros
 
-[postfix macros](https://github.com/rust-lang/rfcs/pull/2442) have been an idea for many years now. If they were to land, this feature
-could easily be implemented as a macro (bikeshedding on postfix macro syntax):
+[postfix macros](https://github.com/rust-lang/rfcs/pull/2442) have been an idea for many years now.
+If they were to land, this feature could easily be implemented as a macro:
 
 ```rust
 macro match_! (
-    postfix { $(
+    { $self:expr; $(
         $arm:pat => $body:expr,
     )+ } => {
         match $self { $(
@@ -275,10 +275,19 @@ still not close to agreeing on syntax or behaviour.
 ### Pipes
 
 I've already mentioned [tap](#tap-pipelines) for how we can do prefix-in-postfix,
-so we could promote the use of `.pipe` instead. However, using the pipe method makes
+so we could promote the use of `.pipe()` instead. However, using the pipe method makes
 async awkward and control flow impossible.
 
-Alternatively we could have a new builtin pipeline operator
+```rust
+x.pipe(|x| async {
+    match x {
+        Err(_) => Ok("Ferris"),
+        Ok(resp) => resp.json::<String>().await,
+    }
+}).await
+```
+
+We could add a new builtin pipeline operator
 (e.g. `|>`<sup>[0]</sup> or `.let x {}`><sup>[1]</sup>)
 but this is brand new syntax and requires a whole new set of discussions.
 
@@ -304,7 +313,7 @@ I've heard many accounts from people that postfix-await is one of their favourit
 
 Method call chains will not lifetime extend their arguments. Match statements, however,
 are notorious for having lifetime extension. It is currently unclear if promoting these
-usecases of match would cause more [subtle bugs](https://fasterthanli.me/articles/a-rust-match-made-in-hell#my-actual-bug), or if it's negligable
+use-cases of match would cause more [subtle bugs](https://fasterthanli.me/articles/a-rust-match-made-in-hell#my-actual-bug), or if it's negligible
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
