@@ -1,7 +1,7 @@
 - Feature Name: source_replacement_ambiguity
 - Start Date: 2022-07-05
 - RFC PR: [rust-lang/rfcs#3289](https://github.com/rust-lang/rfcs/pull/3289)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- Tracking Issue: [rust-lang/cargo#10894](https://github.com/rust-lang/cargo/issues/10894)
 
 # Summary
 [summary]: #summary
