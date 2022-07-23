@@ -97,6 +97,12 @@ responsible for merging the generated `profraw` files, and by default would gene
 format for simple viewing within a browser. The code coverage results produced would be only for the crate `foo`
 and ignore all code coverage for any function defined outside of this crate.
 
+Doctests, binary tests and example tests would all be part of the coverage report if these tests were included as part of
+the test run. The type of tests run can be filtered by using the `--libs`, `--bins`, `--doc`, or `--examples` flag for the
+`cargo test` subcommand. By default running `cargo test` runs all tests for lib, bins and test targets unless the
+`test` key for the `[lib]`, `[[bin]]` and/or `[[test]]` section was set to false. For more information about
+configuring a target, see [the Cargo book](https://doc.rust-lang.org/cargo/reference/cargo-targets.html#configuring-a-target).
+
 LLVM supports exporting code coverage results in a number of formats. `--coverage-format` would be responsible for selecting
 the code coverage results format and `--coverage-output-directory` would allow a Rust developer to select the
 output directory for the code coverage report. The default for `--coverage-format` is `html` and the default for
@@ -228,6 +234,13 @@ environment variable in order to ensure unique profile data is generated for eac
 executable. I am not aware of any other Cargo features that set environment variables today
 so this could potentially create new issues in Cargo.
 
+Another drawback of this feature is that it is specifically geared towards the LLVM codegen
+backend. This feature can be expanded upon to support other codegen backends in the future
+if/when a code coverage instrumentation mechanism exists for other backends. The libgccjit
+AOT codegen for rustc seems to have some support for coverage instrumentation similar to how
+LLVM inserts counters at source locations which is promising for adding support for this
+feature when targeting this codegen backend in the future.
+
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
@@ -341,3 +354,13 @@ added to the `cargo test` command and would only be valid if the `--coverage` fl
 would produce a very similar experience to how `cargo doc --open` works today. `cargo doc` compiles all
 of the documentation for a crate and the `--open` flag automatically opens a browser showing all of the
 generated documentation. This would be a great feature to have when generating code coverage.
+
+## Add support for other codegen backends
+
+Currently this feature is geared towards supporting LLVM's codegen backend but that does not mean
+other codegen backends could not be supported in the future. The Cranelift codegen backend does not
+support gathering code coverage data via instrumentation. This feature could be added in the future at
+which the features proposed by this RFC can be revisited. The libgccjit codegen backend does seem to
+have some support for instrumentation and inserting counters at source locations to support collecting
+code coverage data. This could be a feature added support using this proposed feature for this backend
+in the future.
