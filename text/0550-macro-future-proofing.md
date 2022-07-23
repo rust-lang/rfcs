@@ -183,7 +183,7 @@ ensures that a legal macro definition will continue to assign the same
 determination as to where `... tt` ends and `uu ...` begins, even as
 new syntactic forms are added to the language.
 
-The second part says that a separated complex NT must use a seperator
+The second part says that a separated complex NT must use a separator
 token that is part of the predetermined follow set for the internal
 contents of the NT. This ensures that a legal macro definition will
 continue to parse an input fragment into the same delimited sequence
@@ -318,9 +318,9 @@ NT could be empty (i.e. ε ∈ FIRST(interior)). (I overlooked this fact
 in my first round of prototyping.)
 
 NOTE: The above definition for LAST assumes that we keep our
-pre-existing rule that the seperator token in a complex NT is *solely* for
+pre-existing rule that the separator token in a complex NT is *solely* for
 separating elements; i.e. that such NT's do not match fragments that
-*end with* the seperator token. If we choose to lift this restriction
+*end with* the separator token. If we choose to lift this restriction
 in the future, the above definition will need to be revised
 accordingly.
 
@@ -440,7 +440,7 @@ why particular matchers are legal and others are not.
 
  * `( $($a:tt $b:tt)* ; )` : legal, because FIRST(`$b:tt`) = { `$b:tt` } is ⊆ FOLLOW(`tt`) = ANYTOKEN, as is FIRST(`;`) = { `;` }.
 
- * `( $($t:tt),* , $(t:tt),* )` : legal (though any attempt to actually use this macro will signal a local ambguity error during expansion).
+ * `( $($t:tt),* , $(t:tt),* )` : legal (though any attempt to actually use this macro will signal a local ambiguity error during expansion).
 
  * `($ty:ty $(; not sep)* -)` : illegal, because FIRST(`$(; not sep)* -`) = { `;`, `-` } is not in FOLLOW(`ty`).
 
@@ -479,7 +479,7 @@ reasonable freedom and can be extended in the future.
   * replaced detailed design with a specification-oriented presentation rather than an implementation-oriented algorithm.
   * fixed some oversights in the specification that led to matchers like `$e:expr { stuff }` being accepted (which match fragments like `break { stuff }`, significantly limiting future language extensions),
   * expanded the follows sets for `ty` to include `OpenDelim(Brace), Ident(where), Or` (since Rust's grammar already requires all of `|foo:TY| {}`, `fn foo() -> TY {}` and `fn foo() -> TY where {}` to work).
-  * expanded the follow set for `pat` to include `Or` (since Rust's grammar already requires `match (true,false) { PAT | PAT => {} }` and `|PAT| {}` to work); see also [RFC issue 1336][]. Also added `If` and `In` to follow set for `pat` (to make the specifiation match the old implementation).
+  * expanded the follow set for `pat` to include `Or` (since Rust's grammar already requires `match (true,false) { PAT | PAT => {} }` and `|PAT| {}` to work); see also [RFC issue 1336][]. Also added `If` and `In` to follow set for `pat` (to make the specification match the old implementation).
 
 [RFC issue 1336]: https://github.com/rust-lang/rfcs/issues/1336
 

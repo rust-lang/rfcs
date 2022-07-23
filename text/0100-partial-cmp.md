@@ -4,7 +4,7 @@
 
 # Summary
 
-Add a `partial_cmp` method to `PartialOrd`, analagous to `cmp` in `Ord`.
+Add a `partial_cmp` method to `PartialOrd`, analogous to `cmp` in `Ord`.
 
 # Motivation
 
@@ -43,7 +43,7 @@ pub trait PartialOrd {
         }
     }
 
-    le(&self, other: &Self) -> bool {
+    fn le(&self, other: &Self) -> bool {
         match self.partial_cmp(other) {
             Some(Less) | Some(Equal) => true,
             _ => false,
@@ -57,7 +57,7 @@ pub trait PartialOrd {
         }
     }
 
-    ge(&self, other: &Self) -> bool {
+    fn ge(&self, other: &Self) -> bool {
         match self.partial_cmp(other) {
             Some(Greater) | Some(Equal) => true,
             _ => false,
@@ -93,7 +93,7 @@ should be. It would also require more work to implement `PartialOrd` once the
 currently planned `cmp` reform has finished as noted above.
 
 `partial_cmp` could just be called `cmp`, but it seems like UFCS would need to
-be implemented first for that to be workrable.
+be implemented first for that to be workable.
 
 # Unresolved questions
 

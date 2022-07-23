@@ -59,8 +59,8 @@ The way we balanced these principles was roughly as follows:
 ## Problems with the status quo
 
 The above strategy has served us fairly well in the first year since Rust 1.0,
-but it's increasingly holding us back from enhancements we'd like to make, and
-even for the needs it covers, it's suboptimal in a few ways.
+but it's increasingly holding us back from enhancements we'd like to make.
+It's also suboptimal in a few ways, even for the needs it covers.
 
 **Problems with `std::os`**:
 

@@ -260,6 +260,34 @@ fn foo2() {
 }
 ```
 
+### Cross-crate re-exports
+
+If an item is re-exported from an inner crate to an outer crate,
+its documentation will be resolved the same in both crates, as if it were in
+the original scope. For example, this function will link to `f` in both crates,
+even though `f` is not in scope in the outer crate:
+
+```rust
+// inner-crate
+
+pub fn f() {}
+/// This links to [f].
+pub fn g() {}
+```
+
+```rust
+// outer-crate
+pub use inner_crate::g;
+```
+
+### Links to private items
+
+If a public item links to a private one, and `--document-private-items` is not passed,
+rustdoc should give a warning. If a private item links to another private
+item, no warning should be emitted. If a public item links to another private
+item and `--document-private-items` is passed, rustdoc should emit the link,
+but it is up to the implementation whether to give a warning.
+
 ## Path Ambiguities
 [path-ambiguities]: #path-ambiguities
 
@@ -287,7 +315,7 @@ Our proposal is this:
 - In unambiguous cases paths can be written as described earlier,
   with no pre- or suffix, e.g., `Look at the [FOO] trait`. This also
   applies to modules and tuple structs which exist in both namespaces.
-  Rustdoc will throw an error if you use a non-disambiguated path in
+  Rustdoc will throw a warning if you use a non-disambiguated path in
   the case of there being a value in both the type and value namespace.
 - Links to types can be disambiguated by prefixing them with the concrete
   item type:
@@ -326,18 +354,9 @@ Our proposal is this:
   - It is possible that disambiguators for one kind of type-namespace object
     will work for the other (i.e. you can use `static@` to refer to a const),
 
-For disambiguation markers using an `@`, in implied shortcut links
-you can use a space instead of the `@`. In other words, `[struct Foo]`
-is fine (and preferred).
-
-It should be noted that in the RFC discussion it was determined
-that exact knowledge of the item type
-should not be necessary; only knowing the namespace should suffice.
-It is acceptable that the tool resolving the links
-allows (and successfully resolves) a link
-with the wrong prefix that is in the same namespace.
-E.g., given an `struct Foo`, it may be possible to link to it using `[enum Foo]`,
-or, given a `mod bar`, it may be possible to link to that using `[struct bar]`.
+If a disambiguator for a type does not match, rustdoc should issue a warning.
+For example, given `struct@Foo`, attempting to link to it using `[enum@Foo]`
+should not be allowed.
 
 ## Errors
 [errors]: #errors
@@ -451,6 +470,29 @@ It may be necessary to use fully-qualified paths
 like `See the [<Foo as Bar>::bar()] method`.
 We have yet to analyze in which cases this is necessary,
 and what syntax should be used.
+
+### Traits in scope
+
+If linking to an associated item that comes from a trait,
+the link should only be resolved in the trait is in scope.
+This prevents ambiguities if multiple traits are available with the associated item.
+For example, this should issue a warning:
+
+```rust
+#[derive(Debug)]
+/// Link to [S::fmt]
+struct S;`
+```
+
+but this should link to the implementation of `Debug::fmt` for `S`:
+
+```rust
+use std::fmt::Debug;
+
+#[derive(Debug)]
+/// Link to [S::fmt]
+struct S;`
+```
 
 [ref-ufcs]: https://github.com/rust-lang-nursery/reference/blob/96e976d32a0a6927dd26c2ee805aaf44ef3bef2d/src/expressions.md#disambiguating-function-calls
 

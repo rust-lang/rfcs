@@ -72,14 +72,14 @@ Note that both the `<version>` and the `<hash>` are missing by default. The
 and the `<hash>` was removed to make the output filename predictable.
 
 The three original goals can still be satisfied with this simplified naming
-scheme. As explained in th enext section, the compiler's "glob pattern" when
+scheme. As explained in the next section, the compiler's "glob pattern" when
 searching for a crate named `foo` will be `libfoo*.rlib`, which will help
 rationalize some of these conclusions.
 
 * Libraries of the same name can exist next to one another because they can be
   manually renamed to have extra data after the `libfoo`, such as the version.
 * Libraries of the same name and version, but different source, can also exist
-  by modifing what comes after `libfoo`, such as including a hash.
+  by modifying what comes after `libfoo`, such as including a hash.
 * Rust does not need to occupy a privileged namespace as the default rust
   installation would include hashes in all the filenames as necessary. More on
   this later.
@@ -148,7 +148,7 @@ not compile a crate with two different versions of an upstream crate.
 Additionally, cargo could not substitute `libfast-json` for `libslow-json` at
 compile time (assuming they have the same API).
 
-To accomodate an "expert mode" in rustc, the compiler will grow a new command
+To accommodate an "expert mode" in rustc, the compiler will grow a new command
 line flag of the form:
 
 ```

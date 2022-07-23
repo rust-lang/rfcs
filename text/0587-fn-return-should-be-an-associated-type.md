@@ -126,7 +126,7 @@ impl<B,I,F> Iterator for Map<I,F>,
 ```
 
 Note that this final option is not legal without this change, because
-the type parameter `B` on the impl woudl be unconstrained.
+the type parameter `B` on the impl would be unconstrained.
 
 # Drawbacks
 
@@ -179,6 +179,6 @@ type variable).
 
 We could make `FnMut()` desugar to `FnMut<()>`, and hence require an
 explicit `FnMut() -> ()` to bind the return type to unit.  This feels
-suprising and inconsistent.
+surprising and inconsistent.
 
 

@@ -1,4 +1,4 @@
-- Feature Name: `symbol_name_mangling_v2`
+- Feature Name: N/A
 - Start Date: 2018-11-27
 - RFC PR: [rust-lang/rfcs#2603](https://github.com/rust-lang/rfcs/pull/2603)
 - Rust Issue: [rust-lang/rust#60705](https://github.com/rust-lang/rust/issues/60705)
@@ -506,7 +506,7 @@ mod gödel {
 would be mangled as:
 
 ```
-_RNvNtNtC7mycrateu8gdel_Fqa6escher4bach
+_RNvNtNtC7mycrateu8gdel_5qa6escher4bach
                  <-------->
               Unicode component
 ```
@@ -613,24 +613,25 @@ compiler generates mangled names.
 
 The syntax of mangled names is given in extended Backus-Naur form:
 
- - Non-terminals are within angle brackets (as in `<name-prefix>`)
+ - Non-terminals are within angle brackets (as in `<path>`)
  - Terminals are within quotes (as in `"_R"`),
- - Optional parts are in brackets (as in `[<decimal>]`),
- - Repetition (zero or more times) is signified by curly braces (as in `{<name-prefix>}`)
+ - Optional parts are in brackets (as in `[<disambiguator>]`),
+ - Repetition (zero or more times) is signified by curly braces (as in `{<type>}`)
  - Comments are marked with `//`.
 
 Mangled names conform to the following grammar:
 
 ```
 // The <decimal-number> specifies the encoding version.
-<symbol-name> = "_R" [<decimal-number>] <path> [<instantiating-crate>]
+<symbol-name> =
+    "_R" [<decimal-number>] <path> [<instantiating-crate>] [<vendor-specific-suffix>]
 
-<path> = "C" <identifier>               // crate root
-       | "M" <impl-path> <type>         // <T> (inherent impl)
-       | "X" <impl-path> <type> <path>  // <T as Trait> (trait impl)
-       | "Y" <type> <path>              // <T as Trait> (trait definition)
-       | "N" <ns> <path> <identifier>   // ...::ident (nested path)
-       | "I" <path> {<generic-arg>} "E" // ...<T, U> (generic args)
+<path> = "C" <identifier>                    // crate root
+       | "M" <impl-path> <type>              // <T> (inherent impl)
+       | "X" <impl-path> <type> <path>       // <T as Trait> (trait impl)
+       | "Y" <type> <path>                   // <T as Trait> (trait definition)
+       | "N" <namespace> <path> <identifier> // ...::ident (nested path)
+       | "I" <path> {<generic-arg>} "E"      // ...<T, U> (generic args)
        | <backref>
 
 // Path to an impl (without the Self type or the trait).
@@ -641,11 +642,13 @@ Mangled names conform to the following grammar:
 <impl-path> = [<disambiguator>] <path>
 
 // The <decimal-number> is the length of the identifier in bytes.
-// <bytes> is the identifier itself and must not start with a decimal digit.
+// <bytes> is the identifier itself, and it's optionally preceded by "_",
+// to separate it from its length - this "_" is mandatory if the <bytes>
+// starts with a decimal digit, or "_", in order to keep it unambiguous.
 // If the "u" is present then <bytes> is Punycode-encoded.
 <identifier> = [<disambiguator>] <undisambiguated-identifier>
 <disambiguator> = "s" <base-62-number>
-<undisambiguated-identifier> = ["u"] <decimal-number> <bytes>
+<undisambiguated-identifier> = ["u"] <decimal-number> ["_"] <bytes>
 
 // Namespace of the identifier in a (nested) path.
 // It's an a-zA-Z character, with a-z reserved for implementation-internal
@@ -653,10 +656,10 @@ Mangled names conform to the following grammar:
 // A-Z are used for special namespaces (e.g. closures), which the demangler
 // can show in a special way (e.g. `NC...` as `...::{closure}`), or just
 // default to showing the uppercase character.
-<ns> = "C"      // closure
-     | "S"      // shim
-     | <A-Z>    // other special namespaces
-     | <a-z>    // internal namespaces
+<namespace> = "C"      // closure
+            | "S"      // shim
+            | <A-Z>    // other special namespaces
+            | <a-z>    // internal namespaces
 
 <generic-arg> = <lifetime>
               | <type>
@@ -673,6 +676,7 @@ Mangled names conform to the following grammar:
 // innermost lifetimes, e.g. in `for<'a, 'b> fn(for<'c> fn(...))`,
 // any <lifetime>s in ... (but not inside more binders) will observe
 // the indices 1, 2, and 3 refer to 'c, 'b, and 'a, respectively.
+// The number of bound lifetimes is value of <base-62-number> + 1.
 <binder> = "G" <base-62-number>
 
 <type> = <basic-type>
@@ -713,22 +717,24 @@ Mangled names conform to the following grammar:
 // If the "U" is present then the function is `unsafe`.
 // The return type is always present, but demanglers can
 // choose to omit the ` -> ()` by special-casing "u".
-<fn-sig> := <binder> ["U"] ["K" <abi>] {<type>} "E" <type>
+<fn-sig> = [<binder>] ["U"] ["K" <abi>] {<type>} "E" <type>
 
 <abi> = "C"
       | <undisambiguated-identifier>
 
-<dyn-bounds> = <binder> {<dyn-trait>} "E"
+<dyn-bounds> = [<binder>] {<dyn-trait>} "E"
 <dyn-trait> = <path> {<dyn-trait-assoc-binding>}
 <dyn-trait-assoc-binding> = "p" <undisambiguated-identifier> <type>
 <const> = <type> <const-data>
-        | <type> "p" // placeholder (e.g. for polymorphic constants), shown as _: T
+        | "p" // placeholder, shown as _
         | <backref>
 
-// The encoding of a constant depends on its type, currently only
-// unsigned integers (mainly usize, for arrays) are supported, and they
-// use their value, in base 16 (0-9a-f), not their memory representation.
-<const-data> = {<hex-digit>} "_"
+// The encoding of a constant depends on its type. Integers use their value,
+// in base 16 (0-9a-f), not their memory representation. Negative integer
+// values are preceded with "n". The bool value false is encoded as `0_`, true
+// value as `1_`. The char constants are encoded using their Unicode scalar
+// value.
+<const-data> = ["n"] {<hex-digit>} "_"
 
 // <base-62-number> uses 0-9-a-z-A-Z as digits, i.e. 'a' is decimal 10 and
 // 'Z' is decimal 61.
@@ -741,12 +747,16 @@ Mangled names conform to the following grammar:
 // We use <path> here, so that we don't have to add a special rule for
 // compression. In practice, only a crate root is expected.
 <instantiating-crate> = <path>
+
+// There are no restrictions on the characters that may be used
+// in the suffix following the `.` or `$`.
+<vendor-specific-suffix> = ("." | "$") <suffix>
 ```
 
 ### Namespace Tags
 
 Namespaces are identified by an implementation defined single character tag
-(the `<ns>` production). Only closures (`C`) and shims (`S`) have a
+(the `<namespace>` production). Only closures (`C`) and shims (`S`) have a
 specific character assigned to them so that demanglers can reliable
 adjust their output accordingly. Other namespace tags have to be omitted
 or shown verbatim during demangling.
@@ -775,33 +785,41 @@ and, for now, only define a mangling for integer values.
 ### Punycode Identifiers
 
 Punycode generates strings of the form `([[:ascii:]]+-)?[[:alnum:]]+`.
-This is problematic for two reasons:
+This is problematic because of the `-` character, which is not in the
+supported character set; Punycode uses it to separate the ASCII part
+(if it exists), from the base-36 encoding of the non-ASCII characters.
 
-- Generated strings can contain a `-` character; which is not in the
-  supported character set.
-- Generated strings can start with a digit; which makes them clash
-  with the byte-count prefix of the `<identifier>` production.
-
-For these reasons, vanilla Punycode string are further encoded during mangling:
-
-- The `-` character is simply replaced by a `_` character.
-- The part of the Punycode string that encodes the non-ASCII characters
-  is a base-36 number, using `[a-z0-9]` as its "digits". We want to get
-  rid of the decimal digits in there, so we simply remap `0-9` to `A-J`.
+For this reasons, we deviate from vanilla Punycode, by replacing
+the `-` character with a `_` character.
 
 Here are some examples:
 
 | Original        | Punycode        | Punycode + Encoding |
 |-----------------|-----------------|---------------------|
-| føø             | f-5gaa          | f_Fgaa              |
-| α_ω             | _-ylb7e         | __ylbHe             |
-| 铁锈             | n84amf          | nIEamf              |
-| 🤦              | fq9h            | fqJh                |
-| ρυστ            | 2xaedc          | Cxaedc              |
+| føø             | f-5gaa          | f_5gaa              |
+| α_ω             | _-ylb7e         | __ylb7e             |
+| 铁锈             | n84amf          | n84amf              |
+| 🤦              | fq9h            | fq9h                |
+| ρυστ            | 2xaedc          | 2xaedc              |
 
 With this post-processing in place the Punycode strings can be treated
 like regular identifiers and need no further special handling.
 
+
+### Vendor-specific suffix
+
+Similarly to the [Itanium C++ ABI mangling scheme][itanium-mangling-structure],
+a symbol name containing a period (`.`) or a dollar sign (`$`) represents a
+vendor-specific version of the symbol. There are no restrictions on the
+characters following the period or dollar sign.
+
+This can happen in practice when locally unique names needed to become globally
+unique. For example, LLVM can append a `.llvm.<numbers>` suffix during LTO to
+ensure a unique name, and `$` can be used for thread-local data on Mach-O. In
+these situations it's generally fine to ignore the suffix: the suffixed name has
+the same semantics as the original.
+
+[itanium-mangling-structure]: https://itanium-cxx-abi.github.io/cxx-abi/abi.html#mangling-structure
 
 ## Compression
 
@@ -1154,3 +1172,8 @@ pub static QUUX: u32 = {
 - Resolve question of complex constant data.
 - Add a recommended resolution for open question around Punycode identifiers.
 - Add a recommended resolution for open question around encoding function parameter types.
+- Allow identifiers to start with a digit.
+- Make `<binder>` optional in `<fn-sig>` and `<dyn-bounds>` productions.
+- Extend `<const-data>` to include `bool` values, `char` values, and negative integer values.
+- Remove type from constant placeholders.
+- Allow vendor-specific suffixes.

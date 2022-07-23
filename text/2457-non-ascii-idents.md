@@ -75,7 +75,7 @@ The lexer defines identifiers as:
 
 `XID_Start` and `XID_Continue` are used as defined in the aforementioned standard. The definition of identifiers is forward compatible with each successive release of Unicode as only appropriate new characters are added to the classes but none are removed. We effectively are using UAX 31's default definition of valid identifier, with a tailoring that underscores are included with `XID_Start`. (Note that this allows bare underscores to be identifiers, that is currently also the case with `_` in identifier contexts being a reserved keyword)
 
-Parsers for Rust syntax normalize identifiers to [NFC][UAX15]. Every API accepting raw identifiers (such as `proc_macro::Ident::new` normalizes them to NFC and APIs returning them as strings (like `proc_macro::Ident::to_string`) return the normalized form. This means two identifiers are equal if their NFC forms are equal.
+Rust lexers normalize identifiers to [NFC][UAX15]. Every API accepting identifiers as strings (such as `proc_macro::Ident::new` normalizes them to NFC and APIs returning them as strings (like `proc_macro::Ident::to_string`) return the normalized form. Procedural and declarative macros receive normalized identifiers in their input as well. This means two identifiers are equal if their NFC forms are equal.
 
 A `non_ascii_idents` lint is added to the compiler. This lint is `allow` by default. The lint checks if any identifier in the current context contains a codepoint with a value equal to or greater than 0x80 (outside ASCII range). Not only locally defined identifiers are checked but also those imported from other crates and modules into the current context.
 
@@ -298,5 +298,5 @@ The [Go language][Go] allows identifiers in the form **Letter (Letter | Number)\
 [RFC 0430]: http://rust-lang.github.io/rfcs/0430-finalizing-naming-conventions.html
 [TR39Allowed]: https://www.unicode.org/reports/tr39/#General_Security_Profile
 [TR39RestrictionLevel]: https://www.unicode.org/reports/tr39/#Restriction_Level_Detection
-[unicode-set-confusables]: https://unicode.org/cldr/utility/list-unicodeset.jsp?a=%5B%5B%3AIdentifier_Status%CE%B2%3DAllowed%3A%5D%26%5B%3AXID_Continue%3DYes%3A%5D%26%5B%3AConfMA%CE%B2%3A%5D%5D&g=&i=ConfMA%CE%B2%2CScript_Extensions
-[unicode-set-allowed]: https://unicode.org/cldr/utility/list-unicodeset.jsp?a=%5B%5B%3AIdentifier_Status%CE%B2%3DAllowed%3A%5D%26%5B%3AXID_Continue%3DYes%3A%5D%5D&g=&i=Script_Extensions
+[unicode-set-confusables]: https://unicode.org/cldr/utility/list-unicodeset.jsp?a=%5B%5B%3AIdentifier_Status%3DAllowed%3A%5D%26%5B%3AXID_Continue%3DYes%3A%5D%26%5B%3AConfusable_MA%3A%5D%5D&g=&i=Confusable_MA%2CScript_Extensions
+[unicode-set-allowed]: https://unicode.org/cldr/utility/list-unicodeset.jsp?a=%5B%5B%3AIdentifier_Status%3DAllowed%3A%5D%26%5B%3AXID_Continue%3DYes%3A%5D%5D&g=&i=Script_Extensions

@@ -43,7 +43,7 @@ for representing borrowed C string data, since:
    to FFI functions without an intermediate allocation in `CString`.
 
 As a pattern of owned/borrowed type pairs has been established
-thoughout other modules (see e.g.
+throughout other modules (see e.g.
 [path reform](https://github.com/rust-lang/rfcs/pull/474)),
 it makes sense that `CString` gets its own borrowed counterpart.
 

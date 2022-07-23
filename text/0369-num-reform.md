@@ -6,7 +6,7 @@
 
 This RFC is preparation for API stabilization for the `std::num` module.  The
 proposal is to finish the simplification efforts started in
-[@bjz's reversal of the numerics hierarcy](https://github.com/rust-lang/rust/issues/10387).
+[@bjz's reversal of the numerics hierarchy](https://github.com/rust-lang/rust/issues/10387).
 
 Broadly, the proposal is to collapse the remaining numeric hierarchy
 in `std::num`, and to provide only limited support for generic
@@ -45,7 +45,7 @@ building such a hierarchy within `libstd` was misguided:
 The `std::num` module has thus been slowly migrating *away* from a large trait
 hierarchy toward a simpler one providing just APIs for primitive data types:
 this is
-[@bjz's reversal of the numerics hierarcy](https://github.com/rust-lang/rust/issues/10387).
+[@bjz's reversal of the numerics hierarchy](https://github.com/rust-lang/rust/issues/10387).
 
 Along side this effort, there are already external numerics packages like
 [@bjz's num-rs](https://github.com/bjz/num-rs).
@@ -233,7 +233,7 @@ pub trait Int: Copy + Clone + PartialOrd + PartialEq
     // Deprecated:
     // fn is_zero(&self) -> bool;
 
-    // Bit twidling
+    // Bit twiddling
     fn count_ones(self) -> uint;
     fn count_zeros(self) -> uint { ... }
     fn leading_zeros(self) -> uint;

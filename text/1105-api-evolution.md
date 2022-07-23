@@ -729,7 +729,7 @@ by adding a single explicit, shadowing import.
 **Default type parameters**
 
 Some of the minor changes for moving to more generic code depends on an
-interplay between defaulted type paramters and type inference, which has been
+interplay between defaulted type parameters and type inference, which has been
 [accepted as an RFC](https://github.com/rust-lang/rfcs/pull/213) but not yet
 implemented.
 
@@ -754,7 +754,7 @@ Also known as "optional arguments" -- an
 arguments to a function to be optional makes it possible to add new arguments
 after the fact without a major version bump.
 
-**Open-ended explicit type paramters**
+**Open-ended explicit type parameters**
 
 One hazard is that with today's explicit type parameter syntax, you must always
 specify *all* type parameters: `foo::<T, U>(x, y)`. That means that adding a new

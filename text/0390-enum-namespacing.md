@@ -245,7 +245,7 @@ bootstrapping.
 After a new stage 0 snapshot, the standard library will be ported and resolve
 will be updated to remove variant definitions in the flat namespace. This will
 happen as one atomic PR to keep the implementation phase as compressed as
-possible. In addition, if unforseen problems arise during this set of work, we
+possible. In addition, if unforeseen problems arise during this set of work, we
 can roll back the initial commit and put the change off until after 1.0, with
 only a small pre-1.0 change required. This initial conversion will focus on
 making the minimal set of changes required to port the compiler and standard
@@ -306,7 +306,7 @@ decidedly worse than not having to worry about fallback at all.
 
 Earlier iterations of namespaced enum proposals suggested preserving flat enums
 and adding `enum mod` syntax for namespaced enums. However, variant namespacing
-isn't a large enough enough difference for the additon of a second way to
+isn't a large enough enough difference for the addition of a second way to
 define enums to hold its own weight as a language feature. In addition, it
 would simply cause confusion, as library authors need to decide which one they
 want to use, and library consumers need to double check which place they can

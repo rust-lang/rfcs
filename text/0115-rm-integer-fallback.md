@@ -51,7 +51,7 @@ enum Color { Red = 0, Green = 1, Blue = 2 }
 ```
 
 Currently, an unsuffixed integer defaults to `int`. Instead, we will
-only require enum descriminants primitive integers of unspecified
+only require enum discriminants primitive integers of unspecified
 type; assigning an integer to an enum will behave as if casting from
 from the type of the integer to an unsigned integer with the size of
 the enum discriminant.

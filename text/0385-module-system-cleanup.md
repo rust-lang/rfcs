@@ -90,7 +90,7 @@ mod foo {
 
 ```
 
-While its generally not neccessary to export a extern library directly, the need for it does arise
+While its generally not necessary to export a extern library directly, the need for it does arise
 occasionally during refactorings of huge crate collections,
 generally if a public module gets turned into its own crate.
 

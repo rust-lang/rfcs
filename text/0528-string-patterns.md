@@ -1,6 +1,7 @@
+- Feature Name: `pattern`
 - Start Date: 2015-02-17
 - RFC PR: [rust-lang/rfcs#528](https://github.com/rust-lang/rfcs/pull/528)
-- Rust Issue: [rust-lang/rust#22477](https://github.com/rust-lang/rust/issues/22477)
+- Rust Issue: [rust-lang/rust#27721](https://github.com/rust-lang/rust/issues/27721)
 
 # Summary
 
@@ -138,9 +139,9 @@ pub trait DoubleEndedSearcher<'a>: ReverseSearcher<'a> {}
 ```
 
 The basic idea of a `Searcher` is to expose a interface for
-iterating through all connected string fragments of the haystack while classifing them as either a match, or a reject.
+iterating through all connected string fragments of the haystack while classifying them as either a match, or a reject.
 
-This happens in form of the returned enum value. A `Match` needs to contain the start and end indices of a complete non-overlapping match, while a `Rejects` may be emitted for arbitary non-overlapping rejected parts of the string, as long as the start and end indices lie on valid utf8 boundaries.
+This happens in form of the returned enum value. A `Match` needs to contain the start and end indices of a complete non-overlapping match, while a `Rejects` may be emitted for arbitrary non-overlapping rejected parts of the string, as long as the start and end indices lie on valid utf8 boundaries.
 
 Similar to iterators, depending on the concrete implementation a searcher can have
 additional capabilities that build on each other, which is why they will be
@@ -314,7 +315,7 @@ without a lifetime parameter by making use of higher kinded types in order to si
 string APIs. Eg, instead of `fn starts_with<'a, P>(&'a self, pat: P) -> bool where P: Pattern<'a>;`
 you'd have `fn starts_with<P>(&self, pat: P) -> bool where P: Pattern;`.
 
-In order to not break backwards-compability, these can use the same generic-impl trick to
+In order to not break backwards-compatibility, these can use the same generic-impl trick to
 forward to the old traits, which would roughly look like this:
 
 ```rust

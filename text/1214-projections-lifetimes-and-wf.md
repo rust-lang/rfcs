@@ -1,5 +1,5 @@
 - Feature Name: N/A
-- Start Date: (fill me in with today's date, YYYY-MM-DD)
+- Start Date: 2015-07-17
 - RFC PR: [rust-lang/rfcs#1214](https://github.com/rust-lang/rfcs/pull/1214)
 - Rust Issue: [rust-lang/rust#27579](https://github.com/rust-lang/rust/issues/27579)
 
@@ -775,7 +775,7 @@ Note that `fn` types do not require that `T0..Tn` be `Sized`.  This is
 intentional. The limitation that only sized values can be passed as
 argument (or returned) is enforced at the time when a fn is actually
 called, as well as in actual fn definitions, but is not considered
-fundamental to fn types thesmelves. There are several reasons for
+fundamental to fn types themselves. There are several reasons for
 this. For one thing, it's forwards compatible with passing DST by
 value. For another, it means that non-defaulted trait methods to do
 not have to show that their argument types are `Sized` (this will be

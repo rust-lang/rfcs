@@ -121,10 +121,10 @@ smaller:
 
 #### Doc comments
 
-Prefer line comments (`///`) to block comments (`//* ... */`).
+Prefer line comments (`///`) to block comments (`/** ... */`).
 
-Prefer outer doc comments (`///` or `//*`), only use inner doc comments (`//!`
-and `//*!`) to write module-level or crate-level documentation.
+Prefer outer doc comments (`///` or `/** ... */`), only use inner doc comments
+(`//!` and `/*! ... */`) to write module-level or crate-level documentation.
 
 Doc comments should come before attributes.
 

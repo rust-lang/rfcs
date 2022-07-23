@@ -80,7 +80,7 @@ people avoid `Cell` and `Rc` when not needed. Explicit opt-in
 threatens that future, however, because fewer types will implement
 `Share`, even if they are in fact threadsafe.
    
-With respect to extensibility, it is partiularly worrisome that if a
+With respect to extensibility, it is particularly worrisome that if a
 library forgets to implement `Send` or `Share`, downstream clients are
 stuck. They cannot, for example, use a newtype wrapper, because it
 would be illegal to implement `Send` on the newtype. This implies that
@@ -123,7 +123,7 @@ makes them *less* built-in, but still requires custom logic in the
 `Safe` or `Share` are implemented.
 
 After the changes I propose, the only traits which would be
-specicially understood by the compiler are `Copy` and `Sized`. I
+specifically understood by the compiler are `Copy` and `Sized`. I
 consider this acceptable, since those two traits are intimately tied
 to the core Rust type system, unlike `Send` and `Share`.
 
@@ -198,7 +198,7 @@ that `T` implements `Foo`. This allows recursive types like
     struct List<T> { data: T, next: Option<List<T>> }
 
 to be checked successfully. Otherwise, we would recursive infinitely.
-(This procedure is directly analagous to what the existing
+(This procedure is directly analogous to what the existing
 `TypeContents` code does.)
 
 Note that there exist types that expand to an infinite tree of types.
@@ -367,20 +367,20 @@ traits. In effect, opt-in is anti-modular in its own way.
 To be more specific, imagine that library A wishes to define a
 `Untainted` trait, and it specifically opts out of `Untainted` for
 some base set of types. It then wishes to have routines that only
-operate on `Untained` data. Now imagine that there is some other
+operate on `Untainted` data. Now imagine that there is some other
 library B that defines a nifty replacement for `Vector`,
 `NiftyVector`. Finally, some library C wishes to use a
 `NiftyVector<uint>`, which should not be considered tainted, because
 it doesn't reference any tainted strings. However, `NiftyVector<uint>`
 does not implement `Untainted` (nor can it, without either library A
-or libary B knowing about one another). Similar problems arise for any
+or library B knowing about one another). Similar problems arise for any
 trait, of course, due to our coherence rules, but often they can be
 overcome with new types. Not so with `Send` and `Share`.
 
 #### Other use cases
 
 Part of the design involves making space for other use cases. I'd like
-to skech out how some of those use cases can be implemented briefly.
+to sketch out how some of those use cases can be implemented briefly.
 This is not included in the *Detailed design* section of the RFC
 because these traits generally concern other features and would be
 added under RFCs of their own.

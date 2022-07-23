@@ -125,7 +125,7 @@ the major calling conventions), it's faster than 64-bit integers in
 arithmetic today, and is superior in memory usage while still providing
 a reasonable range of possible values.
 
-To expand on the perfomance argument: `i32` obviously uses half of the
+To expand on the performance argument: `i32` obviously uses half of the
 memory of `i64` meaning half the memory bandwidth used, half as much
 cache consumption and twice as much vectorization – additionally
 arithmetic (like multiplication and division) is faster on some of the

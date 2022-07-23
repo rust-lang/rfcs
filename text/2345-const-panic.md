@@ -36,7 +36,7 @@ const fn parse_bool(s: &str) -> bool {
     match s {
         "true" => true,
         "false" => false,
-        other => panic!("`{}` is not a valid bool"),
+        other => panic!("`{}` is not a valid bool", other),
     }
 }
 parse_bool("true");
@@ -50,8 +50,8 @@ will produce an error with your custom error message:
 error[E0080]: `foo` is not a valid bool
  --> src/main.rs: 5:25
   |
-5 |        other => panic!("`{}` is not a valid bool"),
-  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+5 |        other => panic!("`{}` is not a valid bool", other),
+  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 note: during the evaluation of
    |
 10 | parse_bool("foo");

@@ -46,4 +46,4 @@ This has the drawback that the attribute parsing and representation will need to
 
 Which proposal to use — disallowing `#[rustc_*]` and `#[rustc]` attributes, or just `#[forbid(unused_attribute)]`ing everything.
 
-The name of the feature gate could peraps be improved.
+The name of the feature gate could perhaps be improved.

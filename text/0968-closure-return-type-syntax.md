@@ -38,7 +38,7 @@ annotations are very rarely used.
 # Alternatives
 
 I am not aware of any alternate designs. One possibility would be to
-remove return type anotations altogether, perhaps relying on type
+remove return type annotations altogether, perhaps relying on type
 ascription or other annotations to force the inferencer to figure
 things out, but they are useful in rare scenarios. In particular type
 ascription would not be able to handle a higher-ranked signature like

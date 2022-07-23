@@ -13,7 +13,7 @@ remove `std::thread_local` from the standard library.
 Thread locals are directly related to threading. Combining the modules
 would reduce the number of top level modules, combine related concepts,
 and make browsing the docs easier. It also would have the potential to
-slightly reduce the number of `use` statementsl
+slightly reduce the number of `use` statements.
 
 # Detailed design
 

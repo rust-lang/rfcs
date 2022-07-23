@@ -741,7 +741,7 @@ methods; so `a.alloc_unchecked(layout)` will return an `Option<Address>`
 (where `None` corresponds to allocation failure).
 
 The idea here is that `Allocator` implementors are encouraged
-to streamline the implmentations of such methods by assuming that all
+to streamline the implementations of such methods by assuming that all
 of the preconditions hold.
 
  * However, to ease initial `impl Allocator` development for a given

@@ -224,7 +224,7 @@ some form of "write error" happened, but conveys no extra information.
 This API has a number of oddities:
 
 * The type `Formatter` has inherent `write` and `write_fmt` methods to be used
-  in conjuction with the `write!` macro return an instance of `fmt::Result`.
+  in conjunction with the `write!` macro return an instance of `fmt::Result`.
 * The `Formatter` type also implements the `std::io::Writer` trait in order to
   be able to pass around a `&mut Writer`.
 * This relies on the duck-typing of macros and for the inherent `write_fmt`

@@ -61,7 +61,7 @@ pub use clone::Clone;
 // for the inclusion of these traits in the prelude.
 pub use cmp::{PartialEq, PartialOrd, Eq, Ord};
 
-// Iterators are one of the most core primitives in the standard libary which is
+// Iterators are one of the most core primitives in the standard library which is
 // used to interoperate between any sort of sequence of data. Due to the
 // widespread use, these traits and extension traits are all present in the
 // prelude.
@@ -291,7 +291,7 @@ an open question by this RFC.
 A fairly large amount of functionality was removed from the prelude in order to
 hone in on the driving goals of the prelude, but this unfortunately means that
 many imports must be added throughout code currently using these reexports. It
-is expected, however, that the most painful removals will have roughtly equal
+is expected, however, that the most painful removals will have roughly equal
 ergonomic replacements in the future. For example:
 
 * Removal of `Path` and friends will retain the current level of ergonomics with
@@ -316,7 +316,7 @@ largely be filled with various permutations of moving reexports between the
 
 This RFC is fairly aggressive about removing functionality from the prelude, but
 is unclear how necessary this is. If Rust grows the ability to
-backwards-compatibly modify the prelude in some fasion (for example introducing
+backwards-compatibly modify the prelude in some fashion (for example introducing
 multiple preludes that can be opted into) then the aggressive removal may not be
 necessary.
 

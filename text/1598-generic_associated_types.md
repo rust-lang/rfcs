@@ -155,7 +155,7 @@ impl<T> StreamingIterator for StreamIterMut<T> {
 ### Using an associated type constructor to construct a type
 
 Once a trait has an associated type constructor, it can be applied to any
-parameters or concrete term that are in scope. This can be done both inside the
+parameters or concrete terms that are in scope. This can be done both inside the
 body of the trait and outside of it, using syntax which is analogous to the
 syntax for using associated types. Here are some examples:
 

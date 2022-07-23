@@ -108,7 +108,7 @@ of it.  This marker trait could work similarly to `Send` where all types are
 considered leakable by default, but types could opt-out of `Leak`. This
 approach, however, requires `Rc` and `Arc` to have a `Leak` bound on their type
 parameter which can often leak unfortunately into many generic contexts (e.g.
-trait objects).  Another option would be to treak `Leak` more similarly to
+trait objects).  Another option would be to treat `Leak` more similarly to
 `Sized` where all type parameters have a `Leak` bound by default. This change
 may also cause confusion, however, by being unnecessarily restrictive (e.g. all
 collections may want to take `T: ?Leak`).

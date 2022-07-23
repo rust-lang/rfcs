@@ -184,7 +184,7 @@ globs and `macro_rules!` imports become stable.
 
 ## Merging stability attributes and feature gates
 
-In addition to the feature gates that, in conjuction with the
+In addition to the feature gates that, in conjunction with the
 aforementioned `unstable_features` lint, manage the stable evolution
 of *language* features, Rust *additionally* has another independent
 system for managing the evolution of *library* features, 'stability
@@ -290,7 +290,7 @@ is added in addition to the existing `staged_stable` attribute, as
 well recording the version in which the deprecation was performed with
 the `since` parameter.
 
-(Occassionally unstable APIs may be deprecated for the sake of easing
+(Occasionally unstable APIs may be deprecated for the sake of easing
 user transitions, in which case they receive both the `staged_stable`
 and `staged_deprecated` attributes at once.)
 
@@ -342,7 +342,7 @@ the minimum required Rust language version required to compile a
 crate. Currently the Rust language version coincides with the version
 of the `rustc` compiler.
 
-In the absense of user-supplied information about minimum language
+In the absence of user-supplied information about minimum language
 version requirements, *Cargo will attempt to use feature information
 to determine version compatibility*: by knowing in which version each
 feature of the language and each feature of the library was
@@ -351,7 +351,7 @@ determine the minimum version required; and rustc may assume that the
 crate will be compatible with future stable releases. There are two
 caveats: first, conditional compilation makes it not possible in some
 cases to detect all features in use, which may result in Cargo
-detecting a minumum version less than that required on all
+detecting a minimum version less than that required on all
 platforms. For this and other reasons Cargo will allow the minimum
 version to be specified manually. Second, rustc can not make any
 assumptions about compatibility across major revisions of the

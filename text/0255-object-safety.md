@@ -33,10 +33,10 @@ SomeTrait for SomeTrait { ... }`, but that seems weird and confusing and rather
 like boilerplate. Note that the precise mechanism here is out of scope for this
 RFC).
 
-This is only sound if the trait is /object-safe/. We say a method `m` on trait
+This is only sound if the trait is object-safe. We say a method `m` on trait
 `T` is object-safe if it is legal (in current Rust) to call `x.m(...)` where `x`
-has type `&T`, i.e., `x` is a trait object. If all methods in `T` are object-
-safe, then we say `T` is object-safe.
+has type `&T`, i.e., `x` is a trait object. If all methods in `T` are object-safe,
+then we say `T` is object-safe.
 
 If we ignore this restriction we could allow code such as the following:
 
@@ -61,8 +61,8 @@ traits. This makes both method call and using trait objects with generic code
 simpler. The downside is that it makes Rust less flexible, since not all traits
 can be used to create trait objects.
 
-Software evolution is improved with this proposal: imagine adding a non-object-
-safe method to a previously object-safe trait. With this proposal, you would
+Software evolution is improved with this proposal: imagine adding a non-object-safe
+method to a previously object-safe trait. With this proposal, you would
 then get errors wherever a trait-object is created. The error would explain why
 the trait object could not be created and point out exactly which method was to
 blame and why. Without this proposal, the only errors you would get would be

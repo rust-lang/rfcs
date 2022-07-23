@@ -1422,18 +1422,18 @@ Interestingly, the `EXPR is PAT` idea was floated in the original RFC 160 that
 introduced `if let` expressions in the first place. There, the notion that an
 operator named `is`, which introduces bindings, is confusing was brought up.
 
-[kballard_1]: https://github.com/rust-lang/rfcs/pull/160#issuecomment-48515260
-[kballard_2]: https://github.com/rust-lang/rfcs/pull/160#issuecomment-48551196
+[lilyball_1]: https://github.com/rust-lang/rfcs/pull/160#issuecomment-48515260
+[lilyball_2]: https://github.com/rust-lang/rfcs/pull/160#issuecomment-48551196
 [liigo_1]: https://github.com/rust-lang/rfcs/pull/160#issuecomment-49234092
-[kballard_3]: https://github.com/rust-lang/rfcs/pull/160#issuecomment-49242255
+[lilyball_3]: https://github.com/rust-lang/rfcs/pull/160#issuecomment-49242255
 
-It was also mentioned by [@kballard][kballard_1] that it would be appropriate
+It was also mentioned by [@lilyball][lilyball_1] that it would be appropriate
 if, and only if, it was limited to pattern matching, but not introducing any
 bindings. We make the same argument in this RFC. The issue of unintuitive
-scopes was also mentioned [by @kballard][kballard_2] there.
+scopes was also mentioned [by @lilyball][lilyball_2] there.
 
 Even the idea of `if EXPR match PAT` was floated by [@liigo][liigo_1] at the
-time but that idea was ultimately also rejected. [@kballard][kballard_3] opined
+time but that idea was ultimately also rejected. [@lilyball][lilyball_3] opined
 that using `match` as a binary operator would be *"very confusing"* but did not
 elaborate further at the time.
 
@@ -1687,7 +1687,7 @@ the proposed syntax in this RFC to work.
 [Appendix B.2]: #appendix-b2
 
 Many participants in the survey opined that the proposed syntax was consistent
-with current Rust. They though that this was positive.
+with current Rust. They thought that this was positive.
 
 1. > It is the *only* option consistent with what we have today and expect once we learn about `let PATTERN = EXPR`.
 

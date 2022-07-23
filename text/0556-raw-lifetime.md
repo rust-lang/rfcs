@@ -19,7 +19,7 @@ flexibility of inferring the lifetime from the usage, while falling short
 of providing useful safety semantics in exchange.
 
 A typical case where the lifetime needs to be adjusted is in bindings
-to a foregn library, when returning a reference to an object's
+to a foreign library, when returning a reference to an object's
 inner value (we know from the library's API contract that
 the inner data's lifetime is bound to the containing object):
 ```rust

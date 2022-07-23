@@ -265,7 +265,7 @@ easy to draw the wrong conclusion.
 This RFC proposes to use a `Prelude` suffix for these basic traits. Since the
 traits are, in fact, included in the prelude their names do not generally appear
 in Rust programs. Therefore, choosing a longer and clearer name will help avoid
-confusion about the intent of these traits, and will avoid namespace polution.
+confusion about the intent of these traits, and will avoid namespace pollution.
 
 (There is one important drawback in today's Rust: associated functions in these
 traits cannot yet be called directly on the types implementing the traits. These

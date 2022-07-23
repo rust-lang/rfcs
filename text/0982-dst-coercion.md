@@ -159,13 +159,13 @@ Not as flexible as the previous proposal.
 
 The original [DST5 proposal](http://smallcultfollowing.com/babysteps/blog/2014/01/05/dst-take-5/)
 contains a similar proposal with no opt-in trait, i.e., coercions are completely
-automatic and arbitrarily deep. This is a little too magical and unpredicatable.
+automatic and arbitrarily deep. This is a little too magical and unpredictable.
 It violates some 'soft abstraction boundaries' by interefering with the deep
 structure of objects, sometimes even automatically (and implicitly) allocating.
 
 [RFC 401](https://github.com/rust-lang/rfcs/blob/master/text/0401-coercions.md)
 proposed a scheme for proposals where users write their own coercion using
-intrinsics. Although more flexible, this allows for implcicit excecution of
+intrinsics. Although more flexible, this allows for implicit execution of
 arbitrary code. If we need the increased flexibility, I believe we can add a
 manual option to the `CoerceUnsized` trait backwards compatibly.
 
@@ -185,4 +185,4 @@ that make some API safe?
 
 Since it was accepted, the RFC has been updated as follows:
 
-1. `CoerceUnsized` was specified to ingore PhantomData fields.
+1. `CoerceUnsized` was specified to ignore PhantomData fields.

@@ -80,7 +80,7 @@ after the 1.0 release.
 When you first define a trait, you must also decide whether that trait
 should have (a) a blanket impls for all `T` and (b) any blanket impls
 over references. These blanket impls cannot be added later without a
-major vesion bump, for fear of breaking downstream clients.
+major version bump, for fear of breaking downstream clients.
 
 Here are some examples of the kinds of blanket impls that must be added
 right away:

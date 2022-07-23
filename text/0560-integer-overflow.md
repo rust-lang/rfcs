@@ -94,7 +94,7 @@ conditions (detailed below). Typically these error conditions
 correspond to under/overflow but not exclusively. It is the
 programmers responsibility to avoid these error conditions: any
 failure to do so can be considered a bug, and hence can be flagged by
-a static/dynamic analysis tools as an error. This is largerly a
+a static/dynamic analysis tools as an error. This is largely a
 semantic distinction, though.
 
 The result of an error condition depends upon the state of overflow
@@ -130,7 +130,7 @@ defined results today. The only change is that now a panic may result.
   wrap.
 - The operations `/`, `%` for the arguments `INT_MIN` and `-1`
   will unconditionally panic. This is unconditional for legacy reasons.
-- Shift operations (`<<`, `>>`) on a value of with `N` can be passed a shift
+- Shift operations (`<<`, `>>`) on a value of width `N` can be passed a shift
   value >= `N`. It is unclear what behaviour should result from this, so the
   shift value is unconditionally masked to be modulo `N` to ensure that the
   argument is always in range.
@@ -166,7 +166,7 @@ they be skipped entirely, however. The precise details of how panics
 may be deferred -- and the definition of a pure operation -- can be
 hammered out over time, but the intention here is that, at minimum,
 overflow checks for adjacent numeric operations like `a+b-c` can be
-coallesced into a single check. Another useful example might be that,
+coalesced into a single check. Another useful example might be that,
 when summing a vector, the final overflow check could be deferred
 until the summation is complete.
 
@@ -381,7 +381,7 @@ Illustration of use:
 
 If we adopted a model of overflow checks, one could use an explicit
 request to turn overflow checks *off* as a signal that wrapping is
-desirted. This would allow us to do without the `WrappingOps` trait
+desired. This would allow us to do without the `WrappingOps` trait
 and to avoid having unspecified results. See:
 
  * [Daniel Micay on June 24][DM24_2]

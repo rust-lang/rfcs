@@ -18,7 +18,7 @@ to implement `Debug` manually.
 
 The conventions for `Debug` format state that output should resemble Rust
 struct syntax, without added line breaks. This can make output difficult to
-read in the presense of complex and deeply nested structures:
+read in the presence of complex and deeply nested structures:
 ```rust
 HashMap { "foo": ComplexType { thing: Some(BufferedReader { reader: FileStream { path: "/home/sfackler/rust/README.md", mode: R }, buffer: 1013/65536 }), other_thing: 100 }, "bar": ComplexType { thing: Some(BufferedReader { reader: FileStream { path: "/tmp/foobar", mode: R }, buffer: 0/65536 }), other_thing: 0 } }
 ```

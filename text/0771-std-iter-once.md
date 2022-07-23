@@ -40,7 +40,7 @@ These wrapper structs exist to allow future backwards-compatible changes, and hi
 
 # Drawbacks
 
-Although a tiny amount of code, it still does come with a testing, maintainance, etc. cost.
+Although a tiny amount of code, it still does come with a testing, maintenance, etc. cost.
 
 It's already possible to do this via `Some(x).into_iter()`, `std::iter::repeat(x).take(1)` (for `x: Clone`), `vec![x].into_iter()`, various contraptions involving `iterate`...
 

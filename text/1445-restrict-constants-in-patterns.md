@@ -50,7 +50,7 @@ alternatives.
 
 [ls]: https://github.com/rust-lang/rfcs/blob/master/text/1122-language-semver.md#underspecified-language-semantics
 [crater run]: https://gist.github.com/nikomatsakis/26096ec2a2df3c1fb224
-[internals thread]: https://internals.rust-lang.org/t/how-to-handle-pattern-matching-on-constants/2846)
+[internals thread]: https://internals.rust-lang.org/t/how-to-handle-pattern-matching-on-constants/2846
 
 # Motivation
 [motivation]: #motivation
