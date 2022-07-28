@@ -68,10 +68,10 @@ This is a high level overview of the complete process of a project group.
     discussions. Of course, interested members are free to participate.
 - Write a short motivation for the project.
 - Find a person from the relevant team who's willing to act as a liaison.
-  - Finding a liasion is specific to each team, you should consult the
+  - Finding a liaison is specific to each team, you should consult the
     team's documentation on how to propose project groups.
   - You may not always be able to find someone who is willing to act as
-    liasion. It's up to each team to decide how many new efforts
+    liaison. It's up to each team to decide how many new efforts
     they'll have the bandwidth for, which may at times be none.
 
 2. Obtain the consensus of the team to create group.
@@ -102,7 +102,7 @@ This is a high level overview of the complete process of a project group.
 5. The group works towards the goals laid out in their charter.
 
 6. When active work has stopped a group is "archived".
-- Archival can be started by the project group shepherds, the liasion, or the
+- Archival can be started by the project group shepherds, the liaison, or the
   lead(s) of the parent team if needed.
 - Archival is not necessarily a permanent state, it is only a reflection on the
   current status of the group.
@@ -190,7 +190,7 @@ A project group should have the following;
     participating regularly and productively in the respective area.
   - It is not required for a project group to have a lot of members though,
     some project groups may only have one or two members including leads and
-    liasions.
+    liaisons.
 - A charter that defines the scope and intent of the group.
 - A GitHub repository hosted under the `rust-lang` organization containing
   the charter and instructions for how community members can monitor or
@@ -293,8 +293,8 @@ and address issues that come up in the process.
 
 Both the retrospective and the archival announcement can and likely should be
 written as a single post. However there will be times where having a timely
-retrospective will not be possible, and in that case a shorter seperate
-announcement post is appropiate.
+retrospective will not be possible, and in that case a shorter separate
+announcement post is appropriate.
 
 # Drawbacks
 
