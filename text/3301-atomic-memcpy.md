@@ -1,6 +1,6 @@
 - Feature Name: `atomic_memcpy`
 - Start Date: 2022-08-14
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#3301](https://github.com/rust-lang/rfcs/pull/3301)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 # Summary
