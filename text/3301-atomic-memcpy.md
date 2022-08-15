@@ -82,8 +82,8 @@ C++'s [P1478] proposes the addition of these two functions to the C++ standard
 library to solve this problem:
 
 ```cpp
-void atomic_load_per_byte_memcpy(void *dest, void *source, size_t, memory_order);
-void atomic_store_per_byte_memcpy(void *dest, void *source, size_t, memory_order);
+void *atomic_load_per_byte_memcpy(void *dest, const void *source, size_t, memory_order);
+void *atomic_store_per_byte_memcpy(void *dest, const void *source, size_t, memory_order);
 ```
 
 The first one is effectively a series of `AtomicU8::load`s followed by a memory fence,
