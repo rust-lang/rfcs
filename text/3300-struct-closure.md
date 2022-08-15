@@ -1,18 +1,36 @@
 - Feature Name: `struct_closure`
 - Start Date: 2022-08-05
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#3300](https://github.com/rust-lang/rfcs/pull/3300)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 # Summary
 [summary]: #summary
 
-Concrete Closure Types
+This proposal introduces a struct `core::ops::Closure`, which represents a
+"concrete" form of closures and allows trait impls to distinguish closures from
+other kinds of callables. This distinction brings restrictions Rust applies to
+closures, to the type system, like how closures strictly support only a single
+`Fn*` signature; having this restriction visible at the type level allows the
+same trait to be implemented for multiple closure signatures.
+
+In particular, this proposal aims to solve a historical `std` API design
+problem where some `char` methods, particularly the `char::is_ascii*` family of
+functions, cannot be used as `std::str::pattern::Pattern`s, due to requiring
+`&self` as a receiver, while `Pattern` is only implemented for
+`FnMut(char) -> bool`, i.e.:
+
+```rust
+let s: &str = todo!();
+
+s.starts_with(char::is_ascii); // will not compile, `is_ascii` accepts `&char`, not `char`
+s.starts_with(char::is_whitespace); // compiles
+```
 
 # Motivation
 [motivation]: #motivation
 
 This proposal exists entirely out of spite for the `char::is_ascii*` family of
-functions.
+functions, which cannot be directly used as `Pattern`.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -140,6 +158,8 @@ except with `&char` instead of `char`.
 - Small extra cost due to additional wrapper type. This could affect existing
     users of closures with longer compilation times, but it shouldn't affect
     runtime performance.
+- Library crates could inadvertently start using `&char` receivers where `char`
+    would be better in terms of performance and other optimizations.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -164,7 +184,16 @@ examples:
 - There have been past discussions about potential "overlapping impls" as a way
     of solving this, but they never got very far and were quite underspecified.
     This proposal is much narrower in scope, so it shouldn't have those issues.
-- Adding `std::char::is_ascii*` which take `char` is fragile at best.
+
+    It is not possible to add `impl<F: FnMut(&char) -> bool> Pattern for F` as
+    it overlaps with `impl<F: FnMut(char) -> bool> Pattern for F`.
+- Adding `std::char::is_ascii*` which take `char` is fragile at best. More
+    generally, having replacements under a different name is bound to cause
+    confusion, and is best avoided.
+- One can always wrap the `is_ascii*` functions in another closure, i.e.
+    `|c| c.is_ascii()`. We reject this because it doesn't feel right, it feels
+    like a historic API design thorn. `char:is_ascii` should, in an ideal
+    world, work; and if we can still make it work, then we probably should.
 
 # Prior art
 [prior-art]: #prior-art
@@ -216,6 +245,25 @@ Tentatively, the way function pointers work today is the prior art.
     for the `char::is_ascii*` family of functions, and this would prevent
     that.)
 3. The `Args`. Just like for `Fn*`, this must be resolved before stabilization.
+4. The following code is currently invalid:
+
+    ```rust
+    fn main() {
+        fn foo<F>(f: &mut F) where for<'a> &'a mut F: FnOnce() -> &'a str {
+            todo!();
+        }
+        let mut x = String::new();
+        foo(&mut move || {
+            &*x
+        });
+    }
+    ```
+
+    This proposal, as currently written, would fossilize this behaviour. It is
+    unclear whether we want this to always be an error, or if future versions
+    of Rust may want to lift this restriction. This should be resolved before
+    merging this RFC, and may require significant changes to the design of this
+    proposal.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
