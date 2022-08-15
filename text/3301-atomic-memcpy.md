@@ -211,8 +211,8 @@ The slice functions panic if the slices are not of the same length.
 - Leave this to the ecosystem, outside of the standard library.
 
   Since this requires special compiler support, a community crate would
-  have to use (probably technically unsound) hacks like volatile operations
-  or inline assembly.
+  have to use (platform specific) inline assembly
+  or (probably technically unsound) hacks like volatile operations.
 
 # Unresolved questions
 
