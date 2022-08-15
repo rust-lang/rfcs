@@ -122,7 +122,7 @@ The `MaybeUninit` type is used to represent the potentially invalid state
 the data might be in, since it might be the result of tearing during a race.
 
 Only after confirming that there was no race and the data is valid
-can one safely use `MaybeUninit::assert_init` to get the actual `T` out.
+can one safely use `MaybeUninit::assume_init` to get the actual `T` out.
 
 # Full API Overview
 
