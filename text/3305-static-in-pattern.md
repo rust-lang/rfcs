@@ -13,7 +13,7 @@ Allow referencing non-`mut` `static`s in pattern matches wherever referencing a 
 
 [motivation]: #motivation
 
-Rust pattern matches compare a scrutinee against compile-time information. Rust generally doesn't allow patterns to depend on runtime information; that is relegated to match guards. However, Rust currently also prevents patterns from depending on *link-time* information, specifically statics from `extern` blocks.
+Rust pattern matches compare a scrutinee against compile-time information. Rust generally doesn't allow patterns to depend on runtime information; that is relegated to match guards. However, there is a category between "compile-time", when `rustc` runs, and "runtime", when Rust code runs. Some information a Rust program relies on may be determined at link-time, or by the target operating system, or before `main()` by the C runtime. Rust currently prevents patterns from depending on such information. Specifically, Rust patterns cannot reference statics from `extern` blocks.
 
 I encountered this restriction while trying to port the Rust standard library to [cosmopolitan libc](https://justine.lol/cosmopolitan/index.html). Cosmopolitan provides an API that mostly matches POSIX, with one major exception: constants like `ENOSYS` and `EINVAL`, which on most platforms are defined as C `#define`s (equivalent to Rust `const`s), are instead provided as C `const`s (equivalent to Rust non-`mut` `static`s).
 
