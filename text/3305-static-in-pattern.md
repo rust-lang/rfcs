@@ -206,7 +206,9 @@ fn foo(scrutinee: stuff::PrivateZst) {
 // crate `stuff`
 #[derive(PartialEq, Eq)]
 #[non_exhaustive]
-struct PrivateZst();
+pub struct PrivateZst();
+
+pub static PRIVATE_ZST: PrivateZst = PrivateZst();
 
 // main crate
 extern crate stuff;
