@@ -3,7 +3,7 @@
 - Feature Name: `refined_impls`
 - Start Date: 2022-03-22
 - RFC PR: [rust-lang/rfcs#3245](https://github.com/rust-lang/rfcs/pull/3245)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- Rust Issue: [rust-lang/rust#100706](https://github.com/rust-lang/rust/issues/100706)
 
 # Summary
 [summary]: #summary
