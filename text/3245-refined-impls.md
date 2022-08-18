@@ -198,7 +198,7 @@ After this RFC is merged, we should warn when a user writes an impl that looks r
 
 ### Automatic migration for the next edition
 
-We may want to upgrade the above lint to an error in 2024 or make refinement the default without any attribute at all. In either of these cases, we should have an automatic edition migration that rewrites users' code to preserve its semantics. That means we will replace trait implementations that look refined with the original API of the trait items being implemented.
+We may want to upgrade the above lint to an error in 2024 or make refinement the default without any attribute at all. In either case, we should have an automatic edition migration that rewrites users' code to preserve its semantics. That means we will replace trait implementations that look refined with the original API of the trait items being implemented.
 
 ### Documentation
 
@@ -354,12 +354,6 @@ There are three main options:
 * `#[refine]` is _not recommended_ in the next edition. Refined interfaces always work in future editions without any annotation at all.
 
 It would help to do an analysis of how frequently "dormant refinements" occur on crates.io today, and of a sample of those, how many look accidental and how many look like an extended API that a crate author might have meant to expose.
-
-## Do we need a soft transition?
-
-In "Transitioning away from the current behavior" above we describe doing a soft transition. However, the analysis on crates.io just described _could_ reveal that "dormant refinements" are almost never a mistake, and a `#[refine]` attribute is not needed in future editions. In that case we may want to reconsider the soft transition approach for existing editions.
-
-In the absence of compelling data demonstrating this, however, we should take the conservative approach of doing a soft transition.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
