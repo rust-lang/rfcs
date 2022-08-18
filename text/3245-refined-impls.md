@@ -15,7 +15,7 @@ This RFC generalizes the [`safe_unsafe_trait_methods` RFC][safe_unsafe], allowin
 # Motivation
 [motivation]: #motivation
 
-[RFC 2316][safe_unsafe] introduced the notion of _safe implementations_ of unsafe trait methods. This allows code that knows it is calling a safe implementation of an unsafe trait method to do so without using an unsafe block. In other words, this works today:
+[RFC 2316][safe_unsafe] introduced the notion of _safe implementations_ of unsafe trait methods. This allows code that knows it is calling a safe implementation of an unsafe trait method to do so without using an unsafe block. In other words, this works under RFC 2316, which is not yet implemented:
 
 ```rust
 trait Foo {
@@ -149,7 +149,7 @@ impl Sink for SimpleSink {
 }
 ```
 
-Finally, methods marked `unsafe` in traits can be implemented as safe APIs, allowing code to call them without using `unsafe` blocks.
+Finally, methods marked `unsafe` in traits can be refined as safe APIs, allowing code to call them without using `unsafe` blocks.
 
 [^rpitit]: At the time of writing, return position impl Trait is not allowed in traits. The guide text written here is only for the purpose of illustrating how we would document this feature if it were allowed.
 
@@ -223,6 +223,10 @@ For historical reasons, we allow valid refinements on the following features in 
 This RFC establishes a policy that anytime the signature of an associated item in a trait implementation is *allowed to differ* from the signature in the trait, the information in that signature should be usable by code that uses the implementation.
 
 This RFC specifically does not specify that new language features involving traits *should* allow refined impls wherever possible. The language could choose not to accept refined implementation signatures for that feature. This should be decided on a case-by-case basis for each feature.
+
+## RFC 2316
+
+[RFC 2316][safe_unsafe] is amended by this RFC to require `#[refine]` on safe implementations of unsafe trait methods.
 
 ## Interaction with other features
 
