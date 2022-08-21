@@ -225,6 +225,24 @@ fn foo(scrutinee: stuff::PrivateZst) {
 }
 ```
 
+Static patterns can be nested in other patterns:
+
+```rust
+static ONE: i32 = 1;
+
+fn foo(scrutinee: i32) {
+    match scrutinee {
+        ONE | 2 => println!("a"),
+        _ => (),
+    }
+
+    match (scrutinee, scrutinee) {
+        (ONE, ONE) =>  println!("a"),
+        _ => (),
+    }
+}
+```
+
 The examples above all use `match`, but statics would be allowed in all other language constructs that use patterns, including `let`, `if let`, and function parameters. However, as statics cannot be used in const contexts, static patterns are be unavailable there as well.
 
 # Drawbacks
@@ -257,7 +275,8 @@ As far as I am aware, no other language has an analogous feature. C's `switch` s
 
 [unresolved-questions]: #unresolved-questions
 
-The motivation for this RFC assumes that [trusted external statics](https://github.com/rust-lang/lang-team/issues/149) will eventually be implemented and stabilized. Other than that, there are no unresolved questions that I am aware of.
+ - The motivation for this RFC assumes that [trusted external statics](https://github.com/rust-lang/lang-team/issues/149) will eventually be implemented and stabilized.
+ - Should statics be accepted in range patterns (`LOW_STATIC..=HIGH_STATIC`)? One wrinkle is that the compiler currently checks at compile time that ranges are non-empty, but the values of statics aren't known at compile time. Such patterns could be either always accepted, accepted only when known to be non-empty (because the lower or upper bound is set to the minimum or maximum value of the type, respectively), or always rejected.
 
 # Future possibilities
 
