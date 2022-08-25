@@ -290,7 +290,7 @@ As for not making this change at all, I believe this would be a loss for the lan
 
 [prior-art]: #prior-art
 
-As far as I am aware, no other language has an analogous feature. C's `switch` statement does not allow referring to C `const`s.
+The D language's switch statement [allows referencing "runtime initialized const or immutable variable[s]"](https://dlang.org/spec/statement.html#switch-statement). However, C's `switch` statement does not allow referring to C `const`s.
 
 # Unresolved questions
 
