@@ -290,7 +290,7 @@ As for not making this change at all, I believe this would be a loss for the lan
 
 [prior-art]: #prior-art
 
-The D language's switch statement [allows referencing "runtime initialized const or immutable variable[s]"](https://dlang.org/spec/statement.html#switch-statement), which are equivalent to non-`mut` `static`s in Rust, or `const`s in C.
+The D language's switch statement [allows referencing "runtime initialized const or immutable variable[s]"](https://dlang.org/spec/statement.html#switch-statement), which are equivalent to non-`mut` `static`s in Rust, or `const`s in C. However, D also requires that these immutable variables be "of integral type"; they can't contain pointers/references.
 
 ```d
 import std;
