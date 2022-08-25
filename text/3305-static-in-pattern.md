@@ -286,6 +286,8 @@ Another alternative is to add a new kind of pattern for runtime equality compari
 
 As for not making this change at all, I believe this would be a loss for the language as it would lock out the use-cases described above. This is a very simple feature, it doesn't conflict with any other potential extensions, the behavior and syntax fit well with the rest of the language, and it is immediately understandable to anyone who is already familiar with matching on `const`s.
 
+This feature cannot be fully emulated with a macro, because it's impossible to distinguish a static pattern from a wildcard binding without knowing what statics are in scope. And even an imperfect emulation would likely require proc macros, which can't easily be used inside the standard library.
+
 # Prior art
 
 [prior-art]: #prior-art
