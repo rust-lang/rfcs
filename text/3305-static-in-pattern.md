@@ -15,7 +15,7 @@ Allow referencing non-`mut` `static`s, including trusted statics from `extern` b
 
 Rust pattern matches compare a scrutinee against compile-time information. Rust generally doesn't allow patterns to depend on runtime information; that is relegated to match guards. However, there is a category between "compile-time", when `rustc` runs, and "runtime", when Rust code runs. Some information a Rust program relies on may be determined at link-time, or by the target operating system, or before `main()` by the C runtime. Rust currently prevents patterns from depending on such information. Specifically, Rust patterns cannot reference statics from `extern` blocks.
 
-I encountered this restriction while trying to port the Rust standard library to [cosmopolitan libc](https://justine.lol/cosmopolitan/index.html). Cosmopolitan provides an API that mostly matches POSIX, with one major exception: constants like `ENOSYS` and `EINVAL`, which on most platforms are defined as C `#define`s (equivalent to Rust `const`s), are instead provided as C `const`s (equivalent to Rust non-`mut` `static`s).
+I encountered this restriction while trying to port the Rust standard library to [cosmopolitan libc](https://justine.lol/cosmopolitan/index.html). Cosmopolitan provides an API that mostly matches POSIX, with one major exception: constants like `ENOSYS` and `EINVAL`, which the POSIX standard specifies as C `#define`s (equivalent to Rust `const`s), are instead out of necessity provided as C `const`s (equivalent to Rust non-`mut` `static`s).
 
 ```rust
 // libc crate
@@ -163,8 +163,7 @@ fn foo(scrutinee: bool) {
     }
 }
 ```
-
-As an exception, when all valid values of a type are structurally equal, the compiler is allowed to see that the match will always succeed.
+As an exception, when all valid values of a type are structurally equal, the compiler considers that the match will always succeed.
 
 ```rust
 // Not all `&()` are bitwise equal,
@@ -208,14 +207,14 @@ fn foo(scrutinee: stuff::PrivateZst) {
 #[non_exhaustive]
 pub struct PrivateZst();
 
-pub static PRIVATE_ZST: PrivateZst = PrivateZst();
+pub static NON_EXHAUSTIVE_ZST: PrivateZst = PrivateZst();
 
 // main crate
 extern crate stuff;
 
 fn foo(scrutinee: stuff::PrivateZst) {
     match scrutinee {
-        stuff::PRIVATE_ZST => println!("secrets abound"),
+        stuff::NON_EXHAUSTIVE_ZST => println!("secrets abound"),
         // `stuff::PrivateZst` is marked `#[non_exhaustive]`
         // and comes from an external crate,
         // so we can't tell that all values are equivalent.
@@ -282,6 +281,8 @@ Allowing unsafe-to-access statics in patterns (`static mut`s, untrusted `extern`
 - Rust generally has not allowed unsafe operations (like union field accesses) in pattern matches
 - It's not clear where the `unsafe` keyword would go (within the pattern? around the whole `match` or `let`? what about patterns in function parameters?)
 - it requires Rust to commit to and document, and users to understand, when exactly it is allowed to dereference the static when performing a pattern match
+
+Another alternative is to add a new kind of pattern for runtime equality comparisons, with its own dedicated syntax. In addition to making the language grammar more complex, this option would prevent consts from being interchangeable with statics in pattern matches.
 
 As for not making this change at all, I believe this would be a loss for the language as it would lock out the use-cases described above. This is a very simple feature, it doesn't conflict with any other potential extensions, the behavior and syntax fit well with the rest of the language, and it is immediately understandable to anyone who is already familiar with matching on `const`s.
 
