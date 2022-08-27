@@ -163,6 +163,7 @@ fn foo(scrutinee: bool) {
     }
 }
 ```
+
 As an exception, when all valid values of a type are structurally equal, the compiler considers that the match will always succeed.
 
 ```rust
@@ -242,17 +243,24 @@ fn foo(scrutinee: i32) {
 }
 ```
 
-When multiple identical static patterns appear in succession, the latter patterns are considered unreachable.
-_(See [unresolved questions](#unresolved-questions) for major wrinkle)_
+When multiple identical static patterns appear in succession, the latter patterns are considered unreachable, unless the static's type contains nested references. This exception exists because under Stacked Borrows rules, a value behind multiple layers of immutable references might not actually be immutable.
 
 ```rust
-static ONE: i32 = 1;
+static AND_ONE: &i32 = &1;
+static AND_AND_ONE: &&i32 = &&1;
 
 fn foo(scrutinee: i32) {
-    match scrutinee {
-        ONE => println!("a"),
+    match &scrutinee {
+        AND_ONE => println!("a"),
         // The following pattern is considered unreachable by the compiler
-        ONE => unreachable!(),
+        AND_ONE => unreachable!(),
+        _ => (),
+    };
+
+    match &&scrutinee {
+        AND_AND_ONE => println!("a"),
+        // The following pattern is considered reachable by the compiler
+        AND_AND_ONE => println!("b"),
         _ => (),
     }
 }
@@ -266,7 +274,9 @@ Static patterns perform a runtime equality check each time the match arm/pattern
 
 [drawbacks]: #drawbacks
 
-This change slightly weakens the rule that patterns can only rely on compile-time information. In addition, static patterns may have slightly worse performance than the equivalent constant patterns.
+- This feature slightly weakens the rule that patterns can only rely on compile-time information.
+- Static patterns may have slightly worse performance than the equivalent constant patterns.
+- The rules around single-valued types and nested references add some additional complexity. However, based on the fully-functional implementation of this feature, I believe this complexity is not excessive.
 
 # Rationale and alternatives
 
@@ -282,7 +292,9 @@ Allowing unsafe-to-access statics in patterns (`static mut`s, untrusted `extern`
 - It's not clear where the `unsafe` keyword would go (within the pattern? around the whole `match` or `let`? what about patterns in function parameters?)
 - it requires Rust to commit to and document, and users to understand, when exactly it is allowed to dereference the static when performing a pattern match
 
-Another alternative is to add a new kind of pattern for runtime equality comparisons, with its own dedicated syntax. In addition to making the language grammar more complex, this option would prevent consts from being interchangeable with statics in pattern matches.
+The special rules around reachability for static patterns containing nested references are necessary for soundness. One alternative is to forbid using such types in static patterns completely. However, this alternative expands the set of situations in which adding a reference to a type is a breaking change.
+
+Another alternative is to add a new kind of pattern for runtime equality comparisons, with its own dedicated syntax. In addition to making the language grammar more complex, this option would prevent existing const patterns from being interchangeable with static patterns.
 
 As for not making this change at all, I believe this would be a loss for the language as it would lock out the use-cases described above. This is a very simple feature, it doesn't conflict with any other potential extensions, the behavior and syntax fit well with the rest of the language, and it is immediately understandable to anyone who is already familiar with matching on `const`s.
 
@@ -320,7 +332,6 @@ However, C's `switch` statement does not allow referring to C `const`s.
 
 - The motivation for this RFC assumes that [trusted external statics](https://github.com/rust-lang/lang-team/issues/149) will eventually be implemented and stabilized.
 - Should statics be accepted in range patterns (`LOW_STATIC..=HIGH_STATIC`)? One wrinkle is that the compiler currently checks at compile time that ranges are non-empty, but the values of statics aren't known at compile time. Such patterns could be either always accepted, accepted only when known to be non-empty (because the lower or upper bound is set to the minimum or maximum value of the type, respectively), or always rejected.
-- The current Stacked Borrows model allows mutating the target of an indirect shared reference in some cases; so a static of type `&&i32`, for example, could have its `i32` value change even in the middle of the pattern match. We could either disallow such statics in pattern matches, weaken reachability checking for them, or fully specify how exactly these matches can lead to UB (@RalfJung thinks the last option is impractical).
 
 # Future possibilities
 
