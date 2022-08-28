@@ -266,6 +266,27 @@ fn foo(scrutinee: i32) {
 }
 ```
 
+The following code runs without panicking or undefined behavior.
+
+```rust
+static mut MUT_INNER: i32 = 5;
+static NESTED_REF: &&i32 = unsafe { &&MUT_INNER };
+
+let val = match &&0 {
+    NESTED_REF => false,
+    _ if unsafe {
+        // Following is sound under Stacked Borrows rules,
+        // shared reference asserts immutability one level deep
+        **(core::mem::transmute::<_, *mut *mut i32>(NESTED_REF)) = 0;
+        false
+    } => false,
+    NESTED_REF => true,
+    _ => false,
+};
+
+assert!(val, true);
+```
+
 The examples above all use `match`, but statics would be allowed in all other language constructs that use patterns, including `let`, `if let`, and function parameters. However, as statics cannot be used in const contexts, static patterns are be unavailable there as well.
 
 Static patterns perform a runtime equality check each time the match arm/pattern is reached. In match statements, the value of the static is not cached between match arms, it is loaded anew from the static each time the static pattern is encountered.
