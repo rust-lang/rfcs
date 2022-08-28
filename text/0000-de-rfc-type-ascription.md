@@ -34,7 +34,7 @@ This does not prevent future type ascription RFCs from happening, however they m
 # Reference-level obfuscation
 [reference-level-obfuscation]: #reference-level-obfuscation
 
-![](https://user-images.githubusercontent.com/1617736/187055431-2ab9f46b-4c23-4ec4-9884-d050501bf0c2.png)
+![diff shortstat of 275k removed lines](https://user-images.githubusercontent.com/1617736/187055431-2ab9f46b-4c23-4ec4-9884-d050501bf0c2.png)
 
 # Drawforwards
 [drawforwards]: #drawforwards
