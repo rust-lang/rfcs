@@ -83,7 +83,7 @@ It's far more rare for this to happen to RFCd features, however, hence the de-RF
 # Unresolved answers
 [unresolved-answers]: #unresolved-answers
 
- - Should this be completely removed by the compiler, or left behind in a way that cannot be directly accessed through Rust syntax (or requires using a wrapper macro)
+ - Should this be completely removed by the compiler, or left behind in a way that cannot be directly accessed through Rust syntax (or requires using a wrapper macro)?
 
 # Future probabilities
 [future-probabilities]: #future-probabilities
