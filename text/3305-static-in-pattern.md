@@ -243,24 +243,24 @@ fn foo(scrutinee: i32) {
 }
 ```
 
-When multiple identical static patterns appear in succession, the latter patterns are considered unreachable, unless the static's type contains nested references. This exception exists because under Stacked Borrows rules, a value behind multiple layers of immutable references might not actually be immutable.
+When multiple identical static patterns appear in succession, the latter patterns are considered unreachable, unless the static's type contains a reference. This exception exists because under Stacked Borrows rules, a value behind multiple layers of immutable references, and possibly even a single layer, might not actually be immutable.
 
 ```rust
+static ONE: i32 = 1;
 static AND_ONE: &i32 = &1;
-static AND_AND_ONE: &&i32 = &&1;
 
 fn foo(scrutinee: i32) {
-    match &scrutinee {
-        AND_ONE => println!("a"),
+    match scrutinee {
+        ONE => println!("a"),
         // The following pattern is considered unreachable by the compiler
-        AND_ONE => unreachable!(),
+        ONE => unreachable!(),
         _ => (),
     };
 
-    match &&scrutinee {
-        AND_AND_ONE => println!("a"),
+    match &scrutinee {
+        AND_ONE => println!("a"),
         // The following pattern is considered reachable by the compiler
-        AND_AND_ONE => println!("b"),
+        AND_ONE => println!("b"),
         _ => (),
     }
 }
@@ -292,7 +292,7 @@ Allowing unsafe-to-access statics in patterns (`static mut`s, untrusted `extern`
 - It's not clear where the `unsafe` keyword would go (within the pattern? around the whole `match` or `let`? what about patterns in function parameters?)
 - it requires Rust to commit to and document, and users to understand, when exactly it is allowed to dereference the static when performing a pattern match
 
-The special rules around reachability for static patterns containing nested references are necessary for soundness. One alternative is to forbid using such types in static patterns completely. However, this alternative expands the set of situations in which adding a reference to a type is a breaking change.
+The special rules around reachability for static patterns containing references are necessary for soundness. One alternative is to forbid using such types in static patterns completely. However, this alternative expands the set of situations in which adding a reference to a type is a breaking change.
 
 Another alternative is to add a new kind of pattern for runtime equality comparisons, with its own dedicated syntax. In addition to making the language grammar more complex, this option would prevent existing const patterns from being interchangeable with static patterns.
 
