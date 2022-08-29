@@ -48,6 +48,8 @@ Perhaps even the existence of this de-RFC will spur someone to trying to do this
 
 While the intent of this de-RFC is not to propose a new syntax, new syntax ideas that fit better into Rust today ought to illustrate why the feature should be removed.
 
+Please do not use this RFC to discuss potential syntax; the examples below are to illustrate that there is a newer landscape of design choices; not to suggest any particular one.
+
 `: Foo` and `as Foo` are both tightly-bound postfix syntaxes that don't _look_ tightly-bound. It's often surprising that e.g. `x / y as u8` has the cast apply to `y` and not the entire quotient expression, because it _looks like_ an arithmetic operator. Ascription syntax doesn't start with a space but it still has a similar problem due to the presence of the space. Perhaps that problem would go away if people got used to the syntax, but that's not clear.
 
 On the other hand, the precedence for dot-operator postfix syntaxes — method calls, fields, and `.await` — is quite clear due to the lack of spaces. `?` benefits similarly though it's unary so it wouldn't have that problem either way. There has previously been talk of postfix macros which would also fall in this bucket.
@@ -63,7 +65,6 @@ Some potential dot-postfix ascription syntaxes that could work are:
  - `.::<Type>`
  - `.become::<Type>` (already reserved! credit @mystor)
 
-`.<Type>` feels particularly nice.
 
 And that's just in the space of dot-postfix syntax. While the winds of Rust are blowing quite clearly in the dot-postfix direction, there are probably other syntax choices that would work well here too.
 
