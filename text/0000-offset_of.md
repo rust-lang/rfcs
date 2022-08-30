@@ -175,13 +175,13 @@ the future, however.
    That is, instead of `offset_of!(Foo, quank.zoop.2.quank[4])`, you'll have to
    compute the offsets of each step manually, and sum them.
 
-4. Finally, types other than tuples, structs, and unions are not currently
+4. Finally, types other than tuples, structs, and unions are currently
    unsupported.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-`offset_of` is a new macro exported from `core::mem` which has an signature
+`offset_of` is a new macro exported from `core::mem` which has a signature
 similar to the following:
 
 ```rs
@@ -229,8 +229,8 @@ particular, the implementation should not allocate space for an instance of
     time) would otherwise be hard-coded, so in some cases it may reduce the risk
     of a compatibility hazard.
 
-2. This is a low level feature that most code won't need to use, so perhaps it
-   is better off left out.
+2. This is a feature most code won't need to use, and it may be confusing to
+   users unfamiliar with low level programming.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -273,8 +273,10 @@ considered:
     support use in const (due to accessing the address of a raw pointer).
     Changing both of these issues would be challenging, but may be possible.
 
-    This was not chosen because seems difficult, and would be harder to teach
-    (or read) than `core::mem::offset_of`.
+    This was not chosen because seems difficult, would be harder to teach (or
+    read) than `core::mem::offset_of`, and is largely orthogonal to whether or
+    not a dedicated field offset API is provided (in other words, fixing those
+    issues seems unlikely to make `offset_of!` appear redundant).
 
 6. Hold off until this can be integrated into some larger language feature, such
    as C++-style pointer-to-field, Swift-style field paths, ...
