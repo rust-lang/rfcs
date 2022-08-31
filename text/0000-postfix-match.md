@@ -145,46 +145,12 @@ I see on some of our codebases at work.
 ## tap (pipelines)
 [guide-level-explanation]: #tap-pipelines
 
-While not the intended use of this proposal, [tap](https://crates.io/crates/tap) is a popular crate to allow more advanced pipeline operations.
+While postfix match with a single match arm can replicate a pipeline operator,
+this should be actively condemned for a more well defined syntax or method actually intended for this purpose.
 
-```rust
-let val = original_value
-  .pipe(first)
-  .pipe(|v| second(v, another_arg))
-  .pipe(third)
-  .pipe(|v| last(v, another_arg));
-```
-
-This can be written similarly using our postfix match:
-
-```rust
-let val = original_value
-  .match { v => first(v) }
-  .match { v => second(v, another_arg) }
-  .match { v => third(v) }
-  .match { v => last(v, another_arg) };
-```
+We already have a clippy lint [`clippy::match_single_binding`](https://rust-lang.github.io/rust-clippy/master/index.html#match_single_binding) that covers this case
 
 This avoids the need for a new dedicated pipeline operator or syntax.
-
-### into
-
-Occasionally I've bumped into the difficulty of using `Into` in a postfix setting.
-The tap crate also provides a `Conv` trait to convert in a method chain using turbofish.
-
-```rust
-let upper = "hello, world"
-    .conv::<String>()
-    .tap_mut(|s| s.make_ascii_uppercase());
-```
-
-This can also be emulated with postfix-match
-
-```rust
-let upper = "hello, world"
-    .match { s => String::from(s) }
-    .match { mut s => { s.make_ascii_uppercase(); s } }
-```
 
 ## async support
 
@@ -202,7 +168,7 @@ context.client
     .match {
         Err(_) => Ok("Ferris"),
         Ok(resp) => resp.json::<String>().await,
-        //         this works in a postfix-match ^^^^^^
+        // this works in a postfix-match ^^^^^^
     }
 ```
 
@@ -217,7 +183,7 @@ Will be interpreted as
 match X.Y {}.Z`
 ```
 
-I believe this would be the same precedence as `await`.
+And this will be the same precedence as `await` for consistency with all `.` based prefix operators and methods we have.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -251,6 +217,32 @@ Rather than keep adding more of these methods to suit the needs, we should
 make the language more flexible such that match statements aren't a hindrance.
 
 ## Alternatives
+
+### Precedence
+
+`*` and `&` are very unfortunately low priority prefix operators in our syntax grammar. 
+If `.match` has a higher prefix, this can be a little confusing as shown below
+
+```rust
+*foo.match {
+    Ok(3) => …,
+    Ok(100) => …,
+    _ => …,
+}
+```
+
+where this is parsed as
+
+```rust
+*(match foo {
+    Ok(3) => …,
+    Ok(100) => …,
+    _ => …,
+})
+```
+
+C# has a [postfix switch expression](https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/operators/#operator-precedence) where `switch`
+has a lower precedence than methods and deref. This is something we could explore, not if we use `.match` as the syntax.
 
 ### Postfix Macros
 
