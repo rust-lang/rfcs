@@ -348,7 +348,7 @@ void main()
 
 C's `switch` statement does not allow referring to C `const`s.
 
-C++'s `switch` statement allows arbitrary expressions.
+C++'s `switch` statement allows arbitrary constant expressions, but does not allow referring to C++ `extern const`s (only C++-defined `const`s).
 
 Scala allows matching on arbitrary expressions via special syntax (backticks).
 
