@@ -346,7 +346,11 @@ void main()
 }
 ```
 
-However, C's `switch` statement does not allow referring to C `const`s.
+C's `switch` statement does not allow referring to C `const`s.
+
+C++'s `switch` statement allows arbitrary expressions.
+
+Scala allows matching on arbitrary expressions via special syntax (backticks).
 
 # Unresolved questions
 
