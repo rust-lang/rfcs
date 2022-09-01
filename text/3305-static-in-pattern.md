@@ -50,7 +50,7 @@ fn process_error(error_code: i32) {
 }
 ```
 
-Because Rust patterns don't support statics, all the `match` expressions in the standard library that refer to POSIX constants would currently need to be rewritten to accommodate Cosmopolitan.
+Because Rust patterns don't support statics, all the `match` expressions in the standard library, and in third-party crates as well, that refer to POSIX constants would currently need to be rewritten to accommodate Cosmopolitan.
 
 ```rust
 // stdlib code adapted for cosmopolitan
@@ -298,6 +298,7 @@ Static patterns perform a runtime equality check each time the match arm/pattern
 - This feature slightly weakens the rule that patterns can only rely on compile-time information.
 - Static patterns may have slightly worse performance than the equivalent constant patterns.
 - The rules around single-valued types and nested references add some additional complexity. However, based on the fully-functional implementation of this feature, I believe this complexity is not excessive.
+- This feature may make complicate planned changes to the pattern-matching code. It may be best to postpone consideration of it until those changes are fully implemented, so we can see if the implementation is still simple with the new code.
 
 # Rationale and alternatives
 
