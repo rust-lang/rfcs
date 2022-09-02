@@ -62,7 +62,7 @@ By way of common understanding, the style team acknowledges that the default sty
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-- The rustfmt team could directly determine the Rust style. However, the rustfmt team does not wish to do so; they would prefer to implement styling but not determine the defaults.
+- The rustfmt team could directly determine the Rust style. However, the rustfmt team does not wish to do so, and wouldn't have the capacity even if they did; they would prefer to implement styling but not determine the defaults.
 - The Rust language team could determine the styling for new language constructs. This would add more complexity and potential [bikeshed-painting](https://b0c4de.bikeshed.com/) to the language design process, and not all members of the language team are interested in that work. This would also not address the need for evolving the existing style, which would be even further outside the desired scope of the language team.
 
 # Prior art
