@@ -270,6 +270,9 @@ considered:
     formats or binary serialization formats that contain descriptions of the
     field offsets for the record types they contain, etc.
 
+    It is also useful for implementing field projection as a library feature, as
+    in cases like [`field-offset`][fieldoffset].
+
 3. Require that all fields of `$Container` be visible at the invocation site,
    rather than just requiring that `$field` is.
 
@@ -307,6 +310,26 @@ considered:
 
     Additionally, this does not generalize as well to some of the extensions in
     future work.
+
+8. Expose a high level type-safe API instead, where `offset_of` returns a type
+   with phantom parameters for container and field (for example, see the
+   [`field-offset`][fieldoffset] crate, and the notes on it in the Prior Art
+   section below):
+
+    This is not pursued for a few reasons:
+
+    1. Field projection is just one of several use cases for getting the offset
+       to a field, rather than the only one, or even the most common one. While
+       the other uses could be supported by a function which returns the
+       `usize`, it seems better to push this kind of thing into the ecosystem.
+
+    2. Add this to the stdlib risks conflicting with or restricting our ability
+       to add a lang feature for field projection and/or pointer-to-member
+       functionality.
+
+    None of those are deal-breakers, but it seems better to keep this simple and
+    limited. Such a type-safe API can be implemented on top of a `offset_of!`
+    which returns integers.
 
 # Prior art
 [prior-art]: #prior-art
@@ -349,9 +372,20 @@ popular, and provide this functionality in different ways.
 
     It does not support use during constant evaluation.
 
+- The [`field-offset`][fieldoffset] crate provides a higher level type-safe API
+  for field offsets similar to the pointer-to-member functionality in C++. It
+  uses `memoffset` to implement `offset_of!`.
+
+    Calling `field_offset::offset_of!` returns a `FieldOffset<Field, Container>`
+    structure, which transparently wraps `usize` and while providing phantom
+    annotations to ensure it is used with the correct container and field type.
+    It uses this to provide some generic field projection functionality, mostly
+    around `Pin`.
+
 [memoffset]: https://crates.io/crates/memoffset/0.6.5
 [bmuckcrate]: https://crates.io/crates/bytemuck/1.12.1
 [bmuckoffset]: https://docs.rs/bytemuck/1.12.1/bytemuck/macro.offset_of.html
+[fieldoffset]: https://crates.io/crates/field-offset/0.3.4
 
 ## Prior Art: Languages
 
@@ -519,15 +553,19 @@ The only case where we currently do *not* know the offset of a field statically
 is when the user has requested the offset of the unsized field, and the unsized
 field is a trait object.
 
-There are valid reasons to want to get the offset of:
-1. The fields before the unsized field, as in `offset_of!((i32, dyn Send), 0)`.
-2. The unsized field if it's a `[T]`, `str`, or other case where the offset does
-   not depend on reading the metadata, as in `offset_of!((i32, [u16]), 1)`.
+It's possible for us to provide the offset of for:
 
-Allowing these is somewhat inconsistent with `align_of`, which could provide the
-alignment in some cases, but forbids it for all `?Sized` types (admittedly,
-allowing `align_of::<[T]>()` is not particularly compelling, as it's always the
-same as `align_of::<T>()`).
+1. The fields before the unsized field, as in `offset_of!((i32, dyn Send), 0)`.
+
+2. The unsized field itself if it is a type which whose offset is known without
+   reading the metadata, such as `[T]`, `str`, and types that end with them, as
+   in `offset_of!((i32, [u16]), 1)`, or `offset_of!((u16, (i64, str)), 2)`.
+
+Allowing these is somewhat inconsistent with `core::mem::align_of`, which could
+provide the alignment in some cases such as slices, but instead you must use
+`core::mem::align_of_val` for all `?Sized` types (admittedly, allowing
+`align_of::<[T]>()` is perhaps not very compelling, as it's always the same as
+`align_of::<T>()`).
 
 Either way, it's trivially backwards compatible for us to eventually start
 allowing these, and for the trailing slice/str case, it seems difficult to pin
