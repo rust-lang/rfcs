@@ -27,7 +27,7 @@ This RFC proposes re-chartering the style team, as originally specified in RFC 1
 
 ## Team structure and membership
 
-The Rust style team will be a subteam of both the rustfmt team and the Rust language team. (For the purposes of structures that currently require a team to have only one parent team, such as the `rust-lang/team` repository, the Rust style team will have the rustfmt team as its parent team.)
+The Rust style team will be a subteam of the Rust language team. In addition, the style team will maintain a close working relationship with the rustfmt team.
 
 The initial members of the style team shall be:
 - Lead: Caleb Cartwright (@calebcartwright)
@@ -64,6 +64,7 @@ By way of common understanding, the style team acknowledges that the default sty
 
 - The rustfmt team could directly determine the Rust style. However, the rustfmt team does not wish to do so, and wouldn't have the capacity even if they did; they would prefer to implement styling but not determine the defaults.
 - The Rust language team could determine the styling for new language constructs. This would add more complexity and potential [bikeshed-painting](https://b0c4de.bikeshed.com/) to the language design process, and not all members of the language team are interested in that work. This would also not address the need for evolving the existing style, which would be even further outside the desired scope of the language team.
+- The style team could become a joint subteam of both the language team and the rustfmt team. However, several people have expressed a preference for this team to have a single parent team, and in response, the rustfmt team has recommended that this be a lang subteam.
 
 # Prior art
 [prior-art]: #prior-art
