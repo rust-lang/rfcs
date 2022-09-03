@@ -37,7 +37,7 @@ The initial members of the style team shall be:
 
 The Rust style team shall have at least 3 members and at most 8. If the team has fewer than 3 members it shall seek new members as its primary focus.
 
-Members of the style team are nominated by existing members. All existing members of the team must affirmatively agree to the addition of a member, with zero objections; if there is any objection to a nomination, the new member will not be not added. In addition, the team lead or another team member will check with the moderation team regarding any person nominated for membership, to provide an avenue for awareness of concerns or red flags.
+Members of the style team are nominated by existing members. All existing members of the team must affirmatively agree to the addition of a member, with zero objections; if there is any objection to a nomination, the new member will not be added. In addition, the team lead or another team member will check with the moderation team regarding any person nominated for membership, to provide an avenue for awareness of concerns or red flags.
 
 The style team will have regular synchronous meetings when it has work to do. (The style team may also choose to handle individual agenda items asynchronously.) The style team shall not meet when it does not have work to do, but it shall remain in existence.
 
