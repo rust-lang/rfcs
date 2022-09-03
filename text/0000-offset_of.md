@@ -229,7 +229,16 @@ particular, the implementation should not allocate space for an instance of
     time) would otherwise be hard-coded, so in some cases it may reduce the risk
     of a compatibility hazard.
 
-2. This is a feature most code won't need to use, and it may be confusing to
+2. Similarly, this reduces the amount of dynamism that a Rust implementation
+   could use for `repr(Rust)` types.
+
+    For example, it forbids a Rust implementation from varying field offsets of
+    `repr(Rust)` types between executions of the same compiled program (for
+    example, by way of interpretation or code modification), unless it also
+    performs modifications to adjust the result of `offset_of!` (and recompute
+    the values of derived constants, and regenerate relevant code, ...).
+
+3. This is a feature most code won't need to use, and it may be confusing to
    users unfamiliar with low level programming.
 
 # Rationale and alternatives
@@ -254,6 +263,12 @@ considered:
     This would make `core::mem::offset_of!` have less functionality than the
     implementation from `memoffset`, or the implementation they could implement
     if they computed it manually.
+
+    Needing the offset of fields on `#[repr(Rust)]` is not as common, but still
+    useful in code which needs to describe precise details of type layout to
+    some other system, including GPU APIs which accept configurable vertex
+    formats or binary serialization formats that contain descriptions of the
+    field offsets for the record types they contain, etc.
 
 3. Require that all fields of `$Container` be visible at the invocation site,
    rather than just requiring that `$field` is.
@@ -409,6 +424,28 @@ functionality.
 This proposal is intentionally minimal, so there are a number of future
 possibilities.
 
+## Nested Field Access
+
+In C, expressions like `offsetof(struct some_struct, foo.bar.baz[3].quux)` are
+allowed, where `foo.bar.baz[3].quux` denotes a path to a derived field. This can
+be of somewhat arbitrary complexity, accessing fields of nested structs,
+performing array indexing (often this is used to access past the end of the
+array even), and so on. Similar functionality is offered by
+`MemoryLayout.offset` in Swift, where more complex language features are used to
+achieve it.
+
+This was omitted from this proposal because it is not commonly used, and can
+generally be replaced (at the cost of convenience) by multiple invocations of
+the macro.
+
+Additionally, in the future similar functionality could be added in a
+backwards-compatible way, either by directly allowing usage like
+`offset_of!(SomeStruct, foo.bar.baz[3].quux)`, or by requiring each field be
+comma-separated, as in `offset_of!(SomeStruct, foo, bar, baz, [3], quux)`.
+
+Note that while this example shows a combination that supports array indexing,
+it's unclear if this is actually desirable for Rust.
+
 ## Enum support (`offset_of!(SomeEnum::StructVariant, field_on_variant)`)
 
 Eventually, it may be desirable to allow `offset_of!` to access the fields
@@ -417,7 +454,7 @@ with a primitive integer representation, such as `#[repr(C)]`, `#[repr(int)]`,
 or `#[repr(C, int)]` -- where `int` is one of Rust's primitive integer types —
 u8, isize, u128, etc).
 
-For example, in the future somthing like the following could be allowed:
+For example, in the future something like the following could be allowed:
 
 ```rs
 use core::mem::offset_of;
@@ -440,27 +477,9 @@ While there are use-cases for this in low level FFI code (similar to the use
 cases for `#[repr(int)]` and `#[repr(C, int)]` enums), this may need further
 design work, and is left to the future.
 
-## Nested Field Access
-
-In C, expressions like `offsetof(struct some_struct, foo.bar.baz[3].quux)` are
-allowed, where `foo.bar.baz[3].quux` denotes a path to a derived field. This can
-be of somewhat arbitrary complexity, accessing fields of nested structs,
-performing array indexing (often this is used to access past the end of the
-array even), and so on. Similar functionality is offered by
-`MemoryLayout.offset` in Swift, where more complex language features are used to
-achieve it.
-
-This was omitted from this proposal because it is not commonly used, and can
-generally be replaced (at the cost of convenience) by multiple invocations of
-the macro.
-
-Additionally, in the future similar functionality could be added in a fully
-backwards-compatible way, either by directly allowing usage like
-`offset_of!(SomeStruct, foo.bar.baz[3].quux)`, or by requiring each field be
-comma-separated, as in `offset_of!(SomeStruct, foo, bar, baz, [3], quux)`.
-
-Note that while this example shows a combination that supports array indexing,
-it's unclear if this is actually desirable for Rust.
+A drawback is that it is unclear how to support these types in the "Nested Field
+Access" proposed above, so in the future should we decide to support one of
+these, a decision may need to be made about the other.
 
 ## `memoffset::span_of!` Functionality
 
@@ -474,9 +493,46 @@ would be simple to add a similar macro to `core::mem` in the future.
 
 [spanof]: https://docs.rs/memoffset/0.6.5/memoffset/macro.span_of.html
 
-## Support for types with `?Sized` fields.
+## Support for types with unsized fields
 
-Currently, we don't support `offset_of!((u8, [i32]), 1)`, as `(u8, [i32])` does
-not implement `Sized`.
+### ... via `offset_of_val!`
 
-This is a mostly artificial restriction, and could be relaxed in the future.
+Currently, we don't support use with unsized types. That is, `(A, B, ... [T])`
+and/or `(A, B, ..., dyn Foo)`, or their equivalent in structs.
+
+The reason for this is that the offset of the unsized field is not always known,
+such as in the case of the last field in `(Foo, dyn SomeTrait)`, where the
+offset depends on what the concrete type is. Notably, the compiler must read the
+alignment out of the vtable when you access such a field.
+
+This is equivalent to not being able to determine the the size and/or alignment
+of `?Sized` types, where we solve it by making the user provide the instance
+they're interested in, as in `core::mem::{size_of_val, align_of_val}`, so we
+could provide an analogous `core::mem::offset_of_val!($val, $Type, $field)` to
+support this case.
+
+It would be reasonable to add this in the future, but is left out for now.
+
+### ... by only forbidding the edge case
+
+The only case where we currently do *not* know the offset of a field statically
+is when the user has requested the offset of the unsized field, and the unsized
+field is a trait object.
+
+There are valid reasons to want to get the offset of:
+1. The fields before the unsized field, as in `offset_of!((i32, dyn Send), 0)`.
+2. The unsized field if it's a `[T]`, `str`, or other case where the offset does
+   not depend on reading the metadata, as in `offset_of!((i32, [u16]), 1)`.
+
+Allowing these is somewhat inconsistent with `align_of`, which could provide the
+alignment in some cases, but forbids it for all `?Sized` types (admittedly,
+allowing `align_of::<[T]>()` is not particularly compelling, as it's always the
+same as `align_of::<T>()`).
+
+Either way, it's trivially backwards compatible for us to eventually start
+allowing these, and for the trailing slice/str case, it seems difficult to pin
+down the cases where it's allowed without risk of complicating potential future
+features (like custom DSTs, extern types, or whatever other new unsized types we
+might want to add).
+
+As such, it's left for future work.
