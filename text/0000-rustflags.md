@@ -40,8 +40,10 @@ specified in the manifest file matches the target triple used as the host or tar
 
 Another supported way of setting rustflags in cargo is the `profile.rustflags` manifest key that can be set in a `Cargo.toml`. This
 works in a slightly different manner than the ways mentioned previously in that it is appended to the set of rustflags calculated from
-the environment variables and cargo config settings. It still has the same limitation in that it is applied to all invocations of rustc
-including dependencies.
+the environment variables and cargo config settings. This also has support for crate specific rustflags on a per profile basis. This
+currently depends on the [profile-rustflags](https://doc.rust-lang.org/cargo/reference/unstable.html#profile-rustflags-option) unstable
+option. This restricts setting rustflags for crates to the profile requested. The `--rustflags` option works for the current crate
+regardless of the currently requested profile.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
