@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-Allow giving documentation tests names for identification in teest runner
+Allow giving documentation tests names for identification in test runner
 output by including `name=NAME` in doctest code block info strings.
 
 # Motivation
