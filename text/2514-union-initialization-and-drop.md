@@ -201,7 +201,7 @@ and while writing to a union field is safe, taking a reference is not.
 
 For this reason, `DerefMut` auto-deref is not applied when working on a union or
 its fields.  However, note that manually dereferencing is still possible, so
-`*(u.f).0 = Vec::new()` is still a way to drop an uninitialized field!  But this
+`(*u.f).0 = Vec::new()` is still a way to drop an uninitialized field!  But this
 can never happen when no `*` is involved, and hopefully dereferencing an element
 of a union is a clear enough signal that the union better be initialized
 properly for this to make sense.
