@@ -1,6 +1,6 @@
 - Feature Name: `cargo_cli_rustflags`
 - Start Date: 2022-09-01
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#3310](https://github.com/rust-lang/rfcs/pull/3310)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 # Summary
@@ -255,6 +255,13 @@ The `profile.rustflags` manifest key is appended to the set of rustflags calcula
 There currently exists multiple ways of setting Rust compiler flags when building a Rust project with Cargo. As we mentioned
 earlier, there about 7 different ways that already exist today and this RFC is proposing to add yet another option. This could
 lead to confusion about the best way to set Rust compiler flags in the community.
+
+Another drawback of supporting this new option is that it would make it easier for a Rust developer to enable rustflags that could
+impact ABI, and would be unsound to only compile a single crate with. A couple of examples of these kinds of rustflags are the
+`-C soft-float` and `-C target-feature` rustc flags. This potential issue is not limited to the feature being proposed in this RFC,
+it is currently possible to cause this by using the `cargo rustc` subcommand and passing one of the options listed above. Another way
+of causing this issue is by using the `profile.<PROFILE>.package.<PACKAGE>.rustflags` manifest key to enable one of these rustflags
+for only a specific package.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
