@@ -396,7 +396,7 @@ system. The one twist is the use of `Pin`, which makes it possible to keep data
 borrowed across separate calls to `poll` (i.e., "borrowing over yield
 points"). The mechanics of pinning are explained
 in [the RFC that introduced it](https://github.com/rust-lang/rfcs/pull/2349)
-and the [blog post about t he latest revisions](https://boats.gitlab.io/blog/post/rethinking-pin/).
+and the [blog post about the latest revisions](https://boats.gitlab.io/blog/post/rethinking-pin/).
 
 ## Relation to futures 0.1
 
