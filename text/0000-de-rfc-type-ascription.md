@@ -1,7 +1,7 @@
 - Feature Name: `ascription`
 - Start Date: 2022-08-07
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- RFC PR: [rust-lang/rfcs#3307](https://github.com/rust-lang/rfcs/pull/3307)
+- Rust Issue: [rust-lang/rust#101728](https://github.com/rust-lang/rust/issues/101728)
 
 
 _From the community that brought you the Pre-RFC and the e-RFC, we now introduce: the de-RFC!_
