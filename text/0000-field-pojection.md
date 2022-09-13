@@ -466,6 +466,8 @@ a public trait that can be implemented to allow this.
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
+## Arrays
+
 Even more generalized projections e.g. slices: At the moment
 
 - [`as_array_of_cells`](https://doc.rust-lang.org/core/cell/struct.Cell.html#method.as_array_of_cells)
@@ -473,3 +475,13 @@ Even more generalized projections e.g. slices: At the moment
 
 exist, maybe there is room for generalization here as well.
 
+## [`Rc`]`<T>` and [`Arc`]`<T>` projections
+
+While out of scope for this RFC, projections for [`Rc`]`<T>` and [`Arc`]`<T>`
+could be implemented in a similar way. This change seems to be a lot more
+involved and will probably require that more information is stored in these
+pointers. It seems more likely that this could be implemented for a new type
+that explicitly opts in to provide field projections.
+
+[`Rc`]: https://doc.rust-lang.org/alloc/sync/struct.Rc.html
+[`Arc`]: https://doc.rust-lang.org/alloc/sync/struct.Arc.html
