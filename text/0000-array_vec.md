@@ -4,70 +4,114 @@
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 - Original PR: [rust-lang/rfcs#2990](https://github.com/rust-lang/rfcs/pull/2990)
 
+**RFC TODO** _Would a name like `BufVec`/`BufferVec` be better? This is sort of
+generic across both `array`s and buffers for things like MMIO that may benefit
+from the structure._
+
 # Summary
 [summary]: #summary
 
-This RFC, which depends and takes advantage of the upcoming stabilization of
-constant generics (min_const_generics), tries to propose the creation of a new
-vector named `ArrayVec` that manages stack memory and can be seen as an
-alternative for the built-in structure that handles heap-allocated memory, aka
-`alloc::vec::Vec<T>`.
+This RFC proposes the creation of an object to represent variable-length data
+within a fixed size memory buffer, with associated methods to easily manipulate
+it. The interface will mimic the most common methods of `Vec`, and this memory
+buffer is an array; hence, the selected name of `ArrayVec`. This will provide
+Rust with a representation of a very prevelant programming concept to enable
+higher-level data manipulation without heap reliance.
+
 
 # Motivation
 [motivation]: #motivation
 
-`core::collections::ArrayVec<T>` should be conveniently added into the standard
-library due to its importance and potential.
+Vectors provide one of the easiest ways to work with data that may change its
+length, and this is provided in Rust via `std::vec::Vec`. However, this requires
+heap allocations, and this may not always be desirable in cases where:
 
-### Optimization
+- An allocator is not available. This is typically `no_std` environments like
+  embedded, kernel, or safety-critical applications.
+- A previous stack frame provides a buffer for data, and heap allocating would
+  be redundant. (This is very pervasive in C which has no vector representation,
+  which extends to Rust's FFI. Instead of vectors, function signatures like
+  `void somefunc(buf [BUF_SIZE], int* len)` are used when a function must return
+  variable-length data.)
+- `Vec`-style data structures are required in `const` scopes
+- Small or short-lived representations of variable data are preferred for
+  performance or memory optimization
+- The buffer does not represent memory, e.g. memory-mapped I/O **RFC TODO** _is
+  this even worth mentioning? Could we guarantee anything that would make this
+  useful in MMIO? Would it be good/better to provide a trait for `push`, `pop`,
+  etc that would apply for this, some custom MMIO implementation, and `Vec`?_
 
-Stack-based allocation is generally faster than heap-based allocation and can be
-used as an optimization in places that otherwise would have to call an
-allocator. Some resource-constrained embedded devices can also benefit from it.
+While this sort of datastructure is likely to usually reside on the stack, it is
+entirely possible to reside in some form on the heap within a `Box`, `Vec`, or
+other structure.
 
-### Unstable features and constant functions
+Possibly the most persuasive argument for why `ArrayVec` belongs in Rust's
+`core` is that bits and pieces of the language already use it. Additionally, it
+would provide a pathway for easing future development instead of piecewise
+re-implementing the concept as needed. Some examples:
 
-By adding `ArrayVec` into the standard library, it will be possible to use
-internal unstable features to optimize machine code generation and expose public
-constant functions without the need of a nightly compiler.
+- [`try_collect_into_array`][try_collect_arr] and its variants are used
+  internally. This function wraps a `Guard` struct containing an array and a
+  length that it initializes item by item. Essentially, _this is the fundamental
+  structure of `ArrayVec`_, it is just not made public. Having `ArrayVec` would
+  allow simplifying this function.
+- The much-requested feature of some way to collect into arrays would have a
+  more clear path
+- Constructing a `core::ffi::CStr` is not directly possible from `&str` due to
+  the extra bit. `ArrayVec` would allow for a more clear way to perform this
+  common operation in `no_std` environments.
+- A structure such as `ArrayString` would be posssible to enable easier string
+  manipulation in `no_std` environments
 
-### Useful in the real world
+In short, the benefits to an `ArrayVec` concept are notable enough that there
+are already parts of the implementation in core, and there are a handful of top
+100 crates that provide similar functionality. Exporsing a public `ArrayVec` in
+`core` would help fragmentation, provide a pathway for future language features,
+and give users a builtin tool for a common form of data manipulation.
 
-`arrayvec` is one of the most downloaded project of `crates.io` and is used by
-thousand of projects, including Rustc itself. Currently ranks ninth in the "Data
-structures" category and seventy-fifth in the "All Crate" category.
 
-### Building block
+[try_collect_arr]: https://github.com/rust-lang/rust/blob/17cbdfd07178349d0a3cecb8e7dde8f915666ced/library/core/src/array/mod.rs#L804)
 
-Just like `Vec`, `ArrayVec` is also a primitive vector where high-level
-structures can use it as a building block. For example, a stack-based matrix or
-binary heap.
-
-### Unification
-
-There are a lot of different crates about the subject that tries to do roughly
-the same thing, a centralized implementation would stop the current
-fragmentation.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-`ArrayVec` is a container that encapsulates fixed size buffers. 
+`ArrayVec` is a simple data structure, represented internally with a fixed-size
+memory buffer (an array) and a length. It should feel very familiar to `Vec`.
+The main difference to `Vec` is, the maximum capacity of that memory buffer must
+be known at compile time, and is specified through a generic paramter. See the
+comments in this example:
 
 ```rust
-let mut v: ArrayVec<i32, 4> = ArrayVec::new();
-v.push(1);
-v.push(2);
+// RFC TODO: core::collections and core::ext have also been proposed
+use core::array::ArrayVec;
 
+// We are creating an `ArrayVec` here that contains an i32, and has a capacity
+// of 4. That capacity cannot be changed during runtime
+let mut v: ArrayVec<i32, 4> = ArrayVec::new();
+
+// Adding values to this `ArrayVec` works almost as you would expect
+// One difference is, `push()` returns a `Result<(), InsertionError>`.
+// This is because there is a higher chance that the insertion may fail at runtime,
+// compared to `Vec`
+v.push(1).unwrap();
+v.push(2).unwrap();
+
+// Length, indexing, and end access work similarly to other data structures
 assert_eq!(v.len(), 2);
 assert_eq!(v[0], 1);
 
 assert_eq!(v.pop(), Some(2));
 assert_eq!(v.len(), 1);
 
+// Indexed assignment works as expected
+// **RFC TODO** what is the safe/checked way to perform assignment? It seems
+// like there should be a `.set(&T) -> Result` method to go along with `get`,
+// but I don't know what it is
 v[0] = 7;
 assert_eq!(v[0], 7);
 
+// Many higher-order concepts work from `Vec` as well
 v.extend([1, 2, 3].iter().copied());
 
 for element in &v {
@@ -76,134 +120,68 @@ for element in &v {
 assert_eq!(v, [7, 1, 2, 3]);
 ```
 
-Instead of relying on a heap-allocator, stack-based memory is added and removed
-on-demand in a last-in-first-out (LIFO) order according to the calling workflow
-of a program. `ArrayVec` takes advantage of this predictable behavior to reserve
-an exactly amount of uninitialized bytes up-front to form an internal buffer.
+In the above example, the `ArrayVec` is allocated on the stack, which is its
+usual home (though one can be present on the heap within another type). There
+are advantages and disadvantages to this, but the main thing is that the maximum
+capacity of the `ArrayVec` must be known at compile time.
 
 ```rust
-// `array_vec` can store up to 64 elements
-let mut array_vec: ArrayVec<i32, 64> = ArrayVec::new();
+// `av` can store up to 64 elements
+let mut v: ArrayVec<u8, 64> = ArrayVec::new();
 ```
 
-Another potential use-case is the usage within constant environments:
+As its size is known at compile time, `ArrayVec` can also be initialized within
+const environments:
 
 ```rust
 const MY_CONST_ARRAY_VEC: ArrayVec<i32, 10> = {
     let mut v = ArrayVec::new();
-    v.push(1);
-    v.push(2);
-    v.push(3);
-    v.push(4);
+    v.push(1).unwrap();
+    v.push(2).unwrap();
+    v.push(3).unwrap();
+    v.push(4).unwrap();
     v
 };
 ```
 
-Of course, fixed buffers lead to inflexibility because unlike `Vec`, the
-underlying capacity can not expand at run-time and there will never be more than
-64 elements in the above example.
+The biggest downside to `ArrayVec` is, as mentioned, that its capacity cannot be
+changed at runtime. For this reason, `Vec` is generally preferable unless you
+know you have a case that requires `ArrayVec`.
 
 ```rust
-// This vector can store up to 0 elements, therefore, nothing at all
-let mut array_vec: ArrayVec<i32, 0> = ArrayVec::new();
-array_vec.push(1); // Error!
+// An example attempting to push more than 2 elements
+let mut array_vec: ArrayVec<i32, 2> = ArrayVec::new();
+array_vec.push(1).unwrap(); // Ok
+array_vec.push(1).unwrap(); // Ok
+array_vec.push(1).unwrap(); // Error!
 ```
 
-A good question is: Should I use `core::collections::ArrayVec<T>` or
-`alloc::vec::Vec<T>`? Well, `Vec` is already good enough for most situations
-while stack allocation usually shines for small sizes.
+In the above example, the `push()` fails because the `ArrayVec` is already full.
 
-* Do you have a known upper bound?
-
-* How much memory are you going to allocate for your program? The default values
-  of `RUST_MIN_STACK` or `ulimit -s` might not be enough.
-
-* Are you using nested `Vec`s? `Vec<ArrayVec<T, N>>` might be better than
-  `Vec<Vec<T>>`.
-
-```
-let _: Vec<Vec<i32>> = vec![vec![1, 2, 3], vec![4, 5]];
-
- +-----+-----+-----+
- | ptr | len | cap |
- +--|--+-----+-----+
-    |
-    |   +---------------------+---------------------+----------+
-    |   |       Vec<i32>      |       Vec<i32>      |          |
-    |   | +-----+-----+-----+ | +-----+-----+-----+ |  Unused  |
-    '-> | | ptr | len | cap | | | ptr | len | cap | | capacity |
-        | +--|--+-----+-----+ | +--|--+-----+-----+ |          |
-        +----|----------------+----|----------------+----------+
-             |                     |
-             |                     |   +---+---+--------+
-             |                     '-> | 4 | 5 | Unused |
-             |                         +---+---+--------+
-             |   +---+---+---+--------+
-             '-> | 1 | 2 | 3 | Unused |
-                 +---+---+---+--------+
-
-Illustration credits: @mbartlett21
-```
-
-Can you see the `N`, where `N` is length of the external `Vec`, calls to the
-heap allocator? In the following illustration, the internal `ArrayVec`s are
-placed contiguously in the same space.
-
-```txt
-let _: Vec<ArrayVec<i32, 3>> = vec![array_vec![1, 2, 3], array_vec![4, 5]];
-
- +-----+-----+-----+
- | ptr | len | cap |
- +--|--+-----+-----+
-    |
-    |   +------------------------------+--------------------------+----------+
-    |   |       ArrayVec<i32, 4>       |     Arrayvec<i32, 4>     |          |
-    |   | +-----+---+---+---+--------+ | +-----+---+---+--------+ |  Unused  |
-    '-> | | len | 1 | 2 | 3 | Unused | | | len | 4 | 5 | Unused | | capacity |
-        | +-----+---+---+---+--------+ | +-----+---+---+--------+ |          |
-        +------------------------------+--------------------------+----------+
-
-Illustration credits: @mbartlett21
-```
-
-Each use-case is different and should be pondered individually. In case of
-doubt, stick with `Vec`.
-
-For a more technical overview, take a look at the following operations:
-
-```rust
-// `array_vec` has a pre-allocated memory of 2048 bits (32 * 64) that can store up
-// to 64 signed integers.
-let mut array_vec: ArrayVec<i32, 64> = ArrayVec::new();
-
-// Although reserved, there isn't anything explicitly stored yet
-assert_eq!(array_vec.len(), 0);
-
-// Initializes the first 32 bits with a simple '1' integer or
-// 00000000 00000000 00000000 00000001 bits
-array_vec.push(1);
-
-// Our vector memory is now split into a 32/2016 pair of initialized and
-// uninitialized memory respectively
-assert_eq!(array_vec.len(), 1);
-```
+**RFC TODO** _I will add some more here_.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-`ArrayVec` is a contiguous memory block where elements can be collected,
-therefore, a collection by definition and even though `core::collections`
-doesn't exist, it is the most natural module placement.
+`ArrayVec` represents a higher-level concept that is essentially a type of
+collection that should be available without `std`. For this reason,
+`core::collections` was chosen as its home. This does not exist yet, but may be
+created with the intent that future collections may arise.
 
-To avoid length and conflicting conversations, the API will mimic most of the
-current `Vec` surface, which also means that all methods that depend on valid
-user input or valid internal capacity will panic at run-time when something goes
-wrong. For example, removing an element that is out of bounds.
+In general, the API mimics that of `Vec` for simplicity of use. However: it is
+expected that there is a relatively high chance of failure `pushing` to a
+fixed-length `ArrayVec`, compared to the chance of an allocation failure for
+pushing to a `Vec`. For that reason, failable methods return a `Result`.
+
+The reason behind this decision (instead of `panic!`ing) is that `ArrayVec` will
+likely find common use in `no_std` systems like bare metal and kernelland. In
+these environments, panicking is considered undefined behavior, so it makes
+sense to guide the user toward infailable methods. (`unwrap` can easily be used
+to change this behavior, at user discretion).
 
 ```rust
-// Please, bare in mind that these methods are simply suggestions. Discussions about the
-// API should probably take place elsewhere.
 
+// The actual internal representation may vary, and should vary
 pub struct ArrayVec<T, const N: usize> {
     data: MaybeUninit<[T; N]>,
     len: usize,
@@ -214,8 +192,27 @@ impl<T, const N: usize> ArrayVec<T, N> {
 
     pub const fn new() -> Self;
 
-    // Infallible Methods
+    // Basic methods
+    pub const fn insert(&mut self, idx: usize, element: T) -> Result<(), InsertionError>;
 
+    pub const fn push(&mut self, element: T) -> Result<(), InsertionError>;
+
+    pub const fn remove(&mut self, idx: usize) -> Result<T, RemovalErro> ;
+
+    pub const fn pop(&mut self) -> Option<T>;
+
+    pub const fn get(&mut self, idx: usize) -> Option<T>;
+
+    pub const fn first(&self) -> Option<&T>
+
+    pub const fn first_mut(&self) -> Option<&mut T>
+
+    pub const fn last(&self) -> Option<&T>
+    
+    pub const fn last_mut(&self) -> Option<&mut T>
+
+    // General methods
+    // **RFC TODO** verify what makes sense to return a `Result`
     pub const fn as_mut_ptr(&mut self) -> *mut T;
 
     pub const fn as_mut_slice(&mut self) -> &mut [T];
@@ -238,44 +235,37 @@ impl<T, const N: usize> ArrayVec<T, N> {
 
     pub fn truncate(&mut self, len: usize);
 
-    // Methods that can panic at run-time
-
-    pub fn drain<R>(&mut self, range: R) -> Drain<'_, T, N>
+    pub fn drain<R>(&mut self, range: R) -> Result<Drain<'_, T, N>, IndexError>
     where
         R: RangeBounds<usize>;
 
-    pub fn extend_from_cloneable_slice<'a>(&mut self, other: &'a [T])
+    pub fn extend_from_cloneable_slice<'a>(&mut self, other: &'a [T]) -> Result<(), &'a [T]>
     where
         T: Clone;
 
-    pub fn extend_from_copyable_slice<'a>(&mut self, other: &'a [T])
+    pub fn extend_from_copyable_slice<'a>(&mut self, other: &'a [T]) -> Result<(), &'a [T]>
     where
         T: Copy;
 
-    pub const fn insert(&mut self, idx: usize, element: T);
-
-    pub const fn push(&mut self, element: T);
-
-    pub const fn remove(&mut self, idx: usize) -> T;
-
-    pub fn splice<I, R>(&mut self, range: R, replace_with: I) -> Splice<'_, I::IntoIter, N>
+    pub fn splice<I, R>(&mut self, range: R, replace_with: I) -> Result<Splice<'_, I::IntoIter, N>, IndexError>
     where
         I: IntoIterator<Item = T>,
         R: RangeBounds<usize>;
 
-    pub fn split_off(&mut self, at: usize) -> Self;
+    pub fn split_off(&mut self, at: usize) -> Result<Self, IndexError>;
 
-    pub fn swap_remove(&mut self, idx: usize) -> T;
+    pub fn swap_remove(&mut self, idx: usize) -> Result<T, IndexError>;
 
-    // Verifiable methods
-    
-    pub const fn pop(&mut self) -> Option<T>;
+    // Maybe needed: Some sort of `from_ptr(*ptr, len)` that would ease FFI use
 }
 ```
 
-Meaningless, unstable and deprecated methods like `reserve` or `drain_filter`
-weren't considered. A concrete implementation is available at
-https://github.com/c410-f3r/stack-based-vec.
+Traits that are implemented for `Vec` and `array` will be implemented for
+`ArrayVec`, as is applicable. Unstable and deprecated methods like `reserve` or
+`drain_filter` weren't considered.
+
+**RFC todo** _We need a discussion on `FromIter`. I don't know whether it belongs
+in this RFC, or would be better to mention as a future use case_
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -283,28 +273,29 @@ https://github.com/c410-f3r/stack-based-vec.
 ### Additional complexity
 
 New and existing users are likely to find it difficult to differentiate the
-purpose of each vector type, especially people that don't have a theoretical
-background in memory management.
+purpose of each vector type, especially those that don't have a theoretical
+background in memory management. This can be mitigated by providing coherent
+docs in `ArrayVec`.
 
 ### The current ecosystem is fine
 
-`ArrayVec` might be an overkill in certain situations. If someone wants to use
-stack memory in a specific application, then it is just a matter of grabbing the
-appropriated crate.
+`ArrayVec` is arguably not needed in `core`, as there are a handful of existing
+crates to handle the problem. However, being available in `core` will add the
+possiblity of Rust using the feature, which otherwise wouldn't be an option.
 
 # Prior art
 [prior-art]: #prior-art
 
 These are the most known structures:
 
- * `arrayvec::ArrayVec`: Uses declarative macros and an `Array` trait for
+- `arrayvec::ArrayVec`: Uses declarative macros and an `Array` trait for
    implementations but lacks support for arbitrary sizes.
- * `heapless::Vec`: With the usage of `typenum`, can support arbitrary sizes
+- `heapless::Vec`: With the usage of `typenum`, can support arbitrary sizes
    without a nightly compiler.
- * `staticvec::StaticVec`: Uses unstable constant generics for arrays of
+- `staticvec::StaticVec`: Uses unstable constant generics for arrays of
    arbitrary sizes.
- * `tinyvec::ArrayVec`: Supports fixed and arbitrary (unstable feature) sizes
-   but requires `T: Default` for security reasons.
+-  `tinyvec::ArrayVec`: Supports fixed and arbitrary (unstable feature) sizes
+   but requires `T: Default` to avoid unsafe `MaybeUninit`.
 
 As seen, there isn't an implementation that stands out among the others because
 all of them roughly share the same purpose and functionality. Noteworthy is the
@@ -314,69 +305,14 @@ unified approach for arbitrary array sizes.
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-### Verifiable methods
-
-Unlike methods that will abort the current thread execution, verifiable methods
-will signal that something has gone wrong or is missing. This approach has two
-major benefits:
-
-- `Security`: The user is forced to handle possible variants or corner-cases and
-  enables graceful program shutdown by wrapping everything until `fn main() ->
-  Result<(), MyCustomErrors>` is reached.
-
-- `Flexibility`: Gives freedom to users because it is possible to choose
-  between, for example, `my_full_array_vec.push(100)?` (check),
-  `my_full_array_vec.push(100).unwrap()` (panic) or `let _ =
-  my_full_array_vec.push(100);` (ignore).
-
-In regards to performance, since the upper capacity bound is known at
-compile-time and the majority of methods are `#[inline]`, the compiler will
-probably have the necessary information to remove most of the conditional
-bounding checking when producing optimized machine code.
-
-```rust
-pub fn drain<R>(&mut self, range: R) -> Option<Drain<'_, T, N>>
-where
-    R: RangeBounds<usize>;
-
-pub fn extend_from_cloneable_slice<'a>(&mut self, other: &'a [T]) -> Result<(), &'a [T]>
-where
-    T: Clone;
-
-pub fn extend_from_copyable_slice<'a>(&mut self, other: &'a [T]) -> Result<(), &'a [T]>
-where
-    T: Copy;
-
-pub const fn insert(&mut self, idx: usize, element: T) -> Result<(), T>;
-
-pub const fn push(&mut self, element: T) -> Result<(), T>;
-
-pub const fn remove(&mut self, idx: usize) -> Option<T>;
-
-pub fn splice<I, R>(&mut self, range: R, replace_with: I) -> Option<Splice<'_, I::IntoIter, N>>
-where
-    I: IntoIterator<Item = T>,
-    R: RangeBounds<usize>;
-
-pub fn split_off(&mut self, at: usize) -> Option<Self>;
-
-pub fn swap_remove(&mut self, idx: usize) -> Option<T>;
-```
-
-In my opinion, every fallible method should either return `Option` or `Result`
-instead of panicking at run-time. Although the future addition of `try_*`
-variants can mitigate this situation, it will also bring additional maintenance
-burden.
-
 ### Nomenclature
 
 `ArrayVec` will conflict with `arrayvec::ArrayVec` and `tinyvec::ArrayVec`.
-
-### Prelude
-
-Should it be included in the prelude?
+`BufVec` or `BufferVec` may be alternatives.
 
 ### Macros
+
+Macros should likely mimic `vec!`.
 
 ```rust
 // Instance with 1i32, 2i32 and 3i32
@@ -389,29 +325,6 @@ let _: ArrayVec<i32, 64> = array_vec![1; 2];
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-### Dynamic array
-
-An hybrid approach between heap and stack memory could also be provided natively
-in the future.
-
-```rust
-pub struct DynVec<T, const N: usize> {
-    // Hides internal implementation
-    data: DynVecData,
-}
-
-impl<T, const N: usize> DynVec<T, N> {
-    // Much of the `Vec` API goes here
-}
-
-// This is just an example. `Vec<T>` could be `Box` and `enum` an `union`.
-enum DynVecData<T, const N: usize> {
-    Heap(Vec<T>),
-    Inline(ArrayVec<T, N>),
-}
-```
-
-The above description is very similar to what `smallvec` already does.
 
 ### Generic collections and generic strings
 
