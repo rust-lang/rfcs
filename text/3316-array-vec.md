@@ -1,8 +1,7 @@
 - Feature Name: `array_vec`
 - Start Date: 2020-09-27
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
-- Original PR: [rust-lang/rfcs#2990](https://github.com/rust-lang/rfcs/pull/2990)
+- RFC PR: [rust-lang/rfcs#3316](https://github.com/rust-lang/rfcs/pull/3316)
+- Rust Issue: [rust-lang/rust#3316](https://github.com/rust-lang/rust/issues/3316)
 
 
 # Summary
